@@ -8,7 +8,7 @@ Gap (workflow assess-post-pr-loop → escalation/cap-post-pr-lifecycle.md):
   · #2 _gh_pr_comments 解析(排除自己/bot) + _maybe_dispatch_comment_reply baseline+新评论派发；
   · #3 active 信号驱动双档轮询（_maybe_dispatch_ci_fix 返回 True/False）。
 
-Standalone: `python3 bridge/test_prwatch_ci_fix.py`. 无 gh/a1/网络（monkeypatch + fake pool）。
+Standalone: `python3 bridge/test_prwatch_ci_fix.py`. 无 gh/a1/网络（monkeypatch + fake control plane）。
 """
 import importlib.util
 import json
@@ -19,11 +19,13 @@ import unittest
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
 spec = importlib.util.spec_from_file_location(
     "jarvis_dingtalk_bot", HERE / "jarvis_dingtalk_bot.py")
 bot = importlib.util.module_from_spec(spec)
 sys.modules["jarvis_dingtalk_bot"] = bot
 spec.loader.exec_module(bot)
+from jarvis_task_router import EnqueueResult
 
 TID = "84251052"
 PR = "https://github.com/aliyun/terraform-provider-alicloud/pull/9972"
@@ -34,6 +36,7 @@ class FakeHandler:
     def __init__(self):
         self.broadcasts = []
         self.dispatched = []
+        self.execution_router = FakeRouter()
 
     def _broadcast(self, text):
         self.broadcasts.append(text)
@@ -49,16 +52,25 @@ class FakePool:
         self.submitted = []
 
     def submit(self, key, work, **kw):
-        self.submitted.append({
-            "key": key,
-            "force": kw.get("force"),
-            "kind": kw.get("kind"),
-            "terraform": kw.get("terraform"),
-        })
-        if self.accept:
-            work()
-            return True, "dispatched"
-        return False, "queue_full"
+        raise AssertionError("recoverable PR-watch Task must not enter EphemeralExecutor")
+
+
+class FakeRouter:
+    def __init__(self, sink=None):
+        self.sink = sink
+
+    def enqueue(self, envelope, local_submit=None):
+        if self.sink is not None:
+            self.sink.submitted.append({
+                "key": envelope.task_key,
+                "force": True,
+                "kind": envelope.task_type,
+                "terraform": bool(envelope.payload.get("terraform")),
+                "envelope": envelope,
+            })
+            if not self.sink.accept:
+                return EnqueueResult(False, "control_plane_rejected")
+        return EnqueueResult(True, "task_persisted")
 
 
 def _fake_proc(rc, out):
@@ -224,6 +236,7 @@ class _DispatchBase(unittest.TestCase):
         bot._aone_event_publish = lambda *a: self.events.append(a) or True
         self.handler = FakeHandler()
         self.pool = FakePool()
+        self.handler.execution_router = FakeRouter(self.pool)
         self.sched = bot.PrWatchScheduler(self.handler, self.pool)
         self.sched._comment = lambda *a, **k: 0
         self.sched._escalate = lambda *a, **k: None
@@ -258,6 +271,9 @@ class MaybeDispatchCiFixTest(_DispatchBase):
         self.assertTrue(self.pool.submitted[0]["force"], "CI-fix 应 force=True 越过 24h 去重")
         self.assertEqual(self.pool.submitted[0]["kind"], "pr_ci_fix")
         self.assertTrue(self.pool.submitted[0]["terraform"])
+        self.assertEqual(
+            self.pool.submitted[0]["envelope"].aone_id, TID,
+            "GITHUB PR CI trigger must retain the canonical Aone association")
         e = self._entry()
         self.assertEqual((e["ci_fix_sha"], e["ci_fix_attempts"]), ("sha1", 1))
         self.assertEqual(self.events, [], "单次 CI 修复派发不更新 Aone")
@@ -335,6 +351,9 @@ class MaybeDispatchCommentReplyTest(_DispatchBase):
         self.assertEqual(self.pool.submitted[0]["kind"], "pr_comment_reply")
         self.assertTrue(self.pool.submitted[0]["force"])
         self.assertTrue(self.pool.submitted[0]["terraform"])
+        self.assertEqual(
+            self.pool.submitted[0]["envelope"].aone_id, TID,
+            "GITHUB PR comment trigger must retain the canonical Aone association")
         self.assertEqual(self._entry().get("last_seen_comment"), "pr-2")
         self.assertEqual(self.events, [], "普通 reviewer comment 仅在 GitHub 内处理")
 

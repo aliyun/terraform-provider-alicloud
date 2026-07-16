@@ -164,9 +164,9 @@ class HeadlessWorkerFenceTest(unittest.TestCase):
         self.assertEqual(commands[0][7], "claude")
         self.assertEqual(commands[1][7], "claude")
 
-    def test_managed_guard_binds_guard_but_wraps_the_claude_child(self):
+    def test_task_guard_binds_guard_but_wraps_the_claude_child(self):
         captured = {}
-        guard = _BufferedProcess(bot.ClaudeResult("managed-ok", False, "success"))
+        guard = _BufferedProcess(bot.ClaudeResult("task-ok", False, "success"))
         bound = []
 
         def spawn(argv, cwd, on_spawn):
@@ -176,14 +176,14 @@ class HeadlessWorkerFenceTest(unittest.TestCase):
 
         with mock.patch.object(bot, "jarvis_cmd",
                                return_value=["/opt/claude"]), \
-                mock.patch.object(bot, "_spawn_guarded_managed_process",
+                mock.patch.object(bot, "_spawn_guarded_task_process",
                                   side_effect=spawn):
             result = bot.run_claude_buffered(
-                "prompt", "managed-runtime", True, timeout=5,
+                "prompt", "task-runtime", True, timeout=5,
                 on_spawn=lambda process: bound.append(process.pid),
                 guarded=True)
 
-        self.assertEqual(result.text, "managed-ok")
+        self.assertEqual(result.text, "task-ok")
         self.assertEqual(bound, [guard.pid])
         self.assertEqual(captured["argv"][3], "exec-headless")
         self.assertIn("/opt/claude", captured["argv"])

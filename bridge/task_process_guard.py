@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Keep a managed subprocess tied to the bridge that owns its lease.
+"""Keep a Task subprocess tied to the PersistenceExecutor that owns its lease.
 
 The bridge passes two inherited pipes:
 
@@ -7,7 +7,7 @@ The bridge passes two inherited pipes:
   to ``jarvis_session``.  EOF before the single-byte grant means the command is
   never started.
 * ``sentinel_fd`` is held open only by the bridge.  EOF means the bridge died,
-  including SIGKILL, so this guard terminates the complete managed process group.
+  including SIGKILL, so this guard terminates the complete Task process group.
 
 The guard is the process-group/session leader.  The actual command and all of its
 descendants inherit that group, which gives the live bridge and this crash guard
@@ -89,7 +89,7 @@ def _stop_group(child, grace_seconds):
 
 
 def _group_members():
-    """Return other live members of this private managed process group."""
+    """Return other live members of this private Task process group."""
     pgid = os.getpgrp()
     current = os.getpid()
     try:

@@ -6,7 +6,9 @@
 
 ## 1. 扫描与派发 (bridge)
 - `bridge/run.sh start` 常驻：ScanScheduler 定时跑 `scan.sh --force`，扫 `config/pools.json` 登记的池
-- diff 出新单 + 外部更新单 → DispatchPool 并发起 headless jarvis（每单一实例，上限 `JARVIS_DISPATCH_MAX`）
+- `ExecutionRouter` 只按可恢复性分类：业务工单/重访/唤醒/PR 跟进 → `Task`；probe/本地检查/一次性命令 → `EphemeralJob`
+- `PersistenceExecutor` 从控制面 lease Task；`EphemeralExecutor` 执行本地一次性作业；两者共享 `CapacityManager` 与 `ExecutionRuntime`
+- Task 必须先进入控制面；控制面不可用时 fail-closed，不允许回退到本地无状态执行
 - `_decide` 逐单判定：终态 / `jarvis-done` / `jarvis-claimed` / `jarvis-npe` → skip；`jarvis-idle` 过人工介入门
 - **[人工点·可选]** 回退模式 `JARVIS_AUTO_DISPATCH=0`：新单入 pending，钉钉授权后才派（`plan.sh` 出计划）
 - 后台调度：ProbeScheduler（每日探测轮）/ RevisitScheduler（每日 idle 重访）/ ReconcileScheduler（周期对账）/ PersonaScheduler（评论区数字人接力，默认关）

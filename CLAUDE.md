@@ -10,7 +10,7 @@
 
 1) 跑 `bootstrap/preflight.sh`（24h 闸门，`--force` 强制重跑），全绿才干活；
 2) 等任务：有单 → [loops/aone-triage.md](loops/aone-triage.md)，无单 → [loops/adhoc-intake.md](loops/adhoc-intake.md)，低置信/验收不过 → 起草不发出入 `escalation/`；
-3) bridge 定时扫池并自动派发 headless 并发处理（授权前置可配回退 `JARVIS_AUTO_DISPATCH=0`；另含 probe/人工门重访每日轮；见 `bridge/jarvis_dingtalk_bot.py` ScanScheduler），扫描/派发由 bridge 全权负责，Jarvis 只被动接单；入口统一 `bridge/run.sh start`（自动 source env + 判定钉钉/降级模式，不需额外点火）。
+3) bridge 定时扫池，把可恢复业务统一写入控制面 Task，由 PersistenceExecutor lease 并发处理；probe 等一次性作业走 EphemeralExecutor（授权前置可配 `JARVIS_AUTO_DISPATCH=0`；另含人工门重访每日轮；见 `bridge/jarvis_dingtalk_bot.py` ScanScheduler），扫描/派发由 bridge 全权负责，Jarvis 只被动接单；入口统一 `bridge/run.sh start`（自动 source env + 判定钉钉/降级模式，不需额外点火）。
 
 ## 工作纪律
 

@@ -13,7 +13,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
 from jarvis_task_client import (  # noqa: E402
-    AutomationAgentTaskClient,
+    ControlPlaneClient,
     ControlPlaneConflict,
     ControlPlaneUnavailable,
     InvalidResponse,
@@ -78,20 +78,57 @@ def body(req):
 class TaskEnvelopeTest(unittest.TestCase):
     def test_serializes_and_omits_empty_optional_fields(self):
         env = envelope()
-        data = env.to_dict(execution_mode="MANAGED")
+        data = env.to_dict()
         self.assertEqual(data["taskKey"], "aone:2100304:84345050")
-        self.assertEqual(data["executionMode"], "MANAGED")
+        self.assertNotIn("executionMode", data)
+        self.assertNotIn("shadow", data)
         self.assertEqual(data["sourceRef"]["projectId"], "2100304")
         self.assertEqual(data["payload"]["itemId"], "84345050")
         self.assertEqual(data["priority"], "high")
         self.assertNotIn("persona", data)
 
-    def test_request_id_is_stable_and_mode_sensitive(self):
+    def test_request_id_is_stable(self):
         env = envelope()
-        first = env.request_id("upsert", execution_mode="MANAGED")
-        self.assertEqual(first, env.request_id("upsert", execution_mode="MANAGED"))
-        self.assertNotEqual(first, env.request_id("upsert", execution_mode="SHADOW"))
+        first = env.request_id("upsert")
+        self.assertEqual(first, env.request_id("upsert"))
+        self.assertNotEqual(first, env.request_id("direct-claim"))
         self.assertTrue(first.startswith("jarvis-upsert-"))
+
+    def test_canonical_aone_key_carries_aone_id_for_non_aone_source(self):
+        env = TaskEnvelope(
+            task_key="aone:2100304:84345050",
+            source_type="GITHUB",
+            source_ref={"prUrl": "https://example.test/pull/1"},
+            task_type="pr_ci_fix",
+            desired_revision="pr-ci:abc",
+            payload={"itemId": "84345050", "prompt": "fix ci"},
+        )
+        self.assertEqual(env.aone_id, "84345050")
+        self.assertEqual(env.to_dict()["aoneId"], "84345050")
+
+    def test_canonical_aone_key_rejects_conflicting_explicit_aone_id(self):
+        with self.assertRaisesRegex(ValueError, "conflicts with canonical task_key"):
+            TaskEnvelope(
+                task_key="aone:2100304:84345050",
+                source_type="GITHUB",
+                source_ref={},
+                task_type="pr_comment_reply",
+                desired_revision="pr-comment:1",
+                payload={"itemId": "84345050", "prompt": "reply"},
+                aone_id="84399999",
+            )
+
+    def test_noncanonical_local_key_does_not_infer_aone_id(self):
+        env = TaskEnvelope(
+            task_key="aone:unknown:adhoc",
+            source_type="LOCAL",
+            source_ref={"localId": "adhoc"},
+            task_type="ticket",
+            desired_revision="local:1",
+            payload={"itemId": "adhoc", "prompt": "run"},
+        )
+        self.assertIsNone(env.aone_id)
+        self.assertNotIn("aoneId", env.to_dict())
 
     def test_rejects_missing_identity_or_non_mapping_payload(self):
         with self.assertRaises(ValueError):
@@ -102,13 +139,13 @@ class TaskEnvelopeTest(unittest.TestCase):
 
 class ClientContractTest(unittest.TestCase):
     def make(self, opener):
-        return AutomationAgentTaskClient(
+        return ControlPlaneClient(
             "https://pre-agent.example/", "super-secret", timeout=4.5, opener=opener)
 
     def test_authorization_idempotency_and_upsert_body(self):
         opener = RecordingOpener()
         client = self.make(opener)
-        client.upsert_desired_task(envelope(), execution_mode="managed", request_id="req-123")
+        client.upsert_desired_task(envelope(), request_id="req-123")
         req, timeout = opener.calls[0]
         self.assertEqual(req.full_url,
                          "https://pre-agent.example/api/jarvis/v1/tasks/upsert")
@@ -117,7 +154,8 @@ class ClientContractTest(unittest.TestCase):
         self.assertEqual(hs["authorization"], "Bearer super-secret")
         self.assertEqual(hs["idempotency-key"], "req-123")
         self.assertNotIn("x-request-id", hs)
-        self.assertEqual(body(req)["executionMode"], "MANAGED")
+        self.assertNotIn("executionMode", body(req))
+        self.assertNotIn("shadow", body(req))
         self.assertEqual(body(req)["desiredRevision"],
                          "modified:2026-07-15T01:02:03Z")
 
@@ -159,6 +197,7 @@ class ClientContractTest(unittest.TestCase):
             FakeResponse([{"eventType": "LEASED"}]),
             FakeResponse([{"workerKey": "w1"}]),
             FakeResponse({"worker": {"workerKey": "host/one"}}),
+            FakeResponse({"items": [], "nextAfterSessionId": None, "hasMore": False}),
         ])
         c = self.make(opener)
         operation = {"operation_id": "op1", "fence_token": 7}
@@ -170,6 +209,7 @@ class ClientContractTest(unittest.TestCase):
         timeline = c.get_task_timeline("task/1")
         workers = c.list_workers()
         worker_state = c.get_worker_state("host/one")
+        waits = c.list_pending_aone_reply_waits(after_session_id=7, limit=25)
 
         paths = [call[0].full_url.rsplit("/api/jarvis/v1/", 1)[1]
                  for call in opener.calls]
@@ -177,6 +217,7 @@ class ClientContractTest(unittest.TestCase):
             "operations/begin", "operations/ack", "operations/fail",
             "operations/reconcile", "tasks/by-aone/84345050",
             "tasks/task%2F1/timeline", "workers", "workers/host%2Fone/state",
+            "sessions/waits/aone-reply?afterSessionId=7&limit=25",
         ])
         self.assertEqual(body(opener.calls[0][0]),
                          {"operationId": "op1", "fenceToken": 7})
@@ -184,12 +225,20 @@ class ClientContractTest(unittest.TestCase):
         self.assertEqual(timeline[0]["eventType"], "LEASED")
         self.assertEqual(workers[0]["workerKey"], "w1")
         self.assertEqual(worker_state["worker"]["workerKey"], "host/one")
-        for req, _timeout in opener.calls[-4:]:
+        self.assertEqual(waits["items"], [])
+        for req, _timeout in opener.calls[-5:]:
             self.assertEqual(req.get_method(), "GET")
             self.assertIsNone(req.data)
             self.assertNotIn("idempotency-key", headers(req))
 
-    def test_direct_claim_is_targeted_shadow_and_allows_zero_free_slots(self):
+    def test_pending_wait_query_validates_keyset_bounds(self):
+        c = self.make(RecordingOpener())
+        with self.assertRaises(ValueError):
+            c.list_pending_aone_reply_waits(after_session_id=-1)
+        with self.assertRaises(ValueError):
+            c.list_pending_aone_reply_waits(limit=501)
+
+    def test_direct_claim_is_targeted_task_and_allows_zero_free_slots(self):
         opener = RecordingOpener()
         c = self.make(opener)
         c.claim_task("worker:interactive", envelope(),
@@ -202,8 +251,8 @@ class ClientContractTest(unittest.TestCase):
         self.assertEqual(payload["runtimeSessionId"],
                          "interactive:codex:s:aone:p:i:cycle:1")
         self.assertEqual(payload["freeSlots"], 0)
-        self.assertEqual(payload["task"]["executionMode"], "SHADOW")
-        self.assertTrue(payload["task"]["shadow"])
+        self.assertNotIn("executionMode", payload["task"])
+        self.assertNotIn("shadow", payload["task"])
         self.assertEqual(headers(req)["idempotency-key"], "claim-1")
 
         with self.assertRaises(ValueError):
@@ -211,7 +260,7 @@ class ClientContractTest(unittest.TestCase):
 
     def test_bearer_token_is_optional(self):
         opener = RecordingOpener()
-        c = AutomationAgentTaskClient("https://pre-agent.example", opener=opener)
+        c = ControlPlaneClient("https://pre-agent.example", opener=opener)
         c.register_worker({"workerKey": "w1"}, request_id="r1")
         self.assertNotIn("authorization", headers(opener.calls[0][0]))
 

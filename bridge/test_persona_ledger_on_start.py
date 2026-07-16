@@ -4,7 +4,7 @@ only when the dispatched worker ACTUALLY STARTS, never at submit-accept time.
 
 Bug (工单 84297352, 原根 @Terraform-研发数字人 两次都无人理):
 _apply_decisions 旧逻辑在 self.pool.submit(...) 返回 (accepted=True) 后就同步把评论写进
-ledger.processed。但 submit 只表示"入队接受"——DispatchPool 槽满时 future 仅排队。此刻
+ledger.processed。但 submit 只表示"入队接受"——EphemeralExecutor 槽满时 future 仅排队。此刻
 bridge 换 token 重启，terminate_all 的 shutdown(cancel_futures=True) 丢弃未启动的排队
 future（worker 从未跑、评论从未回），而 ledger 已标 processed → PersonaScheduler 永久
 skip(reason=processed) 不再重派，ScanScheduler 冷启动又把它当存量积压 → 双重盲区烂尾。
@@ -35,7 +35,7 @@ CID = 124851623
 
 
 class FakePool:
-    """最小 DispatchPool 替身。start_worker=True 时 submit 会同步执行 work（模拟拿到槽位
+    """最小 EphemeralExecutor 替身。start_worker=True 时 submit 会同步执行 work（模拟拿到槽位
     立即开跑）；False 时只入队不执行（模拟槽满排队，随后被重启 cancel_futures 丢弃）。"""
 
     def __init__(self, start_worker):

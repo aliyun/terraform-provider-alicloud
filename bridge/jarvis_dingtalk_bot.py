@@ -67,21 +67,22 @@ Env:
   JARVIS_REVISIT_MAX                       max jarvis-idle items inspected per round (default 100).
   JARVIS_REVISIT_STALE_DAYS                Terraform no-progress reminder threshold (default 8).
 
-  --- AutomationAgent persistent task data plane ---
-  JARVIS_TASK_MODE                         legacy (default) / shadow / managed.
-  JARVIS_MANAGED_TASK_TYPES                comma task types owned by the data plane in managed
-                                           mode. Start with "probe"; an empty list manages none.
-  JARVIS_CONTROL_PLANE_BASE_URL            AutomationAgent base URL. Required by shadow/managed.
-  JARVIS_CONTROL_PLANE_TOKEN               optional bearer token for the Jarvis task API.
+  --- AutomationAgent persistent Task data plane ---
+  JARVIS_CONTROL_PLANE_BASE_URL            AutomationAgent base URL. Falls back to
+                                           JARVIS_HTML_REPORT_BASE_URL, then PRE.
+  JARVIS_CONTROL_PLANE_TOKEN               bearer token for the Jarvis Task API. Falls back to
+                                           JARVIS_HTML_REPORT_TOKEN; startup fails when absent.
   JARVIS_CONTROL_PLANE_TIMEOUT             HTTP timeout seconds (default 10).
   JARVIS_CONTROL_PLANE_RETRY_SEC           retry interval while data plane is unavailable (default 5).
-  JARVIS_LEASE_SECONDS                     session lease TTL requested from data plane (default 90).
+  JARVIS_LEASE_SECONDS                     session lease TTL requested from data plane (default 300).
+  JARVIS_LEASE_SAFETY_MARGIN_SEC           local fail-closed margin before lease expiry (default 90).
   JARVIS_WORKER_HEARTBEAT_SEC              worker heartbeat interval (default 30).
-  JARVIS_SESSION_HEARTBEAT_SEC             leased session heartbeat interval (default 20).
+  JARVIS_SESSION_HEARTBEAT_SEC             leased session heartbeat interval (default 30).
   JARVIS_LEASE_POLL_SEC                    task lease poll interval (default 2).
   JARVIS_WORKER_DRAIN_TIMEOUT              normal shutdown drain timeout seconds (default 30).
-  JARVIS_MANAGED_STOP_GRACE_SEC            SIGTERM grace before fenced work is SIGKILLed (default 5).
-  JARVIS_MANAGED_GUARD_GRACE_SEC           guardian grace before orphan/background groups are
+  JARVIS_TASK_STOP_GRACE_SEC               SIGTERM grace before fenced Task work is SIGKILLed
+                                           (default 5).
+  JARVIS_TASK_GUARD_GRACE_SEC              guardian grace before orphan/background groups are
                                            SIGKILLed (default 2).
 
   --- Terraform 旧接力入站迁移 PersonaScheduler (loops/persona-collab.md) ---
@@ -124,9 +125,14 @@ from datetime import datetime, timedelta, timezone
 from urllib.request import Request, urlopen
 from urllib.error import URLError
 
-from jarvis_task_client import AutomationAgentTaskClient, TaskEnvelope
-from jarvis_task_router import EnqueueResult, TaskRouter
-from jarvis_local_worker import LocalWorker
+from jarvis_task_client import ControlPlaneClient, TaskEnvelope
+from jarvis_capacity import CapacityManager
+from jarvis_task_router import ExecutionRouter
+from jarvis_persistence_executor import PersistenceExecutor
+from jarvis_execution_runtime import (
+    DEFAULT_EXECUTION_RUNTIME,
+    DEFAULT_PROCESS_GUARDIAN,
+)
 
 # The DingTalk SDK is only needed by the live WebSocket path in main(). Guard the
 # import so the module still loads for the hermetic test suite and --dry-run-once
@@ -185,13 +191,23 @@ log = logging.getLogger("jarvis-bot")
 
 
 def _task_client_from_env():
-    """Build the AutomationAgent client, or None when the data plane is unconfigured."""
-    base_url = os.environ.get("JARVIS_CONTROL_PLANE_BASE_URL", "").strip()
-    if not base_url:
-        return None
-    return AutomationAgentTaskClient(
+    """Build the mandatory AutomationAgent Task client."""
+    base_url = (
+        os.environ.get("JARVIS_CONTROL_PLANE_BASE_URL", "").strip()
+        or os.environ.get("JARVIS_HTML_REPORT_BASE_URL", "").strip()
+        or "https://pre-agent.aliyun-inc.com"
+    )
+    token = (
+        os.environ.get("JARVIS_CONTROL_PLANE_TOKEN", "").strip()
+        or os.environ.get("JARVIS_HTML_REPORT_TOKEN", "").strip()
+    )
+    if not token:
+        raise RuntimeError(
+            "Task control-plane token is required: set "
+            "JARVIS_CONTROL_PLANE_TOKEN or JARVIS_HTML_REPORT_TOKEN")
+    return ControlPlaneClient(
         base_url,
-        os.environ.get("JARVIS_CONTROL_PLANE_TOKEN", ""),
+        token,
         timeout=float(os.environ.get("JARVIS_CONTROL_PLANE_TIMEOUT", "10")),
     )
 
@@ -227,7 +243,6 @@ def _task_envelope(*, item_id, project, task_type, source_type, source_ref,
         recovery_policy=recovery_policy,
         persona=persona,
         priority=priority,
-        aone_id=(str(item_id) if str(source_type).upper() == "AONE" else None),
         comment_cursor=comment_cursor,
         required_capabilities=required_capabilities,
         max_retries=max_retries,
@@ -264,14 +279,9 @@ def jarvis_root():
     return os.environ.get("JARVIS_ROOT") or str(REPO_ROOT)
 
 
-# ── in-flight worker registry (restart-orphan cure, 方案B) ─────────────────────
-# Every headless ticket worker records itself here the instant it starts and clears
-# the record on any terminal outcome. A bridge restart reads what is left over and
-# `claude --resume`s each survivor (see JarvisHandler._resume_inflight). Persistence
-# mirrors DispatchPool._load_ledger/_persist_ledger: atomic tmp+os.replace, wrapped in
-# best-effort try/except so the registry can never crash a worker. INFLIGHT_PATH is a
-# module global looked up on every call (never captured at def time) so tests can
-# monkeypatch ``b.INFLIGHT_PATH`` onto a tmp file.
+# ── EphemeralJob process registry ────────────────────────────────────────────
+# EphemeralExecutor records live local jobs for watchdog and graceful-stop
+# cleanup only. Records are never used to resume work after a restart.
 INFLIGHT_PATH = Path(REPO_ROOT) / ".my-day/bridge/inflight.json"
 _inflight_lock = threading.Lock()
 
@@ -290,7 +300,7 @@ def _inflight_load():
 
 def _inflight_write(recs):
     """Persist the registry atomically (tmp write + os.replace). Caller holds
-    ``_inflight_lock`` (mirrors DispatchPool._persist_ledger's caller-locked pattern);
+    ``_inflight_lock`` (mirrors EphemeralExecutor's caller-locked persistence);
     best-effort — I/O failures only warn, never raise."""
     try:
         INFLIGHT_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -305,8 +315,7 @@ def _inflight_add(item_id, sid, project, kind, prompt, terraform=False):
     """Register a worker as in-flight before it spawns claude. Atomic load→set→write
     under the lock so concurrent workers never clobber each other's records.
 
-    ``terraform`` persists the model 车道 so _resume_inflight re-selects the SAME lane
-    after a bridge restart — a --resume on the wrong lane lands on a different gateway."""
+    ``terraform`` is retained only for same-process cleanup diagnostics."""
     with _inflight_lock:
         recs = _inflight_load()
         recs[str(item_id)] = {"sid": sid, "project": project, "kind": kind,
@@ -2082,7 +2091,7 @@ def run_claude_stream(text, session_id, resume, timeout=None, on_spawn=None, ter
         return
     # Hard-cap p.wait(): the stream loop above already enforces a soft deadline per
     # yielded token, but nothing bounded the terminal wait — a subprocess in weird
-    # state after stdout EOF could block forever, hanging the DispatchPool worker
+    # state after stdout EOF could block forever, hanging the EphemeralExecutor worker
     # thread and leaking its slot (root cause of the 20-min zombie deadlock).
     remaining = max(1, int(deadline - time.time()))
     try:
@@ -2152,86 +2161,18 @@ def _classify_result(out, err, rc):
 
 
 def _kill_spawned_process_group(process):
-    try:
-        os.killpg(os.getpgid(process.pid), signal.SIGKILL)
-    except (ProcessLookupError, OSError):
-        try:
-            process.kill()
-        except Exception:  # noqa: BLE001
-            pass
-    try:
-        process.wait(timeout=5)
-    except Exception:  # noqa: BLE001
-        pass
-    for stream in (process.stdout, process.stderr):
-        if stream is not None:
-            try:
-                stream.close()
-            except Exception:  # noqa: BLE001
-                pass
+    """Backward-compatible facade over the shared ProcessGuardian."""
+    DEFAULT_PROCESS_GUARDIAN.terminate(process)
 
 
-def _spawn_guarded_managed_process(argv, cwd, on_spawn):
-    """Spawn a gated process-group guard and persist its PID before launch."""
-    if on_spawn is None:
-        raise ValueError("managed process guard requires an on_spawn binder")
-    gate_read, gate_write = os.pipe()
-    sentinel_read, sentinel_write = os.pipe()
-    process = None
-    try:
-        guard = [
-            sys.executable,
-            str(Path(__file__).with_name("managed_process_guard.py")),
-            "--gate-fd", str(gate_read),
-            "--sentinel-fd", str(sentinel_read),
-            "--grace-seconds", os.environ.get("JARVIS_MANAGED_GUARD_GRACE_SEC", "2"),
-            "--",
-        ] + list(argv)
-        process = subprocess.Popen(
-            guard, cwd=cwd, text=True, stdin=subprocess.DEVNULL,
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            start_new_session=True, pass_fds=(gate_read, sentinel_read))
-    except Exception:
-        for fd in (gate_read, gate_write, sentinel_read, sentinel_write):
-            try:
-                os.close(fd)
-            except OSError:
-                pass
-        raise
-    finally:
-        if process is not None:
-            for fd in (gate_read, sentinel_read):
-                try:
-                    os.close(fd)
-                except OSError:
-                    pass
-
-    try:
-        # bind_process performs the fenced control-plane write.  The command is
-        # still waiting behind gate_read and cannot run before this returns.
-        on_spawn(process)
-        os.write(gate_write, b"G")
-    except Exception:
-        try:
-            os.close(gate_write)
-        except OSError:
-            pass
-        try:
-            os.close(sentinel_write)
-        except OSError:
-            pass
-        _kill_spawned_process_group(process)
-        raise
-    finally:
-        try:
-            os.close(gate_write)
-        except OSError:
-            pass
-    return process, sentinel_write
+def _spawn_guarded_task_process(argv, cwd, on_spawn):
+    """Backward-compatible facade over the shared ProcessGuardian."""
+    return DEFAULT_PROCESS_GUARDIAN.spawn(argv, Path(cwd), on_spawn)
 
 
 def run_claude_buffered(text, session_id, resume, timeout=None, on_spawn=None,
-                        terraform=False, guarded=False):
+                        terraform=False, guarded=False,
+                        execution_runtime=None):
     """Buffered (non-streaming) claude round for the headless dispatch path.
 
     Unlike run_claude_stream this uses ``--output-format json`` (NOT stream-json,
@@ -2247,7 +2188,7 @@ def run_claude_buffered(text, session_id, resume, timeout=None, on_spawn=None,
     run_claude_stream cannot apply here — so we enforce a hard timeout via
     ``communicate(timeout=…)`` and kill the whole process group on TimeoutExpired
     (returning subtype 'timeout'). ``on_spawn(p)`` is invoked immediately so the
-    DispatchPool can record the Popen and terminate_all can still kill it. Never
+    EphemeralExecutor can record the Popen and terminate_all can still kill it. Never
     used by the Tata / live-card path (that stays stream-json for the typewriter
     effect)."""
     if timeout is None:
@@ -2255,42 +2196,15 @@ def run_claude_buffered(text, session_id, resume, timeout=None, on_spawn=None,
     argv = jarvis_cmd(session_id, terraform=terraform) + ["-p", text, "--output-format", "json"]
     argv += ["--resume", session_id] if resume else ["--session-id", session_id]
     headless_argv = _headless_exec_command(session_id, argv)
-    sentinel_write = None
-    if guarded:
-        p, sentinel_write = _spawn_guarded_managed_process(
-            headless_argv, jarvis_root(), on_spawn)
-    else:
-        p = subprocess.Popen(headless_argv, cwd=jarvis_root(), text=True,
-                             stdin=subprocess.DEVNULL,
-                             stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                             start_new_session=True)
-        if on_spawn:
-            try:
-                on_spawn(p)
-            except Exception:  # noqa: BLE001
-                pass
-    try:
-        out, err = p.communicate(timeout=timeout)
-    except subprocess.TimeoutExpired:
-        try:
-            os.killpg(os.getpgid(p.pid), signal.SIGKILL)
-        except (ProcessLookupError, OSError):
-            try:
-                p.kill()
-            except Exception:  # noqa: BLE001
-                pass
-        try:
-            out, err = p.communicate(timeout=5)
-        except Exception:  # noqa: BLE001
-            out, err = "", ""
-        return ClaudeResult(out or "", True, "timeout")
-    finally:
-        if sentinel_write is not None:
-            try:
-                os.close(sentinel_write)
-            except OSError:
-                pass
-    return _classify_result(out, err, p.returncode)
+    runtime = execution_runtime or DEFAULT_EXECUTION_RUNTIME
+    execution = runtime.run_buffered(
+        headless_argv, Path(jarvis_root()), timeout=timeout,
+        on_spawn=on_spawn, guarded=guarded,
+        guarded_spawn=_spawn_guarded_task_process if guarded else None)
+    if execution.timed_out:
+        return ClaudeResult(execution.stdout or "", True, "timeout")
+    return _classify_result(
+        execution.stdout, execution.stderr, execution.returncode)
 
 
 def run_tata_stream(text, session_id, resume):
@@ -2505,24 +2419,23 @@ class TataPool:
 class ScanScheduler:
     """Periodically run scan.sh, diff for new items, and act on them.
 
-    Two modes (``JARVIS_AUTO_DISPATCH``):
+    Two authorization policies (``JARVIS_AUTO_DISPATCH``):
 
-    · auto (default, =1): new items are dispatched straight into the DispatchPool —
-      one headless jarvis per ticket, bounded by the pool's concurrency cap. The
-      DingTalk card becomes a broadcast ("已自动派发 #id 〈标题〉"), not an authorization
-      prompt. The soft-dedup ledger + active-set (in DispatchPool) prevent re-dispatch
-      / restart storms; the real mutex stays claim.sh inside each jarvis instance.
+    · auto (default, =1): new items are immediately persisted as control-plane Tasks.
+      PersistenceExecutor leases them under the shared capacity limit. The DingTalk card becomes
+      a broadcast ("已进入任务队列 #id 〈标题〉"), not an authorization prompt.
 
-    · fallback (=0): the legacy authorization-front behaviour — new items land in
+    · supervised (=0): new items land in
       ``pending`` awaiting "处理 #ID" / "全部处理" before dispatch.
 
     Backlog drain (``JARVIS_BACKLOG_DRAIN``, default on, auto mode only): on a tick that
-    has NO new / externally-updated items and the pool has free running slots, it trickle-
-    dispatches "backlog" tickets jarvis has never touched (in-scope + non-terminal + none of
+    has NO new / externally-updated items, it persists up to
+    ``JARVIS_BACKLOG_MAX_SLOTS`` backlog Tasks that jarvis has never touched
+    (in-scope + non-terminal + none of
     the jarvis-claimed/idle/done/npe tags — note jarvis-probe stays dispatchable), ordered by
-    优先级→建单时间, until the free slots fill. New items always
-    win — this only fires on a no-new tick, and free_slots>0 implies an empty queue, so a
-    backlog ticket can never be queued ahead of a future new one. The cold-start tick seeds
+    优先级→建单时间. New items always win because this only fires on a no-new tick.
+    Task capacity and idempotency are enforced centrally, independently of local
+    EphemeralExecutor occupancy. The cold-start tick seeds
     the baseline and drains nothing (a restart never storm-consumes the standing backlog).
 
     Runs as a daemon thread; errors are logged and skipped, never crash the bridge.
@@ -2530,8 +2443,10 @@ class ScanScheduler:
 
     def __init__(self, handler, pool=None):
         self.handler = handler
-        self.pool = pool if pool is not None else (getattr(handler, "dispatch_pool", None))
-        self.task_router = getattr(handler, "task_router", None)
+        self.pool = pool if pool is not None else (getattr(handler, "ephemeral_executor", None))
+        self.execution_router = (
+            getattr(handler, "execution_router", None)
+            or ExecutionRouter(logger=log))
         self.auto = os.environ.get("JARVIS_AUTO_DISPATCH", "1") != "0"
         self.interval = int(os.environ.get("JARVIS_SCAN_INTERVAL", "1800"))
         self.notify_target = os.environ.get("JARVIS_NOTIFY_GROUP", "cidy1mv+qvMEybkqTXcsXTOeQ==")
@@ -2553,8 +2468,9 @@ class ScanScheduler:
         self.dispatch_pools = {p.strip() for p in
                                os.environ.get("JARVIS_DISPATCH_POOLS", "").split(",") if p.strip()}
         self.dispatch_created_before = os.environ.get("JARVIS_DISPATCH_CREATED_BEFORE", "").strip()
-        # 空闲机会式消化积压(默认开)：无新单/更新单且池有空闲运行槽的 tick，涓流派发从未被
-        # jarvis 碰过的积压单填满空闲槽；新单永远优先。JARVIS_BACKLOG_DRAIN=0 恢复纯新单派发。
+        # 空闲机会式消化积压(默认开)：无新单/更新单的 tick，最多发布
+        # JARVIS_BACKLOG_MAX_SLOTS 个 Task；控制面统一做容量与幂等。新单永远优先。
+        # JARVIS_BACKLOG_DRAIN=0 恢复纯新单派发。
         self.backlog_drain = os.environ.get("JARVIS_BACKLOG_DRAIN", "1") != "0"
         # 空闲槽放开指派人(默认关，保守+可逆)：开时 backlog drain 从「全池任何人的开放单」里挑，
         # 而非仅 jarvis worker 指派的单；新单/更新单派发不受影响。JARVIS_BACKLOG_ANY_ASSIGNEE=1 开启。
@@ -2816,7 +2732,7 @@ class ScanScheduler:
             （覆盖去重台账）；否则 skip idle_no_human（等每日 Revisit）
           · 其余（无 jarvis 标签，含首次/外部更新）→ 走派发判定，force=False
         「走派发判定」= pool.status(iid, force) 命中容量/去重则 skip，否则 dispatch/new。
-        DispatchPool 的 active-set + 24h ledger 提供软去重，claim 仍是真正互斥锁。"""
+        EphemeralExecutor 的 active-set + 24h ledger 提供软去重，claim 仍是真正互斥锁。"""
         out = []
         for it in items:
             iid = str(it.get("id", ""))
@@ -2850,7 +2766,9 @@ class ScanScheduler:
             else:
                 decide_dispatch = True
                 action, reason = "dispatch", "new"
-            if decide_dispatch and self.pool is not None:
+            envelope = self._envelope(it)
+            if (decide_dispatch and self.pool is not None
+                    and not self.execution_router.is_task(envelope)):
                 ok, preason = self.pool.status(iid, force=force)
                 action = "dispatch" if ok else "skip"
                 reason = "new" if ok else preason
@@ -2881,15 +2799,8 @@ class ScanScheduler:
             targetType=broadcast_type(),
         )
 
-    def _observe(self, item):
-        """Persist a changed desired revision even when local claim/dedup skips dispatch."""
-        if self.task_router is None:
-            return EnqueueResult(True, "legacy_noop")
-        return self.task_router.observe(self._envelope(item))
-
     def _dispatch(self, item, force=False):
-        """Submit one ticket to the DispatchPool as a headless jarvis instance.
-        Fresh session per ticket (每单一实例). Returns (accepted, reason)."""
+        """Route one ticket: persist Task or locally run an EphemeralJob."""
         iid = str(item.get("id", ""))
         title = item.get("title", "")
         pool_key = item.get("pool", "")
@@ -2900,7 +2811,9 @@ class ScanScheduler:
         notify = self.handler._broadcast if self.handler else (lambda t: None)
         envelope = self._envelope(item, prompt)
 
-        def legacy_submit():
+        def local_submit():
+            if self.pool is None or self.handler is None:
+                return False, "ephemeral_executor_unavailable"
             sid = str(uuid.uuid4())
             work = (lambda: self.handler.dispatch_item(
                 iid, prompt, sid, False, notify, tgt, ttype,
@@ -2910,9 +2823,7 @@ class ScanScheduler:
                                     project=pool_project, force=force,
                                     terraform=terraform)
 
-        if self.task_router is None:
-            return legacy_submit()
-        return self.task_router.enqueue(envelope, legacy_submit)
+        return self.execution_router.enqueue(envelope, local_submit=local_submit)
 
     # -- loop / tick ---------------------------------------------------------
 
@@ -3002,22 +2913,10 @@ class ScanScheduler:
         new items + externally-updated items; both flow through _decide, which skips
         claimed/done/terminal/idle-without-human and only re-dispatches an idle ticket
         (force=True) when a human touched it after jarvis."""
-        if self.pool is None:
-            log.warning("auto-dispatch on but no DispatchPool; skipping tick")
-            return
         candidates = list(new_items) + list((updated_items or {}).values())
         dispatched, dropped = [], []
         for d in self._decide(candidates):
             if d["action"] != "dispatch":
-                # Claimed/active/deduped/queue-full items still carry a newer desired
-                # revision. Persist it before returning so the current generation can
-                # re-enter READY after it finishes. Terminal/done/npe items are omitted.
-                if d["reason"] in {"claimed", "active", "deduped", "queue_full",
-                                   "idle_no_human"}:
-                    observed = self._observe(d["item"])
-                    if not observed.accepted:
-                        log.warning("scan observe #%s failed closed (%s)",
-                                    d["id"], observed.reason)
                 log.info("scan auto: skip #%s (%s)", d["id"], d["reason"])
                 continue
             ok, reason = self._dispatch(d["item"], force=d.get("force", False))
@@ -3060,13 +2959,6 @@ class ScanScheduler:
         (existing tickets whose modified time changed; notify only, not staged)."""
         updated_items = updated_items or {}
         new_by_id = {str(it["id"]): it for it in new_items if it.get("id")}
-        # Supervised mode is still a sensor: persist the desired revision now,
-        # independently of whether/when a human authorizes local execution.
-        for it in list(new_by_id.values()) + list(updated_items.values()):
-            observed = self._observe(it)
-            if not observed.accepted:
-                log.warning("scan supervised observe #%s failed closed (%s)",
-                            it.get("id"), observed.reason)
         if new_by_id:
             with self._lock:
                 self.pending.update(new_by_id)
@@ -3116,19 +3008,11 @@ class ScanScheduler:
 
     def _tick_backlog(self, snapshot):
         """空闲机会式消化积压(JARVIS_BACKLOG_DRAIN)。仅由 _tick 在「本轮无新单/更新单」分支调用，
-        且池有空闲运行槽时才派。从既有快照挑 _is_backlog 的工单，按 优先级→建单时间(旧单先) 排序，
-        最多派 JARVIS_BACKLOG_MAX_SLOTS（默认 1）条积压单，剩余槽位留给新单。
-        走 _dispatch→pool.submit，24h 去重台账照常生效(派出即记账 + headless 实例 claim
-        打标，下轮 _is_backlog 自然过滤)。
-        新单优先由结构保证：本方法只在无新单 tick 触发，free_slots>0 蕴含队列空，积压单绝不排在
-        未来新单前面；一旦某轮有新单，新单当轮直接派，积压单让路等下一个空闲 tick。"""
-        if self.pool is None:
-            return
-        free = self.pool.free_slots()
-        if free <= 0:
-            return
+        从既有快照挑 _is_backlog 的工单，按 优先级→建单时间(旧单先) 排序，最多发布
+        JARVIS_BACKLOG_MAX_SLOTS（默认 1）个 Task。重复 tick 使用相同 taskKey +
+        desiredRevision，由控制面幂等收敛；不读取 EphemeralExecutor 的容量或本地去重台账。
+        新单优先由结构保证：本方法只在无新单 tick 触发。"""
         backlog_cap = int(os.environ.get("JARVIS_BACKLOG_MAX_SLOTS", "1"))
-        free = min(free, backlog_cap)
         # 空闲槽放开指派人：另跑一次 any-assignee 全池扫描(独立 scan-any.json 缓存)作为候选源，
         # 让 backlog 覆盖「指派给任何人」的开放单；失败/为空则退回 jarvis 指派的 snapshot(不放大故障面)。
         if self.backlog_any_assignee:
@@ -3141,7 +3025,7 @@ class ScanScheduler:
         backlog.sort(key=lambda it: (_priority_rank(it.get("priority", "")),
                                      str(it.get("created", ""))))
         dispatched = []
-        for it in backlog[:free]:
+        for it in backlog[:backlog_cap]:
             ok, reason = self._dispatch(it, force=False)
             if ok:
                 dispatched.append(it)
@@ -3199,7 +3083,7 @@ class ReconcileScheduler:
                 log.exception("ReconcileScheduler tick failed; will retry next interval")
 
     def _tick(self):
-        skip_ids = ",".join(self.handler.dispatch_pool.active_ids())
+        skip_ids = ",".join(self.handler.ephemeral_executor.active_ids())
         env = os.environ.copy()
         if skip_ids:
             env["JARVIS_RECONCILE_SKIP_IDS"] = skip_ids
@@ -3500,7 +3384,7 @@ class PrWatchScheduler:
           · per-head 去重（ci_fix_sha == 当前 head → 本轮不重复派，等修复推新 commit 换 head）；
           · 累计不同失败 head 超上限（JARVIS_PRWATCH_CI_FIX_MAX，默认 3）→ escalate 一次后置
             ci_fix_escalated 停自动修（仍看守合并）；
-          · DispatchPool 的 active-set（并发互斥）+ claim.sh（真锁）。
+          · EphemeralExecutor 的 active-set（并发互斥）+ claim.sh（真锁）。
         返回 active bool（CI 失败或 pending = 快档轮询，驱动 #3 双档周期）。pool 为空 / 查询失败
         → False；CI 全绿 → False；escalated → False（转人工，不再快轮询）。绝不在 unknown 上派。"""
         if entry.get("ci_fix_escalated"):
@@ -3550,9 +3434,31 @@ class PrWatchScheduler:
         work = (lambda: self.handler.dispatch_item(
             tid, prompt, sid, False, notify, tgt, ttype,
             kind="pr_ci_fix", project=project, terraform=True))
-        # force=True 越过 24h 去重台账（发布单近期本就被派过）；active-set 仍防并发重入。
-        ok, reason = self.pool.submit(tid, work, notify=notify, force=True,
-                                      kind="pr_ci_fix", project=project, terraform=True)
+        envelope = _task_envelope(
+            item_id=tid,
+            project=project,
+            task_type="pr_ci_fix",
+            source_type="GITHUB",
+            source_ref={"prUrl": str(entry.get("pr_url") or ""), "head": head},
+            desired_revision="pr-ci:%s" % head,
+            trigger="PR_CI_FAILED",
+            prompt=prompt,
+            recovery_policy="RESUME_ONLY",
+            failingChecks=failing[:20],
+            terraform=True,
+            target=tgt,
+            targetType=ttype,
+        )
+
+        def local_submit():
+            # force=True 越过 24h 去重台账；active-set 仍防并发重入。
+            return self.pool.submit(
+                tid, work, notify=notify, force=True,
+                kind="pr_ci_fix", project=project, terraform=True)
+
+        result = self.handler.execution_router.enqueue(
+            envelope, local_submit=local_submit)
+        ok, reason = result
         if ok:
             _prwatch_update(tid, ci_fix_sha=head, ci_fix_attempts=attempts + 1,
                             last_ci_fix_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
@@ -3723,8 +3629,32 @@ class PrWatchScheduler:
         work = (lambda: self.handler.dispatch_item(
             tid, prompt, sid, False, notify, tgt, ttype,
             kind="pr_comment_reply", project=project, terraform=True))
-        ok, reason = self.pool.submit(tid, work, notify=notify, force=True,
-                                      kind="pr_comment_reply", project=project, terraform=True)
+        envelope = _task_envelope(
+            item_id=tid,
+            project=project,
+            task_type="pr_comment_reply",
+            source_type="GITHUB",
+            source_ref={"prUrl": str(entry.get("pr_url") or ""),
+                        "commentKey": key},
+            desired_revision="pr-comment:%s" % key,
+            trigger="PR_COMMENT",
+            prompt=prompt,
+            recovery_policy="RESUME_ONLY",
+            commentAuthor=author,
+            commentSnippet=snippet,
+            terraform=True,
+            target=tgt,
+            targetType=ttype,
+        )
+
+        def local_submit():
+            return self.pool.submit(
+                tid, work, notify=notify, force=True,
+                kind="pr_comment_reply", project=project, terraform=True)
+
+        result = self.handler.execution_router.enqueue(
+            envelope, local_submit=local_submit)
+        ok, reason = result
         if ok:
             _prwatch_update(tid, last_seen_comment=key,
                             last_comment_reply_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
@@ -4177,8 +4107,131 @@ class WaitWatcher:
                 log.warning("WaitWatcher: bad persisted file %s", f)
 
 
-class DispatchPool:
-    """Bounded concurrent worker pool for headless jarvis dispatch, with soft-dedup.
+class ManagedWaitSensor:
+    """Wake control-plane-owned Sessions from durable Aone wait conditions.
+
+    The control plane is the only current-state authority.  ``_poll_state`` only
+    throttles Aone reads; losing it on bridge restart makes polling temporarily
+    more eager but cannot lose a wait or advance its durable cursor.
+    """
+
+    def __init__(self, handler):
+        self.handler = handler
+        self.interval = max(5, int(os.environ.get(
+            "JARVIS_MANAGED_WAIT_SENSOR_SEC", "30")))
+        self.page_size = max(1, min(500, int(os.environ.get(
+            "JARVIS_MANAGED_WAIT_PAGE_SIZE", "100"))))
+        self._poll_state = {}  # session id -> {first_seen, last_poll}
+        self._thread = None
+
+    def start(self):
+        self._thread = threading.Thread(
+            target=self._loop, daemon=True, name="ManagedWaitSensor")
+        self._thread.start()
+
+    def _loop(self):
+        while True:
+            try:
+                self._tick()
+            except Exception:  # noqa: BLE001
+                log.exception("ManagedWaitSensor tick failed")
+            time.sleep(self.interval)
+
+    def _list_waits(self):
+        after = 0
+        while True:
+            page = self.handler.task_client.list_pending_aone_reply_waits(
+                after_session_id=after, limit=self.page_size)
+            if not isinstance(page, dict) or not isinstance(page.get("items"), list):
+                raise ValueError("control plane pending wait page is invalid")
+            for item in page["items"]:
+                if isinstance(item, dict):
+                    yield item
+            if not page.get("hasMore"):
+                return
+            next_after = page.get("nextAfterSessionId")
+            try:
+                next_after = int(next_after)
+            except (TypeError, ValueError) as exc:
+                raise ValueError("control plane pending wait cursor is invalid") from exc
+            if next_after <= after:
+                raise ValueError("control plane pending wait cursor did not advance")
+            after = next_after
+
+    @staticmethod
+    def _comment_id(comment):
+        try:
+            return int(comment.get("id"))
+        except (AttributeError, TypeError, ValueError):
+            return None
+
+    def _tick(self):
+        now = time.time()
+        seen = set()
+        try:
+            waits = list(self._list_waits())
+        except Exception as exc:  # noqa: BLE001
+            # A 503, timeout, or malformed response leaves every wait untouched in
+            # the control plane.  The next tick reconstructs the complete set.
+            log.warning("ManagedWaitSensor list failed; will retry: %s", exc)
+            return
+        for item in waits:
+            task = item.get("task") if isinstance(item.get("task"), dict) else {}
+            session = (item.get("session")
+                       if isinstance(item.get("session"), dict) else {})
+            session_id = str(session.get("id") or "").strip()
+            aone_id = str(session.get("waitKey") or task.get("aoneId") or "").strip()
+            if not session_id or not aone_id.isdigit():
+                log.warning("ManagedWaitSensor ignored invalid wait task=%s session=%s",
+                            task.get("taskKey"), session_id or "<empty>")
+                continue
+            seen.add(session_id)
+            state = self._poll_state.setdefault(
+                session_id, {"first_seen": now, "last_poll": 0})
+            if now - state["last_poll"] < WaitWatcher._poll_interval({
+                    "suspended_at": state["first_seen"]}):
+                continue
+            state["last_poll"] = now
+            comments = self.handler.watcher._fetch_comments(aone_id)
+            if comments is None:
+                continue
+            try:
+                baseline = int(session.get("waitCursor") or 0)
+            except (TypeError, ValueError):
+                baseline = 0
+            new_comments = []
+            for comment in comments:
+                cid = self._comment_id(comment)
+                creator = str(comment.get("creator") or "").strip()
+                if cid is not None and cid > baseline and creator not in JARVIS_SELF_IDS:
+                    new_comments.append(comment)
+            if not new_comments:
+                continue
+            new_comments.sort(key=lambda comment: self._comment_id(comment) or 0)
+            frozen = session.get("inputPayload")
+            if not isinstance(frozen, dict):
+                frozen = task.get("payload") if isinstance(task.get("payload"), dict) else {}
+            wake_context = {
+                "session_id": session.get("runtimeSessionId"),
+                "terraform": bool(frozen.get("terraform")),
+                "project": str(frozen.get("project") or
+                               (task.get("sourceRef") or {}).get("projectId") or ""),
+                "target": str(frozen.get("target") or broadcast_target()),
+                "target_type": str(frozen.get("targetType") or broadcast_type()),
+            }
+            log.info("ManagedWaitSensor: #%s session=%s got %d reply comment(s)",
+                     aone_id, session_id, len(new_comments))
+            if not self.handler._wake(aone_id, wake_context, new_comments):
+                log.warning("ManagedWaitSensor: wake #%s not durably accepted; will retry",
+                            aone_id)
+        # Entries absent from the complete control-plane snapshot are no longer
+        # waiting.  Removing only throttle metadata has no correctness effect.
+        for session_id in set(self._poll_state) - seen:
+            self._poll_state.pop(session_id, None)
+
+
+class EphemeralExecutor:
+    """Bounded executor for disposable local jobs, with soft-dedup.
 
     · concurrency cap = JARVIS_DISPATCH_MAX (default 2); extra jobs queue FIFO inside
       the executor. Beyond ``max_workers + queue_max`` (default 20) outstanding jobs,
@@ -4198,7 +4251,9 @@ class DispatchPool:
 
     DEFAULT_LEDGER = ".my-day/bridge/dispatched.json"
 
-    def __init__(self, max_workers=None, queue_max=None, dedup_ttl=None, ledger_path=None):
+    def __init__(self, max_workers=None, queue_max=None, dedup_ttl=None,
+                 ledger_path=None, capacity_manager=None,
+                 execution_runtime=None):
         self.max_workers = int(max_workers if max_workers is not None
                                else os.environ.get("JARVIS_DISPATCH_MAX", "3"))
         self.queue_max = int(queue_max if queue_max is not None
@@ -4208,11 +4263,15 @@ class DispatchPool:
         self._ledger_path = Path(ledger_path) if ledger_path else (Path(REPO_ROOT) / self.DEFAULT_LEDGER)
         self._executor = ThreadPoolExecutor(max_workers=max(1, self.max_workers),
                                             thread_name_prefix="dispatch")
-        self._active = {}     # id -> {started, kind, future, project, proc}
+        self.capacity_manager = capacity_manager or CapacityManager(self.max_workers)
+        if not isinstance(self.capacity_manager, CapacityManager):
+            raise TypeError("capacity_manager must be a CapacityManager")
+        self.execution_runtime = execution_runtime or DEFAULT_EXECUTION_RUNTIME
+        self._active = {}     # id -> {queuedAt, started, kind, future, project, proc}
         self._ledger = {}     # id -> last-dispatch epoch seconds
         self._lock = threading.Lock()
         self._closed = False
-        # ── DispatchPool P0 slot-leak self-heal ─────────────────────────────
+        # ── EphemeralExecutor P0 slot-leak self-heal ────────────────────────
         # Absolute upper bound on a single worker (12h). If work() hangs beyond this
         # the watchdog force-releases the slot so the pool never permanently deadlocks.
         self._hard_ceiling = int(os.environ.get("JARVIS_DISPATCH_HARD_CEILING", "43200"))
@@ -4226,7 +4285,7 @@ class DispatchPool:
         self._watchdog_threshold = float(os.environ.get("JARVIS_DISPATCH_WATCHDOG_THRESHOLD", "3600"))
         self._load_ledger()
         self._watchdog_thread = threading.Thread(
-            target=self._watchdog_loop, daemon=True, name="DispatchPoolWatchdog")
+            target=self._watchdog_loop, daemon=True, name="EphemeralExecutorWatchdog")
         self._watchdog_thread.start()
 
     # -- dedup / capacity decision -------------------------------------------
@@ -4259,11 +4318,16 @@ class DispatchPool:
             return sorted(self._active.keys())
 
     def free_slots(self):
-        """空闲运行槽 = max_workers - 在飞任务数(含排队)。返回 >0 蕴含队列必为空
-        (在飞数 < 并发上限时不可能有排队)，故 backlog drain 用它可保证只填真正空闲的
-        运行槽、绝不把积压单排到未来新单前面。"""
+        """Return shared free execution slots, preserving FIFO backlog priority."""
         with self._lock:
-            return max(0, self.max_workers - len(self._active))
+            queued = any(ent.get("started") is None for ent in self._active.values())
+            running = sum(ent.get("started") is not None
+                          for ent in self._active.values())
+        if queued:
+            return 0
+        return max(0, min(
+            self.max_workers - running,
+            self.capacity_manager.available_slots()))
 
     # -- submit ---------------------------------------------------------------
 
@@ -4282,15 +4346,34 @@ class DispatchPool:
                 return False, "queue_full"
             self._ledger[iid] = time.time()
             self._persist_ledger()
-            self._active[iid] = {"started": time.time(), "kind": kind, "future": None,
+            self._active[iid] = {"queuedAt": time.time(), "started": None,
+                                 "kind": kind, "future": None,
                                  "project": project, "proc": None,
+                                 "permit": None,
                                  "terraform": bool(terraform)}
 
         def _wrapped():
+            permit = None
             try:
+                # ThreadPoolExecutor bounds local threads; CapacityManager is the
+                # cross-executor fence.  Wait without consuming a slot until a
+                # PersistenceExecutor or earlier EphemeralJob releases one.
+                while permit is None:
+                    with self._lock:
+                        if self._closed or iid not in self._active:
+                            return "cancelled"
+                    permit = self.capacity_manager.acquire("ephemeral:%s" % iid)
+                    if permit is None:
+                        time.sleep(0.05)
+                with self._lock:
+                    ent = self._active.get(iid)
+                    if ent is None or self._closed:
+                        return "cancelled"
+                    ent["permit"] = permit
+                    ent["started"] = time.time()
                 return work()
             except Exception as e:  # noqa: BLE001 — a crashed worker must not kill the pool
-                log.exception("DispatchPool worker #%s crashed: %s", iid, e)
+                log.exception("EphemeralExecutor job #%s crashed: %s", iid, e)
                 if notify:
                     try:
                         notify("⚠️ #%s 后台处理异常: %s" % (iid, e))
@@ -4298,6 +4381,8 @@ class DispatchPool:
                         pass
                 return "error"
             finally:
+                if permit is not None:
+                    permit.release()
                 # Defensive kill on work() return/error: if the watchdog is about to
                 # force-release this slot, the child process must not survive as an
                 # orphan. Idempotent — killpg on an already-dead pgid returns ESRCH
@@ -4352,7 +4437,7 @@ class DispatchPool:
             try:
                 self._watchdog_tick()
             except Exception:  # noqa: BLE001
-                log.exception("DispatchPoolWatchdog tick failed")
+                log.exception("EphemeralExecutor watchdog tick failed")
 
     def _watchdog_tick(self):
         """Single scan pass. Snapshots _active under the lock, then acts outside the
@@ -4364,12 +4449,16 @@ class DispatchPool:
         victims = []
         with self._lock:
             for iid, ent in list(self._active.items()):
-                age = now - ent.get("started", now)
+                started = ent.get("started")
+                if started is None:
+                    continue
+                age = now - started
                 if age > self._watchdog_threshold:
                     victims.append((iid, ent, age))
         for iid, ent, age in victims:
             log.warning(
-                "[DispatchPoolWatchdog] slot #%s zombie (age=%ds, kind=%s) → force release",
+                "[EphemeralExecutorWatchdog] slot #%s zombie "
+                "(age=%ds, kind=%s) → force release",
                 iid, int(age), ent.get("kind", "?"))
             # 1) Kill the child process group so subprocess.wait in the worker unblocks.
             proc = ent.get("proc")
@@ -4386,13 +4475,23 @@ class DispatchPool:
                     fut.cancel()
                 except Exception:  # noqa: BLE001
                     pass
-            # 3) Drop inflight registry entry — the worker's own finally may never run
+            # 3) Release shared capacity even if the worker thread itself is stuck.
+            #    Its finally block may race this path, so CapacityPermit.release()
+            #    must remain idempotent.
+            permit = ent.get("permit")
+            if permit is not None:
+                try:
+                    permit.release()
+                except Exception:  # noqa: BLE001
+                    log.exception(
+                        "EphemeralExecutor watchdog permit release failed #%s", iid)
+            # 4) Drop inflight registry entry — the worker's own finally may never run
             #    (thread stuck in a C call), so we can't rely on dispatch_item's cleanup.
             try:
                 _inflight_remove(iid)
             except Exception:  # noqa: BLE001
                 pass
-            # 4) Pop the slot so the pool can accept new submissions.
+            # 5) Pop the slot so the pool can accept new submissions.
             with self._lock:
                 self._active.pop(iid, None)
 
@@ -4434,16 +4533,11 @@ class DispatchPool:
         time.sleep(grace)
         snap2 = _sweep(signal.SIGKILL)
 
-        # Release only workers that actually started (proc set) — a queued ticket never
-        # ran claim.sh claim, so tagging it jarvis-idle would wrongly park an untouched
-        # item. Union both sweeps so a late-spawned worker is released too.
+        # Release only workers that actually started (proc set) — a queued job never
+        # ran claim.sh claim. Union both sweeps so a late-spawned job is released too.
         to_release = {}
         for iid, proc, project, kind, terraform in list(snap1) + list(snap2):
             if proc is not None and kind == "ticket" and project:
-                # 方案B: 若该单已在在飞登记表 → 保住 claim(不释放), 交给桥重启后的
-                # _resume_inflight 用 --resume 接管续跑; 无登记则照旧释放(安全兜底)。
-                if _inflight_has(iid):
-                    continue
                 to_release[iid] = (project, terraform)
         if release_fn:
             for iid, (project, terraform) in to_release.items():
@@ -4475,7 +4569,7 @@ class DispatchPool:
             tmp.write_text(json.dumps(self._ledger, default=str))
             tmp.replace(self._ledger_path)
         except Exception as e:  # noqa: BLE001
-            log.warning("DispatchPool: could not persist ledger: %s", e)
+            log.warning("EphemeralExecutor: could not persist ledger: %s", e)
 
     def _load_ledger(self):
         try:
@@ -4485,9 +4579,11 @@ class DispatchPool:
                 self._ledger = {str(k): float(v) for k, v in raw.items()
                                 if now - float(v) < self.dedup_ttl}
                 if self._ledger:
-                    log.info("DispatchPool: restored %d dedup entries from disk", len(self._ledger))
+                    log.info("EphemeralExecutor: restored %d dedup entries from disk",
+                             len(self._ledger))
         except Exception as e:  # noqa: BLE001
-            log.warning("DispatchPool: could not load ledger %s: %s", self._ledger_path, e)
+            log.warning("EphemeralExecutor: could not load ledger %s: %s",
+                        self._ledger_path, e)
             self._ledger = {}
 
 
@@ -4498,7 +4594,7 @@ class _DailyScheduler:
     re-fire. Subclasses override ``_run_once()``. Poll cadence is coarse (5 min) — hour
     granularity is the contract, not the minute. Skeleton mirrors ReconcileScheduler.
 
-    _run_once() return contract (bool-tri): False = 本轮真正失败(唯一场景: DispatchPool
+    _run_once() return contract (bool-tri): False = 本轮真正失败(唯一场景: EphemeralExecutor
     submit 被 queue_full 拒), 本日不 mark, 下个 5min tick 会重试; True 或 None =
     成功/已去重/无候选/pool 不可用等既定终态, mark 掉本日, 到明日再跑。"""
 
@@ -4560,7 +4656,7 @@ class _DailyScheduler:
 
 
 class ProbeScheduler(_DailyScheduler):
-    """Daily tf-probe round: submit one探测任务 to the DispatchPool. Pure探测轮 — the
+    """Daily tf-probe round: submit one探测任务 to the EphemeralExecutor. Pure探测轮 — the
     jarvis instance runs loops/tf-probe.md and files drafts; it holds no ticket, so no
     bookend (免 claim/wrap)."""
 
@@ -4571,8 +4667,10 @@ class ProbeScheduler(_DailyScheduler):
             enabled=enabled if enabled is not None else (os.environ.get("JARVIS_PROBE_SCHED", "1") != "0"),
             state_file=state_file or ".my-day/bridge/probe.last")
         self.handler = handler
-        self.pool = pool if pool is not None else (getattr(handler, "dispatch_pool", None))
-        self.task_router = getattr(handler, "task_router", None)
+        self.pool = pool if pool is not None else (getattr(handler, "ephemeral_executor", None))
+        self.execution_router = (
+            getattr(handler, "execution_router", None)
+            or ExecutionRouter(logger=log))
 
     def round_id(self, when=None):
         return "probe-%s" % (when or datetime.now()).date().isoformat()
@@ -4603,9 +4701,9 @@ class ProbeScheduler(_DailyScheduler):
             targetType=ttype,
         )
 
-        def legacy_submit():
+        def local_submit():
             if self.pool is None:
-                return False, "no_pool"
+                return False, "ephemeral_executor_unavailable"
             sid = str(uuid.uuid4())
             # tf-probe 是 Terraform 线探测 → 走 terraform 车道（ideamo/ideamore）。
             work = (lambda: self.handler.dispatch_item(
@@ -4613,21 +4711,18 @@ class ProbeScheduler(_DailyScheduler):
                 kind="probe", terraform=True))
             return self.pool.submit(rid, work, notify=notify, kind="probe")
 
-        if self.task_router is None:
-            ok, reason = legacy_submit()
-            managed = False
-        else:
-            managed = self.task_router.is_managed(envelope)
-            ok, reason = self.task_router.enqueue(envelope, legacy_submit)
+        route = self.execution_router.route(envelope)
+        ok, reason = self.execution_router.enqueue(
+            envelope, local_submit=local_submit)
         if ok:
-            verb = "已进入持久队列" if managed else "已启动"
+            verb = "已进入持久队列" if route.needs_recovery else "已启动"
             notify("🔎 %s每日探测轮 %s（tf-probe tier0 + tier1 轮换，纯探测无单）"
                    % (verb, rid))
             return True
         log.info("ProbeScheduler: round %s not submitted (%s)", rid, reason)
-        # A managed rejection must not mark today's round: the next scheduler tick
-        # retries instead of silently falling back to local execution.
-        return False if managed or reason == "queue_full" else True
+        # A Task rejection must not mark today's round: the next scheduler tick
+        # retries instead of silently falling back to EphemeralJob execution.
+        return False if route.needs_recovery or reason == "queue_full" else True
 
 
 def _json_rows(value):
@@ -5108,8 +5203,10 @@ class RevisitScheduler(_DailyScheduler):
             enabled=enabled if enabled is not None else (os.environ.get("JARVIS_REVISIT_SCHED", "1") != "0"),
             state_file=state_file or ".my-day/bridge/revisit.last")
         self.handler = handler
-        self.pool = pool if pool is not None else (getattr(handler, "dispatch_pool", None))
-        self.task_router = getattr(handler, "task_router", None)
+        self.pool = pool if pool is not None else (getattr(handler, "ephemeral_executor", None))
+        self.execution_router = (
+            getattr(handler, "execution_router", None)
+            or ExecutionRouter(logger=log))
         self.max_n = max(1, int(
             max_n if max_n is not None
             else os.environ.get("JARVIS_REVISIT_MAX", "100")))
@@ -5374,9 +5471,9 @@ class RevisitScheduler(_DailyScheduler):
                 targetType=ttype,
             )
 
-            def legacy_submit(p=prompt, i=iid, pj=project):
+            def local_submit(p=prompt, i=iid, pj=project):
                 if self.pool is None:
-                    return False, "no_pool"
+                    return False, "ephemeral_executor_unavailable"
                 sid = str(uuid.uuid4())
                 work = (lambda: self.handler.dispatch_item(
                     i, p, sid, False, notify, tgt, ttype,
@@ -5385,16 +5482,13 @@ class RevisitScheduler(_DailyScheduler):
                     i, work, notify=notify, kind="revisit", project=pj,
                     terraform=False)
 
-            if self.task_router is None:
-                managed = False
-                ok, reason = legacy_submit()
-            else:
-                managed = self.task_router.is_managed(envelope)
-                ok, reason = self.task_router.enqueue(envelope, legacy_submit)
+            route = self.execution_router.route(envelope)
+            ok, reason = self.execution_router.enqueue(
+                envelope, local_submit=local_submit)
             if ok:
                 submitted.append(iid)
             else:
-                if managed or reason == "queue_full":
+                if route.needs_recovery or reason == "queue_full":
                     retry_hit = True
                 log.info("RevisitScheduler: #%s not submitted (%s)", iid, reason)
         if submitted:
@@ -5427,9 +5521,9 @@ class PersonaScheduler:
       不写 processed，下一 tick 自然重试；per-ticket try/except（S8）确保单工单异常不殃及后续。
 
     每工单 state = {last_seen, processed, dispatch_count, escalated} 落
-    ``.my-day/bridge/persona-ledger.json``（原子写，仿 DispatchPool.ledger 姿势）。
+    ``.my-day/bridge/persona-ledger.json``（原子写，仿 EphemeralExecutor.ledger 姿势）。
 
-    pause 复用 ``.my-day/bridge/pause`` 标记；缺 DispatchPool 时静默跳过；默认关闭
+    pause 复用 ``.my-day/bridge/pause`` 标记；缺 EphemeralExecutor 时静默跳过；默认关闭
     （JARVIS_PERSONA_WATCH=0，灰度期显式开启）。
     """
 
@@ -5438,8 +5532,10 @@ class PersonaScheduler:
     def __init__(self, handler, pool=None, interval=None, enabled=None, max_rounds=None,
                  ledger_path=None):
         self.handler = handler
-        self.pool = pool if pool is not None else (getattr(handler, "dispatch_pool", None))
-        self.task_router = getattr(handler, "task_router", None)
+        self.pool = pool if pool is not None else (getattr(handler, "ephemeral_executor", None))
+        self.execution_router = (
+            getattr(handler, "execution_router", None)
+            or ExecutionRouter(logger=log))
         # B5: 默认关闭（灰度），显式设 =1 才开启。
         self.enabled = (enabled if enabled is not None
                         else os.environ.get("JARVIS_PERSONA_WATCH", "0") == "1")
@@ -5464,7 +5560,7 @@ class PersonaScheduler:
         self._thread = threading.Thread(target=self._loop, daemon=True, name="PersonaScheduler")
         self._thread.start()
 
-    # -- ledger persistence（原子写，仿 DispatchPool._persist_ledger 姿势）--------------
+    # -- ledger persistence（原子写，仿 EphemeralExecutor._persist_ledger 姿势）--------------
 
     def _load_ledger(self):
         try:
@@ -5851,7 +5947,7 @@ class PersonaScheduler:
 
     def _iid_in_flight(self, iid):
         """B4：某工单是否已有 active 派发在跑（persona 或其它 kind 都算）。用于 skip in_flight_active
-        避免同一工单同一时间多个 headless 撞车。DispatchPool.active_ids() 返回完整 key，需按
+        避免同一工单同一时间多个 headless 撞车。EphemeralExecutor.active_ids() 返回完整 key，需按
         persona-<iid>-... 前缀或裸 <iid> 判定。"""
         if self.pool is None:
             return False
@@ -5869,10 +5965,10 @@ class PersonaScheduler:
     def _dispatch_persona(self, item, decision, comments, on_start=None):
         """按 decision 派一个 headless jarvis 编排层实例（旧接力迁移补位）。返回 (accepted, reason).
 
-        B4 in-flight guard：派发前查 DispatchPool 是否已有同工单 active，若有则 skip
+        B4 in-flight guard：派发前查 EphemeralExecutor 是否已有同工单 active，若有则 skip
         in_flight_active（不占坑，让在跑实例自己完成）。
 
-        on_start：worker **真正开始执行**（拿到 DispatchPool 槽位）时触发的回调，用来把
+        on_start：worker **真正开始执行**（拿到 EphemeralExecutor 槽位）时触发的回调，用来把
         ledger 的 last_seen/processed/计数落盘。**绝不能在 submit 返回处同步落盘**——submit
         只表示"入队接受"，槽满时 future 仅排队；此时若 bridge 换 token 重启，terminate_all
         的 shutdown(cancel_futures=True) 会丢弃未启动的排队 future，而 ledger 若已标 processed
@@ -5898,7 +5994,7 @@ class PersonaScheduler:
             requester_is_digital=bool(handoff.get("requester_is_digital")),
             public_identity=public_identity,
         )
-        # 独立 dispatch key：同工单不同接力轮次并存，避免撞 DispatchPool 的 active-dedup
+        # 独立 dispatch key：同工单不同接力轮次并存，避免撞 EphemeralExecutor 的 active-dedup
         dispatch_key = "persona-%s-r%s-c%s" % (
             iid, handoff.get("round") or 1, decision.get("comment_id") or "0")
         tgt, ttype = broadcast_target(), broadcast_type()
@@ -5926,11 +6022,9 @@ class PersonaScheduler:
             targetType=ttype,
         )
 
-        def legacy_submit():
+        def local_submit():
             if self.pool is None:
-                return False, "no_pool"
-            # Run this after the durable shadow observation.  An active local
-            # generation must not suppress the newer desired revision.
+                return False, "ephemeral_executor_unavailable"
             if self._iid_in_flight(iid):
                 return False, "in_flight_active"
             sid = str(uuid.uuid4())
@@ -5953,13 +6047,12 @@ class PersonaScheduler:
                                     kind="persona", project=project, force=True,
                                     terraform=terraform)
 
-        if self.task_router is None:
-            return legacy_submit()
-        managed = self.task_router.is_managed(envelope)
-        result = self.task_router.enqueue(envelope, legacy_submit)
-        if managed and result.accepted and on_start is not None:
-            # Durable remote acceptance replaces the local pool-start boundary.
-            # Advancing the legacy ledger is now safe: the database owns retry.
+        route = self.execution_router.route(envelope)
+        result = self.execution_router.enqueue(
+            envelope, local_submit=local_submit)
+        if route.needs_recovery and result.accepted and on_start is not None:
+            # Durable Task acceptance replaces the local executor-start boundary.
+            # Advancing the sensor ledger is safe because the database owns retry.
             try:
                 on_start()
             except Exception:  # noqa: BLE001
@@ -6228,105 +6321,92 @@ class JarvisHandler(AsyncChatbotHandler):
         self.locks = defaultdict(threading.Lock)  # per-sender serialize
         self.sm = _load_streaming_module()        # imported streaming.py helpers
         self.pool = None if (no_dingtalk or not tata_resident_enabled()) else TataPool()
-        # Persistent scheduling seam.  Legacy remains the zero-config default;
-        # shadow/managed are explicit and share one client across every sensor.
+        # Persistent scheduling seam. Every recoverable Task is owned by the
+        # control plane; only EphemeralJob work may enter the local executor.
         self.task_client = _task_client_from_env()
-        self.task_router = TaskRouter.from_env(client=self.task_client, logger=log)
-        # The first managed slice is deliberately probe-only.  Even an explicit
-        # wildcard cannot move ticket/persona/wake/revisit ownership until their
-        # external-write receipts are wired end to end.  Empty stays empty.
-        requested_managed = set(self.task_router.managed_task_types)
-        effective_managed = ({"probe"} if "*" in requested_managed
-                             else requested_managed & {"probe"})
-        ignored_managed = requested_managed - {"probe"}
-        if ignored_managed:
-            log.warning("managed task types %s are not enabled in the probe-only MVP",
-                        sorted(ignored_managed))
-        self.task_router.managed_task_types = effective_managed
-        if self.task_router.mode != "legacy" and self.task_client is None:
-            log.warning("task mode=%s but JARVIS_CONTROL_PLANE_BASE_URL is unset; "
-                        "managed kinds fail closed", self.task_router.mode)
-        # One bounded pool + soft-dedup ledger shared by every dispatch path
-        # (auto-dispatch / probe / revisit / authorize / handoff / wake).
-        self.dispatch_pool = DispatchPool()
-        self.local_worker = None
-        if self.task_router.mode == "managed" and self.task_client is not None:
-            self.local_worker = LocalWorker(
-                self.task_client,
-                self.dispatch_pool.free_slots,
-                self._execute_managed_lease,
-                self._stop_managed_process,
-                capabilities={"kinds": ["probe"]},
-                max_slots=self.dispatch_pool.max_workers,
-                lease_seconds=int(os.environ.get("JARVIS_LEASE_SECONDS", "90")),
-                lease_interval=float(os.environ.get("JARVIS_LEASE_POLL_SEC", "2")),
-                worker_heartbeat_interval=float(
-                    os.environ.get("JARVIS_WORKER_HEARTBEAT_SEC", "30")),
-                session_heartbeat_interval=float(
-                    os.environ.get("JARVIS_SESSION_HEARTBEAT_SEC", "20")),
-                retry_interval=float(os.environ.get("JARVIS_CONTROL_PLANE_RETRY_SEC", "5")),
-                logger=log,
-            )
-        self.scanner = ScanScheduler(self, self.dispatch_pool)
+        self.execution_router = ExecutionRouter(client=self.task_client, logger=log)
+
+        max_slots = int(os.environ.get("JARVIS_DISPATCH_MAX", "3"))
+        self.execution_runtime = DEFAULT_EXECUTION_RUNTIME
+        self.capacity_manager = CapacityManager(max_slots)
+        self.ephemeral_executor = EphemeralExecutor(
+            max_workers=max_slots,
+            capacity_manager=self.capacity_manager,
+            execution_runtime=self.execution_runtime)
+        kinds = sorted(self.execution_router.task_types)
+        self.persistence_executor = PersistenceExecutor(
+            self.task_client,
+            self.capacity_manager,
+            self._execute_task_lease,
+            self._stop_task_process,
+            capabilities={"kinds": kinds},
+            lease_seconds=int(os.environ.get("JARVIS_LEASE_SECONDS", "300")),
+            lease_safety_margin=float(
+                os.environ.get("JARVIS_LEASE_SAFETY_MARGIN_SEC", "90")),
+            lease_interval=float(os.environ.get("JARVIS_LEASE_POLL_SEC", "2")),
+            worker_heartbeat_interval=float(
+                os.environ.get("JARVIS_WORKER_HEARTBEAT_SEC", "30")),
+            session_heartbeat_interval=float(
+                os.environ.get("JARVIS_SESSION_HEARTBEAT_SEC", "30")),
+            retry_interval=float(os.environ.get("JARVIS_CONTROL_PLANE_RETRY_SEC", "5")),
+            logger=log,
+        )
+        self.scanner = ScanScheduler(self, self.ephemeral_executor)
         self.reconciler = ReconcileScheduler(self)
         self.board = BoardScheduler(self)         # pushes board.sh JSON after each scan tick
-        self.prober = ProbeScheduler(self, self.dispatch_pool)
-        self.reviser = RevisitScheduler(self, self.dispatch_pool)
+        self.prober = ProbeScheduler(self, self.ephemeral_executor)
+        self.reviser = RevisitScheduler(self, self.ephemeral_executor)
         self.watcher = WaitWatcher(self)
+        self.managed_wait_sensor = ManagedWaitSensor(self)
         # 数字人评论区自主协作跨会话补位轮询（loops/persona-collab.md）
-        self.personawatch = PersonaScheduler(self, self.dispatch_pool)
+        self.personawatch = PersonaScheduler(self, self.ephemeral_executor)
         # PR 观察登记表轮询（方案A）：PR 合并后自动 finish 收尾，与 RevisitScheduler 互为兜底
-        self.prwatch = PrWatchScheduler(self, self.dispatch_pool)
+        self.prwatch = PrWatchScheduler(self, self.ephemeral_executor)
         log.info("audience=%s master=%s root=%s tata_cwd=%s claude=%s skill=%s "
-                 "tata_resident=%s auto_dispatch=%s dispatch_max=%s probe=%s@%s revisit=%s@%s "
-                 "persona_watch=%s@%ss max_rounds=%s task_mode=%s managed_types=%s",
+                 "tata_resident=%s auto_dispatch=%s execution_capacity=%s "
+                 "probe=%s@%s revisit=%s@%s persona_watch=%s@%ss max_rounds=%s "
+                 "task_types=%s",
                  self.audience or "*", master_staff(), jarvis_root(), tata_root(),
                  claude_bin(), skill_path(), bool(self.pool), self.scanner.auto,
-                 self.dispatch_pool.max_workers, self.prober.enabled, self.prober.hour,
+                 self.ephemeral_executor.max_workers,
+                 self.prober.enabled, self.prober.hour,
                  self.reviser.enabled, self.reviser.hour,
                  self.personawatch.enabled, self.personawatch.interval,
-                 self.personawatch.max_rounds, self.task_router.mode,
-                 sorted(self.task_router.managed_task_types))
+                 self.personawatch.max_rounds,
+                 sorted(self.execution_router.task_types))
 
     def start_schedulers(self):
-        """Start every background scheduler, then resume any workers a prior bridge
-        process left in-flight. Shared by main() and _run_no_dingtalk() so both entry
-        points run the identical startup block. _resume_inflight() is the LAST step —
-        after scanner.start — so resumed tickets are already in the pool's active-set and
-        still jarvis-claimed before the next scan tick, letting ScanScheduler._decide skip
-        them ('active'/'claimed') instead of double-dispatching."""
+        """Start PersistenceExecutor before every sensor and scheduler."""
         # Register/lease loop first.  Sensors may then publish a desired revision
         # knowing a worker is already available to converge it.
-        if self.local_worker is not None:
-            self.local_worker.start()
+        self.persistence_executor.start()
         self.scanner.start()
         self.reconciler.start()
         self.board.start()
         self.prober.start()
         self.reviser.start()
         self.watcher.start()
+        self.managed_wait_sensor.start()
         self.personawatch.start()
         self.prwatch.start()
-        self._resume_inflight()
 
-    def stop_local_worker(self, *, drain=False, timeout=None):
-        """Stop the persistent worker once; used by both bridge shutdown paths."""
-        worker = self.local_worker
-        if worker is None or worker.stopped:
+    def stop_persistence_executor(self, *, drain=False, timeout=None):
+        """Stop the persistent Task executor once."""
+        if self.persistence_executor.stopped:
             return True
-        return worker.stop(drain=drain, timeout=timeout)
+        return self.persistence_executor.stop(drain=drain, timeout=timeout)
 
     @staticmethod
-    def _stop_managed_process(lifecycle, reason):
+    def _stop_task_process(controller, reason):
         """Fence-loss/stop hook: synchronously stop the owned process group.
 
         Losing the server-side fence is a hard ownership boundary.  A best-effort
         SIGTERM is insufficient here: Claude (or one of its descendants) may delay
         shutdown and keep performing external work after the lease was revoked.
         Give the group a short graceful window, then force SIGKILL and reap the
-        leader before returning to the lifecycle loop.
+        leader before returning to the Session controller loop.
         """
-        proc = getattr(lifecycle, "process", None)
+        proc = getattr(controller, "process", None)
         if proc is None:
             return
         try:
@@ -6336,15 +6416,15 @@ class JarvisHandler(AsyncChatbotHandler):
             pass
 
         try:
-            grace = float(os.environ.get("JARVIS_MANAGED_STOP_GRACE_SEC", "5"))
+            grace = float(os.environ.get("JARVIS_TASK_STOP_GRACE_SEC", "5"))
         except (TypeError, ValueError):
             grace = 5.0
         grace = max(0.0, min(grace, 60.0))
 
         try:
             os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
-            log.warning("managed session %s process stopping (%s)",
-                        getattr(lifecycle, "session_id", "?"), reason)
+            log.warning("Task session %s process stopping (%s)",
+                        getattr(controller, "session_id", "?"), reason)
         except (ProcessLookupError, OSError, AttributeError):
             try:
                 proc.terminate()
@@ -6370,166 +6450,66 @@ class JarvisHandler(AsyncChatbotHandler):
         try:
             proc.wait(timeout=5)
         except Exception:  # noqa: BLE001
-            log.exception("managed session %s process could not be reaped (%s)",
-                          getattr(lifecycle, "session_id", "?"), reason)
+            log.exception("Task session %s process could not be reaped (%s)",
+                          getattr(controller, "session_id", "?"), reason)
             return
-        log.warning("managed session %s process force-killed after %.1fs (%s)",
-                    getattr(lifecycle, "session_id", "?"), grace, reason)
+        log.warning("Task session %s process force-killed after %.1fs (%s)",
+                    getattr(controller, "session_id", "?"), grace, reason)
 
-    def _execute_managed_lease(self, lease, lifecycle):
-        """Translate the frozen lease payload into the existing headless runner."""
+    def _execute_task_lease(self, lease, controller):
+        """Translate one frozen Task lease into the shared execution runtime."""
         task = lease.get("task") if isinstance(lease, dict) else None
         if not isinstance(task, dict):
-            raise ValueError("managed lease.task must be an object")
+            raise ValueError("Task lease.task must be an object")
         session = lease.get("session") if isinstance(lease, dict) else None
-        if session is not None and not isinstance(session, dict):
-            raise ValueError("managed lease.session must be an object")
+        if not isinstance(session, dict):
+            raise ValueError("Task lease.session must be an object")
         # jarvis_task is the newest desired/current state and may advance while an
         # already-fenced attempt is still running.  Execute the immutable snapshot
         # stored on jarvis_session so a response retry or process restart cannot run
-        # revision r2 while reporting completion for r1.  The task payload fallback
-        # keeps shadow rollout compatible with an older data-plane build.
-        payload = None
-        snapshot_present = False
-        if isinstance(session, dict):
-            if "inputPayload" in session:
-                snapshot_present = True
-                payload = session.get("inputPayload")
-            elif "input_payload" in session:
-                snapshot_present = True
-                payload = session.get("input_payload")
-        if not snapshot_present:
-            payload = task.get("payload") or {}
-        elif payload is None:
+        # revision r2 while reporting completion for r1. A lease without the
+        # immutable Session snapshot is invalid and must fail closed.
+        if "inputPayload" not in session:
+            raise ValueError("Task session input snapshot is missing")
+        payload = session.get("inputPayload")
+        if payload is None:
             # A present null is the immutable input for this generation, not a
-            # signal to read the task's newer desired payload.  Fail closed so
+            # signal to read the Task's newer desired payload. Fail closed so
             # generation gN can never execute gN+1 input after a restart.
-            raise ValueError("managed session input snapshot is null")
+            raise ValueError("Task session input snapshot is null")
         if isinstance(payload, str):
             try:
                 payload = json.loads(payload)
             except (TypeError, ValueError) as exc:
-                raise ValueError("managed task payload must be JSON object") from exc
+                raise ValueError("Task payload must be JSON object") from exc
         if not isinstance(payload, dict):
-            raise ValueError("managed task payload must be an object")
+            raise ValueError("Task payload must be an object")
         kind = str(payload.get("kind") or task.get("taskType") or "").strip().lower()
-        if kind != "probe":
-            # Defense in depth: this worker is not an execution backdoor for
-            # ticket/persona/wake until operation receipts are enabled.
-            raise ValueError("managed task type is not enabled: %s" % (kind or "<empty>"))
+        enabled = self.execution_router.task_types
+        if "*" not in enabled and kind not in enabled:
+            raise ValueError("TASK kind is not enabled: %s" % (kind or "<empty>"))
         item_id = str(payload.get("itemId") or task.get("aoneId") or
                       task.get("taskKey") or "").strip()
         prompt = str(payload.get("prompt") or "")
         if not item_id or not prompt:
-            raise ValueError("managed task requires itemId and prompt")
+            raise ValueError("Task requires itemId and prompt")
         target = str(payload.get("target") or broadcast_target())
         target_type = str(payload.get("targetType") or broadcast_type())
         return self.dispatch_item(
             item_id,
             prompt,
-            lifecycle.runtime_session_id,
-            lifecycle.resumed,
+            controller.runtime_session_id,
+            controller.resumed,
             self._broadcast,
             target,
             target_type,
-            on_spawn=lifecycle.bind_process,
+            on_spawn=controller.bind_process,
             project=str(payload.get("project") or ""),
             kind=kind,
             terraform=bool(payload.get("terraform")),
-            managed_lifecycle=lifecycle,
+            session_controller=controller,
         )
 
-    def _resume_inflight(self):
-        """Restart recovery (方案B): pick up ticket workers the previous bridge process was
-        running when it died. For each surviving in-flight record:
-          · kind != 'ticket' or non-numeric id → drop (never resume probe/revisit/persona/wake);
-          · age >= JARVIS_DISPATCH_TIMEOUT (stale) → judge failed: post death cause + release
-            claim (if project) + drop the record, do NOT resume;
-          · session transcript on disk → --resume the ORIGINAL sid from the breakpoint
-            (prompt = 续跑 hint);
-          · transcript missing → fresh run reusing the SAME sid (jarvis_cmd pins the gateway
-            by md5(sid), so the sid must never change), replaying the stored prompt.
-        Re-dispatch goes through the pool with force=True so the 24h dedup ledger cannot
-        veto the recovery. Whole body is best-effort per record."""
-        recs = _inflight_load()
-        if not recs:
-            return
-        timeout = int(os.environ.get("JARVIS_DISPATCH_TIMEOUT", "43200"))
-        for iid, rec in list(recs.items()):
-            try:
-                kind = (rec or {}).get("kind")
-                if kind != "ticket" or not str(iid).isdigit():
-                    _inflight_remove(iid)   # probe/revisit/persona/wake/junk: never resume
-                    continue
-                sid = rec.get("sid")
-                project = rec.get("project") or ""
-                tf = bool(rec.get("terraform"))
-                # ── P0 self-heal 三重校验: 空 sid / session 文件缺失 / 超龄 ────────
-                # (the 20-min zombie that motivated this: session_id="" ticket records
-                #  survived a bridge restart and re-entered dispatch with a broken sid).
-                if not sid:
-                    log.warning("_resume_inflight: #%s drop — empty session_id (zombie)", iid)
-                    if project:
-                        try: _release_claim(iid, project, terraform=tf)
-                        except Exception: pass  # noqa: BLE001
-                    _inflight_remove(iid)
-                    continue
-                if not _session_file_exists(sid):
-                    log.warning("_resume_inflight: #%s drop — session file missing (sid=%s)",
-                                iid, str(sid)[:8])
-                    if project:
-                        try: _release_claim(iid, project, terraform=tf)
-                        except Exception: pass  # noqa: BLE001
-                    _inflight_remove(iid)
-                    continue
-                age = time.time() - float(rec.get("started_at") or 0)
-                if age >= timeout:
-                    cause = ("headless 派发在桥重启时仍在飞且已超过派发超时(%ds)，判失败，"
-                             "未从断点续跑。" % timeout)
-                    self._post_death_cause(iid, cause, terraform=tf)
-                    release_state = "不适用"
-                    if project:
-                        try:
-                            _release_claim(iid, project, terraform=tf)
-                            release_state = "已释放"
-                        except Exception as e:  # noqa: BLE001
-                            release_state = "释放失败"
-                            log.warning("_resume_inflight: stale release #%s failed: %s", iid, e)
-                    if tf and project:
-                        if not _aone_event_enqueue(
-                                iid, project,
-                                "dispatch:%s:%s:stale-orphan" % (
-                                    _aone_event_source_part(kind),
-                                    _aone_event_source_part(
-                                        rec.get("sid") or "unknown-session")),
-                                _dispatch_event_summary(
-                                    kind, "stale-orphan", 1, release_state)):
-                            log.error("_resume_inflight: stale event #%s could not be queued", iid)
-                    _inflight_remove(iid)
-                    log.warning("_resume_inflight: #%s stale (age=%ds) → failed, not resumed",
-                                iid, int(age))
-                    continue
-                tgt, ttype = broadcast_target(), broadcast_type()
-                notify = self._broadcast
-                if _session_file_exists(sid):
-                    resume = True
-                    rprompt = "上次被中断,请从断点继续完成本工单 SOP"
-                else:
-                    resume = False
-                    rprompt = rec.get("prompt") or ""
-                tf = bool(rec.get("terraform"))  # 复原原派发车道，避免 --resume 串到别的网关
-                work = (lambda i=iid, p=rprompt, s=sid, r=resume, pj=project, t=tf:
-                        self.dispatch_item(
-                            i, p, s, r, notify, tgt, ttype,
-                            on_spawn=lambda pr: self.dispatch_pool.set_proc(i, pr),
-                            project=pj, kind="ticket", terraform=t))
-                ok, reason = self.dispatch_pool.submit(
-                    iid, work, notify=notify, force=True, kind="ticket", project=project,
-                    terraform=tf)
-                log.info("_resume_inflight: #%s resume=%s submit=%s(%s)",
-                         iid, resume, ok, reason)
-            except Exception as e:  # noqa: BLE001
-                log.warning("_resume_inflight: #%s could not be resumed: %s", iid, e)
 
     def _tata_session(self, staff):
         """返回该 staff 的 Tata (session_id, resume)。
@@ -6581,7 +6561,7 @@ class JarvisHandler(AsyncChatbotHandler):
             log.exception("broadcast failed")
 
     def _maybe_suspend(self, final_text, sid, target, target_type, terraform=False,
-                       project=None, managed=False):
+                       project=None, task_owned=False):
         """Shared core: if the round emitted a [[SUSPEND:{...}]] sentinel, register it
         with the WaitWatcher (which wakes on the next Aone reply) and return the info;
         else None. Used by both the card path (_dispatch_bg) and headless (dispatch_item).
@@ -6590,7 +6570,7 @@ class JarvisHandler(AsyncChatbotHandler):
         if not info:
             return None
         last_cid = self._last_comment_id(info["aone_id"])
-        if not managed:
+        if not task_owned:
             self.watcher.suspend(info["aone_id"], sid, info.get("wait_for", ""),
                                  last_cid, target, target_type, terraform=terraform,
                                  project=project)
@@ -6602,7 +6582,7 @@ class JarvisHandler(AsyncChatbotHandler):
                      terraform=False, project=None):
         """Card path (interactive authorize / handoff / wake): stream Jarvis into a live
         card, detect the suspend sentinel. Returns an outcome string. Active-set cleanup
-        is owned by DispatchPool, not here. ``terraform`` selects the model 车道."""
+        is owned by EphemeralExecutor, not here. ``terraform`` selects the model 车道."""
         dispatch_timeout = int(os.environ.get("JARVIS_DISPATCH_TIMEOUT", "43200"))
         try:
             log.info("dispatch_bg #%s start (timeout=%ds)", item_id, dispatch_timeout)
@@ -6720,7 +6700,7 @@ class JarvisHandler(AsyncChatbotHandler):
 
     def dispatch_item(self, item_id, prompt, sid, resume, notify, target, target_type,
                       on_spawn=None, project=None, kind="ticket", terraform=False,
-                      managed_lifecycle=None):
+                      session_controller=None):
         """Headless path (auto-dispatch / probe / revisit): run one Jarvis instance to
         completion WITHOUT a live card (no "回复某人" binding); broadcast the result via
         ``notify``. Shares the SUSPEND + WaitWatcher core with the card path.
@@ -6737,17 +6717,17 @@ class JarvisHandler(AsyncChatbotHandler):
         Probe rounds (item_id prefix "probe-") 额外把会话 final 文本落
         ``runs/probe/<item_id>-summary.md`` 供 board.sh 拉取/审计。
 
-        Returns done / suspended / error for legacy execution.  Managed execution
+        EphemeralJob execution returns done / suspended / error. Task execution
         returns a structured wait-current-state mapping when it suspends."""
         max_retries = int(os.environ.get("JARVIS_DISPATCH_RETRY_MAX", "2"))
         backoff = int(os.environ.get("JARVIS_DISPATCH_RETRY_BACKOFF", "30"))
         timeout = int(os.environ.get("JARVIS_DISPATCH_TIMEOUT", "43200"))
         attempt = 0
         try:
-            # Legacy workers retain the local restart ledger.  Managed work is
+            # EphemeralJobs retain only the local process ledger. Task work is
             # reconstructed exclusively from jarvis_task/jarvis_session; writing a
             # second local current-state copy would create two recovery authorities.
-            if managed_lifecycle is None:
+            if session_controller is None:
                 _inflight_add(item_id, sid, project, kind, prompt, terraform=terraform)
             log.info("dispatch_item #%s start (timeout=%ds, retry_max=%d)",
                      item_id, timeout, max_retries)
@@ -6758,7 +6738,10 @@ class JarvisHandler(AsyncChatbotHandler):
                     "on_spawn": on_spawn,
                     "terraform": terraform,
                 }
-                if managed_lifecycle is not None:
+                execution_runtime = getattr(self, "execution_runtime", None)
+                if execution_runtime is not None:
+                    runner_kwargs["execution_runtime"] = execution_runtime
+                if session_controller is not None:
                     runner_kwargs["guarded"] = True
                 res = run_claude_buffered(cur_prompt, sid, cur_resume,
                                           **runner_kwargs)
@@ -6781,16 +6764,15 @@ class JarvisHandler(AsyncChatbotHandler):
                             item_id, res.subtype, attempt, max_retries)
                 time.sleep(min(backoff * attempt, 300))
             final = res.text
-            # 关机短路(方案B): 必须紧跟 final= — 桥停机杀 worker 时若快速走到
-            # _maybe_suspend/_dispatch_failed 会误释放 claim + 删在飞记录。停机中一律
-            # 保住 claim + 保留记录(finally 也据此不删), 交给重启后的 _resume_inflight。
-            pool = getattr(self, "dispatch_pool", None)
-            if pool is not None and getattr(pool, "_closed", False):
+            # Shutdown cleanup owns process termination and claim release. Avoid
+            # publishing a second execution failure while the executor is closing.
+            executor = getattr(self, "ephemeral_executor", None)
+            if executor is not None and getattr(executor, "_closed", False):
                 return "error"
-            if managed_lifecycle is not None:
+            if session_controller is not None:
                 info = self._maybe_suspend(
                     final, sid, target, target_type, terraform=terraform,
-                    project=project, managed=True)
+                    project=project, task_owned=True)
             else:
                 try:
                     info = self._maybe_suspend(final, sid, target, target_type,
@@ -6805,7 +6787,7 @@ class JarvisHandler(AsyncChatbotHandler):
                 line = wl[0] if isinstance(wl, tuple) else wl
                 notify("⏸️ 工单已挂起，等待 @%s 回复\n%s" % (
                     info.get("wait_for", "?"), line))
-                if managed_lifecycle is not None:
+                if session_controller is not None:
                     return {
                         "status": "suspended",
                         "waitType": "AONE_REPLY",
@@ -6850,11 +6832,8 @@ class JarvisHandler(AsyncChatbotHandler):
                 kind=kind, sid=sid, attempts=attempt + 1)
             return "error"
         finally:
-            # 非关机时删记录(覆盖 done/suspended/failed/outer-except 全部终态)。关机中
-            # (_closed) 保留记录, 交给重启 resume——与上面的关机短路对齐。
-            pool = getattr(self, "dispatch_pool", None)
-            if (managed_lifecycle is None and
-                    not (pool is not None and getattr(pool, "_closed", False))):
+            # EphemeralJob state is disposable and is never resumed after restart.
+            if session_controller is None:
                 _inflight_remove(item_id)
 
     @staticmethod
@@ -6941,17 +6920,47 @@ class JarvisHandler(AsyncChatbotHandler):
             log.warning("_dispatch_failed #%s notify failed: %s", item_id, e)
 
     def _submit_card(self, item_id, target, target_type, prompt, sid, resume, force=True,
-                     terraform=False, project=None):
-        """Submit a card-path dispatch through the shared pool. Human/wake/handoff paths
-        pass force=True (override the 24h ledger, but never a live active worker). If the
-        pool rejects (active / queue_full), tell the requester on the same card target.
-        ``terraform`` selects the model 车道 (see jarvis_cmd)."""
-        work = (lambda: self._dispatch_bg(target, target_type, prompt, item_id, sid, resume,
-                                          terraform=terraform, project=project))
-        ok, reason = self.dispatch_pool.submit(
-            item_id, work, force=force, kind="card",
-            notify=lambda t: self._quick_card(target, t, target_type),
-            terraform=terraform)
+                     terraform=False, project=None, task_type="ticket"):
+        """Route a card request through ExecutionRouter.
+
+        Recoverable Task work is persisted and later leased by PersistenceExecutor.
+        Disposable local work alone enters EphemeralExecutor.
+        """
+        project = str(project or "")
+        item_id = str(item_id)
+        source_type = "AONE" if item_id.isdigit() else "LOCAL"
+        source_ref = ({"aoneId": item_id, "projectId": project}
+                      if source_type == "AONE"
+                      else {"localId": item_id})
+        revision = "card:%s" % hashlib.sha256(
+            ("%s\0%s\0%s" % (item_id, task_type, prompt)).encode("utf-8")
+        ).hexdigest()[:24]
+        envelope = _task_envelope(
+            item_id=item_id,
+            project=project,
+            task_type=task_type,
+            source_type=source_type,
+            source_ref=source_ref,
+            desired_revision=revision,
+            trigger="CARD_SUBMIT",
+            prompt=prompt,
+            recovery_policy="RESUME_ONLY",
+            terraform=terraform,
+            target=target,
+            targetType=target_type,
+        )
+
+        def local_submit():
+            work = lambda: self._dispatch_bg(
+                target, target_type, prompt, item_id, sid, resume,
+                terraform=terraform, project=project)
+            return self.ephemeral_executor.submit(
+                item_id, work, force=force, kind=task_type,
+                notify=lambda text: self._quick_card(target, text, target_type),
+                project=project or None, terraform=terraform)
+
+        ok, reason = self.execution_router.enqueue(
+            envelope, local_submit=local_submit)
         if not ok:
             self._quick_card(target, "🟠 工单 #%s 未派发（%s）。" % (item_id, reason), target_type)
         return ok, reason
@@ -7063,7 +7072,7 @@ class JarvisHandler(AsyncChatbotHandler):
             targetType=task["target_type"],
         )
 
-        def legacy_submit():
+        def local_submit():
             if self.no_dingtalk:
                 # 降级模式无 live 卡片可流 → 走 headless dispatch_item 续跑。
                 notify = self._broadcast
@@ -7071,17 +7080,21 @@ class JarvisHandler(AsyncChatbotHandler):
                     aone_id, prompt, task["session_id"], True,
                     notify, task["target"], task["target_type"],
                     project=project, kind="wake", terraform=tf))
-                return self.dispatch_pool.submit(
+                return self.ephemeral_executor.submit(
                     aone_id, work, notify=notify, force=True, kind="wake",
                     project=project, terraform=tf)
             # force=True: a resumed ticket may still sit inside the 24h dedup window.
-            return self._submit_card(
-                aone_id, task["target"], task["target_type"], prompt,
-                task["session_id"], True, force=True, terraform=tf, project=project)
+            work = lambda: self._dispatch_bg(
+                task["target"], task["target_type"], prompt, aone_id,
+                task["session_id"], True, terraform=tf, project=project)
+            return self.ephemeral_executor.submit(
+                aone_id, work, force=True, kind="wake", project=project,
+                notify=lambda text: self._quick_card(
+                    task["target"], text, task["target_type"]),
+                terraform=tf)
 
-        router = getattr(self, "task_router", None)
-        result = (router.enqueue(envelope, legacy_submit)
-                  if router is not None else EnqueueResult(*legacy_submit()))
+        result = self.execution_router.enqueue(
+            envelope, local_submit=local_submit)
         if not result.accepted:
             log.warning("wake #%s was not accepted (%s)", aone_id, result.reason)
             return False
@@ -7140,7 +7153,8 @@ class JarvisHandler(AsyncChatbotHandler):
                     self._quick_card(card_target,
                                      "⚙️ 已接收工单 #%s，后台处理中…" % item["id"], card_type)
                     self._submit_card(item["id"], card_target, card_type,
-                                      prompt, str(uuid.uuid4()), False, terraform=tf)
+                                      prompt, str(uuid.uuid4()), False, terraform=tf,
+                                      project=item.get("pool_project"))
                     return AckMessage.STATUS_OK, "dispatched"
                 else:
                     self._quick_card(card_target, "工单 #%s 不在待处理列表中。" % auth_m.group(1), card_type)
@@ -7154,7 +7168,8 @@ class JarvisHandler(AsyncChatbotHandler):
                                                 item.get("pool", ""), item.get("pool_project", ""))
                         tf = _is_terraform_ticket(item.get("pool", ""), item.get("title", ""))
                         self._submit_card(item["id"], card_target, card_type,
-                                          prompt, str(uuid.uuid4()), False, terraform=tf)
+                                          prompt, str(uuid.uuid4()), False, terraform=tf,
+                                          project=item.get("pool_project"))
                         ids.append(str(item["id"]))
                     self._quick_card(card_target,
                                      "⚙️ 已提交 %d 条工单后台处理: %s" % (
@@ -7203,7 +7218,9 @@ class JarvisHandler(AsyncChatbotHandler):
                     jresume = staff in self.jarvis_started
                     self.jarvis_started.add(staff)
                     handoff_id = "handoff-%s" % int(time.time())
-                    self._submit_card(handoff_id, card_target, card_type, task, jsid, jresume)
+                    self._submit_card(
+                        handoff_id, card_target, card_type, task, jsid, jresume,
+                        task_type="adhoc")
                 else:
                     # 默认: 以 jarvis 身份建 Aone 工单承载委派任务 + 回执，即结束(进度可追踪)。
                     self._handoff_to_ticket(task, staff, card_target, card_type)
@@ -7278,7 +7295,7 @@ def run_dry_once():
     verification entry point for the编排层 (it does call scan.sh / a1id for real)."""
     load_env_file()
     print("=== bridge dispatcher dry-run (no dingtalk, no claude spawn) ===")
-    pool = DispatchPool()
+    pool = EphemeralExecutor()
     scanner = ScanScheduler(handler=None, pool=pool)
     print("auto_dispatch=%s  dispatch_max=%d  queue_max=%d  dedup_ttl=%ds  ledger=%d entries"
           % (scanner.auto, pool.max_workers, pool.queue_max, pool.dedup_ttl, len(pool._ledger)))
@@ -7297,10 +7314,11 @@ def run_dry_once():
                   % (mark, d["id"], (d["title"] or "")[:60], d["reason"], fmark))
 
     print("\n--- BACKLOG DRAIN (idle-only) ---")
-    # dry-run 是一次性扫描、无 prev-snapshot diff，这里只展示「假如本轮无新单/更新单」时会被空闲
-    # 消化的积压候选(只读, 绝不 submit)。live 仅在无新单 tick 且开关开时才真派(填满空闲运行槽)。
-    free = pool.free_slots()
-    print("  backlog_drain=%s  free_slots=%d/%d" % (scanner.backlog_drain, free, pool.max_workers))
+    # dry-run 是一次性扫描、无 prev-snapshot diff，这里只展示「假如本轮无新单/更新单」
+    # 会发布的积压 Task 候选(只读，绝不 upsert)。
+    backlog_cap = int(os.environ.get("JARVIS_BACKLOG_MAX_SLOTS", "1"))
+    print("  backlog_drain=%s  max_tasks_per_tick=%d"
+          % (scanner.backlog_drain, backlog_cap))
     if not scanner.backlog_drain:
         print("  (JARVIS_BACKLOG_DRAIN=0 → disabled, pure new-item dispatch)")
     elif items is None:
@@ -7311,14 +7329,14 @@ def run_dry_once():
                                      str(it.get("created", ""))))
         if not backlog:
             print("  (no untouched backlog in the current snapshot)")
-        elif free <= 0:
-            print("  %d backlog candidate(s) but no free slot this tick" % len(backlog))
         else:
-            print("  would drain up to %d (free slots) of %d candidate(s):" % (free, len(backlog)))
-            for it in backlog[:free]:
+            print("  would persist up to %d of %d candidate(s):"
+                  % (backlog_cap, len(backlog)))
+            for it in backlog[:backlog_cap]:
                 pri = it.get("priority", "")
-                print("  [DRAIN] #%s %s%s"
-                      % (it.get("id"), (it.get("title") or "")[:60], (" [%s]" % pri) if pri else ""))
+                print("  [TASK] #%s %s%s"
+                      % (it.get("id"), (it.get("title") or "")[:60],
+                         (" [%s]" % pri) if pri else ""))
 
     print("\n--- REVISIT CANDIDATES (jarvis-idle) ---")
     reviser = RevisitScheduler(handler=None, pool=pool)
@@ -7353,7 +7371,7 @@ def _release_claim(iid, project, terraform=False):
 
 def _run_no_dingtalk():
     """无钉钉降级模式启动(JARVIS_NO_DINGTALK=1 点火路径): 不建 DingTalk client/stream,
-    不初始化 TataPool; 只起自动派发(ScanScheduler→DispatchPool)+ Reconcile/Board/Probe/
+    不初始化 TataPool; 只起自动派发(ScanScheduler→EphemeralExecutor)+ Reconcile/Board/Probe/
     Revisit/Wait 调度器。卡片/播报统一降级为 [BROADCAST] 日志行(→ bot.log); WaitWatcher
     挂起/唤醒照常(轮询走 a1, 唤醒走 headless 池), "@人通知"降级为日志 + 既有 Aone 评论。
     入站 Tata 门面停用(无 stream)。阻塞至进程收到中断信号。"""
@@ -7361,7 +7379,7 @@ def _run_no_dingtalk():
                 "自动派发 + Scan/Reconcile/Board/Probe/Revisit/Wait 调度器照常; "
                 "卡片/播报 → [BROADCAST] 日志行; 入站 Tata 门面停用。")
     handler = JarvisHandler(no_dingtalk=True)
-    # 起全部调度器 + 重启后 _resume_inflight() 续跑上一进程遗留的在飞工单(方案B)。
+    # PersistenceExecutor first, then every sensor/scheduler.
     handler.start_schedulers()
     log.info("[NO-DINGTALK] scan scheduler started (interval=%ss auto_dispatch=%s target=%s broadcast=%s)",
              handler.scanner.interval, handler.scanner.auto,
@@ -7382,11 +7400,11 @@ def _run_no_dingtalk():
     def _graceful_stop(signum, _frame):
         log.info("[NO-DINGTALK] signal %s received — graceful stop: kill workers + release claims", signum)
         try:
-            handler.stop_local_worker(drain=False)
+            handler.stop_persistence_executor(drain=False)
         except Exception as e:  # noqa: BLE001
-            log.exception("[NO-DINGTALK] managed worker stop failed: %s", e)
+            log.exception("[NO-DINGTALK] PersistenceExecutor stop failed: %s", e)
         try:
-            ids = handler.dispatch_pool.terminate_all(release_fn=_release_claim)
+            ids = handler.ephemeral_executor.terminate_all(release_fn=_release_claim)
             log.info("[NO-DINGTALK] graceful stop: cleaned up %d worker(s): %s", len(ids), ids)
         except Exception as e:  # noqa: BLE001
             log.exception("[NO-DINGTALK] graceful stop cleanup failed: %s", e)
@@ -7400,10 +7418,10 @@ def _run_no_dingtalk():
     except KeyboardInterrupt:  # fallback if signal registration was pre-empted
         pass
     finally:
-        handler.stop_local_worker(
+        handler.stop_persistence_executor(
             drain=True,
             timeout=float(os.environ.get("JARVIS_WORKER_DRAIN_TIMEOUT", "30")))
-        handler.dispatch_pool.shutdown(wait=False, cancel_futures=True)
+        handler.ephemeral_executor.shutdown(wait=False, cancel_futures=True)
     return 0
 
 
@@ -7429,7 +7447,7 @@ def main():
     client.register_callback_handler(ChatbotMessage.TOPIC, handler)
     if handler.pool is not None:
         handler.pool.prewarm()  # 预热 N 个 generic 常驻进程, 首批消息免冷启
-    # 起全部调度器 + 重启后 _resume_inflight() 续跑上一进程遗留的在飞工单(方案B)。
+    # PersistenceExecutor first, then every sensor/scheduler.
     handler.start_schedulers()
     log.info("scan scheduler started (interval=%ss auto_dispatch=%s target=%s broadcast=%s)",
              handler.scanner.interval, handler.scanner.auto,
@@ -7449,11 +7467,11 @@ def main():
     def _graceful_stop(signum, _frame):
         log.info("signal %s received — graceful stop: kill workers + release claims", signum)
         try:
-            handler.stop_local_worker(drain=False)
+            handler.stop_persistence_executor(drain=False)
         except Exception as e:  # noqa: BLE001
-            log.exception("managed worker stop failed: %s", e)
+            log.exception("PersistenceExecutor stop failed: %s", e)
         try:
-            ids = handler.dispatch_pool.terminate_all(release_fn=_release_claim)
+            ids = handler.ephemeral_executor.terminate_all(release_fn=_release_claim)
             log.info("graceful stop: cleaned up %d worker(s): %s", len(ids), ids)
         except Exception as e:  # noqa: BLE001
             log.exception("graceful stop cleanup failed: %s", e)
@@ -7470,10 +7488,10 @@ def main():
     try:
         client.start_forever()
     finally:
-        handler.stop_local_worker(
+        handler.stop_persistence_executor(
             drain=True,
             timeout=float(os.environ.get("JARVIS_WORKER_DRAIN_TIMEOUT", "30")))
-        handler.dispatch_pool.shutdown(wait=False, cancel_futures=True)
+        handler.ephemeral_executor.shutdown(wait=False, cancel_futures=True)
         if handler.pool is not None:
             handler.pool.shutdown()  # 收尾全 kill 常驻 Tata 进程
 
