@@ -71,7 +71,7 @@ bin/a1id -- app pipeline status --pipeline-id 67
 
 ## 发布冲突安全
 
-- 冲突优先在当前功能分支合入兄弟分支、解冲突并重新 submit；**永久禁止** `app pipeline exit-cr` 和等价的 `app pipeline quit`，因为两者会退出最新实例中的全部 CR。`bin/a1id` 与 PreToolUse 会在真实 a1 前硬拒绝。
+- submit 报 `pipeline_submit_failed` 或检测到兄弟 CR 冲突时，**永久禁止** `app pipeline exit-cr` 和等价的 `app pipeline quit`，因为两者会退出最新实例中的全部 CR。`bin/a1id` 与 PreToolUse 会在真实 a1 前硬拒绝。立即停止后续发布动作，反馈“部署失败”，附上当前 CR、流水线及冲突信息，等待人工给出解决方案；禁止 Jarvis 自行查找或 merge 兄弟分支，也禁止自行重 submit。
 - 确需撤回当前 CR 时，只允许已 claim 对应 Aone 的根 Worker 在 CR worktree 内执行 `bin/a1id -- app cr quit <cr-id> --pipeline-id <id>`。执行层核对 CR 工作项、origin、分支、指定流水线最新实例成员，并在网络查证前后复验同一 task/session/fence；无法证明归属即 fail closed。直接 `a1 app cr quit` 同样被拒绝。
 - 该护栏针对 Jarvis 正常工具入口的误操作和 wrapper 绕过；它不构成同一 UID 恶意本地代码的密码学隔离，因为后者本就能读取本机凭据并直调 a1。
 
