@@ -3691,7 +3691,9 @@ class RecoveryScheduler:
         前置分流只为不空转烧轮次）：REPLAY_SAFE（jarvis envelope 默认）→ 重派；
         RESUME_ONLY → 播报一次「仅原 runtime 可续跑」不重派；MANUAL → 播报一次转人工。
       · JARVIS_RECOVERY_REDISPATCH=0 减档：探测/佐证/播报/台账照常但不 spawn
-        （alert-only），供 headless fenced-claim 预注册未合流等场景临时降级。
+        （alert-only），纯运维开关。重派 spawn 与普通派发同走 dispatch 缓冲通道，
+        由 exec-headless 预注册全权 fenced worker（_headless_exec_command 无策略
+        变体），实例内 claim.sh 定向接管无需额外接线。
 
     幂等防抖：台账 "pending" 段记 {aone_id: {last_ts, count, announced, ...}}——dedup TTL
     （JARVIS_RECOVERY_DEDUP_TTL，默认 21600=6h）内同单不重派；重派超
