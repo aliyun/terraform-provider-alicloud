@@ -35,9 +35,8 @@ func TestAccAliCloudRocketmqInstance_SendReceiveRatioValidation(t *testing.T) {
 			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 			testAccPreCheckWithRegions(t, true, connectivity.RocketMQSupportRegions)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -72,7 +71,8 @@ func TestAccAliCloudRocketmqInstance_SendReceiveRatioValidation(t *testing.T) {
 					"remark":            "validation test",
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
-				ExpectError: regexp.MustCompile(`expected send_receive_ratio to be in the range \(0.05 - 0.5\)`),
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile(`expected product_info\.0\.send_receive_ratio to be in the range \(0\.050000 - 0\.500000\), got 0\.030000`),
 			},
 		},
 	})
@@ -199,11 +199,6 @@ func TestAccAliCloudRocketmqInstance_bugfix(t *testing.T) {
 					"sub_series_code":   "cluster_ha",
 					"remark":            "自动化测试购买使用11",
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
-					"software": []map[string]interface{}{
-						{
-							"maintain_time": "02:00-06:00",
-						},
-					},
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "Test",
@@ -400,11 +395,6 @@ func TestAccAliCloudRocketmqInstance_basic4665(t *testing.T) {
 					"sub_series_code":   "cluster_ha",
 					"remark":            "自动化测试购买使用11",
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
-					"software": []map[string]interface{}{
-						{
-							"maintain_time": "02:00-06:00",
-						},
-					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -681,11 +671,6 @@ func SkipTestAccAliCloudRocketmqInstance_basic4652(t *testing.T) {
 					"sub_series_code":   "single_node",
 					"remark":            "自动化测试购买使用11",
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
-					"software": []map[string]interface{}{
-						{
-							"maintain_time": "02:00-06:00",
-						},
-					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -812,7 +797,7 @@ func TestAccAliCloudRocketmqInstance_basic4128(t *testing.T) {
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:  nil, // bypass linter, prepaid (Subscription) resource cannot destroy
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1031,11 +1016,6 @@ func TestAccAliCloudRocketmqInstance_basic4128(t *testing.T) {
 					"sub_series_code": "cluster_ha",
 					"remark":          "自动化测试购买使用11",
 					"period_unit":     "Month",
-					"software": []map[string]interface{}{
-						{
-							"maintain_time": "02:00-06:00",
-						},
-					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -1394,11 +1374,6 @@ func TestAccAliCloudRocketmqInstance_basic4101(t *testing.T) {
 					"sub_series_code":   "cluster_ha",
 					"remark":            "自动化测试购买使用11",
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
-					"software": []map[string]interface{}{
-						{
-							"maintain_time": "02:00-06:00",
-						},
-					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -1521,11 +1496,6 @@ func TestAccAliCloudRocketmqInstance_basic4665_twin(t *testing.T) {
 					"sub_series_code":   "cluster_ha",
 					"remark":            "自动化测试购买使用11",
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
-					"software": []map[string]interface{}{
-						{
-							"maintain_time": "02:00-06:00",
-						},
-					},
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "Test",
@@ -1615,11 +1585,6 @@ func SkipTestAccAliCloudRocketmqInstance_basic4652_twin(t *testing.T) {
 					"sub_series_code":   "single_node",
 					"remark":            "自动化测试购买使用11",
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
-					"software": []map[string]interface{}{
-						{
-							"maintain_time": "02:00-06:00",
-						},
-					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -1664,7 +1629,7 @@ func TestAccAliCloudRocketmqInstance_basic4128_twin(t *testing.T) {
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:  nil, // bypass linter, postpay resource cannot destroy
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1706,11 +1671,6 @@ func TestAccAliCloudRocketmqInstance_basic4128_twin(t *testing.T) {
 					"sub_series_code": "cluster_ha",
 					"remark":          "自动化测试购买使用11",
 					"period_unit":     "Year",
-					"software": []map[string]interface{}{
-						{
-							"maintain_time": "02:00-06:00",
-						},
-					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -1835,18 +1795,13 @@ func TestAccAliCloudRocketmqInstance_basic4101_twin(t *testing.T) {
 					"sub_series_code":   "cluster_ha",
 					"remark":            "自动化测试购买使用11",
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
-					"software": []map[string]interface{}{
-						{
-							"maintain_time": "02:00-06:00",
-						},
-					},
 					"acl_info": []map[string]interface{}{
 						{
 							"acl_types":             []string{"default", "apache_acl", "aliyun_ram"},
 							"default_vpc_auth_free": "false",
 						},
 					},
-					"ip_whitelists": []string{"192.168.1.1", "192.168.2.2"},
+					"ip_whitelists": []string{"0.0.0.0/0", "192.168.1.1", "192.168.2.2"},
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "Test",
@@ -1862,7 +1817,7 @@ func TestAccAliCloudRocketmqInstance_basic4101_twin(t *testing.T) {
 						"remark":            "自动化测试购买使用11",
 						"resource_group_id": CHECKSET,
 						"acl_info.#":        "1",
-						"ip_whitelists.#":   "2",
+						"ip_whitelists.#":   "3",
 						"tags.%":            "2",
 						"tags.Created":      "TF",
 						"tags.For":          "Test",

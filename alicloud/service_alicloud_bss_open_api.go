@@ -103,9 +103,11 @@ func (s *BssOpenApiService) QueryAvailableInstancesWithoutProductType(id, instan
 	if client.IsInternationalAccount() {
 		request["ProductCode"] = productCodeIntl
 	}
-	if instanceRegion != "" {
-		request["Region"] = instanceRegion
-	}
+	// Region is intentionally not set: QueryAvailableInstances is a global billing
+	// API keyed by InstanceIDs. Passing an international region (e.g. na-south-1) for
+	// a domestic-station account makes the domestic BSS return an empty list, which
+	// triggers a blind fallback to the international endpoint and fails with
+	// "account not exists". Omitting Region lets the domestic BSS resolve the instance.
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
