@@ -10,7 +10,33 @@ from unittest import mock
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from jarvis_execution_runtime import ExecutionRuntime  # noqa: E402
+import os  # noqa: E402
+
+from jarvis_execution_runtime import ExecutionRuntime, ProcessGuardian  # noqa: E402
+
+
+class ProcessGuardianTest(unittest.TestCase):
+    def test_gate_broken_pipe_is_swallowed_not_terminal(self):
+        # The guard child can exit before the gate is granted when the bound
+        # session lost ownership (stale_fence) and stop_process fired mid-spawn.
+        # os.write then hits BrokenPipe — an expected handoff, not a crash: the
+        # process is returned so run_buffered observes a retryable empty result
+        # instead of a terminal orchestrator_exception.
+        process = mock.Mock()
+        process.pid = 321
+        bound = []
+        with mock.patch("jarvis_execution_runtime.subprocess.Popen",
+                        return_value=process), \
+                mock.patch("jarvis_execution_runtime.os.write",
+                           side_effect=BrokenPipeError(32, "Broken pipe")), \
+                mock.patch.object(ProcessGuardian, "terminate") as terminate:
+            proc, sentinel_write = ProcessGuardian().spawn(
+                ["tool"], HERE, on_spawn=lambda p: bound.append(p.pid))
+
+        self.assertIs(proc, process)
+        self.assertEqual(bound, [321], "fence must bind before the gate is granted")
+        terminate.assert_not_called()
+        os.close(sentinel_write)
 
 
 class ExecutionRuntimeTest(unittest.TestCase):
