@@ -752,6 +752,20 @@ assert_post_pr_allowed() {
     fi
 }
 
+assert_post_pr_as_blocked() {
+    local label="$1"; shift
+    : > "$CAP"; : > "$ERR"
+    JARVIS_AONE_WRITE_POLICY=post-pr-read-only \
+        A1ID_ROOT="$ROOT" A1_BIN="$BIN/a1" STUB_CAPTURE="$CAP" \
+        bash "$A1ID" as terraform-rd -- "$@" >/dev/null 2>"$ERR"
+    local rc=$?
+    if [ "$rc" != "0" ] && [ ! -s "$CAP" ]; then
+        pass "$label 被显式身份入口 fail-closed"
+    else
+        fail "$label 未阻断: rc=$rc capture=$(cat "$CAP")"
+    fi
+}
+
 assert_post_pr_blocked "update status" project workitem update 123 --status Closed
 assert_post_pr_blocked "update tag" project workitem update 123 --tag post-pr-test-tag
 assert_post_pr_blocked "create" project workitem create --project 528766 --title x
@@ -763,6 +777,8 @@ assert_post_pr_blocked "relation add" project workitem relation add 123 relate:4
 assert_post_pr_blocked "relation remove" project workitem relation remove 123 relate:456
 assert_post_pr_blocked "attachment upload" project workitem attachment upload 123 file.txt
 assert_post_pr_blocked "attachment delete" project workitem attachment delete 123 9
+assert_post_pr_as_blocked "显式 terraform-rd update" \
+    project workitem update 123 --status Closed
 
 assert_post_pr_allowed "get" project workitem get 123
 assert_post_pr_allowed "list" project workitem list --project 528766

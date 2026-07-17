@@ -23,6 +23,30 @@ for rel in \
     "$expected"
 done
 
+for delivery_name in \
+  delivery-aliyun-automation-agent.md \
+  delivery-aliyun-automation-platform.md \
+  delivery-cloudspec.md; do
+  delivery_file="$repo_root/.claude/skills/aone-triage/references/$delivery_name"
+  grep -Fq 'app pipeline exit-cr' "$delivery_file"
+  grep -Fq 'app pipeline quit' "$delivery_file"
+  grep -Fq 'app cr quit' "$delivery_file"
+  grep -Fq '立即停止后续发布动作' "$delivery_file"
+  grep -Fq '反馈“部署失败”' "$delivery_file"
+  grep -Fq '等待人工给出解决方案' "$delivery_file"
+  grep -Fq '禁止 Jarvis 自行查找或 merge 兄弟分支' "$delivery_file"
+  grep -Fq '任何 CR/分支退出动作都交给人工处理' "$delivery_file"
+
+  if grep -Fq 'git log --oneline --all -- <文件>' "$delivery_file" ||
+    grep -Fq 'git merge origin/<兄弟分支>' "$delivery_file" ||
+    grep -Fq '冲突优先在当前功能分支合入兄弟分支' "$delivery_file" ||
+    grep -Fq '只能定向退出自己的 CR' "$delivery_file" ||
+    grep -Fq 'bin/a1id -- app cr quit <cr-id> --pipeline-id <id>' "$delivery_file"; then
+    echo "$delivery_name still instructs Jarvis to resolve or exit a CR automatically" >&2
+    exit 1
+  fi
+done
+
 skill="$repo_root/.claude/skills/aone-triage/SKILL.md"
 delivery="$repo_root/.claude/skills/aone-triage/references/delivery-aliyun-automation-platform.md"
 adhoc="$repo_root/loops/adhoc-intake.md"

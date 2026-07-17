@@ -110,7 +110,7 @@ class HandlerWiringTest(unittest.TestCase):
             bot._task_client_from_env()
         os.environ["JARVIS_HTML_REPORT_TOKEN"] = "shared-token"
         client = bot._task_client_from_env()
-        self.assertEqual(client.base_url, "https://pre-agent.aliyun-inc.com")
+        self.assertEqual(client.base_url, "https://agent.aliyun-inc.com")
         self.assertEqual(client.token, "shared-token")
 
 

@@ -75,9 +75,10 @@ CR FINISH + 正式 SUCCESS 后才清;worktree 干净(已 push)。手建的 workt
 3. **预发/正式 pipeline 固定** 66/67,别凭名字猜,`a1 app pipeline list --app 283346` 核。
 4. **监控收口**:用 poll-until 看「X 部署 [SUCCESS]」收尾,空日志/RUNNING 不算结束;阻塞在人工卡点别死等。
 5. **CM 管控人工卡点**:正式准入 CheckList 含安全扫描(自动)+ CM 管控(WAITING),CLI 推不动,要去 BG 变更审批页人工通过,过后自动续跑。
-6. **共享文件撞兄弟 CR**:submit 报 `pipeline_submit_failed` + 代码冲突预检 → 多半是另一在飞 CR 改了同一文件(`playground.html` 高发,多需求并行)。`git merge origin/<兄弟分支>` 合入共存、解冲突、push、重 submit。先 `git log --oneline --all -- <文件>` 找兄弟分支。
+6. **共享文件撞兄弟 CR**:submit 报 `pipeline_submit_failed` 或代码冲突预检失败时，**永久禁止** `app pipeline exit-cr`、等价的 `app pipeline quit` 以及定向的 `app cr quit`，`bin/a1id` 与 PreToolUse 已在真实 a1 前硬拒绝。立即停止后续发布动作，反馈“部署失败”，附上当前 CR、流水线及冲突信息，等待人工给出解决方案；禁止 Jarvis 自行查找或 merge 兄弟分支，也禁止自行重 submit。任何 CR/分支退出动作都交给人工处理。
 7. **状态枚举无"已发布"**:`workitem update --status` 用 `验收通过`(或 `已发布待需求方验收`),写"已发布"会报 unsupported,枚举见报错列表。
 8. **监控 grep 别太宽**:盯部署用紧 grep,`部署.*(SUCCESS|FAIL)` 会被 WAITING 行里的"预发部署"误命中假收口;锚到 `预发部署 \[SUCCESS\]` 整阶段。
+该护栏防止 Jarvis 在正常工具入口误操作或绕过 wrapper；同一 UID 下可直接读取本机凭据并调用绝对路径 a1 的恶意本地代码，不属于仓库内 guard 能隔离的密码学边界。
 
 ## 交付链路目录
 | 应用 | 项目 | app | 预发/正式 pipeline | 链路文件 |

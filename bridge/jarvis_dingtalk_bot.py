@@ -198,7 +198,7 @@ def _task_client_from_env():
     base_url = (
         os.environ.get("JARVIS_CONTROL_PLANE_BASE_URL", "").strip()
         or os.environ.get("JARVIS_HTML_REPORT_BASE_URL", "").strip()
-        or "https://pre-agent.aliyun-inc.com"
+        or "https://agent.aliyun-inc.com"
     )
     token = (
         os.environ.get("JARVIS_CONTROL_PLANE_TOKEN", "").strip()
@@ -4306,7 +4306,7 @@ class BoardScheduler:
     def __init__(self, handler):
         self.handler = handler
         self.base_url = (os.environ.get("JARVIS_HTML_REPORT_BASE_URL")
-                         or "https://pre-agent.aliyun-inc.com").rstrip("/")
+                         or "https://agent.aliyun-inc.com").rstrip("/")
         self.token = os.environ.get("JARVIS_HTML_REPORT_TOKEN", "")
         self.enabled = bool(self.base_url)  # board pushes whenever a base_url is configured
         self._lock = threading.Lock()
