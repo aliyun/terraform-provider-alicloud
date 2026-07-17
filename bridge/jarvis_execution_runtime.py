@@ -101,7 +101,17 @@ class ProcessGuardian:
             # The real command remains blocked until the fenced process binding
             # succeeds.  Closing the gate without a grant makes the guard exit.
             on_spawn(process)
-            os.write(gate_write, b"G")
+            try:
+                os.write(gate_write, b"G")
+            except BrokenPipeError:
+                # The guard child already exited before the gate was granted —
+                # this happens when the bound session lost ownership
+                # (stale_fence) and stop_process fired mid-spawn.  The real
+                # command never execed, so let run_buffered observe the guard's
+                # empty exit (classified as a retryable no_result) instead of
+                # surfacing a terminal orchestrator_exception for what is an
+                # expected ownership handoff.
+                pass
         except Exception:
             for fd in (gate_write, sentinel_write):
                 try:

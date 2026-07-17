@@ -244,6 +244,39 @@ class SessionControllerTest(unittest.TestCase):
         self.assertEqual(client.named("complete_session"), [])
         self.assertEqual(client.named("fail_session"), [])
 
+    def test_adopt_lease_swaps_fence_so_reheartbeat_survives(self):
+        # A re-lease for the SAME running session rotates the fence; adopting it
+        # keeps the pending heartbeat from being self-rejected 412 STALE_FENCE.
+        client = FakeClient()
+        stopped = []
+        lifecycle = self.make(
+            client, stop_process=lambda current, reason: stopped.append(
+                (current.process, reason)))
+        lifecycle.start()
+        process = FakeProcess(4321)
+        lifecycle.bind_process(process)
+        self.assertEqual(lifecycle.fence_token, 7)
+
+        self.assertTrue(lifecycle.adopt_lease(lease_response(fence_token=8)))
+        self.assertEqual(lifecycle.fence_token, 8)
+
+        self.assertTrue(lifecycle.heartbeat())
+        self.assertFalse(lifecycle.ownership_lost)
+        self.assertEqual(stopped, [])
+        # heartbeat_session(session_id, worker_key, fence_token, detail)
+        self.assertEqual(client.named("heartbeat_session")[0]["args"][2], 8)
+
+    def test_adopt_lease_rejects_mismatch_and_terminal_controller(self):
+        client = FakeClient()
+        lifecycle = self.make(client)
+        lifecycle.start()
+        with self.assertRaises(LeaseProtocolError):
+            lifecycle.adopt_lease(lease_response(session_id="s2", fence_token=9))
+        # Once terminal, a re-lease must never resurrect ownership.
+        self.assertTrue(lifecycle.complete({"status": "done"}))
+        self.assertFalse(lifecycle.adopt_lease(lease_response(fence_token=9)))
+        self.assertEqual(lifecycle.fence_token, 7)
+
     def test_transient_heartbeat_503_keeps_running_then_renews(self):
         clock = FakeClock()
         client = FakeClient(heartbeat_session=[
@@ -495,6 +528,38 @@ class PersistenceExecutorTest(unittest.TestCase):
         executor.run_all()
         self.assertEqual(executed, [], "lost queued work must never start")
         self.assertEqual(worker.active_count(), 0)
+
+    def test_release_of_running_session_adopts_fence_without_new_session(self):
+        # The control plane re-offers a session this worker is already running
+        # (network wobble delayed the ownership heartbeat) with a rotated fence.
+        client = FakeClient(
+            lease_task=[lease_response("s1", fence_token=7),
+                        lease_response("s1", fence_token=8)],
+            heartbeat_session=[{}])
+        executor = ManualExecutor()
+        executed, stopped = [], []
+        worker = self.make(
+            client, lambda *_args: executed.append(True),
+            lambda lifecycle, reason: stopped.append(
+                (lifecycle.session_id, reason)), executor=executor)
+
+        self.assertTrue(worker.run_once())
+        self.assertEqual(worker.active_session_ids(), ["s1"])
+
+        # Re-lease of the same session must adopt the new fence into the live
+        # controller — not spin up a second session or discard it.  Adoption
+        # admits no new work, so run_once reports False (nothing leased in).
+        self.assertFalse(worker.run_once())
+        self.assertEqual(worker.active_session_ids(), ["s1"])
+        self.assertEqual(worker.active_count(), 1)
+        self.assertEqual(len(client.named("start_session")), 1,
+                         "re-lease must not start a second session")
+        self.assertEqual(worker._sessions["s1"].controller.fence_token, 8)
+
+        # The pending heartbeat now renews against the adopted fence.
+        worker.heartbeat_sessions_once()
+        self.assertEqual(stopped, [], "adopted fence must not trigger stale stop")
+        self.assertEqual(client.named("heartbeat_session")[0]["args"][2], 8)
 
     def test_network_failure_pauses_leasing_until_register_recovers(self):
         client = FakeClient(

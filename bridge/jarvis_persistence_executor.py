@@ -508,6 +508,48 @@ class SessionController:
                                  self.session_id, type(exc).__name__)
                 return False
 
+    def adopt_lease(self, lease: Mapping[str, Any]) -> bool:
+        """Adopt the fence token from a re-issued lease for this same session.
+
+        The control plane may re-offer a session this worker is *already*
+        running (e.g. after the ownership heartbeat is delayed past the lease
+        window during a network wobble).  Every lease grant rotates the fence
+        token, so silently discarding the re-lease would leave this running
+        controller holding a fence the server has already superseded — the very
+        next ``heartbeat`` would then be rejected 412 STALE_FENCE and the bound
+        process killed mid-flight.  Adopting the new fence keeps ownership
+        continuous so the pending heartbeat renews against the current token.
+
+        Returns True when the fence was adopted, False when the session is
+        already terminal / ownership was lost (a re-lease must never resurrect
+        a controller that has stopped or is committing a terminal transition).
+        """
+        incoming = _mapping(lease, "lease")
+        incoming_session = _mapping(incoming.get("session"), "lease.session")
+        incoming_id = _nonblank(
+            _field(incoming_session, "id", "sessionId", "session_id"),
+            "session_id")
+        if incoming_id != self.session_id:
+            raise LeaseProtocolError(
+                "adopt_lease session mismatch: %s != %s" % (
+                    incoming_id, self.session_id))
+        new_fence = _field(incoming_session, "fenceToken", "fence_token")
+        if new_fence is None or str(new_fence).strip() == "":
+            raise LeaseProtocolError("fence_token must not be empty")
+        with self._transition_lock:
+            with self._lock:
+                if (self._terminal_action is not None
+                        or self._ownership_lost
+                        or self._pending_terminal is not None):
+                    return False
+                # Swap the fence only; the deadline is left to the next
+                # successful heartbeat's proof refresh so wall-clock skew can
+                # never extend ownership from an unproven local timestamp.
+                self.fence_token = new_fence
+                self.session["fenceToken"] = new_fence
+                self.lease["session"] = self.session
+                return True
+
     def _terminal(self, action: str, detail: Optional[Mapping[str, Any]], *,
                   retry: bool = False) -> bool:
         if action not in self.TERMINAL_ACTIONS:
@@ -852,8 +894,20 @@ class PersistenceExecutor:
                 if capacity_permit is not None:
                     capacity_permit.release()
                 return False
-            if controller.session_id in self._sessions:
-                self.log.warning("duplicate lease ignored session=%s", controller.session_id)
+            existing = self._sessions.get(controller.session_id)
+            if existing is not None:
+                # A re-lease for a session we already run: adopt the rotated
+                # fence into the live controller instead of discarding it, so
+                # the pending heartbeat renews against the current token rather
+                # than losing ownership to a self-inflicted STALE_FENCE.
+                adopted = existing.controller.adopt_lease(lease)
+                if adopted:
+                    self.log.warning(
+                        "re-lease fence adopted session=%s", controller.session_id)
+                else:
+                    self.log.warning(
+                        "duplicate lease ignored session=%s (controller terminal)",
+                        controller.session_id)
                 if capacity_permit is not None:
                     capacity_permit.release()
                 return False
