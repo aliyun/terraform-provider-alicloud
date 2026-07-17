@@ -221,7 +221,8 @@ def _aone_task_key(project, item_id):
 def _task_envelope(*, item_id, project, task_type, source_type, source_ref,
                    desired_revision, trigger, prompt, recovery_policy="RESUME_ONLY",
                    persona=None, priority=None, comment_cursor=None,
-                   required_capabilities=None, max_retries=None, **payload):
+                   required_capabilities=None, max_retries=None,
+                   source_status=None, **payload):
     """Create the resumable envelope shared by Scan/Persona/Wake/Revisit/Probe."""
     body = {
         "itemId": str(item_id),
@@ -246,6 +247,7 @@ def _task_envelope(*, item_id, project, task_type, source_type, source_ref,
         comment_cursor=comment_cursor,
         required_capabilities=required_capabilities,
         max_retries=max_retries,
+        source_status=source_status,
     )
 
 
@@ -2792,6 +2794,7 @@ class ScanScheduler:
             desired_revision="modified:%s" % modified,
             trigger="SCAN",
             prompt=prompt,
+            source_status=item.get("status") or item.get("statusName"),
             title=title,
             poolKey=pool_key,
             terraform=_is_terraform_ticket(pool_key, title),
@@ -5463,6 +5466,7 @@ class RevisitScheduler(_DailyScheduler):
                 desired_revision="revisit:%s" % datetime.now().date().isoformat(),
                 trigger="REVISIT",
                 prompt=prompt,
+                source_status=it.get("status") or it.get("statusName"),
                 recovery_policy="RESUME_ONLY",
                 title=it.get("title", ""),
                 poolKey=it.get("pool", ""),
@@ -6009,6 +6013,7 @@ class PersonaScheduler:
             desired_revision="comment:%s" % comment_id,
             trigger="PERSONA",
             prompt=prompt,
+            source_status=item.get("status") or item.get("statusName"),
             recovery_policy="RESUME_ONLY",
             persona=internal_role,
             comment_cursor=comment_id,
@@ -7064,6 +7069,7 @@ class JarvisHandler(AsyncChatbotHandler):
             desired_revision=revision,
             trigger="WAKE",
             prompt=prompt,
+            source_status=task.get("sourceStatus"),
             recovery_policy="RESUME_ONLY",
             comment_cursor=cursor,
             priorRuntimeSessionId=task.get("session_id"),
