@@ -5,11 +5,15 @@ Gap：交互 Codex/Claude worker 定向接单（dispatch.pull=false）后会话�
 reaper 收敛为 SHADOW+RESUMABLE / SHADOW+无 current session（CORRUPTED 归档）——交互单被
 hasInteractiveLineage 永久挡在通用 Task 队列外，scan 又被 jarvis-claimed 标签 skip，
 此前无人接手。恢复正门 = spawn headless jarvis（EphemeralJob 只是进程外壳）经 claim.sh
-的 fenced targeted claimTask 接管。本测试锁住：候选枚举（STALE/OFFLINE worker 可见残留
-assignment + 台账生前记忆；纯 scanner shadow 观察不进候选）、get_task_by_aone/timeline
-佐证决策表（含 SHADOW 无 session 可重派）、recovery_policy 三分流（REPLAY_SAFE 重派 /
-RESUME_ONLY·MANUAL 只播报）、JARVIS_RECOVERY_REDISPATCH=0 减档、recovery.json 幂等防抖
-（dedup TTL / MAX_ROUNDS 升级 / 告警按原因只播一次）、pause 复用与 client 缺失自动禁用。
+的 fenced targeted claimTask 接管。本测试锁住：候选枚举双通道并集——快通道
+（STALE/OFFLINE worker 可见残留 assignment + 台账生前记忆）∪ 持久通道（ScanScheduler
+每 tick 落盘的 claimed-snapshot × 控制面任务态，兜「assignment 在首个 tick 前已过期且
+本地无台账」的采样时序洞；无 task 行 = legacy claim 跳过不烧轮次；双通道同单去重；
+纯 scanner shadow 观察不进候选）、get_task_by_aone/timeline 佐证决策表（含 SHADOW 无
+session 可重派）、recovery_policy 三分流（REPLAY_SAFE 重派 / RESUME_ONLY·MANUAL 只播报）、
+JARVIS_RECOVERY_REDISPATCH=0 减档、recovery.json 幂等防抖（dedup TTL / MAX_ROUNDS 升级 /
+告警按原因只播一次；台账只做防抖/轮次记账，不是候选真源）、pause 复用与 client 缺失
+自动禁用，以及 ScanScheduler 的 claimed-snapshot 原子落盘挂点。
 
 Standalone: `python3 bridge/test_recovery_scheduler.py`. 无控制面/网络（fake client/pool）。
 """
@@ -147,6 +151,12 @@ class RecoverySchedulerTest(unittest.TestCase):
     def _ledger_data(self):
         return json.loads(self.ledger.read_text())
 
+    def _write_snapshot(self, items):
+        """预置持久通道输入：ScanScheduler 落盘的 claimed-snapshot（REPO_ROOT 已指向 tmp）。"""
+        path = Path(self.tmp.name) / ".my-day" / "bridge" / "claimed-snapshot.json"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps({"ts": 0, "items": items}))
+
     # -- 候选发现与重派 --------------------------------------------------------
 
     def test_stale_worker_dead_assignment_redispatches_and_records_ledger(self):
@@ -195,6 +205,84 @@ class RecoverySchedulerTest(unittest.TestCase):
         sched._tick()
         self.assertEqual(len(self.pool.submitted), 1)
         self.assertEqual(self.pool.submitted[0]["key"], AONE)
+
+    # -- 持久通道（claimed-snapshot × 控制面态）---------------------------------
+
+    def test_snapshot_recovers_death_completed_before_first_tick(self):
+        """评审点名时序洞：t=10s 交互 worker 认领、t=20s 宕机、t≈320s reaper 收敛并从
+        /workers 摘除 → t=600s 首扫时远端不可见、recovery.json 也从未记过（bridge 刚
+        启动/重启台账丢失/迁机）。持久通道（claimed-snapshot × 控制面态）必须仍能发现
+        并重派，否则死任务被永久搁置。"""
+        self._write_snapshot({AONE: {"project": PROJ, "title": "客户工单标题",
+                                     "pool": "tf_customer"}})
+        client = FakeClient(
+            workers=[],  # 首个 tick：无任何 STALE/OFFLINE 残留可见
+            tasks={AONE: [_task(status="SHADOW")]},
+            timelines={"11": _timeline("RESUMABLE")})
+        self.assertFalse(self.ledger.exists(), "前置：本地台账从未记过该单")
+        self._sched(client)._tick()
+        self.assertEqual(len(self.pool.submitted), 1)
+        sub = self.pool.submitted[0]
+        self.assertEqual(sub["key"], AONE)
+        self.assertTrue(sub["force"])
+        self.assertEqual(sub["project"], PROJ)
+        self.assertEqual(self._ledger_data()["pending"][AONE]["count"], 1)
+        self.assertTrue(any("已重委派 #%s" % AONE in b for b in self.handler.broadcasts))
+
+    def test_snapshot_without_control_plane_task_row_is_skipped(self):
+        """快照有单但控制面无 task 行 = legacy claim（控制面接入前的认领）→ 跳过，
+        归 reconcile.sh stale 管；不烧轮次、不播报。"""
+        self._write_snapshot({AONE: {"project": PROJ, "title": "T",
+                                     "pool": "tf_customer"}})
+        client = FakeClient(workers=[], tasks={})  # by-aone 返回空数组
+        self._sched(client)._tick()
+        self.assertEqual(self.pool.submitted, [])
+        self.assertEqual(self.handler.broadcasts, [])
+        self.assertIn(("by_aone", AONE), client.calls, "快照单必须经控制面佐证")
+        self.assertNotIn(AONE, self._ledger_data()["pending"],
+                         "legacy claim 不得消耗防抖/轮次记账")
+
+    def test_snapshot_candidate_with_healthy_owner_is_untouched(self):
+        """快照单佐证出健康 owner（timeline currentWorker 是 ACTIVE worker）→ 不动：
+        不重派、不烧轮次，且不得抹掉该 owner 的生前记忆（快通道侦测素材）。"""
+        live = "interactive:claude:alive:9"
+        self._write_snapshot({AONE: {"project": PROJ, "title": "T",
+                                     "pool": "tf_customer"}})
+        client = FakeClient(
+            workers=[_worker_entry("ACTIVE", [_assignment()], wkey=live)],
+            tasks={AONE: [_task(status="RUNNING")]},
+            timelines={"11": _timeline("RUNNING",
+                                       current_worker={"workerKey": live})})
+        self._sched(client)._tick()
+        self.assertEqual(self.pool.submitted, [])
+        data = self._ledger_data()
+        self.assertNotIn(AONE, data["pending"])
+        self.assertIn(AONE, data["workers"][live]["assign"],
+                      "健康 owner 的生前记忆不得被快照通道 resolve 抹除")
+
+    def test_dual_channel_same_ticket_corroborates_and_dispatches_once(self):
+        """同一死任务同时出现在快通道（STALE 残留 assignment）与持久通道（快照）→
+        双通道去重：只做一次 by-aone 佐证、只重派一次。"""
+        self._write_snapshot({AONE: {"project": PROJ, "title": "客户工单标题",
+                                     "pool": "tf_customer"}})
+        client = FakeClient(
+            workers=[_worker_entry("STALE", [_assignment()])],
+            tasks={AONE: [_task(status="SHADOW")]},
+            timelines={"11": _timeline("RESUMABLE")})
+        self._sched(client)._tick()
+        self.assertEqual(len(self.pool.submitted), 1)
+        self.assertEqual([c for c in client.calls if c == ("by_aone", AONE)],
+                         [("by_aone", AONE)], "同单不得重复佐证")
+        self.assertEqual(self._ledger_data()["pending"][AONE]["count"], 1)
+
+    def test_snapshot_channel_per_tick_cap(self):
+        """持久通道单 tick 佐证量受 JARVIS_RECOVERY_SNAPSHOT_MAX 上限保护。"""
+        self._write_snapshot({
+            "90001": {"project": PROJ, "title": "A", "pool": "tf_customer"},
+            "90002": {"project": PROJ, "title": "B", "pool": "tf_customer"}})
+        client = FakeClient(workers=[], tasks={})
+        self._sched(client, JARVIS_RECOVERY_SNAPSHOT_MAX="1")._tick()
+        self.assertEqual(len([c for c in client.calls if c[0] == "by_aone"]), 1)
 
     # -- 不重派的路径 ----------------------------------------------------------
 
@@ -479,6 +567,52 @@ class RecoverySchedulerTest(unittest.TestCase):
         d = self.handler.dispatched[0]
         self.assertIn(AONE, d["prompt"])
         self.assertIn("claim.sh claim %s %s" % (AONE, PROJ), d["prompt"])
+
+
+class ClaimedSnapshotHookTest(unittest.TestCase):
+    """ScanScheduler 挂点：每个 scan tick 把 jarvis-claimed 子集原子落盘为
+    claimed-snapshot（RecoveryScheduler 持久通道的数据源）。"""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self._orig_root = bot.REPO_ROOT
+        bot.REPO_ROOT = Path(self.tmp.name)
+
+    def tearDown(self):
+        bot.REPO_ROOT = self._orig_root
+        self.tmp.cleanup()
+
+    def test_scan_tick_persists_claimed_snapshot_atomically(self):
+        sched = bot.ScanScheduler(handler=None, pool=FakePool())
+        items = [
+            {"id": AONE, "title": "客户工单标题", "pool": "tf_customer",
+             "pool_project": PROJ, "tag": ["jarvis-claimed"], "status": "处理中",
+             "modified": "2026-07-16 10:00"},
+            {"id": "77001", "title": "逗号串标签", "pool": "iac_srv",
+             "pool_project": "888", "tag": "foo, jarvis-claimed", "status": "处理中",
+             "modified": "2026-07-16 10:01"},
+            {"id": "77002", "title": "无 jarvis 标签", "pool": "iac_srv",
+             "pool_project": "888", "tag": None, "status": "处理中",
+             "modified": "2026-07-16 10:02"},
+        ]
+        with mock.patch.object(sched, "_scan", return_value=items):
+            # 冷启动 tick：只建基线不派发，但快照必须照写（纯感知动作）。
+            sched._tick()
+        snap_path = Path(self.tmp.name) / ".my-day" / "bridge" / "claimed-snapshot.json"
+        data = json.loads(snap_path.read_text())
+        self.assertIn("ts", data)
+        self.assertEqual(set(data["items"]), {AONE, "77001"},
+                         "只收 jarvis-claimed 子集（list 与逗号串标签形态都认）")
+        self.assertEqual(data["items"][AONE],
+                         {"project": PROJ, "title": "客户工单标题",
+                          "pool": "tf_customer"})
+        self.assertFalse((snap_path.parent / (snap_path.name + ".tmp")).exists(),
+                         "tmp+os.replace 原子写不得残留 .tmp")
+        # 第二个 tick 全量覆盖：标签摘除的单从快照消失。
+        with mock.patch.object(sched, "_scan", return_value=[items[0]]):
+            sched._tick()
+        data = json.loads(snap_path.read_text())
+        self.assertEqual(set(data["items"]), {AONE})
 
 
 if __name__ == "__main__":

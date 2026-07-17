@@ -2549,10 +2549,13 @@ class InteractiveWorkerTest(unittest.TestCase):
         self._store().save(state)
         return state
 
-    def _operation_key(self, kind, material):
+    def _operation_key(self, kind, material, session_id="session-1", fence=9):
         import hashlib
-        return "%s:task-1:4:%s" % (
-            kind, hashlib.sha256(material.encode("utf-8")).hexdigest()[:12])
+        attempt = hashlib.sha256(
+            ("%s:%s" % (session_id, fence)).encode("utf-8")).hexdigest()[:12]
+        return "%s:task-1:4:%s:%s" % (
+            kind, attempt,
+            hashlib.sha256(material.encode("utf-8")).hexdigest()[:12])
 
     def test_operation_begin_proceeds_and_keeps_heartbeat_untouched(self):
         self._seed_with_current()
@@ -2770,6 +2773,130 @@ class InteractiveWorkerTest(unittest.TestCase):
         pending = self._store().load()["pendingOperation"]
         self.assertEqual(pending["operationKey"], key)
         self.assertEqual(pending["status"], "RETRY_WAIT")
+
+    def test_release_receipt_is_isolated_per_lease_attempt(self):
+        # 同 generation、不同 Session/fence 的两轮 claim→release：第二轮绝不能
+        # 命中第一轮的 ACKED 回执而跳过标签写（否则任务同代复活后 Aone 卡在
+        # jarvis-claimed，控制面却已 SUSPENDED）。
+        fake = FakeClient()
+        key_by_op = {}
+        acked_keys = set()
+
+        def begin_operation(request, request_id=None):
+            fake.calls.append(
+                ("begin_operation", (request,), {"request_id": request_id}))
+            key = request["operationKey"]
+            if key in acked_keys:
+                op_id = next(op for op, k in key_by_op.items() if k == key)
+                return {"proceed": False,
+                        "operation": {"id": op_id, "status": "ACKED"}}
+            op_id = "op-%d" % (len(key_by_op) + 1)
+            key_by_op[op_id] = key
+            return {"proceed": True,
+                    "operation": {"id": op_id, "status": "SENDING"}}
+
+        def ack_operation(request, request_id=None):
+            fake.calls.append(
+                ("ack_operation", (request,), {"request_id": request_id}))
+            acked_keys.add(key_by_op[str(request["operationId"])])
+            return {"ok": True}
+
+        fake.begin_operation = begin_operation
+        fake.ack_operation = ack_operation
+
+        # attempt A：release-tag 写成功并 ACK。
+        self._seed_with_current()
+        with mock.patch.object(worker, "_client", return_value=fake):
+            first = worker.operation_begin(
+                "84386065", "release-tag", "idle", replay_safe=True)
+            self.assertTrue(first["proceed"])
+            worker.acknowledge_claim(
+                "84386065", "aone:2100304:84386065:tag:jarvis-idle")
+
+        # 任务同代复活：attempt B = 新 Session/fence，同 task/generation 再 release。
+        state = self._store().load()
+        state["current"] = {
+            "aoneId": "84386065", "projectId": "2100304", "taskId": "task-1",
+            "sessionId": "session-2", "fenceToken": 20, "generation": 4,
+            "cycle": 2, "runtimeSessionId": "interactive:cycle:2",
+            "leaseSeconds": 120, "heartbeatEnabled": True,
+        }
+        self._store().save(state)
+        with mock.patch.object(worker, "_client", return_value=fake):
+            second = worker.operation_begin(
+                "84386065", "release-tag", "idle", replay_safe=True)
+        # attempt 分量隔离：第二轮拿到 proceed=True 真执行标签写。
+        self.assertTrue(second["proceed"])
+        keys = [c[1][0]["operationKey"] for c in fake.calls
+                if c[0] == "begin_operation"]
+        self.assertEqual(len(keys), 2)
+        self.assertNotEqual(keys[0], keys[1])
+        self.assertEqual(keys[0], self._operation_key(
+            "release-tag", "idle", session_id="session-1", fence=9))
+        self.assertEqual(keys[1], self._operation_key(
+            "release-tag", "idle", session_id="session-2", fence=20))
+
+    def test_restart_orphans_midtask_receipt_and_new_claim_gets_fresh_key(self):
+        # UNKNOWN 的 mid-task 回执 + 进程重启（replacement 路径）：回执坐标转入
+        # orphanOperations、pendingClaim 不继承其 operationKey；服务端收敛后新
+        # prepare_claim 用全新 aone-claim key 成功接单，而不是复用 mid-task key
+        # 被服务端按「operationKey reused with a different request」拒绝。
+        state = self._seed_with_current()
+        midtask_key = self._operation_key("comment", "digest-abc")
+        state["pendingOperation"] = {
+            "operationId": "op-mid", "operationKey": midtask_key,
+            "aoneId": "84386065", "kind": "comment",
+            "proceed": False, "status": "UNKNOWN",
+        }
+        self._store().save(state)
+        fake = FakeClient()
+        event = {
+            "hook_event_name": "SessionStart",
+            "session_id": "native-thread-1",
+            "cwd": self.temp.name,
+            "source": "resume",
+        }
+        with mock.patch.object(worker, "_client", return_value=fake), \
+                mock.patch.object(worker, "_find_host_pid",
+                                  return_value=(os.getpid(), True)), \
+                mock.patch.object(worker, "_default_boot_id",
+                                  return_value="new-boot"), \
+                mock.patch.object(worker, "_ensure_daemon"), \
+                contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(worker.hook("codex", event), 0)
+
+        recovered = self._store().load()
+        self.assertIsNone(recovered["pendingOperation"])
+        orphan = recovered["orphanOperations"][-1]
+        self.assertEqual(orphan["operationId"], "op-mid")
+        self.assertEqual(orphan["operationKey"], midtask_key)
+        self.assertEqual(orphan["kind"], "comment")
+        self.assertEqual(orphan["aoneId"], "84386065")
+        self.assertEqual(orphan["status"], "UNKNOWN")
+        pending_claim = recovered["pendingClaim"]
+        self.assertEqual(pending_claim["phase"], "READY_TO_RECOVER")
+        self.assertNotIn("operationKey", pending_claim)
+        self.assertNotIn("receiptUnknown", pending_claim)
+
+        # 服务端 op-mid 已被外部 reconcile 收敛为 ACKED（本地无需感知）；新 claim
+        # 的 begin 携全新 key，服务端按新操作受理。
+        fake.begin_results = [{
+            "proceed": True,
+            "operation": {"id": "op-claim-new", "status": "SENDING"},
+        }]
+        with mock.patch.object(worker, "_client", return_value=fake):
+            claimed = worker.prepare_claim("84386065", "2100304")
+        self.assertTrue(claimed["accepted"])
+        self.assertTrue(claimed["proceed"])
+        begin_body = [c for c in fake.calls
+                      if c[0] == "begin_operation"][-1][1][0]
+        self.assertEqual(begin_body["operationType"], "AONE_CLAIM")
+        self.assertTrue(begin_body["operationKey"].startswith("aone-claim:"))
+        self.assertNotEqual(begin_body["operationKey"], midtask_key)
+        # orphan 记录跨 claim 存续，留给生产态 Reconciler/人工按 operationId 收敛。
+        self.assertEqual(
+            self._store().load()["orphanOperations"][-1]["operationId"],
+            "op-mid")
 
     # --- PreToolUse recovery whitelist for frozen external-write receipts ---
 

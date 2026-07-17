@@ -105,11 +105,24 @@ SHADOW+RESUMABLE (resume context available) or SHADOW without a current
 Session (CORRUPTED archive), or RECOVERY_REQUIRED when a required Operation
 receipt is unreconciled.
 
-The bridge `RecoveryScheduler` watches `/workers` for STALE/OFFLINE Workers —
-remembering each live Worker's assignments in `.my-day/bridge/recovery.json`,
-because an expired lease immediately drops the assignment from the response —
-and corroborates every candidate through `tasks/by-aone` plus the Task
-timeline.  Recovery then goes through the front door: it spawns a headless
+The bridge `RecoveryScheduler` enumerates candidates from two channels.  The
+fast channel watches `/workers` for STALE/OFFLINE Workers, remembering each
+live Worker's assignments in `.my-day/bridge/recovery.json` because an expired
+lease immediately drops the assignment from the response.  Sampling alone can
+still miss a death entirely: when claim, crash, reaper convergence, and the
+`/workers` drop all happen before the scheduler's first tick — right after a
+bridge restart, after a lost ledger, or on a fresh machine — neither source
+has ever seen the assignment, and the Task would be parked forever.  The
+persistent channel closes that hole: `ScanScheduler` atomically persists the
+Aone `jarvis-claimed` inventory to `.my-day/bridge/claimed-snapshot.json` on
+every scan tick, and the scheduler cross-checks each snapshot entry against
+the control plane (a snapshot entry without a Task row is a legacy claim and
+is left to `reconcile.sh stale`; per-tick corroboration is capped by
+`JARVIS_RECOVERY_SNAPSHOT_MAX`).  The local ledger is therefore only a
+fast-channel accelerator plus debounce/round bookkeeping — never the source
+of candidate truth.  Candidates from both channels are deduplicated and
+corroborated through `tasks/by-aone` plus the Task timeline.  Recovery then
+goes through the front door: it spawns a headless
 jarvis as an EphemeralJob (only the process shell, no recovery promise of its
 own) whose `claim.sh claim` performs the fenced targeted `claimTask`.  Under
 `REPLAY_SAFE` the control plane archives the dead Session and issues a new

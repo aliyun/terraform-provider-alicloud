@@ -36,6 +36,7 @@ if [ "$1 $2 $3 ${4:-}" = "project workitem comment create" ]; then
   exit 0
 fi
 if [ "$1 $2 $3 ${4:-}" = "project workitem comment list" ]; then
+  [ "${A1_LIST_RC:-0}" = "0" ] || exit "$A1_LIST_RC"
   cat "${A1_COMMENTS_FILE:-/dev/null}" 2>/dev/null || echo '[]'
   exit 0
 fi
@@ -110,7 +111,7 @@ reset_case() {
   unset IW_CURRENT_RC IW_ACK_RC IW_ABORT_RC IW_RECONCILE_RC
   unset IW_BEGIN_RC_COMMENT IW_BEGIN_JSON_COMMENT IW_BEGIN_JSON_COMMENT_2
   unset IW_BEGIN_RC_STATUS IW_BEGIN_JSON_STATUS
-  unset A1_COMMENT_RC A1_COMMENT_NO_ID A1_STATUS_RC
+  unset A1_COMMENT_RC A1_COMMENT_NO_ID A1_STATUS_RC A1_LIST_RC
 }
 line_of() { grep -n "$1" "$TEST_LOG" | head -1 | cut -d: -f1; }
 
@@ -278,6 +279,38 @@ if bash "$WRAP" sync WI-12 "other ticket backfill" >/dev/null 2>&1 \
   ok "non-current ticket keeps the bare write path"
 else
   bad "non-current ticket bare path"
+fi
+
+# --- 12. readback 不可用（a1 list 非零退出）：不 not-found、不重发、冻结 UNKNOWN ---
+reset_case
+export IW_BEGIN_JSON_COMMENT='{"accepted":true,"proceed":false,"needsReadback":true,"operationStatus":"SENDING","operationId":"op-1"}'
+export A1_LIST_RC=7
+if bash "$WRAP" sync WI-13 "readback outage note" >/dev/null 2>&1; then
+  bad "readback outage returns nonzero"
+elif grep -q 'worker:cli operation-reconcile' "$TEST_LOG"; then
+  bad "readback outage never reconciles not-found"
+elif grep -q 'a1:project workitem comment create' "$TEST_LOG"; then
+  bad "readback outage never re-sends the comment"
+elif grep -q 'worker:cli operation-abort WI-13 .* --unknown' "$TEST_LOG"; then
+  ok "readback outage freezes receipt UNKNOWN without duplicate comment"
+else
+  bad "readback outage freezes receipt UNKNOWN"
+fi
+
+# --- 13. readback 坏 JSON + 槽已 UNKNOWN：不 not-found、不重发、不重复 abort ---
+reset_case
+export IW_BEGIN_JSON_COMMENT='{"accepted":true,"proceed":false,"needsReadback":true,"operationStatus":"UNKNOWN","operationId":"op-1"}'
+printf '<html>502 Bad Gateway</html>' > "$A1_COMMENTS_FILE"
+if bash "$WRAP" sync WI-14 "readback bad json note" >/dev/null 2>&1; then
+  bad "bad-JSON readback returns nonzero"
+elif grep -q 'worker:cli operation-reconcile' "$TEST_LOG"; then
+  bad "bad-JSON readback never reconciles not-found"
+elif grep -q 'a1:project workitem comment create' "$TEST_LOG"; then
+  bad "bad-JSON readback never re-sends the comment"
+elif grep -q 'worker:cli operation-abort' "$TEST_LOG"; then
+  bad "already-UNKNOWN slot is not re-aborted"
+else
+  ok "bad-JSON readback keeps UNKNOWN without reconcile, resend or re-abort"
 fi
 
 echo "$pass passed, $fail failed"

@@ -1907,7 +1907,16 @@ def _recovery_pending_claim(old_state: Mapping[str, Any]) -> Optional[Dict[str, 
             if candidate.get("receiptUnknown"):
                 recovered["receiptUnknown"] = True
             pending_operation = old_state.get("pendingOperation")
+            # Only an AONE_CLAIM receipt slot (no ``kind``) may fold its
+            # operationKey/uncertainty into the recovery claim.  A mid-task
+            # external-write slot (comment/status/release-tag/finish-tag)
+            # belongs to a different operation type+payload: reusing its key
+            # for the next AONE_CLAIM begin would be rejected server-side as
+            # an operationKey reuse and trap the task in a recovery loop.
+            # Those slots become durable orphan records instead (see
+            # _orphaned_operation in _build_incarnation_state).
             if (isinstance(pending_operation, Mapping)
+                    and not pending_operation.get("kind")
                     and str(pending_operation.get("aoneId") or "") ==
                     recovered["aoneId"]):
                 if pending_operation.get("operationKey"):
@@ -1920,6 +1929,31 @@ def _recovery_pending_claim(old_state: Mapping[str, Any]) -> Optional[Dict[str, 
                 recovered["receiptUnknown"] = True
             return recovered
     return None
+
+
+def _orphaned_operation(old_state: Mapping[str, Any],
+                        timestamp: int) -> Optional[Dict[str, Any]]:
+    """Freeze a dead incarnation's mid-task receipt as an orphan record.
+
+    A replacement process has no session context left to reconcile the
+    operation with, and the slot's operationKey must never leak into the
+    next AONE_CLAIM (different type+payload → server rejects the key
+    reuse).  Persist the coordinates for the production reconciler /
+    manual convergence instead; records are carried across every later
+    incarnation and never participate in the PreToolUse guard (the
+    pendingOperation slot itself is cleared).
+    """
+    pending = old_state.get("pendingOperation")
+    if not isinstance(pending, Mapping) or not pending.get("kind"):
+        return None
+    return {
+        "operationId": pending.get("operationId"),
+        "operationKey": pending.get("operationKey"),
+        "kind": pending.get("kind"),
+        "aoneId": pending.get("aoneId"),
+        "status": pending.get("status"),
+        "orphanedAt": timestamp,
+    }
 
 
 def _build_incarnation_state(
@@ -1950,6 +1984,16 @@ def _build_incarnation_state(
         _recovery_pending_claim(old_state)
         if old_state and not same_incarnation else None)
     timestamp = int(time.time()) if now is None else int(now)
+    orphan_operations = [
+        dict(record)
+        for record in (old_state.get("orphanOperations") or [])
+        if isinstance(record, Mapping)] if old_state else []
+    # Only a reconstructable recovery claim orphans the mid-task slot: with
+    # no claim lineage the slot stays put as the fail-closed tombstone below.
+    orphaned = (_orphaned_operation(old_state, timestamp)
+                if recovery_claim is not None else None)
+    if orphaned is not None:
+        orphan_operations.append(orphaned)
     is_compact = bool(
         client_name == "codex"
         and str(source or "") == "compact"
@@ -1977,8 +2021,9 @@ def _build_incarnation_state(
             old_state.get("sessionPermit") if same_incarnation else None),
         "pendingClaim": (old_state.get("pendingClaim")
                          if same_incarnation else recovery_claim),
-        # A complete recovery claim absorbs an uncertain operation into
-        # receiptUnknown/operationKey.  If lineage is too partial to construct
+        # A complete recovery claim absorbs an uncertain AONE_CLAIM slot into
+        # receiptUnknown/operationKey and detaches a mid-task slot into an
+        # orphanOperations record.  If lineage is too partial to construct
         # that claim, retain the operation as an explicit fail-closed tombstone
         # instead of silently turning the replacement into an idle worker.
         "pendingOperation": (
@@ -2022,6 +2067,11 @@ def _build_incarnation_state(
     # every replacement incarnation until an exact standard claim reconciles it.
     if old_state.get("lostOwnership"):
         state["lostOwnership"] = old_state.get("lostOwnership")
+    # Orphaned mid-task receipts are durable convergence pointers (reconcile
+    # by operationId out of band); they survive every incarnation but never
+    # gate tools — the pendingOperation slot they came from is cleared.
+    if orphan_operations:
+        state["orphanOperations"] = orphan_operations
     if same_incarnation and old_state.get("recoveryPending"):
         state["recoveryPending"] = old_state.get("recoveryPending")
     elif recovery_claim:
@@ -2842,6 +2892,12 @@ def prepare_claim(aone_id: str, project_id: str) -> Dict[str, Any]:
         if isinstance(retry_claim, Mapping) and retry_claim.get("operationKey")
         else ""
     )
+    if saved_operation_key and not saved_operation_key.startswith("aone-claim:"):
+        # Belt-and-suspenders against pre-fix lineage: a mid-task receipt key
+        # (comment/status/release-tag/finish-tag) must never be replayed as an
+        # AONE_CLAIM key — the server rejects an operationKey reused with a
+        # different request; derive a fresh claim key instead.
+        saved_operation_key = ""
     operation_key = (saved_operation_key or
                      "aone-claim:%s:%s:%s" % (task_id, generation, cycle))
     operation_request = {
@@ -3129,8 +3185,18 @@ def operation_begin(aone_id: str, kind: str, material: str, *,
     current = _matching_current(state, aone_id)
     task_id = current["taskId"]
     generation = current["generation"]
-    operation_key = "%s:%s:%s:%s" % (
-        kind, task_id, generation,
+    # Lease-attempt component: the same task generation can be revived and
+    # re-claimed by a new Session/fence after e.g. an ACKED release, and the
+    # new attempt's identical write (release-tag idle …) must NOT dedup
+    # against the previous attempt's ACKED receipt — that would skip the tag
+    # write and strand Aone in the old state.  Same attempt (fence unchanged)
+    # retries still reuse the same key; a new Session/fence derives a new one
+    # (cf. bridge _PostPrTaskBookend claimAttemptId).
+    attempt12 = hashlib.sha256(
+        ("%s:%s" % (current["sessionId"], current["fenceToken"]))
+        .encode("utf-8")).hexdigest()[:12]
+    operation_key = "%s:%s:%s:%s:%s" % (
+        kind, task_id, generation, attempt12,
         hashlib.sha256(material.encode("utf-8")).hexdigest()[:12])
     operation_request = {
         "taskId": task_id,

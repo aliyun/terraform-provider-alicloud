@@ -137,19 +137,31 @@ _normalized_digest() {
 print(norm_digest(sys.stdin.read()))"
 }
 
-# 在评论流里按规范化 digest 找我们那条评论；命中输出 comment id，未命中输出空。
+# 在评论流里按规范化 digest 找我们那条评论。readback 三态：
+#   rc=0 且 stdout 非空 → found（输出 comment id）
+#   rc=0 且 stdout 为空 → definitely-not-found（评论流完整拉取且解析成功，确认无匹配）
+#   rc≠0               → unavailable（a1 非零退出 / 非法 JSON / 命中但无 id）
+# 只有 definitely-not-found 才允许 reconcile --not-found；unavailable ≠ 副作用不存在。
 _find_comment_by_digest() {
-    local tid="$1" digest="$2"
-    $A1 project workitem comment list "$tid" -f json 2>/dev/null | python3 -c "${_norm_digest_py}
+    local tid="$1" digest="$2" out
+    if ! out="$($A1 project workitem comment list "$tid" -f json 2>/dev/null)"; then
+        return 2
+    fi
+    printf '%s' "$out" | python3 -c "${_norm_digest_py}
 import json
 want = sys.argv[1]
 try:
     comments = json.loads(sys.stdin.read())
 except Exception:
-    comments = []
-for c in comments if isinstance(comments, list) else []:
+    sys.exit(3)   # 解析失败 ≠ 合法空列表：readback 不可用
+if not isinstance(comments, list):
+    sys.exit(3)
+for c in comments:
     if isinstance(c, dict) and norm_digest(str(c.get(\"content\") or \"\")) == want:
-        print(c.get(\"id\") or \"\")
+        cid = c.get(\"id\")
+        if not cid:
+            sys.exit(3)   # 命中却无 id：无法构造 externalRef，不可当 not-found
+        print(cid)
         break
 " "$digest" 2>/dev/null
 }
@@ -160,6 +172,7 @@ for c in comments if isinstance(comments, list) else []:
 _receipted_comment() {
     local tid="$1" text="$2"
     local digest payload begin_json needs_readback proceed cid out rc
+    local readback_rc op_status
     digest="$(_normalized_digest "$text")"
     payload="$(printf '%s' "$text" | python3 -c "
 import json, sys
@@ -174,6 +187,17 @@ print(json.dumps({\"digest\": sys.argv[1], \"preview\": sys.stdin.read()[:120]},
     if [ "$needs_readback" = "true" ]; then
         # SENDING/UNKNOWN 存量回执：comment 不幂等，先 readback 再 reconcile 收敛。
         cid="$(_find_comment_by_digest "$tid" "$digest")"
+        readback_rc=$?
+        if [ "$readback_rc" -ne 0 ]; then
+            # readback 不可用（a1 失败/坏 JSON）≠ 副作用不存在：绝不 --not-found 重发。
+            # 槽仍是 SENDING 时冻结为 UNKNOWN；槽已是 UNKNOWN 则保持原状不再 abort。
+            op_status="$(printf '%s' "$begin_json" | jq -r '.operationStatus // ""' 2>/dev/null)"
+            if [ "$op_status" != "UNKNOWN" ]; then
+                jarvis_interactive_worker_cli operation-abort "$tid" "comment readback unavailable" --unknown >/dev/null 2>&1 || true
+            fi
+            echo "wrap.sh: 评论 readback 不可用（id=$tid），无法判定副作用是否存在；保持 UNKNOWN，稍后重跑 wrap 收敛" >&2
+            return 1
+        fi
         if [ -n "$cid" ]; then
             jarvis_interactive_worker_cli operation-reconcile "$tid" --found "aone:$tid:comment:$cid" >/dev/null || return 2
             return 0

@@ -33,9 +33,13 @@ claim 专用循环之外泛化出一组"当前 assignment 上的外部写回执"
     `AONE_COMMENT / AONE_STATUS / AONE_RELEASE / AONE_RELEASE`；
   - 要求 `current` assignment 匹配 aone_id；不创建/恢复 session（区别于
     prepare-claim）；已有**不同 key** 的 pendingOperation → conflict 退出；
-  - `operationKey = "<kind>:%s:%s:%s" % (task_id, generation, digest12)`，
-    digest12 = sha256(material) 前 12 位。comment 的 material=最终正文 sha256，
-    status 的 material=目标状态值，tag 的 material=目标标签集；
+  - `operationKey = "<kind>:%s:%s:%s:%s" % (task_id, generation, attempt12,
+    digest12)`，attempt12 = sha256("<sessionId>:<fenceToken>") 前 12 位（取自
+    current assignment），digest12 = sha256(material) 前 12 位。comment 的
+    material=最终正文 sha256，status 的 material=目标状态值，tag 的 material=
+    目标标签集。attempt 分量把回执按 lease attempt 隔离：同 generation 任务复活
+    后的新 Session/fence 派生新 key，不会命中上一 attempt 的 ACKED 回执而跳过
+    本轮该写的标签/状态；同 attempt 内重试（fence 不变）仍复用同 key 去重；
   - 决策输出 JSON `{accepted, proceed, needsReadback, operationId,
     operationStatus}`：
     - 服务端 ACKED → `proceed=false`（恰好一次：跳过 Aone 写）；
@@ -71,10 +75,17 @@ claim 期间"ACK 前不许续租"的既有语义不同且刻意为之。
    begin 调用失败（控制面不可用/conflict）→ **fail-closed 不写 Aone**，退出非
    零（sync 同样阻断——fenced 会话的写必须有回执）。
 3. `proceed=false` 且 ACKED → 跳过发送（上轮已恰好一次落地），继续后续步骤。
-4. `needsReadback` → `a1 comment list -f json` 取评论流，按规范化 sha256 匹配：
-   - 命中 → `operation-reconcile --found aone:<id>:comment:<cid>` → 跳过发送；
-   - 未命中 → `operation-reconcile --not-found` → 重新 `operation-begin` →
-     `proceed=true` 进 5。
+4. `needsReadback` → `a1 comment list -f json` 取评论流，按规范化 sha256 匹配。
+   readback 三态：
+   - **found**（拉取+解析成功且命中）→ `operation-reconcile --found
+     aone:<id>:comment:<cid>` → 跳过发送；
+   - **definitely-not-found**（拉取成功、JSON 完整解析为列表、确认无匹配）→
+     `operation-reconcile --not-found` → 重新 `operation-begin` →
+     `proceed=true` 进 5；
+   - **unavailable**（a1 非零退出 / JSON 解析失败 / 命中但无 comment id）→
+     **不得**当 not-found：槽仍是 SENDING 则 `operation-abort --unknown` 冻结，
+     已是 UNKNOWN 则保持原状不再 abort；输出提示、非零退出等重试。首发成功仅
+     ACK 丢失时，一次 503/超时/坏 JSON 不会被错判成「副作用不存在」而重复评论。
 5. `proceed=true` → `a1 comment create -f json`（或解析 `ID:` 行）拿 comment
    id：
    - 成功 → `operation-ack <id> aone:<id>:comment:<cid>`；ack 失败（CLI 内部已
@@ -139,12 +150,34 @@ wrap.sh / claim.sh 的 Bash 调用——不开白名单会把会话锁死。故 
 一律维持阻断。放行只解锁「能重跑收敛命令」；实际收敛仍由 worker CLI 的
 begin/readback/reconcile fail-closed 把关。
 
+## 重启恢复：mid-task 回执孤儿化（orphanOperations）
+
+replacement incarnation（进程重启/换代）构造 recovery pendingClaim 时，只有
+**无 kind 的 AONE_CLAIM 槽**才把 operationKey/receiptUnknown 继承进
+pendingClaim（下次 prepare-claim 复用同 key 幂等收敛）。mid-task 回执槽
+（kind ∈ comment/status/release-tag/finish-tag）**绝不**继承：其 operationKey
+属于不同 operationType/payload，复用为 AONE_CLAIM key 会被服务端按
+「operationKey was reused with a different request」拒绝，任务陷入恢复循环。
+
+这类槽改写入 `state["orphanOperations"]`（`{operationId, operationKey, kind,
+aoneId, status, orphanedAt}` 记录列表），跨 incarnation 持久保留、重启不丢，
+交生产态 Reconciler / 人工按 operationId 收敛；pendingClaim 不带 key →
+prepare-claim 派生全新 aone-claim key。orphan 记录不参与 PreToolUse guard
+放行判定（pendingOperation 槽已清）。prepare-claim 侧另有兜底：saved
+operationKey 非 `aone-claim:` 前缀一律弃用改派新 key（防 pre-fix 存量 state）。
+
 ## 已知边界
 
-- **会话重启清本地槽 vs 服务端 UNKNOWN**：SessionStart resume 会清
-  pendingOperation（既有行为）。此后本地已无 operationId，`operation-reconcile`
-  无从下手，而服务端 UNKNOWN 会让同 key 的 begin 持续 409——需要数据面补
-  「按 operationKey 查询 / reconcile」能力才能闭环；当前只能人工经控制面处置。
+- **重启后的服务端 UNKNOWN 槽只剩带外收敛**：replacement 把 mid-task 槽转入
+  orphanOperations（operationId/kind 不再丢，见上节），但本地 CLI 的 reconcile
+  只作用于当前 pendingOperation——orphan 记录的收敛仍需生产态 Reconciler /
+  人工经控制面按 operationId 处置；服务端 UNKNOWN 期间同 key 的 begin 会持续
+  409（新 incarnation 的 claim 用的是全新 key，不受影响）。
+- **comment 跨 attempt 相同正文会各发一次**：operationKey 含 attempt 分量后，
+  exactly-once 的粒度是「每个 lease attempt」——同 generation 复活的新
+  Session/fence 若生成字节级相同的评论正文，会再发一条。这是有意语义
+  （per-attempt exactly-once），换取 release/finish/status 不被旧 attempt 的
+  ACKED 回执错误去重。
 - **comment 正文可重放性依赖 code_footer 稳定**：wrap.sh 的 claim prefix 已改
   为回执收敛成功后才消费（peek/clear），但页脚含 commit sha + dirty 位——失败
   重跑之间开发库若有新提交，digest/operationKey 漂移 → 与遗留 UNKNOWN 槽
