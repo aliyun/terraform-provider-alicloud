@@ -29,7 +29,7 @@ load_env_defaults() {
 
 load_env_defaults
 
-DEFAULT_BASE_URL="${JARVIS_HTML_REPORT_BASE_URL:-https://pre-agent.aliyun-inc.com}"
+DEFAULT_BASE_URL="${JARVIS_HTML_REPORT_BASE_URL:-https://agent.aliyun-inc.com}"
 CURL_BIN="${JARVIS_CURL_BIN:-curl}"
 A1_BIN="${JARVIS_A1_BIN:-$jarvis_root/bin/a1id}"
 
@@ -40,7 +40,7 @@ Usage:
   bootstrap/html-report-preview.sh from-aone <aone-id> [--attachment-id ID|--all] [--base-url URL] [--comment] [--format markdown|jsonl]
 
 Defaults:
-  --base-url defaults to $JARVIS_HTML_REPORT_BASE_URL or https://pre-agent.aliyun-inc.com
+  --base-url defaults to $JARVIS_HTML_REPORT_BASE_URL or https://agent.aliyun-inc.com
   Set $JARVIS_HTML_REPORT_TOKEN to send Authorization: Bearer <token>.
   from-aone uploads the newest .html/.htm/.zip attachment unless --attachment-id or --all is set.
 EOF
