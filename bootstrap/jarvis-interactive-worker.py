@@ -35,8 +35,10 @@ from typing import Any, Callable, Dict, Iterator, Mapping, Optional, Tuple, Type
 HERE = Path(__file__).resolve().parent
 REPO_ROOT = HERE.parent
 BRIDGE_DIR = REPO_ROOT / "bridge"
+sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(BRIDGE_DIR))
 
+from a1_command_guard import pretool_a1_block_reason  # noqa: E402
 from jarvis_persistence_executor import _default_boot_id, make_worker_key  # noqa: E402
 from jarvis_task_client import (  # noqa: E402
     ControlPlaneClient,
@@ -1146,6 +1148,11 @@ def _authority_context(store: StateStore, client_name: str,
 def _guard_pre_tool_use(store: StateStore, client_name: str,
                         event: Mapping[str, Any]) -> Optional[str]:
     """Fence every tool call while an interactive task is locally attached."""
+    # Direct a1 bypasses bin/a1id's CR-exit deny. Reject it before any ordinary
+    # Worker permit path can authorize the Bash tool call.
+    a1_reason = pretool_a1_block_reason(event)
+    if a1_reason:
+        return a1_reason
     authority_store, state, binding, context_error = _authority_context(
         store, client_name, event)
     if context_error:
