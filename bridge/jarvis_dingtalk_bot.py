@@ -85,6 +85,17 @@ Env:
   JARVIS_TASK_GUARD_GRACE_SEC              guardian grace before orphan/background groups are
                                            SIGKILLed (default 2).
 
+  --- 死任务重委派 RecoveryScheduler (方案 A′, 需控制面 client) ---
+  JARVIS_RECOVERY_SCHED                    1=enable (default; 无 JARVIS_CONTROL_PLANE_BASE_URL
+                                           时自动禁用); 0=off.
+  JARVIS_RECOVERY_REDISPATCH               1=发现死任务后 spawn headless jarvis 走 fenced
+                                           targeted claim 接管 (default); 0=减档 alert-only
+                                           (探测/佐证/播报/台账照常, 不 spawn).
+  JARVIS_RECOVERY_INTERVAL                 tick 间隔秒 (default 600).
+  JARVIS_RECOVERY_MAX_PER_TICK             每 tick 重派上限 (default 2).
+  JARVIS_RECOVERY_DEDUP_TTL                同单重派冷却秒 (default 21600 = 6h).
+  JARVIS_RECOVERY_MAX_ROUNDS               单工单自动重派上限, 超限播报升级 (default 3).
+
   --- Terraform 旧接力入站迁移 PersonaScheduler (loops/persona-collab.md) ---
   JARVIS_PERSONA_WATCH                     **默认 0**(灰度期关闭); =1 显式启用 PersonaScheduler
                                            跨会话补位轮询。只扫带 jarvis-idle 标签的池内工单
@@ -2732,6 +2743,59 @@ class TataPool:
         self._warm = []
 
 
+# ── claimed-snapshot（死任务恢复的持久候选源）───────────────────────────────
+# ScanScheduler 每个 tick 把本轮扫描里带 jarvis-claimed 标签的工单（id → project/title/
+# pool）原子落盘。RecoveryScheduler 以它为持久候选通道——/workers 采样与 recovery.json
+# 生前记忆都有时序洞（bridge 首个 tick 前 lease 已过期、重启台账丢失、迁机），而
+# jarvis-claimed 标签跨进程存活于 Aone，控制面 task 行再提供状态佐证。路径经 REPO_ROOT
+# 调用时现算（never captured at def time），便于测试 monkeypatch ``bot.REPO_ROOT``。
+CLAIMED_SNAPSHOT_REL = ".my-day/bridge/claimed-snapshot.json"
+
+
+def _claimed_snapshot_path():
+    return Path(REPO_ROOT) / CLAIMED_SNAPSHOT_REL
+
+
+def _claimed_snapshot_write(items):
+    """scan 全量 items → jarvis-claimed 子集持久化（tmp+os.replace 原子写，best-effort
+    绝不拖垮 scan tick）。每轮全量覆盖：标签摘除的单自然从快照消失，无需 TTL 修剪。"""
+    claimed = {}
+    for it in items:
+        if not isinstance(it, dict):
+            continue
+        iid = str(it.get("id") or "")
+        if not iid or "jarvis-claimed" not in _tagset(it):
+            continue
+        claimed[iid] = {"project": str(it.get("pool_project") or ""),
+                        "title": str(it.get("title") or ""),
+                        "pool": str(it.get("pool") or "")}
+    path = _claimed_snapshot_path()
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = path.parent / (path.name + ".tmp")
+        tmp.write_text(json.dumps({"ts": time.time(), "items": claimed},
+                                  ensure_ascii=False))
+        os.replace(str(tmp), str(path))
+    except Exception as e:  # noqa: BLE001
+        log.warning("claimed-snapshot: could not persist %s: %s", path, e)
+
+
+def _claimed_snapshot_load():
+    """读 claimed-snapshot → {aone_id: {project,title,pool}}。缺失/损坏一律空 dict：
+    快照只是补洞通道，读不到时退化为纯快通道，不阻塞恢复也不抛错。"""
+    try:
+        raw = json.loads(_claimed_snapshot_path().read_text())
+        items = raw.get("items") if isinstance(raw, dict) else None
+        if isinstance(items, dict):
+            return {str(k): (v if isinstance(v, dict) else {})
+                    for k, v in items.items()}
+    except FileNotFoundError:
+        pass
+    except Exception as e:  # noqa: BLE001
+        log.warning("claimed-snapshot: could not load: %s", e)
+    return {}
+
+
 class ScanScheduler:
     """Periodically run scan.sh, diff for new items, and act on them.
 
@@ -3177,6 +3241,11 @@ class ScanScheduler:
         cur_snapshot = {str(it["id"]): it for it in items if it.get("id")}
         cur_ids = set(cur_snapshot.keys())
 
+        # RecoveryScheduler 的持久候选通道：把本轮全量 items 里的 jarvis-claimed 子集
+        # 原子落盘（内部 best-effort，失败只记日志）。冷启动 tick 也写——快照是纯感知，
+        # 不属于「重启不重复消化积压」约束的派发动作。
+        _claimed_snapshot_write(cur_snapshot.values())
+
         # Cold start (bridge just (re)started): seed the baseline snapshot and dispatch
         # NOTHING — regardless of auto/supervised. A restart must not re-consume the existing
         # backlog; only genuinely new / externally-updated tickets on later ticks trigger action
@@ -3572,6 +3641,486 @@ class ReconcileScheduler:
                     "post-PR operation recovery lease release failed for operation %s",
                     operation_id)
             raise
+
+
+class RecoveryScheduler:
+    """死任务重委派（方案 A′）：交互 Codex/Claude worker 定向接单（dispatch.pull=false）后
+    会话死亡（进程退出/断网/关机）→ session lease 过期 → 服务端 reaper 把死会话收敛为
+    SHADOW+RESUMABLE（有 resume context）或 SHADOW+无 current session（CORRUPTED 归档，
+    session 被剥离），回执未收敛则 RECOVERY_REQUIRED。交互单被服务端 hasInteractiveLineage
+    **永久**挡在 managed 通用队列外（upsert 升级 SHADOW→MANAGED 被拒），PersistenceExecutor
+    租不到；Aone scan 又只认标签（jarvis-claimed 被 _decide skip）——此前无人接手。
+
+    恢复的架构正门是 **targeted claimTask + recovery_policy**：本调度器发现死任务后 spawn
+    一个 headless jarvis 进程。该 EphemeralJob 只是进程外壳（对齐
+    docs/execution-architecture.md「subcommands already enclosed by a Task Session」——
+    EphemeralJob 自身无恢复承诺），实例进场跑 claim.sh claim，其 prepare-claim 做 fenced
+    targeted claimTask：REPLAY_SAFE 策略下服务端把死 session 归档、发新 fence，此后 Task
+    执行归属这个新 fenced Session。本调度器绝不直接动 session/fence，也不
+    execution_router.enqueue / upsert（任务已在控制面，重派不产生新 desired revision）。
+
+      · 候选枚举=双通道并集（本地台账不是候选真源）：
+        - 快通道（发现更快）：list_workers() 找 activityStatus∈{STALE,OFFLINE} 的
+          worker，候选 = 其可见残留 assignment ∪ 台账记住的「生前 assignment」。
+          **为什么要记生前 assignment**：服务端 /workers 的 assignments 只含
+          isTrueActiveAssignment（session lease 未过期）的条目——worker 死后 lease 一到期
+          assignment 即从响应里消失，而交互 lease 远小于扫描间隔，只看当轮响应几乎永远
+          撞不上那扇窗。故每 tick 把活 worker 当前持有的 assignment 记进台账
+          （recovery.json "workers" 段），worker 转 STALE/OFFLINE 后据此追查。只认规范键
+          aone:<project>:<id>。
+        - 持久通道（兜住采样时序洞）：ScanScheduler 每 tick 原子落盘的 claimed-snapshot
+          （Aone jarvis-claimed 存量）× 控制面任务态。快通道本质是本地采样：若「认领→
+          宕机→reaper 收敛→/workers 摘除」全部发生在首个 tick（sleep interval）之前——
+          bridge 刚启动/重启台账丢失/迁机——两个来源皆空，死任务会被永久搁置（交互单不入
+          通用队列、Aone 又被 jarvis-claimed 标签挡住 scan）。jarvis-claimed 标签跨进程
+          存活于 Aone，快照据此枚举兜底；快照单无控制面 task 行 = legacy claim（控制面
+          接入前的认领），跳过不烧轮次，归 reconcile.sh stale 管。单 tick 佐证量受
+          JARVIS_RECOVERY_SNAPSHOT_MAX 上限保护（by-aone 查询量=在飞 claimed 数，本就小）。
+        两通道同单去重后统一走下方佐证决策；纯 scanner shadow 观察（无 jarvis-claimed
+        标签、无 worker assignment）天然不进任何一路候选。recovery.json 从此只承担
+        快通道加速（生前记忆）+ pending 段防抖/轮次记账。
+      · 逐候选 get_task_by_aone / get_task_timeline 佐证当前态（真源是控制面）：
+          - 终态 / SUSPENDED（挂起等人·带 worker 亲和期，WaitWatcher/服务端 wait 域）/
+            已被其它 worker 接管（timeline.currentWorker ≠ 死 worker）→ 解除观察；
+          - RECOVERY_REQUIRED → 不重派（服务端 claim 对未 reconcile 的 required operation
+            409「required external operation must be reconciled」），播报告警一次；
+          - READY / SHADOW+current session RESUMABLE / SHADOW+无 current session
+            （REPLAY_SAFE 死亡的 CORRUPTED 归档路径）→ 候选重委派；
+          - LEASED/RUNNING（lease 尚未过期或 reaper 未跑）→ 本轮不动，下轮再看。
+      · recovery_policy 分流（重派前读 task.recoveryPolicy，接管资格最终由服务端裁决，
+        前置分流只为不空转烧轮次）：REPLAY_SAFE（jarvis envelope 默认）→ 重派；
+        RESUME_ONLY → 播报一次「仅原 runtime 可续跑」不重派；MANUAL → 播报一次转人工。
+      · JARVIS_RECOVERY_REDISPATCH=0 减档：探测/佐证/播报/台账照常但不 spawn
+        （alert-only），供 headless fenced-claim 预注册未合流等场景临时降级。
+
+    幂等防抖：台账 "pending" 段记 {aone_id: {last_ts, count, announced, ...}}——dedup TTL
+    （JARVIS_RECOVERY_DEDUP_TTL，默认 21600=6h）内同单不重派；重派超
+    JARVIS_RECOVERY_MAX_ROUNDS（默认 3）次改播报升级、不再自动；告警类播报按原因去重
+    （announced 记原因，换因才再播）。每 tick 重派上限 JARVIS_RECOVERY_MAX_PER_TICK
+    （默认 2）。运行时暂停复用 .my-day/bridge/pause。控制面未配置（client 缺失）自动禁用；
+    JARVIS_RECOVERY_SCHED=0 显式关闭。
+    Runs as a daemon thread；错误只记日志，绝不 crash the bridge。
+    """
+
+    DEFAULT_LEDGER = ".my-day/bridge/recovery.json"
+    DEAD_STATUSES = ("STALE", "OFFLINE")
+    TERMINAL_TASK_STATUSES = ("SUCCEEDED", "FAILED_FINAL", "CANCELED")
+    # 生前 assignment 记忆保留窗（秒）：死透 worker 的记录长期无更新即丢弃，防台账膨胀。
+    MEMORY_TTL = 7 * 86400
+
+    def __init__(self, handler, pool=None, client=None, ledger_path=None):
+        self.handler = handler
+        self.pool = pool if pool is not None else getattr(handler, "ephemeral_executor", None)
+        # client 来源与 TaskRouter 相同（JarvisHandler.task_client = _task_client_from_env()）。
+        self.client = client if client is not None else getattr(handler, "task_client", None)
+        self.enabled = (os.environ.get("JARVIS_RECOVERY_SCHED", "1") != "0"
+                        and self.client is not None)
+        # 减档开关：=0 时探测/佐证/播报/台账照常但不 spawn（alert-only 运维模式）。
+        self.redispatch = os.environ.get("JARVIS_RECOVERY_REDISPATCH", "1") != "0"
+        self.interval = int(os.environ.get("JARVIS_RECOVERY_INTERVAL", "600"))
+        self.max_per_tick = int(os.environ.get("JARVIS_RECOVERY_MAX_PER_TICK", "2"))
+        self.dedup_ttl = int(os.environ.get("JARVIS_RECOVERY_DEDUP_TTL", "21600"))
+        self.max_rounds = int(os.environ.get("JARVIS_RECOVERY_MAX_ROUNDS", "3"))
+        # 持久通道单 tick 佐证上限：快照单逐个 get_task_by_aone，查询量=在飞 claimed 数
+        # （本就小），上限只是保护阀防快照异常膨胀时打爆控制面。
+        self.snapshot_max = int(os.environ.get("JARVIS_RECOVERY_SNAPSHOT_MAX", "10"))
+        self._ledger_path = (Path(ledger_path) if ledger_path
+                             else Path(REPO_ROOT) / self.DEFAULT_LEDGER)
+        self._thread = None
+
+    def start(self):
+        if not self.enabled:
+            log.info("RecoveryScheduler disabled (%s)",
+                     "no control-plane client" if self.client is None
+                     else "JARVIS_RECOVERY_SCHED=0")
+            return
+        self._thread = threading.Thread(target=self._loop, daemon=True,
+                                        name="RecoveryScheduler")
+        self._thread.start()
+        log.info("RecoveryScheduler started (interval=%ss max_per_tick=%d "
+                 "dedup_ttl=%ds max_rounds=%d snapshot_max=%d redispatch=%s)",
+                 self.interval, self.max_per_tick, self.dedup_ttl, self.max_rounds,
+                 self.snapshot_max, self.redispatch)
+
+    def _loop(self):
+        while True:
+            # Sleep first：冷启动不立刻打控制面（对齐 ReconcileScheduler）。
+            time.sleep(self.interval)
+            try:
+                self._tick()
+            except Exception:  # noqa: BLE001 — never crash
+                log.exception("RecoveryScheduler tick failed; will retry next interval")
+
+    # -- ledger（best-effort 持久化，镜像 ephemeral executor ledger 的 tmp+replace 姿势）----
+
+    def _load_ledger(self):
+        try:
+            if self._ledger_path.exists():
+                raw = json.loads(self._ledger_path.read_text())
+                if isinstance(raw, dict):
+                    return {"pending": dict(raw.get("pending") or {}),
+                            "workers": dict(raw.get("workers") or {})}
+        except Exception as e:  # noqa: BLE001
+            log.warning("RecoveryScheduler: could not load ledger %s: %s",
+                        self._ledger_path, e)
+        return {"pending": {}, "workers": {}}
+
+    def _save_ledger(self, ledger):
+        try:
+            self._ledger_path.parent.mkdir(parents=True, exist_ok=True)
+            tmp = self._ledger_path.parent / (self._ledger_path.name + ".tmp")
+            tmp.write_text(json.dumps(ledger, default=str))
+            os.replace(str(tmp), str(self._ledger_path))
+        except Exception as e:  # noqa: BLE001
+            log.warning("RecoveryScheduler: could not persist ledger: %s", e)
+
+    # -- 数据面响应解析 ---------------------------------------------------------
+
+    @staticmethod
+    def _parse_task_key(task_key):
+        """规范键 aone:<project>:<id> → (project, aone_id)；其余形态（probe/自定义 key）
+        返回 None——非 Aone 任务不归本调度器重派。"""
+        parts = str(task_key or "").split(":")
+        if len(parts) == 3 and parts[0] == "aone" and parts[1] and parts[2]:
+            return parts[1], parts[2]
+        return None
+
+    @classmethod
+    def _worker_assignments(cls, entry):
+        """一条 /workers 响应（WorkerStateResponse：{worker, activityStatus,
+        assignments:[{task: TaskView, session: SessionView}]}）里的 aone assignment
+        → {aone_id: {project, task_id, title, pool}}。payload 即派发 envelope body
+        （交互 claim 的 payload 只有 itemId/project/kind/trigger，title/poolKey 可缺）。"""
+        out = {}
+        for a in (entry.get("assignments") or []):
+            if not isinstance(a, dict):
+                continue
+            task = a.get("task") if isinstance(a.get("task"), dict) else {}
+            parsed = cls._parse_task_key(task.get("taskKey"))
+            if not parsed:
+                continue
+            project, aone_id = parsed
+            payload = task.get("payload") if isinstance(task.get("payload"), dict) else {}
+            out[str(aone_id)] = {
+                "project": project,
+                "task_id": task.get("id"),
+                "title": str(payload.get("title") or ""),
+                "pool": str(payload.get("poolKey") or ""),
+            }
+        return out
+
+    def _task_state(self, aone_id, project):
+        """get_task_by_aone 返回 TaskView 数组；优先取规范键匹配的一条（多条取 id 最大
+        =最新），无键匹配退回 aone 维度最新。查询失败/无匹配 → None（保留观察下轮再看）。"""
+        try:
+            tasks = self.client.get_task_by_aone(str(aone_id))
+        except Exception as e:  # noqa: BLE001 — ControlPlaneError/网络失败一律跳过本轮
+            log.warning("RecoveryScheduler: get_task_by_aone %s failed: %s", aone_id, e)
+            return None
+        if isinstance(tasks, dict):
+            tasks = [tasks]
+        if not isinstance(tasks, list):
+            return None
+        rows = [t for t in tasks if isinstance(t, dict)]
+        want = ("aone:%s:%s" % (project, aone_id)) if project else None
+        keyed = [t for t in rows if want and str(t.get("taskKey") or "") == want]
+        pool = keyed or rows
+        if not pool:
+            return None
+        return max(pool, key=lambda t: t.get("id") or 0)
+
+    def _timeline(self, task):
+        tid = task.get("id")
+        if tid is None:
+            return None
+        try:
+            tl = self.client.get_task_timeline(str(tid))
+        except Exception as e:  # noqa: BLE001
+            log.warning("RecoveryScheduler: get_task_timeline %s failed: %s", tid, e)
+            return None
+        return tl if isinstance(tl, dict) else None
+
+    # -- tick ------------------------------------------------------------------
+
+    def _tick(self):
+        # 运行时暂停闸：与 ScanScheduler/PrWatchScheduler 复用同一个 pause 标记。
+        if (Path(REPO_ROOT) / ".my-day" / "bridge" / "pause").exists():
+            log.info("RecoveryScheduler: pause flag present, skip this tick")
+            return
+        try:
+            workers = self.client.list_workers()
+        except Exception as e:  # noqa: BLE001
+            log.warning("RecoveryScheduler: list_workers failed: %s", e)
+            return
+        if not isinstance(workers, list):
+            log.warning("RecoveryScheduler: unexpected /workers response type %s",
+                        type(workers).__name__)
+            return
+        ledger = self._load_ledger()
+        now = time.time()
+        candidates = {}  # aone_id -> {project, task_id, title, pool, worker_key}
+        dead_keys = set()  # 本轮 STALE/OFFLINE worker 键：佐证时判「owner 也是死者」
+        for entry in workers:
+            if not isinstance(entry, dict):
+                continue
+            worker = entry.get("worker") if isinstance(entry.get("worker"), dict) else {}
+            wkey = str(worker.get("workerKey") or "")
+            if not wkey:
+                continue
+            act = str(entry.get("activityStatus") or "")
+            assigns = self._worker_assignments(entry)
+            if act in self.DEAD_STATUSES:
+                dead_keys.add(wkey)
+                # 死 worker：可见残留 assignment（lease 未过期的短窗）∪ 生前记忆。
+                remembered = (ledger["workers"].get(wkey) or {}).get("assign") or {}
+                merged = dict(remembered)
+                merged.update(assigns)
+                for aone_id, info in merged.items():
+                    info = dict(info) if isinstance(info, dict) else {}
+                    info["worker_key"] = wkey
+                    candidates.setdefault(str(aone_id), info)
+                if assigns:
+                    ledger["workers"][wkey] = {"assign": assigns, "ts": now}
+            elif assigns:
+                # 活 worker：以当前可见 assignment 覆盖记忆。
+                ledger["workers"][wkey] = {"assign": assigns, "ts": now}
+            else:
+                # 活 worker 且无 assignment（干净释放/收尾）→ 记忆清除，不再追查。
+                ledger["workers"].pop(wkey, None)
+        for wkey in list(ledger["workers"]):
+            try:
+                ts = float((ledger["workers"][wkey] or {}).get("ts") or 0)
+            except (TypeError, ValueError):
+                ts = 0
+            if now - ts > self.MEMORY_TTL:
+                ledger["workers"].pop(wkey, None)
+
+        # 持久通道：claimed-snapshot（Aone jarvis-claimed 存量，ScanScheduler 每 tick
+        # 原子落盘、跨 bridge 重启存活）补上快通道的采样时序洞。只补快通道没看到的单
+        # （双通道同单去重，不重复 by-aone 佐证）；task 行是否存在与状态判定统一交给
+        # _recover_one。上限保护：单 tick 最多佐证 snapshot_max 个快照单，超出的下轮再看
+        # （快照每轮 scan 全量重建，legacy 残留经 reconcile stale 摘标签后自然出列）。
+        snap_added = 0
+        for aone_id, info in sorted(_claimed_snapshot_load().items()):
+            if aone_id in candidates:
+                continue
+            if snap_added >= self.snapshot_max:
+                log.info("RecoveryScheduler: snapshot channel capped at %d this tick",
+                         self.snapshot_max)
+                break
+            info = dict(info) if isinstance(info, dict) else {}
+            info["worker_key"] = ""  # 快照单无死 worker 归属；佐证全凭控制面态
+            candidates[str(aone_id)] = info
+            snap_added += 1
+
+        dispatched = 0
+        for aone_id in sorted(candidates):
+            if dispatched >= self.max_per_tick:
+                break  # 每 tick 重派上限；余下候选下轮继续（台账保留）
+            try:
+                if self._recover_one(aone_id, candidates[aone_id], ledger, now,
+                                     dead_keys) == "dispatched":
+                    dispatched += 1
+            except Exception:  # noqa: BLE001 — 单候选异常绝不殃及后续
+                log.exception("RecoveryScheduler: recover #%s failed", aone_id)
+        # pending 孤儿清理：候选来源（死 worker 记忆/claimed 快照）已淘汰后仍残留的
+        # 旧单，按同一保留窗过期，防 announced/escalated 记录永久滞留台账。
+        for aone_id in list(ledger["pending"]):
+            if aone_id in candidates:
+                continue
+            rec = ledger["pending"][aone_id] or {}
+            try:
+                seen = float(rec.get("last_ts") or rec.get("first_seen") or 0)
+            except (TypeError, ValueError):
+                seen = 0
+            if now - seen > self.MEMORY_TTL:
+                ledger["pending"].pop(aone_id, None)
+        self._save_ledger(ledger)
+
+    def _recover_one(self, aone_id, info, ledger, now, dead_keys=frozenset()):
+        """单候选佐证 + 决策。Returns dispatched/announced/resolved/skip。
+        dead_keys=本轮 STALE/OFFLINE worker 键集合：快照通道候选没有死 worker 归属
+        （worker_key 空），LEASED/RUNNING 时靠它区分「owner 是死者等 reaper」与
+        「owner 健康不动」。"""
+        task = self._task_state(aone_id, info.get("project"))
+        if task is None:
+            # 查询失败 → 保留观察下轮再看；控制面无 task 行 → legacy claim（控制面
+            # 接入前的认领），不归本调度器（reconcile.sh stale 管），同样只 skip
+            # 且不烧轮次——两种情况候选下轮都会被重新枚举，无需台账记录。
+            return "skip"
+        status = str(task.get("status") or "")
+        rec = dict(ledger["pending"].get(aone_id) or {})
+        wkey = str(info.get("worker_key") or "?")
+        if status in self.TERMINAL_TASK_STATUSES or status == "SUSPENDED":
+            # 终态；或 SUSPENDED=挂起等人/定时（非死任务，WaitWatcher/服务端 wait 收敛）。
+            self._resolve(aone_id, ledger)
+            return "resolved"
+        if status == "RECOVERY_REQUIRED":
+            return self._announce_once(
+                ledger, aone_id, rec, now, "recovery_required",
+                "🩹 控制面任务 #%s 处于 RECOVERY_REQUIRED（原 worker %s 死亡且有未收敛的"
+                "外部写回执），服务端拒绝重新认领，不自动重派：需人工 readback 收敛"
+                "（见 timeline）后自动恢复。排查：bootstrap/control-plane-status.sh task %s"
+                % (aone_id, wkey, aone_id))
+        claimable = False
+        if status == "READY":
+            claimable = True
+        elif status == "SHADOW":
+            sid = task.get("currentSessionId")
+            if sid is None:
+                # SHADOW 无 current session = REPLAY_SAFE 死亡的 CORRUPTED 归档路径
+                # （reaper 剥离了无 resume context 的死 session）→ targeted claim 可
+                # 直接开新 fenced Session。候选只来自死 worker 的 assignment/生前记忆，
+                # 纯 scanner shadow 观察（从未被 claim）不会走到这里；干净完成的
+                # SHADOW 单终态是 SUCCEEDED，已被上面的终态分支解除观察。
+                claimable = True
+            else:
+                tl = self._timeline(task)
+                if tl is None:
+                    return "skip"  # timeline 查询失败 → 保守保留，下轮再看
+                session = next((s for s in (tl.get("sessions") or [])
+                                if isinstance(s, dict) and s.get("id") == sid), None)
+                if session is None:
+                    return "skip"  # task 与 timeline 视图不一致 → 保守保留
+                sstatus = str(session.get("status") or "")
+                if sstatus == "RESUMABLE":
+                    claimable = True
+                elif sstatus in ("LEASED", "RUNNING"):
+                    return "skip"  # lease 尚未过期/reaper 未跑 → 等下一轮
+                else:
+                    # SUSPENDED/CLOSED/CANCELED：干净挂起或收尾，非可续跑死任务。
+                    self._resolve(aone_id, ledger)
+                    return "resolved"
+        elif status in ("LEASED", "RUNNING", "FINALIZING"):
+            tl = self._timeline(task)
+            cw = (tl or {}).get("currentWorker")
+            owner = str(cw.get("workerKey") or "") if isinstance(cw, dict) else ""
+            if owner and owner != wkey and owner not in dead_keys:
+                # owner 是其它 ACTIVE worker（在跑/已被健康接管）→ 不动，解除观察；
+                # 保留 owner 自己的生前记忆（那是快通道下轮死亡侦测的素材）。
+                self._resolve(aone_id, ledger, keep_worker=owner)
+                return "resolved"
+            # owner 即死者（含快照单佐证出的死 owner）：lease 仍在倒计时或 reaper
+            # 未跑 → 等下一轮。
+            return "skip"
+        else:
+            return "skip"  # RETRY_WAIT 等：交服务端节奏，保留观察
+
+        if not claimable:
+            return "skip"
+        # recovery_policy 分流：接管资格最终由服务端在 claimTask 裁决，这里前置分流
+        # 只为不给注定失败的策略空转烧轮次。缺省视为 REPLAY_SAFE（jarvis envelope 默认）。
+        policy = str(task.get("recoveryPolicy") or "REPLAY_SAFE").upper()
+        if policy == "RESUME_ONLY":
+            return self._announce_once(
+                ledger, aone_id, rec, now, "resume_only",
+                "⏳ #%s 的死亡会话恢复策略为 RESUME_ONLY（仅原 runtime 可续跑），不自动"
+                "重派：等原 worker %s 回归或人工处置。排查：bootstrap/control-plane-status.sh task %s"
+                % (aone_id, wkey, aone_id))
+        if policy == "MANUAL":
+            return self._announce_once(
+                ledger, aone_id, rec, now, "manual",
+                "✋ #%s 的恢复策略为 MANUAL，按策略不自动重派，转人工处置"
+                "（原 worker %s 死亡）。排查：bootstrap/control-plane-status.sh task %s"
+                % (aone_id, wkey, aone_id))
+        if not self.redispatch:
+            # 减档（JARVIS_RECOVERY_REDISPATCH=0）：只告警不 spawn，台账照记。
+            return self._announce_once(
+                ledger, aone_id, rec, now, "alert_only",
+                "🔔 发现可重派死任务 #%s（原 worker %s 死亡，policy=%s），当前"
+                "JARVIS_RECOVERY_REDISPATCH=0 减档只告警不重派。排查："
+                "bootstrap/control-plane-status.sh task %s"
+                % (aone_id, wkey, policy, aone_id))
+        count = int(rec.get("count") or 0)
+        if count >= self.max_rounds:
+            if not rec.get("escalated"):
+                self._notify("🆘 #%s 已自动重委派 %d 次仍未恢复，超上限"
+                             "（JARVIS_RECOVERY_MAX_ROUNDS=%d）不再自动，转人工。排查："
+                             "bootstrap/control-plane-status.sh task %s"
+                             % (aone_id, count, self.max_rounds, aone_id))
+                rec["escalated"] = True
+                ledger["pending"][aone_id] = rec
+            return "skip"
+        try:
+            last_ts = float(rec.get("last_ts") or 0)
+        except (TypeError, ValueError):
+            last_ts = 0
+        if last_ts and now - last_ts < self.dedup_ttl:
+            return "skip"  # 冷却期内不重派（上一重派实例可能仍在收敛路上）
+        ok, reason = self._dispatch(aone_id, info, task)
+        if not ok:
+            log.info("RecoveryScheduler: #%s not dispatched (%s)", aone_id, reason)
+            return "skip"
+        rec.update({"last_ts": now, "count": count + 1})
+        rec.setdefault("first_seen", now)
+        ledger["pending"][aone_id] = rec
+        log.info("RecoveryScheduler: re-dispatched #%s (dead worker %s, round %d/%d)",
+                 aone_id, wkey, count + 1, self.max_rounds)
+        self._notify("🛟 已重委派 #%s（原 worker %s 死亡，第 %d/%d 次）"
+                     % (aone_id, wkey, count + 1, self.max_rounds))
+        return "dispatched"
+
+    def _announce_once(self, ledger, aone_id, rec, now, reason, text):
+        """告警类播报按原因去重：pending.announced 记原因字符串，同因只播一次，
+        状态迁移换因（如 RECOVERY_REQUIRED 收敛后落 RESUME_ONLY）会再播一次。"""
+        if rec.get("announced") != reason:
+            self._notify(text)
+            rec["announced"] = reason
+            rec.setdefault("first_seen", now)
+            ledger["pending"][aone_id] = rec
+        return "announced"
+
+    def _resolve(self, aone_id, ledger, keep_worker=""):
+        """候选已收敛（终态/被接管/干净挂起）→ 摘除 pending 与生前记忆。keep_worker：
+        健康接管者（ACTIVE owner）的记忆不摘——只清死 worker/旧归属的残留，否则快照
+        通道每轮 resolve 会把在跑 worker 的记忆抹掉，快通道退化。"""
+        ledger["pending"].pop(aone_id, None)
+        for wkey in list(ledger["workers"]):
+            if keep_worker and wkey == keep_worker:
+                continue
+            mem = ledger["workers"][wkey] or {}
+            assign = mem.get("assign") or {}
+            if aone_id in assign:
+                assign.pop(aone_id, None)
+                if assign:
+                    mem["assign"] = assign
+                    ledger["workers"][wkey] = mem
+                else:
+                    ledger["workers"].pop(wkey, None)
+
+    def _dispatch(self, aone_id, info, task):
+        """spawn 恢复用 headless jarvis：EphemeralJob 只是进程外壳，Task 执行归属该实例
+        claim.sh claim（fenced targeted claimTask）出的新 fenced Session——REPLAY_SAFE 下
+        服务端归档死 session、fence 递增，claim 才是真正的互斥与接管正门。
+        force=True 只越过本地 24h 派发软去重（死单本来就是最近派过的）；active-set 仍防
+        并发重入。resume=False + 新 sid：原会话 transcript 在死掉的那台机器上，本机没有
+        可 --resume 的本地会话，续跑上下文由 targeted claim 恢复的服务端 Session 承载。"""
+        if self.pool is None or self.handler is None:
+            return False, "no_pool"
+        payload = task.get("payload") if isinstance(task.get("payload"), dict) else {}
+        title = str(info.get("title") or payload.get("title") or "")
+        pool_key = str(info.get("pool") or payload.get("poolKey") or "")
+        project = str(info.get("project") or payload.get("project") or "")
+        prompt = str(payload.get("prompt") or "") or _ticket_prompt(
+            aone_id, title, pool_key, project)
+        terraform = bool(payload.get("terraform")) or _is_terraform_ticket(pool_key, title)
+        notify = self.handler._broadcast
+        tgt, ttype = broadcast_target(), broadcast_type()
+        sid = str(uuid.uuid4())
+        work = (lambda: self.handler.dispatch_item(
+            aone_id, prompt, sid, False, notify, tgt, ttype,
+            on_spawn=lambda p: self.pool.set_proc(aone_id, p),
+            project=project, kind="ticket", terraform=terraform))
+        return self.pool.submit(aone_id, work, notify=notify, kind="ticket",
+                                project=project, force=True, terraform=terraform)
+
+    def _notify(self, text):
+        if self.handler is None:
+            return
+        try:
+            self.handler._broadcast(text)
+        except Exception:  # noqa: BLE001
+            log.exception("RecoveryScheduler broadcast failed")
 
 
 class PrWatchScheduler:
@@ -6840,6 +7389,11 @@ class JarvisHandler(AsyncChatbotHandler):
         self.personawatch = PersonaScheduler(self, self.ephemeral_executor)
         # PR 观察登记表轮询（方案A）：PR 合并后自动 finish 收尾，与 RevisitScheduler 互为兜底
         self.prwatch = PrWatchScheduler(self, self.ephemeral_executor)
+        # 死任务重委派（方案 A′）：控制面视角扫 STALE/OFFLINE worker 的死 assignment，
+        # 佐证 + recovery_policy 分流后 spawn headless jarvis（EphemeralJob 只是进程
+        # 外壳，执行归属其 claim.sh fenced targeted claimTask 出的新 Session）。
+        # 控制面未配置时自动禁用。
+        self.recovery = RecoveryScheduler(self, self.ephemeral_executor)
         log.info("audience=%s master=%s root=%s tata_cwd=%s claude=%s skill=%s "
                  "tata_resident=%s auto_dispatch=%s execution_capacity=%s "
                  "probe=%s@%s revisit=%s@%s persona_watch=%s@%ss max_rounds=%s "
@@ -6867,6 +7421,7 @@ class JarvisHandler(AsyncChatbotHandler):
         self.managed_wait_sensor.start()
         self.personawatch.start()
         self.prwatch.start()
+        self.recovery.start()
 
     def stop_persistence_executor(self, *, drain=False, timeout=None):
         """Stop the persistent Task executor once."""

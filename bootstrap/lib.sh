@@ -65,3 +65,20 @@ coord_self() {
         echo ""
     fi
 }
+
+# Interactive database-fenced context detection — same predicate as claim.sh's
+# local _is_interactive_context (kept there verbatim to avoid churn against
+# parallel branches). New callers (wrap.sh receipts) use this shared copy.
+jarvis_interactive_context() {
+    [ -n "${CLAUDE_CODE_SESSION_ID:-}" ] || [ -n "${CODEX_THREAD_ID:-}" ] || \
+        { case "${JARVIS_INTERACTIVE_CLIENT:-}" in claude|codex) true ;; *) false ;; esac \
+          && [ -n "${JARVIS_INTERACTIVE_SESSION_ID:-}" ]; }
+}
+
+# Invoke the interactive worker CLI (jarvis-interactive-worker.py via the env-
+# loading runner). JARVIS_INTERACTIVE_WORKER_RUNNER lets tests inject a stub.
+jarvis_interactive_worker_cli() {
+    local lib_dir
+    lib_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    bash "${JARVIS_INTERACTIVE_WORKER_RUNNER:-$lib_dir/run-interactive-worker-hook.sh}" cli "$@"
+}

@@ -99,6 +99,9 @@ class FakeClient:
     def fail_operation(self, *args, **kwargs):
         return self._record("fail_operation", *args, **kwargs)
 
+    def reconcile_operation(self, *args, **kwargs):
+        return self._record("reconcile_operation", *args, **kwargs)
+
     def fail_session(self, *args, **kwargs):
         return self._record("fail_session", *args, **kwargs)
 
@@ -2533,6 +2536,500 @@ class InteractiveWorkerTest(unittest.TestCase):
         self.assertEqual(blocked["pendingClaim"]["phase"], "READY_TO_RECOVER")
         self.assertNotIn("claimRequestId", blocked["pendingClaim"])
         self.assertIn("不得继续该单", output.getvalue())
+
+    # --- mid-task external-write operation receipts (operation-begin/abort/reconcile) ---
+
+    def _seed_with_current(self, aone_id="84386065"):
+        state = self._seed()
+        state["current"] = {
+            "aoneId": aone_id, "projectId": "2100304", "taskId": "task-1",
+            "sessionId": "session-1", "fenceToken": 9, "generation": 4,
+            "cycle": 1, "runtimeSessionId": "interactive:cycle:1",
+            "leaseSeconds": 120, "heartbeatEnabled": True,
+        }
+        self._store().save(state)
+        return state
+
+    def _operation_key(self, kind, material, session_id="session-1", fence=9):
+        import hashlib
+        attempt = hashlib.sha256(
+            ("%s:%s" % (session_id, fence)).encode("utf-8")).hexdigest()[:12]
+        return "%s:task-1:4:%s:%s" % (
+            kind, attempt,
+            hashlib.sha256(material.encode("utf-8")).hexdigest()[:12])
+
+    def test_operation_begin_proceeds_and_keeps_heartbeat_untouched(self):
+        self._seed_with_current()
+        fake = FakeClient()
+        fake.begin_results = [{
+            "proceed": True,
+            "operation": {"id": "op-9", "status": "SENDING"},
+        }]
+        with mock.patch.object(worker, "_client", return_value=fake):
+            result = worker.operation_begin("84386065", "comment", "digest-abc")
+        self.assertTrue(result["proceed"])
+        self.assertFalse(result["needsReadback"])
+        begin_body = [c for c in fake.calls if c[0] == "begin_operation"][-1][1][0]
+        self.assertEqual(begin_body["operationType"], "AONE_COMMENT")
+        self.assertEqual(begin_body["operationKey"],
+                         self._operation_key("comment", "digest-abc"))
+        self.assertTrue(begin_body["required"])
+        state = self._store().load()
+        pending = state["pendingOperation"]
+        self.assertEqual(pending["operationId"], "op-9")
+        self.assertEqual(pending["operationKey"],
+                         self._operation_key("comment", "digest-abc"))
+        self.assertTrue(pending["proceed"])
+        # mid-task 回执不动 heartbeatEnabled（区别于 claim 期间的续租闸门）。
+        self.assertTrue(state["current"]["heartbeatEnabled"])
+
+    def test_operation_begin_acked_skips_send_and_clears_slot(self):
+        self._seed_with_current()
+        fake = FakeClient()
+        fake.begin_results = [{
+            "proceed": False,
+            "operation": {"id": "op-9", "status": "ACKED"},
+        }]
+        with mock.patch.object(worker, "_client", return_value=fake):
+            result = worker.operation_begin("84386065", "comment", "digest-abc")
+        self.assertFalse(result["proceed"])
+        self.assertFalse(result["needsReadback"])
+        self.assertEqual(result["operationStatus"], "ACKED")
+        self.assertIsNone(self._store().load()["pendingOperation"])
+
+    def test_operation_begin_sending_replay_safe_replays_local_intent(self):
+        state = self._seed_with_current()
+        key = self._operation_key("release-tag", "idle")
+        state["pendingOperation"] = {
+            "operationId": "op-9", "operationKey": key,
+            "aoneId": "84386065", "kind": "release-tag",
+            "proceed": False, "status": "SENDING",
+        }
+        self._store().save(state)
+        fake = FakeClient()
+        fake.begin_results = [{
+            "proceed": False,
+            "operation": {"id": "op-9", "status": "SENDING"},
+        }]
+        with mock.patch.object(worker, "_client", return_value=fake):
+            result = worker.operation_begin(
+                "84386065", "release-tag", "idle", replay_safe=True)
+        self.assertTrue(result["proceed"])
+        self.assertFalse(result["needsReadback"])
+        begin_body = [c for c in fake.calls if c[0] == "begin_operation"][-1][1][0]
+        self.assertEqual(begin_body["operationType"], "AONE_RELEASE")
+
+    def test_operation_begin_sending_comment_requires_readback(self):
+        state = self._seed_with_current()
+        key = self._operation_key("comment", "digest-abc")
+        state["pendingOperation"] = {
+            "operationId": None, "operationKey": key,
+            "aoneId": "84386065", "kind": "comment",
+            "proceed": False, "status": "BEGINNING",
+        }
+        self._store().save(state)
+        fake = FakeClient()
+        fake.begin_results = [{
+            "proceed": False,
+            "operation": {"id": "op-9", "status": "SENDING"},
+        }]
+        with mock.patch.object(worker, "_client", return_value=fake):
+            result = worker.operation_begin("84386065", "comment", "digest-abc")
+        self.assertFalse(result["proceed"])
+        self.assertTrue(result["needsReadback"])
+        pending = self._store().load()["pendingOperation"]
+        self.assertEqual(pending["operationId"], "op-9")
+        self.assertEqual(pending["status"], "SENDING")
+
+    def test_operation_begin_sending_without_local_intent_fails_closed(self):
+        self._seed_with_current()
+        fake = FakeClient()
+        fake.begin_results = [{
+            "proceed": False,
+            "operation": {"id": "op-9", "status": "SENDING"},
+        }]
+        with mock.patch.object(worker, "_client", return_value=fake):
+            with self.assertRaises(worker.ControlPlaneConflict):
+                worker.operation_begin("84386065", "comment", "digest-abc")
+
+    def test_operation_begin_conflicts_with_different_pending_key(self):
+        state = self._seed_with_current()
+        state["pendingOperation"] = {
+            "operationId": "op-other",
+            "operationKey": self._operation_key("comment", "other-material"),
+            "aoneId": "84386065", "kind": "comment",
+            "proceed": True, "status": "SENDING",
+        }
+        self._store().save(state)
+        fake = FakeClient()
+        with mock.patch.object(worker, "_client", return_value=fake):
+            with self.assertRaises(worker.ControlPlaneConflict):
+                worker.operation_begin("84386065", "comment", "digest-abc")
+        self.assertNotIn("begin_operation", [c[0] for c in fake.calls])
+
+    def test_operation_begin_unknown_slot_short_circuits_to_readback(self):
+        state = self._seed_with_current()
+        key = self._operation_key("comment", "digest-abc")
+        state["pendingOperation"] = {
+            "operationId": "op-7", "operationKey": key,
+            "aoneId": "84386065", "kind": "comment",
+            "proceed": False, "status": "UNKNOWN",
+        }
+        self._store().save(state)
+        fake = FakeClient()
+        with mock.patch.object(worker, "_client", return_value=fake):
+            result = worker.operation_begin("84386065", "comment", "digest-abc")
+        self.assertFalse(result["proceed"])
+        self.assertTrue(result["needsReadback"])
+        self.assertEqual(result["operationId"], "op-7")
+        self.assertEqual(result["operationStatus"], "UNKNOWN")
+        self.assertNotIn("begin_operation", [c[0] for c in fake.calls])
+        self.assertEqual(
+            self._store().load()["pendingOperation"]["status"], "UNKNOWN")
+
+    def test_operation_abort_clears_slot_but_keeps_session(self):
+        state = self._seed_with_current()
+        state["pendingOperation"] = {
+            "operationId": "op-9",
+            "operationKey": self._operation_key("comment", "digest-abc"),
+            "aoneId": "84386065", "kind": "comment",
+            "proceed": True, "status": "SENDING",
+        }
+        self._store().save(state)
+        fake = FakeClient()
+        with mock.patch.object(worker, "_client", return_value=fake):
+            result = worker.operation_abort("84386065", "a1 comment failed")
+        self.assertFalse(result["unknown"])
+        fail_body = [c for c in fake.calls if c[0] == "fail_operation"][-1][1][0]
+        self.assertFalse(fail_body["unknown"])
+        self.assertTrue(fail_body["retryAllowed"])
+        self.assertNotIn("fail_session", [c[0] for c in fake.calls])
+        state = self._store().load()
+        self.assertIsNone(state["pendingOperation"])
+        self.assertIsNone(state["pendingClaim"])
+        self.assertEqual(state["current"]["aoneId"], "84386065")
+
+    def test_operation_abort_unknown_freezes_local_slot(self):
+        state = self._seed_with_current()
+        key = self._operation_key("comment", "digest-abc")
+        state["pendingOperation"] = {
+            "operationId": "op-9", "operationKey": key,
+            "aoneId": "84386065", "kind": "comment",
+            "proceed": True, "status": "SENDING",
+        }
+        self._store().save(state)
+        fake = FakeClient()
+        with mock.patch.object(worker, "_client", return_value=fake):
+            result = worker.operation_abort(
+                "84386065", "comment result indeterminate", unknown=True)
+        self.assertTrue(result["unknown"])
+        fail_body = [c for c in fake.calls if c[0] == "fail_operation"][-1][1][0]
+        self.assertTrue(fail_body["unknown"])
+        self.assertNotIn("fail_session", [c[0] for c in fake.calls])
+        pending = self._store().load()["pendingOperation"]
+        self.assertEqual(pending["status"], "UNKNOWN")
+        self.assertEqual(pending["operationKey"], key)
+        self.assertIsNotNone(self._store().load()["current"])
+
+    def test_operation_reconcile_found_clears_slot(self):
+        state = self._seed_with_current()
+        state["pendingOperation"] = {
+            "operationId": "op-9",
+            "operationKey": self._operation_key("comment", "digest-abc"),
+            "aoneId": "84386065", "kind": "comment",
+            "proceed": False, "status": "UNKNOWN",
+        }
+        self._store().save(state)
+        fake = FakeClient()
+        with mock.patch.object(worker, "_client", return_value=fake):
+            result = worker.operation_reconcile(
+                "84386065", found=True,
+                external_ref="aone:84386065:comment:555")
+        self.assertFalse(result["proceed"])
+        reconcile_body = [
+            c for c in fake.calls if c[0] == "reconcile_operation"][-1][1][0]
+        self.assertTrue(reconcile_body["found"])
+        self.assertEqual(reconcile_body["externalRef"],
+                         "aone:84386065:comment:555")
+        self.assertIsNone(self._store().load()["pendingOperation"])
+
+    def test_operation_reconcile_not_found_keeps_key_for_retry(self):
+        state = self._seed_with_current()
+        key = self._operation_key("comment", "digest-abc")
+        state["pendingOperation"] = {
+            "operationId": "op-9", "operationKey": key,
+            "aoneId": "84386065", "kind": "comment",
+            "proceed": False, "status": "UNKNOWN",
+        }
+        self._store().save(state)
+        fake = FakeClient()
+        with mock.patch.object(worker, "_client", return_value=fake):
+            result = worker.operation_reconcile("84386065", found=False)
+        self.assertFalse(result["proceed"])
+        self.assertTrue(result["retryScheduled"])
+        reconcile_body = [
+            c for c in fake.calls if c[0] == "reconcile_operation"][-1][1][0]
+        self.assertFalse(reconcile_body["found"])
+        self.assertTrue(reconcile_body["retryAllowed"])
+        pending = self._store().load()["pendingOperation"]
+        self.assertEqual(pending["operationKey"], key)
+        self.assertEqual(pending["status"], "RETRY_WAIT")
+
+    def test_release_receipt_is_isolated_per_lease_attempt(self):
+        # 同 generation、不同 Session/fence 的两轮 claim→release：第二轮绝不能
+        # 命中第一轮的 ACKED 回执而跳过标签写（否则任务同代复活后 Aone 卡在
+        # jarvis-claimed，控制面却已 SUSPENDED）。
+        fake = FakeClient()
+        key_by_op = {}
+        acked_keys = set()
+
+        def begin_operation(request, request_id=None):
+            fake.calls.append(
+                ("begin_operation", (request,), {"request_id": request_id}))
+            key = request["operationKey"]
+            if key in acked_keys:
+                op_id = next(op for op, k in key_by_op.items() if k == key)
+                return {"proceed": False,
+                        "operation": {"id": op_id, "status": "ACKED"}}
+            op_id = "op-%d" % (len(key_by_op) + 1)
+            key_by_op[op_id] = key
+            return {"proceed": True,
+                    "operation": {"id": op_id, "status": "SENDING"}}
+
+        def ack_operation(request, request_id=None):
+            fake.calls.append(
+                ("ack_operation", (request,), {"request_id": request_id}))
+            acked_keys.add(key_by_op[str(request["operationId"])])
+            return {"ok": True}
+
+        fake.begin_operation = begin_operation
+        fake.ack_operation = ack_operation
+
+        # attempt A：release-tag 写成功并 ACK。
+        self._seed_with_current()
+        with mock.patch.object(worker, "_client", return_value=fake):
+            first = worker.operation_begin(
+                "84386065", "release-tag", "idle", replay_safe=True)
+            self.assertTrue(first["proceed"])
+            worker.acknowledge_claim(
+                "84386065", "aone:2100304:84386065:tag:jarvis-idle")
+
+        # 任务同代复活：attempt B = 新 Session/fence，同 task/generation 再 release。
+        state = self._store().load()
+        state["current"] = {
+            "aoneId": "84386065", "projectId": "2100304", "taskId": "task-1",
+            "sessionId": "session-2", "fenceToken": 20, "generation": 4,
+            "cycle": 2, "runtimeSessionId": "interactive:cycle:2",
+            "leaseSeconds": 120, "heartbeatEnabled": True,
+        }
+        self._store().save(state)
+        with mock.patch.object(worker, "_client", return_value=fake):
+            second = worker.operation_begin(
+                "84386065", "release-tag", "idle", replay_safe=True)
+        # attempt 分量隔离：第二轮拿到 proceed=True 真执行标签写。
+        self.assertTrue(second["proceed"])
+        keys = [c[1][0]["operationKey"] for c in fake.calls
+                if c[0] == "begin_operation"]
+        self.assertEqual(len(keys), 2)
+        self.assertNotEqual(keys[0], keys[1])
+        self.assertEqual(keys[0], self._operation_key(
+            "release-tag", "idle", session_id="session-1", fence=9))
+        self.assertEqual(keys[1], self._operation_key(
+            "release-tag", "idle", session_id="session-2", fence=20))
+
+    def test_restart_orphans_midtask_receipt_and_new_claim_gets_fresh_key(self):
+        # UNKNOWN 的 mid-task 回执 + 进程重启（replacement 路径）：回执坐标转入
+        # orphanOperations、pendingClaim 不继承其 operationKey；服务端收敛后新
+        # prepare_claim 用全新 aone-claim key 成功接单，而不是复用 mid-task key
+        # 被服务端按「operationKey reused with a different request」拒绝。
+        state = self._seed_with_current()
+        midtask_key = self._operation_key("comment", "digest-abc")
+        state["pendingOperation"] = {
+            "operationId": "op-mid", "operationKey": midtask_key,
+            "aoneId": "84386065", "kind": "comment",
+            "proceed": False, "status": "UNKNOWN",
+        }
+        self._store().save(state)
+        fake = FakeClient()
+        event = {
+            "hook_event_name": "SessionStart",
+            "session_id": "native-thread-1",
+            "cwd": self.temp.name,
+            "source": "resume",
+        }
+        with mock.patch.object(worker, "_client", return_value=fake), \
+                mock.patch.object(worker, "_find_host_pid",
+                                  return_value=(os.getpid(), True)), \
+                mock.patch.object(worker, "_default_boot_id",
+                                  return_value="new-boot"), \
+                mock.patch.object(worker, "_ensure_daemon"), \
+                contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(worker.hook("codex", event), 0)
+
+        recovered = self._store().load()
+        self.assertIsNone(recovered["pendingOperation"])
+        orphan = recovered["orphanOperations"][-1]
+        self.assertEqual(orphan["operationId"], "op-mid")
+        self.assertEqual(orphan["operationKey"], midtask_key)
+        self.assertEqual(orphan["kind"], "comment")
+        self.assertEqual(orphan["aoneId"], "84386065")
+        self.assertEqual(orphan["status"], "UNKNOWN")
+        pending_claim = recovered["pendingClaim"]
+        self.assertEqual(pending_claim["phase"], "READY_TO_RECOVER")
+        self.assertNotIn("operationKey", pending_claim)
+        self.assertNotIn("receiptUnknown", pending_claim)
+
+        # 服务端 op-mid 已被外部 reconcile 收敛为 ACKED（本地无需感知）；新 claim
+        # 的 begin 携全新 key，服务端按新操作受理。
+        fake.begin_results = [{
+            "proceed": True,
+            "operation": {"id": "op-claim-new", "status": "SENDING"},
+        }]
+        with mock.patch.object(worker, "_client", return_value=fake):
+            claimed = worker.prepare_claim("84386065", "2100304")
+        self.assertTrue(claimed["accepted"])
+        self.assertTrue(claimed["proceed"])
+        begin_body = [c for c in fake.calls
+                      if c[0] == "begin_operation"][-1][1][0]
+        self.assertEqual(begin_body["operationType"], "AONE_CLAIM")
+        self.assertTrue(begin_body["operationKey"].startswith("aone-claim:"))
+        self.assertNotEqual(begin_body["operationKey"], midtask_key)
+        # orphan 记录跨 claim 存续，留给生产态 Reconciler/人工按 operationId 收敛。
+        self.assertEqual(
+            self._store().load()["orphanOperations"][-1]["operationId"],
+            "op-mid")
+
+    # --- PreToolUse recovery whitelist for frozen external-write receipts ---
+
+    def _receipt_recovery_event(self, command, index=0):
+        return {
+            "hook_event_name": "PreToolUse",
+            "session_id": "native-thread-1",
+            "turn_id": "turn-recover",
+            "tool_use_id": "tool-receipt-%d" % index,
+            "tool_name": "Bash",
+            "tool_input": {"command": command},
+        }
+
+    def _seed_frozen_receipt(self, status="UNKNOWN", slot_aone="84386065"):
+        state = self._seed_with_current()
+        state["activeTurnId"] = "turn-recover"
+        state["pendingOperation"] = {
+            "operationId": "op-9",
+            "operationKey": self._operation_key("comment", "digest-abc"),
+            "aoneId": slot_aone, "kind": "comment",
+            "proceed": False, "status": status,
+        }
+        self._store().save(state)
+        return state
+
+    def test_frozen_external_receipt_allows_exact_recovery_commands(self):
+        self._seed_frozen_receipt(status="UNKNOWN")
+        wrap_script = worker.REPO_ROOT / "bootstrap" / "wrap.sh"
+        claim_script = worker.REPO_ROOT / "bootstrap" / "claim.sh"
+        allowed = (
+            "/bin/bash %s sync 84386065 --summary-file /tmp/x.md" % wrap_script,
+            "/bin/bash %s done 84386065 收敛完成 已完成" % wrap_script,
+            "/bin/bash %s done-no-status 84386065 收敛完成" % wrap_script,
+            "/bin/bash %s release 84386065 2100304" % claim_script,
+            "/bin/bash %s finish 84386065 2100304" % claim_script,
+        )
+        for index, command in enumerate(allowed):
+            with self.subTest(command=command), \
+                    mock.patch.object(worker, "_client",
+                                      side_effect=AssertionError("recovery gate is local")), \
+                    mock.patch.object(worker, "_calling_process_matches",
+                                      return_value=True):
+                self.assertIsNone(worker._guard_pre_tool_use(
+                    self._store(), "codex",
+                    self._receipt_recovery_event(command, index)))
+        # RETRY_WAIT 槽（reconcile not-found 后进程丢失）同样允许收敛重跑。
+        state = self._store().load()
+        state["pendingOperation"]["status"] = "RETRY_WAIT"
+        self._store().save(state)
+        with mock.patch.object(worker, "_client",
+                               side_effect=AssertionError("recovery gate is local")), \
+                mock.patch.object(worker, "_calling_process_matches",
+                                  return_value=True):
+            self.assertIsNone(worker._guard_pre_tool_use(
+                self._store(), "codex", self._receipt_recovery_event(
+                    "/bin/bash %s sync 84386065 progress" % wrap_script, 99)))
+
+    def test_frozen_external_receipt_blocks_non_exact_recovery_shapes(self):
+        self._seed_frozen_receipt(status="UNKNOWN")
+        wrap_script = worker.REPO_ROOT / "bootstrap" / "wrap.sh"
+        claim_script = worker.REPO_ROOT / "bootstrap" / "claim.sh"
+        rejected = (
+            "/bin/bash %s sync 84386065 x; a1 update" % wrap_script,
+            "/bin/bash %s sync 84386065 x && echo ok" % wrap_script,
+            "/bin/bash %s sync 84386065 x | tee /tmp/x" % wrap_script,
+            "/bin/bash %s sync 84399999 --summary-file /tmp/x.md" % wrap_script,
+            "bash %s sync 84386065 x" % wrap_script,
+            "/bin/bash bootstrap/wrap.sh sync 84386065 x",
+            "/bin/bash /tmp/evil/bootstrap/wrap.sh sync 84386065 x",
+            "env FOO=1 /bin/bash %s sync 84386065 x" % wrap_script,
+            "JARVIS_A1=/tmp/fake /bin/bash %s sync 84386065 x" % wrap_script,
+            "/bin/bash %s update 84386065 x" % wrap_script,
+            "/bin/bash %s finish 84386065 2100304 已完成" % claim_script,
+            "/bin/bash %s release 84399999 2100304" % claim_script,
+        )
+        for index, command in enumerate(rejected):
+            with self.subTest(command=command), \
+                    mock.patch.object(worker, "_calling_process_matches",
+                                      return_value=True):
+                reason = worker._guard_pre_tool_use(
+                    self._store(), "codex",
+                    self._receipt_recovery_event(command, index))
+            self.assertIsNotNone(reason)
+            self.assertIn("已阻断", reason)
+        # 普通工具仍被阻断，且提示的是收敛命令而非 claim.sh claim。
+        with mock.patch.object(worker, "_calling_process_matches",
+                               return_value=True):
+            reason = worker._guard_pre_tool_use(
+                self._store(), "codex",
+                self._receipt_recovery_event("git status --short", 90))
+        self.assertIn("外部写回执", reason)
+        self.assertIn("wrap.sh", reason)
+
+    def test_frozen_receipt_for_other_aone_never_unlocks_recovery(self):
+        # 槽的 aoneId 与 current assignment 不一致（异常/跨单残留）→ 不开白名单。
+        self._seed_frozen_receipt(status="UNKNOWN", slot_aone="84399999")
+        wrap_script = worker.REPO_ROOT / "bootstrap" / "wrap.sh"
+        for index, aone in enumerate(("84386065", "84399999")):
+            with self.subTest(aone=aone), \
+                    mock.patch.object(worker, "_calling_process_matches",
+                                      return_value=True):
+                reason = worker._guard_pre_tool_use(
+                    self._store(), "codex", self._receipt_recovery_event(
+                        "/bin/bash %s sync %s progress" % (wrap_script, aone),
+                        index))
+            self.assertIsNotNone(reason)
+
+    def test_claim_receipt_slot_keeps_claim_only_escape_hatch(self):
+        # AONE_CLAIM 槽（无 kind 字段）不受外部写白名单影响：仍只放行标准 claim.sh。
+        state = self._seed_with_current(aone_id="84345050")
+        state["activeTurnId"] = "turn-recover"
+        state["pendingOperation"] = {
+            "operationId": "op-1", "operationKey": "aone-claim:task-1:4:1",
+            "aoneId": "84345050", "proceed": False, "status": "SENDING",
+        }
+        self._store().save(state)
+        wrap_script = worker.REPO_ROOT / "bootstrap" / "wrap.sh"
+        claim_script = worker.REPO_ROOT / "bootstrap" / "claim.sh"
+        with mock.patch.object(worker, "_calling_process_matches",
+                               return_value=True):
+            reason = worker._guard_pre_tool_use(
+                self._store(), "codex", self._receipt_recovery_event(
+                    "/bin/bash %s sync 84345050 progress" % wrap_script, 0))
+        self.assertIsNotNone(reason)
+        self.assertIn("claim.sh", reason)
+        with mock.patch.object(worker, "_client",
+                               side_effect=AssertionError("claim gate is local")), \
+                mock.patch.object(worker, "_calling_process_matches",
+                                  return_value=True):
+            self.assertIsNone(worker._guard_pre_tool_use(
+                self._store(), "codex", self._receipt_recovery_event(
+                    "/bin/bash %s claim 84345050 2100304" % claim_script, 1)))
 
     def test_idle_ttl_rechecks_active_and_inflight_state_under_lock(self):
         state = self._seed()

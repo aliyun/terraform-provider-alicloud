@@ -430,6 +430,29 @@ _interactive_fail_claim() {
     fi
 }
 
+# release/finish tag 回执的 UNKNOWN 收敛分支（docs/aone-operation-receipts.md）：
+# 上轮 abort --unknown 后 operation-begin 会短路 needsReadback，此处 point-read 现
+# 有 tags——命中目标 tag → reconcile --found（副作用已在，跳过重写）；未命中 →
+# reconcile --not-found 后重新 begin 拿 proceed。stdout 输出 skip|write；point-read
+# 不可达/回执调用失败返回非零（槽保持 UNKNOWN/RETRY_WAIT，fail-closed）。
+_tag_receipt_readback() {
+    local id="$1" kind="$2" material="$3" tag="$4" ref="$5"
+    local tags again
+    if ! tags="$(_get_tags "$id")"; then
+        echo "claim.sh: $kind receipt readback unreachable for $id; receipt stays UNKNOWN" >&2
+        return 2
+    fi
+    if _csv_contains "$tags" "$tag"; then
+        _interactive_worker operation-reconcile "$id" --found "$ref" >/dev/null || return 2
+        echo "skip"
+        return 0
+    fi
+    _interactive_worker operation-reconcile "$id" --not-found >/dev/null || return 2
+    again="$(_interactive_worker operation-begin "$id" "$kind" "$material" --replay-safe)" || return 2
+    printf '%s' "$again" | jq -e '.proceed == true' >/dev/null 2>&1 || return 2
+    echo "write"
+}
+
 case "$cmd" in
     claim)
         interactive_claim=0
@@ -611,14 +634,58 @@ if cands:
             fi
             interactive_release=1
         fi
+        # fenced 会话的 idle tag 写走 operation receipt：begin 失败 fail-closed，不碰
+        # Aone tag、session 保持（docs/aone-operation-receipts.md）。
+        release_proceed=1
+        release_ref="aone:$project_id:$workitem_id:tag:$IDLE_TAG"
+        if [ "$interactive_release" = "1" ]; then
+            if ! release_begin="$(_interactive_worker operation-begin "$workitem_id" release-tag idle --replay-safe)"; then
+                echo "claim.sh: release receipt begin failed closed for $workitem_id; Aone untouched" >&2
+                exit 2
+            fi
+            if ! printf '%s' "$release_begin" | jq -e '.accepted == true' >/dev/null 2>&1; then
+                echo "claim.sh: invalid release receipt for $workitem_id" >&2
+                exit 2
+            fi
+            if printf '%s' "$release_begin" | jq -e '.needsReadback == true' >/dev/null 2>&1; then
+                # UNKNOWN 存量回执：point-read 收敛，永不盲重放。
+                verdict="$(_tag_receipt_readback "$workitem_id" release-tag idle "$IDLE_TAG" "$release_ref")" || exit 2
+                if [ "$verdict" = "skip" ]; then release_proceed=0; fi
+            elif ! printf '%s' "$release_begin" | jq -e '.proceed == true' >/dev/null 2>&1; then
+                release_proceed=0   # ACKED：上轮已落 idle tag，恰好一次，跳过重写
+            fi
+        fi
         # Tag as idle, preserving other tags: existing − {claimed} ∪ {idle}
         # 本轮 jarvis 处理完，释放锁；后续等待人或下一个 jarvis 接手（不动 Aone status）
-        _update_tags_merged "$workitem_id" "$IDLE_TAG" "$CLAIM_TAG"
-        release_tag_rc=$?
+        if [ "$release_proceed" = "1" ]; then
+            _update_tags_merged "$workitem_id" "$IDLE_TAG" "$CLAIM_TAG"
+            release_tag_rc=$?
+        else
+            release_tag_rc=0
+        fi
         if [ "$interactive_release" = "1" ] && [ "$release_tag_rc" -ne 0 ]; then
+            _interactive_worker operation-abort "$workitem_id" "Aone release tag update failed (rc=$release_tag_rc)" >/dev/null 2>&1 || \
+                echo "claim.sh: warning: failed to abort release receipt for $workitem_id" >&2
             echo "claim.sh: Aone release write failed; keeping database session active for $workitem_id" >&2
             [ "$release_tag_rc" -eq 1 ] && release_tag_rc=2
             exit "$release_tag_rc"
+        fi
+        if [ "$interactive_release" = "1" ] && [ "$release_proceed" = "1" ]; then
+            # readback 确认 idle tag 落地后才 ACK；point-read 不可达 → 冻结 UNKNOWN。
+            if ! release_tags="$(_get_tags "$workitem_id")"; then
+                _interactive_worker operation-abort "$workitem_id" "release tag readback unreachable" --unknown >/dev/null 2>&1 || true
+                echo "claim.sh: release tag readback inconclusive for $workitem_id; receipt frozen UNKNOWN" >&2
+                exit 2
+            fi
+            if ! _csv_contains "$release_tags" "$IDLE_TAG"; then
+                _interactive_worker operation-abort "$workitem_id" "release idle tag not visible after write" >/dev/null 2>&1 || true
+                echo "claim.sh: release idle tag not visible after write for $workitem_id" >&2
+                exit 2
+            fi
+            if ! _interactive_worker operation-ack "$workitem_id" "$release_ref" >/dev/null; then
+                echo "claim.sh: Aone idle tag landed but receipt ACK failed for $workitem_id; retry release" >&2
+                exit 2
+            fi
         fi
         if [ "$interactive_release" = "1" ]; then
             if ! _interactive_worker suspend "$workitem_id" "released by interactive worker" >/dev/null; then
@@ -668,14 +735,58 @@ if cands:
         # Optional caller override (4th arg): PrWatchScheduler passes 已完成 on PR merge.
         # already-terminal short-circuit + downgrade black-hole guard below stay intact.
         [ -n "$STATUS_OVERRIDE" ] && eff_status="$STATUS_OVERRIDE"
-        _update_tags_merged "$workitem_id" "$DONE_TAG" "$CLAIM_TAG,$IDLE_TAG"
-        finish_tag_rc=$?
+        # fenced 会话的 done tag 写走 operation receipt（同 release，kind=finish-tag）。
+        finish_proceed=1
+        finish_ref="aone:$project_id:$workitem_id:tag:$DONE_TAG"
+        if [ "$interactive_finish" = "1" ]; then
+            if ! finish_begin="$(_interactive_worker operation-begin "$workitem_id" finish-tag done --replay-safe)"; then
+                echo "claim.sh: finish receipt begin failed closed for $workitem_id; Aone untouched" >&2
+                exit 2
+            fi
+            if ! printf '%s' "$finish_begin" | jq -e '.accepted == true' >/dev/null 2>&1; then
+                echo "claim.sh: invalid finish receipt for $workitem_id" >&2
+                exit 2
+            fi
+            if printf '%s' "$finish_begin" | jq -e '.needsReadback == true' >/dev/null 2>&1; then
+                verdict="$(_tag_receipt_readback "$workitem_id" finish-tag done "$DONE_TAG" "$finish_ref")" || exit 2
+                if [ "$verdict" = "skip" ]; then finish_proceed=0; fi
+            elif ! printf '%s' "$finish_begin" | jq -e '.proceed == true' >/dev/null 2>&1; then
+                finish_proceed=0   # ACKED：上轮已落 done tag，恰好一次，跳过重写
+            fi
+        fi
+        if [ "$finish_proceed" = "1" ]; then
+            _update_tags_merged "$workitem_id" "$DONE_TAG" "$CLAIM_TAG,$IDLE_TAG"
+            finish_tag_rc=$?
+        else
+            finish_tag_rc=0
+        fi
         if [ "$interactive_finish" = "1" ] && [ "$finish_tag_rc" -ne 0 ]; then
+            _interactive_worker operation-abort "$workitem_id" "Aone finish tag update failed (rc=$finish_tag_rc)" >/dev/null 2>&1 || \
+                echo "claim.sh: warning: failed to abort finish receipt for $workitem_id" >&2
             echo "claim.sh: Aone finish tag write failed; keeping database session active for $workitem_id" >&2
             [ "$finish_tag_rc" -eq 1 ] && finish_tag_rc=2
             exit "$finish_tag_rc"
         fi
+        if [ "$interactive_finish" = "1" ] && [ "$finish_proceed" = "1" ]; then
+            if ! finish_tags="$(_get_tags "$workitem_id")"; then
+                _interactive_worker operation-abort "$workitem_id" "finish tag readback unreachable" --unknown >/dev/null 2>&1 || true
+                echo "claim.sh: finish tag readback inconclusive for $workitem_id; receipt frozen UNKNOWN" >&2
+                exit 2
+            fi
+            if ! _csv_contains "$finish_tags" "$DONE_TAG"; then
+                _interactive_worker operation-abort "$workitem_id" "finish done tag not visible after write" >/dev/null 2>&1 || true
+                echo "claim.sh: finish done tag not visible after write for $workitem_id" >&2
+                exit 2
+            fi
+            if ! _interactive_worker operation-ack "$workitem_id" "$finish_ref" >/dev/null; then
+                echo "claim.sh: Aone done tag landed but receipt ACK failed for $workitem_id; retry finish" >&2
+                exit 2
+            fi
+        fi
         rm -f "$(_claim_prefix_path "$workitem_id")"
+        # finish 的 status 写与下方降级路径**不**叠 operation receipt：status 落地失败
+        # 已有 jarvis-idle 降级 + escalate 兜底（不留黑洞），降级 tag 写维持 best-effort，
+        # 再叠一层回执只会把可自愈路径变成 fail-closed 死路（docs/aone-operation-receipts.md）。
         cur_status="$(_get_status "$workitem_id")"
         status_ok=0   # 1 = Aone status 已落到合法完成态，jarvis-done 与真源一致
         if [ -n "$cur_status" ] && { _in_done_statuses "$cur_status" || [ "$cur_status" = "$eff_status" ]; }; then
