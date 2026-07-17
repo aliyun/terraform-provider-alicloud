@@ -46,6 +46,8 @@
 set -euo pipefail
 
 A1="${A1_BIN:-a1}"
+SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+A1_COMMAND_GUARD="$SCRIPT_DIR/../bootstrap/a1_command_guard.py"
 # v2:根目录改由 A1ID_ROOT 控制(测试隔离用),不再复用 a1 自己的 A1_CONFIG_DIR。
 A1ID_ROOT="${A1ID_ROOT:-$HOME/.config/a1}"
 STORE="$A1ID_ROOT/identities"
@@ -53,9 +55,31 @@ LIVE="$A1ID_ROOT/auth.yaml"
 ACTIVE="$STORE/.active"        # 遗留 use 记 live active 身份名(v2 脚本链路不读)
 DEFAULT_ID="jarvis"
 
-mkdir -p "$STORE"
-
 die(){ echo "a1id: $*" >&2; exit 1; }
+
+if [ -x /usr/bin/python3 ]; then
+  A1_GUARD_PYTHON=/usr/bin/python3
+else
+  A1_GUARD_PYTHON="$(command -v python3 2>/dev/null || true)"
+fi
+
+# Use the exact same command parser as the runtime guard before mkdir, auth
+# migration, live whoami, or any other a1 probe.  Bulk quit therefore makes
+# zero real-a1 calls even on a first-run identity store.
+case "${1:-}" in
+  --|as)
+    [ -n "$A1_GUARD_PYTHON" ] || die "a1 safety guard 需要 python3；已 fail-closed"
+    [ -f "$A1_COMMAND_GUARD" ] || die "a1 safety guard 缺失:$A1_COMMAND_GUARD"
+    if "$A1_GUARD_PYTHON" -I "$A1_COMMAND_GUARD" \
+        --check-a1id-argv "$@"; then
+      :
+    else
+      rc=$?
+      exit "$rc"
+    fi
+    ;;
+esac
+mkdir -p "$STORE"
 
 # Terraform 身份收口：旧 PD/QA label 只作为兼容别名解析到唯一公共 terraform-rd。
 # 告警必须在 canon 时发出，覆盖 login/use/who/ready/as/JARVIS_A1_IDENTITY 全入口。
@@ -115,6 +139,17 @@ account_matches(){
 id_dir(){ echo "$STORE/$1"; }
 id_auth(){ echo "$STORE/$1/auth.yaml"; }
 is_logged_in(){ [ -s "$(id_auth "$1")" ]; }
+
+# Every normal a1 execution crosses the repository safety gate.  The gate
+# permanently rejects app pipeline exit-cr and performs live CR/task/worktree
+# ownership verification before the only allowed targeted app cr quit.
+guarded_exec(){
+  local id="$1"; shift
+  [ -f "$A1_COMMAND_GUARD" ] || die "a1 safety guard 缺失:$A1_COMMAND_GUARD"
+  [ -n "$A1_GUARD_PYTHON" ] || die "a1 safety guard 需要 python3；已 fail-closed"
+  A1_CONFIG_DIR="$(id_dir "$id")" exec "$A1_GUARD_PYTHON" -I \
+    "$A1_COMMAND_GUARD" --a1-bin "$A1" -- "$@"
+}
 
 # ---- v1 → v2 自动迁移(幂等、非破坏)-------------------------------------
 # 对每个注册 label,若 v1 文件 identities/<label>.auth.yaml 存在且 v2
@@ -298,12 +333,12 @@ case "$cmd" in
     id="$(canon "$id_raw")"
     valid "$id" || die "未知身份 '$id_raw'(合法 jarvis|terraform-rd|chenyi|guozai|linjun|shanye,旧 pd/qa label 兼容映射到 terraform-rd)"
     is_logged_in "$id" || die "身份 '$id' 未登录,先 'bin/a1id login $id'"
-    # v2:纯 env 方式跑,不动 live,不 trap,天然并发安全。
-    A1_CONFIG_DIR="$(id_dir "$id")" exec "$A1" "$@"
+    # v2:纯 env 方式跑,不动 live,不 trap,天然并发安全；执行前统一过 a1 安全门。
+    guarded_exec "$id" "$@"
     ;;
   --)
     id=$(resolve_default) || exit $?
-    A1_CONFIG_DIR="$(id_dir "$id")" exec "$A1" "$@"
+    guarded_exec "$id" "$@"
     ;;
   *)
     sed -n '2,45p' "$0"; exit 1

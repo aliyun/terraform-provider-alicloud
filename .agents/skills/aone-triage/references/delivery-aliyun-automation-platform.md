@@ -69,6 +69,12 @@ bin/a1id -- app pipeline status --pipeline-id 67
 
 正式仍处于人工卡点、CR/MR 未合并或流水线未整体成功时，不得把 Aone 标为完成，也不得清理仍需排障的 worktree。
 
+## 发布冲突安全
+
+- 冲突优先在当前功能分支合入兄弟分支、解冲突并重新 submit；**永久禁止** `app pipeline exit-cr` 和等价的 `app pipeline quit`，因为两者会退出最新实例中的全部 CR。`bin/a1id` 与 PreToolUse 会在真实 a1 前硬拒绝。
+- 确需撤回当前 CR 时，只允许已 claim 对应 Aone 的根 Worker 在 CR worktree 内执行 `bin/a1id -- app cr quit <cr-id> --pipeline-id <id>`。执行层核对 CR 工作项、origin、分支、指定流水线最新实例成员，并在网络查证前后复验同一 task/session/fence；无法证明归属即 fail closed。直接 `a1 app cr quit` 同样被拒绝。
+- 该护栏针对 Jarvis 正常工具入口的误操作和 wrapper 绕过；它不构成同一 UID 恶意本地代码的密码学隔离，因为后者本就能读取本机凭据并直调 a1。
+
 ## SLS 诊断与验收
 
 必须使用现有 `sls-log-query-aliyun-automation-platform` skill，不在本文件复制凭证或临时查询脚本：

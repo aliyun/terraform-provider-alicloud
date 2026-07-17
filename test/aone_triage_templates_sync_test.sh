@@ -23,6 +23,17 @@ for rel in \
     "$expected"
 done
 
+for delivery_name in \
+  delivery-aliyun-automation-agent.md \
+  delivery-aliyun-automation-platform.md \
+  delivery-cloudspec.md; do
+  delivery_file="$repo_root/.claude/skills/aone-triage/references/$delivery_name"
+  grep -Fq 'app pipeline exit-cr' "$delivery_file"
+  grep -Fq 'app pipeline quit' "$delivery_file"
+  grep -Fq 'bin/a1id -- app cr quit <cr-id> --pipeline-id <id>' "$delivery_file"
+  grep -Fq 'fail closed' "$delivery_file"
+done
+
 skill="$repo_root/.claude/skills/aone-triage/SKILL.md"
 delivery="$repo_root/.claude/skills/aone-triage/references/delivery-aliyun-automation-platform.md"
 adhoc="$repo_root/loops/adhoc-intake.md"
