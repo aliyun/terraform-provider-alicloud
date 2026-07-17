@@ -64,6 +64,7 @@ def envelope():
         payload={"item_id": "84345050", "prompt": "do work"},
         recovery_policy="RESUME_ONLY",
         priority="high",
+        source_status="处理中",
     )
 
 
@@ -85,6 +86,7 @@ class TaskEnvelopeTest(unittest.TestCase):
         self.assertEqual(data["sourceRef"]["projectId"], "2100304")
         self.assertEqual(data["payload"]["itemId"], "84345050")
         self.assertEqual(data["priority"], "high")
+        self.assertEqual(data["sourceStatus"], "处理中")
         self.assertNotIn("persona", data)
 
     def test_request_id_is_stable(self):

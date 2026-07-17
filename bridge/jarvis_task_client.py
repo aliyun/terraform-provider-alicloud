@@ -112,6 +112,7 @@ class TaskEnvelope:
     comment_cursor: Optional[Any] = None
     required_capabilities: Optional[Any] = None
     max_retries: Optional[int] = None
+    source_status: Optional[str] = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "task_key", _nonblank(self.task_key, "task_key"))
@@ -134,6 +135,10 @@ class TaskEnvelope:
                 % (explicit_aone_id, self.task_key))
         if canonical_aone_id and not explicit_aone_id:
             object.__setattr__(self, "aone_id", canonical_aone_id)
+        source_status = str(self.source_status or "").strip() or None
+        if source_status and len(source_status) > 64:
+            raise ValueError("source_status must not exceed 64 characters")
+        object.__setattr__(self, "source_status", source_status)
 
     def to_dict(self) -> Dict[str, Any]:
         data: Dict[str, Any] = {
@@ -158,6 +163,8 @@ class TaskEnvelope:
             data["requiredCapabilities"] = _camelize(self.required_capabilities)
         if self.max_retries is not None:
             data["maxRetries"] = int(self.max_retries)
+        if self.source_status:
+            data["sourceStatus"] = self.source_status
         return _camelize(data)
 
     def request_id(self, operation: str) -> str:
