@@ -174,9 +174,6 @@ data "alicloud_regions" "default" {
 data "alicloud_resource_manager_resource_groups" "default" {
   status = "OK"
 }
-data "alicloud_regions" "default" {
-  current = true
-}
 
 `, name)
 }
