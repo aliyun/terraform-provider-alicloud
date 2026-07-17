@@ -141,8 +141,7 @@ id_auth(){ echo "$STORE/$1/auth.yaml"; }
 is_logged_in(){ [ -s "$(id_auth "$1")" ]; }
 
 # Every normal a1 execution crosses the repository safety gate.  The gate
-# permanently rejects app pipeline exit-cr and performs live CR/task/worktree
-# ownership verification before the only allowed targeted app cr quit.
+# permanently rejects app pipeline exit-cr, app pipeline quit, and app cr quit.
 guarded_exec(){
   local id="$1"; shift
   [ -f "$A1_COMMAND_GUARD" ] || die "a1 safety guard 缺失:$A1_COMMAND_GUARD"

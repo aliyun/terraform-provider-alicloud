@@ -81,8 +81,7 @@ CR FINISH + 正式 SUCCESS 后才清。
 4. **open_jarvis 身份限制**:open_jarvis 在此 app 可能无 committer,自动建 CR 会报错,需人工建或加权限。
 5. **无 mvnw**:本仓库没有 Maven Wrapper,用系统 `mvn` 命令。
 6. **CI 全模块受内网镜像影响**:全模块 `mvn test` 可能因内网坏包失败,单类独立编译+跑通即可。
-7. **共享文件撞兄弟 CR**:submit 报 `pipeline_submit_failed` 或代码冲突预检失败时，**永久禁止** `app pipeline exit-cr` 和等价的 `app pipeline quit`：两者都会移除最新流水线实例里的全部 CR，`bin/a1id` 与 PreToolUse 已硬拒绝。立即停止后续发布动作，反馈“部署失败”，附上当前 CR、流水线及冲突信息，等待人工给出解决方案；禁止 Jarvis 自行查找或 merge 兄弟分支，也禁止自行重 submit。
-8. **只能定向退出自己的 CR**:确需撤回当前 CR 时，只能由已 claim 对应 Aone 的根 Worker 在 CR worktree 内执行 `bin/a1id -- app cr quit <cr-id> --pipeline-id <id>`。执行层会用 `app cr get --workitems -f json` 核对工作项、origin 和分支，再用 pipeline status/branch 核对目标 CR 属于指定流水线最新实例，并在网络查证前后复验同一 task/session/fence；任一信息缺失或变化都 fail closed。禁止直接 `a1 app cr quit` 绕过。
+7. **共享文件撞兄弟 CR**:submit 报 `pipeline_submit_failed` 或代码冲突预检失败时，**永久禁止** `app pipeline exit-cr`、等价的 `app pipeline quit` 以及定向的 `app cr quit`，`bin/a1id` 与 PreToolUse 已在真实 a1 前硬拒绝。立即停止后续发布动作，反馈“部署失败”，附上当前 CR、流水线及冲突信息，等待人工给出解决方案；禁止 Jarvis 自行查找或 merge 兄弟分支，也禁止自行重 submit。任何 CR/分支退出动作都交给人工处理。
 
 该护栏的威胁模型是防止 Jarvis 在正常工具入口误操作或绕过 wrapper；它不声称隔离同一 UID 下的恶意本地代码——后者可直接读取本机凭据并调用绝对路径 a1，不属于仓库内 guard 能提供的密码学边界。
 

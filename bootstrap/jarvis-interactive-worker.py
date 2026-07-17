@@ -38,11 +38,7 @@ BRIDGE_DIR = REPO_ROOT / "bridge"
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(BRIDGE_DIR))
 
-from a1_command_guard import (  # noqa: E402
-    pretool_a1_block_reason,
-    pretool_has_targeted_a1id_quit,
-    pretool_targeted_a1id_quit,
-)
+from a1_command_guard import pretool_a1_block_reason  # noqa: E402
 from jarvis_persistence_executor import _default_boot_id, make_worker_key  # noqa: E402
 from jarvis_task_client import (  # noqa: E402
     ControlPlaneClient,
@@ -681,45 +677,6 @@ def _record_subagent_interaction_permit_locked(
     state["subagentInteractionPermits"] = permits
 
 
-def _record_a1_cr_quit_permit_locked(state: Dict[str, Any],
-                                     event: Mapping[str, Any]) -> None:
-    """Issue a short-lived root-tool permit for one exact targeted CR quit."""
-    target = pretool_targeted_a1id_quit(event)
-    if target is None:
-        state.pop("a1CrQuitPermit", None)
-        return
-    current = state.get("current")
-    if not isinstance(current, Mapping):
-        state.pop("a1CrQuitPermit", None)
-        return
-    cr_id, pipeline_id = target
-    now = time.time()
-    try:
-        ttl = max(5.0, min(300.0, float(os.environ.get(
-            "JARVIS_A1_CR_QUIT_PERMIT_SEC", "120"))))
-    except ValueError:
-        ttl = 120.0
-    seed = "|".join((
-        str(state.get("workerKey") or ""),
-        _assignment_epoch(state),
-        str(event.get("tool_use_id") or ""),
-        cr_id,
-        pipeline_id,
-        str(time.time_ns()),
-    ))
-    state["a1CrQuitPermit"] = {
-        "token": hashlib.sha256(seed.encode()).hexdigest(),
-        "phase": "READY",
-        "crId": cr_id,
-        "pipelineId": pipeline_id,
-        "aoneId": str(current.get("aoneId") or ""),
-        "assignmentEpoch": _assignment_epoch(state),
-        "rootTurnId": str(state.get("activeTurnId") or ""),
-        "toolUseId": str(event.get("tool_use_id") or ""),
-        "expiresAt": now + ttl,
-    }
-
-
 def _consume_subagent_interaction_locked(
         state: Dict[str, Any], event: Mapping[str, Any]) -> Tuple[str, int]:
     tool_kind = _codex_tool_kind(event)
@@ -1191,8 +1148,8 @@ def _authority_context(store: StateStore, client_name: str,
 def _guard_pre_tool_use(store: StateStore, client_name: str,
                         event: Mapping[str, Any]) -> Optional[str]:
     """Fence every tool call while an interactive task is locally attached."""
-    # Direct a1 bypasses bin/a1id's CR ownership verifier.  Reject it before
-    # any ordinary Worker permit path can authorize the Bash tool call.
+    # Direct a1 bypasses bin/a1id's CR-exit deny. Reject it before any ordinary
+    # Worker permit path can authorize the Bash tool call.
     a1_reason = pretool_a1_block_reason(event)
     if a1_reason:
         return a1_reason
@@ -1200,10 +1157,6 @@ def _guard_pre_tool_use(store: StateStore, client_name: str,
         store, client_name, event)
     if context_error:
         return context_error
-    if (pretool_has_targeted_a1id_quit(event)
-            and (binding is not None or event.get("agent_id") or event.get("agent_type"))):
-        return ("Jarvis 只允许根 Worker 执行 ownership-checked app cr quit；"
-                "subagent 不得退出发布流中的 CR。")
     if (str(state.get("client") or "") != client_name
             or (binding is None
                 and str(state.get("clientSessionId") or "") !=
@@ -1252,7 +1205,6 @@ def _guard_pre_tool_use(store: StateStore, client_name: str,
                 return local_reason
             _record_spawn_permit_locked(latest, event)
             _record_subagent_interaction_permit_locked(latest, event)
-            _record_a1_cr_quit_permit_locked(latest, event)
             latest["lastTurnActivityAt"] = int(time.time())
             authority_store.save_unlocked(latest)
         return None
@@ -1290,7 +1242,6 @@ def _guard_pre_tool_use(store: StateStore, client_name: str,
             return permit_reason
         _record_spawn_permit_locked(latest, event)
         _record_subagent_interaction_permit_locked(latest, event)
-        _record_a1_cr_quit_permit_locked(latest, event)
         latest["lastTurnActivityAt"] = int(time.time())
         authority_store.save_unlocked(latest)
     return None
@@ -3102,94 +3053,6 @@ def worker_status() -> Any:
     return _client().get_worker_state(state["workerKey"])
 
 
-def current_authority(phase: str, cr_id: str, pipeline_id: str,
-                      permit_token: str = "") -> Dict[str, Any]:
-    """Return the current claimed Aone only after a locked lease-proof check.
-
-    This is the local authority helper used by the a1 targeted-CR guard.  It
-    transitions only the short-lived local PreTool permit and returns no fence
-    token.  Callers invoke it before metadata reads and immediately before
-    mutation to close stale-state and task-switch races.
-    """
-    client_name, session_id = _runtime_context()
-    store = _current_store()
-    if phase not in ("begin", "confirm"):
-        raise ValueError("authority phase must be begin or confirm")
-    if (not str(cr_id).isdigit() or int(cr_id) <= 0
-            or not str(pipeline_id).isdigit() or int(pipeline_id) <= 0):
-        raise ValueError("CR and pipeline ids must be positive numbers")
-    with store.locked():
-        state = store.load_unlocked()
-        if (not state or state.get("stopped")
-                or str(state.get("client") or "") != client_name
-                or str(state.get("clientSessionId") or "") != session_id):
-            raise RuntimeError("interactive Worker context is not active")
-        if not _calling_process_matches(state, client_name):
-            raise RuntimeError("interactive Worker host incarnation does not match")
-        local_reason = _local_tool_block_reason(state)
-        if local_reason:
-            raise RuntimeError(local_reason)
-        current = state.get("current")
-        if not isinstance(current, Mapping):
-            raise RuntimeError("interactive Worker has no current claimed task")
-        worker_key = str(state.get("workerKey") or "")
-        expected = dict(current)
-        if not worker_key or not _same_current_assignment(state, worker_key, expected):
-            raise RuntimeError("interactive Worker assignment changed")
-        if client_name == "codex" and not _codex_turn_live(state):
-            raise RuntimeError("Codex turn is not active")
-        permit_reason = _session_permit_block_reason(state, expected)
-        if permit_reason:
-            raise RuntimeError(permit_reason)
-        # Re-evaluate under the same lock after every derived check.  This is
-        # mostly defensive today, but keeps the helper correct if a future
-        # check yields or consults another local source.
-        if not _same_current_assignment(state, worker_key, expected):
-            raise RuntimeError("interactive Worker assignment changed during verification")
-        aone_id = str(current.get("aoneId") or "").strip()
-        if not aone_id.isdigit() or int(aone_id) <= 0:
-            raise RuntimeError("current claimed task has no positive Aone id")
-        permit = state.get("a1CrQuitPermit")
-        if not isinstance(permit, Mapping):
-            raise RuntimeError("no PreTool CR-quit permit is active")
-        if (str(permit.get("crId") or "") != str(cr_id)
-                or str(permit.get("pipelineId") or "") != str(pipeline_id)
-                or str(permit.get("aoneId") or "") != aone_id
-                or str(permit.get("assignmentEpoch") or "") != _assignment_epoch(state)
-                or str(permit.get("rootTurnId") or "") !=
-                   str(state.get("activeTurnId") or "")):
-            raise RuntimeError("PreTool CR-quit permit does not match current authority")
-        try:
-            expires_at = float(permit.get("expiresAt") or 0)
-        except (TypeError, ValueError):
-            expires_at = 0
-        if expires_at <= time.time():
-            state.pop("a1CrQuitPermit", None)
-            store.save_unlocked(state)
-            raise RuntimeError("PreTool CR-quit permit expired")
-        token = str(permit.get("token") or "")
-        if phase == "begin":
-            if permit.get("phase") != "READY" or not token:
-                raise RuntimeError("PreTool CR-quit permit is not ready")
-            updated = dict(permit)
-            updated["phase"] = "VERIFYING"
-            updated["verificationStartedAt"] = time.time()
-            state["a1CrQuitPermit"] = updated
-            store.save_unlocked(state)
-        else:
-            if (permit.get("phase") != "VERIFYING" or not permit_token
-                    or permit_token != token):
-                raise RuntimeError("PreTool CR-quit confirmation token does not match")
-            state.pop("a1CrQuitPermit", None)
-            store.save_unlocked(state)
-        return {
-            "aoneId": aone_id,
-            "assignmentEpoch": _assignment_epoch(state),
-            "workerKeyDigest": hashlib.sha256(worker_key.encode()).hexdigest()[:16],
-            "permitToken": token,
-        }
-
-
 def _print_json(value: Any) -> None:
     print(json.dumps(value, ensure_ascii=False, sort_keys=True,
                      separators=(",", ":"), default=str))
@@ -3234,11 +3097,6 @@ def _parser() -> argparse.ArgumentParser:
     exec_parser.add_argument("--client", choices=("claude", "codex"),
                              default="claude")
     exec_parser.add_argument("headless_command", nargs=argparse.REMAINDER)
-    authority_parser = sub.add_parser("current-authority")
-    authority_parser.add_argument("phase", choices=("begin", "confirm"))
-    authority_parser.add_argument("cr_id")
-    authority_parser.add_argument("pipeline_id")
-    authority_parser.add_argument("permit_token", nargs="?", default="")
     sub.add_parser("status")
     return parser
 
@@ -3297,9 +3155,6 @@ def main(argv: Optional[list[str]] = None) -> int:
             if command[:1] == ["--"]:
                 command = command[1:]
             exec_headless(args.session_id, command, client_name=args.client)
-        elif args.command == "current-authority":
-            _print_json(current_authority(
-                args.phase, args.cr_id, args.pipeline_id, args.permit_token))
         elif args.command == "status":
             _print_json(worker_status())
         return 0
