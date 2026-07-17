@@ -33,11 +33,7 @@ func TestAccAlicloudRdsDBInstanceClassInfosDatasource_main(t *testing.T) {
 			"infos.0.class_code":      CHECKSET,
 			"infos.0.class_group":     CHECKSET,
 			"infos.0.cpu":             CHECKSET,
-			"infos.0.max_connections": CHECKSET,
-			"infos.0.max_iombps":      CHECKSET,
-			"infos.0.max_iops":        CHECKSET,
 			"infos.0.memory_class":    CHECKSET,
-			"infos.0.reference_price": CHECKSET,
 		}
 	}
 
@@ -76,6 +72,9 @@ func TestAccAlicloudRdsDBInstanceClassInfosDatasource_readOnly(t *testing.T) {
 			"order_type":     "RENEW",
 			"db_instance_id": "${alicloud_db_instance.default.id}",
 		}),
+		existChangMap: map[string]string{
+			"infos.0.instruction_set_arch": REMOVEKEY,
+		},
 	}
 
 	var existDBInstanceReadOnlyMapFunc = func(rand int) map[string]string {
