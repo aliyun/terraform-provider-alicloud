@@ -1953,8 +1953,9 @@ class InteractiveWorkerTest(unittest.TestCase):
     def test_exec_headless_registers_before_exec_with_same_pid_context(self):
         order = []
 
-        def register(session_id, host_pid, client_name):
+        def register(session_id, host_pid, client_name, headless_policy=None):
             order.append(("register", session_id, host_pid, client_name))
+            self.assertIsNone(headless_policy)
             return {"verifyHostCommand": True}
 
         def execvpe(executable, command, env):

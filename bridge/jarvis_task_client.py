@@ -191,6 +191,9 @@ class ControlPlaneClient:
         "operation_ack": "operations/ack",
         "operation_fail": "operations/fail",
         "operation_reconcile": "operations/reconcile",
+        "operation_recovery_lease": "operations/recovery/lease",
+        "operation_recovery_renew": "operations/recovery/renew",
+        "operation_recovery_release": "operations/recovery/release",
     }
     WORKER_HEARTBEAT_PATH = "workers/{worker_key}/heartbeat"
     WORKERS_PATH = "workers"
@@ -199,6 +202,7 @@ class ControlPlaneClient:
     TASK_BY_AONE_PATH = "tasks/by-aone/{aone_id}"
     TASK_TIMELINE_PATH = "tasks/{task_id}/timeline"
     PENDING_AONE_WAITS_PATH = "sessions/waits/aone-reply"
+    OPERATION_RECOVERY_CANDIDATES_PATH = "operations/recovery-candidates"
 
     def __init__(self, base_url: str, token: str = "", *, timeout: float = 10.0,
                  api_prefix: str = DEFAULT_PREFIX,
@@ -458,6 +462,21 @@ class ControlPlaneClient:
         return self._post(self.PATHS["operation_reconcile"], operation,
                           request_id=request_id)
 
+    def lease_operation_recovery(self, operation: Mapping[str, Any], *,
+                                 request_id: Optional[str] = None) -> Dict[str, Any]:
+        return self._post(self.PATHS["operation_recovery_lease"], operation,
+                          request_id=request_id)
+
+    def renew_operation_recovery(self, operation: Mapping[str, Any], *,
+                                 request_id: Optional[str] = None) -> Dict[str, Any]:
+        return self._post(self.PATHS["operation_recovery_renew"], operation,
+                          request_id=request_id)
+
+    def release_operation_recovery(self, operation: Mapping[str, Any], *,
+                                   request_id: Optional[str] = None) -> Dict[str, Any]:
+        return self._post(self.PATHS["operation_recovery_release"], operation,
+                          request_id=request_id)
+
     def get_task_by_aone(self, aone_id: str) -> Any:
         path = self.TASK_BY_AONE_PATH.format(
             aone_id=self._path_segment(aone_id, "aone_id"))
@@ -473,6 +492,18 @@ class ControlPlaneClient:
             raise ValueError("limit must be between 1 and 500")
         query = urlencode({"afterSessionId": after, "limit": page_size})
         return self._get("%s?%s" % (self.PENDING_AONE_WAITS_PATH, query))
+
+    def list_operation_recovery_candidates(self, *, after_operation_id: int = 0,
+                                           limit: int = 100) -> Any:
+        after = int(after_operation_id)
+        page_size = int(limit)
+        if after < 0:
+            raise ValueError("after_operation_id must not be negative")
+        if page_size <= 0 or page_size > 500:
+            raise ValueError("limit must be between 1 and 500")
+        query = urlencode({"afterOperationId": after, "limit": page_size})
+        return self._get("%s?%s" % (
+            self.OPERATION_RECOVERY_CANDIDATES_PATH, query))
 
     def list_workers(self) -> Any:
         """Return every registered worker and its persisted heartbeat state."""

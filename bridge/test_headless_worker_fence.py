@@ -77,6 +77,30 @@ class HeadlessWorkerFenceTest(unittest.TestCase):
         self.assertEqual(wrapped[9:],
                          ["/opt/claude", "--resume", "runtime-session"])
 
+    def test_post_pr_wrapper_carries_complete_read_only_lineage(self):
+        policy = {
+            "policyRevision": bot.HEADLESS_POLICY_REVISION,
+            "aoneWritePolicy": bot.POST_PR_AONE_WRITE_POLICY,
+            "kind": "pr_comment_reply",
+            "aoneId": "84362517",
+            "projectId": "2100304",
+            "claimAttemptId": "attempt-1",
+        }
+        wrapped = bot._headless_exec_command(
+            "runtime-session", ["/opt/claude"], headless_policy=policy)
+        separator = wrapped.index("--")
+        manager_args = wrapped[3:separator]
+        self.assertEqual(
+            manager_args[manager_args.index("--policy-revision") + 1],
+            bot.HEADLESS_POLICY_REVISION)
+        self.assertEqual(
+            manager_args[manager_args.index("--aone-write-policy") + 1],
+            bot.POST_PR_AONE_WRITE_POLICY)
+        self.assertEqual(
+            manager_args[manager_args.index("--claim-attempt-id") + 1],
+            "attempt-1")
+        self.assertEqual(wrapped[separator + 1:], ["/opt/claude"])
+
     def test_real_wrapper_publishes_same_pid_state_before_exec(self):
         with tempfile.TemporaryDirectory() as directory:
             script = (
@@ -114,7 +138,8 @@ class HeadlessWorkerFenceTest(unittest.TestCase):
                 mock.patch.object(bot.subprocess, "Popen",
                                   return_value=process) as popen:
             output = list(bot.run_claude_stream(
-                "prompt", "runtime-session", True, timeout=5))
+                "prompt", "runtime-session", True, timeout=5,
+                terraform=True))
 
         self.assertEqual(output[-1], "stream-ok")
         command = popen.call_args.args[0]
@@ -125,6 +150,9 @@ class HeadlessWorkerFenceTest(unittest.TestCase):
             "exec-headless",
         ])
         self.assertIn("--resume", command)
+        child_env = popen.call_args.kwargs["env"]
+        self.assertEqual(child_env["JARVIS_A1_IDENTITY"], "terraform-rd")
+        self.assertEqual(child_env["JARVIS_A1_STRICT"], "1")
 
     def test_every_dispatch_retry_spawns_a_fresh_preexec_wrapper(self):
         processes = [
@@ -169,8 +197,9 @@ class HeadlessWorkerFenceTest(unittest.TestCase):
         guard = _BufferedProcess(bot.ClaudeResult("task-ok", False, "success"))
         bound = []
 
-        def spawn(argv, cwd, on_spawn):
+        def spawn(argv, cwd, on_spawn, env):
             captured["argv"] = list(argv)
+            captured["env"] = dict(env)
             on_spawn(guard)
             return guard, None
 
@@ -181,13 +210,15 @@ class HeadlessWorkerFenceTest(unittest.TestCase):
             result = bot.run_claude_buffered(
                 "prompt", "task-runtime", True, timeout=5,
                 on_spawn=lambda process: bound.append(process.pid),
-                guarded=True)
+                guarded=True, terraform=True)
 
         self.assertEqual(result.text, "task-ok")
         self.assertEqual(bound, [guard.pid])
         self.assertEqual(captured["argv"][3], "exec-headless")
         self.assertIn("/opt/claude", captured["argv"])
         self.assertNotEqual(bound[0], os.getpid())
+        self.assertEqual(captured["env"]["JARVIS_A1_IDENTITY"], "terraform-rd")
+        self.assertEqual(captured["env"]["JARVIS_A1_STRICT"], "1")
 
 
 if __name__ == "__main__":

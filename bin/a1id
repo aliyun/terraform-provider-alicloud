@@ -29,6 +29,10 @@
 #                          terraform-rd 未登录一律 die(不允许对外回退 jarvis);
 #                          其它非 jarvis 身份沿用非 strict 回退;个人身份会 stderr 告警
 #   JARVIS_A1_STRICT       严格模式(=1):默认身份未登录时直接 die,不回退
+#   JARVIS_AONE_WRITE_POLICY
+#                          post-pr-read-only: post-PR 子代理仅可执行明确的 Aone
+#                          读操作；认领/释放由 bridge 在模型进程外完成，重要事件由
+#                          bridge 的 RD-only publisher 统一发布。
 #
 # 用法:
 #   a1id login <id>              交互 BUC SSO 登录,落盘 identities/<id>/auth.yaml
@@ -80,6 +84,20 @@ case "${1:-}" in
     ;;
 esac
 mkdir -p "$STORE"
+
+source "$SCRIPT_DIR/../bootstrap/post-pr-context.sh"
+
+guard_aone_write(){
+  [ "${1:-}" = "project" ] && [ "${2:-}" = "workitem" ] || return 0
+  jarvis_post_pr_context_active || return 0
+
+  case "${3:-}:${4:-}" in
+    get:*|list:*|activity:*|comment:list|relation:list|attachment:list|attachment:download|field:list|field:options)
+      return 0
+      ;;
+  esac
+  die "post-PR 子代理对 Aone 只读；仅允许明确查询，认领/释放及其它写操作由 bridge 在模型进程外执行"
+}
 
 # Terraform 身份收口：旧 PD/QA label 只作为兼容别名解析到唯一公共 terraform-rd。
 # 告警必须在 canon 时发出，覆盖 login/use/who/ready/as/JARVIS_A1_IDENTITY 全入口。
@@ -329,6 +347,7 @@ case "$cmd" in
   as)
     id_raw="${1:-}"; shift || true; [ "${1:-}" = "--" ] && shift
     [ -n "$id_raw" ] || die "用法: a1id as <id> -- <a1 args...>"
+    guard_aone_write "$@"
     id="$(canon "$id_raw")"
     valid "$id" || die "未知身份 '$id_raw'(合法 jarvis|terraform-rd|chenyi|guozai|linjun|shanye,旧 pd/qa label 兼容映射到 terraform-rd)"
     is_logged_in "$id" || die "身份 '$id' 未登录,先 'bin/a1id login $id'"
@@ -336,6 +355,7 @@ case "$cmd" in
     guarded_exec "$id" "$@"
     ;;
   --)
+    guard_aone_write "$@"
     id=$(resolve_default) || exit $?
     guarded_exec "$id" "$@"
     ;;

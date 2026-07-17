@@ -715,9 +715,176 @@ fi
 rm -rf "$ROOT" "$BIN" "$CAP" "$ERR"
 
 # ===========================================================================
-# Test 19: 两份活跃 aone-triage Skill 的个人身份纪律枚举保持一致
+# Test 19: post-PR 子代理对 Aone 严格只读，且 env -u 不能绕过进程上下文
 # ===========================================================================
-echo "=== Test 19: aone-triage Skill 个人身份枚举包含 shanye ==="
+echo "=== Test 19: post-PR Aone read-only guard ==="
+ROOT=$(new_root); BIN=$(mktemp -d); make_stub "$BIN"
+seed_login "$ROOT" "terraform-rd"
+CAP=$(mktemp); ERR=$(mktemp)
+
+assert_post_pr_blocked() {
+    local label="$1"; shift
+    : > "$CAP"; : > "$ERR"
+    JARVIS_A1_IDENTITY=terraform-rd JARVIS_A1_STRICT=1 \
+        JARVIS_AONE_WRITE_POLICY=post-pr-read-only \
+        A1ID_ROOT="$ROOT" A1_BIN="$BIN/a1" STUB_CAPTURE="$CAP" \
+        bash "$A1ID" -- "$@" >/dev/null 2>"$ERR"
+    local rc=$?
+    if [ "$rc" != "0" ] && [ ! -s "$CAP" ]; then
+        pass "$label 被 a1id fail-closed"
+    else
+        fail "$label 未阻断: rc=$rc capture=$(cat "$CAP")"
+    fi
+}
+
+assert_post_pr_allowed() {
+    local label="$1"; shift
+    : > "$CAP"; : > "$ERR"
+    JARVIS_A1_IDENTITY=terraform-rd JARVIS_A1_STRICT=1 \
+        JARVIS_AONE_WRITE_POLICY=post-pr-read-only \
+        A1ID_ROOT="$ROOT" A1_BIN="$BIN/a1" STUB_CAPTURE="$CAP" \
+        bash "$A1ID" -- "$@" >/dev/null 2>"$ERR"
+    local rc=$?
+    if [ "$rc" = "0" ] && grep -qF "ARGS=$*" "$CAP"; then
+        pass "$label 明确读操作放行"
+    else
+        fail "$label 被误拦: rc=$rc err=$(cat "$ERR")"
+    fi
+}
+
+assert_post_pr_as_blocked() {
+    local label="$1"; shift
+    : > "$CAP"; : > "$ERR"
+    JARVIS_AONE_WRITE_POLICY=post-pr-read-only \
+        A1ID_ROOT="$ROOT" A1_BIN="$BIN/a1" STUB_CAPTURE="$CAP" \
+        bash "$A1ID" as terraform-rd -- "$@" >/dev/null 2>"$ERR"
+    local rc=$?
+    if [ "$rc" != "0" ] && [ ! -s "$CAP" ]; then
+        pass "$label 被显式身份入口 fail-closed"
+    else
+        fail "$label 未阻断: rc=$rc capture=$(cat "$CAP")"
+    fi
+}
+
+assert_post_pr_blocked "update status" project workitem update 123 --status Closed
+assert_post_pr_blocked "update tag" project workitem update 123 --tag post-pr-test-tag
+assert_post_pr_blocked "create" project workitem create --project 528766 --title x
+assert_post_pr_blocked "delete" project workitem delete 123
+assert_post_pr_blocked "comment create" project workitem comment create 123 -m no
+assert_post_pr_blocked "伪造 jarvis-claim marker" project workitem comment create 123 \
+    -m "jarvis-claim host-a 2026-07-16T12:34:56Z deadbeef"
+assert_post_pr_blocked "relation add" project workitem relation add 123 relate:456
+assert_post_pr_blocked "relation remove" project workitem relation remove 123 relate:456
+assert_post_pr_blocked "attachment upload" project workitem attachment upload 123 file.txt
+assert_post_pr_blocked "attachment delete" project workitem attachment delete 123 9
+assert_post_pr_as_blocked "显式 terraform-rd update" \
+    project workitem update 123 --status Closed
+
+assert_post_pr_allowed "get" project workitem get 123
+assert_post_pr_allowed "list" project workitem list --project 528766
+assert_post_pr_allowed "activity" project workitem activity 123
+assert_post_pr_allowed "comment list" project workitem comment list 123
+assert_post_pr_allowed "relation list" project workitem relation list 123
+assert_post_pr_allowed "attachment list" project workitem attachment list 123
+assert_post_pr_allowed "attachment download" project workitem attachment download 123 9
+assert_post_pr_allowed "field list" project workitem field list --project 528766
+assert_post_pr_allowed "field options" project workitem field options status --project 528766
+
+context_dir="/tmp/jarvis-headless-context-$(id -u)"
+context_pgid="$(ps -o pgid= -p $$ | tr -d '[:space:]')"
+context_marker="$context_dir/$context_pgid.json"
+lineage_dir="$(mktemp -d)"
+manager="$proj_root/bootstrap/jarvis-interactive-worker.py"
+mkdir -p "$context_dir"
+rm -f "$context_marker"
+JARVIS_INTERACTIVE_STATE_DIR="$lineage_dir" \
+JARVIS_CONTROL_PLANE_BASE_URL="http://127.0.0.1:1" \
+JARVIS_HEADLESS_REMOTE_REGISTER_TIMEOUT="0.05" \
+    /usr/bin/python3 -I "$manager" register-headless \
+    --session-id "a1id-lineage-$$" --pid "$$" --client claude \
+    --policy-revision terraform-rd-single-writer-v4 \
+    --aone-write-policy post-pr-read-only \
+    --headless-kind pr_comment_reply --aone-id 123 --project-id 528766 \
+    --claim-attempt-id a1id-lineage-attempt \
+    >/dev/null
+: > "$CAP"; : > "$ERR"
+env -u JARVIS_AONE_WRITE_POLICY \
+    JARVIS_A1_IDENTITY=terraform-rd JARVIS_A1_STRICT=1 \
+    JARVIS_INTERACTIVE_STATE_DIR="$lineage_dir" \
+    A1ID_ROOT="$ROOT" A1_BIN="$BIN/a1" STUB_CAPTURE="$CAP" \
+    bash "$A1ID" -- project workitem update 123 --status Closed \
+    >/dev/null 2>"$ERR"
+rc=$?
+if [ "$rc" != "0" ] && [ ! -s "$CAP" ]; then
+    pass "marker 缺失 + env -u 后仍由 canonical worker lineage 阻断 Aone 写"
+else
+    fail "marker 缺失时 lineage 未阻断写: rc=$rc capture=$(cat "$CAP")"
+fi
+
+printf '%s' '{broken-json' > "$context_marker"
+: > "$CAP"; : > "$ERR"
+env -u JARVIS_AONE_WRITE_POLICY \
+    JARVIS_A1_IDENTITY=terraform-rd JARVIS_A1_STRICT=1 \
+    JARVIS_INTERACTIVE_STATE_DIR="$lineage_dir" \
+    A1ID_ROOT="$ROOT" A1_BIN="$BIN/a1" STUB_CAPTURE="$CAP" \
+    bash "$A1ID" -- project workitem comment create 123 -m no \
+    >/dev/null 2>"$ERR"
+rc=$?
+if [ "$rc" != "0" ] && [ ! -s "$CAP" ]; then
+    pass "marker 损坏 + env 清空后 post-PR Aone 写仍被拒绝"
+else
+    fail "损坏 marker 绕过 lineage: rc=$rc capture=$(cat "$CAP")"
+fi
+
+: > "$CAP"; : > "$ERR"
+env -u JARVIS_AONE_WRITE_POLICY \
+    JARVIS_A1_IDENTITY=terraform-rd JARVIS_A1_STRICT=1 \
+    JARVIS_INTERACTIVE_STATE_DIR="$lineage_dir" \
+    A1ID_ROOT="$ROOT" A1_BIN="$BIN/a1" STUB_CAPTURE="$CAP" \
+    bash "$A1ID" -- project workitem get 123 \
+    >/dev/null 2>"$ERR"
+rc=$?
+if [ "$rc" = "0" ] && grep -qF "ARGS=project workitem get 123" "$CAP"; then
+    pass "marker 损坏 + env 清空后明确 Aone 读仍允许"
+else
+    fail "post-PR lineage 误拦只读: rc=$rc err=$(cat "$ERR")"
+fi
+
+rm -f "$context_marker" "$lineage_dir"/*.json
+sleep 30 &
+ended_pid=$!
+JARVIS_INTERACTIVE_STATE_DIR="$lineage_dir" \
+JARVIS_CONTROL_PLANE_BASE_URL="http://127.0.0.1:1" \
+JARVIS_HEADLESS_REMOTE_REGISTER_TIMEOUT="0.05" \
+    /usr/bin/python3 -I "$manager" register-headless \
+    --session-id "a1id-ended-$$" --pid "$ended_pid" --client claude \
+    --policy-revision terraform-rd-single-writer-v4 \
+    --aone-write-policy post-pr-read-only \
+    --headless-kind pr_ci_fix --aone-id 123 --project-id 528766 \
+    --claim-attempt-id a1id-ended-attempt \
+    >/dev/null
+kill "$ended_pid" 2>/dev/null || true
+wait "$ended_pid" 2>/dev/null || true
+: > "$CAP"; : > "$ERR"
+env -u JARVIS_AONE_WRITE_POLICY \
+    JARVIS_A1_IDENTITY=terraform-rd JARVIS_A1_STRICT=1 \
+    JARVIS_INTERACTIVE_STATE_DIR="$lineage_dir" \
+    A1ID_ROOT="$ROOT" A1_BIN="$BIN/a1" STUB_CAPTURE="$CAP" \
+    bash "$A1ID" -- project workitem update 123 --status Closed \
+    >/dev/null 2>"$ERR"
+rc=$?
+if [ "$rc" = "0" ] && grep -qF \
+        "ARGS=project workitem update 123 --status Closed" "$CAP"; then
+    pass "已结束 worker 的 tombstone 不误伤正常交互写"
+else
+    fail "已结束 worker 仍误拦当前进程: rc=$rc err=$(cat "$ERR")"
+fi
+rm -rf "$ROOT" "$BIN" "$CAP" "$ERR" "$lineage_dir"
+
+# ===========================================================================
+# Test 20: 两份活跃 aone-triage Skill 的个人身份纪律枚举保持一致
+# ===========================================================================
+echo "=== Test 20: aone-triage Skill 个人身份枚举包含 shanye ==="
 for skill in \
     "$proj_root/.agents/skills/aone-triage/SKILL.md" \
     "$proj_root/.claude/skills/aone-triage/SKILL.md"; do

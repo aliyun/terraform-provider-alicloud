@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""Regression: PersonaScheduler must commit the ledger (last_seen/processed/count)
-only when the dispatched worker ACTUALLY STARTS, never at submit-accept time.
+"""Regression: PersonaScheduler advances its ledger only after durable acceptance.
 
 Bug (工单 84297352, 原根 @Terraform-研发数字人 两次都无人理):
 _apply_decisions 旧逻辑在 self.pool.submit(...) 返回 (accepted=True) 后就同步把评论写进
@@ -9,8 +8,8 @@ bridge 换 token 重启，terminate_all 的 shutdown(cancel_futures=True) 丢弃
 future（worker 从未跑、评论从未回），而 ledger 已标 processed → PersonaScheduler 永久
 skip(reason=processed) 不再重派，ScanScheduler 冷启动又把它当存量积压 → 双重盲区烂尾。
 
-Fix: 落盘挪进传给 _dispatch_persona 的 on_start 回调，仅当 _work 真正执行（拿到槽位）
-才触发。排队被取消 → 回调不触发 → ledger 干净 → 下一 tick 由 _iid_in_flight 放行后自然重派。
+Task-only 架构中，控制面成功持久化就等价于可靠接管；未持久化时 ledger 必须保持干净，
+下一 tick 才能自然重试。EphemeralJob 仍以本地 worker on_start 作为确认边界。
 
 Standalone: `python3 bridge/test_persona_ledger_on_start.py`. 无 a1/Aone/DingTalk（fake pool）。
 """
@@ -55,13 +54,20 @@ class FakePool:
         return True, "dispatched"
 
 
-def _make_scheduler(pool):
+class FakeTaskClient:
+    def upsert_desired_task(self, envelope, request_id=None):
+        return {"accepted": True, "reason": "task_persisted"}
+
+
+def _make_scheduler(pool, task_client=None):
     tmp = tempfile.NamedTemporaryFile(suffix=".json", delete=False, mode="w")
     tmp.write('{"tickets": {}}')
     tmp.close()
     # handler=None → _work 里 self.handler is None，落盘后直接返回 "done"，不碰 dispatch_item。
-    return bot.PersonaScheduler(handler=None, pool=pool, enabled=False,
-                                ledger_path=tmp.name)
+    scheduler = bot.PersonaScheduler(handler=None, pool=pool, enabled=False,
+                                     ledger_path=tmp.name)
+    scheduler.execution_router = bot.ExecutionRouter(client=task_client)
+    return scheduler
 
 
 def _item():
@@ -75,19 +81,19 @@ def _dispatch_decision():
 
 
 class LedgerOnStartTest(unittest.TestCase):
-    def test_queued_but_not_started_leaves_ledger_clean(self):
-        """submit 接受但 worker 未启动（排队后被重启丢弃）→ processed 不写、last_seen 不推，
-        下一 tick 才能自然重派。这是修复的核心断言。"""
-        sched = _make_scheduler(FakePool(start_worker=False))
+    def test_task_persistence_failure_leaves_ledger_clean(self):
+        """Task 未持久化时不推进传感器游标，下一 tick 仍可重试。"""
+        sched = _make_scheduler(FakePool(start_worker=False), task_client=None)
         sched._apply_decisions(_item(), [], [_dispatch_decision()])
         st = sched._get_ticket_state(IID)
         self.assertEqual(st.get("processed") or set(), set(),
-                         "排队未启动却把评论标 processed = 复现 84297352 黑洞")
+                         "Task 未持久化却把评论标 processed")
         self.assertEqual(int(st.get("last_seen") or 0), 0)
 
-    def test_worker_started_commits_ledger(self):
-        """worker 真正开跑（on_start 触发）→ processed/last_seen/count 落盘，防同评论重复派。"""
-        sched = _make_scheduler(FakePool(start_worker=True))
+    def test_durable_task_acceptance_commits_ledger(self):
+        """Task 已持久化即推进游标；数据库负责后续 lease/retry。"""
+        sched = _make_scheduler(
+            FakePool(start_worker=False), task_client=FakeTaskClient())
         sched._apply_decisions(_item(), [], [_dispatch_decision()])
         st = sched._get_ticket_state(IID)
         self.assertIn(CID, st.get("processed") or set())

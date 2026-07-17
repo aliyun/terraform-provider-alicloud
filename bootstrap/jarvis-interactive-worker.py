@@ -7,9 +7,12 @@ requested by the user through ``POST /tasks/claim``.  A small detached
 sidecar keeps both the worker and its current fenced session alive while the real
 Codex/Claude host process exists.
 
-State is local coordination data, not an authority.  It is written atomically
-with mode 0600 and deliberately excludes credentials; the database fence remains
-the ownership authority.
+State is local coordination data, not the Aone ownership authority.  It is written
+atomically with mode 0600 and deliberately excludes credentials; the database fence
+remains the ownership authority.  A headless execution policy only removes
+capabilities.  That policy is also mirrored to worker capabilities, and the live
+process lineage retains the exec-headless arguments so deleting a cache file cannot
+turn a restricted worker into an Aone writer.
 """
 
 from __future__ import annotations
@@ -55,6 +58,9 @@ UNAVAILABLE_EXIT = 11
 STATE_ERROR_EXIT = 12
 TRANSITION_EXIT = 13
 HOOK_BLOCK_EXIT = 2
+HEADLESS_POLICY_REVISION = "terraform-rd-single-writer-v4"
+POST_PR_AONE_WRITE_POLICY = "post-pr-read-only"
+POST_PR_HEADLESS_KINDS = frozenset(("pr_ci_fix", "pr_comment_reply"))
 T = TypeVar("T")
 
 
@@ -203,7 +209,7 @@ def _pid_alive(pid: Any) -> bool:
 def _process_info(pid: int) -> Tuple[int, str]:
     try:
         result = subprocess.run(
-            ["ps", "-o", "ppid=", "-o", "command=", "-p", str(pid)],
+            ["/bin/ps", "-o", "ppid=", "-o", "command=", "-p", str(pid)],
             capture_output=True, text=True, timeout=2, check=False)
     except (OSError, subprocess.SubprocessError):
         return 0, ""
@@ -217,6 +223,17 @@ def _process_info(pid: int) -> Tuple[int, str]:
         parent = 0
     command = parts[1] if len(parts) > 1 else ""
     return parent, command
+
+
+def _process_command(pid: int) -> str:
+    """Return the untruncated command line used for immutable lineage checks."""
+    try:
+        result = subprocess.run(
+            ["/bin/ps", "-ww", "-o", "command=", "-p", str(pid)],
+            capture_output=True, text=True, timeout=2, check=False)
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    return result.stdout.strip()
 
 
 def _process_start_identity(pid: int) -> str:
@@ -348,15 +365,20 @@ def _current_store() -> StateStore:
 
 
 def _capabilities(state: Mapping[str, Any]) -> Dict[str, Any]:
-    return {
+    capabilities = {
         "dispatch": {"pull": False},
         "workerMode": "INTERACTIVE",
         "workerKey": state.get("workerKey"),
         "client": state.get("client"),
         "clientSessionId": state.get("clientSessionId"),
         "hostPid": state.get("hostPid"),
+        "hostProcessStartedAt": state.get("hostProcessStartedAt"),
         "kinds": ["interactive-aone"],
     }
+    policy = state.get("headlessPolicy")
+    if state.get("headlessRegistered") and isinstance(policy, Mapping):
+        capabilities["headlessPolicy"] = dict(policy)
+    return capabilities
 
 
 def _worker_payload(state: Mapping[str, Any], status: str) -> Dict[str, Any]:
@@ -1835,6 +1857,7 @@ def _build_incarnation_state(
         host_process_started_at: str, verify_command: bool,
         cwd: str, transcript_path: Any = None, branch: str = "",
         source: Any = None, headless: bool = False,
+        headless_policy: Optional[Mapping[str, Any]] = None,
         now: Optional[int] = None) -> Tuple[Dict[str, Any], bool]:
     """Build the one canonical local state shape for a host incarnation.
 
@@ -1918,8 +1941,19 @@ def _build_incarnation_state(
         "lastTurnActivityAt": timestamp,
         "registeredAt": timestamp,
     }
-    if headless:
+    inherited_headless = bool(
+        same_incarnation and old_state.get("headlessRegistered"))
+    effective_headless_policy = (
+        dict(headless_policy)
+        if isinstance(headless_policy, Mapping)
+        else (dict(old_state["headlessPolicy"])
+              if inherited_headless
+              and isinstance(old_state.get("headlessPolicy"), Mapping)
+              else None))
+    if headless or inherited_headless:
         state["headlessRegistered"] = True
+    if effective_headless_policy is not None:
+        state["headlessPolicy"] = effective_headless_policy
     if is_compact and old_state.get("turnStoppedAt"):
         state["turnStoppedAt"] = old_state.get("turnStoppedAt")
     if ((same_incarnation or recovery_claim is None)
@@ -2295,8 +2329,138 @@ def hook(client_name: str, event: Mapping[str, Any]) -> int:
     return 0
 
 
+def _normalize_headless_policy(
+        *, policy_revision: Any = None, aone_write_policy: Any = None,
+        headless_kind: Any = None, aone_id: Any = None,
+        project_id: Any = None,
+        claim_attempt_id: Any = None) -> Optional[Dict[str, str]]:
+    """Validate the bridge-owned policy persisted with a headless incarnation."""
+    values = {
+        "policyRevision": str(policy_revision or "").strip(),
+        "aoneWritePolicy": str(aone_write_policy or "").strip(),
+        "kind": str(headless_kind or "").strip(),
+        "aoneId": str(aone_id or "").strip(),
+        "projectId": str(project_id or "").strip(),
+        "claimAttemptId": str(claim_attempt_id or "").strip(),
+    }
+    if not any(values.values()):
+        return None
+    if values["policyRevision"] != HEADLESS_POLICY_REVISION:
+        raise ValueError("unsupported headless policy revision")
+    if values["aoneWritePolicy"] != POST_PR_AONE_WRITE_POLICY:
+        raise ValueError("unsupported headless Aone write policy")
+    if values["kind"] not in POST_PR_HEADLESS_KINDS:
+        raise ValueError("unsupported post-PR headless kind")
+    if (not values["aoneId"] or not values["projectId"]
+            or not values["claimAttemptId"]):
+        raise ValueError("post-PR headless policy requires Aone lineage")
+    return values
+
+
+def _is_post_pr_policy(value: Any) -> bool:
+    if not isinstance(value, Mapping):
+        return False
+    return (
+        str(value.get("policyRevision") or "") == HEADLESS_POLICY_REVISION
+        and str(value.get("aoneWritePolicy") or "") ==
+        POST_PR_AONE_WRITE_POLICY
+        and str(value.get("kind") or "") in POST_PR_HEADLESS_KINDS
+        and bool(str(value.get("aoneId") or "").strip())
+        and bool(str(value.get("projectId") or "").strip())
+        and bool(str(value.get("claimAttemptId") or "").strip()))
+
+
+def _post_pr_exec_lineage(command: str) -> bool:
+    """Recognize the fixed manager's policy-bearing argv in a live ancestor."""
+    try:
+        tokens = shlex.split(str(command or ""))
+    except ValueError:
+        return False
+    manager = str(Path(__file__).resolve())
+    try:
+        manager_index = tokens.index(manager)
+    except ValueError:
+        return False
+    if tokens[manager_index + 1:manager_index + 2] != ["exec-headless"]:
+        return False
+    options: Dict[str, str] = {}
+    index = manager_index + 2
+    while index < len(tokens):
+        token = tokens[index]
+        if token == "--":
+            break
+        if token.startswith("--") and index + 1 < len(tokens):
+            options[token] = tokens[index + 1]
+            index += 2
+            continue
+        index += 1
+    return _is_post_pr_policy({
+        "policyRevision": options.get("--policy-revision"),
+        "aoneWritePolicy": options.get("--aone-write-policy"),
+        "kind": options.get("--headless-kind"),
+        "aoneId": options.get("--aone-id"),
+        "projectId": options.get("--project-id"),
+        "claimAttemptId": options.get("--claim-attempt-id"),
+    })
+
+
+def _calling_ancestors(pid: int, max_depth: int = 64) -> Dict[int, str]:
+    ancestors: Dict[int, str] = {}
+    current = int(pid)
+    for _depth in range(max_depth):
+        if current <= 1 or current in ancestors:
+            break
+        started_at = _process_start_identity(current)
+        if started_at:
+            ancestors[current] = started_at
+        parent, _command = _process_info(current)
+        if parent <= 0 or parent == current:
+            break
+        current = parent
+    return ancestors
+
+
+def post_pr_context_active(calling_pid: int) -> bool:
+    """Whether ``calling_pid`` belongs to a live restricted headless lineage.
+
+    The immutable live argv is checked first.  Canonical worker state is the durable
+    fallback and control-plane mirror source.  The legacy ``/tmp`` process-group
+    marker is intentionally not consulted here.
+    """
+    ancestors = _calling_ancestors(calling_pid)
+    if not ancestors:
+        return False
+    for ancestor_pid in ancestors:
+        if _post_pr_exec_lineage(_process_command(ancestor_pid)):
+            return True
+    root = _state_root()
+    try:
+        paths = list(root.glob("*.json"))
+    except OSError:
+        return False
+    for path in paths:
+        try:
+            state = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, TypeError, ValueError):
+            continue
+        if (not isinstance(state, Mapping)
+                or not state.get("headlessRegistered")
+                or not _is_post_pr_policy(state.get("headlessPolicy"))):
+            continue
+        try:
+            host_pid = int(state.get("hostPid") or 0)
+        except (TypeError, ValueError):
+            continue
+        expected_start = str(state.get("hostProcessStartedAt") or "")
+        if (host_pid in ancestors and expected_start
+                and ancestors[host_pid] == expected_start):
+            return True
+    return False
+
+
 def register_headless(session_id: str, host_pid: int,
-                      client_name: str = "claude") -> Dict[str, Any]:
+                      client_name: str = "claude",
+                      headless_policy: Optional[Mapping[str, Any]] = None) -> Dict[str, Any]:
     """Pre-register one trusted wrapper incarnation before it execs Claude.
 
     SessionEnd keeps a stopped tombstone rather than deleting the state file.
@@ -2315,6 +2479,14 @@ def register_headless(session_id: str, host_pid: int,
         raise ValueError("host_pid must be a positive integer")
     if client_name not in ("claude", "codex"):
         raise ValueError("client must be claude or codex")
+    if headless_policy is not None:
+        headless_policy = _normalize_headless_policy(
+            policy_revision=headless_policy.get("policyRevision"),
+            aone_write_policy=headless_policy.get("aoneWritePolicy"),
+            headless_kind=headless_policy.get("kind"),
+            aone_id=headless_policy.get("aoneId"),
+            project_id=headless_policy.get("projectId"),
+            claim_attempt_id=headless_policy.get("claimAttemptId"))
     store = StateStore(_state_path(client_name, session_id))
     old_state: Dict[str, Any] = {}
     with store.locked():
@@ -2332,7 +2504,8 @@ def register_headless(session_id: str, host_pid: int,
             transcript_path=old_state.get("transcriptPath"),
             branch=str(old_state.get("branch") or ""),
             source="headless",
-            headless=True)
+            headless=True,
+            headless_policy=headless_policy)
         # Land local lineage FIRST.  No control-plane call may hold this lock.
         store.save_unlocked(state)
 
@@ -2362,7 +2535,8 @@ def register_headless(session_id: str, host_pid: int,
 
 
 def exec_headless(session_id: str, command: list[str],
-                  client_name: str = "claude") -> None:
+                  client_name: str = "claude",
+                  headless_policy: Optional[Mapping[str, Any]] = None) -> None:
     """Atomically publish the fence state, then replace this process with Claude.
 
     ``exec`` preserves PID and process start time, so the pre-registered
@@ -2370,7 +2544,9 @@ def exec_headless(session_id: str, command: list[str],
     """
     if not command:
         raise ValueError("headless command must not be empty")
-    result = register_headless(session_id, os.getpid(), client_name=client_name)
+    result = register_headless(
+        session_id, os.getpid(), client_name=client_name,
+        headless_policy=headless_policy)
     if not result.get("verifyHostCommand"):
         raise RuntimeError("headless wrapper process could not be verified")
     env = os.environ.copy()
@@ -3092,11 +3268,25 @@ def _parser() -> argparse.ArgumentParser:
     register_parser.add_argument("--pid", required=True, type=int)
     register_parser.add_argument("--client", choices=("claude", "codex"),
                                  default="claude")
+    register_parser.add_argument("--policy-revision")
+    register_parser.add_argument("--aone-write-policy")
+    register_parser.add_argument("--headless-kind")
+    register_parser.add_argument("--aone-id")
+    register_parser.add_argument("--project-id")
+    register_parser.add_argument("--claim-attempt-id")
     exec_parser = sub.add_parser("exec-headless")
     exec_parser.add_argument("--session-id", required=True)
     exec_parser.add_argument("--client", choices=("claude", "codex"),
                              default="claude")
+    exec_parser.add_argument("--policy-revision")
+    exec_parser.add_argument("--aone-write-policy")
+    exec_parser.add_argument("--headless-kind")
+    exec_parser.add_argument("--aone-id")
+    exec_parser.add_argument("--project-id")
+    exec_parser.add_argument("--claim-attempt-id")
     exec_parser.add_argument("headless_command", nargs=argparse.REMAINDER)
+    context_parser = sub.add_parser("post-pr-context")
+    context_parser.add_argument("--pid", type=int, default=os.getppid())
     sub.add_parser("status")
     return parser
 
@@ -3148,13 +3338,32 @@ def main(argv: Optional[list[str]] = None) -> int:
         elif args.command == "complete":
             _print_json(transition(args.aone_id, "complete", args.detail))
         elif args.command == "register-headless":
+            policy = _normalize_headless_policy(
+                policy_revision=args.policy_revision,
+                aone_write_policy=args.aone_write_policy,
+                headless_kind=args.headless_kind,
+                aone_id=args.aone_id,
+                project_id=args.project_id,
+                claim_attempt_id=args.claim_attempt_id)
             _print_json(register_headless(
-                args.session_id, args.pid, client_name=args.client))
+                args.session_id, args.pid, client_name=args.client,
+                headless_policy=policy))
         elif args.command == "exec-headless":
             command = list(args.headless_command)
             if command[:1] == ["--"]:
                 command = command[1:]
-            exec_headless(args.session_id, command, client_name=args.client)
+            policy = _normalize_headless_policy(
+                policy_revision=args.policy_revision,
+                aone_write_policy=args.aone_write_policy,
+                headless_kind=args.headless_kind,
+                aone_id=args.aone_id,
+                project_id=args.project_id,
+                claim_attempt_id=args.claim_attempt_id)
+            exec_headless(
+                args.session_id, command, client_name=args.client,
+                headless_policy=policy)
+        elif args.command == "post-pr-context":
+            return 0 if post_pr_context_active(args.pid) else 1
         elif args.command == "status":
             _print_json(worker_status())
         return 0

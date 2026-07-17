@@ -51,13 +51,16 @@ class ExecutionRuntimeTest(unittest.TestCase):
                         return_value=process) as popen:
             result = ExecutionRuntime().run_buffered(
                 ["tool", "arg"], HERE, timeout=10,
-                on_spawn=lambda value: spawned.append(value.pid))
+                on_spawn=lambda value: spawned.append(value.pid),
+                env={"TEST_EXECUTION_ENV": "present"})
 
         self.assertEqual((result.stdout, result.stderr, result.returncode),
                          ("out", "err", 7))
         self.assertFalse(result.timed_out)
         self.assertEqual(spawned, [42])
         self.assertEqual(popen.call_args.args[0], ["tool", "arg"])
+        self.assertEqual(
+            popen.call_args.kwargs["env"], {"TEST_EXECUTION_ENV": "present"})
 
     def test_timeout_kills_process_group(self):
         process = mock.Mock()
@@ -88,18 +91,21 @@ class ExecutionRuntimeTest(unittest.TestCase):
         __import__("os").close(sentinel_read)
         captured = {}
 
-        def guarded_spawn(argv, cwd, on_spawn):
+        def guarded_spawn(argv, cwd, on_spawn, env):
             captured["argv"] = list(argv)
             captured["cwd"] = cwd
+            captured["env"] = env
             on_spawn(process)
             return process, sentinel_write
 
         result = ExecutionRuntime().run_buffered(
             ["tool"], HERE, timeout=1, guarded=True,
-            guarded_spawn=guarded_spawn, on_spawn=lambda _process: None)
+            guarded_spawn=guarded_spawn, on_spawn=lambda _process: None,
+            env={"TASK_ENV": "fenced"})
 
         self.assertEqual(result.stdout, "ok")
-        self.assertEqual(captured, {"argv": ["tool"], "cwd": HERE})
+        self.assertEqual(captured, {
+            "argv": ["tool"], "cwd": HERE, "env": {"TASK_ENV": "fenced"}})
 
 
 if __name__ == "__main__":

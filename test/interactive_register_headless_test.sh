@@ -28,6 +28,7 @@ import tempfile
 import importlib.util
 import unittest
 from pathlib import Path
+from unittest import mock
 
 REPO = Path(os.environ["REPO_ROOT"])
 MANAGER = REPO / "bootstrap" / "jarvis-interactive-worker.py"
@@ -83,6 +84,66 @@ class RegisterHeadlessTest(unittest.TestCase):
         # A best-effort remote register was attempted.
         self.assertEqual(len(self.register_calls), 1)
         self.assertEqual(self.register_calls[0][0], "ACTIVE")
+
+    def test_post_pr_policy_lands_and_is_mirrored_to_capabilities(self):
+        sid = "sess-post-pr"
+        policy = m._normalize_headless_policy(
+            policy_revision=m.HEADLESS_POLICY_REVISION,
+            aone_write_policy=m.POST_PR_AONE_WRITE_POLICY,
+            headless_kind="pr_comment_reply",
+            aone_id="84362517",
+            project_id="2100304",
+            claim_attempt_id="attempt-comment")
+        m.register_headless(
+            sid, os.getpid(), client_name="claude",
+            headless_policy=policy)
+        state = json.loads(m._state_path("claude", sid).read_text())
+        self.assertEqual(state["headlessPolicy"], policy)
+        capabilities = m._capabilities(state)
+        self.assertEqual(capabilities["headlessPolicy"], policy)
+        self.assertEqual(
+            capabilities["hostProcessStartedAt"],
+            state["hostProcessStartedAt"])
+        self.assertTrue(m.post_pr_context_active(os.getpid()))
+
+    def test_same_incarnation_session_refresh_preserves_post_pr_policy(self):
+        policy = m._normalize_headless_policy(
+            policy_revision=m.HEADLESS_POLICY_REVISION,
+            aone_write_policy=m.POST_PR_AONE_WRITE_POLICY,
+            headless_kind="pr_ci_fix",
+            aone_id="84362517",
+            project_id="2100304",
+            claim_attempt_id="attempt-ci")
+        original, _same = m._build_incarnation_state(
+            {}, client_name="claude", session_id="sess-refresh",
+            host_pid=1234, host_process_started_at="birth",
+            verify_command=True, cwd=str(REPO), source="headless",
+            headless=True, headless_policy=policy, now=1)
+        refreshed, same = m._build_incarnation_state(
+            original, client_name="claude", session_id="sess-refresh",
+            host_pid=1234, host_process_started_at="birth",
+            verify_command=True, cwd=str(REPO), source="resume",
+            headless=False, now=2)
+        self.assertTrue(same)
+        self.assertTrue(refreshed["headlessRegistered"])
+        self.assertEqual(refreshed["headlessPolicy"], policy)
+
+    def test_live_exec_argv_restricts_even_without_local_state(self):
+        policy_args = (
+            "--policy-revision %s --aone-write-policy %s "
+            "--headless-kind pr_ci_fix --aone-id 84362517 "
+            "--project-id 2100304 --claim-attempt-id attempt-live" %
+            (m.HEADLESS_POLICY_REVISION, m.POST_PR_AONE_WRITE_POLICY))
+        command = (
+            "/usr/bin/python3 /repo/bridge/managed_process_guard.py -- "
+            "/usr/bin/python3 -I %s exec-headless --session-id sid "
+            "--client claude %s -- /opt/claude" %
+            (MANAGER, policy_args))
+        with mock.patch.object(m, "_calling_ancestors",
+                               return_value={1234: "birth"}), \
+                mock.patch.object(m, "_process_command",
+                                  return_value=command):
+            self.assertTrue(m.post_pr_context_active(1234))
 
     def test_idempotent_same_pid(self):
         sid = "sess-beta"

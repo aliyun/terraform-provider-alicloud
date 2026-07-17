@@ -299,6 +299,33 @@ else
     fail_count=$((fail_count + 1))
 fi
 
+echo "Test 11: post-PR policy blocks every wrap entry before any Aone/local side effect"
+for wrap_cmd in sync done done-no-status; do
+    : > "$A1_LOG"
+    post_pr_exit=0
+    if [ "$wrap_cmd" = "sync" ]; then
+        JARVIS_AONE_WRITE_POLICY=post-pr-read-only \
+            bash "$WRAP" "$wrap_cmd" "WI-011" "must stay off Aone" >/dev/null 2>&1 \
+            || post_pr_exit=$?
+    elif [ "$wrap_cmd" = "done" ]; then
+        JARVIS_AONE_WRITE_POLICY=post-pr-read-only \
+            bash "$WRAP" "$wrap_cmd" "WI-011" "must stay off Aone" --no-status \
+            >/dev/null 2>&1 || post_pr_exit=$?
+    else
+        JARVIS_AONE_WRITE_POLICY=post-pr-read-only \
+            bash "$WRAP" "$wrap_cmd" "WI-011" "must stay off Aone" >/dev/null 2>&1 \
+            || post_pr_exit=$?
+    fi
+    if [ "$post_pr_exit" -ne 0 ] && [ ! -s "$A1_LOG" ]; then
+        echo "  PASS: post-PR wrap $wrap_cmd blocked before invoking a1"
+        pass_count=$((pass_count + 1))
+    else
+        echo "  FAIL: post-PR wrap $wrap_cmd not blocked cleanly (exit=$post_pr_exit)"
+        cat "$A1_LOG"
+        fail_count=$((fail_count + 1))
+    fi
+done
+
 # ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------

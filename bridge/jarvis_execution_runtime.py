@@ -16,11 +16,14 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Optional, Sequence, Tuple
+from typing import Any, Callable, Mapping, Optional, Sequence, Tuple
 
 
 SpawnCallback = Callable[[Any], None]
-GuardedSpawn = Callable[[Sequence[str], Path, SpawnCallback], Tuple[Any, Optional[int]]]
+GuardedSpawn = Callable[
+    [Sequence[str], Path, SpawnCallback, Optional[Mapping[str, str]]],
+    Tuple[Any, Optional[int]],
+]
 
 
 @dataclass(frozen=True)
@@ -62,7 +65,8 @@ class ProcessGuardian:
                         pass
 
     def spawn(self, argv: Sequence[str], cwd: Path,
-              on_spawn: SpawnCallback) -> Tuple[Any, int]:
+              on_spawn: SpawnCallback,
+              env: Optional[Mapping[str, str]] = None) -> Tuple[Any, int]:
         if on_spawn is None:
             raise ValueError("guarded process requires an on_spawn binder")
         gate_read, gate_write = os.pipe()
@@ -81,7 +85,8 @@ class ProcessGuardian:
             process = subprocess.Popen(
                 command, cwd=cwd, text=True, stdin=subprocess.DEVNULL,
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                start_new_session=True, pass_fds=(gate_read, sentinel_read))
+                start_new_session=True, pass_fds=(gate_read, sentinel_read),
+                env=env)
         except Exception:
             for fd in (gate_read, gate_write, sentinel_read, sentinel_write):
                 try:
@@ -137,16 +142,17 @@ class ExecutionRuntime:
     def run_buffered(self, argv: Sequence[str], cwd: Path, *, timeout: float,
                      on_spawn: Optional[SpawnCallback] = None,
                      guarded: bool = False,
-                     guarded_spawn: Optional[GuardedSpawn] = None) -> ExecutionResult:
+                     guarded_spawn: Optional[GuardedSpawn] = None,
+                     env: Optional[Mapping[str, str]] = None) -> ExecutionResult:
         sentinel_write = None
         if guarded:
             spawn = guarded_spawn or self.guardian.spawn
-            process, sentinel_write = spawn(argv, cwd, on_spawn)
+            process, sentinel_write = spawn(argv, cwd, on_spawn, env)
         else:
             process = subprocess.Popen(
                 list(argv), cwd=cwd, text=True, stdin=subprocess.DEVNULL,
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                start_new_session=True)
+                start_new_session=True, env=env)
             if on_spawn is not None:
                 try:
                     on_spawn(process)

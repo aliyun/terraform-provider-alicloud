@@ -139,7 +139,7 @@ class FollowupPromptIdentityTest(unittest.TestCase):
         self.assertIn("claim.sh finish", p)
         self.assertIn("claim.sh release", p)
 
-    def test_pr_followups_release_without_any_aone_reply(self):
+    def test_pr_followups_delegate_aone_bookend_to_bridge(self):
         prompts = (
             bot._pr_ci_fix_prompt(
                 "84215653", "https://github.com/aliyun/example/pull/1", "1086837", ["test"]),
@@ -148,13 +148,14 @@ class FollowupPromptIdentityTest(unittest.TestCase):
         )
         for p in prompts:
             self.assertIn("ready terraform-rd", p)
-            self.assertIn("JARVIS_A1_IDENTITY=terraform-rd", p)
+            self.assertIn("模型进程外托管", p)
             self.assertNotIn("as terraform-pd", p)
             self.assertNotIn("as terraform-qa", p)
             self.assertNotIn("wrap.sh sync", p)
             self.assertNotIn("wrap.sh done", p)
             self.assertIn("bootstrap/log.sh escalate", p)
-            self.assertIn("claim.sh release", p)
+            self.assertNotIn("bootstrap/claim.sh claim", p)
+            self.assertNotIn("bootstrap/claim.sh release", p)
 
 
 if __name__ == "__main__":
