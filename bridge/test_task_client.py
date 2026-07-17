@@ -195,11 +195,13 @@ class ClientContractTest(unittest.TestCase):
         opener = RecordingOpener(responses=[
             FakeResponse({"ok": True}), FakeResponse({"ok": True}),
             FakeResponse({"ok": True}), FakeResponse({"ok": True}),
+            FakeResponse({"proceed": True}), FakeResponse({"status": "UNKNOWN"}),
             FakeResponse({"taskId": "t1"}),
             FakeResponse([{"eventType": "LEASED"}]),
             FakeResponse([{"workerKey": "w1"}]),
             FakeResponse({"worker": {"workerKey": "host/one"}}),
             FakeResponse({"items": [], "nextAfterSessionId": None, "hasMore": False}),
+            FakeResponse({"items": [], "nextAfterOperationId": None, "hasMore": False}),
         ])
         c = self.make(opener)
         operation = {"operation_id": "op1", "fence_token": 7}
@@ -207,19 +209,29 @@ class ClientContractTest(unittest.TestCase):
         c.ack_operation(operation, request_id="o2")
         c.fail_operation(operation, request_id="o3")
         c.reconcile_operation(operation, request_id="o4")
+        recovery = {
+            "operation_id": "op1", "worker_key": "w1",
+            "recovery_token": "token-1",
+        }
+        c.lease_operation_recovery(recovery, request_id="o5")
+        c.release_operation_recovery(recovery, request_id="o6")
         task = c.get_task_by_aone("84345050")
         timeline = c.get_task_timeline("task/1")
         workers = c.list_workers()
         worker_state = c.get_worker_state("host/one")
         waits = c.list_pending_aone_reply_waits(after_session_id=7, limit=25)
+        recoveries = c.list_operation_recovery_candidates(
+            after_operation_id=9, limit=20)
 
         paths = [call[0].full_url.rsplit("/api/jarvis/v1/", 1)[1]
                  for call in opener.calls]
         self.assertEqual(paths, [
             "operations/begin", "operations/ack", "operations/fail",
-            "operations/reconcile", "tasks/by-aone/84345050",
+            "operations/reconcile", "operations/recovery/lease",
+            "operations/recovery/release", "tasks/by-aone/84345050",
             "tasks/task%2F1/timeline", "workers", "workers/host%2Fone/state",
             "sessions/waits/aone-reply?afterSessionId=7&limit=25",
+            "operations/recovery-candidates?afterOperationId=9&limit=20",
         ])
         self.assertEqual(body(opener.calls[0][0]),
                          {"operationId": "op1", "fenceToken": 7})
@@ -228,7 +240,12 @@ class ClientContractTest(unittest.TestCase):
         self.assertEqual(workers[0]["workerKey"], "w1")
         self.assertEqual(worker_state["worker"]["workerKey"], "host/one")
         self.assertEqual(waits["items"], [])
-        for req, _timeout in opener.calls[-5:]:
+        self.assertEqual(recoveries["items"], [])
+        self.assertEqual(body(opener.calls[4][0]), {
+            "operationId": "op1", "workerKey": "w1",
+            "recoveryToken": "token-1",
+        })
+        for req, _timeout in opener.calls[-6:]:
             self.assertEqual(req.get_method(), "GET")
             self.assertIsNone(req.data)
             self.assertNotIn("idempotency-key", headers(req))
@@ -239,6 +256,10 @@ class ClientContractTest(unittest.TestCase):
             c.list_pending_aone_reply_waits(after_session_id=-1)
         with self.assertRaises(ValueError):
             c.list_pending_aone_reply_waits(limit=501)
+        with self.assertRaises(ValueError):
+            c.list_operation_recovery_candidates(after_operation_id=-1)
+        with self.assertRaises(ValueError):
+            c.list_operation_recovery_candidates(limit=501)
 
     def test_direct_claim_is_targeted_task_and_allows_zero_free_slots(self):
         opener = RecordingOpener()

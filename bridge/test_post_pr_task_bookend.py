@@ -142,8 +142,10 @@ class PostPrTaskBookendTest(unittest.TestCase):
         with mock.patch.object(bot, "_claim_workitem", side_effect=claim) as claim_call, \
                 mock.patch.object(bot, "_release_post_pr_claim",
                                   side_effect=release) as release_call, \
-                mock.patch.object(bot, "_post_pr_claim_visible",
-                                  side_effect=lambda *_a, **_k: claimed["value"]):
+                mock.patch.object(
+                    bot, "_post_pr_target_visible",
+                    side_effect=lambda _iid, action, **_k:
+                    claimed["value"] if action == "claim" else not claimed["value"]):
             bookend.bind_process(process)
             self.assertEqual(controller.bound, [process])
             self.assertTrue(claimed["value"])
@@ -165,7 +167,7 @@ class PostPrTaskBookendTest(unittest.TestCase):
         controller = _Controller(client)
         bookend = bot._PostPrTaskBookend(
             controller, "84362517", "2100304", "pr_comment_reply")
-        with mock.patch.object(bot, "_post_pr_claim_visible", return_value=True), \
+        with mock.patch.object(bot, "_post_pr_target_visible", return_value=True), \
                 mock.patch.object(bot, "_claim_workitem") as claim_call:
             bookend.bind_process(mock.Mock(pid=4322))
 
@@ -190,8 +192,10 @@ class PostPrTaskBookendTest(unittest.TestCase):
         with mock.patch.object(bot, "_claim_workitem", side_effect=claim) as claim_call, \
                 mock.patch.object(bot, "_release_post_pr_claim",
                                   side_effect=release) as release_call, \
-                mock.patch.object(bot, "_post_pr_claim_visible",
-                                  side_effect=lambda *_a, **_k: claimed["value"]):
+                mock.patch.object(
+                    bot, "_post_pr_target_visible",
+                    side_effect=lambda _iid, action, **_k:
+                    claimed["value"] if action == "claim" else not claimed["value"]):
             first.bind_process(mock.Mock(pid=4401))
             # Retrying the same receipt after ACK is a point-read only: no second
             # external claim is allowed.

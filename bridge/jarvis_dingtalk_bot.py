@@ -1388,8 +1388,8 @@ def _release_post_pr_claim(iid, project, terraform=False):
             (iid, proc.returncode, detail or "no detail"))
 
 
-def _post_pr_claim_visible(iid, terraform=True):
-    """Point-read the shared claim tag; read failures remain ambiguous."""
+def _post_pr_tag_snapshot(iid, terraform=True):
+    """Point-read exact tag names/ids; malformed or failed reads stay ambiguous."""
     proc = subprocess.run(
         [str(REPO_ROOT / "bin" / "a1id"), "--", "project", "workitem",
          "get", str(iid), "-f", "json"],
@@ -1405,19 +1405,65 @@ def _post_pr_claim_visible(iid, terraform=True):
         fields = payload.get("fields")
         if not isinstance(fields, list):
             raise ValueError("workitem fields are not a list")
-        tag_value = next(
-            (field.get("displayValue") for field in fields
+        tag_field = next(
+            (field for field in fields
              if isinstance(field, dict) and field.get("identifier") == "tag"),
-            "")
-        tags = {
-            value.strip()
-            for value in str(tag_value or "").replace("，", ",").split(",")
-            if value.strip()
-        }
+            {})
+        names = [value.strip() for value in
+                 str(tag_field.get("displayValue") or "").replace("，", ",").split(",")
+                 if value.strip()]
+        ids = [value.strip() for value in
+               str(tag_field.get("value") or "").replace("，", ",").split(",")
+               if value.strip()]
+        if len(names) != len(ids):
+            raise ValueError("tag names and ids are not aligned")
+        pairs = list(zip(names, ids))
     except (AttributeError, TypeError, ValueError) as exc:
         raise RuntimeError(
             "bridge claim readback returned invalid JSON for #%s" % iid) from exc
-    return "jarvis-claimed" in tags
+    return {"tags": set(names), "pairs": pairs}
+
+
+def _post_pr_claim_visible(iid, terraform=True):
+    """Compatibility point-read for callers that only need the claim bit."""
+    return "jarvis-claimed" in _post_pr_tag_snapshot(
+        iid, terraform=terraform)["tags"]
+
+
+def _post_pr_target_visible(iid, action, terraform=True):
+    tags = _post_pr_tag_snapshot(iid, terraform=terraform)["tags"]
+    if tags & {"jarvis-done", "jarvis-npe"}:
+        raise RuntimeError(
+            "post-PR tag target is terminal; automatic recovery is forbidden")
+    if action == "claim":
+        return "jarvis-claimed" in tags and "jarvis-idle" not in tags
+    if action == "release":
+        return "jarvis-idle" in tags and "jarvis-claimed" not in tags
+    raise ValueError("unsupported post-PR tag action: %s" % action)
+
+
+def _repair_post_pr_tags(iid, action, terraform=True):
+    """Write one exact claim/idle target while preserving unrelated tags by id."""
+    snapshot = _post_pr_tag_snapshot(iid, terraform=terraform)
+    if snapshot["tags"] & {"jarvis-done", "jarvis-npe"}:
+        raise RuntimeError(
+            "post-PR tag repair refused for terminal workitem")
+    desired = "jarvis-claimed" if action == "claim" else "jarvis-idle"
+    if action not in ("claim", "release"):
+        raise ValueError("unsupported post-PR tag action: %s" % action)
+    kept_ids = [tag_id for name, tag_id in snapshot["pairs"]
+                if name not in ("jarvis-claimed", "jarvis-idle")]
+    tag_value = ",".join(kept_ids + [desired])
+    proc = subprocess.run(
+        [str(REPO_ROOT / "bin" / "a1id"), "--", "project", "workitem",
+         "update", str(iid), "--tag", tag_value],
+        cwd=str(REPO_ROOT), timeout=60, capture_output=True, text=True,
+        env=_a1_command_env(terraform=terraform))
+    if proc.returncode != 0:
+        detail = ((proc.stderr or proc.stdout or "").strip())[-300:]
+        raise RuntimeError(
+            "bridge post-PR tag repair failed for #%s (rc=%s): %s" %
+            (iid, proc.returncode, detail or "no detail"))
 
 
 class _PostPrTaskBookend:
@@ -1546,22 +1592,19 @@ class _PostPrTaskBookend:
         self._heartbeat(action + "-begin")
         operation_id, status, proceed = self._begin(action)
         if status == "ACKED":
-            visible = _post_pr_claim_visible(self.item_id, terraform=True)
-            if action == "claim" and not visible:
+            if not _post_pr_target_visible(
+                    self.item_id, action, terraform=True):
                 raise RuntimeError(
-                    "post-PR claim receipt is ACKED but claimed tag is absent")
-            if action == "release" and visible:
-                raise RuntimeError(
-                    "post-PR release receipt is ACKED but claimed tag remains")
+                    "post-PR %s receipt is ACKED but exact tag target is absent" % action)
             return
-        if action == "claim":
-            if proceed:
+        if proceed:
+            if action == "claim":
                 _claim_workitem(self.item_id, self.project, terraform=True)
-            elif not _post_pr_claim_visible(self.item_id, terraform=True):
-                raise RuntimeError(
-                    "post-PR claim receipt is pending but claimed tag is absent")
-        elif _post_pr_claim_visible(self.item_id, terraform=True):
-            _release_post_pr_claim(self.item_id, self.project, terraform=True)
+            else:
+                _release_post_pr_claim(self.item_id, self.project, terraform=True)
+        if not _post_pr_target_visible(self.item_id, action, terraform=True):
+            raise RuntimeError(
+                "post-PR %s receipt remains pending without exact tag target" % action)
         self._ack(action, operation_id)
 
     def bind_process(self, process):
@@ -3320,7 +3363,12 @@ class ScanScheduler:
 
 
 class ReconcileScheduler:
-    """Periodically run reconcile.sh all so the claim-discipline safety net actually fires.
+    """Recover uncertain post-PR receipts, then run the local claim safety net.
+
+    The control plane exposes only current-generation required UNKNOWN post-PR
+    claim/release receipts. This scheduler token-leases them, performs strict Terraform
+    RD Aone readback/repair, and settles only an exact target through found=true.
+    Ambiguous evidence releases the receipt to UNKNOWN for a later retry.
 
     reconcile (stale/orphan/drift) is the after-the-fact backstop:
       · wrap-check.sh (Stop hook) only catches unwrapped claims on a *graceful* session
@@ -3353,6 +3401,11 @@ class ReconcileScheduler:
                 log.exception("ReconcileScheduler tick failed; will retry next interval")
 
     def _tick(self):
+        try:
+            self._recover_post_pr_operations()
+        except Exception:  # noqa: BLE001 — legacy reconciliation must still run
+            log.exception(
+                "post-PR operation recovery scan failed; will retry next interval")
         skip_ids = ",".join(self.handler.ephemeral_executor.active_ids())
         env = os.environ.copy()
         if skip_ids:
@@ -3366,6 +3419,114 @@ class ReconcileScheduler:
                         (result.stderr or "").strip()[:300])
         else:
             log.info("reconcile.sh all: %s", summary or "(no output)")
+
+    @staticmethod
+    def _request_id(action, operation_id, token):
+        material = "%s|%s|%s" % (action, operation_id, token)
+        return "jarvis-post-pr-recovery-%s-%s" % (
+            action, hashlib.sha256(material.encode("utf-8")).hexdigest()[:24])
+
+    def _recovery_token(self, operation_id):
+        worker_key = str(self.handler.persistence_executor.worker_key)
+        material = "post-pr-recovery|%s|%s" % (worker_key, operation_id)
+        return "post-pr-recovery-" + hashlib.sha256(
+            material.encode("utf-8")).hexdigest()
+
+    def _recover_post_pr_operations(self):
+        after = 0
+        while True:
+            page = self.handler.task_client.list_operation_recovery_candidates(
+                after_operation_id=after, limit=100)
+            if not isinstance(page, dict) or not isinstance(page.get("items"), list):
+                raise RuntimeError(
+                    "post-PR operation recovery candidates returned invalid page")
+            for candidate in page["items"]:
+                try:
+                    self._recover_post_pr_candidate(candidate)
+                except Exception:  # noqa: BLE001 — isolate receipts and retry later
+                    log.exception("post-PR operation recovery candidate failed")
+            if not page.get("hasMore"):
+                return
+            next_after = page.get("nextAfterOperationId")
+            try:
+                next_after = int(next_after)
+            except (TypeError, ValueError) as exc:
+                raise RuntimeError(
+                    "post-PR recovery page has invalid cursor") from exc
+            if next_after <= after:
+                raise RuntimeError("post-PR recovery page cursor did not advance")
+            after = next_after
+
+    def _recover_post_pr_candidate(self, candidate):
+        if not isinstance(candidate, dict):
+            raise RuntimeError("post-PR recovery candidate is not an object")
+        task = candidate.get("task")
+        operation = candidate.get("operation")
+        if not isinstance(task, dict) or not isinstance(operation, dict):
+            raise RuntimeError("post-PR recovery candidate is incomplete")
+        operation_id = str(operation.get("id") or "").strip()
+        item_id = str(task.get("aoneId") or "").strip()
+        operation_type = str(operation.get("operationType") or "").upper()
+        action = "claim" if operation_type == "AONE_CLAIM" else "release"
+        payload = task.get("payload")
+        task_generation = task.get("generation")
+        operation_generation = operation.get("generation")
+        operation_key = str(operation.get("operationKey") or "")
+        target = str(operation.get("target") or "")
+        project = str((payload or {}).get("project") or
+                      (payload or {}).get("projectId") or "")
+        if (not operation_id or not item_id.isdigit()
+                or operation_type not in ("AONE_CLAIM", "AONE_RELEASE")):
+            raise RuntimeError("post-PR recovery candidate identity is invalid")
+        if (task.get("status") != "RECOVERY_REQUIRED"
+                or task.get("taskType") not in POST_PR_HEADLESS_KINDS
+                or not isinstance(payload, dict) or payload.get("terraform") is not True
+                or not project.isdigit()
+                or operation.get("status") != "UNKNOWN"
+                or operation.get("required") is not True
+                or str(task_generation) != str(operation_generation)
+                or not operation_key.startswith("post-pr:%s:" % action)
+                or target not in (item_id, "aone:" + item_id)):
+            raise RuntimeError(
+                "post-PR recovery candidate failed defense-in-depth validation")
+        worker_key = str(self.handler.persistence_executor.worker_key)
+        token = self._recovery_token(operation_id)
+        lease_request = {
+            "operationId": operation_id,
+            "workerKey": worker_key,
+            "recoveryToken": token,
+        }
+        lease = self.handler.task_client.lease_operation_recovery(
+            lease_request, request_id=self._request_id(
+                "lease", operation_id, token))
+        if not isinstance(lease, dict) or not lease.get("proceed"):
+            return False
+        try:
+            if not _post_pr_target_visible(item_id, action, terraform=True):
+                _repair_post_pr_tags(item_id, action, terraform=True)
+            if not _post_pr_target_visible(item_id, action, terraform=True):
+                raise RuntimeError(
+                    "post-PR recovery repair did not reach exact tag target")
+            self.handler.task_client.reconcile_operation({
+                "operationId": operation_id,
+                "workerKey": worker_key,
+                "found": True,
+                "externalRef": "aone:%s:%s:recovered:%s" % (
+                    item_id, action, operation_id),
+                "retryAllowed": False,
+                "recoveryToken": token,
+            }, request_id=self._request_id("reconcile", operation_id, token))
+            return True
+        except Exception:
+            try:
+                self.handler.task_client.release_operation_recovery(
+                    lease_request, request_id=self._request_id(
+                        "release", operation_id, token))
+            except Exception:  # noqa: BLE001 — reaper returns stale leases to UNKNOWN
+                log.exception(
+                    "post-PR operation recovery lease release failed for operation %s",
+                    operation_id)
+            raise
 
 
 class PrWatchScheduler:
