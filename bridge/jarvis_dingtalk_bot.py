@@ -1440,10 +1440,17 @@ class _PostPrTaskBookend:
         self.generation = (
             self._field(controller.session, "generation") or
             self._field(controller.task, "generation"))
-        if self.task_id is None or self.generation is None:
+        lease_fence = getattr(controller, "fence_token", None)
+        if (self.task_id is None or self.generation is None
+                or lease_fence is None or not str(lease_fence).strip()):
             raise ValueError("post-PR Task lineage is incomplete")
-        material = "%s|%s|%s" % (
-            self.task_id, self.generation, controller.session_id)
+        # Freeze the lease-attempt identity at construction.  A running controller
+        # may adopt a rotated fence for the same session; that changes write
+        # authority, but it must not split this bookend's claim/release receipts.
+        # Conversely, a later bookend created from a new lease fence must never
+        # inherit an ACKED receipt from the preceding claim/release cycle.
+        material = "%s|%s|%s|%s" % (
+            self.task_id, self.generation, controller.session_id, lease_fence)
         self.claim_attempt_id = "post-pr-" + hashlib.sha256(
             material.encode("utf-8")).hexdigest()[:32]
         self._claimed = False
@@ -1477,8 +1484,7 @@ class _PostPrTaskBookend:
                 "post-PR Task fence lost before Aone %s" % action)
 
     def _operation_key(self, action):
-        return "post-pr:%s:%s:%s" % (
-            action, self.task_id, self.generation)
+        return "post-pr:%s:%s" % (action, self.claim_attempt_id)
 
     def _begin(self, action):
         operation_key = self._operation_key(action)
@@ -1528,7 +1534,8 @@ class _PostPrTaskBookend:
             "operationId": operation_id,
             "workerKey": self.controller.worker_key,
             "fenceToken": self.controller.fence_token,
-            "externalRef": "aone:%s:%s" % (self.item_id, action),
+            "externalRef": "aone:%s:%s:%s" % (
+                self.item_id, action, self.claim_attempt_id),
         }, request_id="jarvis-post-pr-operation-ack-" + hashlib.sha256(
             (self._operation_key(action) + "|" + operation_id).encode("utf-8")
         ).hexdigest()[:24])

@@ -29,6 +29,36 @@ class _OperationClient:
         return {}
 
 
+class _StatefulOperationClient:
+    """Receipt ledger keyed exactly like the control plane."""
+
+    def __init__(self):
+        self.calls = []
+        self.receipts = {}
+        self.by_id = {}
+
+    def begin_operation(self, request, request_id=None):
+        key = request["operationKey"]
+        receipt = self.receipts.get(key)
+        if receipt is None:
+            receipt = {
+                "id": "operation-%d" % (len(self.receipts) + 1),
+                "status": "SENDING",
+            }
+            self.receipts[key] = receipt
+            self.by_id[receipt["id"]] = receipt
+        self.calls.append(("begin", dict(request), request_id))
+        return {
+            "operation": dict(receipt),
+            "proceed": receipt["status"] != "ACKED",
+        }
+
+    def ack_operation(self, request, request_id=None):
+        self.by_id[request["operationId"]]["status"] = "ACKED"
+        self.calls.append(("ack", dict(request), request_id))
+        return {}
+
+
 class _Controller:
     def __init__(self, client):
         self.client = client
@@ -48,6 +78,14 @@ class _Controller:
 
     def heartbeat(self, detail=None):
         self.heartbeats.append(detail)
+        return True
+
+    def adopt_lease(self, lease):
+        session = lease["session"]
+        if str(session["id"]) != self.session_id:
+            raise ValueError("cannot adopt a different session")
+        self.fence_token = session["fenceToken"]
+        self.session["fenceToken"] = self.fence_token
         return True
 
 
@@ -133,6 +171,104 @@ class PostPrTaskBookendTest(unittest.TestCase):
 
         claim_call.assert_not_called()
         self.assertEqual(client.calls[-1][1]["operationId"], "operation-claim")
+
+    def test_receipts_are_scoped_to_frozen_lease_attempt(self):
+        client = _StatefulOperationClient()
+        claimed = {"value": False}
+
+        def claim(*_args, **_kwargs):
+            claimed["value"] = True
+
+        def release(*_args, **_kwargs):
+            claimed["value"] = False
+
+        first_controller = _Controller(client)
+        first = bot._PostPrTaskBookend(
+            first_controller, "84362517", "2100304", "pr_ci_fix")
+        first_attempt = first.claim_attempt_id
+        first_claim_key = first._operation_key("claim")
+        with mock.patch.object(bot, "_claim_workitem", side_effect=claim) as claim_call, \
+                mock.patch.object(bot, "_release_post_pr_claim",
+                                  side_effect=release) as release_call, \
+                mock.patch.object(bot, "_post_pr_claim_visible",
+                                  side_effect=lambda *_a, **_k: claimed["value"]):
+            first.bind_process(mock.Mock(pid=4401))
+            # Retrying the same receipt after ACK is a point-read only: no second
+            # external claim is allowed.
+            first._apply("claim")
+            self.assertEqual(first._operation_key("claim"), first_claim_key)
+
+            # A re-issued lease may rotate the live authority fence.  This
+            # bookend remains one idempotency domain through its release.
+            self.assertTrue(first_controller.adopt_lease({
+                "session": {
+                    "id": "session-1",
+                    "fenceToken": "fence-8-adopted",
+                },
+            }))
+            first.release()
+            first._apply("release")
+            self.assertEqual(first.claim_attempt_id, first_attempt)
+            self.assertIn(first_attempt, first._operation_key("release"))
+
+            second_controller = _Controller(client)
+            second_controller.fence_token = "fence-9"
+            second_controller.session["fenceToken"] = "fence-9"
+            second = bot._PostPrTaskBookend(
+                second_controller, "84362517", "2100304", "pr_ci_fix")
+            self.assertNotEqual(second.claim_attempt_id, first_attempt)
+            second.bind_process(mock.Mock(pid=4402))
+            second.release()
+
+        self.assertEqual(claim_call.call_count, 2)
+        self.assertEqual(release_call.call_count, 2)
+        self.assertEqual(len(client.receipts), 4)
+        self.assertTrue(all(
+            receipt["status"] == "ACKED"
+            for receipt in client.receipts.values()))
+
+        begins = [call for call in client.calls if call[0] == "begin"]
+        first_claim_begins = [
+            call for call in begins
+            if call[1]["operationKey"] == first_claim_key]
+        self.assertEqual(len(first_claim_begins), 2)
+        self.assertEqual(
+            first_claim_begins[0][2], first_claim_begins[1][2],
+            "same lease-attempt retry must reuse its begin request id")
+
+        claim_keys = {
+            call[1]["operationKey"] for call in begins
+            if call[1]["operationType"] == "AONE_CLAIM"}
+        release_keys = {
+            call[1]["operationKey"] for call in begins
+            if call[1]["operationType"] == "AONE_RELEASE"}
+        self.assertEqual(len(claim_keys), 2)
+        self.assertEqual(len(release_keys), 2)
+        self.assertTrue(all(first_attempt in key or second.claim_attempt_id in key
+                            for key in claim_keys | release_keys))
+        begin_request_ids = {}
+        for _, request, request_id in begins:
+            begin_request_ids.setdefault(
+                request["operationKey"], set()).add(request_id)
+        self.assertEqual(len(begin_request_ids), 4)
+        self.assertTrue(all(len(ids) == 1
+                            for ids in begin_request_ids.values()))
+        self.assertEqual(
+            len({next(iter(ids)) for ids in begin_request_ids.values()}), 4,
+            "different action/lease attempts must not share begin request ids")
+
+        acks = [call for call in client.calls if call[0] == "ack"]
+        ack_external_refs = [call[1]["externalRef"] for call in acks]
+        self.assertEqual(len(set(ack_external_refs)), 4)
+        self.assertEqual(len({call[2] for call in acks}), 4)
+        self.assertTrue(any(first_attempt in ref for ref in ack_external_refs))
+        self.assertTrue(any(second.claim_attempt_id in ref
+                            for ref in ack_external_refs))
+        self.assertEqual(
+            first.lineage_policy()["claimAttemptId"], first_attempt)
+        self.assertEqual(
+            second.lineage_policy()["claimAttemptId"],
+            second.claim_attempt_id)
 
     def test_lost_fence_blocks_aone_write_and_guard_open(self):
         client = _OperationClient()
