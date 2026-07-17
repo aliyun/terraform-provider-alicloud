@@ -71,6 +71,22 @@ func resourceAlicloudArmsPrometheus() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"duration": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
+			"archive_duration": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
+			"payment_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"POSTPAY", "POSTPAY_GB"}, false),
+			},
 			"tags": tagsSchema(),
 		},
 	}
@@ -114,6 +130,18 @@ func resourceAliCloudArmsPrometheusCreate(d *schema.ResourceData, meta interface
 
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		request["ResourceGroupId"] = v
+	}
+
+	if v, ok := d.GetOkExists("duration"); ok {
+		request["Duration"] = v
+	}
+
+	if v, ok := d.GetOkExists("archive_duration"); ok {
+		request["ArchiveDuration"] = v
+	}
+
+	if v, ok := d.GetOk("payment_type"); ok {
+		request["PaymentType"] = v
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -161,6 +189,9 @@ func resourceAliCloudArmsPrometheusRead(d *schema.ResourceData, meta interface{}
 	d.Set("cluster_name", object["ClusterName"])
 	d.Set("sub_clusters_json", object["SubClustersJson"])
 	d.Set("resource_group_id", object["ResourceGroupId"])
+	d.Set("duration", formatInt(object["StorageDuration"]))
+	d.Set("archive_duration", formatInt(object["ArchiveDuration"]))
+	d.Set("payment_type", object["PaymentType"])
 
 	listTagResourcesObject, err := armsService.ListTagResources(d.Id(), "PROMETHEUS")
 	if err != nil {
@@ -288,6 +319,54 @@ func resourceAliCloudArmsPrometheusUpdate(d *schema.ResourceData, meta interface
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 
+	}
+
+	update = false
+	updatePrometheusInstanceReq := map[string]interface{}{
+		"RegionId":  client.RegionId,
+		"ClusterId": d.Id(),
+	}
+
+	if !d.IsNewResource() && d.HasChange("duration") {
+		update = true
+	}
+	if v, ok := d.GetOkExists("duration"); ok {
+		updatePrometheusInstanceReq["StorageDuration"] = v
+	}
+
+	if !d.IsNewResource() && d.HasChange("archive_duration") {
+		update = true
+	}
+	if v, ok := d.GetOkExists("archive_duration"); ok {
+		updatePrometheusInstanceReq["ArchiveDuration"] = v
+	}
+
+	if !d.IsNewResource() && d.HasChange("payment_type") {
+		update = true
+	}
+	if v, ok := d.GetOk("payment_type"); ok {
+		updatePrometheusInstanceReq["PaymentType"] = v
+	}
+
+	if update {
+		action := "UpdatePrometheusInstance"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = client.RpcPost("ARMS", "2019-08-08", action, nil, updatePrometheusInstanceReq, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, updatePrometheusInstanceReq)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
 	}
 
 	d.Partial(false)

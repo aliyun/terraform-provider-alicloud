@@ -25,10 +25,10 @@ func (s *ApigServiceV2) DescribeApigHttpApi(id string) (object map[string]interf
 	var response map[string]interface{}
 	var query map[string]*string
 	httpApiId := id
-	action := fmt.Sprintf("/v1/http-apis/%s", httpApiId)
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
-	request["httpApiId"] = id
+
+	action := fmt.Sprintf("/v1/http-apis/%s", httpApiId)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
@@ -50,6 +50,10 @@ func (s *ApigServiceV2) DescribeApigHttpApi(id string) (object map[string]interf
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+	code, _ := jsonpath.Get("$.code", response)
+	if InArray(fmt.Sprint(code), []string{"DatabaseError.RecordNotFound"}) {
+		return object, WrapErrorf(NotFoundErr("HttpApi", id), NotFoundMsg, response)
+	}
 
 	v, err := jsonpath.Get("$.data", response)
 	if err != nil {
@@ -60,15 +64,18 @@ func (s *ApigServiceV2) DescribeApigHttpApi(id string) (object map[string]interf
 }
 
 func (s *ApigServiceV2) ApigHttpApiStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.ApigHttpApiStateRefreshFuncWithApi(id, field, failStates, s.DescribeApigHttpApi)
+}
+
+func (s *ApigServiceV2) ApigHttpApiStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeApigHttpApi(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
@@ -98,10 +105,10 @@ func (s *ApigServiceV2) DescribeApigDomain(id string) (object map[string]interfa
 	var response map[string]interface{}
 	var query map[string]*string
 	domainId := id
-	action := fmt.Sprintf("/v1/domains/%s", domainId)
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
-	request["domainId"] = id
+
+	action := fmt.Sprintf("/v1/domains/%s", domainId)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
@@ -117,11 +124,12 @@ func (s *ApigServiceV2) DescribeApigDomain(id string) (object map[string]interfa
 		return nil
 	})
 	addDebug(action, response, request)
-	if err != nil {
-		if IsExpectedErrors(err, []string{"DatabaseError.RecordNotFound"}) {
-			return object, WrapErrorf(NotFoundErr("Domain", id), NotFoundMsg, err)
-		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	if response == nil {
+		return object, WrapErrorf(NotFoundErr("Domain", id), NotFoundMsg, response)
+	}
+	code, _ := jsonpath.Get("$.code", response)
+	if InArray(fmt.Sprint(code), []string{"DatabaseError.RecordNotFound"}) {
+		return object, WrapErrorf(NotFoundErr("Domain", id), NotFoundMsg, response)
 	}
 
 	v, err := jsonpath.Get("$.data", response)
@@ -133,15 +141,18 @@ func (s *ApigServiceV2) DescribeApigDomain(id string) (object map[string]interfa
 }
 
 func (s *ApigServiceV2) ApigDomainStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.ApigDomainStateRefreshFuncWithApi(id, field, failStates, s.DescribeApigDomain)
+}
+
+func (s *ApigServiceV2) ApigDomainStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeApigDomain(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
@@ -173,7 +184,6 @@ func (s *ApigServiceV2) DescribeApigGateway(id string) (object map[string]interf
 	gatewayId := id
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
-	request["gatewayId"] = id
 
 	action := fmt.Sprintf("/v1/gateways/%s", gatewayId)
 
@@ -191,11 +201,12 @@ func (s *ApigServiceV2) DescribeApigGateway(id string) (object map[string]interf
 		return nil
 	})
 	addDebug(action, response, request)
-	if err != nil {
-		if IsExpectedErrors(err, []string{"NotFound.GatewayNotFound", "Conflict.GatewayIsDeleted"}) {
-			return object, WrapErrorf(NotFoundErr("Gateway", id), NotFoundMsg, err)
-		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	if response == nil {
+		return object, WrapErrorf(NotFoundErr("Gateway", id), NotFoundMsg, response)
+	}
+	code, _ := jsonpath.Get("$.code", response)
+	if InArray(fmt.Sprint(code), []string{"NotFound.GatewayNotFound", "Conflict.GatewayIsDeleted"}) {
+		return object, WrapErrorf(NotFoundErr("Gateway", id), NotFoundMsg, response)
 	}
 
 	v, err := jsonpath.Get("$.data", response)
@@ -207,15 +218,19 @@ func (s *ApigServiceV2) DescribeApigGateway(id string) (object map[string]interf
 }
 
 func (s *ApigServiceV2) ApigGatewayStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.ApigGatewayStateRefreshFuncWithApi(id, field, failStates, s.DescribeApigGateway)
+}
+
+func (s *ApigServiceV2) ApigGatewayStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeApigGateway(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
+		object["chargeType"] = convertApigGatewaydatachargeTypeResponse(object["chargeType"])
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
@@ -240,8 +255,8 @@ func (s *ApigServiceV2) ApigGatewayStateRefreshFunc(id string, field string, fai
 // SetResourceTags <<< Encapsulated tag function for Apig.
 func (s *ApigServiceV2) SetResourceTags(d *schema.ResourceData, resourceType string) error {
 	if d.HasChange("tags") {
-		var err error
 		var action string
+		var err error
 		client := s.client
 		var request map[string]interface{}
 		var response map[string]interface{}
@@ -249,7 +264,7 @@ func (s *ApigServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 		body := make(map[string]interface{})
 
 		added, removed := parsingTags(d)
-		removedTagKeys := make([]interface{}, 0)
+		removedTagKeys := make([]string, 0)
 		for _, v := range removed {
 			if !ignoredTags(v, "") {
 				removedTagKeys = append(removedTagKeys, v)
@@ -260,21 +275,14 @@ func (s *ApigServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 			request = make(map[string]interface{})
 			query = make(map[string]*string)
 			body = make(map[string]interface{})
-			jsonString := "{}"
-			jsonString, _ = sjson.Set(jsonString, "ResourceId.0", d.Id())
-			err = json.Unmarshal([]byte(jsonString), &request)
-			if err != nil {
-				return WrapError(err)
-			}
+			query["ResourceId"] = StringPointer(convertListToJsonString(expandSingletonToList(d.Id())))
 			query["RegionId"] = StringPointer(client.RegionId)
-			query["TagKey"] = StringPointer(convertListToJsonString(removedTagKeys))
+			query["TagKey"] = StringPointer(convertListToJsonString(convertListStringToListInterface(removedTagKeys)))
 			query["ResourceType"] = StringPointer(resourceType)
-			query["ResourceId"] = StringPointer(convertListToJsonString(convertListStringToListInterface([]string{d.Id()})))
-
 			body = request
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = client.RoaDelete("APIG", "2024-03-27", action, query, nil, body, true)
+				response, err = client.RoaDelete("APIG", "2024-03-27", action, query, nil, nil, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -296,25 +304,23 @@ func (s *ApigServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 			request = make(map[string]interface{})
 			query = make(map[string]*string)
 			body = make(map[string]interface{})
-			jsonString := "{}"
-			jsonString, _ = sjson.Set(jsonString, "resourceId.0", d.Id())
-			err = json.Unmarshal([]byte(jsonString), &request)
-			if err != nil {
-				return WrapError(err)
-			}
 
 			count := 1
 			tagsMaps := make([]map[string]interface{}, 0)
 			for key, value := range added {
 				tagsMap := make(map[string]interface{})
-				tagsMap["key"] = key
 				tagsMap["value"] = value
+				tagsMap["key"] = key
 				tagsMaps = append(tagsMaps, tagsMap)
 				count++
 			}
 			request["tag"] = tagsMaps
 
-			request["resourceType"] = resourceType
+			request["resourceType"] = "gateway"
+			jsonString := convertObjectToJsonString(request)
+			jsonString, _ = sjson.Set(jsonString, "resourceId.0", d.Id())
+			_ = json.Unmarshal([]byte(jsonString), &request)
+
 			body = request
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
@@ -493,61 +499,77 @@ func (s *ApigServiceV2) DescribeApigPlugin(id string) (object map[string]interfa
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]*string
-	action := fmt.Sprintf("/v1/plugins")
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.RoaGet("APIG", "2024-03-27", action, query, nil, nil)
+	action := fmt.Sprintf("/v1/plugins")
 
-		if err != nil {
-			if NeedRetry(err) {
-				wait()
-				return resource.RetryableError(err)
+	pageNumber := 1
+	query["pageSize"] = StringPointer(fmt.Sprintf("%d", PageSizeLarge))
+	query["pageNumber"] = StringPointer(fmt.Sprintf("%d", pageNumber))
+
+	for {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+			response, err = client.RoaGet("APIG", "2024-03-27", action, query, nil, nil)
+
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
-		return nil
-	})
-	addDebug(action, response, request)
-	if err != nil {
-		if IsExpectedErrors(err, []string{"DatabaseError.RecordNotFound"}) {
-			return object, WrapErrorf(NotFoundErr("Plugin", id), NotFoundMsg, err)
+		if response == nil {
+			return object, WrapErrorf(NotFoundErr("Plugin", id), NotFoundMsg, response)
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		code, _ := jsonpath.Get("$.code", response)
+		if InArray(fmt.Sprint(code), []string{"DatabaseError.RecordNotFound"}) {
+			return object, WrapErrorf(NotFoundErr("Plugin", id), NotFoundMsg, response)
+		}
+
+		v, err := jsonpath.Get("$.data.items[*]", response)
+		if err != nil {
+			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.data.items[*]", response)
+		}
+
+		result, _ := v.([]interface{})
+		for _, vv := range result {
+			item := vv.(map[string]interface{})
+			if fmt.Sprint(item["pluginId"]) == id {
+				return item, nil
+			}
+		}
+
+		if len(result) < PageSizeLarge {
+			break
+		}
+		pageNumber += 1
+		query["pageNumber"] = StringPointer(fmt.Sprintf("%d", pageNumber))
 	}
 
-	v, err := jsonpath.Get("$.data.items[*]", response)
-	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.data.items[*]", response)
-	}
-
-	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(NotFoundErr("Plugin", id), NotFoundMsg, response)
-	}
-
-	result, _ := v.([]interface{})
-	for _, v := range result {
-		item := v.(map[string]interface{})
-		if fmt.Sprint(item["pluginId"]) != id {
-			continue
-		}
-		return item, nil
-	}
 	return object, WrapErrorf(NotFoundErr("Plugin", id), NotFoundMsg, response)
 }
 
 func (s *ApigServiceV2) ApigPluginStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.ApigPluginStateRefreshFuncWithApi(id, field, failStates, s.DescribeApigPlugin)
+}
+
+func (s *ApigServiceV2) ApigPluginStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeApigPlugin(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 

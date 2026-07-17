@@ -34,41 +34,50 @@ func (s *RamServiceV2) DescribeRamUserGroupAttachment(id string) (object map[str
 
 	action := "ListUsersForGroup"
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.RpcPost("Ram", "2015-05-01", action, query, request, true)
+	for {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+			response, err = client.RpcPost("Ram", "2015-05-01", action, query, request, true)
 
-		if err != nil {
-			if NeedRetry(err) {
-				wait()
-				return resource.RetryableError(err)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
-		return nil
-	})
-	addDebug(action, response, request)
-	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-	}
 
-	v, err := jsonpath.Get("$.Users.User[*]", response)
-	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Users.User[*]", response)
-	}
-
-	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(NotFoundErr("UserGroupAttachment", id), NotFoundMsg, response)
-	}
-
-	result, _ := v.([]interface{})
-	for _, v := range result {
-		item := v.(map[string]interface{})
-		if fmt.Sprint(item["UserName"]) != parts[1] {
-			continue
+		v, err := jsonpath.Get("$.Users.User[*]", response)
+		if err != nil {
+			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Users.User[*]", response)
 		}
-		return item, nil
+
+		result, _ := v.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			if fmt.Sprint(item["UserName"]) != parts[1] {
+				continue
+			}
+			return item, nil
+		}
+
+		if isTruncated, _ := response["IsTruncated"].(bool); !isTruncated {
+			break
+		}
+
+		marker, _ := response["Marker"].(string)
+		if marker == "" || marker == fmt.Sprint(request["Marker"]) {
+			break
+		}
+		request["Marker"] = marker
 	}
+
 	return object, WrapErrorf(NotFoundErr("UserGroupAttachment", id), NotFoundMsg, response)
 }
 

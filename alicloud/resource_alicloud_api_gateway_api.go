@@ -790,12 +790,17 @@ func getFcServiceConfig(d *schema.ResourceData) ([]byte, error) {
 	serviceConfig.FcConfig.FunctionName = config["function_name"].(string)
 	serviceConfig.FcConfig.ServiceName = config["service_name"].(string)
 	serviceConfig.FcConfig.Arn = config["arn_role"].(string)
-	serviceConfig.FcConfig.ContentTypeValue = config["content_type_value"].(string)
-	serviceConfig.FcConfig.ContentTypeCategory = config["content_type_category"].(string)
 	serviceConfig.Timeout = config["timeout"].(int)
 	serviceConfig.VpcEnable = "FALSE"
 	serviceConfig.MockEnable = "FALSE"
 	serviceConfig.ContentTypeCategory = "CLIENT"
+
+	serviceConfig.FcConfig.ContentTypeCategory = config["content_type_category"].(string)
+	contentTypeValue := config["content_type_value"].(string)
+	if !strings.EqualFold(serviceConfig.FcConfig.ContentTypeCategory, "CLIENT") {
+		serviceConfig.FcConfig.ContentTypeValue = contentTypeValue
+	}
+
 	if v, ok := config["aone_name"]; ok {
 		serviceConfig.AoneName = v.(string)
 	}

@@ -65,7 +65,7 @@ The following arguments are supported:
 * `classic_link_enabled` - (Optional) The status of ClassicLink function.
 * `description` - (Optional) The new description of the VPC.
 The description must be 1 to 256 characters in length, and cannot start with `http://` or `https://`.
-* `dns_hostname_status` - (Optional, Computed, Available since v1.240.0) The status of VPC DNS Hostname
+* `dns_hostname_status` - (Optional, Computed, Available since v1.240.0) The status of VPC DNS Hostname. Valid values: `ENABLED`, `DISABLED`.
 * `dry_run` - (Optional, Available since v1.119.0) Whether to PreCheck only this request. Value:
   - `true`: The check request is sent without creating a VPC. Check items include whether required parameters, request format, and business restrictions are filled in. If the check does not pass, the corresponding error is returned. If the check passes, the error code 'DryRunOperation' is returned '.
   - `false` (default): Sends a normal request, returns an HTTP 2xx status code and directly creates a VPC.
@@ -104,7 +104,7 @@ The description must be 1 to 256 characters in length, and cannot start with `ht
 The name must be 1 to 128 characters in length and cannot start with `http://` or `https://`.
 * `system_route_table_route_propagation_enable` - (Optional, Computed, Available since v1.248.0) Whether the system route table receives propagation routes.
 * `tags` - (Optional, Map, Available since v1.55.3) The tags of Vpc.
-* `user_cidrs` - (Optional, ForceNew, Computed, List, Available since v1.119.0) A list of user CIDRs.
+* `user_cidrs` - (Optional, ForceNew, Computed, List, Available since v1.119.0) A list of user CIDRs. Up to `3` CIDR blocks can be specified.
 * `vpc_name` - (Optional, Computed, Available since v1.119.0) The new name of the VPC.
 The name must be 1 to 128 characters in length and cannot start with `http://` or `https://`.
 

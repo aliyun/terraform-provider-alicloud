@@ -204,6 +204,16 @@ func resourceAliCloudRedisTairInstance() *schema.Resource {
 			"security_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if old != "" && new != "" && old != new {
+						oldParts := strings.Split(old, ",")
+						sort.Strings(oldParts)
+						newParts := strings.Split(new, ",")
+						sort.Strings(newParts)
+						return reflect.DeepEqual(newParts, oldParts)
+					}
+					return false
+				},
 			},
 			"security_ip_group_name": {
 				Type:     schema.TypeString,
@@ -434,6 +444,14 @@ func resourceAliCloudRedisTairInstanceRead(d *schema.ResourceData, meta interfac
 		return WrapError(err)
 	}
 
+	// IsSupportTDE reflects whether the instance actually supports Transparent Data Encryption.
+	// It must be captured from the DescribeInstanceAttribute response before objectRaw gets
+	// reassigned by the subsequent describe calls below.
+	isSupportTDE := false
+	if v, ok := objectRaw["IsSupportTDE"].(bool); ok {
+		isSupportTDE = v
+	}
+
 	if objectRaw["ArchitectureType"] != nil {
 		d.Set("architecture_type", objectRaw["ArchitectureType"])
 	}
@@ -562,9 +580,11 @@ func resourceAliCloudRedisTairInstanceRead(d *schema.ResourceData, meta interfac
 		d.Set("security_group_id", objectRaw["SecurityGroupId"])
 	}
 
-	checkValue00 := d.Get("instance_type")
-	checkValue01 := d.Get("engine_version")
-	if (checkValue00 == "tair_rdb") && (InArray(fmt.Sprint(checkValue01), []string{"6.0", "7.0"})) {
+	// Only query the TDE status when the instance actually supports it. Gating on the
+	// runtime IsSupportTDE flag (instead of a static instance_type/engine_version match)
+	// avoids the InstanceType.NotSupport 400 error that DescribeInstanceTDEStatus raises
+	// for instances that do not support TDE, which otherwise bubbles up as a fatal read error.
+	if isSupportTDE {
 		objectRaw, err = redisServiceV2.DescribeTairInstanceDescribeInstanceTDEStatus(d.Id())
 		if err != nil && !NotFoundError(err) {
 			return WrapError(err)

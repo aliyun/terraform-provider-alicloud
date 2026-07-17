@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -60,6 +59,11 @@ func resourceAliCloudRamUserGroupAttachmentCreate(d *schema.ResourceData, meta i
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("Ram", "2015-05-01", action, query, request, true)
 		if err != nil {
+			// The user is already a member of the group (409): the attachment already exists
+			// This is not the right way to import the existing resource into Terraform but to compromise the current creation error.
+			if IsExpectedErrors(err, []string{"EntityAlreadyExists.User.Group", "409"}) {
+				return nil
+			}
 			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
@@ -75,6 +79,12 @@ func resourceAliCloudRamUserGroupAttachmentCreate(d *schema.ResourceData, meta i
 	}
 
 	d.SetId(fmt.Sprintf("%v:%v", request["GroupName"], request["UserName"]))
+
+	ramServiceV2 := RamServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(request["UserName"])}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ramServiceV2.RamUserGroupAttachmentStateRefreshFunc(d.Id(), "UserName", []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
 
 	return resourceAliCloudRamUserGroupAttachmentRead(d, meta)
 }
@@ -130,7 +140,7 @@ func resourceAliCloudRamUserGroupAttachmentDelete(d *schema.ResourceData, meta i
 	addDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if NotFoundError(err) || IsExpectedErrors(err, []string{"EntityNotExist.Group", "EntityNotExist.User", "EntityNotExist.User.Group"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)

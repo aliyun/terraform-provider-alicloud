@@ -30,7 +30,7 @@ func dataSourceAliCloudCloudFirewallAddressBooks() *schema.Resource {
 			"group_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"ip", "ipv6", "domain", "port", "tag"}, false),
+				ValidateFunc: StringInSlice([]string{"ip", "ipv6", "domain", "port", "tag", "asset", "assetIpv6"}, false),
 			},
 			"output_file": {
 				Type:     schema.TypeString,
@@ -94,6 +94,155 @@ func dataSourceAliCloudCloudFirewallAddressBooks() *schema.Resource {
 									},
 								},
 							},
+						},
+						"asset_member_uids": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeInt},
+						},
+						"asset_region_resource_types": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"asset_region_id": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"resource_type": {
+										Type:     schema.TypeList,
+										Computed: true,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"ipv4": {
+													Type:     schema.TypeList,
+													Computed: true,
+													Elem: &schema.Resource{
+														Schema: map[string]*schema.Schema{
+															"eip": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+															"ecs_eip": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+															"ecs_public_ip": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+															"slb_eip": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+															"slb_public_ip": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+															"nlb_eip": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+															"alb_eip": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+															"nat_eip": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+															"nat_public_ip": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+															"eni_eip": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+															"ga_eip": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+															"api_gateway_eip": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+															"ai_gateway_eip": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+															"bastion_host_ip": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+															"bastion_host_ingress_ip": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+															"bastion_host_egress_ip": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+															"havip": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+														},
+													},
+												},
+												"ipv6": {
+													Type:     schema.TypeList,
+													Computed: true,
+													Elem: &schema.Resource{
+														Schema: map[string]*schema.Schema{
+															"ecs_ipv6": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+															"slb_ipv6": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+															"nlb_ipv6": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+															"alb_ipv6": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+															"eni_eipv6": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+															"ga_eipv6": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+															"api_gateway_eipv6": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+															"ai_gateway_eipv6": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						"address_list_count": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"reference_count": {
+							Type:     schema.TypeInt,
+							Computed: true,
 						},
 					},
 				},
@@ -213,6 +362,24 @@ func dataSourceAliCloudCloudFirewallAddressBooksRead(d *schema.ResourceData, met
 		}
 
 		mapping["ecs_tags"] = ecsTags
+
+		assetMemberUids := make([]int, 0)
+		if v, ok := object["AssetMemberUids"].([]interface{}); ok {
+			for _, assetMemberUid := range v {
+				assetMemberUids = append(assetMemberUids, formatInt(assetMemberUid))
+			}
+		}
+
+		mapping["asset_member_uids"] = assetMemberUids
+		mapping["asset_region_resource_types"] = flattenCloudFirewallAddressBookAssetRegionResourceTypes(object["AssetRegionResourceTypes"])
+
+		if v, ok := object["AddressListCount"]; ok {
+			mapping["address_list_count"] = formatInt(v)
+		}
+
+		if v, ok := object["ReferenceCount"]; ok {
+			mapping["reference_count"] = formatInt(v)
+		}
 
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		names = append(names, object["GroupName"])

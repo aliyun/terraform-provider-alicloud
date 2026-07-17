@@ -1054,6 +1054,44 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
+	if !d.IsNewResource() && d.HasChange("engine_version") && d.Get("engine").(string) == string(SQLServer) {
+		action := "ModifyDBInstanceSpec"
+		request := map[string]interface{}{
+			"RegionId":                 client.RegionId,
+			"DBInstanceId":             d.Id(),
+			"PayType":                  d.Get("instance_charge_type"),
+			"EngineVersion":            d.Get("engine_version"),
+			"DBInstanceClass":          d.Get("instance_type"),
+			"AllowMajorVersionUpgrade": true,
+			"ClientToken":              buildClientToken(action),
+			"SourceIp":                 client.SourceIp,
+		}
+		if v, ok := d.GetOk("effective_time"); ok && v.(string) != "" {
+			request["EffectiveTime"] = v
+		}
+		var response map[string]interface{}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(action, response, request)
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+
 	if d.Get("engine").(string) == string(PostgreSQL) && !d.IsNewResource() && d.HasChange("engine_version") {
 		action := "UpgradeDBInstanceMajorVersionPrecheck"
 		request := map[string]interface{}{
@@ -2081,6 +2119,20 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 	return resourceAliCloudDBInstanceRead(d, meta)
 }
 
+// parseDBInstanceParamGroupId extracts the parameter group id from a
+// DescribeParameters response. The "ParamGroupInfo" object (and its
+// "ParamGroupId") is not always present - e.g. right after an instance is
+// created, before its parameter group is populated - so both lookups are
+// guarded to avoid a nil interface conversion panic in Read.
+func parseDBInstanceParamGroupId(response map[string]interface{}) (string, bool) {
+	dbParamGroupInfo, ok := response["ParamGroupInfo"].(map[string]interface{})
+	if !ok {
+		return "", false
+	}
+	paramGroupId, ok := dbParamGroupInfo["ParamGroupId"].(string)
+	return paramGroupId, ok
+}
+
 func resourceAliCloudDBInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	rdsService := RdsService{client}
@@ -2396,11 +2448,12 @@ func resourceAliCloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("tcp_connection_type", res["TcpConnectionType"])
 
 	response, err := rdsService.DescribeParameters(d.Id())
-	dbParamGroupInfo := response["ParamGroupInfo"].(map[string]interface{})
 	if err != nil {
 		return WrapError(err)
 	}
-	d.Set("db_param_group_id", dbParamGroupInfo["ParamGroupId"].(string))
+	if paramGroupId, ok := parseDBInstanceParamGroupId(response); ok {
+		d.Set("db_param_group_id", paramGroupId)
+	}
 
 	WhitelistTemplate, err := rdsService.DescribeInstanceLinkedWhitelistTemplate(d.Id())
 	if err != nil {

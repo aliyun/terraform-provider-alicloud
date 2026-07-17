@@ -834,6 +834,12 @@ func (s *RKvstoreService) DescribeInstanceTDEStatus(id string) (object map[strin
 	})
 	addDebug(action, response, request)
 	if err != nil {
+		// Instances that do not support TDE reject DescribeInstanceTDEStatus with a 400
+		// InstanceType.NotSupport. Treat it as "TDE not supported" by returning an empty
+		// object without error, so the read is not aborted.
+		if IsExpectedErrors(err, []string{"InstanceType.NotSupport"}) {
+			return object, nil
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 	v, err := jsonpath.Get("$", response)

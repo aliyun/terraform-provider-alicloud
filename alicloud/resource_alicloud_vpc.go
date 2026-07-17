@@ -47,7 +47,7 @@ func resourceAliCloudVpcVpc() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"ENABLED", "DISABLED", "MODIFYING"}, false),
+				ValidateFunc: StringInSlice([]string{"ENABLED", "DISABLED"}, false),
 			},
 			"dry_run": {
 				Type:     schema.TypeBool,
