@@ -70,7 +70,7 @@ func resourceAlicloudAdbBackupPolicyRead(d *schema.ResourceData, meta interface{
 	}
 
 	d.Set("db_cluster_id", d.Id())
-	d.Set("backup_retention_period", object.BackupRetentionPeriod)
+	d.Set("backup_retention_period", fmt.Sprint(object.BackupRetentionPeriod))
 	d.Set("preferred_backup_period", strings.Split(object.PreferredBackupPeriod, ","))
 	d.Set("preferred_backup_time", object.PreferredBackupTime)
 

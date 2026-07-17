@@ -48,6 +48,7 @@ func TestAccAlicloudMongodbShardingNetworkPublicAddressesDataSource(t *testing.T
 
 	preCheck := func() {
 		testAccPreCheck(t)
+		testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 	}
 	alicloudMongodbShardingNetworkPublicAddressesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, allConf)
 }

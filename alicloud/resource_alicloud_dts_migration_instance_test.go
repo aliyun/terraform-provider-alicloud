@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"os"
 	"reflect"
 	"strconv"
 	"testing"
@@ -19,7 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudDTSMigrationInstance_basic0(t *testing.T) {
+func TestAccAliCloudDTSMigrationInstance_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dts_migration_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudDTSMigrationInstanceMap0)
@@ -135,7 +134,7 @@ func TestUnitAlicloudDTSMigrationInstance(t *testing.T) {
 		err = d.Set(key, value)
 		assert.Nil(t, err)
 	}
-	region := os.Getenv("ALICLOUD_REGION")
+	region := "cn-beijing"
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)

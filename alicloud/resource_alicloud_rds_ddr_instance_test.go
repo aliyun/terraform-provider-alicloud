@@ -174,7 +174,7 @@ func testSweepDBDdrInstances(region string) error {
 	return nil
 }
 
-func SkipTestAccAlicloudRdsDdrInstanceMysql(t *testing.T) {
+func SkipTestAccAliCloudRdsDdrInstanceMysql(t *testing.T) {
 	var instance map[string]interface{}
 	var ips []map[string]interface{}
 
@@ -193,16 +193,16 @@ func SkipTestAccAlicloudRdsDdrInstanceMysql(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"engine":                   "MySQL",
 					"engine_version":           "8.0",
 					"instance_type":            "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}",
-					"instance_storage":         "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min}",
+					"instance_storage":         "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min}",
 					"payment_type":             "PayAsYouGo",
 					"instance_name":            "${var.name}",
 					"vswitch_id":               "${local.vswitch_id}",
@@ -269,7 +269,7 @@ func SkipTestAccAlicloudRdsDdrInstanceMysql(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_storage": "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min + data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.step}",
+					"instance_storage": "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min + data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.step}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -357,7 +357,7 @@ func SkipTestAccAlicloudRdsDdrInstanceMysql(t *testing.T) {
 					"engine":                     "MySQL",
 					"engine_version":             "8.0",
 					"instance_type":              "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}",
-					"instance_storage":           "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min * 3}",
+					"instance_storage":           "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min * 3}",
 					"db_instance_storage_type":   "local_ssd",
 					"instance_name":              "tf-testAccDdrDBInstanceConfig",
 					"monitoring_period":          "60",
@@ -423,7 +423,7 @@ func SkipTestAccAlicloudRdsDdrInstanceMysql(t *testing.T) {
 	})
 }
 
-func SkipTestAccAlicloudRdsDdrInstanceMysqlTime(t *testing.T) {
+func SkipTestAccAliCloudRdsDdrInstanceMysqlTime(t *testing.T) {
 	var instance map[string]interface{}
 	var ips []map[string]interface{}
 
@@ -442,16 +442,16 @@ func SkipTestAccAlicloudRdsDdrInstanceMysqlTime(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"engine":                   "MySQL",
 					"engine_version":           "8.0",
 					"instance_type":            "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}",
-					"instance_storage":         "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min}",
+					"instance_storage":         "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min}",
 					"payment_type":             "PayAsYouGo",
 					"instance_name":            "${var.name}",
 					"vswitch_id":               "${local.vswitch_id}",
@@ -522,7 +522,7 @@ func SkipTestAccAlicloudRdsDdrInstanceMysqlTime(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_storage": "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min + data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.step}",
+					"instance_storage": "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min + data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.step}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -610,7 +610,7 @@ func SkipTestAccAlicloudRdsDdrInstanceMysqlTime(t *testing.T) {
 					"engine":                     "MySQL",
 					"engine_version":             "8.0",
 					"instance_type":              "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}",
-					"instance_storage":           "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min * 3}",
+					"instance_storage":           "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min * 3}",
 					"db_instance_storage_type":   "local_ssd",
 					"instance_name":              "tf-testAccDdrDBInstanceConfig",
 					"monitoring_period":          "60",
@@ -756,7 +756,7 @@ resource "alicloud_kms_key" "default" {
 `, name, startTime, endTime)
 }
 
-func SkipTestAccAlicloudRdsDdrInstanceSQLServer(t *testing.T) {
+func SkipTestAccAliCloudRdsDdrInstanceSQLServer(t *testing.T) {
 	var instance map[string]interface{}
 	var ips []map[string]interface{}
 
@@ -779,7 +779,7 @@ func SkipTestAccAlicloudRdsDdrInstanceSQLServer(t *testing.T) {
 		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -899,7 +899,7 @@ func SkipTestAccAlicloudRdsDdrInstanceSQLServer(t *testing.T) {
 	})
 }
 
-func SkipTestAccAlicloudRdsDdrInstanceSQLServerTime(t *testing.T) {
+func SkipTestAccAliCloudRdsDdrInstanceSQLServerTime(t *testing.T) {
 	var instance map[string]interface{}
 	var ips []map[string]interface{}
 
@@ -922,7 +922,7 @@ func SkipTestAccAlicloudRdsDdrInstanceSQLServerTime(t *testing.T) {
 		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-func TestAccAlicloudRdsDBInstanceEndpointMySql(t *testing.T) {
+func TestAccAliCloudRdsDBInstanceEndpointMySql(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_rds_db_instance_endpoint.default"
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -23,9 +23,9 @@ func TestAccAlicloudRdsDBInstanceEndpointMySql(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -167,7 +167,7 @@ resource "alicloud_db_instance" "default" {
   engine_version           = "8.0"
   db_instance_storage_type = "cloud_essd"
   instance_type            = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min
   vswitch_id               = data.alicloud_vswitches.default.ids.0
   instance_name            = var.name
   zone_id 				   = data.alicloud_db_zones.default.ids.0

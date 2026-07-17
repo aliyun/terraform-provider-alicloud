@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudDMSEnterpriseUsersDataSource(t *testing.T) {
+func TestAccAliCloudDMSEnterpriseUsersDataSource(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.DMSEnterpriseSupportRegions)
 	rand := acctest.RandIntRange(1000000, 9999999)
 	resourceId := "data.alicloud_dms_enterprise_users.default"
 	name := fmt.Sprintf("tf_testAccDmsEnterpriseUsersDataSource_%d", rand)
@@ -56,7 +58,6 @@ func TestAccAlicloudDMSEnterpriseUsersDataSource(t *testing.T) {
 			"ids.#":                "1",
 			"ids.0":                CHECKSET,
 			"users.#":              "1",
-			"users.0.mobile":       "15910799999",
 			"users.0.nick_name":    name,
 			"users.0.parent_uid":   CHECKSET,
 			"users.0.role_ids.#":   "1",

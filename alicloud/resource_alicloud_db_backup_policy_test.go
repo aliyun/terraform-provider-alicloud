@@ -286,7 +286,7 @@ resource "alicloud_db_instance" "default" {
 	engine_version = "8.0"
  	db_instance_storage_type = "local_ssd"
 	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min
 	vswitch_id = local.vswitch_id
 	instance_name = var.name
 	security_group_ids = alicloud_security_group.default.*.id
@@ -520,7 +520,7 @@ resource "alicloud_db_instance" "default" {
 	engine_version = "14.0"
  	db_instance_storage_type = "cloud_essd"
 	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min
 	vswitch_id = local.vswitch_id
 	instance_name = var.name
 	security_group_ids = alicloud_security_group.default.*.id
@@ -690,7 +690,7 @@ resource "alicloud_db_instance" "default" {
 	engine_version       = "2012"
  	db_instance_storage_type = "cloud_essd"
 	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min
 	vswitch_id = local.vswitch_id
 	instance_name = var.name
 	security_group_ids = alicloud_security_group.default.*.id
@@ -816,7 +816,7 @@ resource "alicloud_db_instance" "default" {
 	category             = "AlwaysOn"
  	db_instance_storage_type = "cloud_essd"
 	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min
 	vswitch_id = local.vswitch_id
 	instance_name = var.name
 	security_group_ids = alicloud_security_group.default.*.id
@@ -1036,7 +1036,7 @@ resource "alicloud_db_instance" "default" {
   	engine_version       = "10.3"
  	db_instance_storage_type = "cloud_essd"
 	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min
 	vswitch_id = local.vswitch_id
 	instance_name = var.name
 	security_group_ids = alicloud_security_group.default.*.id

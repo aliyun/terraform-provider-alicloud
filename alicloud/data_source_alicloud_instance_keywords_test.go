@@ -6,7 +6,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudRdsInstanceKeywordsDatasource(t *testing.T) {
+func TestAccAliCloudRdsInstanceKeywordsDatasource(t *testing.T) {
 	rand := acctest.RandInt()
 	resourceId := "data.alicloud_instance_keywords.default"
 	testAccConfig := dataSourceTestAccConfigFunc(resourceId, "", testAccAlicloudRdsInstanceKeywordsDataSourceConfig)

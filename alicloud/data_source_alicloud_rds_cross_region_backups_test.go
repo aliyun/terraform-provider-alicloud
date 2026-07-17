@@ -13,7 +13,7 @@ import (
 	Because there are two lines between enabling remote disaster recovery and generating remote disaster recovery, the generation time of the remote disaster recovery set cannot be determined, the query cannot be determined to have a value, and the OpenAPI will return normally without a value. All users skip the 'Test' and have passed the 'Test' offline simulation.
 */
 
-func SkipTestAccAlicloudRdsCrossRegionBackupsDataSource(t *testing.T) {
+func SkipTestAccAliCloudRdsCrossRegionBackupsDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	testConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudRdsCrossRegionBackupsDataSourceName(rand, map[string]string{
@@ -152,7 +152,7 @@ resource "alicloud_db_instance" "default" {
   engine_version           = "8.0"
   db_instance_storage_type = "local_ssd"
   instance_type            = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min
   vswitch_id               = local.vswitch_id
   instance_name            = var.name
 }

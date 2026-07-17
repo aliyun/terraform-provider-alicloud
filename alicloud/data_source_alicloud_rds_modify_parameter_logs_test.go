@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudRdsModifyParameterLogsDataSource(t *testing.T) {
+func TestAccAliCloudRdsModifyParameterLogsDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 
 	testConf := dataSourceTestAccConfig{
@@ -115,7 +115,7 @@ resource "alicloud_db_instance" "default" {
   engine_version           = "8.0"
   db_instance_storage_type = "cloud_essd"
   instance_type            = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min
   vswitch_id               = local.vswitch_id
   instance_name            = var.name
   parameters {

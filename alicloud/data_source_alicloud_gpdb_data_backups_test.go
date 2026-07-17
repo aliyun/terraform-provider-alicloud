@@ -9,9 +9,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudGpdbDatabackupDataSource(t *testing.T) {
+func TestAccAliCloudGpdbDatabackupDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
-	testAccPreCheckWithRegions(t, true, connectivity.GPDBDBInstancePlanSupportRegions)
+	testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudGpdbDatabackupSourceConfig(rand, map[string]string{

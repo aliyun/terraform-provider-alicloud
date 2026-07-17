@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudRdsCharacterSetNamesDataSource(t *testing.T) {
+func TestAccAliCloudRdsCharacterSetNamesDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	resourceId := "data.alicloud_rds_character_set_names.default"
 	rdsCharacterSetNamesConfig := dataSourceTestAccConfig{

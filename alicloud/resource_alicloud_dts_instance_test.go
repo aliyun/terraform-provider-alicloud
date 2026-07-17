@@ -10,7 +10,7 @@ import (
 )
 
 // Case 1
-func TestAccAliCloudDtsInstance_basic1170(t *testing.T) {
+func TestAccAliCloudDTSInstance_basic1170(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dts_instance.default"
 	ra := resourceAttrInit(resourceId, AliCloudDtsInstanceMap1170)
@@ -94,7 +94,7 @@ func TestAccAliCloudDtsInstance_basic1170(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudDtsInstance_basic1(t *testing.T) {
+func TestAccAliCloudDTSInstance_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dts_instance.default"
 	ra := resourceAttrInit(resourceId, AliCloudDtsInstanceMap1170)

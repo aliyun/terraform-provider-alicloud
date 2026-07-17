@@ -35,6 +35,7 @@ func TestAccAliCloudMongoDBAuditPolicy_basic0(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 		},
 		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
@@ -97,6 +98,7 @@ func TestAccAliCloudMongoDBAuditPolicy_basic0_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 		},
 		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
@@ -406,6 +408,7 @@ func TestAccAliCloudMongodbAuditPolicy_basic11599(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 		},
 		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
@@ -490,6 +493,7 @@ func TestAccAliCloudMongodbAuditPolicy_basic11599_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 		},
 		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,

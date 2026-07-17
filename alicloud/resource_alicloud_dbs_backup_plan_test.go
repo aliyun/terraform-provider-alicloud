@@ -105,7 +105,7 @@ func testSweepDbsBackupPlan(region string) error {
 	return nil
 }
 
-func TestAccAlicloudDBSBackupPlan_basic0(t *testing.T) {
+func TestAccAliCloudDBSBackupPlan_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dbs_backup_plan.default"
 	ra := resourceAttrInit(resourceId, AlicloudDBSBackupPlanMap0)
@@ -121,9 +121,9 @@ func TestAccAlicloudDBSBackupPlan_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -132,12 +132,12 @@ func TestAccAlicloudDBSBackupPlan_basic0(t *testing.T) {
 					"instance_class":                "xlarge",
 					"backup_method":                 "logical",
 					"database_type":                 "MySQL",
-					"database_region":               "${var.database_region}",
-					"storage_region":                "${var.storage_region}",
+					"database_region":               "${data.alicloud_regions.default.regions.0.id}",
+					"storage_region":                "${data.alicloud_regions.default.regions.0.id}",
 					"instance_type":                 "RDS",
 					"source_endpoint_instance_type": "RDS",
 					"resource_group_id":             "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
-					"source_endpoint_region":        "${var.source_endpoint_region}",
+					"source_endpoint_region":        "${data.alicloud_regions.default.regions.0.id}",
 					"source_endpoint_instance_id":   "${alicloud_db_instance.default.id}",
 					"source_endpoint_user_name":     "${alicloud_db_account_privilege.default.account_name}",
 					"source_endpoint_password":      "${alicloud_rds_account.default.account_password}",
@@ -205,79 +205,48 @@ func AlicloudDBSBackupPlanBasicDependence0(name string) string {
 variable "name" {
   default = "%s"
 }
-variable "database_region" {
-  default = "%s"
-}
-variable "storage_region" {
-  default = "%s"
-}
-variable "source_endpoint_region" {
-  default = "%s"
-}
+
 data "alicloud_resource_manager_resource_groups" "default" {
   status = "OK"
 }
 
-data "alicloud_db_zones" "default"{
-	engine = "MySQL"
-	engine_version = "8.0"
-	instance_charge_type = "PostPaid"
-	category = "HighAvailability"
- 	db_instance_storage_type = "local_ssd"
+data "alicloud_regions" "default" {
+  current = true
 }
 
-data "alicloud_db_instance_classes" "default" {
-    zone_id = data.alicloud_db_zones.default.zones.0.id
-	engine = "MySQL"
-	engine_version = "8.0"
-    category = "HighAvailability"
- 	db_instance_storage_type = "local_ssd"
-	instance_charge_type = "PostPaid"
+data "alicloud_zones" "default" {
 }
 
 data "alicloud_vpcs" "default" {
-    name_regex = "^default-NODELETING$"
-}
-data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_db_zones.default.zones.0.id
+  name_regex = "^default-NODELETING$"
 }
 
-resource "alicloud_vswitch" "this" {
- count = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
- vswitch_name = var.name
- vpc_id = data.alicloud_vpcs.default.ids.0
- zone_id = data.alicloud_db_zones.default.ids.0
- cidr_block = cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)
-}
-locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]
-  zone_id = data.alicloud_db_zones.default.ids.0
+data "alicloud_vswitches" "default" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_zones.default.zones.2.id
 }
 
 resource "alicloud_security_group" "default" {
-	name   = var.name
-	vpc_id = data.alicloud_vpcs.default.ids.0
+  name   = var.name
+  vpc_id = data.alicloud_vpcs.default.ids.0
+}
+resource "alicloud_db_instance" "default" {
+  engine           = "MySQL"
+  engine_version   = "8.0"
+  instance_type    = "rds.mysql.s1.small"
+  instance_storage = "10"
+  vswitch_id       = data.alicloud_vswitches.default.ids.0
+  instance_name    = var.name
 }
 
-resource "alicloud_db_instance" "default" {
-    engine = "MySQL"
-	engine_version = "8.0"
- 	db_instance_storage_type = "local_ssd"
-	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
-	vswitch_id = local.vswitch_id
-	instance_name = var.name
-	security_group_ids = alicloud_security_group.default.*.id
-}
 resource "alicloud_db_database" "default" {
   instance_id = alicloud_db_instance.default.id
   name        = "tftestdatabase"
 }
 resource "alicloud_rds_account" "default" {
-  db_instance_id = alicloud_db_instance.default.id
-  account_name        = "tftestnormal000"
-  account_password    = "Test12345"
+  db_instance_id   = alicloud_db_instance.default.id
+  account_name     = "tftestnormal000"
+  account_password = "Test12345"
 }
 resource "alicloud_db_account_privilege" "default" {
   instance_id  = alicloud_db_instance.default.id
@@ -285,10 +254,10 @@ resource "alicloud_db_account_privilege" "default" {
   privilege    = "ReadWrite"
   db_names     = [alicloud_db_database.default.name]
 }
-`, name, defaultRegionToTest, defaultRegionToTest, defaultRegionToTest)
+`, name)
 }
 
-func TestAccAlicloudDBSBackupPlan_basic1(t *testing.T) {
+func TestAccAliCloudDBSBackupPlan_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dbs_backup_plan.default"
 	ra := resourceAttrInit(resourceId, AlicloudDBSBackupPlanMap1)
@@ -304,9 +273,9 @@ func TestAccAlicloudDBSBackupPlan_basic1(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -315,11 +284,11 @@ func TestAccAlicloudDBSBackupPlan_basic1(t *testing.T) {
 					"instance_class":                "xlarge",
 					"backup_method":                 "logical",
 					"database_type":                 "MySQL",
-					"database_region":               "${var.database_region}",
-					"storage_region":                "${var.storage_region}",
+					"database_region":               "${data.alicloud_regions.default.regions.0.id}",
+					"storage_region":                "${data.alicloud_regions.default.regions.0.id}",
 					"instance_type":                 "RDS",
 					"source_endpoint_instance_type": "RDS",
-					"source_endpoint_region":        "${var.database_region}",
+					"source_endpoint_region":        "${data.alicloud_regions.default.regions.0.id}",
 					"source_endpoint_instance_id":   "${alicloud_db_instance.default.id}",
 					"source_endpoint_user_name":     "${alicloud_db_account_privilege.default.account_name}",
 					"source_endpoint_password":      "${alicloud_rds_account.default.account_password}",

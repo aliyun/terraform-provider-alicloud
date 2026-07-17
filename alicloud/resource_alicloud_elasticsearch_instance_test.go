@@ -60,7 +60,7 @@ const AutoRenewal = "AutoRenewal"
 const NotRenewal = "NotRenewal"
 const ManualRenewal = "ManualRenewal"
 
-const Version55 = "5.5.3_with_X-Pack"
+const Version55 = "7.10.0_with_X-Pack"
 const Version716 = "7.16.2_with_X-Pack"
 
 const Version77 = "7.7.1_with_X-Pack"
@@ -190,9 +190,9 @@ func TestAccAliCloudElasticsearchInstance_basic(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -441,9 +441,9 @@ func TestAccAliCloudElasticsearchInstance_version(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -527,9 +527,9 @@ func TestAccAliCloudElasticsearchInstance_multizone(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -612,9 +612,9 @@ func TestAccAliCloudElasticsearchInstance_encrypt_disk(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -667,9 +667,9 @@ func TestAccAliCloudElasticsearchInstance_prepaid_autorenew(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -798,9 +798,9 @@ func TestAccAliCloudElasticsearchInstance_network(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -991,109 +991,6 @@ func TestAccAliCloudElasticsearchInstance_network(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudElasticsearchInstance_onecs(t *testing.T) {
-	var instance *elasticsearch.DescribeInstanceResponse
-
-	resourceId := "alicloud_elasticsearch_instance.default"
-	ra := resourceAttrInit(resourceId, elasticsearchNetworkMap)
-
-	serviceFunc := func() interface{} {
-		return &ElasticsearchService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &instance, serviceFunc)
-
-	rac := resourceAttrCheckInit(rc, ra)
-
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandInt()
-	name := fmt.Sprintf("tf-testAccES%s%d", defaultRegionToTest, rand)
-	if len(name) > 30 {
-		name = name[:30]
-	}
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceElasticsearchInstanceConfigDependence)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		IDRefreshName: resourceId,
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description":                      name,
-					"vswitch_id":                       "${local.vswitch_id}",
-					"version":                          "5.5.3_with_X-Pack",
-					"password":                         "Yourpassword1234",
-					"data_node_spec":                   DataNodeSpec,
-					"data_node_amount":                 DataNodeAmount,
-					"data_node_disk_size":              DataNodeDisk,
-					"data_node_disk_type":              DataNodeEssdDiskType,
-					"data_node_disk_performance_level": DataNodeDiskPerformanceLevel1,
-					"kibana_node_spec":                 KibanaSpec,
-					"instance_charge_type":             string(PostPaid),
-					"zone_count":                       "1",
-					"enable_public":                    "false",
-					"enable_kibana_private_network":    "true",
-					"enable_kibana_public_network":     "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description":                      name,
-						"version":                          "5.5.3_with_X-Pack",
-						"password":                         "Yourpassword1234",
-						"data_node_spec":                   DataNodeSpec,
-						"data_node_amount":                 DataNodeAmount,
-						"data_node_disk_size":              DataNodeDisk,
-						"data_node_disk_type":              DataNodeEssdDiskType,
-						"data_node_disk_performance_level": DataNodeDiskPerformanceLevel1,
-						"kibana_node_spec":                 KibanaSpec,
-						"instance_charge_type":             string(PostPaid),
-						"zone_count":                       "1",
-						"enable_public":                    "false",
-						"enable_kibana_private_network":    "true",
-						"enable_kibana_public_network":     "true",
-					}),
-				),
-			},
-
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"kibana_private_whitelist": []string{"192.168.0.0/24", "127.0.0.1/32"},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"kibana_private_whitelist.#": "2",
-					}),
-				),
-			},
-
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"enable_public": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"enable_public": "true",
-					}),
-				),
-			},
-
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"enable_kibana_public_network": "false",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"enable_kibana_public_network": "false",
-					}),
-				),
-			},
-		},
-	})
-}
-
 var elasticsearchMap = map[string]string{
 	"description":                      CHECKSET,
 	"data_node_spec":                   CHECKSET,
@@ -1172,9 +1069,9 @@ func TestAccAliCloudElasticsearchInstance_basic11468(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1327,9 +1224,9 @@ func TestAccAliCloudElasticsearchInstance_basic11477(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1474,9 +1371,9 @@ func TestAccAliCloudElasticsearchInstance_basic11518(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1491,7 +1388,7 @@ func TestAccAliCloudElasticsearchInstance_basic11518(t *testing.T) {
 					},
 					"payment_type": "PayAsYouGo",
 					"vswitch_id":   "${alicloud_vswitch.defaultAislbL.id}",
-					"version":      "5.5.3_with_X-Pack",
+					"version":      "7.10.0_with_X-Pack",
 					"password":     "Admain@123",
 					"data_node_configuration": []map[string]interface{}{
 						{
@@ -1507,58 +1404,56 @@ func TestAccAliCloudElasticsearchInstance_basic11518(t *testing.T) {
 						"zone_count":   "1",
 						"description":  "开Kibana私网并修改白名单",
 						"payment_type": "PayAsYouGo",
-						"version":      "5.5.3_with_X-Pack",
+						"version":      "7.10.0_with_X-Pack",
 						"password":     "Admain@123",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"order_action_type":             "UPGRADE",
-					"public_whitelist":              []string{},
-					"enable_kibana_private_network": "true",
+					"order_action_type":                "UPGRADE",
+					"public_whitelist":                 []string{},
+					"enable_kibana_private_network":    "true",
+					"kibana_private_security_group_id": "${alicloud_security_group.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"order_action_type":             "UPGRADE",
-						"public_whitelist.#":            "0",
-						"enable_kibana_private_network": "true",
+						"order_action_type":                "UPGRADE",
+						"public_whitelist.#":               "0",
+						"enable_kibana_private_network":    "true",
+						"kibana_private_security_group_id": CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"enable_public": "false",
-					"kibana_private_whitelist": []string{
-						"0.0.0.0/24"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"enable_public":              "false",
-						"kibana_private_whitelist.#": "1",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"kibana_private_whitelist": []string{
-						"1.0.0.0/24", "3.0.0.0/24", "2.0.0.0/24"},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"kibana_private_whitelist.#": "3",
+						"enable_public": "false",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"enable_kibana_private_network": "false",
-					"kibana_private_whitelist":      []string{},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"enable_kibana_private_network": "false",
-						"kibana_private_whitelist.#":    CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_kibana_private_network":    "true",
+					"kibana_private_security_group_id": "${alicloud_security_group.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_kibana_private_network":    "true",
+						"kibana_private_security_group_id": CHECKSET,
 					}),
 				),
 			},
@@ -1645,6 +1540,12 @@ resource "alicloud_vswitch" "defaultAislbL" {
   vswitch_name = "es-instanc-case"
 }
 
+resource "alicloud_security_group" "default" {
+  description         = "terraform2"
+  security_group_name = "terraform2"
+  security_group_type = "normal"
+  vpc_id              = alicloud_vpc.defaultLPXHTQ.id
+}
 
 `, name)
 }
@@ -1667,9 +1568,9 @@ func TestAccAliCloudElasticsearchInstance_basic11519(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1684,7 +1585,7 @@ func TestAccAliCloudElasticsearchInstance_basic11519(t *testing.T) {
 					},
 					"payment_type": "PayAsYouGo",
 					"vswitch_id":   "${alicloud_vswitch.defaultAislbL.id}",
-					"version":      "5.5.3_with_X-Pack",
+					"version":      "7.10.0_with_X-Pack",
 					"password":     "Admain@123",
 					"data_node_configuration": []map[string]interface{}{
 						{
@@ -1700,7 +1601,7 @@ func TestAccAliCloudElasticsearchInstance_basic11519(t *testing.T) {
 						"zone_count":   "1",
 						"description":  "开Kibana公网并修改白名单",
 						"payment_type": "PayAsYouGo",
-						"version":      "5.5.3_with_X-Pack",
+						"version":      "7.10.0_with_X-Pack",
 						"password":     "Admain@123",
 					}),
 				),
@@ -1723,23 +1624,23 @@ func TestAccAliCloudElasticsearchInstance_basic11519(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"kibana_private_whitelist": []string{},
 					"kibana_whitelist": []string{
-						"::1", "0.0.0.0/24"},
+						"0.0.0.0/24"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"kibana_private_whitelist.#": "0",
-						"kibana_whitelist.#":         "2",
+						"kibana_whitelist.#":         "1",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"kibana_whitelist": []string{
-						"::1", "1.0.0.0/24", "3.0.0.0/24", "2.0.0.0/24"},
+						"1.0.0.0/24", "3.0.0.0/24", "2.0.0.0/24"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"kibana_whitelist.#": "4",
+						"kibana_whitelist.#": "3",
 					}),
 				),
 			},
@@ -1859,9 +1760,9 @@ func TestAccAliCloudElasticsearchInstance_basic11456(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2018,9 +1919,9 @@ func TestAccAliCloudElasticsearchInstance_basic11520(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2035,7 +1936,7 @@ func TestAccAliCloudElasticsearchInstance_basic11520(t *testing.T) {
 					},
 					"payment_type": "PayAsYouGo",
 					"vswitch_id":   "${alicloud_vswitch.defaultAislbL.id}",
-					"version":      "5.5.3_with_X-Pack",
+					"version":      "7.10.0_with_X-Pack",
 					"password":     "Admain@123",
 					"data_node_configuration": []map[string]interface{}{
 						{
@@ -2051,7 +1952,7 @@ func TestAccAliCloudElasticsearchInstance_basic11520(t *testing.T) {
 						"zone_count":   "1",
 						"description":  "开Kibana私网并修改白名单",
 						"payment_type": "PayAsYouGo",
-						"version":      "5.5.3_with_X-Pack",
+						"version":      "7.10.0_with_X-Pack",
 						"password":     "Admain@123",
 					}),
 				),
@@ -2187,9 +2088,9 @@ func TestAccAliCloudElasticsearchInstance_basic11469(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2358,9 +2259,9 @@ func TestAccAliCloudElasticsearchInstance_basic11508(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2528,9 +2429,9 @@ func TestAccAliCloudElasticsearchInstance_basic11514(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2692,9 +2593,9 @@ func TestAccAliCloudElasticsearchInstance_basic11516(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2709,7 +2610,7 @@ func TestAccAliCloudElasticsearchInstance_basic11516(t *testing.T) {
 					},
 					"payment_type": "PayAsYouGo",
 					"vswitch_id":   "${alicloud_vswitch.defaultAislbL.id}",
-					"version":      "5.5.3_with_X-Pack",
+					"version":      "7.10.0_with_X-Pack",
 					"password":     "Admain@123",
 					"data_node_configuration": []map[string]interface{}{
 						{
@@ -2725,7 +2626,7 @@ func TestAccAliCloudElasticsearchInstance_basic11516(t *testing.T) {
 						"zone_count":   "1",
 						"description":  "开es公网并修改白名单",
 						"payment_type": "PayAsYouGo",
-						"version":      "5.5.3_with_X-Pack",
+						"version":      "7.10.0_with_X-Pack",
 						"password":     "Admain@123",
 					}),
 				),
@@ -2745,22 +2646,22 @@ func TestAccAliCloudElasticsearchInstance_basic11516(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"public_whitelist": []string{
-						"::1", "1.0.0.0/24", "3.0.0.0/24", "2.0.0.0/24"},
+						"1.0.0.0/24", "3.0.0.0/24", "2.0.0.0/24"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"public_whitelist.#": "4",
+						"public_whitelist.#": "3",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"public_whitelist": []string{
-						"::1", "1.0.0.0/24"},
+						"1.0.0.0/24"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"public_whitelist.#": "2",
+						"public_whitelist.#": "1",
 					}),
 				),
 			},
@@ -2881,9 +2782,9 @@ func TestAccAliCloudElasticsearchInstance_basic11480(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -3085,9 +2986,9 @@ func TestAccAliCloudElasticsearchInstance_basic11506(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -3262,9 +3163,9 @@ func TestAccAliCloudElasticsearchInstance_basic11515(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -3429,9 +3330,9 @@ func TestAccAliCloudElasticsearchInstance_basic11512(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -3598,9 +3499,9 @@ func TestAccAliCloudElasticsearchInstance_basic11511(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -3765,9 +3666,9 @@ func TestAccAliCloudElasticsearchInstance_basic11510(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -3933,9 +3834,9 @@ func TestAccAliCloudElasticsearchInstance_basic11470(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -4111,9 +4012,9 @@ func TestAccAliCloudElasticsearchInstance_basic11509(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -4279,9 +4180,9 @@ func TestAccAliCloudElasticsearchInstance_basic11529(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -4599,9 +4500,9 @@ func TestAccAliCloudElasticsearchInstance_basic11482(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -4762,9 +4663,9 @@ func TestAccAliCloudElasticsearchInstance_deprecatedToNewFields(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

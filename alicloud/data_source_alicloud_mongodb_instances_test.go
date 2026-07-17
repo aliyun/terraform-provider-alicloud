@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
@@ -145,6 +146,7 @@ func TestAccAliCloudMongoDBInstancesDataSource_basic0(t *testing.T) {
 
 	preCheck := func() {
 		testAccPreCheck(t)
+		testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 	}
 
 	aliCloudMongoDBInstancesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, instanceClassConf, availabilityZoneConf, statusConf, tagsConf, allConf)
@@ -326,6 +328,7 @@ func TestAccAliCloudMongoDBInstancesDataSource_basic1(t *testing.T) {
 
 	preCheck := func() {
 		testAccPreCheck(t)
+		testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 	}
 
 	aliCloudMongoDBInstancesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, instanceClassConf, availabilityZoneConf, statusConf, tagsConf, allConf)
@@ -502,6 +505,7 @@ func TestAccAliCloudMongoDBShardingInstancesDataSource_basic0(t *testing.T) {
 
 	preCheck := func() {
 		testAccPreCheck(t)
+		testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 	}
 
 	aliCloudMongoDBShardingInstancesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, availabilityZoneConf, statusConf, tagsConf, allConf)
@@ -667,6 +671,7 @@ func TestAccAliCloudMongoDBShardingInstancesDataSource_basic1(t *testing.T) {
 
 	preCheck := func() {
 		testAccPreCheck(t)
+		testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 	}
 
 	aliCloudMongoDBShardingInstancesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, availabilityZoneConf, statusConf, tagsConf, allConf)

@@ -12,6 +12,7 @@ import (
 // Test DMSEnterprise AuthorityTemplate. >>> Resource test cases, automatically generated.
 // Case 4696
 func TestAccAliCloudDMSEnterpriseAuthorityTemplate_basic4696(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.DMSEnterpriseSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_dms_enterprise_authority_template.default"
 	ra := resourceAttrInit(resourceId, AlicloudDMSEnterpriseAuthorityTemplateMap4696)
@@ -27,9 +28,9 @@ func TestAccAliCloudDMSEnterpriseAuthorityTemplate_basic4696(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -142,6 +143,7 @@ data "alicloud_dms_user_tenants" "default" {
 
 // Case 4696  twin
 func TestAccAliCloudDMSEnterpriseAuthorityTemplate_basic4696_twin(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.DMSEnterpriseSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_dms_enterprise_authority_template.default"
 	ra := resourceAttrInit(resourceId, AlicloudDMSEnterpriseAuthorityTemplateMap4696)
@@ -157,9 +159,9 @@ func TestAccAliCloudDMSEnterpriseAuthorityTemplate_basic4696_twin(t *testing.T) 
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

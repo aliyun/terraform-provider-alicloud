@@ -419,8 +419,11 @@ func isOtsTunnelNotFound(err error) bool {
 		if e.Code == otsTunnel.ErrCodeParamInvalid && strings.Contains(e.Message, "tunnel not exist") {
 			return true
 		}
-		if e.Code == otsTunnel.ErrCodePermissionDenied && strings.Contains(e.Message, "Instance not found") {
-			return true
+		if e.Code == otsTunnel.ErrCodePermissionDenied {
+			lowerMsg := strings.ToLower(e.Message)
+			if strings.Contains(lowerMsg, "is not found") || strings.Contains(lowerMsg, "instance is not running") {
+				return true
+			}
 		}
 	}
 	return false

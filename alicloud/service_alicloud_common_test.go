@@ -1371,7 +1371,7 @@ resource "alicloud_db_instance" "default" {
 	engine = "MySQL"
 	engine_version = "8.0"
 	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min
 	zone_id = data.alicloud_db_zones.default.ids[length(data.alicloud_db_zones.default.ids)-1]
 	instance_charge_type = "Postpaid"
 	db_instance_storage_type = "cloud_essd"

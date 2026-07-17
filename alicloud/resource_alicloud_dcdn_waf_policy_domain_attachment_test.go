@@ -21,7 +21,6 @@ import (
 func TestAccAliCloudDcdnWafPolicyDomainAttachment_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dcdn_waf_policy_domain_attachment.default"
-	checkoutSupportedRegions(t, true, connectivity.DCDNSupportRegions)
 	ra := resourceAttrInit(resourceId, AlicloudDCDNWafPolicyDomainAttachmentMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &DcdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -35,9 +34,9 @@ func TestAccAliCloudDcdnWafPolicyDomainAttachment_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

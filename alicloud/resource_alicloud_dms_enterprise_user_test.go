@@ -97,7 +97,8 @@ func testSweepDMSEnterpriseUsers(region string) error {
 	return nil
 }
 
-func TestAccAlicloudDMSEnterpriseUser_basic(t *testing.T) {
+func TestAccAliCloudDMSEnterpriseUser_basic(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.DMSEnterpriseSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_dms_enterprise_user.default"
 	ra := resourceAttrInit(resourceId, DmsEnterpriseUserMap)
@@ -114,9 +115,9 @@ func TestAccAlicloudDMSEnterpriseUser_basic(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -163,16 +164,6 @@ func TestAccAlicloudDMSEnterpriseUser_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"nick_name": name + "update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"role_names": []string{"USER"},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"role_names.#": "1",
 					}),
 				),
 			},

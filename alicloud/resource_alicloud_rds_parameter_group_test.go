@@ -18,7 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudRdsParameterGroup_basic(t *testing.T) {
+func TestAccAliCloudRdsParameterGroup_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_rds_parameter_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudRdsParameterGroupMap0)
@@ -35,9 +35,9 @@ func TestAccAlicloudRdsParameterGroup_basic(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -135,7 +135,7 @@ func TestAccAlicloudRdsParameterGroup_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudRdsParameterGroup_basic1(t *testing.T) {
+func TestAccAliCloudRdsParameterGroup_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_rds_parameter_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudRdsParameterGroupMap0)
@@ -152,9 +152,9 @@ func TestAccAlicloudRdsParameterGroup_basic1(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -491,7 +491,7 @@ func TestUnitAlicloudRdsParameterGroup(t *testing.T) {
 
 }
 
-func TestAccAlicloudRdsParameterGroupPostgreSQL(t *testing.T) {
+func TestAccAliCloudRdsParameterGroupPostgreSQL(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_rds_parameter_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudRdsParameterGroupMap0)
@@ -508,9 +508,9 @@ func TestAccAlicloudRdsParameterGroupPostgreSQL(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

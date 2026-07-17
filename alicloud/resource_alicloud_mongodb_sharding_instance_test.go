@@ -111,19 +111,20 @@ func TestAccAliCloudMongoDBShardingInstance_basic0(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000, 9999)
 	name := fmt.Sprintf("tf-testAccMongoDBShardingInstance%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMongoDBShardingInstanceBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMongoDBShardingInstanceBasicDependence1)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"engine_version": "4.2",
-					"vswitch_id":     "${data.alicloud_vswitches.default.ids.0}",
+					"vswitch_id":     "${alicloud_vswitch.default.id}",
 					"mongo_list": []map[string]interface{}{
 						{
 							"node_class": "dds.mongos.mid",
@@ -413,10 +414,11 @@ func TestAccAliCloudMongoDBShardingInstance_basic0_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -523,10 +525,11 @@ func TestAccAliCloudMongoDBShardingInstance_basic1(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -941,10 +944,11 @@ func TestAccAliCloudMongoDBShardingInstance_basic1_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

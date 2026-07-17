@@ -29,9 +29,9 @@ func TestAccAliCloudRdsAiInstance_basic12309(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -156,9 +156,9 @@ func TestAccAliCloudRdsAiInstance_basic12309_twin(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -173,7 +173,7 @@ func TestAccAliCloudRdsAiInstance_basic12309_twin(t *testing.T) {
 					"database_password":             "YourPassword123",
 					"initialize_with_existing_data": "true",
 					"public_endpoint_enabled":       "true",
-					"public_network_access_enabled": "true",
+					"public_network_access_enabled": "false",
 					"status":                        "Running",
 					"auth_config_list": []map[string]interface{}{
 						{

@@ -65,6 +65,9 @@ func (s *DmsEnterpriseService) DescribeDmsEnterpriseUser(id string) (object map[
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.User", response)
 	}
 	object = v.(map[string]interface{})
+	if fmt.Sprint(object["State"]) == "DELETE" {
+		return object, GetNotFoundErrorFromString(GetNotFoundMessage("DMS Enterprise User", id))
+	}
 	return object, nil
 }
 
