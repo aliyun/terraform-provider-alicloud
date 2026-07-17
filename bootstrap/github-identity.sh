@@ -32,32 +32,65 @@ run_commit() {
         git commit --author="$JARVIS_GIT_AUTHOR_NAME <$JARVIS_GIT_AUTHOR_EMAIL>" "$@"
 }
 
+# Verify the token belongs to the api-tool-agent account. Exit codes:
+#   0  identity verified (login == api-tool-agent)
+#   0  token present but GitHub transiently unreachable after retries — identity
+#      could NOT be confirmed, but the pinned JARVIS_GITHUB_TOKEN is still used
+#      for the real op (no ambient fallback), so proceed rather than mask a
+#      transient GitHub 5xx/HTML/network blip as an identity failure (emits a
+#      loud WARNING).
+#   2  token missing (hard fail)
+#   3  token rejected (HTTP 401 / bad credentials) or login mismatch (hard fail)
+#
+# The probe distinguishes a *definitive* auth rejection (401 / Bad credentials)
+# from a *transient* failure (5xx, network error, or a non-JSON HTML error page
+# that makes `--jq` emit "invalid character '<'"). Only the former is a real
+# identity failure; the latter is retried, then downgraded to a non-blocking
+# warning. Retries/backoff tunable via JARVIS_GHID_CHECK_RETRIES (default 3).
 check_identity() {
     if [ -z "${JARVIS_GITHUB_TOKEN:-}" ]; then
         echo "github-identity: JARVIS_GITHUB_TOKEN is required" >&2
         return 2
     fi
 
-    local expected actual
-    expected="api-tool-agent"
-
-    if actual="$(GH_TOKEN="$JARVIS_GITHUB_TOKEN" gh api user --jq .login 2>&1)"; then
-        :
-    else
-        local status=$?
-        echo "github-identity: gh api user failed (exit $status)" >&2
-        if [ -n "$actual" ]; then
-            printf '%s\n' "$actual" >&2
+    local expected="api-tool-agent"
+    local attempts="${JARVIS_GHID_CHECK_RETRIES:-3}"
+    local i out status
+    for (( i=1; i<=attempts; i++ )); do
+        # `|| status=$?` both captures the real probe exit status AND shields the
+        # failing command substitution from `set -e` (a bare assignment would
+        # abort the script). status stays 0 on the success path.
+        status=0
+        out="$(GH_TOKEN="$JARVIS_GITHUB_TOKEN" gh api user --jq .login 2>&1)" || status=$?
+        if [ "$status" -eq 0 ]; then
+            if [ "$out" != "$expected" ]; then
+                echo "github-identity: GitHub login mismatch: expected '$expected', got '$out'" >&2
+                return 3
+            fi
+            printf '%s\n' "$out"
+            return 0
         fi
-        return "$status"
-    fi
 
-    if [ "$actual" != "$expected" ]; then
-        echo "github-identity: GitHub login mismatch: expected '$expected', got '$actual'" >&2
-        return 3
-    fi
+        # Definitive auth rejection → real identity failure, do not retry.
+        if printf '%s' "$out" | grep -qiE 'Bad credentials|HTTP 401'; then
+            echo "github-identity: token rejected (HTTP 401 / bad credentials)" >&2
+            printf '%s\n' "$out" >&2
+            return 3
+        fi
 
-    printf '%s\n' "$actual"
+        # Transient: 5xx / network / non-JSON HTML page (jq 'invalid character').
+        echo "github-identity: gh api user probe failed (attempt $i/$attempts, exit $status): $(printf '%s' "$out" | head -1)" >&2
+        if [ "$i" -lt "$attempts" ]; then
+            sleep "$(( i * 2 ))"
+        fi
+    done
+
+    # Exhausted retries without a definitive rejection → treat as transient
+    # unavailability, not an identity failure. The op still runs under the pinned
+    # token; if GitHub stays down the op surfaces its own error for the caller's
+    # existing retry (e.g. PrWatch "keep watching") to handle.
+    echo "github-identity: WARNING: could not verify GitHub identity after $attempts probes (GitHub 5xx/HTML/network); proceeding with pinned token — identity unconfirmed." >&2
+    return 0
 }
 
 run_gh() {
