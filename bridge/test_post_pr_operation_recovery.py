@@ -12,9 +12,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import jarvis_dingtalk_bot as bot
 
 
-def candidate(action="claim"):
+def candidate(action="claim", operation_status="UNKNOWN"):
     operation_type = "AONE_CLAIM" if action == "claim" else "AONE_RELEASE"
     return {
+        "recoveryAction": action.upper(),
         "task": {
             "id": "task-1",
             "aoneId": "84362517",
@@ -34,7 +35,7 @@ def candidate(action="claim"):
             "operationType": operation_type,
             "target": "84362517",
             "required": True,
-            "status": "UNKNOWN",
+            "status": operation_status,
         },
     }
 
@@ -74,24 +75,63 @@ class PostPrOperationRecoveryTest(unittest.TestCase):
 
     def test_candidate_repairs_then_reconciles_found_true_with_stable_token(self):
         scheduler, client = self.scheduler()
-        client.lease_operation_recovery.return_value = {"proceed": True}
+        client.lease_operation_recovery.return_value = {
+            "proceed": True, "recoveryAction": "CLAIM"}
+        client.renew_operation_recovery.return_value = {
+            "proceed": True, "recoveryAction": "CLAIM"}
+
+        def repair(_item_id, _action, terraform=True,
+                   before_external_step=None):
+            self.assertTrue(terraform)
+            before_external_step("repair-read")
+            before_external_step("repair-write")
+
         with mock.patch.object(
                 bot, "_post_pr_target_visible", side_effect=[False, True]), \
-                mock.patch.object(bot, "_repair_post_pr_tags") as repair:
+                mock.patch.object(bot, "_repair_post_pr_tags",
+                                  side_effect=repair) as repair_mock:
             self.assertTrue(scheduler._recover_post_pr_candidate(candidate("claim")))
 
-        repair.assert_called_once_with("84362517", "claim", terraform=True)
+        repair_mock.assert_called_once()
         lease_request = client.lease_operation_recovery.call_args.args[0]
         reconcile_request = client.reconcile_operation.call_args.args[0]
         self.assertEqual(lease_request["recoveryToken"],
                          reconcile_request["recoveryToken"])
         self.assertTrue(reconcile_request["found"])
         self.assertFalse(reconcile_request["retryAllowed"])
+        self.assertEqual(client.renew_operation_recovery.call_count, 4)
+        for renew_call in client.renew_operation_recovery.call_args_list:
+            self.assertEqual(renew_call.args[0], lease_request)
         client.release_operation_recovery.assert_not_called()
+
+    def test_scheduler_renews_before_initial_and_final_read(self):
+        scheduler, client = self.scheduler()
+        client.lease_operation_recovery.return_value = {
+            "proceed": True, "recoveryAction": "CLAIM"}
+        events = []
+
+        def renew(_request, request_id=None):
+            phase = "initial" if "initial-read" in request_id else "final"
+            events.append("renew-" + phase)
+            return {"proceed": True, "recoveryAction": "CLAIM"}
+
+        def readback(*_args, **_kwargs):
+            events.append("read")
+            return True
+
+        client.renew_operation_recovery.side_effect = renew
+        with mock.patch.object(
+                bot, "_post_pr_target_visible", side_effect=readback):
+            self.assertTrue(scheduler._recover_post_pr_candidate(candidate("claim")))
+        self.assertEqual(events, [
+            "renew-initial", "read", "renew-final", "read"])
 
     def test_read_or_reconcile_failure_releases_lease_without_guessing_ack(self):
         scheduler, client = self.scheduler()
-        client.lease_operation_recovery.return_value = {"proceed": True}
+        client.lease_operation_recovery.return_value = {
+            "proceed": True, "recoveryAction": "RELEASE"}
+        client.renew_operation_recovery.return_value = {
+            "proceed": True, "recoveryAction": "RELEASE"}
         with mock.patch.object(
                 bot, "_post_pr_target_visible",
                 side_effect=RuntimeError("readback unavailable")), \
@@ -103,7 +143,10 @@ class PostPrOperationRecoveryTest(unittest.TestCase):
         client.release_operation_recovery.assert_called_once()
 
         client.reset_mock()
-        client.lease_operation_recovery.return_value = {"proceed": True}
+        client.lease_operation_recovery.return_value = {
+            "proceed": True, "recoveryAction": "RELEASE"}
+        client.renew_operation_recovery.return_value = {
+            "proceed": True, "recoveryAction": "RELEASE"}
         client.reconcile_operation.side_effect = RuntimeError("response lost")
         with mock.patch.object(bot, "_post_pr_target_visible", return_value=True), \
                 mock.patch.object(bot, "_repair_post_pr_tags") as repair:
@@ -121,6 +164,52 @@ class PostPrOperationRecoveryTest(unittest.TestCase):
         readback.assert_not_called()
         repair.assert_not_called()
         client.reconcile_operation.assert_not_called()
+
+    def test_due_retry_wait_candidate_is_allowed_to_recover(self):
+        scheduler, client = self.scheduler()
+        client.lease_operation_recovery.return_value = {
+            "proceed": True, "recoveryAction": "RELEASE"}
+        client.renew_operation_recovery.return_value = {
+            "proceed": True, "recoveryAction": "RELEASE"}
+        with mock.patch.object(
+                bot, "_post_pr_target_visible", return_value=True):
+            self.assertTrue(scheduler._recover_post_pr_candidate(
+                candidate("release", operation_status="RETRY_WAIT")))
+        client.lease_operation_recovery.assert_called_once()
+        self.assertEqual(client.renew_operation_recovery.call_count, 2)
+        client.reconcile_operation.assert_called_once()
+
+    def test_candidate_and_lease_canonical_action_mismatch_releases_without_aone(self):
+        scheduler, client = self.scheduler()
+        client.lease_operation_recovery.return_value = {
+            "proceed": True, "recoveryAction": "RELEASE"}
+        with mock.patch.object(bot, "_post_pr_target_visible") as readback, \
+                mock.patch.object(bot, "_repair_post_pr_tags") as repair:
+            with self.assertRaisesRegex(RuntimeError, "canonical actions differ"):
+                scheduler._recover_post_pr_candidate(candidate("claim"))
+        readback.assert_not_called()
+        repair.assert_not_called()
+        client.renew_operation_recovery.assert_not_called()
+        client.reconcile_operation.assert_not_called()
+        client.release_operation_recovery.assert_called_once()
+
+    def test_renew_failure_before_repair_write_aborts_write_and_releases(self):
+        scheduler, client = self.scheduler()
+        client.lease_operation_recovery.return_value = {
+            "proceed": True, "recoveryAction": "CLAIM"}
+        renewed = {"proceed": True, "recoveryAction": "CLAIM"}
+        client.renew_operation_recovery.side_effect = [
+            renewed, renewed, RuntimeError("renew unavailable")]
+        snapshot = {"tags": {"other"}, "pairs": [("other", "77")]}
+        with mock.patch.object(
+                bot, "_post_pr_tag_snapshot", return_value=snapshot), \
+                mock.patch.object(bot.subprocess, "run") as run:
+            with self.assertRaisesRegex(RuntimeError, "renew unavailable"):
+                scheduler._recover_post_pr_candidate(candidate("claim"))
+        self.assertEqual(client.renew_operation_recovery.call_count, 3)
+        run.assert_not_called()
+        client.reconcile_operation.assert_not_called()
+        client.release_operation_recovery.assert_called_once()
 
     def test_untrusted_candidate_is_rejected_before_lease_or_aone_access(self):
         scheduler, client = self.scheduler()
@@ -142,6 +231,29 @@ class PostPrOperationRecoveryTest(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "terminal"):
                 bot._repair_post_pr_tags("84362517", "claim")
         run.assert_not_called()
+
+    def test_tag_repair_renews_before_read_and_write(self):
+        events = []
+        snapshot = {"tags": {"other"}, "pairs": [("other", "77")]}
+
+        def heartbeat(phase):
+            events.append(phase)
+
+        def readback(*_args, **_kwargs):
+            events.append("read")
+            return snapshot
+
+        def write(*_args, **_kwargs):
+            events.append("write")
+            return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+        with mock.patch.object(
+                bot, "_post_pr_tag_snapshot", side_effect=readback), \
+                mock.patch.object(bot.subprocess, "run", side_effect=write):
+            bot._repair_post_pr_tags(
+                "84362517", "claim", before_external_step=heartbeat)
+        self.assertEqual(events, [
+            "repair-read", "read", "repair-write", "write"])
 
     def test_tag_repair_preserves_unrelated_id_and_makes_claim_idle_mutually_exclusive(self):
         snapshot = {

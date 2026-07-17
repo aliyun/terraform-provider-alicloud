@@ -195,7 +195,8 @@ class ClientContractTest(unittest.TestCase):
         opener = RecordingOpener(responses=[
             FakeResponse({"ok": True}), FakeResponse({"ok": True}),
             FakeResponse({"ok": True}), FakeResponse({"ok": True}),
-            FakeResponse({"proceed": True}), FakeResponse({"status": "UNKNOWN"}),
+            FakeResponse({"proceed": True}), FakeResponse({"proceed": True}),
+            FakeResponse({"status": "UNKNOWN"}),
             FakeResponse({"taskId": "t1"}),
             FakeResponse([{"eventType": "LEASED"}]),
             FakeResponse([{"workerKey": "w1"}]),
@@ -214,7 +215,8 @@ class ClientContractTest(unittest.TestCase):
             "recovery_token": "token-1",
         }
         c.lease_operation_recovery(recovery, request_id="o5")
-        c.release_operation_recovery(recovery, request_id="o6")
+        c.renew_operation_recovery(recovery, request_id="o6")
+        c.release_operation_recovery(recovery, request_id="o7")
         task = c.get_task_by_aone("84345050")
         timeline = c.get_task_timeline("task/1")
         workers = c.list_workers()
@@ -228,7 +230,8 @@ class ClientContractTest(unittest.TestCase):
         self.assertEqual(paths, [
             "operations/begin", "operations/ack", "operations/fail",
             "operations/reconcile", "operations/recovery/lease",
-            "operations/recovery/release", "tasks/by-aone/84345050",
+            "operations/recovery/renew", "operations/recovery/release",
+            "tasks/by-aone/84345050",
             "tasks/task%2F1/timeline", "workers", "workers/host%2Fone/state",
             "sessions/waits/aone-reply?afterSessionId=7&limit=25",
             "operations/recovery-candidates?afterOperationId=9&limit=20",
@@ -242,6 +245,10 @@ class ClientContractTest(unittest.TestCase):
         self.assertEqual(waits["items"], [])
         self.assertEqual(recoveries["items"], [])
         self.assertEqual(body(opener.calls[4][0]), {
+            "operationId": "op1", "workerKey": "w1",
+            "recoveryToken": "token-1",
+        })
+        self.assertEqual(body(opener.calls[5][0]), {
             "operationId": "op1", "workerKey": "w1",
             "recoveryToken": "token-1",
         })

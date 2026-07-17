@@ -1442,8 +1442,10 @@ def _post_pr_target_visible(iid, action, terraform=True):
     raise ValueError("unsupported post-PR tag action: %s" % action)
 
 
-def _repair_post_pr_tags(iid, action, terraform=True):
+def _repair_post_pr_tags(iid, action, terraform=True, before_external_step=None):
     """Write one exact claim/idle target while preserving unrelated tags by id."""
+    if before_external_step is not None:
+        before_external_step("repair-read")
     snapshot = _post_pr_tag_snapshot(iid, terraform=terraform)
     if snapshot["tags"] & {"jarvis-done", "jarvis-npe"}:
         raise RuntimeError(
@@ -1454,6 +1456,8 @@ def _repair_post_pr_tags(iid, action, terraform=True):
     kept_ids = [tag_id for name, tag_id in snapshot["pairs"]
                 if name not in ("jarvis-claimed", "jarvis-idle")]
     tag_value = ",".join(kept_ids + [desired])
+    if before_external_step is not None:
+        before_external_step("repair-write")
     proc = subprocess.run(
         [str(REPO_ROOT / "bin" / "a1id"), "--", "project", "workitem",
          "update", str(iid), "--tag", tag_value],
@@ -3432,6 +3436,29 @@ class ReconcileScheduler:
         return "post-pr-recovery-" + hashlib.sha256(
             material.encode("utf-8")).hexdigest()
 
+    @staticmethod
+    def _canonical_recovery_action(value):
+        action = str(value or "").strip().upper()
+        if action not in ("CLAIM", "RELEASE"):
+            raise RuntimeError(
+                "post-PR recovery response has invalid canonical action")
+        return action
+
+    def _renew_post_pr_recovery(self, lease_request, operation_id, token,
+                                expected_action, phase):
+        renewed = self.handler.task_client.renew_operation_recovery(
+            lease_request, request_id=self._request_id(
+                "renew-" + phase, operation_id, token))
+        if not isinstance(renewed, dict) or not renewed.get("proceed"):
+            raise RuntimeError(
+                "post-PR recovery lease renewal was rejected before %s" % phase)
+        renewed_action = self._canonical_recovery_action(
+            renewed.get("recoveryAction"))
+        if renewed_action != expected_action:
+            raise RuntimeError(
+                "post-PR recovery canonical action changed while renewing")
+        return renewed
+
     def _recover_post_pr_operations(self):
         after = 0
         while True:
@@ -3467,7 +3494,11 @@ class ReconcileScheduler:
         operation_id = str(operation.get("id") or "").strip()
         item_id = str(task.get("aoneId") or "").strip()
         operation_type = str(operation.get("operationType") or "").upper()
-        action = "claim" if operation_type == "AONE_CLAIM" else "release"
+        canonical_action = self._canonical_recovery_action(
+            candidate.get("recoveryAction"))
+        action = canonical_action.lower()
+        expected_operation_type = (
+            "AONE_CLAIM" if canonical_action == "CLAIM" else "AONE_RELEASE")
         payload = task.get("payload")
         task_generation = task.get("generation")
         operation_generation = operation.get("generation")
@@ -3476,13 +3507,13 @@ class ReconcileScheduler:
         project = str((payload or {}).get("project") or
                       (payload or {}).get("projectId") or "")
         if (not operation_id or not item_id.isdigit()
-                or operation_type not in ("AONE_CLAIM", "AONE_RELEASE")):
+                or operation_type != expected_operation_type):
             raise RuntimeError("post-PR recovery candidate identity is invalid")
         if (task.get("status") != "RECOVERY_REQUIRED"
                 or task.get("taskType") not in POST_PR_HEADLESS_KINDS
                 or not isinstance(payload, dict) or payload.get("terraform") is not True
                 or not project.isdigit()
-                or operation.get("status") != "UNKNOWN"
+                or operation.get("status") not in ("UNKNOWN", "RETRY_WAIT")
                 or operation.get("required") is not True
                 or str(task_generation) != str(operation_generation)
                 or not operation_key.startswith("post-pr:%s:" % action)
@@ -3502,8 +3533,22 @@ class ReconcileScheduler:
         if not isinstance(lease, dict) or not lease.get("proceed"):
             return False
         try:
+            lease_action = self._canonical_recovery_action(
+                lease.get("recoveryAction"))
+            if lease_action != canonical_action:
+                raise RuntimeError(
+                    "post-PR recovery candidate and lease canonical actions differ")
+
+            def renew(phase):
+                return self._renew_post_pr_recovery(
+                    lease_request, operation_id, token, canonical_action, phase)
+
+            renew("initial-read")
             if not _post_pr_target_visible(item_id, action, terraform=True):
-                _repair_post_pr_tags(item_id, action, terraform=True)
+                _repair_post_pr_tags(
+                    item_id, action, terraform=True,
+                    before_external_step=renew)
+            renew("final-read")
             if not _post_pr_target_visible(item_id, action, terraform=True):
                 raise RuntimeError(
                     "post-PR recovery repair did not reach exact tag target")

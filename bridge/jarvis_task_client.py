@@ -192,6 +192,7 @@ class ControlPlaneClient:
         "operation_fail": "operations/fail",
         "operation_reconcile": "operations/reconcile",
         "operation_recovery_lease": "operations/recovery/lease",
+        "operation_recovery_renew": "operations/recovery/renew",
         "operation_recovery_release": "operations/recovery/release",
     }
     WORKER_HEARTBEAT_PATH = "workers/{worker_key}/heartbeat"
@@ -464,6 +465,11 @@ class ControlPlaneClient:
     def lease_operation_recovery(self, operation: Mapping[str, Any], *,
                                  request_id: Optional[str] = None) -> Dict[str, Any]:
         return self._post(self.PATHS["operation_recovery_lease"], operation,
+                          request_id=request_id)
+
+    def renew_operation_recovery(self, operation: Mapping[str, Any], *,
+                                 request_id: Optional[str] = None) -> Dict[str, Any]:
+        return self._post(self.PATHS["operation_recovery_renew"], operation,
                           request_id=request_id)
 
     def release_operation_recovery(self, operation: Mapping[str, Any], *,
