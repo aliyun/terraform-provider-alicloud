@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""HTTP client primitives for the AutomationAgent Jarvis data plane.
+"""HTTP client primitives for the Jarvis control plane.
 
 This module deliberately contains no scheduler or worker-loop policy.  Sensors
-serialize :class:`TaskEnvelope` values through it and the Local Worker uses the
-worker/session methods.  Keeping the HTTP boundary small makes the
-legacy, shadow, and managed execution paths independently testable.
+serialize :class:`TaskEnvelope` values through it and PersistenceExecutor uses the
+Task/Session/Worker/Operation methods.  Keeping the HTTP boundary small also
+keeps rollout policy outside the control-plane contract.
 """
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, Mapping, Optional
 from urllib.error import HTTPError, URLError
-from urllib.parse import quote
+from urllib.parse import quote, urlencode
 from urllib.request import Request, urlopen
 
 
@@ -55,6 +55,20 @@ def _nonblank(value: Any, name: str) -> str:
     if not text:
         raise ValueError("%s must not be empty" % name)
     return text
+
+
+def _aone_id_from_task_key(task_key: Any) -> Optional[str]:
+    """Return the work-item id encoded by a canonical Aone task key.
+
+    Aone project and work-item ids are numeric.  Requiring both components keeps
+    local keys such as ``aone:unknown:adhoc`` from being misclassified merely
+    because they share the prefix.
+    """
+    parts = str(task_key or "").split(":")
+    if (len(parts) == 3 and parts[0] == "aone"
+            and parts[1].isdigit() and parts[2].isdigit()):
+        return parts[2]
+    return None
 
 
 def _camel_key(key: Any) -> Any:
@@ -111,8 +125,17 @@ class TaskEnvelope:
             raise TypeError("source_ref must be a mapping")
         if not isinstance(self.payload, Mapping):
             raise TypeError("payload must be a mapping")
+        canonical_aone_id = _aone_id_from_task_key(self.task_key)
+        explicit_aone_id = str(self.aone_id or "").strip() or None
+        if (canonical_aone_id and explicit_aone_id
+                and explicit_aone_id != canonical_aone_id):
+            raise ValueError(
+                "aone_id %s conflicts with canonical task_key %s"
+                % (explicit_aone_id, self.task_key))
+        if canonical_aone_id and not explicit_aone_id:
+            object.__setattr__(self, "aone_id", canonical_aone_id)
 
-    def to_dict(self, *, execution_mode: Optional[str] = None) -> Dict[str, Any]:
+    def to_dict(self) -> Dict[str, Any]:
         data: Dict[str, Any] = {
             "taskKey": self.task_key,
             "sourceType": self.source_type,
@@ -127,17 +150,8 @@ class TaskEnvelope:
             data["persona"] = self.persona
         if self.priority:
             data["priority"] = self.priority
-        if execution_mode:
-            mode = _nonblank(execution_mode, "execution_mode").upper()
-            data["executionMode"] = mode
-            # The clean-slate API keeps this compatibility flag explicit so an
-            # older data-plane build can still enforce the non-leaseable invariant.
-            data["shadow"] = mode == "SHADOW"
-        aone_id = self.aone_id
-        if not aone_id and str(self.source_type).upper() == "AONE":
-            aone_id = self.source_ref.get("aoneId") or self.payload.get("itemId")
-        if aone_id:
-            data["aoneId"] = str(aone_id)
+        if self.aone_id:
+            data["aoneId"] = str(self.aone_id)
         if self.comment_cursor is not None:
             data["commentCursor"] = self.comment_cursor
         if self.required_capabilities is not None:
@@ -146,19 +160,19 @@ class TaskEnvelope:
             data["maxRetries"] = int(self.max_retries)
         return _camelize(data)
 
-    def request_id(self, operation: str, *, execution_mode: Optional[str] = None) -> str:
+    def request_id(self, operation: str) -> str:
         """Return a stable idempotency key for one logical envelope operation."""
         material = {
             "operation": _nonblank(operation, "operation"),
-            "task": self.to_dict(execution_mode=execution_mode),
+            "task": self.to_dict(),
         }
         raw = json.dumps(material, ensure_ascii=False, sort_keys=True,
                          separators=(",", ":"), default=str).encode("utf-8")
         return "jarvis-%s-%s" % (operation, hashlib.sha256(raw).hexdigest()[:32])
 
 
-class AutomationAgentTaskClient:
-    """Small JSON-over-HTTP client for the AutomationAgent task APIs."""
+class ControlPlaneClient:
+    """Small JSON-over-HTTP client for Jarvis control-plane APIs."""
 
     DEFAULT_PREFIX = "/api/jarvis/v1"
     PATHS = {
@@ -177,6 +191,7 @@ class AutomationAgentTaskClient:
     SESSION_ACTION_PATH = "sessions/{session_id}/{action}"
     TASK_BY_AONE_PATH = "tasks/by-aone/{aone_id}"
     TASK_TIMELINE_PATH = "tasks/{task_id}/timeline"
+    PENDING_AONE_WAITS_PATH = "sessions/waits/aone-reply"
 
     def __init__(self, base_url: str, token: str = "", *, timeout: float = 10.0,
                  api_prefix: str = DEFAULT_PREFIX,
@@ -299,18 +314,16 @@ class AutomationAgentTaskClient:
     def _get(self, suffix: str) -> Any:
         return self._request("GET", suffix)
 
-    def upsert_task(self, envelope: TaskEnvelope, *, execution_mode: str,
+    def upsert_task(self, envelope: TaskEnvelope, *,
                     request_id: Optional[str] = None) -> Dict[str, Any]:
-        mode = _nonblank(execution_mode, "execution_mode").upper()
-        rid = request_id or envelope.request_id("upsert", execution_mode=mode)
+        rid = request_id or envelope.request_id("upsert")
         return self._post(self.PATHS["task_upsert"],
-                          envelope.to_dict(execution_mode=mode), request_id=rid)
+                          envelope.to_dict(), request_id=rid)
 
-    def upsert_desired_task(self, envelope: TaskEnvelope, *, execution_mode: str,
+    def upsert_desired_task(self, envelope: TaskEnvelope, *,
                             request_id: Optional[str] = None) -> Dict[str, Any]:
-        """Compatibility name used by the sensor router."""
-        return self.upsert_task(envelope, execution_mode=execution_mode,
-                                request_id=request_id)
+        """Persist the latest desired revision for one recoverable Task."""
+        return self.upsert_task(envelope, request_id=request_id)
 
     def register_worker(self, worker: Mapping[str, Any], *,
                         request_id: Optional[str] = None) -> Dict[str, Any]:
@@ -323,7 +336,7 @@ class AutomationAgentTaskClient:
             worker_key=self._path_segment(worker_key, "worker_key"))
         return self._post(path, payload, request_id=request_id)
 
-    def lease_task(self, worker_key: str, *, lease_seconds: int = 90,
+    def lease_task(self, worker_key: str, *, lease_seconds: int = 300,
                    capabilities: Optional[Any] = None,
                    request_id: Optional[str] = None) -> Dict[str, Any]:
         ttl = int(lease_seconds)
@@ -338,15 +351,15 @@ class AutomationAgentTaskClient:
         return self._post(self.PATHS["task_lease"], payload, request_id=request_id)
 
     def claim_task(self, worker_key: str, envelope: TaskEnvelope, *,
-                   runtime_session_id: str, lease_seconds: int = 90,
+                   runtime_session_id: str, lease_seconds: int = 300,
                    free_slots: int = 1, request_id: Optional[str] = None) -> Dict[str, Any]:
-        """Atomically attach ``worker_key`` to one explicitly named SHADOW task.
+        """Atomically attach ``worker_key`` to one explicitly named Task.
 
         Interactive workers use this endpoint instead of :meth:`lease_task`: the
-        latter pulls from the shared MANAGED queue, while this request carries the
-        complete canonical task envelope and can only claim that exact task.  Keeping
-        the nested task in SHADOW mode lets the bridge continue observing later Aone
-        revisions without silently converting the ticket into an auto-pulled task.
+        latter pulls the next matching Task, while this request carries the complete
+        canonical envelope and can only claim that exact Task.  The envelope's
+        ``requiredCapabilities.workerKey`` keeps targeted interactive work out of
+        unrelated workers without introducing another Task mode.
         """
         if not isinstance(envelope, TaskEnvelope):
             raise TypeError("envelope must be a TaskEnvelope")
@@ -361,9 +374,9 @@ class AutomationAgentTaskClient:
             "runtimeSessionId": _nonblank(runtime_session_id, "runtime_session_id"),
             "leaseSeconds": ttl,
             "freeSlots": slots,
-            "task": envelope.to_dict(execution_mode="SHADOW"),
+            "task": envelope.to_dict(),
         }
-        rid = request_id or envelope.request_id("direct-claim", execution_mode="SHADOW")
+        rid = request_id or envelope.request_id("direct-claim")
         return self._post(self.PATHS["task_claim"], payload, request_id=rid)
 
     @staticmethod
@@ -442,6 +455,17 @@ class AutomationAgentTaskClient:
         path = self.TASK_BY_AONE_PATH.format(
             aone_id=self._path_segment(aone_id, "aone_id"))
         return self._get(path)
+
+    def list_pending_aone_reply_waits(self, *, after_session_id: int = 0,
+                                      limit: int = 100) -> Any:
+        after = int(after_session_id)
+        page_size = int(limit)
+        if after < 0:
+            raise ValueError("after_session_id must not be negative")
+        if page_size <= 0 or page_size > 500:
+            raise ValueError("limit must be between 1 and 500")
+        query = urlencode({"afterSessionId": after, "limit": page_size})
+        return self._get("%s?%s" % (self.PENDING_AONE_WAITS_PATH, query))
 
     def list_workers(self) -> Any:
         """Return every registered worker and its persisted heartbeat state."""

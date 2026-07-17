@@ -286,6 +286,17 @@ EOF
     fi
 }
 
+assert_lifecycle_prefers_system_python() {
+    local wrapper="$repo_root/bootstrap/run-interactive-worker-hook.sh"
+    if grep -q 'python_bin="/usr/bin/python3"' "$wrapper" \
+            && grep -q 'JARVIS_INTERACTIVE_WORKER_PYTHON' "$wrapper" \
+            && grep -q 'python_bin="python3"' "$wrapper"; then
+        ok "interactive lifecycle prefers system Python with override and fallback"
+    else
+        no "interactive lifecycle Python trust-store selection is incomplete"
+    fi
+}
+
 assert_claude_has_all_tool_worker_fence_handler() {
     local command matcher
     command="$(jq -r '.hooks.PreToolUse[0].hooks[0].command' \
@@ -463,6 +474,7 @@ assert_codex_prompt_runs_outside_git_with_recorded_root
 assert_codex_tool_activity_hook_runs_outside_git
 assert_codex_pretool_root_resolution_fails_closed
 assert_pretool_wrapper_normalizes_all_failures_to_block
+assert_lifecycle_prefers_system_python
 assert_claude_has_all_tool_worker_fence_handler
 assert_stale_global_runner_cannot_bypass_current_hooks
 assert_codex_stop_has_single_ordered_handler

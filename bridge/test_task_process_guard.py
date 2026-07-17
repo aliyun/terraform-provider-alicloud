@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Crash-boundary tests for managed Claude process guarding."""
+"""Crash-boundary tests for Task process guarding."""
 
 import os
 import signal
@@ -14,11 +14,10 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import jarvis_dingtalk_bot as bot
-from test_headless_worker_fence import _FenceClient
 
 
 BRIDGE_DIR = Path(__file__).resolve().parent
-GUARD = BRIDGE_DIR / "managed_process_guard.py"
+GUARD = BRIDGE_DIR / "task_process_guard.py"
 
 
 def _pid_alive(pid):
@@ -29,7 +28,7 @@ def _pid_alive(pid):
         return False
 
 
-class ManagedProcessGuardTest(unittest.TestCase):
+class TaskProcessGuardTest(unittest.TestCase):
     def test_command_starts_only_after_fenced_bind_returns(self):
         with tempfile.TemporaryDirectory() as directory:
             marker = Path(directory) / "started"
@@ -81,106 +80,6 @@ class ManagedProcessGuardTest(unittest.TestCase):
             time.sleep(0.1)
             self.assertFalse(marker.exists())
 
-    def test_post_pr_claim_failure_never_launches_or_advances_cursor(self):
-        with tempfile.TemporaryDirectory() as directory:
-            marker = Path(directory) / "must-not-start-post-pr"
-            cursor = Path(directory) / "cursor"
-            script = "from pathlib import Path; Path(%r).write_text('bad')" % str(marker)
-
-            class Pool:
-                process = None
-
-                def set_proc(self, _item_id, process):
-                    self.process = process
-
-            pool = Pool()
-            binder = bot._post_pr_process_binder(
-                pool, "84362517", "pr_comment_reply", "528766",
-                "session-post-pr", "prompt",
-                on_claimed=lambda: cursor.write_text("advanced"),
-                task_client=_FenceClient())
-            with mock.patch.object(bot, "jarvis_cmd",
-                                   return_value=[sys.executable, "-c", script]), \
-                    mock.patch.object(bot, "jarvis_root", return_value=Path(directory)), \
-                    mock.patch.object(bot, "_headless_exec_command",
-                                      side_effect=lambda _sid, command, **_kw: command), \
-                    mock.patch.object(bot, "_claim_workitem",
-                                      side_effect=RuntimeError("claim lost")), \
-                    mock.patch.object(bot, "_post_pr_claim_visible",
-                                      return_value=False), \
-                    mock.patch.object(bot, "_release_post_pr_claim") as release, \
-                    mock.patch.object(
-                        bot, "INFLIGHT_PATH",
-                        Path(directory) / "inflight.json"):
-                with self.assertRaisesRegex(RuntimeError, "claim lost"):
-                    bot.run_claude_buffered(
-                        "prompt", "session-post-pr", False, timeout=5,
-                        on_spawn=binder, guarded=True, terraform=True,
-                        aone_write_policy=bot.POST_PR_AONE_WRITE_POLICY)
-
-            time.sleep(0.1)
-            self.assertIsNotNone(pool.process, "set_proc must happen before claim")
-            self.assertFalse(marker.exists(), "guard must kill before command exec")
-            self.assertFalse(cursor.exists(), "claim failure must not advance PR cursor")
-            release.assert_not_called()
-
-    def test_live_argv_restricts_after_state_and_marker_are_deleted(self):
-        with tempfile.TemporaryDirectory() as directory:
-            state_dir = Path(directory) / "state"
-            helper = Path(bot.__file__).resolve().parents[1] / \
-                "bootstrap" / "post-pr-context.sh"
-            script = (
-                "rm -f %s/*.json; "
-                "unset JARVIS_AONE_WRITE_POLICY; "
-                "source %s; "
-                "jarvis_post_pr_context_active"
-            ) % (state_dir, helper)
-            policy = {
-                "policyRevision": bot.HEADLESS_POLICY_REVISION,
-                "aoneWritePolicy": bot.POST_PR_AONE_WRITE_POLICY,
-                "kind": "pr_ci_fix",
-                "aoneId": "84362517",
-                "projectId": "2100304",
-                "claimAttemptId": "attempt-guard",
-            }
-            argv = bot._headless_exec_command(
-                "state-deleted-post-pr", ["/bin/bash", "-c", script],
-                headless_policy=policy)
-            env = os.environ.copy()
-            env.update({
-                "JARVIS_INTERACTIVE_STATE_DIR": str(state_dir),
-                "JARVIS_CONTROL_PLANE_BASE_URL": "http://127.0.0.1:1",
-                "JARVIS_HEADLESS_REMOTE_REGISTER_TIMEOUT": "0.05",
-            })
-            process, sentinel_write = bot._spawn_guarded_managed_process(
-                argv, directory, lambda _process: None, env)
-            try:
-                _stdout, stderr = process.communicate(timeout=10)
-            finally:
-                os.close(sentinel_write)
-            self.assertEqual(process.returncode, 0, stderr)
-
-    def test_legacy_on_spawn_is_also_gated_before_command(self):
-        with tempfile.TemporaryDirectory() as directory:
-            marker = Path(directory) / "must-not-start-legacy"
-            script = "from pathlib import Path; Path(%r).write_text('bad')" % str(marker)
-
-            def reject(_process):
-                raise RuntimeError("pool registration failed")
-
-            with mock.patch.object(bot, "jarvis_cmd",
-                                   return_value=[sys.executable, "-c", script]), \
-                    mock.patch.object(bot, "jarvis_root", return_value=Path(directory)), \
-                    mock.patch.object(bot, "_headless_exec_command",
-                                      side_effect=lambda _sid, command: command):
-                with self.assertRaisesRegex(RuntimeError, "pool registration failed"):
-                    bot.run_claude_buffered(
-                        "prompt", "session", False, timeout=5,
-                        on_spawn=reject)
-
-            time.sleep(0.1)
-            self.assertFalse(marker.exists())
-
     def test_normal_command_exit_kills_background_grandchildren(self):
         with tempfile.TemporaryDirectory() as directory:
             grandchild_pid_file = Path(directory) / "grandchild.pid"
@@ -204,7 +103,7 @@ class ManagedProcessGuardTest(unittest.TestCase):
                     mock.patch.object(bot, "_headless_exec_command",
                                       side_effect=lambda _sid, argv: argv), \
                     mock.patch.dict(os.environ,
-                                    {"JARVIS_MANAGED_GUARD_GRACE_SEC": "0.1"}):
+                                    {"JARVIS_TASK_GUARD_GRACE_SEC": "0.1"}):
                 result = bot.run_claude_buffered(
                     "prompt", "session", False, timeout=5,
                     on_spawn=lambda _process: None, guarded=True)

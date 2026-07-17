@@ -1,24 +1,44 @@
 #!/usr/bin/env python3
-"""Execution-mode router for persistent Jarvis task enqueue.
+"""Route Jarvis work by recovery semantics.
 
-The router is the migration seam between the current in-process DispatchPool
-and AutomationAgent.  It intentionally accepts a ``legacy_submit`` callback so
-the existing schedulers can be wired one at a time without importing the large
-bridge module here.
+There are only two execution kinds:
+
+* ``TASK`` survives interruption and is always persisted in the control plane.
+* ``EPHEMERAL_JOB`` is disposable and may execute locally.
+
+There is no execution-mode switch: a Task is always control-plane owned.
 """
 
 from __future__ import annotations
 
 import logging
-import os
 from typing import Callable, Iterable, NamedTuple, Optional, Tuple
 
 from jarvis_task_client import (
-    AutomationAgentTaskClient,
+    ControlPlaneClient,
     ControlPlaneError,
     ControlPlaneUnavailable,
     TaskEnvelope,
 )
+
+
+TASK = "TASK"
+EPHEMERAL_JOB = "EPHEMERAL_JOB"
+DEFAULT_TASK_TYPES = (
+    "ticket",
+    "revisit",
+    "persona",
+    "wake",
+    "pr_ci_fix",
+    "pr_comment_reply",
+)
+
+
+class ExecutionRoute(NamedTuple):
+    """Stable domain classification for one work item."""
+
+    execution_kind: str
+    needs_recovery: bool
 
 
 class EnqueueResult(NamedTuple):
@@ -26,108 +46,67 @@ class EnqueueResult(NamedTuple):
     reason: str
 
 
-LegacySubmit = Callable[[], Tuple[bool, str]]
+LocalSubmit = Callable[[], Tuple[bool, str]]
 
 
-class TaskRouter:
-    """Route one envelope through legacy, shadow, or managed ownership.
+class ExecutionRouter:
+    """Classify work and send it to its only valid executor.
 
-    Modes:
-      * ``legacy``: local submit only.
-      * ``shadow``: best-effort SHADOW upsert, then local submit regardless of
-        control-plane health.  SHADOW tasks must never be leaseable server-side.
-      * ``managed``: explicitly allow-listed task types are owned only by the
-        data plane.  A failed upsert is fail-closed and never falls back locally.
-        Non-allow-listed task types shadow-upsert and continue through legacy;
-        an empty allow-list therefore manages nothing.  Use ``*`` to manage all.
+    ``task_types`` contains work kinds that need recovery.  ``*`` classifies
+    every envelope as a ``TASK``; an empty set classifies all work as
+    ``EPHEMERAL_JOB``.
     """
 
-    VALID_MODES = {"legacy", "shadow", "managed"}
-
-    def __init__(self, mode: str = "legacy", *,
-                 client: Optional[AutomationAgentTaskClient] = None,
-                 managed_task_types: Optional[Iterable[str]] = None,
+    def __init__(self, *, client: Optional[ControlPlaneClient] = None,
+                 task_types: Optional[Iterable[str]] = None,
                  logger: Optional[logging.Logger] = None):
-        normalized = str(mode or "legacy").strip().lower()
-        if normalized not in self.VALID_MODES:
-            raise ValueError("invalid task mode %r (expected legacy/shadow/managed)" % mode)
-        self.mode = normalized
+        configured_types = DEFAULT_TASK_TYPES if task_types is None else task_types
         self.client = client
-        self.managed_task_types = {
-            str(value).strip().lower() for value in (managed_task_types or [])
+        self.task_types = {
+            str(value).strip().lower() for value in configured_types
             if str(value).strip()
         }
         self.log = logger or logging.getLogger(__name__)
 
-    @classmethod
-    def from_env(cls, *, client: Optional[AutomationAgentTaskClient] = None,
-                 logger: Optional[logging.Logger] = None) -> "TaskRouter":
-        raw_types = os.environ.get("JARVIS_MANAGED_TASK_TYPES", "")
-        return cls(
-            os.environ.get("JARVIS_TASK_MODE", "legacy"),
-            client=client,
-            managed_task_types=raw_types.split(","),
-            logger=logger,
-        )
+    @staticmethod
+    def classify(needs_recovery: bool) -> ExecutionRoute:
+        """Map the sole domain decision to its stable execution kind."""
+        if not isinstance(needs_recovery, bool):
+            raise TypeError("needs_recovery must be a bool")
+        return ExecutionRoute(TASK if needs_recovery else EPHEMERAL_JOB,
+                              needs_recovery)
 
-    def _is_managed(self, envelope: TaskEnvelope) -> bool:
-        if self.mode != "managed":
-            return False
-        task_type = envelope.task_type.strip().lower()
-        return "*" in self.managed_task_types or task_type in self.managed_task_types
-
-    def is_managed(self, envelope: TaskEnvelope) -> bool:
-        """Public ownership predicate for scheduler lifecycle decisions."""
+    def route(self, envelope: TaskEnvelope) -> ExecutionRoute:
         if not isinstance(envelope, TaskEnvelope):
             raise TypeError("envelope must be a TaskEnvelope")
-        return self._is_managed(envelope)
+        task_type = envelope.task_type.strip().lower()
+        needs_recovery = "*" in self.task_types or task_type in self.task_types
+        return self.classify(needs_recovery)
+
+    def is_task(self, envelope: TaskEnvelope) -> bool:
+        return self.route(envelope).needs_recovery
 
     @staticmethod
-    def _remote_result(response: object, default_reason: str) -> EnqueueResult:
+    def _remote_result(response: object) -> EnqueueResult:
         if isinstance(response, dict) and response.get("accepted") is False:
-            return EnqueueResult(False, str(response.get("reason") or "control_plane_rejected"))
-        reason = default_reason
+            return EnqueueResult(
+                False, str(response.get("reason") or "control_plane_rejected"))
+        reason = "task_persisted"
         if isinstance(response, dict) and response.get("reason"):
             reason = str(response["reason"])
         return EnqueueResult(True, reason)
 
-    def _upsert(self, envelope: TaskEnvelope, execution_mode: str) -> EnqueueResult:
-        if self.client is None:
-            return EnqueueResult(False, "control_plane_unconfigured")
-        request_id = envelope.request_id("upsert", execution_mode=execution_mode)
-        response = self.client.upsert_desired_task(
-            envelope, execution_mode=execution_mode, request_id=request_id)
-        return self._remote_result(response, "managed" if execution_mode == "MANAGED" else "shadowed")
-
-    @staticmethod
-    def _legacy(legacy_submit: Optional[LegacySubmit]) -> EnqueueResult:
-        if legacy_submit is None:
-            return EnqueueResult(False, "legacy_submit_missing")
-        accepted, reason = legacy_submit()
-        return EnqueueResult(bool(accepted), str(reason))
-
-    def _observe_shadow(self, envelope: TaskEnvelope) -> EnqueueResult:
-        """Best-effort observation which can never block the legacy owner."""
-        if self.client is None:
-            return EnqueueResult(True, "shadow_unconfigured")
-        try:
-            remote = self._upsert(envelope, "SHADOW")
-            if not remote.accepted:
-                self.log.warning("shadow upsert rejected task=%s reason=%s",
-                                 envelope.task_key, remote.reason)
-                return EnqueueResult(True, "shadow_rejected:" + remote.reason)
-            return remote
-        except Exception as exc:  # shadow must never affect the legacy production path
-            self.log.warning("shadow upsert failed task=%s error=%s",
-                             envelope.task_key, type(exc).__name__)
-            return EnqueueResult(True, "shadow_failed")
-
-    def _observe_managed(self, envelope: TaskEnvelope) -> EnqueueResult:
-        """Persist a managed observation, mapping every error fail-closed."""
+    def _persist_task(self, envelope: TaskEnvelope) -> EnqueueResult:
+        """Persist a recoverable Task, mapping every failure fail-closed."""
         if self.client is None:
             return EnqueueResult(False, "control_plane_unconfigured")
         try:
-            return self._upsert(envelope, "MANAGED")
+            request_id = envelope.request_id("upsert")
+            response = self.client.upsert_desired_task(
+                envelope,
+                request_id=request_id,
+            )
+            return self._remote_result(response)
         except ControlPlaneUnavailable:
             return EnqueueResult(False, "control_plane_unavailable")
         except ControlPlaneError as exc:
@@ -135,33 +114,30 @@ class TaskRouter:
             if getattr(exc, "code", ""):
                 reason += ":" + str(exc.code)
             return EnqueueResult(False, reason)
-        except Exception as exc:  # fail closed on client/programming surprises too
-            self.log.exception("managed upsert failed closed task=%s error=%s",
-                               envelope.task_key, type(exc).__name__)
+        except Exception as exc:
+            self.log.exception(
+                "task persistence failed closed task=%s error=%s",
+                envelope.task_key, type(exc).__name__)
             return EnqueueResult(False, "control_plane_error")
 
-    def observe(self, envelope: TaskEnvelope) -> EnqueueResult:
-        """Persist the newest desired revision without starting local work.
+    @staticmethod
+    def _run_ephemeral(local_submit: Optional[LocalSubmit]) -> EnqueueResult:
+        if local_submit is None:
+            return EnqueueResult(False, "local_submit_missing")
+        accepted, reason = local_submit()
+        return EnqueueResult(bool(accepted), str(reason))
 
-        Scan sensors call this before local claimed/active filters.  That keeps
-        the desired state current even when the legacy scheduler intentionally
-        skips dispatching the item.
-        """
-        if not isinstance(envelope, TaskEnvelope):
-            raise TypeError("envelope must be a TaskEnvelope")
-        if self.mode == "legacy":
-            return EnqueueResult(True, "legacy_noop")
-        if self._is_managed(envelope):
-            return self._observe_managed(envelope)
-        return self._observe_shadow(envelope)
+    def observe(self, envelope: TaskEnvelope) -> EnqueueResult:
+        """Persist Task desired state; EphemeralJob has no durable observation."""
+        route = self.route(envelope)
+        if route.needs_recovery:
+            return self._persist_task(envelope)
+        return EnqueueResult(True, "ephemeral_noop")
 
     def enqueue(self, envelope: TaskEnvelope,
-                legacy_submit: Optional[LegacySubmit] = None) -> EnqueueResult:
-        observed = self.observe(envelope)
-        if self._is_managed(envelope):
-            # Managed ownership is fail-closed.  Never call legacy_submit from
-            # this branch, even on timeout/5xx/invalid response/conflict.
-            return observed
-        # Legacy, shadow, and non-allow-listed managed kinds remain locally
-        # owned.  ``observe`` has already done the one (and only one) upsert.
-        return self._legacy(legacy_submit)
+                local_submit: Optional[LocalSubmit] = None) -> EnqueueResult:
+        """Persist Task or execute EphemeralJob locally, never both."""
+        route = self.route(envelope)
+        if route.needs_recovery:
+            return self._persist_task(envelope)
+        return self._run_ephemeral(local_submit)

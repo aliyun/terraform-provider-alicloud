@@ -37,7 +37,16 @@ if [ -z "${JARVIS_CONTROL_PLANE_BASE_URL:-}" ] && [ -n "${JARVIS_HTML_REPORT_BAS
   export JARVIS_CONTROL_PLANE_BASE_URL="$JARVIS_HTML_REPORT_BASE_URL"
 fi
 
-python_bin="${JARVIS_INTERACTIVE_WORKER_PYTHON:-python3}"
+if [ -n "${JARVIS_INTERACTIVE_WORKER_PYTHON:-}" ]; then
+  python_bin="$JARVIS_INTERACTIVE_WORKER_PYTHON"
+elif [ -x /usr/bin/python3 ]; then
+  # The macOS system runtime uses the platform trust store. Framework/Homebrew
+  # Python installations may not trust internal control-plane certificates,
+  # which would silently stop the detached heartbeat sidecar.
+  python_bin="/usr/bin/python3"
+else
+  python_bin="python3"
+fi
 manager="${JARVIS_INTERACTIVE_WORKER_MANAGER:-$script_dir/jarvis-interactive-worker.py}"
 mode="${1:-}"
 expected_event="${2:-}"

@@ -34,7 +34,7 @@ bridge/run.sh start
 
 ## triage loop
 
-批量扫派由 bridge 负责：`bridge/run.sh start` 起 ScanScheduler 定时扫池，对新单/外部更新单自动派发 headless jarvis 并发处理（`JARVIS_AUTO_DISPATCH=0` 可回退为钉钉授权前置模式），按 `loops/aone-triage.md` 全链跑到预发/CR。当面会话只处理用户直接给的单条工单或即时任务（`loops/adhoc-intake.md`）；`bootstrap/scan.sh` / `bootstrap/plan.sh` 保留作手动兜底与 bridge 内部计划步骤。**正式发布永停**，须人工介入。
+批量扫派由 bridge 负责：`bridge/run.sh start` 起 ScanScheduler 定时扫池，对新单/外部更新单统一创建或唤醒控制面 Task，再由 PersistenceExecutor lease 并发处理（`JARVIS_AUTO_DISPATCH=0` 可切到钉钉授权前置模式）；probe 等可丢弃作业由 EphemeralExecutor 本地执行。全链按 `loops/aone-triage.md` 跑到预发/CR。当面会话只处理用户直接给的单条工单或即时任务（`loops/adhoc-intake.md`）；`bootstrap/scan.sh` / `bootstrap/plan.sh` 保留作手动兜底与 bridge 内部计划步骤。**正式发布永停**，须人工介入。
 
 ## 任务看板
 

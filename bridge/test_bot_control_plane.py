@@ -15,7 +15,7 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import jarvis_dingtalk_bot as bot
-from jarvis_local_worker import SessionLifecycle
+from jarvis_persistence_executor import SessionController
 from jarvis_task_router import EnqueueResult
 
 
@@ -28,7 +28,7 @@ class _Starter:
         self.calls.append(self.name)
 
 
-class _FakeLocalWorker:
+class _FakePersistenceExecutor:
     instances = []
 
     def __init__(self, *args, **kwargs):
@@ -49,13 +49,14 @@ class _FakeLocalWorker:
 
 class HandlerWiringTest(unittest.TestCase):
     ENV_KEYS = (
-        "JARVIS_TASK_MODE", "JARVIS_MANAGED_TASK_TYPES",
         "JARVIS_CONTROL_PLANE_BASE_URL", "JARVIS_CONTROL_PLANE_TOKEN",
+        "JARVIS_HTML_REPORT_BASE_URL",
+        "JARVIS_HTML_REPORT_TOKEN",
     )
 
     def setUp(self):
         self.old_env = {key: os.environ.get(key) for key in self.ENV_KEYS}
-        _FakeLocalWorker.instances.clear()
+        _FakePersistenceExecutor.instances.clear()
 
     def tearDown(self):
         for key, value in self.old_env.items():
@@ -64,53 +65,136 @@ class HandlerWiringTest(unittest.TestCase):
             else:
                 os.environ[key] = value
 
-    def test_managed_allowlist_is_probe_only_and_worker_capability_matches(self):
-        os.environ["JARVIS_TASK_MODE"] = "managed"
-        os.environ["JARVIS_MANAGED_TASK_TYPES"] = "*,ticket,wake"
+    def test_worker_capability_matches_fixed_task_types(self):
         client = object()
         with mock.patch.object(bot, "_task_client_from_env", return_value=client), \
-                mock.patch.object(bot, "LocalWorker", _FakeLocalWorker):
+                mock.patch.object(bot, "PersistenceExecutor", _FakePersistenceExecutor):
             handler = bot.JarvisHandler(no_dingtalk=True)
-        self.assertEqual(handler.task_router.managed_task_types, {"probe"})
-        self.assertIsNotNone(handler.local_worker)
-        self.assertEqual(_FakeLocalWorker.instances[-1].kwargs["capabilities"],
-                         {"kinds": ["probe"]})
-
-    def test_empty_managed_allowlist_stays_empty(self):
-        os.environ["JARVIS_TASK_MODE"] = "managed"
-        os.environ["JARVIS_MANAGED_TASK_TYPES"] = ""
-        with mock.patch.object(bot, "_task_client_from_env", return_value=object()), \
-                mock.patch.object(bot, "LocalWorker", _FakeLocalWorker):
-            handler = bot.JarvisHandler(no_dingtalk=True)
-        self.assertEqual(handler.task_router.managed_task_types, set())
+        self.assertIn("ticket", handler.execution_router.task_types)
+        self.assertIn("wake", handler.execution_router.task_types)
+        self.assertNotIn("probe", handler.execution_router.task_types)
+        self.assertIsNotNone(handler.persistence_executor)
+        self.assertEqual(_FakePersistenceExecutor.instances[-1].kwargs["capabilities"],
+                         {"kinds": sorted(handler.execution_router.task_types)})
+        self.assertEqual(
+            _FakePersistenceExecutor.instances[-1].kwargs["lease_safety_margin"], 90)
+        self.assertIs(_FakePersistenceExecutor.instances[-1].args[1],
+                      handler.ephemeral_executor.capacity_manager)
+        self.assertIs(handler.execution_runtime,
+                      handler.ephemeral_executor.execution_runtime)
+        for obsolete in ("task_router", "local_worker", "dispatch_pool"):
+            self.assertFalse(hasattr(handler, obsolete))
 
     def test_worker_starts_before_every_sensor(self):
         calls = []
         handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
-        handler.local_worker = _Starter("worker", calls)
+        handler.persistence_executor = _Starter("worker", calls)
         for name in ("scanner", "reconciler", "board", "prober", "reviser",
-                     "watcher", "personawatch", "prwatch"):
+                     "watcher", "managed_wait_sensor", "personawatch", "prwatch"):
             setattr(handler, name, _Starter(name, calls))
-        handler._resume_inflight = lambda: calls.append("legacy-resume")
         handler.start_schedulers()
         self.assertEqual(calls[0], "worker")
-        self.assertEqual(calls[-1], "legacy-resume")
+        self.assertEqual(calls[-1], "prwatch")
 
     def test_stop_helper_forwards_drain_policy(self):
         handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
-        worker = _FakeLocalWorker()
-        handler.local_worker = worker
-        self.assertTrue(handler.stop_local_worker(drain=True, timeout=7))
+        worker = _FakePersistenceExecutor()
+        handler.persistence_executor = worker
+        self.assertTrue(handler.stop_persistence_executor(drain=True, timeout=7))
         self.assertEqual(worker.stop_calls, [(True, 7)])
 
+    def test_task_client_defaults_to_pre_and_requires_token(self):
+        for key in self.ENV_KEYS:
+            os.environ.pop(key, None)
+        with self.assertRaisesRegex(RuntimeError, "token is required"):
+            bot._task_client_from_env()
+        os.environ["JARVIS_HTML_REPORT_TOKEN"] = "shared-token"
+        client = bot._task_client_from_env()
+        self.assertEqual(client.base_url, "https://pre-agent.aliyun-inc.com")
+        self.assertEqual(client.token, "shared-token")
 
-class ManagedExecutionTest(unittest.TestCase):
+
+class ManagedWaitSensorTest(unittest.TestCase):
+    def _handler(self, pages, comments, wake_result=True):
+        client = mock.Mock()
+        client.list_pending_aone_reply_waits.side_effect = pages
+        handler = SimpleNamespace(
+            task_client=client,
+            watcher=SimpleNamespace(_fetch_comments=mock.Mock(return_value=comments)),
+            _wake=mock.Mock(return_value=wake_result),
+        )
+        return handler
+
+    @staticmethod
+    def _wait(session_id=10, cursor="40"):
+        return {
+            "task": {
+                "taskKey": "aone:2100304:84345050",
+                "aoneId": "84345050",
+                "sourceRef": {"projectId": "2100304"},
+                "payload": {"project": "2100304"},
+            },
+            "session": {
+                "id": session_id,
+                "runtimeSessionId": "runtime-1",
+                "waitType": "AONE_REPLY",
+                "waitKey": "84345050",
+                "waitCursor": cursor,
+                "inputPayload": {
+                    "project": "2100304", "terraform": True,
+                    "target": "staff-1", "targetType": "user",
+                },
+            },
+        }
+
+    def test_rebuilds_wait_from_control_plane_and_wakes_only_new_external_comments(self):
+        page = {"items": [self._wait()], "nextAfterSessionId": 10, "hasMore": False}
+        comments = [
+            {"id": "39", "creator": "human", "content": "old"},
+            {"id": "41", "creator": "open-jarvis", "content": "self"},
+            {"id": "43", "creator": "human", "content": "reply"},
+            {"id": "42", "creator": "human-2", "content": "earlier reply"},
+        ]
+        handler = self._handler([page], comments)
+        sensor = bot.ManagedWaitSensor(handler)
+
+        sensor._tick()
+
+        handler._wake.assert_called_once()
+        aone_id, context, observed = handler._wake.call_args.args
+        self.assertEqual(aone_id, "84345050")
+        self.assertEqual(context["session_id"], "runtime-1")
+        self.assertTrue(context["terraform"])
+        self.assertEqual([int(c["id"]) for c in observed], [42, 43])
+
+    def test_list_failure_keeps_local_throttle_and_retries_without_wake(self):
+        handler = self._handler([RuntimeError("503")], [])
+        sensor = bot.ManagedWaitSensor(handler)
+        sensor._poll_state["10"] = {"first_seen": 1, "last_poll": 2}
+
+        sensor._tick()
+
+        self.assertIn("10", sensor._poll_state)
+        handler._wake.assert_not_called()
+
+    def test_failed_wake_keeps_wait_discovery_retryable(self):
+        page = {"items": [self._wait()], "nextAfterSessionId": 10, "hasMore": False}
+        handler = self._handler([page], [
+            {"id": 41, "creator": "human", "content": "reply"}], wake_result=False)
+        sensor = bot.ManagedWaitSensor(handler)
+
+        sensor._tick()
+
+        self.assertIn("10", sensor._poll_state)
+        handler._wake.assert_called_once()
+
+class TaskExecutionTest(unittest.TestCase):
     def test_process_spawned_after_fence_loss_is_immediately_force_killed(self):
-        lifecycle = SessionLifecycle(
+        lifecycle = SessionController(
             object(), "mac:boot:process",
             {"task": {"id": "task-1"},
              "session": {"id": "late-bind-session", "fenceToken": 7}},
-            stop_process=bot.JarvisHandler._stop_managed_process)
+            stop_process=bot.JarvisHandler._stop_task_process)
         # First stop attempt happens before on_spawn has supplied a process.
         lifecycle._lose_ownership("stale_fence:heartbeat")
 
@@ -128,7 +212,7 @@ class ManagedExecutionTest(unittest.TestCase):
         try:
             self.assertEqual(proc.stdout.readline().strip(), "ready")
             with mock.patch.dict(
-                    os.environ, {"JARVIS_MANAGED_STOP_GRACE_SEC": "0.05"}):
+                    os.environ, {"JARVIS_TASK_STOP_GRACE_SEC": "0.05"}):
                 lifecycle.bind_process(proc)
             self.assertEqual(proc.poll(), -signal.SIGKILL)
         finally:
@@ -156,8 +240,8 @@ class ManagedExecutionTest(unittest.TestCase):
             self.assertEqual(proc.stdout.readline().strip(), "ready")
             lifecycle = SimpleNamespace(process=proc, session_id="fenced-session")
             with mock.patch.dict(
-                    os.environ, {"JARVIS_MANAGED_STOP_GRACE_SEC": "0.05"}):
-                bot.JarvisHandler._stop_managed_process(lifecycle, "stale_fence:test")
+                    os.environ, {"JARVIS_TASK_STOP_GRACE_SEC": "0.05"}):
+                bot.JarvisHandler._stop_task_process(lifecycle, "stale_fence:test")
             self.assertEqual(proc.poll(), -signal.SIGKILL)
         finally:
             if proc.poll() is None:
@@ -179,6 +263,7 @@ class ManagedExecutionTest(unittest.TestCase):
             return "done"
 
         handler.dispatch_item = dispatch
+        handler.execution_router = SimpleNamespace(task_types={"ticket"})
 
         class Lifecycle:
             runtime_session_id = "runtime-stable"
@@ -189,26 +274,27 @@ class ManagedExecutionTest(unittest.TestCase):
 
         lifecycle = Lifecycle()
         lease = {
-            "task": {"taskType": "probe", "payload": {
-                "itemId": "probe-2026-07-15", "kind": "probe",
+            "task": {"taskType": "ticket", "payload": {
+                "itemId": "84345050", "kind": "ticket",
                 "prompt": "newer-current-task-input",
             }},
             "session": {"inputPayload": {
-                "itemId": "probe-2026-07-15", "kind": "probe", "prompt": "go",
+                "itemId": "84345050", "kind": "ticket", "prompt": "go",
                 "terraform": True, "target": "group-1", "targetType": "group",
             }},
         }
-        self.assertEqual(handler._execute_managed_lease(lease, lifecycle), "done")
+        self.assertEqual(handler._execute_task_lease(lease, lifecycle), "done")
         self.assertEqual(captured["args"][1], "go")
         self.assertEqual(captured["args"][2], "runtime-stable")
         self.assertTrue(captured["args"][3])
         self.assertEqual(captured["kwargs"]["on_spawn"], lifecycle.bind_process)
-        self.assertIs(captured["kwargs"]["managed_lifecycle"], lifecycle)
+        self.assertIs(captured["kwargs"]["session_controller"], lifecycle)
 
     def test_malformed_session_input_snapshot_never_falls_forward_to_current_task(self):
         handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
         handler._broadcast = lambda _text: None
         handler.dispatch_item = mock.Mock()
+        handler.execution_router = SimpleNamespace(task_types={"ticket"})
         lifecycle = SimpleNamespace(runtime_session_id="r", resumed=True,
                                     bind_process=lambda _p: None)
         lease = {
@@ -217,13 +303,14 @@ class ManagedExecutionTest(unittest.TestCase):
             "session": {"inputPayload": "not-json"},
         }
         with self.assertRaisesRegex(ValueError, "payload must be JSON object"):
-            handler._execute_managed_lease(lease, lifecycle)
+            handler._execute_task_lease(lease, lifecycle)
         handler.dispatch_item.assert_not_called()
 
     def test_null_session_input_snapshot_never_falls_forward_to_newer_task(self):
         handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
         handler._broadcast = lambda _text: None
         handler.dispatch_item = mock.Mock()
+        handler.execution_router = SimpleNamespace(task_types={"ticket"})
         lifecycle = SimpleNamespace(runtime_session_id="r", resumed=True,
                                     bind_process=lambda _p: None)
         lease = {
@@ -232,12 +319,12 @@ class ManagedExecutionTest(unittest.TestCase):
             "session": {"inputPayload": None, "processingRevision": "old-revision"},
         }
         with self.assertRaisesRegex(ValueError, "input snapshot is null"):
-            handler._execute_managed_lease(lease, lifecycle)
+            handler._execute_task_lease(lease, lifecycle)
         handler.dispatch_item.assert_not_called()
 
-    def test_managed_dispatch_never_writes_local_inflight_current_state(self):
+    def test_task_dispatch_never_writes_local_inflight_current_state(self):
         handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
-        handler.dispatch_pool = SimpleNamespace(_closed=False)
+        handler.ephemeral_executor = SimpleNamespace(_closed=False)
         handler._maybe_suspend = lambda *args, **kwargs: None
         handler._completion_broadcast = lambda _item_id: "done"
         result = SimpleNamespace(text="ok", is_error=False, subtype="success")
@@ -246,27 +333,46 @@ class ManagedExecutionTest(unittest.TestCase):
                 mock.patch.object(bot, "_inflight_add") as add, \
                 mock.patch.object(bot, "_inflight_remove") as remove:
             outcome = handler.dispatch_item(
-                "managed-probe", "go", "runtime-1", False, notices.append,
-                "target", "group", kind="probe", managed_lifecycle=object())
+                "task-probe", "go", "runtime-1", False, notices.append,
+                "target", "group", kind="probe", session_controller=object())
         self.assertEqual(outcome, "done")
         add.assert_not_called()
         remove.assert_not_called()
 
-    def test_non_probe_managed_lease_is_rejected_before_execution(self):
+    def test_ephemeral_probe_lease_is_rejected_before_execution(self):
         handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
         handler._broadcast = lambda _text: None
         handler.dispatch_item = mock.Mock()
+        handler.execution_router = SimpleNamespace(task_types={"ticket"})
         lifecycle = SimpleNamespace(runtime_session_id="r", resumed=False,
                                     bind_process=lambda _p: None)
         with self.assertRaisesRegex(ValueError, "not enabled"):
-            handler._execute_managed_lease(
-                {"task": {"taskType": "ticket", "payload": {
-                    "itemId": "1", "kind": "ticket", "prompt": "go"}}}, lifecycle)
+            handler._execute_task_lease(
+                {"task": {"taskType": "probe", "payload": {
+                    "itemId": "probe-1", "kind": "probe", "prompt": "go"}},
+                 "session": {"inputPayload": {
+                     "itemId": "probe-1", "kind": "probe", "prompt": "go"}}},
+                lifecycle)
         handler.dispatch_item.assert_not_called()
 
-    def test_managed_suspend_returns_central_wait_state_without_local_watcher(self):
+    def test_task_lease_without_session_snapshot_is_rejected(self):
         handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
-        handler.dispatch_pool = SimpleNamespace(_closed=False)
+        handler._broadcast = lambda _text: None
+        handler.dispatch_item = mock.Mock()
+        handler.execution_router = SimpleNamespace(task_types={"ticket"})
+        lifecycle = SimpleNamespace(runtime_session_id="r", resumed=False,
+                                    bind_process=lambda _p: None)
+        with self.assertRaisesRegex(ValueError, "input snapshot is missing"):
+            handler._execute_task_lease(
+                {"task": {"taskType": "ticket", "payload": {
+                    "itemId": "84345050", "kind": "ticket", "prompt": "go"}},
+                 "session": {}},
+                lifecycle)
+        handler.dispatch_item.assert_not_called()
+
+    def test_task_suspend_returns_central_wait_state_without_local_watcher(self):
+        handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
+        handler.ephemeral_executor = SimpleNamespace(_closed=False)
         handler.watcher = SimpleNamespace(suspend=mock.Mock())
         handler._last_comment_id = lambda _iid: 41
         handler._workitem_line = lambda iid: "#%s" % iid
@@ -276,8 +382,8 @@ class ManagedExecutionTest(unittest.TestCase):
         with mock.patch.object(bot, "run_claude_buffered", return_value=result), \
                 mock.patch.object(bot, "_inflight_add") as add:
             outcome = handler.dispatch_item(
-                "managed-probe", "go", "runtime-1", False, lambda _text: None,
-                "target", "group", kind="probe", managed_lifecycle=object())
+                "task-probe", "go", "runtime-1", False, lambda _text: None,
+                "target", "group", kind="probe", session_controller=object())
         self.assertEqual(outcome["status"], "suspended")
         self.assertEqual(outcome["waitType"], "AONE_REPLY")
         self.assertEqual(outcome["waitKey"], "843")
@@ -285,6 +391,40 @@ class ManagedExecutionTest(unittest.TestCase):
         self.assertIn("waitExpireAt", outcome)
         handler.watcher.suspend.assert_not_called()
         add.assert_not_called()
+
+
+class TaskAoneAssociationTest(unittest.TestCase):
+    def test_association_survives_every_trigger_source_transition(self):
+        cases = (
+            ("ticket", "AONE", "SCAN"),
+            ("pr_comment_reply", "GITHUB", "PR_COMMENT"),
+            ("pr_ci_fix", "GITHUB", "PR_CI_FAILED"),
+            ("wake", "AONE", "WAKE"),
+            ("persona", "AONE", "PERSONA"),
+            ("revisit", "AONE", "REVISIT"),
+        )
+        envelopes = [
+            bot._task_envelope(
+                item_id="84345050",
+                project="2100304",
+                task_type=task_type,
+                source_type=source_type,
+                source_ref={"sequence": index},
+                desired_revision="sequence:%d" % index,
+                trigger=trigger,
+                prompt="step %d" % index,
+            )
+            for index, (task_type, source_type, trigger) in enumerate(cases)
+        ]
+        self.assertEqual(
+            {envelope.task_key for envelope in envelopes},
+            {"aone:2100304:84345050"})
+        self.assertEqual(
+            [envelope.aone_id for envelope in envelopes],
+            ["84345050"] * len(cases))
+        self.assertTrue(all(
+            envelope.to_dict().get("aoneId") == "84345050"
+            for envelope in envelopes))
 
 
 class WakeRoutingTest(unittest.TestCase):
@@ -295,17 +435,18 @@ class WakeRoutingTest(unittest.TestCase):
         handler._workitem_line = lambda _iid: "#843"
         handler._workitem_project = lambda _iid: "2100304"
         handler._quick_card = mock.Mock()
-        handler.dispatch_pool = SimpleNamespace(
+        handler.ephemeral_executor = SimpleNamespace(
             submit=lambda *args, **kwargs: (accepted, "dispatched" if accepted else "full"))
         captured = {}
 
         class Router:
-            def enqueue(self, envelope, legacy_submit):
+            def enqueue(self, envelope, local_submit=None):
+                del local_submit
                 captured["envelope"] = envelope
-                ok, reason = legacy_submit()
-                return EnqueueResult(ok, reason)
+                return EnqueueResult(
+                    accepted, "persisted" if accepted else "rejected")
 
-        handler.task_router = Router()
+        handler.execution_router = Router()
         return handler, captured
 
     def test_wake_uses_unified_project_key_and_returns_accepted(self):
@@ -318,6 +459,7 @@ class WakeRoutingTest(unittest.TestCase):
         self.assertTrue(accepted)
         envelope = captured["envelope"]
         self.assertEqual(envelope.task_key, "aone:2100304:843")
+        self.assertEqual(envelope.aone_id, "843")
         self.assertEqual(envelope.desired_revision, "comment:9")
         handler._quick_card.assert_called_once()
 
