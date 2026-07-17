@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Hermetic integration tests for the bridge/control-plane seam."""
 
+import json
 import os
 import signal
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 import unittest
@@ -132,7 +134,7 @@ class ManagedWaitSensorTest(unittest.TestCase):
             "task": {
                 "taskKey": "aone:2100304:84345050",
                 "aoneId": "84345050",
-                "sourceRef": {"projectId": "2100304"},
+                "sourceRef": {"projectId": "2100304", "title": "Managed title"},
                 "payload": {"project": "2100304"},
             },
             "session": {
@@ -166,6 +168,7 @@ class ManagedWaitSensorTest(unittest.TestCase):
         self.assertEqual(aone_id, "84345050")
         self.assertEqual(context["session_id"], "runtime-1")
         self.assertTrue(context["terraform"])
+        self.assertEqual(context["title"], "Managed title")
         self.assertEqual([int(c["id"]) for c in observed], [42, 43])
 
     def test_list_failure_keeps_local_throttle_and_retries_without_wake(self):
@@ -427,6 +430,30 @@ class TaskAoneAssociationTest(unittest.TestCase):
             envelope.to_dict().get("aoneId") == "84345050"
             for envelope in envelopes))
 
+    def test_card_submit_reports_aone_title_only_in_source_ref(self):
+        handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
+        captured = {}
+
+        class Router:
+            def enqueue(self, envelope, local_submit=None):
+                del local_submit
+                captured["envelope"] = envelope
+                return EnqueueResult(True, "task_persisted")
+
+        handler.execution_router = Router()
+        handler.ephemeral_executor = object()
+        handler._quick_card = mock.Mock()
+        handler._submit_card(
+            "84345050", "group", "group", "go", "runtime", False,
+            project="2100304", title="Aone card title")
+        envelope = captured["envelope"]
+        self.assertEqual(envelope.source_ref, {
+            "aoneId": "84345050", "projectId": "2100304",
+            "title": "Aone card title",
+        })
+        self.assertNotIn("title", envelope.payload)
+        self.assertNotIn("Aone card title", envelope.desired_revision)
+
 
 class WakeRoutingTest(unittest.TestCase):
     def _handler(self, accepted=True):
@@ -435,6 +462,7 @@ class WakeRoutingTest(unittest.TestCase):
         handler._broadcast = lambda _text: None
         handler._workitem_line = lambda _iid: "#843"
         handler._workitem_project = lambda _iid: "2100304"
+        handler._workitem_title = lambda _iid: "Point-read title"
         handler._quick_card = mock.Mock()
         handler.ephemeral_executor = SimpleNamespace(
             submit=lambda *args, **kwargs: (accepted, "dispatched" if accepted else "full"))
@@ -462,6 +490,7 @@ class WakeRoutingTest(unittest.TestCase):
         self.assertEqual(envelope.task_key, "aone:2100304:843")
         self.assertEqual(envelope.aone_id, "843")
         self.assertEqual(envelope.desired_revision, "comment:9")
+        self.assertEqual(envelope.source_ref["title"], "Point-read title")
         handler._quick_card.assert_called_once()
 
     def test_rejected_wake_is_not_announced_as_started(self):
@@ -493,6 +522,34 @@ class WakeRoutingTest(unittest.TestCase):
         watcher._tick()
         self.assertNotIn("843", watcher.suspended)
         watcher._remove_persisted.assert_called_once_with("843")
+
+    def test_legacy_wait_persists_and_restores_aone_title(self):
+        with tempfile.TemporaryDirectory() as tmp, \
+                mock.patch.object(bot, "REPO_ROOT", Path(tmp)):
+            watcher = bot.WaitWatcher(SimpleNamespace())
+            watcher.suspend(
+                "843", "runtime", "owner", 4, "group", "group",
+                project="2100304", title="Frozen wait title")
+            restored = bot.WaitWatcher(SimpleNamespace())
+            self.assertEqual(restored.suspended["843"]["title"],
+                             "Frozen wait title")
+
+    def test_legacy_wait_backfills_pre_title_record_by_item_id(self):
+        with tempfile.TemporaryDirectory() as tmp, \
+                mock.patch.object(bot, "REPO_ROOT", Path(tmp)), \
+                mock.patch.object(
+                    bot.JarvisHandler, "_workitem_title",
+                    return_value="Backfilled wait title") as lookup:
+            persisted = Path(tmp) / ".my-day/suspended/843.json"
+            persisted.parent.mkdir(parents=True)
+            persisted.write_text(
+                '{"aone_id":"843","session_id":"runtime","project":"2100304"}')
+            restored = bot.WaitWatcher(SimpleNamespace())
+            self.assertEqual(restored.suspended["843"]["title"],
+                             "Backfilled wait title")
+            lookup.assert_called_once_with("843")
+            self.assertEqual(json.loads(persisted.read_text())["title"],
+                             "Backfilled wait title")
 
 
 if __name__ == "__main__":

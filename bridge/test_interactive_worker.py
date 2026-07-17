@@ -2006,17 +2006,22 @@ class InteractiveWorkerTest(unittest.TestCase):
         fake.claim_error = worker.ControlPlaneUnavailable("lost response")
         with mock.patch.object(worker, "_client", return_value=fake):
             with self.assertRaises(worker.ControlPlaneUnavailable):
-                worker.prepare_claim("84345050", "2100304")
+                worker.prepare_claim("84345050", "2100304", "Original Aone title")
         pending = self._store().load()["pendingClaim"]
         self.assertEqual(pending["cycle"], 1)
+        self.assertEqual(pending["title"], "Original Aone title")
         first_runtime = pending["runtimeSessionId"]
 
         fake.claim_error = None
         with mock.patch.object(worker, "_client", return_value=fake):
-            first = worker.prepare_claim("84345050", "2100304")
+            first = worker.prepare_claim("84345050", "2100304", "Renamed Aone title")
         claim_calls = [c for c in fake.calls if c[0] == "claim_task"]
         self.assertEqual(claim_calls[0][2]["request_id"],
                          claim_calls[1][2]["request_id"])
+        self.assertEqual(claim_calls[0][1][1].source_ref["title"],
+                         "Original Aone title")
+        self.assertEqual(claim_calls[1][1][1].source_ref["title"],
+                         "Original Aone title")
         first_claim = [c for c in fake.calls if c[0] == "claim_task"][-1]
         first_envelope = first_claim[1][1]
         self.assertEqual(first["runtimeSessionId"], first_runtime)
@@ -2030,7 +2035,7 @@ class InteractiveWorkerTest(unittest.TestCase):
             "operation": {"id": "op-1", "status": "SENDING"},
         })
         with mock.patch.object(worker, "_client", return_value=fake):
-            retry = worker.prepare_claim("84345050", "2100304")
+            retry = worker.prepare_claim("84345050", "2100304", "Third Aone title")
         retry_claim = [c for c in fake.calls if c[0] == "claim_task"][-1]
         retry_envelope = retry_claim[1][1]
         self.assertTrue(retry["proceed"])
@@ -2051,9 +2056,22 @@ class InteractiveWorkerTest(unittest.TestCase):
             "operation": {"id": "op-2", "status": "SENDING"},
         })
         with mock.patch.object(worker, "_client", return_value=fake):
-            next_claim = worker.prepare_claim("84345050", "2100304")
+            next_claim = worker.prepare_claim("84345050", "2100304", "Renamed Aone title")
         self.assertNotEqual(next_claim["runtimeSessionId"], first_runtime)
         self.assertIn("cycle:2", next_claim["runtimeSessionId"])
+
+    def test_blank_title_is_omitted_without_changing_interactive_revision(self):
+        self._seed()
+        fake = FakeClient()
+        with mock.patch.object(worker, "_client", return_value=fake):
+            claim = worker.prepare_claim("84345050", "2100304", "   ")
+        envelope = [c for c in fake.calls if c[0] == "claim_task"][-1][1][1]
+        self.assertEqual(envelope.source_ref,
+                         {"aoneId": "84345050", "projectId": "2100304"})
+        expected = "interactive:%s" % worker.hashlib.sha256(
+            claim["runtimeSessionId"].encode()).hexdigest()[:32]
+        self.assertEqual(envelope.desired_revision, expected)
+        self.assertEqual(self._store().load()["current"]["title"], "")
 
     def test_different_target_cannot_overwrite_inflight_local_claim(self):
         state = self._seed()

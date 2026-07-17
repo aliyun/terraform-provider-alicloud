@@ -4,6 +4,13 @@
 set -uo pipefail
 D="$(cd "$(dirname "${BASH_SOURCE[0]}")/../bootstrap" && pwd)"; PW="$D/pr-watch.sh"
 export JARVIS_ROOT="$(mktemp -d)"; F="$JARVIS_ROOT/.my-day/bridge/pr-watch.json"
+mkdir -p "$JARVIS_ROOT/bin"
+cat > "$JARVIS_ROOT/bin/a1id" <<'STUB'
+#!/usr/bin/env bash
+printf '%s\n' "$*" >> "$JARVIS_ROOT/a1id.log"
+printf '{"subject":"%s"}\n' "${A1_TITLE-Preregistered Aone title}"
+STUB
+chmod +x "$JARVIS_ROOT/bin/a1id"
 pass=0; fail=0
 ck(){ [ "$2" = "$3" ] && { echo "PASS $1"; pass=$((pass+1)); } || { echo "FAIL $1: '$2' != '$3'"; fail=$((fail+1)); }; }
 
@@ -20,11 +27,23 @@ ck seed-is-object "$(jq -r 'type' "$F")" object
 ck add1-has-key "$(jq -r 'has("83902495")' "$F")" true
 ck add1-pr_url "$(jq -r '."83902495".pr_url' "$F")" "$PR1"
 ck add1-project "$(jq -r '."83902495".project' "$F")" 528766
+ck add1-title "$(jq -r '."83902495".title' "$F")" "Preregistered Aone title"
+ck add1-lookup-item-only "$(grep -c '^-- project workitem get 83902495 -f json$' "$JARVIS_ROOT/a1id.log")" 1
 ck add1-has-ts "$(jq -r '."83902495" | has("submitted_at")' "$F")" true
+
+# Re-registering after an Aone rename preserves the first observed title.
+A1_TITLE="Renamed Aone title" bash "$PW" add 83902495 "$PR1" 528766 >/dev/null
+ck add1-title-frozen "$(jq -r '."83902495".title' "$F")" "Preregistered Aone title"
+
+# A failed/blank first read is backfilled on a later explicit re-registration.
+A1_TITLE="" bash "$PW" add 83902496 "$PR1" 528766 >/dev/null
+ck blank-title-first "$(jq -r '."83902496".title' "$F")" ""
+A1_TITLE="Recovered Aone title" bash "$PW" add 83902496 "$PR1" 528766 >/dev/null
+ck blank-title-backfilled "$(jq -r '."83902496".title' "$F")" "Recovered Aone title"
 
 # --- second add: object grows to two keys ---
 bash "$PW" add 99 "$PR2" 1086837 >/dev/null; ck add2-rc $? 0
-ck two-keys "$(jq -r 'keys | length' "$F")" 2
+ck three-keys "$(jq -r 'keys | length' "$F")" 3
 
 # --- list emits TSV rows (<ticket>\t<pr_url>\t<project>) ---
 rows="$(bash "$PW" list | sort)"

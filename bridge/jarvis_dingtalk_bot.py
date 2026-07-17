@@ -232,6 +232,15 @@ def _aone_task_key(project, item_id):
     return "aone:%s:%s" % (project, str(item_id))
 
 
+def _source_ref_with_title(source_ref, title):
+    """Return sourceRef with the formal Aone title field when it is non-blank."""
+    result = dict(source_ref)
+    title = str(title or "").strip()
+    if title:
+        result["title"] = title
+    return result
+
+
 def _task_envelope(*, item_id, project, task_type, source_type, source_ref,
                    desired_revision, trigger, prompt, recovery_policy="RESUME_ONLY",
                    persona=None, priority=None, comment_cursor=None,
@@ -508,12 +517,18 @@ def _prwatch_write(recs):
         log.warning("prwatch: could not persist %s: %s", PRWATCH_PATH, e)
 
 
-def _prwatch_add(ticket, pr_url, project):
+def _prwatch_add(ticket, pr_url, project, title=""):
     """Register a PR to observe. Atomic load→set→write under the lock so concurrent writers
-    never clobber each other's records."""
+    never clobber each other's records. The first non-blank Aone title is frozen; a
+    failed/blank read remains backfillable and GitHub PR titles are never substituted."""
     with _prwatch_lock:
         recs = _prwatch_load()
+        existing = recs.get(str(ticket))
+        existing_title = (str(existing.get("title") or "").strip()
+                          if isinstance(existing, dict) else "")
+        frozen_title = existing_title or str(title or "").strip()
         recs[str(ticket)] = {"pr_url": pr_url, "project": project,
+                             "title": frozen_title,
                              "submitted_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
         _prwatch_write(recs)
 
@@ -4207,6 +4222,7 @@ class PrWatchScheduler:
         return any_active
 
     def _check_one(self, tid, entry):
+        entry = self._ensure_registry_title(tid, entry)
         pr_url = entry.get("pr_url")
         project = entry.get("project")
         tf_writer = _is_terraform_project(project)
@@ -4338,6 +4354,18 @@ class PrWatchScheduler:
         self._maybe_dispatch_comment_reply(tid, entry)
         return bool(active)
 
+    def _ensure_registry_title(self, tid, entry):
+        """Best-effort migration for pre-title/failed-read PR registry entries."""
+        if str(entry.get("title") or "").strip():
+            return entry
+        _project, title = self._ticket_metadata(tid)
+        if not title:
+            return entry
+        _prwatch_update(tid, title=title)
+        migrated = dict(entry)
+        migrated["title"] = title
+        return migrated
+
     # -- helpers（全部 capture_output，绝不真连网/gh/claim/wrap）----------------------
 
     def _gh_pr_state(self, pr_url):
@@ -4464,7 +4492,9 @@ class PrWatchScheduler:
             project=project,
             task_type="pr_ci_fix",
             source_type="GITHUB",
-            source_ref={"prUrl": str(entry.get("pr_url") or ""), "head": head},
+            source_ref=_source_ref_with_title(
+                {"prUrl": str(entry.get("pr_url") or ""), "head": head},
+                entry.get("title")),
             desired_revision="pr-ci:%s" % head,
             trigger="PR_CI_FAILED",
             prompt=prompt,
@@ -4659,8 +4689,9 @@ class PrWatchScheduler:
             project=project,
             task_type="pr_comment_reply",
             source_type="GITHUB",
-            source_ref={"prUrl": str(entry.get("pr_url") or ""),
-                        "commentKey": key},
+            source_ref=_source_ref_with_title(
+                {"prUrl": str(entry.get("pr_url") or ""), "commentKey": key},
+                entry.get("title")),
             desired_revision="pr-comment:%s" % key,
             trigger="PR_COMMENT",
             prompt=prompt,
@@ -4715,9 +4746,8 @@ class PrWatchScheduler:
             log.warning("PrWatchScheduler: gh pr list non-JSON: %s", e)
             return None
 
-    def _ticket_project(self, tid):
-        """工单归属 project（pools.json 池 id，如 528766）via aone-get fields[].space.value。
-        读失败 / 无此单 / 非数字 → None（→ caller 跳过，不冒然登记错单）。"""
+    def _ticket_metadata(self, tid):
+        """Return ``(project, title)`` from one Aone point-read by itemId only."""
         env = os.environ.copy()
         env["JARVIS_CACHE_TTL"] = "0"
         try:
@@ -4725,18 +4755,27 @@ class PrWatchScheduler:
                 [str(Path(REPO_ROOT) / "bootstrap" / "aone-get.sh"), str(tid)],
                 capture_output=True, text=True, env=env, timeout=90)
         except Exception:  # noqa: BLE001
-            return None
+            return None, ""
         if proc.returncode != 0:
-            return None
+            return None, ""
         try:
             d = json.loads(proc.stdout)
         except Exception:  # noqa: BLE001
-            return None
+            return None, ""
+        title = str(d.get("title") or d.get("subject") or "").strip()
         for f in (d.get("fields") or []):
-            if isinstance(f, dict) and f.get("identifier") == "space":
-                v = str(f.get("value") or "")
-                return v if v.isdigit() else None
-        return None
+            if not isinstance(f, dict):
+                continue
+            if f.get("identifier") in ("title", "subject") and not title:
+                title = str(f.get("displayValue") or f.get("value") or "").strip()
+            if f.get("identifier") == "space":
+                value = str(f.get("value") or "")
+                return (value if value.isdigit() else None), title
+        return None, title
+
+    def _ticket_project(self, tid):
+        """Backward-compatible project-only view of the itemId point-read."""
+        return self._ticket_metadata(tid)[0]
 
     def _maybe_autoregister_open_prs(self):
         """周期(≥ self.interval 节流)扫 api-tool-agent 名下 upstream open PR，对未登记的：branch
@@ -4759,14 +4798,14 @@ class PrWatchScheduler:
             branch = str(pr.get("headRefName") or "")
             m = re.search(r"(\d{8,})", branch)  # jarvis 分支多编码工单号 e.g. feat/84291978-...
             tid = m.group(1) if m else ""
-            project = self._ticket_project(tid) if tid else None
+            project, title = self._ticket_metadata(tid) if tid else (None, "")
             if not project:
                 if url not in self._autoreg_warned:
                     self._autoreg_warned.add(url)
                     log.info("PrWatchScheduler: 未登记 open PR %s (branch %s) — 工单号无法从分支解析/"
                              "校验，跳过自动登记，请人工 pr-watch.sh add", url, branch)
                 continue
-            _prwatch_add(tid, url, project)
+            _prwatch_add(tid, url, project, title)
             log.info("PrWatchScheduler: 自动补登记漏登 open PR %s → #%s (project %s)", url, tid, project)
             if self.handler:
                 self.handler._broadcast(
@@ -5019,12 +5058,13 @@ class WaitWatcher:
         self._thread.start()
 
     def suspend(self, aone_id, session_id, wait_for, last_comment_id, target, target_type,
-                terraform=False, project=None):
+                terraform=False, project=None, title=None):
         now = time.time()
         entry = {"session_id": session_id, "wait_for": wait_for,
                  "last_comment_id": last_comment_id, "target": target,
                  "target_type": target_type, "suspended_at": now, "last_poll": 0,
-                 "terraform": bool(terraform), "project": str(project or "")}
+                 "terraform": bool(terraform), "project": str(project or ""),
+                 "title": str(title or "").strip()}
         with self._lock:
             self.suspended[str(aone_id)] = entry
         self._persist(aone_id, entry)
@@ -5126,6 +5166,9 @@ class WaitWatcher:
             try:
                 entry = json.loads(f.read_text())
                 aid = entry.pop("aone_id", f.stem)
+                if "title" not in entry:
+                    entry["title"] = JarvisHandler._workitem_title(aid)
+                    self._persist(aid, entry)
                 self.suspended[str(aid)] = entry
                 log.info("WaitWatcher: restored suspended #%s from disk", aid)
             except Exception:  # noqa: BLE001
@@ -5243,6 +5286,8 @@ class ManagedWaitSensor:
                                (task.get("sourceRef") or {}).get("projectId") or ""),
                 "target": str(frozen.get("target") or broadcast_target()),
                 "target_type": str(frozen.get("targetType") or broadcast_type()),
+                "title": str(frozen.get("title") or
+                             (task.get("sourceRef") or {}).get("title") or ""),
             }
             log.info("ManagedWaitSensor: #%s session=%s got %d reply comment(s)",
                      aone_id, session_id, len(new_comments))
@@ -7602,7 +7647,7 @@ class JarvisHandler(AsyncChatbotHandler):
             log.exception("broadcast failed")
 
     def _maybe_suspend(self, final_text, sid, target, target_type, terraform=False,
-                       project=None, task_owned=False):
+                       project=None, task_owned=False, title=None):
         """Shared core: if the round emitted a [[SUSPEND:{...}]] sentinel, register it
         with the WaitWatcher (which wakes on the next Aone reply) and return the info;
         else None. Used by both the card path (_dispatch_bg) and headless (dispatch_item).
@@ -7612,9 +7657,12 @@ class JarvisHandler(AsyncChatbotHandler):
             return None
         last_cid = self._last_comment_id(info["aone_id"])
         if not task_owned:
+            frozen_title = str(title or "").strip()
+            if not frozen_title:
+                frozen_title = self._workitem_title(info["aone_id"])
             self.watcher.suspend(info["aone_id"], sid, info.get("wait_for", ""),
                                  last_cid, target, target_type, terraform=terraform,
-                                 project=project)
+                                 project=project, title=frozen_title)
         enriched = dict(info)
         enriched["wait_cursor"] = last_cid
         return enriched
@@ -7656,6 +7704,32 @@ class JarvisHandler(AsyncChatbotHandler):
             log.exception("dispatch_bg #%s failed: %s", item_id, e)
             self._quick_card(target, "⚠️ 工单 #%s 后台处理异常: %s" % (item_id, e), target_type)
             return "error"
+
+    @staticmethod
+    def _workitem_title(item_id):
+        """Best-effort Aone title point-read using only itemId."""
+        sid = str(item_id)
+        if not sid.isdigit():
+            return ""
+        try:
+            result = subprocess.run(
+                [str(REPO_ROOT / "bin" / "a1id"), "--", "project", "workitem",
+                 "get", sid, "-f", "json"],
+                capture_output=True, text=True, timeout=30, cwd=str(REPO_ROOT))
+            if result.returncode != 0:
+                return ""
+            data = json.loads(result.stdout)
+            title = str(data.get("title") or data.get("subject") or "").strip()
+            if title:
+                return title
+            for field in data.get("fields") or []:
+                if (isinstance(field, dict)
+                        and field.get("identifier") in ("title", "subject")):
+                    return str(field.get("displayValue") or
+                               field.get("value") or "").strip()
+        except Exception:  # noqa: BLE001
+            pass
+        return ""
 
     @staticmethod
     def _workitem_project(item_id):
@@ -7972,7 +8046,7 @@ class JarvisHandler(AsyncChatbotHandler):
             log.warning("_dispatch_failed #%s notify failed: %s", item_id, e)
 
     def _submit_card(self, item_id, target, target_type, prompt, sid, resume, force=True,
-                     terraform=False, project=None, task_type="ticket"):
+                     terraform=False, project=None, task_type="ticket", title=None):
         """Route a card request through ExecutionRouter.
 
         Recoverable Task work is persisted and later leased by PersistenceExecutor.
@@ -7981,7 +8055,8 @@ class JarvisHandler(AsyncChatbotHandler):
         project = str(project or "")
         item_id = str(item_id)
         source_type = "AONE" if item_id.isdigit() else "LOCAL"
-        source_ref = ({"aoneId": item_id, "projectId": project}
+        source_ref = (_source_ref_with_title(
+                          {"aoneId": item_id, "projectId": project}, title)
                       if source_type == "AONE"
                       else {"localId": item_id})
         revision = "card:%s" % hashlib.sha256(
@@ -8107,12 +8182,16 @@ class JarvisHandler(AsyncChatbotHandler):
             cursor = None
             revision = "comments:%s" % hashlib.sha256(
                 reply_text.encode("utf-8")).hexdigest()[:20]
+        wake_title = str(task.get("title") or "").strip()
+        if not wake_title:
+            wake_title = self._workitem_title(aone_id)
         envelope = _task_envelope(
             item_id=str(aone_id),
             project=project,
             task_type="wake",
             source_type="AONE",
-            source_ref={"aoneId": str(aone_id), "projectId": project, "title": task.get("title", "")},
+            source_ref=_source_ref_with_title(
+                {"aoneId": str(aone_id), "projectId": project}, wake_title),
             desired_revision=revision,
             trigger="WAKE",
             prompt=prompt,
@@ -8207,7 +8286,8 @@ class JarvisHandler(AsyncChatbotHandler):
                                      "⚙️ 已接收工单 #%s，后台处理中…" % item["id"], card_type)
                     self._submit_card(item["id"], card_target, card_type,
                                       prompt, str(uuid.uuid4()), False, terraform=tf,
-                                      project=item.get("pool_project"))
+                                      project=item.get("pool_project"),
+                                      title=item.get("title"))
                     return AckMessage.STATUS_OK, "dispatched"
                 else:
                     self._quick_card(card_target, "工单 #%s 不在待处理列表中。" % auth_m.group(1), card_type)
@@ -8222,7 +8302,8 @@ class JarvisHandler(AsyncChatbotHandler):
                         tf = _is_terraform_ticket(item.get("pool", ""), item.get("title", ""))
                         self._submit_card(item["id"], card_target, card_type,
                                           prompt, str(uuid.uuid4()), False, terraform=tf,
-                                          project=item.get("pool_project"))
+                                          project=item.get("pool_project"),
+                                          title=item.get("title"))
                         ids.append(str(item["id"]))
                     self._quick_card(card_target,
                                      "⚙️ 已提交 %d 条工单后台处理: %s" % (

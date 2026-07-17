@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Hermetic ordering/fail-closed tests for claim.sh's interactive DB gate.
+# Hermetic ordering/compatibility tests for claim.sh's interactive DB gate.
 
 set -uo pipefail
 
@@ -28,10 +28,14 @@ cat > "$tmp/bin/a1" <<'STUB'
 #!/usr/bin/env bash
 echo "a1:$*" >> "$TEST_LOG"
 if [ "$1 $2 $3" = "project workitem get" ]; then
+  if [ "${A1_GET_FAIL_ONCE:-0}" = "1" ] && [ ! -f "$TEST_DIR/a1-get-failed-once" ]; then
+    : > "$TEST_DIR/a1-get-failed-once"
+    exit 1
+  fi
   [ "${A1_GET_RC:-0}" = "0" ] || exit "$A1_GET_RC"
   tags="$(cat "$A1_STATE" 2>/dev/null || true)"
   tags_ml="${tags//,/, }"
-  printf '{"fields":[{"identifier":"tag","displayValue":"%s","value":"%s"},{"identifier":"workitemType","displayValue":"需求"},{"identifier":"status","displayValue":"%s"}]}\n' "$tags_ml" "$tags_ml" "${A1_STATUS:-处理中}"
+  printf '{"subject":"%s","fields":[{"identifier":"tag","displayValue":"%s","value":"%s"},{"identifier":"workitemType","displayValue":"需求"},{"identifier":"status","displayValue":"%s"}]}\n' "${A1_TITLE-Interactive test title}" "$tags_ml" "$tags_ml" "${A1_STATUS:-处理中}"
   exit 0
 fi
 if [ "$1 $2 $3" = "project workitem update" ]; then
@@ -85,6 +89,7 @@ export JARVIS_A1="$tmp/bin/a1"
 export JARVIS_INTERACTIVE_WORKER_RUNNER="$tmp/interactive-runner.sh"
 export CODEX_THREAD_ID="codex-test-thread"
 export TEST_LOG="$tmp/events.log"
+export TEST_DIR="$tmp"
 export A1_STATE="$tmp/aone-tags"
 export JARVIS_CLAIM_READBACK_SLEEP=0
 export JARVIS_CLAIM_PROGRESS=0
@@ -96,11 +101,13 @@ ok() { echo "PASS: $1"; pass=$((pass + 1)); }
 bad() { echo "FAIL: $1"; fail=$((fail + 1)); }
 reset_case() {
   : > "$TEST_LOG"
+  rm -f "$TEST_DIR/a1-get-failed-once"
   printf '%s' "${1:-}" > "$A1_STATE"
   unset IW_PREPARE_RC IW_PREPARE_JSON IW_ACK_RC IW_CURRENT_RC IW_TRANSITION_RC
   unset IW_BEGIN_RC IW_BEGIN_JSON IW_ABORT_RC IW_RECONCILE_RC
-  unset A1_TAG_RC A1_REJECT_STATUS A1_GET_RC
+  unset A1_TAG_RC A1_REJECT_STATUS A1_GET_RC A1_GET_FAIL_ONCE
   export A1_STATUS="${2:-处理中}"
+  export A1_TITLE="Interactive test title"
 }
 run_claim() {
   bash "$repo_root/bootstrap/claim.sh" "$@" >/dev/null 2>&1
@@ -110,20 +117,20 @@ reset_case
 export IW_PREPARE_RC=10
 if run_claim claim 84345050 2100304; then
   bad "409 conflict returns nonzero"
-elif grep -q '^a1:' "$TEST_LOG"; then
-  bad "409 conflict performs no Aone calls"
+elif grep -q 'a1:project workitem update' "$TEST_LOG"; then
+  bad "409 conflict performs no Aone writes"
 else
-  ok "409 conflict fails before Aone"
+  ok "409 conflict fails after title read and before Aone writes"
 fi
 
 reset_case
 export IW_PREPARE_RC=11
 if run_claim claim 84345050 2100304; then
   bad "control-plane outage returns nonzero"
-elif grep -q '^a1:' "$TEST_LOG"; then
-  bad "control-plane outage performs no Aone calls"
+elif grep -q 'a1:project workitem update' "$TEST_LOG"; then
+  bad "control-plane outage performs no Aone writes"
 else
-  ok "control-plane outage fails before Aone"
+  ok "control-plane outage fails after title read and before Aone writes"
 fi
 
 reset_case
@@ -131,7 +138,7 @@ unset CODEX_THREAD_ID CLAUDE_CODE_SESSION_ID
 export JARVIS_INTERACTIVE_CLIENT=claude
 export JARVIS_INTERACTIVE_SESSION_ID=claude-env-file-session
 export IW_PREPARE_RC=10
-if run_claim claim 84345050 2100304 || grep -q '^a1:' "$TEST_LOG"; then
+if run_claim claim 84345050 2100304 || grep -q 'a1:project workitem update' "$TEST_LOG"; then
   bad "persisted Claude hook context enters the DB gate"
 else
   ok "persisted Claude hook context enters the DB gate"
@@ -142,6 +149,8 @@ export CODEX_THREAD_ID="codex-test-thread"
 reset_case
 if ! run_claim claim 84345050 2100304; then
   bad "interactive claim succeeds"
+elif ! grep -q '^worker:cli prepare-claim 84345050 2100304 Interactive test title$' "$TEST_LOG"; then
+  bad "interactive claim forwards the itemId point-read title"
 else
   prepare_line="$(grep -n 'worker:cli prepare-claim' "$TEST_LOG" | head -1 | cut -d: -f1)"
   tag_line="$(grep -n 'a1:project workitem update .*--tag' "$TEST_LOG" | head -1 | cut -d: -f1)"
@@ -152,6 +161,26 @@ else
   else
     bad "claim ordering"
   fi
+fi
+
+reset_case
+export A1_TITLE="   "
+if ! run_claim claim 84345050 2100304; then
+  bad "blank title remains backward compatible"
+elif ! grep -q '^worker:cli prepare-claim 84345050 2100304' "$TEST_LOG"; then
+  bad "blank title still reaches control-plane claim"
+else
+  ok "blank title is omitted without blocking claim"
+fi
+
+reset_case
+export A1_GET_FAIL_ONCE=1
+if ! run_claim claim 84345050 2100304; then
+  bad "title point-read failure remains backward compatible"
+elif ! grep -q '^worker:cli prepare-claim 84345050 2100304' "$TEST_LOG"; then
+  bad "title point-read failure still reaches control-plane claim"
+else
+  ok "title point-read failure does not block claim"
 fi
 
 reset_case

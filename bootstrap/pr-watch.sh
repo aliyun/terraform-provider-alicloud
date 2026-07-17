@@ -12,7 +12,7 @@
 #   pr-watch.sh list                                 列出 <ticket>\t<pr_url>\t<project>（TSV）
 #
 # 登记表落 .my-day/bridge/pr-watch.json，**对象键**结构（非数组）：
-#   {"<ticket>": {"pr_url": "...", "project": "...", "submitted_at": "..."}}
+#   {"<ticket>": {"pr_url": "...", "project": "...", "title": "...", "submitted_at": "..."}}
 # 桥侧 PrWatchScheduler 会往 entry 里补 CI-fix 去重字段（ci_fix_sha / ci_fix_attempts /
 # ci_fix_escalated / last_ci_fix_at，见 _prwatch_update）——本脚本的 add/remove/list 对多余
 # 字段无感（jq 只增/删/读基础字段），无需同步维护。
@@ -56,12 +56,24 @@ case "$cmd" in
             echo "pr-watch.sh: invalid pr_url '$pr_url' — expect a full GitHub PR URL like https://github.com/<owner>/<repo>/pull/<n>" >&2
             exit 1
         fi
+        # Freeze the Aone title from a point-read identified only by itemId. Failure is
+        # backward compatible: keep an empty title and continue registering the PR.
+        title="$("$R/bin/a1id" -- project workitem get "$ticket" -f json 2>/dev/null \
+            | jq -r '(.title // .subject //
+                ((.fields // []) | map(select(.identifier=="title" or .identifier=="subject"))
+                 | (.[0].displayValue // .[0].value // "")))
+                | tostring | gsub("^\\s+|\\s+$"; "")' 2>/dev/null || true)"
         ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
         acquired="$(_acquire_lock)"
         _seed
         tmp="$(mktemp "$(dirname "$F")/.pr-watch-tmp.XXXXXX")"
-        jq --arg id "$ticket" --arg url "$pr_url" --arg pj "$project" --arg ts "$ts" \
-            '. + {($id): {pr_url:$url, project:$pj, submitted_at:$ts}}' "$F" > "$tmp" \
+        jq --arg id "$ticket" --arg url "$pr_url" --arg pj "$project" \
+            --arg title "$title" --arg ts "$ts" \
+            '(.[$id] // {}) as $old |
+             . + {($id): {pr_url:$url, project:$pj,
+                           title:(if (($old|type)=="object" and
+                                     (($old.title // "") | length) > 0)
+                                  then $old.title else $title end), submitted_at:$ts}}' "$F" > "$tmp" \
             && mv "$tmp" "$F" || rm -f "$tmp"
         [ -n "$acquired" ] && rmdir "$LOCK" 2>/dev/null
         echo "pr-watch.sh: watching #$ticket → $pr_url (project $project)"
