@@ -585,14 +585,17 @@ class AoneScannerUnionTest(unittest.TestCase):
         rows = s._query_pool_union("tf_customer", "1086837", ["Closed", "已发布"])
         ids = sorted(r["id"] for r in rows)
         self.assertEqual(ids, ["1", "2", "3"], "三源并集按 id 去重（#1 只保留一次）")
+        # 三源查询并行发出 → seen_filters 顺序不定，按集合断言（顺序无关）
+        worker_csv = ",".join(sorted(bot.DIGITAL_WORKER_IDS))
+        self.assertEqual(len(seen_filters), 3, "assignee/tracker/idle 三源各查一次")
         # 每源都叠加 pools.json 状态排除
         self.assertTrue(all("NOT status=Closed" in f and "NOT status=已发布" in f
-                            for f in seen_filters[:2]),
-                        "assignee/tracker 过滤须叠加 exclude_status")
+                            for f in seen_filters),
+                        "三源过滤须叠加 exclude_status")
         # 数字人 id 单一真源
-        worker_csv = ",".join(sorted(bot.DIGITAL_WORKER_IDS))
-        self.assertIn("assignedTo=%s" % worker_csv, seen_filters[0])
-        self.assertIn("workitem.tracker=%s" % worker_csv, seen_filters[1])
+        self.assertTrue(any("assignedTo=%s" % worker_csv in f for f in seen_filters))
+        self.assertTrue(any("workitem.tracker=%s" % worker_csv in f for f in seen_filters))
+        self.assertTrue(any("tag=jarvis-idle" in f for f in seen_filters))
         # 每源都带 pool/pool_project 戳
         self.assertTrue(all(r.get("pool") == "tf_customer"
                             and r.get("pool_project") == "1086837" for r in rows))

@@ -3239,19 +3239,27 @@ class AoneScanner:
             })
         return out
 
-    def _query_pool_union(self, key, project, exclude_status):
-        """一个池的 assignee∪tracker∪idle 并集（按 id 去重）。数字人被指派 / 被抄送(tracker)
-        / jarvis-idle 三源；三源都叠加 pools.json 的状态排除，避免终态/已排除态单被捞。"""
+    def _union_filters(self, exclude_status):
+        """一个池的三源 a1 --filter 表达式：数字人被指派 / 被抄送(tracker) / jarvis-idle；
+        三源都叠加 pools.json 的状态排除，避免终态/已排除态单被捞。"""
         worker_csv = ",".join(sorted(DIGITAL_WORKER_IDS))
         excl = "".join(" AND NOT status=%s" % s for s in (exclude_status or []))
-        filters = (
+        return (
             "assignedTo=%s%s" % (worker_csv, excl),          # 指派给数字人
             "workitem.tracker=%s%s" % (worker_csv, excl),    # 参与/抄送数字人（人 @ 会自动抄送）
             "tag=jarvis-idle%s" % excl,                       # idle 重访（吸收原 Revisit 非 tf 车道）
         )
+
+    def _query_pool_union(self, key, project, exclude_status):
+        """一个池的 assignee∪tracker∪idle 并集（按 id 去重）。三源查询并行发出（各自 a1 调用
+        best-effort），去重时 assignee 源优先（保序稳定，与串行等价）。"""
+        filters = self._union_filters(exclude_status)
+        with ThreadPoolExecutor(max_workers=len(filters),
+                                thread_name_prefix="aone-union") as ex:
+            per_filter = list(ex.map(lambda f: self._a1_list(project, f), filters))
         rows = {}
-        for flt in filters:
-            for it in self._a1_list(project, flt):
+        for src in per_filter:  # 顺序 = filters 顺序（assignee→tracker→idle），去重保序
+            for it in src:
                 iid = str(it.get("id") or "")
                 if not iid or iid in rows:
                     continue
@@ -3262,13 +3270,20 @@ class AoneScanner:
 
     def _scan_union(self):
         """全池 assignee∪tracker∪idle 并集 → item 列表（同 _scan shape），或 None（无池配置）。
-        单池失败只记日志、不作废本轮（其余池仍有效，与 scan.sh partial 语义一致）。"""
+        池间并行（每池内三源也并行），单池失败只记日志、不作废本轮（与 scan.sh partial 语义一致）。"""
         pools = self._read_pools()
         if not pools:
             return None
         items = []
-        for key, project, exclude_status in pools:
-            items.extend(self._query_pool_union(key, project, exclude_status))
+        with ThreadPoolExecutor(max_workers=min(8, len(pools)),
+                                thread_name_prefix="aone-pool") as ex:
+            futures = [ex.submit(self._query_pool_union, key, project, excl)
+                       for key, project, excl in pools]
+            for fut in futures:
+                try:
+                    items.extend(fut.result())
+                except Exception as e:  # noqa: BLE001 — 单池失败不作废本轮
+                    log.warning("AoneScanner: pool union query failed: %s", e)
         return items
 
     def _in_scope(self, it):
