@@ -287,11 +287,17 @@ class TaskExecutionTest(unittest.TestCase):
                 "terraform": True, "target": "group-1", "targetType": "group",
             }},
         }
-        self.assertEqual(handler._execute_task_lease(lease, lifecycle), "done")
+        with mock.patch.object(bot, "_terraform_rd_ready", return_value=True):
+            self.assertEqual(handler._execute_task_lease(lease, lifecycle), "done")
         self.assertEqual(captured["args"][1], "go")
         self.assertEqual(captured["args"][2], "runtime-stable")
         self.assertTrue(captured["args"][3])
-        self.assertEqual(captured["kwargs"]["on_spawn"], lifecycle.bind_process)
+        # ticket is a TASK_BOOKEND_KIND: the executor owns the Aone bookend, so on_spawn
+        # is the bookend's bind_process (which still binds the controller's process).
+        bookend = captured["kwargs"]["task_bookend"]
+        self.assertIsInstance(bookend, bot._TaskAoneBookend)
+        self.assertIs(bookend.controller, lifecycle)
+        self.assertEqual(captured["kwargs"]["on_spawn"], bookend.bind_process)
         self.assertIs(captured["kwargs"]["session_controller"], lifecycle)
 
     def test_malformed_session_input_snapshot_never_falls_forward_to_current_task(self):
@@ -550,6 +556,108 @@ class WakeRoutingTest(unittest.TestCase):
             lookup.assert_called_once_with("843")
             self.assertEqual(json.loads(persisted.read_text())["title"],
                              "Backfilled wait title")
+
+
+class TaskBookendDispatchTest(unittest.TestCase):
+    """B-proper: the control-plane Task run authors a structured result; the executor
+    (via _TaskAoneBookend) owns the single Aone write. The run never self-claims, so the
+    self-lease-conflict is gone. Verifies commit routing (done/idle/suspend) and the
+    fail-closed path when the run exits clean without a valid [[AONE_RESULT]]."""
+
+    def _handler(self):
+        h = bot.JarvisHandler.__new__(bot.JarvisHandler)
+        h._broadcast = lambda _t: None
+        h._completion_broadcast = lambda _iid: "done-broadcast"
+        h._maybe_suspend = lambda *a, **k: None
+        h._last_comment_id = lambda _iid: 12345
+        return h
+
+    def _controller(self):
+        return SimpleNamespace(
+            task={"id": 603, "generation": 1},
+            session={"generation": 1},
+            runtime_session_id="rt-1", resumed=False)
+
+    def _run(self, final, outcome_terraform=True):
+        h = self._handler()
+        ctrl = self._controller()
+        bookend = bot._TaskAoneBookend(ctrl, "84407231", "1086837",
+                                       outcome_terraform, "persona")
+        calls = {}
+        h._dispatch_failed = lambda *a, **k: calls.setdefault("failed", a)
+        with mock.patch.object(bot, "run_claude_buffered",
+                               return_value=bot.ClaudeResult(final, False, "success")), \
+             mock.patch.object(bot, "_claim_workitem",
+                               side_effect=lambda *a, **k: calls.setdefault("claim", a)), \
+             mock.patch.object(bot, "_aone_event_enqueue",
+                               side_effect=lambda *a, **k: calls.setdefault("reply", (a, k)) or True), \
+             mock.patch.object(bot, "_finish_workitem",
+                               side_effect=lambda *a, **k: calls.setdefault("finish", a)), \
+             mock.patch.object(bot, "_release_post_pr_claim",
+                               side_effect=lambda *a, **k: calls.setdefault("release", a)):
+            out = h.dispatch_item(
+                "84407231", "prompt", "sid", False, lambda _t: None,
+                "tgt", "group", project="1086837", kind="persona", terraform=True,
+                session_controller=ctrl, task_bookend=bookend)
+        return out, calls
+
+    def test_done_writes_reply_then_finishes(self):
+        out, calls = self._run(
+            '[[AONE_RESULT:{"outcome":"done","reply_body":"结论 done"}]]')
+        self.assertEqual(out, "done")
+        self.assertIn("reply", calls)
+        self.assertIn("finish", calls)
+        self.assertNotIn("release", calls)
+        # terraform reply → terraform-rd identity
+        self.assertEqual(calls["reply"][1].get("identity"), bot.PERSONA_PUBLIC_IDENTITY)
+
+    def test_idle_writes_reply_then_releases(self):
+        out, calls = self._run(
+            '[[AONE_RESULT:{"outcome":"idle","reply_body":"阶段完成"}]]')
+        self.assertEqual(out, "done")
+        self.assertIn("reply", calls)
+        self.assertIn("release", calls)
+        self.assertNotIn("finish", calls)
+
+    def test_suspend_writes_reply_and_returns_wait_state(self):
+        out, calls = self._run(
+            '[[AONE_RESULT:{"outcome":"suspend","reply_body":"@新山 请确认",'
+            '"suspend_wait_for":"521957"}]]')
+        self.assertIsInstance(out, dict)
+        self.assertEqual(out["status"], "suspended")
+        self.assertEqual(out["waitKey"], "84407231")
+        self.assertEqual(out["waitCursor"], "12345")
+        self.assertIn("reply", calls)
+        self.assertNotIn("finish", calls)
+        self.assertNotIn("release", calls)
+
+    def test_missing_result_fails_closed_without_commit(self):
+        out, calls = self._run("干完了但忘了输出结构化结果")
+        self.assertEqual(out, "error")
+        self.assertIn("failed", calls)
+        self.assertNotIn("reply", calls)
+        self.assertNotIn("finish", calls)
+        self.assertNotIn("release", calls)
+
+    def test_non_terraform_reply_uses_jarvis_identity(self):
+        h = self._handler()
+        ctrl = self._controller()
+        bookend = bot._TaskAoneBookend(ctrl, "999", "2100304", False, "ticket")
+        calls = {}
+        with mock.patch.object(bot, "run_claude_buffered",
+                               return_value=bot.ClaudeResult(
+                                   '[[AONE_RESULT:{"outcome":"idle","reply_body":"x"}]]',
+                                   False, "success")), \
+             mock.patch.object(bot, "_aone_event_enqueue",
+                               side_effect=lambda *a, **k: calls.setdefault("reply", k) or True), \
+             mock.patch.object(bot, "_release_post_pr_claim", lambda *a, **k: None):
+            out = h.dispatch_item(
+                "999", "p", "sid", False, lambda _t: None, "tgt", "group",
+                project="2100304", kind="ticket", terraform=False,
+                session_controller=ctrl, task_bookend=bookend)
+        self.assertEqual(out, "done")
+        self.assertEqual(calls["reply"].get("identity"), "jarvis")
+        self.assertTrue(calls["reply"].get("allow_non_tf"))
 
 
 class CompletionBroadcastTest(unittest.TestCase):

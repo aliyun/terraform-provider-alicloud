@@ -175,6 +175,9 @@ PUT_MIN_GROWTH = 40       # chars of growth that also triggers a PUT
 HEADLESS_POLICY_REVISION = "terraform-rd-single-writer-v4"
 POST_PR_AONE_WRITE_POLICY = "post-pr-read-only"
 POST_PR_HEADLESS_KINDS = frozenset(("pr_ci_fix", "pr_comment_reply"))
+# Control-plane Task kinds whose Aone claim/reply/finish are owned by the executor
+# (_TaskAoneBookend), not self-claimed inside the run — the self-lease-conflict fix.
+TASK_BOOKEND_KINDS = frozenset(("ticket", "persona"))
 
 TATA_PROMPT = (
     "你是 Tata，钉钉里的轻量助手。日常陪聊、答疑、查资料，语气简洁友好。"
@@ -1404,6 +1407,22 @@ def _a1_command_env(terraform=False, aone_write_policy=None):
     return env
 
 
+def _terraform_rd_ready():
+    """True iff the terraform-rd write identity is logged in (a1id ready rc==0).
+
+    The executor checks this before running a terraform Task-bookend line so a missing
+    login fails the Task closed instead of producing a run that finishes without any
+    Aone write. Never falls back to jarvis for a terraform reply (identity discipline).
+    """
+    try:
+        proc = subprocess.run(
+            [str(REPO_ROOT / "bin" / "a1id"), "ready", PERSONA_PUBLIC_IDENTITY],
+            cwd=str(REPO_ROOT), timeout=30, capture_output=True, text=True)
+        return proc.returncode == 0
+    except Exception:  # noqa: BLE001
+        return False
+
+
 def _claim_workitem(iid, project, terraform=False):
     """Claim a post-PR work item without arbitration comments or status moves."""
     env = _a1_command_env(terraform=terraform)
@@ -1431,6 +1450,26 @@ def _release_post_pr_claim(iid, project, terraform=False):
         detail = ((proc.stderr or proc.stdout or "").strip())[-300:]
         raise RuntimeError(
             "bridge post-PR release failed for #%s (rc=%s): %s" %
+            (iid, proc.returncode, detail or "no detail"))
+
+
+def _finish_workitem(iid, project, terraform=False):
+    """Finish a bridge-owned claim: jarvis-done + the pool's done_status.
+
+    Runs claim.sh finish from bridge (non-interactive) context, so it takes the
+    plain merge-tag + status path and never contends on a control-plane claim_task.
+    claim.sh already degrades jarvis-done→jarvis-idle + escalate when the done_status
+    cannot land, so a rejected finish never strands a 'label done, source open' hole.
+    """
+    proc = subprocess.run(
+        [str(REPO_ROOT / "bootstrap" / "claim.sh"),
+         "finish", str(iid), str(project)],
+        cwd=str(REPO_ROOT), timeout=60, capture_output=True, text=True,
+        env=_a1_command_env(terraform=terraform))
+    if proc.returncode != 0:
+        detail = ((proc.stderr or proc.stdout or "").strip())[-300:]
+        raise RuntimeError(
+            "bridge finish failed for #%s (rc=%s): %s" %
             (iid, proc.returncode, detail or "no detail"))
 
 
@@ -1673,6 +1712,94 @@ class _PostPrTaskBookend:
             self._apply("release")
             self._released = True
             self._claimed = False
+
+
+class _TaskAoneBookend:
+    """Executor-owned Aone bookend for a control-plane Task run (ticket/persona).
+
+    The PersistenceExecutor already holds the control-plane lease, so the run must NOT
+    self-claim — a second control-plane claim_task from inside the run 409s against the
+    executor's own session (the self-lease-conflict this fix removes). Instead every
+    Aone write happens here, from the bridge/executor thread, in NON-interactive context
+    → plain idempotent merge-tag / marker-guarded comment / idempotent status writes,
+    never a second claim_task:
+
+      * ``bind_process`` claims (jarvis-claimed) once the PID is bound, mirroring
+        :class:`_PostPrTaskBookend`;
+      * ``commit`` writes the run's structured result exactly once — the single RD reply
+        comment (terraform-rd for terraform lines, jarvis otherwise) then the terminal
+        tag (done→finish / idle→release; suspend leaves it claimed for the WaitWatcher).
+
+    Idempotency is per task generation: a same-generation crash/retry reuses the reply
+    key (no duplicate comment); a genuine re-dispatch (new generation) posts a fresh
+    reply. This keeps the single-writer contract — the RD-finalizer inside the run is
+    still the sole author; the executor is only the one-time sender.
+    """
+
+    def __init__(self, controller, item_id, project, terraform, kind):
+        self.controller = controller
+        self.item_id = str(item_id)
+        self.project = str(project or "")
+        self.terraform = bool(terraform)
+        self.kind = str(kind)
+        task = getattr(controller, "task", None) or {}
+        session = getattr(controller, "session", None) or {}
+        self.task_id = self._field(task, "id", "taskId", "task_id") or self.item_id
+        self.generation = str(
+            self._field(session, "generation")
+            or self._field(task, "generation") or "1")
+        self._claimed = False
+        self._lock = threading.RLock()
+
+    @staticmethod
+    def _field(value, *names):
+        if not isinstance(value, dict):
+            return None
+        for name in names:
+            if name in value:
+                return value[name]
+        return None
+
+    def _reply_identity(self):
+        return PERSONA_PUBLIC_IDENTITY if self.terraform else "jarvis"
+
+    def bind_process(self, process):
+        """Bind the PID (via the controller) then claim the Aone tag before work starts."""
+        if self.controller is not None:
+            self.controller.bind_process(process)
+        with self._lock:
+            if not self._claimed:
+                _claim_workitem(self.item_id, self.project, terraform=self.terraform)
+                self._claimed = True
+        return process
+
+    def commit(self, result):
+        """Write the single RD reply then the terminal tag for a finished run.
+
+        ``result`` is the validated dict from :func:`extract_task_result`. The reply is
+        durably enqueued (posted or pending→flush) before the terminal tag; a ledger I/O
+        failure raises so the caller fails the Task closed (retryable) rather than
+        stranding the reply. ``done``→finish (jarvis-done + pool done_status),
+        ``idle``→release (jarvis-idle), ``suspend``→leave claimed for the WaitWatcher.
+        """
+        reply = str(result.get("reply_body") or "").strip()
+        links = result.get("mr_cr_links") or []
+        body = "%s\n\n关联：%s" % (reply, " ".join(links)) if links else reply
+        event_key = "task-reply:%s:%s" % (self.task_id, self.generation)
+        if not _aone_event_enqueue(
+                self.item_id, self.project, event_key, body,
+                allow_non_tf=not self.terraform, identity=self._reply_identity()):
+            raise RuntimeError(
+                "task reply comment not durably captured for #%s" % self.item_id)
+        outcome = result.get("outcome")
+        if outcome == "done":
+            _finish_workitem(self.item_id, self.project, terraform=self.terraform)
+        elif outcome == "idle":
+            _release_post_pr_claim(
+                self.item_id, self.project, terraform=self.terraform)
+        # outcome == "suspend": leave jarvis-claimed; caller suspends the Task and the
+        # WaitWatcher resumes on the awaited reply.
+        return True
 
 
 def tata_root():
@@ -7676,12 +7803,33 @@ class JarvisHandler(AsyncChatbotHandler):
             raise ValueError("Task requires itemId and prompt")
         target = str(payload.get("target") or broadcast_target())
         target_type = str(payload.get("targetType") or broadcast_type())
+        project = str(payload.get("project") or "")
+        terraform = bool(payload.get("terraform"))
         post_pr_bookend = None
         if kind in POST_PR_HEADLESS_KINDS:
             if str(payload.get("policyRevision") or "") != HEADLESS_POLICY_REVISION:
                 raise ValueError("post-PR Task policy revision is missing or stale")
             post_pr_bookend = _PostPrTaskBookend(
-                controller, item_id, str(payload.get("project") or ""), kind)
+                controller, item_id, project, kind)
+        task_bookend = None
+        if post_pr_bookend is None and kind in TASK_BOOKEND_KINDS:
+            # Executor owns the Aone bookend for ticket/persona (B-proper). A terraform
+            # line reply must be written as terraform-rd; if that identity is not logged
+            # in, fail the Task CLOSED (retryable) rather than let the run finish and be
+            # recorded SUCCEEDED with no Aone write — the exact false-completion this fix
+            # removes. Never fall back to jarvis for a terraform reply.
+            if terraform and not _terraform_rd_ready():
+                raise RuntimeError(
+                    "terraform-rd identity not ready; refusing to run Task #%s "
+                    "closed-fail (no silent SUCCEEDED)" % item_id)
+            task_bookend = _TaskAoneBookend(
+                controller, item_id, project, terraform, kind)
+        if post_pr_bookend is not None:
+            on_spawn = post_pr_bookend.bind_process
+        elif task_bookend is not None:
+            on_spawn = task_bookend.bind_process
+        else:
+            on_spawn = controller.bind_process
         return self.dispatch_item(
             item_id,
             prompt,
@@ -7690,13 +7838,13 @@ class JarvisHandler(AsyncChatbotHandler):
             self._broadcast,
             target,
             target_type,
-            on_spawn=(post_pr_bookend.bind_process
-                      if post_pr_bookend is not None else controller.bind_process),
-            project=str(payload.get("project") or ""),
+            on_spawn=on_spawn,
+            project=project,
             kind=kind,
-            terraform=bool(payload.get("terraform")),
+            terraform=terraform,
             session_controller=controller,
             post_pr_bookend=post_pr_bookend,
+            task_bookend=task_bookend,
         )
 
 
@@ -7927,7 +8075,7 @@ class JarvisHandler(AsyncChatbotHandler):
 
     def dispatch_item(self, item_id, prompt, sid, resume, notify, target, target_type,
                       on_spawn=None, project=None, kind="ticket", terraform=False,
-                      session_controller=None, post_pr_bookend=None):
+                      session_controller=None, post_pr_bookend=None, task_bookend=None):
         """Headless path (auto-dispatch / probe / revisit): run one Jarvis instance to
         completion WITHOUT a live card (no "回复某人" binding); broadcast the result via
         ``notify``. Shares the SUSPEND + WaitWatcher core with the card path.
@@ -8036,6 +8184,45 @@ class JarvisHandler(AsyncChatbotHandler):
                 log.info("dispatch_item #%s failed (subtype=%s, attempts=%d)",
                          item_id, res.subtype, attempt + 1)
                 return "error"
+            if task_bookend is not None:
+                # B-proper: the run authored its result but wrote nothing to Aone; the
+                # executor commits the single Aone write here. A clean exit WITHOUT a
+                # valid [[AONE_RESULT]] means the run did not finish its SOP → fail closed
+                # (retryable), never a silent SUCCEEDED (the false-completion this fixes).
+                _clean, tr = extract_task_result(final)
+                if tr is None:
+                    res_err = ClaudeResult(final or "", True, "missing_task_result")
+                    self._dispatch_failed(
+                        item_id, res_err, notify, project, terraform=terraform,
+                        kind=kind, sid=sid, attempts=attempt + 1)
+                    log.warning(
+                        "dispatch_item #%s clean exit without AONE_RESULT; failing closed",
+                        item_id)
+                    return "error"
+                task_bookend.commit(tr)
+                if tr["outcome"] == "suspend":
+                    wl = self._workitem_line(item_id)
+                    line = wl[0] if isinstance(wl, tuple) else wl
+                    notify("⏸️ 工单已挂起，等待 @%s 回复\n%s" % (
+                        tr.get("suspend_wait_for", "?"), line))
+                    if session_controller is not None:
+                        return {
+                            "status": "suspended",
+                            "waitType": "AONE_REPLY",
+                            "waitKey": str(item_id),
+                            "waitCursor": str(self._last_comment_id(item_id) or "0"),
+                            "waitExpireAt": time.strftime(
+                                "%Y-%m-%dT%H:%M:%SZ",
+                                time.gmtime(time.time() + WAIT_EXPIRE_SEC)),
+                        }
+                    return "suspended"
+                try:
+                    notify(self._completion_broadcast(item_id))
+                except Exception as e:  # noqa: BLE001
+                    log.warning(
+                        "dispatch_item #%s completion notify failed: %s", item_id, e)
+                log.info("dispatch_item #%s done", item_id)
+                return "done"
             if terraform and kind == "revisit" and project:
                 _, event = extract_aone_event(final)
                 if event:
