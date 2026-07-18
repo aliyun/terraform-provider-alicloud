@@ -287,11 +287,17 @@ class TaskExecutionTest(unittest.TestCase):
                 "terraform": True, "target": "group-1", "targetType": "group",
             }},
         }
-        self.assertEqual(handler._execute_task_lease(lease, lifecycle), "done")
+        with mock.patch.object(bot, "_terraform_rd_ready", return_value=True):
+            self.assertEqual(handler._execute_task_lease(lease, lifecycle), "done")
         self.assertEqual(captured["args"][1], "go")
         self.assertEqual(captured["args"][2], "runtime-stable")
         self.assertTrue(captured["args"][3])
-        self.assertEqual(captured["kwargs"]["on_spawn"], lifecycle.bind_process)
+        # ticket is a TASK_BOOKEND_KIND: the executor owns the Aone bookend, so on_spawn
+        # is the bookend's bind_process (which still binds the controller's process).
+        bookend = captured["kwargs"]["task_bookend"]
+        self.assertIsInstance(bookend, bot._TaskAoneBookend)
+        self.assertIs(bookend.controller, lifecycle)
+        self.assertEqual(captured["kwargs"]["on_spawn"], bookend.bind_process)
         self.assertIs(captured["kwargs"]["session_controller"], lifecycle)
 
     def test_malformed_session_input_snapshot_never_falls_forward_to_current_task(self):
@@ -550,6 +556,195 @@ class WakeRoutingTest(unittest.TestCase):
             lookup.assert_called_once_with("843")
             self.assertEqual(json.loads(persisted.read_text())["title"],
                              "Backfilled wait title")
+
+
+class TaskBookendDispatchTest(unittest.TestCase):
+    """B-proper: the control-plane Task run authors a structured result; the executor
+    (via _TaskAoneBookend) owns the single Aone write. The run never self-claims, so the
+    self-lease-conflict is gone. Verifies commit routing (done/idle/suspend) and the
+    fail-closed path when the run exits clean without a valid [[AONE_RESULT]]."""
+
+    def _handler(self):
+        h = bot.JarvisHandler.__new__(bot.JarvisHandler)
+        h._broadcast = lambda _t: None
+        h._completion_broadcast = lambda _iid: "done-broadcast"
+        h._maybe_suspend = lambda *a, **k: None
+        h._last_comment_id = lambda _iid: 12345
+        return h
+
+    def _controller(self):
+        return SimpleNamespace(
+            task={"id": 603, "generation": 1},
+            session={"generation": 1},
+            runtime_session_id="rt-1", resumed=False)
+
+    def _run(self, final, outcome_terraform=True):
+        h = self._handler()
+        ctrl = self._controller()
+        bookend = bot._TaskAoneBookend(ctrl, "84407231", "1086837",
+                                       outcome_terraform, "persona")
+        calls = {}
+        h._dispatch_failed = lambda *a, **k: calls.setdefault("failed", a)
+        with mock.patch.object(bot, "run_claude_buffered",
+                               return_value=bot.ClaudeResult(final, False, "success")), \
+             mock.patch.object(bot, "_claim_workitem",
+                               side_effect=lambda *a, **k: calls.setdefault("claim", a)), \
+             mock.patch.object(bot, "_aone_event_enqueue",
+                               side_effect=lambda *a, **k: calls.setdefault("reply", (a, k)) or True), \
+             mock.patch.object(bot, "_finish_workitem",
+                               side_effect=lambda *a, **k: calls.setdefault("finish", a)), \
+             mock.patch.object(bot, "_release_post_pr_claim",
+                               side_effect=lambda *a, **k: calls.setdefault("release", a)):
+            out = h.dispatch_item(
+                "84407231", "prompt", "sid", False, lambda _t: None,
+                "tgt", "group", project="1086837", kind="persona", terraform=True,
+                session_controller=ctrl, task_bookend=bookend)
+        return out, calls
+
+    def test_done_writes_reply_then_finishes(self):
+        out, calls = self._run(
+            '[[AONE_RESULT:{"outcome":"done","reply_body":"结论 done"}]]')
+        self.assertEqual(out, "done")
+        self.assertIn("reply", calls)
+        self.assertIn("finish", calls)
+        self.assertNotIn("release", calls)
+        # terraform reply → terraform-rd identity
+        self.assertEqual(calls["reply"][1].get("identity"), bot.PERSONA_PUBLIC_IDENTITY)
+
+    def test_idle_writes_reply_then_releases(self):
+        out, calls = self._run(
+            '[[AONE_RESULT:{"outcome":"idle","reply_body":"阶段完成"}]]')
+        self.assertEqual(out, "done")
+        self.assertIn("reply", calls)
+        self.assertIn("release", calls)
+        self.assertNotIn("finish", calls)
+
+    def test_suspend_writes_reply_and_returns_wait_state(self):
+        out, calls = self._run(
+            '[[AONE_RESULT:{"outcome":"suspend","reply_body":"@新山 请确认",'
+            '"suspend_wait_for":"521957"}]]')
+        self.assertIsInstance(out, dict)
+        self.assertEqual(out["status"], "suspended")
+        self.assertEqual(out["waitKey"], "84407231")
+        self.assertEqual(out["waitCursor"], "12345")
+        self.assertIn("reply", calls)
+        self.assertNotIn("finish", calls)
+        self.assertNotIn("release", calls)
+
+    def test_missing_result_fails_closed_without_commit(self):
+        out, calls = self._run("干完了但忘了输出结构化结果")
+        self.assertEqual(out, "error")
+        self.assertIn("failed", calls)
+        self.assertNotIn("reply", calls)
+        self.assertNotIn("finish", calls)
+        self.assertNotIn("release", calls)
+
+    def test_non_terraform_reply_uses_jarvis_identity(self):
+        h = self._handler()
+        ctrl = self._controller()
+        bookend = bot._TaskAoneBookend(ctrl, "999", "2100304", False, "ticket")
+        calls = {}
+        with mock.patch.object(bot, "run_claude_buffered",
+                               return_value=bot.ClaudeResult(
+                                   '[[AONE_RESULT:{"outcome":"idle","reply_body":"x"}]]',
+                                   False, "success")), \
+             mock.patch.object(bot, "_aone_event_enqueue",
+                               side_effect=lambda *a, **k: calls.setdefault("reply", k) or True), \
+             mock.patch.object(bot, "_release_post_pr_claim", lambda *a, **k: None):
+            out = h.dispatch_item(
+                "999", "p", "sid", False, lambda _t: None, "tgt", "group",
+                project="2100304", kind="ticket", terraform=False,
+                session_controller=ctrl, task_bookend=bookend)
+        self.assertEqual(out, "done")
+        self.assertEqual(calls["reply"].get("identity"), "jarvis")
+        self.assertTrue(calls["reply"].get("allow_non_tf"))
+
+
+class CompletionBroadcastTest(unittest.TestCase):
+    """_completion_broadcast must reflect what the run left on the ticket, not
+    merely that the process exited cleanly (see self-lease-conflict fix)."""
+
+    def _broadcast(self, line, tag):
+        with mock.patch.object(bot.JarvisHandler, "_workitem_line",
+                               return_value=(line, tag)):
+            return bot.JarvisHandler._completion_broadcast(None, "84407231")
+
+    def test_jarvis_done_reports_completion(self):
+        self.assertTrue(self._broadcast("- [#84407231](url) t", "jarvis-done")
+                        .startswith("✅ 工单处理完成"))
+
+    def test_jarvis_idle_reports_staged(self):
+        self.assertTrue(self._broadcast("- [#84407231](url) t", "jarvis-idle")
+                        .startswith("⏸️ 工单阶段完成·待人工接手"))
+
+    def test_jarvis_claimed_reports_unwrapped(self):
+        self.assertIn("未收尾", self._broadcast("- [#84407231](url) t", "jarvis-claimed"))
+
+    def test_empty_tag_is_not_reported_as_completion(self):
+        out = self._broadcast("- [#84407231](url) t", "")
+        self.assertFalse(out.startswith("✅"))
+        self.assertIn("未获认领", out)
+
+    def test_numeric_query_failure_falls_back_to_headless(self):
+        with mock.patch.object(bot.JarvisHandler, "_workitem_line",
+                               return_value="#84407231"):
+            out = bot.JarvisHandler._completion_broadcast(None, "84407231")
+        self.assertIn("处理完成（headless）", out)
+
+    def test_non_numeric_pseudo_id_has_no_workitem(self):
+        with mock.patch.object(bot.JarvisHandler, "_workitem_line",
+                               return_value="#probe-2026-07-17"):
+            out = bot.JarvisHandler._completion_broadcast(None, "probe-2026-07-17")
+        self.assertIn("任务 #probe-2026-07-17 处理完成", out)
+
+
+class ExtractTaskResultTest(unittest.TestCase):
+    """The control-plane Task-path run hands the executor a structured outcome
+    instead of writing Aone itself. A missing/garbage sentinel must yield None so
+    the caller fails closed rather than silently succeeding."""
+
+    def test_valid_done_result(self):
+        text = ('前言\n[[AONE_RESULT:{"outcome":"done","reply_body":"结论 X",'
+                '"target_status":"已发布","mr_cr_links":["http://mr/1"]}]]\n尾')
+        clean, res = bot.extract_task_result(text)
+        self.assertNotIn("AONE_RESULT", clean)
+        self.assertEqual(res["outcome"], "done")
+        self.assertEqual(res["reply_body"], "结论 X")
+        self.assertEqual(res["target_status"], "已发布")
+        self.assertEqual(res["mr_cr_links"], ["http://mr/1"])
+
+    def test_no_sentinel_returns_none(self):
+        clean, res = bot.extract_task_result("just some run output, no sentinel")
+        self.assertIsNone(res)
+        self.assertEqual(clean, "just some run output, no sentinel")
+
+    def test_invalid_outcome_rejected(self):
+        _clean, res = bot.extract_task_result(
+            '[[AONE_RESULT:{"outcome":"maybe","reply_body":"x"}]]')
+        self.assertIsNone(res)
+
+    def test_empty_reply_body_rejected(self):
+        _clean, res = bot.extract_task_result(
+            '[[AONE_RESULT:{"outcome":"idle","reply_body":"  "}]]')
+        self.assertIsNone(res)
+
+    def test_suspend_requires_wait_for(self):
+        _clean, res = bot.extract_task_result(
+            '[[AONE_RESULT:{"outcome":"suspend","reply_body":"等确认"}]]')
+        self.assertIsNone(res)
+        _clean, ok = bot.extract_task_result(
+            '[[AONE_RESULT:{"outcome":"suspend","reply_body":"等确认",'
+            '"suspend_wait_for":"320687"}]]')
+        self.assertEqual(ok["outcome"], "suspend")
+        self.assertEqual(ok["suspend_wait_for"], "320687")
+
+    def test_last_span_wins_and_all_stripped(self):
+        text = ('[[AONE_RESULT:{"outcome":"idle","reply_body":"first"}]]'
+                'mid'
+                '[[AONE_RESULT:{"outcome":"done","reply_body":"second"}]]')
+        clean, res = bot.extract_task_result(text)
+        self.assertEqual(res["reply_body"], "second")
+        self.assertNotIn("AONE_RESULT", clean)
 
 
 if __name__ == "__main__":

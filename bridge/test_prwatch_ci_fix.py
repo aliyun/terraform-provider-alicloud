@@ -235,7 +235,7 @@ class _DispatchBase(unittest.TestCase):
         bot.broadcast_target = lambda: "t"
         bot.broadcast_type = lambda: "ty"
         self.events = []
-        bot._aone_event_publish = lambda *a: self.events.append(a) or True
+        bot._aone_event_publish = lambda *a, **k: self.events.append(a) or True
         self.handler = FakeHandler()
         self.pool = FakePool()
         self.handler.execution_router = FakeRouter(self.pool)
@@ -457,7 +457,7 @@ class PrWatchWriteIdentityAndOutcomeTest(_DispatchBase):
         self.assertEqual(len(self.handler.broadcasts), 1)
 
     def test_terraform_finish_keeps_watch_if_event_not_durable(self):
-        bot._aone_event_publish = lambda *_a: False
+        bot._aone_event_publish = lambda *_a, **_k: False
         self.sched._gh_pr_state = lambda _url: ("MERGED", "2026-07-01T00:00:00Z")
         self.sched._ticket_guard = lambda _tid: "ok"
         self.sched._finish = lambda *_a: 0
