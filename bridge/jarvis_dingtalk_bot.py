@@ -2263,9 +2263,33 @@ def _priority_rank(priority):
     return _PRIORITY_RANK.get(str(priority or "").strip(), 9)
 
 
+def _task_result_instructions(item_id, terraform):
+    """B-proper 收尾契约（executor 托管）——三个控制面 Task prompt 共用的尾块。
+
+    控制面 Task 路径下 executor 已持有 lease 并托管 Aone 收尾，run 若自己 claim/wrap/release
+    会与 executor 的 lease 自冲突（409 空跑）。故 run 不碰本工单的认领/回复/状态/标签，只做内部
+    处理，最后交回一条结构化 [[AONE_RESULT]] 供 executor 用单一身份写出。缺失/非法即视为本轮未
+    完成 → 失败重试，绝不静默成功。"""
+    identity = "terraform-rd" if terraform else "jarvis"
+    return (
+        "⚠️ 收尾契约（executor 托管，务必遵守）：本工单 #%s 的**认领 / 对外回复 / 状态 / 标签 / 收尾**"
+        "由 bridge executor 用【%s】身份一次性写出——你【绝不】对本工单跑 bootstrap/claim.sh、"
+        "bootstrap/wrap.sh、release、finish，也不直接发工单评论、改状态或打标签。其余内部动作"
+        "（查证、建关联需求/CR、worktree 开发等）照常，产物链接写进 reply_body。\n"
+        "结束时【必须】在最后单起一行输出结构化结果供 executor 落账：\n"
+        "[[AONE_RESULT:{\"outcome\":\"done|idle|suspend\",\"reply_body\":\"<写给工单的唯一对外回复正文>\","
+        "\"target_status\":\"<可选:目标状态>\",\"mr_cr_links\":[\"<可选:MR/CR 链接>\"],"
+        "\"unresolved\":\"<可选:未决项>\",\"suspend_wait_for\":\"<outcome=suspend 时要 @ 等待的 staffId>\"}]]\n"
+        "- 真闭环→done；本轮阶段完成、待人或下一轮→idle；需人类确认/决策→suspend（把 @对应人与待"
+        "确认问题写进 reply_body）。reply_body 是发给工单的唯一对外回复，executor 只发这一条。"
+        "缺失或非法的 AONE_RESULT 会被判本轮未完成、失败重试。"
+        % (item_id, identity)
+    )
+
+
 def _ticket_prompt(item_id, title, pool_key, pool_project):
-    """Prompt for a headless auto-dispatched Aone ticket: run the aone-triage loop with
-    the claim→bookend discipline, and suspend (not block) on a human gate.
+    """Prompt for a headless auto-dispatched Aone ticket (B-proper: executor owns the
+    Aone bookend; the run does the triage and hands back a structured [[AONE_RESULT]]).
 
     terraform 线工单(pool line=terraform_provider 或标题命中关键词)改走 persona 编排 prompt：
     headless jarvis 只编排，依次 Task 起 terraform-pd→rd→qa 三数字人接力
@@ -2279,55 +2303,48 @@ def _ticket_prompt(item_id, title, pool_key, pool_project):
         "工单 #%s（%s）  池:%s  project:%s\n\n"
         "按 loops/aone-triage.md「二、逐项执行」：\n"
         "1) bootstrap/log.sh seen %s 去重；已处理则直接退出。\n"
-        "2) bootstrap/claim.sh claim %s %s 认领；退码 1(被别的实例抢先)即退出，勿硬闯。\n"
-        "3) 调 .claude/skills/aone-triage 技能查证并处理（回复/打标/建需求/建 CR/开发走 worktree）。\n"
-        "4) 收尾 bookend：bootstrap/wrap.sh done（status 必填）+ bootstrap/claim.sh release；"
-        "开 MR/CR 立刻 wrap.sh sync 贴链回工单。\n"
-        "遇必须人类确认/决策的点：在工单评论 @对应人，末尾单起一行输出 "
-        "[[SUSPEND:{\"aone_id\":\"%s\",\"wait_for\":\"<staffId>\"}]] 后退出，由 bridge 挂起等回复唤醒。"
-        % (item_id, title, pool_key or "?", proj or "?", item_id, item_id, proj, item_id)
+        "2) 调 .claude/skills/aone-triage 技能查证并处理（查证 / 建关联需求 / 建 CR / 开发走 worktree）。\n"
+        "%s"
+        % (item_id, title, pool_key or "?", proj or "?", item_id,
+           _task_result_instructions(item_id, False))
     )
 
 
 def _ticket_prompt_terraform(item_id, title, pool_key, proj):
-    """Terraform ticket orchestration: three internal roles, one public writer."""
+    """Terraform ticket orchestration: three internal roles, one public writer
+    (B-proper: the RD finalizer authors the reply; the executor commits it once)."""
     pool = pool_key or "?"
     project = proj or "?"
+    result_instructions = _task_result_instructions(item_id, True)
     return f"""【headless 自动派发·terraform 线】你是 Jarvis headless 编排层，本轮只处理这一条 Aone 工单。
 工单 #{item_id}（{title}） 池:{pool} project:{project}
 
 这是 Terraform 线工单：你只做编排，不自己分诊/查证/写代码/验收。必须在同一个 headless run
 内连续 Task 起 terraform-pd → terraform-rd → terraform-qa；三者是 internal_role，不是三个
-公开数字人。对外只保留 TerraformRD（WORKER_1783582458263）；本次主处理 run 只允许最终 RD
-聚合回复一次。后续重访、PR 看守或终态失败遇到新的重要事件，可由 bridge 以 RD 身份幂等更新，
-但每次轮询、CI pending/单次重试、普通内部交接和重复事件必须静默。
+公开数字人。对外只保留 TerraformRD（WORKER_1783582458263）身份；本次主处理 run 的对外回复由
+RD finalizer 撰写、经 bridge executor 以 terraform-rd 身份一次性写出（见末尾收尾契约）。后续重访、
+PR 看守或终态失败遇到新的重要事件，可由 bridge 以 RD 身份幂等更新，但每次轮询、CI pending/单次
+重试、普通内部交接和重复事件必须静默。
 PD/QA 全程只读或执行内部验证，不得写 Aone、钉钉、MR/CR，不得借 RD 身份代写；开发阶段 RD
 也不得发工单进展。旧 PD/QA 身份不得出站，也不得 fallback 到 jarvis。
 
 1) bootstrap/log.sh seen {item_id} 去重；已处理则直接退出。
-2) 先 bin/a1id ready terraform-rd；非 0 立即阻断并报缺登录，不做任何外写。绿后执行
-   JARVIS_A1_IDENTITY=terraform-rd bootstrap/claim.sh claim {item_id} {project}；退码 1 即退出。
-3) Task 起 terraform-pd 做 triage；先调 aone-triage 完成查证与路由判断，但路由写动作只提出
-   给最终 RD，不自行执行。返回严格结构：
+2) Task 起 terraform-pd 做 triage；先调 aone-triage 完成查证与路由判断，路由写动作只提出给
+   最终 RD，不自行执行。严格结构返回：
    internal_role/status/summary/evidence/requested_external_actions/next/reply_fragment。
-4) 把 PD 返回完整交给 Task terraform-rd 做开发或 no-op 评估。需要开发时走 worktree；
+3) 把 PD 返回完整交给 Task terraform-rd 做开发或 no-op 评估。需要开发时走 worktree；
    GitHub 动作先过 github-identity.sh check；PR CI 用 gh pr checks 确认全绿才交 QA，红或 pending
    由 RD 内部修复后复检。RD 同样按上述结构返回，不在此阶段回复 Aone。
-5) 把 PD+RD 返回完整交给 Task terraform-qa 做独立验收；远程 AccTest，只验不改，并按同一结构
+4) 把 PD+RD 返回完整交给 Task terraform-qa 做独立验收；远程 AccTest，只验不改，并按同一结构
    返回。QA fail 时把缺陷草稿与证据内部退回 RD 修复，再重跑 QA；pass 才进入收口。blocked、
    low_conf 或循环达到 JARVIS_PERSONA_MAX_ROUNDS 时进入最终 RD 升级收口，不产生阶段回复。
-6) 最后再 Task 起 terraform-rd 作为 finalizer：汇总全部结构化返回，审查并执行允许的
-   requested_external_actions，起草一条完整回复，包含结论、PD 查证、RD 改动及 MR/CR 链接、
-   QA 证据、未决项和下一步。MR/CR 链接只放这条最终回复，不做中途同步。随后且仅随后执行一次
-   JARVIS_A1_IDENTITY=terraform-rd bootstrap/wrap.sh done {item_id} --summary-stdin <status|--no-status>。
-   禁止阶段回复、直接发工单评论、中途台账回填、钉钉通知或生成新的公开接力标记。本条限制
-   只约束主处理 run 的内部交接，不禁止后续重要生命周期事件由 RD 幂等更新。
-7) bootstrap/log.sh run_done {item_id} "<PD→RD→QA 内部链路 + RD 最终收口摘要>"。
-   有 PR 时 bootstrap/pr-watch.sh add {item_id} <pr_url> {project}。
-   已合并且真闭环：JARVIS_A1_IDENTITY=terraform-rd bootstrap/claim.sh finish {item_id} {project}；
-   未合并：JARVIS_A1_IDENTITY=terraform-rd bootstrap/claim.sh release {item_id} {project}。
-遇人工门：也由 finalizer RD 把问题并入上述唯一回复，然后输出
-[[SUSPEND:{{"aone_id":"{item_id}","wait_for":"<staffId>"}}]]；编排层不得用 jarvis 代言。"""
+5) 最后再 Task 起 terraform-rd 作为 finalizer：汇总全部结构化返回，审查允许的
+   requested_external_actions（关联需求/CR 等内部产物可建；MR/CR 已开则收集链接），起草一条
+   完整回复正文——结论、PD 查证、RD 改动及 MR/CR 链接、QA 证据、未决项/下一步。这段正文即下面
+   AONE_RESULT 的 reply_body。有 PR 时 bootstrap/pr-watch.sh add {item_id} <pr_url> {project}
+   （本地看守登记，非 Aone 外写，照常做）。bootstrap/log.sh run_done {item_id} "<内部链路 + 收口摘要>"。
+
+{result_instructions}"""
 
 
 def _probe_prompt(round_id):
@@ -2494,28 +2511,23 @@ def _persona_prompt(item_id, role, action, note, round_n, snippet, project=None,
             "%s 开始在当前 headless run 内 Task 剩余内部链；需要开发时 RD→QA，QA fail→RD 修复"
             "后重跑 QA，直到 pass、blocked 或达到上限。不要向外复写旧接力格式。" % internal_role
         )
+    result_instructions = _task_result_instructions(item_id, True)
     return (
         "【headless persona 迁移补位】你是 Jarvis headless 编排层，本轮处理工单 #%s，"
         "入站 action=%s、round=%d。\n"
         "%s"
         "按 loops/persona-collab.md：\n"
-        "1) bin/a1id ready terraform-rd；非 0 立即阻断。随后 "
-        "JARVIS_A1_IDENTITY=terraform-rd bootstrap/claim.sh claim %s %s，退码 1 即退出。\n"
-        "2) %s\n"
-        "3) 每个内部 Task 只返回结构化结果："
+        "1) %s\n"
+        "2) 每个内部 Task 只返回结构化结果："
         "internal_role/status/summary/evidence/requested_external_actions/next/reply_fragment。"
         "PD 的路由动作、QA 的缺陷与验收结论都只是给 RD 的提案；PD/QA 禁止外写，中间 RD "
-        "禁止工单进展回复。MR/CR 链接留到最终汇总，不做中途同步。\n"
-        "4) 最后 Task 起 terraform-rd finalizer，汇总所有返回并审查允许的外部动作；正文包含"
-        "结论、查证、改动及链接、验收证据、未决项/下一步。随后且仅随后执行一次 "
-        "JARVIS_A1_IDENTITY=terraform-rd bootstrap/wrap.sh done %s --summary-stdin <status|--no-status>。"
-        "禁止阶段回复、直接发工单评论、中途台账回填、钉钉通知或生成新的公开接力标记。\n"
-        "5) 真闭环且满足状态门才 finish；否则 JARVIS_A1_IDENTITY=terraform-rd "
-        "bootstrap/claim.sh release %s %s。需要等人时把问题写入上述唯一回复，再输出 "
-        "[[SUSPEND:{...}]]。\n"
+        "禁止工单进展回复。MR/CR 已开则收集链接。\n"
+        "3) 最后 Task 起 terraform-rd finalizer，汇总所有返回并审查允许的外部动作，起草完整回复正文"
+        "（结论、查证、改动及链接、验收证据、未决项/下一步）——这段正文即下面 AONE_RESULT 的 reply_body。\n"
+        "%s\n"
         "%s\n%s"
-        % (item_id, action, round_n, identity_context, item_id, proj, scenario,
-           item_id, item_id, proj, fenced_note, fenced_snippet)
+        % (item_id, action, round_n, identity_context, scenario,
+           result_instructions, fenced_note, fenced_snippet)
     )
 
 
