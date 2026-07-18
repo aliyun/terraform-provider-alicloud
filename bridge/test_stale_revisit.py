@@ -210,7 +210,7 @@ class OwnerResolutionTest(unittest.TestCase):
 class SchedulerBoundaryTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
-        self.scheduler = bot.RevisitScheduler(
+        self.scheduler = bot.ProgressNudgeScheduler(
             handler=None, pool=None, enabled=True, stale_days=8, max_n=5,
             state_file=Path(self.tmp.name) / "revisit.last",
             index_path=Path(self.tmp.name) / "index.json")
@@ -290,7 +290,7 @@ class SchedulerBoundaryTest(unittest.TestCase):
 class CandidateFairnessTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
-        self.scheduler = bot.RevisitScheduler(
+        self.scheduler = bot.ProgressNudgeScheduler(
             handler=None, pool=None, enabled=True, max_n=5,
             state_file=Path(self.tmp.name) / "revisit.last",
             index_path=Path(self.tmp.name) / "index.json")

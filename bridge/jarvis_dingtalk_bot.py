@@ -366,7 +366,7 @@ def _inflight_has(item_id):
 
 
 # ── PR-watch registry (方案A) ─────────────────────────────────────────────────
-# skill/persona 提交 PR 后按自治边界 release 成 jarvis-idle；RevisitScheduler 的选择器只捞
+# skill/persona 提交 PR 后按自治边界 release 成 jarvis-idle；ProgressNudgeScheduler 的选择器只捞
 # 标题/描述含特定词的 idle 单，terraform 发布单都不含 → 工单永久停在 jarvis-idle、永不推到
 # 「已完成」。此登记表 + PrWatchScheduler 补缺口：PR 合并后自动 claim.sh finish 收尾。持久化
 # 姿势与 inflight 一致（atomic tmp+os.replace，best-effort try/except，绝不 crash worker）；
@@ -2983,7 +2983,7 @@ class TataPool:
 
 
 # ── claimed-snapshot（死任务恢复的持久候选源）───────────────────────────────
-# ScanScheduler 每个 tick 把本轮扫描里带 jarvis-claimed 标签的工单（id → project/title/
+# AoneScanner 每个 tick 把本轮扫描里带 jarvis-claimed 标签的工单（id → project/title/
 # pool）原子落盘。RecoveryScheduler 以它为持久候选通道——/workers 采样与 recovery.json
 # 生前记忆都有时序洞（bridge 首个 tick 前 lease 已过期、重启台账丢失、迁机），而
 # jarvis-claimed 标签跨进程存活于 Aone，控制面 task 行再提供状态佐证。路径经 REPO_ROOT
@@ -3035,7 +3035,7 @@ def _claimed_snapshot_load():
     return {}
 
 
-class ScanScheduler:
+class AoneScanner:
     """Periodically run scan.sh, diff for new items, and act on them.
 
     Two authorization policies (``JARVIS_AUTO_DISPATCH``):
@@ -3122,7 +3122,7 @@ class ScanScheduler:
     # -- public API ----------------------------------------------------------
 
     def start(self):
-        self._thread = threading.Thread(target=self._loop, daemon=True, name="ScanScheduler")
+        self._thread = threading.Thread(target=self._loop, daemon=True, name="AoneScanner")
         self._thread.start()
 
     def authorize(self, item_id):
@@ -3474,7 +3474,7 @@ class ScanScheduler:
                     force, decide_dispatch = True, True
                     action, reason = "dispatch", "new"
                 else:
-                    # 仍是 jarvis 自更新/停摆 → 交每日 RevisitScheduler，不每轮重启实例。
+                    # 仍是 jarvis 自更新/停摆 → 交每日 ProgressNudgeScheduler，不每轮重启实例。
                     action, reason = "skip", "idle_no_human"
             else:
                 decide_dispatch = True
@@ -3549,7 +3549,7 @@ class ScanScheduler:
                     _dingtalk_event_flush()
                 self._tick()
             except Exception:  # noqa: BLE001 — never crash
-                log.exception("ScanScheduler tick failed; will retry next interval")
+                log.exception("AoneScanner tick failed; will retry next interval")
             try:
                 self.handler.board.sync()
             except Exception:  # noqa: BLE001
@@ -3562,7 +3562,7 @@ class ScanScheduler:
         # Runtime pause switch: `touch .my-day/bridge/pause` halts new scan+dispatch
         # without restarting the bridge; `rm` resumes. In-flight workers keep running.
         if (REPO_ROOT / ".my-day" / "bridge" / "pause").exists():
-            log.info("ScanScheduler: pause flag present (.my-day/bridge/pause), skip this tick")
+            log.info("AoneScanner: pause flag present (.my-day/bridge/pause), skip this tick")
             return
         self._human_cache = {}   # per-tick cache reset for _human_touched
         self._human_comment_cache = {}
@@ -3587,7 +3587,7 @@ class ScanScheduler:
         if self._cold:
             self._cold = False
             self._prev_snapshot = cur_snapshot
-            log.info("ScanScheduler cold start: seeded %d IDs, no dispatch (auto=%s)",
+            log.info("AoneScanner cold start: seeded %d IDs, no dispatch (auto=%s)",
                      len(cur_ids), self.auto)
             return
 
@@ -3662,7 +3662,7 @@ class ScanScheduler:
             try:
                 self.handler._broadcast("\n".join(lines))
             except Exception:  # noqa: BLE001
-                log.exception("ScanScheduler failed to broadcast dispatch summary")
+                log.exception("AoneScanner failed to broadcast dispatch summary")
         if dropped:
             qf = [i for i, r in dropped if r == "queue_full"]
             if qf:
@@ -3671,7 +3671,7 @@ class ScanScheduler:
                         "🟠 派发队列已满，%d 条本轮跳过（将下轮重试）：%s"
                         % (len(qf), ", ".join("#" + i for i in qf)))
                 except Exception:  # noqa: BLE001
-                    log.exception("ScanScheduler failed to broadcast drop notice")
+                    log.exception("AoneScanner failed to broadcast drop notice")
 
     def _tick_supervised(self, new_items, updated_items=None):
         """Fallback (JARVIS_AUTO_DISPATCH=0): stage new items for authorization + push a card.
@@ -3710,7 +3710,7 @@ class ScanScheduler:
         try:
             self.handler._quick_card(self.notify_target, text, "group")
         except Exception:  # noqa: BLE001
-            log.exception("ScanScheduler failed to push notification card")
+            log.exception("AoneScanner failed to push notification card")
 
     # -- backlog drain (idle-only opportunistic) -----------------------------
 
@@ -4002,7 +4002,7 @@ class RecoveryScheduler:
           撞不上那扇窗。故每 tick 把活 worker 当前持有的 assignment 记进台账
           （recovery.json "workers" 段），worker 转 STALE/OFFLINE 后据此追查。只认规范键
           aone:<project>:<id>。
-        - 持久通道（兜住采样时序洞）：ScanScheduler 每 tick 原子落盘的 claimed-snapshot
+        - 持久通道（兜住采样时序洞）：AoneScanner 每 tick 原子落盘的 claimed-snapshot
           （Aone jarvis-claimed 存量）× 控制面任务态。快通道本质是本地采样：若「认领→
           宕机→reaper 收敛→/workers 摘除」全部发生在首个 tick（sleep interval）之前——
           bridge 刚启动/重启台账丢失/迁机——两个来源皆空，死任务会被永久搁置（交互单不入
@@ -4179,7 +4179,7 @@ class RecoveryScheduler:
     # -- tick ------------------------------------------------------------------
 
     def _tick(self):
-        # 运行时暂停闸：与 ScanScheduler/PrWatchScheduler 复用同一个 pause 标记。
+        # 运行时暂停闸：与 AoneScanner/PrWatchScheduler 复用同一个 pause 标记。
         if (Path(REPO_ROOT) / ".my-day" / "bridge" / "pause").exists():
             log.info("RecoveryScheduler: pause flag present, skip this tick")
             return
@@ -4231,7 +4231,7 @@ class RecoveryScheduler:
             if now - ts > self.MEMORY_TTL:
                 ledger["workers"].pop(wkey, None)
 
-        # 持久通道：claimed-snapshot（Aone jarvis-claimed 存量，ScanScheduler 每 tick
+        # 持久通道：claimed-snapshot（Aone jarvis-claimed 存量，AoneScanner 每 tick
         # 原子落盘、跨 bridge 重启存活）补上快通道的采样时序洞。只补快通道没看到的单
         # （双通道同单去重，不重复 by-aone 佐证）；task 行是否存在与状态判定统一交给
         # _recover_one。上限保护：单 tick 最多佐证 snapshot_max 个快照单，超出的下轮再看
@@ -4474,10 +4474,10 @@ class RecoveryScheduler:
 class PrWatchScheduler:
     """PR-watch: 周期轮询 PR 观察登记表 (.my-day/bridge/pr-watch.json)，跨会话看守已提交 PR
     的**全生命周期**——open 窗口内 CI 失败自动派修复，合并后自动 claim.sh finish 收尾本工单，
-    与 RevisitScheduler 互为兜底。
+    与 ProgressNudgeScheduler 互为兜底。
 
     背景缺口：skill/persona 提交 PR 后按自治边界 release 成 jarvis-idle，单次 headless 会话
-    撑不住 PR 从提交到合并的几小时/几天，`gh pr checks` 只在那次会话里跑一次；RevisitScheduler
+    撑不住 PR 从提交到合并的几小时/几天，`gh pr checks` 只在那次会话里跑一次；ProgressNudgeScheduler
     的选择器只捞标题/描述含特定词的 idle 单，terraform 发布单都不含 → open 窗口 CI 转红无人修、
     合并后工单永久停在 jarvis-idle。本调度器读登记表逐条查 PR 状态：
       · merged        → claim.sh finish <ticket> <project> 已完成（过 npe/终态 guard）→ 评论+播报+摘除
@@ -4538,7 +4538,7 @@ class PrWatchScheduler:
 
     def _tick(self):
         """Returns True if any watched PR is active（CI 失败/pending）→ 下一轮走快档。"""
-        # 运行时暂停闸：与 ScanScheduler/PersonaScheduler 复用同一个 pause 标记。
+        # 运行时暂停闸：与 AoneScanner/PersonaScheduler 复用同一个 pause 标记。
         if (Path(REPO_ROOT) / ".my-day" / "bridge" / "pause").exists():
             return False
         try:
@@ -5259,11 +5259,11 @@ class PrWatchScheduler:
 class BoardScheduler:
     """Push board.sh JSON to AutomationAgent after each scan tick.
 
-    board.sh reads scan.json (produced by ScanScheduler) and classifies items into
+    board.sh reads scan.json (produced by AoneScanner) and classifies items into
     states (pool/inflight/done/merged/escalated/idle). The JSON is POSTed to
     /api/board/sync on AutomationAgent, which stores it for the /board dashboard page.
 
-    Called by ScanScheduler._loop() after each _tick() — not on its own timer,
+    Called by AoneScanner._loop() after each _tick() — not on its own timer,
     because the board is only useful with fresh scan data.
     """
 
@@ -5699,7 +5699,7 @@ class EphemeralExecutor:
 
     def status(self, item_id, force=False):
         """Read-only: would submit(item_id, force) be accepted? → (bool, reason).
-        Reasons: ok / active / deduped / queue_full. Used by ScanScheduler._decide and
+        Reasons: ok / active / deduped / queue_full. Used by AoneScanner._decide and
         --dry-run-once (no side effects)."""
         iid = str(item_id)
         with self._lock:
@@ -6585,7 +6585,7 @@ def _stale_reminder_payload(item, anchor, owner, stale_days):
     return event_key, aone_text, dm_text
 
 
-class RevisitScheduler(_DailyScheduler):
+class ProgressNudgeScheduler(_DailyScheduler):
     """Daily revisit for two lanes.
 
     * Terraform: inspect every open ``jarvis-idle`` ticket, deterministically remind its
@@ -6601,7 +6601,7 @@ class RevisitScheduler(_DailyScheduler):
     def __init__(self, handler, pool=None, hour=None, enabled=None, state_file=None,
                  max_n=None, stale_days=None, index_path=None):
         super().__init__(
-            name="RevisitScheduler",
+            name="ProgressNudgeScheduler",
             hour=hour if hour is not None else os.environ.get("JARVIS_REVISIT_HOUR", "9"),
             enabled=enabled if enabled is not None else (os.environ.get("JARVIS_REVISIT_SCHED", "1") != "0"),
             state_file=state_file or ".my-day/bridge/revisit.last")
@@ -6626,7 +6626,7 @@ class RevisitScheduler(_DailyScheduler):
         try:
             pools = json.loads(cfg.read_text()).get("pools", {})
         except Exception as e:  # noqa: BLE001
-            log.warning("RevisitScheduler: cannot read pools.json: %s", e)
+            log.warning("ProgressNudgeScheduler: cannot read pools.json: %s", e)
             return []
         out = []
         for key, p in pools.items():
@@ -6661,7 +6661,7 @@ class RevisitScheduler(_DailyScheduler):
                      "-f", "json"],
                     capture_output=True, text=True, timeout=90, cwd=str(REPO_ROOT))
                 if r.returncode != 0:
-                    log.warning("RevisitScheduler: idle query failed for pool %s page %d "
+                    log.warning("ProgressNudgeScheduler: idle query failed for pool %s page %d "
                                 "(rc=%d): %s", key, page, r.returncode,
                                 (r.stderr or "").strip()[:200])
                     return None
@@ -6687,7 +6687,7 @@ class RevisitScheduler(_DailyScheduler):
                 page += 1
             return rows
         except Exception as e:  # noqa: BLE001
-            log.warning("RevisitScheduler: idle query error for pool %s: %s", key, e)
+            log.warning("ProgressNudgeScheduler: idle query error for pool %s: %s", key, e)
             return None
 
     def _load_index(self):
@@ -6698,7 +6698,7 @@ class RevisitScheduler(_DailyScheduler):
         except FileNotFoundError:
             pass
         except Exception as e:  # noqa: BLE001
-            log.warning("RevisitScheduler: cannot load index %s: %s", self.index_path, e)
+            log.warning("ProgressNudgeScheduler: cannot load index %s: %s", self.index_path, e)
         return {"tickets": {}}
 
     def _write_index(self, value):
@@ -6708,7 +6708,7 @@ class RevisitScheduler(_DailyScheduler):
             tmp.write_text(json.dumps(value, ensure_ascii=False, default=str))
             os.replace(str(tmp), str(self.index_path))
         except Exception as e:  # noqa: BLE001
-            log.warning("RevisitScheduler: cannot persist index %s: %s", self.index_path, e)
+            log.warning("ProgressNudgeScheduler: cannot persist index %s: %s", self.index_path, e)
 
     def _select_fair(self, candidates, now=None):
         now = float(now if now is not None else time.time())
@@ -6794,16 +6794,16 @@ class RevisitScheduler(_DailyScheduler):
                     command, capture_output=True, text=True, cwd=str(REPO_ROOT),
                     timeout=90, env=env)
             except Exception as e:  # noqa: BLE001
-                log.warning("RevisitScheduler: %s query #%s raised: %s", name, iid, e)
+                log.warning("ProgressNudgeScheduler: %s query #%s raised: %s", name, iid, e)
                 return None
             if proc.returncode != 0:
-                log.warning("RevisitScheduler: %s query #%s rc=%d: %s",
+                log.warning("ProgressNudgeScheduler: %s query #%s rc=%d: %s",
                             name, iid, proc.returncode, (proc.stderr or "")[:200])
                 return None
             try:
                 result[name] = _json_rows(json.loads(proc.stdout or "[]"))
             except Exception as e:  # noqa: BLE001
-                log.warning("RevisitScheduler: %s query #%s bad JSON: %s", name, iid, e)
+                log.warning("ProgressNudgeScheduler: %s query #%s bad JSON: %s", name, iid, e)
                 return None
         return result["comments"], result["activities"]
 
@@ -6811,7 +6811,7 @@ class RevisitScheduler(_DailyScheduler):
         now = float(now if now is not None else time.time())
         owner = _resolve_stale_owner(item)
         if owner is None:
-            log.warning("RevisitScheduler: #%s owner unresolved; skip reminder",
+            log.warning("ProgressNudgeScheduler: #%s owner unresolved; skip reminder",
                         item.get("id"))
             return "owner_unresolved"
         timeline = self._ticket_timeline(item)
@@ -6836,69 +6836,23 @@ class RevisitScheduler(_DailyScheduler):
         return "reminded" if aone_ok and dm_ok else "pending"
 
     def _run_once(self):
-        # 返回契约: 只要有任一候选被 queue_full 拒即整体 False(下个 tick 重试整批);
-        # active/deduped/无候选/no-pool 视为成功, 由本日 mark 收敛。
+        """每日轮：仅对 Terraform jarvis-idle 单做停滞进度催办（双通道 Aone@ + 钉钉私信）。
+
+        非 Terraform idle 单的人工门重访已并入 AoneScanner 的统一探测（tag=jarvis-idle 源 +
+        _decide 的 idle 人工介入门），本调度器不再派发，只做催办。催办 best-effort：
+        _remind_if_stale 内部走 _aone_event_enqueue/_dingtalk_event_enqueue 各自持久/补偿，
+        故本轮恒视为收敛（返回 True）。"""
         cands = self._query()
-        notify = self.handler._broadcast if self.handler is not None else (lambda _text: None)
-        tgt, ttype = broadcast_target(), broadcast_type()
         if not cands:
-            log.info("RevisitScheduler: no jarvis-idle revisit candidates this round")
+            log.info("ProgressNudgeScheduler: no jarvis-idle candidates this round")
             return True
-        submitted = []
-        retry_hit = False
         for it in cands:
             iid = str(it["id"])
-            if it.get("terraform"):
-                outcome = self._remind_if_stale(it)
-                log.info("RevisitScheduler: Terraform #%s stale-check → %s", iid, outcome)
-                continue
-            if self.pool is None or self.handler is None:
-                log.warning("RevisitScheduler: no pool/handler for non-Terraform #%s", iid)
-                continue
-            prompt = _revisit_prompt(iid, it.get("title", ""), it.get("pool_project", ""))
-            project = str(it.get("pool_project") or "")
-            envelope = _task_envelope(
-                item_id=iid,
-                project=project,
-                task_type="revisit",
-                source_type="AONE",
-                source_ref={"aoneId": iid, "projectId": project, "title": it.get("title", "")},
-                desired_revision="revisit:%s" % datetime.now().date().isoformat(),
-                trigger="REVISIT",
-                prompt=prompt,
-                source_status=it.get("status") or it.get("statusName"),
-                recovery_policy="RESUME_ONLY",
-                title=it.get("title", ""),
-                poolKey=it.get("pool", ""),
-                terraform=False,
-                target=tgt,
-                targetType=ttype,
-            )
-
-            def local_submit(p=prompt, i=iid, pj=project):
-                if self.pool is None:
-                    return False, "ephemeral_executor_unavailable"
-                sid = str(uuid.uuid4())
-                work = (lambda: self.handler.dispatch_item(
-                    i, p, sid, False, notify, tgt, ttype,
-                    project=pj, kind="revisit", terraform=False))
-                return self.pool.submit(
-                    i, work, notify=notify, kind="revisit", project=pj,
-                    terraform=False)
-
-            route = self.execution_router.route(envelope)
-            ok, reason = self.execution_router.enqueue(
-                envelope, local_submit=local_submit)
-            if ok:
-                submitted.append(iid)
-            else:
-                if route.needs_recovery or reason == "queue_full":
-                    retry_hit = True
-                log.info("RevisitScheduler: #%s not submitted (%s)", iid, reason)
-        if submitted:
-            notify("🔁 非 Terraform 人工门重访：已投 %d 条 jarvis-idle 工单复查：%s"
-                   % (len(submitted), ", ".join("#" + i for i in submitted)))
-        return not retry_hit
+            if not it.get("terraform"):
+                continue  # 非 tf idle 重访归 AoneScanner
+            outcome = self._remind_if_stale(it)
+            log.info("ProgressNudgeScheduler: Terraform #%s stale-check → %s", iid, outcome)
+        return True
 
 class JarvisHandler(AsyncChatbotHandler):
     # process() runs in a ThreadPoolExecutor (sync, NOT async) so blocking
@@ -6946,11 +6900,11 @@ class JarvisHandler(AsyncChatbotHandler):
             retry_interval=float(os.environ.get("JARVIS_CONTROL_PLANE_RETRY_SEC", "5")),
             logger=log,
         )
-        self.scanner = ScanScheduler(self, self.ephemeral_executor)
+        self.scanner = AoneScanner(self, self.ephemeral_executor)
         self.reconciler = ReconcileScheduler(self)
         self.board = BoardScheduler(self)         # pushes board.sh JSON after each scan tick
         self.prober = ProbeScheduler(self, self.ephemeral_executor)
-        self.reviser = RevisitScheduler(self, self.ephemeral_executor)
+        self.reviser = ProgressNudgeScheduler(self, self.ephemeral_executor)
         self.watcher = WaitWatcher(self)
         self.managed_wait_sensor = ManagedWaitSensor(self)
         # PR 观察登记表轮询（方案A）：PR 合并后自动 finish 收尾，与 ProgressNudgeScheduler 互为兜底。
@@ -8019,7 +7973,7 @@ def run_dry_once():
     load_env_file()
     print("=== bridge dispatcher dry-run (no dingtalk, no claude spawn) ===")
     pool = EphemeralExecutor()
-    scanner = ScanScheduler(handler=None, pool=pool)
+    scanner = AoneScanner(handler=None, pool=pool)
     print("auto_dispatch=%s  dispatch_max=%d  queue_max=%d  dedup_ttl=%ds  ledger=%d entries"
           % (scanner.auto, pool.max_workers, pool.queue_max, pool.dedup_ttl, len(pool._ledger)))
 
@@ -8062,7 +8016,7 @@ def run_dry_once():
                          (" [%s]" % pri) if pri else ""))
 
     print("\n--- REVISIT CANDIDATES (jarvis-idle) ---")
-    reviser = RevisitScheduler(handler=None, pool=pool)
+    reviser = ProgressNudgeScheduler(handler=None, pool=pool)
     cands = reviser._query()
     if not cands:
         print("  (none / query skipped)")
@@ -8094,7 +8048,7 @@ def _release_claim(iid, project, terraform=False):
 
 def _run_no_dingtalk():
     """无钉钉降级模式启动(JARVIS_NO_DINGTALK=1 点火路径): 不建 DingTalk client/stream,
-    不初始化 TataPool; 只起自动派发(ScanScheduler→EphemeralExecutor)+ Reconcile/Board/Probe/
+    不初始化 TataPool; 只起自动派发(AoneScanner→EphemeralExecutor)+ Reconcile/Board/Probe/
     Revisit/Wait 调度器。卡片/播报统一降级为 [BROADCAST] 日志行(→ bot.log); WaitWatcher
     挂起/唤醒照常(轮询走 a1, 唤醒走 headless 池), "@人通知"降级为日志 + 既有 Aone 评论。
     入站 Tata 门面停用(无 stream)。阻塞至进程收到中断信号。"""

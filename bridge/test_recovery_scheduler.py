@@ -6,14 +6,14 @@ reaper 收敛为 SHADOW+RESUMABLE / SHADOW+无 current session（CORRUPTED 归�
 hasInteractiveLineage 永久挡在通用 Task 队列外，scan 又被 jarvis-claimed 标签 skip，
 此前无人接手。恢复正门 = spawn headless jarvis（EphemeralJob 只是进程外壳）经 claim.sh
 的 fenced targeted claimTask 接管。本测试锁住：候选枚举双通道并集——快通道
-（STALE/OFFLINE worker 可见残留 assignment + 台账生前记忆）∪ 持久通道（ScanScheduler
+（STALE/OFFLINE worker 可见残留 assignment + 台账生前记忆）∪ 持久通道（AoneScanner
 每 tick 落盘的 claimed-snapshot × 控制面任务态，兜「assignment 在首个 tick 前已过期且
 本地无台账」的采样时序洞；无 task 行 = legacy claim 跳过不烧轮次；双通道同单去重；
 纯 scanner shadow 观察不进候选）、get_task_by_aone/timeline 佐证决策表（含 SHADOW 无
 session 可重派）、recovery_policy 三分流（REPLAY_SAFE 重派 / RESUME_ONLY·MANUAL 只播报）、
 JARVIS_RECOVERY_REDISPATCH=0 减档、recovery.json 幂等防抖（dedup TTL / MAX_ROUNDS 升级 /
 告警按原因只播一次；台账只做防抖/轮次记账，不是候选真源）、pause 复用与 client 缺失
-自动禁用，以及 ScanScheduler 的 claimed-snapshot 原子落盘挂点。
+自动禁用，以及 AoneScanner 的 claimed-snapshot 原子落盘挂点。
 
 Standalone: `python3 bridge/test_recovery_scheduler.py`. 无控制面/网络（fake client/pool）。
 """
@@ -152,7 +152,7 @@ class RecoverySchedulerTest(unittest.TestCase):
         return json.loads(self.ledger.read_text())
 
     def _write_snapshot(self, items):
-        """预置持久通道输入：ScanScheduler 落盘的 claimed-snapshot（REPO_ROOT 已指向 tmp）。"""
+        """预置持久通道输入：AoneScanner 落盘的 claimed-snapshot（REPO_ROOT 已指向 tmp）。"""
         path = Path(self.tmp.name) / ".my-day" / "bridge" / "claimed-snapshot.json"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps({"ts": 0, "items": items}))
@@ -573,7 +573,7 @@ class RecoverySchedulerTest(unittest.TestCase):
 
 
 class ClaimedSnapshotHookTest(unittest.TestCase):
-    """ScanScheduler 挂点：每个 scan tick 把 jarvis-claimed 子集原子落盘为
+    """AoneScanner 挂点：每个 scan tick 把 jarvis-claimed 子集原子落盘为
     claimed-snapshot（RecoveryScheduler 持久通道的数据源）。"""
 
     def setUp(self):
@@ -586,7 +586,7 @@ class ClaimedSnapshotHookTest(unittest.TestCase):
         self.tmp.cleanup()
 
     def test_scan_tick_persists_claimed_snapshot_atomically(self):
-        sched = bot.ScanScheduler(handler=None, pool=FakePool())
+        sched = bot.AoneScanner(handler=None, pool=FakePool())
         items = [
             {"id": AONE, "title": "客户工单标题", "pool": "tf_customer",
              "pool_project": PROJ, "tag": ["jarvis-claimed"], "status": "处理中",
