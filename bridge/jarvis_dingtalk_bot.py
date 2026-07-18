@@ -818,11 +818,19 @@ def _aone_comment_create_id(stdout):
     return find(data)
 
 
-def _aone_event_publish_digest(ticket, project, event_digest, text, allow_non_tf=False):
-    """Publish an already-digested event without ever persisting semantic source text."""
+def _aone_event_publish_digest(ticket, project, event_digest, text,
+                               allow_non_tf=False, identity=None):
+    """Publish an already-digested event without ever persisting semantic source text.
+
+    ``identity`` selects the a1id write identity — default ``terraform-rd`` (existing
+    revisit/PR callers), or ``jarvis`` for a non-terraform control-plane Task reply.
+    It is persisted in the ledger record so a later flush retries under the same
+    identity, never silently swapping terraform-rd for jarvis or vice versa.
+    """
     ticket = str(ticket or "")
     project = str(project or "")
     event_digest = str(event_digest or "").strip()
+    identity = str(identity or PERSONA_PUBLIC_IDENTITY).strip() or PERSONA_PUBLIC_IDENTITY
     text = _aone_event_sanitize_text(text)
     if (not ticket.isdigit() or not project
             or not _AONE_EVENT_DIGEST_RE.fullmatch(event_digest) or not text):
@@ -845,6 +853,7 @@ def _aone_event_publish_digest(ticket, project, event_digest, text, allow_non_tf
                 "text": text, "marker": marker, "attempts": 0,
                 "state": "pending",
                 "allow_non_tf": bool(allow_non_tf),
+                "identity": identity,
                 "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             }
         else:
@@ -856,6 +865,9 @@ def _aone_event_publish_digest(ticket, project, event_digest, text, allow_non_tf
             record["marker"] = marker
             record["allow_non_tf"] = bool(
                 record.get("allow_non_tf") or allow_non_tf)
+            # Freeze the identity from the first observation; a retry must not swap it.
+            record["identity"] = str(record.get("identity") or identity).strip() \
+                or PERSONA_PUBLIC_IDENTITY
             record.pop("event_key", None)
         try:
             not_before = float(record.get("not_before") or 0)
@@ -907,12 +919,14 @@ def _aone_event_publish_digest(ticket, project, event_digest, text, allow_non_tf
                 return False
             record = pending
         body = "%s\n\n%s" % (record["text"].rstrip(), marker)
+        write_identity = str(record.get("identity") or PERSONA_PUBLIC_IDENTITY)
+        is_tf_identity = write_identity == PERSONA_PUBLIC_IDENTITY
         try:
             proc = subprocess.run(
-                [str(REPO_ROOT / "bin" / "a1id"), "as", PERSONA_PUBLIC_IDENTITY, "--",
+                [str(REPO_ROOT / "bin" / "a1id"), "as", write_identity, "--",
                  "project", "workitem", "comment", "create", ticket, "-m", body],
                 capture_output=True, text=True, cwd=str(REPO_ROOT), timeout=90,
-                env=_a1_command_env(terraform=True))
+                env=_a1_command_env(terraform=is_tf_identity))
         except Exception as e:  # noqa: BLE001
             log.warning("aone-event: comment create #%s raised: %s", ticket, e)
             proc = None
@@ -965,7 +979,8 @@ def _aone_event_publish_digest(ticket, project, event_digest, text, allow_non_tf
             _aone_event_inflight.discard(ledger_id)
 
 
-def _aone_event_publish(ticket, project, event_key, text, allow_non_tf=False):
+def _aone_event_publish(ticket, project, event_key, text, allow_non_tf=False,
+                        identity=None):
     """RD-only idempotent Terraform event publisher.
 
     Contract:
@@ -975,10 +990,13 @@ def _aone_event_publish(ticket, project, event_key, text, allow_non_tf=False):
       * the same ``ticket + event_key`` is skipped locally or remotely;
       * an ambiguous successful create becomes ``post_uncertain`` and is never recreated;
       * failures remain pending for ``_aone_event_flush``.
+
+    ``identity`` selects the write identity (default terraform-rd; jarvis for a
+    non-terraform control-plane Task reply).
     """
     return _aone_event_publish_digest(
         ticket, project, _aone_event_digest(event_key), text,
-        allow_non_tf=allow_non_tf)
+        allow_non_tf=allow_non_tf, identity=identity)
 
 
 def _aone_event_flush(limit=20):
@@ -995,12 +1013,14 @@ def _aone_event_flush(limit=20):
             digest = _aone_event_digest(rec.get("event_key"))
         if _aone_event_publish_digest(
                 rec.get("ticket"), rec.get("project"), digest, rec.get("text"),
-                allow_non_tf=bool(rec.get("allow_non_tf"))):
+                allow_non_tf=bool(rec.get("allow_non_tf")),
+                identity=str(rec.get("identity") or PERSONA_PUBLIC_IDENTITY)):
             flushed += 1
     return flushed
 
 
-def _aone_event_enqueue(ticket, project, event_key, text, allow_non_tf=False):
+def _aone_event_enqueue(ticket, project, event_key, text, allow_non_tf=False,
+                        identity=None):
     """Return True once an event is either remotely posted or durably pending.
 
     PrWatch uses this stronger result before deleting its own observation entry, so a
@@ -1008,9 +1028,9 @@ def _aone_event_enqueue(ticket, project, event_key, text, allow_non_tf=False):
     """
     published = (
         _aone_event_publish(
-            ticket, project, event_key, text, allow_non_tf=True)
+            ticket, project, event_key, text, allow_non_tf=True, identity=identity)
         if allow_non_tf
-        else _aone_event_publish(ticket, project, event_key, text))
+        else _aone_event_publish(ticket, project, event_key, text, identity=identity))
     if published:
         return True
     ledger_id = _aone_event_ledger_id(ticket, event_key)

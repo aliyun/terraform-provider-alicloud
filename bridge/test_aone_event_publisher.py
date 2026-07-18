@@ -339,7 +339,8 @@ class RevisitDispatchTest(unittest.TestCase):
         self.orig_publish = bot._aone_event_publish
         bot.INFLIGHT_PATH = Path(self.tmp.name) / "inflight.json"
         self.events = []
-        bot._aone_event_publish = lambda *args: self.events.append(args) or True
+        bot._aone_event_publish = lambda *args, **kwargs: (
+            self.events.append(args) or True)
 
         class FakeSelf:
             dispatch_pool = None
