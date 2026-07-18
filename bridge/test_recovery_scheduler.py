@@ -566,7 +566,10 @@ class RecoverySchedulerTest(unittest.TestCase):
         self._sched(client)._tick()
         d = self.handler.dispatched[0]
         self.assertIn(AONE, d["prompt"])
-        self.assertIn("claim.sh claim %s %s" % (AONE, PROJ), d["prompt"])
+        # B-proper：合成的是 B-form ticket prompt（run 交 [[AONE_RESULT]]，不自 claim/wrap）；
+        # ephemeral 重派带 controller=None 的 bookend 提交结果（见 RecoveryScheduler._dispatch）。
+        self.assertIn("AONE_RESULT", d["prompt"])
+        self.assertNotIn("claim.sh claim", d["prompt"])
 
 
 class ClaimedSnapshotHookTest(unittest.TestCase):

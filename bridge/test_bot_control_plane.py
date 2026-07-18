@@ -92,7 +92,7 @@ class HandlerWiringTest(unittest.TestCase):
         handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
         handler.persistence_executor = _Starter("worker", calls)
         for name in ("scanner", "reconciler", "board", "prober", "reviser",
-                     "watcher", "managed_wait_sensor", "personawatch", "prwatch",
+                     "watcher", "managed_wait_sensor", "prwatch",
                      "recovery"):
             setattr(handler, name, _Starter(name, calls))
         handler.start_schedulers()
