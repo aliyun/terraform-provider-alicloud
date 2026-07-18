@@ -1830,6 +1830,7 @@ def _finalize_pending_suspend_unlocked(state: Dict[str, Any],
         state["pendingClaim"] = {
             "aoneId": str(current["aoneId"]),
             "projectId": str(current["projectId"]),
+            "title": str(current.get("title") or ""),
             "cycle": int(current["cycle"]),
             "runtimeSessionId": str(current["runtimeSessionId"]),
             "phase": "READY_TO_RESUME",
@@ -2212,7 +2213,8 @@ def _resume_codex_turn(store: StateStore,
     if auto_resumable:
         try:
             resumed = prepare_claim(
-                str(pending_claim["aoneId"]), str(pending_claim["projectId"]))
+                str(pending_claim["aoneId"]), str(pending_claim["projectId"]),
+                str(pending_claim.get("title") or ""))
         except ControlPlaneConflict:
             with store.locked():
                 latest = store.load_unlocked()
@@ -2911,9 +2913,10 @@ def _same_current_assignment(state: Mapping[str, Any], worker_key: Any,
             and str(current.get("fenceToken")) == str(expected.get("fenceToken")))
 
 
-def prepare_claim(aone_id: str, project_id: str) -> Dict[str, Any]:
+def prepare_claim(aone_id: str, project_id: str, title: str = "") -> Dict[str, Any]:
     aone_id = _nonblank(aone_id, "aone_id")
     project_id = _nonblank(project_id, "project_id")
+    title = str(title or "").strip()
     store = _current_store()
     cp = _client()
     with store.locked():
@@ -2947,6 +2950,11 @@ def prepare_claim(aone_id: str, project_id: str) -> Dict[str, Any]:
             and str(existing_claim.get("runtimeSessionId")) == runtime_id
             and existing_claim.get("phase") == "CLAIMING"
             and existing_claim.get("claimRequestId"))
+        # Freeze the first observed value (including an unavailable/blank read) for
+        # this request identifier. Retrying a lost response must send the same body.
+        stable_title = (
+            str(existing_claim.get("title") or "")
+            if same_inflight and "title" in existing_claim else title)
         claim_request_id = (
             str(existing_claim["claimRequestId"]) if same_inflight else
             "jarvis-interactive-claim-%s" % hashlib.sha256(
@@ -2956,6 +2964,7 @@ def prepare_claim(aone_id: str, project_id: str) -> Dict[str, Any]:
         state["pendingClaim"] = {
             "aoneId": aone_id,
             "projectId": project_id,
+            "title": stable_title,
             "cycle": cycle,
             "runtimeSessionId": runtime_id,
             "phase": "CLAIMING",
@@ -2969,10 +2978,13 @@ def prepare_claim(aone_id: str, project_id: str) -> Dict[str, Any]:
 
     _retry_unavailable(lambda: _register(cp, state))
     revision = "interactive:%s" % hashlib.sha256(runtime_id.encode()).hexdigest()[:32]
+    source_ref = {"aoneId": aone_id, "projectId": project_id}
+    if stable_title:
+        source_ref["title"] = stable_title
     envelope = TaskEnvelope(
         task_key="aone:%s:%s" % (project_id, aone_id),
         source_type="AONE",
-        source_ref={"aoneId": aone_id, "projectId": project_id},
+        source_ref=source_ref,
         task_type="ticket",
         desired_revision=revision,
         trigger_mask=["INTERACTIVE"],
@@ -3029,6 +3041,7 @@ def prepare_claim(aone_id: str, project_id: str) -> Dict[str, Any]:
     current = {
         "aoneId": aone_id,
         "projectId": project_id,
+        "title": stable_title,
         "taskId": task_id,
         "sessionId": session_id,
         "generation": generation,
@@ -3312,6 +3325,7 @@ def fail_claim(aone_id: str, message: str, *, unknown: bool = False) -> None:
             latest["pendingClaim"] = {
                 "aoneId": str(current["aoneId"]),
                 "projectId": str(current["projectId"]),
+                "title": str(current.get("title") or ""),
                 "cycle": int(current["cycle"]),
                 "runtimeSessionId": str(current["runtimeSessionId"]),
                 "phase": "READY_TO_CLAIM",
@@ -3690,6 +3704,7 @@ def _parser() -> argparse.ArgumentParser:
     claim_parser = sub.add_parser("prepare-claim")
     claim_parser.add_argument("aone_id")
     claim_parser.add_argument("project_id")
+    claim_parser.add_argument("title", nargs="?", default="")
     ack_parser = sub.add_parser("operation-ack")
     ack_parser.add_argument("aone_id")
     ack_parser.add_argument("external_ref")
@@ -3784,7 +3799,7 @@ def main(argv: Optional[list[str]] = None) -> int:
         if args.command == "daemon":
             return daemon(Path(args.state), args.worker_key)
         if args.command == "prepare-claim":
-            _print_json(prepare_claim(args.aone_id, args.project_id))
+            _print_json(prepare_claim(args.aone_id, args.project_id, args.title))
         elif args.command == "operation-ack":
             _print_json(acknowledge_claim(args.aone_id, args.external_ref))
         elif args.command == "operation-fail":

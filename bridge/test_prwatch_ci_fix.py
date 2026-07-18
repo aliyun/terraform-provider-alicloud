@@ -30,6 +30,7 @@ from jarvis_task_router import EnqueueResult
 TID = "84251052"
 PR = "https://github.com/aliyun/terraform-provider-alicloud/pull/9972"
 PROJ = "528766"
+TITLE = "Aone workitem title"
 
 
 class FakeHandler:
@@ -220,7 +221,8 @@ class GhPrCommentsParseTest(unittest.TestCase):
 class _DispatchBase(unittest.TestCase):
     def setUp(self):
         tf = tempfile.NamedTemporaryFile(suffix=".json", delete=False, mode="w")
-        tf.write(json.dumps({TID: {"pr_url": PR, "project": PROJ, "submitted_at": "x"}}))
+        tf.write(json.dumps({TID: {"pr_url": PR, "project": PROJ,
+                                  "title": TITLE, "submitted_at": "x"}}))
         tf.close()
         self.tmp = tf.name
         self._orig_path = bot.PRWATCH_PATH
@@ -274,9 +276,28 @@ class MaybeDispatchCiFixTest(_DispatchBase):
         self.assertEqual(
             self.pool.submitted[0]["envelope"].aone_id, TID,
             "GITHUB PR CI trigger must retain the canonical Aone association")
+        self.assertEqual(
+            self.pool.submitted[0]["envelope"].source_ref["title"], TITLE)
+        self.assertNotIn(TITLE, self.pool.submitted[0]["envelope"].desired_revision)
         e = self._entry()
         self.assertEqual((e["ci_fix_sha"], e["ci_fix_attempts"]), ("sha1", 1))
         self.assertEqual(self.events, [], "单次 CI 修复派发不更新 Aone")
+
+    def test_check_migrates_legacy_registry_title_before_pr_dispatch(self):
+        legacy = self._entry()
+        legacy.pop("title", None)
+        bot._prwatch_write({TID: legacy})
+        self.sched._ticket_metadata = lambda tid: (PROJ, "Backfilled Aone title")
+        self.sched._gh_pr_state = lambda _url: ("OPEN", None)
+        self._ci = ("sha1", ["Compile"], False)
+        self.sched._gh_pr_comments = lambda _url: (None, None, None)
+
+        self.sched._check_one(TID, self._entry())
+
+        self.assertEqual(self._entry()["title"], "Backfilled Aone title")
+        self.assertEqual(
+            self.pool.submitted[0]["envelope"].source_ref["title"],
+            "Backfilled Aone title")
 
     def test_same_head_not_redispatched_but_still_active(self):
         self._ci = ("sha1", ["Compile"], False)
@@ -354,6 +375,8 @@ class MaybeDispatchCommentReplyTest(_DispatchBase):
         self.assertEqual(
             self.pool.submitted[0]["envelope"].aone_id, TID,
             "GITHUB PR comment trigger must retain the canonical Aone association")
+        self.assertEqual(
+            self.pool.submitted[0]["envelope"].source_ref["title"], TITLE)
         self.assertEqual(self._entry().get("last_seen_comment"), "pr-2")
         self.assertEqual(self.events, [], "普通 reviewer comment 仅在 GitHub 内处理")
 
@@ -502,7 +525,7 @@ class AutoRegisterTest(_DispatchBase):
         self._prs = []
         self._proj = "528766"
         self.sched._gh_open_prs = lambda: self._prs
-        self.sched._ticket_project = lambda tid: self._proj
+        self.sched._ticket_metadata = lambda tid: (self._proj, TITLE)
 
     @staticmethod
     def _pr(n, branch):
@@ -516,15 +539,25 @@ class AutoRegisterTest(_DispatchBase):
         self.assertIn("84291978", reg)
         self.assertEqual(reg["84291978"]["project"], "528766")
         self.assertEqual(reg["84291978"]["pr_url"], self._prs[0]["url"])
+        self.assertEqual(reg["84291978"]["title"], TITLE)
 
     def test_already_watched_skipped(self):
         pr = self._pr(9972, "feat/84291978-tair")
         bot._prwatch_add("84291978", pr["url"], "528766")
         self._prs = [pr]
         called = []
-        self.sched._ticket_project = lambda tid: called.append(tid) or "528766"
+        self.sched._ticket_metadata = lambda tid: (called.append(tid) or "528766", TITLE)
         self.sched._maybe_autoregister_open_prs()
         self.assertEqual(called, [], "已登记 PR 不应再查 project/重登")
+
+    def test_registry_freezes_first_aone_title_and_never_uses_pr_title(self):
+        pr = self._pr(9972, "feat/84291978-tair")
+        bot._prwatch_add("84291978", pr["url"], "528766", "Original Aone title")
+        bot._prwatch_add("84291978", pr["url"], "528766", "Renamed Aone title")
+        self.assertEqual(bot._prwatch_list()["84291978"]["title"],
+                         "Original Aone title")
+        self.assertNotEqual(bot._prwatch_list()["84291978"]["title"],
+                            "PR 9972 title")
 
     def test_unparseable_branch_not_registered(self):
         self._prs = [self._pr(100, "feat/gpdb-api-key")]  # 无工单号

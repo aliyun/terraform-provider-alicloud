@@ -313,6 +313,20 @@ _get_tags() {
     ' 2>/dev/null || return 1
 }
 
+# Best-effort point-read by itemId only. A title read failure must not block the
+# existing claim flow; the interactive worker simply omits sourceRef.title.
+_get_workitem_title() {
+    local id="$1" json title
+    json="$($A1 project workitem get "$id" -f json 2>/dev/null)" || return 1
+    title="$(printf '%s' "$json" | jq -r '
+        (.subject // .title //
+         ((.fields // []) | map(select(.identifier=="subject" or .identifier=="title"))
+          | (.[0].displayValue // "")))
+        | tostring | gsub("^\\s+|\\s+$"; "")
+    ' 2>/dev/null)" || return 1
+    printf '%s' "$title"
+}
+
 # Echo comma-joined result of (existing ∪ add) − remove over tag-name sets.
 # Args: <existing_csv> <add_csv> <remove_csv> (any may be empty; comma-separated).
 _compute_tags() {
@@ -458,7 +472,8 @@ case "$cmd" in
         interactive_claim=0
         interactive_prepare=""
         if _is_interactive_context; then
-            interactive_prepare="$(_interactive_worker prepare-claim "$workitem_id" "$project_id")"
+            interactive_title="$(_get_workitem_title "$workitem_id" || true)"
+            interactive_prepare="$(_interactive_worker prepare-claim "$workitem_id" "$project_id" "$interactive_title")"
             interactive_rc=$?
             if [ "$interactive_rc" -ne 0 ]; then
                 if [ "$interactive_rc" -eq 10 ]; then
