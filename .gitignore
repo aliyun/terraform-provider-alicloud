@@ -44,3 +44,11 @@ runs/rc-gate/
 *.tfstate.*
 *.tfplan
 crash.log
+
+# env 配置回滚备份(含密钥,严禁入库；保留本地文件仅忽略跟踪)
+bridge/jarvis.env.bak-*
+# 验收测试日志(可再生,真源在远端 ACC)
+acctest_logs/
+# amp / cloudspec CLI 运行时状态与日志
+.amp/
+.cloudspec/
