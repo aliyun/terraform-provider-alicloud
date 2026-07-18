@@ -21,7 +21,7 @@ from pathlib import Path
 # 供 test/control_plane_status_test.sh 注入 stub client 做离线测试。
 sys.path.append(str(Path(__file__).resolve().parent.parent / "bridge"))
 
-from jarvis_task_client import AutomationAgentTaskClient, ControlPlaneError  # noqa: E402
+from jarvis_task_client import ControlPlaneClient, ControlPlaneError  # noqa: E402
 
 EVENT_TAIL = 5  # task 视图只列最近 N 条 event（全量看服务端 timeline）
 
@@ -41,7 +41,7 @@ def _client():
             "(JARVIS_HTML_REPORT_TOKEN is reused as fallback)\n")
         raise SystemExit(2)
     timeout = float(os.environ.get("JARVIS_CONTROL_PLANE_TIMEOUT", "10"))
-    return AutomationAgentTaskClient(base, token, timeout=timeout)
+    return ControlPlaneClient(base, token, timeout=timeout)
 
 
 def _trunc(text, limit):

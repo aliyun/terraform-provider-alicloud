@@ -1772,6 +1772,12 @@ SUSPEND_RE = re.compile(r'\[\[SUSPEND:(.*?)\]\]', re.DOTALL)
 AONE_EVENT_RE = re.compile(r'\[\[AONE-EVENT:(.*?)\]\]', re.DOTALL)
 AONE_EVENT_PREFIX = "[[AONE-EVENT:"
 
+# Structured result sentinel emitted by a control-plane Task-path run (B-proper).
+# The run no longer self-claims/wraps/releases; it authors the reply and hands the
+# executor a machine-readable outcome so the executor commits the single Aone write.
+TASK_RESULT_PREFIX = "[[AONE_RESULT:"
+TASK_RESULT_OUTCOMES = frozenset(("done", "idle", "suspend"))
+
 
 def _valid_task(task):
     """哨兵任务是否真要升级: 非空、>=4 字、不含否定词。否则视为无任务。"""
@@ -1858,6 +1864,81 @@ def extract_aone_event(text):
     summary = _aone_revisit_summary(summary)
     semantic_source = "revisit:%s:%s:%s" % (gate, transition, semantic_id)
     return clean, {"semantic_source": semantic_source, "summary": summary}
+
+
+def extract_task_result(text):
+    """Parse the last ``[[AONE_RESULT:{…}]]`` sentinel from a control-plane Task run.
+
+    Returns ``(clean_text, result)``. ``result`` is ``None`` when no valid sentinel is
+    present, so a run that forgot to emit one (or emitted garbage) is treated as an
+    execution failure by the caller rather than a silent success. Same multi-span scan +
+    strict-field validation posture as :func:`extract_aone_event`.
+
+    Validated shape::
+
+        {"outcome": "done"|"idle"|"suspend",
+         "reply_body": "<non-empty RD reply>",
+         "target_status": "<optional Aone status displayValue>",
+         "mr_cr_links": ["<url>", …],           # optional
+         "unresolved": "<optional>",            # optional
+         "suspend_wait_for": "<staffId>"}       # required iff outcome == suspend
+    """
+    value = text or ""
+    decoder = json.JSONDecoder()
+    spans = []
+    cursor = 0
+    while True:
+        start = value.find(TASK_RESULT_PREFIX, cursor)
+        if start < 0:
+            break
+        json_start = start + len(TASK_RESULT_PREFIX)
+        tail = value[json_start:]
+        stripped = tail.lstrip()
+        leading = len(tail) - len(stripped)
+        try:
+            payload, consumed = decoder.raw_decode(stripped)
+        except (ValueError, TypeError):
+            cursor = json_start
+            continue
+        close = json_start + leading + consumed
+        if value.startswith("]]", close):
+            spans.append((start, close + 2, payload))
+            cursor = close + 2
+        else:
+            cursor = json_start
+    if not spans:
+        return text, None
+    clean = value
+    for start, end, _payload in reversed(spans):
+        clean = clean[:start] + clean[end:]
+    clean = clean.strip()
+    payload = spans[-1][2]
+    if not isinstance(payload, dict):
+        return clean, None
+    outcome = str(payload.get("outcome") or "").strip().lower()
+    if outcome not in TASK_RESULT_OUTCOMES:
+        return clean, None
+    reply_body = str(payload.get("reply_body") or "").strip()
+    if not reply_body:
+        return clean, None
+    wait_for = str(payload.get("suspend_wait_for") or "").strip()
+    if outcome == "suspend" and not wait_for:
+        # A suspend that names nobody to wait on cannot be resumed → invalid.
+        return clean, None
+    links = payload.get("mr_cr_links")
+    if isinstance(links, list):
+        links = [str(x).strip() for x in links if str(x).strip()]
+    else:
+        links = []
+    result = {
+        "outcome": outcome,
+        "reply_body": _aone_event_sanitize_text(reply_body),
+        "target_status": str(payload.get("target_status") or "").strip(),
+        "mr_cr_links": links,
+        "unresolved": str(payload.get("unresolved") or "").strip(),
+        "suspend_wait_for": wait_for,
+    }
+    return clean, result
 
 
 def truncate(text, limit=MAX_REPLY):
@@ -7787,11 +7868,18 @@ class JarvisHandler(AsyncChatbotHandler):
 
     def _completion_broadcast(self, item_id):
         """Build the completion broadcast text. Distinguishes the final tag
-        state (jarvis-done / jarvis-idle / jarvis-claimed) and appends a clickable Aone
-        link matching the dispatch-card format.
+        state (jarvis-done / jarvis-idle / jarvis-claimed / 无标签) and appends a clickable
+        Aone link matching the dispatch-card format.
 
         Uses class-qualified access to the static _workitem_line so tests that stub self=None
         also work (the helper touches no instance state).
+
+        The tag branch reflects what the run actually left on the ticket — NOT merely that
+        the process exited cleanly. A headless run can return is_error=False yet never claim
+        or touch the ticket (e.g. a lost claim race, or a persona subagent failing to spawn).
+        In that case the ticket carries no jarvis-* label, and reporting "✅ 工单处理完成" is a
+        false positive. The 无标签 branch therefore stays neutral about the cause and never
+        asserts completion.
 
         Fallback text discriminates: non-numeric ids (probe rounds 等) → "任务 #<rid>"
         (无工单概念); numeric id 查询失败 → "工单 #<sid> 处理完成（headless）" 标注
@@ -7812,7 +7900,9 @@ class JarvisHandler(AsyncChatbotHandler):
         elif "jarvis-claimed" in tag:
             prefix = "⚠️ 工单处理结束但未收尾（仍 claimed）"
         else:
-            prefix = "✅ 工单处理完成"
+            # no jarvis-* label at all → the run exited without claiming/processing this
+            # ticket (typically a lost claim race); do NOT claim success.
+            prefix = "⚠️ 本轮未处理该工单（未获认领：或被其他 worker 接管、或待重新派发）"
         return prefix + "\n" + line
 
     def dispatch_item(self, item_id, prompt, sid, resume, notify, target, target_type,

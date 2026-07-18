@@ -552,5 +552,92 @@ class WakeRoutingTest(unittest.TestCase):
                              "Backfilled wait title")
 
 
+class CompletionBroadcastTest(unittest.TestCase):
+    """_completion_broadcast must reflect what the run left on the ticket, not
+    merely that the process exited cleanly (see self-lease-conflict fix)."""
+
+    def _broadcast(self, line, tag):
+        with mock.patch.object(bot.JarvisHandler, "_workitem_line",
+                               return_value=(line, tag)):
+            return bot.JarvisHandler._completion_broadcast(None, "84407231")
+
+    def test_jarvis_done_reports_completion(self):
+        self.assertTrue(self._broadcast("- [#84407231](url) t", "jarvis-done")
+                        .startswith("✅ 工单处理完成"))
+
+    def test_jarvis_idle_reports_staged(self):
+        self.assertTrue(self._broadcast("- [#84407231](url) t", "jarvis-idle")
+                        .startswith("⏸️ 工单阶段完成·待人工接手"))
+
+    def test_jarvis_claimed_reports_unwrapped(self):
+        self.assertIn("未收尾", self._broadcast("- [#84407231](url) t", "jarvis-claimed"))
+
+    def test_empty_tag_is_not_reported_as_completion(self):
+        out = self._broadcast("- [#84407231](url) t", "")
+        self.assertFalse(out.startswith("✅"))
+        self.assertIn("未获认领", out)
+
+    def test_numeric_query_failure_falls_back_to_headless(self):
+        with mock.patch.object(bot.JarvisHandler, "_workitem_line",
+                               return_value="#84407231"):
+            out = bot.JarvisHandler._completion_broadcast(None, "84407231")
+        self.assertIn("处理完成（headless）", out)
+
+    def test_non_numeric_pseudo_id_has_no_workitem(self):
+        with mock.patch.object(bot.JarvisHandler, "_workitem_line",
+                               return_value="#probe-2026-07-17"):
+            out = bot.JarvisHandler._completion_broadcast(None, "probe-2026-07-17")
+        self.assertIn("任务 #probe-2026-07-17 处理完成", out)
+
+
+class ExtractTaskResultTest(unittest.TestCase):
+    """The control-plane Task-path run hands the executor a structured outcome
+    instead of writing Aone itself. A missing/garbage sentinel must yield None so
+    the caller fails closed rather than silently succeeding."""
+
+    def test_valid_done_result(self):
+        text = ('前言\n[[AONE_RESULT:{"outcome":"done","reply_body":"结论 X",'
+                '"target_status":"已发布","mr_cr_links":["http://mr/1"]}]]\n尾')
+        clean, res = bot.extract_task_result(text)
+        self.assertNotIn("AONE_RESULT", clean)
+        self.assertEqual(res["outcome"], "done")
+        self.assertEqual(res["reply_body"], "结论 X")
+        self.assertEqual(res["target_status"], "已发布")
+        self.assertEqual(res["mr_cr_links"], ["http://mr/1"])
+
+    def test_no_sentinel_returns_none(self):
+        clean, res = bot.extract_task_result("just some run output, no sentinel")
+        self.assertIsNone(res)
+        self.assertEqual(clean, "just some run output, no sentinel")
+
+    def test_invalid_outcome_rejected(self):
+        _clean, res = bot.extract_task_result(
+            '[[AONE_RESULT:{"outcome":"maybe","reply_body":"x"}]]')
+        self.assertIsNone(res)
+
+    def test_empty_reply_body_rejected(self):
+        _clean, res = bot.extract_task_result(
+            '[[AONE_RESULT:{"outcome":"idle","reply_body":"  "}]]')
+        self.assertIsNone(res)
+
+    def test_suspend_requires_wait_for(self):
+        _clean, res = bot.extract_task_result(
+            '[[AONE_RESULT:{"outcome":"suspend","reply_body":"等确认"}]]')
+        self.assertIsNone(res)
+        _clean, ok = bot.extract_task_result(
+            '[[AONE_RESULT:{"outcome":"suspend","reply_body":"等确认",'
+            '"suspend_wait_for":"320687"}]]')
+        self.assertEqual(ok["outcome"], "suspend")
+        self.assertEqual(ok["suspend_wait_for"], "320687")
+
+    def test_last_span_wins_and_all_stripped(self):
+        text = ('[[AONE_RESULT:{"outcome":"idle","reply_body":"first"}]]'
+                'mid'
+                '[[AONE_RESULT:{"outcome":"done","reply_body":"second"}]]')
+        clean, res = bot.extract_task_result(text)
+        self.assertEqual(res["reply_body"], "second")
+        self.assertNotIn("AONE_RESULT", clean)
+
+
 if __name__ == "__main__":
     unittest.main()
