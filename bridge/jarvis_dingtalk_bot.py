@@ -3199,6 +3199,100 @@ class ScanScheduler:
             return None
         return items
 
+    # -- 统一探测：python 直查 assignee∪tracker∪idle 并集（AoneScanner） -------------
+    # scan.sh 只按单一 assignee 出数据 → 漏掉「指派给人 / 抄送数字人」的单（黑洞成因）。
+    # 这里直查每池三类过滤并集去重：数字人被指派 OR 被参与/抄送(tracker) OR jarvis-idle。
+    # 状态排除沿用 pools.json 的 exclude_status（与 scan.sh 一致），列含 modified 供 diff。
+    # backlog-drain 仍走 scan.sh scan-any（保留 any-assignee 消化）。
+
+    _UNION_COLUMNS = ("id,title,status,priority,tag,type,category,modified,gmtCreate,"
+                      "assignedTo")
+
+    @staticmethod
+    def _read_pools():
+        """pools.json → [(key, project, exclude_status[])]。失败返回空列表。"""
+        try:
+            pools = json.loads(
+                (Path(REPO_ROOT) / "config" / "pools.json").read_text()).get("pools", {})
+        except Exception as e:  # noqa: BLE001
+            log.warning("AoneScanner: cannot read pools.json: %s", e)
+            return []
+        out = []
+        for key, p in pools.items():
+            proj = p.get("project")
+            if proj:
+                out.append((key, str(proj), list(p.get("exclude_status") or [])))
+        return out
+
+    @classmethod
+    def _a1_list(cls, project, filter_expr):
+        """按 --filter 查一个池（富列），回规范化 item 列表。best-effort，失败回 []。"""
+        try:
+            r = subprocess.run(
+                [str(REPO_ROOT / "bin" / "a1id"), "--", "project", "workitem", "list",
+                 "--project", str(project), "--filter", filter_expr,
+                 "--columns", cls._UNION_COLUMNS, "-f", "json"],
+                capture_output=True, text=True, timeout=90, cwd=str(REPO_ROOT))
+            if r.returncode != 0:
+                log.warning("AoneScanner: [%s] list failed pool_project=%s rc=%d: %s",
+                            filter_expr, project, r.returncode, (r.stderr or "").strip()[:200])
+                return []
+            data = json.loads(r.stdout)
+            if not isinstance(data, list):
+                return []
+        except Exception as e:  # noqa: BLE001
+            log.warning("AoneScanner: [%s] list error pool_project=%s: %s",
+                        filter_expr, project, e)
+            return []
+        out = []
+        for it in data:
+            gmt_create = it.get("gmtCreate") or it.get("created") or ""
+            out.append({
+                "id": it.get("identifier") or it.get("id"),
+                "title": it.get("subject") or it.get("title") or "",
+                "status": it.get("status") or it.get("statusName") or "",
+                "priority": it.get("priority") or "",
+                "tag": it.get("tag"),
+                "type": it.get("type") or it.get("workitemType") or "",
+                "category": it.get("category") or "",
+                "modified": it.get("modified") or it.get("gmtModified") or "",
+                "created": gmt_create,  # _in_scope / backlog 排序用 created
+                "assignedTo": it.get("assignedTo") or "",
+            })
+        return out
+
+    def _query_pool_union(self, key, project, exclude_status):
+        """一个池的 assignee∪tracker∪idle 并集（按 id 去重）。数字人被指派 / 被抄送(tracker)
+        / jarvis-idle 三源；三源都叠加 pools.json 的状态排除，避免终态/已排除态单被捞。"""
+        worker_csv = ",".join(sorted(DIGITAL_WORKER_IDS))
+        excl = "".join(" AND NOT status=%s" % s for s in (exclude_status or []))
+        filters = (
+            "assignedTo=%s%s" % (worker_csv, excl),          # 指派给数字人
+            "workitem.tracker=%s%s" % (worker_csv, excl),    # 参与/抄送数字人（人 @ 会自动抄送）
+            "tag=jarvis-idle%s" % excl,                       # idle 重访（吸收原 Revisit 非 tf 车道）
+        )
+        rows = {}
+        for flt in filters:
+            for it in self._a1_list(project, flt):
+                iid = str(it.get("id") or "")
+                if not iid or iid in rows:
+                    continue
+                it["pool"] = key
+                it["pool_project"] = str(project)
+                rows[iid] = it
+        return list(rows.values())
+
+    def _scan_union(self):
+        """全池 assignee∪tracker∪idle 并集 → item 列表（同 _scan shape），或 None（无池配置）。
+        单池失败只记日志、不作废本轮（其余池仍有效，与 scan.sh partial 语义一致）。"""
+        pools = self._read_pools()
+        if not pools:
+            return None
+        items = []
+        for key, project, exclude_status in pools:
+            items.extend(self._query_pool_union(key, project, exclude_status))
+        return items
+
     def _in_scope(self, it):
         """灰度安全阀：item 是否在自动派发范围内。pool 白名单 + created 上限，两者空=不限。
         created 缺失或 >= cutoff 一律视为不在范围(保守不派，宁可漏派也不误处理)。
@@ -3496,7 +3590,8 @@ class ScanScheduler:
         self._human_comment_cache = {}
         self._activity_cache = {}
         self._human_operators = self._load_human_operators()  # reload whitelist each tick
-        items = self._scan()
+        # 统一探测：python 直查 assignee∪tracker∪idle 并集（取代 scan.sh 出派发数据）。
+        items = self._scan_union()
         if items is None:
             return
         cur_snapshot = {str(it["id"]): it for it in items if it.get("id")}

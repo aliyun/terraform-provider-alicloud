@@ -595,7 +595,7 @@ class ClaimedSnapshotHookTest(unittest.TestCase):
              "pool_project": "888", "tag": None, "status": "处理中",
              "modified": "2026-07-16 10:02"},
         ]
-        with mock.patch.object(sched, "_scan", return_value=items):
+        with mock.patch.object(sched, "_scan_union", return_value=items):
             # 冷启动 tick：只建基线不派发，但快照必须照写（纯感知动作）。
             sched._tick()
         snap_path = Path(self.tmp.name) / ".my-day" / "bridge" / "claimed-snapshot.json"
@@ -609,7 +609,7 @@ class ClaimedSnapshotHookTest(unittest.TestCase):
         self.assertFalse((snap_path.parent / (snap_path.name + ".tmp")).exists(),
                          "tmp+os.replace 原子写不得残留 .tmp")
         # 第二个 tick 全量覆盖：标签摘除的单从快照消失。
-        with mock.patch.object(sched, "_scan", return_value=[items[0]]):
+        with mock.patch.object(sched, "_scan_union", return_value=[items[0]]):
             sched._tick()
         data = json.loads(snap_path.read_text())
         self.assertEqual(set(data["items"]), {AONE})
