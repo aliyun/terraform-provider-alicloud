@@ -7977,10 +7977,10 @@ def run_dry_once():
     print("auto_dispatch=%s  dispatch_max=%d  queue_max=%d  dedup_ttl=%ds  ledger=%d entries"
           % (scanner.auto, pool.max_workers, pool.queue_max, pool.dedup_ttl, len(pool._ledger)))
 
-    items = scanner._scan()
+    items = scanner._scan_union()   # 统一探测：assignee∪tracker∪idle 并集（同 _tick）
     print("\n--- SCAN DISPATCH DECISIONS ---")
     if items is None:
-        print("  scan.sh failed (see WARN above)")
+        print("  _scan_union failed / no pools configured (see WARN above)")
     elif not items:
         print("  (inbox empty)")
     else:
