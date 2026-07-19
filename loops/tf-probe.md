@@ -18,7 +18,7 @@
 |------|------|
 | 手动触发 | 用户在会话中执行 `/tf-probe` 或直接发指令「跑一轮场景探测 / 三方一致性扫描」 |
 | provider 新版 | 新版本发布后应尽快全量跑一轮(版本升级易引入 state 不兼容 / 新永久 diff / 文档漂移) |
-| cron / bridge | bridge ProbeScheduler 每日 `JARVIS_PROBE_HOUR`(默认 10) 自动投递探测轮(headless;`JARVIS_PROBE_SCHED=0` 关) |
+| cron / bridge | bridge DailyScheduler 的 probe job 每日 `JARVIS_PROBE_HOUR`(默认 10) 自动投递探测轮(headless;`JARVIS_PROBE_SCHED=0` 关) |
 
 ---
 

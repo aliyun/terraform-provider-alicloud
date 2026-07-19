@@ -29,7 +29,7 @@ done
 
 | 方式 | 说明 |
 |------|------|
-| bridge 定时扫池（自动派发） | bridge **`AoneScanner`** 周期做 **python 直查并集探测**（每池 `assignedTo∪workitem.tracker∪tag=jarvis-idle` × `DIGITAL_WORKER_IDS`，池间+池内并行；取代旧 `scan.sh --force` 单一 assignee 出数据，消除「指派给人/抄送数字人」盲区），把**新单 + 外部更新单**(gmtModified 变化)统一 upsert 为控制面 Task；`bootstrap/scan.sh` 降级为人工审计/兜底 + backlog-drain any-assignee 扫描；PersistenceExecutor 按 `JARVIS_DISPATCH_MAX` 共享容量 lease 执行，控制面 Task/Session/lease/fence 是唯一真源，失败时不回退本地无状态执行。**派发判定**(`_decide`)逐单：终态 / `jarvis-done` / `jarvis-claimed` → skip；`jarvis-npe`（路由不明标记，aone-triage 分支 H jarvis 打或人工打）→ skip（**优先于 idle 门**：idle+npe 就算有人评论也不重派，直到人工澄清路由、摘掉标签，经 gmtModified 更新路径自然恢复派发）；`jarvis-idle` 过**人工介入门**（activity 作者判据 `_human_touched`——人工在 jarvis 上轮动作**之后**介入过才唤醒，否则 skip 等每日 Revisit）；其余（含新单/外部更新）→ 创建或更新 Task。**范围安全阀**（`JARVIS_DISPATCH_POOLS` 池白名单 + `JARVIS_DISPATCH_CREATED_BEFORE` 创建上限）+ **运行时暂停**（`touch .my-day/bridge/pause` 停止产生新 Task，`rm` 恢复，在跑 Task 不受影响）。钉钉卡片语义=播报（「已进入任务队列 #id」）。**授权前置=`JARVIS_AUTO_DISPATCH=0`** 时新单入 pending，钉钉「处理 #id / 全部处理」后才创建 Task。ProbeScheduler 的扫描动作本身由 EphemeralExecutor 执行，发现问题并建 Aone 后形成 Task；RevisitScheduler 周期唤醒原 Task。启动入口统一 **`bridge/run.sh start`**（自动 source env、判定钉钉/降级模式、pidfile 守护）。**扫描/派发由 bridge 全权负责，Jarvis 只被动接单**（CLAUDE.md 开局动作 #3） |
+| bridge 定时扫池（自动派发） | bridge **`AoneScheduler`** 周期做 **python 直查并集探测**（每池 `assignedTo∪workitem.tracker∪tag=jarvis-idle` × `DIGITAL_WORKER_IDS`，池间+池内并行；取代旧 `scan.sh --force` 单一 assignee 出数据，消除「指派给人/抄送数字人」盲区），把**新单 + 外部更新单**(gmtModified 变化)统一 upsert 为控制面 Task；`bootstrap/scan.sh` 降级为人工审计/兜底 + backlog-drain any-assignee 扫描；PersistenceExecutor 按 `JARVIS_DISPATCH_MAX` 共享容量 lease 执行，控制面 Task/Session/lease/fence 是唯一真源，失败时不回退本地无状态执行。**派发判定**(`_decide`)逐单：终态 / `jarvis-done` / `jarvis-claimed` → skip；`jarvis-npe`（路由不明标记，aone-triage 分支 H jarvis 打或人工打）→ skip（**优先于 idle 门**：idle+npe 就算有人评论也不重派，直到人工澄清路由、摘掉标签，经 gmtModified 更新路径自然恢复派发）；`jarvis-idle` 过**人工介入门**（activity 作者判据 `_human_touched`——人工在 jarvis 上轮动作**之后**介入过才唤醒，否则 skip 等每日 Revisit）；其余（含新单/外部更新）→ 创建或更新 Task。**范围安全阀**（`JARVIS_DISPATCH_POOLS` 池白名单 + `JARVIS_DISPATCH_CREATED_BEFORE` 创建上限）+ **运行时暂停**（`touch .my-day/bridge/pause` 停止产生新 Task，`rm` 恢复，在跑 Task 不受影响）。钉钉卡片语义=播报（「已进入任务队列 #id」）。**授权前置=`JARVIS_AUTO_DISPATCH=0`** 时新单入 pending，钉钉「处理 #id / 全部处理」后才创建 Task。DailyScheduler 的 probe job 由 EphemeralExecutor 执行探测，发现问题并建 Aone 后形成 Task；nudge job 每日对停滞 idle 单双通道催办。启动入口统一 **`bridge/run.sh start`**（自动 source env、判定钉钉/降级模式、pidfile 守护）。**扫描/派发由 bridge 全权负责，Jarvis 只被动接单**（CLAUDE.md 开局动作 #3） |
 | bridge dispatch | Tata 委派单工单，headless 执行（autonomy.md headless 模式：auto 列表免授权、遇阻 `[[SUSPEND:...]]` 挂起） |
 | 用户指令 | 会话里给 Aone URL / 工单 id → 直接进「二、逐项执行」单条流程 |
 | 手动兜底 | `/aone-triage` 或手动跑 `bootstrap/scan.sh`（排查/对账用；`plan.sh` 供 bridge/serve 流程出计划） |
@@ -126,7 +126,7 @@ bootstrap/claim.sh release <id> <pool-project>                                # 
 
 ## 三、定期维护（僵尸清扫）
 
-bridge 主机由 ReconcileScheduler 周期自动跑（`JARVIS_RECONCILE_INTERVAL`，默认 1200s）；非 bridge 机按 `bootstrap/cron.example` 独立触发，或每次 loop 结束后手动运行：
+bridge 主机由 AoneScheduler 的 stale-claim 子任务（每 `JARVIS_STALE_CHECK_EVERY` 个 scan tick）广播僵尸认领告警。post-PR 工单的 Aone 认领/释放已并入正常 `_TaskAoneBookend`（`pr_ci_fix`/`pr_comment_reply` 走 `REPLAY_SAFE`：worker 中途死亡由控制面重新 lease、幂等重跑收敛标签），不再有独立的 fenced-operation 恢复组件。orphan/drift/donecheck 与 escalation/ 落盘的 `reconcile.sh all` 不再由 bridge 自动调度，改为运维手动或按 `bootstrap/cron.example` 独立触发：
 
 ```bash
 bootstrap/reconcile.sh all      # stale + orphan + drift + donecheck 四路顺跑

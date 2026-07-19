@@ -91,13 +91,11 @@ class HandlerWiringTest(unittest.TestCase):
         calls = []
         handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
         handler.persistence_executor = _Starter("worker", calls)
-        for name in ("scanner", "reconciler", "board", "prober", "reviser",
-                     "watcher", "managed_wait_sensor", "prwatch",
-                     "recovery"):
+        for name in ("scanner", "daily", "aone_reply_scheduler", "prwatch"):
             setattr(handler, name, _Starter(name, calls))
         handler.start_schedulers()
         self.assertEqual(calls[0], "worker")
-        self.assertEqual(calls[-1], "recovery")
+        self.assertEqual(calls[-1], "prwatch")
 
     def test_stop_helper_forwards_drain_policy(self):
         handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
@@ -117,16 +115,20 @@ class HandlerWiringTest(unittest.TestCase):
         self.assertEqual(client.token, "shared-token")
 
 
-class ManagedWaitSensorTest(unittest.TestCase):
+class AoneReplySchedulerTest(unittest.TestCase):
     def _handler(self, pages, comments, wake_result=True):
         client = mock.Mock()
         client.list_pending_aone_reply_waits.side_effect = pages
         handler = SimpleNamespace(
             task_client=client,
-            watcher=SimpleNamespace(_fetch_comments=mock.Mock(return_value=comments)),
             _wake=mock.Mock(return_value=wake_result),
         )
         return handler
+
+    def _sensor(self, handler, comments):
+        sensor = bot.AoneReplyScheduler(handler)
+        sensor._fetch_comments = mock.Mock(return_value=comments)
+        return sensor
 
     @staticmethod
     def _wait(session_id=10, cursor="40"):
@@ -159,7 +161,7 @@ class ManagedWaitSensorTest(unittest.TestCase):
             {"id": "42", "creator": "human-2", "content": "earlier reply"},
         ]
         handler = self._handler([page], comments)
-        sensor = bot.ManagedWaitSensor(handler)
+        sensor = self._sensor(handler, comments)
 
         sensor._tick()
 
@@ -173,7 +175,7 @@ class ManagedWaitSensorTest(unittest.TestCase):
 
     def test_list_failure_keeps_local_throttle_and_retries_without_wake(self):
         handler = self._handler([RuntimeError("503")], [])
-        sensor = bot.ManagedWaitSensor(handler)
+        sensor = self._sensor(handler, [])
         sensor._poll_state["10"] = {"first_seen": 1, "last_poll": 2}
 
         sensor._tick()
@@ -183,9 +185,9 @@ class ManagedWaitSensorTest(unittest.TestCase):
 
     def test_failed_wake_keeps_wait_discovery_retryable(self):
         page = {"items": [self._wait()], "nextAfterSessionId": 10, "hasMore": False}
-        handler = self._handler([page], [
-            {"id": 41, "creator": "human", "content": "reply"}], wake_result=False)
-        sensor = bot.ManagedWaitSensor(handler)
+        comments = [{"id": 41, "creator": "human", "content": "reply"}]
+        handler = self._handler([page], comments, wake_result=False)
+        sensor = self._sensor(handler, comments)
 
         sensor._tick()
 
@@ -333,21 +335,21 @@ class TaskExecutionTest(unittest.TestCase):
         handler.dispatch_item.assert_not_called()
 
     def test_task_dispatch_never_writes_local_inflight_current_state(self):
+        # The on-disk inflight registry is gone entirely: live-process tracking is owned
+        # by EphemeralExecutor._active (in-memory). This is now a structural guarantee.
+        self.assertFalse(hasattr(bot, "_inflight_add"))
+        self.assertFalse(hasattr(bot, "INFLIGHT_PATH"))
         handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
         handler.ephemeral_executor = SimpleNamespace(_closed=False)
         handler._maybe_suspend = lambda *args, **kwargs: None
         handler._completion_broadcast = lambda _item_id: "done"
         result = SimpleNamespace(text="ok", is_error=False, subtype="success")
         notices = []
-        with mock.patch.object(bot, "run_claude_buffered", return_value=result), \
-                mock.patch.object(bot, "_inflight_add") as add, \
-                mock.patch.object(bot, "_inflight_remove") as remove:
+        with mock.patch.object(bot, "run_claude_buffered", return_value=result):
             outcome = handler.dispatch_item(
                 "task-probe", "go", "runtime-1", False, notices.append,
                 "target", "group", kind="probe", session_controller=object())
         self.assertEqual(outcome, "done")
-        add.assert_not_called()
-        remove.assert_not_called()
 
     def test_ephemeral_probe_lease_is_rejected_before_execution(self):
         handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
@@ -389,8 +391,7 @@ class TaskExecutionTest(unittest.TestCase):
         result = SimpleNamespace(
             text='waiting [[SUSPEND:{"aone_id":"843","wait_for":"320687"}]]',
             is_error=False, subtype="success")
-        with mock.patch.object(bot, "run_claude_buffered", return_value=result), \
-                mock.patch.object(bot, "_inflight_add") as add:
+        with mock.patch.object(bot, "run_claude_buffered", return_value=result):
             outcome = handler.dispatch_item(
                 "task-probe", "go", "runtime-1", False, lambda _text: None,
                 "target", "group", kind="probe", session_controller=object())
@@ -400,7 +401,6 @@ class TaskExecutionTest(unittest.TestCase):
         self.assertEqual(outcome["waitCursor"], "41")
         self.assertIn("waitExpireAt", outcome)
         handler.watcher.suspend.assert_not_called()
-        add.assert_not_called()
 
 
 class TaskAoneAssociationTest(unittest.TestCase):
@@ -507,63 +507,13 @@ class WakeRoutingTest(unittest.TestCase):
             "843", task, [{"id": 9, "creator": "a", "content": "x"}]))
         handler._quick_card.assert_not_called()
 
-    def test_wait_record_is_removed_only_after_accepted_wake(self):
-        task = {"last_comment_id": 1, "last_poll": 0,
-                "suspended_at": time.time() - 1000,
-                "target": "g", "target_type": "group"}
-        handler = SimpleNamespace(_wake=mock.Mock(return_value=False))
-        watcher = bot.WaitWatcher.__new__(bot.WaitWatcher)
-        watcher.handler = handler
-        watcher.suspended = {"843": task}
-        watcher._lock = threading.Lock()
-        watcher._fetch_comments = lambda _iid: [
-            {"id": 2, "creator": "human", "content": "go"}]
-        watcher._remove_persisted = mock.Mock()
-        watcher._tick()
-        self.assertIn("843", watcher.suspended)
-        watcher._remove_persisted.assert_not_called()
 
-        task["last_poll"] = 0
-        handler._wake.return_value = True
-        watcher._tick()
-        self.assertNotIn("843", watcher.suspended)
-        watcher._remove_persisted.assert_called_once_with("843")
-
-    def test_legacy_wait_persists_and_restores_aone_title(self):
-        with tempfile.TemporaryDirectory() as tmp, \
-                mock.patch.object(bot, "REPO_ROOT", Path(tmp)):
-            watcher = bot.WaitWatcher(SimpleNamespace())
-            watcher.suspend(
-                "843", "runtime", "owner", 4, "group", "group",
-                project="2100304", title="Frozen wait title")
-            restored = bot.WaitWatcher(SimpleNamespace())
-            self.assertEqual(restored.suspended["843"]["title"],
-                             "Frozen wait title")
-
-    def test_legacy_wait_backfills_pre_title_record_by_item_id(self):
-        with tempfile.TemporaryDirectory() as tmp, \
-                mock.patch.object(bot, "REPO_ROOT", Path(tmp)), \
-                mock.patch.object(
-                    bot.JarvisHandler, "_workitem_title",
-                    return_value="Backfilled wait title") as lookup:
-            persisted = Path(tmp) / ".my-day/suspended/843.json"
-            persisted.parent.mkdir(parents=True)
-            persisted.write_text(
-                '{"aone_id":"843","session_id":"runtime","project":"2100304"}')
-            restored = bot.WaitWatcher(SimpleNamespace())
-            self.assertEqual(restored.suspended["843"]["title"],
-                             "Backfilled wait title")
-            lookup.assert_called_once_with("843")
-            self.assertEqual(json.loads(persisted.read_text())["title"],
-                             "Backfilled wait title")
-
-
-class AoneScannerUnionTest(unittest.TestCase):
-    """AoneScanner 统一探测：每池 assignee∪tracker∪idle 并集去重，取代 scan.sh 单一 assignee
+class AoneSchedulerUnionTest(unittest.TestCase):
+    """AoneScheduler 统一探测：每池 assignee∪tracker∪idle 并集去重，取代 scan.sh 单一 assignee
     出数据，消除「指派给人 / 抄送数字人」盲区（黑洞成因）。"""
 
     def _scanner(self):
-        s = bot.AoneScanner.__new__(bot.AoneScanner)
+        s = bot.AoneScheduler.__new__(bot.AoneScheduler)
         return s
 
     def test_query_pool_union_merges_three_sources_and_dedups(self):
@@ -602,7 +552,7 @@ class AoneScannerUnionTest(unittest.TestCase):
 
     def test_scan_union_iterates_pools(self):
         s = self._scanner()
-        with mock.patch.object(bot.AoneScanner, "_read_pools",
+        with mock.patch.object(bot.AoneScheduler, "_read_pools",
                                return_value=[("tf_customer", "1086837", []),
                                              ("tf_provider", "528766", [])]):
             calls = []
@@ -618,7 +568,7 @@ class AoneScannerUnionTest(unittest.TestCase):
 
     def test_scan_union_no_pools_returns_none(self):
         s = self._scanner()
-        with mock.patch.object(bot.AoneScanner, "_read_pools", return_value=[]):
+        with mock.patch.object(bot.AoneScheduler, "_read_pools", return_value=[]):
             self.assertIsNone(s._scan_union())
 
     def test_digital_worker_ids_single_source(self):
@@ -728,6 +678,94 @@ class TaskBookendDispatchTest(unittest.TestCase):
         self.assertEqual(out, "done")
         self.assertEqual(calls["reply"].get("identity"), "jarvis")
         self.assertTrue(calls["reply"].get("allow_non_tf"))
+
+
+class PostPrRerouteDispatchTest(unittest.TestCase):
+    """Tier-0 acceptance for the post-PR replay-safe reroute: pr_ci_fix / pr_comment_reply
+    now run through _TaskAoneBookend(writes_reply=False) — idempotent claim on bind,
+    release-to-idle on clean completion, NO Aone reply, NO [[AONE_RESULT]] required, and
+    NO fenced-operation calls (the deleted machinery). REPLAY_SAFE means a re-run's claim/
+    release are idempotent no-ops after the first."""
+
+    def _handler(self):
+        h = bot.JarvisHandler.__new__(bot.JarvisHandler)
+        h._broadcast = lambda _t: None
+        h._completion_broadcast = lambda _iid: "done-broadcast"
+        h._maybe_suspend = lambda *a, **k: None
+        return h
+
+    def _controller(self):
+        return SimpleNamespace(
+            task={"id": 700, "generation": 1}, session={"generation": 1},
+            runtime_session_id="rt-1", resumed=False,
+            bind_process=lambda _p: None)
+
+    def _run(self, kind, final, is_error=False):
+        h = self._handler()
+        ctrl = self._controller()
+        bookend = bot._TaskAoneBookend(ctrl, "84448059", "528766", True, kind,
+                                       writes_reply=False)
+        calls = {"claim": 0, "release": 0, "reply": 0, "finish": 0}
+        h._dispatch_failed = lambda *a, **k: calls.__setitem__("failed", True)
+        with mock.patch.dict(os.environ, {"JARVIS_DISPATCH_RETRY_MAX": "0",
+                                          "JARVIS_DISPATCH_RETRY_BACKOFF": "0"}), \
+             mock.patch.object(bot, "run_claude_buffered",
+                               return_value=bot.ClaudeResult(final, is_error, "success")), \
+             mock.patch.object(bot, "_claim_workitem",
+                               side_effect=lambda *a, **k: calls.__setitem__("claim", calls["claim"] + 1)), \
+             mock.patch.object(bot, "_release_post_pr_claim",
+                               side_effect=lambda *a, **k: calls.__setitem__("release", calls["release"] + 1)), \
+             mock.patch.object(bot, "_finish_workitem",
+                               side_effect=lambda *a, **k: calls.__setitem__("finish", calls["finish"] + 1)), \
+             mock.patch.object(bot, "_aone_event_enqueue",
+                               side_effect=lambda *a, **k: calls.__setitem__("reply", calls["reply"] + 1) or True):
+            # bind (claim) then dispatch, mirroring _execute_task_lease on_spawn=bind_process
+            bookend.bind_process(SimpleNamespace(pid=1))
+            out = h.dispatch_item(
+                "84448059", "prompt", "sid", False, lambda _t: None, "tgt", "group",
+                project="528766", kind=kind, terraform=True,
+                session_controller=ctrl, task_bookend=bookend)
+        return out, calls, bookend
+
+    def test_pr_ci_fix_clean_completion_releases_idle_no_reply(self):
+        # No [[AONE_RESULT]] in the run text — post-PR runs never emit one.
+        out, calls, _bk = self._run("pr_ci_fix", "CI 已修复并 force-push")
+        self.assertEqual(out, "done")
+        self.assertEqual(calls["claim"], 1)      # claimed once on bind
+        self.assertEqual(calls["release"], 1)    # released-to-idle once on completion
+        self.assertEqual(calls["reply"], 0)      # NO Aone reply comment
+        self.assertEqual(calls["finish"], 0)     # never finishes (PR still open)
+        self.assertNotIn("failed", calls)
+
+    def test_pr_comment_reply_same_reroute(self):
+        out, calls, _bk = self._run("pr_comment_reply", "已回复评审意见")
+        self.assertEqual(out, "done")
+        self.assertEqual((calls["claim"], calls["release"], calls["reply"]), (1, 1, 0))
+
+    def test_error_does_not_release_so_replay_reclaims(self):
+        # A failed run stays claimed (no release); REPLAY_SAFE re-lease re-claims.
+        out, calls, _bk = self._run("pr_ci_fix", "boom", is_error=True)
+        self.assertEqual(out, "error")
+        self.assertIn("failed", calls)
+        self.assertEqual(calls["release"], 0)
+
+    def test_release_idle_is_idempotent_under_replay(self):
+        # Simulate the completion twice (a re-lease re-runs release_idle): still one write.
+        _out, _calls, bk = self._run("pr_ci_fix", "ok")
+        released_before = None
+        with mock.patch.object(bot, "_release_post_pr_claim") as rel:
+            bk.release_idle()        # second call after the dispatch already released
+            bk.release_idle()
+            released_before = rel.call_count
+        self.assertEqual(released_before, 0)  # already released → no further writes
+
+    def test_writes_reply_false_bookend_has_no_fenced_operation_surface(self):
+        # The reroute must not resurrect the deleted fenced-operation API.
+        bk = bot._TaskAoneBookend(self._controller(), "1", "528766", True,
+                                  "pr_ci_fix", writes_reply=False)
+        self.assertFalse(hasattr(bk, "lineage_policy"))
+        self.assertFalse(hasattr(bk, "_begin"))
+        self.assertFalse(hasattr(bot, "_PostPrTaskBookend"))
 
 
 class CompletionBroadcastTest(unittest.TestCase):
