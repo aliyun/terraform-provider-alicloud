@@ -285,61 +285,9 @@ def jarvis_root():
     return os.environ.get("JARVIS_ROOT") or str(REPO_ROOT)
 
 
-# ── EphemeralJob process registry ────────────────────────────────────────────
-# EphemeralExecutor records live local jobs for watchdog and graceful-stop
-# cleanup only. Records are never used to resume work after a restart.
-INFLIGHT_PATH = Path(REPO_ROOT) / ".my-day/bridge/inflight.json"
-_inflight_lock = threading.Lock()
-
-
-def _inflight_load():
-    """Load the registry (id -> record). Best-effort: any failure → {} + warning."""
-    try:
-        if INFLIGHT_PATH.exists():
-            raw = json.loads(INFLIGHT_PATH.read_text())
-            if isinstance(raw, dict):
-                return {str(k): v for k, v in raw.items()}
-    except Exception as e:  # noqa: BLE001
-        log.warning("inflight: could not load %s: %s", INFLIGHT_PATH, e)
-    return {}
-
-
-def _inflight_write(recs):
-    """Persist the registry atomically (tmp write + os.replace). Caller holds
-    ``_inflight_lock`` (mirrors EphemeralExecutor's caller-locked persistence);
-    best-effort — I/O failures only warn, never raise."""
-    try:
-        INFLIGHT_PATH.parent.mkdir(parents=True, exist_ok=True)
-        tmp = INFLIGHT_PATH.parent / (INFLIGHT_PATH.name + ".tmp")
-        tmp.write_text(json.dumps(recs, default=str))
-        os.replace(str(tmp), str(INFLIGHT_PATH))
-    except Exception as e:  # noqa: BLE001
-        log.warning("inflight: could not persist %s: %s", INFLIGHT_PATH, e)
-
-
-def _inflight_add(item_id, sid, project, kind, prompt, terraform=False):
-    """Register a worker as in-flight before it spawns claude. Atomic load→set→write
-    under the lock so concurrent workers never clobber each other's records.
-
-    ``terraform`` is retained only for same-process cleanup diagnostics."""
-    with _inflight_lock:
-        recs = _inflight_load()
-        recs[str(item_id)] = {"sid": sid, "project": project, "kind": kind,
-                              "prompt": prompt, "started_at": time.time(),
-                              "terraform": bool(terraform)}
-        _inflight_write(recs)
-
-
-def _inflight_remove(item_id):
-    """Drop a worker's record on any terminal outcome (no-op if already absent)."""
-    with _inflight_lock:
-        recs = _inflight_load()
-        recs.pop(str(item_id), None)
-        _inflight_write(recs)
-
-
-def _inflight_has(item_id):
-    return str(item_id) in _inflight_load()
+# EphemeralJob live-process tracking is owned entirely by EphemeralExecutor._active
+# (in-memory): the watchdog and graceful-stop enumerate it directly. There is no
+# on-disk inflight registry — records were never read to resume work after a restart.
 
 
 # ── PR-watch registry (方案A) ─────────────────────────────────────────────────
@@ -4606,13 +4554,7 @@ class EphemeralExecutor:
                 except Exception:  # noqa: BLE001
                     log.exception(
                         "EphemeralExecutor watchdog permit release failed #%s", iid)
-            # 4) Drop inflight registry entry — the worker's own finally may never run
-            #    (thread stuck in a C call), so we can't rely on dispatch_item's cleanup.
-            try:
-                _inflight_remove(iid)
-            except Exception:  # noqa: BLE001
-                pass
-            # 5) Pop the slot so the pool can accept new submissions.
+            # 4) Pop the slot so the pool can accept new submissions.
             with self._lock:
                 self._active.pop(iid, None)
 
@@ -5987,11 +5929,9 @@ class JarvisHandler(AsyncChatbotHandler):
         timeout = int(os.environ.get("JARVIS_DISPATCH_TIMEOUT", "43200"))
         attempt = 0
         try:
-            # EphemeralJobs retain only the local process ledger. Task work is
-            # reconstructed exclusively from jarvis_task/jarvis_session; writing a
-            # second local current-state copy would create two recovery authorities.
-            if session_controller is None:
-                _inflight_add(item_id, sid, project, kind, prompt, terraform=terraform)
+            # Live EphemeralJob tracking is owned by EphemeralExecutor._active (in-memory);
+            # Task work is reconstructed exclusively from jarvis_task/jarvis_session. Neither
+            # path keeps a second on-disk current-state copy.
             log.info("dispatch_item #%s start (timeout=%ds, retry_max=%d)",
                      item_id, timeout, max_retries)
             cur_prompt, cur_resume = prompt, resume
@@ -6147,10 +6087,6 @@ class JarvisHandler(AsyncChatbotHandler):
                 item_id, res, notify, project, terraform=terraform,
                 kind=kind, sid=sid, attempts=attempt + 1)
             return "error"
-        finally:
-            # EphemeralJob state is disposable and is never resumed after restart.
-            if session_controller is None:
-                _inflight_remove(item_id)
 
     @staticmethod
     def _write_probe_summary(round_id, final_text):

@@ -335,21 +335,21 @@ class TaskExecutionTest(unittest.TestCase):
         handler.dispatch_item.assert_not_called()
 
     def test_task_dispatch_never_writes_local_inflight_current_state(self):
+        # The on-disk inflight registry is gone entirely: live-process tracking is owned
+        # by EphemeralExecutor._active (in-memory). This is now a structural guarantee.
+        self.assertFalse(hasattr(bot, "_inflight_add"))
+        self.assertFalse(hasattr(bot, "INFLIGHT_PATH"))
         handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
         handler.ephemeral_executor = SimpleNamespace(_closed=False)
         handler._maybe_suspend = lambda *args, **kwargs: None
         handler._completion_broadcast = lambda _item_id: "done"
         result = SimpleNamespace(text="ok", is_error=False, subtype="success")
         notices = []
-        with mock.patch.object(bot, "run_claude_buffered", return_value=result), \
-                mock.patch.object(bot, "_inflight_add") as add, \
-                mock.patch.object(bot, "_inflight_remove") as remove:
+        with mock.patch.object(bot, "run_claude_buffered", return_value=result):
             outcome = handler.dispatch_item(
                 "task-probe", "go", "runtime-1", False, notices.append,
                 "target", "group", kind="probe", session_controller=object())
         self.assertEqual(outcome, "done")
-        add.assert_not_called()
-        remove.assert_not_called()
 
     def test_ephemeral_probe_lease_is_rejected_before_execution(self):
         handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
@@ -391,8 +391,7 @@ class TaskExecutionTest(unittest.TestCase):
         result = SimpleNamespace(
             text='waiting [[SUSPEND:{"aone_id":"843","wait_for":"320687"}]]',
             is_error=False, subtype="success")
-        with mock.patch.object(bot, "run_claude_buffered", return_value=result), \
-                mock.patch.object(bot, "_inflight_add") as add:
+        with mock.patch.object(bot, "run_claude_buffered", return_value=result):
             outcome = handler.dispatch_item(
                 "task-probe", "go", "runtime-1", False, lambda _text: None,
                 "target", "group", kind="probe", session_controller=object())
@@ -402,7 +401,6 @@ class TaskExecutionTest(unittest.TestCase):
         self.assertEqual(outcome["waitCursor"], "41")
         self.assertIn("waitExpireAt", outcome)
         handler.watcher.suspend.assert_not_called()
-        add.assert_not_called()
 
 
 class TaskAoneAssociationTest(unittest.TestCase):
