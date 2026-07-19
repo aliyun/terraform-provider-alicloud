@@ -179,7 +179,7 @@ import json, sys
 print(json.dumps({\"digest\": sys.argv[1], \"preview\": sys.stdin.read()[:120]},
                  ensure_ascii=False))" "$digest")"
     if ! begin_json="$(jarvis_interactive_worker_cli operation-begin "$tid" comment "$digest" --payload-json "$payload")"; then
-        echo "wrap.sh: comment 回执 begin 失败（id=$tid），fail-closed 不写 Aone" >&2
+        echo "wrap.sh: comment 回执 begin 失败（id=${tid}），fail-closed 不写 Aone" >&2
         return 2
     fi
     needs_readback="$(printf '%s' "$begin_json" | jq -r '.needsReadback // false' 2>/dev/null)"
@@ -195,7 +195,7 @@ print(json.dumps({\"digest\": sys.argv[1], \"preview\": sys.stdin.read()[:120]},
             if [ "$op_status" != "UNKNOWN" ]; then
                 jarvis_interactive_worker_cli operation-abort "$tid" "comment readback unavailable" --unknown >/dev/null 2>&1 || true
             fi
-            echo "wrap.sh: 评论 readback 不可用（id=$tid），无法判定副作用是否存在；保持 UNKNOWN，稍后重跑 wrap 收敛" >&2
+            echo "wrap.sh: 评论 readback 不可用（id=${tid}），无法判定副作用是否存在；保持 UNKNOWN，稍后重跑 wrap 收敛" >&2
             return 1
         fi
         if [ -n "$cid" ]; then
@@ -204,7 +204,7 @@ print(json.dumps({\"digest\": sys.argv[1], \"preview\": sys.stdin.read()[:120]},
         fi
         jarvis_interactive_worker_cli operation-reconcile "$tid" --not-found >/dev/null || return 2
         if ! begin_json="$(jarvis_interactive_worker_cli operation-begin "$tid" comment "$digest" --payload-json "$payload")"; then
-            echo "wrap.sh: comment 回执重试 begin 失败（id=$tid），fail-closed 不写 Aone" >&2
+            echo "wrap.sh: comment 回执重试 begin 失败（id=${tid}），fail-closed 不写 Aone" >&2
             return 2
         fi
         proceed="$(printf '%s' "$begin_json" | jq -r '.proceed // false' 2>/dev/null)"
@@ -217,7 +217,7 @@ print(json.dumps({\"digest\": sys.argv[1], \"preview\": sys.stdin.read()[:120]},
     rc=$?
     if [ "$rc" -ne 0 ]; then
         jarvis_interactive_worker_cli operation-abort "$tid" "a1 comment create failed (rc=$rc)" >/dev/null 2>&1 || true
-        echo "wrap.sh: a1 comment 失败（id=$tid, rc=$rc），回执已终结（可重试）" >&2
+        echo "wrap.sh: a1 comment 失败（id=${tid}, rc=$rc），回执已终结（可重试）" >&2
         return 1
     fi
     cid="$(printf '%s' "$out" | jq -r '.id // empty' 2>/dev/null)"
@@ -225,11 +225,11 @@ print(json.dumps({\"digest\": sys.argv[1], \"preview\": sys.stdin.read()[:120]},
     if [ -z "$cid" ]; then
         # 退出码 0 但拿不到 comment id → 结果不明：冻结 UNKNOWN，等重跑 readback 收敛。
         jarvis_interactive_worker_cli operation-abort "$tid" "comment result indeterminate (no id)" --unknown >/dev/null 2>&1 || true
-        echo "wrap.sh: 评论结果不明（id=$tid），回执已冻结 UNKNOWN，重跑 wrap 收敛" >&2
+        echo "wrap.sh: 评论结果不明（id=${tid}），回执已冻结 UNKNOWN，重跑 wrap 收敛" >&2
         return 1
     fi
     if ! jarvis_interactive_worker_cli operation-ack "$tid" "aone:$tid:comment:$cid" >/dev/null; then
-        echo "wrap.sh: 评论已落 Aone 但回执 ACK 失败（id=$tid），重跑 wrap 收敛" >&2
+        echo "wrap.sh: 评论已落 Aone 但回执 ACK 失败（id=${tid}），重跑 wrap 收敛" >&2
         return 1
     fi
     return 0
@@ -240,7 +240,7 @@ print(json.dumps({\"digest\": sys.argv[1], \"preview\": sys.stdin.read()[:120]},
 _receipted_status() {
     local tid="$1" status="$2" begin_json proceed
     if ! begin_json="$(jarvis_interactive_worker_cli operation-begin "$tid" status "$status" --replay-safe)"; then
-        echo "wrap.sh: status 回执 begin 失败（id=$tid），fail-closed 不写 Aone" >&2
+        echo "wrap.sh: status 回执 begin 失败（id=${tid}），fail-closed 不写 Aone" >&2
         return 2
     fi
     proceed="$(printf '%s' "$begin_json" | jq -r '.proceed // false' 2>/dev/null)"
@@ -249,11 +249,11 @@ _receipted_status() {
     fi
     if ! $A1 project workitem update "$tid" --status "$status"; then
         jarvis_interactive_worker_cli operation-abort "$tid" "a1 status update failed" >/dev/null 2>&1 || true
-        echo "wrap.sh: a1 status 更新失败（id=$tid），回执已终结（可重试）" >&2
+        echo "wrap.sh: a1 status 更新失败（id=${tid}），回执已终结（可重试）" >&2
         return 1
     fi
     if ! jarvis_interactive_worker_cli operation-ack "$tid" "aone:$tid:status:$status" >/dev/null; then
-        echo "wrap.sh: 状态已落 Aone 但回执 ACK 失败（id=$tid），重跑 wrap 收敛" >&2
+        echo "wrap.sh: 状态已落 Aone 但回执 ACK 失败（id=${tid}），重跑 wrap 收敛" >&2
         return 1
     fi
     return 0
