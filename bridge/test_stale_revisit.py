@@ -210,10 +210,8 @@ class OwnerResolutionTest(unittest.TestCase):
 class SchedulerBoundaryTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
-        self.scheduler = bot.ProgressNudgeScheduler(
-            handler=None, pool=None, enabled=True, stale_days=8, max_n=5,
-            state_file=Path(self.tmp.name) / "revisit.last",
-            index_path=Path(self.tmp.name) / "index.json")
+        self.scheduler = bot._NudgeJob(
+            handler=None, pool=None, stale_days=8, max_n=5)
         self.scheduler._ticket_timeline = lambda _item: ([], [])
         self.orig_aone = bot._aone_event_enqueue
         self.orig_dm = bot._dingtalk_event_enqueue
@@ -290,10 +288,7 @@ class SchedulerBoundaryTest(unittest.TestCase):
 class CandidateFairnessTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
-        self.scheduler = bot.ProgressNudgeScheduler(
-            handler=None, pool=None, enabled=True, max_n=5,
-            state_file=Path(self.tmp.name) / "revisit.last",
-            index_path=Path(self.tmp.name) / "index.json")
+        self.scheduler = bot._NudgeJob(handler=None, pool=None, max_n=5)
 
     def tearDown(self):
         self.tmp.cleanup()

@@ -16,7 +16,7 @@
 - Jarvis 由 bridge 后台 spawn，无终端交互，始终持有一个 Aone 工单。
 - **自主权高**：自动执行项（auto 列表）全部免授权直接执行。
 - **身份约束**：非 Terraform 编排默认 jarvis；Terraform 内部按 terraform-pd/rd/qa 三个 subagent 分工，PD/QA 只返回结构化结果、禁止外写，开发阶段 RD 也不发工单进展。本次主处理 run 最后由 terraform-rd finalizer 聚合回复一次；后续重访/PR/终态失败的重要事件由同一 RD 身份幂等更新，无变化与重复事件静默。terraform-rd 未登录即阻断，不回退 jarvis，旧 pd/qa 身份仅兼容别名到 rd。需使用 chenyi/guozai/linjun/shanye 等个人身份时，必须在 Aone 工单评论中 @对应人并获得明确授权回复后方可使用。
-- **遇阻挂起**：非 Terraform 遇到必须人类确认/决策的点时，先在 Aone 工单评论中 @对应人；Terraform 不发独立阶段评论，由最终 terraform-rd 把问题与 @对象并入本 run 的唯一聚合回复。随后输出 `[[SUSPEND:...]]` 哨兵信号并退出进程。bridge 的 WaitWatcher 轮询评论，检测到回复后用 `--resume` 唤醒 Jarvis 继续。
+- **遇阻挂起**：非 Terraform 遇到必须人类确认/决策的点时，先在 Aone 工单评论中 @对应人；Terraform 不发独立阶段评论，由最终 terraform-rd 把问题与 @对象并入本 run 的唯一聚合回复。随后输出 `[[SUSPEND:...]]` 哨兵信号并退出进程。控制面把 Session 置 SUSPENDED；bridge 的 WakeSensor 轮询控制面挂起会话对应的 Aone 评论，检测到人工回复后 wake_session 推 SUSPENDED→READY，由 PersistenceExecutor 重新 lease 续跑。
 - **外化契约（多机安全）**：SUSPEND 挂起或 release 释放**之前**必须先把上下文与代码外化到远端，否则换一台机器无法续跑。非 Terraform 依次执行 `wrap.sh sync` + `github-identity.sh push` + `coord.sh checkpoint`；Terraform 主处理 run 不做中途 sync，改由 RD finalizer 的单次 `wrap.sh done` 写入完整上下文，再 push + checkpoint；后续重要事件由 bridge 独立 ledger 补偿，Aone 与钉钉分通道持久化，semantic source 只落短摘要，正文统一 sanitize，Aone `post_uncertain` 只查远端 marker 不重发。满 8 天无实质进展的重访催办固定发 Aone @ + 钉钉私信，同一 anchor/owner epoch 各通道至多成功一次。缺任一即视为 `unexternalized`，`JARVIS_REQUIRE_PUSH=1` 时 wrap-check 会阻断收尾。
 - **超时**：单轮执行上限 12 小时（`JARVIS_DISPATCH_TIMEOUT`）；挂起等待上限 14 天。
 

@@ -91,13 +91,12 @@ class HandlerWiringTest(unittest.TestCase):
         calls = []
         handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
         handler.persistence_executor = _Starter("worker", calls)
-        for name in ("scanner", "reconciler", "board", "prober", "reviser",
-                     "watcher", "managed_wait_sensor", "prwatch",
-                     "recovery"):
+        for name in ("scanner", "post_pr_recovery", "daily",
+                     "wake_sensor", "prwatch"):
             setattr(handler, name, _Starter(name, calls))
         handler.start_schedulers()
         self.assertEqual(calls[0], "worker")
-        self.assertEqual(calls[-1], "recovery")
+        self.assertEqual(calls[-1], "prwatch")
 
     def test_stop_helper_forwards_drain_policy(self):
         handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
@@ -117,16 +116,20 @@ class HandlerWiringTest(unittest.TestCase):
         self.assertEqual(client.token, "shared-token")
 
 
-class ManagedWaitSensorTest(unittest.TestCase):
+class WakeSensorTest(unittest.TestCase):
     def _handler(self, pages, comments, wake_result=True):
         client = mock.Mock()
         client.list_pending_aone_reply_waits.side_effect = pages
         handler = SimpleNamespace(
             task_client=client,
-            watcher=SimpleNamespace(_fetch_comments=mock.Mock(return_value=comments)),
             _wake=mock.Mock(return_value=wake_result),
         )
         return handler
+
+    def _sensor(self, handler, comments):
+        sensor = bot.WakeSensor(handler)
+        sensor._fetch_comments = mock.Mock(return_value=comments)
+        return sensor
 
     @staticmethod
     def _wait(session_id=10, cursor="40"):
@@ -159,7 +162,7 @@ class ManagedWaitSensorTest(unittest.TestCase):
             {"id": "42", "creator": "human-2", "content": "earlier reply"},
         ]
         handler = self._handler([page], comments)
-        sensor = bot.ManagedWaitSensor(handler)
+        sensor = self._sensor(handler, comments)
 
         sensor._tick()
 
@@ -173,7 +176,7 @@ class ManagedWaitSensorTest(unittest.TestCase):
 
     def test_list_failure_keeps_local_throttle_and_retries_without_wake(self):
         handler = self._handler([RuntimeError("503")], [])
-        sensor = bot.ManagedWaitSensor(handler)
+        sensor = self._sensor(handler, [])
         sensor._poll_state["10"] = {"first_seen": 1, "last_poll": 2}
 
         sensor._tick()
@@ -183,9 +186,9 @@ class ManagedWaitSensorTest(unittest.TestCase):
 
     def test_failed_wake_keeps_wait_discovery_retryable(self):
         page = {"items": [self._wait()], "nextAfterSessionId": 10, "hasMore": False}
-        handler = self._handler([page], [
-            {"id": 41, "creator": "human", "content": "reply"}], wake_result=False)
-        sensor = bot.ManagedWaitSensor(handler)
+        comments = [{"id": 41, "creator": "human", "content": "reply"}]
+        handler = self._handler([page], comments, wake_result=False)
+        sensor = self._sensor(handler, comments)
 
         sensor._tick()
 
@@ -507,63 +510,13 @@ class WakeRoutingTest(unittest.TestCase):
             "843", task, [{"id": 9, "creator": "a", "content": "x"}]))
         handler._quick_card.assert_not_called()
 
-    def test_wait_record_is_removed_only_after_accepted_wake(self):
-        task = {"last_comment_id": 1, "last_poll": 0,
-                "suspended_at": time.time() - 1000,
-                "target": "g", "target_type": "group"}
-        handler = SimpleNamespace(_wake=mock.Mock(return_value=False))
-        watcher = bot.WaitWatcher.__new__(bot.WaitWatcher)
-        watcher.handler = handler
-        watcher.suspended = {"843": task}
-        watcher._lock = threading.Lock()
-        watcher._fetch_comments = lambda _iid: [
-            {"id": 2, "creator": "human", "content": "go"}]
-        watcher._remove_persisted = mock.Mock()
-        watcher._tick()
-        self.assertIn("843", watcher.suspended)
-        watcher._remove_persisted.assert_not_called()
 
-        task["last_poll"] = 0
-        handler._wake.return_value = True
-        watcher._tick()
-        self.assertNotIn("843", watcher.suspended)
-        watcher._remove_persisted.assert_called_once_with("843")
-
-    def test_legacy_wait_persists_and_restores_aone_title(self):
-        with tempfile.TemporaryDirectory() as tmp, \
-                mock.patch.object(bot, "REPO_ROOT", Path(tmp)):
-            watcher = bot.WaitWatcher(SimpleNamespace())
-            watcher.suspend(
-                "843", "runtime", "owner", 4, "group", "group",
-                project="2100304", title="Frozen wait title")
-            restored = bot.WaitWatcher(SimpleNamespace())
-            self.assertEqual(restored.suspended["843"]["title"],
-                             "Frozen wait title")
-
-    def test_legacy_wait_backfills_pre_title_record_by_item_id(self):
-        with tempfile.TemporaryDirectory() as tmp, \
-                mock.patch.object(bot, "REPO_ROOT", Path(tmp)), \
-                mock.patch.object(
-                    bot.JarvisHandler, "_workitem_title",
-                    return_value="Backfilled wait title") as lookup:
-            persisted = Path(tmp) / ".my-day/suspended/843.json"
-            persisted.parent.mkdir(parents=True)
-            persisted.write_text(
-                '{"aone_id":"843","session_id":"runtime","project":"2100304"}')
-            restored = bot.WaitWatcher(SimpleNamespace())
-            self.assertEqual(restored.suspended["843"]["title"],
-                             "Backfilled wait title")
-            lookup.assert_called_once_with("843")
-            self.assertEqual(json.loads(persisted.read_text())["title"],
-                             "Backfilled wait title")
-
-
-class AoneScannerUnionTest(unittest.TestCase):
-    """AoneScanner 统一探测：每池 assignee∪tracker∪idle 并集去重，取代 scan.sh 单一 assignee
+class AoneSchedulerUnionTest(unittest.TestCase):
+    """AoneScheduler 统一探测：每池 assignee∪tracker∪idle 并集去重，取代 scan.sh 单一 assignee
     出数据，消除「指派给人 / 抄送数字人」盲区（黑洞成因）。"""
 
     def _scanner(self):
-        s = bot.AoneScanner.__new__(bot.AoneScanner)
+        s = bot.AoneScheduler.__new__(bot.AoneScheduler)
         return s
 
     def test_query_pool_union_merges_three_sources_and_dedups(self):
@@ -602,7 +555,7 @@ class AoneScannerUnionTest(unittest.TestCase):
 
     def test_scan_union_iterates_pools(self):
         s = self._scanner()
-        with mock.patch.object(bot.AoneScanner, "_read_pools",
+        with mock.patch.object(bot.AoneScheduler, "_read_pools",
                                return_value=[("tf_customer", "1086837", []),
                                              ("tf_provider", "528766", [])]):
             calls = []
@@ -618,7 +571,7 @@ class AoneScannerUnionTest(unittest.TestCase):
 
     def test_scan_union_no_pools_returns_none(self):
         s = self._scanner()
-        with mock.patch.object(bot.AoneScanner, "_read_pools", return_value=[]):
+        with mock.patch.object(bot.AoneScheduler, "_read_pools", return_value=[]):
             self.assertIsNone(s._scan_union())
 
     def test_digital_worker_ids_single_source(self):

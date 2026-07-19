@@ -48,7 +48,7 @@ class PostPrOperationRecoveryTest(unittest.TestCase):
             persistence_executor=SimpleNamespace(worker_key="host:boot:process"),
             ephemeral_executor=SimpleNamespace(active_ids=lambda: []),
         )
-        return bot.ReconcileScheduler(handler), client
+        return bot.PostPrRecoverySensor(handler), client
 
     def test_exact_tag_state_requires_one_side_and_rejects_terminal_tags(self):
         states = [

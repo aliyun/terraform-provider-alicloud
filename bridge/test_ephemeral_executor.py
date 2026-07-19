@@ -18,8 +18,7 @@ from jarvis_dingtalk_bot import EphemeralExecutor  # noqa: E402
 class EphemeralExecutorTest(unittest.TestCase):
     def make(self, manager, directory):
         return EphemeralExecutor(
-            max_workers=1, queue_max=2, capacity_manager=manager,
-            ledger_path=Path(directory) / "ledger.json")
+            max_workers=1, queue_max=2, capacity_manager=manager)
 
     def test_waits_for_shared_capacity_without_starting_work(self):
         manager = CapacityManager(1)

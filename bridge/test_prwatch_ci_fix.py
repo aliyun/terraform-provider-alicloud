@@ -221,16 +221,16 @@ class GhPrCommentsParseTest(unittest.TestCase):
 class _DispatchBase(unittest.TestCase):
     def setUp(self):
         tf = tempfile.NamedTemporaryFile(suffix=".json", delete=False, mode="w")
-        tf.write(json.dumps({TID: {"pr_url": PR, "project": PROJ,
-                                  "title": TITLE, "submitted_at": "x"}}))
         tf.close()
         self.tmp = tf.name
-        self._orig_path = bot.PRWATCH_PATH
+        os.unlink(self.tmp)  # only the ".events" sibling path is used
+        bot._PRWATCH_STORE.clear()
+        bot._PRWATCH_STORE[TID] = {"pr_url": PR, "project": PROJ,
+                                   "title": TITLE, "submitted_at": "x"}
         self._orig_event_path = bot.AONE_EVENT_PATH
         self._orig_bt = bot.broadcast_target
         self._orig_by = bot.broadcast_type
         self._orig_publish = bot._aone_event_publish
-        bot.PRWATCH_PATH = Path(self.tmp)
         bot.AONE_EVENT_PATH = Path(self.tmp + ".events")
         bot.broadcast_target = lambda: "t"
         bot.broadcast_type = lambda: "ty"
@@ -244,12 +244,11 @@ class _DispatchBase(unittest.TestCase):
         self.sched._escalate = lambda *a, **k: None
 
     def tearDown(self):
-        bot.PRWATCH_PATH = self._orig_path
+        bot._PRWATCH_STORE.clear()
         bot.AONE_EVENT_PATH = self._orig_event_path
         bot.broadcast_target = self._orig_bt
         bot.broadcast_type = self._orig_by
         bot._aone_event_publish = self._orig_publish
-        os.unlink(self.tmp)
         try:
             os.unlink(self.tmp + ".events")
         except FileNotFoundError:
@@ -286,7 +285,8 @@ class MaybeDispatchCiFixTest(_DispatchBase):
     def test_check_migrates_legacy_registry_title_before_pr_dispatch(self):
         legacy = self._entry()
         legacy.pop("title", None)
-        bot._prwatch_write({TID: legacy})
+        bot._PRWATCH_STORE.clear()
+        bot._PRWATCH_STORE[TID] = legacy
         self.sched._ticket_metadata = lambda tid: (PROJ, "Backfilled Aone title")
         self.sched._gh_pr_state = lambda _url: ("OPEN", None)
         self._ci = ("sha1", ["Compile"], False)
@@ -521,7 +521,7 @@ class AutoRegisterTest(_DispatchBase):
 
     def setUp(self):
         super().setUp()
-        bot._prwatch_write({})  # 清空 base 的 TID entry，从零测漏登发现
+        bot._PRWATCH_STORE.clear()  # 清空 base 的 TID entry，从零测漏登发现
         self._prs = []
         self._proj = "528766"
         self.sched._gh_open_prs = lambda: self._prs
