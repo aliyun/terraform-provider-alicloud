@@ -25,6 +25,7 @@ fi
 
 TMP="$(mktemp -d 2>/dev/null || mktemp -d -t bridge_run)"
 FAKE_HOME="$TMP/home"
+FAKE_BREW="$TMP/opt/homebrew"
 STATE="$TMP/state"
 FAKEPY="$TMP/fakepy"
 BOTFILE="$TMP/bot.py"       # dummy path handed to the fake python; content unused
@@ -34,7 +35,7 @@ FAKECTL="$TMP/launchctl"
 FAKECTL_STATE="$TMP/launchctl-state"
 LPLIST="$TMP/com.jarvis.test.plist"
 : >"$BOTFILE"; : >"$BSENV"; : >"$JENV"
-mkdir -p "$FAKE_HOME/.local/bin"
+mkdir -p "$FAKE_HOME/.local/bin" "$FAKE_BREW/bin" "$FAKE_BREW/sbin"
 printf '%s\n' '<?xml version="1.0"?><plist version="1.0"><dict><key>Label</key><string>com.jarvis.test</string></dict></plist>' >"$LPLIST"
 
 pass=0; fail=0
@@ -121,6 +122,7 @@ run() {
       JARVIS_BRIDGE_START_WAIT="1.0" \
       JARVIS_BRIDGE_STOP_WAIT="1" \
       JARVIS_BRIDGE_NO_COORD="1" \
+      JARVIS_BRIDGE_TOOL_DIRS="$FAKE_BREW/sbin $FAKE_BREW/bin $FAKE_HOME/.local/bin" \
       JARVIS_BRIDGE_SUPERVISOR="${TEST_SUPERVISOR-}" \
       JARVIS_BRIDGE_LAUNCHCTL="$FAKECTL" \
       JARVIS_BRIDGE_LAUNCHD_LABEL="com.jarvis.test" \
@@ -128,7 +130,7 @@ run() {
       JARVIS_BRIDGE_LAUNCHD_PLIST="$LPLIST" \
       FAKE_LAUNCHCTL_STATE="$FAKECTL_STATE" \
       HOME="$FAKE_HOME" \
-      PATH="/usr/bin:/bin:/usr/sbin:/sbin" \
+      PATH="$FAKE_BREW/bin:$FAKE_BREW/sbin:/usr/bin:/bin:/usr/sbin:/sbin" \
       DINGTALK_APP_KEY="${TEST_KEY-}" \
       DINGTALK_APP_SECRET="${TEST_SECRET-}" \
       JARVIS_NO_DINGTALK="" \
@@ -222,8 +224,8 @@ fresh
 out="$(run dry-run 2>&1)"; rc=$?
 [ "$rc" = 0 ] && ok "dry-run: exit 0" || no "dry-run: exit 0 (got $rc)"
 has "dry-run ok" "$out" "dry-run: --dry-run-once forwarded to bot"
-has "PATH=$FAKE_HOME/.local/bin:/usr/bin:/bin:/usr/sbin:/sbin" "$out" \
-  "dry-run: non-interactive PATH includes user-local a1 directory"
+has "PATH=$FAKE_HOME/.local/bin:$FAKE_BREW/bin:$FAKE_BREW/sbin:/usr/bin:/bin:/usr/sbin:/sbin" "$out" \
+  "dry-run: non-interactive PATH includes user-local and Homebrew tool directories"
 has "JARVIS_ROOT=$repo_root" "$out" \
   "dry-run: review worktree stays on its own wrappers and configuration"
 
