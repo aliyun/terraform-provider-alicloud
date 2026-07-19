@@ -6,7 +6,8 @@ Long-running process that holds a DingTalk Stream WebSocket. On each text
 message from a whitelisted user it creates one AI card and streams claude's
 answer into it live — reading `claude` stream-json token-by-token and PUTting
 the accumulated text onto the card so the user sees it grow in real time
-(true streaming, no upfront "处理中" ack). Per-sender session continuity.
+(true streaming, no upfront "处理中" ack). Conversation-scoped session
+continuity keeps the same sender isolated across groups and private chat.
 
 Direction: INBOUND (user -> bot -> claude -> bot -> user). The card sender
 helpers are imported from the dingtalk-ai-card skill's streaming.py.
@@ -26,6 +27,12 @@ Env:
   JARVIS_HANDOFF_POOL                       委派建单默认落的池 key(见 config/pools.json,默认 api_toolkit).
   JARVIS_TATA_ROOT                         Tata cwd (default ~/.jarvis/tata-cwd, no jarvis bootstrap).
   JARVIS_TATA_RESIDENT                     1=use resident TataPool warm subprocesses (default 0 = one-shot).
+  JARVIS_TATA_DWS_HISTORY                  1=read bounded history for the callback's exact group (default 0).
+  JARVIS_TATA_DWS_PROFILE                  optional authenticated DWS profile.
+  JARVIS_TATA_DWS_LOOKBACK_MIN             group-history lookback minutes (default 30, max 1440).
+  JARVIS_TATA_DWS_MAX                      max group-history messages per round (default 20, max 100).
+  JARVIS_TATA_DWS_TIMEOUT                  DWS subprocess timeout seconds (default 15, max 60).
+  JARVIS_DWS_BIN                           DWS executable (default dws).
   JARVIS_ROOT                              cwd for Jarvis claude (default repo root, two up).
   DINGTALK_SKILL                           override path to streaming.py.
   CLAUDE_BIN                               claude binary (default: PATH / ~/.local/bin/claude).
@@ -140,6 +147,12 @@ from jarvis_task_client import ControlPlaneClient, TaskEnvelope
 from jarvis_capacity import CapacityManager
 from jarvis_task_router import ExecutionRouter
 from jarvis_persistence_executor import PersistenceExecutor
+from tata_dws_history import (
+    DwsGroupHistory,
+    DwsHistoryError,
+    TataConversationScope,
+    render_group_history,
+)
 from jarvis_execution_runtime import (
     DEFAULT_EXECUTION_RUNTIME,
     DEFAULT_PROCESS_GUARDIAN,
@@ -1875,6 +1888,11 @@ def tata_cmd():
 def tata_resident_enabled():
     """Whether Tata should keep warm subprocesses. Default off to avoid idle resident claude."""
     return os.environ.get("JARVIS_TATA_RESIDENT", "0").strip().lower() in ("1", "true", "yes", "on")
+
+
+def tata_dws_history_enabled():
+    return os.environ.get("JARVIS_TATA_DWS_HISTORY", "0").strip().lower() in (
+        "1", "true", "yes", "on")
 
 
 def jarvis_cmd(session_id=None, terraform=False):
@@ -6888,13 +6906,21 @@ class JarvisHandler(AsyncChatbotHandler):
         # 日志, 唤醒走 headless 池, 无入站 Tata → TataPool 是死重故跳过。见 _run_no_dingtalk()。
         self.no_dingtalk = no_dingtalk
         self.audience = tata_audience()           # 空=全员; 非空=Tata 受众名单
-        self.jarvis_sessions = {}                 # staff -> Jarvis session uuid (master only)
-        self.jarvis_started = set()               # staff with a live Jarvis session
-        self.tata_sessions = {}                   # staff -> Tata session uuid (claude --session-id)
-        self.tata_started = set()                 # staff whose Tata session已建(后续 --resume)
-        self.locks = defaultdict(threading.Lock)  # per-sender serialize
+        self.jarvis_sessions = {}                 # scope key -> Jarvis session uuid (master only)
+        self.jarvis_started = set()               # scope keys with a live Jarvis session
+        self.tata_sessions = {}                   # scope key -> Tata session uuid (claude --session-id)
+        self.tata_started = set()                 # scope keys whose Tata session已建(后续 --resume)
+        self.locks = defaultdict(threading.Lock)  # per-conversation + sender serialize
         self.sm = _load_streaming_module()        # imported streaming.py helpers
         self.pool = None if (no_dingtalk or not tata_resident_enabled()) else TataPool()
+        self.tata_history = None
+        if not no_dingtalk and tata_dws_history_enabled():
+            try:
+                self.tata_history = DwsGroupHistory.from_env(robot_code())
+            except (TypeError, ValueError) as exc:
+                # Optional context must never prevent the inbound bridge from starting.
+                log.warning("Tata DWS history disabled: invalid configuration (%s)",
+                            type(exc).__name__)
         # Persistent scheduling seam. Every recoverable Task is owned by the
         # control plane; only EphemeralJob work may enter the local executor.
         self.task_client = _task_client_from_env()
@@ -6942,11 +6968,12 @@ class JarvisHandler(AsyncChatbotHandler):
         # 控制面未配置时自动禁用。
         self.recovery = RecoveryScheduler(self, self.ephemeral_executor)
         log.info("audience=%s master=%s root=%s tata_cwd=%s claude=%s skill=%s "
-                 "tata_resident=%s auto_dispatch=%s execution_capacity=%s "
+                 "tata_resident=%s tata_dws_history=%s auto_dispatch=%s execution_capacity=%s "
                  "probe=%s@%s nudge=%s@%s "
                  "task_types=%s",
                  self.audience or "*", master_staff(), jarvis_root(), tata_root(),
-                 claude_bin(), skill_path(), bool(self.pool), self.scanner.auto,
+                 claude_bin(), skill_path(), bool(self.pool), bool(self.tata_history),
+                 self.scanner.auto,
                  self.ephemeral_executor.max_workers,
                  self.prober.enabled, self.prober.hour,
                  self.reviser.enabled, self.reviser.hour,
@@ -7117,17 +7144,35 @@ class JarvisHandler(AsyncChatbotHandler):
         )
 
 
-    def _tata_session(self, staff):
-        """返回该 staff 的 Tata (session_id, resume)。
+    def _tata_session(self, scope_key):
+        """返回该会话范围的 Tata (session_id, resume)。
 
         session_id 必须是合法 UUID——claude CLI 对 --session-id/--resume 强校验，
         一次性冷起模式(默认)下直传 staffId 会被拒("Invalid session ID. Must be a
-        valid UUID.")。每 staff 一个稳定 uuid：首轮 --session-id 建会话，后续 --resume
-        续聊。resident TataPool 仅拿它当 dict key，语义不变。"""
-        sid = self.tata_sessions.setdefault(staff, str(uuid.uuid4()))
-        resume = staff in self.tata_started
-        self.tata_started.add(staff)
+        valid UUID.")。每会话范围一个稳定 uuid：首轮 --session-id 建会话，后续 --resume
+        续聊。群聊按 group+staff，私聊按 private+staff 隔离，防止跨群或群/私聊
+        串会话。resident TataPool 仅拿它当 dict key，语义不变。"""
+        sid = self.tata_sessions.setdefault(scope_key, str(uuid.uuid4()))
+        resume = scope_key in self.tata_started
+        self.tata_started.add(scope_key)
         return sid, resume
+
+    def _tata_input(self, scope, text):
+        """为当前群读取有界历史；私聊与任何 DWS 失败均只使用当前消息。"""
+        if self.tata_history is None or scope.kind != "group":
+            return text
+        try:
+            messages = self.tata_history.read_current(scope)
+            history = render_group_history(messages, current_text=text)
+            log.info("Tata DWS history scope=%s messages=%d",
+                     scope.audit_id, len(messages))
+        except DwsHistoryError as exc:
+            log.warning("Tata DWS history scope=%s skipped code=%s",
+                        scope.audit_id, exc.code)
+            return text
+        if not history:
+            return text
+        return "%s\n\n【当前提问｜唯一可执行的用户意图】\n%s" % (history, text)
 
     def _tata_runner(self, text, sid, resume):
         """Tata 一轮: 默认一次性冷起; 显式开启 resident 模式时走常驻进程保温。"""
@@ -7837,6 +7882,13 @@ class JarvisHandler(AsyncChatbotHandler):
             return AckMessage.STATUS_OK, "ignored"
         if not text:
             return AckMessage.STATUS_OK, "empty"
+        try:
+            scope = (TataConversationScope.group(msg.conversation_id, staff)
+                     if is_group else TataConversationScope.private(staff))
+        except ValueError:
+            log.warning("ignore callback with incomplete conversation scope group=%s", is_group)
+            return AckMessage.STATUS_OK, "invalid_scope"
+        scope_key = scope.session_key
 
         # Authorization interception (fallback mode / manual override): "处理 #ID" or
         # "全部处理" → dispatch the pending item(s) as headless jarvis, one fresh session
@@ -7892,18 +7944,19 @@ class JarvisHandler(AsyncChatbotHandler):
                 self._quick_card(card_target, "工作板尚未生成,请稍候。", card_type)
             return AckMessage.STATUS_OK, "board"
 
-        lock = self.locks[staff]
+        lock = self.locks[scope_key]
         if not lock.acquire(blocking=False):
             self._quick_card(card_target, "🟠 上一条还在处理中, 请稍候再发。", card_type)
             return AckMessage.STATUS_OK, "busy"
         try:
-            log.info("staff=%s group=%s conv=%s msg=%r", staff, is_group,
-                     msg.conversation_id if is_group else "-", text[:200])
+            log.info("staff=%s group=%s scope=%s msg_len=%d",
+                     staff, is_group, scope.audit_id, len(text))
             t0 = time.time()
             # 第一层：Tata 门面，全文先建卡流推；哨兵剥行不上屏。
-            tsid, tresume = self._tata_session(staff)
+            tsid, tresume = self._tata_session(scope_key)
+            tata_text = self._tata_input(scope, text)
             full = self._stream_round(
-                card_target, text, tsid, tresume,
+                card_target, tata_text, tsid, tresume,
                 self._tata_runner,
                 clean_sentinel=True,
                 tail_on_handoff="\n\n交给 Jarvis 处理…",
@@ -7916,9 +7969,9 @@ class JarvisHandler(AsyncChatbotHandler):
                     log.info("staff=%s handoff -> jarvis (async exec): %r", staff, task[:200])
                     # Handoff continues the master's conversational Jarvis session (reuse
                     # jsid/resume), unlike per-ticket dispatch which is一单一会话.
-                    jsid = self.jarvis_sessions.setdefault(staff, str(uuid.uuid4()))
-                    jresume = staff in self.jarvis_started
-                    self.jarvis_started.add(staff)
+                    jsid = self.jarvis_sessions.setdefault(scope_key, str(uuid.uuid4()))
+                    jresume = scope_key in self.jarvis_started
+                    self.jarvis_started.add(scope_key)
                     handoff_id = "handoff-%s" % int(time.time())
                     self._submit_card(
                         handoff_id, card_target, card_type, task, jsid, jresume,
