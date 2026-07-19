@@ -126,7 +126,7 @@ bootstrap/claim.sh release <id> <pool-project>                                # 
 
 ## 三、定期维护（僵尸清扫）
 
-bridge 主机由 AoneScheduler 的 stale-claim 子任务（每 `JARVIS_STALE_CHECK_EVERY` 个 scan tick）广播僵尸认领告警；post-PR operation 恢复由 PostPrRecoverySensor（`JARVIS_RECONCILE_INTERVAL`，默认 1200s）跑。orphan/drift/donecheck 与 escalation/ 落盘的 `reconcile.sh all` 不再由 bridge 自动调度，改为运维手动或按 `bootstrap/cron.example` 独立触发：
+bridge 主机由 AoneScheduler 的 stale-claim 子任务（每 `JARVIS_STALE_CHECK_EVERY` 个 scan tick）广播僵尸认领告警。post-PR 工单的 Aone 认领/释放已并入正常 `_TaskAoneBookend`（`pr_ci_fix`/`pr_comment_reply` 走 `REPLAY_SAFE`：worker 中途死亡由控制面重新 lease、幂等重跑收敛标签），不再有独立的 fenced-operation 恢复组件。orphan/drift/donecheck 与 escalation/ 落盘的 `reconcile.sh all` 不再由 bridge 自动调度，改为运维手动或按 `bootstrap/cron.example` 独立触发：
 
 ```bash
 bootstrap/reconcile.sh all      # stale + orphan + drift + donecheck 四路顺跑
