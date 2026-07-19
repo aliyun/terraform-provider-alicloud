@@ -3075,5 +3075,162 @@ class InteractiveWorkerTest(unittest.TestCase):
             self.assertTrue(worker._worker_idle_expired(state, now=200))
 
 
+class StopCheckTest(unittest.TestCase):
+    """Tests for the stop-check subcommand (control-plane session exit gate)."""
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.env = mock.patch.dict(os.environ, {
+            "HOME": self.temp.name,
+            "JARVIS_INTERACTIVE_STATE_DIR": self.temp.name,
+            "JARVIS_INTERACTIVE_RETRY_DELAY": "0",
+            "CODEX_THREAD_ID": "native-thread-1",
+            "CLAUDE_CODE_SESSION_ID": "",
+        }, clear=False)
+        self.env.start()
+        self._nearest_patch = mock.patch.object(
+            worker, "_nearest_runtime_client", return_value="")
+        self._nearest_patch.start()
+
+    def tearDown(self):
+        self._nearest_patch.stop()
+        self.env.stop()
+        self.temp.cleanup()
+
+    def _store(self):
+        return worker.StateStore(worker._state_path("codex", "native-thread-1"))
+
+    def _seed(self, **overrides):
+        state = {
+            "schemaVersion": 1,
+            "client": "codex",
+            "clientSessionId": "native-thread-1",
+            "workerKey": "host:boot:process",
+            "host": "host",
+            "bootId": "boot",
+            "processUuid": "process",
+            "hostPid": os.getpid(),
+            "hostProcessStartedAt": worker._process_start_identity(os.getpid()),
+            "verifyHostCommand": True,
+            "cwd": "/workspace",
+            "transcriptPath": "/tmp/transcript.jsonl",
+            "branch": "worktree-ticket",
+            "version": "test",
+            "claimCounter": 0,
+            "current": None,
+            "pendingClaim": None,
+            "pendingOperation": None,
+            "pendingSuspend": None,
+            "stopped": False,
+            "turnActive": True,
+            "activeTurnId": None,
+            "daemonPid": os.getpid(),
+            "daemonStartedAt": worker.time.time(),
+            "sidecarHeartbeatAt": worker.time.time(),
+        }
+        state.update(overrides)
+        self._store().save(state)
+        return state
+
+    def test_stop_check_no_current_passes(self):
+        """No active task → exit 0 (safe to stop)."""
+        self._seed(current=None)
+        self.assertEqual(worker.stop_check(), 0)
+
+    def test_stop_check_empty_state_passes(self):
+        """Empty state dict → exit 0."""
+        self._store().save({})
+        self.assertEqual(worker.stop_check(), 0)
+
+    def test_stop_check_terminal_session_completed_passes(self):
+        """Session COMPLETED → exit 0."""
+        self._seed(
+            current={"aoneId": "123", "sessionId": "s-1"},
+            sessionPermit={"sessionStatus": "COMPLETED", "issuedAt": 1},
+        )
+        self.assertEqual(worker.stop_check(), 0)
+
+    def test_stop_check_terminal_session_failed_passes(self):
+        """Session FAILED → exit 0."""
+        self._seed(
+            current={"aoneId": "123", "sessionId": "s-1"},
+            sessionPermit={"sessionStatus": "FAILED", "issuedAt": 1},
+        )
+        self.assertEqual(worker.stop_check(), 0)
+
+    def test_stop_check_terminal_session_suspended_passes(self):
+        """Session SUSPENDED → exit 0."""
+        self._seed(
+            current={"aoneId": "123", "sessionId": "s-1"},
+            sessionPermit={"sessionStatus": "SUSPENDED", "issuedAt": 1},
+        )
+        self.assertEqual(worker.stop_check(), 0)
+
+    def test_stop_check_lost_ownership_passes(self):
+        """Ownership lost → exit 0 (not our problem anymore)."""
+        self._seed(
+            current={"aoneId": "123", "sessionId": "s-1"},
+            sessionPermit={"sessionStatus": "RUNNING", "issuedAt": 1},
+            lostOwnership={"aoneId": "123", "reason": "stale_fence"},
+        )
+        self.assertEqual(worker.stop_check(), 0)
+
+    def test_stop_check_stopped_passes(self):
+        """Worker already stopped → exit 0."""
+        self._seed(
+            current={"aoneId": "123", "sessionId": "s-1"},
+            sessionPermit={"sessionStatus": "RUNNING", "issuedAt": 1},
+            stopped=True,
+        )
+        self.assertEqual(worker.stop_check(), 0)
+
+    def test_stop_check_active_session_blocks(self):
+        """Active session with RUNNING status → exit 2 (blocked)."""
+        self._seed(
+            current={"aoneId": "456", "sessionId": "s-2"},
+            sessionPermit={"sessionStatus": "RUNNING", "issuedAt": 1},
+        )
+        self.assertEqual(worker.stop_check(), 2)
+
+    def test_stop_check_active_session_no_permit_blocks(self):
+        """Active session with no permit → exit 2 (status unknown, block)."""
+        self._seed(
+            current={"aoneId": "789", "sessionId": "s-3"},
+        )
+        self.assertEqual(worker.stop_check(), 2)
+
+    def test_stop_check_pending_operation_blocks(self):
+        """Active session with pending operation → exit 2."""
+        self._seed(
+            current={"aoneId": "111", "sessionId": "s-4"},
+            sessionPermit={"sessionStatus": "RUNNING", "issuedAt": 1},
+            pendingOperation={"kind": "AONE_COMMENT", "status": "SENDING"},
+        )
+        self.assertEqual(worker.stop_check(), 2)
+
+    def test_stop_check_pending_claim_blocks(self):
+        """Active session with pending claim → exit 2."""
+        self._seed(
+            current={"aoneId": "222", "sessionId": "s-5"},
+            sessionPermit={"sessionStatus": "RUNNING", "issuedAt": 1},
+            pendingClaim={"phase": "CLAIMING"},
+        )
+        self.assertEqual(worker.stop_check(), 2)
+
+    def test_stop_check_pending_suspend_blocks(self):
+        """Active session with pending suspend → exit 2."""
+        self._seed(
+            current={"aoneId": "333", "sessionId": "s-6"},
+            sessionPermit={"sessionStatus": "RUNNING", "issuedAt": 1},
+            pendingSuspend={"detail": "waiting"},
+        )
+        self.assertEqual(worker.stop_check(), 2)
+
+    def test_stop_check_state_missing_returns_fallback(self):
+        """No state file → exit 1 (trigger wrap-check fallback)."""
+        # Don't seed anything — state file doesn't exist
+        self.assertEqual(worker.stop_check(), 1)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -3680,6 +3680,62 @@ def transition(aone_id: str, action: str, detail: Optional[str] = None) -> Dict[
     return dict(result)
 
 
+def stop_check() -> int:
+    """Control-plane-aware session exit gate.
+
+    Returns:
+        0 — safe to stop (no active session, or session already terminal)
+        2 — stop blocked (active session with unfinished work)
+        1 — state unavailable (caller should fall back to wrap-check.sh)
+    """
+    try:
+        store = _current_store()
+    except RuntimeError:
+        return 1
+    try:
+        state = store.load()
+    except (RuntimeError, OSError):
+        return 1
+
+    if not state:
+        return 0
+
+    current = state.get("current")
+    if not isinstance(current, Mapping):
+        return 0
+
+    permit = state.get("sessionPermit") or {}
+    session_status = str(permit.get("sessionStatus") or "")
+    if session_status in ("COMPLETED", "FAILED", "SUSPENDED"):
+        return 0
+
+    if state.get("lostOwnership") or state.get("stopped"):
+        return 0
+
+    aone_id = current.get("aoneId") or "?"
+    problems: list[str] = []
+
+    if state.get("pendingOperation"):
+        problems.append("  %s (外部操作回执未收敛)" % aone_id)
+
+    if state.get("pendingClaim"):
+        problems.append("  %s (接单意图未完成)" % aone_id)
+
+    if state.get("pendingSuspend"):
+        problems.append("  %s (挂起结果未确定)" % aone_id)
+
+    if problems:
+        print("stop-check: 活跃 session 存在未收敛状态:", file=sys.stderr)
+        for p in problems:
+            print(p, file=sys.stderr)
+        return HOOK_BLOCK_EXIT
+
+    print("stop-check: session 仍活跃 (aone=%s, status=%s); "
+          "请先 claim.sh release 或 wrap.sh done 收尾" % (aone_id, session_status or "ACTIVE"),
+          file=sys.stderr)
+    return HOOK_BLOCK_EXIT
+
+
 def worker_status() -> Any:
     state = _current_store().load()
     return _client().get_worker_state(state["workerKey"])
@@ -3762,6 +3818,7 @@ def _parser() -> argparse.ArgumentParser:
     context_parser = sub.add_parser("post-pr-context")
     context_parser.add_argument("--pid", type=int, default=os.getppid())
     sub.add_parser("status")
+    sub.add_parser("stop-check")
     return parser
 
 
@@ -3855,6 +3912,8 @@ def main(argv: Optional[list[str]] = None) -> int:
             return 0 if post_pr_context_active(args.pid) else 1
         elif args.command == "status":
             _print_json(worker_status())
+        elif args.command == "stop-check":
+            return stop_check()
         return 0
     except ControlPlaneConflict as exc:
         print("interactive claim conflict: %s" % exc, file=sys.stderr)
