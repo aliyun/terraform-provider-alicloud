@@ -92,7 +92,7 @@ class HandlerWiringTest(unittest.TestCase):
         handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
         handler.persistence_executor = _Starter("worker", calls)
         for name in ("scanner", "post_pr_recovery", "daily",
-                     "wake_sensor", "prwatch"):
+                     "aone_reply_scheduler", "prwatch"):
             setattr(handler, name, _Starter(name, calls))
         handler.start_schedulers()
         self.assertEqual(calls[0], "worker")
@@ -116,7 +116,7 @@ class HandlerWiringTest(unittest.TestCase):
         self.assertEqual(client.token, "shared-token")
 
 
-class WakeSensorTest(unittest.TestCase):
+class AoneReplySchedulerTest(unittest.TestCase):
     def _handler(self, pages, comments, wake_result=True):
         client = mock.Mock()
         client.list_pending_aone_reply_waits.side_effect = pages
@@ -127,7 +127,7 @@ class WakeSensorTest(unittest.TestCase):
         return handler
 
     def _sensor(self, handler, comments):
-        sensor = bot.WakeSensor(handler)
+        sensor = bot.AoneReplyScheduler(handler)
         sensor._fetch_comments = mock.Mock(return_value=comments)
         return sensor
 

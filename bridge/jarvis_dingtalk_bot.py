@@ -1680,7 +1680,7 @@ class _TaskAoneBookend:
         :class:`_PostPrTaskBookend`;
       * ``commit`` writes the run's structured result exactly once — the single RD reply
         comment (terraform-rd for terraform lines, jarvis otherwise) then the terminal
-        tag (done→finish / idle→release; suspend leaves it claimed for the WakeSensor).
+        tag (done→finish / idle→release; suspend leaves it claimed for the AoneReplyScheduler).
 
     Idempotency is per task generation: a same-generation crash/retry reuses the reply
     key (no duplicate comment); a genuine re-dispatch (new generation) posts a fresh
@@ -1732,7 +1732,7 @@ class _TaskAoneBookend:
         durably enqueued (posted or pending→flush) before the terminal tag; a ledger I/O
         failure raises so the caller fails the Task closed (retryable) rather than
         stranding the reply. ``done``→finish (jarvis-done + pool done_status),
-        ``idle``→release (jarvis-idle), ``suspend``→leave claimed for the WakeSensor.
+        ``idle``→release (jarvis-idle), ``suspend``→leave claimed for the AoneReplyScheduler.
 
         Integrity flags (soft gate): if the result carries ``code_pushed`` or
         ``backfill_done`` as explicit False, warn but do not block — the hard gate
@@ -1760,7 +1760,7 @@ class _TaskAoneBookend:
             _release_post_pr_claim(
                 self.item_id, self.project, terraform=self.terraform)
         # outcome == "suspend": leave jarvis-claimed; caller suspends the Task and the
-        # WakeSensor resumes on the awaited reply.
+        # AoneReplyScheduler resumes on the awaited reply.
         return True
 
 
@@ -4610,7 +4610,7 @@ class PrWatchScheduler:
             log.warning("PrWatchScheduler: escalate broadcast #%s failed: %s", tid, e)
 
 
-# WakeSensor comment-poll back-off tiers + control-plane suspend wait expiry (14 days).
+# AoneReplyScheduler comment-poll back-off tiers + control-plane suspend wait expiry (14 days).
 WAIT_TIERS = [
     (30 * 60,       120),    # first 30 min: every 2 min
     (2 * 3600,      600),    # 30 min–2 h:   every 10 min
@@ -4619,7 +4619,7 @@ WAIT_TIERS = [
 WAIT_EXPIRE_SEC = 14 * 24 * 3600  # 14 days
 
 
-class WakeSensor:
+class AoneReplyScheduler:
     """Wake control-plane-owned Sessions from durable Aone wait conditions.
 
     Single data source (control-plane ``list_pending_aone_reply_waits``), fixed period
@@ -4643,7 +4643,7 @@ class WakeSensor:
 
     def start(self):
         self._thread = threading.Thread(
-            target=self._loop, daemon=True, name="WakeSensor")
+            target=self._loop, daemon=True, name="AoneReplyScheduler")
         self._thread.start()
 
     def _loop(self):
@@ -4651,7 +4651,7 @@ class WakeSensor:
             try:
                 self._tick()
             except Exception:  # noqa: BLE001
-                log.exception("WakeSensor tick failed")
+                log.exception("AoneReplyScheduler tick failed")
             time.sleep(self.interval)
 
     @staticmethod
@@ -4709,7 +4709,7 @@ class WakeSensor:
         except Exception as exc:  # noqa: BLE001
             # A 503, timeout, or malformed response leaves every wait untouched in
             # the control plane.  The next tick reconstructs the complete set.
-            log.warning("WakeSensor list failed; will retry: %s", exc)
+            log.warning("AoneReplyScheduler list failed; will retry: %s", exc)
             return
         for item in waits:
             task = item.get("task") if isinstance(item.get("task"), dict) else {}
@@ -4718,7 +4718,7 @@ class WakeSensor:
             session_id = str(session.get("id") or "").strip()
             aone_id = str(session.get("waitKey") or task.get("aoneId") or "").strip()
             if not session_id or not aone_id.isdigit():
-                log.warning("WakeSensor ignored invalid wait task=%s session=%s",
+                log.warning("AoneReplyScheduler ignored invalid wait task=%s session=%s",
                             task.get("taskKey"), session_id or "<empty>")
                 continue
             seen.add(session_id)
@@ -4756,10 +4756,10 @@ class WakeSensor:
                 "title": str(frozen.get("title") or
                              (task.get("sourceRef") or {}).get("title") or ""),
             }
-            log.info("WakeSensor: #%s session=%s got %d reply comment(s)",
+            log.info("AoneReplyScheduler: #%s session=%s got %d reply comment(s)",
                      aone_id, session_id, len(new_comments))
             if not self.handler._wake(aone_id, wake_context, new_comments):
-                log.warning("WakeSensor: wake #%s not durably accepted; will retry",
+                log.warning("AoneReplyScheduler: wake #%s not durably accepted; will retry",
                             aone_id)
         # Entries absent from the complete control-plane snapshot are no longer
         # waiting.  Removing only throttle metadata has no correctness effect.
@@ -5958,12 +5958,12 @@ class JarvisHandler(AsyncChatbotHandler):
         )
         # Final component set (7): AoneScheduler(scan+dispatch+stale sub-tick),
         # PersistenceExecutor(control-plane Task lease), EphemeralExecutor(local jobs),
-        # WakeSensor(SUSPENDED session wake), DailyScheduler(probe+nudge),
+        # AoneReplyScheduler(SUSPENDED session wake), DailyScheduler(probe+nudge),
         # PrWatchScheduler(PR lifecycle), PostPrRecoverySensor(control-plane post-PR recovery).
         self.scanner = AoneScheduler(self, self.ephemeral_executor)
         self.post_pr_recovery = PostPrRecoverySensor(self)
         self.daily = DailyScheduler(self, self.ephemeral_executor)
-        self.wake_sensor = WakeSensor(self)
+        self.aone_reply_scheduler = AoneReplyScheduler(self)
         # PR 观察登记表轮询（方案A）：PR 合并后自动 finish 收尾，与 DailyScheduler 的 nudge 互为兜底。
         # 注：原 PersonaScheduler（评论区 tracker/@ 补位）已并入 AoneScheduler 统一探测（assignee∪
         # tracker∪idle 并集），不再单列调度器。
@@ -5985,7 +5985,7 @@ class JarvisHandler(AsyncChatbotHandler):
         self.scanner.start()
         self.post_pr_recovery.start()
         self.daily.start()
-        self.wake_sensor.start()
+        self.aone_reply_scheduler.start()
         self.prwatch.start()
 
     def stop_persistence_executor(self, *, drain=False, timeout=None):
@@ -6193,7 +6193,7 @@ class JarvisHandler(AsyncChatbotHandler):
         enriched info (with the wait cursor); else None.
 
         Control-plane Task runs (``task_owned=True``) persist the SUSPENDED session via
-        their SessionController, and WakeSensor resumes them on the next Aone reply.
+        their SessionController, and AoneReplyScheduler resumes them on the next Aone reply.
         The legacy interactive card path (``task_owned=False``, only reachable under
         JARVIS_HANDOFF_MODE=exec) surfaces the suspend on its card but is not durably
         auto-woken — re-delegate to resume. ``terraform`` persists the model 车道."""
@@ -6741,7 +6741,7 @@ class JarvisHandler(AsyncChatbotHandler):
     def _wake(self, aone_id, task, new_comments):
         """Durably observe and enqueue a suspended task reply.
 
-        Returns whether ownership was accepted.  WakeSensor only removes its
+        Returns whether ownership was accepted.  AoneReplyScheduler only removes its
         persisted wait record after True, so a control-plane/local-capacity failure
         is retried instead of losing the wake-up.
         """
@@ -7054,8 +7054,8 @@ def _release_claim(iid, project, terraform=False):
 def _run_no_dingtalk():
     """无钉钉降级模式启动(JARVIS_NO_DINGTALK=1 点火路径): 不建 DingTalk client/stream,
     不初始化 TataPool; 只起 PersistenceExecutor + AoneScheduler(扫单派发+stale 子任务) +
-    PostPrRecoverySensor + DailyScheduler(probe/nudge) + WakeSensor + PrWatchScheduler。
-    卡片/播报统一降级为 [BROADCAST] 日志行(→ bot.log); WakeSensor 挂起/唤醒照常(轮询走 a1,
+    PostPrRecoverySensor + DailyScheduler(probe/nudge) + AoneReplyScheduler + PrWatchScheduler。
+    卡片/播报统一降级为 [BROADCAST] 日志行(→ bot.log); AoneReplyScheduler 挂起/唤醒照常(轮询走 a1,
     唤醒走控制面), "@人通知"降级为日志 + 既有 Aone 评论。入站 Tata 门面停用(无 stream)。
     阻塞至进程收到中断信号。"""
     log.warning("[NO-DINGTALK] 降级模式启动: 无 DingTalk client/stream/TataPool; "
