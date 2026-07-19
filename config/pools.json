@@ -10,10 +10,23 @@
       "name": "Terraform - 客户需求",
       "line": "terraform_provider",
       "desc": "来自客户侧的需求",
-      "assignee": "WORKER_1782379562571",
+      "assignee": [
+        "WORKER_1782379562571",
+        "WORKER_1783582458263",
+        "WORKER_1783582374386",
+        "WORKER_1783582593461"
+      ],
       "dev": false,
-      "done_status": {"需求问题": "已发布待需求方验收", "功能缺陷": "Fixed", "线上问题": "Fixed", "任务": "已完成"},
-      "progress_status": {"需求问题": "问题解决中", "功能缺陷": "Open"},
+      "done_status": {
+        "需求问题": "已发布待需求方验收",
+        "功能缺陷": "Fixed",
+        "线上问题": "Fixed",
+        "任务": "已完成"
+      },
+      "progress_status": {
+        "需求问题": "问题解决中",
+        "功能缺陷": "Open"
+      },
       "exclude_status": [
         "Closed",
         "Fixed",
@@ -36,10 +49,24 @@
       "name": "terraform-provider",
       "line": "terraform_provider",
       "desc": "内部发布单 + Terraform 生产流程优化",
-      "assignee": "WORKER_1782379562571",
+      "assignee": [
+        "WORKER_1782379562571",
+        "WORKER_1783582458263",
+        "WORKER_1783582374386",
+        "WORKER_1783582593461"
+      ],
       "dev": false,
-      "done_status": {"产品类需求": "待发布", "功能缺陷": "Fixed", "线上问题": "Fixed", "性能瓶颈": "Fixed", "任务": "已完成"},
-      "progress_status": {"产品类需求": "开发中", "功能缺陷": "Open"},
+      "done_status": {
+        "产品类需求": "待发布",
+        "功能缺陷": "Fixed",
+        "线上问题": "Fixed",
+        "性能瓶颈": "Fixed",
+        "任务": "已完成"
+      },
+      "progress_status": {
+        "产品类需求": "开发中",
+        "功能缺陷": "Open"
+      },
       "exclude_status": [
         "已发布",
         "已取消",
@@ -60,22 +87,43 @@
           "app": 283346,
           "name": "aliyun-automation-agent",
           "repo": "aliyun-automation-agent",
-          "pipelines": { "daily": 65, "prestage": 66, "prod": 67 },
+          "pipelines": {
+            "daily": 65,
+            "prestage": 66,
+            "prod": 67
+          },
           "delivery": "delivery-aliyun-automation-agent.md"
         },
         {
           "app": 260634,
           "name": "cloudspec",
           "repo": "cloudspec",
-          "pipelines": { "daily": 65, "prestage": 420, "prod": 67 },
+          "pipelines": {
+            "daily": 65,
+            "prestage": 420,
+            "prod": 67
+          },
           "delivery": "delivery-cloudspec.md"
         }
       ],
-      "assignee": "WORKER_1782379562571",
+      "assignee": [
+        "WORKER_1782379562571",
+        "WORKER_1783582458263",
+        "WORKER_1783582374386",
+        "WORKER_1783582593461"
+      ],
       "dev": true,
       "version_cfs": 100340,
-      "done_status": {"需求问题": "已发布待需求方验收", "功能缺陷": "Fixed", "线上问题": "Fixed", "任务": "已完成"},
-      "progress_status": {"需求问题": "问题解决中", "功能缺陷": "Open"},
+      "done_status": {
+        "需求问题": "已发布待需求方验收",
+        "功能缺陷": "Fixed",
+        "线上问题": "Fixed",
+        "任务": "已完成"
+      },
+      "progress_status": {
+        "需求问题": "问题解决中",
+        "功能缺陷": "Open"
+      },
       "exclude_status": [
         "Closed",
         "需求撤回",
@@ -88,10 +136,23 @@
       "name": "API 工具团队需求",
       "line": "agentic_tools",
       "product_cfs": "107239=906688",
-      "assignee": "WORKER_1782379562571",
+      "assignee": [
+        "WORKER_1782379562571",
+        "WORKER_1783582458263",
+        "WORKER_1783582374386",
+        "WORKER_1783582593461"
+      ],
       "dev": false,
-      "done_status": {"产品类需求": "已发布", "功能缺陷": "Fixed", "线上问题": "Fixed", "任务": "已完成"},
-      "progress_status": {"产品类需求": "开发中", "功能缺陷": "Open"},
+      "done_status": {
+        "产品类需求": "已发布",
+        "功能缺陷": "Fixed",
+        "线上问题": "Fixed",
+        "任务": "已完成"
+      },
+      "progress_status": {
+        "产品类需求": "开发中",
+        "功能缺陷": "Open"
+      },
       "exclude_status": [
         "已发布",
         "已取消",
@@ -110,14 +171,32 @@
           "repo_id": 2156624,
           "name": "aliyun-automation-platform",
           "repo": "aliyun-automation-platform",
-          "pipelines": { "prestage": 66, "prod": 67 },
+          "pipelines": {
+            "prestage": 66,
+            "prod": 67
+          },
           "delivery": "delivery-aliyun-automation-platform.md"
         }
       ],
-      "assignee": "WORKER_1782379562571",
+      "assignee": [
+        "WORKER_1782379562571",
+        "WORKER_1783582458263",
+        "WORKER_1783582374386",
+        "WORKER_1783582593461"
+      ],
       "dev": true,
-      "done_status": {"产品类需求": "已发布", "功能缺陷": "Fixed", "线上问题": "Fixed", "任务": "已完成"},
-      "progress_status": {"产品类需求": "开发中", "功能缺陷": "Open", "线上问题": "Open", "任务": "处理中"},
+      "done_status": {
+        "产品类需求": "已发布",
+        "功能缺陷": "Fixed",
+        "线上问题": "Fixed",
+        "任务": "已完成"
+      },
+      "progress_status": {
+        "产品类需求": "开发中",
+        "功能缺陷": "Open",
+        "线上问题": "Open",
+        "任务": "处理中"
+      },
       "exclude_status": [
         "已发布",
         "已取消",
@@ -201,9 +280,35 @@
     "idle_tag": "jarvis-idle",
     "done_tag": "jarvis-done",
     "done_status": "已发布待需求排期",
-    "done_statuses": ["已发布", "已发布待需求方验收", "验收通过", "已完成", "已关闭", "已解决", "已拒绝", "已取消", "方案功能已存在", "需求撤回", "Fixed", "Closed", "Won'tfix", "Worksforme", "Duplicate", "Invalid", "External", "ByDesign"],
+    "done_statuses": [
+      "已发布",
+      "已发布待需求方验收",
+      "验收通过",
+      "已完成",
+      "已关闭",
+      "已解决",
+      "已拒绝",
+      "已取消",
+      "方案功能已存在",
+      "需求撤回",
+      "Fixed",
+      "Closed",
+      "Won'tfix",
+      "Worksforme",
+      "Duplicate",
+      "Invalid",
+      "External",
+      "ByDesign"
+    ],
     "progress_status": "处理中",
-    "start_statuses": ["待处理", "新建", "New", "待认领", "Reopen", "已排期"],
+    "start_statuses": [
+      "待处理",
+      "新建",
+      "New",
+      "待认领",
+      "Reopen",
+      "已排期"
+    ],
     "ttl_min": 45
   }
 }

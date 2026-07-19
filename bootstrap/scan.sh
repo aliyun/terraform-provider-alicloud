@@ -1,8 +1,14 @@
 #!/bin/bash
-# scan.sh – pull assigned Aone work items per pool, emit [{id,title,type,status,pool,category}] JSON.
-# Returns ALL assigned items incl. jarvis-claimed (board.sh needs them for 进行中/inflight).
+# scan.sh – pull Aone work items per pool (数字人被指派 ∪ 被抄送/参与 workitem.tracker),
+#           emit [{id,title,type,status,pool,category}] JSON.
+# 用途：board.sh 看板数据源 + backlog-drain 的 any-assignee 扫描 + 人工审计/兜底。
+#   NOTE: 自动派发的探测真源已改为 bridge 的 AoneScanner python 直查并集(assignee∪tracker∪
+#   tag=jarvis-idle × DIGITAL_WORKER_IDS)，本脚本不再是派发真源；其 assignee/tracker 口径已与
+#   AoneScanner 对齐(per-pool assignee = DIGITAL_WORKER_IDS 数组 + 每变体并 workitem.tracker)，
+#   使审计视图 = 派发视图。"完整会派哪些"以 `bridge/run.sh dry-run` 为准。
+# Returns ALL matched items incl. jarvis-claimed (board.sh needs them for 进行中/inflight).
 # Uses pool-scoped --project queries; no claim-tag exclusion (dedup is downstream, not here).
-# Each pool scanned thrice (--category req,bug,task); rows stamped category:"req|bug|task".
+# Each pool scanned thrice (--category req,bug,task) × {assignee,tracker} 两变体; unique_by(id) 去重.
 # Writes .my-day/scan.json AND echoes to stdout. 30min TTL: serve cached scan.json if fresh,
 # unless --force (mirror preflight.sh; JARVIS_SCAN_TTL=0 forces too). Empty/failing pools
 # skipped (non-fatal). Exits non-zero only on fatal errors.
@@ -97,48 +103,49 @@ if $has_pools; then
 
   fetch_pool() {  # args: key project status_csv title_csv assignee_spec → prints transformed JSON array
     local pool_key="$1" pool_project="$2" exclude_status="$3" exclude_title="$4" assignee_spec="$5"
-    local filter="" pat pool_out="[]" cat page pg n _rc asg_flag=""
+    local excl="" pat _pats pool_out="[]"
     # JARVIS_SCAN_ANY_ASSIGNEE=1 → 无视 pools.json 逐池 assignee，一律扫全池(不限关注人)。
     [ "${JARVIS_SCAN_ANY_ASSIGNEE:-0}" = 1 ] && assignee_spec=__ANY__
-    # 关注人过滤(per-pool assignee, config/pools.json)——三态语义:
-    #   __ANY__     ("assignee":"any") → 不限关注人,扫全池(不带 --assignee,无 assignedTo 子句)
-    #   __GLOBAL__  (池未配 assignee)  → 回退全局 $scan_assignee,经 --assignee 传(保持旧行为)
-    #   其它(单值/逗号多值)             → 经 --filter assignedTo=<csv> 过滤(多值 OR;--assignee 不吃逗号)
-    case "$assignee_spec" in
-      __ANY__) : ;;
-      __GLOBAL__) asg_flag="$scan_assignee" ;;
-      *) [ -n "$filter" ] && filter="$filter AND "; filter="${filter}assignedTo=$assignee_spec" ;;
-    esac
-    # NOTE: jarvis-claimed items are intentionally KEPT (board.sh maps them → 进行中/inflight).
-    # The old "NOT tag=$claim_tag" exclusion was triage-loop dedup, not for the board, and broke
-    # 进行中 (always empty). If a triage caller needs dedup, filter on tag downstream, not in scan.
-    [ -n "$exclude_status" ] && { [ -n "$filter" ] && filter="$filter AND "; filter="${filter}NOT status=$exclude_status"; }
+    # 共享排除子句(状态 + 标题)。NOTE: jarvis-claimed 单故意保留(board.sh 映射 → 进行中/inflight)。
+    [ -n "$exclude_status" ] && excl="NOT status=$exclude_status"
     if [ -n "$exclude_title" ]; then
       IFS=',' read -ra _pats <<< "$exclude_title"
-      for pat in "${_pats[@]}"; do [ -n "$filter" ] && filter="$filter AND "; filter="${filter}subject!~$pat"; done
+      for pat in "${_pats[@]}"; do [ -n "$excl" ] && excl="$excl AND "; excl="${excl}subject!~$pat"; done
     fi
-    # Three categories: req,bug,task. --category makes categoryIdentifier authoritative; stamp literal.
-    for cat in req bug task; do
-      page=1
-      while :; do
-        _rc=0; pg=$(_scan_page "$pool_project" "$asg_flag" "$cat" "$filter" "$page") || _rc=$?
-        # rc 2 = 权限类(本 assignee 对该池无权,预期)→ 静默跳过该 category,不告警不作废。
-        [ "$_rc" = 2 ] && break
-        # rc 1 = 瞬时失败重试尽 → 告警 + 跳过该 category(其余 category/池照常,scan 不整轮作废)。
-        # 下一轮 scan 会补上漏的;bridge _scan 在 stderr 非空时记 partial 日志,漏派可追。
-        if [ "$_rc" != 0 ]; then
-          echo "scan.sh: WARN pool=$pool_key cat=$cat page=$page a1 list failed after retries; this category skipped (results may be incomplete this tick)" >&2
-          break
-        fi
-        n=$(echo "$pg" | jq 'length' 2>/dev/null)   # _scan_page 保证是合法数组, n 必有值
-        [ "$n" -eq 0 ] && break                       # 空结果 = 没有更多
-        pg=$(jq --arg c "$cat" '[.[] | .category=$c]' <<<"$pg" 2>/dev/null) || pg="[]"
-        pool_out=$(jq -s 'add' <<<"$pool_out"$'\n'"$pg" 2>/dev/null) || pool_out="[]"
-        [ "$n" -lt "$PAGE_SIZE" ] && break
-        page=$((page+1))
+    # 跑一个 (filter, asg_flag) 变体的三 category 分页，累加进 pool_out(bash 动态作用域改外层 local)。
+    _run_variant() {  # args: filter asg_flag
+      local vfilter="$1" vasg="$2" cat page pg n _rc
+      for cat in req bug task; do
+        page=1
+        while :; do
+          _rc=0; pg=$(_scan_page "$pool_project" "$vasg" "$cat" "$vfilter" "$page") || _rc=$?
+          [ "$_rc" = 2 ] && break   # rc 2 = 权限类(预期)→ 静默跳过该 category
+          if [ "$_rc" != 0 ]; then  # rc 1 = 瞬时失败重试尽 → 告警 + 跳过(不整轮作废)
+            echo "scan.sh: WARN pool=$pool_key cat=$cat page=$page a1 list failed after retries; this category skipped (results may be incomplete this tick)" >&2
+            break
+          fi
+          n=$(echo "$pg" | jq 'length' 2>/dev/null)
+          [ "$n" -eq 0 ] && break
+          pg=$(jq --arg c "$cat" '[.[] | .category=$c]' <<<"$pg" 2>/dev/null) || pg="[]"
+          pool_out=$(jq -s 'add' <<<"$pool_out"$'\n'"$pg" 2>/dev/null) || pool_out="[]"
+          [ "$n" -lt "$PAGE_SIZE" ] && break
+          page=$((page+1))
+        done
       done
-    done
-    echo "$pool_out" | jq --arg pool "$pool_key" --arg proj "$pool_project" '[.[] | {id:.identifier,title:.subject,type:(.categoryIdentifier // .workitemType),status,pool:$pool,pool_project:$proj,priority,tag,category,modified:.gmtModified,created:.gmtCreate}]'
+    }
+    # 派发口径对齐 AoneScanner：指派给数字人 ∪ 抄送/参与数字人(workitem.tracker)。三态语义:
+    #   __ANY__    (backlog-drain 全池) → 不带 assignee/tracker，扫全池(any-assignee 已 ⊇ tracker)
+    #   __GLOBAL__ (池未配 assignee)    → 回退全局 $scan_assignee，assignee + tracker 两变体
+    #   CSV/数组   (per-pool assignee)  → assignedTo=<csv> + workitem.tracker=<csv> 两变体
+    case "$assignee_spec" in
+      __ANY__)    _run_variant "$excl" "" ;;
+      __GLOBAL__) _run_variant "$excl" "$scan_assignee"
+                  _run_variant "workitem.tracker=$scan_assignee${excl:+ AND $excl}" "" ;;
+      *)          _run_variant "assignedTo=$assignee_spec${excl:+ AND $excl}" ""
+                  _run_variant "workitem.tracker=$assignee_spec${excl:+ AND $excl}" "" ;;
+    esac
+    # assignee 与 tracker 变体可能命中同一单 → unique_by(.id) 并集去重。
+    echo "$pool_out" | jq --arg pool "$pool_key" --arg proj "$pool_project" '[.[] | {id:.identifier,title:.subject,type:(.categoryIdentifier // .workitemType),status,pool:$pool,pool_project:$proj,priority,tag,category,modified:.gmtModified,created:.gmtCreate}] | unique_by(.id)'
   }
 
   tmpd=$(mktemp -d); trap 'rm -rf "$tmpd"' EXIT
