@@ -1781,7 +1781,17 @@ class _TaskAoneBookend:
         failure raises so the caller fails the Task closed (retryable) rather than
         stranding the reply. ``done``→finish (jarvis-done + pool done_status),
         ``idle``→release (jarvis-idle), ``suspend``→leave claimed for the WaitWatcher.
+
+        Integrity flags (soft gate): if the result carries ``code_pushed`` or
+        ``backfill_done`` as explicit False, warn but do not block — the hard gate
+        will be enabled once the interactive path is fully migrated.
         """
+        if result.get("code_pushed") is False:
+            log.warning("integrity: task #%s completed without code_pushed=true "
+                        "(soft gate, not blocking)", self.item_id)
+        if result.get("backfill_done") is False:
+            log.warning("integrity: task #%s completed without backfill_done=true "
+                        "(soft gate, not blocking)", self.item_id)
         reply = str(result.get("reply_body") or "").strip()
         links = result.get("mr_cr_links") or []
         body = "%s\n\n关联：%s" % (reply, " ".join(links)) if links else reply

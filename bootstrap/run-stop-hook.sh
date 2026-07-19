@@ -1,36 +1,116 @@
 #!/usr/bin/env bash
-# Resolve and run the project Stop hook. Codex also records turn completion,
-# but only after wrap-check has allowed the turn to stop.
+# Stop hook: control-plane session exit gate with wrap-check.sh fallback.
+#
+# Primary path: delegates to jarvis-interactive-worker.py stop-check which reads
+# the session state cached by the 30s heartbeat sidecar. This replaces the older
+# approach of scanning .my-day/ ledger files.
+#
+# Fallback: if the worker state is unavailable (exit 1), falls back to wrap-check.sh
+# for backward compatibility and degraded-mode safety.
 
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 wrap_check="$script_dir/wrap-check.sh"
 
-if [ ! -f "$wrap_check" ]; then
-    echo "stop-hook: wrap-check.sh not found at $wrap_check" >&2
+# --- Resolve Python + manager (same env-loading as run-interactive-worker-hook.sh) ---
+main_root="$script_dir/.."
+git_common="$(git -C "$main_root" rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)"
+case "$git_common" in
+  */.git) main_root="${git_common%/.git}" ;;
+esac
+bootstrap_env="${JARVIS_INTERACTIVE_BOOTSTRAP_ENV:-$main_root/bootstrap/.env}"
+bridge_env="${JARVIS_INTERACTIVE_BRIDGE_ENV:-$main_root/bridge/jarvis.env}"
+
+set -a; set +u
+# shellcheck disable=SC1090
+[ -f "$bootstrap_env" ] && . "$bootstrap_env"
+# shellcheck disable=SC1090
+[ -f "$bridge_env" ] && . "$bridge_env"
+set -u; set +a
+
+if [ -z "${JARVIS_CONTROL_PLANE_TOKEN:-}" ] && [ -n "${JARVIS_HTML_REPORT_TOKEN:-}" ]; then
+  export JARVIS_CONTROL_PLANE_TOKEN="$JARVIS_HTML_REPORT_TOKEN"
+fi
+if [ -z "${JARVIS_CONTROL_PLANE_BASE_URL:-}" ] && [ -n "${JARVIS_HTML_REPORT_BASE_URL:-}" ]; then
+  export JARVIS_CONTROL_PLANE_BASE_URL="$JARVIS_HTML_REPORT_BASE_URL"
+fi
+
+python_bin="${JARVIS_INTERACTIVE_WORKER_PYTHON:-}"
+if [ -z "$python_bin" ]; then
+  if [ -x /usr/bin/python3 ]; then
+    python_bin="/usr/bin/python3"
+  else
+    python_bin="python3"
+  fi
+fi
+manager="${JARVIS_INTERACTIVE_WORKER_MANAGER:-$script_dir/jarvis-interactive-worker.py}"
+
+mode="${1:-wrap-only}"
+
+# --- Primary path: control-plane session exit gate ---
+_run_stop_check() {
+    "$python_bin" "$manager" stop-check 2>&1
+}
+
+stop_output="$(_run_stop_check)"
+rc=$?
+
+if [ "$rc" -eq 0 ]; then
+    # Control-plane path: safe to stop.
+    if [ "$mode" = "codex" ]; then
+        # Codex: also need to record the turn Stop event via the worker hook.
+        payload="$(mktemp)"
+        worker_output="$(mktemp)"
+        trap 'rm -f "$payload" "$worker_output"' EXIT
+        cat > "$payload"
+
+        worker_hook="$script_dir/run-interactive-worker-hook.sh"
+        if [ ! -x "$worker_hook" ]; then
+            echo "stop-hook: interactive worker hook not found at $worker_hook" >&2
+            exit 2
+        fi
+
+        bash "$worker_hook" codex Stop < "$payload" > "$worker_output"
+        wrc=$?
+        if [ "$wrc" -ne 0 ]; then
+            [ ! -s "$worker_output" ] || cat "$worker_output" >&2
+            echo "stop-hook: interactive worker Stop signal failed with rc=$wrc" >&2
+            exit 2
+        fi
+        printf '{}\n'
+    fi
+    exit 0
+fi
+
+if [ "$rc" -eq 2 ]; then
+    # Control-plane path: explicitly blocked.
+    [ -n "$stop_output" ] && echo "$stop_output" >&2
     exit 2
 fi
 
-mode="${1:-wrap-only}"
+# --- Fallback: wrap-check.sh (state unavailable, Python crash, etc.) ---
+if [ ! -f "$wrap_check" ]; then
+    echo "stop-hook: worker state unavailable and wrap-check.sh not found" >&2
+    exit 2
+fi
+
 if [ "$mode" != "codex" ]; then
     exec bash "$wrap_check"
 fi
 
+# Codex fallback: same ordered sequence as before.
 payload="$(mktemp)"
 wrap_output="$(mktemp)"
 worker_output="$(mktemp)"
 trap 'rm -f "$payload" "$wrap_output" "$worker_output"' EXIT
 cat > "$payload"
 
-# Codex launches multiple handlers for one event concurrently. Keep this as a
-# single ordered handler so a blocking wrap-check cannot race with a Stop signal
-# that would pause a still-running task lease.
 bash "$wrap_check" < "$payload" > "$wrap_output"
 rc=$?
 [ ! -s "$wrap_output" ] || cat "$wrap_output" >&2
 if [ "$rc" -ne 0 ]; then
-    [ "$rc" -eq 2 ] || echo "stop-hook: wrap-check failed with rc=$rc" >&2
+    [ "$rc" -eq 2 ] || echo "stop-hook: wrap-check failed with rc=$rc (degraded mode)" >&2
     exit 2
 fi
 
