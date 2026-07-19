@@ -198,6 +198,7 @@ class ControlPlaneClient:
     SESSION_ACTION_PATH = "sessions/{session_id}/{action}"
     TASK_BY_AONE_PATH = "tasks/by-aone/{aone_id}"
     TASK_TIMELINE_PATH = "tasks/{task_id}/timeline"
+    READY_TASK_DIAGNOSTICS_PATH = "tasks/ready-diagnostics"
     PENDING_AONE_WAITS_PATH = "sessions/waits/aone-reply"
 
     def __init__(self, base_url: str, token: str = "", *, timeout: float = 10.0,
@@ -477,6 +478,15 @@ class ControlPlaneClient:
     def list_workers(self) -> Any:
         """Return every registered worker and its persisted heartbeat state."""
         return self._get(self.WORKERS_PATH)
+
+    def list_ready_task_diagnostics(self, *, limit: int = 100) -> Any:
+        """Return READY tasks with the reason each one can or cannot be leased."""
+        page_size = int(limit)
+        if page_size <= 0 or page_size > 500:
+            raise ValueError("limit must be between 1 and 500")
+        return self._get("%s?%s" % (
+            self.READY_TASK_DIAGNOSTICS_PATH,
+            urlencode({"limit": page_size})))
 
     def get_worker_state(self, worker_key: str) -> Any:
         """Return one worker plus its current task/session assignments."""

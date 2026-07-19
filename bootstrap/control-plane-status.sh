@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 # control-plane-status.sh — Jarvis 控制面可观测 CLI（人工排查入口）。
 #   workers            列出全部注册 worker（key/client/activityStatus/assignment aone id）
+#   ready [--limit N]  列出 READY 任务及无 eligible worker 的原因
 #   task <aone_id>     按 Aone ID 全链路查询（task 状态/current session/fence/
 #                      最近事件/operations 回执）
 #
 # 环境加载与 run-interactive-worker-hook.sh 同源：主仓 gitignored bootstrap/.env +
-# bridge/jarvis.env；token 缺省回退 JARVIS_HTML_REPORT_TOKEN（base url 回退
-# JARVIS_HTML_REPORT_BASE_URL）。实现体在同目录 control-plane-status.py。
+# bridge/jarvis.env；token 缺省回退 JARVIS_HTML_REPORT_TOKEN；控制面 base url 可由
+# JARVIS_CONTROL_PLANE_BASE_URL / JARVIS_HTML_REPORT_BASE_URL 覆盖，默认预发。
+# 实现体在同目录 control-plane-status.py。
 
 set -uo pipefail
 

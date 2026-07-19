@@ -79,6 +79,32 @@ _source_env() {
   # shellcheck disable=SC1090
   [ -f "$BRIDGE_ENV" ] && . "$BRIDGE_ENV"
   set -u; set +a
+
+  # Non-interactive SSH/launch shells on macOS commonly omit both the user-local
+  # installer directory (a1) and Homebrew (claude). Normalize the standard tool
+  # locations before spawning the daemon so registration implies an executable
+  # worker instead of a process that can heartbeat but cannot run a Task.
+  local tool_dir tool_dirs
+  PATH="${PATH:-/usr/bin:/bin:/usr/sbin:/sbin}"
+  # Space-separated override is intentionally test/deployment-only; standard paths
+  # contain no spaces on supported macOS hosts.
+  tool_dirs="${JARVIS_BRIDGE_TOOL_DIRS:-/usr/local/bin /opt/homebrew/sbin /opt/homebrew/bin ${HOME:-}/.local/bin}"
+  for tool_dir in $tool_dirs; do
+    [ -d "$tool_dir" ] || continue
+    case ":$PATH:" in
+      *":$tool_dir:"*) ;;
+      *) PATH="$tool_dir:$PATH" ;;
+    esac
+  done
+  export PATH
+
+  # bootstrap/lib.sh deliberately resolves git worktrees back to the common main
+  # repository unless JARVIS_ROOT is explicit. A bridge launched from a review
+  # worktree must use that worktree's guarded wrappers and configuration as one
+  # coherent version, while still allowing an operator-provided override.
+  if [ -z "${JARVIS_ROOT:-}" ]; then
+    export JARVIS_ROOT="$REPO_ROOT"
+  fi
 }
 
 # -- mode decision: 0 = full, 1 = degraded (also exports the flag) ---------

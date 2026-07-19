@@ -172,7 +172,7 @@ class StateStore:
 def _client(*, timeout_override: Optional[float] = None) -> ControlPlaneClient:
     base_url = (os.environ.get("JARVIS_CONTROL_PLANE_BASE_URL", "").strip()
                 or os.environ.get("JARVIS_HTML_REPORT_BASE_URL", "").strip()
-                or "https://agent.aliyun-inc.com")
+                or "https://pre-agent.aliyun-inc.com")
     token = (os.environ.get("JARVIS_CONTROL_PLANE_TOKEN", "").strip()
              or os.environ.get("JARVIS_HTML_REPORT_TOKEN", "").strip())
     timeout = float(os.environ.get("JARVIS_CONTROL_PLANE_TIMEOUT", "10"))
