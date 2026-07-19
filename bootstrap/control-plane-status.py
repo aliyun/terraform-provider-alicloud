@@ -8,9 +8,10 @@
                     operations 回执状态）
 
 凭证由 wrapper 从主仓 gitignored bootstrap/.env + bridge/jarvis.env 加载
-（token 回退 JARVIS_HTML_REPORT_TOKEN），本文件只读环境变量、不读 env 文件。
+（token 回退 JARVIS_HTML_REPORT_TOKEN）；控制面地址可显式覆盖，默认指向预发。
+本文件只读环境变量、不读 env 文件。
 
-退出码：0=成功；1=控制面无该工单任务；2=缺 base url/token 配置；3=控制面请求失败。
+退出码：0=成功；1=控制面无该工单任务；2=缺 token 配置；3=控制面请求失败。
 """
 
 import argparse
@@ -25,17 +26,13 @@ sys.path.append(str(Path(__file__).resolve().parent.parent / "bridge"))
 from jarvis_task_client import ControlPlaneClient, ControlPlaneError  # noqa: E402
 
 EVENT_TAIL = 5  # task 视图只列最近 N 条 event（全量看服务端 timeline）
+DEFAULT_CONTROL_PLANE_BASE_URL = "https://pre-agent.aliyun-inc.com"
 
 
 def _client():
-    base = os.environ.get("JARVIS_CONTROL_PLANE_BASE_URL", "").strip()
+    base = (os.environ.get("JARVIS_CONTROL_PLANE_BASE_URL", "").strip()
+            or DEFAULT_CONTROL_PLANE_BASE_URL)
     token = os.environ.get("JARVIS_CONTROL_PLANE_TOKEN", "").strip()
-    if not base:
-        sys.stderr.write(
-            "error: JARVIS_CONTROL_PLANE_BASE_URL is not configured "
-            "(set it in bootstrap/.env or bridge/jarvis.env; "
-            "JARVIS_HTML_REPORT_BASE_URL also works)\n")
-        raise SystemExit(2)
     if not token:
         sys.stderr.write(
             "error: JARVIS_CONTROL_PLANE_TOKEN is not configured "

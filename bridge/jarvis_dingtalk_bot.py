@@ -208,7 +208,7 @@ def _task_client_from_env():
     base_url = (
         os.environ.get("JARVIS_CONTROL_PLANE_BASE_URL", "").strip()
         or os.environ.get("JARVIS_HTML_REPORT_BASE_URL", "").strip()
-        or "https://agent.aliyun-inc.com"
+        or "https://pre-agent.aliyun-inc.com"
     )
     token = (
         os.environ.get("JARVIS_CONTROL_PLANE_TOKEN", "").strip()

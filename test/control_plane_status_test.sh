@@ -6,8 +6,9 @@
 # （不碰真 bootstrap/.env），控制面 client 用 PYTHONPATH 前插 stub jarvis_task_client
 # 顶替（实现体 append bridge 目录到 sys.path 正是为此留的口子），不连网。
 #
-# 覆盖：bash -n 语法；py_compile；无参 usage；缺 base url / 缺 token 干净报错(rc=2)；
-#       env 文件加载 + JARVIS_HTML_REPORT_TOKEN 回退；workers / READY 诊断表格输出；
+# 覆盖：bash -n 语法；py_compile；无参 usage；缺 token 干净报错(rc=2)；
+#       预发 base url 默认值；env 文件加载 + 显式 base url / token 回退；
+#       workers / READY 诊断表格输出；
 #       task 全链路输出(状态/current session/fence/最近5条 event/operations)；
 #       控制面无该单任务 rc=1。
 #
@@ -53,6 +54,10 @@ class ControlPlaneClient:
     def __init__(self, base_url, token="", timeout=10.0, **kwargs):
         if not base_url:
             raise SystemExit("stub: base_url must be forwarded")
+        expect_base = os.environ.get("STUB_EXPECT_BASE")
+        if expect_base and base_url != expect_base:
+            raise SystemExit("stub: unexpected base %r (want %r)" %
+                             (base_url, expect_base))
         expect = os.environ.get("STUB_EXPECT_TOKEN")
         if expect and token != expect:
             raise SystemExit("stub: unexpected token %r (want %r)" % (token, expect))
@@ -132,20 +137,21 @@ out="$(run_cli 2>&1)"; rc=$?
 [ $rc -ne 0 ] && ok "no-args exits nonzero (rc=$rc)" || no "no-args should fail"
 has "usage" "$out" "no-args prints usage"
 
-# ── 3) 缺 base url → rc=2 干净报错 ────────────────────────────────────────────
-out="$(run_cli workers 2>&1)"; rc=$?
-[ $rc -eq 2 ] && ok "missing base url rc=2" || no "missing base url rc=$rc (want 2)"
-has "JARVIS_CONTROL_PLANE_BASE_URL" "$out" "missing base url names the env var"
-
-# ── 4) 缺 token → rc=2 干净报错（base url 从 env 文件加载） ─────────────────────
-printf 'JARVIS_CONTROL_PLANE_BASE_URL=http://stub.example\n' >"$JENV"
+# ── 3) 缺 token → rc=2 干净报错（base url 默认预发） ─────────────────────────
 out="$(run_cli workers 2>&1)"; rc=$?
 [ $rc -eq 2 ] && ok "missing token rc=2" || no "missing token rc=$rc (want 2)"
 has "JARVIS_CONTROL_PLANE_TOKEN" "$out" "missing token names the env var"
 
-# ── 5) env 文件加载 + JARVIS_HTML_REPORT_TOKEN 回退 → workers 表格 ─────────────
+# ── 4) 默认预发 base url + JARVIS_HTML_REPORT_TOKEN 回退 ─────────────────────
+printf 'JARVIS_HTML_REPORT_TOKEN=sekrit-token\n' >"$JENV"
+out="$(STUB_EXPECT_BASE=https://pre-agent.aliyun-inc.com \
+  STUB_EXPECT_TOKEN=sekrit-token run_cli workers 2>&1)"; rc=$?
+[ $rc -eq 0 ] && ok "default pre base rc=0" || no "default pre base rc=$rc: $out"
+
+# ── 5) env 文件显式 base url + token 回退 → workers 表格 ─────────────────────
 printf 'JARVIS_CONTROL_PLANE_BASE_URL=http://stub.example\nJARVIS_HTML_REPORT_TOKEN=sekrit-token\n' >"$JENV"
-out="$(STUB_EXPECT_TOKEN=sekrit-token run_cli workers 2>&1)"; rc=$?
+out="$(STUB_EXPECT_BASE=http://stub.example STUB_EXPECT_TOKEN=sekrit-token \
+  run_cli workers 2>&1)"; rc=$?
 [ $rc -eq 0 ] && ok "workers rc=0 (token fallback forwarded)" || no "workers rc=$rc: $out"
 has "interactive:codex:macmini" "$out" "workers lists worker key"
 has "codex" "$out" "workers lists client"

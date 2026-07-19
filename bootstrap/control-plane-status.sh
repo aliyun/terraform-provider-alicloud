@@ -6,8 +6,9 @@
 #                      最近事件/operations 回执）
 #
 # 环境加载与 run-interactive-worker-hook.sh 同源：主仓 gitignored bootstrap/.env +
-# bridge/jarvis.env；token 缺省回退 JARVIS_HTML_REPORT_TOKEN（base url 回退
-# JARVIS_HTML_REPORT_BASE_URL）。实现体在同目录 control-plane-status.py。
+# bridge/jarvis.env；token 缺省回退 JARVIS_HTML_REPORT_TOKEN；控制面 base url 可由
+# JARVIS_CONTROL_PLANE_BASE_URL / JARVIS_HTML_REPORT_BASE_URL 覆盖，默认预发。
+# 实现体在同目录 control-plane-status.py。
 
 set -uo pipefail
 
