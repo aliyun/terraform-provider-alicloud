@@ -49,7 +49,7 @@ cat >"$FAKEPY" <<'FAKE'
 ts="$(date '+%Y-%m-%d %H:%M:%S')"
 for a in "$@"; do
   if [ "$a" = "--dry-run-once" ]; then
-    echo "$ts INFO [MainThread] dry-run ok (fake bot) PATH=$PATH"
+    echo "$ts INFO [MainThread] dry-run ok (fake bot) PATH=$PATH JARVIS_ROOT=${JARVIS_ROOT:-}"
     exit 0
   fi
 done
@@ -224,6 +224,8 @@ out="$(run dry-run 2>&1)"; rc=$?
 has "dry-run ok" "$out" "dry-run: --dry-run-once forwarded to bot"
 has "PATH=$FAKE_HOME/.local/bin:/usr/bin:/bin:/usr/sbin:/sbin" "$out" \
   "dry-run: non-interactive PATH includes user-local a1 directory"
+has "JARVIS_ROOT=$repo_root" "$out" \
+  "dry-run: review worktree stays on its own wrappers and configuration"
 
 # --- T9: status when stopped -----------------------------------------------
 fresh

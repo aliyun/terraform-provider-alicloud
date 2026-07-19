@@ -90,6 +90,14 @@ _source_env() {
       *) export PATH="$user_local_bin:${PATH:-/usr/bin:/bin:/usr/sbin:/sbin}" ;;
     esac
   fi
+
+  # bootstrap/lib.sh deliberately resolves git worktrees back to the common main
+  # repository unless JARVIS_ROOT is explicit. A bridge launched from a review
+  # worktree must use that worktree's guarded wrappers and configuration as one
+  # coherent version, while still allowing an operator-provided override.
+  if [ -z "${JARVIS_ROOT:-}" ]; then
+    export JARVIS_ROOT="$REPO_ROOT"
+  fi
 }
 
 # -- mode decision: 0 = full, 1 = degraded (also exports the flag) ---------
