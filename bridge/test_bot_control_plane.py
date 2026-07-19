@@ -92,7 +92,7 @@ class HandlerWiringTest(unittest.TestCase):
         handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
         handler.persistence_executor = _Starter("worker", calls)
         for name in ("scanner", "reconciler", "board", "prober", "reviser",
-                     "watcher", "managed_wait_sensor", "personawatch", "prwatch",
+                     "watcher", "managed_wait_sensor", "prwatch",
                      "recovery"):
             setattr(handler, name, _Starter(name, calls))
         handler.start_schedulers()
@@ -556,6 +556,76 @@ class WakeRoutingTest(unittest.TestCase):
             lookup.assert_called_once_with("843")
             self.assertEqual(json.loads(persisted.read_text())["title"],
                              "Backfilled wait title")
+
+
+class AoneScannerUnionTest(unittest.TestCase):
+    """AoneScanner 统一探测：每池 assignee∪tracker∪idle 并集去重，取代 scan.sh 单一 assignee
+    出数据，消除「指派给人 / 抄送数字人」盲区（黑洞成因）。"""
+
+    def _scanner(self):
+        s = bot.AoneScanner.__new__(bot.AoneScanner)
+        return s
+
+    def test_query_pool_union_merges_three_sources_and_dedups(self):
+        s = self._scanner()
+        seen_filters = []
+
+        def fake_a1_list(project, flt):
+            seen_filters.append(flt)
+            if flt.startswith("assignedTo="):
+                return [{"id": "1", "title": "指派单"}]
+            if flt.startswith("workitem.tracker="):
+                return [{"id": "1", "title": "重复(抄送同一单)"},
+                        {"id": "2", "title": "抄送数字人单"}]
+            if flt.startswith("tag=jarvis-idle"):
+                return [{"id": "3", "title": "idle 单"}]
+            return []
+
+        s._a1_list = fake_a1_list
+        rows = s._query_pool_union("tf_customer", "1086837", ["Closed", "已发布"])
+        ids = sorted(r["id"] for r in rows)
+        self.assertEqual(ids, ["1", "2", "3"], "三源并集按 id 去重（#1 只保留一次）")
+        # 三源查询并行发出 → seen_filters 顺序不定，按集合断言（顺序无关）
+        worker_csv = ",".join(sorted(bot.DIGITAL_WORKER_IDS))
+        self.assertEqual(len(seen_filters), 3, "assignee/tracker/idle 三源各查一次")
+        # 每源都叠加 pools.json 状态排除
+        self.assertTrue(all("NOT status=Closed" in f and "NOT status=已发布" in f
+                            for f in seen_filters),
+                        "三源过滤须叠加 exclude_status")
+        # 数字人 id 单一真源
+        self.assertTrue(any("assignedTo=%s" % worker_csv in f for f in seen_filters))
+        self.assertTrue(any("workitem.tracker=%s" % worker_csv in f for f in seen_filters))
+        self.assertTrue(any("tag=jarvis-idle" in f for f in seen_filters))
+        # 每源都带 pool/pool_project 戳
+        self.assertTrue(all(r.get("pool") == "tf_customer"
+                            and r.get("pool_project") == "1086837" for r in rows))
+
+    def test_scan_union_iterates_pools(self):
+        s = self._scanner()
+        with mock.patch.object(bot.AoneScanner, "_read_pools",
+                               return_value=[("tf_customer", "1086837", []),
+                                             ("tf_provider", "528766", [])]):
+            calls = []
+
+            def fake_union(key, project, excl):
+                calls.append(key)
+                return [{"id": "%s-x" % key, "pool": key, "pool_project": project}]
+            s._query_pool_union = fake_union
+            items = s._scan_union()
+        self.assertEqual(calls, ["tf_customer", "tf_provider"])
+        self.assertEqual({it["id"] for it in items},
+                         {"tf_customer-x", "tf_provider-x"})
+
+    def test_scan_union_no_pools_returns_none(self):
+        s = self._scanner()
+        with mock.patch.object(bot.AoneScanner, "_read_pools", return_value=[]):
+            self.assertIsNone(s._scan_union())
+
+    def test_digital_worker_ids_single_source(self):
+        # 单一真源含编排层 + 公开 RD + 旧 PD/QA 兼容 worker
+        self.assertIn(bot.JARVIS_ORCH_WORKER, bot.DIGITAL_WORKER_IDS)
+        self.assertIn(bot.PERSONA_PUBLIC_WORKER, bot.DIGITAL_WORKER_IDS)
+        self.assertTrue(bot.PERSONA_LEGACY_WORKER_IDS <= bot.DIGITAL_WORKER_IDS)
 
 
 class TaskBookendDispatchTest(unittest.TestCase):

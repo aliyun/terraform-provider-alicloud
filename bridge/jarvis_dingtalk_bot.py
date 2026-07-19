@@ -366,7 +366,7 @@ def _inflight_has(item_id):
 
 
 # ── PR-watch registry (方案A) ─────────────────────────────────────────────────
-# skill/persona 提交 PR 后按自治边界 release 成 jarvis-idle；RevisitScheduler 的选择器只捞
+# skill/persona 提交 PR 后按自治边界 release 成 jarvis-idle；ProgressNudgeScheduler 的选择器只捞
 # 标题/描述含特定词的 idle 单，terraform 发布单都不含 → 工单永久停在 jarvis-idle、永不推到
 # 「已完成」。此登记表 + PrWatchScheduler 补缺口：PR 合并后自动 claim.sh finish 收尾。持久化
 # 姿势与 inflight 一致（atomic tmp+os.replace，best-effort try/except，绝不 crash worker）；
@@ -2134,31 +2134,9 @@ PERSONA_LEGACY_WORKER_ROLES = {
 }
 PERSONA_LEGACY_WORKER_IDS = set(PERSONA_LEGACY_WORKER_ROLES)
 
-# 机读哨兵：宽松匹配 [[PERSONA-HANDOFF:<payload>]]，payload 由 _extract_handoff 走 json.loads
-# 校验——坏 JSON 返回 bad_json（vs 无哨兵 no_handoff），便于 log 分级。取**最后一条**（O2）。
-# 该协议只保留旧评论入站迁移兼容；新 prompt 不再生成哨兵，内部接力由同一 headless run 的
-# Task 返回值驱动，最终只由 TerraformRD 聚合回写一次。
-PERSONA_HANDOFF_RE = re.compile(r"\[\[PERSONA-HANDOFF:(.*?)\]\]", re.DOTALL)
-
 # 作者识别兼容历史显示名。命中 PD/RD/QA 都只返回唯一 public_identity=terraform-rd，
-# 绝不从作者显示名反推 internal_role；internal_role 必须来自 handoff.from/to。
+# 绝不从作者显示名反推 internal_role。
 PERSONA_NAME_RE = re.compile(r"terraform[-_ ]?(pd|rd|qa)\b", re.IGNORECASE)
-
-# @ mention 正则（B2）：@ 必须显式（防裸 role 名如 jarvis wrap 里提到 "terraform-rd" 误触发）。
-# 支持三种命中形态：@terraform-pd 类；WORKER_1783582374386 类（括号内或 @ 后）；@昵称（env 提供的显示名）。
-# Fix: Python 3 \w 含 CJK，\b 在 ASCII→CJK 边界失效，改用 lookahead。
-PERSONA_AT_ROLE_RE = re.compile(r"@\s*terraform[-_ ]?(pd|rd|qa)(?=[^a-zA-Z0-9_]|$)", re.IGNORECASE)
-# Fix: Aone UI 格式 @Name(WORKER_xxx)，WORKER 不一定在 @ 后，允许括号/空格前缀。
-PERSONA_MENTION_WORKER_ROLES = {
-    # 唯一公开 @TerraformRD 是统一入口，默认从内部 PD 分诊开始。
-    PERSONA_PUBLIC_WORKER: "terraform-pd",
-    **PERSONA_LEGACY_WORKER_ROLES,
-}
-PERSONA_AT_WORKER_RES = {
-    worker_id: (internal_role,
-                re.compile(r"(?<!\w)%s\b" % re.escape(worker_id)))
-    for worker_id, internal_role in PERSONA_MENTION_WORKER_ROLES.items()
-}
 
 # handoff action 白名单（S6）：非法一律降级为 respond，不让评论方随便注入指令语义。
 PERSONA_ACTION_WHITELIST = {"triage", "dev", "review", "acc_verify",
@@ -2173,6 +2151,12 @@ PERSONA_CLOSE_ESCALATION = (("辰羿", "320687"), ("过载", "484483"))
 
 # jarvis 编排层 worker id（与 JARVIS_SELF_IDS 保持一致）。
 JARVIS_ORCH_WORKER = "WORKER_1782379562571"
+
+# 「数字人」account 单一真源：编排层 jarvis + 公开 TerraformRD + 旧 PD/QA 兼容 worker。
+# AoneScanner 的 assignedTo / workitem.tracker 过滤都引用它——一处维护，扫描面不再散落
+# （原来散在 pools.json 的 assignee=WORKER_1782379562571 与 PERSONA_WORKER_IDS 两处）。
+DIGITAL_WORKER_IDS = frozenset(
+    {JARVIS_ORCH_WORKER, PERSONA_PUBLIC_WORKER} | PERSONA_LEGACY_WORKER_IDS)
 # @jarvis(编排层)识别：@jarvis / @open-jarvis / @WORKER_1782379562571（Aone UI 括号形态亦可）。
 # **仅用于关单请求提醒**——scope 决策：jarvis 一般 @ 不触发 persona 协作，只有明确关单请求才走
 # 人工授权 handoff（由 terraform-pd 代为核验 + 催真人关单）。CJK 边界用 lookahead（同 persona 正则）。
@@ -2999,7 +2983,7 @@ class TataPool:
 
 
 # ── claimed-snapshot（死任务恢复的持久候选源）───────────────────────────────
-# ScanScheduler 每个 tick 把本轮扫描里带 jarvis-claimed 标签的工单（id → project/title/
+# AoneScanner 每个 tick 把本轮扫描里带 jarvis-claimed 标签的工单（id → project/title/
 # pool）原子落盘。RecoveryScheduler 以它为持久候选通道——/workers 采样与 recovery.json
 # 生前记忆都有时序洞（bridge 首个 tick 前 lease 已过期、重启台账丢失、迁机），而
 # jarvis-claimed 标签跨进程存活于 Aone，控制面 task 行再提供状态佐证。路径经 REPO_ROOT
@@ -3051,7 +3035,7 @@ def _claimed_snapshot_load():
     return {}
 
 
-class ScanScheduler:
+class AoneScanner:
     """Periodically run scan.sh, diff for new items, and act on them.
 
     Two authorization policies (``JARVIS_AUTO_DISPATCH``):
@@ -3138,7 +3122,7 @@ class ScanScheduler:
     # -- public API ----------------------------------------------------------
 
     def start(self):
-        self._thread = threading.Thread(target=self._loop, daemon=True, name="ScanScheduler")
+        self._thread = threading.Thread(target=self._loop, daemon=True, name="AoneScanner")
         self._thread.start()
 
     def authorize(self, item_id):
@@ -3191,6 +3175,115 @@ class ScanScheduler:
         if not isinstance(items, list):
             log.warning("scan.sh returned non-list: %s", type(items).__name__)
             return None
+        return items
+
+    # -- 统一探测：python 直查 assignee∪tracker∪idle 并集（AoneScanner） -------------
+    # scan.sh 只按单一 assignee 出数据 → 漏掉「指派给人 / 抄送数字人」的单（黑洞成因）。
+    # 这里直查每池三类过滤并集去重：数字人被指派 OR 被参与/抄送(tracker) OR jarvis-idle。
+    # 状态排除沿用 pools.json 的 exclude_status（与 scan.sh 一致），列含 modified 供 diff。
+    # backlog-drain 仍走 scan.sh scan-any（保留 any-assignee 消化）。
+
+    _UNION_COLUMNS = ("id,title,status,priority,tag,type,category,modified,gmtCreate,"
+                      "assignedTo")
+
+    @staticmethod
+    def _read_pools():
+        """pools.json → [(key, project, exclude_status[])]。失败返回空列表。"""
+        try:
+            pools = json.loads(
+                (Path(REPO_ROOT) / "config" / "pools.json").read_text()).get("pools", {})
+        except Exception as e:  # noqa: BLE001
+            log.warning("AoneScanner: cannot read pools.json: %s", e)
+            return []
+        out = []
+        for key, p in pools.items():
+            proj = p.get("project")
+            if proj:
+                out.append((key, str(proj), list(p.get("exclude_status") or [])))
+        return out
+
+    @classmethod
+    def _a1_list(cls, project, filter_expr):
+        """按 --filter 查一个池（富列），回规范化 item 列表。best-effort，失败回 []。"""
+        try:
+            r = subprocess.run(
+                [str(REPO_ROOT / "bin" / "a1id"), "--", "project", "workitem", "list",
+                 "--project", str(project), "--filter", filter_expr,
+                 "--columns", cls._UNION_COLUMNS, "-f", "json"],
+                capture_output=True, text=True, timeout=90, cwd=str(REPO_ROOT))
+            if r.returncode != 0:
+                log.warning("AoneScanner: [%s] list failed pool_project=%s rc=%d: %s",
+                            filter_expr, project, r.returncode, (r.stderr or "").strip()[:200])
+                return []
+            data = json.loads(r.stdout)
+            if not isinstance(data, list):
+                return []
+        except Exception as e:  # noqa: BLE001
+            log.warning("AoneScanner: [%s] list error pool_project=%s: %s",
+                        filter_expr, project, e)
+            return []
+        out = []
+        for it in data:
+            gmt_create = it.get("gmtCreate") or it.get("created") or ""
+            out.append({
+                "id": it.get("identifier") or it.get("id"),
+                "title": it.get("subject") or it.get("title") or "",
+                "status": it.get("status") or it.get("statusName") or "",
+                "priority": it.get("priority") or "",
+                "tag": it.get("tag"),
+                "type": it.get("type") or it.get("workitemType") or "",
+                "category": it.get("category") or "",
+                "modified": it.get("modified") or it.get("gmtModified") or "",
+                "created": gmt_create,  # _in_scope / backlog 排序用 created
+                "assignedTo": it.get("assignedTo") or "",
+            })
+        return out
+
+    def _union_filters(self, exclude_status):
+        """一个池的三源 a1 --filter 表达式：数字人被指派 / 被抄送(tracker) / jarvis-idle；
+        三源都叠加 pools.json 的状态排除，避免终态/已排除态单被捞。"""
+        worker_csv = ",".join(sorted(DIGITAL_WORKER_IDS))
+        excl = "".join(" AND NOT status=%s" % s for s in (exclude_status or []))
+        return (
+            "assignedTo=%s%s" % (worker_csv, excl),          # 指派给数字人
+            "workitem.tracker=%s%s" % (worker_csv, excl),    # 参与/抄送数字人（人 @ 会自动抄送）
+            "tag=jarvis-idle%s" % excl,                       # idle 重访（吸收原 Revisit 非 tf 车道）
+        )
+
+    def _query_pool_union(self, key, project, exclude_status):
+        """一个池的 assignee∪tracker∪idle 并集（按 id 去重）。三源查询并行发出（各自 a1 调用
+        best-effort），去重时 assignee 源优先（保序稳定，与串行等价）。"""
+        filters = self._union_filters(exclude_status)
+        with ThreadPoolExecutor(max_workers=len(filters),
+                                thread_name_prefix="aone-union") as ex:
+            per_filter = list(ex.map(lambda f: self._a1_list(project, f), filters))
+        rows = {}
+        for src in per_filter:  # 顺序 = filters 顺序（assignee→tracker→idle），去重保序
+            for it in src:
+                iid = str(it.get("id") or "")
+                if not iid or iid in rows:
+                    continue
+                it["pool"] = key
+                it["pool_project"] = str(project)
+                rows[iid] = it
+        return list(rows.values())
+
+    def _scan_union(self):
+        """全池 assignee∪tracker∪idle 并集 → item 列表（同 _scan shape），或 None（无池配置）。
+        池间并行（每池内三源也并行），单池失败只记日志、不作废本轮（与 scan.sh partial 语义一致）。"""
+        pools = self._read_pools()
+        if not pools:
+            return None
+        items = []
+        with ThreadPoolExecutor(max_workers=min(8, len(pools)),
+                                thread_name_prefix="aone-pool") as ex:
+            futures = [ex.submit(self._query_pool_union, key, project, excl)
+                       for key, project, excl in pools]
+            for fut in futures:
+                try:
+                    items.extend(fut.result())
+                except Exception as e:  # noqa: BLE001 — 单池失败不作废本轮
+                    log.warning("AoneScanner: pool union query failed: %s", e)
         return items
 
     def _in_scope(self, it):
@@ -3396,7 +3489,7 @@ class ScanScheduler:
                     force, decide_dispatch = True, True
                     action, reason = "dispatch", "new"
                 else:
-                    # 仍是 jarvis 自更新/停摆 → 交每日 RevisitScheduler，不每轮重启实例。
+                    # 仍是 jarvis 自更新/停摆 → 交每日 ProgressNudgeScheduler，不每轮重启实例。
                     action, reason = "skip", "idle_no_human"
             else:
                 decide_dispatch = True
@@ -3471,7 +3564,7 @@ class ScanScheduler:
                     _dingtalk_event_flush()
                 self._tick()
             except Exception:  # noqa: BLE001 — never crash
-                log.exception("ScanScheduler tick failed; will retry next interval")
+                log.exception("AoneScanner tick failed; will retry next interval")
             try:
                 self.handler.board.sync()
             except Exception:  # noqa: BLE001
@@ -3484,13 +3577,14 @@ class ScanScheduler:
         # Runtime pause switch: `touch .my-day/bridge/pause` halts new scan+dispatch
         # without restarting the bridge; `rm` resumes. In-flight workers keep running.
         if (REPO_ROOT / ".my-day" / "bridge" / "pause").exists():
-            log.info("ScanScheduler: pause flag present (.my-day/bridge/pause), skip this tick")
+            log.info("AoneScanner: pause flag present (.my-day/bridge/pause), skip this tick")
             return
         self._human_cache = {}   # per-tick cache reset for _human_touched
         self._human_comment_cache = {}
         self._activity_cache = {}
         self._human_operators = self._load_human_operators()  # reload whitelist each tick
-        items = self._scan()
+        # 统一探测：python 直查 assignee∪tracker∪idle 并集（取代 scan.sh 出派发数据）。
+        items = self._scan_union()
         if items is None:
             return
         cur_snapshot = {str(it["id"]): it for it in items if it.get("id")}
@@ -3508,7 +3602,7 @@ class ScanScheduler:
         if self._cold:
             self._cold = False
             self._prev_snapshot = cur_snapshot
-            log.info("ScanScheduler cold start: seeded %d IDs, no dispatch (auto=%s)",
+            log.info("AoneScanner cold start: seeded %d IDs, no dispatch (auto=%s)",
                      len(cur_ids), self.auto)
             return
 
@@ -3583,7 +3677,7 @@ class ScanScheduler:
             try:
                 self.handler._broadcast("\n".join(lines))
             except Exception:  # noqa: BLE001
-                log.exception("ScanScheduler failed to broadcast dispatch summary")
+                log.exception("AoneScanner failed to broadcast dispatch summary")
         if dropped:
             qf = [i for i, r in dropped if r == "queue_full"]
             if qf:
@@ -3592,7 +3686,7 @@ class ScanScheduler:
                         "🟠 派发队列已满，%d 条本轮跳过（将下轮重试）：%s"
                         % (len(qf), ", ".join("#" + i for i in qf)))
                 except Exception:  # noqa: BLE001
-                    log.exception("ScanScheduler failed to broadcast drop notice")
+                    log.exception("AoneScanner failed to broadcast drop notice")
 
     def _tick_supervised(self, new_items, updated_items=None):
         """Fallback (JARVIS_AUTO_DISPATCH=0): stage new items for authorization + push a card.
@@ -3631,7 +3725,7 @@ class ScanScheduler:
         try:
             self.handler._quick_card(self.notify_target, text, "group")
         except Exception:  # noqa: BLE001
-            log.exception("ScanScheduler failed to push notification card")
+            log.exception("AoneScanner failed to push notification card")
 
     # -- backlog drain (idle-only opportunistic) -----------------------------
 
@@ -3923,7 +4017,7 @@ class RecoveryScheduler:
           撞不上那扇窗。故每 tick 把活 worker 当前持有的 assignment 记进台账
           （recovery.json "workers" 段），worker 转 STALE/OFFLINE 后据此追查。只认规范键
           aone:<project>:<id>。
-        - 持久通道（兜住采样时序洞）：ScanScheduler 每 tick 原子落盘的 claimed-snapshot
+        - 持久通道（兜住采样时序洞）：AoneScanner 每 tick 原子落盘的 claimed-snapshot
           （Aone jarvis-claimed 存量）× 控制面任务态。快通道本质是本地采样：若「认领→
           宕机→reaper 收敛→/workers 摘除」全部发生在首个 tick（sleep interval）之前——
           bridge 刚启动/重启台账丢失/迁机——两个来源皆空，死任务会被永久搁置（交互单不入
@@ -4100,7 +4194,7 @@ class RecoveryScheduler:
     # -- tick ------------------------------------------------------------------
 
     def _tick(self):
-        # 运行时暂停闸：与 ScanScheduler/PrWatchScheduler 复用同一个 pause 标记。
+        # 运行时暂停闸：与 AoneScanner/PrWatchScheduler 复用同一个 pause 标记。
         if (Path(REPO_ROOT) / ".my-day" / "bridge" / "pause").exists():
             log.info("RecoveryScheduler: pause flag present, skip this tick")
             return
@@ -4152,7 +4246,7 @@ class RecoveryScheduler:
             if now - ts > self.MEMORY_TTL:
                 ledger["workers"].pop(wkey, None)
 
-        # 持久通道：claimed-snapshot（Aone jarvis-claimed 存量，ScanScheduler 每 tick
+        # 持久通道：claimed-snapshot（Aone jarvis-claimed 存量，AoneScanner 每 tick
         # 原子落盘、跨 bridge 重启存活）补上快通道的采样时序洞。只补快通道没看到的单
         # （双通道同单去重，不重复 by-aone 佐证）；task 行是否存在与状态判定统一交给
         # _recover_one。上限保护：单 tick 最多佐证 snapshot_max 个快照单，超出的下轮再看
@@ -4364,10 +4458,22 @@ class RecoveryScheduler:
         notify = self.handler._broadcast
         tgt, ttype = broadcast_target(), broadcast_type()
         sid = str(uuid.uuid4())
+        # B-proper：prompt 为 B-form（run 交 [[AONE_RESULT]]，不自 claim/wrap）。ephemeral 重派
+        # 无控制面 SessionController，但 executor 侧 bookend 的 Aone 写都是非 interactive 幂等写、
+        # 不依赖 controller —— 传 controller=None 的 _TaskAoneBookend，让 run 结果被一次性提交，
+        # 否则 AONE_RESULT 无人 commit → 又成黑洞。
+        bookend = _TaskAoneBookend(None, aone_id, project, terraform, "ticket")
+
+        def _on_spawn(p, _iid=aone_id, _be=bookend):
+            self.pool.set_proc(_iid, p)
+            _be.bind_process(p)
+            return p
+
         work = (lambda: self.handler.dispatch_item(
             aone_id, prompt, sid, False, notify, tgt, ttype,
-            on_spawn=lambda p: self.pool.set_proc(aone_id, p),
-            project=project, kind="ticket", terraform=terraform))
+            on_spawn=_on_spawn,
+            project=project, kind="ticket", terraform=terraform,
+            task_bookend=bookend))
         return self.pool.submit(aone_id, work, notify=notify, kind="ticket",
                                 project=project, force=True, terraform=terraform)
 
@@ -4383,10 +4489,10 @@ class RecoveryScheduler:
 class PrWatchScheduler:
     """PR-watch: 周期轮询 PR 观察登记表 (.my-day/bridge/pr-watch.json)，跨会话看守已提交 PR
     的**全生命周期**——open 窗口内 CI 失败自动派修复，合并后自动 claim.sh finish 收尾本工单，
-    与 RevisitScheduler 互为兜底。
+    与 ProgressNudgeScheduler 互为兜底。
 
     背景缺口：skill/persona 提交 PR 后按自治边界 release 成 jarvis-idle，单次 headless 会话
-    撑不住 PR 从提交到合并的几小时/几天，`gh pr checks` 只在那次会话里跑一次；RevisitScheduler
+    撑不住 PR 从提交到合并的几小时/几天，`gh pr checks` 只在那次会话里跑一次；ProgressNudgeScheduler
     的选择器只捞标题/描述含特定词的 idle 单，terraform 发布单都不含 → open 窗口 CI 转红无人修、
     合并后工单永久停在 jarvis-idle。本调度器读登记表逐条查 PR 状态：
       · merged        → claim.sh finish <ticket> <project> 已完成（过 npe/终态 guard）→ 评论+播报+摘除
@@ -4447,7 +4553,7 @@ class PrWatchScheduler:
 
     def _tick(self):
         """Returns True if any watched PR is active（CI 失败/pending）→ 下一轮走快档。"""
-        # 运行时暂停闸：与 ScanScheduler/PersonaScheduler 复用同一个 pause 标记。
+        # 运行时暂停闸：与 AoneScanner/PersonaScheduler 复用同一个 pause 标记。
         if (Path(REPO_ROOT) / ".my-day" / "bridge" / "pause").exists():
             return False
         try:
@@ -5168,11 +5274,11 @@ class PrWatchScheduler:
 class BoardScheduler:
     """Push board.sh JSON to AutomationAgent after each scan tick.
 
-    board.sh reads scan.json (produced by ScanScheduler) and classifies items into
+    board.sh reads scan.json (produced by AoneScanner) and classifies items into
     states (pool/inflight/done/merged/escalated/idle). The JSON is POSTed to
     /api/board/sync on AutomationAgent, which stores it for the /board dashboard page.
 
-    Called by ScanScheduler._loop() after each _tick() — not on its own timer,
+    Called by AoneScanner._loop() after each _tick() — not on its own timer,
     because the board is only useful with fresh scan data.
     """
 
@@ -5608,7 +5714,7 @@ class EphemeralExecutor:
 
     def status(self, item_id, force=False):
         """Read-only: would submit(item_id, force) be accepted? → (bool, reason).
-        Reasons: ok / active / deduped / queue_full. Used by ScanScheduler._decide and
+        Reasons: ok / active / deduped / queue_full. Used by AoneScanner._decide and
         --dry-run-once (no side effects)."""
         iid = str(item_id)
         with self._lock:
@@ -6494,7 +6600,7 @@ def _stale_reminder_payload(item, anchor, owner, stale_days):
     return event_key, aone_text, dm_text
 
 
-class RevisitScheduler(_DailyScheduler):
+class ProgressNudgeScheduler(_DailyScheduler):
     """Daily revisit for two lanes.
 
     * Terraform: inspect every open ``jarvis-idle`` ticket, deterministically remind its
@@ -6510,7 +6616,7 @@ class RevisitScheduler(_DailyScheduler):
     def __init__(self, handler, pool=None, hour=None, enabled=None, state_file=None,
                  max_n=None, stale_days=None, index_path=None):
         super().__init__(
-            name="RevisitScheduler",
+            name="ProgressNudgeScheduler",
             hour=hour if hour is not None else os.environ.get("JARVIS_REVISIT_HOUR", "9"),
             enabled=enabled if enabled is not None else (os.environ.get("JARVIS_REVISIT_SCHED", "1") != "0"),
             state_file=state_file or ".my-day/bridge/revisit.last")
@@ -6535,7 +6641,7 @@ class RevisitScheduler(_DailyScheduler):
         try:
             pools = json.loads(cfg.read_text()).get("pools", {})
         except Exception as e:  # noqa: BLE001
-            log.warning("RevisitScheduler: cannot read pools.json: %s", e)
+            log.warning("ProgressNudgeScheduler: cannot read pools.json: %s", e)
             return []
         out = []
         for key, p in pools.items():
@@ -6570,7 +6676,7 @@ class RevisitScheduler(_DailyScheduler):
                      "-f", "json"],
                     capture_output=True, text=True, timeout=90, cwd=str(REPO_ROOT))
                 if r.returncode != 0:
-                    log.warning("RevisitScheduler: idle query failed for pool %s page %d "
+                    log.warning("ProgressNudgeScheduler: idle query failed for pool %s page %d "
                                 "(rc=%d): %s", key, page, r.returncode,
                                 (r.stderr or "").strip()[:200])
                     return None
@@ -6596,7 +6702,7 @@ class RevisitScheduler(_DailyScheduler):
                 page += 1
             return rows
         except Exception as e:  # noqa: BLE001
-            log.warning("RevisitScheduler: idle query error for pool %s: %s", key, e)
+            log.warning("ProgressNudgeScheduler: idle query error for pool %s: %s", key, e)
             return None
 
     def _load_index(self):
@@ -6607,7 +6713,7 @@ class RevisitScheduler(_DailyScheduler):
         except FileNotFoundError:
             pass
         except Exception as e:  # noqa: BLE001
-            log.warning("RevisitScheduler: cannot load index %s: %s", self.index_path, e)
+            log.warning("ProgressNudgeScheduler: cannot load index %s: %s", self.index_path, e)
         return {"tickets": {}}
 
     def _write_index(self, value):
@@ -6617,7 +6723,7 @@ class RevisitScheduler(_DailyScheduler):
             tmp.write_text(json.dumps(value, ensure_ascii=False, default=str))
             os.replace(str(tmp), str(self.index_path))
         except Exception as e:  # noqa: BLE001
-            log.warning("RevisitScheduler: cannot persist index %s: %s", self.index_path, e)
+            log.warning("ProgressNudgeScheduler: cannot persist index %s: %s", self.index_path, e)
 
     def _select_fair(self, candidates, now=None):
         now = float(now if now is not None else time.time())
@@ -6703,16 +6809,16 @@ class RevisitScheduler(_DailyScheduler):
                     command, capture_output=True, text=True, cwd=str(REPO_ROOT),
                     timeout=90, env=env)
             except Exception as e:  # noqa: BLE001
-                log.warning("RevisitScheduler: %s query #%s raised: %s", name, iid, e)
+                log.warning("ProgressNudgeScheduler: %s query #%s raised: %s", name, iid, e)
                 return None
             if proc.returncode != 0:
-                log.warning("RevisitScheduler: %s query #%s rc=%d: %s",
+                log.warning("ProgressNudgeScheduler: %s query #%s rc=%d: %s",
                             name, iid, proc.returncode, (proc.stderr or "")[:200])
                 return None
             try:
                 result[name] = _json_rows(json.loads(proc.stdout or "[]"))
             except Exception as e:  # noqa: BLE001
-                log.warning("RevisitScheduler: %s query #%s bad JSON: %s", name, iid, e)
+                log.warning("ProgressNudgeScheduler: %s query #%s bad JSON: %s", name, iid, e)
                 return None
         return result["comments"], result["activities"]
 
@@ -6720,7 +6826,7 @@ class RevisitScheduler(_DailyScheduler):
         now = float(now if now is not None else time.time())
         owner = _resolve_stale_owner(item)
         if owner is None:
-            log.warning("RevisitScheduler: #%s owner unresolved; skip reminder",
+            log.warning("ProgressNudgeScheduler: #%s owner unresolved; skip reminder",
                         item.get("id"))
             return "owner_unresolved"
         timeline = self._ticket_timeline(item)
@@ -6745,879 +6851,23 @@ class RevisitScheduler(_DailyScheduler):
         return "reminded" if aone_ok and dm_ok else "pending"
 
     def _run_once(self):
-        # 返回契约: 只要有任一候选被 queue_full 拒即整体 False(下个 tick 重试整批);
-        # active/deduped/无候选/no-pool 视为成功, 由本日 mark 收敛。
+        """每日轮：仅对 Terraform jarvis-idle 单做停滞进度催办（双通道 Aone@ + 钉钉私信）。
+
+        非 Terraform idle 单的人工门重访已并入 AoneScanner 的统一探测（tag=jarvis-idle 源 +
+        _decide 的 idle 人工介入门），本调度器不再派发，只做催办。催办 best-effort：
+        _remind_if_stale 内部走 _aone_event_enqueue/_dingtalk_event_enqueue 各自持久/补偿，
+        故本轮恒视为收敛（返回 True）。"""
         cands = self._query()
-        notify = self.handler._broadcast if self.handler is not None else (lambda _text: None)
-        tgt, ttype = broadcast_target(), broadcast_type()
         if not cands:
-            log.info("RevisitScheduler: no jarvis-idle revisit candidates this round")
+            log.info("ProgressNudgeScheduler: no jarvis-idle candidates this round")
             return True
-        submitted = []
-        retry_hit = False
         for it in cands:
             iid = str(it["id"])
-            if it.get("terraform"):
-                outcome = self._remind_if_stale(it)
-                log.info("RevisitScheduler: Terraform #%s stale-check → %s", iid, outcome)
-                continue
-            if self.pool is None or self.handler is None:
-                log.warning("RevisitScheduler: no pool/handler for non-Terraform #%s", iid)
-                continue
-            prompt = _revisit_prompt(iid, it.get("title", ""), it.get("pool_project", ""))
-            project = str(it.get("pool_project") or "")
-            envelope = _task_envelope(
-                item_id=iid,
-                project=project,
-                task_type="revisit",
-                source_type="AONE",
-                source_ref={"aoneId": iid, "projectId": project, "title": it.get("title", "")},
-                desired_revision="revisit:%s" % datetime.now().date().isoformat(),
-                trigger="REVISIT",
-                prompt=prompt,
-                source_status=it.get("status") or it.get("statusName"),
-                recovery_policy="RESUME_ONLY",
-                title=it.get("title", ""),
-                poolKey=it.get("pool", ""),
-                terraform=False,
-                target=tgt,
-                targetType=ttype,
-            )
-
-            def local_submit(p=prompt, i=iid, pj=project):
-                if self.pool is None:
-                    return False, "ephemeral_executor_unavailable"
-                sid = str(uuid.uuid4())
-                work = (lambda: self.handler.dispatch_item(
-                    i, p, sid, False, notify, tgt, ttype,
-                    project=pj, kind="revisit", terraform=False))
-                return self.pool.submit(
-                    i, work, notify=notify, kind="revisit", project=pj,
-                    terraform=False)
-
-            route = self.execution_router.route(envelope)
-            ok, reason = self.execution_router.enqueue(
-                envelope, local_submit=local_submit)
-            if ok:
-                submitted.append(iid)
-            else:
-                if route.needs_recovery or reason == "queue_full":
-                    retry_hit = True
-                log.info("RevisitScheduler: #%s not submitted (%s)", iid, reason)
-        if submitted:
-            notify("🔁 非 Terraform 人工门重访：已投 %d 条 jarvis-idle 工单复查：%s"
-                   % (len(submitted), ", ".join("#" + i for i in submitted)))
-        return not retry_hit
-
-
-class PersonaScheduler:
-    """Terraform 旧公开接力/人类 @ 的入站迁移轮询（loops/persona-collab.md）。
-
-    本调度器只负责消费历史哨兵和显式 @，然后派一个新 headless run 在内部完成剩余角色链；
-    新 run 不再生成公开接力，最终只由 RD 聚合回复一次。
-
-    ── 扫描范围（B4）──
-    只扫带 ``jarvis-idle`` 标签的池内工单（``jarvis-claimed`` = 同会话接力正在进行，不需补位）。
-    另按 TERMINAL_STATUSES 过滤终态单（S9）。
-
-    ── 逐条评论判定（_decide_persona，纯函数、可单测）──
-    · 作者 ∈ 数字人 ∪ jarvis 编排层 → 只看哨兵；无哨兵一律 skip（不进 @mention 分支）
-    · 作者 ∉ 数字人 ∪ jarvis → 优先解析哨兵，其次显式 @ 触发（`@terraform-xx` / `@WORKER_xxx`）
-    · self_addressed（作者 == handoff.to）→ skip
-    · 服务端硬护栏（B3）：ledger dispatch_count >= max_rounds → 未 escalated 走升级路径一次并
-      置 escalated=True；已 escalated → skip escalated_dropped。人类 @ 触发时清零计数（人工重
-      新授权预算）。round 自报值是快路径（round > max_rounds → 升级），硬停以服务端计数为准。
-    · 时效门（S7）：createdAt 早于 max(24h, 2*interval) 前 → skip stale。createdAt 解析失败放行。
-    · 内容加固（S6/S10）：`\\_` → `_` 规整；action 白名单校验（非法→respond）；非数字人作者
-      发的哨兵 action 一律降级为 respond；note 截断 ≤200。
-    · 端到端保护（S5/S8）：pool 拒收（queue_full/closing/no_pool/active）→ 不推进 last_seen
-      不写 processed，下一 tick 自然重试；per-ticket try/except（S8）确保单工单异常不殃及后续。
-
-    每工单 state = {last_seen, processed, dispatch_count, escalated} 落
-    ``.my-day/bridge/persona-ledger.json``（原子写，仿 EphemeralExecutor.ledger 姿势）。
-
-    pause 复用 ``.my-day/bridge/pause`` 标记；缺 EphemeralExecutor 时静默跳过；默认关闭
-    （JARVIS_PERSONA_WATCH=0，灰度期显式开启）。
-    """
-
-    DEFAULT_LEDGER = ".my-day/bridge/persona-ledger.json"
-
-    def __init__(self, handler, pool=None, interval=None, enabled=None, max_rounds=None,
-                 ledger_path=None):
-        self.handler = handler
-        self.pool = pool if pool is not None else (getattr(handler, "ephemeral_executor", None))
-        self.execution_router = (
-            getattr(handler, "execution_router", None)
-            or ExecutionRouter(logger=log))
-        # B5: 默认关闭（灰度），显式设 =1 才开启。
-        self.enabled = (enabled if enabled is not None
-                        else os.environ.get("JARVIS_PERSONA_WATCH", "0") == "1")
-        self.interval = int(interval if interval is not None
-                            else os.environ.get("JARVIS_PERSONA_INTERVAL", "600"))
-        self.max_rounds = int(max_rounds if max_rounds is not None
-                              else os.environ.get("JARVIS_PERSONA_MAX_ROUNDS", "6"))
-        self._ledger_path = (Path(ledger_path) if ledger_path
-                             else (Path(REPO_ROOT) / self.DEFAULT_LEDGER))
-        # {tickets: {iid: {last_seen: int, processed: set[int], dispatch_count: int, escalated: bool}}}
-        self._ledger = {"tickets": {}}
-        self._lock = threading.Lock()
-        self._thread = None
-        self._load_ledger()
-
-    # -- public API ----------------------------------------------------------
-
-    def start(self):
-        if not self.enabled:
-            log.info("PersonaScheduler disabled (set JARVIS_PERSONA_WATCH=1 to enable)")
-            return
-        self._thread = threading.Thread(target=self._loop, daemon=True, name="PersonaScheduler")
-        self._thread.start()
-
-    # -- ledger persistence（原子写，仿 EphemeralExecutor._persist_ledger 姿势）--------------
-
-    def _load_ledger(self):
-        try:
-            if self._ledger_path.exists():
-                raw = json.loads(self._ledger_path.read_text())
-                if isinstance(raw, dict) and isinstance(raw.get("tickets"), dict):
-                    self._ledger = {"tickets": {}}
-                    for k, v in raw["tickets"].items():
-                        if not isinstance(v, dict):
-                            continue
-                        try:
-                            last_seen = int(v.get("last_seen") or 0)
-                        except (ValueError, TypeError):
-                            last_seen = 0
-                        try:
-                            dispatch_count = int(v.get("dispatch_count") or 0)
-                        except (ValueError, TypeError):
-                            dispatch_count = 0
-                        self._ledger["tickets"][str(k)] = {
-                            "last_seen": last_seen,
-                            "processed": {int(x) for x in (v.get("processed") or [])
-                                          if str(x).isdigit()},
-                            "dispatch_count": dispatch_count,
-                            "escalated": bool(v.get("escalated") or False),
-                        }
-                    log.info("PersonaScheduler: restored ledger with %d ticket entries",
-                             len(self._ledger["tickets"]))
-        except Exception as e:  # noqa: BLE001
-            log.warning("PersonaScheduler: could not load ledger %s: %s",
-                        self._ledger_path, e)
-            self._ledger = {"tickets": {}}
-
-    def _persist_ledger(self):
-        # Caller holds self._lock. processed set → sorted list（JSON 兼容），限制 200 条防膨胀。
-        try:
-            self._ledger_path.parent.mkdir(parents=True, exist_ok=True)
-            tmp = self._ledger_path.parent / (self._ledger_path.name + ".tmp")
-            snapshot = {"tickets": {}}
-            for k, v in self._ledger["tickets"].items():
-                proc = sorted(v.get("processed") or [])
-                if len(proc) > 200:
-                    proc = proc[-200:]
-                snapshot["tickets"][k] = {
-                    "last_seen": int(v.get("last_seen") or 0),
-                    "processed": proc,
-                    "dispatch_count": int(v.get("dispatch_count") or 0),
-                    "escalated": bool(v.get("escalated") or False),
-                }
-            tmp.write_text(json.dumps(snapshot, default=str))
-            tmp.replace(self._ledger_path)
-        except Exception as e:  # noqa: BLE001
-            log.warning("PersonaScheduler: could not persist ledger: %s", e)
-
-    def _get_ticket_state(self, iid):
-        return self._ledger["tickets"].setdefault(
-            str(iid),
-            {"last_seen": 0, "processed": set(),
-             "dispatch_count": 0, "escalated": False})
-
-    # -- pure decision（真的可单测：state 由调用方传入，不动 ledger）------------
-
-    def _decide_persona(self, item, comments, state=None):
-        """逐条评论判定，返回按顺序的 decision 列表（O1：纯函数，state 由调用方注入）：
-
-        每项 = {comment_id, action, reason, internal_role, public_identity, handoff}
-        · action ∈ {dispatch, escalate, skip}
-        · dispatch: 派 internal_role 子代理接手；任何外写固定 public_identity=terraform-rd
-        · escalate: 服务端硬护栏触发（dispatch_count >= max_rounds 或 round 自报 > max）
-        · skip: 见 reason
-             processed / self_addressed / persona_no_sentinel / jarvis_no_sentinel /
-             no_handoff / bad_json / bad_to / bad_action / bad_round /
-             done_tag / stale / escalated_dropped / in_flight_active
-        """
-        iid = str(item.get("id", ""))
-        tags = _tagset(item)
-        if state is None:
-            state = self._get_ticket_state(iid)
-        processed = state.get("processed") or set()
-        decisions = []
-        # 工单终态 jarvis-done：一律 skip（loops/persona-collab.md §五 硬约束）。
-        if "jarvis-done" in tags:
-            for c in comments:
-                cid = self._safe_cid(c.get("id"))
-                decisions.append({
-                    "comment_id": cid, "action": "skip", "reason": "done_tag",
-                    "internal_role": None, "public_identity": None, "handoff": None,
-                })
-            return decisions
-
-        stale_cutoff = self._stale_cutoff_epoch()
-        for c in comments:
-            cid = self._safe_cid(c.get("id"))
-            author = str(c.get("author") or c.get("creator") or "").strip()
-            # content 预处理（S10）：Aone web UI 转义 `\_` → 规整回 `_` 才能命中哨兵/mention
-            content = _normalize_content(str(c.get("content") or "")).strip()
-            if cid and cid in processed:
-                decisions.append({
-                    "comment_id": cid, "action": "skip", "reason": "processed",
-                    "internal_role": None, "public_identity": None, "handoff": None,
-                })
-                continue
-
-            # S7 时效门：createdAt 太早 → skip stale。解析失败视为放行。
-            created_epoch = self._parse_created_at_epoch(
-                c.get("createdAt") or c.get("created"))
-            if stale_cutoff is not None and created_epoch is not None \
-                    and created_epoch < stale_cutoff:
-                decisions.append({
-                    "comment_id": cid, "action": "skip", "reason": "stale",
-                    "internal_role": None, "public_identity": None, "handoff": None,
-                })
-                continue
-
-            handoff, hf_reason = self._extract_handoff(content)
-            author_public_identity = _author_public_identity(author)
-            is_jarvis = _is_jarvis_author(author)
-
-            if handoff is not None:
-                # 作者非数字人（含人类/未知）发的哨兵：忽略其自报 action，一律降级 respond（S6）
-                if not author_public_identity and not is_jarvis:
-                    handoff["action"] = "respond"
-                # 统一 RD 作者不能表达内部角色：数字作者/历史 jarvis fallback 的内部来源只信 from。
-                # 缺/坏 from 不派；self_addressed 仅在 sentinel.from == sentinel.to 时成立。
-                if author_public_identity or is_jarvis:
-                    internal_from = str(handoff.get("from") or "").strip()
-                    if internal_from not in PERSONA_INTERNAL_ROLES:
-                        decisions.append({
-                            "comment_id": cid, "action": "skip", "reason": "bad_from",
-                            "internal_role": handoff.get("to"),
-                            "public_identity": PERSONA_PUBLIC_IDENTITY,
-                            "handoff": handoff,
-                        })
-                        continue
-                if handoff.get("from") == handoff.get("to"):
-                    decisions.append({
-                        "comment_id": cid, "action": "skip", "reason": "self_addressed",
-                        "internal_role": handoff.get("to"),
-                        "public_identity": PERSONA_PUBLIC_IDENTITY,
-                        "handoff": handoff,
-                    })
-                    continue
-                # 客户端 round 自报值（快路径）：>max_rounds 视为升级候选
-                rnd = self._safe_round(handoff.get("round"))
-                if rnd is None:
-                    decisions.append({
-                        "comment_id": cid, "action": "skip", "reason": "bad_round",
-                        "internal_role": handoff.get("to"),
-                        "public_identity": PERSONA_PUBLIC_IDENTITY, "handoff": handoff,
-                    })
-                    continue
-                handoff["round"] = rnd
-                # 服务端硬护栏（B3）：dispatch_count >= max_rounds → escalate 一次或 skip
-                gate = self._server_gate(state, rnd)
-                if gate == "escalated_dropped":
-                    decisions.append({
-                        "comment_id": cid, "action": "skip", "reason": "escalated_dropped",
-                        "internal_role": handoff.get("to"),
-                        "public_identity": PERSONA_PUBLIC_IDENTITY, "handoff": handoff,
-                    })
-                    continue
-                if gate == "escalate":
-                    decisions.append({
-                        "comment_id": cid, "action": "escalate", "reason": "max_rounds",
-                        "internal_role": handoff.get("to"),
-                        "public_identity": PERSONA_PUBLIC_IDENTITY, "handoff": handoff,
-                    })
-                    continue
-                # 关单请求上下文：触发评论明确要求关单时，收尾走人工授权而非静默 release。
-                handoff["close_request"] = self._detect_close_request(content)
-                handoff.setdefault("requester", author)
-                handoff["requester_is_digital"] = bool(author_public_identity or is_jarvis)
-                decisions.append({
-                    "comment_id": cid, "action": "dispatch", "reason": "handoff",
-                    "internal_role": handoff.get("to"),
-                    "public_identity": PERSONA_PUBLIC_IDENTITY, "handoff": handoff,
-                })
-                continue
-
-            # 无哨兵分支：作者 ∈ 数字人 → skip persona_no_sentinel；作者 == jarvis → skip jarvis_no_sentinel；
-            # 都不是且显式 @ 到某数字人 → 视为人类 @ 触发（重置 dispatch_count）。
-            if author_public_identity:
-                decisions.append({
-                    "comment_id": cid, "action": "skip", "reason": "persona_no_sentinel",
-                    "internal_role": None, "public_identity": None, "handoff": None,
-                })
-                continue
-            if is_jarvis:
-                decisions.append({
-                    "comment_id": cid, "action": "skip", "reason": "jarvis_no_sentinel",
-                    "internal_role": None, "public_identity": None, "handoff": None,
-                })
-                continue
-            role = self._detect_mention(content)
-            if role is None:
-                # @jarvis(编排层) + 明确关单请求 → 复用关单 handoff，由 terraform-pd 代为核验 +
-                # 催真人关单。scope：jarvis 一般 @ 不触发协作，仅关单请求提醒（见 loops/persona-collab.md）。
-                if self._detect_jarvis_mention(content) and self._detect_close_request(content):
-                    decisions.append({
-                        "comment_id": cid, "action": "dispatch", "reason": "human_mention",
-                        "internal_role": "terraform-pd",
-                        "public_identity": PERSONA_PUBLIC_IDENTITY,
-                        "handoff": {"from": author, "to": "terraform-pd", "ticket": iid,
-                                    "action": "respond", "round": 1,
-                                    "note": content[:200],
-                                    "close_request": True,
-                                    "requester": author,
-                                    "requester_is_digital": False},
-                    })
-                    continue
-                decisions.append({
-                    "comment_id": cid, "action": "skip",
-                    "reason": hf_reason or "no_handoff",
-                    "internal_role": None, "public_identity": None, "handoff": None,
-                })
-                continue
-            # 人类显式 @ 触发：action=respond, round=1, 服务端计数与 escalated 需要重置（B3）
-            # 重置动作由 apply 时按此 reason 执行（保持 _decide_persona 无副作用）。
-            decisions.append({
-                "comment_id": cid, "action": "dispatch", "reason": "human_mention",
-                "internal_role": role,
-                "public_identity": PERSONA_PUBLIC_IDENTITY,
-                "handoff": {"from": author, "to": role, "ticket": iid,
-                            "action": "respond", "round": 1,
-                            "note": content[:200],
-                            # 人类 @ 触发：作者恒为人类（非数字人），关单请求 → @提单人+私信本人。
-                            "close_request": self._detect_close_request(content),
-                            "requester": author,
-                            "requester_is_digital": False},
-            })
-        return decisions
-
-    # -- helpers（服务端护栏 / 时效门 / 数字安全）---------------------------
-
-    def _server_gate(self, state, client_round):
-        """B3 服务端硬护栏：返回 "ok" / "escalate" / "escalated_dropped"。
-
-        · 已 escalated 且 dispatch_count 溢出上限二倍 → escalated_dropped（不再刷屏）
-        · dispatch_count >= max_rounds → escalate（本次以升级路径消费）
-        · 客户端 round 也 > max_rounds → 也走 escalate（快路径兜底）
-        · 其余 → ok
-        """
-        count = int(state.get("dispatch_count") or 0)
-        escalated = bool(state.get("escalated") or False)
-        if escalated and count >= self.max_rounds * 2:
-            return "escalated_dropped"
-        if count >= self.max_rounds:
-            return "escalate"
-        if client_round is not None and client_round > self.max_rounds:
-            return "escalate"
-        return "ok"
-
-    def _stale_cutoff_epoch(self):
-        """S7：时效门 cutoff = now - max(24h, 2*interval)。返回 epoch 秒。"""
-        window = max(24 * 3600, 2 * int(self.interval))
-        return time.time() - window
-
-    @staticmethod
-    def _parse_created_at_epoch(value):
-        """解析 Aone createdAt 字符串到 epoch 秒。tolerate 缺/坏格式 → None。"""
-        raw = str(value or "").strip()
-        if not raw:
-            return None
-        for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M",
-                    "%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M:%SZ"):
-            try:
-                return time.mktime(time.strptime(raw, fmt))
-            except (ValueError, TypeError):
-                continue
-        return None
-
-    @staticmethod
-    def _safe_cid(value):
-        """comment id → int。坏值返回 0（下游 processed 判空 + last_seen max 都能吃 0）。"""
-        try:
-            return int(value)
-        except (ValueError, TypeError):
-            return 0
-
-    @staticmethod
-    def _safe_round(value):
-        """round → int，坏值返回 None（触发 skip bad_round）。"""
-        if value is None or value == "":
-            return 1
-        try:
-            n = int(value)
-        except (ValueError, TypeError):
-            return None
-        return max(1, n)
-
-    @staticmethod
-    def _extract_handoff(content):
-        """解析评论文本里的旧 [[PERSONA-HANDOFF:{...}]] 哨兵（仅入站迁移兼容）。
-
-        返回 (handoff_dict, reason)：
-        · handoff_dict 非 None：合法哨兵；reason=None
-        · handoff_dict is None：非哨兵 or 坏格式；reason ∈ {no_handoff, bad_json, bad_to,
-          bad_action}
-        取评论内**最后一条**哨兵（同评论出现多条时以最新意图为准，O2）。
-        """
-        matches = PERSONA_HANDOFF_RE.findall(content or "")
-        if not matches:
-            return None, "no_handoff"
-        # 从后往前找第一条能成功解析的哨兵（尽量宽容）
-        for payload in reversed(matches):
-            try:
-                info = json.loads(payload)
-            except (ValueError, TypeError):
-                continue
-            if not isinstance(info, dict):
-                continue
-            to = str(info.get("to") or "").strip()
-            if to not in PERSONA_INTERNAL_ROLES:
-                continue
-            # 后续 self_addressed / dispatch 一律使用规范化值，不能只校验局部变量。
-            info["to"] = to
-            if "from" in info:
-                info["from"] = str(info.get("from") or "").strip()
-            # S6 action 白名单：非法降级为 respond（不阻断,只降级)
-            action = str(info.get("action") or "").strip()
-            if action not in PERSONA_ACTION_WHITELIST:
-                info["action"] = "respond"
-            # note 长度截断（S6）
-            note = str(info.get("note") or "").strip()
-            if len(note) > 200:
-                info["note"] = note[:200] + "…"
-            else:
-                info["note"] = note
-            return info, None
-        # 有匹配但全部解析失败 / to 非法
-        # 尝试一次严格解析取诊断 reason
-        try:
-            info = json.loads(matches[-1])
-        except (ValueError, TypeError):
-            return None, "bad_json"
-        if not isinstance(info, dict):
-            return None, "bad_json"
-        return None, "bad_to"
-
-    @staticmethod
-    def _detect_mention(content):
-        """B2：文本里是否显式 @ 到 Terraform 公共身份/历史身份。返回 internal_role 或 None。
-
-        当前唯一公开 @TerraformRD / @RD-worker 是统一入口，内部从 terraform-pd 分诊；旧
-        @TerraformPD / @TerraformQA 及旧 worker 只保留一版入站兼容，分别路由到原内部角色。
-        @ 必须显式，防裸 role 名误触发。
-
-        支持三种命中形态：
-        · @terraform-pd / @Terraform_RD 类（大小写不敏感 + 分隔符宽容）
-        · @WORKER_1783582374386 类
-        · @<env 昵称>（JARVIS_PERSONA_NICKS 提供）
-        """
-        text = content or ""
-        m = PERSONA_AT_ROLE_RE.search(text)
-        if m:
-            suffix = m.group(1).lower()
-            return "terraform-qa" if suffix == "qa" else "terraform-pd"
-        for _worker_id, (internal_role, regex) in PERSONA_AT_WORKER_RES.items():
-            if regex.search(text):
-                return internal_role
-        nicks = _persona_nicks_map()
-        if nicks:
-            # 简单扫 @<name> 形式（含连字符 -，兼容 Terraform-PD数字人 类显示名）
-            for m in re.finditer(r"@\s*([A-Za-z0-9_一-鿿\-]+)", text):
-                cand = m.group(1).lower()
-                if cand in nicks:
-                    configured_role = nicks[cand]
-                    return ("terraform-pd" if configured_role == PERSONA_PUBLIC_IDENTITY
-                            else configured_role)
-        return None
-
-    @staticmethod
-    def _detect_close_request(content):
-        """评论是否明确要求关单/关闭工单。命中 → 收尾走人工授权 handoff（@提单人+钉钉私信），
-        而非静默 release。关单本身仍是人工门（persona 不代关）。"""
-        return bool(PERSONA_CLOSE_REQUEST_RE.search(content or ""))
-
-    @staticmethod
-    def _detect_jarvis_mention(content):
-        """文本是否显式 @ jarvis 编排层（@jarvis / @open-jarvis / @WORKER_1782379562571）。
-        仅在关单请求场景消费（见 _decide_persona jarvis-close 分支）。"""
-        return bool(JARVIS_AT_RE.search(content or ""))
-
-    # -- dispatch ------------------------------------------------------------
-
-    def _iid_in_flight(self, iid):
-        """B4：某工单是否已有 active 派发在跑（persona 或其它 kind 都算）。用于 skip in_flight_active
-        避免同一工单同一时间多个 headless 撞车。EphemeralExecutor.active_ids() 返回完整 key，需按
-        persona-<iid>-... 前缀或裸 <iid> 判定。"""
-        if self.pool is None:
-            return False
-        try:
-            active = self.pool.active_ids()
-        except Exception:  # noqa: BLE001
-            return False
-        prefix = "persona-%s-" % iid
-        for key in active:
-            k = str(key)
-            if k == str(iid) or k.startswith(prefix):
-                return True
-        return False
-
-    def _dispatch_persona(self, item, decision, comments, on_start=None):
-        """按 decision 派一个 headless jarvis 编排层实例（旧接力迁移补位）。返回 (accepted, reason).
-
-        B4 in-flight guard：派发前查 EphemeralExecutor 是否已有同工单 active，若有则 skip
-        in_flight_active（不占坑，让在跑实例自己完成）。
-
-        on_start：worker **真正开始执行**（拿到 EphemeralExecutor 槽位）时触发的回调，用来把
-        ledger 的 last_seen/processed/计数落盘。**绝不能在 submit 返回处同步落盘**——submit
-        只表示"入队接受"，槽满时 future 仅排队；此时若 bridge 换 token 重启，terminate_all
-        的 shutdown(cancel_futures=True) 会丢弃未启动的排队 future，而 ledger 若已标 processed
-        就会永久压死重试（先例：工单 84297352 被 @ 两次、两次都在排队时遇重启被丢、再没人理）。
-        延后到 on_start 落盘后：排队被取消 → 回调不触发 → ledger 干净 → 下一 tick 自然重派；
-        正常运行期间 _iid_in_flight 会挡住重复派发。"""
-        iid = str(item.get("id", ""))
-        project = item.get("pool_project") or ""
-        # 车道与 _dispatch 同口径：persona 扫全池（不止 terraform），按 pool/title 判定。
-        terraform = _is_terraform_ticket(item.get("pool", ""), item.get("title", ""))
-        internal_role = decision["internal_role"]
-        public_identity = decision.get("public_identity") or PERSONA_PUBLIC_IDENTITY
-        handoff = decision.get("handoff") or {}
-        snippet = self._comment_snippet(comments, decision.get("comment_id"))
-        prompt = _persona_prompt(
-            iid, internal_role, handoff.get("action") or "respond",
-            handoff.get("note") or "",
-            self._safe_round(handoff.get("round")) or 1, snippet,
-            project=project,
-            escalated=(decision["action"] == "escalate"),
-            close_request=bool(handoff.get("close_request")),
-            requester=handoff.get("requester"),
-            requester_is_digital=bool(handoff.get("requester_is_digital")),
-            public_identity=public_identity,
-        )
-        # 独立 dispatch key：同工单不同接力轮次并存，避免撞 EphemeralExecutor 的 active-dedup
-        dispatch_key = "persona-%s-r%s-c%s" % (
-            iid, handoff.get("round") or 1, decision.get("comment_id") or "0")
-        tgt, ttype = broadcast_target(), broadcast_type()
-        notify = self.handler._broadcast if self.handler else (lambda t: None)
-        comment_id = self._safe_cid(decision.get("comment_id"))
-        envelope = _task_envelope(
-            item_id=iid,
-            project=project,
-            task_type="persona",
-            source_type="AONE",
-            source_ref={"aoneId": iid, "projectId": str(project), "title": item.get("title", "")},
-            desired_revision="comment:%s" % comment_id,
-            trigger="PERSONA",
-            prompt=prompt,
-            source_status=item.get("status") or item.get("statusName"),
-            recovery_policy="RESUME_ONLY",
-            persona=internal_role,
-            comment_cursor=comment_id,
-            title=item.get("title", ""),
-            poolKey=item.get("pool", ""),
-            dispatchKey=dispatch_key,
-            action=handoff.get("action") or "respond",
-            round=handoff.get("round") or 1,
-            terraform=terraform,
-            target=tgt,
-            targetType=ttype,
-        )
-
-        def local_submit():
-            if self.pool is None:
-                return False, "ephemeral_executor_unavailable"
-            if self._iid_in_flight(iid):
-                return False, "in_flight_active"
-            sid = str(uuid.uuid4())
-
-            def _work():
-                # 首行落 ledger：仅当 worker 真正拿到槽位开始跑才触发（排队被取消则不触发）。
-                if on_start is not None:
-                    try:
-                        on_start()
-                    except Exception:  # noqa: BLE001 — 落盘失败不阻断实际派发
-                        log.exception("persona on_start ledger commit failed #%s", iid)
-                if self.handler is None:
-                    return "done"
-                return self.handler.dispatch_item(
-                    iid, prompt, sid, False, notify, tgt, ttype,
-                    on_spawn=lambda p: self.pool.set_proc(dispatch_key, p),
-                    project=project, kind="persona", terraform=terraform)
-
-            return self.pool.submit(dispatch_key, _work, notify=notify,
-                                    kind="persona", project=project, force=True,
-                                    terraform=terraform)
-
-        route = self.execution_router.route(envelope)
-        result = self.execution_router.enqueue(
-            envelope, local_submit=local_submit)
-        if route.needs_recovery and result.accepted and on_start is not None:
-            # Durable Task acceptance replaces the local executor-start boundary.
-            # Advancing the sensor ledger is safe because the database owns retry.
-            try:
-                on_start()
-            except Exception:  # noqa: BLE001
-                log.exception("persona durable ledger commit failed #%s", iid)
-        return result
-
-    @staticmethod
-    def _comment_snippet(comments, target_id, size=6):
-        """取 target 及其前后各若干条评论，构 short prompt 上下文。避免整段拉太多字。"""
-        if not comments:
-            return "(空)"
-        try:
-            idx = next(i for i, c in enumerate(comments)
-                       if int(c.get("id") or 0) == int(target_id or 0))
-        except (StopIteration, ValueError, TypeError):
-            idx = max(0, len(comments) - 1)
-        start = max(0, idx - size // 2)
-        end = min(len(comments), start + size)
-        lines = []
-        for c in comments[start:end]:
-            author = c.get("creator") or c.get("author") or "?"
-            content = (c.get("content") or "").replace("\n", " ")
-            if len(content) > 200:
-                content = content[:200] + "…"
-            lines.append("@%s: %s" % (author, content))
-        return "\n".join(lines) or "(空)"
-
-    # -- comment fetch（每轮 tick 一次；best-effort）------------------------
-
-    def _fetch_comments(self, iid):
-        try:
-            r = subprocess.run(
-                [str(REPO_ROOT / "bin" / "a1id"), "--", "project", "workitem",
-                 "comment", "list", str(iid), "-f", "json"],
-                capture_output=True, text=True, timeout=60, cwd=str(REPO_ROOT))
-            if r.returncode != 0:
-                log.warning("PersonaScheduler: comment list #%s failed (rc=%d): %s",
-                            iid, r.returncode, (r.stderr or "").strip()[:200])
-                return None
-            data = json.loads(r.stdout)
-            if not isinstance(data, list):
-                return []
-            return data
-        except Exception as e:  # noqa: BLE001
-            log.warning("PersonaScheduler: comment error #%s: %s", iid, e)
-            return None
-
-    # -- scan target list（复用 RevisitScheduler 的 pool query 姿势）--------
-
-    def _query_candidates(self):
-        """扫两类池内工单，合并去重：
-        · ``jarvis-idle`` 标签单（B4：jarvis 上轮处理完释放、等接力补位；claimed 单同会话自处理，不补位）
-        · ``workitem.tracker`` 主扫唯一公共 TerraformRD worker；旧 PD/QA worker 另走一版兼容入站
-          查询。人 @ 数字人时 Aone 自动加抄送，即便无 jarvis 标签也能进入 @mention 判定。
-          总开关 ``JARVIS_PERSONA_TRACKER_SCAN=0``；旧 worker 兼容可单独
-          ``JARVIS_PERSONA_LEGACY_TRACKER_SCAN=0`` 关闭。
-        S9：TERMINAL_STATUSES 过滤终态单。best-effort per pool。"""
-        cfg = Path(REPO_ROOT) / "config" / "pools.json"
-        try:
-            pools = json.loads(cfg.read_text()).get("pools", {})
-        except Exception as e:  # noqa: BLE001
-            log.warning("PersonaScheduler: cannot read pools.json: %s", e)
-            return []
-        tracker_scan = os.environ.get("JARVIS_PERSONA_TRACKER_SCAN", "1") == "1"
-        legacy_tracker_scan = os.environ.get("JARVIS_PERSONA_LEGACY_TRACKER_SCAN", "1") == "1"
-        # 主扫唯一公开 RD + jarvis（只 @jarvis 的关单提醒）。旧 PD/QA worker 独立查询，避免继续
-        # 把它们塑造成公开身份，也便于下一版直接关兼容。
-        primary_tracker_filter = "workitem.tracker=" + ",".join(
-            sorted(PERSONA_WORKER_IDS | {JARVIS_ORCH_WORKER}))
-        legacy_tracker_filter = "workitem.tracker=" + ",".join(
-            sorted(PERSONA_LEGACY_WORKER_IDS))
-        cands = []
-        for key, p in pools.items():
-            project = p.get("project")
-            if not project:
-                continue
-            # jarvis-idle（既有行为，向后兼容）+ tracker 抄送命中 persona（新增，被 @ 触发）
-            items = list(self._query_pool_tag(key, str(project), "jarvis-idle") or [])
-            if tracker_scan:
-                items += (self._query_pool_filter(
-                    key, str(project), primary_tracker_filter) or [])
-                if legacy_tracker_scan and PERSONA_LEGACY_WORKER_IDS:
-                    items += (self._query_pool_filter(
-                        key, str(project), legacy_tracker_filter) or [])
-            for it in items:
-                # S9: 终态单跳过
-                if str(it.get("status") or "").strip() in TERMINAL_STATUSES:
-                    continue
-                it["pool"] = key
-                it["pool_project"] = str(project)
-                cands.append(it)
-        # 按 id 去重（防某些池叠加返回同一单）
-        seen = set()
-        uniq = []
-        for it in cands:
-            iid = str(it.get("id") or "")
-            if not iid or iid in seen:
-                continue
-            seen.add(iid)
-            uniq.append(it)
-        return uniq
-
-    @staticmethod
-    def _query_pool_filter(key, project, filter_expr):
-        """按任意 a1 --filter 表达式查一个池，回列表 [{id,title,tag,status}]。best-effort。
-        filter_expr 例：``tag=jarvis-idle`` / ``workitem.tracker=WORKER_a,WORKER_b``（逗号多值 OR）。"""
-        try:
-            r = subprocess.run(
-                [str(REPO_ROOT / "bin" / "a1id"), "--", "project", "workitem", "list",
-                 "--project", project, "--filter", filter_expr,
-                 "--columns", "id,title,status,tag", "-f", "json"],
-                capture_output=True, text=True, timeout=60, cwd=str(REPO_ROOT))
-            if r.returncode != 0:
-                log.warning("PersonaScheduler: [%s] query failed pool=%s (rc=%d): %s",
-                            filter_expr, key, r.returncode, (r.stderr or "").strip()[:200])
-                return []
-            data = json.loads(r.stdout)
-            if not isinstance(data, list):
-                return []
-            return [{"id": it.get("identifier") or it.get("id"),
-                     "title": it.get("subject") or it.get("title") or "",
-                     "tag": it.get("tag"),
-                     "status": it.get("status") or ""}
-                    for it in data]
-        except Exception as e:  # noqa: BLE001
-            log.warning("PersonaScheduler: [%s] query error pool=%s: %s", filter_expr, key, e)
-            return []
-
-    @classmethod
-    def _query_pool_tag(cls, key, project, tag):
-        """薄封装：按单个 tag 过滤（保留既有调用点语义）。"""
-        return cls._query_pool_filter(key, project, "tag=%s" % tag)
-
-    # -- loop / tick ---------------------------------------------------------
-
-    def _loop(self):
-        while True:
-            try:
-                self._tick()
-            except Exception:  # noqa: BLE001 — never crash
-                log.exception("PersonaScheduler tick failed; will retry next interval")
-            time.sleep(self.interval)
-
-    def _tick(self):
-        if (REPO_ROOT / ".my-day" / "bridge" / "pause").exists():
-            log.info("PersonaScheduler: pause flag present, skip this tick")
-            return
-        cands = self._query_candidates()
-        if not cands:
-            return
-        for it in cands:
-            iid = str(it.get("id") or "")
-            # S8 per-ticket try/except: 单工单异常不能殃及后续工单；异常时也不推进 last_seen
-            try:
-                self._tick_one(it, iid)
-            except Exception:  # noqa: BLE001 — never crash the whole tick
-                log.exception("PersonaScheduler: ticket #%s failed; continuing", iid)
-
-    def _tick_one(self, item, iid):
-        comments = self._fetch_comments(iid)
-        if comments is None:
-            return
-        with self._lock:
-            state = self._get_ticket_state(iid)
-            last_seen = state["last_seen"]
-            # 拿一份 state 的浅拷贝给 _decide_persona 用（含 dispatch_count/escalated），
-            # 保持 _decide_persona 纯函数（不动 ledger）。
-            state_snapshot = {
-                "last_seen": state["last_seen"],
-                "processed": set(state.get("processed") or set()),
-                "dispatch_count": int(state.get("dispatch_count") or 0),
-                "escalated": bool(state.get("escalated") or False),
-            }
-        # 只看比 last_seen 更新的评论（首次进入 ticket → 全量扫，但 processed 空防重派）
-        new_comments = []
-        for c in comments:
-            cid = self._safe_cid(c.get("id"))
-            if cid > last_seen:
-                new_comments.append(c)
-        if not new_comments:
-            return
-        decisions = self._decide_persona(item, new_comments, state=state_snapshot)
-        self._apply_decisions(item, comments, decisions)
-
-    def _apply_decisions(self, item, comments, decisions):
-        iid = str(item.get("id", ""))
-        dispatched = []
-        escalated_list = []
-        for d in decisions:
-            cid = self._safe_cid(d.get("comment_id"))
-            if d["action"] == "skip":
-                # skip 一律推进 last_seen（防下一 tick 重扫）；processed 不写。
-                with self._lock:
-                    st = self._get_ticket_state(iid)
-                    st["last_seen"] = max(int(st.get("last_seen") or 0), cid)
-                    self._persist_ledger()
-                log.info("persona: skip #%s comment=%s (%s)", iid, cid, d["reason"])
-                continue
-            # S5：ledger 落盘延后到 worker 真正开始执行（on_start），**不在 submit 返回处同步写**。
-            # submit 只是入队接受，槽满时 future 仅排队；此刻若换 token 重启会丢弃排队 future，
-            # 而 ledger 若已标 processed 就永久压死重试（先例 84297352）。绑定当前 cid/d。
-            def _commit_ledger(_cid=cid, _d=d):
-                with self._lock:
-                    st = self._get_ticket_state(iid)
-                    st["last_seen"] = max(int(st.get("last_seen") or 0), _cid)
-                    if _cid:
-                        st["processed"].add(_cid)
-                    # B3：服务端计数
-                    if _d["reason"] == "human_mention":
-                        # 人类显式 @ 触发 → 重置计数 + escalated 预算，恢复 max_rounds 额度
-                        st["dispatch_count"] = 1
-                        st["escalated"] = False
-                    else:
-                        st["dispatch_count"] = int(st.get("dispatch_count") or 0) + 1
-                        if _d["action"] == "escalate":
-                            st["escalated"] = True
-                    count = st.get("dispatch_count", 0)
-                    self._persist_ledger()
-                log.info("persona: ledger commit #%s comment=%s (worker started, count=%d)",
-                         iid, _cid, count)
-
-            ok, reason = self._dispatch_persona(item, d, comments, on_start=_commit_ledger)
-            if ok:
-                # 接受入队（ledger 待 worker 启动时由 on_start 落盘）。pool 拒收则不落盘，
-                # 下一 tick 自然重试；反复拒收由 B3 服务端计数 max_rounds*2 兜底。
-                if d["action"] == "escalate":
-                    escalated_list.append((iid, d.get("internal_role")))
-                else:
-                    dispatched.append((iid, d.get("internal_role")))
-                log.info("persona: dispatch #%s → %s (%s, round=%s) [queued; ledger on worker start]",
-                         iid, d.get("internal_role"), d.get("reason"),
-                         (d.get("handoff") or {}).get("round"))
-            else:
-                log.info("persona: pool rejected #%s → %s (%s)",
-                         iid, d.get("internal_role"), reason)
-        if self.handler:
-            if dispatched:
-                try:
-                    self.handler._broadcast(
-                        "🎭 Terraform 内部链迁移补位：%s"
-                        % ", ".join("#%s→%s" % (i, r) for i, r in dispatched))
-                except Exception:  # noqa: BLE001
-                    log.exception("persona dispatch broadcast failed")
-            if escalated_list:
-                try:
-                    self.handler._broadcast(
-                        "⚠️ 数字人接力已升级（超轮次上限）：%s"
-                        % ", ".join("#%s@%s" % (i, r) for i, r in escalated_list))
-                except Exception:  # noqa: BLE001
-                    log.exception("persona escalate broadcast failed")
-
+            if not it.get("terraform"):
+                continue  # 非 tf idle 重访归 AoneScanner
+            outcome = self._remind_if_stale(it)
+            log.info("ProgressNudgeScheduler: Terraform #%s stale-check → %s", iid, outcome)
+        return True
 
 class JarvisHandler(AsyncChatbotHandler):
     # process() runs in a ThreadPoolExecutor (sync, NOT async) so blocking
@@ -7665,16 +6915,16 @@ class JarvisHandler(AsyncChatbotHandler):
             retry_interval=float(os.environ.get("JARVIS_CONTROL_PLANE_RETRY_SEC", "5")),
             logger=log,
         )
-        self.scanner = ScanScheduler(self, self.ephemeral_executor)
+        self.scanner = AoneScanner(self, self.ephemeral_executor)
         self.reconciler = ReconcileScheduler(self)
         self.board = BoardScheduler(self)         # pushes board.sh JSON after each scan tick
         self.prober = ProbeScheduler(self, self.ephemeral_executor)
-        self.reviser = RevisitScheduler(self, self.ephemeral_executor)
+        self.reviser = ProgressNudgeScheduler(self, self.ephemeral_executor)
         self.watcher = WaitWatcher(self)
         self.managed_wait_sensor = ManagedWaitSensor(self)
-        # 数字人评论区自主协作跨会话补位轮询（loops/persona-collab.md）
-        self.personawatch = PersonaScheduler(self, self.ephemeral_executor)
-        # PR 观察登记表轮询（方案A）：PR 合并后自动 finish 收尾，与 RevisitScheduler 互为兜底
+        # PR 观察登记表轮询（方案A）：PR 合并后自动 finish 收尾，与 ProgressNudgeScheduler 互为兜底。
+        # 注：原 PersonaScheduler（评论区 tracker/@ 补位）已并入 AoneScanner 统一探测（assignee∪
+        # tracker∪idle 并集），不再单列调度器。
         self.prwatch = PrWatchScheduler(self, self.ephemeral_executor)
         # 死任务重委派（方案 A′）：控制面视角扫 STALE/OFFLINE worker 的死 assignment，
         # 佐证 + recovery_policy 分流后 spawn headless jarvis（EphemeralJob 只是进程
@@ -7683,15 +6933,13 @@ class JarvisHandler(AsyncChatbotHandler):
         self.recovery = RecoveryScheduler(self, self.ephemeral_executor)
         log.info("audience=%s master=%s root=%s tata_cwd=%s claude=%s skill=%s "
                  "tata_resident=%s auto_dispatch=%s execution_capacity=%s "
-                 "probe=%s@%s revisit=%s@%s persona_watch=%s@%ss max_rounds=%s "
+                 "probe=%s@%s nudge=%s@%s "
                  "task_types=%s",
                  self.audience or "*", master_staff(), jarvis_root(), tata_root(),
                  claude_bin(), skill_path(), bool(self.pool), self.scanner.auto,
                  self.ephemeral_executor.max_workers,
                  self.prober.enabled, self.prober.hour,
                  self.reviser.enabled, self.reviser.hour,
-                 self.personawatch.enabled, self.personawatch.interval,
-                 self.personawatch.max_rounds,
                  sorted(self.execution_router.task_types))
 
     def start_schedulers(self):
@@ -7706,7 +6954,6 @@ class JarvisHandler(AsyncChatbotHandler):
         self.reviser.start()
         self.watcher.start()
         self.managed_wait_sensor.start()
-        self.personawatch.start()
         self.prwatch.start()
         self.recovery.start()
 
@@ -8741,14 +7988,14 @@ def run_dry_once():
     load_env_file()
     print("=== bridge dispatcher dry-run (no dingtalk, no claude spawn) ===")
     pool = EphemeralExecutor()
-    scanner = ScanScheduler(handler=None, pool=pool)
+    scanner = AoneScanner(handler=None, pool=pool)
     print("auto_dispatch=%s  dispatch_max=%d  queue_max=%d  dedup_ttl=%ds  ledger=%d entries"
           % (scanner.auto, pool.max_workers, pool.queue_max, pool.dedup_ttl, len(pool._ledger)))
 
-    items = scanner._scan()
+    items = scanner._scan_union()   # 统一探测：assignee∪tracker∪idle 并集（同 _tick）
     print("\n--- SCAN DISPATCH DECISIONS ---")
     if items is None:
-        print("  scan.sh failed (see WARN above)")
+        print("  _scan_union failed / no pools configured (see WARN above)")
     elif not items:
         print("  (inbox empty)")
     else:
@@ -8784,7 +8031,7 @@ def run_dry_once():
                          (" [%s]" % pri) if pri else ""))
 
     print("\n--- REVISIT CANDIDATES (jarvis-idle) ---")
-    reviser = RevisitScheduler(handler=None, pool=pool)
+    reviser = ProgressNudgeScheduler(handler=None, pool=pool)
     cands = reviser._query()
     if not cands:
         print("  (none / query skipped)")
@@ -8816,7 +8063,7 @@ def _release_claim(iid, project, terraform=False):
 
 def _run_no_dingtalk():
     """无钉钉降级模式启动(JARVIS_NO_DINGTALK=1 点火路径): 不建 DingTalk client/stream,
-    不初始化 TataPool; 只起自动派发(ScanScheduler→EphemeralExecutor)+ Reconcile/Board/Probe/
+    不初始化 TataPool; 只起自动派发(AoneScanner→EphemeralExecutor)+ Reconcile/Board/Probe/
     Revisit/Wait 调度器。卡片/播报统一降级为 [BROADCAST] 日志行(→ bot.log); WaitWatcher
     挂起/唤醒照常(轮询走 a1, 唤醒走 headless 池), "@人通知"降级为日志 + 既有 Aone 评论。
     入站 Tata 门面停用(无 stream)。阻塞至进程收到中断信号。"""
@@ -8829,14 +8076,11 @@ def _run_no_dingtalk():
     log.info("[NO-DINGTALK] scan scheduler started (interval=%ss auto_dispatch=%s target=%s broadcast=%s)",
              handler.scanner.interval, handler.scanner.auto,
              handler.scanner.notify_target, broadcast_target())
-    log.info("[NO-DINGTALK] reconcile=%ss board=%s probe=%s@%s revisit=%s@%s max=%d wait(suspended=%d) "
-             "persona=%s@%ss max_rounds=%d",
+    log.info("[NO-DINGTALK] reconcile=%ss board=%s probe=%s@%s nudge=%s@%s max=%d wait(suspended=%d)",
              handler.reconciler.interval, ("on" if handler.board.enabled else "off"),
              handler.prober.enabled, handler.prober.hour,
              handler.reviser.enabled, handler.reviser.hour, handler.reviser.max_n,
-             handler.watcher.count(),
-             handler.personawatch.enabled, handler.personawatch.interval,
-             handler.personawatch.max_rounds)
+             handler.watcher.count())
     log.info("[NO-DINGTALK] ready — 阻塞运行; 卡片/播报以 [BROADCAST] 日志行落 bot.log。"
              "配好钉钉凭证后去掉 JARVIS_NO_DINGTALK 即回全功能模式。")
 
@@ -8901,12 +8145,9 @@ def main():
     log.info("board scheduler %s (target=%s)",
              "started" if handler.board.enabled else "disabled",
              handler.board.base_url or "<empty>")
-    log.info("probe scheduler: enabled=%s hour=%s | revisit scheduler: enabled=%s hour=%s max=%d",
+    log.info("probe scheduler: enabled=%s hour=%s | nudge scheduler: enabled=%s hour=%s max=%d",
              handler.prober.enabled, handler.prober.hour,
              handler.reviser.enabled, handler.reviser.hour, handler.reviser.max_n)
-    log.info("persona scheduler: enabled=%s interval=%ss max_rounds=%d",
-             handler.personawatch.enabled, handler.personawatch.interval,
-             handler.personawatch.max_rounds)
     log.info("wait watcher started (suspended=%d)", handler.watcher.count())
 
     def _graceful_stop(signum, _frame):
