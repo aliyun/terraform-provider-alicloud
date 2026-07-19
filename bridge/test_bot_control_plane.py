@@ -680,6 +680,94 @@ class TaskBookendDispatchTest(unittest.TestCase):
         self.assertTrue(calls["reply"].get("allow_non_tf"))
 
 
+class PostPrRerouteDispatchTest(unittest.TestCase):
+    """Tier-0 acceptance for the post-PR replay-safe reroute: pr_ci_fix / pr_comment_reply
+    now run through _TaskAoneBookend(writes_reply=False) — idempotent claim on bind,
+    release-to-idle on clean completion, NO Aone reply, NO [[AONE_RESULT]] required, and
+    NO fenced-operation calls (the deleted machinery). REPLAY_SAFE means a re-run's claim/
+    release are idempotent no-ops after the first."""
+
+    def _handler(self):
+        h = bot.JarvisHandler.__new__(bot.JarvisHandler)
+        h._broadcast = lambda _t: None
+        h._completion_broadcast = lambda _iid: "done-broadcast"
+        h._maybe_suspend = lambda *a, **k: None
+        return h
+
+    def _controller(self):
+        return SimpleNamespace(
+            task={"id": 700, "generation": 1}, session={"generation": 1},
+            runtime_session_id="rt-1", resumed=False,
+            bind_process=lambda _p: None)
+
+    def _run(self, kind, final, is_error=False):
+        h = self._handler()
+        ctrl = self._controller()
+        bookend = bot._TaskAoneBookend(ctrl, "84448059", "528766", True, kind,
+                                       writes_reply=False)
+        calls = {"claim": 0, "release": 0, "reply": 0, "finish": 0}
+        h._dispatch_failed = lambda *a, **k: calls.__setitem__("failed", True)
+        with mock.patch.dict(os.environ, {"JARVIS_DISPATCH_RETRY_MAX": "0",
+                                          "JARVIS_DISPATCH_RETRY_BACKOFF": "0"}), \
+             mock.patch.object(bot, "run_claude_buffered",
+                               return_value=bot.ClaudeResult(final, is_error, "success")), \
+             mock.patch.object(bot, "_claim_workitem",
+                               side_effect=lambda *a, **k: calls.__setitem__("claim", calls["claim"] + 1)), \
+             mock.patch.object(bot, "_release_post_pr_claim",
+                               side_effect=lambda *a, **k: calls.__setitem__("release", calls["release"] + 1)), \
+             mock.patch.object(bot, "_finish_workitem",
+                               side_effect=lambda *a, **k: calls.__setitem__("finish", calls["finish"] + 1)), \
+             mock.patch.object(bot, "_aone_event_enqueue",
+                               side_effect=lambda *a, **k: calls.__setitem__("reply", calls["reply"] + 1) or True):
+            # bind (claim) then dispatch, mirroring _execute_task_lease on_spawn=bind_process
+            bookend.bind_process(SimpleNamespace(pid=1))
+            out = h.dispatch_item(
+                "84448059", "prompt", "sid", False, lambda _t: None, "tgt", "group",
+                project="528766", kind=kind, terraform=True,
+                session_controller=ctrl, task_bookend=bookend)
+        return out, calls, bookend
+
+    def test_pr_ci_fix_clean_completion_releases_idle_no_reply(self):
+        # No [[AONE_RESULT]] in the run text — post-PR runs never emit one.
+        out, calls, _bk = self._run("pr_ci_fix", "CI 已修复并 force-push")
+        self.assertEqual(out, "done")
+        self.assertEqual(calls["claim"], 1)      # claimed once on bind
+        self.assertEqual(calls["release"], 1)    # released-to-idle once on completion
+        self.assertEqual(calls["reply"], 0)      # NO Aone reply comment
+        self.assertEqual(calls["finish"], 0)     # never finishes (PR still open)
+        self.assertNotIn("failed", calls)
+
+    def test_pr_comment_reply_same_reroute(self):
+        out, calls, _bk = self._run("pr_comment_reply", "已回复评审意见")
+        self.assertEqual(out, "done")
+        self.assertEqual((calls["claim"], calls["release"], calls["reply"]), (1, 1, 0))
+
+    def test_error_does_not_release_so_replay_reclaims(self):
+        # A failed run stays claimed (no release); REPLAY_SAFE re-lease re-claims.
+        out, calls, _bk = self._run("pr_ci_fix", "boom", is_error=True)
+        self.assertEqual(out, "error")
+        self.assertIn("failed", calls)
+        self.assertEqual(calls["release"], 0)
+
+    def test_release_idle_is_idempotent_under_replay(self):
+        # Simulate the completion twice (a re-lease re-runs release_idle): still one write.
+        _out, _calls, bk = self._run("pr_ci_fix", "ok")
+        released_before = None
+        with mock.patch.object(bot, "_release_post_pr_claim") as rel:
+            bk.release_idle()        # second call after the dispatch already released
+            bk.release_idle()
+            released_before = rel.call_count
+        self.assertEqual(released_before, 0)  # already released → no further writes
+
+    def test_writes_reply_false_bookend_has_no_fenced_operation_surface(self):
+        # The reroute must not resurrect the deleted fenced-operation API.
+        bk = bot._TaskAoneBookend(self._controller(), "1", "528766", True,
+                                  "pr_ci_fix", writes_reply=False)
+        self.assertFalse(hasattr(bk, "lineage_policy"))
+        self.assertFalse(hasattr(bk, "_begin"))
+        self.assertFalse(hasattr(bot, "_PostPrTaskBookend"))
+
+
 class CompletionBroadcastTest(unittest.TestCase):
     """_completion_broadcast must reflect what the run left on the ticket, not
     merely that the process exited cleanly (see self-lease-conflict fix)."""
