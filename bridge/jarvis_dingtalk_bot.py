@@ -29,6 +29,7 @@ Env:
   JARVIS_TATA_RESIDENT                     1=use resident TataPool warm subprocesses (default 0 = one-shot).
   JARVIS_TATA_DWS_HISTORY                  1=read bounded history for the callback's exact group (default 0).
   JARVIS_TATA_DWS_PROFILE                  optional authenticated DWS profile.
+  JARVIS_TATA_DWS_USER_ID                  required DWS login staff ID (default JARVIS_MASTER_STAFF/320687).
   JARVIS_TATA_DWS_LOOKBACK_MIN             group-history lookback minutes (default 30, max 1440).
   JARVIS_TATA_DWS_MAX                      max group-history messages per round (default 20, max 100).
   JARVIS_TATA_DWS_TIMEOUT                  DWS subprocess timeout seconds (default 15, max 60).
@@ -148,6 +149,7 @@ from jarvis_capacity import CapacityManager
 from jarvis_task_router import ExecutionRouter
 from jarvis_persistence_executor import PersistenceExecutor
 from tata_dws_history import (
+    DWS_USER_NOT_IN_GROUP,
     DwsGroupHistory,
     DwsHistoryError,
     TataConversationScope,
@@ -200,6 +202,10 @@ TATA_PROMPT = (
 )
 # idealab 网关吃掉 --append-system-prompt, 改在常驻进程对话首轮注入身份做 priming。
 TATA_PRIMING = TATA_PROMPT + "\n\n(从现在起按以上身份回应, 只回一个'好'确认)"
+TATA_DWS_ONBOARDING_MESSAGE = (
+    "Tata 当前无权限读取群历史消息，为了Tata提供更好的服务，"
+    "请群主/管理员添加辰羿后重新 @ Tata"
+)
 
 
 def _load_streaming_module():
@@ -7158,7 +7164,7 @@ class JarvisHandler(AsyncChatbotHandler):
         return sid, resume
 
     def _tata_input(self, scope, text):
-        """为当前群读取有界历史；私聊与任何 DWS 失败均只使用当前消息。"""
+        """为当前群读取有界历史；缺少 DWS 群权限时触发安全 onboarding。"""
         if self.tata_history is None or scope.kind != "group":
             return text
         try:
@@ -7169,6 +7175,8 @@ class JarvisHandler(AsyncChatbotHandler):
         except DwsHistoryError as exc:
             log.warning("Tata DWS history scope=%s skipped code=%s",
                         scope.audit_id, exc.code)
+            if exc.code == DWS_USER_NOT_IN_GROUP:
+                raise
             return text
         if not history:
             return text
@@ -7953,8 +7961,16 @@ class JarvisHandler(AsyncChatbotHandler):
                      staff, is_group, scope.audit_id, len(text))
             t0 = time.time()
             # 第一层：Tata 门面，全文先建卡流推；哨兵剥行不上屏。
+            try:
+                tata_text = self._tata_input(scope, text)
+            except DwsHistoryError as exc:
+                if exc.code != DWS_USER_NOT_IN_GROUP:
+                    raise
+                log.info("Tata DWS onboarding scope=%s", scope.audit_id)
+                self._quick_card(
+                    card_target, TATA_DWS_ONBOARDING_MESSAGE, card_type)
+                return AckMessage.STATUS_OK, "tata_dws_onboarding"
             tsid, tresume = self._tata_session(scope_key)
-            tata_text = self._tata_input(scope, text)
             full = self._stream_round(
                 card_target, tata_text, tsid, tresume,
                 self._tata_runner,

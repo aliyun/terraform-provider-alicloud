@@ -4,28 +4,37 @@
 import json
 import subprocess
 import sys
+import threading
 import unittest
+from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import patch
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
 from tata_dws_history import (  # noqa: E402
+    DWS_USER_NOT_IN_GROUP,
     DwsGroupHistory,
     DwsHistoryError,
     TataConversationScope,
     _minimal_dws_env,
     render_group_history,
 )
-from jarvis_dingtalk_bot import JarvisHandler  # noqa: E402
+import jarvis_dingtalk_bot as bot_module  # noqa: E402
+from jarvis_dingtalk_bot import (  # noqa: E402
+    TATA_DWS_ONBOARDING_MESSAGE,
+    JarvisHandler,
+)
 
 
 GROUP_A = "cid-group-a"
 GROUP_B = "cid-group-b"
 STAFF = "320687"
 ROBOT = "robot-code"
+OPEN_ID = "open-dingtalk-staff"
 
 
 def ok(result):
@@ -36,8 +45,65 @@ def ok(result):
     )
 
 
+def envelope(**payload):
+    return SimpleNamespace(
+        returncode=0,
+        stdout=json.dumps(payload),
+        stderr="",
+    )
+
+
+def failed(code):
+    return SimpleNamespace(
+        returncode=1,
+        stdout=json.dumps({"success": False, "errorCode": code}),
+        stderr="",
+    )
+
+
+def auth(user_id=STAFF, user_name="陈汉璋"):
+    return envelope(
+        success=True,
+        authenticated=True,
+        token_valid=True,
+        user_id=user_id,
+        user_name=user_name,
+    )
+
+
+def contacts(*rows):
+    return ok(list(rows))
+
+
+def contact(user_id=STAFF, open_id=OPEN_ID, name="陈汉璋"):
+    return {
+        "name": name,
+        "flowerName": "辰羿",
+        "userId": user_id,
+        "openDingTalkId": open_id,
+    }
+
+
+def members(*open_ids):
+    return ok({
+        "members": [
+            {"openDingtalkId": open_id, "nick": "member"}
+            for open_id in open_ids
+        ],
+    })
+
+
 def bots(*robot_codes):
     return ok({"bots": [{"robotCode": code} for code in robot_codes]})
+
+
+def group_access(*robot_codes):
+    return (
+        auth(),
+        contacts(contact()),
+        members(OPEN_ID),
+        bots(*robot_codes),
+    )
 
 
 def search(group, messages, *, more=False, cursor=""):
@@ -78,6 +144,7 @@ class QueueRunner:
 def adapter(runner, **kwargs):
     return DwsGroupHistory(
         ROBOT,
+        expected_user_id=STAFF,
         runner=runner,
         now=lambda: datetime(2026, 7, 19, 12, 0, tzinfo=timezone.utc),
         **kwargs,
@@ -112,27 +179,82 @@ class DwsGroupHistoryTest(unittest.TestCase):
         self.assertEqual(runner.calls, [])
 
     def test_robot_absent_stops_before_message_search(self):
-        runner = QueueRunner(bots("another-robot"))
+        runner = QueueRunner(*group_access("another-robot"))
         with self.assertRaisesRegex(DwsHistoryError, "tata_not_in_group"):
             adapter(runner).read_current(
                 TataConversationScope.group(GROUP_A, STAFF))
-        self.assertEqual(len(runner.calls), 1)
+        self.assertEqual(len(runner.calls), 4)
         self.assertEqual(
-            runner.calls[0][0][:5],
+            runner.calls[3][0][:5],
             ["dws", "chat", "group", "bots", "--group"],
         )
-        self.assertIn(GROUP_A, runner.calls[0][0])
+        self.assertIn(GROUP_A, runner.calls[3][0])
+
+    def test_dws_user_absent_stops_before_bot_and_message_search(self):
+        runner = QueueRunner(
+            auth(),
+            contacts(contact()),
+            members(),
+        )
+        with self.assertRaisesRegex(
+                DwsHistoryError, DWS_USER_NOT_IN_GROUP):
+            adapter(runner).read_current(
+                TataConversationScope.group(GROUP_A, STAFF))
+
+        self.assertEqual(len(runner.calls), 3)
+        self.assertEqual(
+            runner.calls[2][0][:6],
+            ["dws", "chat", "group", "members", "list-by-ids", "--id"],
+        )
+        self.assertNotIn("bots", runner.calls[2][0])
+        self.assertNotIn("search-advanced", runner.calls[2][0])
+
+    def test_group_permission_failure_enters_onboarding(self):
+        runner = QueueRunner(
+            auth(),
+            contacts(contact()),
+            failed("GROUP_NO_PERMISSION"),
+        )
+        with self.assertRaises(DwsHistoryError) as caught:
+            adapter(runner).read_current(
+                TataConversationScope.group(GROUP_A, STAFF))
+        self.assertEqual(caught.exception.code, DWS_USER_NOT_IN_GROUP)
+
+    def test_live_dws_identity_must_match_configured_staff(self):
+        runner = QueueRunner(auth(user_id="another-user"))
+        with self.assertRaisesRegex(DwsHistoryError, "dws_identity_mismatch"):
+            adapter(runner).read_current(
+                TataConversationScope.group(GROUP_A, STAFF))
+        self.assertEqual(len(runner.calls), 1)
+
+    def test_identity_resolution_uses_exact_user_id_not_same_name(self):
+        runner = QueueRunner(
+            auth(),
+            contacts(
+                contact(user_id="same-name-other", open_id="wrong-open-id"),
+                contact(),
+            ),
+            members(OPEN_ID),
+            bots("another-robot"),
+        )
+        with self.assertRaisesRegex(DwsHistoryError, "tata_not_in_group"):
+            adapter(runner).read_current(
+                TataConversationScope.group(GROUP_A, STAFF))
+        member_argv = runner.calls[2][0]
+        self.assertEqual(
+            member_argv[member_argv.index("--users") + 1], OPEN_ID)
+        self.assertNotIn("wrong-open-id", member_argv)
 
     def test_search_is_pinned_to_exact_callback_group(self):
         runner = QueueRunner(
-            bots(ROBOT),
+            *group_access(ROBOT),
             search(GROUP_B, [message("m1", "other group")]),
         )
         with self.assertRaisesRegex(DwsHistoryError, "cross_group_response"):
             adapter(runner).read_current(
                 TataConversationScope.group(GROUP_A, STAFF))
 
-        argv = runner.calls[1][0]
+        argv = runner.calls[4][0]
         group_index = argv.index("--conversation-ids") + 1
         self.assertEqual(argv[group_index], GROUP_A)
         self.assertNotIn(GROUP_B, argv)
@@ -140,7 +262,7 @@ class DwsGroupHistoryTest(unittest.TestCase):
 
     def test_paginates_deduplicates_and_preserves_time_order(self):
         runner = QueueRunner(
-            bots(ROBOT),
+            *group_access(ROBOT),
             search(GROUP_A, [
                 message("m2", "second", "2026-07-19T10:02:00+08:00"),
                 message("m1", "first", "2026-07-19T10:01:00+08:00"),
@@ -154,22 +276,22 @@ class DwsGroupHistoryTest(unittest.TestCase):
             TataConversationScope.group(GROUP_A, STAFF))
 
         self.assertEqual([row["id"] for row in rows], ["m1", "m2", "m3"])
-        self.assertEqual(runner.calls[2][0][runner.calls[2][0].index("--cursor") + 1],
+        self.assertEqual(runner.calls[5][0][runner.calls[5][0].index("--cursor") + 1],
                          "next")
 
     def test_each_page_is_capped_at_dws_limit(self):
         runner = QueueRunner(
-            bots(ROBOT),
+            *group_access(ROBOT),
             search(GROUP_A, [], more=False),
         )
         adapter(runner, max_messages=100).read_current(
             TataConversationScope.group(GROUP_A, STAFF))
-        argv = runner.calls[1][0]
+        argv = runner.calls[4][0]
         self.assertEqual(argv[argv.index("--limit") + 1], "30")
 
     def test_stalled_cursor_fails_closed(self):
         runner = QueueRunner(
-            bots(ROBOT),
+            *group_access(ROBOT),
             search(GROUP_A, [], more=True, cursor="0"),
         )
         with self.assertRaisesRegex(DwsHistoryError, "cursor_stalled"):
@@ -287,6 +409,54 @@ class JarvisHandlerHistoryIntegrationTest(unittest.TestCase):
         scope = TataConversationScope.group(GROUP_A, STAFF)
         self.assertEqual(handler._tata_input(scope, "current question"),
                          "current question")
+
+    def test_missing_dws_member_raises_onboarding_before_tata(self):
+        history = FakeHistory(
+            error=DwsHistoryError(DWS_USER_NOT_IN_GROUP))
+        handler = self.handler(history)
+        scope = TataConversationScope.group(GROUP_A, STAFF)
+        with self.assertRaises(DwsHistoryError) as caught:
+            handler._tata_input(scope, "current question")
+        self.assertEqual(caught.exception.code, DWS_USER_NOT_IN_GROUP)
+        self.assertEqual(
+            TATA_DWS_ONBOARDING_MESSAGE,
+            "Tata 当前无权限读取群历史消息，为了Tata提供更好的服务，"
+            "请群主/管理员添加辰羿后重新 @ Tata",
+        )
+
+    def test_process_sends_onboarding_without_starting_tata_session(self):
+        handler = self.handler(FakeHistory(
+            error=DwsHistoryError(DWS_USER_NOT_IN_GROUP)))
+        handler.audience = set()
+        handler.scanner = None
+        handler.board = None
+        handler.locks = defaultdict(threading.Lock)
+        cards = []
+        handler._quick_card = lambda target, text, target_type: cards.append(
+            (target, text, target_type))
+        handler._stream_round = lambda *args, **kwargs: self.fail(
+            "Tata must not start during onboarding")
+        message = SimpleNamespace(
+            sender_staff_id=STAFF,
+            sender_nick="member",
+            text=SimpleNamespace(content="@Tata current question"),
+            conversation_type="2",
+            conversation_id=GROUP_A,
+        )
+        chatbot_message = SimpleNamespace(from_dict=lambda _data: message)
+
+        with patch.object(bot_module, "ChatbotMessage", chatbot_message):
+            result = handler.process(SimpleNamespace(data={}))
+
+        self.assertEqual(
+            result,
+            (bot_module.AckMessage.STATUS_OK, "tata_dws_onboarding"),
+        )
+        self.assertEqual(cards, [
+            (GROUP_A, TATA_DWS_ONBOARDING_MESSAGE, "group"),
+        ])
+        self.assertEqual(handler.tata_sessions, {})
+        self.assertEqual(handler.tata_started, set())
 
     def test_tata_session_resume_is_scoped(self):
         handler = self.handler(None)

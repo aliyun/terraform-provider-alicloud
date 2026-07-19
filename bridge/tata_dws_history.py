@@ -3,9 +3,9 @@
 
 The bridge, not the model, owns the conversation scope.  Callers may only pass a
 ``TataConversationScope`` created from a trusted DingTalk Stream callback.  The
-adapter revalidates that the configured Tata robot is still installed in that
-exact group before every history read and never exposes a free-form group
-selector to Tata.
+adapter revalidates that both the authenticated DWS principal and the configured
+Tata robot are still members of that exact group before every history read and
+never exposes a free-form group selector to Tata.
 """
 
 from __future__ import annotations
@@ -23,6 +23,14 @@ from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional
 MAX_DWS_PAGE_SIZE = 30
 MAX_DWS_PAGES = 10
 MAX_DWS_OUTPUT_BYTES = 2 * 1024 * 1024
+DWS_USER_NOT_IN_GROUP = "dws_user_not_in_group"
+_DWS_TRANSPORT_ERRORS = frozenset((
+    "timeout",
+    "dws_unavailable",
+    "response_too_large",
+    "invalid_json",
+    "invalid_envelope",
+))
 
 
 def _safe_error_code(value: Any) -> str:
@@ -103,6 +111,7 @@ class DwsGroupHistory:
             *,
             dws_bin: str = "dws",
             profile: str = "",
+            expected_user_id: str = "320687",
             timeout: int = 15,
             lookback_minutes: int = 30,
             max_messages: int = 20,
@@ -113,6 +122,9 @@ class DwsGroupHistory:
             raise ValueError("robot_code is required")
         self.dws_bin = str(dws_bin or "dws")
         self.profile = str(profile or "").strip()
+        self.expected_user_id = str(expected_user_id or "").strip()
+        if not self.expected_user_id:
+            raise ValueError("expected_user_id is required")
         self.timeout = max(1, min(int(timeout), 60))
         self.lookback_minutes = max(1, min(int(lookback_minutes), 24 * 60))
         self.max_messages = max(1, min(int(max_messages), 100))
@@ -125,6 +137,9 @@ class DwsGroupHistory:
             robot_code,
             dws_bin=os.environ.get("JARVIS_DWS_BIN", "dws"),
             profile=os.environ.get("JARVIS_TATA_DWS_PROFILE", ""),
+            expected_user_id=os.environ.get(
+                "JARVIS_TATA_DWS_USER_ID",
+                os.environ.get("JARVIS_MASTER_STAFF", "320687")),
             timeout=int(os.environ.get("JARVIS_TATA_DWS_TIMEOUT", "15")),
             lookback_minutes=int(
                 os.environ.get("JARVIS_TATA_DWS_LOOKBACK_MIN", "30")),
@@ -165,6 +180,66 @@ class DwsGroupHistory:
             code = payload.get("errorCode") or payload.get("code") or "dws_failed"
             raise DwsHistoryError(_safe_error_code(code))
         return payload
+
+    def _dws_principal_open_id(self) -> str:
+        """Resolve and pin the live DWS identity to the configured staff ID."""
+
+        status = self._call("auth", "status")
+        if (status.get("authenticated") is not True
+                or status.get("token_valid") is not True):
+            raise DwsHistoryError("dws_not_authenticated")
+        user_id = str(status.get("user_id") or "").strip()
+        user_name = str(status.get("user_name") or "").strip()
+        if not user_id or not user_name:
+            raise DwsHistoryError("invalid_dws_identity")
+        if not hmac.compare_digest(user_id, self.expected_user_id):
+            raise DwsHistoryError("dws_identity_mismatch")
+
+        payload = self._call(
+            "contact", "user", "search", "--query", user_name)
+        result = payload.get("result")
+        if not isinstance(result, list):
+            raise DwsHistoryError("invalid_contact_result")
+        open_ids = {
+            str(row.get("openDingTalkId") or "").strip()
+            for row in result
+            if isinstance(row, Mapping)
+            and hmac.compare_digest(
+                str(row.get("userId") or "").strip(), user_id)
+            and str(row.get("openDingTalkId") or "").strip()
+        }
+        if len(open_ids) != 1:
+            raise DwsHistoryError("dws_identity_unresolved")
+        return open_ids.pop()
+
+    def _assert_dws_user_in_group(self, conversation_id: str) -> None:
+        principal_open_id = self._dws_principal_open_id()
+        try:
+            payload = self._call(
+                "chat", "group", "members", "list-by-ids",
+                "--id", conversation_id,
+                "--users", principal_open_id,
+            )
+        except DwsHistoryError as exc:
+            # A non-member may receive either an empty member list or a group
+            # authorization error.  Infrastructure failures remain operational
+            # errors; group-scoped authorization failures enter onboarding.
+            if exc.code in _DWS_TRANSPORT_ERRORS:
+                raise
+            raise DwsHistoryError(DWS_USER_NOT_IN_GROUP) from exc
+        result = payload.get("result")
+        members = result.get("members") if isinstance(result, Mapping) else None
+        if not isinstance(members, list):
+            raise DwsHistoryError("invalid_member_list")
+        present = any(
+            isinstance(member, Mapping)
+            and hmac.compare_digest(
+                str(member.get("openDingtalkId")
+                    or member.get("openDingTalkId") or "").strip(),
+                principal_open_id)
+            for member in members)
+        if not present:
+            raise DwsHistoryError(DWS_USER_NOT_IN_GROUP)
 
     def _assert_tata_in_group(self, conversation_id: str) -> None:
         payload = self._call(
@@ -207,6 +282,7 @@ class DwsGroupHistory:
     def read_current(self, scope: TataConversationScope) -> List[Dict[str, str]]:
         if scope.kind != "group" or not scope.conversation_id:
             raise DwsHistoryError("group_scope_required")
+        self._assert_dws_user_in_group(scope.conversation_id)
         self._assert_tata_in_group(scope.conversation_id)
 
         end = self._now()
