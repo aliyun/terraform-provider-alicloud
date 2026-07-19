@@ -334,10 +334,8 @@ class RevisitSentinelTest(unittest.TestCase):
 class RevisitDispatchTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
-        self.orig_inflight = bot.INFLIGHT_PATH
         self.orig_runner = bot.run_claude_buffered
         self.orig_publish = bot._aone_event_publish
-        bot.INFLIGHT_PATH = Path(self.tmp.name) / "inflight.json"
         self.events = []
         bot._aone_event_publish = lambda *args, **kwargs: (
             self.events.append(args) or True)
@@ -360,7 +358,6 @@ class RevisitDispatchTest(unittest.TestCase):
         self.fake = FakeSelf()
 
     def tearDown(self):
-        bot.INFLIGHT_PATH = self.orig_inflight
         bot.run_claude_buffered = self.orig_runner
         bot._aone_event_publish = self.orig_publish
         self.tmp.cleanup()
