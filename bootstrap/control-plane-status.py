@@ -3,6 +3,7 @@
 
 只读查询 AutomationAgent Jarvis 数据面，供人工按 Aone ID 全链路排查：
   workers           worker 总览表（key/client/activityStatus/assignment aone id）
+  ready             READY 任务及 eligibleWorkerCount=0 的具体原因
   task <aone_id>    单工单全链路（task 状态/current session/fence/最近 5 条 event/
                     operations 回执状态）
 
@@ -94,6 +95,34 @@ def cmd_workers(client):
     return 0
 
 
+def cmd_ready(client, limit):
+    diagnostics = client.list_ready_task_diagnostics(limit=limit)
+    if not isinstance(diagnostics, list):
+        sys.stderr.write("error: unexpected /tasks/ready-diagnostics response type %s\n"
+                         % type(diagnostics).__name__)
+        return 3
+    rows = []
+    for entry in diagnostics:
+        if not isinstance(entry, dict):
+            continue
+        task = entry.get("task") if isinstance(entry.get("task"), dict) else {}
+        rows.append((
+            str(task.get("id") or "?"),
+            str(task.get("aoneId") or "-"),
+            _trunc(task.get("taskType") or "-", 22),
+            str(task.get("recoveryPolicy") or "-"),
+            str(entry.get("eligibleWorkerCount", "?")),
+            str(entry.get("reasonCode") or "?"),
+            _trunc(entry.get("requiredWorkerKey") or "-", 38),
+            str(entry.get("requiredWorkerActivityStatus") or "-"),
+        ))
+    _print_table(("TASK", "AONE", "TYPE", "RECOVERY", "ELIGIBLE", "REASON",
+                  "REQUIRED-WORKER", "ACTIVITY"), rows)
+    blocked = sum(1 for row in rows if row[4] == "0")
+    print("%d READY task(s), %d without eligible worker" % (len(rows), blocked))
+    return 0
+
+
 def _print_task(client, task):
     print("== task %s %s ==" % (task.get("id", "?"), task.get("taskKey") or "?"))
     print("  status=%s  mode=%s  generation=%s  retry=%s/%s"
@@ -166,9 +195,12 @@ def cmd_task(client, aone_id):
 def main(argv=None):
     parser = argparse.ArgumentParser(
         prog="control-plane-status",
-        description="Jarvis 控制面只读排查 CLI（workers 总览 / 单工单全链路）")
+        description="Jarvis 控制面只读排查 CLI（workers / READY 派发诊断 / 单工单全链路）")
     sub = parser.add_subparsers(dest="cmd", required=True)
     sub.add_parser("workers", help="list every registered worker with assignments")
+    p_ready = sub.add_parser("ready", help="list READY tasks with dispatch eligibility reasons")
+    p_ready.add_argument("--limit", type=int, default=100,
+                         help="maximum READY tasks to return (1-500, default: 100)")
     p_task = sub.add_parser("task", help="full chain for one Aone work item")
     p_task.add_argument("aone_id", help="Aone work item id, e.g. 84386065")
     args = parser.parse_args(argv)
@@ -176,6 +208,8 @@ def main(argv=None):
     try:
         if args.cmd == "workers":
             return cmd_workers(client)
+        if args.cmd == "ready":
+            return cmd_ready(client, args.limit)
         return cmd_task(client, args.aone_id)
     except ControlPlaneError as e:
         sys.stderr.write("error: %s\n" % e)

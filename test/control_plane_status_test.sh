@@ -7,7 +7,7 @@
 # 顶替（实现体 append bridge 目录到 sys.path 正是为此留的口子），不连网。
 #
 # 覆盖：bash -n 语法；py_compile；无参 usage；缺 base url / 缺 token 干净报错(rc=2)；
-#       env 文件加载 + JARVIS_HTML_REPORT_TOKEN 回退；workers 表格输出；
+#       env 文件加载 + JARVIS_HTML_REPORT_TOKEN 回退；workers / READY 诊断表格输出；
 #       task 全链路输出(状态/current session/fence/最近5条 event/operations)；
 #       控制面无该单任务 rc=1。
 #
@@ -39,7 +39,7 @@ no() { echo "FAIL $1"; fail=$((fail+1)); }
 has() { case "$2" in *"$1"*) ok "$3";; *) no "$3 [missing '$1']";; esac; }
 hasnot() { case "$2" in *"$1"*) no "$3 [unexpected '$1']";; *) ok "$3";; esac; }
 
-# Stub client：形参契约与真 AutomationAgentTaskClient 对齐；fixture 结构对齐服务端
+# Stub client：形参契约与真 ControlPlaneClient 对齐；fixture 结构对齐服务端
 # WorkerStateResponse / TaskView 数组 / TaskTimelineResponse。
 cat >"$STUB/jarvis_task_client.py" <<'PY'
 import os
@@ -49,7 +49,7 @@ class ControlPlaneError(RuntimeError):
     pass
 
 
-class AutomationAgentTaskClient:
+class ControlPlaneClient:
     def __init__(self, base_url, token="", timeout=10.0, **kwargs):
         if not base_url:
             raise SystemExit("stub: base_url must be forwarded")
@@ -81,6 +81,21 @@ class AutomationAgentTaskClient:
                  "desiredRevision": "rev-2", "processingRevision": "rev-2",
                  "processedRevision": "rev-1", "retryCount": 1, "maxRetries": 3,
                  "lastError": "lease expired"}]
+
+    def list_ready_task_diagnostics(self, limit=100):
+        if limit != 9:
+            raise SystemExit("stub: ready limit was not forwarded")
+        return [
+            {"task": {"id": 21, "aoneId": "84038905", "taskType": "ticket",
+                      "recoveryPolicy": "REPLAY_SAFE"},
+             "eligibleWorkerCount": 0,
+             "reasonCode": "TARGET_WORKER_UNAVAILABLE",
+             "requiredWorkerKey": "interactive:codex:macmini:gone",
+             "requiredWorkerActivityStatus": "OFFLINE"},
+            {"task": {"id": 22, "aoneId": "84452582", "taskType": "ticket",
+                      "recoveryPolicy": "REPLAY_SAFE"},
+             "eligibleWorkerCount": 1, "reasonCode": "DISPATCHABLE"},
+        ]
 
     def get_task_timeline(self, task_id):
         return {"task": {"id": 11}, "currentWorker": None,
@@ -139,7 +154,16 @@ has "OFFLINE" "$out" "workers lists offline worker"
 has "84386065" "$out" "workers lists assignment aone id"
 has "2 worker(s)" "$out" "workers prints count"
 
-# ── 6) task <aone_id> 全链路输出 ───────────────────────────────────────────────
+# ── 6) ready --limit N 派发诊断 ───────────────────────────────────────────────
+out="$(run_cli ready --limit 9 2>&1)"; rc=$?
+[ $rc -eq 0 ] && ok "ready rc=0" || no "ready rc=$rc: $out"
+has "84038905" "$out" "ready lists blocked Aone id"
+has "TARGET_WORKER_UNAVAILABLE" "$out" "ready shows reason code"
+has "interactive:codex:macmini:gone" "$out" "ready shows required worker"
+has "OFFLINE" "$out" "ready shows target activity"
+has "2 READY task(s), 1 without eligible worker" "$out" "ready prints blocked count"
+
+# ── 7) task <aone_id> 全链路输出 ───────────────────────────────────────────────
 out="$(run_cli task 84386065 2>&1)"; rc=$?
 [ $rc -eq 0 ] && ok "task rc=0" || no "task rc=$rc: $out"
 has "aone:2100304:84386065" "$out" "task shows canonical key"
@@ -153,7 +177,7 @@ hasnot "EV1 " "$out" "task omits events older than the tail window"
 has "AONE_COMMENT" "$out" "task lists operations"
 has "UNKNOWN" "$out" "task shows operation status"
 
-# ── 7) 控制面无该单任务 → rc=1 ────────────────────────────────────────────────
+# ── 8) 控制面无该单任务 → rc=1 ────────────────────────────────────────────────
 out="$(STUB_MODE=empty run_cli task 99999999 2>&1)"; rc=$?
 [ $rc -eq 1 ] && ok "task-not-found rc=1" || no "task-not-found rc=$rc (want 1)"
 has "no control-plane task" "$out" "task-not-found message"

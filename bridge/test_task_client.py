@@ -199,6 +199,7 @@ class ClientContractTest(unittest.TestCase):
             FakeResponse([{"eventType": "LEASED"}]),
             FakeResponse([{"workerKey": "w1"}]),
             FakeResponse({"worker": {"workerKey": "host/one"}}),
+            FakeResponse([{"eligibleWorkerCount": 0}]),
             FakeResponse({"items": [], "nextAfterSessionId": None, "hasMore": False}),
         ])
         c = self.make(opener)
@@ -212,6 +213,7 @@ class ClientContractTest(unittest.TestCase):
         timeline = c.get_task_timeline("task/1")
         workers = c.list_workers()
         worker_state = c.get_worker_state("host/one")
+        ready = c.list_ready_task_diagnostics(limit=9)
         waits = c.list_pending_aone_reply_waits(after_session_id=7, limit=25)
 
         paths = [call[0].full_url.rsplit("/api/jarvis/v1/", 1)[1]
@@ -221,6 +223,7 @@ class ClientContractTest(unittest.TestCase):
             "operations/reconcile",
             "tasks/by-aone/84345050",
             "tasks/task%2F1/timeline", "workers", "workers/host%2Fone/state",
+            "tasks/ready-diagnostics?limit=9",
             "sessions/waits/aone-reply?afterSessionId=7&limit=25",
         ])
         self.assertEqual(body(opener.calls[0][0]),
@@ -229,8 +232,9 @@ class ClientContractTest(unittest.TestCase):
         self.assertEqual(timeline[0]["eventType"], "LEASED")
         self.assertEqual(workers[0]["workerKey"], "w1")
         self.assertEqual(worker_state["worker"]["workerKey"], "host/one")
+        self.assertEqual(ready[0]["eligibleWorkerCount"], 0)
         self.assertEqual(waits["items"], [])
-        for req, _timeout in opener.calls[-5:]:
+        for req, _timeout in opener.calls[-6:]:
             self.assertEqual(req.get_method(), "GET")
             self.assertIsNone(req.data)
             self.assertNotIn("idempotency-key", headers(req))
@@ -241,6 +245,10 @@ class ClientContractTest(unittest.TestCase):
             c.list_pending_aone_reply_waits(after_session_id=-1)
         with self.assertRaises(ValueError):
             c.list_pending_aone_reply_waits(limit=501)
+        with self.assertRaises(ValueError):
+            c.list_ready_task_diagnostics(limit=0)
+        with self.assertRaises(ValueError):
+            c.list_ready_task_diagnostics(limit=501)
 
     def test_direct_claim_is_targeted_task_and_allows_zero_free_slots(self):
         opener = RecordingOpener()
