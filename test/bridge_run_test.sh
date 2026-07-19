@@ -24,6 +24,7 @@ if [ ! -f "$RUNSH" ]; then
 fi
 
 TMP="$(mktemp -d 2>/dev/null || mktemp -d -t bridge_run)"
+FAKE_HOME="$TMP/home"
 STATE="$TMP/state"
 FAKEPY="$TMP/fakepy"
 BOTFILE="$TMP/bot.py"       # dummy path handed to the fake python; content unused
@@ -33,6 +34,7 @@ FAKECTL="$TMP/launchctl"
 FAKECTL_STATE="$TMP/launchctl-state"
 LPLIST="$TMP/com.jarvis.test.plist"
 : >"$BOTFILE"; : >"$BSENV"; : >"$JENV"
+mkdir -p "$FAKE_HOME/.local/bin"
 printf '%s\n' '<?xml version="1.0"?><plist version="1.0"><dict><key>Label</key><string>com.jarvis.test</string></dict></plist>' >"$LPLIST"
 
 pass=0; fail=0
@@ -47,7 +49,7 @@ cat >"$FAKEPY" <<'FAKE'
 ts="$(date '+%Y-%m-%d %H:%M:%S')"
 for a in "$@"; do
   if [ "$a" = "--dry-run-once" ]; then
-    echo "$ts INFO [MainThread] dry-run ok (fake bot)"
+    echo "$ts INFO [MainThread] dry-run ok (fake bot) PATH=$PATH"
     exit 0
   fi
 done
@@ -125,6 +127,8 @@ run() {
       JARVIS_BRIDGE_LAUNCHD_DOMAIN="gui/4242" \
       JARVIS_BRIDGE_LAUNCHD_PLIST="$LPLIST" \
       FAKE_LAUNCHCTL_STATE="$FAKECTL_STATE" \
+      HOME="$FAKE_HOME" \
+      PATH="/usr/bin:/bin:/usr/sbin:/sbin" \
       DINGTALK_APP_KEY="${TEST_KEY-}" \
       DINGTALK_APP_SECRET="${TEST_SECRET-}" \
       JARVIS_NO_DINGTALK="" \
@@ -218,6 +222,8 @@ fresh
 out="$(run dry-run 2>&1)"; rc=$?
 [ "$rc" = 0 ] && ok "dry-run: exit 0" || no "dry-run: exit 0 (got $rc)"
 has "dry-run ok" "$out" "dry-run: --dry-run-once forwarded to bot"
+has "PATH=$FAKE_HOME/.local/bin:/usr/bin:/bin:/usr/sbin:/sbin" "$out" \
+  "dry-run: non-interactive PATH includes user-local a1 directory"
 
 # --- T9: status when stopped -----------------------------------------------
 fresh

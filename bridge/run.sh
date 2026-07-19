@@ -79,6 +79,17 @@ _source_env() {
   # shellcheck disable=SC1090
   [ -f "$BRIDGE_ENV" ] && . "$BRIDGE_ENV"
   set -u; set +a
+
+  # Non-interactive SSH/launch shells on macOS commonly omit ~/.local/bin,
+  # even though that is where the supported a1 installer places the binary.
+  # Normalize it before spawning the daemon so every scheduler sees a1 too.
+  local user_local_bin="${HOME:-}/.local/bin"
+  if [ -d "$user_local_bin" ]; then
+    case ":${PATH:-}:" in
+      *":$user_local_bin:"*) ;;
+      *) export PATH="$user_local_bin:${PATH:-/usr/bin:/bin:/usr/sbin:/sbin}" ;;
+    esac
+  fi
 }
 
 # -- mode decision: 0 = full, 1 = degraded (also exports the flag) ---------
