@@ -198,6 +198,7 @@ class ControlPlaneClient:
     SESSION_ACTION_PATH = "sessions/{session_id}/{action}"
     TASK_BY_AONE_PATH = "tasks/by-aone/{aone_id}"
     TASK_TIMELINE_PATH = "tasks/{task_id}/timeline"
+    DISCARD_RESUME_CONTEXT_PATH = "tasks/{task_id}/discard-resume-context"
     READY_TASK_DIAGNOSTICS_PATH = "tasks/ready-diagnostics"
     PENDING_AONE_WAITS_PATH = "sessions/waits/aone-reply"
 
@@ -498,3 +499,14 @@ class ControlPlaneClient:
         path = self.TASK_TIMELINE_PATH.format(
             task_id=self._path_segment(task_id, "task_id"))
         return self._get(path)
+
+    def discard_resume_context(self, task_id: str, expected_session_id: int, reason: str,
+                               *, request_id: Optional[str] = None) -> Dict[str, Any]:
+        """Explicitly discard one reviewed legacy resume context."""
+        path = self.DISCARD_RESUME_CONTEXT_PATH.format(
+            task_id=self._path_segment(task_id, "task_id"))
+        reason = _nonblank(reason, "reason")
+        return self._post(path, {
+            "expectedSessionId": int(expected_session_id),
+            "reason": reason,
+        }, request_id=request_id)

@@ -261,6 +261,7 @@ class TaskExecutionTest(unittest.TestCase):
     def test_lease_uses_persisted_runtime_resume_and_binds_process(self):
         handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
         handler._broadcast = lambda _text: None
+        handler._routine_notice = mock.Mock()
         captured = {}
 
         def dispatch(*args, **kwargs):
@@ -301,6 +302,33 @@ class TaskExecutionTest(unittest.TestCase):
         self.assertIs(bookend.controller, lifecycle)
         self.assertEqual(captured["kwargs"]["on_spawn"], bookend.bind_process)
         self.assertIs(captured["kwargs"]["session_controller"], lifecycle)
+        self.assertIs(captured["args"][4], handler._routine_notice)
+
+    def test_adhoc_task_replies_to_original_conversation(self):
+        handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
+        handler._quick_card = mock.Mock()
+        captured = {}
+
+        def dispatch(*args, **kwargs):
+            captured["notify"] = args[4]
+            return "done"
+
+        handler.dispatch_item = dispatch
+        handler.execution_router = SimpleNamespace(task_types={"adhoc"})
+        lifecycle = SimpleNamespace(runtime_session_id="r", resumed=False,
+                                    bind_process=lambda _p: None)
+        lease = {
+            "task": {"taskType": "adhoc"},
+            "session": {"inputPayload": {
+                "itemId": "handoff-1", "kind": "adhoc", "prompt": "go",
+                "target": "conversation-1", "targetType": "group",
+            }},
+        }
+
+        self.assertEqual(handler._execute_task_lease(lease, lifecycle), "done")
+        captured["notify"]("finished")
+        handler._quick_card.assert_called_once_with(
+            "conversation-1", "finished", "group")
 
     def test_malformed_session_input_snapshot_never_falls_forward_to_current_task(self):
         handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
@@ -497,7 +525,7 @@ class WakeRoutingTest(unittest.TestCase):
         self.assertEqual(envelope.aone_id, "843")
         self.assertEqual(envelope.desired_revision, "comment:9")
         self.assertEqual(envelope.source_ref["title"], "Point-read title")
-        handler._quick_card.assert_called_once()
+        handler._quick_card.assert_not_called()
 
     def test_rejected_wake_is_not_announced_as_started(self):
         handler, _captured = self._handler(False)

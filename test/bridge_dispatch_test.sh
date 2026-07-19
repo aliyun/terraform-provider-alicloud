@@ -1080,13 +1080,13 @@ class NoDingtalkDegradedTest(unittest.TestCase):
         # _BoomSM 未抛异常即证明没走真钉钉(get_access_token 等未被调用)。
 
     def test_scheduler_broadcast_path_no_dingtalk(self):
-        # 调度器 dispatch 汇总播报回调 = handler._broadcast → 降级落 [BROADCAST] 日志, 不触钉钉。
-        # Task 持久化成功后派发汇总照常播报，不真起本地 claude。
+        # Task 入库只是 persisted，不是 Worker 已派发；只落 routine 日志，不群播。
         h = self._handler()
         with self.assertLogs("jarvis-bot", level="INFO") as cm:
             h.scanner._tick_auto([{"id": "77", "title": "新单派发", "tag": [],
                                    "pool": "tf_provider", "pool_project": "528766"}], {})
-        self.assertIn("[BROADCAST]", "\n".join(cm.output))
+        self.assertNotIn("[BROADCAST]", "\n".join(cm.output))
+        self.assertIn("persisted 1 Task", "\n".join(cm.output))
         self.assertEqual(len(h.execution_router.calls), 1)
         self.assertEqual(h.execution_router.calls[0].task_type, "ticket")
 
@@ -1112,7 +1112,8 @@ class NoDingtalkDegradedTest(unittest.TestCase):
         self.assertEqual(envelope.source_ref["projectId"], "2100304")
         self.assertTrue(envelope.payload["terraform"],
                         "Terraform wake 必须保留 Terraform 身份车道")
-        self.assertIn("[BROADCAST]", "\n".join(cm.output))  # 「收到回复,唤醒中」通知降级为日志
+        self.assertNotIn("[BROADCAST]", "\n".join(cm.output))
+        self.assertIn("进入唤醒队列", "\n".join(cm.output))
 
 
 class TataResidentModeTest(unittest.TestCase):
@@ -2525,6 +2526,38 @@ class SourceWiringTest(unittest.TestCase):
         self.assertIn("self.persistence_executor.start()", src)
 
 
+class DurableDailySchedulerTest(unittest.TestCase):
+    class _Job:
+        name = "nudge"
+        hour = 9
+
+    def setUp(self):
+        self._orig = b.DailyScheduler.STATE_PATH
+        self._tmp = Path(tempfile.mkdtemp()) / "daily.json"
+        b.DailyScheduler.STATE_PATH = self._tmp
+        self.scheduler = b.DailyScheduler.__new__(b.DailyScheduler)
+        self.scheduler._last_run = self.scheduler._load_state()
+
+    def tearDown(self):
+        b.DailyScheduler.STATE_PATH = self._orig
+
+    def test_late_bridge_start_does_not_catch_up_elapsed_job(self):
+        self.assertFalse(self.scheduler._due(
+            self._Job(), dt.datetime(2026, 7, 20, 23, 50)),
+            "23:50 启动不能补跑 09:00 的催办")
+        self.assertTrue(self.scheduler._due(
+            self._Job(), dt.datetime(2026, 7, 20, 9, 15)),
+            "配置小时内仍应执行")
+
+    def test_mark_is_durable_across_restart(self):
+        when = dt.datetime(2026, 7, 20, 9, 15)
+        self.scheduler._mark_run(self._Job(), when)
+        restarted = b.DailyScheduler.__new__(b.DailyScheduler)
+        restarted._last_run = restarted._load_state()
+        self.assertFalse(restarted._due(self._Job(), dt.datetime(2026, 7, 20, 9, 45)))
+        self.assertTrue(restarted._due(self._Job(), dt.datetime(2026, 7, 21, 9, 0)))
+
+
 # ── PR-watch (方案A) ──────────────────────────────────────────────────────────
 class _Proc:
     def __init__(self, returncode=0, stdout="", stderr=""):
@@ -2681,7 +2714,7 @@ class PrWatchCheckOneTest(_PrWatchBase):
         self.assertEqual(fa[-1], "已完成")
         self.assertNotIn("comment", r.kinds(), "Terraform merged 不走 legacy comment")
         self.assertEqual(len(self.events), 1, "Terraform merged 走统一幂等 publisher")
-        self.assertTrue(h.broadcasts, "merge 收尾必须播报")
+        self.assertEqual(h.broadcasts, [], "merge 收尾已落 Aone，不再主动打扰群")
         self.assertFalse(b._prwatch_has("123"), "merged+ok → 摘除条目")
 
     def test_b_open_keeps(self):

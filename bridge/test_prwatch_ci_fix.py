@@ -224,9 +224,9 @@ class _DispatchBase(unittest.TestCase):
         tf.close()
         self.tmp = tf.name
         os.unlink(self.tmp)  # only the ".events" sibling path is used
-        bot._PRWATCH_STORE.clear()
-        bot._PRWATCH_STORE[TID] = {"pr_url": PR, "project": PROJ,
-                                   "title": TITLE, "submitted_at": "x"}
+        self._orig_prwatch_path = bot.PRWATCH_PATH
+        bot.PRWATCH_PATH = Path(self.tmp + ".prwatch")
+        bot._prwatch_add(TID, PR, PROJ, TITLE)
         self._orig_event_path = bot.AONE_EVENT_PATH
         self._orig_bt = bot.broadcast_target
         self._orig_by = bot.broadcast_type
@@ -244,13 +244,17 @@ class _DispatchBase(unittest.TestCase):
         self.sched._escalate = lambda *a, **k: None
 
     def tearDown(self):
-        bot._PRWATCH_STORE.clear()
+        bot.PRWATCH_PATH = self._orig_prwatch_path
         bot.AONE_EVENT_PATH = self._orig_event_path
         bot.broadcast_target = self._orig_bt
         bot.broadcast_type = self._orig_by
         bot._aone_event_publish = self._orig_publish
         try:
             os.unlink(self.tmp + ".events")
+        except FileNotFoundError:
+            pass
+        try:
+            os.unlink(self.tmp + ".prwatch")
         except FileNotFoundError:
             pass
 
@@ -285,8 +289,7 @@ class MaybeDispatchCiFixTest(_DispatchBase):
     def test_check_migrates_legacy_registry_title_before_pr_dispatch(self):
         legacy = self._entry()
         legacy.pop("title", None)
-        bot._PRWATCH_STORE.clear()
-        bot._PRWATCH_STORE[TID] = legacy
+        bot.PRWATCH_PATH.write_text(json.dumps({TID: legacy}))
         self.sched._ticket_metadata = lambda tid: (PROJ, "Backfilled Aone title")
         self.sched._gh_pr_state = lambda _url: ("OPEN", None)
         self._ci = ("sha1", ["Compile"], False)
@@ -454,7 +457,8 @@ class PrWatchWriteIdentityAndOutcomeTest(_DispatchBase):
         self.assertEqual(comments, [])
         self.assertEqual(len(self.events), 1)
         self.assertIn(":merged:", self.events[0][2])
-        self.assertEqual(len(self.handler.broadcasts), 1)
+        self.assertEqual(self.handler.broadcasts, [],
+                         "merged event 已持久化到 Aone，不再群播 routine 状态")
 
     def test_terraform_finish_keeps_watch_if_event_not_durable(self):
         bot._aone_event_publish = lambda *_a, **_k: False
@@ -477,7 +481,8 @@ class PrWatchWriteIdentityAndOutcomeTest(_DispatchBase):
         self.assertFalse(bot._prwatch_has(TID))
         self.assertEqual(comments, [])
         self.assertEqual(len(self.events), 1)
-        self.assertEqual(len(self.handler.broadcasts), 1)
+        self.assertEqual(self.handler.broadcasts, [],
+                         "补偿收尾成功后不再重复群播")
 
     def test_terraform_closed_pr_publishes_important_event(self):
         self.sched._gh_pr_state = lambda _url: ("CLOSED", None)
@@ -521,7 +526,7 @@ class AutoRegisterTest(_DispatchBase):
 
     def setUp(self):
         super().setUp()
-        bot._PRWATCH_STORE.clear()  # 清空 base 的 TID entry，从零测漏登发现
+        bot._prwatch_remove(TID)  # 清空 base 的 TID entry，从零测漏登发现
         self._prs = []
         self._proj = "528766"
         self.sched._gh_open_prs = lambda: self._prs

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Jarvis 控制面可观测 CLI（bootstrap/control-plane-status.sh 的实现体）。
+"""Jarvis 控制面诊断与显式恢复 CLI（bootstrap/control-plane-status.sh 的实现体）。
 
-只读查询 AutomationAgent Jarvis 数据面，供人工按 Aone ID 全链路排查：
+查询 AutomationAgent Jarvis 数据面，供人工按 Aone ID 全链路排查和受保护恢复：
   workers           worker 总览表（key/client/activityStatus/assignment aone id）
   ready             READY 任务及 eligibleWorkerCount=0 的具体原因
   task <aone_id>    单工单全链路（task 状态/current session/fence/最近 5 条 event/
@@ -9,7 +9,7 @@
 
 凭证由 wrapper 从主仓 gitignored bootstrap/.env + bridge/jarvis.env 加载
 （token 回退 JARVIS_HTML_REPORT_TOKEN）；控制面地址可显式覆盖，默认指向预发。
-本文件只读环境变量、不读 env 文件。
+本文件只读环境变量、不读 env 文件。只有 ``discard-resume`` 是写操作，且必须显式 ``--yes``。
 
 退出码：0=成功；1=控制面无该工单任务；2=缺 token 配置；3=控制面请求失败。
 """
@@ -189,10 +189,24 @@ def cmd_task(client, aone_id):
     return 0
 
 
+def cmd_discard_resume(client, task_id, session_id, reason, yes):
+    if not yes:
+        sys.stderr.write(
+            "error: discard-resume cancels the exact resumable session; "
+            "review `task <aone_id>` first and pass --yes\n")
+        return 2
+    result = client.discard_resume_context(
+        str(task_id), int(session_id), reason,
+        request_id="discard-resume:%s:%s" % (task_id, session_id))
+    print("discarded resume context: task=%s session=%s status=%s"
+          % (result.get("id", task_id), session_id, result.get("status", "?")))
+    return 0
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(
         prog="control-plane-status",
-        description="Jarvis 控制面只读排查 CLI（workers / READY 派发诊断 / 单工单全链路）")
+        description="Jarvis 控制面排查与受保护恢复 CLI（workers / READY 派发诊断 / 单工单全链路）")
     sub = parser.add_subparsers(dest="cmd", required=True)
     sub.add_parser("workers", help="list every registered worker with assignments")
     p_ready = sub.add_parser("ready", help="list READY tasks with dispatch eligibility reasons")
@@ -200,6 +214,13 @@ def main(argv=None):
                          help="maximum READY tasks to return (1-500, default: 100)")
     p_task = sub.add_parser("task", help="full chain for one Aone work item")
     p_task.add_argument("aone_id", help="Aone work item id, e.g. 84386065")
+    p_discard = sub.add_parser(
+        "discard-resume",
+        help="cancel one exact legacy resumable session after operator review")
+    p_discard.add_argument("task_id", type=int, help="control-plane Task id")
+    p_discard.add_argument("session_id", type=int, help="expected current Session id")
+    p_discard.add_argument("--reason", required=True, help="auditable recovery reason")
+    p_discard.add_argument("--yes", action="store_true", help="confirm context discard")
     args = parser.parse_args(argv)
     client = _client()
     try:
@@ -207,7 +228,10 @@ def main(argv=None):
             return cmd_workers(client)
         if args.cmd == "ready":
             return cmd_ready(client, args.limit)
-        return cmd_task(client, args.aone_id)
+        if args.cmd == "task":
+            return cmd_task(client, args.aone_id)
+        return cmd_discard_resume(
+            client, args.task_id, args.session_id, args.reason, args.yes)
     except ControlPlaneError as e:
         sys.stderr.write("error: %s\n" % e)
         return 3
