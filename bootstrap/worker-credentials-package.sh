@@ -17,8 +17,11 @@
 #   $JARVIS_ROOT/config/workspaces.local.json  (if present) — sanitized/re-derived
 #                                              on worker; this ships as reference
 #
-# Crypto: openssl aes-256-cbc + pbkdf2 + 100k iters. Works on OpenSSL 1.0.2+
-# (AliOS 7.2 default) and 3.x (macOS Homebrew).
+# Crypto: openssl aes-256-cbc + SHA-256 KDF. Works on OpenSSL 1.0.2 (AliOS 7.2
+# default, no `-pbkdf2` flag) through 3.x (macOS Homebrew). We rely on the
+# 256-bit random passphrase for security rather than KDF strength; a stronger
+# KDF (PBKDF2 / scrypt / argon2) matters when passphrases have low entropy,
+# not when they're `openssl rand -hex 32`.
 #
 # Required env vars:
 #   OSS_BUCKET       e.g. cc-packet
@@ -203,7 +206,7 @@ tar czf "$PLAINTAR" -C "$STAGE" home repo MANIFEST
 ok "tarball: $(stat -f '%z' "$PLAINTAR" 2>/dev/null || stat -c '%s' "$PLAINTAR") bytes"
 
 PASSPHRASE=$(openssl rand -hex 32)  # 256 bits of entropy
-openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 \
+openssl enc -aes-256-cbc -salt -md sha256 \
   -in "$PLAINTAR" -out "$CIPHER" \
   -pass "pass:$PASSPHRASE"
 
