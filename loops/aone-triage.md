@@ -22,6 +22,7 @@ done
 - `list-orphans`：列出任务文件中 owner_instance 已死（`coord.sh dead` 返回 0）的工单 id。
 - `adopt <aone_id>`：将孤儿任务的 `owner_instance` 改为当前实例，使其进入本轮 triage 队列续跑。
 - dispatch 实例（如 DingTalk bridge）不执行 adopt，避免重复接管正常分派的工单；仅保持心跳和阶段 checkpoint，供 watchdog 监控存活。
+- **跨机 orphan 检测走控制面**：`coord.sh dead` 用 `kill -0 <pid>` 判活，仅同机可信。多机部署时跨机 orphan 由 bridge scheduler 通过控制面 `/workers` STALE/OFFLINE + `.my-day/bridge/claimed-snapshot.json` 双通道兜底（`docs/execution-architecture.md` §Dead interactive Session recovery）；worker 机不做 orphan 检测，只 heartbeat + lease。详见 [docs/multi-worker-deployment.md](../docs/multi-worker-deployment.md)。
 
 ---
 

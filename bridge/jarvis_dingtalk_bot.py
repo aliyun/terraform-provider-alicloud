@@ -5742,10 +5742,26 @@ class JarvisHandler(AsyncChatbotHandler):
                  sorted(self.execution_router.task_types))
 
     def start_schedulers(self):
-        """Start PersistenceExecutor before every sensor and scheduler."""
+        """Start PersistenceExecutor; scheduler-role bridge also starts sensors/periodic loops.
+
+        JARVIS_BRIDGE_ROLE=scheduler (default): full bridge — Task producer, sensors,
+        PR/wake/daily loops. Exactly one host in the fleet should run scheduler (Task
+        producer and PR/wake/daily state live in local .my-day files; two schedulers
+        double-upsert Tasks and double-publish events).
+
+        JARVIS_BRIDGE_ROLE=worker: executor-only — leases Tasks from the control plane
+        and spawns; no scheduling. Every additional worker adds JARVIS_DISPATCH_MAX
+        slots to the shared lease pool.
+        """
         # Register/lease loop first.  Sensors may then publish a desired revision
         # knowing a worker is already available to converge it.
         self.persistence_executor.start()
+        role = os.environ.get("JARVIS_BRIDGE_ROLE", "scheduler")
+        if role == "worker":
+            log.info("bridge role=worker: executor-only, skipping schedulers")
+            return
+        if role != "scheduler":
+            log.warning("unknown JARVIS_BRIDGE_ROLE=%r; defaulting to scheduler", role)
         self.scanner.start()
         self.daily.start()
         self.aone_reply_scheduler.start()

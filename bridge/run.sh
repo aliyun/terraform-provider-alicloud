@@ -30,6 +30,10 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 PYTHON="${JARVIS_BRIDGE_PYTHON:-python3}"
 BOT="${JARVIS_BRIDGE_BOT:-$SCRIPT_DIR/jarvis_dingtalk_bot.py}"
 STATE_DIR="${JARVIS_BRIDGE_STATE_DIR:-$REPO_ROOT/.my-day/bridge}"
+# PIDFILE/LOG default to scheduler role; _resolve_paths_by_role() re-derives after
+# _source_env so JARVIS_BRIDGE_ROLE from env files applies. Worker role uses
+# bot-worker.{pid,log} so scheduler and worker can coexist on the same host without
+# stepping on each other's pidfile/log (though normal deployment runs one role per host).
 PIDFILE="$STATE_DIR/bot.pid"
 LOG="$STATE_DIR/bot.log"
 BOOTSTRAP_ENV="${JARVIS_BRIDGE_BOOTSTRAP_ENV:-$REPO_ROOT/bootstrap/.env}"
@@ -71,6 +75,21 @@ _tail_log() {  # $1 = n
   if [ -f "$LOG" ]; then tail -n "$n" "$LOG"; else say "(暂无日志: $LOG)"; fi
 }
 
+# -- role-aware paths (call AFTER _source_env; env files may set JARVIS_BRIDGE_ROLE) --
+_resolve_paths_by_role() {
+  local role="${JARVIS_BRIDGE_ROLE:-scheduler}"
+  case "$role" in
+    scheduler)
+      PIDFILE="$STATE_DIR/bot.pid";        LOG="$STATE_DIR/bot.log" ;;
+    worker)
+      PIDFILE="$STATE_DIR/bot-worker.pid"; LOG="$STATE_DIR/bot-worker.log" ;;
+    *)
+      err "unsupported JARVIS_BRIDGE_ROLE=$role (accept: scheduler|worker)"
+      return 2 ;;
+  esac
+  return 0
+}
+
 # -- env sourcing (variables auto-exported for the bot) --------------------
 _source_env() {
   set -a; set +u
@@ -105,6 +124,10 @@ _source_env() {
   if [ -z "${JARVIS_ROOT:-}" ]; then
     export JARVIS_ROOT="$REPO_ROOT"
   fi
+
+  # Role-aware PIDFILE/LOG must be re-derived AFTER env files are sourced (they
+  # may set JARVIS_BRIDGE_ROLE). Failure to resolve exits early via the || guard.
+  _resolve_paths_by_role || return $?
 }
 
 # -- mode decision: 0 = full, 1 = degraded (also exports the flag) ---------
@@ -286,7 +309,7 @@ cmd_start() {
   [ -f "$LOG" ] && pre_sz="$(wc -c <"$LOG" 2>/dev/null | tr -d ' ')"
   [ -n "$pre_sz" ] || pre_sz=0
 
-  say "启动 bridge: $PYTHON $BOT  (mode=$mode, log=$LOG)"
+  say "启动 bridge: $PYTHON $BOT  (mode=$mode, role=${JARVIS_BRIDGE_ROLE:-scheduler}, log=$LOG)"
   nohup "$PYTHON" "$BOT" >>"$LOG" 2>&1 &
   local newpid=$!
   printf '%s\n' "$newpid" >"$PIDFILE"
@@ -355,7 +378,7 @@ cmd_status() {
     local uptime mode
     uptime="$(ps -o etime= -p "$pid" 2>/dev/null | tr -d ' ')"
     mode="$(_mode_from_log)"
-    say "bridge: RUNNING  (pid $pid, uptime ${uptime:-?}, mode ${mode})"
+    say "bridge: RUNNING  (pid $pid, uptime ${uptime:-?}, mode ${mode}, role ${JARVIS_BRIDGE_ROLE:-scheduler})"
     say "  pidfile: $PIDFILE"
     say "  log:     $LOG"
     say "  --- 最近 5 行日志 ---"
@@ -371,6 +394,7 @@ cmd_status() {
 }
 
 cmd_logs() {
+  _source_env
   say "bridge 日志: $LOG"
   say "实时跟随:  tail -f \"$LOG\""
   say "--- 最近 20 行 ---"
@@ -392,7 +416,7 @@ cmd_daemon() {
   mkdir -p "$STATE_DIR"
   local mode
   if _decide_mode; then mode="full"; else mode="degraded"; fi
-  say "bridge foreground daemon 启动 (mode=$mode, pid=$$): $PYTHON $BOT"
+  say "bridge foreground daemon 启动 (mode=$mode, role=${JARVIS_BRIDGE_ROLE:-scheduler}, pid=$$): $PYTHON $BOT"
   _register_coord "$$"
   exec "$PYTHON" "$BOT"
 }

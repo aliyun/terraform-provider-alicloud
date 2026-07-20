@@ -1,0 +1,372 @@
+# Multi-worker deployment
+
+Phase 1 of Aone #84478029: horizontally scale headless Task execution across
+multiple hosts by splitting the bridge into two roles.
+
+## Architecture
+
+```
+                  ┌────────────────────────────────────────────────┐
+                  │  Control plane (remote HTTP)                    │
+                  │  https://pre-agent.aliyun-inc.com               │
+                  │  Task / Session / Worker / fence / operations   │
+                  └────────────────────────────────────────────────┘
+                       ▲          ▲          ▲          ▲
+                       │lease     │lease     │lease     │lease
+                       │+heartbeat│          │          │
+              ┌────────┴────┐  ┌──┴────┐  ┌──┴────┐  ┌──┴────┐
+              │  scheduler   │  │worker1│  │worker2│  │workerN│
+              │  (macmini)   │  │(linux)│  │(linux)│  │(linux)│
+              │              │  │       │  │       │  │       │
+              │ • PersistExec│  │•Persist│  │•Persist│  │•Persist│
+              │ • AoneSched  │  │ Exec  │  │ Exec  │  │ Exec  │
+              │ • DailySched │  │       │  │       │  │       │
+              │ • PrWatch    │  │       │  │       │  │       │
+              │ • AoneReply  │  │       │  │       │  │       │
+              └──────────────┘  └───────┘  └───────┘  └───────┘
+                 5 slots         3 slots    3 slots    3 slots
+                                     total = 5 + N×3 slots
+```
+
+**Scheduler role** — the Task producer + all periodic sensor loops. Local state
+(`.my-day/bridge/pr-watch.json`, `daily-scheduler.json`, event ledgers,
+`claimed-snapshot.json`) is per-host and cannot be shared. **Exactly one host
+in the fleet runs scheduler.** Currently: the macmini in Dallas.
+
+**Worker role** — executor-only. `PersistenceExecutor.start()` then blocks on
+`run_forever()`. Leases Tasks from control plane by its own `workerKey`,
+spawns headless claude, reports back. Every added worker grows total lease
+capacity by its local `JARVIS_DISPATCH_MAX`. No coordination needed between
+workers — fenced `claimTask` on the control plane is the only interlock.
+
+## Push-only credential distribution
+
+Constraints on the worker side (AliOS 7.2):
+- **No browser** — SSO interactive login impossible.
+- **SSH inconvenient** — worker doesn't reach out to scheduler; scheduler
+  doesn't push over ssh either.
+- **Only OSS is reachable** — same channel that carries the claude binary.
+
+The install therefore uses two scripts:
+
+1. `bootstrap/worker-credentials-package.sh` — runs ONCE on the scheduler
+   (macmini). Packages `~/.config/a1/`, `~/.claude/`, and repo env files;
+   encrypts with a fresh AES-256 passphrase; uploads to OSS; prints the URL
+   + sha256 + passphrase.
+
+2. `bootstrap/worker-install.sh` — runs on each worker. Pulls the encrypted
+   bundle from OSS, sha256-verifies, decrypts, extracts to the right paths,
+   rewrites the packager's `$HOME` prefix to this host's, then continues the
+   normal install (systemd unit, preflight, etc.).
+
+Neither script requires ssh in either direction.
+
+## Prerequisites (scheduler host, one-time-per-refresh)
+
+Two OSS objects to prepare — one for the claude binary (long-lived), one for
+the credential bundle (short-lived, revoke after fleet install).
+
+### A. Claude binary → OSS
+
+Anthropic geo-blocks `claude.ai/install.sh` from Alibaba internal networks.
+Relay through OSS from a scheduler host in an unrestricted region (Dallas).
+
+```bash
+VERSION=$(curl -fsSL https://downloads.claude.ai/claude-code-releases/latest)
+curl -fsSL -o /tmp/claude \
+  "https://downloads.claude.ai/claude-code-releases/$VERSION/linux-x64/claude"
+sha256sum /tmp/claude
+ossutil cp /tmp/claude oss://<your-bucket>/claude-$VERSION-linux-x64
+```
+
+Give workers the OSS URL + expected sha256.
+
+### B. Credential bundle → OSS (repeat before each worker install run)
+
+```bash
+# On the scheduler host:
+OSS_BUCKET=cc-packet bash bootstrap/worker-credentials-package.sh
+```
+
+Output prints three values:
+
+- `CREDS_OSS_URL`     — the OSS URL of the encrypted bundle
+- `CREDS_SHA256`      — sha256 of the ciphertext (integrity check on worker)
+- `CREDS_PASSPHRASE`  — 32-hex random string (256-bit) needed to decrypt
+
+Distribute these three values to each worker via any secure channel (DingTalk
+DM to yourself, in-person, ops runbook page). The passphrase alone is useless
+without the OSS object; the OSS object alone is useless without the passphrase.
+
+**After all workers install**, revoke by deleting the object:
+
+```bash
+ossutil rm oss://<bucket>/jarvis-worker-creds-<ts>.tar.gz.enc
+```
+
+Re-package before adding a NEW worker later (fresh passphrase every time).
+
+### C. Fleet knowledge
+
+Record which hosts run scheduler vs worker in `escalation/` or a team runbook,
+so an operator knows never to accidentally start `JARVIS_BRIDGE_ROLE=scheduler`
+on a worker host (would create dual Task producers).
+
+## Install a worker (per-host, one-time)
+
+Target: AliOS 7.2 (RHEL 7 lineage, glibc ≥ 2.17). Other RHEL-family should
+work; Debian/Ubuntu need the yum lines swapped.
+
+```bash
+# On the worker host, as the ops user (e.g., admin):
+git clone git@gitlab.alibaba-inc.com:terraflow/jarvis-preview.git ~/workspace/jarvis-preview
+cd ~/workspace/jarvis-preview
+
+# All five env vars are required (feed from Prereq A + B outputs):
+CLAUDE_OSS_URL="https://cc-packet.oss-cn-beijing-internal.aliyuncs.com/claude" \
+CLAUDE_SHA256="c1efffaaf370aa187cb6a09dd93d4e511c646899b0078476f83791b664bde7fe" \
+CREDS_OSS_URL="https://cc-packet.oss-cn-beijing-internal.aliyuncs.com/jarvis-worker-creds-<ts>.tar.gz.enc" \
+CREDS_SHA256="<sha printed by packager>" \
+CREDS_PASSPHRASE="<32-hex printed by packager>" \
+JARVIS_DISPATCH_MAX=3 \
+  bash bootstrap/worker-install.sh
+```
+
+The script runs 10 steps in order:
+1. Sanity: OS/arch/glibc (fails closed on unsupported host)
+2. Install python3 (≥ 3.8) and git if missing
+3. Fetch claude binary from OSS, sha256 verify
+4. Clone or update the jarvis repo
+5. Pull encrypted credential bundle from OSS, sha256 verify, decrypt (openssl
+   aes-256-cbc + pbkdf2 100k iters, passphrase read from stdin — never on
+   argv), extract classified into `$HOME` (a1/claude) and `$JARVIS_ROOT`
+   (env files), then rewrite the packager's `$HOME` prefix → this host's
+   `$HOME` in all extracted json/yaml/env/conf files. Scratch dir zeroed +
+   wiped on exit.
+6. Probe `a1id ready jarvis` — see [a1 portability fallback](#a1-portability)
+7. Write `config/workspaces.local.json` for this host's paths (if the bundle
+   didn't ship one)
+8. `bootstrap/preflight.sh --force` (fail closed)
+9. Append `JARVIS_BRIDGE_ROLE=worker` + `JARVIS_DISPATCH_MAX=N` to
+   `bridge/jarvis.env`; if DingTalk keys are present (inherited from
+   scheduler), also set `JARVIS_NO_DINGTALK=1` so the worker skips stream
+   client startup
+10. Install `~/.config/systemd/user/jarvis-worker.service` +
+    `loginctl enable-linger` so the worker survives operator logout
+
+## Start / stop / observe
+
+```bash
+# Start (systemd user service, auto-restart on failure):
+systemctl --user start jarvis-worker
+
+# Enable auto-start on boot:
+systemctl --user enable jarvis-worker
+
+# Watch:
+journalctl --user -u jarvis-worker -f
+tail -f ~/workspace/jarvis-preview/.my-day/bridge/bot-worker.log
+
+# Stop (graceful; drains in-flight Sessions as RESUMABLE without consuming Task
+# retry budget, per the "preserve task sessions across bridge restarts" change):
+systemctl --user stop jarvis-worker
+
+# Or manually, bypassing systemd:
+JARVIS_BRIDGE_ROLE=worker ~/workspace/jarvis-preview/bridge/run.sh start
+JARVIS_BRIDGE_ROLE=worker ~/workspace/jarvis-preview/bridge/run.sh stop
+JARVIS_BRIDGE_ROLE=worker ~/workspace/jarvis-preview/bridge/run.sh status
+```
+
+Worker pidfile: `.my-day/bridge/bot-worker.pid`  (scheduler uses `bot.pid`)
+Worker log:     `.my-day/bridge/bot-worker.log`  (scheduler uses `bot.log`)
+
+## Fleet visibility
+
+From any jarvis checkout, ask the control plane which workers are alive:
+
+```bash
+bootstrap/control-plane-status.sh workers
+```
+
+Each worker registers with a stable `workerKey` (persisted in
+`.my-day/bridge/worker-id` on the worker host, fcntl-locked to prevent
+duplicates). A worker's `processUuid` changes on every restart but its
+`workerKey` stays. A missed heartbeat past the lease safety margin transitions
+the Worker to STALE/OFFLINE and its Task is subject to control-plane recovery
+per the RESUME_ONLY / REPLAY_SAFE / MANUAL policy.
+
+## Scaling
+
+Add a worker: run `worker-install.sh` on a new host. It shows up in `/workers`
+within one heartbeat interval (30s). No scheduler restart needed.
+
+Remove a worker: `systemctl --user stop jarvis-worker`. Graceful stop
+transitions in-flight Sessions to RESUMABLE; another worker (or the
+scheduler's own executor) leases them from the queue on the next tick.
+
+## Update claude binary
+
+When Anthropic ships a new version:
+
+```bash
+# 1. On a host with claude.ai reachable (Dallas macmini):
+VERSION=$(curl -fsSL https://downloads.claude.ai/claude-code-releases/latest)
+curl -fsSL -o /tmp/claude "https://downloads.claude.ai/claude-code-releases/$VERSION/linux-x64/claude"
+SHA=$(sha256sum /tmp/claude | awk '{print $1}')
+ossutil cp /tmp/claude oss://<your-bucket>/claude-$VERSION-linux-x64
+
+# 2. On each worker (creds can be re-used if valid; if a1 token TTL has
+#    lapsed, re-package creds first with worker-credentials-package.sh):
+cd ~/workspace/jarvis-preview
+git pull --ff-only
+CLAUDE_OSS_URL="https://<bucket>.oss-cn-beijing-internal.aliyuncs.com/claude-$VERSION-linux-x64" \
+CLAUDE_SHA256=$SHA \
+CREDS_OSS_URL=<same as install> \
+CREDS_SHA256=<same> \
+CREDS_PASSPHRASE=<same> \
+  bash bootstrap/worker-install.sh
+# Only step 3 does real work (new binary); creds re-download is idempotent.
+systemctl --user restart jarvis-worker
+```
+
+## Refresh credentials
+
+Do this when:
+- a1 token approaching expiry (before workers start failing bookend)
+- Anthropic gateway token rotated
+- GitHub PAT rotated
+- Adding a new worker after original bundle was revoked
+
+```bash
+# On scheduler (fresh a1 login first if TTL is short):
+bin/a1id as jarvis -- auth login              # optional; if fingerprint-portable
+OSS_BUCKET=cc-packet bash bootstrap/worker-credentials-package.sh
+# → prints new CREDS_OSS_URL / CREDS_SHA256 / CREDS_PASSPHRASE
+
+# On each existing worker:
+CREDS_OSS_URL=<new> CREDS_SHA256=<new> CREDS_PASSPHRASE=<new> \
+CLAUDE_OSS_URL=<current> CLAUDE_SHA256=<current> \
+  bash bootstrap/worker-install.sh
+systemctl --user restart jarvis-worker
+
+# After all workers updated:
+ossutil rm oss://<bucket>/jarvis-worker-creds-<old-ts>.tar.gz.enc
+```
+
+## Update jarvis code
+
+Same as before — merge to master on scheduler host. Each worker's
+`worker-install.sh` re-run picks up the pull; or from cron/manually:
+
+```bash
+cd ~/workspace/jarvis-preview
+git pull --ff-only
+systemctl --user restart jarvis-worker
+```
+
+## Cross-host orphan detection
+
+`bootstrap/coord.sh` uses `kill -0 <pid>` to test liveness, which is
+same-host only. It is **not** the multi-host orphan-detection mechanism.
+Instead, cross-host recovery goes through two channels already implemented
+in the control plane (`docs/execution-architecture.md`):
+
+1. **Fast channel**: bridge scheduler's tick watches `/workers` for
+   STALE/OFFLINE Workers and remembers their assignments.
+2. **Persistent channel**: `AoneScheduler` atomically snapshots the
+   `jarvis-claimed` Aone inventory to `.my-day/bridge/claimed-snapshot.json`
+   every tick and corroborates each entry with the control plane's Task
+   timeline. Snapshot lives only on scheduler host — this is why exactly one
+   scheduler runs.
+
+Workers themselves don't do orphan detection; they just heartbeat and lease.
+
+## Troubleshooting
+
+### a1 portability
+
+`~/.config/a1/` may not survive a host copy if the internal SSO system binds
+tokens to a machine fingerprint (hostname / MAC / TPM / RAM role). Workers
+have no browser and can't easily be ssh'd to, so the standard interactive
+fallback (`bin/a1id as jarvis -- auth login`) is impractical.
+
+If step 6 fails, options in decreasing preference:
+
+- **A. Ask the a1 team** for a machine-portable or long-lived service token
+  that survives cross-host copy. Drop it in the packager's
+  `~/.config/a1/jarvis/token.json` before re-running the packager.
+- **B. Fresh-token window** — some SSO systems mint tokens that are portable
+  for their initial TTL but not after refresh. Package immediately after a
+  fresh `bin/a1id as jarvis -- auth login` on the scheduler, then install
+  all workers within that window (typically hours).
+- **C. Escalate** — without working a1 on the worker, `claim.sh`, `wrap.sh`,
+  and `aone-get.sh` fail. The worker can't participate in the fleet.
+
+`worker-install.sh` exits with code 2 on step 6 failure. Fix upstream, then
+re-run (steps 1-5 are idempotent).
+
+### glibc too old
+
+If `worker-install.sh` step 1 fails with `glibc=X.Y < 2.17`, this host cannot
+run the linux-x64 claude binary directly. Fallbacks (see Aone #84478029
+comment for full analysis):
+- **Path A**: run claude inside a podman container based on
+  `docker.io/library/debian:12-slim` — needs `_headless_exec_command` wrapper
+  work (Phase 2 or ad hoc).
+- **Path B**: ask ops to upgrade the host OS to AliOS 3 (glibc ≥ 2.28) or
+  Ubuntu 22.04. Preferred.
+- **Path C**: musl variant — requires `/lib/ld-musl-x86_64.so.1`, not
+  installed on RHEL-family. Not recommended.
+
+### Control plane unreachable
+
+`worker-install.sh` step 8 (`preflight`) probes the control plane URL. If it
+fails:
+- Confirm the worker host can reach `${JARVIS_CONTROL_PLANE_BASE_URL}` (from
+  `bootstrap/.env` or `bridge/jarvis.env`)
+- Confirm `JARVIS_CONTROL_PLANE_TOKEN` is populated and current
+- Check `curl -I https://pre-agent.aliyun-inc.com/` returns 200/301
+
+### Claude binary geo-blocked
+
+`claude.ai` and `downloads.claude.ai` are blocked from Alibaba internal
+networks — the installer will download an HTML "app unavailable in region"
+page instead of the script. **Always** relay through OSS from a scheduler
+host in an unrestricted region (Dallas macmini). `worker-install.sh` uses
+your OSS URL, never `claude.ai/install.sh` directly.
+
+### Systemd service won't start
+
+Check `journalctl --user -u jarvis-worker -n 50`. Common issues:
+- `bridge/run.sh` errors on missing env → confirm `bridge/jarvis.env` and
+  `bootstrap/.env` are readable by the service user.
+- `python3` not on PATH → systemd's PATH is minimal; the service exec is
+  `bash bridge/run.sh daemon` which sources env and normalizes PATH.
+- `loginctl enable-linger` not applied → service dies on user logout;
+  re-run with `sudo` if step 10 warned about it.
+
+## What Phase 1 does not do
+
+- **Wake path cross-host**: SUSPENDED session wake still relies on the
+  local `~/.claude/projects/<slug>/<sid>.jsonl` transcript, which is
+  per-host. Phase 1 doesn't cross-host wake; the recovery scheduler picks a
+  worker with workerKey affinity or falls back to REPLAY_SAFE (re-prompt
+  from Aone context). Phase 2 addresses this.
+- **Leader election**: if the scheduler host dies, no new Tasks are
+  produced until it comes back up. In-flight Tasks continue on workers.
+  Phase 2 or later may add hot standby.
+- **Load balancing across workers**: control plane leases first-come; if
+  one worker is faster it grabs more. That's usually fine; not tuned.
+
+## Rollback
+
+Stop workers first (they'll drain gracefully), then continue running the
+scheduler as before:
+
+```bash
+# On each worker:
+systemctl --user stop jarvis-worker
+systemctl --user disable jarvis-worker
+
+# Scheduler host: no change needed — it never depended on workers being up.
+```
