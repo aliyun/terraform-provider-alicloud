@@ -1112,6 +1112,8 @@ class NoDingtalkDegradedTest(unittest.TestCase):
         self.assertEqual(envelope.source_ref["projectId"], "2100304")
         self.assertTrue(envelope.payload["terraform"],
                         "Terraform wake 必须保留 Terraform 身份车道")
+        self.assertIn("[[AONE_RESULT:", envelope.payload["prompt"],
+                      "wake prompt 必须重申 executor bookend 结果契约")
         self.assertNotIn("[BROADCAST]", "\n".join(cm.output))
         self.assertIn("进入唤醒队列", "\n".join(cm.output))
 
@@ -1920,6 +1922,79 @@ class DispatchRetryTest(unittest.TestCase):
         self.assertEqual(outcome, "error")
         self.assertEqual(len(calls), 1, "terminal timeout → no retry")
         self.assertEqual(len(fs.failed_calls), 1)
+
+
+class WakeTaskBookendTest(unittest.TestCase):
+    """评论唤醒仍属于原工单生命周期，必须走与 ticket/persona 相同的 bookend。"""
+
+    class _Controller:
+        task = {"id": 570, "generation": 3}
+        session = {"id": 389, "generation": 3}
+        runtime_session_id = "runtime-wake"
+        resumed = True
+
+        def bind_process(self, process):
+            return process
+
+    class _ExecuteSelf:
+        def __init__(self):
+            self.execution_router = type("Router", (), {"task_types": {"wake"}})()
+            self.captured = None
+
+        def dispatch_item(self, *args, **kwargs):
+            self.captured = (args, kwargs)
+            return "captured"
+
+    class _Bookend:
+        writes_reply = True
+
+        def __init__(self):
+            self.commits = []
+
+        def commit(self, result):
+            self.commits.append(result)
+
+    def setUp(self):
+        self._orig_ready = b._terraform_rd_ready
+        self._orig_rcb = b.run_claude_buffered
+
+    def tearDown(self):
+        b._terraform_rd_ready = self._orig_ready
+        b.run_claude_buffered = self._orig_rcb
+
+    def test_execute_wake_builds_reply_bookend(self):
+        b._terraform_rd_ready = lambda: True
+        fs = self._ExecuteSelf()
+        controller = self._Controller()
+        lease = {
+            "task": {"id": 570, "taskType": "wake", "aoneId": "83884678",
+                     "generation": 3},
+            "session": {"id": 389, "generation": 3, "inputPayload": {
+                "kind": "wake", "itemId": "83884678", "project": "1086837",
+                "prompt": "continue", "terraform": True,
+            }},
+        }
+        result = b.JarvisHandler._execute_task_lease(fs, lease, controller)
+        self.assertEqual(result, "captured")
+        bookend = fs.captured[1]["task_bookend"]
+        self.assertIsInstance(bookend, b._TaskAoneBookend)
+        self.assertTrue(bookend.writes_reply)
+        self.assertEqual(bookend.kind, "wake")
+        self.assertTrue(bookend.terraform)
+
+    def test_clean_wake_without_result_fails_closed(self):
+        b.run_claude_buffered = (
+            lambda *a, **k: b.ClaudeResult("处理完成，但遗漏结果哨兵", False, "success"))
+        fs = _RetrySelf()
+        bookend = self._Bookend()
+        outcome = b.JarvisHandler.dispatch_item(
+            fs, "83884678", "continue", "sid-wake", True,
+            (lambda text: None), "grp", "group", project="1086837",
+            kind="wake", terraform=True, task_bookend=bookend)
+        self.assertEqual(outcome, "error")
+        self.assertEqual(len(fs.failed_calls), 1)
+        self.assertEqual(fs.failed_calls[0][1].subtype, "missing_task_result")
+        self.assertEqual(bookend.commits, [], "无合法结果时不得提交 Aone 收尾")
 
 
 class ResumeFallbackTest(unittest.TestCase):

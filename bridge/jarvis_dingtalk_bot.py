@@ -169,7 +169,9 @@ HEADLESS_POLICY_REVISION = "terraform-rd-single-writer-v4"
 POST_PR_HEADLESS_KINDS = frozenset(("pr_ci_fix", "pr_comment_reply"))
 # Control-plane Task kinds whose Aone claim/reply/finish are owned by the executor
 # (_TaskAoneBookend), not self-claimed inside the run — the self-lease-conflict fix.
-TASK_BOOKEND_KINDS = frozenset(("ticket", "persona"))
+# ``wake`` resumes the same business run after an Aone reply, so it must commit an
+# explicit result instead of silently succeeding while leaving ``jarvis-claimed``.
+TASK_BOOKEND_KINDS = frozenset(("ticket", "persona", "wake"))
 
 TATA_PROMPT = (
     "你是 Tata，钉钉里的轻量助手。日常陪聊、答疑、查资料，语气简洁友好。"
@@ -1599,7 +1601,7 @@ def _post_pr_claim_visible(iid, terraform=True):
 
 
 class _TaskAoneBookend:
-    """Executor-owned Aone bookend for a control-plane Task run (ticket/persona).
+    """Executor-owned Aone bookend for a control-plane Task run (ticket/persona/wake).
 
     The PersistenceExecutor already holds the control-plane lease, so the run must NOT
     self-claim — a second control-plane claim_task from inside the run 409s against the
@@ -1627,8 +1629,8 @@ class _TaskAoneBookend:
         self.project = str(project or "")
         self.terraform = bool(terraform)
         self.kind = str(kind)
-        # writes_reply=True (ticket/persona): commit() writes the single RD reply + terminal
-        # tag from a validated [[AONE_RESULT]]. writes_reply=False (post-PR pr_ci_fix /
+        # writes_reply=True (ticket/persona/wake): commit() writes the single RD reply +
+        # terminal tag from a validated [[AONE_RESULT]]. writes_reply=False (post-PR pr_ci_fix /
         # pr_comment_reply): no Aone reply and no AONE_RESULT is expected — the run only
         # does GitHub work; release_idle() drops the claim on clean completion.
         self.writes_reply = bool(writes_reply)
@@ -6544,10 +6546,12 @@ class JarvisHandler(AsyncChatbotHandler):
         """
         reply_text = "\n".join(
             "@%s: %s" % (c.get("creator", "?"), c.get("content", "")) for c in new_comments)
-        prompt = "工单 #%s 收到新回复:\n%s\n\n请继续处理。" % (aone_id, reply_text)
+        tf = bool(task.get("terraform"))  # 复原挂起前的车道，唤醒续跑必落同一网关
+        prompt = (
+            "工单 #%s 收到新回复:\n%s\n\n请继续处理。\n\n%s"
+            % (aone_id, reply_text, _task_result_instructions(aone_id, tf)))
         wl = self._workitem_line(aone_id)
         line = wl[0] if isinstance(wl, tuple) else wl
-        tf = bool(task.get("terraform"))  # 复原挂起前的车道，唤醒续跑必落同一网关
         project = str(task.get("project") or self._workitem_project(aone_id) or "")
         comment_ids = []
         for comment in new_comments:
