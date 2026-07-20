@@ -88,6 +88,11 @@ command -v git >/dev/null 2>&1 || sudo yum install -y git
 git_ver=$(git --version | awk '{print $3}')
 lowest_git=$(printf '%s\n2.5\n' "$git_ver" | sort -V | awk 'NR==1')
 [ "$lowest_git" = "2.5" ] || warn "git=$git_ver < 2.5; worktree flows may misbehave"
+# openssl: needed to decrypt the credential bundle in step 5. AliOS minimal
+# install often omits it. Any version >= 1.0.2 works (we use -md sha256, not
+# -pbkdf2 which requires 1.1.1+).
+command -v openssl >/dev/null 2>&1 || sudo yum install -y openssl
+ok "openssl = $(openssl version 2>&1)"
 # openssh-clients install is DEFERRED until after step 5 (creds extract) —
 # only needed if the packager shipped an ssh key. Token-mode bundles don't
 # need ssh on the worker, and AliOS minimal install omits openssh-clients.
@@ -143,9 +148,9 @@ ok "bundle sha256 verified"
 
 # Decrypt via stdin to keep the passphrase off argv.
 if ! printf '%s' "$CREDS_PASSPHRASE" \
-     | openssl enc -aes-256-cbc -d -pbkdf2 -iter 100000 -pass stdin \
+     | openssl enc -aes-256-cbc -d -md sha256 -pass stdin \
                    -in "$CIPHER" -out "$PLAIN"; then
-  die "decrypt failed — CREDS_PASSPHRASE wrong, or bundle from an older openssl (no -pbkdf2)"
+  die "decrypt failed — CREDS_PASSPHRASE wrong, or bundle from a mismatched openssl KDF (see packager script)"
 fi
 
 # Extract to staging, then dispatch to correct roots by top-level dir.
