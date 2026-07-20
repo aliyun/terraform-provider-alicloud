@@ -14,6 +14,15 @@ Turn a reported Provider symptom into a repeatable, auditable live reproduction.
 - If existing AccTests pass but do not contain the reporter's exact trigger fields, treat them as regression coverage rather than reproduction proof.
 - If an Aone ID is present, load `aone-triage` first and verify the item title/description. Uploading a report does not authorize comments, status changes, or closure.
 
+## Host compatibility
+
+Keep the workflow and bundled scripts host-neutral:
+
+- Load `SKILL.md` from the current host's project skill root.
+- Treat `agents/openai.yaml` as optional UI metadata; runtime behavior must not depend on it.
+- Resolve `skill_dir` as the absolute directory containing the currently loaded `SKILL.md`. Never hard-code the other host's skill root.
+- Use the same `scripts/`, `references/`, and `assets/` relative paths on both hosts.
+
 ## Hard safety rules
 
 1. Create real resources only when the user explicitly asks to create/apply/reproduce, or when an already-approved workflow clearly includes live creation.
@@ -112,7 +121,8 @@ For NAS VPC/VSwitch cases, compare `CreateFileSystem`, `DescribeFileSystems`, an
 Use the bundled parser; it emits only allowlisted request/response fields:
 
 ```bash
-python3 {SKILL_DIR}/scripts/extract-api-timeline.py \
+skill_dir="<absolute directory containing the currently loaded SKILL.md>"
+python3 "$skill_dir/scripts/extract-api-timeline.py" \
   "$evidence_dir/terraform-apply.raw.log" \
   --format markdown > "$evidence_dir/apply-api-timeline.md"
 ```
@@ -175,7 +185,8 @@ Copy [assets/report-template.md](assets/report-template.md) and fill every appli
 Render a self-contained HTML file without base64 images:
 
 ```bash
-python3 {SKILL_DIR}/scripts/render-report-html.py report.md report.html
+skill_dir="<absolute directory containing the currently loaded SKILL.md>"
+python3 "$skill_dir/scripts/render-report-html.py" report.md report.html
 ```
 
 When the user requests an online report, invoke `html-report-preview` and use the repository helper with a verified Aone ID:
