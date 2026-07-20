@@ -354,6 +354,32 @@ class MaybeDispatchCiFixTest(_DispatchBase):
         self.assertFalse(active, "escalated 后转人工 → 不再快档")
 
 
+class EscalateMessageTest(_DispatchBase):
+    """_escalate 消息格式：pr_url 非空时工单号渲染成指向对应 PR 的 markdown 链接（钉钉 AI
+    卡片按 markdown 渲染，[text](url) 可点）；缺省回退纯文本 #<tid>。诉求：escalate 消息
+    "🚩 需人工介入 #<id>" 里的 #<id> 须带可点击链接指向对应 PR，而非仅展示 id 号。"""
+
+    def setUp(self):
+        super().setUp()
+        # _DispatchBase.setUp 把 _escalate mock 成 noop；恢复真实实现以校验消息格式。
+        self.sched._escalate = bot.PrWatchScheduler._escalate.__get__(self.sched)
+
+    def test_pr_url_renders_clickable_link_to_pr(self):
+        self.sched._escalate(TID, "PR CI 反复失败超过自动修复上限(3)，请人工介入", PR)
+        self.assertEqual(len(self.handler.broadcasts), 1)
+        msg = self.handler.broadcasts[0]
+        self.assertIn("[#%s](%s)" % (TID, PR), msg,
+                      "工单号须渲染成指向对应 PR 的 markdown 可点击链接")
+        self.assertIn("请人工介入", msg, "reason 正文保留")
+
+    def test_missing_pr_url_falls_back_to_plain_id(self):
+        self.sched._escalate(TID, "PR 未合并即关闭，请人工确认工单去向")
+        self.assertEqual(len(self.handler.broadcasts), 1)
+        msg = self.handler.broadcasts[0]
+        self.assertIn("#%s" % TID, msg, "缺省仍展示工单号")
+        self.assertNotIn("](http", msg, "无 pr_url 时回退纯文本，不渲染 markdown 链接")
+
+
 class MaybeDispatchCommentReplyTest(_DispatchBase):
     def setUp(self):
         super().setUp()

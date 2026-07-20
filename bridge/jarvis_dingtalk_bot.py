@@ -3694,7 +3694,7 @@ class PrWatchScheduler:
                         log.warning("PrWatchScheduler: comment #%s failed rc=%s; keep watching",
                                     tid, rc)
                         return
-                self._escalate(tid, "PR 已合并但工单带 jarvis-npe（人工介入），不自动收尾")
+                self._escalate(tid, "PR 已合并但工单带 jarvis-npe（人工介入），不自动收尾", pr_url)
                 _prwatch_remove(tid)
                 return
             if g == "unknown":
@@ -3749,7 +3749,7 @@ class PrWatchScheduler:
                     log.warning("PrWatchScheduler: closed-PR comment #%s failed rc=%s; keep watching",
                                 tid, rc)
                     return
-            self._escalate(tid, "PR 未合并即关闭，请人工确认工单去向")
+            self._escalate(tid, "PR 未合并即关闭，请人工确认工单去向", pr_url)
             _prwatch_remove(tid)
             return
         # open PR → open 窗口推进：CI 失败自动派修复(#1) + 新评审评论自动派回应(#2)。
@@ -3882,7 +3882,7 @@ class PrWatchScheduler:
                     log.warning("PrWatchScheduler: CI escalation comment #%s failed rc=%s; "
                                 "keep automatic state unchanged", tid, rc)
                     return True
-            self._escalate(tid, "PR CI 反复失败超过自动修复上限(%d)，请人工介入" % max_attempts)
+            self._escalate(tid, "PR CI 反复失败超过自动修复上限(%d)，请人工介入" % max_attempts, entry.get("pr_url"))
             _prwatch_update(tid, ci_fix_escalated=True)
             return False  # 转人工 → 不再快档
         prompt = _pr_ci_fix_prompt(tid, entry.get("pr_url"), project, failing)
@@ -4329,11 +4329,18 @@ class PrWatchScheduler:
             log.warning("PrWatchScheduler: wrap.sh sync #%s failed: %s", tid, e)
             return 1
 
-    def _escalate(self, tid, reason):
+    def _escalate(self, tid, reason, pr_url=None):
         """Surface a needs-human PR event via DingTalk broadcast (no escalation/ file).
-        Best-effort（善后不 crash worker）。"""
-        aone_url = "https://project.aone.alibaba-inc.com/v2/project"
-        text = "**🚩 需人工介入 #%s**\n%s" % (tid, reason)
+        Best-effort（善后不 crash worker）。
+
+        pr_url 非空时把工单号渲染成可点击 markdown 链接指向对应 PR（钉钉 AI 卡片按
+        markdown 渲染，[text](url) 可点；降级模式落 [BROADCAST] 日志仍保留 url 文本）。
+        缺省回退纯文本 #<tid>，保持向后兼容（pr_url 未知/为空的旧路径）。"""
+        if pr_url:
+            header = "**🚩 需人工介入 [#%s](%s)**" % (tid, pr_url)
+        else:
+            header = "**🚩 需人工介入 #%s**" % (tid)
+        text = "%s\n%s" % (header, reason)
         log.warning("PrWatchScheduler escalate #%s: %s", tid, reason)
         try:
             if self.handler is not None:
