@@ -2799,6 +2799,8 @@ class AoneScheduler:
 
     # Stale-claim reconcile sub-tick cadence (every N scan ticks).
     STALE_CHECK_EVERY = int(os.environ.get("JARVIS_STALE_CHECK_EVERY", "4"))
+    SOURCE_STATUS_PAGE_SIZE = int(os.environ.get("JARVIS_SOURCE_STATUS_PAGE_SIZE", "500"))
+    SOURCE_STATUS_WORKERS = int(os.environ.get("JARVIS_SOURCE_STATUS_WORKERS", "8"))
 
     def __init__(self, handler, pool=None):
         self.handler = handler
@@ -2811,6 +2813,7 @@ class AoneScheduler:
         self.notify_target = os.environ.get("JARVIS_NOTIFY_GROUP", "cidy1mv+qvMEybkqTXcsXTOeQ==")
         self._prev_snapshot = {}         # id -> full item snapshot (new/updated diff via modified)
         self._tick_count = 0             # drives the stale-claim reconcile sub-tick
+        self._source_status_after_task_id = 0
         self.pending = {}                # id -> item dict, awaiting authorization (fallback mode)
         self._lock = threading.Lock()    # guards self.pending
         self._thread = None
@@ -2979,6 +2982,97 @@ class AoneScheduler:
                 except Exception as e:  # noqa: BLE001 — 单池失败不作废本轮
                     log.warning("AoneScheduler: pool union query failed: %s", e)
         return items
+
+    @staticmethod
+    def _point_read_source_status(task):
+        """Read one canonical Aone Task's current business status.
+
+        This point-read intentionally bypasses the dispatch pool filters. A task that has
+        already moved to an excluded/terminal Aone status must still be observable here.
+        Failures return ``None`` and leave the persisted status untouched.
+        """
+        aone_id = str(task.get("aoneId") or "").strip()
+        if not aone_id.isdigit():
+            return task, None
+        try:
+            result = subprocess.run(
+                [str(REPO_ROOT / "bin" / "a1id"), "--", "project", "workitem",
+                 "get", aone_id, "-f", "json"],
+                capture_output=True, text=True, timeout=45, cwd=str(REPO_ROOT))
+            if result.returncode != 0:
+                log.warning("AoneScheduler: source status point-read #%s rc=%d: %s",
+                            aone_id, result.returncode, (result.stderr or "").strip()[:200])
+                return task, None
+            data = json.loads(result.stdout)
+            fields = {field.get("identifier"): field for field in data.get("fields", [])
+                      if isinstance(field, dict)}
+            status_field = fields.get("status") or {}
+            status = status_field.get("displayValue") or status_field.get("value")
+            if not status:
+                status = data.get("status") or data.get("statusName")
+                if isinstance(status, dict):
+                    status = (status.get("name") or status.get("displayValue")
+                              or status.get("value"))
+            status = str(status or "").strip()
+            return task, status or None
+        except Exception as exc:  # noqa: BLE001
+            log.warning("AoneScheduler: source status point-read #%s failed: %s",
+                        aone_id, type(exc).__name__)
+            return task, None
+
+    def _reconcile_source_statuses(self):
+        """Reconcile lifecycle metadata for already tracked control-plane Tasks.
+
+        Discovery/dispatch and lifecycle observation are deliberately separate. This page
+        may contain Tasks whose Aone status is excluded from pool scanning; reporting a
+        status uses a metadata-only endpoint and cannot change desired revision, generation,
+        execution state, or Session ownership.
+        """
+        client = getattr(self.execution_router, "client", None)
+        if client is None:
+            return
+        after = int(getattr(self, "_source_status_after_task_id", 0) or 0)
+        page_size = max(1, min(500, int(self.SOURCE_STATUS_PAGE_SIZE)))
+        page = client.list_source_status_candidates(
+            after_task_id=after, limit=page_size)
+        if not isinstance(page, dict) or not isinstance(page.get("items"), list):
+            raise ValueError("control plane source status candidate page is invalid")
+        tasks = [task for task in page["items"] if isinstance(task, dict)]
+        workers = max(1, min(32, int(self.SOURCE_STATUS_WORKERS)))
+        with ThreadPoolExecutor(max_workers=workers,
+                                thread_name_prefix="aone-source-status") as executor:
+            observations = list(executor.map(self._point_read_source_status, tasks))
+        changed = 0
+        for task, source_status in observations:
+            if not source_status or source_status == str(task.get("sourceStatus") or "").strip():
+                continue
+            task_id = str(task.get("taskId") or "").strip()
+            aone_id = str(task.get("aoneId") or "").strip()
+            if not task_id or not aone_id:
+                continue
+            try:
+                digest = hashlib.sha256(source_status.encode("utf-8")).hexdigest()[:16]
+                client.update_source_status(
+                    task_id, aone_id, source_status,
+                    request_id="source-status:%s:%s" % (task_id, digest))
+                changed += 1
+                log.info("AoneScheduler: source status reconciled task=%s aone=#%s %s→%s",
+                         task_id, aone_id, task.get("sourceStatus") or "<missing>", source_status)
+            except Exception as exc:  # noqa: BLE001 — one Task cannot block the page
+                log.warning("AoneScheduler: source status report task=%s aone=#%s failed: %s",
+                            task_id, aone_id, exc)
+        if page.get("hasMore"):
+            try:
+                next_after = int(page.get("nextAfterTaskId"))
+            except (TypeError, ValueError) as exc:
+                raise ValueError("control plane source status cursor is invalid") from exc
+            if next_after <= after:
+                raise ValueError("control plane source status cursor did not advance")
+            self._source_status_after_task_id = next_after
+        else:
+            self._source_status_after_task_id = 0
+        log.info("AoneScheduler: source status page observed=%d changed=%d next=%d",
+                 len(tasks), changed, self._source_status_after_task_id)
 
     def _in_scope(self, it):
         """灰度安全阀：item 是否在自动派发范围内。pool 白名单 + created 上限，两者空=不限。
@@ -3278,6 +3372,10 @@ class AoneScheduler:
         self._human_comment_cache = {}
         self._activity_cache = {}
         self._human_operators = self._load_human_operators()  # reload whitelist each tick
+        try:
+            self._reconcile_source_statuses()
+        except Exception:  # noqa: BLE001 — lifecycle observation must not block dispatch
+            log.exception("AoneScheduler source status reconcile failed; will retry next tick")
         # 统一探测：python 直查 assignee∪tracker∪idle 并集（取代 scan.sh 出派发数据）。
         items = self._scan_union()
         if items is None:

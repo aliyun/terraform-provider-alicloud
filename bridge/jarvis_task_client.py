@@ -200,6 +200,8 @@ class ControlPlaneClient:
     TASK_TIMELINE_PATH = "tasks/{task_id}/timeline"
     DISCARD_RESUME_CONTEXT_PATH = "tasks/{task_id}/discard-resume-context"
     READY_TASK_DIAGNOSTICS_PATH = "tasks/ready-diagnostics"
+    SOURCE_STATUS_CANDIDATES_PATH = "tasks/source-status-candidates"
+    SOURCE_STATUS_PATH = "tasks/{task_id}/source-status"
     PENDING_AONE_WAITS_PATH = "sessions/waits/aone-reply"
 
     def __init__(self, base_url: str, token: str = "", *, timeout: float = 10.0,
@@ -534,4 +536,29 @@ class ControlPlaneClient:
         return self._post(path, {
             "expectedSessionId": int(expected_session_id),
             "reason": reason,
+        }, request_id=request_id)
+
+    def list_source_status_candidates(self, *, after_task_id: int = 0,
+                                      limit: int = 100) -> Any:
+        """Page through Aone-backed Tasks independently from dispatch eligibility."""
+        after = int(after_task_id)
+        page_size = int(limit)
+        if after < 0:
+            raise ValueError("after_task_id must not be negative")
+        if page_size <= 0 or page_size > 500:
+            raise ValueError("limit must be between 1 and 500")
+        return self._get("%s?%s" % (
+            self.SOURCE_STATUS_CANDIDATES_PATH,
+            urlencode({"afterTaskId": after, "limit": page_size})))
+
+    def update_source_status(self, task_id: str, aone_id: str, source_status: str,
+                             *, request_id: Optional[str] = None) -> Dict[str, Any]:
+        """Report source lifecycle metadata without upserting or waking a Task."""
+        path = self.SOURCE_STATUS_PATH.format(
+            task_id=self._path_segment(task_id, "task_id"))
+        aone_id = _nonblank(aone_id, "aone_id")
+        source_status = _nonblank(source_status, "source_status")
+        return self._post(path, {
+            "aoneId": aone_id,
+            "sourceStatus": source_status,
         }, request_id=request_id)
