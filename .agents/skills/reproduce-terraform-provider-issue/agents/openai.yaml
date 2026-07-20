@@ -1,4 +1,4 @@
 interface:
-  display_name: "Terraform Provider 现场复现"
+  display_name: "Terraform Provider 用户问题排查"
   short_description: "在真实资源上复现 Provider 问题并生成可追溯 API 证据"
   default_prompt: "使用 $reproduce-terraform-provider-issue 在真实资源上复现这个 Provider 问题，并生成可追溯的 API 证据。"

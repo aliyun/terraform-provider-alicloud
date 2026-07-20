@@ -3,7 +3,7 @@ name: reproduce-terraform-provider-issue
 description: 使用最小化本地 HCL、Provider 调试日志、OpenAPI RequestId、刷新漂移证据、受控的现场保留或清理，以及可选的 AutomationAgent HTML 报告，在真实阿里云资源上复现 Terraform Provider 问题。适用于用户要求实际复现 Provider 缺陷、根据给定 Terraform 创建资源、排查创建与读取无法回环或意外替换、为产品团队保留云上现场，或生成完整 API 时间线的场景；普通验收测试优先使用 invoke-terraform-acc-test-remote，只有问题依赖用户原始 HCL 和真实 API 响应时才使用本技能。
 ---
 
-# Terraform Provider 真实资源现场复现
+# Terraform Provider 用户问题现场排查复现
 
 把 Provider 问题转化为可重复、可审计的真实资源复现。精确保留用户输入，分离云产品 API 行为与 Provider 状态行为，并最终留下已验证的云上现场或已验证的干净账号。
 

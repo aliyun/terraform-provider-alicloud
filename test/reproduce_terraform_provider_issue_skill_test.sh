@@ -25,9 +25,9 @@ for runtime_skill in "$agents_skill" "$claude_skill"; do
   test -x "$runtime_skill/scripts/render-report-html.py"
   grep -q '^name: reproduce-terraform-provider-issue$' "$runtime_skill/SKILL.md"
   grep -q '^description: ' "$runtime_skill/SKILL.md"
-  grep -q '^# Terraform Provider 真实资源现场复现$' "$runtime_skill/SKILL.md"
+  grep -q '^# Terraform Provider 用户问题现场排查复现$' "$runtime_skill/SKILL.md"
   grep -q '禁止执行漂移或替换计划' "$runtime_skill/SKILL.md"
-  grep -q 'Terraform Provider 现场复现' "$runtime_skill/agents/openai.yaml"
+  grep -q 'Terraform Provider 用户问题排查' "$runtime_skill/agents/openai.yaml"
   grep -q '^## 1\. 现场状态$' "$runtime_skill/assets/report-template.md"
   grep -q '^# 证据与脱敏契约$' "$runtime_skill/references/evidence-contract.md"
 done
