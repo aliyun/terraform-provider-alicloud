@@ -39,30 +39,78 @@ spawns headless claude, reports back. Every added worker grows total lease
 capacity by its local `JARVIS_DISPATCH_MAX`. No coordination needed between
 workers — fenced `claimTask` on the control plane is the only interlock.
 
-## Prerequisites (scheduler host, one-time)
+## Push-only credential distribution
 
-1. **Claude binary on OSS** — Anthropic geo-blocks `claude.ai/install.sh` from
-   Alibaba internal networks. Relay through OSS:
+Constraints on the worker side (AliOS 7.2):
+- **No browser** — SSO interactive login impossible.
+- **SSH inconvenient** — worker doesn't reach out to scheduler; scheduler
+  doesn't push over ssh either.
+- **Only OSS is reachable** — same channel that carries the claude binary.
 
-   ```bash
-   # On scheduler host (with claude.ai reachable):
-   VERSION=$(curl -fsSL https://downloads.claude.ai/claude-code-releases/latest)
-   curl -fsSL -o /tmp/claude \
-     "https://downloads.claude.ai/claude-code-releases/$VERSION/linux-x64/claude"
-   sha256sum /tmp/claude  # note the hash
-   ossutil cp /tmp/claude oss://<your-bucket>/claude-$VERSION-linux-x64
-   ```
+The install therefore uses two scripts:
 
-   Give workers the OSS URL + expected sha256.
+1. `bootstrap/worker-credentials-package.sh` — runs ONCE on the scheduler
+   (macmini). Packages `~/.config/a1/`, `~/.claude/`, and repo env files;
+   encrypts with a fresh AES-256 passphrase; uploads to OSS; prints the URL
+   + sha256 + passphrase.
 
-2. **SSH from worker → scheduler** — `worker-install.sh` rsyncs credentials
-   from the scheduler. Set up public-key SSH from each worker's `admin` user
-   to the scheduler host's shell user.
+2. `bootstrap/worker-install.sh` — runs on each worker. Pulls the encrypted
+   bundle from OSS, sha256-verifies, decrypts, extracts to the right paths,
+   rewrites the packager's `$HOME` prefix to this host's, then continues the
+   normal install (systemd unit, preflight, etc.).
 
-3. **Fleet knowledge** — record which hosts run scheduler vs worker in
-   `escalation/` or a team runbook, so an operator knows never to accidentally
-   start `JARVIS_BRIDGE_ROLE=scheduler` on a worker host (would create dual
-   Task producers).
+Neither script requires ssh in either direction.
+
+## Prerequisites (scheduler host, one-time-per-refresh)
+
+Two OSS objects to prepare — one for the claude binary (long-lived), one for
+the credential bundle (short-lived, revoke after fleet install).
+
+### A. Claude binary → OSS
+
+Anthropic geo-blocks `claude.ai/install.sh` from Alibaba internal networks.
+Relay through OSS from a scheduler host in an unrestricted region (Dallas).
+
+```bash
+VERSION=$(curl -fsSL https://downloads.claude.ai/claude-code-releases/latest)
+curl -fsSL -o /tmp/claude \
+  "https://downloads.claude.ai/claude-code-releases/$VERSION/linux-x64/claude"
+sha256sum /tmp/claude
+ossutil cp /tmp/claude oss://<your-bucket>/claude-$VERSION-linux-x64
+```
+
+Give workers the OSS URL + expected sha256.
+
+### B. Credential bundle → OSS (repeat before each worker install run)
+
+```bash
+# On the scheduler host:
+OSS_BUCKET=cc-packet bash bootstrap/worker-credentials-package.sh
+```
+
+Output prints three values:
+
+- `CREDS_OSS_URL`     — the OSS URL of the encrypted bundle
+- `CREDS_SHA256`      — sha256 of the ciphertext (integrity check on worker)
+- `CREDS_PASSPHRASE`  — 32-hex random string (256-bit) needed to decrypt
+
+Distribute these three values to each worker via any secure channel (DingTalk
+DM to yourself, in-person, ops runbook page). The passphrase alone is useless
+without the OSS object; the OSS object alone is useless without the passphrase.
+
+**After all workers install**, revoke by deleting the object:
+
+```bash
+ossutil rm oss://<bucket>/jarvis-worker-creds-<ts>.tar.gz.enc
+```
+
+Re-package before adding a NEW worker later (fresh passphrase every time).
+
+### C. Fleet knowledge
+
+Record which hosts run scheduler vs worker in `escalation/` or a team runbook,
+so an operator knows never to accidentally start `JARVIS_BRIDGE_ROLE=scheduler`
+on a worker host (would create dual Task producers).
 
 ## Install a worker (per-host, one-time)
 
@@ -74,10 +122,12 @@ work; Debian/Ubuntu need the yum lines swapped.
 git clone git@gitlab.alibaba-inc.com:terraflow/jarvis-preview.git ~/workspace/jarvis-preview
 cd ~/workspace/jarvis-preview
 
-# All env vars in one line. CLAUDE_OSS_URL + CLAUDE_SHA256 are required.
+# All five env vars are required (feed from Prereq A + B outputs):
 CLAUDE_OSS_URL="https://cc-packet.oss-cn-beijing-internal.aliyuncs.com/claude" \
 CLAUDE_SHA256="c1efffaaf370aa187cb6a09dd93d4e511c646899b0078476f83791b664bde7fe" \
-CREDS_SOURCE="gzzz@macmini-dallas" \
+CREDS_OSS_URL="https://cc-packet.oss-cn-beijing-internal.aliyuncs.com/jarvis-worker-creds-<ts>.tar.gz.enc" \
+CREDS_SHA256="<sha printed by packager>" \
+CREDS_PASSPHRASE="<32-hex printed by packager>" \
 JARVIS_DISPATCH_MAX=3 \
   bash bootstrap/worker-install.sh
 ```
@@ -85,12 +135,17 @@ JARVIS_DISPATCH_MAX=3 \
 The script runs 10 steps in order:
 1. Sanity: OS/arch/glibc (fails closed on unsupported host)
 2. Install python3 (≥ 3.8) and git if missing
-3. Fetch claude binary from OSS, verify sha256
+3. Fetch claude binary from OSS, sha256 verify
 4. Clone or update the jarvis repo
-5. rsync credentials from scheduler (`~/.config/a1/`, `~/.claude/`,
-   `bootstrap/.env`, `bridge/jarvis.env`)
-6. Probe `a1id ready jarvis` — see [a1 fingerprint fallback](#a1-fingerprint-fallback)
-7. Write `config/workspaces.local.json` for this host's paths
+5. Pull encrypted credential bundle from OSS, sha256 verify, decrypt (openssl
+   aes-256-cbc + pbkdf2 100k iters, passphrase read from stdin — never on
+   argv), extract classified into `$HOME` (a1/claude) and `$JARVIS_ROOT`
+   (env files), then rewrite the packager's `$HOME` prefix → this host's
+   `$HOME` in all extracted json/yaml/env/conf files. Scratch dir zeroed +
+   wiped on exit.
+6. Probe `a1id ready jarvis` — see [a1 portability fallback](#a1-portability)
+7. Write `config/workspaces.local.json` for this host's paths (if the bundle
+   didn't ship one)
 8. `bootstrap/preflight.sh --force` (fail closed)
 9. Append `JARVIS_BRIDGE_ROLE=worker` + `JARVIS_DISPATCH_MAX=N` to
    `bridge/jarvis.env`; if DingTalk keys are present (inherited from
@@ -154,20 +209,48 @@ scheduler's own executor) leases them from the queue on the next tick.
 When Anthropic ships a new version:
 
 ```bash
-# 1. On a host with claude.ai reachable (Dallas):
+# 1. On a host with claude.ai reachable (Dallas macmini):
 VERSION=$(curl -fsSL https://downloads.claude.ai/claude-code-releases/latest)
 curl -fsSL -o /tmp/claude "https://downloads.claude.ai/claude-code-releases/$VERSION/linux-x64/claude"
 SHA=$(sha256sum /tmp/claude | awk '{print $1}')
 ossutil cp /tmp/claude oss://<your-bucket>/claude-$VERSION-linux-x64
-echo "URL: https://<bucket>.oss-cn-beijing-internal.aliyuncs.com/claude-$VERSION-linux-x64"
-echo "SHA: $SHA"
 
-# 2. On each worker:
-CLAUDE_OSS_URL="https://.../claude-$VERSION-linux-x64" \
+# 2. On each worker (creds can be re-used if valid; if a1 token TTL has
+#    lapsed, re-package creds first with worker-credentials-package.sh):
+cd ~/workspace/jarvis-preview
+git pull --ff-only
+CLAUDE_OSS_URL="https://<bucket>.oss-cn-beijing-internal.aliyuncs.com/claude-$VERSION-linux-x64" \
 CLAUDE_SHA256=$SHA \
+CREDS_OSS_URL=<same as install> \
+CREDS_SHA256=<same> \
+CREDS_PASSPHRASE=<same> \
   bash bootstrap/worker-install.sh
-# Only step 3 does real work; other steps are idempotent no-ops.
+# Only step 3 does real work (new binary); creds re-download is idempotent.
 systemctl --user restart jarvis-worker
+```
+
+## Refresh credentials
+
+Do this when:
+- a1 token approaching expiry (before workers start failing bookend)
+- Anthropic gateway token rotated
+- GitHub PAT rotated
+- Adding a new worker after original bundle was revoked
+
+```bash
+# On scheduler (fresh a1 login first if TTL is short):
+bin/a1id as jarvis -- auth login              # optional; if fingerprint-portable
+OSS_BUCKET=cc-packet bash bootstrap/worker-credentials-package.sh
+# → prints new CREDS_OSS_URL / CREDS_SHA256 / CREDS_PASSPHRASE
+
+# On each existing worker:
+CREDS_OSS_URL=<new> CREDS_SHA256=<new> CREDS_PASSPHRASE=<new> \
+CLAUDE_OSS_URL=<current> CLAUDE_SHA256=<current> \
+  bash bootstrap/worker-install.sh
+systemctl --user restart jarvis-worker
+
+# After all workers updated:
+ossutil rm oss://<bucket>/jarvis-worker-creds-<old-ts>.tar.gz.enc
 ```
 
 ## Update jarvis code
@@ -200,23 +283,27 @@ Workers themselves don't do orphan detection; they just heartbeat and lease.
 
 ## Troubleshooting
 
-### a1 fingerprint fallback
+### a1 portability
 
 `~/.config/a1/` may not survive a host copy if the internal SSO system binds
-tokens to a machine fingerprint. `worker-install.sh` detects this at step 6
-(`bin/a1id ready jarvis` returns non-zero) and exits with code 3, printing
-the interactive re-login command:
+tokens to a machine fingerprint (hostname / MAC / TPM / RAM role). Workers
+have no browser and can't easily be ssh'd to, so the standard interactive
+fallback (`bin/a1id as jarvis -- auth login`) is impractical.
 
-```bash
-bin/a1id as jarvis -- auth login          # opens browser or provides SSO code
-```
+If step 6 fails, options in decreasing preference:
 
-Complete the SSO flow, then re-run `worker-install.sh` (steps 1-5 are
-idempotent). If the worker will handle Terraform Tasks, also:
+- **A. Ask the a1 team** for a machine-portable or long-lived service token
+  that survives cross-host copy. Drop it in the packager's
+  `~/.config/a1/jarvis/token.json` before re-running the packager.
+- **B. Fresh-token window** — some SSO systems mint tokens that are portable
+  for their initial TTL but not after refresh. Package immediately after a
+  fresh `bin/a1id as jarvis -- auth login` on the scheduler, then install
+  all workers within that window (typically hours).
+- **C. Escalate** — without working a1 on the worker, `claim.sh`, `wrap.sh`,
+  and `aone-get.sh` fail. The worker can't participate in the fleet.
 
-```bash
-bin/a1id as terraform-rd -- auth login
-```
+`worker-install.sh` exits with code 2 on step 6 failure. Fix upstream, then
+re-run (steps 1-5 are idempotent).
 
 ### glibc too old
 

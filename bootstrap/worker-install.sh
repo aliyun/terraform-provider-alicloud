@@ -3,39 +3,43 @@
 #
 # Target: AliOS 7.2 (RHEL 7 lineage, glibc >= 2.17). Other RHEL-family should work.
 #
-# Prereq on the operator side (macmini or any scheduler host with working creds):
-#   1) Upload the Linux x86_64 claude binary to an OSS bucket reachable from AliOS
-#      (internal endpoint preferred for speed). Note its sha256.
-#   2) Ensure SSH from this AliOS worker → operator host is set up (public-key auth)
-#      OR be ready to manually copy creds if CREDS_SOURCE is left empty.
+# Push-only credential distribution: worker never ssh's out to scheduler and has
+# no browser for interactive SSO. The operator first runs
+# `bootstrap/worker-credentials-package.sh` on the scheduler host — that packages
+# ~/.config/a1, ~/.claude, and repo env files into an OSS object encrypted with a
+# one-shot passphrase. Each worker then curls the object, sha256-verifies it,
+# decrypts, and extracts. Deleting the OSS object revokes access.
 #
 # Required env vars (fail fast if unset):
-#   CLAUDE_OSS_URL   e.g. https://cc-packet.oss-cn-beijing-internal.aliyuncs.com/claude
-#   CLAUDE_SHA256    expected sha256 of the binary (from Anthropic manifest)
+#   CLAUDE_OSS_URL      OSS URL of the claude linux-x64 binary
+#   CLAUDE_SHA256       expected sha256 (from Anthropic manifest)
+#   CREDS_OSS_URL       OSS URL of the encrypted credential bundle
+#   CREDS_SHA256        expected sha256 of the ciphertext
+#   CREDS_PASSPHRASE    32-hex passphrase printed by worker-credentials-package.sh
 #
 # Optional env vars (defaults shown):
 #   JARVIS_REPO_URL     git@gitlab.alibaba-inc.com:terraflow/jarvis-preview.git
 #   JARVIS_ROOT         $HOME/workspace/jarvis-preview
 #   CLAUDE_BIN          $HOME/.local/bin/claude
-#   CREDS_SOURCE        (empty; else "user@host" for rsync-pull)
 #   JARVIS_DISPATCH_MAX 3        (per-host slot count)
 #
-# Usage:
-#   CLAUDE_OSS_URL=... CLAUDE_SHA256=... CREDS_SOURCE=gzzz@macmini.dallas.local \
+# Usage — see worker-credentials-package.sh output for the full one-liner. Shape:
+#
+#   CLAUDE_OSS_URL=... CLAUDE_SHA256=... \
+#   CREDS_OSS_URL=... CREDS_SHA256=... CREDS_PASSPHRASE=... \
+#   JARVIS_DISPATCH_MAX=3 \
 #     bash bootstrap/worker-install.sh
 #
 # Exit codes:
 #   0  = success, worker ready to start
-#   1  = fatal (sanity/download/verify failed)
-#   2  = creds missing, manually populate then re-run
-#   3  = a1 login fingerprint bound to source; interactive re-login required
+#   1  = fatal (sanity/download/verify/decrypt failed)
+#   2  = a1 login not portable across hosts — see step 6 output for options
 
 set -euo pipefail
 
 JARVIS_REPO_URL="${JARVIS_REPO_URL:-git@gitlab.alibaba-inc.com:terraflow/jarvis-preview.git}"
 JARVIS_ROOT="${JARVIS_ROOT:-$HOME/workspace/jarvis-preview}"
 CLAUDE_BIN="${CLAUDE_BIN:-$HOME/.local/bin/claude}"
-CREDS_SOURCE="${CREDS_SOURCE:-}"
 DISPATCH_MAX="${JARVIS_DISPATCH_MAX:-3}"
 
 die()  { printf '[ERR] %s\n' "$*" >&2; exit "${2:-1}"; }
@@ -46,6 +50,9 @@ step() { printf '\n===== %s =====\n' "$*"; }
 
 : "${CLAUDE_OSS_URL:?export CLAUDE_OSS_URL=<OSS URL of claude linux-x64 binary>}"
 : "${CLAUDE_SHA256:?export CLAUDE_SHA256=<expected sha256 of claude binary>}"
+: "${CREDS_OSS_URL:?export CREDS_OSS_URL=<OSS URL of encrypted credential bundle>}"
+: "${CREDS_SHA256:?export CREDS_SHA256=<sha256 of encrypted bundle>}"
+: "${CREDS_PASSPHRASE:?export CREDS_PASSPHRASE=<passphrase from worker-credentials-package.sh>}"
 
 # ---------------------------------------------------------------------------
 step "1. Sanity · OS / arch / glibc"
@@ -110,56 +117,123 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-step "5. Sync shared credentials from scheduler host"
-if [ -z "$CREDS_SOURCE" ]; then
-  warn "CREDS_SOURCE unset — cannot auto-pull creds. Populate manually:"
-  cat >&2 <<MANUAL
+step "5. Fetch + decrypt credential bundle from OSS"
+STAGE=$(mktemp -d -t jarvis-creds.XXXXXX)
+# shellcheck disable=SC2064
+trap "rm -rf '$STAGE'" EXIT
+CIPHER="$STAGE/creds.tar.gz.enc"
+PLAIN="$STAGE/creds.tar.gz"
 
-  Required paths on this host (copy from a working scheduler):
+info "downloading from $CREDS_OSS_URL"
+curl -fL --progress-bar -o "$CIPHER" "$CREDS_OSS_URL" \
+  || die "credential bundle download failed"
 
-    ~/.config/a1/                      # a1 CLI login state (may not survive rehost;
-                                       # if so see Step 6 fallback)
-    ~/.claude/                         # claude settings archives (idea_settings.json,
-                                       # glm5.2.json, etc.)
-    $JARVIS_ROOT/bootstrap/.env        # GitHub PAT, control-plane token, etc.
-    $JARVIS_ROOT/bridge/jarvis.env     # DingTalk keys (optional for worker),
-                                       # settings archive paths, model lanes
+actual=$(sha256sum "$CIPHER" | awk '{print $1}')
+[ "$actual" = "$CREDS_SHA256" ] \
+  || die "creds sha256 mismatch: got $actual expected $CREDS_SHA256"
+ok "bundle sha256 verified"
 
-  After copying, re-run this script.
-
-MANUAL
-  exit 2
+# Decrypt via stdin to keep the passphrase off argv.
+if ! printf '%s' "$CREDS_PASSPHRASE" \
+     | openssl enc -aes-256-cbc -d -pbkdf2 -iter 100000 -pass stdin \
+                   -in "$CIPHER" -out "$PLAIN"; then
+  die "decrypt failed — CREDS_PASSPHRASE wrong, or bundle from an older openssl (no -pbkdf2)"
 fi
-info "rsync from $CREDS_SOURCE"
-for path in ".config/a1/" ".claude/"; do
-  mkdir -p "$HOME/$path"
-  rsync -a --delete "$CREDS_SOURCE:~/$path" "$HOME/$path" \
-    || die "rsync ~/$path failed"
-done
-rsync -a "$CREDS_SOURCE:$JARVIS_ROOT/bootstrap/.env" "$JARVIS_ROOT/bootstrap/.env" \
-  || warn "bootstrap/.env not present on source; ensure it's populated"
-rsync -a "$CREDS_SOURCE:$JARVIS_ROOT/bridge/jarvis.env" "$JARVIS_ROOT/bridge/jarvis.env" \
-  || warn "bridge/jarvis.env not present on source"
+
+# Extract to staging, then dispatch to correct roots by top-level dir.
+EXTRACT="$STAGE/extract"
+mkdir -p "$EXTRACT"
+tar xzf "$PLAIN" -C "$EXTRACT" || die "tar extract failed"
+
+# 5a. HOME-scoped: ~/.config/a1 + ~/.claude — cp -R with mode preservation.
+if [ -d "$EXTRACT/home/.config/a1" ]; then
+  mkdir -p "$HOME/.config"
+  rm -rf "$HOME/.config/a1"
+  cp -Rp "$EXTRACT/home/.config/a1" "$HOME/.config/a1"
+fi
+if [ -d "$EXTRACT/home/.claude" ]; then
+  # Preserve existing worker-local files not in bundle (rare — bundle should be complete),
+  # but overwrite anything from bundle.
+  mkdir -p "$HOME/.claude"
+  cp -Rp "$EXTRACT/home/.claude/." "$HOME/.claude/"
+fi
+
+# 5b. Rewrite Mac-specific $HOME paths → this host's $HOME, best-effort.
+# Only rewrites when packager's $HOME was recorded and differs from ours.
+PACKAGER_HOME=$(awk -F= '/^PACKAGER_HOME=/{print $2}' "$EXTRACT/MANIFEST" 2>/dev/null || true)
+if [ -n "$PACKAGER_HOME" ] && [ "$PACKAGER_HOME" != "$HOME" ]; then
+  info "rewriting $PACKAGER_HOME → $HOME in extracted config/env files"
+  # Use printf-safe delimiter | so slashes in paths don't collide
+  find "$HOME/.claude" "$HOME/.config/a1" -type f \
+       \( -name '*.json' -o -name '*.yaml' -o -name '*.yml' -o -name '*.env' -o -name '*.conf' \) \
+       -exec sed -i.bak "s|$PACKAGER_HOME|$HOME|g" {} \; 2>/dev/null || true
+  find "$HOME/.claude" "$HOME/.config/a1" -name '*.bak' -delete 2>/dev/null || true
+fi
+
+# 5c. Repo-scoped: overlay env + workspaces.local.json into $JARVIS_ROOT.
+[ -f "$EXTRACT/repo/bootstrap/.env" ] \
+  && cp -p "$EXTRACT/repo/bootstrap/.env" "$JARVIS_ROOT/bootstrap/.env"
+[ -f "$EXTRACT/repo/bridge/jarvis.env" ] \
+  && cp -p "$EXTRACT/repo/bridge/jarvis.env" "$JARVIS_ROOT/bridge/jarvis.env"
+[ -f "$EXTRACT/repo/config/workspaces.local.json" ] \
+  && cp -p "$EXTRACT/repo/config/workspaces.local.json" "$JARVIS_ROOT/config/workspaces.local.json"
+
+# Rewrite Mac paths in env files too (JARVIS_ROOT / JARVIS_TATA_ROOT / CLAUDE_BIN etc)
+if [ -n "$PACKAGER_HOME" ] && [ "$PACKAGER_HOME" != "$HOME" ]; then
+  for f in "$JARVIS_ROOT/bootstrap/.env" "$JARVIS_ROOT/bridge/jarvis.env"; do
+    [ -f "$f" ] && sed -i.bak "s|$PACKAGER_HOME|$HOME|g" "$f" && rm -f "$f.bak"
+  done
+fi
+
 chmod 600 "$JARVIS_ROOT/bootstrap/.env" "$JARVIS_ROOT/bridge/jarvis.env" 2>/dev/null || true
-ok "creds synced"
+
+# Zero-then-remove the plaintext tarball — decrypt output shouldn't linger.
+dd if=/dev/zero of="$PLAIN" bs=1M count=1 conv=notrunc 2>/dev/null || true
+rm -f "$PLAIN" "$CIPHER"
+ok "creds installed; scratch dir wiped"
+
+# Show packaging provenance for the operator's log.
+if [ -f "$EXTRACT/MANIFEST" ]; then
+  info "bundle provenance:"
+  sed 's/^/       /' "$EXTRACT/MANIFEST"
+fi
 
 # ---------------------------------------------------------------------------
-step "6. a1 login probe (fingerprint may re-require login on new host)"
+step "6. a1 login portability probe (bundled tokens must survive rehost)"
 cd "$JARVIS_ROOT"
 if bin/a1id ready jarvis; then
-  ok "a1 jarvis login OK on this host"
+  ok "a1 jarvis login OK on this host (tokens portable)"
 else
-  warn "a1 jarvis login FAILED — token likely fingerprint-bound to source host."
-  warn "Fallback: log in interactively on THIS machine (needs browser/SSO):"
-  warn "    $JARVIS_ROOT/bin/a1id as jarvis -- auth login"
-  warn "Then re-run this script (steps 1-5 are idempotent)."
-  exit 3
+  cat >&2 <<'DIAG'
+
+[ERR] a1 jarvis auth is not usable on this host.
+
+This is likely because a1's login token was bound to the scheduler host's
+fingerprint (hostname / MAC / TPM / RAM role). Since this worker has no
+browser and can't easily be ssh'd to, the standard interactive fallback
+(`bin/a1id as jarvis -- auth login`) is impractical.
+
+Options (in decreasing preference):
+  A) Ask a1 team for a machine-portable or long-lived service token that
+     survives cross-host copy. Feed it via ~/.config/a1/jarvis/token.json.
+  B) Package tokens right AFTER a fresh SSO login on the scheduler and
+     use them immediately (some tokens are portable for their initial TTL
+     but not after refresh). Re-run this install within that window.
+  C) Escalate: this worker can't participate in the fleet without a1
+     writes, since claim.sh / wrap.sh / aone-get.sh all call a1.
+
+For now: FAILED. Fix upstream, then re-run this script (steps 1-5 are
+idempotent).
+
+DIAG
+  exit 2
 fi
 if bin/a1id ready terraform-rd 2>/dev/null; then
   ok "a1 terraform-rd login OK"
 else
   warn "a1 terraform-rd not logged in (needed for Terraform Task types)"
-  warn "  bin/a1id as terraform-rd -- auth login  (if this worker will handle Terraform)"
+  warn "  Package again after logging into terraform-rd on the scheduler, or"
+  warn "  this worker will fail-closed on Terraform Tasks."
 fi
 
 # ---------------------------------------------------------------------------
