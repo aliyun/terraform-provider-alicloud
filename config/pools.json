@@ -27,6 +27,9 @@
         "需求问题": "问题解决中",
         "功能缺陷": "Open"
       },
+      "claim_required_field_defaults": {
+        "140282": "有OpenAPI，资源未定义，开放平台维护"
+      },
       "exclude_status": [
         "Closed",
         "Fixed",

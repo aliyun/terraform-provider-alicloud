@@ -499,6 +499,22 @@ class PersistenceExecutorTest(unittest.TestCase):
                         "retryAfterSeconds": 20,
                     })
 
+    def test_actionable_task_failure_is_forwarded_without_collapsing_detail(self):
+        client = FakeClient(lease_task=[lease_response()])
+        result = {
+            "status": "error",
+            "error": {
+                "errorType": "AoneClaimFailed",
+                "message": "required field Terraform需求类型 is missing",
+                "attempts": 1,
+            },
+        }
+        worker = self.make(client, lambda *_args: result, lambda *_args: None)
+        self.assertTrue(worker.run_once())
+        self.assertEqual(client.named("fail_session")[0]["args"][3], {
+            "error": result["error"],
+        })
+
     def test_managed_wait_state_is_forwarded_without_runner_status_fields(self):
         client = FakeClient(lease_task=[lease_response()])
         result = {

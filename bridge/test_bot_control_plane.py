@@ -758,7 +758,9 @@ class TaskBookendDispatchTest(unittest.TestCase):
 
     def test_missing_result_fails_closed_without_commit(self):
         out, calls = self._run("干完了但忘了输出结构化结果")
-        self.assertEqual(out, "error")
+        self.assertEqual(out["status"], "error")
+        self.assertEqual(out["error"]["subtype"], "missing_task_result")
+        self.assertIn("干完了但忘了输出结构化结果", out["error"]["message"])
         self.assertIn("failed", calls)
         self.assertNotIn("reply", calls)
         self.assertNotIn("finish", calls)
@@ -850,9 +852,28 @@ class PostPrRerouteDispatchTest(unittest.TestCase):
     def test_error_does_not_release_so_replay_reclaims(self):
         # A failed run stays claimed (no release); REPLAY_SAFE re-lease re-claims.
         out, calls, _bk = self._run("pr_ci_fix", "boom", is_error=True)
-        self.assertEqual(out, "error")
+        self.assertEqual(out["status"], "error")
+        self.assertEqual(out["error"]["message"], "boom")
         self.assertIn("failed", calls)
         self.assertEqual(calls["release"], 0)
+
+    def test_claim_failure_detail_is_returned_to_control_plane(self):
+        h = self._handler()
+        ctrl = self._controller()
+        bookend = bot._TaskAoneBookend(
+            ctrl, "9001", "528766", True, "pr_ci_fix", writes_reply=False)
+        h._dispatch_failed = lambda *a, **k: None
+        detail = ("bridge claim failed for #9001 (rc=3): "
+                  "【涉及云产品】不能为空,【Terraform需求类型】不能为空")
+        with mock.patch.object(bot, "run_claude_buffered", side_effect=RuntimeError(detail)):
+            out = h.dispatch_item(
+                "9001", "prompt", "sid", False, lambda _t: None, "tgt", "group",
+                project="528766", kind="pr_ci_fix", terraform=True,
+                session_controller=ctrl, task_bookend=bookend)
+        self.assertEqual(out["status"], "error")
+        self.assertEqual(out["error"]["errorType"], "AoneClaimFailed")
+        self.assertIn("涉及云产品", out["error"]["message"])
+        self.assertIn("Terraform需求类型", out["error"]["message"])
 
     def test_release_idle_is_idempotent_under_replay(self):
         # Simulate the completion twice (a re-lease re-runs release_idle): still one write.

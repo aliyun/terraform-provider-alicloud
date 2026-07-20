@@ -220,6 +220,10 @@ if [ -z "$cmd" ] || [ -z "$workitem_id" ] || [ -z "$project_id" ]; then
     echo "Usage: claim.sh <claim|release|finish> <workitem_id> <project_id>" >&2
     exit 1
 fi
+if [ "${JARVIS_AONE_WRITE_POLICY:-}" = "post-pr-read-only" ]; then
+    echo "claim.sh: Aone bookends are disabled in post-PR read-only runs" >&2
+    exit 2
+fi
 
 myday_dir="$jarvis_root/.my-day"
 today_date="$(date -u +%F)"
@@ -362,20 +366,25 @@ _get_tag_pairs() {
 # may describe unrelated validation and must retain the original failure code.
 _run_tag_update() {
     local out rc parsed field_id field_name
+    TAG_UPDATE_ERROR=""
     if out="$("$@" 2>&1)"; then
         return 0
     else
         rc=$?
     fi
+    TAG_UPDATE_ERROR="$out"
 
-    parsed="$(printf '%s\n' "$out" | sed -n \
-        's/.*【\([^】][^】]*\)】[[:space:]]*[(（]\([0-9][0-9]*\)[)）][[:space:]]*不能为空.*/\2\t\1/p' \
-        | head -n 1)"
+    # Aone has emitted both `【name】(123)不能为空` and `【name】不能为空`.
+    # Classify either exact bracketed form, while retaining the complete response for
+    # retry diagnostics. Generic prose containing only `不能为空` remains untouched.
+    parsed="$(printf '%s\n' "$out" | grep -oE \
+        '【[^】]+】[[:space:]]*([(（][0-9]+[)）])?[[:space:]]*不能为空' 2>/dev/null | head -n 1)"
     if [ -n "$parsed" ]; then
-        field_id="${parsed%%$'\t'*}"
-        field_name="${parsed#*$'\t'}"
+        field_name="$(printf '%s' "$parsed" | sed -E 's/^【([^】]+)】.*/\1/')"
+        field_id="$(printf '%s' "$parsed" | sed -nE 's/.*[(（]([0-9]+)[)）].*/\1/p')"
         printf '%s\n' "$out" >&2
-        printf 'claim.sh: blocked missing_required_field %s %s\n' "$field_id" "$field_name" >&2
+        printf 'claim.sh: blocked missing_required_field %s %s\n' \
+            "${field_id:-unknown}" "$field_name" >&2
         return 3
     fi
 
@@ -503,17 +512,39 @@ case "$cmd" in
         _update_tags_merged "$workitem_id" "$CLAIM_TAG" "$IDLE_TAG"
         tag_rc=$?
         if [ "$tag_rc" -eq 3 ]; then
-            # The tag never landed, so no prefix/ledger cleanup is needed. The caller must
-            # inspect aone-fields.sh missing, choose a legal value, fill it, and retry claim.
-            [ "$interactive_claim" = "1" ] && \
-                _interactive_fail_claim "$workitem_id" "Aone rejected claim tag: missing required field"
-            exit 3
+            # Repair only values that can be selected deterministically, then retry this
+            # exact tag update once. The helper refuses ambiguous choices and emits its
+            # candidate set, so a failed self-heal remains actionable rather than opaque.
+            first_tag_error="$TAG_UPDATE_ERROR"
+            autofill_out="$(bash "$script_dir/aone-fields.sh" auto-fill "$workitem_id" 2>&1)"
+            autofill_rc=$?
+            if [ "$autofill_rc" -eq 0 ]; then
+                echo "claim.sh: filled deterministic required fields for $workitem_id; retrying claim"
+                _update_tags_merged "$workitem_id" "$CLAIM_TAG" "$IDLE_TAG"
+                tag_rc=$?
+                if [ "$tag_rc" -eq 0 ]; then
+                    echo "claim.sh: required-field self-heal succeeded for $workitem_id"
+                else
+                    printf 'claim.sh: required-field self-heal retry failed: %s\n' \
+                        "${TAG_UPDATE_ERROR:-unknown Aone update error}" >&2
+                    [ "$interactive_claim" = "1" ] && _interactive_fail_claim \
+                        "$workitem_id" "Aone claim retry failed after required-field self-heal: ${TAG_UPDATE_ERROR:-unknown error}"
+                    exit 3
+                fi
+            else
+                printf 'claim.sh: required-field self-heal could not complete: %s\n' \
+                    "${autofill_out:-no deterministic value found}" >&2
+                [ "$interactive_claim" = "1" ] && _interactive_fail_claim \
+                    "$workitem_id" "Aone claim missing required fields: ${first_tag_error:-unknown}; auto-fill: ${autofill_out:-unresolved}"
+                exit 3
+            fi
         elif [ "$tag_rc" -ne 0 ]; then
             # Transport/auth/other validation failures are not races. Preserve the original
             # rc and stop before readback, which could otherwise mistake a stale tag for ours.
             # rc=1 is reserved by claim for an actual lost race, so remap an a1 rc=1 to rc=2.
             [ "$interactive_claim" = "1" ] && \
-                _interactive_fail_claim "$workitem_id" "Aone claim tag update failed (rc=$tag_rc)"
+                _interactive_fail_claim "$workitem_id" \
+                    "Aone claim tag update failed (rc=$tag_rc): ${TAG_UPDATE_ERROR:-no detail}"
             [ "$tag_rc" -eq 1 ] && tag_rc=2
             exit "$tag_rc"
         fi
