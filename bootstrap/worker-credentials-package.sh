@@ -116,11 +116,26 @@ step "3. Stage credential tree in a temp dir"
 STAGE=$(mktemp -d)
 trap 'rm -rf "$STAGE"' EXIT
 
-mkdir -p "$STAGE/home/.config" "$STAGE/repo/bootstrap" "$STAGE/repo/bridge" "$STAGE/repo/config"
+mkdir -p "$STAGE/home/.config" "$STAGE/home/.claude" \
+         "$STAGE/repo/bootstrap" "$STAGE/repo/bridge" "$STAGE/repo/config"
 
-# Copy — preserve mode/owner so 0600 secrets stay 0600 on extract
+# Copy — preserve mode/owner so 0600 secrets stay 0600 on extract.
+# ~/.config/a1: whole dir (login state per identity, all small JSON tokens).
 cp -Rp "$HOME/.config/a1"  "$STAGE/home/.config/a1"
-cp -Rp "$HOME/.claude"     "$STAGE/home/.claude"
+
+# ~/.claude: SELECTIVE. Ship only the top-level *.json settings archives that
+# claude --settings points to (glm5.2.json, idea_settings.json, etc). Skip:
+#   tasks/, projects/, todos/, statsig/, shell-snapshots/, ide/, __store.db*
+# — all per-machine transient state (session transcripts, task/hook state,
+# telemetry, IDE snapshots) that workers must NOT inherit from the packager.
+# Shipping them bloats the bundle by tens/hundreds of MB and leaks past
+# conversations to workers unnecessarily.
+find "$HOME/.claude" -maxdepth 1 -type f \
+  \( -name '*.json' -o -name 'CLAUDE.md' -o -name '.credentials.json' \) \
+  -exec cp -p {} "$STAGE/home/.claude/" \; 2>/dev/null || true
+
+n_json=$(find "$STAGE/home/.claude" -maxdepth 1 -type f -name '*.json' | wc -l | tr -d ' ')
+[ "$n_json" -gt 0 ] || warn "no ~/.claude/*.json files found — worker may lack gateway/settings config"
 [ -f "$JARVIS_ROOT/bootstrap/.env" ] \
   && cp -p "$JARVIS_ROOT/bootstrap/.env" "$STAGE/repo/bootstrap/.env"
 [ -f "$JARVIS_ROOT/bridge/jarvis.env" ] \
