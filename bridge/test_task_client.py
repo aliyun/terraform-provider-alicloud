@@ -250,6 +250,23 @@ class ClientContractTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             c.list_ready_task_diagnostics(limit=501)
 
+    def test_discard_resume_context_posts_exact_session_and_reason(self):
+        opener = RecordingOpener(responses=[FakeResponse({"id": 42, "status": "READY"})])
+        c = self.make(opener)
+
+        result = c.discard_resume_context(
+            "task/42", 7, "original worker retired", request_id="discard-42-7")
+
+        req, _timeout = opener.calls[0]
+        self.assertTrue(req.full_url.endswith(
+            "/api/jarvis/v1/tasks/task%2F42/discard-resume-context"))
+        self.assertEqual(body(req), {
+            "expectedSessionId": 7,
+            "reason": "original worker retired",
+        })
+        self.assertEqual(headers(req)["idempotency-key"], "discard-42-7")
+        self.assertEqual(result["status"], "READY")
+
     def test_direct_claim_is_targeted_task_and_allows_zero_free_slots(self):
         opener = RecordingOpener()
         c = self.make(opener)

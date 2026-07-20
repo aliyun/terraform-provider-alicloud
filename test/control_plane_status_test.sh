@@ -114,6 +114,12 @@ class ControlPlaneClient:
                 "operations": [{"id": 9, "operationType": "AONE_COMMENT",
                                 "status": "UNKNOWN", "target": "84386065",
                                 "lastError": "ack timed out"}]}
+
+    def discard_resume_context(self, task_id, expected_session_id, reason, request_id=None):
+        if (str(task_id), int(expected_session_id), reason, request_id) != (
+                "11", 7, "old worker retired", "discard-resume:11:7"):
+            raise SystemExit("stub: unexpected discard arguments")
+        return {"id": 11, "status": "READY"}
 PY
 
 # 统一调用姿势：env 文件覆盖到临时目录；清空四个凭证 env（空串=未配置）；PYTHONPATH 前插 stub。
@@ -187,6 +193,14 @@ has "UNKNOWN" "$out" "task shows operation status"
 out="$(STUB_MODE=empty run_cli task 99999999 2>&1)"; rc=$?
 [ $rc -eq 1 ] && ok "task-not-found rc=1" || no "task-not-found rc=$rc (want 1)"
 has "no control-plane task" "$out" "task-not-found message"
+
+# ── 9) 丢弃恢复上下文必须显式确认，且精确转发 task/session/reason ─────────────
+out="$(run_cli discard-resume 11 7 --reason 'old worker retired' 2>&1)"; rc=$?
+[ $rc -eq 2 ] && ok "discard-resume without --yes rc=2" || no "discard without --yes rc=$rc"
+has "pass --yes" "$out" "discard-resume explains confirmation gate"
+out="$(run_cli discard-resume 11 7 --reason 'old worker retired' --yes 2>&1)"; rc=$?
+[ $rc -eq 0 ] && ok "discard-resume confirmed rc=0" || no "discard confirmed rc=$rc: $out"
+has "task=11 session=7 status=READY" "$out" "discard-resume prints exact result"
 
 echo
 echo "control_plane_status_test: $pass passed, $fail failed"

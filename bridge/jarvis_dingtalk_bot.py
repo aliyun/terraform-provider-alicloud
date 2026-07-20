@@ -304,6 +304,13 @@ def jarvis_root():
     return os.environ.get("JARVIS_ROOT") or str(REPO_ROOT)
 
 
+def _routine_notifier(handler):
+    """Return a non-group lifecycle sink, including for lightweight test adapters."""
+    if handler is not None and hasattr(handler, "_routine_notice"):
+        return handler._routine_notice
+    return lambda text: log.info("[ROUTINE] %s", str(text or "").replace("\n", " | ")[:1000])
+
+
 # EphemeralJob live-process tracking is owned entirely by EphemeralExecutor._active
 # (in-memory): the watchdog and graceful-stop enumerate it directly. There is no
 # on-disk inflight registry — records were never read to resume work after a restart.
@@ -313,10 +320,9 @@ def jarvis_root():
 # skill/persona 提交 PR 后按自治边界 release 成 jarvis-idle；DailyScheduler 的 nudge 选择器只捞
 # 标题/描述含特定词的 idle 单，terraform 发布单都不含 → 工单永久停在 jarvis-idle、永不推到
 # 「已完成」。此登记表 + PrWatchScheduler 补缺口：PR 合并后自动 claim.sh finish 收尾。
-# **内存态，无本地文件**：bridge 重启后由 PrWatchScheduler._maybe_autoregister_open_prs 首 tick
-# 扫 api-tool-agent 名下 open PR 重建（PR 生命周期是天级，延迟一个 interval 补全无损）。
-# 条目**无 TTL 修剪**——只在合并收尾/关闭/终态时显式删。
-_PRWATCH_STORE = {}          # ticket -> {pr_url, project, title, submitted_at, ...}
+# 与 bootstrap/pr-watch.sh 共用同一持久登记表。CI/review 去重游标也必须落盘；否则 bridge
+# 重启会把所有 open PR 当成“未登记”，重复群播并丢失每个 head 的修复次数。
+PRWATCH_PATH = Path(REPO_ROOT) / ".my-day/bridge/pr-watch.json"
 _prwatch_lock = threading.Lock()
 
 # Terraform 重要事件 Aone 回填台账。它故意独立于内存 PR watch 台账：PR watch 条目在 merged /
@@ -438,24 +444,95 @@ def _load_self_github_logins():
     return base
 
 
+def _prwatch_load():
+    """Load the shared PR registry. Missing/corrupt files are an empty best-effort view."""
+    try:
+        raw = json.loads(PRWATCH_PATH.read_text())
+        return ({str(k): dict(v) for k, v in raw.items() if isinstance(v, dict)}
+                if isinstance(raw, dict) else {})
+    except FileNotFoundError:
+        return {}
+    except Exception as e:  # noqa: BLE001
+        log.warning("prwatch: could not load %s: %s", PRWATCH_PATH, e)
+        return {}
+
+
+def _prwatch_write(records):
+    """Atomically replace the registry after an in-process locked read/modify/write."""
+    try:
+        PRWATCH_PATH.parent.mkdir(parents=True, exist_ok=True)
+        tmp = PRWATCH_PATH.with_name(PRWATCH_PATH.name + ".tmp")
+        tmp.write_text(json.dumps(records, ensure_ascii=False, sort_keys=True))
+        os.replace(str(tmp), str(PRWATCH_PATH))
+        return True
+    except Exception as e:  # noqa: BLE001
+        log.warning("prwatch: could not persist %s: %s", PRWATCH_PATH, e)
+        return False
+
+
+def _prwatch_acquire_file_lock():
+    """Share bootstrap/pr-watch.sh's mkdir lock for cross-process mutations."""
+    lock_path = PRWATCH_PATH.parent / ".pr-watch.lock"
+    deadline = time.time() + 5
+    while time.time() < deadline:
+        try:
+            PRWATCH_PATH.parent.mkdir(parents=True, exist_ok=True)
+            lock_path.mkdir()
+            return lock_path
+        except FileExistsError:
+            try:
+                if time.time() - lock_path.stat().st_mtime > 10:
+                    lock_path.rmdir()
+                    continue
+            except (FileNotFoundError, OSError):
+                pass
+            time.sleep(0.1)
+        except OSError:
+            break
+    log.warning("prwatch: file lock busy; continuing with atomic best-effort write")
+    return None
+
+
+def _prwatch_release_file_lock(lock_path):
+    if lock_path is None:
+        return
+    try:
+        lock_path.rmdir()
+    except OSError:
+        pass
+
+
 def _prwatch_add(ticket, pr_url, project, title=""):
-    """Register a PR to observe (in-memory). Under the lock so concurrent writers never
-    clobber. The first non-blank Aone title is frozen; a blank read stays backfillable and
-    GitHub PR titles are never substituted."""
+    """Persist one watch entry while preserving its durable dedup/title fields."""
     with _prwatch_lock:
-        existing = _PRWATCH_STORE.get(str(ticket))
-        existing_title = (str(existing.get("title") or "").strip()
-                          if isinstance(existing, dict) else "")
-        frozen_title = existing_title or str(title or "").strip()
-        _PRWATCH_STORE[str(ticket)] = {
-            "pr_url": pr_url, "project": project, "title": frozen_title,
-            "submitted_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+        file_lock = _prwatch_acquire_file_lock()
+        try:
+            records = _prwatch_load()
+            existing = records.get(str(ticket))
+            existing_title = (str(existing.get("title") or "").strip()
+                              if isinstance(existing, dict) else "")
+            frozen_title = existing_title or str(title or "").strip()
+            entry = dict(existing) if isinstance(existing, dict) else {}
+            entry.update({
+                "pr_url": pr_url, "project": project, "title": frozen_title,
+                "submitted_at": entry.get("submitted_at")
+                or time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
+            records[str(ticket)] = entry
+            _prwatch_write(records)
+        finally:
+            _prwatch_release_file_lock(file_lock)
 
 
 def _prwatch_remove(ticket):
-    """Drop a ticket's watch record on 收尾/关闭/终态 (no-op if already absent)."""
+    """Drop a ticket's durable watch record on 收尾/关闭/终态."""
     with _prwatch_lock:
-        _PRWATCH_STORE.pop(str(ticket), None)
+        file_lock = _prwatch_acquire_file_lock()
+        try:
+            records = _prwatch_load()
+            records.pop(str(ticket), None)
+            _prwatch_write(records)
+        finally:
+            _prwatch_release_file_lock(file_lock)
 
 
 def _prwatch_update(ticket, **fields):
@@ -463,21 +540,26 @@ def _prwatch_update(ticket, **fields):
     PrWatchScheduler to record CI-fix dedup state (ci_fix_sha / ci_fix_attempts /
     ci_fix_escalated / last_ci_fix_at) without disturbing pr_url/project/submitted_at."""
     with _prwatch_lock:
-        ent = _PRWATCH_STORE.get(str(ticket))
-        if not isinstance(ent, dict):
-            return
-        ent.update(fields)
+        file_lock = _prwatch_acquire_file_lock()
+        try:
+            records = _prwatch_load()
+            ent = records.get(str(ticket))
+            if not isinstance(ent, dict):
+                return
+            ent.update(fields)
+            _prwatch_write(records)
+        finally:
+            _prwatch_release_file_lock(file_lock)
 
 
 def _prwatch_list():
     with _prwatch_lock:
-        return {k: dict(v) if isinstance(v, dict) else v
-                for k, v in _PRWATCH_STORE.items()}
+        return _prwatch_load()
 
 
 def _prwatch_has(ticket):
     with _prwatch_lock:
-        return str(ticket) in _PRWATCH_STORE
+        return str(ticket) in _prwatch_load()
 
 
 def _aone_event_load():
@@ -3149,7 +3231,7 @@ class AoneScheduler:
         prompt = _ticket_prompt(iid, title, pool_key, pool_project)
         terraform = _is_terraform_ticket(pool_key, title)
         tgt, ttype = broadcast_target(), broadcast_type()
-        notify = self.handler._broadcast if self.handler else (lambda t: None)
+        notify = _routine_notifier(self.handler)
         envelope = self._envelope(item, prompt)
 
         def local_submit():
@@ -3258,30 +3340,17 @@ class AoneScheduler:
                 dropped.append((d["id"], reason))
                 log.warning("scan auto: #%s not dispatched (%s)", d["id"], reason)
 
-        if not self.handler:
-            return
-        aone_url = "https://project.aone.alibaba-inc.com/v2/project/%s/req/%s"
         if dispatched:
-            lines = ["**已自动派发 %d 条工单 (headless)**\n" % len(dispatched)]
-            for d in dispatched:
-                it = d["item"]
-                proj = it.get("pool_project", "")
-                idl = ("[#%s](%s)" % (d["id"], aone_url % (proj, d["id"]))) if proj else ("#%s" % d["id"])
-                pri = it.get("priority", "")
-                lines.append("- %s %s%s" % (idl, d["title"], (" [%s]" % pri) if pri else ""))
-            try:
-                self.handler._broadcast("\n".join(lines))
-            except Exception:  # noqa: BLE001
-                log.exception("AoneScheduler failed to broadcast dispatch summary")
+            # enqueue/upsert success is not Worker assignment.  Keep the exact state in
+            # control-plane/board and logs; do not publish the misleading legacy
+            # “已自动派发(headless)” group message.
+            log.info("scan auto: persisted %d Task(s): %s", len(dispatched),
+                     ",".join("#" + d["id"] for d in dispatched))
         if dropped:
             qf = [i for i, r in dropped if r == "queue_full"]
             if qf:
-                try:
-                    self.handler._broadcast(
-                        "🟠 派发队列已满，%d 条本轮跳过（将下轮重试）：%s"
-                        % (len(qf), ", ".join("#" + i for i in qf)))
-                except Exception:  # noqa: BLE001
-                    log.exception("AoneScheduler failed to broadcast drop notice")
+                log.warning("scan auto: queue full; %d Task(s) retry next tick: %s",
+                            len(qf), ",".join("#" + i for i in qf))
 
     def _tick_supervised(self, new_items, updated_items=None):
         """Fallback (JARVIS_AUTO_DISPATCH=0): stage new items for authorization + push a card.
@@ -3351,10 +3420,7 @@ class AoneScheduler:
             iid = str(it.get("id", ""))
             idl = ("[#%s](%s)" % (iid, aone_url % (proj, iid))) if proj else ("#%s" % iid)
             lines.append("- %s %s [claimed %dmin]" % (idl, it.get("title", ""), age_min))
-        try:
-            self.handler._broadcast("\n".join(lines))
-        except Exception:  # noqa: BLE001
-            log.exception("stale-claim reconcile broadcast failed")
+        log.warning("stale-claim reconcile: %s", " | ".join(lines))
 
     @staticmethod
     def _claim_ttl_min():
@@ -3494,7 +3560,7 @@ class PrWatchScheduler:
                         log.warning("PrWatchScheduler: merged event #%s not durable; keep watching",
                                     tid)
                         return
-                    self.handler._broadcast("[PR-watch] #%s PR 已合并，已自动收尾工单" % tid)
+                    log.info("PrWatchScheduler: #%s PR merged and ticket finalized", tid)
                     _prwatch_remove(tid)
                     return
                 # 非 Terraform 保留旧补偿语义：上轮 finish 已落地但总结评论失败。
@@ -3505,7 +3571,7 @@ class PrWatchScheduler:
                     log.warning("PrWatchScheduler: pending finish comment #%s failed rc=%s; "
                                 "keep watching", tid, rc)
                     return
-                self.handler._broadcast("[PR-watch] #%s PR 已合并，已自动收尾工单" % tid)
+                log.info("PrWatchScheduler: #%s PR merged and ticket finalized", tid)
                 _prwatch_remove(tid)
                 return
             g = self._ticket_guard(tid)
@@ -3560,7 +3626,7 @@ class PrWatchScheduler:
                     log.warning("PrWatchScheduler: merged event #%s not durable after finish; "
                                 "keep watching", tid)
                     return
-                self.handler._broadcast("[PR-watch] #%s PR 已合并，已自动收尾工单" % tid)
+                log.info("PrWatchScheduler: #%s PR merged and ticket finalized", tid)
                 _prwatch_remove(tid)
                 return
             # 先持久化 finish 成功，再发总结评论；若评论失败或此处后进程退出，下轮可补偿。
@@ -3572,7 +3638,7 @@ class PrWatchScheduler:
                 log.warning("PrWatchScheduler: finish succeeded but comment #%s failed rc=%s; "
                             "keep watch and do not broadcast success", tid, rc)
                 return
-            self.handler._broadcast("[PR-watch] #%s PR 已合并，已自动收尾工单" % tid)
+            log.info("PrWatchScheduler: #%s PR merged and ticket finalized", tid)
             _prwatch_remove(tid)
             return
         if state == "CLOSED" and not merged_at:
@@ -3730,7 +3796,7 @@ class PrWatchScheduler:
             _prwatch_update(tid, ci_fix_escalated=True)
             return False  # 转人工 → 不再快档
         prompt = _pr_ci_fix_prompt(tid, entry.get("pr_url"), project, failing)
-        notify = self.handler._broadcast if self.handler else (lambda t: None)
+        notify = _routine_notifier(self.handler)
         tgt, ttype = broadcast_target(), broadcast_type()
         sid = str(uuid.uuid4())
         work = (lambda: self.handler.dispatch_item(
@@ -3774,8 +3840,8 @@ class PrWatchScheduler:
             log.info("PrWatchScheduler: #%s CI failing (%s) → dispatched pr_ci_fix "
                      "(attempt %d/%d, head %s)", tid, ",".join(failing[:5]),
                      attempts + 1, max_attempts, head[:12])
-            self.handler._broadcast("[PR-watch] #%s CI 失败，已自动派发修复（%s）"
-                                    % (tid, ",".join(failing[:5])))
+            log.info("PrWatchScheduler: #%s CI fix Task persisted (%s)",
+                     tid, ",".join(failing[:5]))
         else:
             log.info("PrWatchScheduler: #%s CI fix not submitted (%s)", tid, reason)
         return True  # 仍 CI 失败中 → 快档轮询
@@ -3933,7 +3999,7 @@ class PrWatchScheduler:
         project = entry.get("project")
         prompt = _pr_comment_reply_prompt(tid, entry.get("pr_url"), project, author,
                                           snippet, comment_key=key)
-        notify = self.handler._broadcast if self.handler else (lambda t: None)
+        notify = _routine_notifier(self.handler)
         tgt, ttype = broadcast_target(), broadcast_type()
         sid = str(uuid.uuid4())
         work = (lambda: self.handler.dispatch_item(
@@ -3976,7 +4042,8 @@ class PrWatchScheduler:
                             last_comment_reply_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
             log.info("PrWatchScheduler: #%s new PR comment by %s → dispatched pr_comment_reply",
                      tid, author)
-            self.handler._broadcast("[PR-watch] #%s PR 有新评审评论（@%s），已自动派发回应" % (tid, author))
+            log.info("PrWatchScheduler: #%s review reply Task persisted (author=%s)",
+                     tid, author)
         else:
             log.info("PrWatchScheduler: #%s comment reply not submitted (%s)", tid, reason)
 
@@ -4067,9 +4134,8 @@ class PrWatchScheduler:
                 continue
             _prwatch_add(tid, url, project, title)
             log.info("PrWatchScheduler: 自动补登记漏登 open PR %s → #%s (project %s)", url, tid, project)
-            if self.handler:
-                self.handler._broadcast(
-                    "[PR-watch] 自动补登记未跟踪的 open PR #%s → 工单 #%s" % (pr.get("number"), tid))
+            # The durable registry is the source of truth.  Auto-repairing a missing
+            # entry is routine bookkeeping, not a human-actionable group event.
 
     @staticmethod
     def _parse_ticket_meta(d):
@@ -4646,28 +4712,48 @@ class EphemeralExecutor:
 
 
 class DailyScheduler:
-    """Single daily-cadence thread that fires N jobs, each at/after its own hour, at most
-    once per local-time day.
+    """Single daily-cadence thread that fires jobs inside their configured local hour.
 
-    Last-run dates live in memory (no state file), so a same-day restart may re-fire a
-    job once — acceptable because each job is idempotent downstream: probe dedups via the
-    control-plane ``desired_revision`` (``probe-YYYY-MM-DD``), and nudge dedups via its
-    Aone/DingTalk event ledgers. Poll cadence is coarse (5 min) — hour granularity is the
-    contract, not the minute.
+    Last-run dates are durable.  A bridge restart later in the day therefore neither
+    catches up every elapsed job immediately nor repeats a job already run that day.
+    Poll cadence is coarse (5 min) and the configured hour is the execution window.
 
     Each job exposes ``.name`` / ``.hour`` / ``.enabled`` / ``run()``. ``run()`` returns
     False only on a genuine deferral (EphemeralExecutor queue_full) → not marked, retried
     next tick; True/None → marked for today."""
 
     CHECK_INTERVAL = 300
+    STATE_PATH = Path(REPO_ROOT) / ".my-day/bridge/daily-scheduler.json"
 
     def __init__(self, handler, pool=None):
         self.handler = handler
         pool = pool if pool is not None else getattr(handler, "ephemeral_executor", None)
         self.jobs = [j for j in (_NudgeJob(handler, pool), _ProbeJob(handler, pool))
                      if j.enabled]
-        self._last_run = {}   # job.name -> last-run date iso (in-memory)
+        self._last_run = self._load_state()  # job.name -> last-run date iso
         self._thread = None
+
+    def _load_state(self):
+        try:
+            value = json.loads(self.STATE_PATH.read_text())
+            return ({str(k): str(v) for k, v in value.items()}
+                    if isinstance(value, dict) else {})
+        except FileNotFoundError:
+            return {}
+        except Exception as e:  # noqa: BLE001
+            log.warning("DailyScheduler: cannot load %s: %s", self.STATE_PATH, e)
+            return {}
+
+    def _mark_run(self, job, now=None):
+        now = now or datetime.now()
+        self._last_run[job.name] = now.date().isoformat()
+        try:
+            self.STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
+            tmp = self.STATE_PATH.with_name(self.STATE_PATH.name + ".tmp")
+            tmp.write_text(json.dumps(self._last_run, ensure_ascii=False, sort_keys=True))
+            os.replace(str(tmp), str(self.STATE_PATH))
+        except Exception as e:  # noqa: BLE001
+            log.warning("DailyScheduler: cannot persist %s: %s", self.STATE_PATH, e)
 
     @property
     def enabled(self):
@@ -4675,7 +4761,7 @@ class DailyScheduler:
 
     def _due(self, job, now=None):
         now = now or datetime.now()
-        if now.hour < job.hour:
+        if now.hour != job.hour:
             return False
         return self._last_run.get(job.name) != now.date().isoformat()
 
@@ -4693,7 +4779,7 @@ class DailyScheduler:
                     if self._due(job):
                         log.info("DailyScheduler: firing %s round", job.name)
                         if job.run() is not False:
-                            self._last_run[job.name] = datetime.now().date().isoformat()
+                            self._mark_run(job)
                         else:
                             log.info("DailyScheduler: %s deferred (queue_full); retry next tick",
                                      job.name)
@@ -4728,7 +4814,7 @@ class _ProbeJob:
         rid = self.round_id()
         prompt = _probe_prompt(rid)
         tgt, ttype = broadcast_target(), broadcast_type()
-        notify = self.handler._broadcast
+        notify = _routine_notifier(self.handler)
         envelope = _task_envelope(
             item_id=rid,
             project="",
@@ -4759,9 +4845,7 @@ class _ProbeJob:
         ok, reason = self.execution_router.enqueue(
             envelope, local_submit=local_submit)
         if ok:
-            verb = "已进入持久队列" if route.needs_recovery else "已启动"
-            notify("🔎 %s每日探测轮 %s（tf-probe tier0 + tier1 轮换，纯探测无单）"
-                   % (verb, rid))
+            log.info("_ProbeJob: round %s accepted (durable=%s)", rid, route.needs_recovery)
             return True
         log.info("_ProbeJob: round %s not submitted (%s)", rid, reason)
         # A Task rejection must not mark today's round: the next scheduler tick
@@ -5698,12 +5782,17 @@ class JarvisHandler(AsyncChatbotHandler):
                 controller, item_id, project, terraform, kind)
         on_spawn = (task_bookend.bind_process if task_bookend is not None
                     else controller.bind_process)
+        # Durable scanner/PR/probe work records lifecycle in Task/Aone only.  The sole
+        # exception is an explicit interactive adhoc handoff, whose result belongs in the
+        # originating conversation and is request-response rather than a proactive alert.
+        notify = ((lambda text: self._quick_card(target, text, target_type))
+                  if kind == "adhoc" else _routine_notifier(self))
         return self.dispatch_item(
             item_id,
             prompt,
             controller.runtime_session_id,
             controller.resumed,
-            self._broadcast,
+            notify,
             target,
             target_type,
             on_spawn=on_spawn,
@@ -5783,6 +5872,16 @@ class JarvisHandler(AsyncChatbotHandler):
             self._quick_card(broadcast_target(), text, broadcast_type())
         except Exception:  # noqa: BLE001
             log.exception("broadcast failed")
+
+    @staticmethod
+    def _routine_notice(text):
+        """Record lifecycle progress without interrupting a shared group.
+
+        Durable Task/Aone state is the user-facing source of truth.  This callback is
+        intentionally used by scanners, PR-watch and timers for enqueue/completion/failure
+        notices; only explicit human-escalation paths call ``_broadcast``.
+        """
+        log.info("[ROUTINE] %s", (text or "").replace("\n", " | ")[:1000])
 
     def _maybe_suspend(self, final_text, sid, target, target_type, terraform=False,
                        project=None, task_owned=False, title=None):
@@ -5960,8 +6059,8 @@ class JarvisHandler(AsyncChatbotHandler):
                       on_spawn=None, project=None, kind="ticket", terraform=False,
                       session_controller=None, task_bookend=None):
         """Headless path (auto-dispatch / probe / revisit): run one Jarvis instance to
-        completion WITHOUT a live card (no "回复某人" binding); broadcast the result via
-        ``notify``. Shares the SUSPEND core with the card path.
+        completion WITHOUT a live card (no "回复某人" binding); report the result through
+        the caller-selected ``notify`` sink. Shares the SUSPEND core with the card path.
 
         Resilience: runs through run_claude_buffered (--output-format json) so
         is_error/subtype/rc are actually read, and retries transient failures with a
@@ -6182,8 +6281,8 @@ class JarvisHandler(AsyncChatbotHandler):
     def _dispatch_failed(self, item_id, res, notify, project, terraform=False,
                          kind="ticket", sid="unknown-session", attempts=None):
         """Retries exhausted / terminal error: record the death cause, release the claim
-        (ticket kind only — probe/revisit/wake pass project=None), and broadcast a failure
-        notice. Terraform keeps the local escalation and submits one terminal event to the
+        (ticket kind only — probe/revisit/wake pass project=None), and report the failure
+        through the caller-selected notice sink. Terraform keeps the local escalation and submits one terminal event to the
         RD-only idempotent publisher; non-Terraform retains the legacy Aone death-cause
         comment. Every step is best-effort and never raises."""
         retries = int(os.environ.get("JARVIS_DISPATCH_RETRY_MAX", "2"))
@@ -6409,10 +6508,7 @@ class JarvisHandler(AsyncChatbotHandler):
         if not result.accepted:
             log.warning("wake #%s was not accepted (%s)", aone_id, result.reason)
             return False
-        self._quick_card(
-            task["target"],
-            "🔔 工单收到回复，正在唤醒 Jarvis…\n%s" % line,
-            task["target_type"])
+        self._routine_notice("工单收到回复，Task 已进入唤醒队列: %s" % line)
         return True
 
     @staticmethod
