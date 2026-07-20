@@ -3,7 +3,7 @@ set -euo pipefail
 
 test_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "$test_dir/.." && pwd)"
-skill_rel="terraform-provider-live-repro"
+skill_rel="reproduce-terraform-provider-issue"
 agents_skill="$repo_root/.agents/skills/$skill_rel"
 claude_skill="$repo_root/.claude/skills/$skill_rel"
 tmpdir="$(mktemp -d)"
@@ -23,7 +23,7 @@ for runtime_skill in "$agents_skill" "$claude_skill"; do
   test -f "$runtime_skill/SKILL.md"
   test -x "$runtime_skill/scripts/extract-api-timeline.py"
   test -x "$runtime_skill/scripts/render-report-html.py"
-  grep -q '^name: terraform-provider-live-repro$' "$runtime_skill/SKILL.md"
+  grep -q '^name: reproduce-terraform-provider-issue$' "$runtime_skill/SKILL.md"
   grep -q '^description: ' "$runtime_skill/SKILL.md"
   grep -q '^# Terraform Provider 真实资源现场复现$' "$runtime_skill/SKILL.md"
   grep -q '禁止执行漂移或替换计划' "$runtime_skill/SKILL.md"
@@ -69,7 +69,7 @@ for runtime_skill in "$agents_skill" "$claude_skill"; do
   grep -q 'VpcId.*vpc-123' "$timeline"
   grep -q 'QuorumVswId=missing' "$timeline"
   if grep -q 'SHOULD-NOT-LEAK' "$timeline"; then
-    echo "terraform_provider_live_repro_skill_test: parser leaked a forbidden request field" >&2
+    echo "reproduce_terraform_provider_issue_skill_test: parser leaked a forbidden request field" >&2
     exit 1
   fi
 
@@ -80,14 +80,14 @@ for runtime_skill in "$agents_skill" "$claude_skill"; do
   grep -q '<title>现场复现报告</title>' "$report_html"
   grep -q '<table>' "$report_html"
   if grep -qi 'data:image' "$report_html"; then
-    echo "terraform_provider_live_repro_skill_test: renderer emitted base64 image data" >&2
+    echo "reproduce_terraform_provider_issue_skill_test: renderer emitted base64 image data" >&2
     exit 1
   fi
 
   if python3 "$runtime_skill/scripts/render-report-html.py" "$unsafe_md" "$tmpdir/unsafe-$runtime_index.html" >/dev/null 2>&1; then
-    echo "terraform_provider_live_repro_skill_test: renderer accepted executable HTML" >&2
+    echo "reproduce_terraform_provider_issue_skill_test: renderer accepted executable HTML" >&2
     exit 1
   fi
 done
 
-echo "terraform_provider_live_repro_skill_test: PASS"
+echo "reproduce_terraform_provider_issue_skill_test: PASS"

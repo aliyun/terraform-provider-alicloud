@@ -1,5 +1,5 @@
 ---
-name: terraform-provider-live-repro
+name: reproduce-terraform-provider-issue
 description: 使用最小化本地 HCL、Provider 调试日志、OpenAPI RequestId、刷新漂移证据、受控的现场保留或清理，以及可选的 AutomationAgent HTML 报告，在真实阿里云资源上复现 Terraform Provider 问题。适用于用户要求实际复现 Provider 缺陷、根据给定 Terraform 创建资源、排查创建与读取无法回环或意外替换、为产品团队保留云上现场，或生成完整 API 时间线的场景；普通验收测试优先使用 invoke-terraform-acc-test-remote，只有问题依赖用户原始 HCL 和真实 API 响应时才使用本技能。
 ---
 
@@ -45,7 +45,7 @@ description: 使用最小化本地 HCL、Provider 调试日志、OpenAPI Request
 - 可用时记录 Aone ID；
 - 用户指定的工作目录和现场处置方式。
 
-默认在 `~/Workspace/troubleshoot/<slug>-<aone-id-or-date>` 下创建隔离目录。不得覆盖其他复现目录或复用无关 Terraform state。
+默认在 `~/workspace/troubleshoot/<slug>-<aone-id-or-date>` 下创建隔离目录。不得覆盖其他复现目录或复用无关 Terraform state。
 
 ### 2. 前置检查身份与依赖
 
