@@ -136,7 +136,7 @@ The warn supports the following:
 * `comparison_operator` - (Optional) The comparison operator of the threshold for warn-level alerts.
 * `statistics` - (Optional) The statistical aggregation method for warn-level alerts.
 * `threshold` - (Optional) The threshold for warn-level alerts.
-* `times` - (Optional, Intl) The consecutive number of times for which the metric value is measured before a warn-level alert is triggered.
+* `times` - (Optional, Int) The consecutive number of times for which the metric value is measured before a warn-level alert is triggered.
 
 ## Attributes Reference
 
