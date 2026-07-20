@@ -48,6 +48,17 @@ OSS_ENDPOINT="${OSS_ENDPOINT:-https://oss-cn-beijing-internal.aliyuncs.com}"
 OSS_KEY="${OSS_KEY:-jarvis-worker-creds-$(date +%Y%m%d-%H%M%S).tar.gz.enc}"
 OSSUTIL="${OSSUTIL:-ossutil}"
 
+# Git auth for workers to `git clone` / `git pull` jarvis-preview via HTTPS +
+# GitLab Deploy Token. Create the token via web UI:
+#   jarvis-preview → Settings → Repository → Deploy Tokens → Add token
+#   Scope: read_repository ONLY
+#   Save both the username (e.g. 'gitlab+deploy-token-12345') and secret
+#   — GitLab shows the secret only once.
+: "${GIT_TOKEN:?export GIT_TOKEN=<GitLab Deploy Token secret; see script header for setup>}"
+: "${GIT_TOKEN_USER:?export GIT_TOKEN_USER=<username GitLab printed, e.g. gitlab+deploy-token-12345>}"
+GIT_HOST="${GIT_HOST:-code.alibaba-inc.com}"
+GIT_REPO_PATH="${GIT_REPO_PATH:-terraflow/jarvis-preview}"
+
 # Resolve JARVIS_ROOT = the repo containing this script
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 JARVIS_ROOT="${JARVIS_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
@@ -57,14 +68,24 @@ JARVIS_ROOT="${JARVIS_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 command -v openssl >/dev/null 2>&1 || die "openssl not found on PATH"
 command -v tar >/dev/null 2>&1 || die "tar not found on PATH"
 
-# ossutil is OPTIONAL: if installed, we upload automatically. If missing, we
-# still do the tar+encrypt work, save the ciphertext to a durable location,
-# and print instructions so the operator can upload via web console /
-# ossbrowser / any other tool. This makes the packager usable on hosts where
-# installing ossutil is inconvenient (e.g., macOS without brew tap set up).
+# ossutil is OPTIONAL: if installed AND runnable, we upload automatically.
+# If missing (or the file exists but isn't a working ossutil — e.g., an HTML
+# error page saved by a botched install), we still do the tar+encrypt work,
+# save the ciphertext to a durable location, and print instructions so the
+# operator can upload via web console / ossbrowser / any other tool.
 OSSUTIL_AVAILABLE=0
 if command -v "$OSSUTIL" >/dev/null 2>&1; then
-  OSSUTIL_AVAILABLE=1
+  # Verify it's actually a working ossutil, not a mis-downloaded HTML/XML page
+  # or an unrelated binary at the same name. --version is the cheapest probe.
+  if ossutil_version=$("$OSSUTIL" --version 2>&1) && [ -n "$ossutil_version" ]; then
+    OSSUTIL_AVAILABLE=1
+    ok "ossutil detected: $(printf '%s' "$ossutil_version" | head -1)"
+  else
+    warn "ossutil found at $(command -v "$OSSUTIL") but --version failed:"
+    printf '%s\n' "$ossutil_version" | head -3 | sed 's/^/       /' >&2
+    warn "treating as unavailable; will save encrypted bundle locally for manual upload"
+    warn "  (likely a broken install — remove and re-install from https://help.aliyun.com/document_detail/120075.html if you want auto-upload)"
+  fi
 else
   warn "ossutil not found — will package + encrypt locally and print manual upload instructions."
   warn "  To auto-upload next time: install ossutil (https://help.aliyun.com/document_detail/120075.html)"
@@ -136,6 +157,26 @@ find "$HOME/.claude" -maxdepth 1 -type f \
 
 n_json=$(find "$STAGE/home/.claude" -maxdepth 1 -type f -name '*.json' | wc -l | tr -d ' ')
 [ "$n_json" -gt 0 ] || warn "no ~/.claude/*.json files found — worker may lack gateway/settings config"
+
+# Git auth: HTTPS + Deploy Token via git's `store` credential helper.
+# Package ~/.git-credentials + ~/.gitconfig so worker can `git pull` without
+# openssh-clients (AliOS minimal install omits it). Deploy Token is repo-
+# scoped read-only + revocable in GitLab web UI.
+printf 'https://%s:%s@%s\n' "$GIT_TOKEN_USER" "$GIT_TOKEN" "$GIT_HOST" \
+  > "$STAGE/home/.git-credentials"
+chmod 600 "$STAGE/home/.git-credentials"
+cat > "$STAGE/home/.gitconfig" <<GITCFG
+[credential]
+    helper = store
+[credential "https://$GIT_HOST"]
+    helper = store
+GITCFG
+chmod 644 "$STAGE/home/.gitconfig"
+# Record the HTTPS URL worker-install.sh should set as `origin`, overriding
+# any ssh URL the tarballed repo may have inherited from the packager's clone.
+printf 'GIT_HTTPS_URL=https://%s/%s.git\n' "$GIT_HOST" "$GIT_REPO_PATH" \
+  >> "$STAGE/MANIFEST"
+ok "packaged git-credentials for Deploy Token ${GIT_TOKEN_USER}@${GIT_HOST}/${GIT_REPO_PATH}"
 [ -f "$JARVIS_ROOT/bootstrap/.env" ] \
   && cp -p "$JARVIS_ROOT/bootstrap/.env" "$STAGE/repo/bootstrap/.env"
 [ -f "$JARVIS_ROOT/bridge/jarvis.env" ] \

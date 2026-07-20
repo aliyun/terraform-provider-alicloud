@@ -37,7 +37,7 @@
 
 set -euo pipefail
 
-JARVIS_REPO_URL="${JARVIS_REPO_URL:-git@gitlab.alibaba-inc.com:terraflow/jarvis-preview.git}"
+JARVIS_REPO_URL="${JARVIS_REPO_URL:-https://code.alibaba-inc.com/terraflow/jarvis-preview.git}"
 JARVIS_ROOT="${JARVIS_ROOT:-$HOME/workspace/jarvis-preview}"
 CLAUDE_BIN="${CLAUDE_BIN:-$HOME/.local/bin/claude}"
 DISPATCH_MAX="${JARVIS_DISPATCH_MAX:-3}"
@@ -88,6 +88,9 @@ command -v git >/dev/null 2>&1 || sudo yum install -y git
 git_ver=$(git --version | awk '{print $3}')
 lowest_git=$(printf '%s\n2.5\n' "$git_ver" | sort -V | head -1)
 [ "$lowest_git" = "2.5" ] || warn "git=$git_ver < 2.5; worktree flows may misbehave"
+# openssh-clients install is DEFERRED until after step 5 (creds extract) —
+# only needed if the packager shipped an ssh key. Token-mode bundles don't
+# need ssh on the worker, and AliOS minimal install omits openssh-clients.
 
 # ---------------------------------------------------------------------------
 step "3. Fetch claude binary from OSS + sha256 verify"
@@ -106,13 +109,18 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-step "4. Clone / update jarvis repo"
+step "4. Ensure jarvis repo present (git pull deferred to step 5b)"
 if [ -d "$JARVIS_ROOT/.git" ]; then
-  ok "repo present at $JARVIS_ROOT; updating"
-  (cd "$JARVIS_ROOT" && git pull --ff-only 2>&1 | tail -3)
+  ok "repo present at $JARVIS_ROOT"
 else
+  # Fresh clone — needs auth. If operator pre-set GIT_HTTPS_URL (with token
+  # embedded, `https://user:token@host/repo.git`), use that; otherwise fall
+  # back to $JARVIS_REPO_URL (default ssh). For fully headless bootstrap the
+  # operator can also tarball-relay the repo before running this script.
   mkdir -p "$(dirname "$JARVIS_ROOT")"
-  git clone "$JARVIS_REPO_URL" "$JARVIS_ROOT"
+  clone_url="${GIT_HTTPS_URL:-$JARVIS_REPO_URL}"
+  git clone "$clone_url" "$JARVIS_ROOT" \
+    || die "git clone $clone_url failed; either tarball-relay the repo first or provide GIT_HTTPS_URL with token"
   ok "cloned to $JARVIS_ROOT"
 fi
 
@@ -157,6 +165,15 @@ if [ -d "$EXTRACT/home/.claude" ]; then
   mkdir -p "$HOME/.claude"
   cp -Rp "$EXTRACT/home/.claude/." "$HOME/.claude/"
 fi
+# ~/.git-credentials + ~/.gitconfig: git's `store` credential helper needs
+# both. cp -p preserves 0600 on ~/.git-credentials (mandatory — token is
+# sensitive). ~/.gitconfig is 0644 (references helper name, not the token).
+for f in .git-credentials .gitconfig; do
+  if [ -f "$EXTRACT/home/$f" ]; then
+    cp -p "$EXTRACT/home/$f" "$HOME/$f"
+  fi
+done
+[ -f "$HOME/.git-credentials" ] && chmod 600 "$HOME/.git-credentials"
 
 # 5b. Rewrite Mac-specific $HOME paths → this host's $HOME, best-effort.
 # Only rewrites when packager's $HOME was recorded and differs from ours.
@@ -196,6 +213,30 @@ ok "creds installed; scratch dir wiped"
 if [ -f "$EXTRACT/MANIFEST" ]; then
   info "bundle provenance:"
   sed 's/^/       /' "$EXTRACT/MANIFEST"
+fi
+
+# ---------------------------------------------------------------------------
+step "5b. Rewrite origin to HTTPS + (non-fatal) git pull for latest master"
+# The packager records a full HTTPS URL in MANIFEST; worker uses it as origin
+# so git pull goes through the credential helper (~/.git-credentials +
+# ~/.gitconfig extracted in step 5a) — no ssh needed.
+GIT_HTTPS_URL_MF=$(awk -F= '/^GIT_HTTPS_URL=/{print $2}' "$EXTRACT/MANIFEST" 2>/dev/null || true)
+if [ -n "$GIT_HTTPS_URL_MF" ] && [ -d "$JARVIS_ROOT/.git" ]; then
+  cur=$(cd "$JARVIS_ROOT" && git remote get-url origin 2>/dev/null || echo)
+  if [ "$cur" != "$GIT_HTTPS_URL_MF" ]; then
+    info "resetting origin: $cur → $GIT_HTTPS_URL_MF"
+    (cd "$JARVIS_ROOT" && git remote set-url origin "$GIT_HTTPS_URL_MF")
+  fi
+fi
+
+if [ -d "$JARVIS_ROOT/.git" ]; then
+  info "attempting git pull for latest master (non-fatal)"
+  if (cd "$JARVIS_ROOT" && git pull --ff-only 2>&1 | tail -3); then
+    ok "repo up-to-date with origin/master"
+  else
+    warn "git pull failed — repo stays at whatever the tarball/clone had; check remote URL + Deploy Token"
+    warn "  cur origin: $(cd "$JARVIS_ROOT" && git remote get-url origin 2>/dev/null)"
+  fi
 fi
 
 # ---------------------------------------------------------------------------
