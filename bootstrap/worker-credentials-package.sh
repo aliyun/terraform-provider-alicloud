@@ -56,8 +56,19 @@ JARVIS_ROOT="${JARVIS_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 
 command -v openssl >/dev/null 2>&1 || die "openssl not found on PATH"
 command -v tar >/dev/null 2>&1 || die "tar not found on PATH"
-command -v "$OSSUTIL" >/dev/null 2>&1 \
-  || die "ossutil not found (or OSSUTIL=$OSSUTIL points to nowhere); install from https://help.aliyun.com/document_detail/120075.html"
+
+# ossutil is OPTIONAL: if installed, we upload automatically. If missing, we
+# still do the tar+encrypt work, save the ciphertext to a durable location,
+# and print instructions so the operator can upload via web console /
+# ossbrowser / any other tool. This makes the packager usable on hosts where
+# installing ossutil is inconvenient (e.g., macOS without brew tap set up).
+OSSUTIL_AVAILABLE=0
+if command -v "$OSSUTIL" >/dev/null 2>&1; then
+  OSSUTIL_AVAILABLE=1
+else
+  warn "ossutil not found — will package + encrypt locally and print manual upload instructions."
+  warn "  To auto-upload next time: install ossutil (https://help.aliyun.com/document_detail/120075.html)"
+fi
 
 # ---------------------------------------------------------------------------
 step "1. Sanity check credential sources"
@@ -105,11 +116,26 @@ step "3. Stage credential tree in a temp dir"
 STAGE=$(mktemp -d)
 trap 'rm -rf "$STAGE"' EXIT
 
-mkdir -p "$STAGE/home/.config" "$STAGE/repo/bootstrap" "$STAGE/repo/bridge" "$STAGE/repo/config"
+mkdir -p "$STAGE/home/.config" "$STAGE/home/.claude" \
+         "$STAGE/repo/bootstrap" "$STAGE/repo/bridge" "$STAGE/repo/config"
 
-# Copy — preserve mode/owner so 0600 secrets stay 0600 on extract
+# Copy — preserve mode/owner so 0600 secrets stay 0600 on extract.
+# ~/.config/a1: whole dir (login state per identity, all small JSON tokens).
 cp -Rp "$HOME/.config/a1"  "$STAGE/home/.config/a1"
-cp -Rp "$HOME/.claude"     "$STAGE/home/.claude"
+
+# ~/.claude: SELECTIVE. Ship only the top-level *.json settings archives that
+# claude --settings points to (glm5.2.json, idea_settings.json, etc). Skip:
+#   tasks/, projects/, todos/, statsig/, shell-snapshots/, ide/, __store.db*
+# — all per-machine transient state (session transcripts, task/hook state,
+# telemetry, IDE snapshots) that workers must NOT inherit from the packager.
+# Shipping them bloats the bundle by tens/hundreds of MB and leaks past
+# conversations to workers unnecessarily.
+find "$HOME/.claude" -maxdepth 1 -type f \
+  \( -name '*.json' -o -name 'CLAUDE.md' -o -name '.credentials.json' \) \
+  -exec cp -p {} "$STAGE/home/.claude/" \; 2>/dev/null || true
+
+n_json=$(find "$STAGE/home/.claude" -maxdepth 1 -type f -name '*.json' | wc -l | tr -d ' ')
+[ "$n_json" -gt 0 ] || warn "no ~/.claude/*.json files found — worker may lack gateway/settings config"
 [ -f "$JARVIS_ROOT/bootstrap/.env" ] \
   && cp -p "$JARVIS_ROOT/bootstrap/.env" "$STAGE/repo/bootstrap/.env"
 [ -f "$JARVIS_ROOT/bridge/jarvis.env" ] \
@@ -150,23 +176,39 @@ dd if=/dev/zero of="$PLAINTAR" bs=1M count=1 conv=notrunc 2>/dev/null || true
 rm -f "$PLAINTAR"
 
 # ---------------------------------------------------------------------------
-step "5. Upload to OSS"
-"$OSSUTIL" cp -f "$CIPHER" "oss://$OSS_BUCKET/$OSS_KEY" 2>&1 | tail -3
+# Compute the expected worker-facing URL — works whether we upload here or
+# operator uploads via web console / ossbrowser to the same bucket+key.
+if [[ "$OSS_ENDPOINT" == *"://$OSS_BUCKET."* ]]; then
+  URL="$OSS_ENDPOINT/$OSS_KEY"
+else
+  URL="${OSS_ENDPOINT%/}"
+  URL="${URL/#https:\/\//https:\/\/$OSS_BUCKET.}"
+  URL="${URL/#http:\/\//http:\/\/$OSS_BUCKET.}"
+  URL="$URL/$OSS_KEY"
+fi
+
+# Persist the ciphertext outside the temp dir so it survives after the script
+# exits (the temp dir is trap-cleaned). Operator can upload it manually if
+# ossutil wasn't available.
+OUT_FILE="${OUT_DIR:-$HOME}/${OSS_KEY##*/}"
+cp -p "$CIPHER" "$OUT_FILE"
+chmod 600 "$OUT_FILE"
+
+if [ "$OSSUTIL_AVAILABLE" = 1 ]; then
+  step "5. Upload to OSS via ossutil"
+  "$OSSUTIL" cp -f "$OUT_FILE" "oss://$OSS_BUCKET/$OSS_KEY" 2>&1 | tail -3
+  UPLOAD_STATE=uploaded
+else
+  step "5. SKIP auto-upload (ossutil not installed)"
+  info "ciphertext saved to $OUT_FILE (mode 600)"
+  info "upload via web console / ossbrowser as object key: $OSS_KEY"
+  UPLOAD_STATE=manual
+fi
 
 # ---------------------------------------------------------------------------
 step "6. Distribute these three values to each worker (secure channel)"
-URL="$OSS_ENDPOINT/$OSS_KEY"
-# If OSS_ENDPOINT already includes the bucket subdomain (public form), don't
-# double-prefix. Otherwise (internal endpoint form), build bucket-scoped URL.
-case "$OSS_ENDPOINT" in
-  *"://$OSS_BUCKET."*) URL="$OSS_ENDPOINT/$OSS_KEY" ;;
-  *)                   URL="${OSS_ENDPOINT%/}"
-                       URL="${URL/#https:\/\//https:\/\/$OSS_BUCKET.}"
-                       URL="${URL/#http:\/\//http:\/\/$OSS_BUCKET.}"
-                       URL="$URL/$OSS_KEY" ;;
-esac
-
-cat <<EOF
+if [ "$UPLOAD_STATE" = uploaded ]; then
+  cat <<EOF
 
 ═══════════════════════════════════════════════════════════════════════════════
 CREDENTIAL BUNDLE UPLOADED — DISTRIBUTE THESE 3 VALUES
@@ -192,3 +234,42 @@ The passphrase is 256-bit random; leaked without the OSS object it grants
 nothing. Deleting the object cuts the last shred of usefulness.
 ═══════════════════════════════════════════════════════════════════════════════
 EOF
+else
+  cat <<EOF
+
+═══════════════════════════════════════════════════════════════════════════════
+CREDENTIAL BUNDLE READY — MANUAL UPLOAD REQUIRED
+
+Local ciphertext:
+  $OUT_FILE
+  ($(wc -c <"$OUT_FILE" | tr -d ' ') bytes, sha256=$SHA, mode 600)
+
+Upload it to your OSS bucket via web console / ossbrowser / any tool:
+  bucket:     $OSS_BUCKET
+  object key: $OSS_KEY
+
+After upload, distribute THESE 3 VALUES to each worker:
+
+  CREDS_OSS_URL="$URL"
+  CREDS_SHA256="$SHA"
+  CREDS_PASSPHRASE="$PASSPHRASE"
+
+On each worker:
+
+  CLAUDE_OSS_URL="https://$OSS_BUCKET.oss-cn-beijing-internal.aliyuncs.com/claude" \\
+  CLAUDE_SHA256="c1efffaaf370aa187cb6a09dd93d4e511c646899b0078476f83791b664bde7fe" \\
+  CREDS_OSS_URL="$URL" \\
+  CREDS_SHA256="$SHA" \\
+  CREDS_PASSPHRASE="$PASSPHRASE" \\
+  JARVIS_DISPATCH_MAX=3 \\
+    bash bootstrap/worker-install.sh
+
+After all workers install, REVOKE by deleting the OSS object (via console /
+ossbrowser / ossutil) — the passphrase alone grants nothing.
+
+Also delete the local ciphertext to leave no trace:
+  shred -u "$OUT_FILE"   # linux
+  rm -P "$OUT_FILE"      # macOS
+═══════════════════════════════════════════════════════════════════════════════
+EOF
+fi
