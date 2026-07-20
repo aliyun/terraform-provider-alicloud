@@ -652,6 +652,42 @@ class AoneSchedulerUnionTest(unittest.TestCase):
 
         self.assertEqual(scanner._source_status_after_task_id, 570)
 
+    def test_tick_dispatches_before_bounded_lifecycle_observation(self):
+        scanner = self._scanner()
+        scanner._tick_count = 0
+        scanner._prev_snapshot = {}
+        scanner.pending = {}
+        scanner._lock = threading.Lock()
+        scanner.auto = True
+        scanner.STALE_CHECK_EVERY = 4
+        scanner._load_human_operators = mock.Mock(return_value=set())
+        scanner._scan_union = mock.Mock(return_value=[{
+            "id": "84386065", "modified": "2026-07-20 12:00:00",
+        }])
+        calls = []
+        scanner._tick_auto = mock.Mock(side_effect=lambda *_args: calls.append("dispatch"))
+        scanner._reconcile_source_statuses_safely = mock.Mock(
+            side_effect=lambda: calls.append("lifecycle"))
+
+        scanner._tick()
+
+        self.assertEqual(calls, ["dispatch", "lifecycle"])
+        self.assertLessEqual(scanner.SOURCE_STATUS_PAGE_SIZE, 32)
+        self.assertLessEqual(scanner.SOURCE_STATUS_POINT_TIMEOUT_SECONDS, 10)
+
+    def test_source_status_point_read_uses_bounded_timeout(self):
+        completed = SimpleNamespace(returncode=0, stdout=json.dumps({
+            "fields": [{"identifier": "status", "displayValue": "已发布"}],
+        }), stderr="")
+        with mock.patch.object(bot.subprocess, "run", return_value=completed) as run:
+            task, status = bot.AoneScheduler._point_read_source_status({
+                "taskId": 411, "aoneId": "84386065",
+            })
+
+        self.assertEqual(task["taskId"], 411)
+        self.assertEqual(status, "已发布")
+        self.assertLessEqual(run.call_args.kwargs["timeout"], 10)
+
 
 class TaskBookendDispatchTest(unittest.TestCase):
     """B-proper: the control-plane Task run authors a structured result; the executor

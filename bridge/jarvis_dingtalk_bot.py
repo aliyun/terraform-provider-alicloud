@@ -2799,8 +2799,12 @@ class AoneScheduler:
 
     # Stale-claim reconcile sub-tick cadence (every N scan ticks).
     STALE_CHECK_EVERY = int(os.environ.get("JARVIS_STALE_CHECK_EVERY", "4"))
-    SOURCE_STATUS_PAGE_SIZE = int(os.environ.get("JARVIS_SOURCE_STATUS_PAGE_SIZE", "500"))
+    # Lifecycle observation is intentionally bounded and runs after dispatch. A large
+    # tracked history must not hold new Aone work behind hundreds of point reads.
+    SOURCE_STATUS_PAGE_SIZE = int(os.environ.get("JARVIS_SOURCE_STATUS_PAGE_SIZE", "32"))
     SOURCE_STATUS_WORKERS = int(os.environ.get("JARVIS_SOURCE_STATUS_WORKERS", "8"))
+    SOURCE_STATUS_POINT_TIMEOUT_SECONDS = int(
+        os.environ.get("JARVIS_SOURCE_STATUS_POINT_TIMEOUT_SECONDS", "10"))
 
     def __init__(self, handler, pool=None):
         self.handler = handler
@@ -2998,7 +3002,9 @@ class AoneScheduler:
             result = subprocess.run(
                 [str(REPO_ROOT / "bin" / "a1id"), "--", "project", "workitem",
                  "get", aone_id, "-f", "json"],
-                capture_output=True, text=True, timeout=45, cwd=str(REPO_ROOT))
+                capture_output=True, text=True,
+                timeout=max(1, AoneScheduler.SOURCE_STATUS_POINT_TIMEOUT_SECONDS),
+                cwd=str(REPO_ROOT))
             if result.returncode != 0:
                 log.warning("AoneScheduler: source status point-read #%s rc=%d: %s",
                             aone_id, result.returncode, (result.stderr or "").strip()[:200])
@@ -3372,13 +3378,10 @@ class AoneScheduler:
         self._human_comment_cache = {}
         self._activity_cache = {}
         self._human_operators = self._load_human_operators()  # reload whitelist each tick
-        try:
-            self._reconcile_source_statuses()
-        except Exception:  # noqa: BLE001 — lifecycle observation must not block dispatch
-            log.exception("AoneScheduler source status reconcile failed; will retry next tick")
         # 统一探测：python 直查 assignee∪tracker∪idle 并集（取代 scan.sh 出派发数据）。
         items = self._scan_union()
         if items is None:
+            self._reconcile_source_statuses_safely()
             return
         cur_snapshot = {str(it["id"]): it for it in items if it.get("id")}
         cur_ids = set(cur_snapshot.keys())
@@ -3417,6 +3420,16 @@ class AoneScheduler:
                 self._reconcile_stale_claims(cur_snapshot)
             except Exception:  # noqa: BLE001 — reconcile failure never fails the scan tick
                 log.exception("stale-claim reconcile sub-tick failed")
+
+        # Lifecycle observation follows discovery/dispatch and uses a small bounded page,
+        # so terminal-status point reads cannot delay newly actionable work.
+        self._reconcile_source_statuses_safely()
+
+    def _reconcile_source_statuses_safely(self):
+        try:
+            self._reconcile_source_statuses()
+        except Exception:  # noqa: BLE001 — lifecycle observation must not fail the scan tick
+            log.exception("AoneScheduler source status reconcile failed; will retry next tick")
 
     def _tick_auto(self, new_items, updated_items=None):
         """Auto-dispatch candidates into the pool (broadcast, not authorize). Candidates =
