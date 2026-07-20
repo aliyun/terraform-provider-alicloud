@@ -421,6 +421,7 @@ Supported only for clusters running Kubernetes 1.35 or later. The Kubernetes com
 * `control_plane_log_project` - (Optional, Available since v1.141.0) Control plane log project. If this field is not set, a log service project named k8s-log-{ClusterID} will be automatically created.
 * `audit_log_config` - (Optional, Available since v1.250.0) Audit log configuration. See [`audit_log_config`](#audit_log_config) below.
 * `auto_mode` - (Optional, ForceNew, Available since v1.254.0) Auto mode cluster configuration. See [`auto_mode`](#auto_mode) below.
+* `control_plane_endpoints_config` - (Optional, Available since v1.286.0) The cluster access configuration. See [`control_plane_endpoints_config`](#control_plane_endpoints_config) below.
 * `retain_resources` - (Optional, Available since v1.141.0) Resources that are automatically created during cluster creation, including NAT gateways, SNAT rules, SLB instances, and RAM Role, will be deleted. Resources that are manually created after you create the cluster, such as SLB instances for Services, will also be deleted. If you need to retain resources, please configure with `retain_resources`. There are several aspects to pay attention to when using `retain_resources` to retain resources. After configuring `retain_resources` into the terraform configuration manifest file, you first need to run `terraform apply`.Then execute `terraform destroy`.
 * `delete_options` - (Optional, Available since v1.223.2) Delete options, only work for deleting resource. Make sure you have run `terraform apply` to make the configuration applied. See [`delete_options`](#delete_options) below.
 * `addons` - (Optional, Available since v1.88.0) The addon you want to install in cluster. See [`addons`](#addons) below. Only works for **Create** Operation, use [resource cs_kubernetes_addon](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cs_kubernetes_addon) to manage addons if cluster is created.
@@ -536,9 +537,26 @@ Audit log config. If `enabled` is set to `true`, a Logstore is created in the sp
 * `sls_project_name` - (Optional) The SLS project to which the Logstore storing the cluster audit logs belongs.
 
 ### `auto_mode`
-Auto mode cluster config.  
+Auto mode cluster config.
 
 * `enabled` - (Optional, ForceNew) Whether to enable auto mode. Valid values: `true`, `false`. Only ACK managed Pro clusters support Auto Mode.
+
+### `control_plane_endpoints_config`
+The cluster access configuration.
+
+* `load_balancers_config` - (Optional, Computed) The load balancing configuration for cluster access. See [`load_balancers_config`](#control_plane_endpoints_config-load_balancers_config) below.
+* `internal_dns_config` - (Optional, Computed) The cluster internal domain name configuration, applicable to ACK managed clusters. See [`internal_dns_config`](#control_plane_endpoints_config-internal_dns_config) below.
+
+#### `control_plane_endpoints_config-load_balancers_config`
+
+* `load_balancer_id` - (Optional, Computed) The ID of the SLB (NLB) instance associated with the endpoint.
+* `endpoint_type` - (Optional, Computed) The endpoint type. Valid values: `private`, `public`.
+* `endpoint` - (Computed) The access address.
+
+#### `control_plane_endpoints_config-internal_dns_config`
+
+* `bind_vpcs` - (Optional, Computed) The list of VPCs where the API Server access domain name takes effect. By default, the VPC of the cluster is included.
+* `enabled` - (Optional, Computed) Whether to enable the cluster internal domain name access. When enabled, node-side components (kubelet, kube-proxy) access the API Server through the cluster internal domain name. This field can only be set on update, not on create.
 
 ### `upgrade_policy`
 Configuration block for cluster upgrade operations. This is a transient parameter that controls upgrade behavior when updating the `version` field.

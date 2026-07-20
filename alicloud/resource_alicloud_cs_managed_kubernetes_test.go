@@ -706,6 +706,296 @@ func TestAccAliCloudCSManagedKubernetesAuto(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudCSManagedKubernetes_controlPlaneEndpoints(t *testing.T) {
+	var v *cs.KubernetesClusterDetail
+
+	resourceId := "alicloud_cs_managed_kubernetes.default"
+	ra := resourceAttrInit(resourceId, map[string]string{})
+
+	serviceFunc := func() interface{} {
+		return &CsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testaccmanagedkubernetes-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCSManagedKubernetesConfigDependenceNlb)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				// create with a custom NLB endpoint (load_balancers_config)
+				Config: testAccConfig(map[string]interface{}{
+					"name":                         name,
+					"cluster_spec":                 "ack.pro.small",
+					"vswitch_ids":                  []string{"${alicloud_vswitch.default_1.id}"},
+					"new_nat_gateway":              "false",
+					"deletion_protection":          "false",
+					"service_cidr":                 "172.23.0.0/16",
+					"pod_cidr":                     "172.20.0.0/16",
+					"is_enterprise_security_group": "true",
+					"addons":                       []map[string]string{{"name": "flannel", "config": "", "version": "", "disabled": "false"}},
+					"control_plane_endpoints_config": []map[string]interface{}{
+						{
+							"load_balancers_config": []map[string]interface{}{
+								{
+									"load_balancer_id": "${alicloud_nlb_load_balancer.default.id}",
+									"endpoint_type":    "private",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":                             name,
+						"cluster_spec":                     "ack.pro.small",
+						"vpc_id":                           CHECKSET,
+						"control_plane_endpoints_config.#": "1",
+						"control_plane_endpoints_config.0.load_balancers_config.0.load_balancer_id": CHECKSET,
+						"control_plane_endpoints_config.0.load_balancers_config.0.endpoint_type":    "private",
+						"control_plane_endpoints_config.0.load_balancers_config.0.endpoint":         CHECKSET,
+					}),
+				),
+			},
+			{
+				// change load_balancers_config: switch to another NLB instance
+				Config: testAccConfig(map[string]interface{}{
+					"control_plane_endpoints_config": []map[string]interface{}{
+						{
+							"load_balancers_config": []map[string]interface{}{
+								{
+									"load_balancer_id": "${alicloud_nlb_load_balancer.update.id}",
+									"endpoint_type":    "private",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"control_plane_endpoints_config.0.load_balancers_config.0.load_balancer_id": CHECKSET,
+						"control_plane_endpoints_config.0.load_balancers_config.0.endpoint_type":    "private",
+						"control_plane_endpoints_config.0.load_balancers_config.0.endpoint":         CHECKSET,
+					}),
+				),
+			},
+			{
+				// add a second endpoint (A -> AB), both private
+				Config: testAccConfig(map[string]interface{}{
+					"control_plane_endpoints_config": []map[string]interface{}{
+						{
+							"load_balancers_config": []map[string]interface{}{
+								{
+									"load_balancer_id": "${alicloud_nlb_load_balancer.update.id}",
+									"endpoint_type":    "private",
+								},
+								{
+									"load_balancer_id": "${alicloud_nlb_load_balancer.default.id}",
+									"endpoint_type":    "private",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"control_plane_endpoints_config.0.load_balancers_config.#":                  "2",
+						"control_plane_endpoints_config.0.load_balancers_config.0.load_balancer_id": CHECKSET,
+						"control_plane_endpoints_config.0.load_balancers_config.0.endpoint_type":    "private",
+						"control_plane_endpoints_config.0.load_balancers_config.0.endpoint":         CHECKSET,
+						"control_plane_endpoints_config.0.load_balancers_config.1.load_balancer_id": CHECKSET,
+						"control_plane_endpoints_config.0.load_balancers_config.1.endpoint_type":    "private",
+						"control_plane_endpoints_config.0.load_balancers_config.1.endpoint":         CHECKSET,
+					}),
+				),
+			},
+			{
+				// remove the second endpoint (AB -> A)
+				Config: testAccConfig(map[string]interface{}{
+					"control_plane_endpoints_config": []map[string]interface{}{
+						{
+							"load_balancers_config": []map[string]interface{}{
+								{
+									"load_balancer_id": "${alicloud_nlb_load_balancer.update.id}",
+									"endpoint_type":    "private",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"control_plane_endpoints_config.0.load_balancers_config.#":                  "1",
+						"control_plane_endpoints_config.0.load_balancers_config.0.load_balancer_id": CHECKSET,
+						"control_plane_endpoints_config.0.load_balancers_config.0.endpoint_type":    "private",
+						"control_plane_endpoints_config.0.load_balancers_config.0.endpoint":         CHECKSET,
+						// the second endpoint is removed; clear its accumulated expectations
+						"control_plane_endpoints_config.0.load_balancers_config.1.load_balancer_id": REMOVEKEY,
+						"control_plane_endpoints_config.0.load_balancers_config.1.endpoint_type":    REMOVEKEY,
+						"control_plane_endpoints_config.0.load_balancers_config.1.endpoint":         REMOVEKEY,
+					}),
+				),
+			},
+			{
+				// add a public endpoint (Internet NLB) alongside the private one; backend requires at least one private NLB retained
+				Config: testAccConfig(map[string]interface{}{
+					"control_plane_endpoints_config": []map[string]interface{}{
+						{
+							"load_balancers_config": []map[string]interface{}{
+								{
+									"load_balancer_id": "${alicloud_nlb_load_balancer.update.id}",
+									"endpoint_type":    "private",
+								},
+								{
+									"load_balancer_id": "${alicloud_nlb_load_balancer.public.id}",
+									"endpoint_type":    "public",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"control_plane_endpoints_config.0.load_balancers_config.#":                  "2",
+						"control_plane_endpoints_config.0.load_balancers_config.0.load_balancer_id": CHECKSET,
+						"control_plane_endpoints_config.0.load_balancers_config.0.endpoint_type":    "private",
+						"control_plane_endpoints_config.0.load_balancers_config.0.endpoint":         CHECKSET,
+						"control_plane_endpoints_config.0.load_balancers_config.1.load_balancer_id": CHECKSET,
+						"control_plane_endpoints_config.0.load_balancers_config.1.endpoint_type":    "public",
+						"control_plane_endpoints_config.0.load_balancers_config.1.endpoint":         CHECKSET,
+					}),
+				),
+			},
+			{
+				// remove the public endpoint, keep only the private one
+				Config: testAccConfig(map[string]interface{}{
+					"control_plane_endpoints_config": []map[string]interface{}{
+						{
+							"load_balancers_config": []map[string]interface{}{
+								{
+									"load_balancer_id": "${alicloud_nlb_load_balancer.update.id}",
+									"endpoint_type":    "private",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"control_plane_endpoints_config.0.load_balancers_config.#":                  "1",
+						"control_plane_endpoints_config.0.load_balancers_config.0.load_balancer_id": CHECKSET,
+						"control_plane_endpoints_config.0.load_balancers_config.0.endpoint_type":    "private",
+						"control_plane_endpoints_config.0.load_balancers_config.0.endpoint":         CHECKSET,
+						// the public endpoint is removed; clear its accumulated expectations
+						"control_plane_endpoints_config.0.load_balancers_config.1.load_balancer_id": REMOVEKEY,
+						"control_plane_endpoints_config.0.load_balancers_config.1.endpoint_type":    REMOVEKEY,
+						"control_plane_endpoints_config.0.load_balancers_config.1.endpoint":         REMOVEKEY,
+					}),
+				),
+			},
+			{
+				// enable cluster internal domain name access (internal_dns_config) with bind_vpcs
+				Config: testAccConfig(map[string]interface{}{
+					"control_plane_endpoints_config": []map[string]interface{}{
+						{
+							"load_balancers_config": []map[string]interface{}{
+								{
+									"load_balancer_id": "${alicloud_nlb_load_balancer.update.id}",
+									"endpoint_type":    "private",
+								},
+							},
+							"internal_dns_config": []map[string]interface{}{
+								{
+									"enabled":   "true",
+									"bind_vpcs": []string{"${alicloud_vpc.default.id}"},
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"control_plane_endpoints_config.0.internal_dns_config.0.enabled":     "true",
+						"control_plane_endpoints_config.0.internal_dns_config.0.bind_vpcs.#": "1",
+					}),
+				),
+			},
+			{
+				// change internal_dns_config.bind_vpcs: bind an additional VPC
+				Config: testAccConfig(map[string]interface{}{
+					"control_plane_endpoints_config": []map[string]interface{}{
+						{
+							"load_balancers_config": []map[string]interface{}{
+								{
+									"load_balancer_id": "${alicloud_nlb_load_balancer.update.id}",
+									"endpoint_type":    "private",
+								},
+							},
+							"internal_dns_config": []map[string]interface{}{
+								{
+									"enabled":   "true",
+									"bind_vpcs": []string{"${alicloud_vpc.default.id}", "${alicloud_vpc.bind.id}"},
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"control_plane_endpoints_config.0.internal_dns_config.0.enabled":     "true",
+						"control_plane_endpoints_config.0.internal_dns_config.0.bind_vpcs.#": "2",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"skip_set_certificate_authority", "addons", "new_nat_gateway", "user_ca", "name_prefix", "load_balancer_spec", "slb_internet_enabled", "zone_ids", "is_enterprise_security_group"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"delete_options": []map[string]interface{}{
+						{
+							"delete_mode":   "delete",
+							"resource_type": "SLB",
+						},
+						{
+							"delete_mode":   "delete",
+							"resource_type": "ALB",
+						},
+						{
+							"delete_mode":   "delete",
+							"resource_type": "PrivateZone",
+						},
+						{
+							"delete_mode":   "delete",
+							"resource_type": "SLS_Data",
+						},
+						{
+							"delete_mode":   "delete",
+							"resource_type": "SLS_ControlPlane",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{})),
+			},
+		},
+	})
+}
+
 func TestAccAliCloudCSManagedKubernetesForProfile(t *testing.T) {
 	var v *cs.KubernetesClusterDetail
 
@@ -960,6 +1250,101 @@ data "alicloud_cs_kubernetes_version" "kubernetes_versions" {
 }
 
 data "alicloud_enhanced_nat_available_zones" "enhanced" {
+}
+`, name)
+}
+
+func resourceCSManagedKubernetesConfigDependenceNlb(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "%s"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {
+}
+
+data "alicloud_nlb_zones" "default" {
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.1.0.0/21"
+}
+
+resource "alicloud_vpc" "bind" {
+  vpc_name   = "${var.name}-bind"
+  cidr_block = "10.2.0.0/21"
+}
+
+resource "alicloud_vswitch" "default_1" {
+  vswitch_name = "${var.name}-1"
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "10.1.1.0/24"
+  zone_id      = data.alicloud_nlb_zones.default.zones.0.id
+}
+
+resource "alicloud_vswitch" "default_2" {
+  vswitch_name = "${var.name}-2"
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "10.1.2.0/24"
+  zone_id      = data.alicloud_nlb_zones.default.zones.1.id
+}
+
+resource "alicloud_security_group" "default" {
+  security_group_name = var.name
+  vpc_id              = alicloud_vpc.default.id
+  security_group_type = "enterprise"
+}
+
+resource "alicloud_nlb_load_balancer" "default" {
+  load_balancer_name = "${var.name}-1"
+  resource_group_id  = data.alicloud_resource_manager_resource_groups.default.groups.0.id
+  load_balancer_type = "Network"
+  address_type       = "Intranet"
+  vpc_id             = alicloud_vpc.default.id
+  security_group_ids = [alicloud_security_group.default.id]
+  zone_mappings {
+    vswitch_id = alicloud_vswitch.default_1.id
+    zone_id    = data.alicloud_nlb_zones.default.zones.0.id
+  }
+  zone_mappings {
+    vswitch_id = alicloud_vswitch.default_2.id
+    zone_id    = data.alicloud_nlb_zones.default.zones.1.id
+  }
+}
+
+resource "alicloud_nlb_load_balancer" "update" {
+  load_balancer_name = "${var.name}-2"
+  resource_group_id  = data.alicloud_resource_manager_resource_groups.default.groups.0.id
+  load_balancer_type = "Network"
+  address_type       = "Intranet"
+  vpc_id             = alicloud_vpc.default.id
+  security_group_ids = [alicloud_security_group.default.id]
+  zone_mappings {
+    vswitch_id = alicloud_vswitch.default_1.id
+    zone_id    = data.alicloud_nlb_zones.default.zones.0.id
+  }
+  zone_mappings {
+    vswitch_id = alicloud_vswitch.default_2.id
+    zone_id    = data.alicloud_nlb_zones.default.zones.1.id
+  }
+}
+
+resource "alicloud_nlb_load_balancer" "public" {
+  load_balancer_name = "${var.name}-3"
+  resource_group_id  = data.alicloud_resource_manager_resource_groups.default.groups.0.id
+  load_balancer_type = "Network"
+  address_type       = "Internet"
+  vpc_id             = alicloud_vpc.default.id
+  security_group_ids = [alicloud_security_group.default.id]
+  zone_mappings {
+    vswitch_id = alicloud_vswitch.default_1.id
+    zone_id    = data.alicloud_nlb_zones.default.zones.0.id
+  }
+  zone_mappings {
+    vswitch_id = alicloud_vswitch.default_2.id
+    zone_id    = data.alicloud_nlb_zones.default.zones.1.id
+  }
 }
 `, name)
 }
