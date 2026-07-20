@@ -22,7 +22,6 @@ func TestAccAliCloudRdsDBReadonlyInstance_update(t *testing.T) {
 		"port":                  "3306",
 		"instance_name":         name,
 		"instance_type":         CHECKSET,
-		"parameters":            NOSET,
 		"master_db_instance_id": CHECKSET,
 		"zone_id":               CHECKSET,
 		"vswitch_id":            CHECKSET,
@@ -46,14 +45,14 @@ func TestAccAliCloudRdsDBReadonlyInstance_update(t *testing.T) {
 		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"master_db_instance_id": "${alicloud_db_instance.default.id}",
 					"zone_id":               "${alicloud_db_instance.default.zone_id}",
 					"engine_version":        "${alicloud_db_instance.default.engine_version}",
-					"instance_type":         "${data.alicloud_db_instance_classes.read.instance_classes[20].instance_class}",
+					"instance_type":         "mysqlro.n2.medium.1c",
 					"instance_storage":      "${alicloud_db_instance.default.instance_storage}",
 					"instance_name":         "${var.name}",
 					"vswitch_id":            "${data.alicloud_vswitches.default.ids.0}",
@@ -74,7 +73,7 @@ func TestAccAliCloudRdsDBReadonlyInstance_update(t *testing.T) {
 			// upgrade storage
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_storage": "${alicloud_db_instance.default.instance_storage + data.alicloud_db_instance_classes.read.instance_classes[20].storage_range[0].step}",
+					"instance_storage": "${alicloud_db_instance.default.instance_storage + 5}",
 					"effective_time":   "Immediate",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -84,7 +83,7 @@ func TestAccAliCloudRdsDBReadonlyInstance_update(t *testing.T) {
 			// upgrade instanceType
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_type": "${data.alicloud_db_instance_classes.read.instance_classes[21].instance_class}",
+					"instance_type": "mysqlro.n4.medium.1c",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{"instance_type": CHECKSET}),
@@ -142,12 +141,12 @@ func TestAccAliCloudRdsDBReadonlyInstance_update(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"upgrade_db_instance_kernel_version": "false",
 					"upgrade_time":                       "Immediate",
-					"switch_time":                        "2020-01-15T00:00:00Z",
-					"target_minor_version":               "rds_20201031",
+					"switch_time":                        "2026-07-20T00:00:00Z",
+					"target_minor_version":               "rds_20260620",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"target_minor_version": "rds_20201031",
+						"target_minor_version": "rds_20260620",
 					}),
 				),
 			},
@@ -182,8 +181,8 @@ func TestAccAliCloudRdsDBReadonlyInstance_update(t *testing.T) {
 					"master_db_instance_id": "${alicloud_db_instance.default.id}",
 					"zone_id":               "${alicloud_db_instance.default.zone_id}",
 					"engine_version":        "${alicloud_db_instance.default.engine_version}",
-					"instance_type":         "${data.alicloud_db_instance_classes.read.instance_classes[20].instance_class}",
-					"instance_storage":      "${alicloud_db_instance.default.instance_storage + 2*data.alicloud_db_instance_classes.read.instance_classes[20].storage_range[0].step}",
+					"instance_type":         "mysqlro.n4.medium.1c",
+					"instance_storage":      "${alicloud_db_instance.default.instance_storage + 10}",
 					"instance_name":         "${var.name}",
 					"vswitch_id":            "${data.alicloud_vswitches.default.ids.0}",
 					"resource_group_id":     "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
@@ -271,7 +270,6 @@ func TestAccAliCloudRdsDBReadonlyInstancePostgreSQL_update(t *testing.T) {
 		"port":                  CHECKSET,
 		"instance_name":         name,
 		"instance_type":         CHECKSET,
-		"parameters":            NOSET,
 		"master_db_instance_id": CHECKSET,
 		"zone_id":               CHECKSET,
 		"vswitch_id":            CHECKSET,
@@ -295,7 +293,7 @@ func TestAccAliCloudRdsDBReadonlyInstancePostgreSQL_update(t *testing.T) {
 		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -538,7 +536,7 @@ func TestAccAliCloudRdsDBReadonlyInstanceMySQL_updatePayType(t *testing.T) {
 		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -631,9 +629,9 @@ func TestAccAliCloudRdsDBReadonlyInstanceMySQL_downgrade(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -705,7 +703,6 @@ func TestAccAliCloudRdsDBReadonlyInstancePostgreSQL_updateDBInstanceSSL(t *testi
 		"port":                  CHECKSET,
 		"instance_name":         name,
 		"instance_type":         CHECKSET,
-		"parameters":            NOSET,
 		"master_db_instance_id": CHECKSET,
 		"zone_id":               CHECKSET,
 		"vswitch_id":            CHECKSET,
@@ -729,7 +726,7 @@ func TestAccAliCloudRdsDBReadonlyInstancePostgreSQL_updateDBInstanceSSL(t *testi
 		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -951,7 +948,7 @@ func TestAccAliCloudRdsDBReadonlyInstancePostgreSQL_updatePayType(t *testing.T) 
 		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1047,7 +1044,7 @@ func TestAccAliCloudRdsDBReadonlyInstanceSQLServer_updatePayType(t *testing.T) {
 		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1205,7 +1202,6 @@ resource "alicloud_db_instance" "default" {
  	db_instance_storage_type = "cloud_essd"
 	instance_type = "pg.x2m.medium.2c"
 	instance_storage = 20
-	zone_id = "eu-central-1a"
 	vswitch_id = data.alicloud_vswitches.default.ids.0
 	instance_name = var.name
 	security_ips = ["10.168.1.12", "100.69.7.112"]
@@ -1324,7 +1320,7 @@ variable "name" {
 }
 data "alicloud_db_zones" "default"{
 	engine = "PostgreSQL"
-	engine_version = "10.0"
+	engine_version = "13.0"
 	instance_charge_type = "PrePaid"
 	category = "HighAvailability"
  	db_instance_storage_type = "cloud_essd"
@@ -1333,7 +1329,7 @@ data "alicloud_db_zones" "default"{
 data "alicloud_db_instance_classes" "default" {
     zone_id = data.alicloud_db_zones.default.zones.0.id
 	engine = "PostgreSQL"
-	engine_version = "10.0"
+	engine_version = "13.0"
     category = "HighAvailability"
  	db_instance_storage_type = "cloud_essd"
 	instance_charge_type = "PrePaid"
@@ -1348,7 +1344,7 @@ data "alicloud_vswitches" "default" {
 
 resource "alicloud_db_instance" "default" {
     engine = "PostgreSQL"
-	engine_version = "10.0"
+	engine_version = "13.0"
  	db_instance_storage_type = "cloud_essd"
 	instance_type = "pg.x2m.medium.2c"
 	instance_storage = 20
@@ -1360,7 +1356,7 @@ data "alicloud_db_instance_classes" "read" {
     db_instance_id = alicloud_db_instance.default.id 
     zone_id = data.alicloud_db_zones.default.zones.0.id
 	engine = "PostgreSQL"
-	engine_version = "10.0"
+	engine_version = "13.0"
     category = "HighAvailability"
  	db_instance_storage_type = "cloud_essd"
 	instance_charge_type = "PrePaid"
@@ -1402,8 +1398,8 @@ resource "alicloud_db_instance" "default" {
     engine = "SQLServer"
 	engine_version = "2019_ent"
  	db_instance_storage_type = "cloud_essd"
-	instance_type = "mssql.mem2.large.s2"
-	instance_storage = 20
+	instance_type = data.alicloud_db_instance_classes.default.instance_classes[0].instance_class
+	instance_storage = data.alicloud_db_instance_classes.default.instance_classes[0].storage_range[0].min
 	vswitch_id = data.alicloud_vswitches.default.ids.0
 	instance_name = var.name
 	category = "AlwaysOn"
