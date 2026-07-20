@@ -1506,18 +1506,18 @@ def _interactive_lease_seconds() -> int:
     """Return the targeted interactive Task lease duration."""
     try:
         return max(30, int(os.environ.get(
-            "JARVIS_INTERACTIVE_LEASE_SECONDS", "300")))
+            "JARVIS_INTERACTIVE_LEASE_SECONDS", "660")))
     except ValueError:
-        return 300
+        return 660
 
 
 def _interactive_lease_safety_margin_seconds() -> float:
     """Return the minimum remaining lease required before a tool may start."""
     try:
         return max(0.0, float(os.environ.get(
-            "JARVIS_INTERACTIVE_LEASE_SAFETY_MARGIN_SEC", "90")))
+            "JARVIS_INTERACTIVE_LEASE_SAFETY_MARGIN_SEC", "60")))
     except ValueError:
-        return 90.0
+        return 60.0
 
 
 def _interactive_affinity_seconds() -> float:
@@ -2819,6 +2819,14 @@ def daemon(state_path: Path, expected_worker_key: str) -> int:
                 daemon_started = _process_start_identity(os.getpid())
                 if daemon_started:
                     latest["daemonProcessStartedAt"] = daemon_started
+                # This is local sidecar liveness, not proof that the remote
+                # heartbeat succeeded. Persist it before the request so a
+                # control-plane 503 does not make PreToolUse mistake a live
+                # sidecar for a dead one; the independently expiring session
+                # permit still fences new tools at the lease safety boundary.
+                heartbeat_at = time.time()
+                latest["sidecarHeartbeatAt"] = heartbeat_at
+                store.save_unlocked(latest)
                 try:
                     _heartbeat_worker(cp, latest, "ACTIVE")
                 except ControlPlaneError as exc:
@@ -2830,8 +2838,6 @@ def daemon(state_path: Path, expected_worker_key: str) -> int:
                     print("interactive heartbeat stopped: admin cleanup removed Worker",
                           file=sys.stderr)
                     return 0
-                heartbeat_at = time.time()
-                latest["sidecarHeartbeatAt"] = heartbeat_at
                 current = latest.get("current")
                 if (isinstance(current, Mapping)
                         and current.get("heartbeatEnabled", True)):

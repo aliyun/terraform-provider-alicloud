@@ -71,8 +71,10 @@ Env:
                                            JARVIS_HTML_REPORT_TOKEN; startup fails when absent.
   JARVIS_CONTROL_PLANE_TIMEOUT             HTTP timeout seconds (default 10).
   JARVIS_CONTROL_PLANE_RETRY_SEC           retry interval while data plane is unavailable (default 5).
-  JARVIS_LEASE_SECONDS                     session lease TTL requested from data plane (default 300).
-  JARVIS_LEASE_SAFETY_MARGIN_SEC           local fail-closed margin before lease expiry (default 90).
+  JARVIS_LEASE_SECONDS                     session lease TTL requested from data plane (default 660).
+  JARVIS_LEASE_SAFETY_MARGIN_SEC           local fail-closed margin before lease expiry (default 60).
+                                           The defaults preserve 10 minutes of transient 503 tolerance
+                                           plus a 60-second fencing tail before server-side reclamation.
   JARVIS_WORKER_HEARTBEAT_SEC              worker heartbeat interval (default 30).
   JARVIS_SESSION_HEARTBEAT_SEC             leased session heartbeat interval (default 30).
   JARVIS_LEASE_POLL_SEC                    task lease poll interval (default 2).
@@ -5729,9 +5731,9 @@ class JarvisHandler(AsyncChatbotHandler):
                 "JARVIS_WORKER_ID_FILE",
                 os.path.join(jarvis_root(), ".my-day", "bridge", "worker-id")),
             capabilities={"kinds": kinds},
-            lease_seconds=int(os.environ.get("JARVIS_LEASE_SECONDS", "300")),
+            lease_seconds=int(os.environ.get("JARVIS_LEASE_SECONDS", "660")),
             lease_safety_margin=float(
-                os.environ.get("JARVIS_LEASE_SAFETY_MARGIN_SEC", "90")),
+                os.environ.get("JARVIS_LEASE_SAFETY_MARGIN_SEC", "60")),
             lease_interval=float(os.environ.get("JARVIS_LEASE_POLL_SEC", "2")),
             worker_heartbeat_interval=float(
                 os.environ.get("JARVIS_WORKER_HEARTBEAT_SEC", "30")),

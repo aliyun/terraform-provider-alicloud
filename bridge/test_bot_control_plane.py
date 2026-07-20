@@ -79,7 +79,9 @@ class HandlerWiringTest(unittest.TestCase):
         self.assertEqual(_FakePersistenceExecutor.instances[-1].kwargs["capabilities"],
                          {"kinds": sorted(handler.execution_router.task_types)})
         self.assertEqual(
-            _FakePersistenceExecutor.instances[-1].kwargs["lease_safety_margin"], 90)
+            _FakePersistenceExecutor.instances[-1].kwargs["lease_safety_margin"], 60)
+        self.assertEqual(
+            _FakePersistenceExecutor.instances[-1].kwargs["lease_seconds"], 660)
         self.assertIs(_FakePersistenceExecutor.instances[-1].args[1],
                       handler.ephemeral_executor.capacity_manager)
         self.assertIs(handler.execution_runtime,

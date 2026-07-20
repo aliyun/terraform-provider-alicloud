@@ -324,26 +324,27 @@ class SessionControllerTest(unittest.TestCase):
     def test_sustained_heartbeat_503_stops_at_safety_boundary(self):
         clock = FakeClock()
         client = FakeClient(heartbeat_session=[
-            ControlPlaneUnavailable("deploying") for _ in range(7)
+            ControlPlaneUnavailable("deploying") for _ in range(21)
         ])
         stopped = []
         lifecycle = SessionController(
             client, "mac:boot:proc", lease_response(),
-            lease_seconds=300, lease_safety_margin=90, clock=clock,
+            lease_seconds=660, lease_safety_margin=60, clock=clock,
             stop_process=lambda current, reason: stopped.append(
                 (current.process, reason)), logger=LOG)
         self.assertTrue(lifecycle.start())
         process = FakeProcess(4321)
         lifecycle.bind_process(process)
 
-        for _ in range(6):
+        for _ in range(19):
             clock.advance(30)
             self.assertTrue(lifecycle.heartbeat())
-        self.assertEqual(clock(), 180)
+        self.assertEqual(clock(), 570)
         self.assertEqual(stopped, [])
 
         clock.advance(30)
         self.assertFalse(lifecycle.heartbeat())
+        self.assertEqual(clock(), 600)
         self.assertTrue(lifecycle.ownership_lost)
         self.assertEqual(stopped, [
             (process, "lease_proof_expiring:heartbeat")])
