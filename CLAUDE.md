@@ -10,7 +10,7 @@
 
 1) 跑 `bootstrap/preflight.sh`（24h 闸门，`--force` 强制重跑），全绿才干活；
 2) 等任务：有单 → [loops/aone-triage.md](loops/aone-triage.md)，无单 → [loops/adhoc-intake.md](loops/adhoc-intake.md)，低置信/验收不过 → 起草不发出入 `escalation/`；
-3) bridge 定时扫池，把可恢复业务统一写入控制面 Task，由 PersistenceExecutor lease 并发处理；probe 等一次性作业走 EphemeralExecutor（授权前置可配 `JARVIS_AUTO_DISPATCH=0`；停滞催办走每日 `DailyScheduler`(nudge job)；见 `bridge/jarvis_dingtalk_bot.py` **`AoneScheduler`**），扫描/派发由 bridge 全权负责，Jarvis 只被动接单；入口统一 `bridge/run.sh start`（自动 source env + 判定钉钉/降级模式，不需额外点火）。**派发探测真源 = `AoneScheduler` 的 python 直查并集**（每池 `assignedTo∪workitem.tracker∪tag=jarvis-idle` × `DIGITAL_WORKER_IDS`：指派/抄送数字人的新单或更新单、及 idle 人工门），非 `bootstrap/scan.sh`——后者已降级为人工审计/兜底工具与 backlog-drain 的 any-assignee 扫描。
+3) bridge 定时扫池，把可恢复业务统一写入控制面 Task，由 PersistenceExecutor lease 并发处理；probe 等一次性作业走 EphemeralExecutor（授权前置可配 `JARVIS_AUTO_DISPATCH=0`；停滞催办走每日 `DailyScheduler`(nudge job)；见 `bridge/jarvis_dingtalk_bot.py` **`AoneScheduler`**），扫描/派发由 bridge 全权负责，Jarvis 只被动接单；入口统一 `bridge/run.sh start`（自动 source env + 判定钉钉/降级模式，不需额外点火）。**派发探测真源 = `AoneScheduler` 的 python 直查并集**（每池 `assignedTo∪workitem.tracker∪tag=jarvis-idle` × `DIGITAL_WORKER_IDS`：指派/抄送数字人的新单或更新单、及 idle 人工门），非 `bootstrap/scan.sh`——后者已降级为人工审计/兜底工具与 backlog-drain 的 any-assignee 扫描。**多机部署**：`JARVIS_BRIDGE_ROLE=scheduler`（macmini 一台，全部调度器 + executor）+ `JARVIS_BRIDGE_ROLE=worker`（Linux 机器 N 台，只 executor），聚合并发 = 各机 `JARVIS_DISPATCH_MAX` 之和；详见 [docs/multi-worker-deployment.md](docs/multi-worker-deployment.md)。
 
 ## 工作纪律
 
