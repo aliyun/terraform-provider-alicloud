@@ -420,6 +420,16 @@ func resourceAliCloudKvstoreInstance() *schema.Resource {
 				Type:     schema.TypeInt,
 				Optional: true,
 			},
+			"replica_count": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
+			"slave_replica_count": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
 			"is_auto_upgrade_open": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -568,6 +578,14 @@ func resourceAliCloudKvstoreInstanceCreate(d *schema.ResourceData, meta interfac
 		request["SlaveReadOnlyCount"] = v
 	}
 
+	if v, ok := d.GetOk("replica_count"); ok {
+		request["ReplicaCount"] = v
+	}
+
+	if v, ok := d.GetOk("slave_replica_count"); ok {
+		request["SlaveReplicaCount"] = v
+	}
+
 	vswitchId := Trim(d.Get("vswitch_id").(string))
 	if vswitchId != "" {
 		vpcService := VpcService{client}
@@ -691,6 +709,8 @@ func resourceAliCloudKvstoreInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("shard_count", object["ShardCount"])
 	d.Set("read_only_count", object["ReadOnlyCount"])
 	d.Set("slave_read_only_count", object["SlaveReadOnlyCount"])
+	d.Set("replica_count", object["ReplicaCount"])
+	d.Set("slave_replica_count", object["SlaveReplicaCount"])
 	d.Set("status", object["InstanceStatus"])
 	if v, ok := object["Tags"].(map[string]interface{}); ok {
 		d.Set("tags", tagsToMap(v["Tag"]))
@@ -1031,6 +1051,13 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		migrateToOtherZoneReq["VSwitchId"] = v
 	}
 
+	// Trigger MigrateToOtherZone whenever secondary_zone_id changes. Setting it to a
+	// non-empty value swaps the secondary zone; clearing it (REMOVEKEY) converts a
+	// dual-zone instance to single-zone via MigrateToOtherZone by omitting
+	// SecondaryZoneId and zeroing the secondary replica/read-only counts (the former
+	// secondary nodes are absorbed into the primary counts to keep
+	// ReplicaCount+SlaveReplicaCount and the read-only pair sum-invariant, as required
+	// by the API; see the absorb block below).
 	if !d.IsNewResource() && d.HasChange("secondary_zone_id") {
 		update = true
 	}
@@ -1046,6 +1073,14 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		migrateToOtherZoneReq["SlaveReadOnlyCount"] = v
 	}
 
+	if v, ok := d.GetOk("replica_count"); ok {
+		migrateToOtherZoneReq["ReplicaCount"] = v
+	}
+
+	if v, ok := d.GetOk("slave_replica_count"); ok {
+		migrateToOtherZoneReq["SlaveReplicaCount"] = v
+	}
+
 	if !d.IsNewResource() && d.HasChange("availability_zone") {
 		update = true
 
@@ -1056,6 +1091,82 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 
 	if v, ok := d.GetOk("effective_time"); ok {
 		migrateToOtherZoneReq["EffectiveTime"] = v
+	}
+
+	// Ensure ZoneId is present for MigrateToOtherZone even when only
+	// secondary_zone_id or replica counts changed and zone_id/availability_zone
+	// did not change. Fallback: state zone_id -> availability_zone -> live instance zone.
+	if update {
+		if _, ok := migrateToOtherZoneReq["ZoneId"]; !ok {
+			if v, ok := d.GetOk("zone_id"); ok {
+				migrateToOtherZoneReq["ZoneId"] = v
+			} else if v, ok := d.GetOk("availability_zone"); ok {
+				migrateToOtherZoneReq["ZoneId"] = v
+			} else {
+				instance, err := r_kvstoreService.DescribeKvstoreInstance(d.Id())
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DescribeKvstoreInstance", AlibabaCloudSdkGoERROR)
+				}
+				if v, ok := instance["ZoneId"]; ok {
+					migrateToOtherZoneReq["ZoneId"] = v
+				}
+			}
+		}
+	}
+
+	// Determine whether this update clears secondary_zone_id (REMOVEKEY), which
+	// converts a dual-zone instance to single-zone. The flag drives both the
+	// SecondaryZoneId backfill (skipped on REMOVEKEY) and the replica absorb below.
+	isRemoveSecondaryZone := false
+	if update && d.HasChange("secondary_zone_id") {
+		if v, ok := d.GetOk("secondary_zone_id"); !ok || fmt.Sprint(v) == "" {
+			isRemoveSecondaryZone = true
+		}
+	}
+
+	// Backfill the current instance SecondaryZoneId only when this is NOT a REMOVEKEY.
+	// REMOVEKEY intentionally omits SecondaryZoneId to convert dual-zone to single-zone;
+	// the absorb block below zeros the secondary replica/read-only counts and preserves
+	// the sum. For routine migrations triggered by other fields (zone_id/vswitch_id/
+	// availability_zone/replica counts) where secondary_zone_id did not change, keep the
+	// current SecondaryZoneId intact so the migration does not accidentally drop it.
+	if update && !isRemoveSecondaryZone {
+		if _, ok := migrateToOtherZoneReq["SecondaryZoneId"]; !ok {
+			instance, err := r_kvstoreService.DescribeKvstoreInstance(d.Id())
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DescribeKvstoreInstance", AlibabaCloudSdkGoERROR)
+			}
+			if cur, ok := instance["SecondaryZoneId"]; ok && fmt.Sprint(cur) != "" {
+				migrateToOtherZoneReq["SecondaryZoneId"] = cur
+			}
+		}
+	}
+
+	// Dual-zone -> single-zone conversion (REMOVEKEY): zero the secondary replica and
+	// read-only counts and absorb the former secondary nodes into the primary counts so
+	// ReplicaCount+SlaveReplicaCount (and ReadOnlyCount+SlaveReadOnlyCount) stay the
+	// same as before migration, as required by MigrateToOtherZone. The instance's live
+	// distribution is read here so the totals reflect the actual server-side state; config
+	// values for replica_count/slave_replica_count are intentionally overridden because
+	// the conversion must preserve the total. Only the node type the instance actually
+	// uses is adjusted to avoid sending irrelevant counts to the API.
+	if update && isRemoveSecondaryZone {
+		instance, err := r_kvstoreService.DescribeKvstoreInstance(d.Id())
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DescribeKvstoreInstance", AlibabaCloudSdkGoERROR)
+		}
+		curReplica := formatInt(instance["ReplicaCount"])
+		curSlaveReplica := formatInt(instance["SlaveReplicaCount"])
+		curReadOnly := formatInt(instance["ReadOnlyCount"])
+		curSlaveReadOnly := formatInt(instance["SlaveReadOnlyCount"])
+		if curReplica > 0 || curSlaveReplica > 0 {
+			migrateToOtherZoneReq["SlaveReplicaCount"] = 0
+			migrateToOtherZoneReq["ReplicaCount"] = curReplica + curSlaveReplica
+		}
+		if curReadOnly > 0 || curSlaveReadOnly > 0 {
+			migrateToOtherZoneReq["SlaveReadOnlyCount"] = 0
+			migrateToOtherZoneReq["ReadOnlyCount"] = curReadOnly + curSlaveReadOnly
+		}
 	}
 
 	if update {
@@ -1268,6 +1379,22 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 
 		if v, ok := d.GetOkExists("read_only_count"); ok {
 			modifyInstanceSpecReq["ReadOnlyCount"] = v
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("replica_count") {
+		update = true
+
+		if v, ok := d.GetOk("replica_count"); ok {
+			modifyInstanceSpecReq["ReplicaCount"] = v
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("slave_replica_count") {
+		update = true
+
+		if v, ok := d.GetOk("slave_replica_count"); ok {
+			modifyInstanceSpecReq["SlaveReplicaCount"] = v
 		}
 	}
 

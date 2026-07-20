@@ -273,6 +273,9 @@ The following arguments are supported:
 * `read_only_count` - (Optional, Int, Available since v1.226.0) The number of read replicas in the primary zone. Valid values: `1` to `9`.
 * `slave_read_only_count` - (Optional, Int, Available since v1.226.0) The number of read replicas in the secondary zone. **NOTE:**: When you create a multi-zone read/write splitting instance, you must specify both `secondary_zone_id` and `slave_read_only_count`.
 -> **NOTE:** The sum of `read_only_count` and `slave_read_only_count` cannot be greater than `9`.
+* `replica_count` - (Optional, Int, Available since v1.286.0) The number of replica nodes in the primary zone. If not specified, the value is assigned by the system based on the instance architecture.
+* `slave_replica_count` - (Optional, Int, Available since v1.286.0) The number of replica nodes in the secondary zone. If not specified, the value is assigned by the system based on the instance architecture.
+-> **NOTE:** `replica_count`/`slave_replica_count` (replica nodes) and `read_only_count`/`slave_read_only_count` (read-only nodes) are mutually exclusive. An instance cannot have both replicas and read-only nodes at the same time.
 * `is_auto_upgrade_open` - (Optional, Available since v1.228.0) Specifies whether to enable automatic minor version update. Valid values:
   - `1`: Enables automatic minor version update.
   - `0`: Disables automatic minor version update.
