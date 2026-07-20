@@ -678,6 +678,7 @@ class _ActiveSession:
 
 
 Execute = Callable[[Mapping[str, Any], SessionController], Any]
+Progress = Callable[[Mapping[str, Any], SessionController], Optional[str]]
 
 
 class PersistenceExecutor:
@@ -696,6 +697,7 @@ class PersistenceExecutor:
                  session_heartbeat_interval: float = 30.0, retry_interval: float = 5.0,
                  clock: Callable[[], float] = time.monotonic,
                  executor: Optional[Any] = None,
+                 progress: Optional[Progress] = None,
                  logger: Optional[logging.Logger] = None):
         if not callable(execute):
             raise TypeError("execute must be callable")
@@ -742,12 +744,15 @@ class PersistenceExecutor:
             raise ValueError("lease_safety_margin must be less than lease_seconds")
         if not callable(runtime_session_id_factory):
             raise TypeError("runtime_session_id_factory must be callable")
+        if progress is not None and not callable(progress):
+            raise TypeError("progress must be callable")
         self._runtime_session_id_factory = runtime_session_id_factory
         self.lease_interval = float(lease_interval)
         self.worker_heartbeat_interval = float(worker_heartbeat_interval)
         self.session_heartbeat_interval = float(session_heartbeat_interval)
         self.retry_interval = float(retry_interval)
         self.clock = clock
+        self.progress = progress
         self.log = logger or logging.getLogger(__name__)
 
         self._executor = executor or _ThreadExecutor()
@@ -1079,7 +1084,17 @@ class PersistenceExecutor:
             if controller.pending_terminal:
                 controller.retry_terminal()
             elif not controller.terminal and not controller.ownership_lost:
-                controller.heartbeat()
+                detail = None
+                if self.progress is not None:
+                    try:
+                        excerpt = self.progress(controller.lease, controller)
+                        if excerpt:
+                            detail = {"progressExcerpt": str(excerpt)}
+                    except Exception as exc:  # noqa: BLE001 - observability is best effort
+                        self.log.warning(
+                            "session progress snapshot failed session=%s error=%s",
+                            controller.session_id, type(exc).__name__)
+                controller.heartbeat(detail)
             if ((controller.terminal or controller.ownership_lost) and
                     self._future_done(record)):
                 self._remove_session(controller.session_id)

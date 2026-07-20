@@ -84,8 +84,85 @@ class HandlerWiringTest(unittest.TestCase):
                       handler.ephemeral_executor.capacity_manager)
         self.assertIs(handler.execution_runtime,
                       handler.ephemeral_executor.execution_runtime)
+        self.assertTrue(callable(
+            _FakePersistenceExecutor.instances[-1].kwargs["progress"]))
         for obsolete in ("task_router", "local_worker", "dispatch_pool"):
             self.assertFalse(hasattr(handler, obsolete))
+
+    def test_exposes_assistant_text_and_tool_name_without_tool_payloads(self):
+        with tempfile.TemporaryDirectory() as directory:
+            transcript = Path(directory) / "session.jsonl"
+            transcript.write_text("\n".join([
+                json.dumps({
+                    "message": {"role": "assistant", "content": [
+                        {"type": "text", "text": "正在检查控制面状态"},
+                        {"type": "tool_use", "name": "exec_command",
+                         "input": {"token": "must-not-leak"}},
+                    ]}
+                }, ensure_ascii=False),
+                json.dumps({
+                    "message": {"role": "user", "content": [
+                        {"type": "tool_result", "content": "secret-result"}
+                    ]}
+                }, ensure_ascii=False),
+            ]), encoding="utf-8")
+            with mock.patch.object(bot, "_session_file", return_value=transcript):
+                excerpt = bot._session_progress_excerpt("runtime-1")
+
+        self.assertIn("正在检查控制面状态", excerpt)
+        self.assertIn("[执行工具 exec_command]", excerpt)
+        self.assertNotIn("must-not-leak", excerpt)
+        self.assertNotIn("secret-result", excerpt)
+
+    def test_exposes_latest_subagent_progress_in_timestamp_order(self):
+        with tempfile.TemporaryDirectory() as directory:
+            transcript = Path(directory) / "session.jsonl"
+            transcript.write_text(json.dumps({
+                "timestamp": "2026-07-20T09:13:13Z",
+                "message": {"role": "assistant", "content": [
+                    {"type": "text", "text": "开始 terraform-rd"},
+                ]},
+            }, ensure_ascii=False), encoding="utf-8")
+            subagents = transcript.with_suffix("") / "subagents"
+            subagents.mkdir(parents=True)
+            (subagents / "agent-rd.jsonl").write_text("\n".join([
+                json.dumps({
+                    "timestamp": "2026-07-20T09:14:00Z",
+                    "message": {"role": "assistant", "content": [
+                        {"type": "text", "text": "正在检查评审意见"},
+                    ]},
+                }, ensure_ascii=False),
+                json.dumps({
+                    "timestamp": "2026-07-20T09:15:00Z",
+                    "message": {"role": "assistant", "content": [
+                        {"type": "tool_use", "name": "Bash",
+                         "input": {"command": "secret command"}},
+                    ]},
+                }, ensure_ascii=False),
+            ]), encoding="utf-8")
+            with mock.patch.object(bot, "_session_file", return_value=transcript):
+                excerpt = bot._session_progress_excerpt("runtime-1")
+
+        self.assertLess(excerpt.index("开始 terraform-rd"),
+                        excerpt.index("正在检查评审意见"))
+        self.assertIn("[执行工具 Bash]", excerpt)
+        self.assertNotIn("secret command", excerpt)
+
+    def test_redacts_sensitive_values_repeated_by_assistant(self):
+        with tempfile.TemporaryDirectory() as directory:
+            transcript = Path(directory) / "session.jsonl"
+            transcript.write_text(json.dumps({
+                "timestamp": "2026-07-20T09:14:00Z",
+                "message": {"role": "assistant", "content": [
+                    {"type": "text",
+                     "text": "access_key_secret=super-secret-value"},
+                ]},
+            }), encoding="utf-8")
+            with mock.patch.object(bot, "_session_file", return_value=transcript):
+                excerpt = bot._session_progress_excerpt("runtime-1")
+
+        self.assertIn("access_key_secret=[REDACTED]", excerpt)
+        self.assertNotIn("super-secret-value", excerpt)
 
     def test_worker_starts_before_every_sensor(self):
         calls = []
