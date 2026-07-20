@@ -61,6 +61,7 @@ JSON
 #   A1_GET_FAIL   – "all" | "first" | unset
 #   A1_UPDATE_NOOP – "1" → update captures but does NOT persist (lost-race sim)
 #   A1_MISSING_FIELD – "1" → tag update fails with structured required-field validation
+#   A1_MISSING_FIELD_NO_ID – "1" → same validation without numeric field IDs
 #   A1_UPDATE_ERROR_RC – non-empty → tag update fails with this rc and a generic error
 #   A1_LOOSE_EMPTY_RC – non-empty → tag update fails with an unstructured 不能为空 error
 #   A1_STATUS_CAPTURE – file to record the --status value of an update (optional)
@@ -123,6 +124,10 @@ if [ "$1 $2 $3" = "project workitem update" ]; then
     done
     if [ -n "$has_tag" ] && [ "${A1_MISSING_FIELD:-}" = "1" ]; then
         echo "更新工作项失败:【需求分类】(140282)不能为空" >&2
+        exit 1
+    fi
+    if [ -n "$has_tag" ] && [ "${A1_MISSING_FIELD_NO_ID:-}" = "1" ]; then
+        echo "更新工作项失败:【涉及云产品】不能为空,【Terraform需求类型】不能为空" >&2
         exit 1
     fi
     if [ -n "$has_tag" ] && [ -n "${A1_LOOSE_EMPTY_RC:-}" ]; then
@@ -850,10 +855,22 @@ if printf '%s' "$out" | grep -q "missing_required_field 140282 需求分类"; th
 else
     assert_fail "missing field: machine-readable detail absent: $out"
 fi
-if [ "$get_count" -eq 1 ] && ! printf '%s' "$out" | grep -q "lost race"; then
-    assert_pass "missing field: stops after update failure without readback"
+if [ "$get_count" -ge 2 ] && ! printf '%s' "$out" | grep -q "lost race"; then
+    assert_pass "missing field: attempts deterministic repair without lost-race readback"
 else
-    assert_fail "missing field: should have one pre-update get and no lost race (gets=$get_count, out=$out)"
+    assert_fail "missing field: should inspect repair candidates and avoid lost race (gets=$get_count, out=$out)"
+fi
+
+printf '' > "$tmpstate"
+unset A1_MISSING_FIELD
+export A1_MISSING_FIELD_NO_ID=1
+run_claim claim
+unset A1_MISSING_FIELD_NO_ID
+if [ "$rc" -eq 3 ] && printf '%s' "$out" | grep -q "missing_required_field unknown 涉及云产品" \
+        && printf '%s' "$out" | grep -q "required-field self-heal could not complete"; then
+    assert_pass "missing field: no-ID Aone validation is classified and auto-fill attempted"
+else
+    assert_fail "missing field: no-ID validation was not actionable rc=$rc out=$out"
 fi
 
 # ---------------------------------------------------------------------------

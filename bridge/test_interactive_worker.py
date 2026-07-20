@@ -737,11 +737,11 @@ class InteractiveWorkerTest(unittest.TestCase):
         with mock.patch.dict(os.environ, {}, clear=False):
             old = {key: os.environ.pop(key, None) for key in keys}
             try:
-                self.assertEqual(worker._interactive_lease_seconds(), 300)
+                self.assertEqual(worker._interactive_lease_seconds(), 660)
                 self.assertEqual(worker._interactive_heartbeat_seconds(), 30)
                 self.assertEqual(worker._interactive_turn_grace_seconds(), 600)
                 self.assertEqual(
-                    worker._interactive_lease_safety_margin_seconds(), 90)
+                    worker._interactive_lease_safety_margin_seconds(), 60)
                 self.assertEqual(worker._interactive_affinity_seconds(), 7200)
 
                 os.environ["JARVIS_INTERACTIVE_TURN_GRACE_SEC"] = "90"
@@ -894,6 +894,32 @@ class InteractiveWorkerTest(unittest.TestCase):
         self.assertIsNone(after["current"])
         self.assertIsNone(after["pendingClaim"])
         self.assertEqual(after["lostOwnership"]["aoneId"], "84345050")
+
+    def test_sidecar_stays_locally_healthy_during_control_plane_503(self):
+        state = self._seed()
+        state["current"] = {
+            "aoneId": "84345050", "projectId": "2100304", "taskId": "task-1",
+            "sessionId": "session-1", "fenceToken": 9, "generation": 4,
+            "cycle": 1, "runtimeSessionId": "interactive:cycle:1",
+            "leaseSeconds": 660, "heartbeatEnabled": True,
+        }
+        self._add_permit(state, now=900, lease_seconds=660)
+        self._store().save(state)
+        fake = FakeClient()
+        fake.worker_heartbeat_error = worker.ControlPlaneUnavailable("deploying")
+
+        with mock.patch.object(worker, "_client", return_value=fake), \
+                mock.patch.object(worker, "_host_alive", return_value=True), \
+                mock.patch.object(worker.time, "time", return_value=1000), \
+                mock.patch.object(
+                    worker.time, "sleep", side_effect=RuntimeError("stop test loop")), \
+                self.assertRaisesRegex(RuntimeError, "stop test loop"):
+            worker.daemon(self._store().path, state["workerKey"])
+
+        after = self._store().load()
+        self.assertEqual(after["sidecarHeartbeatAt"], 1000)
+        self.assertEqual(after["sessionPermit"]["leaseExpireAt"], 1560)
+        self.assertIsNotNone(after["current"])
 
     def test_worker_404_tombstones_old_assignment_and_standard_claim_rebuilds(self):
         state = self._seed()
@@ -1050,7 +1076,7 @@ class InteractiveWorkerTest(unittest.TestCase):
         for label, mutate, expected in (
                 ("safety-margin",
                  lambda value: value["sessionPermit"].update(
-                     {"leaseExpireAt": 1090}),
+                     {"leaseExpireAt": 1060}),
                  "安全边界"),
                 ("session-status",
                  lambda value: value["sessionPermit"].update(

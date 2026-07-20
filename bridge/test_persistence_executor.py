@@ -324,26 +324,27 @@ class SessionControllerTest(unittest.TestCase):
     def test_sustained_heartbeat_503_stops_at_safety_boundary(self):
         clock = FakeClock()
         client = FakeClient(heartbeat_session=[
-            ControlPlaneUnavailable("deploying") for _ in range(7)
+            ControlPlaneUnavailable("deploying") for _ in range(21)
         ])
         stopped = []
         lifecycle = SessionController(
             client, "mac:boot:proc", lease_response(),
-            lease_seconds=300, lease_safety_margin=90, clock=clock,
+            lease_seconds=660, lease_safety_margin=60, clock=clock,
             stop_process=lambda current, reason: stopped.append(
                 (current.process, reason)), logger=LOG)
         self.assertTrue(lifecycle.start())
         process = FakeProcess(4321)
         lifecycle.bind_process(process)
 
-        for _ in range(6):
+        for _ in range(19):
             clock.advance(30)
             self.assertTrue(lifecycle.heartbeat())
-        self.assertEqual(clock(), 180)
+        self.assertEqual(clock(), 570)
         self.assertEqual(stopped, [])
 
         clock.advance(30)
         self.assertFalse(lifecycle.heartbeat())
+        self.assertEqual(clock(), 600)
         self.assertTrue(lifecycle.ownership_lost)
         self.assertEqual(stopped, [
             (process, "lease_proof_expiring:heartbeat")])
@@ -498,6 +499,22 @@ class PersistenceExecutorTest(unittest.TestCase):
                         "error": {"type": "TRANSIENT"},
                         "retryAfterSeconds": 20,
                     })
+
+    def test_actionable_task_failure_is_forwarded_without_collapsing_detail(self):
+        client = FakeClient(lease_task=[lease_response()])
+        result = {
+            "status": "error",
+            "error": {
+                "errorType": "AoneClaimFailed",
+                "message": "required field Terraform需求类型 is missing",
+                "attempts": 1,
+            },
+        }
+        worker = self.make(client, lambda *_args: result, lambda *_args: None)
+        self.assertTrue(worker.run_once())
+        self.assertEqual(client.named("fail_session")[0]["args"][3], {
+            "error": result["error"],
+        })
 
     def test_managed_wait_state_is_forwarded_without_runner_status_fields(self):
         client = FakeClient(lease_task=[lease_response()])

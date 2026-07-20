@@ -71,8 +71,10 @@ Env:
                                            JARVIS_HTML_REPORT_TOKEN; startup fails when absent.
   JARVIS_CONTROL_PLANE_TIMEOUT             HTTP timeout seconds (default 10).
   JARVIS_CONTROL_PLANE_RETRY_SEC           retry interval while data plane is unavailable (default 5).
-  JARVIS_LEASE_SECONDS                     session lease TTL requested from data plane (default 300).
-  JARVIS_LEASE_SAFETY_MARGIN_SEC           local fail-closed margin before lease expiry (default 90).
+  JARVIS_LEASE_SECONDS                     session lease TTL requested from data plane (default 660).
+  JARVIS_LEASE_SAFETY_MARGIN_SEC           local fail-closed margin before lease expiry (default 60).
+                                           The defaults preserve 10 minutes of transient 503 tolerance
+                                           plus a 60-second fencing tail before server-side reclamation.
   JARVIS_WORKER_HEARTBEAT_SEC              worker heartbeat interval (default 30).
   JARVIS_SESSION_HEARTBEAT_SEC             leased session heartbeat interval (default 30).
   JARVIS_LEASE_POLL_SEC                    task lease poll interval (default 2).
@@ -1516,7 +1518,7 @@ def _claim_workitem(iid, project, terraform=False):
          "claim", str(iid), str(project)],
         cwd=str(REPO_ROOT), timeout=60, capture_output=True, text=True, env=env)
     if proc.returncode != 0:
-        detail = ((proc.stderr or proc.stdout or "").strip())[-300:]
+        detail = ((proc.stderr or proc.stdout or "").strip())[-1000:]
         raise RuntimeError(
             "bridge claim failed for #%s (rc=%s): %s" %
             (iid, proc.returncode, detail or "no detail"))
@@ -2563,6 +2565,28 @@ def run_claude_stream(text, session_id, resume, timeout=None, on_spawn=None, ter
 
 
 ClaudeResult = namedtuple("ClaudeResult", "text is_error subtype")
+
+
+def _task_failure_result(result, attempts=1):
+    """Return the actionable, sanitized error envelope persisted by Task sessions."""
+    message = _aone_event_sanitize_text(
+        getattr(result, "text", "") or getattr(result, "subtype", "") or
+        "Jarvis execution failed", limit=1000)
+    subtype = str(getattr(result, "subtype", "") or "execution_error")[:100]
+    lowered = message.lower()
+    error_type = ("AoneClaimFailed" if
+                  ("claim failed" in lowered or "missing_required_field" in lowered or
+                   "missing required field" in lowered or "不能为空" in message)
+                  else "JarvisExecutionFailed")
+    return {
+        "status": "error",
+        "error": {
+            "errorType": error_type,
+            "subtype": subtype,
+            "message": message,
+            "attempts": max(1, int(attempts)),
+        },
+    }
 
 
 def _classify_result(out, err, rc):
@@ -5707,9 +5731,9 @@ class JarvisHandler(AsyncChatbotHandler):
                 "JARVIS_WORKER_ID_FILE",
                 os.path.join(jarvis_root(), ".my-day", "bridge", "worker-id")),
             capabilities={"kinds": kinds},
-            lease_seconds=int(os.environ.get("JARVIS_LEASE_SECONDS", "300")),
+            lease_seconds=int(os.environ.get("JARVIS_LEASE_SECONDS", "660")),
             lease_safety_margin=float(
-                os.environ.get("JARVIS_LEASE_SAFETY_MARGIN_SEC", "90")),
+                os.environ.get("JARVIS_LEASE_SAFETY_MARGIN_SEC", "60")),
             lease_interval=float(os.environ.get("JARVIS_LEASE_POLL_SEC", "2")),
             worker_heartbeat_interval=float(
                 os.environ.get("JARVIS_WORKER_HEARTBEAT_SEC", "30")),
@@ -6277,7 +6301,8 @@ class JarvisHandler(AsyncChatbotHandler):
                     kind=kind, sid=sid, attempts=attempt + 1)
                 log.info("dispatch_item #%s failed (subtype=%s, attempts=%d)",
                          item_id, res.subtype, attempt + 1)
-                return "error"
+                return (_task_failure_result(res, attempt + 1)
+                        if session_controller is not None else "error")
             if task_bookend is not None and not task_bookend.writes_reply:
                 # Post-PR (pr_ci_fix / pr_comment_reply): the run only did GitHub work and
                 # wrote nothing to Aone; no [[AONE_RESULT]] is expected. Drop the claim to
@@ -6306,7 +6331,8 @@ class JarvisHandler(AsyncChatbotHandler):
                     log.warning(
                         "dispatch_item #%s clean exit without AONE_RESULT; failing closed",
                         item_id)
-                    return "error"
+                    return (_task_failure_result(res_err, attempt + 1)
+                            if session_controller is not None else "error")
                 task_bookend.commit(tr)
                 if tr["outcome"] == "suspend":
                     wl = self._workitem_line(item_id)
@@ -6356,7 +6382,8 @@ class JarvisHandler(AsyncChatbotHandler):
             self._dispatch_failed(
                 item_id, res, notify, project, terraform=terraform,
                 kind=kind, sid=sid, attempts=attempt + 1)
-            return "error"
+            return (_task_failure_result(res, attempt + 1)
+                    if session_controller is not None else "error")
 
     @staticmethod
     def _write_probe_summary(round_id, final_text):
