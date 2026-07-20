@@ -345,6 +345,63 @@ resource "alicloud_cs_managed_kubernetes" "auto-mode" {
 
 ```
 
+ACK Cluster with an automatically created private NLB
+
+When `load_balancer_id` is omitted, ACK automatically creates and manages a private NLB for the cluster API server endpoint, so there is no need to create an `alicloud_nlb_load_balancer` resource. The cluster must span at least two zones so that the auto-created NLB gets a valid zone list.
+
+```terraform
+variable "name" {
+  default = "tf-example-auto-nlb"
+}
+
+variable "service_cidr" {
+  description = "The kubernetes service cidr block."
+  default     = "172.23.0.0/16"
+}
+
+data "alicloud_nlb_zones" "default" {}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.1.0.0/21"
+}
+
+resource "alicloud_vswitch" "default_1" {
+  vswitch_name = "${var.name}-1"
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "10.1.1.0/24"
+  zone_id      = data.alicloud_nlb_zones.default.zones.0.id
+}
+
+resource "alicloud_vswitch" "default_2" {
+  vswitch_name = "${var.name}-2"
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "10.1.2.0/24"
+  zone_id      = data.alicloud_nlb_zones.default.zones.1.id
+}
+
+resource "alicloud_cs_managed_kubernetes" "default" {
+  name                         = var.name
+  cluster_spec                 = "ack.pro.small"
+  vswitch_ids                  = [alicloud_vswitch.default_1.id, alicloud_vswitch.default_2.id]
+  pod_vswitch_ids              = [alicloud_vswitch.default_1.id, alicloud_vswitch.default_2.id]
+  new_nat_gateway              = false
+  service_cidr                 = var.service_cidr
+  is_enterprise_security_group = true
+
+  addons {
+    name = "terway-eniip"
+  }
+
+  control_plane_endpoints_config {
+    # load_balancer_id is left empty so ACK creates a private NLB automatically.
+    load_balancers_config {
+      endpoint_type = "private"
+    }
+  }
+}
+```
+
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cs_managed_kubernetes&spm=docs.r.cs_managed_kubernetes.example&intl_lang=EN_US)
 
 ## Argument Reference
@@ -421,6 +478,7 @@ Supported only for clusters running Kubernetes 1.35 or later. The Kubernetes com
 * `control_plane_log_project` - (Optional, Available since v1.141.0) Control plane log project. If this field is not set, a log service project named k8s-log-{ClusterID} will be automatically created.
 * `audit_log_config` - (Optional, Available since v1.250.0) Audit log configuration. See [`audit_log_config`](#audit_log_config) below.
 * `auto_mode` - (Optional, ForceNew, Available since v1.254.0) Auto mode cluster configuration. See [`auto_mode`](#auto_mode) below.
+* `control_plane_endpoints_config` - (Optional, Available since v1.286.0) The cluster access configuration. See [`control_plane_endpoints_config`](#control_plane_endpoints_config) below.
 * `retain_resources` - (Optional, Available since v1.141.0) Resources that are automatically created during cluster creation, including NAT gateways, SNAT rules, SLB instances, and RAM Role, will be deleted. Resources that are manually created after you create the cluster, such as SLB instances for Services, will also be deleted. If you need to retain resources, please configure with `retain_resources`. There are several aspects to pay attention to when using `retain_resources` to retain resources. After configuring `retain_resources` into the terraform configuration manifest file, you first need to run `terraform apply`.Then execute `terraform destroy`.
 * `delete_options` - (Optional, Available since v1.223.2) Delete options, only work for deleting resource. Make sure you have run `terraform apply` to make the configuration applied. See [`delete_options`](#delete_options) below.
 * `addons` - (Optional, Available since v1.88.0) The addon you want to install in cluster. See [`addons`](#addons) below. Only works for **Create** Operation, use [resource cs_kubernetes_addon](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cs_kubernetes_addon) to manage addons if cluster is created.
@@ -536,9 +594,28 @@ Audit log config. If `enabled` is set to `true`, a Logstore is created in the sp
 * `sls_project_name` - (Optional) The SLS project to which the Logstore storing the cluster audit logs belongs.
 
 ### `auto_mode`
-Auto mode cluster config.  
+Auto mode cluster config.
 
 * `enabled` - (Optional, ForceNew) Whether to enable auto mode. Valid values: `true`, `false`. Only ACK managed Pro clusters support Auto Mode.
+
+### `control_plane_endpoints_config`
+The cluster access configuration.
+
+* `load_balancers_config` - (Optional, Computed) The load balancing configuration for cluster access. See [`load_balancers_config`](#control_plane_endpoints_config-load_balancers_config) below.
+* `internal_dns_config` - (Optional, Computed) The cluster internal domain name configuration, applicable to ACK managed clusters. See [`internal_dns_config`](#control_plane_endpoints_config-internal_dns_config) below.
+
+#### `control_plane_endpoints_config-load_balancers_config`
+
+-> **NOTE:** CLB configuration may be generated automatically after updating for an old cluster, so keep it in `load_balancers_config` unless you really intend to remove the CLB. Removing a load balancer configuration may affect access to the cluster, please proceed with caution. When a configuration is removed, its associated load balancer (SLB/NLB) instance is only disassociated from the cluster and is **not** released, you need to release it manually.
+
+* `load_balancer_id` - (Optional, Computed) The ID of the SLB (NLB) instance associated with the endpoint.
+* `endpoint_type` - (Optional, Computed) The endpoint type. Valid values: `private`, `public`.
+* `endpoint` - (Computed) The access address.
+
+#### `control_plane_endpoints_config-internal_dns_config`
+
+* `bind_vpcs` - (Optional, Computed) The list of VPCs where the API Server access domain name takes effect. By default, the VPC of the cluster is included.
+* `enabled` - (Optional, Computed) Whether to enable the cluster internal domain name access. When enabled, node-side components (kubelet, kube-proxy) access the API Server through the cluster internal domain name. This field can only be set on update, not on create.
 
 ### `upgrade_policy`
 Configuration block for cluster upgrade operations. This is a transient parameter that controls upgrade behavior when updating the `version` field.
