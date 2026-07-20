@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -4132,6 +4131,27 @@ var deprecatedEndpointMap = map[string]string{
 	"cloudapi":         "apigateway",
 }
 
+// defaultConfigPath returns the default location of the aliyun CLI shared
+// config file under the user's home directory. It is used by
+// getConfigFromProfile when the caller has not configured
+// shared_credentials_file.
+//
+// The home directory is resolved through homedir.Dir(), which falls back to
+// the OS user database when HOME / USERPROFILE are unset. This avoids the
+// previous behaviour of building the path with
+// fmt.Sprintf("%s/.aliyun/config.json", os.Getenv("USERPROFILE")) which, when
+// USERPROFILE is empty (Windows service accounts, minimal containers), yields
+// "/.aliyun/config.json" that os.Stat resolves to the current drive root and
+// silently leaves the profile unloaded, surfacing as an opaque authentication
+// failure. Using filepath.Join also ensures OS-correct path separators.
+func defaultConfigPath() (string, error) {
+	home, err := homedir.Dir()
+	if err != nil {
+		return "", WrapError(err)
+	}
+	return filepath.Join(home, ".aliyun", "config.json"), nil
+}
+
 func getConfigFromProfile(d *schema.ResourceData, ProfileKey string) (interface{}, error) {
 
 	if providerConfig == nil {
@@ -4145,10 +4165,11 @@ func getConfigFromProfile(d *schema.ResourceData, ProfileKey string) (interface{
 			return nil, WrapError(err)
 		}
 		if profilePath == "" {
-			profilePath = fmt.Sprintf("%s/.aliyun/config.json", os.Getenv("HOME"))
-			if runtime.GOOS == "windows" {
-				profilePath = fmt.Sprintf("%s/.aliyun/config.json", os.Getenv("USERPROFILE"))
+			configPath, err := defaultConfigPath()
+			if err != nil {
+				return nil, WrapError(err)
 			}
+			profilePath = configPath
 		}
 		providerConfig = make(map[string]interface{})
 		_, err = os.Stat(profilePath)
