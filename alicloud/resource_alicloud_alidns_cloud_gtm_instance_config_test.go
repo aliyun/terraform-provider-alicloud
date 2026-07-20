@@ -78,6 +78,16 @@ func TestAccAliCloudAlidnsCloudGtmInstanceConfig_basic12689(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"sequence_lb_strategy_mode": "non_preemptive",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"sequence_lb_strategy_mode": "non_preemptive",
+					}),
+				),
+			},
+			{
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,

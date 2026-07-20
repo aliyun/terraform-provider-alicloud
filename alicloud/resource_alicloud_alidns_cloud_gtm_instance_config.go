@@ -72,7 +72,7 @@ func resourceAliCloudAlidnsCloudGtmInstanceConfig() *schema.Resource {
 			"sequence_lb_strategy_mode": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"preemptive", "nonPreemptive"}, false),
+				ValidateFunc: StringInSlice([]string{"preemptive", "non_preemptive", "nonPreemptive"}, false),
 			},
 			"ttl": {
 				Type:     schema.TypeInt,
