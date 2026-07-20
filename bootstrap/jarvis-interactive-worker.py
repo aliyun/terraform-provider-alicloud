@@ -409,6 +409,7 @@ def _heartbeat_worker(client: ControlPlaneClient,
     }
     client.heartbeat_worker(
         state["workerKey"], heartbeat,
+        process_uuid=state["processUuid"],
         request_id="jarvis-interactive-worker-heartbeat-%s" %
         hashlib.sha256((state["workerKey"] + str(time.time_ns())).encode()).hexdigest()[:24])
 
@@ -1864,7 +1865,8 @@ def _send_pending_suspend_locked(state: Dict[str, Any],
         return False
     cp.suspend_session(
         str(pending["sessionId"]), state["workerKey"], pending["fenceToken"],
-        dict(pending["request"]), request_id=str(pending["requestId"]))
+        dict(pending["request"]), process_uuid=state["processUuid"],
+        request_id=str(pending["requestId"]))
     _finalize_pending_suspend_unlocked(state, pending)
     return True
 
@@ -2842,6 +2844,7 @@ def daemon(state_path: Path, expected_worker_key: str) -> int:
                                 {"leaseSeconds": int(
                                     current.get("leaseSeconds")
                                     or _interactive_lease_seconds())},
+                                process_uuid=latest["processUuid"],
                                 request_id="jarvis-interactive-session-heartbeat-%s" %
                                 hashlib.sha256((str(current["sessionId"]) +
                                                 str(time.time_ns())).encode()).hexdigest()[:24])
@@ -3007,6 +3010,7 @@ def prepare_claim(aone_id: str, project_id: str, title: str = "") -> Dict[str, A
     lease = _retry_unavailable(lambda: cp.claim_task(
         state["workerKey"], envelope, runtime_session_id=runtime_id,
         lease_seconds=lease_seconds, free_slots=free_slots,
+        process_uuid=state["processUuid"],
         request_id=claim_request_id))
     task = lease.get("task") if isinstance(lease, Mapping) else None
     session = lease.get("session") if isinstance(lease, Mapping) else None
@@ -3029,6 +3033,7 @@ def prepare_claim(aone_id: str, project_id: str, title: str = "") -> Dict[str, A
     }
     start_result = _retry_unavailable(lambda: cp.start_session(
         str(session_id), state["workerKey"], fence, start_detail,
+        process_uuid=state["processUuid"],
         request_id="jarvis-interactive-session-start-%s" %
         hashlib.sha256((str(session_id) + "|" + str(fence)).encode()).hexdigest()[:24]))
 
@@ -3101,6 +3106,7 @@ def prepare_claim(aone_id: str, project_id: str, title: str = "") -> Dict[str, A
         "sessionId": session_id,
         "generation": generation,
         "workerKey": state["workerKey"],
+        "processUuid": state["processUuid"],
         "fenceToken": fence,
         "operationKey": operation_key,
         "operationType": "AONE_CLAIM",
@@ -3231,6 +3237,7 @@ def acknowledge_claim(aone_id: str, external_ref: str) -> Dict[str, Any]:
     request = {
         "operationId": pending["operationId"],
         "workerKey": state["workerKey"],
+        "processUuid": state["processUuid"],
         "fenceToken": current["fenceToken"],
         "externalRef": _nonblank(external_ref, "external_ref"),
     }
@@ -3244,6 +3251,7 @@ def acknowledge_claim(aone_id: str, external_ref: str) -> Dict[str, Any]:
             cp.fail_operation({
                 "operationId": pending["operationId"],
                 "workerKey": state["workerKey"],
+                "processUuid": state["processUuid"],
                 "fenceToken": current["fenceToken"],
                 "error": {"errorType": type(exc).__name__,
                           "message": "Aone claim write succeeded but ACK failed"},
@@ -3294,6 +3302,7 @@ def fail_claim(aone_id: str, message: str, *, unknown: bool = False) -> None:
             cp.fail_operation({
                 "operationId": pending["operationId"],
                 "workerKey": state["workerKey"],
+                "processUuid": state["processUuid"],
                 "fenceToken": current["fenceToken"],
                 "error": error,
                 "unknown": bool(unknown),
@@ -3306,6 +3315,7 @@ def fail_claim(aone_id: str, message: str, *, unknown: bool = False) -> None:
         cp.fail_session(
             str(current["sessionId"]), state["workerKey"], current["fenceToken"],
             {"error": error, "retryAfterSeconds": 0},
+            process_uuid=state["processUuid"],
             request_id="jarvis-interactive-session-fail-%s" %
             hashlib.sha256(str(current["runtimeSessionId"]).encode()).hexdigest()[:24])
     except BaseException as exc:
@@ -3400,6 +3410,7 @@ def operation_begin(aone_id: str, kind: str, material: str, *,
         "sessionId": current["sessionId"],
         "generation": generation,
         "workerKey": state["workerKey"],
+        "processUuid": state["processUuid"],
         "fenceToken": current["fenceToken"],
         "operationKey": operation_key,
         "operationType": operation_type,
@@ -3546,6 +3557,7 @@ def operation_abort(aone_id: str, message: str, *,
         cp.fail_operation({
             "operationId": pending["operationId"],
             "workerKey": state["workerKey"],
+            "processUuid": state["processUuid"],
             "fenceToken": current["fenceToken"],
             "error": error,
             "unknown": bool(unknown),
@@ -3653,12 +3665,14 @@ def transition(aone_id: str, action: str, detail: Optional[str] = None) -> Dict[
             payload["waitCursor"] = hashlib.sha256(detail.encode()).hexdigest()[:32]
         result = _retry_unavailable(lambda: cp.suspend_session(
             str(current["sessionId"]), state["workerKey"], current["fenceToken"], payload,
+            process_uuid=state["processUuid"],
             request_id="jarvis-interactive-session-suspend-%s" %
             hashlib.sha256(str(current["runtimeSessionId"]).encode()).hexdigest()[:24]))
     elif action == "complete":
         payload = {"result": {"aoneId": str(aone_id), "summary": str(detail or "completed")}}
         result = _retry_unavailable(lambda: cp.complete_session(
             str(current["sessionId"]), state["workerKey"], current["fenceToken"], payload,
+            process_uuid=state["processUuid"],
             request_id="jarvis-interactive-session-complete-%s" %
             hashlib.sha256(str(current["runtimeSessionId"]).encode()).hexdigest()[:24]))
     else:

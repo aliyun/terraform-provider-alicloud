@@ -339,14 +339,18 @@ class ControlPlaneClient:
         return self._post(self.PATHS["worker_register"], worker, request_id=request_id)
 
     def heartbeat_worker(self, worker_key: str, heartbeat: Optional[Mapping[str, Any]] = None,
-                         *, request_id: Optional[str] = None) -> Dict[str, Any]:
+                         *, process_uuid: Optional[str] = None,
+                         request_id: Optional[str] = None) -> Dict[str, Any]:
         payload = dict(heartbeat or {})
+        if process_uuid is not None:
+            payload["processUuid"] = _nonblank(process_uuid, "process_uuid")
         path = self.WORKER_HEARTBEAT_PATH.format(
             worker_key=self._path_segment(worker_key, "worker_key"))
         return self._post(path, payload, request_id=request_id)
 
     def lease_task(self, worker_key: str, *, lease_seconds: int = 300,
                    capabilities: Optional[Any] = None,
+                   process_uuid: Optional[str] = None,
                    request_id: Optional[str] = None) -> Dict[str, Any]:
         ttl = int(lease_seconds)
         if ttl <= 0:
@@ -357,11 +361,14 @@ class ControlPlaneClient:
         }
         if capabilities is not None:
             payload["capabilities"] = capabilities
+        if process_uuid is not None:
+            payload["processUuid"] = _nonblank(process_uuid, "process_uuid")
         return self._post(self.PATHS["task_lease"], payload, request_id=request_id)
 
     def claim_task(self, worker_key: str, envelope: TaskEnvelope, *,
                    runtime_session_id: str, lease_seconds: int = 300,
-                   free_slots: int = 1, request_id: Optional[str] = None) -> Dict[str, Any]:
+                   free_slots: int = 1, process_uuid: Optional[str] = None,
+                   request_id: Optional[str] = None) -> Dict[str, Any]:
         """Atomically attach ``worker_key`` to one explicitly named Task.
 
         Interactive workers use this endpoint instead of :meth:`lease_task`: the
@@ -385,12 +392,15 @@ class ControlPlaneClient:
             "freeSlots": slots,
             "task": envelope.to_dict(),
         }
+        if process_uuid is not None:
+            payload["processUuid"] = _nonblank(process_uuid, "process_uuid")
         rid = request_id or envelope.request_id("direct-claim")
         return self._post(self.PATHS["task_claim"], payload, request_id=rid)
 
     @staticmethod
     def _session_payload(worker_key: str, fence_token: Any,
-                         detail: Optional[Mapping[str, Any]]) -> Dict[str, Any]:
+                         detail: Optional[Mapping[str, Any]],
+                         process_uuid: Optional[str] = None) -> Dict[str, Any]:
         payload = dict(detail or {})
         payload.update({
             "workerKey": _nonblank(worker_key, "worker_key"),
@@ -398,47 +408,62 @@ class ControlPlaneClient:
         })
         if fence_token is None or str(fence_token).strip() == "":
             raise ValueError("fence_token must not be empty")
+        if process_uuid is not None:
+            payload["processUuid"] = _nonblank(process_uuid, "process_uuid")
         return payload
 
     def _session_transition(self, action: str, session_id: str, worker_key: str,
                             fence_token: Any, detail: Optional[Mapping[str, Any]],
-                            request_id: Optional[str]) -> Dict[str, Any]:
+                            request_id: Optional[str],
+                            process_uuid: Optional[str] = None) -> Dict[str, Any]:
         path = self.SESSION_ACTION_PATH.format(
             session_id=self._path_segment(session_id, "session_id"),
             action=self._path_segment(action, "action"),
         )
-        payload = self._session_payload(worker_key, fence_token, detail)
+        payload = self._session_payload(worker_key, fence_token, detail, process_uuid)
         return self._post(path, payload, request_id=request_id)
 
     def start_session(self, session_id: str, worker_key: str, fence_token: Any,
                       detail: Optional[Mapping[str, Any]] = None, *,
+                      process_uuid: Optional[str] = None,
                       request_id: Optional[str] = None) -> Dict[str, Any]:
         return self._session_transition("start", session_id, worker_key, fence_token,
-                                        detail, request_id)
+                                        detail, request_id, process_uuid)
 
     def heartbeat_session(self, session_id: str, worker_key: str, fence_token: Any,
                           detail: Optional[Mapping[str, Any]] = None, *,
+                          process_uuid: Optional[str] = None,
                           request_id: Optional[str] = None) -> Dict[str, Any]:
         return self._session_transition("heartbeat", session_id, worker_key, fence_token,
-                                        detail, request_id)
+                                        detail, request_id, process_uuid)
 
     def suspend_session(self, session_id: str, worker_key: str, fence_token: Any,
                         detail: Optional[Mapping[str, Any]] = None, *,
+                        process_uuid: Optional[str] = None,
                         request_id: Optional[str] = None) -> Dict[str, Any]:
         return self._session_transition("suspend", session_id, worker_key, fence_token,
-                                        detail, request_id)
+                                        detail, request_id, process_uuid)
 
     def complete_session(self, session_id: str, worker_key: str, fence_token: Any,
                          detail: Optional[Mapping[str, Any]] = None, *,
+                         process_uuid: Optional[str] = None,
                          request_id: Optional[str] = None) -> Dict[str, Any]:
         return self._session_transition("complete", session_id, worker_key, fence_token,
-                                        detail, request_id)
+                                        detail, request_id, process_uuid)
 
     def fail_session(self, session_id: str, worker_key: str, fence_token: Any,
                      detail: Optional[Mapping[str, Any]] = None, *,
+                     process_uuid: Optional[str] = None,
                      request_id: Optional[str] = None) -> Dict[str, Any]:
         return self._session_transition("fail", session_id, worker_key, fence_token,
-                                        detail, request_id)
+                                        detail, request_id, process_uuid)
+
+    def relinquish_session(self, session_id: str, worker_key: str, fence_token: Any,
+                           detail: Optional[Mapping[str, Any]] = None, *,
+                           process_uuid: Optional[str] = None,
+                           request_id: Optional[str] = None) -> Dict[str, Any]:
+        return self._session_transition("relinquish", session_id, worker_key, fence_token,
+                                        detail, request_id, process_uuid)
 
     def begin_operation(self, operation: Mapping[str, Any], *,
                         request_id: Optional[str] = None) -> Dict[str, Any]:
