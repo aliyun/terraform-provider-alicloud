@@ -162,34 +162,44 @@ class ClientContractTest(unittest.TestCase):
                          "modified:2026-07-15T01:02:03Z")
 
     def test_all_worker_and_session_endpoints(self):
-        opener = RecordingOpener(responses=[FakeResponse({}) for _ in range(8)])
+        opener = RecordingOpener(responses=[FakeResponse({}) for _ in range(9)])
         c = self.make(opener)
         c.register_worker({"worker_key": "mac:boot:pid"}, request_id="r1")
-        c.heartbeat_worker("w1", {"status": "ACTIVE"}, request_id="r2")
+        c.heartbeat_worker("w1", {"status": "ACTIVE"}, process_uuid="p1", request_id="r2")
         c.lease_task("w1", lease_seconds=45,
-                     capabilities={"kinds": ["probe"]}, request_id="r3")
-        c.start_session("s1", "w1", 7, {"pid": 99}, request_id="r4")
-        c.heartbeat_session("s1", "w1", 7, {"progress": "running"}, request_id="r5")
-        c.suspend_session("s1", "w1", 7, {"wait_for": "320687"}, request_id="r6")
-        c.complete_session("s1", "w1", 7, {"result": "done"}, request_id="r7")
-        c.fail_session("s1", "w1", 7, {"error": "boom"}, request_id="r8")
+                     capabilities={"kinds": ["probe"]}, process_uuid="p1",
+                     request_id="r3")
+        c.start_session("s1", "w1", 7, {"pid": 99}, process_uuid="p1", request_id="r4")
+        c.heartbeat_session("s1", "w1", 7, {"progress": "running"},
+                            process_uuid="p1", request_id="r5")
+        c.suspend_session("s1", "w1", 7, {"wait_for": "320687"},
+                          process_uuid="p1", request_id="r6")
+        c.complete_session("s1", "w1", 7, {"result": "done"},
+                           process_uuid="p1", request_id="r7")
+        c.fail_session("s1", "w1", 7, {"error": "boom"},
+                       process_uuid="p1", request_id="r8")
+        c.relinquish_session("s1", "w1", 7, {"reason": "restart"},
+                             process_uuid="p1", request_id="r9")
 
         paths = [call[0].full_url.rsplit("/api/jarvis/v1/", 1)[1]
                  for call in opener.calls]
         self.assertEqual(paths, [
             "workers/register", "workers/w1/heartbeat", "tasks/lease",
             "sessions/s1/start", "sessions/s1/heartbeat", "sessions/s1/suspend",
-            "sessions/s1/complete", "sessions/s1/fail",
+            "sessions/s1/complete", "sessions/s1/fail", "sessions/s1/relinquish",
         ])
         self.assertEqual(body(opener.calls[0][0])["workerKey"], "mac:boot:pid")
         lease = body(opener.calls[2][0])
         self.assertEqual(lease["workerKey"], "w1")
         self.assertEqual(lease["leaseSeconds"], 45)
+        self.assertEqual(body(opener.calls[1][0])["processUuid"], "p1")
+        self.assertEqual(body(opener.calls[2][0])["processUuid"], "p1")
         for req, _timeout in opener.calls[3:]:
             payload = body(req)
             self.assertNotIn("sessionId", payload)
             self.assertEqual(payload["workerKey"], "w1")
             self.assertEqual(payload["fenceToken"], 7)
+            self.assertEqual(payload["processUuid"], "p1")
 
     def test_operations_and_queries_use_contract_paths(self):
         opener = RecordingOpener(responses=[

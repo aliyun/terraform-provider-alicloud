@@ -12,6 +12,7 @@ tested without clocks, sockets, or real processes.
 from __future__ import annotations
 
 import hashlib
+import fcntl
 import logging
 import os
 import socket
@@ -73,6 +74,37 @@ def make_worker_key(host: Optional[str] = None, boot_id: Optional[str] = None,
     boot_value = _component(boot_id or _default_boot_id(host_value), "boot_id")
     process_value = _component(process_uuid or uuid.uuid4().hex, "process_uuid")
     return "%s:%s:%s" % (host_value, boot_value, process_value)
+
+
+def load_or_create_worker_key(path: Optional[Any] = None) -> str:
+    """Return the installation-scoped Worker id stored on this machine."""
+    configured = path or os.environ.get("JARVIS_WORKER_ID_FILE")
+    worker_path = Path(configured or ".my-day/bridge/worker-id").expanduser()
+    worker_path.parent.mkdir(parents=True, exist_ok=True)
+    lock_path = worker_path.with_name(worker_path.name + ".lock")
+    with lock_path.open("a+") as lock_file:
+        os.chmod(lock_path, 0o600)
+        fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+        if worker_path.exists():
+            value = _nonblank(worker_path.read_text().strip(), "worker_id_file")
+            os.chmod(worker_path, 0o600)
+            return _component(value, "worker_id_file")
+        value = "worker-" + uuid.uuid4().hex
+        temp_path = worker_path.with_name(
+            "%s.tmp.%s.%s" % (worker_path.name, os.getpid(), uuid.uuid4().hex))
+        fd = os.open(str(temp_path), os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        try:
+            with os.fdopen(fd, "w") as stream:
+                stream.write(value + "\n")
+                stream.flush()
+                os.fsync(stream.fileno())
+            os.replace(temp_path, worker_path)
+        finally:
+            try:
+                temp_path.unlink()
+            except FileNotFoundError:
+                pass
+        return value
 
 
 def _new_runtime_session_id() -> str:
@@ -180,10 +212,11 @@ class SessionController:
     margin; crossing that boundary stops the process fail-closed.
     """
 
-    TERMINAL_ACTIONS = {"complete", "fail", "suspend"}
+    TERMINAL_ACTIONS = {"complete", "fail", "suspend", "relinquish"}
 
     def __init__(self, client: ControlPlaneClient, worker_key: str,
                  lease: Mapping[str, Any], *,
+                 process_uuid: Optional[str] = None,
                  lease_seconds: int = 300,
                  lease_safety_margin: float = 90.0,
                  runtime_session_id_factory: Callable[[], str] = _new_runtime_session_id,
@@ -193,6 +226,7 @@ class SessionController:
                  logger: Optional[logging.Logger] = None):
         self.client = client
         self.worker_key = _nonblank(worker_key, "worker_key")
+        self.process_uuid = _nonblank(process_uuid or "unknown", "process_uuid")
         self.lease = dict(_mapping(lease, "lease"))
         self.task = dict(_mapping(self.lease.get("task"), "lease.task"))
         self.session = dict(_mapping(self.lease.get("session"), "lease.session"))
@@ -337,6 +371,7 @@ class SessionController:
                 response = self.client.start_session(
                     self.session_id, self.worker_key, self.fence_token,
                     self._start_detail({"pid": pid}),
+                    process_uuid=self.process_uuid,
                     request_id=self._request_id("bind-process-%s" % pid))
             except ControlPlaneUnavailable as exc:
                 self._notify_network_failure(exc)
@@ -438,7 +473,8 @@ class SessionController:
                 request_started_at = self.clock()
                 response = self.client.start_session(
                     self.session_id, self.worker_key, self.fence_token,
-                    self._start_detail(detail), request_id=self._request_id("start"))
+                    self._start_detail(detail), process_uuid=self.process_uuid,
+                    request_id=self._request_id("start"))
             except ControlPlaneUnavailable as exc:
                 self._notify_network_failure(exc)
                 return False
@@ -479,6 +515,7 @@ class SessionController:
                 response = self.client.heartbeat_session(
                     self.session_id, self.worker_key, self.fence_token,
                     self._lease_detail(detail),
+                    process_uuid=self.process_uuid,
                     request_id="jarvis-session-heartbeat-%s" % uuid.uuid4().hex)
                 self._refresh_lease_proof(response, request_started_at)
                 return True
@@ -578,6 +615,7 @@ class SessionController:
             method = getattr(self.client, "%s_session" % action)
             try:
                 method(self.session_id, self.worker_key, self.fence_token, payload,
+                       process_uuid=self.process_uuid,
                        request_id=self._request_id(action))
             except ControlPlaneUnavailable as exc:
                 # Keep the desired terminal transition pending.  No terminal ACK
@@ -628,6 +666,9 @@ class SessionController:
     def suspend(self, detail: Optional[Mapping[str, Any]] = None) -> bool:
         return self._terminal("suspend", detail)
 
+    def relinquish(self, reason: str = "worker_stopping") -> bool:
+        return self._terminal("relinquish", {"reason": str(reason)})
+
 
 @dataclass
 class _ActiveSession:
@@ -646,6 +687,7 @@ class PersistenceExecutor:
                  execute: Execute, stop_process: StopProcess, *,
                  host: Optional[str] = None, boot_id: Optional[str] = None,
                  process_uuid: Optional[str] = None, worker_key: Optional[str] = None,
+                 worker_id_file: Optional[Any] = None,
                  capabilities: Optional[Mapping[str, Any]] = None,
                  lease_seconds: int = 300,
                  lease_safety_margin: float = 90.0,
@@ -678,11 +720,17 @@ class PersistenceExecutor:
         self.execute = execute
         self.stop_process = stop_process
         self.worker_key = _nonblank(
-            worker_key or make_worker_key(host, boot_id, process_uuid), "worker_key")
-        parts = self.worker_key.split(":", 2)
-        self.host = parts[0] if len(parts) == 3 else (host or socket.gethostname())
-        self.boot_id = parts[1] if len(parts) == 3 else (boot_id or "unknown")
-        self.process_uuid = parts[2] if len(parts) == 3 else (process_uuid or "unknown")
+            worker_key or load_or_create_worker_key(worker_id_file), "worker_key")
+        legacy_parts = self.worker_key.split(":", 2) if worker_key else []
+        self.host = _component(
+            host or (legacy_parts[0] if len(legacy_parts) == 3 else socket.gethostname()),
+            "host")
+        self.boot_id = _component(
+            boot_id or (legacy_parts[1] if len(legacy_parts) == 3
+                        else _default_boot_id(self.host)), "boot_id")
+        self.process_uuid = _component(
+            process_uuid or (legacy_parts[2] if len(legacy_parts) == 3
+                             else uuid.uuid4().hex), "process_uuid")
         self.capabilities = dict(capabilities or {})
         self.lease_seconds = int(lease_seconds)
         if self.lease_seconds <= 0:
@@ -797,6 +845,7 @@ class PersistenceExecutor:
             self.client.heartbeat_worker(
                 self.worker_key,
                 self._worker_payload("DRAINING" if self.draining else "ACTIVE"),
+                process_uuid=self.process_uuid,
                 request_id="jarvis-worker-heartbeat-%s" % uuid.uuid4().hex)
         except Exception as exc:
             self._mark_network_failure(exc)
@@ -835,6 +884,7 @@ class PersistenceExecutor:
             response = self.client.lease_task(
                 self.worker_key, capabilities=self.capabilities,
                 lease_seconds=self.lease_seconds,
+                process_uuid=self.process_uuid,
                 request_id="jarvis-worker-lease-%s" % uuid.uuid4().hex)
             lease = parse_lease_response(response)
         except ControlPlaneConflict as exc:
@@ -880,6 +930,7 @@ class PersistenceExecutor:
                 return False
         controller = SessionController(
             self.client, self.worker_key, lease,
+            process_uuid=self.process_uuid,
             lease_seconds=self.lease_seconds,
             lease_safety_margin=self.lease_safety_margin,
             runtime_session_id_factory=self._runtime_session_id_factory,
@@ -890,6 +941,7 @@ class PersistenceExecutor:
         )
         with self._lock:
             if self._draining or self._stopped:
+                controller.start()
                 self._fail_worker_stopping(controller, "worker_not_accepting")
                 if capacity_permit is not None:
                     capacity_permit.release()
@@ -946,15 +998,7 @@ class PersistenceExecutor:
 
     @staticmethod
     def _fail_worker_stopping(controller: SessionController, reason: str) -> None:
-        """Return an accidentally-held lease to retryable state, never SUSPENDED.
-
-        A worker shutdown is not an external wait condition.  Encoding it as a
-        suspend without ``waitExpireAt`` leaves a permanent task that no sensor can
-        wake, so use the normal retryable failure transition instead.  Stop the
-        owned process synchronously before making the task retryable; otherwise a
-        fast reaper/new worker could start the replacement while the old process is
-        still inside its graceful-termination window.
-        """
+        """Stop the local process and relinquish without consuming task retry budget."""
         controller.request_stop("worker_stopping")
         if controller.pending_terminal:
             # The work already has a stable complete/fail/suspend intent.  Never
@@ -963,13 +1007,7 @@ class PersistenceExecutor:
             controller.retry_terminal()
             return
         if not controller.terminal and not controller.ownership_lost:
-            controller.fail({
-                "error": {
-                    "errorType": "WorkerStopping",
-                    "message": str(reason),
-                },
-                "retryAfterSeconds": 0,
-            })
+            controller.relinquish(reason)
 
     @staticmethod
     def _result_detail(result: Any) -> Dict[str, Any]:
@@ -1091,13 +1129,14 @@ class PersistenceExecutor:
         return True
 
     def stop(self, *, drain: bool = False, timeout: Optional[float] = None) -> bool:
-        """Stop loops; optionally drain, otherwise stop and retry-fail active work."""
+        """Stop loops, relinquish active Sessions, then mark this Worker OFFLINE."""
+        with self._lock:
+            registered = self._registered
         if drain:
             drained = self.drain(timeout)
         else:
             with self._lock:
                 self._draining = True
-                registered = self._registered
             if registered:
                 self._heartbeat_worker_if_due(force=True)
             drained = self.active_count() == 0
@@ -1107,6 +1146,21 @@ class PersistenceExecutor:
                 controllers = [record.controller for record in self._sessions.values()]
             for controller in controllers:
                 self._fail_worker_stopping(controller, "worker_stopping")
+                if controller.terminal or controller.ownership_lost:
+                    self._remove_session(controller.session_id)
+            drained = self.active_count() == 0
+        offline = not registered
+        if registered and drained:
+            try:
+                self.client.heartbeat_worker(
+                    self.worker_key, self._worker_payload("OFFLINE"),
+                    process_uuid=self.process_uuid,
+                    request_id="jarvis-worker-offline-%s" % uuid.uuid4().hex)
+                offline = True
+            except Exception as exc:
+                self._mark_network_failure(exc)
+                self.log.warning("worker offline failed worker=%s error=%s",
+                                 self.worker_key, type(exc).__name__)
         with self._lock:
             self._stopped = True
             threads = list(self._threads)
@@ -1119,4 +1173,4 @@ class PersistenceExecutor:
                 self._executor.shutdown(wait=drained, cancel_futures=not drained)
             except TypeError:  # pragma: no cover - Python <3.9
                 self._executor.shutdown(wait=drained)
-        return drained
+        return drained and offline

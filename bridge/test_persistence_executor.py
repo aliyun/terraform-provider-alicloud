@@ -3,6 +3,7 @@
 
 import logging
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -13,6 +14,7 @@ from jarvis_persistence_executor import (  # noqa: E402
     LeaseProtocolError,
     SessionController,
     PersistenceExecutor,
+    load_or_create_worker_key,
     make_worker_key,
     parse_lease_response,
 )
@@ -86,6 +88,9 @@ class FakeClient:
     def suspend_session(self, *args, **kwargs):
         return self._call("suspend_session", *args, **kwargs)
 
+    def relinquish_session(self, *args, **kwargs):
+        return self._call("relinquish_session", *args, **kwargs)
+
 
 class ManualFuture:
     def __init__(self, fn, args):
@@ -145,6 +150,15 @@ class WorkerKeyAndLeaseTest(unittest.TestCase):
         second = make_worker_key("mac-mini", "boot-1", "process-1")
         self.assertEqual(first, "mac-mini:boot-1:process-1")
         self.assertEqual(first, second)
+
+    def test_installation_worker_key_survives_process_restart(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "worker-id"
+            first = load_or_create_worker_key(path)
+            second = load_or_create_worker_key(path)
+            self.assertEqual(first, second)
+            self.assertTrue(first.startswith("worker-"))
+            self.assertEqual(path.stat().st_mode & 0o777, 0o600)
 
     def test_frozen_direct_lease_empty_204_and_draft_wrapper(self):
         direct = lease_response(resumed=True)
@@ -659,7 +673,7 @@ class PersistenceExecutorTest(unittest.TestCase):
         self.assertEqual(len(client.named("register_worker")), 1)
         self.assertEqual(len(client.named("lease_task")), 2)
 
-    def test_drain_stops_new_leases_and_immediate_stop_retries_active(self):
+    def test_drain_stops_new_leases_and_immediate_stop_relinquishes_active(self):
         client = FakeClient(lease_task=[lease_response(), lease_response("s2")])
         executor = ManualExecutor()
         stopped = []
@@ -677,36 +691,32 @@ class PersistenceExecutorTest(unittest.TestCase):
         self.assertTrue(worker.run_once())
         self.assertEqual(len(client.named("lease_task")), 1)
 
-        self.assertFalse(worker.stop())
+        self.assertTrue(worker.stop())
         self.assertTrue(worker.stopped)
         self.assertEqual(len(client.named("suspend_session")), 0)
-        self.assertEqual(client.named("fail_session")[0]["args"][3], {
-            "error": {
-                "errorType": "WorkerStopping",
-                "message": "worker_stopping",
-            },
-            "retryAfterSeconds": 0,
+        self.assertEqual(client.named("relinquish_session")[0]["args"][3], {
+            "reason": "worker_stopping",
         })
+        self.assertEqual(len(client.named("fail_session")), 0)
         self.assertEqual(stopped, [("s1", "worker_stopping", 0)],
-                         "the process must stop before the task becomes retryable")
+                         "the process must stop before the task becomes resumable")
+        self.assertEqual(client.named("heartbeat_worker")[-1]["args"][1]["status"],
+                         "OFFLINE")
         executor.run_all()
         self.assertEqual(worker.active_count(), 0)
 
-    def test_lease_arriving_after_drain_is_failed_retryable_not_suspended(self):
+    def test_lease_arriving_after_drain_is_started_then_relinquished(self):
         client = FakeClient()
         worker = self.make(client, lambda *_args: "done", lambda *_args: None,
                            executor=ManualExecutor())
         worker._draining = True
         self.assertFalse(worker._accept_lease(lease_response()))
-        self.assertEqual(len(client.named("start_session")), 0)
+        self.assertEqual(len(client.named("start_session")), 1)
         self.assertEqual(len(client.named("suspend_session")), 0)
-        self.assertEqual(client.named("fail_session")[0]["args"][3], {
-            "error": {
-                "errorType": "WorkerStopping",
-                "message": "worker_not_accepting",
-            },
-            "retryAfterSeconds": 0,
+        self.assertEqual(client.named("relinquish_session")[0]["args"][3], {
+            "reason": "worker_not_accepting",
         })
+        self.assertEqual(len(client.named("fail_session")), 0)
 
     def test_stop_preserves_pending_terminal_intent_instead_of_replacing_it(self):
         client = FakeClient(

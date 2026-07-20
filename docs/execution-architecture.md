@@ -55,6 +55,16 @@ reaches the safety boundary.  Pausing a rollout means stopping
 PersistenceExecutors so Tasks remain queued; it does not introduce another
 execution mode.
 
+The queue-pull Worker is installation-scoped, not process-scoped. Its stable
+`workerKey` is stored in `.my-day/bridge/worker-id` (override with
+`JARVIS_WORKER_ID_FILE`), while every bridge start creates a new `processUuid`.
+Ordinary mutations carry both identities. During a planned stop the executor
+reports `DRAINING`, synchronously stops local task processes, relinquishes each
+Session as `RESUMABLE` without increasing Task retry count, and finally reports
+`OFFLINE`. The next process re-registers the same Worker and resumes the same
+runtime session. A crash cannot be taken over until the old heartbeat/leases
+are stale and no Session remains `LEASED` or `RUNNING`.
+
 ## Managed wait wake-up
 
 A managed Session persists `waitType`, `waitKey`, `waitCursor`, and expiry in

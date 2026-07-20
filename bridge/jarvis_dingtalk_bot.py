@@ -5606,6 +5606,9 @@ class JarvisHandler(AsyncChatbotHandler):
             self.capacity_manager,
             self._execute_task_lease,
             self._stop_task_process,
+            worker_id_file=os.environ.get(
+                "JARVIS_WORKER_ID_FILE",
+                os.path.join(jarvis_root(), ".my-day", "bridge", "worker-id")),
             capabilities={"kinds": kinds},
             lease_seconds=int(os.environ.get("JARVIS_LEASE_SECONDS", "300")),
             lease_safety_margin=float(
