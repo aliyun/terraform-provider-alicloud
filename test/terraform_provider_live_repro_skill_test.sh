@@ -25,6 +25,11 @@ for runtime_skill in "$agents_skill" "$claude_skill"; do
   test -x "$runtime_skill/scripts/render-report-html.py"
   grep -q '^name: terraform-provider-live-repro$' "$runtime_skill/SKILL.md"
   grep -q '^description: ' "$runtime_skill/SKILL.md"
+  grep -q '^# Terraform Provider 真实资源现场复现$' "$runtime_skill/SKILL.md"
+  grep -q '禁止执行漂移或替换计划' "$runtime_skill/SKILL.md"
+  grep -q 'Terraform Provider 现场复现' "$runtime_skill/agents/openai.yaml"
+  grep -q '^## 1\. 现场状态$' "$runtime_skill/assets/report-template.md"
+  grep -q '^# 证据与脱敏契约$' "$runtime_skill/references/evidence-contract.md"
 done
 
 for term in \
@@ -32,7 +37,7 @@ for term in \
   "TF_LOG_PROVIDER=DEBUG" \
   "DescribeFileSystems" \
   "replace_paths" \
-  "Never apply a drift/replacement plan" \
+  "禁止执行漂移或替换计划" \
   "html-report-preview" \
   "destroy-after-evidence"; do
   grep -q -- "$term" "$agents_skill/SKILL.md"
@@ -49,9 +54,9 @@ cat > "$raw_log" <<'EOF'
 EOF
 
 report_md="$tmpdir/report.md"
-printf '# Live Repro\n\n| API | RequestId |\n|---|---|\n| CreateFileSystem | req-create |\n' > "$report_md"
+printf '# 现场复现报告\n\n| API | RequestId |\n|---|---|\n| CreateFileSystem | req-create |\n' > "$report_md"
 unsafe_md="$tmpdir/unsafe.md"
-printf '# Unsafe\n\n<script>alert(1)</script>\n' > "$unsafe_md"
+printf '# 不安全内容\n\n<script>alert(1)</script>\n' > "$unsafe_md"
 
 runtime_index=0
 for runtime_skill in "$agents_skill" "$claude_skill"; do
@@ -72,7 +77,7 @@ for runtime_skill in "$agents_skill" "$claude_skill"; do
     | jq -e 'select(.request_id == "req-read" and (.observations | index("QuorumVswId=missing")))' >/dev/null
 
   python3 "$runtime_skill/scripts/render-report-html.py" "$report_md" "$report_html" >/dev/null
-  grep -q '<title>Live Repro</title>' "$report_html"
+  grep -q '<title>现场复现报告</title>' "$report_html"
   grep -q '<table>' "$report_html"
   if grep -qi 'data:image' "$report_html"; then
     echo "terraform_provider_live_repro_skill_test: renderer emitted base64 image data" >&2
