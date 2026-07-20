@@ -83,10 +83,33 @@ Give workers the OSS URL + expected sha256.
 
 ### B. Credential bundle → OSS (repeat before each worker install run)
 
+The bundle carries: `~/.config/a1/` (a1 CLI login state), `~/.claude/*.json`
+(model-lane settings archives), `bootstrap/.env` + `bridge/jarvis.env`
+(GitHub PAT, control-plane token, gateway routes), plus `~/.git-credentials`
++ `~/.gitconfig` so workers can `git pull` jarvis-preview over HTTPS with a
+GitLab Deploy Token — no ssh setup on the worker.
+
+One-time setup: create a Deploy Token in GitLab web UI (scheduler-side, once):
+
+1. Open https://code.alibaba-inc.com/terraflow/jarvis-preview
+2. Settings → Repository → **Deploy Tokens** → Add token
+3. Name: `jarvis-fleet-2026-07`  Scopes: **`read_repository` ONLY**
+4. Save. GitLab prints a username (e.g., `gitlab+deploy-token-12345`) and a
+   secret — **copy both immediately, they're shown only once**.
+
+Package:
+
 ```bash
-# On the scheduler host:
-OSS_BUCKET=cc-packet bash bootstrap/worker-credentials-package.sh
+GIT_TOKEN_USER="gitlab+deploy-token-12345" \
+GIT_TOKEN="<the secret GitLab printed>" \
+OSS_BUCKET=cc-packet \
+  bash bootstrap/worker-credentials-package.sh
 ```
+
+Bundle now contains `~/.git-credentials`
+(`https://<user>:<token>@code.alibaba-inc.com`) and `~/.gitconfig`
+(`credential.helper = store`). Revoke by deleting the token in GitLab UI —
+workers can no longer pull; rotate by creating a new token + re-packaging.
 
 Output prints three values:
 
@@ -105,6 +128,10 @@ ossutil rm oss://<bucket>/jarvis-worker-creds-<ts>.tar.gz.enc
 ```
 
 Re-package before adding a NEW worker later (fresh passphrase every time).
+To rotate the Deploy Token: revoke the old one in GitLab UI → create a
+new one → repackage with the new `GIT_TOKEN_USER`/`GIT_TOKEN` → re-run
+`worker-install.sh` on each worker (idempotent — updates the credential
+file in place).
 
 ### C. Fleet knowledge
 
@@ -118,8 +145,17 @@ Target: AliOS 7.2 (RHEL 7 lineage, glibc ≥ 2.17). Other RHEL-family should
 work; Debian/Ubuntu need the yum lines swapped.
 
 ```bash
-# On the worker host, as the ops user (e.g., admin):
-git clone git@gitlab.alibaba-inc.com:terraflow/jarvis-preview.git ~/workspace/jarvis-preview
+# On the worker host, as the ops user (e.g., admin).
+# First-time repo delivery — one of:
+#   a) tarball relay via OSS (fastest on a bare AliOS with no git auth yet):
+#        curl -fL -o /tmp/jarvis.tgz \
+#          https://<bucket>.oss-cn-beijing-internal.aliyuncs.com/jarvis-preview.tar.gz
+#        tar xzf /tmp/jarvis.tgz -C ~/workspace
+#   b) `git clone` over HTTPS with the Deploy Token in the URL (bootstrap
+#      escape hatch — the installer will rewrite origin from MANIFEST after
+#      step 5):
+#        git clone https://gitlab+deploy-token-N:<TOKEN>@code.alibaba-inc.com/terraflow/jarvis-preview.git \
+#          ~/workspace/jarvis-preview
 cd ~/workspace/jarvis-preview
 
 # All five env vars are required (feed from Prereq A + B outputs):
@@ -132,17 +168,20 @@ JARVIS_DISPATCH_MAX=3 \
   bash bootstrap/worker-install.sh
 ```
 
-The script runs 10 steps in order:
+The script runs these steps in order:
 1. Sanity: OS/arch/glibc (fails closed on unsupported host)
 2. Install python3 (≥ 3.8) and git if missing
 3. Fetch claude binary from OSS, sha256 verify
-4. Clone or update the jarvis repo
+4. Ensure jarvis repo present (`git clone` only if missing; `git pull`
+   deferred to step 5b)
 5. Pull encrypted credential bundle from OSS, sha256 verify, decrypt (openssl
    aes-256-cbc + pbkdf2 100k iters, passphrase read from stdin — never on
-   argv), extract classified into `$HOME` (a1/claude) and `$JARVIS_ROOT`
-   (env files), then rewrite the packager's `$HOME` prefix → this host's
-   `$HOME` in all extracted json/yaml/env/conf files. Scratch dir zeroed +
-   wiped on exit.
+   argv), extract classified into `$HOME` (a1/claude/git-credentials) and
+   `$JARVIS_ROOT` (env files), then rewrite the packager's `$HOME` prefix →
+   this host's `$HOME` in all extracted json/yaml/env/conf files. Scratch
+   dir zeroed + wiped on exit.
+5b. Rewrite `origin` remote to HTTPS URL from MANIFEST + attempt `git pull`
+    (non-fatal) via the newly installed credential helper + Deploy Token.
 6. Probe `a1id ready jarvis` — see [a1 portability fallback](#a1-portability)
 7. Write `config/workspaces.local.json` for this host's paths (if the bundle
    didn't ship one)
@@ -153,6 +192,10 @@ The script runs 10 steps in order:
    client startup
 10. Install `~/.config/systemd/user/jarvis-worker.service` +
     `loginctl enable-linger` so the worker survives operator logout
+
+No openssh-clients is installed on the worker — HTTPS + Deploy Token is
+the only supported git auth. If you need ssh for other reasons on the
+worker, install it separately.
 
 ## Start / stop / observe
 
