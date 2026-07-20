@@ -58,9 +58,9 @@ step() { printf '\n===== %s =====\n' "$*"; }
 step "1. Sanity · OS / arch / glibc"
 arch=$(uname -m)
 [ "$arch" = x86_64 ] || die "arch=$arch not supported (need x86_64)"
-glibc=$(ldd --version 2>&1 | head -1 | awk '{print $NF}')
+glibc=$(ldd --version 2>&1 | awk 'NR==1{print $NF}')
 # glibc >= 2.17 (claude linux-x64 baseline)
-lowest=$(printf '%s\n2.17\n' "$glibc" | sort -V | head -1)
+lowest=$(printf '%s\n2.17\n' "$glibc" | sort -V | awk 'NR==1')
 [ "$lowest" = "2.17" ] || die "glibc=$glibc < 2.17; claude binary won't load"
 os_name=$(grep -E '^PRETTY_NAME=' /etc/os-release 2>/dev/null | cut -d= -f2 | tr -d '"')
 ok "OS=$os_name  arch=$arch  glibc=$glibc  kernel=$(uname -r)"
@@ -86,7 +86,7 @@ else
 fi
 command -v git >/dev/null 2>&1 || sudo yum install -y git
 git_ver=$(git --version | awk '{print $3}')
-lowest_git=$(printf '%s\n2.5\n' "$git_ver" | sort -V | head -1)
+lowest_git=$(printf '%s\n2.5\n' "$git_ver" | sort -V | awk 'NR==1')
 [ "$lowest_git" = "2.5" ] || warn "git=$git_ver < 2.5; worktree flows may misbehave"
 # openssh-clients install is DEFERRED until after step 5 (creds extract) —
 # only needed if the packager shipped an ssh key. Token-mode bundles don't
@@ -97,7 +97,7 @@ step "3. Fetch claude binary from OSS + sha256 verify"
 mkdir -p "$(dirname "$CLAUDE_BIN")"
 if [ -x "$CLAUDE_BIN" ] \
    && [ "$(sha256sum "$CLAUDE_BIN" | awk '{print $1}')" = "$CLAUDE_SHA256" ]; then
-  ok "claude already installed with matching sha256 ($("$CLAUDE_BIN" --version 2>&1 | head -1))"
+  ok "claude already installed with matching sha256 ($("$CLAUDE_BIN" --version 2>&1 | awk 'NR==1'))"
 else
   info "downloading from $CLAUDE_OSS_URL (~265MB)"
   curl -fL --progress-bar -o "$CLAUDE_BIN" "$CLAUDE_OSS_URL"
@@ -105,7 +105,7 @@ else
   actual=$(sha256sum "$CLAUDE_BIN" | awk '{print $1}')
   [ "$actual" = "$CLAUDE_SHA256" ] \
     || die "sha256 mismatch: got $actual expected $CLAUDE_SHA256"
-  ok "claude installed → $CLAUDE_BIN ($("$CLAUDE_BIN" --version 2>&1 | head -1))"
+  ok "claude installed → $CLAUDE_BIN ($("$CLAUDE_BIN" --version 2>&1 | awk 'NR==1'))"
 fi
 
 # ---------------------------------------------------------------------------
