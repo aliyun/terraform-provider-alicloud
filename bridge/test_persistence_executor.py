@@ -543,6 +543,24 @@ class PersistenceExecutorTest(unittest.TestCase):
         self.assertEqual(executed, [], "lost queued work must never start")
         self.assertEqual(worker.active_count(), 0)
 
+    def test_session_heartbeat_includes_best_effort_progress_excerpt(self):
+        client = FakeClient(lease_task=[lease_response()], heartbeat_session=[{}])
+        executor = ManualExecutor()
+        worker = self.make(
+            client, lambda *_args: None, lambda *_args: None, executor=executor,
+            progress=lambda _lease, controller: "latest output for %s" %
+            controller.runtime_session_id,
+            runtime_session_id_factory=lambda: "runtime-progress")
+        self.assertTrue(worker.run_once())
+
+        worker.heartbeat_sessions_once()
+
+        heartbeat = client.named("heartbeat_session")[0]
+        self.assertEqual(heartbeat["args"][3], {
+            "leaseSeconds": 45,
+            "progressExcerpt": "latest output for runtime-progress",
+        })
+
     def test_release_of_running_session_adopts_fence_without_new_session(self):
         # The control plane re-offers a session this worker is already running
         # (network wobble delayed the ownership heartbeat) with a rotated fence.

@@ -1291,6 +1291,96 @@ def _session_file_exists(sid):
         return False
 
 
+def _session_file(sid):
+    """Return the local Claude transcript path for one headless runtime session."""
+    slug = re.sub(r"[^a-zA-Z0-9]", "-", os.path.realpath(jarvis_root()))
+    return Path.home() / ".claude" / "projects" / slug / ("%s.jsonl" % sid)
+
+
+def _session_progress_files(sid, max_subagents=8):
+    """Return the root transcript plus the most recently active subagents.
+
+    Claude keeps Task/Agent transcripts under ``<session>/subagents`` instead of
+    appending their live output to the root JSONL.  Reading only the root therefore
+    freezes the board at e.g. "starting terraform-rd" for the full child run.
+    """
+    root = _session_file(sid)
+    paths = [root]
+    try:
+        subagents = list((root.with_suffix("") / "subagents").glob("*.jsonl"))
+        subagents.sort(key=lambda path: path.stat().st_mtime, reverse=True)
+        paths.extend(subagents[:max(0, int(max_subagents))])
+    except (OSError, TypeError, ValueError):
+        pass
+    return paths
+
+
+def _session_progress_excerpt(sid, max_bytes=512 * 1024, max_chars=12000):
+    """Render a bounded, low-risk progress view from a live Claude transcript.
+
+    Tool arguments and raw tool results are deliberately excluded.  The board gets
+    assistant text plus tool names from the root and recent subagents, enough to show
+    what the session is doing without copying credentials, command payloads, or full
+    terminal output into the browser.
+    """
+    paths = _session_progress_files(sid)
+    if not paths:
+        return None
+    per_file_bytes = max(4096, int(max_bytes) // len(paths))
+    entries = []
+    for path_index, path in enumerate(paths):
+        try:
+            with path.open("rb") as handle:
+                size = handle.seek(0, os.SEEK_END)
+                handle.seek(max(0, size - per_file_bytes))
+                raw = handle.read().decode("utf-8", errors="replace")
+        except (OSError, TypeError, ValueError):
+            continue
+        if size > per_file_bytes:
+            raw = raw.split("\n", 1)[-1]
+        for line_index, line in enumerate(raw.splitlines()):
+            try:
+                event = json.loads(line)
+            except (TypeError, ValueError):
+                continue
+            message = event.get("message") if isinstance(event, dict) else None
+            if not isinstance(message, dict) or message.get("role") != "assistant":
+                continue
+            content = message.get("content")
+            parts = []
+            if isinstance(content, str) and content.strip():
+                parts.append(content.strip())
+            elif isinstance(content, list):
+                for block in content:
+                    if not isinstance(block, dict):
+                        continue
+                    if (block.get("type") == "text"
+                            and str(block.get("text") or "").strip()):
+                        parts.append(str(block["text"]).strip())
+                    elif block.get("type") == "tool_use":
+                        name = re.sub(
+                            r"[^a-zA-Z0-9_.:-]", "",
+                            str(block.get("name") or "tool"))[:80]
+                        parts.append("[执行工具 %s]" % (name or "tool"))
+            if parts:
+                entries.append((str(event.get("timestamp") or ""), path_index,
+                                line_index, "\n".join(parts)))
+    if not entries:
+        return None
+    entries.sort(key=lambda entry: entry[:3])
+    excerpt = "\n\n".join(entry[3] for entry in entries[-24:])
+    excerpt = re.sub(r"\x1b(?:\[[0-?]*[ -/]*[@-~]|\][^\x07]*(?:\x07|\x1b\\))", "", excerpt)
+    excerpt = "".join(char for char in excerpt
+                      if char in "\n\r\t" or ord(char) >= 32)
+    if len(excerpt) > max_chars:
+        excerpt = "…" + excerpt[-max_chars + 1:]
+    # Assistant-authored prose can repeat a credential that originally appeared in
+    # an excluded tool result.  Apply the same outbound redaction used by Aone events
+    # before this snapshot leaves the Worker.
+    excerpt = _aone_event_sanitize_text(excerpt, limit=max_chars)
+    return excerpt or None
+
+
 def tata_audience():
     """Tata 受众名单（staffId 集合）。空/未设 → 空集 = 全员放行。"""
     raw = os.environ.get("JARVIS_TATA_STAFF", "")
@@ -5619,6 +5709,8 @@ class JarvisHandler(AsyncChatbotHandler):
             session_heartbeat_interval=float(
                 os.environ.get("JARVIS_SESSION_HEARTBEAT_SEC", "30")),
             retry_interval=float(os.environ.get("JARVIS_CONTROL_PLANE_RETRY_SEC", "5")),
+            progress=lambda _lease, controller: _session_progress_excerpt(
+                controller.runtime_session_id),
             logger=log,
         )
         # Final component set (6): AoneScheduler(scan+dispatch+stale sub-tick),
