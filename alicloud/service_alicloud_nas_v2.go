@@ -1184,3 +1184,87 @@ func (s *NasServiceV2) DescribeAsyncGetFileset(d *schema.ResourceData, res map[s
 }
 
 // DescribeAsyncGetFileset >>> Encapsulated.
+
+// DescribeNasLogAnalysis <<< Encapsulated get interface for Nas LogAnalysis.
+
+func (s *NasServiceV2) DescribeNasLogAnalysis(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["RegionId"] = client.RegionId
+	action := "DescribeLogAnalysis"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("NAS", "2017-06-26", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.Analyses.Analysis[*]", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Analyses.Analysis[*]", response)
+	}
+
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(NotFoundErr("LogAnalysis", id), NotFoundMsg, response)
+	}
+
+	result, _ := v.([]interface{})
+	for _, v := range result {
+		item := v.(map[string]interface{})
+		if fmt.Sprint(item["MetaKey"]) != id {
+			continue
+		}
+		return item, nil
+	}
+	return object, WrapErrorf(NotFoundErr("LogAnalysis", id), NotFoundMsg, response)
+}
+
+func (s *NasServiceV2) NasLogAnalysisStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.NasLogAnalysisStateRefreshFuncWithApi(id, field, failStates, s.DescribeNasLogAnalysis)
+}
+
+func (s *NasServiceV2) NasLogAnalysisStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeNasLogAnalysis >>> Encapsulated.
