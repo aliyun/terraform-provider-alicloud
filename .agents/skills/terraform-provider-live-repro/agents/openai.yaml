@@ -1,0 +1,4 @@
+interface:
+  display_name: "Terraform Provider Live Repro"
+  short_description: "Reproduce provider bugs with API evidence."
+  default_prompt: "Use $terraform-provider-live-repro to reproduce this provider issue on real resources and produce traceable API evidence."
