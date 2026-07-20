@@ -738,7 +738,6 @@ func resourceAlicloudDBReadonlyInstanceRead(d *schema.ResourceData, meta interfa
 	if err != nil && !IsExpectedErrors(err, []string{"InvaildEngineInRegion.ValueNotSupported", "InstanceEngineType.NotSupport", "OperationDenied.DBInstanceType"}) {
 		return WrapError(err)
 	}
-	d.Set("ssl_status", sslAction["RequireUpdate"])
 	d.Set("ssl_enabled", d.Get("ssl_enabled"))
 	d.Set("client_ca_enabled", d.Get("client_ca_enabled"))
 	d.Set("client_crl_enabled", d.Get("client_crl_enabled"))
