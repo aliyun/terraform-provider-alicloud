@@ -2313,6 +2313,7 @@ func providerConfigure(d *schema.ResourceData, p *schema.Provider) (interface{},
 		config.KmsEndpoint = strings.TrimSpace(endpoints["kms"].(string))
 		config.OtsEndpoint = strings.TrimSpace(endpoints["ots"].(string))
 		config.CmsEndpoint = strings.TrimSpace(endpoints["cms"].(string))
+		config.Cms2Endpoint = strings.TrimSpace(endpoints["cms2"].(string))
 		config.PvtzEndpoint = strings.TrimSpace(endpoints["pvtz"].(string))
 		config.StsEndpoint = strings.TrimSpace(endpoints["sts"].(string))
 		config.LogEndpoint = strings.TrimSpace(endpoints["log"].(string))
@@ -2575,6 +2576,8 @@ func init() {
 		"ots_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Table Store endpoints.",
 
 		"cms_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Cloud Monitor endpoints.",
+
+		"cms2_endpoint": "Use this to override the default endpoint URL constructed from the `region` for CloudMonitor 2.0 (CMS2, API version 2024-03-30). It's typically used to connect to custom Cloud Monitor 2.0 endpoints.",
 
 		"pvtz_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Private Zone endpoints.",
 
@@ -3748,6 +3751,13 @@ func endpointsSchema() *schema.Schema {
 					Optional:    true,
 					Default:     "",
 					Description: descriptions["cms_endpoint"],
+				},
+
+				"cms2": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["cms2_endpoint"],
 				},
 
 				"pvtz": {
