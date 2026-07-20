@@ -51,6 +51,10 @@ cat > "$raw_log" <<'EOF'
 2026-07-20T11:45:51.109+0800 [DEBUG] provider.terraform-provider-alicloud_v1.285.0: "{\"AccessKeyId\":\"SHOULD-NOT-LEAK\",\"FileSystemType\":\"standard\",\"VpcId\":\"vpc-123\",\"VSwitchId\":\"vsw-123\",\"ZoneId\":\"cn-test-a\"}"
 2026-07-20T11:45:56.330+0800 [DEBUG] provider.terraform-provider-alicloud_v1.285.0: *************** DescribeFileSystems Response ***************
 2026-07-20T11:45:56.330+0800 [DEBUG] provider.terraform-provider-alicloud_v1.285.0: {"FileSystems":{"FileSystem":[{"FileSystemId":"fs-123","Status":"Running","VpcId":""}]},"RequestId":"req-read"}Domain:, Version:
+2026-07-20T11:46:01.109+0800 [DEBUG] provider.terraform-provider-alicloud_v1.285.0: *************** CreateDBInstance Response ***************
+2026-07-20T11:46:01.109+0800 [DEBUG] provider.terraform-provider-alicloud_v1.285.0: {"DBInstanceId":"rm-123","RequestId":"req-db"}Domain:, Version:
+2026-07-20T11:46:01.109+0800 [DEBUG] provider.terraform-provider-alicloud_v1.285.0: ***************  Request ***************
+2026-07-20T11:46:01.109+0800 [DEBUG] provider.terraform-provider-alicloud_v1.285.0: "{\"AccessKeyId\":\"SHOULD-NOT-LEAK\",\"DBInstanceClass\":\"rds.mysql.s1.small\",\"Engine\":\"MySQL\"}"
 EOF
 
 report_md="$tmpdir/report.md"
@@ -59,21 +63,50 @@ unsafe_md="$tmpdir/unsafe.md"
 printf '# 不安全内容\n\n<script>alert(1)</script>\n' > "$unsafe_md"
 
 runtime_index=0
+timeline_args=(
+  --request-field FileSystemType
+  --request-field VpcId
+  --request-field VSwitchId
+  --request-field ZoneId
+  --request-field DBInstanceClass
+  --request-field Engine
+  --target-field FileSystemId
+  --target-field DBInstanceId
+  --observe-field DescribeFileSystems:VpcId
+  --observe-field DescribeFileSystems:QuorumVswId
+)
 for runtime_skill in "$agents_skill" "$claude_skill"; do
   runtime_index=$((runtime_index + 1))
   timeline="$tmpdir/timeline-$runtime_index.md"
   report_html="$tmpdir/report-$runtime_index.html"
 
-  python3 "$runtime_skill/scripts/extract-api-timeline.py" "$raw_log" --format markdown > "$timeline"
+  python3 "$runtime_skill/scripts/extract-api-timeline.py" "$raw_log" \
+    "${timeline_args[@]}" --format markdown > "$timeline"
   grep -q 'req-create' "$timeline"
   grep -q 'VpcId.*vpc-123' "$timeline"
   grep -q 'QuorumVswId=missing' "$timeline"
+  grep -q 'DBInstanceClass.*rds.mysql.s1.small' "$timeline"
+  grep -q 'DBInstanceId.*rm-123' "$timeline"
   if grep -q 'SHOULD-NOT-LEAK' "$timeline"; then
     echo "reproduce_terraform_provider_issue_skill_test: parser leaked a forbidden request field" >&2
     exit 1
   fi
 
-  python3 "$runtime_skill/scripts/extract-api-timeline.py" "$raw_log" --format jsonl \
+  default_timeline="$tmpdir/default-timeline-$runtime_index.md"
+  python3 "$runtime_skill/scripts/extract-api-timeline.py" "$raw_log" > "$default_timeline"
+  if grep -q 'FileSystemType\|DBInstanceClass\|fs-123\|rm-123' "$default_timeline"; then
+    echo "reproduce_terraform_provider_issue_skill_test: parser emitted unselected fields" >&2
+    exit 1
+  fi
+
+  if python3 "$runtime_skill/scripts/extract-api-timeline.py" "$raw_log" \
+    --request-field AccessKeyId >/dev/null 2>&1; then
+    echo "reproduce_terraform_provider_issue_skill_test: parser accepted a sensitive field" >&2
+    exit 1
+  fi
+
+  python3 "$runtime_skill/scripts/extract-api-timeline.py" "$raw_log" \
+    "${timeline_args[@]}" --format jsonl \
     | jq -e 'select(.request_id == "req-read" and (.observations | index("QuorumVswId=missing")))' >/dev/null
 
   python3 "$runtime_skill/scripts/render-report-html.py" "$report_md" "$report_html" >/dev/null

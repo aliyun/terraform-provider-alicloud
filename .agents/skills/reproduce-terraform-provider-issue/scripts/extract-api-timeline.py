@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Extract an allowlisted API timeline from terraform-provider-alicloud debug logs."""
+"""Extract a caller-configured, allowlisted API timeline from Provider debug logs."""
 
 from __future__ import annotations
 
@@ -18,43 +18,9 @@ LOG_PREFIX_RE = re.compile(
     r"^.*provider\.terraform-provider-alicloud[^:]*: "
 )
 
-REQUEST_ALLOWLIST = (
-    "RegionId",
-    "ZoneId",
-    "VpcId",
-    "VSwitchId",
-    "VswId",
-    "FileSystemId",
-    "FileSystemType",
-    "ProtocolType",
-    "StorageType",
-    "EncryptType",
-    "Description",
-    "AccessGroupName",
-    "AccessGroupType",
-    "NetworkType",
-    "MountTargetDomain",
-    "SourceCidrIp",
-    "RWAccessType",
-    "UserAccessType",
-    "Priority",
-    "CidrBlock",
-    "VpcName",
-    "VSwitchName",
-)
-
-TARGET_KEYS = (
-    "FileSystemId",
-    "VpcId",
-    "VSwitchId",
-    "VswId",
-    "MountTargetDomain",
-    "AccessGroupName",
-    "AccessRuleId",
-    "InstanceId",
-    "ResourceId",
-    "RouteTableId",
-    "VRouterId",
+FORBIDDEN_FIELD_RE = re.compile(
+    r"accesskey|secret|token|password|signature|cookie|authorization|userdata|privatekey",
+    re.IGNORECASE,
 )
 
 
@@ -101,49 +67,31 @@ def unique_pairs(value: Any, allowed_keys: tuple[str, ...]) -> list[str]:
     return result
 
 
-def allowlisted_request(value: Any) -> dict[str, Any]:
+def allowlisted_request(value: Any, allowed_keys: tuple[str, ...]) -> dict[str, Any]:
     if not isinstance(value, dict):
         return {}
-    return {key: value[key] for key in REQUEST_ALLOWLIST if key in value}
+    return {key: value[key] for key in allowed_keys if key in value}
 
 
-def first_filesystem(response: Any) -> dict[str, Any] | None:
-    try:
-        items = response["FileSystems"]["FileSystem"]
-    except (KeyError, TypeError):
-        return None
-    if isinstance(items, list) and items and isinstance(items[0], dict):
-        return items[0]
-    return None
-
-
-def observations(api: str, response: Any) -> list[str]:
+def observations(api: str, response: Any, observed_fields: tuple[str, ...]) -> list[str]:
     result: list[str] = []
-    if api == "DescribeFileSystems":
-        filesystem = first_filesystem(response)
-        if filesystem is not None:
-            if "VpcId" in filesystem:
-                result.append(
-                    "VpcId="
-                    + json.dumps(filesystem["VpcId"], ensure_ascii=False, separators=(",", ":"))
-                )
-            else:
-                result.append("VpcId=missing")
-            if "QuorumVswId" in filesystem:
-                result.append(
-                    "QuorumVswId="
-                    + json.dumps(
-                        filesystem["QuorumVswId"],
-                        ensure_ascii=False,
-                        separators=(",", ":"),
-                    )
-                )
-            else:
-                result.append("QuorumVswId=missing")
+    for specification in observed_fields:
+        api_filter, separator, field = specification.partition(":")
+        if not separator:
+            field = api_filter
+        elif api_filter != api:
+            continue
+        values = unique_pairs(response, (field,))
+        result.extend(values if values else [f"{field}=missing"])
     return result
 
 
-def extract_events(lines: list[str]) -> list[dict[str, Any]]:
+def extract_events(
+    lines: list[str],
+    request_fields: tuple[str, ...],
+    target_fields: tuple[str, ...],
+    observed_fields: tuple[str, ...],
+) -> list[dict[str, Any]]:
     events: list[dict[str, Any]] = []
     for index, line in enumerate(lines):
         match = HEADER_RE.search(line)
@@ -170,10 +118,10 @@ def extract_events(lines: list[str]) -> list[dict[str, Any]]:
             "timestamp": match.group("timestamp"),
             "api": match.group("api"),
             "request_id": request_id,
-            "targets": unique_pairs(response, TARGET_KEYS),
+            "targets": unique_pairs(response, target_fields),
             "statuses": unique_pairs(response, ("Status",)),
-            "request": allowlisted_request(request),
-            "observations": observations(match.group("api"), response),
+            "request": allowlisted_request(request, request_fields),
+            "observations": observations(match.group("api"), response, observed_fields),
         }
         events.append(event)
     return events
@@ -211,12 +159,43 @@ def main() -> int:
     parser.add_argument(
         "--format", choices=("markdown", "jsonl"), default="markdown"
     )
+    parser.add_argument(
+        "--request-field",
+        action="append",
+        default=[],
+        metavar="NAME",
+        help="Allowlisted top-level request field to emit; repeat for multiple fields",
+    )
+    parser.add_argument(
+        "--target-field",
+        action="append",
+        default=[],
+        metavar="NAME",
+        help="Allowlisted response field to emit as a target; repeat for multiple fields",
+    )
+    parser.add_argument(
+        "--observe-field",
+        action="append",
+        default=[],
+        metavar="NAME",
+        help="Allowlisted response field to report as value or missing; use API:NAME to scope it",
+    )
     args = parser.parse_args()
 
     if not args.log.is_file():
         parser.error(f"log file does not exist: {args.log}")
 
-    events = extract_events(args.log.read_text(encoding="utf-8", errors="replace").splitlines())
+    selected_fields = args.request_field + args.target_field + args.observe_field
+    forbidden = sorted({field for field in selected_fields if FORBIDDEN_FIELD_RE.search(field)})
+    if forbidden:
+        parser.error("refusing sensitive field selection: " + ", ".join(forbidden))
+
+    events = extract_events(
+        args.log.read_text(encoding="utf-8", errors="replace").splitlines(),
+        tuple(dict.fromkeys(args.request_field)),
+        tuple(dict.fromkeys(args.target_field)),
+        tuple(dict.fromkeys(args.observe_field)),
+    )
     if not events:
         print("extract-api-timeline: no Provider response events found", file=sys.stderr)
         return 2

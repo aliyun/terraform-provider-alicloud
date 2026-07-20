@@ -118,14 +118,19 @@ terraform apply -input=false -auto-approve -no-color create.tfplan
 
 ### 7. 提取脱敏 apply 时间线
 
-使用内置解析器，只输出请求和响应的白名单字段：
+使用内置解析器，按当前资源的 API 契约显式传入白名单字段。解析器不内置任何产品或资源字段；未传参时只输出时间、API、RequestId 和通用状态：
 
 ```bash
 skill_dir="<当前已加载 SKILL.md 所在目录的绝对路径>"
 python3 "$skill_dir/scripts/extract-api-timeline.py" \
   "$evidence_dir/terraform-apply.raw.log" \
+  --request-field <trigger-field> \
+  --target-field <resource-id-field> \
+  --observe-field <read-api>:<disputed-response-field> \
   --format markdown > "$evidence_dir/apply-api-timeline.md"
 ```
+
+每个参数可重复传入。`--observe-field` 优先使用 `API:字段` 限定只在该 API 响应中判断字段存在性，避免把其他 API 本就不返回的字段误报为缺失。只选择本次诊断所需字段；解析器会拒绝密钥、Token、密码、签名、Cookie、UserData 和私钥类字段。
 
 分享证据或编写最终报告前，阅读 [references/evidence-contract.md](references/evidence-contract.md)。
 
