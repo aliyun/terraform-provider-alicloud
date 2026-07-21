@@ -51,15 +51,16 @@ executor: Bridge advertises `capabilities.dispatch.pull=false`, and
 AutomationAgent rejects the fixed Scheduler registration unless that opt-out is
 explicit. It does not authorize any other host to run scheduler jobs.
 
-Use `bridge/jarvis.env` to enable it only for a named job.  A job has one route:
-`legacy` (default) or `new`; never enable both.  The first supported handover is
-`daily.probe`:
+Use `bridge/jarvis.env` to select new-engine ownership with one variable.
+`JARVIS_SCHEDULER_NEW_JOBS` is a comma-separated list: listed jobs are owned by
+the new Engine, unlisted jobs remain on legacy, and an empty value means all
+legacy. Unknown, blank, or duplicate keys fail closed. The first supported
+handover is `daily.probe`:
 
 ```bash
 JARVIS_BRIDGE_ROLE=scheduler
-JARVIS_SCHEDULER_ENABLE=1
 JARVIS_CONTROL_PLANE_TOKEN=<shared-control-plane-token>
-JARVIS_SCHEDULER_JOB_DAILY_PROBE=new
+JARVIS_SCHEDULER_NEW_JOBS=daily.probe
 bridge/run.sh start
 ```
 
@@ -68,8 +69,17 @@ the ACTIVE Worker identity, registers the full job registry, recovers
 interrupted slots, and then begins polling.  The legacy `DailyScheduler`
 excludes only `daily.probe`; its existing `_ProbeJob` plus
 `daily-scheduler.json` marker are reused during the handover.  A configured
-`new` route without a runner mapping fails closed at startup, while a disabled
-global gate leaves every job on the legacy path.
+new job without a runner mapping fails closed at startup. Each definition's
+`enabled_env` remains an independent business switch; for example,
+`JARVIS_PROBE_SCHED=0` registers a routed `daily.probe` as `DISABLED`.
+
+A planned Scheduler restart closes admission, registers the Worker as
+`DRAINING`, and waits for the admitted job to finish before starting a new
+process. The Scheduler path never falls back to `SIGKILL`, and launchd restart
+disables KeepAlive and avoids `kickstart -k`; a drain timeout leaves the old
+process in place and refuses successor startup. An unexpected process crash is
+recovered by replaying the same scheduled slot from the beginning. Generic
+checkpoint/resume is deferred to job-specific implementations.
 
 ## Push-only credential distribution
 

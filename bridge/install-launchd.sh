@@ -5,7 +5,8 @@
 #   - only writes the configured user plist (never sudo/system domain);
 #   - refuses symlink targets and a target owned by a different Label;
 #   - renders to a temporary file, validates XML, then atomically replaces;
-#   - bootout/bootstrap/kickstart converges both first install and reinstall.
+#   - reinstall drains the loaded process before bootout/bootstrap; it never
+#     uses kickstart -k to overlap an old Scheduler with its replacement.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -123,12 +124,31 @@ else
   printf 'launchd plist installed: %s\n' "$TARGET"
 fi
 
-if "$LAUNCHCTL_BIN" print "$SERVICE" >/dev/null 2>&1; then
-  "$LAUNCHCTL_BIN" bootout "$SERVICE"
+if detail="$("$LAUNCHCTL_BIN" print "$SERVICE" 2>/dev/null)"; then
+  old_pid="$(printf '%s\n' "$detail" \
+    | sed -n 's/^[[:space:]]*pid = //p' | head -n1)"
+  stop_wait="${JARVIS_BRIDGE_STOP_WAIT:-${JARVIS_STOP_GRACE:-30}}"
+  "$LAUNCHCTL_BIN" disable "$SERVICE" >/dev/null 2>&1 \
+    || die "cannot disable loaded launchd service before drain: $SERVICE"
+  if [ -n "$old_pid" ]; then
+    "$LAUNCHCTL_BIN" kill SIGTERM "$SERVICE" \
+      || die "cannot request graceful drain from loaded launchd service: $SERVICE"
+    i=0
+    deadline=$(( stop_wait * 10 ))
+    while [ "$i" -lt "$deadline" ] && kill -0 "$old_pid" 2>/dev/null; do
+      sleep 0.1
+      i=$((i + 1))
+    done
+    if kill -0 "$old_pid" 2>/dev/null; then
+      die "loaded bridge did not drain in ${stop_wait}s; service remains disabled and no replacement was started"
+    fi
+  fi
+  "$LAUNCHCTL_BIN" bootout "$SERVICE" \
+    || die "cannot unload drained launchd service: $SERVICE"
 fi
 "$LAUNCHCTL_BIN" bootstrap "$DOMAIN" "$TARGET"
 "$LAUNCHCTL_BIN" enable "$SERVICE" >/dev/null 2>&1 || true
-"$LAUNCHCTL_BIN" kickstart -k "$SERVICE"
+"$LAUNCHCTL_BIN" kickstart "$SERVICE"
 
 printf 'Jarvis bridge is managed by launchd: %s\n' "$SERVICE"
 printf 'status: JARVIS_BRIDGE_SUPERVISOR=launchd %s status\n' "$RUN_SH"

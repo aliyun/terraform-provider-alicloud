@@ -27,8 +27,8 @@ from .composition import (
     SchedulerComposition, SchedulerCompositionError,
 )
 from .migration import (
-    JOB_ENV_PREFIX, SCHEDULER_ENABLE_ENV, SchedulerMigrationError,
-    job_env_name, requested_new_jobs, scheduler_enabled, uses_new_engine,
+    SCHEDULER_NEW_JOBS_ENV, SchedulerMigrationError, business_job_enabled,
+    requested_new_jobs, uses_new_engine,
 )
 
 __all__ = [
@@ -45,7 +45,7 @@ __all__ = [
     "ScheduledJobControlPlaneProtocolError", "ScheduledJobControlPlaneRejected",
     "ScheduledJobControlPlaneUnavailable",
     "EmptyResultPublisher", "SCHEDULER_HOST_ID", "SCHEDULER_WORKER_KEY",
-    "SchedulerComposition", "SchedulerCompositionError", "JOB_ENV_PREFIX",
-    "SCHEDULER_ENABLE_ENV", "SchedulerMigrationError", "job_env_name",
-    "requested_new_jobs", "scheduler_enabled", "uses_new_engine",
+    "SchedulerComposition", "SchedulerCompositionError", "SCHEDULER_NEW_JOBS_ENV",
+    "SchedulerMigrationError", "business_job_enabled", "requested_new_jobs",
+    "uses_new_engine",
 ]

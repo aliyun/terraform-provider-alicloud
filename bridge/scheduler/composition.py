@@ -29,7 +29,9 @@ except ModuleNotFoundError:  # pragma: no cover - import path depends on composi
 from .control_plane_client import HttpScheduledJobControlPlane
 from .engine import DurableResultPublisher, SchedulerEngine
 from .jobs import JOBS, load_jobs
-from .migration import SchedulerMigrationError, requested_new_jobs, scheduler_enabled
+from .migration import (
+    SchedulerMigrationError, business_job_enabled, requested_new_jobs,
+)
 from .model import JobResult, ScheduledJobDefinition
 from .runtime import JobRunner, ScannerRuntime
 
@@ -93,17 +95,21 @@ class SchedulerComposition:
 
     @property
     def enabled(self) -> bool:
-        return scheduler_enabled(self._environ)
+        return bool(requested_new_jobs(
+            (definition.id for definition in JOBS), environ=self._environ))
 
     def start(self) -> bool:
         """Register/verify the fixed Worker, register jobs, recover, then poll.
 
-        ``False`` means the scheduler global gate is disabled or no job is
-        selected.  Any selected-but-unmapped job raises before a legacy loop
+        ``False`` means ``JARVIS_SCHEDULER_NEW_JOBS`` is empty. Any
+        selected-but-unmapped job raises before a legacy loop
         can be suppressed, so the operator cannot lose a job during cutover.
         """
 
-        if not self.enabled:
+        definitions = load_jobs()
+        migrated = requested_new_jobs(
+            (definition.id for definition in definitions), environ=self._environ)
+        if not migrated:
             return False
         self._heartbeat_interval = _positive_float(
             self._environ.get("JARVIS_SCHEDULER_HEARTBEAT_SEC", "30"),
@@ -111,12 +117,6 @@ class SchedulerComposition:
         self._poll_interval = _positive_float(
             self._environ.get("JARVIS_SCHEDULER_POLL_SEC", "5"),
             "JARVIS_SCHEDULER_POLL_SEC")
-        definitions = load_jobs()
-        migrated = requested_new_jobs(
-            (definition.id for definition in definitions), environ=self._environ)
-        if not migrated:
-            self._log.info("SchedulerEngine disabled: no job has route=new")
-            return False
         missing = sorted(migrated.difference(self._runners))
         if missing:
             raise SchedulerCompositionError(
@@ -147,7 +147,10 @@ class SchedulerComposition:
                 # explicitly DISABLED on the new control plane and remain legacy-owned.
                 engine.register(
                     datetime.now(timezone.utc),
-                    is_enabled=lambda definition: definition.id in migrated)
+                    is_enabled=lambda definition: (
+                        definition.id in migrated
+                        and business_job_enabled(definition, environ=self._environ)
+                    ))
                 engine.recover_interrupted()
             except Exception:
                 # A Worker that could register but could not complete the

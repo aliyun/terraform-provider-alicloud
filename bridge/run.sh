@@ -9,9 +9,9 @@
 #   · 模式判定: 有 DINGTALK_APP_KEY/SECRET → 全功能; 缺 → 自动 JARVIS_NO_DINGTALK=1 降级点火
 #     (自动派发+各调度器照常, 卡片/播报落 bot.log; 配好凭证后 run.sh restart 即回全功能)。
 #   · nohup 守护 + 写 pidfile, 启动后自检(进程仍活 + 日志首行非 ERROR), 失败退非零并打印日志尾。
-# stop 优雅停止(吸收 master f7f1f72): 发 SIGTERM → bot 自身 SIGTERM handler 按进程组整树杀在跑
-#   worker(含 gopls/go build 孙进程)并 release 其 jarvis-claimed 工单; 轮询宽限 JARVIS_STOP_GRACE
-#   (默认 30s)给足清理时间, 超时才 SIGKILL 兜底。降级模式(_run_no_dingtalk)也注册同一 handler。
+# stop 优雅停止(吸收 master f7f1f72): 发 SIGTERM → bot 自身 SIGTERM handler 收尾在跑
+#   worker 并 release 其已认领工单。Task-only worker 保留超时 SIGKILL 兜底；
+#   Scheduler 必须先 drain 在途 job，超时拒绝 SIGKILL 和新进程启动。
 #
 # 依赖 F 线 JARVIS_NO_DINGTALK(bridge 降级模式, 分支 worktree-f3-nodingtalk / MR-4)。若该能力
 # 尚未合并, 缺凭证时旧 bot 会忽略 flag、因缺凭证退 2 —— 本脚本的启动自检会如实报错并提示先合 MR-4。
@@ -39,10 +39,6 @@ LOG="$STATE_DIR/bot.log"
 BOOTSTRAP_ENV="${JARVIS_BRIDGE_BOOTSTRAP_ENV:-$REPO_ROOT/bootstrap/.env}"
 BRIDGE_ENV="${JARVIS_BRIDGE_ENV:-$SCRIPT_DIR/jarvis.env}"
 START_WAIT="${JARVIS_BRIDGE_START_WAIT:-2}"
-# stop 宽限: 默认 30s(吸收 master f7f1f72 JARVIS_STOP_GRACE 语义——给 bot 时间整树杀 worker +
-# release claim); JARVIS_BRIDGE_STOP_WAIT 优先(测试用小值), 否则回落 JARVIS_STOP_GRACE, 再默认 30。
-STOP_WAIT="${JARVIS_BRIDGE_STOP_WAIT:-${JARVIS_STOP_GRACE:-30}}"
-
 say()  { printf '%s\n' "$*"; }
 err()  { printf '%s\n' "$*" >&2; }
 
@@ -149,25 +145,40 @@ _decide_mode() {
 }
 
 _validate_scheduler_cutover() {
-  # The new Engine is intentionally dormant by default.  Refuse a partial
-  # enablement before daemonizing, so a typo cannot suppress a legacy job while
-  # leaving it without its fenced Scheduler owner.
-  local enabled="${JARVIS_SCHEDULER_ENABLE:-0}"
-  case "$enabled" in
-    ''|0) return 0 ;;
-    1) ;;
-    *) err "JARVIS_SCHEDULER_ENABLE 只能为 0 或 1。"; return 2 ;;
-  esac
-  if [ "${JARVIS_BRIDGE_ROLE:-scheduler}" != "scheduler" ]; then
-    err "JARVIS_SCHEDULER_ENABLE=1 只能与 JARVIS_BRIDGE_ROLE=scheduler 一起使用。"
+  # One comma-separated list is the sole ownership switch. Empty means all
+  # legacy. Python's import-safe JOBS registry is the single source for exact
+  # keys, duplicate detection, and deprecated-variable rejection.
+  local selected validation_error python_path
+  selected="$(printf '%s' "${JARVIS_SCHEDULER_NEW_JOBS:-}" \
+    | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+  # Executor-only Task workers do not instantiate the Scheduler owner. Ignore
+  # stale scheduler-only migration variables there unless someone incorrectly
+  # asks that worker to own a new scheduled job.
+  if [ "${JARVIS_BRIDGE_ROLE:-scheduler}" = "worker" ] && [ -z "$selected" ]; then
+    return 0
+  fi
+  if [ -n "$selected" ] && [ "${JARVIS_BRIDGE_ROLE:-scheduler}" != "scheduler" ]; then
+    err "JARVIS_SCHEDULER_NEW_JOBS 非空时只能与 JARVIS_BRIDGE_ROLE=scheduler 一起使用。"
     return 2
   fi
-  if [ -z "${JARVIS_CONTROL_PLANE_TOKEN:-}" ] && [ -z "${JARVIS_HTML_REPORT_TOKEN:-}" ]; then
-    err "JARVIS_SCHEDULER_ENABLE=1 需要 JARVIS_CONTROL_PLANE_TOKEN 或 JARVIS_HTML_REPORT_TOKEN。"
+  if [ -n "$selected" ] \
+     && [ -z "${JARVIS_CONTROL_PLANE_TOKEN:-}" ] \
+     && [ -z "${JARVIS_HTML_REPORT_TOKEN:-}" ]; then
+    err "JARVIS_SCHEDULER_NEW_JOBS 非空时需要 JARVIS_CONTROL_PLANE_TOKEN 或 JARVIS_HTML_REPORT_TOKEN。"
     return 2
   fi
-  if ! env | grep -Eq '^JARVIS_SCHEDULER_JOB_[A-Z0-9_]+=new$'; then
-    err "JARVIS_SCHEDULER_ENABLE=1 还需要至少一个 JARVIS_SCHEDULER_JOB_<JOB>=new。"
+  python_path="$REPO_ROOT${PYTHONPATH:+:$PYTHONPATH}"
+  if ! validation_error="$(PYTHONPATH="$python_path" "$PYTHON" -c '
+import sys
+from bridge.scheduler.jobs import JOBS
+from bridge.scheduler.migration import SchedulerMigrationError, requested_new_jobs
+try:
+    requested_new_jobs((definition.id for definition in JOBS))
+except SchedulerMigrationError as exc:
+    print(exc, file=sys.stderr)
+    raise SystemExit(2)
+' 2>&1)"; then
+    err "Scheduler 路由配置无效: $validation_error"
     return 2
   fi
   return 0
@@ -213,6 +224,7 @@ _launchd_loaded() {
 
 cmd_launchd_start() {
   _launchd_require || return 1
+  _validate_scheduler_cutover || return $?
   if [ ! -f "$LAUNCHD_PLIST" ]; then
     err "launchd plist 不存在: $LAUNCHD_PLIST"
     err "请先运行: $SCRIPT_DIR/install-launchd.sh"
@@ -227,10 +239,17 @@ cmd_launchd_start() {
     }
   fi
   "$LAUNCHCTL_BIN" enable "$LAUNCHD_SERVICE" >/dev/null 2>&1 || true
-  "$LAUNCHCTL_BIN" kickstart -k "$LAUNCHD_SERVICE" || {
-    err "launchd kickstart 失败: $LAUNCHD_SERVICE"
-    return 1
-  }
+  if [ "${JARVIS_BRIDGE_ROLE:-scheduler}" = "scheduler" ]; then
+    "$LAUNCHCTL_BIN" kickstart "$LAUNCHD_SERVICE" || {
+      err "launchd kickstart 失败: $LAUNCHD_SERVICE"
+      return 1
+    }
+  else
+    "$LAUNCHCTL_BIN" kickstart -k "$LAUNCHD_SERVICE" || {
+      err "launchd kickstart 失败: $LAUNCHD_SERVICE"
+      return 1
+    }
+  fi
   say "bridge 已交由 launchd 启动 ($LAUNCHD_SERVICE)。"
 }
 
@@ -249,20 +268,62 @@ cmd_launchd_stop() {
 
 cmd_launchd_restart() {
   _launchd_require || return 1
+  _validate_scheduler_cutover || return $?
   if ! _launchd_loaded; then
     cmd_launchd_start
     return
   fi
 
-  # Keep the job registered and let launchd replace the running process.  A
-  # bootout/bootstrap pair can race the old process' graceful SIGTERM cleanup,
-  # leaving the newly registered job in a transient SIGTERMed state.
-  "$LAUNCHCTL_BIN" enable "$LAUNCHD_SERVICE" >/dev/null 2>&1 || true
-  "$LAUNCHCTL_BIN" kickstart -k "$LAUNCHD_SERVICE" || {
+  # Task-only workers retain the existing in-place replacement behavior. They
+  # do not own scheduled jobs and remain governed by their lease/recovery path.
+  if [ "${JARVIS_BRIDGE_ROLE:-scheduler}" = "worker" ]; then
+    "$LAUNCHCTL_BIN" enable "$LAUNCHD_SERVICE" >/dev/null 2>&1 || true
+    "$LAUNCHCTL_BIN" kickstart -k "$LAUNCHD_SERVICE" || {
+      err "launchd restart 失败: $LAUNCHD_SERVICE"
+      return 1
+    }
+    say "bridge worker 已由 launchd 重启 ($LAUNCHD_SERVICE)。"
+    return 0
+  fi
+
+  # Scheduler restart is a two-phase handoff. Disable KeepAlive first, ask the
+  # old process to drain, and start a replacement only after that exact PID has
+  # exited. Never use `kickstart -k`: it starts the successor before the old
+  # process has proved that its in-flight scheduled job committed.
+  local detail old_pid="" i=0 stop_wait
+  detail="$("$LAUNCHCTL_BIN" print "$LAUNCHD_SERVICE" 2>/dev/null || true)"
+  old_pid="$(printf '%s\n' "$detail" \
+    | sed -n 's/^[[:space:]]*pid = //p' | head -n1)"
+  stop_wait="${JARVIS_BRIDGE_STOP_WAIT:-${JARVIS_STOP_GRACE:-30}}"
+  "$LAUNCHCTL_BIN" disable "$LAUNCHD_SERVICE" >/dev/null 2>&1 || {
+    err "launchd restart 失败: 无法禁用 KeepAlive ($LAUNCHD_SERVICE)"
+    return 1
+  }
+  if [ -n "$old_pid" ]; then
+    "$LAUNCHCTL_BIN" kill SIGTERM "$LAUNCHD_SERVICE" || {
+      err "launchd restart 失败: 无法请求旧 bridge 优雅停止"
+      return 1
+    }
+    local deadline=$(( stop_wait * 10 ))
+    while [ "$i" -lt "$deadline" ] && _alive "$old_pid"; do
+      sleep 0.1
+      i=$((i + 1))
+    done
+    if _alive "$old_pid"; then
+      err "Scheduler 在 ${stop_wait}s 内未 drain 完成；launchd 保持 disabled，不会启动新 Bridge。"
+      err "等待在途 job 完成后重新执行 bridge/run.sh restart。"
+      return 1
+    fi
+  fi
+  "$LAUNCHCTL_BIN" enable "$LAUNCHD_SERVICE" >/dev/null 2>&1 || {
+    err "launchd restart 失败: 无法重新启用 $LAUNCHD_SERVICE"
+    return 1
+  }
+  "$LAUNCHCTL_BIN" kickstart "$LAUNCHD_SERVICE" || {
     err "launchd restart 失败: $LAUNCHD_SERVICE"
     return 1
   }
-  say "bridge 已由 launchd 重启 ($LAUNCHD_SERVICE)。"
+  say "Scheduler 已 drain，bridge 已由 launchd 重启 ($LAUNCHD_SERVICE)。"
 }
 
 cmd_launchd_status() {
@@ -382,7 +443,8 @@ cmd_watchdog() {
 }
 
 cmd_stop() {
-  local pid
+  local pid stop_wait
+  stop_wait="${JARVIS_BRIDGE_STOP_WAIT:-${JARVIS_STOP_GRACE:-30}}"
   # Operator-intent sentinel: `run.sh stop` means STAY stopped. The cron
   # watchdog (run.sh watchdog) refuses to start while this file exists; only
   # a human `run.sh start` clears it. Dropped even when nothing is running —
@@ -396,15 +458,19 @@ cmd_stop() {
     rm -f "$PIDFILE"
     return 0
   fi
-  # 发 SIGTERM → bot 的 _graceful_stop handler 整树杀在跑 worker(进程组)+ release 其 claim
-  # (全功能与降级两模式均注册)。宽限 STOP_WAIT 秒等 bot 自清, 超时才 SIGKILL 兜底(此时 worker
-  # 可能遗留，由控制面 lease/reaper 与 AoneScheduler 收敛)。
-  say "停止 bridge (pid $pid): 发 SIGTERM (bot 自杀 worker + release claim), 宽限 ${STOP_WAIT}s…"
+  # 发 SIGTERM → bot 的 _graceful_stop handler。Scheduler 会先停 admission 并 drain；
+  # 只有 Task-only worker 在超时后仍保留 SIGKILL 兜底。
+  say "停止 bridge (pid $pid): 发 SIGTERM (bot 自杀 worker + release claim), 宽限 ${stop_wait}s…"
   kill -TERM "$pid" 2>/dev/null || true
-  local i=0 deadline=$(( STOP_WAIT * 10 ))
+  local i=0 deadline=$(( stop_wait * 10 ))
   while [ "$i" -lt "$deadline" ] && _alive "$pid"; do sleep 0.1; i=$((i + 1)); done
   if _alive "$pid"; then
-    say "TERM ${STOP_WAIT}s 未退 → SIGKILL 兜底(worker 清理可能不全, 控制面 reaper 收敛)。"
+    if [ "${JARVIS_BRIDGE_ROLE:-scheduler}" = "scheduler" ]; then
+      err "Scheduler 在 ${stop_wait}s 内未 drain 完成；拒绝 SIGKILL，不会启动新 Bridge。"
+      err "等待在途 job 完成后重试 stop/restart。"
+      return 1
+    fi
+    say "TERM ${stop_wait}s 未退 → SIGKILL 兜底(worker 清理可能不全, reconcile 收敛)。"
     kill -KILL "$pid" 2>/dev/null || true
     sleep 0.2
     rm -f "$PIDFILE"
@@ -416,7 +482,7 @@ cmd_stop() {
   return 0
 }
 
-cmd_restart() { cmd_stop; cmd_start; }
+cmd_restart() { cmd_stop || return $?; cmd_start; }
 
 cmd_status() {
   local pid
@@ -459,6 +525,7 @@ cmd_dryrun() {
 # exec 后 bot 与 supervisor 看到的是同一 PID，崩溃退出可被 KeepAlive 准确拉起。
 cmd_daemon() {
   _source_env
+  _validate_scheduler_cutover || return $?
   mkdir -p "$STATE_DIR"
   local mode
   if _decide_mode; then mode="full"; else mode="degraded"; fi

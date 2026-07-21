@@ -8316,10 +8316,10 @@ class JarvisHandler(AsyncChatbotHandler):
         # PrWatchScheduler(PR lifecycle), and external-operation recovery.
         self.scanner = AoneScheduler(self, self.ephemeral_executor)
         self.daily = DailyScheduler(self, self.ephemeral_executor)
-        # The composition layer is dormant unless JARVIS_SCHEDULER_ENABLE=1 and
-        # at least one JARVIS_SCHEDULER_JOB_<KEY>=new route is selected.  Only
-        # daily.probe has a runner adapter in this C5 slice; a request to move
-        # any other job fails closed before old loops are started.
+        # JARVIS_SCHEDULER_NEW_JOBS is the sole ownership switch. Only
+        # daily.probe has a runner adapter in this C5 slice; selecting any other
+        # job fails closed before old loops are started. Each definition's
+        # enabled_env remains an independent business on/off switch.
         self.scheduler_composition = SchedulerComposition(
             task_client=self.task_client,
             runners={"daily.probe": self.daily.new_engine_runner("daily.probe")},
@@ -8374,7 +8374,16 @@ class JarvisHandler(AsyncChatbotHandler):
         """Stop the persistent Task executor once."""
         scheduler = getattr(self, "scheduler_composition", None)
         if scheduler is not None:
-            scheduler.stop(timeout=timeout)
+            scheduler_drained = scheduler.stop(timeout=timeout)
+            if not scheduler_drained:
+                # A planned Scheduler shutdown is fail-closed: keep this
+                # process alive and do not tear down shared executors while an
+                # admitted scheduled job is still finishing its terminal
+                # control-plane update. run.sh must not start a successor.
+                log.error(
+                    "Scheduler did not drain; keeping the current Bridge alive "
+                    "and refusing replacement startup")
+                return False
         recovery = getattr(self, "external_operation_recovery", None)
         if recovery is not None:
             recovery.stop()
@@ -9701,13 +9710,20 @@ def _run_no_dingtalk():
              "配好钉钉凭证后去掉 JARVIS_NO_DINGTALK 即回全功能模式。")
 
     # 优雅停止(与全功能 main() 同款, 吸收 master f7f1f72): run.sh stop 发 SIGTERM → 整树杀在跑
-    # worker(进程组) + release 其 jarvis-claimed 工单, 再退出。降级模式无 TataPool, 故不 shutdown pool。
+    # worker(进程组) + release 其已认领工单, 再退出。降级模式无 TataPool, 故不 shutdown pool。
     def _graceful_stop(signum, _frame):
         log.info("[NO-DINGTALK] signal %s received — graceful stop: kill workers + release claims", signum)
         try:
-            handler.stop_persistence_executor(drain=False)
+            stopped = handler.stop_persistence_executor(drain=False)
         except Exception as e:  # noqa: BLE001
             log.exception("[NO-DINGTALK] PersistenceExecutor stop failed: %s", e)
+            stopped = False
+        if (os.environ.get("JARVIS_BRIDGE_ROLE", "scheduler") == "scheduler"
+                and not stopped):
+            log.error(
+                "[NO-DINGTALK] planned Scheduler stop remains in DRAINING; "
+                "skip worker termination and os._exit until a later stop retry")
+            return
         try:
             ids = handler.ephemeral_executor.terminate_all(release_fn=_release_claim)
             log.info("[NO-DINGTALK] graceful stop: cleaned up %d worker(s): %s", len(ids), ids)
@@ -9775,9 +9791,16 @@ def main():
     def _graceful_stop(signum, _frame):
         log.info("signal %s received — graceful stop: kill workers + release claims", signum)
         try:
-            handler.stop_persistence_executor(drain=False)
+            stopped = handler.stop_persistence_executor(drain=False)
         except Exception as e:  # noqa: BLE001
             log.exception("PersistenceExecutor stop failed: %s", e)
+            stopped = False
+        if (os.environ.get("JARVIS_BRIDGE_ROLE", "scheduler") == "scheduler"
+                and not stopped):
+            log.error(
+                "planned Scheduler stop remains in DRAINING; skip worker "
+                "termination and os._exit until a later stop retry")
+            return
         try:
             ids = handler.ephemeral_executor.terminate_all(release_fn=_release_claim)
             log.info("graceful stop: cleaned up %d worker(s): %s", len(ids), ids)

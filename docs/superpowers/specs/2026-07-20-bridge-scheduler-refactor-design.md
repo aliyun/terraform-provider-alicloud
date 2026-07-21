@@ -206,7 +206,7 @@ v14 只迁移当前主干真实存在的时间驱动职责，不复活已删除�
 | `timeout_seconds` | 正数 |
 | `retry_delay_seconds` | 可重试失败后重跑同一 slot 的间隔 |
 | `replay_policy` | `TASK_UPSERT_IDEMPOTENT`、`EVENT_LEDGER_IDEMPOTENT` 或 `EPHEMERAL` |
-| `enabled_env` | 可选，只在 start/restart 时读取 |
+| `enabled_env` | 可选，只决定业务是否启用；与新旧链路归属分离，只在 start/restart 时读取 |
 | `checkpoint_upgrade` | `RESET_FULL`、`RESET_OVERLAP` 或 `MIGRATE` |
 
 job 模块 import 时不得启动线程、访问网络、sleep 或写文件。`validate_registry()` 必须先把 iterable 单次物化为有序 tuple，校验后返回同一个 tuple；`load_jobs()` 直接返回校验结果。
@@ -333,7 +333,7 @@ CREATE TABLE jarvis_scheduled_job (
 | 可重试失败 | `ERROR` | 重试时间 | `last_finished_at=now`，记录错误摘要 |
 | 重试开始 | `RUNNING` | 保留重试计划时间 | `last_started_at=now`，清空 `last_error` |
 | 永久失败 | `ERROR` | `NULL` | `last_finished_at=now`，记录错误摘要 |
-| restart 恢复 | `IDLE` | 保留原计划时间 | 原 `RUNNING` 视为未完成并立即重跑 |
+| 异常中断恢复 | `IDLE` | 保留原计划时间 | 原 `RUNNING` 视为未完成并从 slot 起点立即重跑 |
 | 禁用 | `DISABLED` | `NULL` | 保留最近一次运行结果 |
 | 重新启用 | `IDLE` | 重新计算计划时间 | 保留最近一次运行结果 |
 
@@ -347,24 +347,25 @@ CREATE TABLE jarvis_scheduled_job (
 
 1. `DailyScheduler` 的日期 marker 继续作为 daily runner 的独立业务状态，不能塞入 `jarvis_scheduled_job`。
 2. `pr-watch.json` 的 registry、cursor 和 dedupe 状态继续由 PR runner 所有，后续需要控制面化时使用独立业务状态接口。
-3. 迁移期旧 loop 和新 job 不得同时触发；每个 job 使用独立 enable gate 原子切换。
+3. 迁移期旧 loop 和新 job 不得同时触发；所有 job 只通过统一的
+   `JARVIS_SCHEDULER_NEW_JOBS` 清单决定新旧归属，`enabled_env` 只决定业务启停。
 4. 连续两个完整周期对账一致并确认新的业务状态真源后，才停止读取旧状态文件。
 5. 双事件 ledger 在等价 durable outbox 验收前继续保留，不能随 scheduler 状态文件一起删除。
 
 ### 8.3 控制面渐进迁移与旧链路兼容
 
 首版允许旧定时任务模块与新 `SchedulerEngine` 同进程共存，以 job 为最小迁移单元；这不是双写或
-双触发模式。默认全部 job 仍走旧链路。运维只可通过显式迁移清单把单个 job 切到新链路：
+双触发模式。默认全部 job 仍走旧链路。运维只可通过一个显式迁移清单把 job 切到新链路：
 
 ```text
-JARVIS_SCHEDULER_ENABLE=1
-JARVIS_SCHEDULER_JOB_DAILY_PROBE=new
+JARVIS_SCHEDULER_NEW_JOBS=daily.probe,aone.scan
 ```
 
-启动时 composition 必须构造唯一 `JobRoute`：清单内 job 仅由新 Engine 注册、计划和执行，旧模块
-对同一 job 必须停止旧 tick；清单外 job 仅保留旧模块，不能被新 Engine admission。未知 job、重复项、
-未开启 `JARVIS_SCHEDULER_ENABLE` 的迁移清单，或缺少旧/新路由实现，均在启动阶段 fail-closed。这样可以
-先迁移 `aone.scan`，观察完整周期后再逐项迁移，不会让两条链路对同一 job 同时产生 Task 或事件。
+该变量为空时全部 job 走旧链路；逗号清单内 job 仅由新 Engine admission，旧模块必须停止同一
+job 的旧 tick；清单外 job 仅由旧模块执行，新控制面登记为 `DISABLED`。清单内 job 仍须满足
+definition 的 `enabled_env`，业务开关关闭时新旧链路均不执行。未知 job、重复项、仍配置已废弃的
+`JARVIS_SCHEDULER_ENABLE`/`JARVIS_SCHEDULER_JOB_*`，或缺少新 runner 映射，均在启动阶段
+fail-closed。这样只需编辑一个变量即可逐项迁移，且路由归属与业务启停不会相互覆盖。
 
 本轮迁移只替换**调度控制路径**。job 原有的业务 cursor、daily marker、PR registry 和 event ledger
 仍由旧 runner 持有；D1 的数据面导出、迁移、对账和删除旧状态文件仍不在本轮范围。
@@ -393,7 +394,7 @@ JARVIS_SCHEDULER_JOB_DAILY_PROBE=new
 
 ### 9.4 Probe
 
-- `daily.probe` 仍为 Ephemeral；restart 可以中断本轮。
+- `daily.probe` 仍为 Ephemeral；计划内 restart 必须等待本轮完成，异常崩溃可以中断本轮。
 - 未成功的 daily slot 不得标记完成，新 Scheduler 在当天窗口内补跑相同 slot。
 - Probe 不使用 PersistenceExecutor，不引入 `probe_finding` Task。
 
@@ -423,30 +424,29 @@ sequenceDiagram
     Note over TW: 持续运行，不接收 stop
     Old->>Old: admission lock 内关闭 trigger gate
     Old->>Scan: drain active runs
-    alt 完整链在 deadline 前完成
+    alt 完整链在 drain deadline 前完成
         Scan-->>Old: JobResult
         Old->>CP: Task/Event durable ACK
         Old->>CP: update status + next_run_at
-    else deadline 到达
-        Old->>Scan: TERM/KILL process group
-        Note over Old,CP: 保留 RUNNING 与原计划时间
+        Old->>CP: Scheduler Worker OFFLINE
+        CLI->>New: start(restart_id)
+        New-->>CLI: READY(restart_id)
+    else drain deadline 到达
+        Note over Old: 保持 DRAINING，继续等待在途 job
+        Note over CLI,New: restart 失败；不得启动新进程
     end
-    Old->>CP: Scheduler Worker OFFLINE
-    CLI->>New: start(restart_id)
-    New->>CP: register and normalize stale RUNNING
-    CP-->>New: definitions / status / next_run_at
-    New-->>CLI: READY(restart_id)
 ```
 
 固定顺序：
 
 1. 生成 restart ID，旧 Scheduler 进入 `QUIESCING`。
 2. 在 admission lock 内关闭 trigger gate，不再启动新 Scanner。
-3. 等待 active Scanner 完成“结果校验 → Task/Event durable ACK → 更新 status/next_run_at”完整提交链。
-4. deadline 到达后终止仍在运行的 Scanner 进程组；ACK 未知时不推进业务 cursor，也不把 job 标记成功。
-5. 旧 Scheduler 标记 OFFLINE 并退出。
-6. 旧进程退出后才启动新 Scheduler；启动时把遗留 `RUNNING` 归一为 `IDLE`，保留原 `next_run_at`，因此立即重跑。
-7. 只有收到相同 restart ID 的 READY，restart 才返回成功。
+3. Worker 标记为 `DRAINING` 后不得 admission 新 slot，但相同 `process_uuid` 的在途 job 可以继续
+   `complete/fail`，完成“结果校验 → Task/Event durable ACK → 更新 status/next_run_at”完整提交链。
+4. drain deadline 到达时不杀 Scanner、不标记 OFFLINE、不启动新进程；restart 返回失败，旧进程
+   保持 `DRAINING` 并继续等待，运维可延长等待或显式选择异常中断处置。
+5. 所有 active Scanner 完成后，旧 Scheduler 标记 OFFLINE 并退出。
+6. 旧进程退出后才启动新 Scheduler；只有收到相同 restart ID 的 READY，restart 才返回成功。
 
 launchd 不得直接用 `kickstart -k` 跳过 quiesce/drain；必须先完成协议，再由 supervisor 拉起新进程。
 
@@ -476,6 +476,15 @@ Scheduler composition 在首次 job 注册前必须完成以下顺序：
 返回 job 均为保留原 `next_run_at` 的 `IDLE`。HTTP、JSON 或响应契约不确定时 fail-closed，
 不得进入普通 tick。`SchedulerEngine.tick()` 不自动调用恢复，避免未完成启动协调的轮询意外
 改写控制面 `RUNNING` 状态。
+
+计划内 restart 不产生需要恢复的半途 job。只有进程崩溃、机器重启或人工强制终止等异常中断，
+才把遗留 `RUNNING` 归一为 `IDLE`，保留原 `next_run_at` 并从相同 slot 起点幂等重跑。控制面
+不保存 Python 调用栈、局部变量或外部 API 的半完成状态，因此首版本不承诺从任意代码位置继续。
+
+后续断点续跑只采用 job-owned checkpoint：每个 job 自己定义持久化阶段、cursor、升级策略和
+恢复入口，在完成 checkpoint 的 durable ACK 后推进；Scheduler 只把同一 `scheduled_for` 交还
+runner。未声明 checkpoint 能力的 job 永远从 slot 起点重跑，不向 `jarvis_scheduled_job` 增加
+通用 checkpoint 字段。
 
 服务端等价状态归一：
 
@@ -550,7 +559,7 @@ bridge/
 | U2 | 已提交，待预发验证 | `jarvis_scheduled_job` 已创建；AutomationAgent Code Review `28719590` 包含注册、状态 API、恢复和 Board Scheduled Jobs 展示。该 Code Review 尚未完成 Java 21 预发验证。 |
 | U3 | 部分完成（控制面骨架） | Bridge MR `28675904` 已包含 import-safe `SchedulerEngine`、`ScannerRuntime`、slot admission、失败上报和本进程 stop admission。未接 legacy runner、数据面 publisher 或 Bridge composition。 |
 | C4 | 已提交，待预发联调 | Bridge MR `28675904` 已包含标准库 HTTP adapter：register/list/start/complete/fail/recover-interrupted、UTC 时间编解码、严格 `admitted` slot 准入及异常 fail-closed。AutomationAgent Code Review `28719590` 的 `start` 响应已包含 `{admitted, job}`。两端尚未完成预发联调。 |
-| C5 | 已提交，待预发联调 | Bridge 已实现固定 `bridge-scheduler`/`AgenticTools-Macmini.local` composition、本机 hostname/FQDN gate、`boot_id + process_uuid` 注册确认、`dispatch.pull=false`、READY/OFFLINE、quiesce admission，以及 `daily.probe` 的旧/新单 job 切换；AutomationAgent 已提交固定 host、ACTIVE process 和 API 的服务端校验及 Board Worker 展示。两端复用同一控制面 token，并分别校验允许的 hostId；Scheduler 不进入普通 Task queue-pull Worker 集合。该阶段不停止或重启 Task Worker。 |
+| C5 | 已提交，待预发联调 | Bridge 已实现固定 `bridge-scheduler`/`AgenticTools-Macmini.local` composition、本机 hostname/FQDN gate、`boot_id + process_uuid` 注册确认、`dispatch.pull=false`、统一 `JARVIS_SCHEDULER_NEW_JOBS` 路由、READY/OFFLINE 和计划内 drain；AutomationAgent 已提交固定 host、ACTIVE process、DRAINING 在途终态提交和 API 的服务端校验及 Board Worker 展示。两端复用同一控制面 token，并分别校验允许的 hostId；Scheduler 不进入普通 Task queue-pull Worker 集合。该阶段不停止或重启 Task Worker。 |
 | C6 | 未开始 | 控制面预发验证：固定 Worker 拒绝非远端身份、重复启动拒绝、slot admission、interrupted recovery、Board 展示和控制面不可用 fail-closed。 |
 | D1 | 本轮不实施 | Daily/PR/Aone/Probe 的业务状态和 runner 旁路迁移脚本：导出、校验、回放、对账与原子切换，单独评审 |
 
@@ -591,7 +600,7 @@ C4–C6 只完成控制面。D1 及独立 Task Worker/数据面验收前，禁�
 
 预发必须分别注入以下故障：
 
-1. Scanner 扫描中 restart。
+1. Scanner 扫描中注入进程崩溃；计划内 restart 另行验证会等待 Scanner 完成。
 2. Task upsert 成功、job 状态更新前 restart。
 3. PR/Aone 事件写 ledger 后、发布前 restart。
 4. Scheduler crash，无正常 OFFLINE。
@@ -605,7 +614,8 @@ C4–C6 只完成控制面。D1 及独立 Task Worker/数据面验收前，禁�
 - 重复 Task/事件由稳定 identity 收敛。
 - 旧 Scheduler 完全退出后新实例才进入 READY，不存在两个 Scheduler 同时写 job 状态。
 - Task Worker PID、sentinel 和活动 Session 在 Bridge restart 前后保持不变。
-- `run.sh restart` 只在新 Scheduler READY 后返回成功。
+- 计划内 `run.sh restart` 只有在旧 Scheduler drain 完成且新 Scheduler READY 后返回成功；drain
+  超时时返回失败且不启动新进程。
 
 ## 15. 评审问题的明确回答
 
@@ -635,7 +645,8 @@ C4–C6 只完成控制面。D1 及独立 Task Worker/数据面验收前，禁�
 3. `jarvis_scheduled_job` 只保存注册定义和当前状态；遗留 `RUNNING` 可在启动时恢复为立即重跑。
 4. Aone/PR discovery 使用 at-least-once 与稳定 Task identity；事件使用稳定 ledger/outbox key。
 5. 任一未明确 durable ACK 的 Task/事件都不会被业务 cursor 越过。
-6. Scheduler restart 可中断 Scanner，但未完成 job 会保留原计划时间并重新执行。
+6. 计划内 Scheduler restart 等待 Scanner 完成；异常中断时未完成 job 保留原计划时间，并从
+   slot 起点幂等重跑。后续只有声明 job-owned checkpoint 的 job 才允许从持久化阶段继续。
 7. 独立 Task Worker 不被 Bridge restart 操作，活动 Session/SubAgent 实测不中断。
 8. 首版只有一个活动 Scheduler；旧进程未退出或新实例未 READY 时 restart 不成功。
 9. Daily/PR 各自业务状态完成固化和双读对账后才停止读取旧文件；事件 ledger 在等价 outbox 上线前不删除。

@@ -333,6 +333,19 @@ class HandlerWiringTest(unittest.TestCase):
 
         handler.external_operation_recovery.stop.assert_called_once_with()
 
+    def test_stop_helper_keeps_process_components_alive_when_scheduler_not_drained(self):
+        handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
+        handler.scheduler_composition = mock.Mock()
+        handler.scheduler_composition.stop.return_value = False
+        handler.persistence_executor = _FakePersistenceExecutor()
+        handler.external_operation_recovery = mock.Mock()
+
+        self.assertFalse(handler.stop_persistence_executor(timeout=3))
+
+        handler.scheduler_composition.stop.assert_called_once_with(timeout=3)
+        self.assertEqual(handler.persistence_executor.stop_calls, [])
+        handler.external_operation_recovery.stop.assert_not_called()
+
     def test_task_client_defaults_to_pre_and_requires_token(self):
         for key in self.ENV_KEYS:
             os.environ.pop(key, None)
