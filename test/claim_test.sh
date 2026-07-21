@@ -21,7 +21,7 @@ tmplog=$(mktemp)
 tmpstate=$(mktemp)
 tmpcapture=$(mktemp)
 tmpgetcnt=$(mktemp)
-trap 'rm -rf "$tmpbin" "$tmpconfig"; rm -f "$tmplog" "$tmpstate" "$tmpcapture" "$tmpgetcnt" "${tmpstatuscap:-}"' EXIT
+trap 'rm -rf "$tmpbin" "$tmpconfig"; rm -f "$tmplog" "$tmpstate" "$tmpcapture" "$tmpgetcnt" "${tmpstatuscap:-}" "${tmpstatusstate:-}"' EXIT
 
 PASS=0
 FAIL=0
@@ -99,6 +99,10 @@ if [ "$1 $2 $3 $4" = "project workitem comment list" ]; then
 fi
 if [ "$1 $2 $3" = "project workitem get" ]; then
     if [ "${A1_GET_FAIL:-}" = "all" ]; then exit 1; fi
+    if [ -n "${A1_GET_FAIL_AT:-}" ]; then
+        c=$(cat "$A1_GETCNT" 2>/dev/null || echo 0); c=$((c + 1)); echo "$c" > "$A1_GETCNT"
+        if [ "$c" = "$A1_GET_FAIL_AT" ]; then exit 1; fi
+    fi
     if [ "${A1_GET_FAIL:-}" = "first" ]; then
         c=$(cat "$A1_GETCNT" 2>/dev/null || echo 0); c=$((c + 1)); echo "$c" > "$A1_GETCNT"
         if [ "$c" = "1" ]; then exit 1; fi
@@ -111,7 +115,11 @@ if [ "$1 $2 $3" = "project workitem get" ]; then
     # round-trips and the name-based assertions below still hold.
     tags_ml="${tags//,/, }"
     wtype="${A1_WTYPE:-需求}"
-    status="${A1_STATUS:-待处理}"
+    if [ -n "${A1_STATUS_STATE:-}" ] && [ -s "$A1_STATUS_STATE" ]; then
+        status="$(cat "$A1_STATUS_STATE")"
+    else
+        status="${A1_STATUS:-待处理}"
+    fi
     printf '{"fields":[{"identifier":"tag","displayValue":"%s","value":"%s","format":"multiList"},{"identifier":"workitemType","displayValue":"%s"},{"identifier":"status","displayValue":"%s"}]}\n' "$tags_ml" "$tags_ml" "$wtype" "$status"
     exit 0
 fi
@@ -143,10 +151,17 @@ if [ "$1 $2 $3" = "project workitem update" ]; then
         if [ -n "${A1_REJECT_STATUS:-}" ] && [ "$statusval" = "$A1_REJECT_STATUS" ]; then
             echo "Error: unsupported target status \"$statusval\"" >&2; exit 1
         fi
+        [ -n "${A1_STATUS_STATE:-}" ] && printf '%s' "$statusval" > "$A1_STATUS_STATE"
     fi
     if [ -n "$has_tag" ]; then
         printf '%s' "$tagval" > "$A1_CAPTURE"
-        if [ -z "${A1_UPDATE_NOOP:-}" ]; then printf '%s' "$tagval" > "$A1_STATE"; fi
+        if [ -z "${A1_UPDATE_NOOP:-}" ]; then
+            if [ "${A1_FORCE_IDLE_RESIDUE:-}" = "1" ]; then
+                printf '%s,jarvis-idle' "$tagval" > "$A1_STATE"
+            else
+                printf '%s' "$tagval" > "$A1_STATE"
+            fi
+        fi
     fi
     exit 0
 fi
@@ -156,6 +171,7 @@ chmod +x "$tmpbin/a1"
 export JARVIS_A1=a1   # 走 PATH 上的 a1 stub,不经真 bin/a1id
 
 tmpstatuscap=$(mktemp)
+tmpstatusstate=$(mktemp)
 export A1_LOG="$tmplog" A1_STATE="$tmpstate" A1_CAPTURE="$tmpcapture" A1_GETCNT="$tmpgetcnt" A1_STATUS_CAPTURE="$tmpstatuscap"
 
 WORKITEM_ID="9001"
@@ -912,6 +928,162 @@ if [ "$rc" -eq 6 ] && ! printf '%s' "$out" | grep -q "missing_required_field"; t
     assert_pass "unstructured 不能为空 retains rc 6 (strict matcher)"
 else
     assert_fail "unstructured 不能为空 should not map to rc 3: rc=$rc out=$out"
+fi
+
+# ---------------------------------------------------------------------------
+# Test 30: comment-only done reopen is one strict claim update. It preserves unrelated
+# tags, removes done+idle, adds claimed, advances by exact workitem type, and records the
+# normal claim ledger. This claim activity becomes the cross-machine comment watermark.
+# ---------------------------------------------------------------------------
+echo "=== Test 30: strict terminal comment reopen reuses claim path ==="
+printf 'keep,jarvis-idle,jarvis-done' > "$tmpstate"
+printf '已发布' > "$tmpstatusstate"
+: > "$tmpstatuscap"; : > "$tmplog"; : > "$tmpcapture"; : > "$tmpgetcnt"
+unset A1_GET_FAIL A1_UPDATE_NOOP A1_REJECT_STATUS A1_MISSING_FIELD A1_UPDATE_ERROR_RC
+out=$(PATH="$tmpbin:$PATH" JARVIS_ROOT="$tmpconfig" JARVIS_CLAIM_READBACK_SLEEP=0 \
+    JARVIS_CLAIM_REOPEN_DONE=1 JARVIS_CLAIM_PROGRESS=0 \
+    A1_STATUS_STATE="$tmpstatusstate" A1_WTYPE=功能缺陷 \
+    bash "$proj_root/bootstrap/claim.sh" claim "$WORKITEM_ID" 2100305 2>&1)
+rc=$?
+state=$(cat "$tmpstate" 2>/dev/null); status=$(cat "$tmpstatusstate" 2>/dev/null)
+ledger="$tmpconfig/.my-day/claims-$(date -u +%F).json"
+if [ "$rc" -eq 0 ]; then assert_pass "done reopen: claim exits 0"; else assert_fail "done reopen: rc=$rc out=$out"; fi
+if [ "$state" = "keep,jarvis-claimed" ]; then
+    assert_pass "done reopen: preserves unrelated tag and replaces done+idle with claimed"
+else
+    assert_fail "done reopen: unexpected tags '$state'"
+fi
+if [ "$status" = "Open" ]; then assert_pass "done reopen: exact 功能缺陷 progress status landed"; else assert_fail "done reopen: expected Open, got '$status'"; fi
+if jq -e --arg id "$WORKITEM_ID" 'any(.[]; .id==$id and .done==false)' "$ledger" >/dev/null 2>&1; then
+    assert_pass "done reopen: normal claim ledger recorded"
+else
+    assert_fail "done reopen: claim ledger missing"
+fi
+combined=$(grep "project workitem update $WORKITEM_ID" "$tmplog" | head -n 1)
+if printf '%s' "$combined" | grep -q -- '--tag keep,jarvis-claimed' \
+        && printf '%s' "$combined" | grep -q -- '--status Open'; then
+    assert_pass "done reopen: tag and status share one Aone update"
+else
+    assert_fail "done reopen: expected one combined update, got '$combined'"
+fi
+
+# ---------------------------------------------------------------------------
+# Test 31: object-valued progress mapping must match exact workitem type. Unknown types
+# fail before any write instead of falling back to another category or global status.
+# ---------------------------------------------------------------------------
+echo "=== Test 31: done reopen rejects unknown type without writes ==="
+printf 'keep,jarvis-done' > "$tmpstate"; printf '已发布' > "$tmpstatusstate"
+: > "$tmpstatuscap"; : > "$tmplog"; : > "$tmpcapture"; : > "$tmpgetcnt"
+out=$(PATH="$tmpbin:$PATH" JARVIS_ROOT="$tmpconfig" JARVIS_CLAIM_READBACK_SLEEP=0 \
+    JARVIS_CLAIM_REOPEN_DONE=1 A1_STATUS_STATE="$tmpstatusstate" A1_WTYPE=未知类型 \
+    bash "$proj_root/bootstrap/claim.sh" claim "$WORKITEM_ID" 2100305 2>&1)
+rc=$?
+if [ "$rc" -eq 2 ] && ! grep -q "project workitem update $WORKITEM_ID" "$tmplog"; then
+    assert_pass "done reopen unknown type: fails closed before write"
+else
+    assert_fail "done reopen unknown type: rc=$rc log=$(cat "$tmplog") out=$out"
+fi
+if [ "$(cat "$tmpstate")" = "keep,jarvis-done" ]; then assert_pass "done reopen unknown type: done remains intact"; else assert_fail "done reopen unknown type mutated tags"; fi
+
+# ---------------------------------------------------------------------------
+# Test 32: a rejected combined status transition is fatal and leaves done intact.
+# ---------------------------------------------------------------------------
+echo "=== Test 32: done reopen rejected transition fails closed ==="
+printf 'keep,jarvis-done' > "$tmpstate"; printf '已发布' > "$tmpstatusstate"
+: > "$tmpstatuscap"; : > "$tmplog"; : > "$tmpcapture"; : > "$tmpgetcnt"
+out=$(PATH="$tmpbin:$PATH" JARVIS_ROOT="$tmpconfig" JARVIS_CLAIM_READBACK_SLEEP=0 \
+    JARVIS_CLAIM_REOPEN_DONE=1 A1_STATUS_STATE="$tmpstatusstate" \
+    A1_WTYPE=功能缺陷 A1_REJECT_STATUS=Open \
+    bash "$proj_root/bootstrap/claim.sh" claim "$WORKITEM_ID" 2100305 2>&1)
+rc=$?
+if [ "$rc" -eq 2 ]; then assert_pass "done reopen rejected transition: fatal rc 2"; else assert_fail "done reopen rejected transition: rc=$rc out=$out"; fi
+if [ "$(cat "$tmpstate")" = "keep,jarvis-done" ]; then assert_pass "done reopen rejected transition: done remains intact"; else assert_fail "done reopen rejected transition mutated tags"; fi
+
+# ---------------------------------------------------------------------------
+# Test 33: the new behavior is opt-in; an ordinary claim does not reopen done.
+# ---------------------------------------------------------------------------
+echo "=== Test 33: ordinary claim leaves done semantics unchanged ==="
+printf 'keep,jarvis-done' > "$tmpstate"; printf '已发布' > "$tmpstatusstate"
+: > "$tmpstatuscap"; : > "$tmplog"; : > "$tmpcapture"; : > "$tmpgetcnt"
+out=$(PATH="$tmpbin:$PATH" JARVIS_ROOT="$tmpconfig" JARVIS_CLAIM_READBACK_SLEEP=0 \
+    JARVIS_CLAIM_PROGRESS=0 A1_STATUS_STATE="$tmpstatusstate" A1_WTYPE=功能缺陷 \
+    bash "$proj_root/bootstrap/claim.sh" claim "$WORKITEM_ID" 2100305 2>&1)
+rc=$?
+state=$(cat "$tmpstate")
+if [ "$rc" -eq 0 ] && printf '%s' "$state" | grep -q 'jarvis-done' \
+        && printf '%s' "$state" | grep -q 'jarvis-claimed'; then
+    assert_pass "ordinary claim: terminal reopen is not implicitly enabled"
+else
+    assert_fail "ordinary claim changed terminal semantics: rc=$rc tags=$state out=$out"
+fi
+
+# ---------------------------------------------------------------------------
+# Test 34: strict comment claim never takes _update_tags_merged's lossy fallback.
+# The third get is the tag-pair read after done detection and workitem-type lookup.
+# ---------------------------------------------------------------------------
+echo "=== Test 34: strict reopen tag read failure cannot drop unrelated tags ==="
+printf 'keep,jarvis-done' > "$tmpstate"; printf '已发布' > "$tmpstatusstate"
+: > "$tmpstatuscap"; : > "$tmplog"; : > "$tmpcapture"; : > "$tmpgetcnt"
+out=$(PATH="$tmpbin:$PATH" JARVIS_ROOT="$tmpconfig" JARVIS_CLAIM_READBACK_SLEEP=0 \
+    JARVIS_CLAIM_REOPEN_DONE=1 A1_STATUS_STATE="$tmpstatusstate" \
+    A1_WTYPE=功能缺陷 A1_GET_FAIL_AT=3 \
+    bash "$proj_root/bootstrap/claim.sh" claim "$WORKITEM_ID" 2100305 2>&1)
+rc=$?
+if [ "$rc" -eq 2 ] && ! grep -q "project workitem update $WORKITEM_ID" "$tmplog"; then
+    assert_pass "strict reopen unreadable tags: fails closed before update"
+else
+    assert_fail "strict reopen unreadable tags: rc=$rc log=$(cat "$tmplog") out=$out"
+fi
+if [ "$(cat "$tmpstate")" = "keep,jarvis-done" ]; then
+    assert_pass "strict reopen unreadable tags: unrelated+done tags remain intact"
+else
+    assert_fail "strict reopen unreadable tags mutated state: $(cat "$tmpstate")"
+fi
+
+# ---------------------------------------------------------------------------
+# Test 35: the initial strict tag read is itself mandatory. A failed first read cannot
+# be interpreted as "not done" and must not reach any update.
+# ---------------------------------------------------------------------------
+echo "=== Test 35: strict reopen initial tag read fails before update ==="
+printf 'keep,jarvis-done' > "$tmpstate"; printf '已发布' > "$tmpstatusstate"
+: > "$tmpstatuscap"; : > "$tmplog"; : > "$tmpcapture"; : > "$tmpgetcnt"
+out=$(PATH="$tmpbin:$PATH" JARVIS_ROOT="$tmpconfig" JARVIS_CLAIM_READBACK_SLEEP=0 \
+    JARVIS_CLAIM_REOPEN_DONE=1 A1_STATUS_STATE="$tmpstatusstate" \
+    A1_WTYPE=功能缺陷 A1_GET_FAIL_AT=1 \
+    bash "$proj_root/bootstrap/claim.sh" claim "$WORKITEM_ID" 2100305 2>&1)
+rc=$?
+if [ "$rc" -eq 2 ] && ! grep -q "project workitem update $WORKITEM_ID" "$tmplog"; then
+    assert_pass "strict reopen initial read: rc2 before update"
+else
+    assert_fail "strict reopen initial read: rc=$rc log=$(cat "$tmplog") out=$out"
+fi
+if [ "$(cat "$tmpstate")" = "keep,jarvis-done" ]; then
+    assert_pass "strict reopen initial read: done and unrelated tags remain intact"
+else
+    assert_fail "strict reopen initial read mutated state: $(cat "$tmpstate")"
+fi
+
+# ---------------------------------------------------------------------------
+# Test 36: strict reopen readback also requires jarvis-idle to be absent.
+# ---------------------------------------------------------------------------
+echo "=== Test 36: strict reopen rejects idle residue in readback ==="
+printf 'keep,jarvis-done' > "$tmpstate"; printf '已发布' > "$tmpstatusstate"
+: > "$tmpstatuscap"; : > "$tmplog"; : > "$tmpcapture"; : > "$tmpgetcnt"
+out=$(PATH="$tmpbin:$PATH" JARVIS_ROOT="$tmpconfig" JARVIS_CLAIM_READBACK_SLEEP=0 \
+    JARVIS_CLAIM_REOPEN_DONE=1 A1_STATUS_STATE="$tmpstatusstate" \
+    A1_WTYPE=功能缺陷 A1_FORCE_IDLE_RESIDUE=1 \
+    bash "$proj_root/bootstrap/claim.sh" claim "$WORKITEM_ID" 2100305 2>&1)
+rc=$?
+state=$(cat "$tmpstate")
+if [ "$rc" -eq 1 ] && printf '%s' "$out" | grep -q "done reopen readback mismatch"; then
+    assert_pass "strict reopen idle residue: readback fails closed"
+else
+    assert_fail "strict reopen idle residue: rc=$rc tags=$state out=$out"
+fi
+if printf '%s' "$state" | grep -q 'jarvis-idle'; then
+    assert_pass "strict reopen idle residue: test observed the forbidden residual tag"
+else
+    assert_fail "strict reopen idle residue simulation did not retain idle: $state"
 fi
 
 # ---------------------------------------------------------------------------

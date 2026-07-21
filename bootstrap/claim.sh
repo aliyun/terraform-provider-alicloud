@@ -19,6 +19,11 @@
 #          This is best-effort/non-fatal: a rejected status is a WARN and never affects
 #          claim's exit code or the lock semantics (tag + ledger stay the sole truth).
 #          Set JARVIS_CLAIM_PROGRESS=0 to disable the status advance entirely.
+#          Set JARVIS_CLAIM_REOPEN_DONE=1 only for a comment-triggered generation that
+#          may be reopening a jarvis-done ticket. When jarvis-done is present, claim
+#          removes both done+idle and writes the exact per-type progress status in the
+#          same Aone update; missing mappings, rejected transitions, or readback drift
+#          fail closed. Ordinary claims are unchanged.
 # release: tags the workitem jarvis-idle —— 本轮 jarvis 处理完毕、释放锁、等待人或下一个 jarvis
 #          接手；不动 Aone status。cleans up any leftover prefix. Exits 0.
 # finish:  tags the workitem jarvis-done + 改 Aone status 为 .claim.done_status（默认"已发布
@@ -98,6 +103,26 @@ _pool_progress_status() {
            else . end' \
         "$pools_cfg" 2>/dev/null)"
     if [ -n "$ps" ]; then echo "$ps"; else jq -r '.claim.progress_status // empty' "$pools_cfg" 2>/dev/null; fi
+}
+
+# Strict progress resolver for terminal-comment reopen. Unlike the ordinary claim
+# resolver above, an object-valued pool mapping MUST contain the exact workitem type;
+# choosing the first entry for an unknown type could move the ticket into another
+# category's status. String pool values and the global string fallback remain valid.
+_pool_reopen_progress_status() {
+    local project="$1" wtype="${2:-}"
+    jq -r --arg p "$project" --arg w "$wtype" '
+        ([.pools[]? | select((.project|tostring) == $p) | .progress_status] | first)
+        as $pool
+        | if $pool == null then
+              (.claim.progress_status
+               | if type == "string" then . else empty end)
+          elif ($pool | type) == "object" then
+              ($pool[$w] // empty)
+          elif ($pool | type) == "string" then
+              $pool
+          else empty end
+    ' "$pools_cfg" 2>/dev/null
 }
 
 # Point-read a workitem's type displayValue (e.g. 需求 / 功能缺陷 / 任务), used to pick the
@@ -402,6 +427,11 @@ _update_tags_merged() {
     local id="$1" add="$2" remove="$3"; shift 3
     local pairs kept_ids to_write
     if ! pairs="$(_get_tag_pairs "$id")"; then
+        if [ "${JARVIS_CLAIM_REOPEN_DONE:-0}" = "1" ]; then
+            TAG_UPDATE_ERROR="strict comment claim could not read existing tags"
+            echo "claim.sh: refusing strict comment claim for $id: existing tags unreadable" >&2
+            return 2
+        fi
         echo "claim.sh: warning: could not read existing tags for $id; writing only '$add' (pre-existing tags may be lost)" >&2
         _run_tag_update $A1 project workitem update "$id" --tag "$add" "$@"
         return
@@ -474,6 +504,33 @@ case "$cmd" in
     claim)
         interactive_claim=0
         interactive_prepare=""
+        reopen_done=0
+        reopen_progress=""
+        claim_remove="$IDLE_TAG"
+        if [ "${JARVIS_CLAIM_REOPEN_DONE:-0}" = "1" ]; then
+            claim_remove="$IDLE_TAG,$DONE_TAG"
+            if ! current_tags="$(_get_tags "$workitem_id" 2>/dev/null)"; then
+                echo "claim.sh: refusing strict comment claim for $workitem_id: initial tags unreadable" >&2
+                exit 2
+            fi
+            if _csv_contains "$current_tags" "$DONE_TAG"; then
+                reopen_done=1
+                reopen_wtype="$(_get_wtype "$workitem_id")"
+                reopen_progress="$(_pool_reopen_progress_status "$project_id" "$reopen_wtype")"
+                if [ -z "$reopen_progress" ]; then
+                    echo "claim.sh: refusing done reopen for $workitem_id: no exact progress_status for workitemType '${reopen_wtype:-<unknown>}'" >&2
+                    exit 2
+                fi
+            fi
+        fi
+        _claim_tag_update() {
+            if [ "$reopen_done" = "1" ]; then
+                _update_tags_merged "$workitem_id" "$CLAIM_TAG" "$claim_remove" \
+                    --status "$reopen_progress"
+            else
+                _update_tags_merged "$workitem_id" "$CLAIM_TAG" "$claim_remove"
+            fi
+        }
         if _is_interactive_context; then
             interactive_title="$(_get_workitem_title "$workitem_id" || true)"
             interactive_prepare="$(_interactive_worker prepare-claim "$workitem_id" "$project_id" "$interactive_title")"
@@ -508,8 +565,9 @@ case "$cmd" in
             fi
         fi
 
-        # 1. Tag as claimed, preserving any pre-existing tags: existing ∪ {claimed} − {idle}
-        _update_tags_merged "$workitem_id" "$CLAIM_TAG" "$IDLE_TAG"
+        # 1. Tag as claimed, preserving any pre-existing tags. Comment-triggered reopen
+        # removes done+idle and atomically advances status; ordinary claim removes idle.
+        _claim_tag_update
         tag_rc=$?
         if [ "$tag_rc" -eq 3 ]; then
             # Repair only values that can be selected deterministically, then retry this
@@ -520,7 +578,7 @@ case "$cmd" in
             autofill_rc=$?
             if [ "$autofill_rc" -eq 0 ]; then
                 echo "claim.sh: filled deterministic required fields for $workitem_id; retrying claim"
-                _update_tags_merged "$workitem_id" "$CLAIM_TAG" "$IDLE_TAG"
+                _claim_tag_update
                 tag_rc=$?
                 if [ "$tag_rc" -eq 0 ]; then
                     echo "claim.sh: required-field self-heal succeeded for $workitem_id"
@@ -566,8 +624,14 @@ case "$cmd" in
         # and mutual exclusion still rests on the ledger + reconcile stale/drift sweep.
         claimed_ok=""
         for _ in 1 2 3; do
-            if _csv_contains "$(_get_tags "$workitem_id" 2>/dev/null || echo "")" "$CLAIM_TAG"; then
-                claimed_ok=1; break
+            readback_tags="$(_get_tags "$workitem_id" 2>/dev/null || echo "")"
+            if _csv_contains "$readback_tags" "$CLAIM_TAG" \
+                    && { [ "$reopen_done" != "1" ] \
+                         || { ! _csv_contains "$readback_tags" "$DONE_TAG" \
+                              && ! _csv_contains "$readback_tags" "$IDLE_TAG" \
+                              && [ "$(_get_status "$workitem_id")" = "$reopen_progress" ]; }; }; then
+                claimed_ok=1
+                break
             fi
             sleep "${JARVIS_CLAIM_READBACK_SLEEP:-2}"
         done
@@ -576,7 +640,11 @@ case "$cmd" in
             rm -f "$(_claim_prefix_path "$workitem_id")"
             [ "$interactive_claim" = "1" ] && \
                 _interactive_fail_claim "$workitem_id" "Aone claim tag readback was inconclusive" 1
-            echo "claim.sh: lost race for workitem $workitem_id (claimed tag not visible in point-read readback)" >&2
+            if [ "$reopen_done" = "1" ]; then
+                echo "claim.sh: done reopen readback mismatch for workitem $workitem_id (claimed/done/status invariant not visible)" >&2
+            else
+                echo "claim.sh: lost race for workitem $workitem_id (claimed tag not visible in point-read readback)" >&2
+            fi
             exit 1
         fi
 
@@ -587,7 +655,7 @@ case "$cmd" in
                 exit 2
             fi
             echo "claim.sh: claimed workitem $workitem_id in project $project_id (database fenced)"
-            _advance_status "$workitem_id" "$project_id"
+            [ "$reopen_done" = "1" ] || _advance_status "$workitem_id" "$project_id"
             _ledger_upsert "$workitem_id" false
             exit 0
         fi
@@ -598,7 +666,7 @@ case "$cmd" in
         if ! [ "$settle" -gt 0 ] 2>/dev/null; then
             echo "claim.sh: claimed workitem $workitem_id in project $project_id"
             # Best-effort advance Aone status to the pool's in-progress status (non-fatal).
-            _advance_status "$workitem_id" "$project_id"
+            [ "$reopen_done" = "1" ] || _advance_status "$workitem_id" "$project_id"
             _ledger_upsert "$workitem_id" false
             exit 0
         fi
@@ -648,7 +716,7 @@ if cands:
         if [ -z "$winner_host" ] || [ "$winner_host" = "$host" ]; then
             echo "claim.sh: claimed workitem $workitem_id in project $project_id (arbitration won)"
             # Best-effort advance Aone status to the pool's in-progress status (non-fatal).
-            _advance_status "$workitem_id" "$project_id"
+            [ "$reopen_done" = "1" ] || _advance_status "$workitem_id" "$project_id"
             _ledger_upsert "$workitem_id" false
             exit 0
         fi
