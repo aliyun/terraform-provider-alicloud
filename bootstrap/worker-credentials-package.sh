@@ -12,6 +12,7 @@
 # What's packaged:
 #   ~/.config/a1/                              a1 CLI login state (all identities)
 #   ~/.claude/                                 claude settings + gateway/token files
+#   ~/.aliyun/config.json                      aliyun CLI AK (OpenAPI 查证 / cred check)
 #   $JARVIS_ROOT/bootstrap/.env                GitHub PAT, control-plane token, etc.
 #   $JARVIS_ROOT/bridge/jarvis.env             DingTalk, model lanes, JARVIS_* vars
 #   $JARVIS_ROOT/config/workspaces.local.json  (if present) — sanitized/re-derived
@@ -99,14 +100,64 @@ step "1. Sanity check credential sources"
 missing=()
 [ -d "$HOME/.config/a1" ] || missing+=("~/.config/a1/")
 [ -d "$HOME/.claude" ]    || missing+=("~/.claude/")
+# verify.sh hard-checks `aliyun sts GetCallerIdentity` on every role — a bundle
+# without ~/.aliyun/config.json produces workers that fail preflight daily.
+[ -f "$HOME/.aliyun/config.json" ] || missing+=("~/.aliyun/config.json")
 [ -f "$JARVIS_ROOT/bootstrap/.env" ] \
   || warn "$JARVIS_ROOT/bootstrap/.env missing (workers won't have GitHub/control-plane tokens)"
 [ -f "$JARVIS_ROOT/bridge/jarvis.env" ] \
   || warn "$JARVIS_ROOT/bridge/jarvis.env missing (workers won't have model-lane / DingTalk config)"
 if [ "${#missing[@]}" -gt 0 ]; then
-  die "required credential dirs missing: ${missing[*]}"
+  die "required credential sources missing: ${missing[*]}"
 fi
 ok "sources present"
+
+# ---------------------------------------------------------------------------
+step "1.5 Validate credentials are ALIVE (never ship dead creds)"
+# Root cause of the first canary's WARN jarvis-a1-session: the bundle was cut
+# while the packager's a1 session was expired, so every worker inherited a dead
+# session. Liveness is cheap to probe here and expensive to discover on N
+# workers — hard-fail the packager instead.
+
+# a1: whoami must resolve to the jarvis digital-worker account.
+a1_expect="WORKER_1782379562571"
+a1_acct=$(JARVIS_A1_IDENTITY=jarvis "$JARVIS_ROOT/bin/a1id" -- auth whoami 2>/dev/null \
+            | awk '/Account:/{print $2}' || true)
+[ "$a1_acct" = "$a1_expect" ] \
+  || die "a1 jarvis session dead/expired (whoami Account='${a1_acct:-<empty>}' != $a1_expect).
+       Fix: browser-login BUC as open_jarvis, run \`bin/a1id login jarvis\`, then re-run this packager."
+ok "a1 session alive (Account=$a1_acct)"
+
+# GitHub PAT (bootstrap/.env → JARVIS_GITHUB_TOKEN): workers use it for the
+# whole GitHub path (github-identity.sh check/push, PR flows). Probe with the
+# token AS READ FROM .env — unset first so a token lingering in the calling
+# shell's environment can't mask an .env that ships without one, and require
+# non-empty so gh can't fall back to ambient stored auth (禁回退, 纪律 #6).
+if command -v gh >/dev/null 2>&1 && [ -f "$JARVIS_ROOT/bootstrap/.env" ]; then
+  gh_token=$( (unset JARVIS_GITHUB_TOKEN
+               source "$JARVIS_ROOT/bootstrap/.env" >/dev/null 2>&1 || true
+               printf '%s' "${JARVIS_GITHUB_TOKEN:-}") )
+  [ -n "$gh_token" ] \
+    || die "bootstrap/.env carries no JARVIS_GITHUB_TOKEN — workers would ship without the GitHub PAT.
+       Fix: add JARVIS_GITHUB_TOKEN=<api-tool-agent PAT> to bootstrap/.env, then re-run this packager."
+  gh_login=$(GH_TOKEN="$gh_token" gh api user --jq .login 2>/dev/null || true)
+  [ "$gh_login" = "api-tool-agent" ] \
+    || die "JARVIS_GITHUB_TOKEN in bootstrap/.env invalid (gh api user → '${gh_login:-<empty>}', want api-tool-agent).
+       Fix: refresh the api-tool-agent token, update bootstrap/.env, then re-run this packager."
+  ok "GitHub token alive (login=$gh_login)"
+else
+  warn "gh CLI or bootstrap/.env missing on packager — skipping GitHub token liveness probe"
+fi
+
+# aliyun AK (~/.aliyun/config.json): workers use it for OpenAPI 查证.
+if command -v aliyun >/dev/null 2>&1; then
+  aliyun sts GetCallerIdentity >/dev/null 2>&1 \
+    || die "aliyun credential invalid on packager (sts GetCallerIdentity failed).
+       Fix: repair ~/.aliyun/config.json (aliyun configure), then re-run this packager."
+  ok "aliyun credential alive"
+else
+  warn "aliyun CLI missing on packager PATH — skipping aliyun cred liveness probe"
+fi
 
 # ---------------------------------------------------------------------------
 step "2. Warn on Mac-specific absolute paths in claude settings"
@@ -160,6 +211,12 @@ find "$HOME/.claude" -maxdepth 1 -type f \
 
 n_json=$(find "$STAGE/home/.claude" -maxdepth 1 -type f -name '*.json' | wc -l | tr -d ' ')
 [ "$n_json" -gt 0 ] || warn "no ~/.claude/*.json files found — worker may lack gateway/settings config"
+
+# ~/.aliyun: config.json only (profiles + AK). plugins/ is per-arch binary
+# cache the worker regenerates on its own — shipping it bloats the bundle.
+mkdir -p "$STAGE/home/.aliyun"
+cp -p "$HOME/.aliyun/config.json" "$STAGE/home/.aliyun/config.json"
+chmod 600 "$STAGE/home/.aliyun/config.json"
 
 # Git auth: HTTPS + Deploy Token via git's `store` credential helper.
 # Package ~/.git-credentials + ~/.gitconfig so worker can `git pull` without

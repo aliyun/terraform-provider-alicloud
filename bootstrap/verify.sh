@@ -47,31 +47,54 @@ chk_skill() {
     fi
 }
 
-# Worker mode skips dev-only tools that are only needed when actively editing
-# code (aliyun/cloudspec for Terraform/CloudSpec dev, gh for GitHub PR flow).
-# Workers only lease + execute Tasks; those tools are needed lazily per-Task
-# and their absence should not fail the daily preflight gate.
-JARVIS_BRIDGE_ROLE="${JARVIS_BRIDGE_ROLE:-scheduler}"
+# All roles run the same full tool + credential check set. Workers used to
+# SKIP gh/aliyun/cloudspec as "dev-only", but worker Tasks do the same
+# triage/PR work as the scheduler host — a worker without gh + aliyun creds
+# silently loses the GitHub escalation path and OpenAPI 查证. Both now install
+# sudo-free from pinned tarballs on Linux (deps.lock), and cloudspec is a
+# WARN-not-FAIL below, so there is no install-cost reason left to skip.
+repo_root="$(git rev-parse --show-toplevel)"
 
 # Check the CLIs
 chk a1 a1
 chk git git
-if [ "$JARVIS_BRIDGE_ROLE" != "worker" ]; then
-    chk gh gh
-    chk aliyun aliyun
-    chk cloudspec cloudspec
+chk gh gh
+chk aliyun aliyun
+# cloudspec CLI: upstream install endpoint (acube.aliyun-inc.com) currently
+# returns HTTP 500 for all known versions — install.sh downloads an empty
+# zip and unzip fails. Downgrade to WARN so preflight isn't blocked; drop
+# an idempotent escalation note so the missing binary stays visible.
+# Once upstream is healthy again, `bootstrap/install.sh` will pick it up
+# and the WARN turns back into PASS on next preflight.
+if command -v cloudspec >/dev/null 2>&1; then
+    echo "PASS cloudspec"
 else
-    # Info line so operator sees the skip is intentional.
-    echo "SKIP gh aliyun cloudspec (JARVIS_BRIDGE_ROLE=worker)"
+    echo "WARN cloudspec — 上游 install URL (acube.aliyun-inc.com/api/v1/cloudspec/cli/download) 当前返回 500, 无法自动装; CloudSpec IDL 相关 Task 会缺 CLI 支持"
+    echo "     修复: 找有装 cloudspec 的 macOS/Linux 机器复制 binary 到 ~/.local/bin, 或等上游修复 https://code.alibaba-inc.com/cloudspec-mcp/cloudspec"
+    esc_dir="${JARVIS_ESCALATION_DIR:-$repo_root/escalation}"
+    esc_file="$esc_dir/cloudspec-install-broken-$(date -u +%F).md"
+    if [ ! -f "$esc_file" ]; then
+        mkdir -p "$esc_dir"
+        {
+            echo "# cloudspec CLI 装机失败 — $(date -u +%F)"
+            echo ""
+            echo "## 现象"
+            echo "\`bootstrap/install.sh\` 里 cloudspec 装法 (\`curl https://acube.aliyun-inc.com/api/v1/cloudspec/cli/install.sh | sudo bash\`) 里硬编码的 1.1.39 版本、以及所有其他试过的版本，从 acube.aliyun-inc.com 下载都返回 HTTP 500，脚本内部 unzip 一个空 zip 失败。"
+            echo ""
+            echo "## 影响面"
+            echo "只影响需要本地 \`cloudspec\` CLI 的 CloudSpec IDL 编辑/校验/build 类 Task。其他 Task 类型不受影响。故 verify 记 WARN 不硬失败。"
+            echo ""
+            echo "## 修复选项"
+            echo "1. 上游 acube endpoint 修好后 \`bash bootstrap/install.sh\` 会自动重装。"
+            echo "2. 手动: 从已装 cloudspec 的机器 \`scp ~/.local/bin/cloudspec\` 过来，或从 https://code.alibaba-inc.com/cloudspec-mcp/cloudspec 源码编译。"
+        } > "$esc_file"
+        echo "     已落 escalation 提示: $esc_file"
+    fi
 fi
 
 # Check credentials (each independent PASS/FAIL)
-if [ "$JARVIS_BRIDGE_ROLE" != "worker" ]; then
-    chk_cred aliyun "aliyun sts GetCallerIdentity"
-fi
+chk_cred aliyun "aliyun sts GetCallerIdentity"
 chk_cred a1 "a1 auth whoami"
-
-repo_root="$(git rev-parse --show-toplevel)"
 # GitHub token daily check — WARN, NOT FAIL. A stale/missing JARVIS_GITHUB_TOKEN only
 # blocks the GitHub escalation path (PR/评论/推分支); it must not fail preflight and
 # thereby block Aone-only work. So we print a WARN line, do NOT increment fail_count,
