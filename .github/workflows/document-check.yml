@@ -50,7 +50,7 @@ jobs:
           filter_mode: file
           locale: "US"
           path: ./website/docs
-          ignore: 'analyses'
+#          ignore: 'analyses'
 
   terrafmt:
     runs-on: ubuntu-latest
