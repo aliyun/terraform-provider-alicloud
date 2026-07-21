@@ -16,6 +16,13 @@ state、非当前工单——例如 bookend 同时回填的客户主单）保持
 - `POST operations/ack`：携 workerKey+fenceToken+externalRef；旧 fence 412。
 - `POST operations/fail`：`unknown=true` 冻结为 UNKNOWN（副作用不可证），否则按
   retryAllowed 进 RETRY_WAIT/DEAD。
+- `GET operations/{id}` / `GET operations/by-key`：machine-token 保护的 point-read，
+  返回 operation、Task、Session/fence、Worker 与最小化 readbackSpec；不返回
+  requestPayload 或凭证。
+- `POST operations/not-started`：仅当前 source worker+process+fence 可把普通
+  SENDING 标为 FAILED_NOT_STARTED。它证明控制面已创建 intent、但外部副作用尚未
+  开始；同 key 可再次 begin。recovery lease release 只表示 reconciler 没拿到权威
+  readback，不能冒充 abort/not-started。
 - `POST operations/reconcile`：`{operationId, workerKey, found, externalRef,
   retryAllowed, retryAfterSeconds}`。`found=true`→ACKED（副作用已在，恰好一次收
   敛）；`found=false`+retryAllowed→RETRY_WAIT（之后可重新 begin→proceed 重发）。
@@ -50,17 +57,23 @@ claim 专用循环之外泛化出一组"当前 assignment 上的外部写回执"
     - SENDING 且无本地意图 → fail-closed conflict（丢失 begin 响应，无法自证）；
     - 本地意图记录状态为 UNKNOWN（上轮 abort --unknown 留下）→ 不调 begin，
       直接 `needsReadback=true` 返回存量 operationId。
+  - begin HTTP 结果分类：2xx 才接受服务端 receipt；400/401/403 是明确拒绝，操作
+    确定未开始，清本地 BEGINNING intent；409 保留 key/幂等线索供 readback；412
+    作为 lost fence 处理；timeout、连接中断和无法判断的 5xx 冻结为 UNKNOWN。
 - `operation-ack <aone_id> <external_ref>`：既有实现即通用（ACK 当前
   pendingOperation 并清槽）。
 - `operation-abort <aone_id> <message> [--unknown]`：仅终结**回执**，不 fail
   session、不写 pendingClaim（区别于 claim 失败路径的 operation-fail）：
-  - 定性失败：fail_operation(retryAllowed) 后清本地槽（下轮重新 begin 重试）；
+  - 定性未开始：not-started 后清本地槽（下轮重新 begin 重试）；
   - `--unknown`：fail_operation(unknown=true) 且**保留**本地槽（记 status=
     UNKNOWN），供下轮 `operation-begin` 短路到 readback/reconcile。
 - `operation-reconcile <aone_id> --found <external_ref> | --not-found
   [--no-retry]`：调 reconcile 端点；found→清槽返回 `{proceed:false}`；
   not-found+retry→保留 key（status=RETRY_WAIT）返回 `{proceed:false,
   retryScheduled:true}`，调用方随后重新 `operation-begin` 拿 proceed。
+  若 UNKNOWN 发生在 begin 响应前、operationId 为空，CLI 先按
+  taskId+generation+operationKey point-read：找到后补齐 operationId 再 readback；
+  404 则权威证明 begin 未提交、清本地 intent；网络错误仍保持 UNKNOWN。
 
 会话心跳：mid-task 回执不动 `heartbeatEnabled`（session 本来就在跑）；这与
 claim 期间"ACK 前不许续租"的既有语义不同且刻意为之。
@@ -126,7 +139,7 @@ comment 与 status 是两个串行回执（单槽约束）；comment 先行，st
 
 ## 恢复命令白名单（PreToolUse guard）
 
-`_local_tool_block_reason` 在 pendingOperation 存在时阻断一切工具调用。对
+`_local_tool_block_reason` 在 pendingOperation 存在时阻断可能产生副作用的工具调用。对
 claim 回执这是自洽的（恢复入口 = 标准 `claim.sh claim`，本就放行）；但外部写
 回执 abort --unknown / reconcile not-found 后若进程丢失，收敛入口本身就是
 wrap.sh / claim.sh 的 Bash 调用——不开白名单会把会话锁死。故 guard
@@ -149,6 +162,26 @@ wrap.sh / claim.sh 的 Bash 调用——不开白名单会把会话锁死。故 
 组合命令、env 前缀、相对路径、lookalike 仓路径、非 `/bin/bash`、别的 aone id
 一律维持阻断。放行只解锁「能重跑收敛命令」；实际收敛仍由 worker CLI 的
 begin/readback/reconcile fail-closed 把关。
+
+wrapper 恢复命令按 kind 匹配（comment/status→wrap，release-tag→release，
+finish-tag→finish）；同 Aone 的精确 `operation-abort` / `operation-reconcile`
+命令也可通过恢复门，错误 kind 的写命令继续阻断。
+
+无论本地槽或 Task 处于何种恢复/终态，以下精确、参数级校验的只读命令始终放行：
+Worker/READY/Task/Session timeline、operation point-read、当前本地 permit 状态、
+runtime config 来源诊断。诊断只显示 token configured/missing，绝不显示 token 值。
+`FAILED_FINAL/CANCELED/SUCCEEDED` 只给出终态诊断，不再循环提示 claim；
+`SUSPENDED` 等待或 wake，`RECOVERY_REQUIRED` 按 operation kind readback/reconcile，
+只有 `READY` 才提示 claim。
+
+## 机器级 runtime config
+
+bridge、claim、wrap、interactive worker、task client、status 与 hooks 统一经
+`bootstrap/runtime-config.sh` 加载控制面运行时配置。优先级为：非空进程环境 >
+`JARVIS_RUNTIME_ENV` > `${XDG_CONFIG_HOME:-~/.config}/jarvis/runtime.env` > git
+common dir 主 checkout 的 legacy `bootstrap/.env` / `bridge/jarvis.env`。新机器级或
+显式 secret 文件要求 0600（或更严格）；凭证不复制进 worktree、tracked 文件或日志。
+`runtime-config.sh diagnose` 只打印生效来源、base URL 与 token 是否已配置。
 
 ## 重启恢复：mid-task 回执孤儿化（orphanOperations）
 

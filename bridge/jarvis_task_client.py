@@ -190,6 +190,7 @@ class ControlPlaneClient:
         "operation_begin": "operations/begin",
         "operation_ack": "operations/ack",
         "operation_fail": "operations/fail",
+        "operation_not_started": "operations/not-started",
         "operation_reconcile": "operations/reconcile",
     }
     WORKER_HEARTBEAT_PATH = "workers/{worker_key}/heartbeat"
@@ -208,6 +209,8 @@ class ControlPlaneClient:
     OPERATION_RECOVERY_LEASE_PATH = "operations/recovery/lease"
     OPERATION_RECOVERY_RENEW_PATH = "operations/recovery/renew"
     OPERATION_RECOVERY_RELEASE_PATH = "operations/recovery/release"
+    OPERATION_PATH = "operations/{operation_id}"
+    OPERATION_BY_KEY_PATH = "operations/by-key"
 
     def __init__(self, base_url: str, token: str = "", *, timeout: float = 10.0,
                  api_prefix: str = DEFAULT_PREFIX,
@@ -487,10 +490,33 @@ class ControlPlaneClient:
         return self._post(self.PATHS["operation_fail"], operation,
                           request_id=request_id)
 
+    def mark_operation_not_started(self, operation: Mapping[str, Any], *,
+                                   request_id: Optional[str] = None) -> Dict[str, Any]:
+        return self._post(self.PATHS["operation_not_started"], operation,
+                          request_id=request_id)
+
     def reconcile_operation(self, operation: Mapping[str, Any], *,
                             request_id: Optional[str] = None) -> Dict[str, Any]:
         return self._post(self.PATHS["operation_reconcile"], operation,
                           request_id=request_id)
+
+    def get_operation(self, operation_id: Any) -> Any:
+        path = self.OPERATION_PATH.format(
+            operation_id=self._path_segment(operation_id, "operation_id"))
+        return self._get(path)
+
+    def get_operation_by_key(self, task_id: Any, generation: Any,
+                             operation_key: str) -> Any:
+        if task_id is None or str(task_id).strip() == "":
+            raise ValueError("task_id must not be empty")
+        if generation is None or str(generation).strip() == "":
+            raise ValueError("generation must not be empty")
+        query = urlencode({
+            "taskId": task_id,
+            "generation": generation,
+            "operationKey": _nonblank(operation_key, "operation_key"),
+        })
+        return self._get("%s?%s" % (self.OPERATION_BY_KEY_PATH, query))
 
     def list_external_operation_recovery_candidates(
             self, *, after_operation_id: int = 0, limit: int = 100) -> Any:

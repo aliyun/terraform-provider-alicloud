@@ -3,6 +3,11 @@
 #
 # Source this file to get common functions. Safe to source multiple times.
 
+_jarvis_lib_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
+source "$_jarvis_lib_dir/runtime-config.sh"
+jarvis_load_runtime_config || return $?
+
 # Resolve the MAIN repo root, even from inside a git worktree.
 # Uses git-common-dir which always points to the main repo's .git,
 # then strips the trailing /.git to get the repo root.

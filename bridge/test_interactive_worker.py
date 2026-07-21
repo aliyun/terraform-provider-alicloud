@@ -99,6 +99,12 @@ class FakeClient:
     def fail_operation(self, *args, **kwargs):
         return self._record("fail_operation", *args, **kwargs)
 
+    def mark_operation_not_started(self, *args, **kwargs):
+        return self._record("mark_operation_not_started", *args, **kwargs)
+
+    def get_operation_by_key(self, *args, **kwargs):
+        return self._record("get_operation_by_key", *args, **kwargs)
+
     def reconcile_operation(self, *args, **kwargs):
         return self._record("reconcile_operation", *args, **kwargs)
 
@@ -2767,8 +2773,57 @@ class InteractiveWorkerTest(unittest.TestCase):
         self.assertEqual(pending["operationKey"],
                          self._operation_key("comment", "digest-abc"))
         self.assertTrue(pending["proceed"])
-        # mid-task 回执不动 heartbeatEnabled（区别于 claim 期间的续租闸门）。
         self.assertTrue(state["current"]["heartbeatEnabled"])
+
+    def test_operation_begin_401_clears_local_intent_as_not_started(self):
+        self._seed_with_current()
+        fake = FakeClient()
+        fake.begin_error = worker.ControlPlaneRejected(
+            "control plane HTTP 401: machine token required", status=401)
+        with mock.patch.object(worker, "_client", return_value=fake):
+            with self.assertRaises(worker.ControlPlaneRejected):
+                worker.operation_begin("84386065", "comment", "digest-abc")
+        self.assertIsNone(self._store().load()["pendingOperation"])
+
+    def test_operation_begin_timeout_freezes_unknown_with_key_for_point_read(self):
+        self._seed_with_current()
+        fake = FakeClient()
+        fake.begin_error = worker.ControlPlaneUnavailable("timeout")
+        with mock.patch.object(worker, "_client", return_value=fake):
+            with self.assertRaises(worker.ControlPlaneUnavailable):
+                worker.operation_begin("84386065", "comment", "digest-abc")
+        pending = self._store().load()["pendingOperation"]
+        self.assertEqual(pending["status"], "UNKNOWN")
+        self.assertIsNone(pending["operationId"])
+        self.assertTrue(pending["operationKey"].startswith("comment:"))
+
+    def test_operation_begin_conflict_freezes_unknown_for_point_read(self):
+        self._seed_with_current()
+        fake = FakeClient()
+        fake.begin_error = worker.ControlPlaneConflict(
+            "operation already exists", status=409,
+            response={"operationId": "op-existing"})
+        with mock.patch.object(worker, "_client", return_value=fake):
+            with self.assertRaises(worker.ControlPlaneConflict):
+                worker.operation_begin("84386065", "comment", "digest-abc")
+        pending = self._store().load()["pendingOperation"]
+        self.assertEqual(pending["status"], "UNKNOWN")
+        self.assertEqual(pending["operationId"], "op-existing")
+        self.assertTrue(pending["operationKey"].startswith("comment:"))
+
+    def test_operation_begin_stale_fence_clears_local_ownership(self):
+        self._seed_with_current()
+        fake = FakeClient()
+        fake.begin_error = worker.StaleFence("stale fence", status=412)
+        with mock.patch.object(worker, "_client", return_value=fake):
+            with self.assertRaises(worker.StaleFence):
+                worker.operation_begin("84386065", "comment", "digest-abc")
+        state = self._store().load()
+        self.assertIsNone(state["pendingOperation"])
+        self.assertIsNone(state["current"])
+        self.assertEqual(state["lostOwnership"]["sessionId"], "session-1")
+        self.assertEqual(state["lostOwnership"]["reason"],
+                         "stale_fence:operation_begin")
 
     def test_operation_begin_acked_skips_send_and_clears_slot(self):
         self._seed_with_current()
@@ -2887,9 +2942,9 @@ class InteractiveWorkerTest(unittest.TestCase):
         with mock.patch.object(worker, "_client", return_value=fake):
             result = worker.operation_abort("84386065", "a1 comment failed")
         self.assertFalse(result["unknown"])
-        fail_body = [c for c in fake.calls if c[0] == "fail_operation"][-1][1][0]
-        self.assertFalse(fail_body["unknown"])
-        self.assertTrue(fail_body["retryAllowed"])
+        fail_body = [c for c in fake.calls
+                     if c[0] == "mark_operation_not_started"][-1][1][0]
+        self.assertEqual(fail_body["reason"], "a1 comment failed")
         self.assertNotIn("fail_session", [c[0] for c in fake.calls])
         state = self._store().load()
         self.assertIsNone(state["pendingOperation"])
@@ -2938,6 +2993,23 @@ class InteractiveWorkerTest(unittest.TestCase):
         self.assertTrue(reconcile_body["found"])
         self.assertEqual(reconcile_body["externalRef"],
                          "aone:84386065:comment:555")
+        self.assertIsNone(self._store().load()["pendingOperation"])
+
+    def test_operation_reconcile_without_id_point_reads_absence_and_clears(self):
+        state = self._seed_with_current()
+        state["pendingOperation"] = {
+            "operationId": None,
+            "operationKey": self._operation_key("comment", "digest-abc"),
+            "aoneId": "84386065", "kind": "comment",
+            "proceed": False, "status": "UNKNOWN",
+        }
+        self._store().save(state)
+        fake = FakeClient()
+        fake.get_operation_by_key = mock.Mock(side_effect=worker.ControlPlaneRejected(
+            "not found", status=404))
+        with mock.patch.object(worker, "_client", return_value=fake):
+            result = worker.operation_reconcile("84386065", found=False)
+        self.assertTrue(result["notStarted"])
         self.assertIsNone(self._store().load()["pendingOperation"])
 
     def test_operation_reconcile_not_found_keeps_key_for_retry(self):
@@ -3113,13 +3185,14 @@ class InteractiveWorkerTest(unittest.TestCase):
     def test_frozen_external_receipt_allows_exact_recovery_commands(self):
         self._seed_frozen_receipt(status="UNKNOWN")
         wrap_script = worker.REPO_ROOT / "bootstrap" / "wrap.sh"
-        claim_script = worker.REPO_ROOT / "bootstrap" / "claim.sh"
+        hook_script = worker.REPO_ROOT / "bootstrap" / "run-interactive-worker-hook.sh"
         allowed = (
             "/bin/bash %s sync 84386065 --summary-file /tmp/x.md" % wrap_script,
             "/bin/bash %s done 84386065 收敛完成 已完成" % wrap_script,
             "/bin/bash %s done-no-status 84386065 收敛完成" % wrap_script,
-            "/bin/bash %s release 84386065 2100304" % claim_script,
-            "/bin/bash %s finish 84386065 2100304" % claim_script,
+            "/bin/bash %s cli operation-abort 84386065 not-started" % hook_script,
+            "/bin/bash %s cli operation-reconcile 84386065 --not-found" % hook_script,
+            "/bin/bash %s cli operation-reconcile 84386065 --found comment-9" % hook_script,
         )
         for index, command in enumerate(allowed):
             with self.subTest(command=command), \
@@ -3138,9 +3211,86 @@ class InteractiveWorkerTest(unittest.TestCase):
                                side_effect=AssertionError("recovery gate is local")), \
                 mock.patch.object(worker, "_calling_process_matches",
                                   return_value=True):
+                self.assertIsNone(worker._guard_pre_tool_use(
+                    self._store(), "codex", self._receipt_recovery_event(
+                        "/bin/bash %s sync 84386065 progress" % wrap_script, 99)))
+
+    def test_frozen_receipt_wrapper_recovery_matches_operation_kind(self):
+        self._seed_frozen_receipt(status="UNKNOWN")
+        wrap_script = worker.REPO_ROOT / "bootstrap" / "wrap.sh"
+        claim_script = worker.REPO_ROOT / "bootstrap" / "claim.sh"
+        with mock.patch.object(worker, "_calling_process_matches", return_value=True):
+            reason = worker._guard_pre_tool_use(
+                self._store(), "codex", self._receipt_recovery_event(
+                    "/bin/bash %s release 84386065 2100304" % claim_script))
+        self.assertIsNotNone(reason)
+
+        state = self._store().load()
+        state["pendingOperation"]["kind"] = "release-tag"
+        self._store().save(state)
+        with mock.patch.object(worker, "_calling_process_matches", return_value=True):
             self.assertIsNone(worker._guard_pre_tool_use(
                 self._store(), "codex", self._receipt_recovery_event(
-                    "/bin/bash %s sync 84386065 progress" % wrap_script, 99)))
+                    "/bin/bash %s release 84386065 2100304" % claim_script, 1)))
+            reason = worker._guard_pre_tool_use(
+                self._store(), "codex", self._receipt_recovery_event(
+                    "/bin/bash %s sync 84386065 progress" % wrap_script, 2))
+        self.assertIsNotNone(reason)
+
+    def test_frozen_receipt_recovery_hint_matches_operation_kind(self):
+        state = self._seed_frozen_receipt(status="UNKNOWN")
+        state["pendingOperation"]["operationId"] = "9"
+        wrap_script = worker.REPO_ROOT / "bootstrap" / "wrap.sh"
+        claim_script = worker.REPO_ROOT / "bootstrap" / "claim.sh"
+        status_script = worker.REPO_ROOT / "bootstrap" / "control-plane-status.sh"
+        hook_script = worker.REPO_ROOT / "bootstrap" / "run-interactive-worker-hook.sh"
+
+        common = (
+            "/bin/bash %s operation 9" % status_script,
+            "/bin/bash %s cli operation-reconcile 84386065" % hook_script,
+            "/bin/bash %s cli operation-abort 84386065 not-started" % hook_script,
+        )
+        expected = {
+            "comment": "/bin/bash %s sync|done|done-no-status 84386065" % wrap_script,
+            "status": "/bin/bash %s done 84386065" % wrap_script,
+            "release-tag": "/bin/bash %s release 84386065 2100304" % claim_script,
+            "finish-tag": "/bin/bash %s finish 84386065 2100304" % claim_script,
+        }
+        forbidden = {
+            "comment": ("claim.sh",),
+            "status": ("sync|done|done-no-status", "claim.sh"),
+            "release-tag": ("wrap.sh", " finish "),
+            "finish-tag": ("wrap.sh", " release "),
+        }
+        for kind, command in expected.items():
+            with self.subTest(kind=kind):
+                state["pendingOperation"]["kind"] = kind
+                hint = worker._receipt_recovery_hint(state)
+                self.assertIn(command, hint)
+                for diagnostic in common:
+                    self.assertIn(diagnostic, hint)
+                for fragment in forbidden[kind]:
+                    self.assertNotIn(fragment, hint)
+
+    def test_frozen_receipt_always_allows_exact_readonly_diagnostics(self):
+        self._seed_frozen_receipt(status="UNKNOWN")
+        status_script = worker.REPO_ROOT / "bootstrap" / "control-plane-status.sh"
+        config_script = worker.REPO_ROOT / "bootstrap" / "runtime-config.sh"
+        hook_script = worker.REPO_ROOT / "bootstrap" / "run-interactive-worker-hook.sh"
+        allowed = (
+            "/bin/bash %s workers" % status_script,
+            "/bin/bash %s ready --limit 25" % status_script,
+            "/bin/bash %s task 84386065" % status_script,
+            "/bin/bash %s operation 9" % status_script,
+            "/bin/bash %s diagnose" % config_script,
+            "/bin/bash %s cli status" % hook_script,
+        )
+        for index, command in enumerate(allowed):
+            with self.subTest(command=command), \
+                    mock.patch.object(worker, "_calling_process_matches", return_value=True):
+                self.assertIsNone(worker._guard_pre_tool_use(
+                    self._store(), "codex",
+                    self._receipt_recovery_event(command, 200 + index)))
 
     def test_frozen_external_receipt_blocks_non_exact_recovery_shapes(self):
         self._seed_frozen_receipt(status="UNKNOWN")
