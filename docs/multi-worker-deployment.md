@@ -144,18 +144,31 @@ on a worker host (would create dual Task producers).
 Target: AliOS 7.2 (RHEL 7 lineage, glibc ≥ 2.17). Other RHEL-family should
 work; Debian/Ubuntu need the yum lines swapped.
 
+### One-shot from bare metal (recommended)
+
+`bootstrap/worker-bootstrap.sh` is self-contained (no repo needed on the
+host). A copy is published to OSS; paste ONE command on the new worker:
+
 ```bash
-# On the worker host, as the ops user (e.g., admin).
-# First-time repo delivery — one of:
-#   a) tarball relay via OSS (fastest on a bare AliOS with no git auth yet):
-#        curl -fL -o /tmp/jarvis.tgz \
-#          https://<bucket>.oss-cn-beijing-internal.aliyuncs.com/jarvis-preview.tar.gz
-#        tar xzf /tmp/jarvis.tgz -C ~/workspace
-#   b) `git clone` over HTTPS with the Deploy Token in the URL (bootstrap
-#      escape hatch — the installer will rewrite origin from MANIFEST after
-#      step 5):
-#        git clone https://gitlab+deploy-token-N:<TOKEN>@code.alibaba-inc.com/terraflow/jarvis-preview.git \
-#          ~/workspace/jarvis-preview
+GIT_TOKEN_USER=open_jarvis GIT_TOKEN=<code.alibaba-inc.com token> \
+CLAUDE_OSS_URL="https://cc-packet.oss-cn-beijing.aliyuncs.com/claude" \
+CLAUDE_SHA256="c1efffaaf370aa187cb6a09dd93d4e511c646899b0078476f83791b664bde7fe" \
+CREDS_OSS_URL="<bundle URL from worker-credentials-package.sh>" \
+CREDS_SHA256="<sha printed by packager>" \
+CREDS_PASSPHRASE="<32-hex printed by packager>" \
+JARVIS_DISPATCH_MAX=3 \
+  bash -c "$(curl -fsSL https://cc-packet.oss-cn-beijing.aliyuncs.com/worker-bootstrap.sh)"
+```
+
+It installs git/curl if missing, clones the repo via HTTPS+token (then scrubs
+the token from `.git/config` — later pulls use the credential store the
+bundle installs), and hands off to `worker-install.sh` below. The OSS copy is
+a mirror; after changing the script in-repo, re-publish:
+`ossutil cp bootstrap/worker-bootstrap.sh oss://cc-packet/worker-bootstrap.sh -f`.
+
+### If the repo is already on the host
+
+```bash
 cd ~/workspace/jarvis-preview
 
 # All five env vars are required (feed from Prereq A + B outputs):
@@ -170,7 +183,10 @@ JARVIS_DISPATCH_MAX=3 \
 
 The script runs these steps in order:
 1. Sanity: OS/arch/glibc (fails closed on unsupported host)
-2. Install python3 (≥ 3.8) and git if missing
+2. Install python3 (≥ 3.8) and git if missing — yum first, then the
+   canary-proven fallback: uv + python-build-standalone 3.12 (glibc 2.17
+   baseline) with `/usr/bin/python3` symlinked to it (cron/systemd PATH
+   lacks `~/.local/bin`)
 3. Fetch claude binary from OSS, sha256 verify
 4. Ensure jarvis repo present (`git clone` only if missing; `git pull`
    deferred to step 5b)
@@ -185,13 +201,20 @@ The script runs these steps in order:
 6. Probe `a1id ready jarvis` — see [a1 portability fallback](#a1-portability)
 7. Write `config/workspaces.local.json` for this host's paths (if the bundle
    didn't ship one)
+7.5. Build cloudspec from source if missing (Linux has no upstream artifacts;
+   `bootstrap/cloudspec-build-linux.sh`, non-fatal — preflight WARNs on skip;
+   `JARVIS_SKIP_CLOUDSPEC_BUILD=1` to opt out)
 8. `bootstrap/preflight.sh --force` (fail closed)
 9. Append `JARVIS_BRIDGE_ROLE=worker` + `JARVIS_DISPATCH_MAX=N` to
    `bridge/jarvis.env`; if DingTalk keys are present (inherited from
    scheduler), also set `JARVIS_NO_DINGTALK=1` so the worker skips stream
-   client startup
+   client startup (run.sh + the bot enforce this by role regardless)
 10. Install `~/.config/systemd/user/jarvis-worker.service` +
-    `loginctl enable-linger` so the worker survives operator logout
+    `loginctl enable-linger`; when sudo/linger is blocked by command control,
+    fall back to a user crontab (`@reboot` autostart + `*/10` watchdog via
+    `run.sh start`, installing cronie + starting crond as needed). Without
+    linger, prefer `run.sh start` over `systemctl --user` — the systemd user
+    unit dies with your last ssh session, run.sh survives it
 
 No openssh-clients is installed on the worker — HTTPS + Deploy Token is
 the only supported git auth. If you need ssh for other reasons on the

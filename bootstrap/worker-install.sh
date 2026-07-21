@@ -78,9 +78,7 @@ have_py3() {
   command -v python3 >/dev/null 2>&1 \
     && python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3,8) else 1)' 2>/dev/null
 }
-if have_py3; then
-  ok "python3 = $(python3 --version 2>&1)"
-else
+if ! have_py3; then
   info "python3 (>=3.8) missing; attempting yum install"
   for pkg in python38 python3 rh-python38-python; do
     if sudo yum install -y "$pkg" 2>/dev/null; then
@@ -88,9 +86,30 @@ else
       break
     fi
   done
-  have_py3 || die "could not install python3.8+; try SCL or conda manually then re-run"
-  ok "python3 = $(python3 --version 2>&1)"
 fi
+if ! have_py3; then
+  # AliOS yum tops out at python 3.6 — the canary-proven fallback is uv +
+  # python-build-standalone (glibc 2.17 baseline, runs on AliOS 7.2).
+  info "yum python insufficient; falling back to uv + python-build-standalone 3.12"
+  command -v uv >/dev/null 2>&1 \
+    || curl -LsSf https://astral.sh/uv/install.sh | sh
+  UV=uv; command -v uv >/dev/null 2>&1 || UV="$HOME/.local/bin/uv"
+  "$UV" python install 3.12
+  py_path="$("$UV" python find 3.12)"
+  [ -n "$py_path" ] || die "uv python find 3.12 returned nothing"
+  mkdir -p "$HOME/.local/bin"
+  ln -sf "$py_path" "$HOME/.local/bin/python3"
+  # System shim: cron/systemd PATH lacks ~/.local/bin, and hook shebangs use
+  # /usr/bin/env python3. Canary-proven; AliOS 7 yum runs on python2 so this
+  # does not touch package tooling. sudo blocked → warn with the manual step.
+  if sudo ln -sfn "$HOME/.local/bin/python3" /usr/bin/python3 2>/dev/null; then
+    ok "system python3 → uv 3.12 (/usr/bin/python3 symlink)"
+  else
+    warn "could not symlink /usr/bin/python3 (sudo blocked); run manually: sudo ln -sfn $HOME/.local/bin/python3 /usr/bin/python3"
+  fi
+fi
+have_py3 || die "could not provision python3.8+ (yum + uv both failed)"
+ok "python3 = $(python3 --version 2>&1)"
 command -v git >/dev/null 2>&1 || sudo yum install -y git
 git_ver=$(git --version | awk '{print $3}')
 lowest_git=$(printf '%s\n2.5\n' "$git_ver" | sort -V | awk 'NR==1')
@@ -321,6 +340,22 @@ EOF
   ok "created $local_ws (workspace_root=$HOME/workspace)"
 else
   ok "$local_ws exists; leaving alone (verify manually if paths need adjustment)"
+fi
+
+# ---------------------------------------------------------------------------
+step "7.5 cloudspec CLI (Linux: source build if missing)"
+# Upstream ships no Linux artifacts (acube 500s all cloudspec-linux-*.zip), so
+# deps.lock cannot install it at preflight; build from source here instead —
+# needs the git credentials laid down by step 5, hence after it. Failure is
+# non-fatal: preflight records WARN cloudspec and work continues without it.
+if command -v cloudspec >/dev/null 2>&1; then
+  ok "cloudspec already installed"
+elif [ "${JARVIS_SKIP_CLOUDSPEC_BUILD:-0}" = "1" ]; then
+  warn "skipped (JARVIS_SKIP_CLOUDSPEC_BUILD=1); preflight will WARN cloudspec"
+else
+  info "building cloudspec from source (official Linux path, ~a few minutes)"
+  bash "$JARVIS_ROOT/bootstrap/cloudspec-build-linux.sh" \
+    || warn "cloudspec build failed — preflight will WARN; retry later with bootstrap/cloudspec-build-linux.sh"
 fi
 
 # ---------------------------------------------------------------------------
