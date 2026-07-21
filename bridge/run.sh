@@ -305,9 +305,14 @@ cmd_start() {
   else
     mode="degraded"
     say "=================================================================="
-    say "  无钉钉凭证 (DINGTALK_APP_KEY/SECRET 未设) → 以降级模式点火。"
-    say "  自动派发 + 各调度器照常运行; 卡片/播报落 bot.log ([BROADCAST])。"
-    say "  配好凭证后运行  bridge/run.sh restart  即回全功能模式。"
+    if [ "${JARVIS_BRIDGE_ROLE:-scheduler}" = "worker" ]; then
+      say "  role=worker → 强制降级模式 (worker 不跑钉钉 stream, 发声统一归 scheduler)。"
+      say "  被动接单执行照常; 本机播报落 bot.log ([BROADCAST]) 作审计轨迹。"
+    else
+      say "  无钉钉凭证 (DINGTALK_APP_KEY/SECRET 未设) → 以降级模式点火。"
+      say "  自动派发 + 各调度器照常运行; 卡片/播报落 bot.log ([BROADCAST])。"
+      say "  配好凭证后运行  bridge/run.sh restart  即回全功能模式。"
+    fi
     say "=================================================================="
   fi
 

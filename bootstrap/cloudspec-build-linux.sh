@@ -39,8 +39,15 @@ ok()   { printf '[OK]  %s\n' "$*"; }
 step() { printf '\n===== %s =====\n' "$*"; }
 
 command -v git >/dev/null 2>&1 || die "git not found"
-command -v uv  >/dev/null 2>&1 || die "uv not found (worker-install puts it in ~/.local/bin)"
 command -v zip >/dev/null 2>&1 || die "zip not found (sudo yum install -y zip)"
+# uv: self-install when absent (hosts whose yum python sufficed never needed
+# the step-2 uv fallback, but the build always does).
+if ! command -v uv >/dev/null 2>&1 && [ ! -x "$HOME/.local/bin/uv" ]; then
+  info "uv missing; installing from astral.sh"
+  curl -LsSf https://astral.sh/uv/install.sh | sh || die "uv install failed"
+fi
+command -v uv >/dev/null 2>&1 || export PATH="$HOME/.local/bin:$PATH"
+command -v uv >/dev/null 2>&1 || die "uv still not on PATH after install"
 
 t=$(mktemp -d -t cloudspec-build.XXXXXX)
 # shellcheck disable=SC2064
