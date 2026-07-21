@@ -200,6 +200,43 @@ class PublisherTest(unittest.TestCase):
         self.assertIn("[REDACTED]", public)
         self.assertRegex(marker, r"^\[\[JARVIS-EVENT:v1:[0-9a-f]{24}\]\]$")
 
+    def test_bare_urls_are_clickable_without_touching_protected_markdown(self):
+        text = "\n".join([
+            "关联：https://code.example/cr/123。",
+            "已有 [评审](https://keep.example/mr/9) 不重包。",
+            "命令 `curl https://inline.example/api` 保持原样。",
+            "```text",
+            "https://fence.example/log",
+            "```",
+        ])
+        self.assertTrue(bot._aone_event_publish(
+            TID, PROJ, "task-reply:url-markdown", text))
+        public = self.remote[-1].rsplit("\n\n", 1)[0]
+        self.assertIn(
+            "[https://code.example/cr/123](https://code.example/cr/123)。", public)
+        self.assertIn("[评审](https://keep.example/mr/9)", public)
+        self.assertNotIn("[[评审]", public)
+        self.assertIn("`curl https://inline.example/api`", public)
+        self.assertIn("```text\nhttps://fence.example/log\n```", public)
+
+    def test_autolink_respects_limit_without_partial_markdown(self):
+        prefix = "x" * (bot._AONE_EVENT_TEXT_MAX - 10)
+        public = bot._aone_event_prepare_text(
+            prefix + " https://code.example/cr/too-long")
+        self.assertLessEqual(len(public), bot._AONE_EVENT_TEXT_MAX)
+        self.assertTrue(public.endswith("…"))
+        self.assertNotIn("https://", public)
+        self.assertEqual(public.count("["), public.count("]"))
+        self.assertEqual(public.count("("), public.count(")"))
+
+        fits_then_truncates = bot._aone_event_prepare_text(
+            "关联：https://code.example/cr/123\n" + "y" * 3000)
+        self.assertEqual(len(fits_then_truncates), bot._AONE_EVENT_TEXT_MAX)
+        self.assertIn(
+            "[https://code.example/cr/123](https://code.example/cr/123)",
+            fits_then_truncates)
+        self.assertTrue(fits_then_truncates.endswith("…"))
+
     def test_bracketed_internal_stages_and_persona_handoff_are_removed(self):
         unsafe = "\n".join([
             "[PD分诊] 内部路由",
