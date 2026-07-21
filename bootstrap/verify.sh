@@ -47,15 +47,28 @@ chk_skill() {
     fi
 }
 
-# Check the 4 CLIs
+# Worker mode skips dev-only tools that are only needed when actively editing
+# code (aliyun/cloudspec for Terraform/CloudSpec dev, gh for GitHub PR flow).
+# Workers only lease + execute Tasks; those tools are needed lazily per-Task
+# and their absence should not fail the daily preflight gate.
+JARVIS_BRIDGE_ROLE="${JARVIS_BRIDGE_ROLE:-scheduler}"
+
+# Check the CLIs
 chk a1 a1
-chk gh gh
 chk git git
-chk aliyun aliyun
-chk cloudspec cloudspec
+if [ "$JARVIS_BRIDGE_ROLE" != "worker" ]; then
+    chk gh gh
+    chk aliyun aliyun
+    chk cloudspec cloudspec
+else
+    # Info line so operator sees the skip is intentional.
+    echo "SKIP gh aliyun cloudspec (JARVIS_BRIDGE_ROLE=worker)"
+fi
 
 # Check credentials (each independent PASS/FAIL)
-chk_cred aliyun "aliyun sts GetCallerIdentity"
+if [ "$JARVIS_BRIDGE_ROLE" != "worker" ]; then
+    chk_cred aliyun "aliyun sts GetCallerIdentity"
+fi
 chk_cred a1 "a1 auth whoami"
 
 repo_root="$(git rev-parse --show-toplevel)"
@@ -149,7 +162,9 @@ for skill in \
     chk_skill "$skill"
 done
 
-if bash "$(git rev-parse --show-toplevel)/bootstrap/cloudspec-core.sh" check >/dev/null 2>&1; then
+if [ "$JARVIS_BRIDGE_ROLE" = "worker" ]; then
+    echo "SKIP cloudspec-core-snapshot (JARVIS_BRIDGE_ROLE=worker)"
+elif bash "$(git rev-parse --show-toplevel)/bootstrap/cloudspec-core.sh" check >/dev/null 2>&1; then
     echo "PASS cloudspec-core-snapshot"
 else
     echo "FAIL cloudspec-core-snapshot"

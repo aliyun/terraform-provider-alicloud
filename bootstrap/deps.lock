@@ -1,5 +1,5 @@
 a1	curl -fsSL https://git.cn-hangzhou.oss-cdn.aliyun-inc.com/aone-cli/install.sh | sh	https://a1.io.alibaba-inc.com/docs/guide/
-aliyun	/bin/bash -c "$(curl -fsSL https://aliyuncli.alicdn.com/install.sh)"	https://help.aliyun.com/zh/cli/install-update-alibaba-cloud-cli
+aliyun	curl -fsSL https://aliyuncli.alicdn.com/install.sh | sudo -E /bin/bash	https://help.aliyun.com/zh/cli/install-update-alibaba-cloud-cli
 cloudspec	sudo -v ; curl https://acube.aliyun-inc.com/api/v1/cloudspec/cli/install.sh | sudo bash	https://aliyuque.antfin.com/cloudspec/model/mslpwp94a4k2aygc
 amp	AMP_DOWNLOAD_URL=https://amp-cli.oss-cn-beijing.aliyuncs.com/0.1.0; export AMP_DOWNLOAD_URL; curl -fsSL "$AMP_DOWNLOAD_URL/install.sh" | sh; amp upgrade --yes --no-interactive	https://ampv2inner-share.aliyuncs.com
-gh	brew install gh	https://cli.github.com/
+gh	if [ "$(uname)" = Darwin ]; then brew install gh; else curl -fsSL https://cli.github.com/packages/rpm/gh-cli.repo | sudo tee /etc/yum.repos.d/gh-cli.repo >/dev/null && sudo yum install -y gh; fi	https://cli.github.com/

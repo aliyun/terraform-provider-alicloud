@@ -7497,11 +7497,16 @@ def _run_no_dingtalk():
     handler = JarvisHandler(no_dingtalk=True)
     # PersistenceExecutor first, then every sensor/scheduler.
     handler.start_schedulers()
-    log.info("[NO-DINGTALK] scan scheduler started (interval=%ss auto_dispatch=%s target=%s broadcast=%s)",
-             handler.scanner.interval, handler.scanner.auto,
-             handler.scanner.notify_target, broadcast_target())
-    log.info("[NO-DINGTALK] daily(%s)",
-             ",".join(j.name for j in handler.daily.jobs))
+    # scan/daily log lines only make sense in scheduler role — in worker role
+    # start_schedulers returned early and those threads never started; printing
+    # scanner.interval / daily.jobs is misleading (the values exist as instance
+    # attrs but no thread was launched).
+    if os.environ.get("JARVIS_BRIDGE_ROLE", "scheduler") != "worker":
+        log.info("[NO-DINGTALK] scan scheduler started (interval=%ss auto_dispatch=%s target=%s broadcast=%s)",
+                 handler.scanner.interval, handler.scanner.auto,
+                 handler.scanner.notify_target, broadcast_target())
+        log.info("[NO-DINGTALK] daily(%s)",
+                 ",".join(j.name for j in handler.daily.jobs))
     log.info("[NO-DINGTALK] ready — 阻塞运行; 卡片/播报以 [BROADCAST] 日志行落 bot.log。"
              "配好钉钉凭证后去掉 JARVIS_NO_DINGTALK 即回全功能模式。")
 
