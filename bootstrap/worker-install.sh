@@ -400,6 +400,17 @@ if grep -qE '^(export[[:space:]]+)?DINGTALK_APP_KEY=' "$env_file"; then
   grep -qE '^(export[[:space:]]+)?JARVIS_NO_DINGTALK=' "$env_file" \
     || printf 'JARVIS_NO_DINGTALK=1\n' >> "$env_file"
 fi
+# Model lanes: Linux workers use ONLY the glm lane (仓库主人 2026-07-21 指令) —
+# ideamo/ideamore are office-network mac lanes. Pin BOTH lanes to glm5.2.json:
+# strip any inherited multi-lane lines first (the bundle carries the
+# scheduler's jarvis.env verbatim), then append. Deliberately does NOT touch
+# JARVIS_TATA_SETTINGS (anchored regex excludes it).
+sed -i.bak -E '/^(export[[:space:]]+)?JARVIS_SETTINGS(_TF)?=/d' "$env_file" && rm -f "$env_file.bak"
+printf 'JARVIS_SETTINGS=$HOME/.claude/glm5.2.json\n'    >> "$env_file"
+printf 'JARVIS_SETTINGS_TF=$HOME/.claude/glm5.2.json\n' >> "$env_file"
+[ -f "$HOME/.claude/glm5.2.json" ] \
+  || warn "~/.claude/glm5.2.json missing — glm lane will fail to load; check the credential bundle"
+ok "model lanes pinned to glm5.2.json (worker policy: no ideamo/ideamore)"
 
 # ---------------------------------------------------------------------------
 step "10. Install systemd user unit"
