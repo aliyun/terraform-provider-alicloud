@@ -132,6 +132,12 @@ _source_env() {
 
 # -- mode decision: 0 = full, 1 = degraded (also exports the flag) ---------
 _decide_mode() {
+  # Workers never run the DingTalk stream client (scheduler-only); inherited
+  # DINGTALK_* creds from the credential bundle must not flip a worker to full.
+  if [ "${JARVIS_BRIDGE_ROLE:-scheduler}" = "worker" ]; then
+    export JARVIS_NO_DINGTALK=1
+    return 1
+  fi
   if [ -n "${DINGTALK_APP_KEY:-}" ] && [ -n "${DINGTALK_APP_SECRET:-}" ] \
      && [ "${JARVIS_NO_DINGTALK:-}" != "1" ]; then
     return 0

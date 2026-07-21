@@ -345,9 +345,9 @@ if ! grep -qE '^JARVIS_DISPATCH_MAX=' "$env_file"; then
   ok "appended JARVIS_DISPATCH_MAX=$DISPATCH_MAX → $env_file"
 fi
 # Workers don't need DingTalk output — clear keys to force degraded mode (skip stream)
-if grep -qE '^DINGTALK_APP_KEY=' "$env_file"; then
+if grep -qE '^(export[[:space:]]+)?DINGTALK_APP_KEY=' "$env_file"; then
   warn "DINGTALK_APP_KEY present on worker; setting JARVIS_NO_DINGTALK=1 to skip stream client"
-  grep -qE '^JARVIS_NO_DINGTALK=' "$env_file" \
+  grep -qE '^(export[[:space:]]+)?JARVIS_NO_DINGTALK=' "$env_file" \
     || printf 'JARVIS_NO_DINGTALK=1\n' >> "$env_file"
 fi
 
