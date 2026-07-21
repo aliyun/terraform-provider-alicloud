@@ -13,9 +13,9 @@
 1. Bridge 内只保留一个常驻 `SchedulerEngine`，所有时间驱动任务都通过显式 `JOBS` 注册表调度。
 2. 调度器只运行扫描或可重放维护，不直接执行需要长期恢复的业务工作；业务工作继续写入现有 Task 控制面。
 3. `PersistenceExecutor` 从 Bridge 拆成独立 Task Worker 服务。只有拆分完成后，才允许承诺 Bridge restart 不会终止正在运行的 Session/SubAgent。
-4. job 定义、当前 slot、checkpoint、状态、最近结果和 `next_run_at` 保存到控制面单行当前态，供恢复与 Board 展示；不新增 run 历史表。
+4. job 定义、状态、最近结果和 `next_run_at` 保存到控制面单行当前态，供调度与 Board 展示；首版不在该表保存执行租约、通用 checkpoint 或 run 历史。
 5. restart 采用 `QUIESCING → drain Scanner → Scheduler OFFLINE → 新实例 READY` 协议；Task Worker 不在 Bridge restart 的操作范围内。
-6. Aone、Aone Reply、PR 生命周期均保持 at-least-once：先持久化 Task 或事件 WAL，再推进 checkpoint，禁止用内存状态作为完成依据。
+6. Aone、Aone Reply、PR 生命周期均保持 at-least-once：先持久化 Task 或事件 WAL，再推进各 runner 自己的业务 cursor，禁止用内存状态作为完成依据。
 7. Probe 继续是一次性 Ephemeral 作业，不扩展为 `probe_finding` Task；它受统一 Scheduler 管理，但不占用持久 Task Worker。
 
 本轮只交付设计，不修改现有调度实现、控制面或运行入口。
@@ -25,7 +25,7 @@
 ### 2.1 目标
 
 - 统一 interval、daily、adaptive 三类时间语义。
-- 统一 job 注册、校验、并发、防重入、超时、重试、checkpoint 和可观测性。
+- 统一 job 注册、校验、并发、防重入、超时、重试和可观测性；业务 cursor 仍由对应 runner 负责。
 - restart 后恢复未完成 slot，不丢 Aone/PR 更新，不制造重复业务副作用。
 - Board 可查看所有 job 的周期、当前状态、最近结果和下一次执行时间。
 - 新增 job 时只增加 job 定义、runner 和契约测试，不再复制 daemon loop。
@@ -38,6 +38,7 @@
 - 不改变现有 Task/Session 的业务状态机。
 - 不把 Board、Executor 或人工触发命令注册成定时 job。
 - 不在本次设计中把 Probe finding 持久化为 Task。
+- 不通过首版 scheduled-job 表实现多 Scheduler 选主、执行租约或通用扫描游标。
 
 ## 3. 当前主干基线
 
@@ -75,7 +76,7 @@ PersistenceExecutor
 ### 3.3 尚未实现的能力
 
 - 没有 `SchedulerEngine`、`JOBS` 注册表或统一时间循环。
-- 没有 scheduled-job 控制面表/API、slot/checkpoint CAS 或 Scheduler Worker fencing。
+- 没有 scheduled-job 注册/状态表、API 或 Board 查询。
 - 没有 quiesce、Scanner drain、restart ID 或 READY 握手。
 - Task Worker 尚未独立；Bridge restart 会中断活动 Session/SubAgent。
 - `PrWatchScheduler` 仍混合 discovery、Task 生产和生命周期副作用。
@@ -110,7 +111,7 @@ flowchart LR
         Lease --> Agent
     end
 
-    Engine <-->|"register / CAS / recover"| JobState
+    Engine <-->|"register / update status"| JobState
     Publisher -->|"tasks/upsert"| Task
     JobState --> Board
     Task -->|"lease"| Lease
@@ -167,6 +168,8 @@ v14 只迁移当前主干真实存在的时间驱动职责，不复活已删除�
 
 job 模块 import 时不得启动线程、访问网络、sleep 或写文件。`validate_registry()` 必须先把 iterable 单次物化为有序 tuple，校验后返回同一个 tuple；`load_jobs()` 直接返回校验结果。
 
+`checkpoint_upgrade` 只描述 runner 自己的业务状态升级策略，不对应 `jarvis_scheduled_job` 字段。
+
 ### 6.2 Runner
 
 | runner | 场景 | 约束 |
@@ -187,7 +190,7 @@ job 模块 import 时不得启动线程、访问网络、sleep 或写文件。`v
 - `next_due_at`：仅 adaptive 的成功结果允许提供，且必须带时区。
 - `error`：失败必填，成功禁止携带。
 
-失败结果不得携带 observations、checkpoint 或新的 slot。协议非法时不发布 Task、不提交 checkpoint，并记录为永久协议错误。
+`JobResult.checkpoint` 由对应 runner 的业务状态接口消费，不写入通用 job 表。失败结果不得携带 observations、checkpoint 或新的 slot。协议非法时不发布 Task、不提交业务 cursor，并记录为永久协议错误。
 
 ## 7. 时间、slot 与失败语义
 
@@ -213,7 +216,8 @@ revision 升级不得复用旧 slot identity。旧分支的 `TriggerPlanner` 可
 
 | 状态 | 最终真源 |
 | --- | --- |
-| definition、status、current slot、checkpoint、next due、最近结果 | `jarvis_scheduled_job` |
+| definition、status、next due、最近结果 | `jarvis_scheduled_job` |
+| runner 扫描游标、业务 checkpoint | 各 runner 现有持久状态；不进入首版通用 job 表 |
 | Aone/PR 发现后的业务工作 | 现有 Task/Session 控制面 |
 | Aone Reply 等待与 comment cursor | 现有 Session/wait 控制面 |
 | Aone/DingTalk 发布去重与失败补偿 | 现有双事件 ledger；等价控制面 outbox 上线前不得删除 |
@@ -221,59 +225,41 @@ revision 升级不得复用旧 slot identity。旧分支的 `TriggerPlanner` 可
 | PID、restart ID、READY | 本地进程握手文件，不作为业务恢复真源 |
 
 `jarvis_scheduled_job` 一行代表一个已注册 job，同时保存 job 定义和当前运行状态。
-详细属性统一放入 `definition` JSON；看板、调度和恢复需要频繁查询的字段单独展开：
+详细属性统一放入 `definition` JSON；首版只展开调度和 Board 直接需要的字段：
 
 | 字段 | 类型 | 含义与更新规则 |
 | --- | --- | --- |
-| `id` | `BIGINT` | 数据库自增主键，不参与调度 identity |
-| `job_key` | `VARCHAR(128)` | 稳定 job ID，例如 `aone.scan`，全表唯一 |
+| `job_key` | `VARCHAR(128)` | 稳定 job ID，例如 `aone.scan`，直接作为主键 |
 | `job_name` | `VARCHAR(256)` | 看板展示名称 |
 | `definition` | `LONGTEXT` | definition JSON：revision、description、schedule、runner、timeout、retry 和 replay policy |
-| `enabled` | `TINYINT` | 是否允许调度；未出现在本次完整注册中的历史 job 置为 `0`，不删除 |
-| `status` | `VARCHAR(32)` | `IDLE`、`RUNNING`、`RECOVERING`、`ERROR`、`DISABLED` |
-| `next_run_at` | `DATETIME(3)` | 下次正常执行或失败重试时间；运行中、永久失败和禁用时为空 |
-| `current_slot` | `VARCHAR(256)` | 当前计划批次，使用 `job_key + revision + scheduled_for_utc`；重试和恢复复用原值 |
-| `current_worker_id` | `VARCHAR(128)` | 当前有权提交该 slot 结果的 Scheduler 实例 |
-| `lease_expire_at` | `DATETIME(3)` | 当前 Scheduler 所有权到期时间；过期的 `RUNNING` 可由新实例接管 |
-| `checkpoint` | `LONGTEXT` | 最近成功提交的扫描进度 JSON |
+| `status` | `VARCHAR(32)` | `IDLE`、`RUNNING`、`ERROR`、`DISABLED`；是否正在运行直接看该字段 |
+| `next_run_at` | `DATETIME(3)` | 当前待执行的计划时间；运行中保留本次计划时间，成功后更新为下一次时间 |
 | `last_started_at` | `DATETIME(3)` | 最近一次开始执行时间 |
 | `last_finished_at` | `DATETIME(3)` | 最近一次成功或失败结束时间 |
 | `last_error` | `VARCHAR(2048)` | 最近错误摘要，不保存凭证或完整业务载荷 |
-| `version` | `BIGINT` | CAS 乐观锁和旧实例 fencing；抢占、完成、失败、接管和启停时递增 |
 | `gmt_create` / `gmt_modified` | `DATETIME(3)` | 注册时间和最后更新时间 |
 
 建表定义固定为：
 
 ```sql
 CREATE TABLE jarvis_scheduled_job (
-  id BIGINT NOT NULL AUTO_INCREMENT,
   job_key VARCHAR(128) NOT NULL COMMENT '稳定 job ID',
   job_name VARCHAR(256) NOT NULL COMMENT '看板展示名称',
   definition LONGTEXT NOT NULL COMMENT 'job definition JSON',
 
-  enabled TINYINT NOT NULL DEFAULT 1 COMMENT '是否允许调度',
   status VARCHAR(32) NOT NULL DEFAULT 'IDLE'
-    COMMENT 'IDLE/RUNNING/RECOVERING/ERROR/DISABLED',
-  next_run_at DATETIME(3) NULL COMMENT '下次执行或重试时间',
-
-  current_slot VARCHAR(256) NULL COMMENT '当前计划批次',
-  current_worker_id VARCHAR(128) NULL COMMENT '当前 Scheduler 实例',
-  lease_expire_at DATETIME(3) NULL COMMENT '执行所有权过期时间',
-
-  checkpoint LONGTEXT NULL COMMENT '已提交的扫描进度 JSON',
+    COMMENT 'IDLE/RUNNING/ERROR/DISABLED',
+  next_run_at DATETIME(3) NULL COMMENT '当前待执行的计划时间',
   last_started_at DATETIME(3) NULL COMMENT '最近开始时间',
   last_finished_at DATETIME(3) NULL COMMENT '最近完成时间',
   last_error VARCHAR(2048) NULL COMMENT '最近错误摘要',
 
-  version BIGINT NOT NULL DEFAULT 0 COMMENT 'CAS 与 fencing 版本',
   gmt_create DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   gmt_modified DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
     ON UPDATE CURRENT_TIMESTAMP(3),
 
-  PRIMARY KEY (id),
-  UNIQUE KEY uk_job_key (job_key),
-  KEY idx_schedule (enabled, status, next_run_at),
-  KEY idx_worker (current_worker_id, status)
+  PRIMARY KEY (job_key),
+  KEY idx_schedule (status, next_run_at)
 );
 ```
 
@@ -293,28 +279,30 @@ CREATE TABLE jarvis_scheduled_job (
 
 状态字段按以下规则更新：
 
-| 场景 | `status` | `next_run_at` | `current_slot` | `current_worker_id` | `lease_expire_at` | `version` |
-| --- | --- | --- | --- | --- | --- | --- |
-| 首次注册 | `IDLE` | 首次计划时间 | `NULL` | `NULL` | `NULL` | `0` |
-| 到期抢占 | `RUNNING` | `NULL` | 设置稳定 slot | 设置实例 ID | 设置租约 | `+1` |
-| 运行心跳 | `RUNNING` | `NULL` | 不变 | 不变 | 延长租约 | 不变 |
-| 成功完成 | `IDLE` | 下次计划时间 | `NULL` | `NULL` | `NULL` | `+1` |
-| 可重试失败 | `ERROR` | 重试时间 | 保留原 slot | `NULL` | `NULL` | `+1` |
-| 重试 | `RUNNING` | `NULL` | 复用原 slot | 设置新实例 | 设置新租约 | `+1` |
-| 租约过期接管 | `RECOVERING` | `NULL` | 复用原 slot | 替换为新实例 | 设置新租约 | `+1` |
-| 永久失败 | `ERROR` | `NULL` | 保留原 slot | `NULL` | `NULL` | `+1` |
-| 禁用 | `DISABLED` | `NULL` | `NULL` | `NULL` | `NULL` | `+1` |
+| 场景 | `status` | `next_run_at` | 时间与错误字段 |
+| --- | --- | --- | --- |
+| 首次注册 | `IDLE` | 首次计划时间 | 三个最近结果字段均为空 |
+| 到期开始 | `RUNNING` | 保留本次计划时间 | `last_started_at=now`，清空 `last_error` |
+| 成功完成 | `IDLE` | 下次计划时间 | `last_finished_at=now`，清空 `last_error` |
+| 可重试失败 | `ERROR` | 重试时间 | `last_finished_at=now`，记录错误摘要 |
+| 重试开始 | `RUNNING` | 保留重试计划时间 | `last_started_at=now`，清空 `last_error` |
+| 永久失败 | `ERROR` | `NULL` | `last_finished_at=now`，记录错误摘要 |
+| restart 恢复 | `IDLE` | 保留原计划时间 | 原 `RUNNING` 视为未完成并立即重跑 |
+| 禁用 | `DISABLED` | `NULL` | 保留最近一次运行结果 |
+| 重新启用 | `IDLE` | 重新计算计划时间 | 保留最近一次运行结果 |
+
+每次启动用完整 `JOBS` 注册表 upsert：已存在的 job 更新 `job_name` 和 `definition`；本次未注册但表中仍存在的历史 job 只改为 `DISABLED`，不删除记录。重新出现时再恢复为 `IDLE` 并计算 `next_run_at`。
 
 不新增 run-history 表；历史运行明细继续由日志和 Task/Session 时间线承担。
 
 ### 8.2 本地状态迁移
 
-迁移必须采用“导入、双读校验、切换、延迟删除”，禁止先删本地文件：
+首版 job 表不承载业务 cursor/checkpoint。本地业务状态迁移仍采用“固化、双读校验、切换、延迟删除”，禁止先删本地文件：
 
-1. `DailyScheduler` 的日期 marker 导入 `daily.nudge`、`daily.probe` 各自 checkpoint。
-2. `pr-watch.json` 的 registry、cursor 和 dedupe 状态导入 `pr.watch` checkpoint。
+1. `DailyScheduler` 的日期 marker 继续作为 daily runner 的独立业务状态，不能塞入 `jarvis_scheduled_job`。
+2. `pr-watch.json` 的 registry、cursor 和 dedupe 状态继续由 PR runner 所有，后续需要控制面化时使用独立业务状态接口。
 3. 迁移期旧 loop 和新 job 不得同时触发；每个 job 使用独立 enable gate 原子切换。
-4. 连续两个完整周期对账一致后，停止读取旧状态文件。
+4. 连续两个完整周期对账一致并确认新的业务状态真源后，才停止读取旧状态文件。
 5. 双事件 ledger 在等价 durable outbox 验收前继续保留，不能随 scheduler 状态文件一起删除。
 
 ## 9. Task 与事件不丢失契约
@@ -323,19 +311,19 @@ CREATE TABLE jarvis_scheduled_job (
 
 - 冷启动允许全量重扫。
 - `task_key` 与 `desired_revision` 必须稳定；重复发现由 Task upsert 收敛。
-- Task 全部明确 accepted 后才能推进 scan checkpoint。
-- 网络超时或 ACK 未知时不推进 checkpoint，下一轮以相同 identity 重提。
+- Task 全部明确 accepted 后才能推进 runner 自己的 scan cursor。
+- 网络超时或 ACK 未知时不推进业务 cursor，下一轮以相同 identity 重提。
 
 ### 9.2 Aone Reply
 
 - 控制面 Session/wait cursor 是唯一真源。
-- Scheduler checkpoint 只记录扫描进度，不能代替 wait cursor。
+- 通用 job 表不保存 checkpoint；控制面 wait cursor 仍是唯一恢复依据。
 - restart 后重新分页查询全部 pending wait；相同评论生成相同 `wake` Task identity。
 
 ### 9.3 PR watch 与生命周期事件
 
-- PR registry/cursor 迁入 job checkpoint；重复扫描生成相同 Task identity。
-- finish、评论、Aone/DingTalk 通知必须先写带稳定 semantic event key 的 ledger/outbox，再允许推进 checkpoint。
+- PR registry/cursor 保留在 PR runner 的独立持久状态中；重复扫描生成相同 Task identity。
+- finish、评论、Aone/DingTalk 通知必须先写带稳定 semantic event key 的 ledger/outbox，再允许推进业务 cursor。
 - Aone 与 DingTalk 独立记账、独立重试；一个通道成功不得抑制另一个通道补偿。
 - `post_uncertain` 只能查 marker，不得盲目重发。
 
@@ -374,15 +362,15 @@ sequenceDiagram
     alt 完整链在 deadline 前完成
         Scan-->>Old: JobResult
         Old->>CP: Task/Event durable ACK
-        Old->>CP: CAS checkpoint + slot
+        Old->>CP: update status + next_run_at
     else deadline 到达
         Old->>Scan: TERM/KILL process group
-        Note over Old,CP: 不推进 checkpoint
+        Note over Old,CP: 保留 RUNNING 与原计划时间
     end
     Old->>CP: Scheduler Worker OFFLINE
     CLI->>New: start(restart_id)
-    New->>CP: register and take over
-    CP-->>New: current state / RECOVERING slots
+    New->>CP: register and normalize stale RUNNING
+    CP-->>New: definitions / status / next_run_at
     New-->>CLI: READY(restart_id)
 ```
 
@@ -390,23 +378,28 @@ sequenceDiagram
 
 1. 生成 restart ID，旧 Scheduler 进入 `QUIESCING`。
 2. 在 admission lock 内关闭 trigger gate，不再启动新 Scanner。
-3. 等待 active Scanner 完成“结果校验 → Task/Event durable ACK → job CAS”完整提交链。
-4. deadline 到达后终止仍在运行的 Scanner 进程组；ACK 未知或 CAS 未完成时不推进 checkpoint。
+3. 等待 active Scanner 完成“结果校验 → Task/Event durable ACK → 更新 status/next_run_at”完整提交链。
+4. deadline 到达后终止仍在运行的 Scanner 进程组；ACK 未知时不推进业务 cursor，也不把 job 标记成功。
 5. 旧 Scheduler 标记 OFFLINE 并退出。
-6. 新 Scheduler 事务性接管 job 行；遗留 RUNNING slot 转为 RECOVERING，从 committed checkpoint 重扫。
+6. 旧进程退出后才启动新 Scheduler；启动时把遗留 `RUNNING` 归一为 `IDLE`，保留原 `next_run_at`，因此立即重跑。
 7. 只有收到相同 restart ID 的 READY，restart 才返回成功。
 
 launchd 不得直接用 `kickstart -k` 跳过 quiesce/drain；必须先完成协议，再由 supervisor 拉起新进程。
 
-### 10.3 Fencing
+### 10.3 单实例约束与中断恢复
 
-job 状态更新必须匹配：
+首版明确只有一个活动 Scheduler，不在 `jarvis_scheduled_job` 中预埋 owner、lease 和 version。单实例由 `bridge/run.sh`、PID/restart ID 和 supervisor 保证：旧 Scheduler 完全退出后，新实例才能进入 READY 并接收运行。
 
-```text
-job_key + current_slot + current_worker_id + expected_version
+新实例启动时执行等价状态归一：
+
+```sql
+UPDATE jarvis_scheduled_job
+SET status = 'IDLE',
+    last_error = 'scheduler interrupted before completion'
+WHERE status = 'RUNNING';
 ```
 
-除心跳续租外，每次成功 CAS 都递增 `version`。新 Worker 接管后，旧 Worker 的迟到结果、Task ACK 和 checkpoint 提交都必须被拒绝。
+该更新不修改 `next_run_at`，原计划时间已经到期，因此会被立即重新执行。若未来确定支持多 Scheduler 选主，再单独引入 owner/lease/version；不为未确认场景提前增加字段。
 
 ## 11. Board 与可观测性
 
@@ -414,12 +407,11 @@ job_key + current_slot + current_worker_id + expected_version
 
 | 字段 | 展示要求 |
 | --- | --- |
-| job | id、description、revision、enabled |
+| job | `job_key`、`job_name`、description、revision |
 | schedule | interval/daily/adaptive 摘要与时区 |
-| current | `status`、`current_slot`、`current_worker_id`、`lease_expire_at` |
+| current | `status`；`RUNNING` 即当前正在执行，`DISABLED` 即已禁用 |
 | next | `next_run_at`；永久失败或禁用时明确显示原因 |
 | latest | `last_started_at`、`last_finished_at`、duration、`last_error` |
-| recovery | checkpoint 摘要、RECOVERING 状态、`version` |
 
 Board 只读控制面当前态，不通过轮询 Bridge 内存拼装，也不触发 job。
 
@@ -434,7 +426,7 @@ bridge/
   scheduler/
     model.py                      # definition / schedule / result
     planner.py                    # 纯时间计算 TriggerPlanner
-    engine.py                     # 唯一 loop / admission / fencing
+    engine.py                     # 唯一 loop / admission / restart recovery
     runtime.py                    # ScannerRuntime / publishers
     jobs/
       __init__.py                 # 显式 JOBS 注册表
@@ -465,9 +457,9 @@ bridge/
 | --- | --- | --- |
 | B0 | 已完成 | 组件 10→6、Aone 并集探测、控制面 wait、PR/每日本地持久状态 |
 | U1 | 未开始 | 模型、registry、修正后的纯 `TriggerPlanner` 及契约测试 |
-| U2 | 未开始 | scheduled-job 表/API、Board 查询与 Scheduler Worker fencing |
+| U2 | 未开始 | 精简 scheduled-job 表/API 与 Board 查询 |
 | U3 | 未开始 | `SchedulerEngine`、ScannerRuntime、Task/Event publisher、fake clock 测试 |
-| U4 | 未开始 | 导入 Daily/PR 本地状态；双读对账；保留事件 ledger |
+| U4 | 未开始 | 固化 Daily/PR 各自业务状态；双读对账；保留事件 ledger |
 | U5 | 未开始 | 逐项迁移 7 个 job；每项原子关旧开新，无双触发 |
 | U6 | 未开始 | 独立 Task Worker/service 与静态容量分区 |
 | U7 | 未开始 | quiesce/drain/OFFLINE/READY restart 协议 |
@@ -489,8 +481,8 @@ U6、U7、U8 完成前，禁止对外宣称 Bridge restart 保持业务 Session/
 - fake clock 覆盖 interval、daily 补跑、adaptive 边界、misfire 和同 slot retry。
 - slot identity 必须包含 revision；失败结果不得生成下一 slot。
 - 同 job 禁止 overlap，不同 job 允许在容量内并发。
-- Task/Event 未明确 durable ACK 时 checkpoint 不推进。
-- state CAS 冲突、旧 Worker fence、控制面不可用必须 fail-closed。
+- Task/Event 未明确 durable ACK 时，runner 的业务 cursor 不推进。
+- 控制面不可用必须 fail-closed；遗留 `RUNNING` 在启动时恢复为可立即重跑的 `IDLE`。
 
 ### 14.2 迁移回归
 
@@ -506,7 +498,7 @@ U6、U7、U8 完成前，禁止对外宣称 Bridge restart 保持业务 Session/
 预发必须分别注入以下故障：
 
 1. Scanner 扫描中 restart。
-2. Task upsert 成功、job CAS 前 restart。
+2. Task upsert 成功、job 状态更新前 restart。
 3. PR/Aone 事件写 ledger 后、发布前 restart。
 4. Scheduler crash，无正常 OFFLINE。
 5. 控制面短时不可用。
@@ -514,10 +506,10 @@ U6、U7、U8 完成前，禁止对外宣称 Bridge restart 保持业务 Session/
 
 通过标准：
 
-- Scanner 从相同 slot 与 committed checkpoint 重扫。
-- Aone/PR 更新没有被 checkpoint 越过。
+- 未完成 Scanner 对应的 `RUNNING` 被恢复为 `IDLE`，保留原计划时间并立即重跑。
+- Aone/PR 更新没有被 runner 的业务 cursor 越过。
 - 重复 Task/事件由稳定 identity 收敛。
-- 旧 Scheduler 的迟到提交被 fencing 拒绝。
+- 旧 Scheduler 完全退出后新实例才进入 READY，不存在两个 Scheduler 同时写 job 状态。
 - Task Worker PID、sentinel 和活动 Session 在 Bridge restart 前后保持不变。
 - `run.sh restart` 只在新 Scheduler READY 后返回成功。
 
@@ -526,19 +518,19 @@ U6、U7、U8 完成前，禁止对外宣称 Bridge restart 保持业务 Session/
 1. **Board 如何看调度？** 读取 `jarvis_scheduled_job` 当前态，展示 job、周期、状态、最近结果和 next due；Board 本身不是 job。
 2. **PersonaScheduler 与 ScanScheduler 是否合并？** 已合并。当前主干由 `AoneScheduler` 做 `assignedTo ∪ tracker ∪ idle-tagged work items` 并集探测；v14 只保留 `aone.scan`。
 3. **Bridge restart 是否会杀 SubAgent？** 当前会。目标方案先拆独立 Task Worker，再让 restart 只 quiesce/drain Scheduler/Scanner；U6–U8 是硬门。
-4. **Aone/PR 更新会不会在 restart 时丢失？** 目标保证不会被 checkpoint 越过：Task 或事件 ledger/outbox 必须先获得 durable ACK，再 CAS 提交 checkpoint；未知 ACK 使用相同 identity 重放。
+4. **Aone/PR 更新会不会在 restart 时丢失？** 不会依赖通用 job checkpoint：Task 或事件 ledger/outbox 必须先获得 durable ACK，runner 才推进自己的业务 cursor；未知 ACK 使用相同 identity 重放。
 
 ## 16. 最终通过条件
 
 方案实施完成必须同时满足：
 
 1. 所有生产定时职责都来自唯一 `JOBS` 注册表，不存在隐藏 sub-tick 或自建永久调度线程。
-2. 7 个 job 的 schedule、状态、next due、最近结果和恢复摘要可在 Board 查询。
-3. slot、checkpoint、next due、owner 和 state version 由单行控制面当前态恢复。
+2. 7 个 job 的 schedule、状态、next due 和最近结果可在 Board 查询。
+3. `jarvis_scheduled_job` 只保存注册定义和当前状态；遗留 `RUNNING` 可在启动时恢复为立即重跑。
 4. Aone/PR discovery 使用 at-least-once 与稳定 Task identity；事件使用稳定 ledger/outbox key。
-5. 任一未明确 durable ACK 的 Task/事件都不会被 checkpoint 越过。
-6. Scheduler restart 可中断 Scanner，但会从相同 slot 和 committed checkpoint 恢复。
+5. 任一未明确 durable ACK 的 Task/事件都不会被业务 cursor 越过。
+6. Scheduler restart 可中断 Scanner，但未完成 job 会保留原计划时间并重新执行。
 7. 独立 Task Worker 不被 Bridge restart 操作，活动 Session/SubAgent 实测不中断。
-8. 旧 Worker 无法覆盖新 Worker 状态；新实例未 READY 时 restart 不成功。
-9. Daily/PR 本地状态完成导入和双读对账后才停止读取；事件 ledger 在等价 outbox 上线前不删除。
+8. 首版只有一个活动 Scheduler；旧进程未退出或新实例未 READY 时 restart 不成功。
+9. Daily/PR 各自业务状态完成固化和双读对账后才停止读取旧文件；事件 ledger 在等价 outbox 上线前不删除。
 10. 原子切换后无旧调度入口、双触发和过期架构文档。
