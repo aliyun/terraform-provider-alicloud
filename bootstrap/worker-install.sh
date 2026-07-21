@@ -93,9 +93,11 @@ lowest_git=$(printf '%s\n2.5\n' "$git_ver" | sort -V | awk 'NR==1')
 # -pbkdf2 which requires 1.1.1+).
 command -v openssl >/dev/null 2>&1 || sudo yum install -y openssl
 ok "openssl = $(openssl version 2>&1)"
-# openssh-clients install is DEFERRED until after step 5 (creds extract) —
-# only needed if the packager shipped an ssh key. Token-mode bundles don't
-# need ssh on the worker, and AliOS minimal install omits openssh-clients.
+# jq: bootstrap/claim.sh + bootstrap/verify.sh parse Aone JSON via jq — without
+# it every claim call and every jq-check in preflight silently fails. AliOS
+# minimal install skips it.
+command -v jq >/dev/null 2>&1 || sudo yum install -y jq
+ok "jq = $(jq --version 2>&1)"
 
 # ---------------------------------------------------------------------------
 step "3. Fetch claude binary from OSS + sha256 verify"
