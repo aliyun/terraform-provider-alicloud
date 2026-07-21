@@ -31,6 +31,8 @@ trap 'rm -rf "$TMP"' EXIT
 BSENV="$TMP/bootstrap.env"   # stand-in for bootstrap/.env
 JENV="$TMP/jarvis.env"       # stand-in for bridge/jarvis.env
 : >"$BSENV"; : >"$JENV"
+chmod 600 "$BSENV" "$JENV"
+mkdir -p "$TMP/xdg"
 STUB="$TMP/stub"
 mkdir -p "$STUB"
 
@@ -126,6 +128,9 @@ PY
 run_cli() {
   JARVIS_INTERACTIVE_BOOTSTRAP_ENV="$BSENV" \
   JARVIS_INTERACTIVE_BRIDGE_ENV="$JENV" \
+  JARVIS_RUNTIME_ENV="$JENV" \
+  JARVIS_RUNTIME_CONFIG_LOADED="" \
+  XDG_CONFIG_HOME="$TMP/xdg" \
   JARVIS_CONTROL_PLANE_BASE_URL="${OVERRIDE_BASE_URL:-}" \
   JARVIS_CONTROL_PLANE_TOKEN="${OVERRIDE_TOKEN:-}" \
   JARVIS_HTML_REPORT_BASE_URL="" \

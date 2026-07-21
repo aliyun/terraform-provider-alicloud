@@ -3237,6 +3237,41 @@ class InteractiveWorkerTest(unittest.TestCase):
                     "/bin/bash %s sync 84386065 progress" % wrap_script, 2))
         self.assertIsNotNone(reason)
 
+    def test_frozen_receipt_recovery_hint_matches_operation_kind(self):
+        state = self._seed_frozen_receipt(status="UNKNOWN")
+        state["pendingOperation"]["operationId"] = "9"
+        wrap_script = worker.REPO_ROOT / "bootstrap" / "wrap.sh"
+        claim_script = worker.REPO_ROOT / "bootstrap" / "claim.sh"
+        status_script = worker.REPO_ROOT / "bootstrap" / "control-plane-status.sh"
+        hook_script = worker.REPO_ROOT / "bootstrap" / "run-interactive-worker-hook.sh"
+
+        common = (
+            "/bin/bash %s operation 9" % status_script,
+            "/bin/bash %s cli operation-reconcile 84386065" % hook_script,
+            "/bin/bash %s cli operation-abort 84386065 not-started" % hook_script,
+        )
+        expected = {
+            "comment": "/bin/bash %s sync|done|done-no-status 84386065" % wrap_script,
+            "status": "/bin/bash %s done 84386065" % wrap_script,
+            "release-tag": "/bin/bash %s release 84386065 2100304" % claim_script,
+            "finish-tag": "/bin/bash %s finish 84386065 2100304" % claim_script,
+        }
+        forbidden = {
+            "comment": ("claim.sh",),
+            "status": ("sync|done|done-no-status", "claim.sh"),
+            "release-tag": ("wrap.sh", " finish "),
+            "finish-tag": ("wrap.sh", " release "),
+        }
+        for kind, command in expected.items():
+            with self.subTest(kind=kind):
+                state["pendingOperation"]["kind"] = kind
+                hint = worker._receipt_recovery_hint(state)
+                self.assertIn(command, hint)
+                for diagnostic in common:
+                    self.assertIn(diagnostic, hint)
+                for fragment in forbidden[kind]:
+                    self.assertNotIn(fragment, hint)
+
     def test_frozen_receipt_always_allows_exact_readonly_diagnostics(self):
         self._seed_frozen_receipt(status="UNKNOWN")
         status_script = worker.REPO_ROOT / "bootstrap" / "control-plane-status.sh"

@@ -1145,13 +1145,43 @@ def _exact_operation_recovery(event: Mapping[str, Any]) -> Optional[str]:
 
 def _receipt_recovery_hint(state: Mapping[str, Any]) -> str:
     target = _external_receipt_recovery_target(state)
+    pending = state.get("pendingOperation")
     wrap_script = shlex.quote(str((REPO_ROOT / "bootstrap" / "wrap.sh").resolve()))
     claim_script = shlex.quote(str((REPO_ROOT / "bootstrap" / "claim.sh").resolve()))
+    status_script = shlex.quote(str(
+        (REPO_ROOT / "bootstrap" / "control-plane-status.sh").resolve()))
+    hook_script = shlex.quote(str(
+        (REPO_ROOT / "bootstrap" / "run-interactive-worker-hook.sh").resolve()))
     aone = target[0] if target else "<aone-id>"
     project = target[1] if target and target[1] else "<project-id>"
-    return ("/bin/bash %s sync|done|done-no-status %s … 或 "
-            "/bin/bash %s release|finish %s %s" %
-            (wrap_script, aone, claim_script, aone, project))
+    kind = (str(pending.get("kind") or "")
+            if isinstance(pending, Mapping) else "")
+    operation_id = (str(pending.get("operationId") or "").strip()
+                    if isinstance(pending, Mapping) else "")
+    rerun_by_kind = {
+        "comment": "/bin/bash %s sync|done|done-no-status %s …" %
+                   (wrap_script, aone),
+        "status": "/bin/bash %s done %s …" % (wrap_script, aone),
+        "release-tag": "/bin/bash %s release %s %s" %
+                       (claim_script, aone, project),
+        "finish-tag": "/bin/bash %s finish %s %s" %
+                      (claim_script, aone, project),
+    }
+    hints = []
+    if operation_id.isdigit():
+        hints.append("只读 point-read：/bin/bash %s operation %s" %
+                     (status_script, operation_id))
+    hints.extend((
+        "证据 readback 后 reconcile：/bin/bash %s cli operation-reconcile %s "
+        "--found <external-ref>|--not-found [--no-retry]" %
+        (hook_script, aone),
+        "确认未开始时 abort-not-started：/bin/bash %s cli operation-abort %s "
+        "not-started" % (hook_script, aone),
+    ))
+    rerun = rerun_by_kind.get(kind)
+    if rerun:
+        hints.append("按 %s 原操作安全重跑：%s" % (kind, rerun))
+    return "；".join(hints)
 
 
 def _standard_claim_hint(state: Mapping[str, Any]) -> str:
