@@ -1213,6 +1213,29 @@ class TaskBookendDispatchTest(unittest.TestCase):
         self.assertIn("release", calls)
         self.assertNotIn("finish", calls)
 
+    def test_mr_cr_links_become_clickable_at_event_outbound_boundary(self):
+        bookend = bot._TaskAoneBookend(
+            self._controller(), "999", "2100304", False, "ticket")
+        links = [
+            "https://code.example/cr/123",
+            "https://code.example/mr/456",
+        ]
+        with mock.patch.object(bot, "_aone_event_enqueue", return_value=True) as enqueue, \
+             mock.patch.object(bot, "_release_post_pr_claim"):
+            bookend.commit({
+                "outcome": "idle",
+                "reply_body": "修复已完成",
+                "mr_cr_links": links,
+            })
+        queued = enqueue.call_args.args[3]
+        self.assertEqual(
+            queued,
+            "修复已完成\n\n关联：%s" % " ".join(links))
+        public = bot._aone_event_prepare_text(queued)
+        for link in links:
+            self.assertIn("[%s](%s)" % (link, link), public)
+        self.assertNotIn("关联：https://", public)
+
     def test_suspend_writes_reply_and_returns_wait_state(self):
         out, calls = self._run(
             '[[AONE_RESULT:{"outcome":"suspend","reply_body":"@新山 请确认",'

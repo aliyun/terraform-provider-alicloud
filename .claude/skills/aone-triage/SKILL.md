@@ -120,7 +120,7 @@ bash bootstrap/aone-image-extract.sh <id>          # 附件截图→本地,skill
 - **可点击链接的唯一可靠格式 = markdown `[text](url)`**——评论区按 markdown 渲染(先例:84307546 评论 124870464 四格式对照实测,仅 markdown 链接可点);
 - 裸 URL **不 autolink**——独占一行+前后空行、或行内紧贴文字,统统渲染为不可点的死文本;
 - `<a href>` 锚标签与 `<url>` 尖括号包 URL 也不行——`<...>` 被当 HTML tag 剥掉/转义,不渲染为链接;
-- 走 `wrap.sh done` 的评论正文**同样要写 markdown 链接**——`bootstrap/aone-comment-format.sh` 只管列表项排版空行,不会帮你把裸 URL 转成链接;
+- 评论正文仍应主动写 markdown 链接；`wrap.sh` 的 `aone-comment-format.sh` 与 bridge 幂等事件发布器各自在自己的统一出站边界自动兜底裸 URL，直调 `a1 comment create` 不经过这两道闸门;
 - 详情区(description)同为 markdown 渲染,`[text](url)` 同样适用(评论与详情口径一致)。
 
 ### 5. 写操作(全部先授权 — supervised 默认模式)

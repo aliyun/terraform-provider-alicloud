@@ -637,10 +637,105 @@ def _aone_event_sanitize_text(text, limit=_AONE_EVENT_TEXT_MAX):
     value = _AONE_ACCESS_KEY_RE.sub("[REDACTED]", value)
     value = _AONE_INSTANCE_ID_RE.sub("[REDACTED]", value)
     value = re.sub(r"\n{3,}", "\n\n", value).strip()
-    max_len = max(1, int(limit))
-    if len(value) > max_len:
-        value = value[:max_len - 1].rstrip() + "…"
+    if limit is not None:
+        max_len = max(1, int(limit))
+        if len(value) > max_len:
+            value = value[:max_len - 1].rstrip() + "…"
     return value
+
+
+_AONE_BARE_URL_RE = re.compile(
+    r"https?://[^\s)\]<>\u3000-\u303f\u3400-\u9fff\uff00-\uffef]+")
+_AONE_INLINE_PROTECTED_RE = re.compile(
+    r"`[^`\n]*`|\[[^\]\n]*\]\([^\n)]*\)")
+_AONE_URL_TRAILING_PUNCTUATION = ".,;:!?。，；：！？）】、》"
+
+
+def _aone_markdown_autolink(text, limit=None):
+    """Wrap bare URLs while preserving Markdown/code and a hard output budget.
+
+    Existing Markdown links, inline code spans, and complete fenced code blocks are
+    emitted as indivisible tokens. Newly generated links are indivisible too, so a
+    length clamp can never leave a half link or an unclosed fence behind.
+    """
+    value = str(text or "")
+    tokens = []
+
+    def add_plain(part):
+        cursor = 0
+        for match in _AONE_BARE_URL_RE.finditer(part):
+            if match.start() > cursor:
+                tokens.append((part[cursor:match.start()], False))
+            raw = match.group(0)
+            url = raw.rstrip(_AONE_URL_TRAILING_PUNCTUATION)
+            suffix = raw[len(url):]
+            if url:
+                tokens.append(("[%s](%s)" % (url, url), True))
+            if suffix:
+                tokens.append((suffix, False))
+            cursor = match.end()
+        if cursor < len(part):
+            tokens.append((part[cursor:], False))
+
+    def add_inline(line):
+        cursor = 0
+        for match in _AONE_INLINE_PROTECTED_RE.finditer(line):
+            if match.start() > cursor:
+                add_plain(line[cursor:match.start()])
+            tokens.append((match.group(0), True))
+            cursor = match.end()
+        if cursor < len(line):
+            add_plain(line[cursor:])
+
+    lines = value.splitlines(keepends=True)
+    fence = []
+    in_fence = False
+    for line in lines:
+        is_marker = line.strip().startswith("```")
+        if in_fence:
+            fence.append(line)
+            if is_marker:
+                tokens.append(("".join(fence), True))
+                fence = []
+                in_fence = False
+            continue
+        if is_marker:
+            fence = [line]
+            in_fence = True
+            continue
+        add_inline(line)
+    if fence:
+        # An incomplete input fence stays atomic; clamping omits it instead of emitting
+        # an opening fence with no close.
+        tokens.append(("".join(fence), True))
+
+    if limit is None:
+        return "".join(part for part, _protected in tokens)
+
+    max_len = max(1, int(limit))
+    output = []
+    used = 0
+    for part, protected in tokens:
+        if used + len(part) <= max_len:
+            output.append(part)
+            used += len(part)
+            continue
+        remaining = max_len - used
+        if not protected and remaining > 0:
+            if remaining == 1:
+                output.append("…")
+            else:
+                output.append(part[:remaining - 1].rstrip() + "…")
+        elif remaining > 0:
+            output.append("…")
+        break
+    return "".join(output).rstrip()
+
+
+def _aone_event_prepare_text(text, limit=_AONE_EVENT_TEXT_MAX):
+    """Sanitize, autolink, then clamp without splitting Markdown tokens."""
+    clean = _aone_event_sanitize_text(text, limit=None)
+    return _aone_markdown_autolink(clean, limit=limit)
 
 
 def _aone_revisit_summary(text):
@@ -834,7 +929,7 @@ def _aone_event_publish_digest(ticket, project, event_digest, text,
     project = str(project or "")
     event_digest = str(event_digest or "").strip()
     identity = str(identity or PERSONA_PUBLIC_IDENTITY).strip() or PERSONA_PUBLIC_IDENTITY
-    text = _aone_event_sanitize_text(text)
+    text = _aone_event_prepare_text(text)
     if (not ticket.isdigit() or not project
             or not _AONE_EVENT_DIGEST_RE.fullmatch(event_digest) or not text):
         return False
@@ -864,7 +959,7 @@ def _aone_event_publish_digest(ticket, project, event_digest, text,
             record["ticket"] = ticket
             record["project"] = project
             record["event_digest"] = event_digest
-            record["text"] = _aone_event_sanitize_text(record.get("text") or text)
+            record["text"] = _aone_event_prepare_text(record.get("text") or text)
             record["marker"] = marker
             record["allow_non_tf"] = bool(
                 record.get("allow_non_tf") or allow_non_tf)
