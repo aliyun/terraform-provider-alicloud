@@ -272,6 +272,40 @@ class ClientContractTest(unittest.TestCase):
         self.assertEqual(headers(opener.calls[1][0])["idempotency-key"],
                          "source-status-42")
 
+    def test_external_operation_recovery_uses_dedicated_page_and_token_paths(self):
+        opener = RecordingOpener(responses=[
+            FakeResponse({"items": [], "nextAfterOperationId": None, "hasMore": False}),
+            FakeResponse({"proceed": True}), FakeResponse({"proceed": True}),
+            FakeResponse({"status": "UNKNOWN"}),
+        ])
+        client = self.make(opener)
+
+        page = client.list_external_operation_recovery_candidates(
+            after_operation_id=12, limit=30)
+        client.lease_operation_recovery(44, "worker-1", "token-1", request_id="lease")
+        client.renew_operation_recovery(44, "worker-1", "token-1", request_id="renew")
+        client.release_operation_recovery(44, "worker-1", "token-1", request_id="release")
+
+        self.assertFalse(page["hasMore"])
+        paths = [call[0].full_url.rsplit("/api/jarvis/v1/", 1)[1]
+                 for call in opener.calls]
+        self.assertEqual(paths, [
+            "operations/external-recovery-candidates?afterOperationId=12&limit=30",
+            "operations/recovery/lease", "operations/recovery/renew",
+            "operations/recovery/release",
+        ])
+        for request, _timeout in opener.calls[1:]:
+            self.assertEqual(body(request), {
+                "operationId": 44,
+                "workerKey": "worker-1",
+                "recoveryToken": "token-1",
+            })
+
+        with self.assertRaises(ValueError):
+            client.list_external_operation_recovery_candidates(after_operation_id=-1)
+        with self.assertRaises(ValueError):
+            client.list_external_operation_recovery_candidates(limit=501)
+
     def test_pending_wait_query_validates_keyset_bounds(self):
         c = self.make(RecordingOpener())
         with self.assertRaises(ValueError):

@@ -147,3 +147,11 @@ nothing.
 Operation receipts protect writes that are unsafe to replay blindly, such as
 Aone state/comments, PR/CR mutations, notifications, and formal external
 triggers.  Internal reads and ordinary subprocess steps are not Operations.
+
+Required Aone receipts left `UNKNOWN` are recovered from the control-plane
+`external-recovery-candidates` read model, never from local `orphanOperations`.
+Only the scheduler-role bridge runs `ExternalOperationRecoveryScheduler`. It
+leases one receipt with a stable per-worker/per-operation token, renews around
+the Aone read, and checks comment digest, exact status, or the complete tag
+postcondition. A definite found/not-found result is reconciled; unavailable or
+ambiguous readback releases the lease without any Aone write.
