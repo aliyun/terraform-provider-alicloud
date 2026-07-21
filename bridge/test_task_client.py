@@ -89,6 +89,33 @@ class TaskEnvelopeTest(unittest.TestCase):
         self.assertEqual(data["sourceStatus"], "处理中")
         self.assertNotIn("persona", data)
 
+    def test_blank_source_status_is_omitted_from_body(self):
+        # An empty/whitespace source_status normalizes to None and is omitted from
+        # the serialized body (so the control plane first-insert does not persist
+        # NULL). The interactive direct claim must therefore carry a non-empty
+        # pre-claim status to avoid the "需要处理" misclassification.
+        env = TaskEnvelope(
+            task_key="aone:2100304:84345050",
+            source_type="AONE",
+            source_ref={"project_id": "2100304", "workitem_id": "84345050"},
+            task_type="ticket",
+            desired_revision="r1",
+            payload={"item_id": "84345050"},
+        )
+        self.assertIsNone(env.source_status)
+        self.assertNotIn("sourceStatus", env.to_dict())
+        env_blank = TaskEnvelope(
+            task_key="aone:2100304:84345050",
+            source_type="AONE",
+            source_ref={"project_id": "2100304", "workitem_id": "84345050"},
+            task_type="ticket",
+            desired_revision="r1",
+            payload={"item_id": "84345050"},
+            source_status="   ",
+        )
+        self.assertIsNone(env_blank.source_status)
+        self.assertNotIn("sourceStatus", env_blank.to_dict())
+
     def test_request_id_is_stable(self):
         env = envelope()
         first = env.request_id("upsert")

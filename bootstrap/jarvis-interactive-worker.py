@@ -2216,7 +2216,8 @@ def _resume_codex_turn(store: StateStore,
         try:
             resumed = prepare_claim(
                 str(pending_claim["aoneId"]), str(pending_claim["projectId"]),
-                str(pending_claim.get("title") or ""))
+                str(pending_claim.get("title") or ""),
+                str(pending_claim.get("sourceStatus") or ""))
         except ControlPlaneConflict:
             with store.locked():
                 latest = store.load_unlocked()
@@ -2922,10 +2923,12 @@ def _same_current_assignment(state: Mapping[str, Any], worker_key: Any,
             and str(current.get("fenceToken")) == str(expected.get("fenceToken")))
 
 
-def prepare_claim(aone_id: str, project_id: str, title: str = "") -> Dict[str, Any]:
+def prepare_claim(aone_id: str, project_id: str, title: str = "",
+                  source_status: str = "") -> Dict[str, Any]:
     aone_id = _nonblank(aone_id, "aone_id")
     project_id = _nonblank(project_id, "project_id")
     title = str(title or "").strip()
+    source_status = str(source_status or "").strip()
     store = _current_store()
     cp = _client()
     with store.locked():
@@ -2964,6 +2967,15 @@ def prepare_claim(aone_id: str, project_id: str, title: str = "") -> Dict[str, A
         stable_title = (
             str(existing_claim.get("title") or "")
             if same_inflight and "title" in existing_claim else title)
+        # source_status follows the same freeze contract: claim.sh reads the Aone
+        # workitem status BEFORE advancing it, so the first non-blank observation is
+        # the pre-claim state. A lost-response retry must resend the identical body
+        # (and the claim request id is already frozen for the same inflight), so the
+        # retry reuses the frozen sourceStatus instead of a freshly read value that
+        # may have moved (e.g. status advanced to 处理中 after the first claim).
+        stable_source_status = (
+            str(existing_claim.get("sourceStatus") or "")
+            if same_inflight and "sourceStatus" in existing_claim else source_status)
         claim_request_id = (
             str(existing_claim["claimRequestId"]) if same_inflight else
             "jarvis-interactive-claim-%s" % hashlib.sha256(
@@ -2974,6 +2986,7 @@ def prepare_claim(aone_id: str, project_id: str, title: str = "") -> Dict[str, A
             "aoneId": aone_id,
             "projectId": project_id,
             "title": stable_title,
+            "sourceStatus": stable_source_status,
             "cycle": cycle,
             "runtimeSessionId": runtime_id,
             "phase": "CLAIMING",
@@ -3005,6 +3018,7 @@ def prepare_claim(aone_id: str, project_id: str, title: str = "") -> Dict[str, A
         },
         recovery_policy="REPLAY_SAFE",
         aone_id=aone_id,
+        source_status=stable_source_status,
         required_capabilities={"workerKey": state["workerKey"]},
     )
     lease_seconds = _interactive_lease_seconds()
@@ -3781,6 +3795,7 @@ def _parser() -> argparse.ArgumentParser:
     claim_parser.add_argument("aone_id")
     claim_parser.add_argument("project_id")
     claim_parser.add_argument("title", nargs="?", default="")
+    claim_parser.add_argument("source_status", nargs="?", default="")
     ack_parser = sub.add_parser("operation-ack")
     ack_parser.add_argument("aone_id")
     ack_parser.add_argument("external_ref")
@@ -3876,7 +3891,8 @@ def main(argv: Optional[list[str]] = None) -> int:
         if args.command == "daemon":
             return daemon(Path(args.state), args.worker_key)
         if args.command == "prepare-claim":
-            _print_json(prepare_claim(args.aone_id, args.project_id, args.title))
+            _print_json(prepare_claim(args.aone_id, args.project_id, args.title,
+                                      args.source_status))
         elif args.command == "operation-ack":
             _print_json(acknowledge_claim(args.aone_id, args.external_ref))
         elif args.command == "operation-fail":

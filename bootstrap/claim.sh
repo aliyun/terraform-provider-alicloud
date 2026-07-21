@@ -533,7 +533,13 @@ case "$cmd" in
         }
         if _is_interactive_context; then
             interactive_title="$(_get_workitem_title "$workitem_id" || true)"
-            interactive_prepare="$(_interactive_worker prepare-claim "$workitem_id" "$project_id" "$interactive_title")"
+            # Capture the Aone status displayValue BEFORE _claim_tag_update /
+            # _advance_status mutate it, so the interactive direct claim reports the
+            # pre-claim source_status in the canonical TaskEnvelope. Best-effort like
+            # title: an empty read degrades to omitting sourceStatus (no NULL write
+            # beyond what already exists) and never blocks the claim flow.
+            interactive_status="$(_get_status "$workitem_id" || true)"
+            interactive_prepare="$(_interactive_worker prepare-claim "$workitem_id" "$project_id" "$interactive_title" "$interactive_status")"
             interactive_rc=$?
             if [ "$interactive_rc" -ne 0 ]; then
                 if [ "$interactive_rc" -eq 10 ]; then
