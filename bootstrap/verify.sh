@@ -50,7 +50,7 @@ chk_skill() {
 # All roles run the same full tool + credential check set. Workers used to
 # SKIP gh/aliyun/cloudspec as "dev-only", but worker Tasks do the same
 # triage/PR work as the scheduler host — a worker without gh + aliyun creds
-# silently loses the GitHub escalation path and OpenAPI 查证. Both now install
+# silently loses the GitHub delivery path and OpenAPI 查证. Both now install
 # sudo-free from pinned tarballs on Linux (deps.lock), and cloudspec is a
 # WARN-not-FAIL below, so there is no install-cost reason left to skip.
 repo_root="$(git rev-parse --show-toplevel)"
@@ -62,8 +62,8 @@ chk gh gh
 chk aliyun aliyun
 # cloudspec CLI: upstream install endpoint (acube.aliyun-inc.com) currently
 # returns HTTP 500 for all known versions — install.sh downloads an empty
-# zip and unzip fails. Downgrade to WARN so preflight isn't blocked; drop
-# an idempotent escalation note so the missing binary stays visible.
+# zip and unzip fails. Downgrade to WARN so preflight isn't blocked; the
+# warning includes the repair command.
 # Once upstream is healthy again, `bootstrap/install.sh` will pick it up
 # and the WARN turns back into PASS on next preflight.
 if command -v cloudspec >/dev/null 2>&1; then
@@ -71,35 +71,14 @@ if command -v cloudspec >/dev/null 2>&1; then
 else
     echo "WARN cloudspec — acube 上游缺 Linux 产物(cloudspec-linux-*.zip 全版本 500「下载失败」, mac 包正常); CloudSpec IDL 相关 Task 会缺 CLI 支持"
     echo "     修复: 跑 bash bootstrap/cloudspec-build-linux.sh 源码构建(官方 Linux 路径, 全程几分钟), 或等上游补产物后 preflight 自动装; 文档: https://aliyuque.antfin.com/cloudspec/model/cli-install"
-    esc_dir="${JARVIS_ESCALATION_DIR:-$repo_root/escalation}"
-    esc_file="$esc_dir/cloudspec-install-broken-$(date -u +%F).md"
-    if [ ! -f "$esc_file" ]; then
-        mkdir -p "$esc_dir"
-        {
-            echo "# cloudspec CLI 装机失败 — $(date -u +%F)"
-            echo ""
-            echo "## 现象"
-            echo "acube 下载端点 (\`acube.aliyun-inc.com/api/v1/cloudspec/cli/download/<ver>?file=cloudspec-linux-<arch>.zip\`) 对**所有版本、所有架构的 Linux 包**统一返回 HTTP 500（body=「下载失败:<ver>」）；同端点 mac 包正常（1.1.39 实测 200/47MB）。判定：上游从未发布 Linux 构建产物。"
-            echo ""
-            echo "## 影响面"
-            echo "只影响需要本地 \`cloudspec\` CLI 的 CloudSpec IDL 编辑/校验/build 类 Task。其他 Task 类型不受影响。故 verify 记 WARN 不硬失败。"
-            echo ""
-            echo "## 修复选项"
-            echo "1. \`bash bootstrap/cloudspec-build-linux.sh\` 源码构建（官方 Linux 路径：clone cloudspec/cloudspec-cli + pyinstaller，全程几分钟，装到 ~/.local）。"
-            echo "2. 上游补 Linux 产物后 \`bash bootstrap/install.sh\` 自动装（deps.lock 免 sudo 流程已就位：zip → ~/.local/opt/cloudspec + symlink）。"
-            echo "3. 文档: https://aliyuque.antfin.com/cloudspec/model/cli-install"
-        } > "$esc_file"
-        echo "     已落 escalation 提示: $esc_file"
-    fi
 fi
 
 # Check credentials (each independent PASS/FAIL)
 chk_cred aliyun "aliyun sts GetCallerIdentity"
 chk_cred a1 "a1 auth whoami"
 # GitHub token daily check — WARN, NOT FAIL. A stale/missing JARVIS_GITHUB_TOKEN only
-# blocks the GitHub escalation path (PR/评论/推分支); it must not fail preflight and
-# thereby block Aone-only work. So we print a WARN line, do NOT increment fail_count,
-# and drop an idempotent escalation note so the stale token stays visible/actionable.
+# blocks the GitHub delivery path (PR/评论/推分支); it must not fail preflight and
+# thereby block Aone-only work. So we print a WARN line and do NOT increment fail_count.
 # (github-identity.sh check itself is unchanged — it stays a hard gate at use time.)
 # Auto-source .env if JARVIS_GITHUB_TOKEN not yet in environment (gh#78).
 if [ -z "${JARVIS_GITHUB_TOKEN:-}" ] && [ -f "$repo_root/bootstrap/.env" ]; then
@@ -111,33 +90,13 @@ if "$repo_root/bootstrap/github-identity.sh" check >/dev/null 2>&1; then
 else
     echo "WARN jarvis-github-token — JARVIS_GITHUB_TOKEN 失效/缺失；GitHub 升级路径(PR/评论/推分支)会被阻断，Aone-only 工作不受影响"
     echo "     修复: 刷新 api-tool-agent 的 GitHub token，更新 bootstrap/.env 的 JARVIS_GITHUB_TOKEN(或其环境来源)，再跑 bootstrap/github-identity.sh check 复验"
-    esc_dir="${JARVIS_ESCALATION_DIR:-$repo_root/escalation}"
-    esc_file="$esc_dir/github-token-invalid-$(date -u +%F).md"
-    if [ ! -f "$esc_file" ]; then
-        mkdir -p "$esc_dir"
-        {
-            echo "# GitHub token 失效/缺失 — $(date -u +%F)"
-            echo ""
-            echo "## 现象"
-            echo "\`bootstrap/verify.sh\` 的 GitHub token 日检失败：\`bootstrap/github-identity.sh check\` 非零退出（JARVIS_GITHUB_TOKEN 过期 401 或缺失）。"
-            echo ""
-            echo "## 影响面"
-            echo "仅阻断 GitHub 升级路径（terraform-provider-alicloud PR/评论/推分支，head=api-tool-agent:<branch>）。Aone-only 工作不受影响，故 verify 记 WARN 不硬失败。"
-            echo ""
-            echo "## 修复步骤"
-            echo "1. 用 api-tool-agent 账号刷新 GitHub token（需 repo/workflow 权限）。"
-            echo "2. 更新 \`bootstrap/.env\` 的 \`JARVIS_GITHUB_TOKEN\`（或其环境来源），确保 \`GH_TOKEN=\$JARVIS_GITHUB_TOKEN gh api user --jq .login\` 返回 \`api-tool-agent\`。"
-            echo "3. 复验：\`bootstrap/github-identity.sh check\` 应打印 \`api-tool-agent\` 并退 0。"
-        } > "$esc_file"
-        echo "     已落 escalation 提示: $esc_file"
-    fi
 fi
 
 # a1 (jarvis identity) login-state daily check — WARN, NOT FAIL. Mirrors the
 # GitHub-token check above: a dead/expired a1 session only blocks a1-backed Aone
-# writes (aone-triage 回复/建单、wrap.sh、claim/scan/reconcile — all go through
+# writes (aone-triage 回复/建单、wrap.sh、claim/scan — all go through
 # bin/a1id); it must not fail preflight and thereby block non-a1 work. So we WARN,
-# do NOT increment fail_count, and drop an idempotent escalation note.
+# do NOT increment fail_count.
 # OK iff `bin/a1id -- auth whoami` yields Account == WORKER_1782379562571 (jarvis).
 # 空/报错(过期会话) 或 半死(EmpID 在但 Account 空) → WARN. Parser matches bin/a1id.
 a1id_bin="${JARVIS_A1ID:-$repo_root/bin/a1id}"
@@ -150,26 +109,6 @@ if [ "$a1_account" = "$a1_expect" ]; then
 else
     echo "WARN jarvis-a1-session — a1 jarvis 登录态失效/缺失(whoami Account='${a1_account:-<空>}' != $a1_expect)；a1 相关 Aone 写(triage 回复/建单/wrap)会被阻断，非 a1 工作不受影响"
     echo "     修复: 浏览器 BUC 登 open_jarvis 后 bin/a1id login jarvis，再跑 bin/a1id -- auth whoami 复验 Account=$a1_expect"
-    esc_dir="${JARVIS_ESCALATION_DIR:-$repo_root/escalation}"
-    esc_file="$esc_dir/a1-session-expired-$(date -u +%F).md"
-    if [ ! -f "$esc_file" ]; then
-        mkdir -p "$esc_dir"
-        {
-            echo "# a1 jarvis 登录态失效/缺失 — $(date -u +%F)"
-            echo ""
-            echo "## 现象"
-            echo "\`bootstrap/verify.sh\` 的 a1 登录态日检失败：\`bin/a1id -- auth whoami\` 的 Account 字段为空或非 jarvis 账号（期望 \`$a1_expect\`）。过期会话（报错/非零退出）与半死会话（EmpID 在、Account 空）均命中。"
-            echo ""
-            echo "## 影响面"
-            echo "仅阻断 a1 相关 Aone 写路径（aone-triage 回复/建单、wrap.sh sync/done、claim/scan/reconcile 走 bin/a1id）。非 a1 工作不受影响，故 verify 记 WARN 不硬失败。"
-            echo ""
-            echo "## 修复步骤"
-            echo "1. 浏览器登 BUC（https://buc.alibaba-inc.com/）为 open_jarvis 账号。"
-            echo "2. 跑 \`bin/a1id login jarvis\`（走 BUC SSO，落盘 jarvis 身份）。"
-            echo "3. 复验：\`bin/a1id -- auth whoami\` 应打印 \`Account: $a1_expect\` 并退 0。"
-        } > "$esc_file"
-        echo "     已落 escalation 提示: $esc_file"
-    fi
 fi
 
 # Check vendored skills

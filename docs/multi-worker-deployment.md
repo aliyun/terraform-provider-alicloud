@@ -135,7 +135,7 @@ file in place).
 
 ### C. Fleet knowledge
 
-Record which hosts run scheduler vs worker in `escalation/` or a team runbook,
+Record which hosts run scheduler vs worker in a team runbook or deployment inventory,
 so an operator knows never to accidentally start `JARVIS_BRIDGE_ROLE=scheduler`
 on a worker host (would create dual Task producers).
 
@@ -330,12 +330,11 @@ git pull --ff-only
 systemctl --user restart jarvis-worker
 ```
 
-## Cross-host orphan detection
+## Cross-host interrupted-session detection
 
-`bootstrap/coord.sh` uses `kill -0 <pid>` to test liveness, which is
-same-host only. It is **not** the multi-host orphan-detection mechanism.
-Instead, cross-host recovery goes through two channels already implemented
-in the control plane (`docs/execution-architecture.md`):
+Worker/Task/Session state in the control plane is the only coordination truth;
+there is no local PID-based coord fallback. Cross-host recovery goes through
+two channels already implemented in the control plane (`docs/execution-architecture.md`):
 
 1. **Fast channel**: bridge scheduler's tick watches `/workers` for
    STALE/OFFLINE Workers and remembers their assignments.

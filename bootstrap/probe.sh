@@ -17,10 +17,9 @@
 #                                     默认扫场景 resources 并集;--all=website/docs/r 全量轮换巡检)
 #   run <scenario-id> [--region r] [--dry] [--keep] — tier-1 真实 apply 生命周期探测
 #   sweep                           — 扫 .my-day/probe/*/terraform.tfstate 报告残留 state
-#   archive [--dry]                 — 幂等归档:draft filed/rejected → drafts_archived/;
-#                                     verdict retention → runs/probe/archive/<YYYYMM>/(排 ledger/summary);
+#   archive [--dry]                 — 幂等归档:verdict retention → runs/probe/archive/<YYYYMM>/(排 ledger/summary);
 #                                     .my-day/probe/<ts-sid> 空 state 且过期 → rm(排 .plugin-cache/manual-*/索引文件);
-#                                     plugin-cache 陌生版本报体积;pending drafts + _quarantine + origin:generated 待办清单
+#                                     plugin-cache 陌生版本报体积;_quarantine + origin:generated 待办清单
 #
 # 退出码(run/tier0):0=无 findings;1=有 findings;2=runner 自身错误/env 阻断;3=清理失败(run 专属,最高优先级人工介入)。
 #
@@ -1723,7 +1722,7 @@ _drift_expand_placeholders() {
 }
 
 # ════════════════════════════════════════════════════════════════════
-# A1 archive [--dry] — 幂等归档(draft/verdict retention/workdir gc/plugin-cache 报告/待办清单)
+# A1 archive [--dry] — 幂等归档(verdict retention/workdir gc/plugin-cache 报告/待办清单)
 # ════════════════════════════════════════════════════════════════════
 # 判老:优先 JSON started_at,缺则文件 mtime。返回 epoch(0=解析失败,视为未老,不动)。
 _archive_verdict_epoch() {
@@ -1734,53 +1733,6 @@ _archive_verdict_epoch() {
         [ -n "$v" ] && [ "$v" != "0" ] && echo "$v" && return
     fi
     stat -c %Y "$f" 2>/dev/null || stat -f %m "$f" 2>/dev/null || echo 0
-}
-
-# _draft_status <path> — 抽 frontmatter status 值(小写),缺失/坏文件回空。
-_draft_status() {
-    local f="$1"
-    awk 'NR==1 && $0=="---" {infm=1; next}
-         infm && $0=="---" {exit}
-         infm && /^[[:space:]]*status[[:space:]]*:/ { sub(/^[[:space:]]*status[[:space:]]*:[[:space:]]*/,""); gsub(/"|'"'"'/,""); sub(/[[:space:]]+$/,""); print tolower($0); exit }' "$f" 2>/dev/null
-}
-
-# _archive_drafts <dry> — draft 归档;stdout 打印摘要;stderr 打印每项动作。写入全局 __ARCH_MOVED_DRAFTS(计数)。
-__ARCH_MOVED_DRAFTS=0
-__ARCH_PENDING_DRAFTS=""
-_archive_drafts() {
-    local dry="$1"
-    local root drafts arc dest st f base
-    root="$(probe_root)"
-    drafts="$root/$(cfg_or '.paths.drafts' 'escalation/probe-drafts')"
-    arc="$root/$(cfg_or '.paths.drafts_archived' 'escalation/probe-drafts/archived')"
-    [ -d "$drafts" ] || { echo "  drafts: 无 $drafts 目录,跳过"; return 0; }
-    [ "$dry" = "0" ] && mkdir -p "$arc" 2>/dev/null
-    __ARCH_MOVED_DRAFTS=0
-    __ARCH_PENDING_DRAFTS=""
-    shopt -s nullglob
-    for f in "$drafts"/*.md; do
-        base="$(basename "$f")"
-        [ "$base" = ".gitkeep" ] && continue
-        st="$(_draft_status "$f")"
-        case "$st" in
-            filed|rejected|rejected-*)
-                __ARCH_MOVED_DRAFTS=$((__ARCH_MOVED_DRAFTS+1))
-                if [ "$dry" = "1" ]; then
-                    echo "  DRY draft mv: $base → archived/ (status=$st)" >&2
-                else
-                    mv -f "$f" "$arc/$base" 2>/dev/null && echo "  draft mv: $base → archived/ (status=$st)" >&2
-                fi
-                ;;
-            pending-review|pending)
-                __ARCH_PENDING_DRAFTS="$__ARCH_PENDING_DRAFTS $base"
-                ;;
-            *)
-                # 空/未知 status 留原地,进 pending 清单
-                __ARCH_PENDING_DRAFTS="$__ARCH_PENDING_DRAFTS $base"
-                ;;
-        esac
-    done
-    echo "  drafts: moved=$__ARCH_MOVED_DRAFTS pending=$(printf '%s' "$__ARCH_PENDING_DRAFTS" | wc -w | tr -d ' ')"
 }
 
 # _archive_verdicts <dry> — verdict retention;写 __ARCH_MOVED_VERDICTS。
@@ -1899,18 +1851,10 @@ _archive_plugin_cache_report() {
     echo "  plugin-cache: 陌生版本=$hits(只报体积不删,人工评估)"
 }
 
-# _archive_todos — 待办清单(pending drafts / _quarantine / origin: generated 未校订)
+# _archive_todos — 待办清单(_quarantine / origin: generated 未校订)
 _archive_todos() {
-    local root pgroot d y n qc qdir base
-    root="$(probe_root)"
+    local pgroot d y n qc qdir
     pgroot="$(probe_playground_dir)"
-    # pending-review drafts
-    local pend
-    pend="$(echo "$__ARCH_PENDING_DRAFTS" | tr ' ' '\n' | grep . || true)"
-    if [ -n "$pend" ]; then
-        echo "  TODO drafts pending-review:"
-        while IFS= read -r base; do [ -n "$base" ] && echo "    - $base"; done <<< "$pend"
-    fi
     # playground _quarantine
     qdir="$pgroot/_quarantine"
     qc=0
@@ -1943,7 +1887,6 @@ _cmd_archive() {
         esac
     done
     if [ "$dry" = "1" ]; then echo "archive plan (dry-run,不做真操作):"; else echo "archive run:"; fi
-    _archive_drafts    "$dry"
     _archive_verdicts  "$dry"
     _archive_workdir_gc "$dry"
     _archive_plugin_cache_report
@@ -1951,9 +1894,8 @@ _cmd_archive() {
     # A2 ledger:archive 追加一行(dry 也追加,便于审计;dry 用 kind:"archive_dry")
     local kind; [ "$dry" = "1" ] && kind="archive_dry" || kind="archive"
     _ledger_append \
-        '{ts:$ts, kind:$k, moved:{drafts:$md, verdicts:$mv, workdirs:$mw}}' \
+        '{ts:$ts, kind:$k, moved:{verdicts:$mv, workdirs:$mw}}' \
         --arg k "$kind" \
-        --argjson md "$__ARCH_MOVED_DRAFTS" \
         --argjson mv "$__ARCH_MOVED_VERDICTS" \
         --argjson mw "$__ARCH_MOVED_WORKDIRS"
     return 0

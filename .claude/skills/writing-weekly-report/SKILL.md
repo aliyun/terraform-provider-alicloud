@@ -47,7 +47,7 @@ description: 写周报/月报/工作汇报技能。覆盖触发：用户说"写�
 
 ```bash
 git log --since="YYYY-MM-DD" --pretty=format:"%h %ad %s" --date=short --no-merges
-ls -lat runs/ escalation/
+ls -lat runs/
 bootstrap/week.sh   # 优先,基于 Aone jarvis-done 真源
 ```
 

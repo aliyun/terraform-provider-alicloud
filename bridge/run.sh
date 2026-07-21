@@ -19,7 +19,7 @@
 # 可覆盖(测试/部署): JARVIS_BRIDGE_PYTHON(默认 python3) JARVIS_BRIDGE_BOT(默认本目录 bot)
 #   JARVIS_BRIDGE_STATE_DIR(默认 <repo>/.my-day/bridge) JARVIS_BRIDGE_BOOTSTRAP_ENV
 #   JARVIS_BRIDGE_ENV JARVIS_BRIDGE_START_WAIT(默认 2s) JARVIS_BRIDGE_STOP_WAIT / JARVIS_STOP_GRACE
-#   (stop 宽限秒数, 默认 30s) JARVIS_BRIDGE_NO_COORD(=1 跳过 coord/heartbeat 注册)。
+#   (stop 宽限秒数, 默认 30s)。
 #   JARVIS_BRIDGE_SUPERVISOR=launchd 时 start/stop/restart/status 委托给 launchctl；可覆盖
 #   JARVIS_BRIDGE_LAUNCHCTL、JARVIS_BRIDGE_LAUNCHD_LABEL/DOMAIN/PLIST（测试/定制安装）。
 set -uo pipefail
@@ -159,18 +159,6 @@ _mode_from_log() {  # infer running mode from the latest mode-defining banner in
     '')                printf 'unknown' ;;
     *)                 printf '全功能(dingtalk)' ;;
   esac
-}
-
-# -- coord/heartbeat: keep the always-on bridge visible to the watchdog ----
-# (aone-triage.md §0: dispatch 实例只做心跳/checkpoint 供 watchdog 监控存活)。
-# Best-effort, non-fatal; skipped when JARVIS_BRIDGE_NO_COORD=1 or coord.sh absent.
-_register_coord() {
-  [ "${JARVIS_BRIDGE_NO_COORD:-}" = "1" ] && return 0
-  local coord="$REPO_ROOT/bootstrap/coord.sh" hb="$REPO_ROOT/bootstrap/heartbeat.sh" pid="$1" id
-  [ -f "$coord" ] || return 0
-  id="$(bash "$coord" register dispatch "$pid" 2>/dev/null || true)"
-  [ -n "$id" ] && [ -f "$hb" ] && nohup bash "$hb" "$id" "$pid" >/dev/null 2>&1 &
-  return 0
 }
 
 # -- launchd supervisor ----------------------------------------------------
@@ -327,8 +315,6 @@ cmd_start() {
   nohup "$PYTHON" "$BOT" >>"$LOG" 2>&1 &
   local newpid=$!
   printf '%s\n' "$newpid" >"$PIDFILE"
-  _register_coord "$newpid"
-
   sleep "$START_WAIT"
 
   if ! _alive "$newpid"; then
@@ -384,13 +370,13 @@ cmd_stop() {
   fi
   # 发 SIGTERM → bot 的 _graceful_stop handler 整树杀在跑 worker(进程组)+ release 其 claim
   # (全功能与降级两模式均注册)。宽限 STOP_WAIT 秒等 bot 自清, 超时才 SIGKILL 兜底(此时 worker
-  # 可能遗留, 由 reconcile 收敛僵尸 claim)。
+  # 可能遗留，由控制面 lease/reaper 与 AoneScheduler 收敛)。
   say "停止 bridge (pid $pid): 发 SIGTERM (bot 自杀 worker + release claim), 宽限 ${STOP_WAIT}s…"
   kill -TERM "$pid" 2>/dev/null || true
   local i=0 deadline=$(( STOP_WAIT * 10 ))
   while [ "$i" -lt "$deadline" ] && _alive "$pid"; do sleep 0.1; i=$((i + 1)); done
   if _alive "$pid"; then
-    say "TERM ${STOP_WAIT}s 未退 → SIGKILL 兜底(worker 清理可能不全, reconcile 收敛)。"
+    say "TERM ${STOP_WAIT}s 未退 → SIGKILL 兜底(worker 清理可能不全, 控制面 reaper 收敛)。"
     kill -KILL "$pid" 2>/dev/null || true
     sleep 0.2
     rm -f "$PIDFILE"
@@ -449,7 +435,6 @@ cmd_daemon() {
   local mode
   if _decide_mode; then mode="full"; else mode="degraded"; fi
   say "bridge foreground daemon 启动 (mode=$mode, role=${JARVIS_BRIDGE_ROLE:-scheduler}, pid=$$): $PYTHON $BOT"
-  _register_coord "$$"
   exec "$PYTHON" "$BOT"
 }
 

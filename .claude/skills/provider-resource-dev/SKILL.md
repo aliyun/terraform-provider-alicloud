@@ -14,7 +14,7 @@ description: Use when DEVELOPING, DIAGNOSING, or FIXING an alicloud Terraform pr
 ## 工具/路径
 - 工作区一律通过 `bootstrap/workspace.sh dir <key>` 解析;provider key=`terraform_provider`;acube key=`acube`;生成器 key=`terraform_generator_v4`。
 - cspec 仓 `cloudspec-model/<Product>_pop_*`;provider upstream=aliyun;Jarvis 提交 GitHub PR/评论/推分支必须使用 `JARVIS_GITHUB_TOKEN` 对应的 `api-tool-agent` 身份,head=`api-tool-agent:<branch>`;acube/terraform-generator-v4 见 `config/workspaces.json`。
-- Acube 在线生成工具: `tools/acube_terraform_generate.py`(注:tools/ 是 repo 顶层的 Python 工具目录,不在 skill scripts/ 内,是为便于跨会话共享 + 测试独立;归属见 escalation/archived/cap-repo-structure-cleanup.md P6)。
+- Acube 在线生成工具: `tools/acube_terraform_generate.py`(tools/ 是 repo 顶层的 Python 工具目录,不在 skill scripts/ 内,便于跨会话共享 + 独立测试)。
 - 生成差异/语义检查工具: `tools/terraform_generated_diff.py`(同上)。
 - **错误码语义查证**(客户 acc/apply 报错、retry 白名单决策):读 `.claude/skills/aone-triage/references/aliyun-error-code-lookup.md`(跨 skill 复用,给定 product+code 出 HTTP/中英 message/官方 retry 建议/相邻错误码)。
 - **镇元查证与路由分支**(诊断资源在哪一层缺、按决策树选执行分支):读 `references/zhenyuan-verification.md`(跨 skill 单点维护:aone-triage tf-customer 路由与本 skill 资源开发都读它)。
@@ -52,7 +52,7 @@ description: Use when DEVELOPING, DIAGNOSING, or FIXING an alicloud Terraform pr
    - 常用真实化手段:`kms_encrypted_password` → `alicloud_kms_ciphertext` 真密文(先例 `resource_alicloud_rds_account_test.go`);`coupon_no` → 官方"不用券"占位值 `youhuiquan_promotion_option_id_for_blank`;`private_ip` → dependence 自建 vpc/vswitch 固定 cidr;`capacity` → 取与 `instance_class` 规格一致值;企业版特性(如 TDE)→ 扩展既有 amber/企业版规格 test;
    - **明确补不了的**(需外部前置:真实备份/专属集群/既有全球实例等)**不硬凑**,在关联工单逐属性列明原因(区分「不可测」与「可补但需扩 scope,建议 follow-up」),PR 里给 maintainer 一段简短英文说明。
 8. **PR** — 提交走 `bootstrap/github-identity.sh commit -m "..."`(而非裸 `git commit`)→ `bootstrap/github-identity.sh check` → `bootstrap/github-identity.sh push api-tool-agent/terraform-provider-alicloud HEAD <branch>` → `bootstrap/github-identity.sh gh pr create --repo aliyun/terraform-provider-alicloud --head api-tool-agent:<branch>`;带 resource+test+service+provider注册+website 文档;无 AI 署名。缺 `JARVIS_GITHUB_TOKEN` 或登录名不是 `api-tool-agent` 时阻断并升级,禁止回退个人账号或 ambient git 凭据。
-   - **commit 作者硬门(CLA)**:CLA-assistant 按 **commit 作者邮箱**核验,不是 push token 也不是 PR opener。裸 `git commit` 会用本地默认身份(如 `jarvis@jarvis.local`)→ `license/cla` 必挂。子代理提交一律走 `github-identity.sh commit`(自动署名 `api-tool-agent <cloudspec_bot@alibaba-inc.com>`);已用裸 commit 的用 `bootstrap/github-identity.sh commit --amend --no-edit` 重署名后再 force-push。`push` 会对 tip 作者不符时 WARN。参见 `escalation/archived/cap-github-commit-identity.md`。
+   - **commit 作者硬门(CLA)**:CLA-assistant 按 **commit 作者邮箱**核验,不是 push token 也不是 PR opener。裸 `git commit` 会用本地默认身份(如 `jarvis@jarvis.local`)→ `license/cla` 必挂。子代理提交一律走 `github-identity.sh commit`(自动署名 `api-tool-agent <cloudspec_bot@alibaba-inc.com>`);已用裸 commit 的用 `bootstrap/github-identity.sh commit --amend --no-edit` 重署名后再 force-push。`push` 会对 tip 作者不符时 WARN。
    - **force-push 自有 fork PR-head 是预授权动作**:为满足单提交 CI 门禁而 squash/rebase/重署名后 force-push 到 `api-tool-agent:<branch>`（`... push api-tool-agent/terraform-provider-alicloud +<ref> <branch>`）属 `autonomy.md` 的 `fork_push`,headless 下**直接执行,不 SUSPEND/escalate/等工单放行**。仅限自有 fork PR-head;force-push 上游 `aliyun/…` 或任何 master = `release_prod` 人工硬门。
 
 ## Terraform 资源名解析

@@ -2386,6 +2386,14 @@ class InteractiveWorkerTest(unittest.TestCase):
             self.assertEqual(worker.daemon(self._store().path, state["workerKey"]), 0)
         names = [c[0] for c in fake.calls]
         self.assertIn("heartbeat_session", names)
+        session_heartbeat = [c for c in fake.calls
+                             if c[0] == "heartbeat_session"][0]
+        checkpoint = session_heartbeat[1][3]
+        self.assertEqual(checkpoint["leaseSeconds"], 120)
+        self.assertEqual(checkpoint["transcriptUri"], state["transcriptPath"])
+        self.assertEqual(checkpoint["workspaceRef"], state["cwd"])
+        self.assertEqual(checkpoint["branchRef"], state["branch"])
+        self.assertTrue(checkpoint["logUri"].endswith(".log"))
         refreshed = self._store().load()["sessionPermit"]
         self.assertEqual(refreshed["source"], "sidecar-heartbeat")
         self.assertEqual(refreshed["sessionStatus"], "RUNNING")

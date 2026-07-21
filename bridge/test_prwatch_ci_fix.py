@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Unit: PrWatchScheduler open-PR 全生命周期看守（post-PR 生命周期清单 #1/#2/#3）.
 
-Gap (workflow assess-post-pr-loop → escalation/cap-post-pr-lifecycle.md):
+Gap (workflow assess-post-pr-loop → PR lifecycle handling):
 提交 PR 后单次 headless 会话撑不住多日合并窗口——CI 转红没人修、reviewer 在 GitHub 上评论没人
 回应、轮询频率跟不上。本测试锁住 PrWatchScheduler 升级为「全生命周期看守器」后的三块逻辑：
   · #1 _gh_pr_ci 解析 (failing/pending) + _maybe_dispatch_ci_fix 派发/去重/上限/active 信号；

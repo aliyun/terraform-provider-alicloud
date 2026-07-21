@@ -783,13 +783,15 @@ class AoneSchedulerUnionTest(unittest.TestCase):
             "id": "84386065", "modified": "2026-07-20 12:00:00",
         }])
         calls = []
+        scanner._reconcile_done_status_drifts_safely = mock.Mock(
+            side_effect=lambda *_args: calls.append("done-drift"))
         scanner._tick_auto = mock.Mock(side_effect=lambda *_args: calls.append("dispatch"))
         scanner._reconcile_source_statuses_safely = mock.Mock(
             side_effect=lambda: calls.append("lifecycle"))
 
         scanner._tick()
 
-        self.assertEqual(calls, ["dispatch", "lifecycle"])
+        self.assertEqual(calls, ["done-drift", "dispatch", "lifecycle"])
         self.assertLessEqual(scanner.SOURCE_STATUS_PAGE_SIZE, 32)
         self.assertLessEqual(scanner.SOURCE_STATUS_POINT_TIMEOUT_SECONDS, 10)
 
@@ -805,6 +807,191 @@ class AoneSchedulerUnionTest(unittest.TestCase):
         self.assertEqual(task["taskId"], 411)
         self.assertEqual(status, "已发布")
         self.assertLessEqual(run.call_args.kwargs["timeout"], 10)
+
+    def test_legit_done_statuses_include_pool_parking_states(self):
+        statuses = bot._load_legit_done_statuses()
+        self.assertIn("已完成", statuses)
+        self.assertIn("待发布", statuses)
+
+    def test_done_status_drift_enqueues_both_channels_with_lane_identity(self):
+        cases = (
+            ("tf_customer", "1086837", bot.PERSONA_PUBLIC_IDENTITY, False),
+            ("api_toolkit", "2100304", "jarvis", True),
+        )
+        for pool, project, identity, allow_non_tf in cases:
+            with self.subTest(pool=pool):
+                scanner = self._scanner()
+                scanner._done_drift_retry = set()
+                scanner._last_tag_added_epoch = mock.Mock(return_value="doneepoch")
+                item = {
+                    "id": "84551585", "title": "状态回退", "pool": pool,
+                    "pool_project": project, "status": "开发中",
+                    "tag": ["jarvis-done"],
+                }
+                with mock.patch.object(bot, "_load_legit_done_statuses",
+                                       return_value=frozenset({"已完成"})), \
+                     mock.patch.object(bot, "_aone_event_enqueue",
+                                       return_value=True) as aone, \
+                     mock.patch.object(bot, "_dingtalk_event_enqueue",
+                                       return_value=True) as dingtalk:
+                    scanner._reconcile_done_status_drifts([item])
+
+                event_key = aone.call_args.args[2]
+                self.assertRegex(
+                    event_key,
+                    r"^done-status-drift:84551585:doneepoch:[0-9a-f]{16}$")
+                self.assertEqual(aone.call_args.kwargs, {
+                    "allow_non_tf": allow_non_tf,
+                    "identity": identity,
+                })
+                self.assertEqual(dingtalk.call_args.args[2], event_key)
+                self.assertEqual(dingtalk.call_args.args[3], bot.master_staff())
+                self.assertEqual(dingtalk.call_args.kwargs,
+                                 {"allow_non_tf": allow_non_tf})
+                self.assertNotIn("84551585", scanner._done_drift_retry)
+
+    def test_done_status_drift_channels_are_independent_and_retryable(self):
+        scanner = self._scanner()
+        scanner._done_drift_retry = set()
+        scanner._last_tag_added_epoch = mock.Mock(return_value="legacy")
+        item = {
+            "id": "84551585", "title": "状态回退", "pool": "api_toolkit",
+            "pool_project": "2100304", "status": "开发中",
+            "tag": ["jarvis-done"],
+        }
+        with mock.patch.object(bot, "_load_legit_done_statuses",
+                               return_value=frozenset({"已完成"})), \
+             mock.patch.object(bot, "_aone_event_enqueue",
+                               side_effect=RuntimeError("ledger unavailable")) as aone, \
+             mock.patch.object(bot, "_dingtalk_event_enqueue", return_value=True) as dingtalk:
+            scanner._reconcile_done_status_drifts([item])
+        aone.assert_called_once()
+        dingtalk.assert_called_once()
+        self.assertEqual(scanner._done_drift_retry, {"84551585"})
+
+    def test_done_status_config_failure_keeps_candidate_retryable(self):
+        scanner = self._scanner()
+        scanner._done_drift_retry = set()
+        item = {
+            "id": "84551585", "pool_project": "2100304", "status": "开发中",
+            "tag": ["jarvis-done"],
+        }
+        with mock.patch.object(bot, "_load_legit_done_statuses", return_value=None), \
+             mock.patch.object(bot, "_aone_event_enqueue") as aone, \
+             mock.patch.object(bot, "_dingtalk_event_enqueue") as dingtalk:
+            scanner._reconcile_done_status_drifts([item])
+        aone.assert_not_called()
+        dingtalk.assert_not_called()
+        self.assertEqual(scanner._done_drift_retry, {"84551585"})
+
+    def test_done_status_drift_skips_legit_and_retries_activity_failure(self):
+        scanner = self._scanner()
+        scanner._done_drift_retry = {"84551585"}
+        item = {
+            "id": "84551585", "title": "状态", "pool": "api_toolkit",
+            "pool_project": "2100304", "status": "已完成",
+            "tag": ["jarvis-done"],
+        }
+        with mock.patch.object(bot, "_load_legit_done_statuses",
+                               return_value=frozenset({"已完成"})), \
+             mock.patch.object(bot, "_aone_event_enqueue") as aone, \
+             mock.patch.object(bot, "_dingtalk_event_enqueue") as dingtalk:
+            scanner._reconcile_done_status_drifts([item])
+        aone.assert_not_called()
+        dingtalk.assert_not_called()
+        self.assertEqual(scanner._done_drift_retry, set())
+
+        item["status"] = "开发中"
+        scanner._last_tag_added_epoch = mock.Mock(
+            side_effect=RuntimeError("activity unavailable"))
+        with mock.patch.object(bot, "_load_legit_done_statuses",
+                               return_value=frozenset({"已完成"})), \
+             mock.patch.object(bot, "_aone_event_enqueue") as aone, \
+             mock.patch.object(bot, "_dingtalk_event_enqueue") as dingtalk:
+            scanner._reconcile_done_status_drifts([item])
+        aone.assert_not_called()
+        dingtalk.assert_not_called()
+        self.assertEqual(scanner._done_drift_retry, {"84551585"})
+
+    def test_done_tag_epoch_changes_only_with_latest_tag_add(self):
+        scanner = self._scanner()
+        activities = [{
+            "id": "10", "property": "标签", "oldValue": "jarvis-idle",
+            "newValue": "jarvis-done", "eventTime": "2026-07-20 19:20:00",
+        }]
+        scanner._activities = lambda _iid, strict=False: activities
+        first = scanner._last_tag_added_epoch("84551585", "jarvis-done", strict=True)
+        self.assertEqual(
+            first,
+            scanner._last_tag_added_epoch("84551585", "jarvis-done", strict=True))
+        activities.append({
+            "id": "11", "property": "标签", "oldValue": "jarvis-idle",
+            "newValue": "jarvis-done", "eventTime": "2026-07-21 09:00:00",
+        })
+        self.assertNotEqual(
+            first,
+            scanner._last_tag_added_epoch("84551585", "jarvis-done", strict=True))
+
+    def test_stale_claim_uses_durable_dual_channel_epoch(self):
+        scanner = self._scanner()
+        scanner._claim_age_min = mock.Mock(return_value=61)
+        scanner._last_tag_added_epoch = mock.Mock(return_value="claimepoch")
+        item = {
+            "id": "84551585", "title": "超时认领", "pool": "api_toolkit",
+            "pool_project": "2100304", "tag": ["jarvis-claimed"],
+        }
+        with mock.patch.object(scanner, "_claim_ttl_min", return_value=45), \
+             mock.patch.object(bot, "_aone_event_enqueue", return_value=True) as aone, \
+             mock.patch.object(bot, "_dingtalk_event_enqueue", return_value=True) as dm:
+            scanner._reconcile_stale_claims({"84551585": item})
+
+        self.assertEqual(aone.call_args.args[2],
+                         "stale-claim:84551585:claimepoch")
+        self.assertEqual(aone.call_args.kwargs,
+                         {"allow_non_tf": True, "identity": "jarvis"})
+        self.assertEqual(dm.call_args.args[2],
+                         "stale-claim:84551585:claimepoch")
+        self.assertEqual(dm.call_args.args[3], bot.master_staff())
+        self.assertNotIn("escalation", aone.call_args.args[3])
+
+    def test_stale_claim_activity_failure_emits_no_unstable_event(self):
+        scanner = self._scanner()
+        scanner._claim_age_min = mock.Mock(return_value=61)
+        scanner._last_tag_added_epoch = mock.Mock(
+            side_effect=RuntimeError("activity unavailable"))
+        item = {
+            "id": "84551585", "title": "超时认领", "pool": "api_toolkit",
+            "pool_project": "2100304", "tag": ["jarvis-claimed"],
+        }
+        with mock.patch.object(scanner, "_claim_ttl_min", return_value=45), \
+             mock.patch.object(bot, "_aone_event_enqueue") as aone, \
+             mock.patch.object(bot, "_dingtalk_event_enqueue") as dm:
+            scanner._reconcile_stale_claims({"84551585": item})
+        aone.assert_not_called()
+        dm.assert_not_called()
+
+    def test_headless_prompts_suspend_via_control_plane_without_local_artifact(self):
+        prompts = (
+            bot._revisit_prompt("84551585", "Terraform", "1086837"),
+            bot._pr_ci_fix_prompt(
+                "84551585", "https://example.test/pull/1", "528766", ["ci"]),
+            bot._pr_comment_reply_prompt(
+                "84551585", "https://example.test/pull/1", "528766",
+                "reviewer", "needs decision"),
+        )
+        for prompt in prompts:
+            with self.subTest(prompt=prompt[:40]):
+                self.assertIn("[[SUSPEND:", prompt)
+                self.assertIn('"wait_for":"320687"', prompt)
+                self.assertIn("SUSPENDED", prompt)
+                self.assertIn("attention event", prompt)
+                self.assertNotIn("escalation/", prompt)
+                self.assertNotIn("bootstrap/log.sh escalate", prompt)
+
+        probe_prompt = bot._probe_prompt("probe-2026-07-22")
+        self.assertIn("直接创建 Aone", probe_prompt)
+        self.assertNotIn("files drafts", probe_prompt)
+
     def test_idle_human_comment_uses_comment_revision_and_bounded_prompt(self):
         s = self._scanner()
         s.dispatch_pools = set()

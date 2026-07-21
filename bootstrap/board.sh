@@ -5,23 +5,20 @@
 #   (no args)     Emits the board JSON ARRAY to stdout (unchanged contract; consumed as a
 #                 bare array by bridge BoardScheduler → /api/board/sync and by board-html.sh).
 #   probe [--text] Emits the F3 度量看板 "probe 飞轮健康度" metrics SECTION (JSON object, or
-#                 human digest with --text). Aggregates runs/probe verdicts + probe-drafts
-#                 frontmatter + a1 jarvis-probe workitems + playground scenarios + tier0
+#                 human digest with --text). Aggregates runs/probe verdicts + a1
+#                 jarvis-probe workitems + playground scenarios + tier0
 #                 rotate coverage. Kept as a sibling subcommand precisely so the bare-array
 #                 stdout stays byte-compatible with the existing consumers above.
 #
 # Board array contract (no-arg): [{id,title,state,summary,priority,pool,project,url,ts}].
-#   state: escalated > merged > done > idle > inflight > pool (precedence on id collision)
-#   escalated ← escalation/<id>.md exists                 (first body line = reason)
+#   state: merged > done > idle > inflight > pool (precedence on id collision)
 #   merged    ← tag jarvis-done  + status 已发布/验收通过/已完成/已发布待需求方验收/已发布待需求排期
 #   done      ← tag jarvis-done  + any other status        (审核中)
 #   idle      ← tag jarvis-idle                            (jarvis 本轮释放,等待人或下一个 jarvis)
 #   inflight  ← tag jarvis-claimed                         (进行中)
 #   pool      ← untagged scan candidate (scan already applied exclude_status); cap 2000/pool by 紧急>高>中>低, pool_total=full count + req/bug/task split
 # runs/<id>.md is NO LONGER source of done/merged — only enriches summary text;
-# scan items with no runs record use title as summary. escalation/ still supplies reason.
-# Cross-refs scan.json by id for title/priority/pool/project; escalated ids absent from
-# scan still appear (title=reason, default project 528766).
+# scan items with no runs record use title as summary.
 # Pure python3; no external deps. JARVIS_ROOT overrides repo root.
 set -euo pipefail
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -42,7 +39,7 @@ if [ "${1:-}" = "probe" ]; then
     tag="$(jq -r '.ticket.tag' "$probe_config" 2>/dev/null || true)"
     case "$tag" in ""|null) tag="jarvis-probe" ;; esac
 
-    # a1 jarvis-probe 工单查询(唯一网络调用);失败/不可解析 → 降级为本地 drafts + WARN。
+    # a1 jarvis-probe 工单查询(唯一网络调用);失败/不可解析 → ticket 指标降级 + WARN。
     # A1 与 scan.sh 同款:默认 bin/a1id(jarvis 身份),JARVIS_A1 供测试打桩。
     A1="${JARVIS_A1:-$root/bin/a1id --}"
     a1_file="$(mktemp)"; trap 'rm -f "$a1_file"' EXIT
@@ -151,43 +148,6 @@ for f in _verdict_glob:
 findings = {"rounds": rounds, "tier0_rounds": tier0, "tier1_rounds": tier1,
             "total": ftotal, "by_severity": by_sev, "api_gap": api_gap, "mech": mech}
 
-# ── drafts: escalation/probe-drafts/*.md frontmatter status ───────────
-# 采纳率 = filed / (filed + rejected)(只算已决断的;pending/未知不入分母)。
-# A4:同时扫 paths.drafts_archived 子目录(archive 命令搬移过去的历史 filed/rejected),adoption_rate 分母含归档件。
-drafts_dir = os.path.join(root, paths.get("drafts", "escalation/probe-drafts"))
-drafts_archived_dir = os.path.join(root, paths.get("drafts_archived", "escalation/probe-drafts/archived"))
-dc = {"filed": 0, "pending": 0, "rejected": 0, "other": 0}
-
-def draft_status(path):
-    try:
-        lines = open(path, encoding="utf-8").read().splitlines()
-    except Exception:
-        return None
-    if not lines or lines[0].strip() != "---":
-        return None
-    for l in lines[1:]:
-        if l.strip() == "---": break
-        m = re.match(r"\s*status\s*:\s*(.+)", l)
-        if m: return m.group(1).strip().strip('"').strip("'")
-    return None
-
-dtotal = 0
-_draft_globs = glob.glob(os.path.join(drafts_dir, "*.md"))
-if os.path.isdir(drafts_archived_dir):
-    _draft_globs += glob.glob(os.path.join(drafts_archived_dir, "*.md"))
-for f in _draft_globs:
-    if os.path.basename(f) == ".gitkeep": continue
-    dtotal += 1
-    st = (draft_status(f) or "").lower()
-    if   st.startswith("filed"):  dc["filed"] += 1
-    elif st.startswith("pending"): dc["pending"] += 1   # covers pending-review
-    elif st.startswith("reject"): dc["rejected"] += 1
-    else: dc["other"] += 1
-decided  = dc["filed"] + dc["rejected"]
-adoption = round(dc["filed"] / decided, 3) if decided > 0 else None
-drafts = {"total": dtotal, "filed": dc["filed"], "pending": dc["pending"],
-          "rejected": dc["rejected"], "other": dc["other"], "adoption_rate": adoption}
-
 # ── tickets: a1 jarvis-probe 工单(降级安全)──────────────────────────
 CLOSED_KEYS = ("已完成", "已关闭", "已解决", "已修复", "已发布", "验收通过", "已取消", "已交付", "关闭", "完成")
 if a1_ok:
@@ -244,7 +204,6 @@ out = {
     "window_days":     days,
     "since":           cutoff.strftime("%Y-%m-%dT%H:%M:%SZ"),
     "findings":        findings,
-    "drafts":          drafts,
     "tickets":         tickets,
     "scenarios":       scenarios,
     "tier0_coverage":  tier0_coverage,
@@ -258,7 +217,6 @@ if text_mode:
     bp = ", ".join("%s:%d" % (k, v) for k, v in sorted(by_product.items())) or "—"
     ts = (", ".join("%s:%d" % (k, v) for k, v in sorted(tickets["by_status"].items()))
           if tickets["source"] == "aone" else "(降级:本地)")
-    ar = ("%.0f%%" % (adoption * 100)) if adoption is not None else "—"
     tt = tickets["total"] if tickets["total"] is not None else "—(降级)"
     tcl = tickets["closed"] if tickets["closed"] is not None else "—"
     print("\n".join([
@@ -267,8 +225,6 @@ if text_mode:
         "  严重度: %s" % bs,
         "  api_gap 分布: %s" % ag,
         "  tier0 mech: %s" % mc,
-        "草稿: %d (filed %d / pending %d / rejected %d) 采纳率 %s" % (
-            dtotal, dc["filed"], dc["pending"], dc["rejected"], ar),
         "工单[%s]: 建单 %s / 关单 %s / 状态 %s" % (tickets["source"], tt, tcl, ts),
         "场景总数(按产品): %d (%s)" % (stotal, bp),
         "tier0 已巡检资源: %d" % res_n,
@@ -330,7 +286,7 @@ def enrich(item):
     item["priority"] = s.get("priority", "")
     # default uncategorized non-pool items to "req" so the badge + type filter
     # keep them visible instead of vanishing as uncategorized.
-    item["category"] = s.get("category") or ("req" if item["state"] in ("done", "merged", "escalated") else "")
+    item["category"] = s.get("category") or ("req" if item["state"] in ("done", "merged") else "")
     item["pool"] = pool_for(s)
     item["project"] = project_for(item["pool"])
     item["url"] = URL.format(p=item["project"], i=item["id"])
@@ -340,8 +296,8 @@ def enrich(item):
     item["ts"] = item.get("ts") or r.get("ts") or ""
     return item
 
-items = {}  # id -> record ; precedence escalated>merged>done>idle>inflight>pool
-RANK = {"pool": 0, "inflight": 1, "idle": 2, "done": 3, "merged": 4, "escalated": 5}
+items = {}  # id -> record ; precedence merged>done>idle>inflight>pool
+RANK = {"pool": 0, "inflight": 1, "idle": 2, "done": 3, "merged": 4}
 def put(rec):
     old = items.get(rec["id"])
     if old is None or RANK[rec["state"]] >= RANK[old["state"]]:
@@ -359,14 +315,6 @@ for i, s in scan.items():
         put(enrich({"id": i, "state": "idle", "summary": s.get("status", ""), "ts": ""}))
     elif "jarvis-claimed" in tag:
         put(enrich({"id": i, "state": "inflight", "summary": s.get("status", ""), "ts": ""}))
-
-# escalated from escalation/ (overrides tag-derived state)
-for f in glob.glob(os.path.join(root, "escalation", "*.md")):
-    b = os.path.basename(f)
-    if not b.endswith(".md") or b == ".gitkeep": continue
-    rid = b[:-3]
-    reason = next((l.strip() for l in open(f, encoding="utf-8") if l.strip()), "")
-    put(enrich({"id": rid, "state": "escalated", "summary": reason, "ts": ""}))
 
 # pool ← scan candidates: any scan item not already tracked + no jarvis tag.
 # scan already applied exclude_status, so trust it — no active-status whitelist; status passes through.

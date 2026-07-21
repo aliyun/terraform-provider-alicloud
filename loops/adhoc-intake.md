@@ -76,7 +76,7 @@ EOF
 
 收尾回填 Aone（评论+改状态）并落 `runs/`；dev 中途用 `wrap.sh sync <id> --summary-stdin <<'EOF' ... EOF` 或 `--summary-file <path>` 报多行进展。临时数据走 `.my-day/`，禁往仓库根甩 scratch。Aone 唯一真源——禁止只在本地推进不落 Aone。
 
-> **收尾必走 bookend，禁裸 `log.sh run_done`**：凡 claim 过的工单(新建/复用都算)，收尾用 `bootstrap/triage-one.sh <id> <pool> <project> "<summary>" <status>`(claim→done→release 一把成对)，或手跑 `wrap.sh done` + `claim.sh release` 两步。裸 run_done 只落本地审计：标签停 claimed/状态不动/release 漏。claim 开头、release 收尾闭合，`wrap-check.sh`+`reconcile.sh` 才兜得住。
+> **收尾必走 bookend，禁裸 `log.sh run_done`**：凡 claim 过的工单(新建/复用都算)，收尾用 `bootstrap/triage-one.sh <id> <pool> <project> "<summary>" <status>`(claim→done→release 一把成对)，或手跑 `wrap.sh done` + `claim.sh release` 两步。裸 run_done 只落本地审计：标签停 claimed/状态不动/release 漏。claim 开头、release 收尾闭合；bridge 的 fenced Session 与 AoneScheduler 对账负责异常恢复和状态漂移告警。
 
 ---
 
@@ -85,7 +85,7 @@ EOF
 | 结果 | 说明 |
 |------|------|
 | 完成 | 只读出结论 / dev 到 MR·预发，`wrap.sh done` 回填 Aone+入 `runs/` |
-| escalation | 缺口/低置信/红线 → 写 `escalation/`，触发 `self-improve` |
+| needs-attention | 缺口/低置信/红线 → Task `SUSPENDED` + 幂等人工决策事件，触发 `self-improve` |
 
 ---
 
@@ -96,4 +96,4 @@ EOF
 | `config/workspaces.json` | 工作区 canonical schema → repo/path/remotes/ops |
 | `config/pools.json` | 池路由（ad-hoc PR→tf_provider 528766，客户 1086837） |
 | `bootstrap/wrap.sh sync/done` | 进展实时回填 Aone（真源）+收尾审计；多行正文用 `--summary-stdin`/`--summary-file` |
-| `loops/self-improve.md` | 缺口→escalation→补丁 |
+| `loops/self-improve.md` | 缺口→Aone 跟踪→补丁 |

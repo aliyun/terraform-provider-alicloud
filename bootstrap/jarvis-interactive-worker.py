@@ -2845,12 +2845,22 @@ def daemon(state_path: Path, expected_worker_key: str) -> int:
                     heartbeat_current = dict(current)
                     if _session_heartbeat_allowed(latest):
                         try:
+                            # The fenced Session heartbeat is also the durable
+                            # checkpoint.  Keep recovery references in the
+                            # control plane instead of recreating a
+                            # machine-local task ledger.
+                            checkpoint = {
+                                "leaseSeconds": int(
+                                    current.get("leaseSeconds")
+                                    or _interactive_lease_seconds()),
+                                "transcriptUri": latest.get("transcriptPath"),
+                                "workspaceRef": latest.get("cwd"),
+                                "branchRef": latest.get("branch"),
+                                "logUri": str(store.path.with_suffix(".log")),
+                            }
                             response = cp.heartbeat_session(
                                 str(current["sessionId"]), latest["workerKey"],
-                                current["fenceToken"],
-                                {"leaseSeconds": int(
-                                    current.get("leaseSeconds")
-                                    or _interactive_lease_seconds())},
+                                current["fenceToken"], checkpoint,
                                 process_uuid=latest["processUuid"],
                                 request_id="jarvis-interactive-session-heartbeat-%s" %
                                 hashlib.sha256((str(current["sessionId"]) +

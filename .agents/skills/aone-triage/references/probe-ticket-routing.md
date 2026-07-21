@@ -1,7 +1,7 @@
 # probe 探测工单诊断与路由(aone-triage reference)
 
 > 触发条件:aone-triage 读单后,发现工单在 **tf_provider 池(528766)** 且带标签 `jarvis-probe` 或标题前缀 `[probe]`。
-> 这类单是 jarvis 自己的 tf-customer-probe 探测产出(见 `escalation/cap-tf-customer-probe.md` / `escalation/cap-probe-fix-flywheel.md`),
+> 这类单是 jarvis 自己的 tf-customer-probe 探测产出，
 > 本 reference 定义修复飞轮第③段(修复)与第④段(验证)的路由与状态机。
 
 ## 一、识别
@@ -43,13 +43,10 @@
 阻断项，客户单/probe 单皆算）。收录判据：可执行 / 跨场景复用 / 非文档已明示；条目格式
 `- [YYYY-MM-DD][来源: 工单URL 或 verdict 路径 或 PR URL] <一条可执行的产品级事实>`。
 
-### ④ draft / ledger 归档联动
+### ④ ledger 归档联动
 
-- 若该单来自 draft（mode=draft 阶段落 `escalation/probe-drafts/*.md`），关单前把 draft frontmatter `status`
-  改为 `filed`——**归档动作**由 `probe.sh archive` 自动做（下一轮 probe 收尾或独立跑 `archive` 时把 filed
-  draft 移入 `escalation/probe-drafts/archived/`）；本 triage 会话只**在评论里带上 verdict 与 ledger 指针**
-  （`runs/probe/<YYYYMMDD>-<HHMMSS>-<sid>.json` + `runs/probe/ledger.jsonl` 对应行）即可，不手工搬文件。
-- mode=file 场合（当前默认）本无 draft，回灌 + 蒸馏 + 复验证据贴回后直接进关单状态机。
+在评论里带上 verdict 与 ledger 指针（`runs/probe/<YYYYMMDD>-<HHMMSS>-<sid>.json` +
+`runs/probe/ledger.jsonl` 对应行）；回灌 + 蒸馏 + 复验证据贴回后直接进关单状态机。
 
 ## 四、回灌（关单前直落 playground + 工单报备）
 

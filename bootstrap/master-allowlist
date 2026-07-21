@@ -13,8 +13,6 @@ runs/
 # .my-day/ — gitignored 每日临时状态；guard 只针对 tracked+跟踪路径，保底加一行
 .my-day/
 
-# escalation/ — 升级队列写入，同上属于每轮产出而非受评审代码
-escalation/
 
 # bootstrap/master-allowlist / worktree-guard.sh 自身 —— 升级 guard 时需要能改
 # 只在真的要动 guard 本体/白名单时才留后门；这两行删掉即等于封死。

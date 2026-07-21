@@ -127,7 +127,7 @@ persistent channel closes that hole: `ScanScheduler` atomically persists the
 Aone `jarvis-claimed` inventory to `.my-day/bridge/claimed-snapshot.json` on
 every scan tick, and the scheduler cross-checks each snapshot entry against
 the control plane (a snapshot entry without a Task row is a legacy claim and
-is left to `reconcile.sh stale`; per-tick corroboration is capped by
+is announced by AoneScheduler for manual resolution; per-tick corroboration is capped by
 `JARVIS_RECOVERY_SNAPSHOT_MAX`).  The local ledger is therefore only a
 fast-channel accelerator plus debounce/round bookkeeping — never the source
 of candidate truth.  Candidates from both channels are deduplicated and

@@ -1,28 +1,17 @@
 # aone-triage 无人值守到预发 triage loop
 
-> 单条工单怎么处理在 `.claude/skills/aone-triage`(读单/归类/查证/回复/bookend);本文件只管 **loop 编排**:实例协调、触发入口、认领竞争、autonomy 判定、收敛维护。
+> 单条工单怎么处理在 `.claude/skills/aone-triage`(读单/归类/查证/回复/bookend);本文件只管 **loop 编排**:控制面 Session、触发入口、认领竞争、autonomy 判定、收敛维护。
 
 ---
 
-## 零、实例协调（coord.sh）
+## 零、实例协调（控制面）
 
-每个 triage 实例启动后先通过 `coord.sh` 扫孤儿、续跑；dispatch（Tata 委派）实例只做心跳与 checkpoint，不做 adopt。
+每个持久任务只通过控制面的 Worker → Task → fenced Session 生命周期执行。bridge 注册稳定 Worker，`PersistenceExecutor` lease Task，`SessionController` 负责 start/heartbeat/suspend/complete；交互式入口由 `jarvis-interactive-worker.py` 使用同一套 API。业务上下文、分支、transcript 与 result refs 随 Session 外化，不再写本地 coord task/checkpoint 文件。
 
-```bash
-# triage 实例开局：注册自身，扫孤儿并续跑
-COORD_ID=$(bootstrap/coord.sh register triage "$$")   # 传自身 pid,coord.sh dead 才能按 kill -0 判活
-for oid in $(bootstrap/coord.sh list-orphans); do
-  COORD_ID=$COORD_ID bootstrap/coord.sh adopt "$oid"
-done
-
-# dispatch 实例（Tata 委派）：只心跳 + checkpoint，跳过 adopt
-# nohup bootstrap/heartbeat.sh "$COORD_ID" $$ >/dev/null 2>&1 &
-```
-
-- `list-orphans`：列出任务文件中 owner_instance 已死（`coord.sh dead` 返回 0）的工单 id。
-- `adopt <aone_id>`：将孤儿任务的 `owner_instance` 改为当前实例，使其进入本轮 triage 队列续跑。
-- dispatch 实例（如 DingTalk bridge）不执行 adopt，避免重复接管正常分派的工单；仅保持心跳和阶段 checkpoint，供 watchdog 监控存活。
-- **跨机 orphan 检测走控制面**：`coord.sh dead` 用 `kill -0 <pid>` 判活，仅同机可信。多机部署时跨机 orphan 由 bridge scheduler 通过控制面 `/workers` STALE/OFFLINE + `.my-day/bridge/claimed-snapshot.json` 双通道兜底（`docs/execution-architecture.md` §Dead interactive Session recovery）；worker 机不做 orphan 检测，只 heartbeat + lease。详见 [docs/multi-worker-deployment.md](../docs/multi-worker-deployment.md)。
+- Worker/Session 心跳和 fence 是存活与写权限真源；本机 PID 只用于终止当前进程，不参与跨机接管判定。
+- 进程或机器中断后由服务端 reaper 收敛 Session，`RECOVERY_REQUIRED`/`RESUMABLE` Task 再由 bridge 恢复调度；不存在本地 orphan scan/adopt。
+- `SUSPENDED` Task 保留 wait/affinity 与续跑上下文，不占执行槽；换机后从控制面恢复。
+- 控制面不可用时持久任务 fail-closed，禁止降级为本地无追踪执行。详见 [docs/execution-architecture.md](../docs/execution-architecture.md) 与 [docs/multi-worker-deployment.md](../docs/multi-worker-deployment.md)。
 
 ---
 
@@ -108,7 +97,7 @@ GitHub PR/评论/推分支的身份纪律见 CLAUDE.md 工作纪律 #6（`bootst
 | 条件 | 动作 |
 |------|------|
 | 高置信（high_conf）+ 操作可逆（reply / create_req / tag / create_cr / worktree / prestage） | 自动执行至**预发（prestage）**，完成后 release |
-| 低置信（low_conf）/ 验证失败（verify_fail）/ 红线（redline） | escalate 后 release |
+| 低置信（low_conf）/ 验证失败（verify_fail）/ 红线（redline） | 外化上下文，将 Task `SUSPENDED` 并发布 needs-attention 事件 |
 
 ```bash
 # 自动走到预发
@@ -117,24 +106,19 @@ bootstrap/log.sh run_done <id> "自动部署至预发"
 JARVIS_A1_IDENTITY=terraform-rd bootstrap/claim.sh release <id> <pool-project>  # Terraform
 bootstrap/claim.sh release <id> <pool-project>                                # 非 Terraform
 
-# escalate 路径
-bootstrap/log.sh escalate <id> "<reason>"
-JARVIS_A1_IDENTITY=terraform-rd bootstrap/claim.sh release <id> <pool-project>  # Terraform
-bootstrap/claim.sh release <id> <pool-project>                                # 非 Terraform
+# needs-attention 路径由当前 fenced Session suspend；事件发布器幂等写回 Aone/钉钉。
 ```
 
 ---
 
-## 三、定期维护（僵尸清扫）
+## 三、定期维护（控制面收敛）
 
-bridge 主机由 AoneScheduler 的 stale-claim 子任务（每 `JARVIS_STALE_CHECK_EVERY` 个 scan tick）广播僵尸认领告警。post-PR 工单的 Aone 认领/释放已并入正常 `_TaskAoneBookend`（`pr_ci_fix`/`pr_comment_reply` 走 `REPLAY_SAFE`：worker 中途死亡由控制面重新 lease、幂等重跑收敛标签），不再有独立的 fenced-operation 恢复组件。orphan/drift/donecheck 与 escalation/ 落盘的 `reconcile.sh all` 不再由 bridge 自动调度，改为运维手动或按 `bootstrap/cron.example` 独立触发：
+bridge scheduler 统一承担收敛，不再运行本地 reconcile 脚本：
 
-```bash
-bootstrap/reconcile.sh all      # stale + orphan + drift + donecheck 四路顺跑
-bootstrap/reconcile.sh stale    # 只跑僵尸 claim
-```
-
-`reconcile.sh stale` 查找所有 `jarvis-claimed` 超过 `claim.ttl_min`（默认 45 分钟）的工作项，将其写入 `escalation/` 目录，防止僵尸认领长期占用工单。`orphan` 处理 owner_instance 已死的 task；`drift` 补漏 release；`donecheck` 对账 `jarvis-done` 标签与 Aone 状态——标签 done 但状态落在合法完成态集合（`.claim.done_statuses` ∪ 各池 `.done_status`，含 tf_provider `待发布`）外的，判为漂移（finish 状态被拒 / 人工打回返工后标签滞留）写 `escalation/` 告警。**与之配套**：`claim.sh finish` 若 done_status 未能落地，会主动降级 `jarvis-done`→`jarvis-idle` + escalate，避免制造「标签 done、真源未结束」黑洞被 `_decide` 永久 skip。
+- 服务端 reaper 按 Worker/Session heartbeat、lease 和 fence 收敛死亡执行，并把可恢复 Task 放回恢复链路。
+- AoneScheduler 周期检查超时 `jarvis-claimed`，通过幂等事件发布器广播 needs-attention；有 Task 的工单以控制面状态为准，无 Task 的 legacy claim 只告警、不凭本地历史猜测 release。
+- AoneScheduler 对账 `jarvis-done` 标签与合法完成态集合（`.claim.done_statuses` ∪ 各池 `.done_status`，含 tf_provider `待发布`），漂移时发布一次状态告警。
+- `claim.sh finish` 若 done_status 未能落地，立即降级 `jarvis-done`→`jarvis-idle` 并返回失败，由当前 Task 进入 needs-attention，避免制造跳过黑洞。
 
 ---
 
@@ -143,7 +127,7 @@ bootstrap/reconcile.sh stale    # 只跑僵尸 claim
 | 结果 | 说明 |
 |------|------|
 | **到预发（prestage）** | 高置信可逆操作已自动完成，`run_done` 已写入 `runs/` |
-| **入队（escalation）** | 低置信/红线条目已写入 `escalation/`，等待人工决策 |
+| **挂起（needs-attention）** | 低置信/红线 Task 已 `SUSPENDED`，人工决策事件已发布 |
 
 每条工作项最终落入上述两个状态之一，本轮 loop 结束。
 
@@ -176,14 +160,12 @@ Jarvis 不会自动触发 release_prod。预发验收通过后，由工程师手
 | `bootstrap/log.sh run_done` | 记录完成 |
 | `bootstrap/wrap.sh sync/done` | Aone 回填与收尾；Terraform 主处理 run 禁用 sync、只由 RD finalizer done 一次；后续重要事件走 bridge RD-only event publisher |
 | `bootstrap/html-report-preview.sh upload/from-aone` | 仅非 Terraform 流程可上传 HTML/zip/Aone 附件报告；`--comment` 也仅限非 Terraform。Terraform QA 只返回本地路径或已有链接，不上传、不回贴 |
-| `bootstrap/log.sh escalate` | 记录上报 |
 | `bootstrap/claim.sh claim <id> <project>` | 认领工作项；退码 1 = 输了跳过，退码 3 = 缺必填字段，需经 `aone-fields.sh` 挑合法值回填后重试；其它 update 失败直接上抛，不误报 lost race。认领成功还会把 Aone status 从起始态推进到该池进行中状态，best-effort 非阻断 |
 | `bootstrap/aone-fields.sh missing <id>` | 列出当前为空的必填自定义字段；field-list options 为空时补查 field options API，输出合法候选，不自动选值 |
 | `bootstrap/aone-fields.sh fill <id> <fieldId>=<value> …` | 回填 agent 已明确选择的字段值（重复 `--cfs`）；拒绝空值/非法参数 |
 | `bootstrap/claim.sh release <id> <project>` | 释放认领（打 jarvis-idle 标签：本轮处理完，等待人或下一个 jarvis 接手；不动 Aone status） |
-| `bootstrap/claim.sh finish <id> <project>` | jarvis 判断真完成（打 jarvis-done 标签 + status 改为 `pools.json` 里该池 × workitemType 的 `done_status`；`.claim.done_status` = `已发布待需求排期` 只是**全局兜底**，主流走 per-池 per-category。tf_provider(528766) 产品类需求 → **`待发布`**，不是 `已发布`——workflow 不允许 `已选择` 直跳 `已发布`。被拒时先 `bin/a1id -- project workitem field options status --project <id> --type <workitemType>` 查合法枚举再改 pools.json。**若 done_status 终究落不到合法完成态**，finish 会降级 `jarvis-done`→`jarvis-idle` + escalate，不留「标签 done、真源未结束」黑洞） |
-| `bootstrap/triage-one.sh <id> <pool> <project> "<summary>" <status>` | 单条工单收尾 bookend：claim→wrap done→release；claim 输竞争则 SKIP，退码 3 则输出合法字段候选并 escalate（不 wrap/release） |
+| `bootstrap/claim.sh finish <id> <project>` | jarvis 判断真完成（打 jarvis-done 标签 + status 改为 `pools.json` 里该池 × workitemType 的 `done_status`；`.claim.done_status` = `已发布待需求排期` 只是**全局兜底**，主流走 per-池 per-category。tf_provider(528766) 产品类需求 → **`待发布`**，不是 `已发布`——workflow 不允许 `已选择` 直跳 `已发布`。被拒时先 `bin/a1id -- project workitem field options status --project <id> --type <workitemType>` 查合法枚举再改 pools.json。**若 done_status 终究落不到合法完成态**，finish 会降级 `jarvis-done`→`jarvis-idle` 并返回失败，由 Task 进入 needs-attention） |
+| `bootstrap/triage-one.sh <id> <pool> <project> "<summary>" <status>` | 单条工单收尾 bookend：claim→wrap done→release；claim 输竞争则 SKIP，退码 3 则输出合法字段候选并返回失败（不 wrap/release） |
 | `bootstrap/wrap-check.sh` | Stop 闸门：会话结束时校验未完工工单是否已回填，失败则阻断 |
-| `bootstrap/reconcile.sh [stale\|orphan\|drift\|donecheck\|all]` | 收敛族入口:stale=超时 claim→escalate;orphan=owner dead→escalate;drift=台账 vs Aone 对账;donecheck=jarvis-done 标签 vs Aone 状态一致性对账(漂移→escalate);all=顺跑四者(默认) |
 | `.claude/skills/aone-triage` | 单条工单全流程技能 |
 | `autonomy.md` | 模式/置信度/停止项策略 |

@@ -9,7 +9,7 @@
 ## 开局动作
 
 1) 跑 `bootstrap/preflight.sh`（24h 闸门，`--force` 强制重跑），全绿才干活；
-2) 等任务：有单 → [loops/aone-triage.md](loops/aone-triage.md)，无单 → [loops/adhoc-intake.md](loops/adhoc-intake.md)，低置信/验收不过 → 起草不发出入 `escalation/`；
+2) 等任务：有单 → [loops/aone-triage.md](loops/aone-triage.md)，无单 → [loops/adhoc-intake.md](loops/adhoc-intake.md)，低置信/验收不过 → 将 Task 置为 `SUSPENDED` 并通过幂等事件发布器请求人工决策；
 3) bridge 定时扫池，把可恢复业务统一写入控制面 Task，由 PersistenceExecutor lease 并发处理；probe 等一次性作业走 EphemeralExecutor（授权前置可配 `JARVIS_AUTO_DISPATCH=0`；停滞催办走每日 `DailyScheduler`(nudge job)；见 `bridge/jarvis_dingtalk_bot.py` **`AoneScheduler`**），扫描/派发由 bridge 全权负责，Jarvis 只被动接单；入口统一 `bridge/run.sh start`（自动 source env + 判定钉钉/降级模式，不需额外点火）。**派发探测真源 = `AoneScheduler` 的 python 直查并集**（每池 `assignedTo∪workitem.tracker∪tag=jarvis-idle` × `DIGITAL_WORKER_IDS`：指派/抄送数字人的新单或更新单、及 idle 人工门），非 `bootstrap/scan.sh`——后者已降级为人工审计/兜底工具与 backlog-drain 的 any-assignee 扫描。**多机部署**：`JARVIS_BRIDGE_ROLE=scheduler`（macmini 一台，全部调度器 + executor）+ `JARVIS_BRIDGE_ROLE=worker`（Linux 机器 N 台，只 executor），聚合并发 = 各机 `JARVIS_DISPATCH_MAX` 之和；详见 [docs/multi-worker-deployment.md](docs/multi-worker-deployment.md)。
 
 ## 工作纪律
@@ -33,13 +33,13 @@
 
 6. **身份纪律**：a1 一律走 `bin/a1id`，非 Terraform 默认 jarvis（`a1id -- <args>`）；Terraform 的 PD/RD/QA 是 internal_role，不是三套公开身份。PD/QA 不调用写身份；主处理 run 的 RD finalizer 与后续重要事件发布器统一使用 `a1id as terraform-rd --` 或 `JARVIS_A1_IDENTITY=terraform-rd` 外写，未登录直接阻断、**不回退 jarvis**。旧 `pd`/`qa`/`terraform-pd`/`terraform-qa` 仅一版兼容别名到 terraform-rd，调用会告警且绝不读取旧 auth。个人身份（chenyi/guozai/linjun/shanye）禁擅用，仅仓库主人本轮当面授权时才 `a1id as <id> -- <args>` 临时切，用完即回。GitHub PR/评论/推分支必须先 `bootstrap/github-identity.sh check`（token 账号必须 `api-tool-agent`，PR head `api-tool-agent:<branch>`），缺 token/账号不匹配一律阻断升级，禁回退 ambient `gh auth`。terraform-pr-review skill 有完整清单。
 
-7. **auto-memory 只存 personal/machine，技术知识入 skill**：save memory 前扫本仓 skills 全集，已覆盖则不写；技术/团队/项目类且 skill 未覆盖 → 补入相关 skill/reference，不落 memory；仅个人偏好/机器状态/临时上下文才走 auto-memory。**why**：auto-memory per-machine 不跨设备，skill 走 git 天然跨设备并在 trigger 时自然加载。策略与已清理清单见 [escalation/archived/cap-auto-memory-save-policy.md](escalation/archived/cap-auto-memory-save-policy.md)（已归档）。
+7. **auto-memory 只存 personal/machine，技术知识入 skill**：save memory 前扫本仓 skills 全集，已覆盖则不写；技术/团队/项目类且 skill 未覆盖 → 补入相关 skill/reference，不落 memory；仅个人偏好/机器状态/临时上下文才走 auto-memory。**why**：auto-memory per-machine 不跨设备，skill 走 git 天然跨设备并在 trigger 时自然加载。
 
 8. **Aone 工单必先调 aone-triage skill**：用户给 Aone URL / 工单 id / 提及工单时，**第一步必须 `Skill aone-triage`** 加载完整诊断+路由规则（决策树、Step 1.5 canned 前置分诊、团队分工、关联单建单纪律）。严禁跳过 skill 直接手动 `aone-get.sh` + 查源码——会漏路由判定（专属名单/镇元查证/生成器 vs 手写/分支 A–G）导致转单到错的人。
 
 ## 自我迭代
 
-流程/能力缺口按 [loops/self-improve.md](loops/self-improve.md) 沉淀，别只口头修；跨轮结构性重构走 `escalation/cap-*.md` 路线图。
+流程/能力缺口按 [loops/self-improve.md](loops/self-improve.md) 沉淀，别只口头修；跨轮结构性重构建 Aone 跟踪，并把可复用技术知识补进相关 skill/reference。
 
 @autonomy.md
 @loops/aone-triage.md
