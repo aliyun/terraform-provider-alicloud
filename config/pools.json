@@ -30,12 +30,19 @@
       "claim_required_field_defaults": {
         "140282": "有OpenAPI，资源未定义，开放平台维护"
       },
+      "pr_merged_status": {
+        "type": "3",
+        "type_name": "需求问题",
+        "name": "已合入主线",
+        "id": "626904"
+      },
       "exclude_status": [
         "Closed",
         "Fixed",
         "Invalid",
         "Won'tfix",
         "ByDesign",
+        "已合入主线",
         "已发布",
         "已发布待需求方验收",
         "已取消",

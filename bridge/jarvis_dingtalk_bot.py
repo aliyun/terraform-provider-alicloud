@@ -323,8 +323,8 @@ def _routine_notifier(handler):
 
 # ── PR-watch registry (方案A) ─────────────────────────────────────────────────
 # skill/persona 提交 PR 后按自治边界 release 成 jarvis-idle；DailyScheduler 的 nudge 选择器只捞
-# 标题/描述含特定词的 idle 单，terraform 发布单都不含 → 工单永久停在 jarvis-idle、永不推到
-# 「已完成」。此登记表 + PrWatchScheduler 补缺口：PR 合并后自动 claim.sh finish 收尾。
+# 标题/描述含特定词的 idle 单，terraform 发布单都不含 → 工单永久停在 jarvis-idle。此登记表 +
+# PrWatchScheduler 补缺口：客户池需求 PR 合并后进入发布准备状态，其它池沿用 claim.sh finish 收尾。
 # 与 bootstrap/pr-watch.sh 共用同一持久登记表。CI/review 去重游标也必须落盘；否则 bridge
 # 重启会把所有 open PR 当成“未登记”，重复群播并丢失每个 head 的修复次数。
 PRWATCH_PATH = Path(REPO_ROOT) / ".my-day/bridge/pr-watch.json"
@@ -550,9 +550,9 @@ def _prwatch_update(ticket, **fields):
             records = _prwatch_load()
             ent = records.get(str(ticket))
             if not isinstance(ent, dict):
-                return
+                return False
             ent.update(fields)
-            _prwatch_write(records)
+            return _prwatch_write(records)
         finally:
             _prwatch_release_file_lock(file_lock)
 
@@ -1483,6 +1483,81 @@ def _is_terraform_project(project):
         return False
 
 
+def _normalize_pr_merged_status(value):
+    """Return a valid pool-scoped PR-merged status spec or None."""
+    if not isinstance(value, dict):
+        return None
+    item_type = str(value.get("type") or "").strip()
+    item_type_name = str(value.get("type_name") or "").strip()
+    name = str(value.get("name") or "").strip()
+    status_id = str(value.get("id") or "").strip()
+    if not item_type or not item_type_name or not name or not status_id:
+        return None
+    return {
+        "type": item_type,
+        "type_name": item_type_name,
+        "name": name,
+        "id": status_id,
+    }
+
+
+def _pr_merged_status_map():
+    """Load pool-scoped PR-merged status mappings from pools.json."""
+    try:
+        pools = json.loads(
+            (Path(REPO_ROOT) / "config" / "pools.json").read_text()).get("pools", {})
+    except Exception as exc:  # noqa: BLE001
+        log.warning("bridge: could not read PR-merged status mappings: %s", exc)
+        return {}
+    out = {}
+    for key, pool in (pools or {}).items():
+        spec = _normalize_pr_merged_status(pool.get("pr_merged_status"))
+        if spec:
+            out[str(key)] = spec
+    return out
+
+
+def _pool_pr_merged_status(pool_key=None, project=None):
+    """Resolve one PR-merged status mapping by pool key or project id."""
+    target_key = str(pool_key or "")
+    target_project = str(project or "")
+    try:
+        pools = json.loads(
+            (Path(REPO_ROOT) / "config" / "pools.json").read_text()).get("pools", {})
+    except Exception as exc:  # noqa: BLE001
+        log.warning("bridge: could not resolve PR-merged status mapping: %s", exc)
+        return None
+    if target_key and target_key in pools:
+        return _normalize_pr_merged_status(pools[target_key].get("pr_merged_status"))
+    if target_project:
+        for pool in pools.values():
+            if str(pool.get("project") or "") == target_project:
+                return _normalize_pr_merged_status(pool.get("pr_merged_status"))
+    return None
+
+
+def _item_type_value(item):
+    """Normalize the numeric workitem type emitted by list APIs."""
+    value = item.get("type") or item.get("workitemType") or ""
+    if isinstance(value, dict):
+        value = value.get("id") or value.get("value") or value.get("identifier") or ""
+    return str(value or "").strip()
+
+
+def _has_pr_merged_status(item, status_map=None):
+    """Whether this pool/type item is at its configured PR-merged stop-scan status."""
+    pool_key = str(item.get("pool") or "")
+    spec = ((status_map or {}).get(pool_key)
+            if status_map is not None else _pool_pr_merged_status(pool_key=pool_key))
+    if not spec:
+        return False
+    status = item.get("status") or item.get("statusName") or ""
+    if isinstance(status, dict):
+        status = status.get("name") or status.get("displayValue") or ""
+    return (_item_type_value(item) in {spec["type"], spec["type_name"]}
+            and str(status or "").strip() == spec["name"])
+
+
 def _a1_command_env(terraform=False):
     """Return a clean identity environment for an Aone subprocess."""
     env = os.environ.copy()
@@ -1601,6 +1676,56 @@ def _post_pr_tag_snapshot(iid, terraform=True):
         raise RuntimeError(
             "bridge claim readback returned invalid JSON for #%s" % iid) from exc
     return {"tags": set(names), "pairs": pairs}
+
+
+def _post_pr_workitem_snapshot(iid, terraform=True):
+    """Point-read authoritative project, numeric type, status id/name, and tags.
+
+    The PR-merged status transition is scoped to one project and one workitem type, so
+    missing or malformed identity fields are ambiguous and must fail closed.
+    """
+    proc = subprocess.run(
+        [str(REPO_ROOT / "bin" / "a1id"), "--", "project", "workitem",
+         "get", str(iid), "-f", "json"],
+        cwd=str(REPO_ROOT), timeout=60, capture_output=True, text=True,
+        env=_a1_command_env(terraform=terraform))
+    if proc.returncode != 0:
+        detail = ((proc.stderr or proc.stdout or "").strip())[-300:]
+        raise RuntimeError(
+            "post-PR workitem read failed for #%s (rc=%s): %s" %
+            (iid, proc.returncode, detail or "no detail"))
+    try:
+        payload = json.loads(proc.stdout or "{}")
+        fields = payload.get("fields")
+        if not isinstance(fields, list):
+            raise ValueError("workitem fields are not a list")
+        fmap = {str(field.get("identifier") or ""): field
+                for field in fields if isinstance(field, dict)}
+        space = fmap.get("space") or {}
+        item_type = fmap.get("workitemType") or {}
+        status = fmap.get("status") or {}
+        tag = fmap.get("tag") or {}
+        project = str(space.get("value") or "").strip()
+        workitem_type = str(item_type.get("value") or "").strip()
+        workitem_type_name = str(item_type.get("displayValue") or "").strip()
+        status_name = str(status.get("displayValue") or "").strip()
+        status_id = str(status.get("value") or "").strip()
+        if not (project.isdigit() and workitem_type and status_name and status_id):
+            raise ValueError("required project/type/status fields are missing")
+        tags = {value.strip() for value in
+                str(tag.get("displayValue") or "").replace("，", ",").split(",")
+                if value.strip()}
+    except (AttributeError, TypeError, ValueError) as exc:
+        raise RuntimeError(
+            "post-PR workitem read returned invalid JSON for #%s" % iid) from exc
+    return {
+        "project": project,
+        "workitem_type": workitem_type,
+        "workitem_type_name": workitem_type_name,
+        "status": status_name,
+        "status_id": status_id,
+        "tags": tags,
+    }
 
 
 def _post_pr_claim_visible(iid, terraform=True):
@@ -2347,7 +2472,18 @@ def _tagset(item):
     """Normalize an item's ``tag`` field (list | comma-string | None) to a set of strings."""
     t = item.get("tag")
     if isinstance(t, list):
-        return {str(x).strip() for x in t if str(x).strip()}
+        out = set()
+        for value in t:
+            if isinstance(value, dict):
+                for key in ("name", "displayValue", "id", "value"):
+                    token = str(value.get(key) or "").strip()
+                    if token:
+                        out.add(token)
+            else:
+                token = str(value).strip()
+                if token:
+                    out.add(token)
+        return out
     if isinstance(t, str):
         return {s.strip() for s in t.split(",") if s.strip()}
     return set()
@@ -3236,6 +3372,7 @@ class AoneScheduler:
         self.dispatch_pools = {p.strip() for p in
                                os.environ.get("JARVIS_DISPATCH_POOLS", "").split(",") if p.strip()}
         self.dispatch_created_before = os.environ.get("JARVIS_DISPATCH_CREATED_BEFORE", "").strip()
+        self._pr_merged_status_by_pool = _pr_merged_status_map()
 
     def _load_human_operators(self):
         """从 config/contacts.json 动态加载人类操作者白名单(name+flower+id)。
@@ -3291,7 +3428,7 @@ class AoneScheduler:
 
     @staticmethod
     def _read_pools():
-        """pools.json → [(key, project, exclude_status[])]。失败返回空列表。"""
+        """pools.json → [(key, project, exclude_status[], pr_merged_status|None)]。"""
         try:
             pools = json.loads(
                 (Path(REPO_ROOT) / "config" / "pools.json").read_text()).get("pools", {})
@@ -3302,7 +3439,8 @@ class AoneScheduler:
         for key, p in pools.items():
             proj = p.get("project")
             if proj:
-                out.append((key, str(proj), list(p.get("exclude_status") or [])))
+                out.append((key, str(proj), list(p.get("exclude_status") or []),
+                            _normalize_pr_merged_status(p.get("pr_merged_status"))))
         return out
 
     @classmethod
@@ -3342,21 +3480,24 @@ class AoneScheduler:
             })
         return out
 
-    def _union_filters(self, exclude_status):
+    def _union_filters(self, exclude_status, pr_merged_status=None):
         """一个池的四源过滤：assignee / tracker / idle / terminal done watch。"""
         worker_csv = ",".join(sorted(DIGITAL_WORKER_IDS))
         excl = "".join(" AND NOT status=%s" % s for s in (exclude_status or []))
+        merged = _normalize_pr_merged_status(pr_merged_status)
+        done_excl = " AND NOT status=%s" % merged["name"] if merged else ""
         return (
-            "assignedTo=%s%s" % (worker_csv, excl),          # 指派给数字人
-            "workitem.tracker=%s%s" % (worker_csv, excl),    # 参与/抄送数字人（人 @ 会自动抄送）
-            "tag=jarvis-idle%s" % excl,                       # idle 重访（吸收原 Revisit 非 tf 车道）
-            "tag=jarvis-done",                                # 终态评论监听，不排除终态 status
+            "assignedTo=%s%s" % (worker_csv, excl),
+            "workitem.tracker=%s%s" % (worker_csv, excl),
+            "tag=jarvis-idle%s" % excl,
+            "tag=jarvis-done%s" % done_excl,
         )
 
-    def _query_pool_union(self, key, project, exclude_status):
+    def _query_pool_union(self, key, project, exclude_status,
+                          pr_merged_status=None):
         """一个池的 assignee∪tracker∪idle∪done 并集（按 id 去重）。四源查询
         并行发出（各自 a1 调用 best-effort），去重时 assignee 源优先。"""
-        filters = self._union_filters(exclude_status)
+        filters = self._union_filters(exclude_status, pr_merged_status)
         with ThreadPoolExecutor(max_workers=len(filters),
                                 thread_name_prefix="aone-union") as ex:
             per_filter = list(ex.map(lambda f: self._a1_list(project, f), filters))
@@ -3380,8 +3521,8 @@ class AoneScheduler:
         items = []
         with ThreadPoolExecutor(max_workers=min(8, len(pools)),
                                 thread_name_prefix="aone-pool") as ex:
-            futures = [ex.submit(self._query_pool_union, key, project, excl)
-                       for key, project, excl in pools]
+            futures = [ex.submit(self._query_pool_union, key, project, excl, merged_status)
+                       for key, project, excl, merged_status in pools]
             for fut in futures:
                 try:
                     items.extend(fut.result())
@@ -3714,6 +3855,10 @@ class AoneScheduler:
         retry_ids = getattr(self, "_done_watch_retry", None)
         if retry_ids is None:
             retry_ids = self._done_watch_retry = set()
+        merged_status_map = getattr(self, "_pr_merged_status_by_pool", None)
+        if merged_status_map is None:
+            merged_status_map = self._pr_merged_status_by_pool = (
+                _pr_merged_status_map())
         for it in items:
             iid = str(it.get("id", ""))
             if not iid:
@@ -3726,6 +3871,9 @@ class AoneScheduler:
             decide_dispatch = False
             if not self._in_scope(it):
                 action, reason = "skip", "out_of_scope"
+            elif _has_pr_merged_status(it, merged_status_map):
+                retry_ids.discard(iid)
+                action, reason = "skip", "pr_merged_status"
             elif "jarvis-done" in tags:
                 if "jarvis-npe" in tags:
                     # NPE remains an explicit human routing gate after completion.
@@ -4118,14 +4266,16 @@ class AoneScheduler:
 
 class PrWatchScheduler:
     """PR-watch: 周期轮询内存 PR 观察登记表（重启后 autoregister 重建），跨会话看守已提交 PR
-    的**全生命周期**——open 窗口内 CI 失败自动派修复，合并后自动 claim.sh finish 收尾本工单，
+    的**全生命周期**——open 窗口内 CI 失败自动派修复；合并后客户池需求进入发布准备状态，其它池
+    自动 claim.sh finish 收尾本工单，
     与 DailyScheduler 的 nudge 互为兜底。
 
     背景缺口：skill/persona 提交 PR 后按自治边界 release 成 jarvis-idle，单次 headless 会话
     撑不住 PR 从提交到合并的几小时/几天，`gh pr checks` 只在那次会话里跑一次；DailyScheduler 的 nudge
     的选择器只捞标题/描述含特定词的 idle 单，terraform 发布单都不含 → open 窗口 CI 转红无人修、
     合并后工单永久停在 jarvis-idle。本调度器读登记表逐条查 PR 状态：
-      · merged        → claim.sh finish <ticket> <project> 已完成（过 npe/终态 guard）→ 评论+播报+摘除
+      · merged        → 客户池需求写入池级 PR-merged 状态；其它池 claim.sh finish
+        <ticket> <project> 已完成（过 npe/终态 guard）→ 重要事件入账+摘除
       · closed 未合并 → 评论 + escalate 交人工，不 finish → 摘除
       · open + CI 有失败 → force 重派 headless jarvis 修 CI（_maybe_dispatch_ci_fix）；
         open + 新评审评论 → force 重派回应（_maybe_dispatch_comment_reply）；均走 fork_push 预授权 SOP、
@@ -4217,6 +4367,75 @@ class PrWatchScheduler:
             merged_text = (
                 "关联 PR 已合并，Terraform 研发侧已完成本次交付收口。\n\n"
                 "PR：[%s](%s)" % (pr_url.rstrip("/").rsplit("/", 1)[-1], pr_url))
+            merged_status = _pool_pr_merged_status(project=project)
+            if merged_status:
+                customer_merged_text = (
+                    "关联 PR 已合并，Terraform 研发侧已完成代码合入。\n\n"
+                    "PR：[%s](%s)" % (
+                        pr_url.rstrip("/").rsplit("/", 1)[-1], pr_url))
+                try:
+                    snapshot = self._workitem_snapshot(tid)
+                except Exception as exc:  # noqa: BLE001
+                    log.warning("PrWatchScheduler: merged-status point-read #%s failed: %s; "
+                                "keep watching", tid, exc)
+                    return
+                if self._snapshot_in_merged_scope(snapshot, merged_status, project):
+                    current_status = str(snapshot.get("status") or "")
+                    tags = set(snapshot.get("tags") or ())
+                    if current_status in _load_done_statuses():
+                        if not _aone_event_enqueue(
+                                tid, project, merged_key,
+                                customer_merged_text +
+                                "\n\n工单已处于终态，本轮不重复修改状态。"):
+                            log.warning("PrWatchScheduler: customer terminal event #%s not "
+                                        "durable; keep watching", tid)
+                            return
+                        log.info("PrWatchScheduler: #%s already terminal; unwatching", tid)
+                        _prwatch_remove(tid)
+                        return
+                    if "jarvis-npe" in tags:
+                        npe_key = "pr:%s:merged-npe:%s" % (
+                            pr_url, merged_at or "state-MERGED")
+                        if not _aone_event_enqueue(
+                                tid, project, npe_key,
+                                customer_merged_text +
+                                "\n\n工单当前带 jarvis-npe，未自动修改状态，"
+                                "已转人工确认。"):
+                            log.warning("PrWatchScheduler: customer merged-npe event #%s not "
+                                        "durable; keep watching", tid)
+                            return
+                        self._escalate(
+                            tid, "PR 已合并但工单带 jarvis-npe（人工介入），不自动收尾", pr_url)
+                        _prwatch_remove(tid)
+                        return
+                    if not self._snapshot_has_merged_status(snapshot, merged_status):
+                        if not self._update_merged_status(tid, merged_status):
+                            log.warning("PrWatchScheduler: merged-status update #%s failed; "
+                                        "keep watching", tid)
+                            return
+                        try:
+                            snapshot = self._workitem_snapshot(tid)
+                        except Exception as exc:  # noqa: BLE001
+                            log.warning("PrWatchScheduler: merged-status readback #%s failed: %s; "
+                                        "keep watching", tid, exc)
+                            return
+                        if (not self._snapshot_in_merged_scope(
+                                snapshot, merged_status, project)
+                                or not self._snapshot_has_merged_status(
+                                    snapshot, merged_status)):
+                            log.warning("PrWatchScheduler: merged-status readback drift #%s; "
+                                        "keep watching", tid)
+                            return
+                    customer_text = (
+                        customer_merged_text + "\n\n工单状态已更新为「%s」，作为发布准备阶段的"
+                        "停止扫描状态。" % merged_status["name"])
+                    if not _aone_event_enqueue(tid, project, merged_key, customer_text):
+                        log.warning("PrWatchScheduler: customer merged event #%s not durable; "
+                                    "keep watching", tid)
+                        return
+                    log.info("PrWatchScheduler: #%s PR merged status confirmed", tid)
+                    _prwatch_remove(tid)
+                    return
             if entry.get("finish_succeeded"):
                 if tf_writer:
                     if not _aone_event_enqueue(tid, project, merged_key, merged_text):
@@ -4867,6 +5086,44 @@ class PrWatchScheduler:
         if "jarvis-npe" in names:
             return "npe"
         return "ok"
+
+    def _workitem_snapshot(self, tid):
+        """Authoritative Aone point-read for the typed PR-merged transition."""
+        return _post_pr_workitem_snapshot(tid, terraform=True)
+
+    @staticmethod
+    def _snapshot_in_merged_scope(snapshot, merged_status, project):
+        return (
+            str(snapshot.get("project") or "") == str(project or "")
+            and str(snapshot.get("workitem_type") or "") == merged_status["type"]
+        )
+
+    @staticmethod
+    def _snapshot_has_merged_status(snapshot, merged_status):
+        return (
+            str(snapshot.get("status") or "") == merged_status["name"]
+            and str(snapshot.get("status_id") or "") == merged_status["id"]
+        )
+
+    @staticmethod
+    def _update_merged_status(tid, merged_status):
+        """Move a scoped customer requirement to its release-prep stop-scan status."""
+        try:
+            proc = subprocess.run(
+                [str(REPO_ROOT / "bin" / "a1id"), "--", "project", "workitem",
+                 "update", str(tid), "--status", merged_status["name"]],
+                cwd=str(REPO_ROOT), timeout=60, capture_output=True, text=True,
+                env=_a1_command_env(terraform=True))
+        except Exception as exc:  # noqa: BLE001
+            log.warning("PrWatchScheduler: merged-status update #%s raised: %s", tid, exc)
+            return False
+        if proc.returncode != 0:
+            detail = ((proc.stderr or proc.stdout or "").strip())[-300:]
+            log.warning("PrWatchScheduler: merged-status update #%s rc=%d: %s",
+                        tid, proc.returncode, detail or "no detail")
+            return False
+        return True
+
 
     def _finish(self, tid, project, status):
         """claim.sh finish <tid> <project> <status>. Returns proc.returncode；任何非零都由
@@ -6042,14 +6299,18 @@ class _NudgeJob:
 
     def _query_pool(self, key, project):
         rows = []
+        merged_status = _pool_pr_merged_status(pool_key=key)
+        merged_filter = (
+            " AND NOT status=%s" % merged_status["name"] if merged_status else "")
         try:
             page = 1
             while page <= 100:
                 r = subprocess.run(
                     [str(REPO_ROOT / "bin" / "a1id"), "--",
                      "project", "workitem", "list",
-                     "--project", project, "--filter", "tag=%s" % self.IDLE_TAG,
-                     "--columns", "id,title,status,tag,assignee,created,modified",
+                     "--project", project, "--filter",
+                     "tag=%s%s" % (self.IDLE_TAG, merged_filter),
+                     "--columns", "id,title,status,tag,type,assignee,created,modified",
                      "--sort", "modified:asc", "--page", str(page), "--page-size", "1000",
                      "-f", "json"],
                     capture_output=True, text=True, timeout=90, cwd=str(REPO_ROOT))
@@ -6066,6 +6327,7 @@ class _NudgeJob:
                         "pool": key,
                         "pool_project": project,
                         "tag": it.get("tag"),
+                        "type": it.get("type") or it.get("workitemType") or "",
                         "status": it.get("status") or it.get("statusName") or "",
                         "description": it.get("description") or it.get("body") or "",
                         "assignee": (it.get("assignedTo") or it.get("assignee")
@@ -6141,6 +6403,7 @@ class _NudgeJob:
     def _query(self):
         """Collect all eligible rows, then fairly select at most ``max_n``."""
         cands = []
+        merged_status_map = _pr_merged_status_map()
         for key, project in self._pool_projects():
             rows = self._query_pool(key, project)
             if rows is None:
@@ -6148,6 +6411,8 @@ class _NudgeJob:
             for it in rows:
                 tags = _tagset(it)
                 if tags & {"jarvis-npe", "jarvis-claimed", "jarvis-done"}:
+                    continue
+                if _has_pr_merged_status(it, merged_status_map):
                     continue
                 if str(it.get("status") or "").strip() in TERMINAL_STATUSES:
                     continue

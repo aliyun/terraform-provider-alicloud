@@ -71,6 +71,25 @@ done
 jq -e '.pools.tf_provider.exclude_status | index("ByDesign") != null' "$POOLS_JSON" >/dev/null \
   && ok "tf_provider.exclude_status contains ByDesign" || bad "tf_provider.exclude_status missing ByDesign"
 
+jq -e '.pools.tf_customer.pr_merged_status == {
+  "type":"3", "type_name":"需求问题", "name":"已合入主线", "id":"626904"
+}' "$POOLS_JSON" >/dev/null \
+  && ok "tf_customer PR-merged status is configured for type 3" \
+  || bad "tf_customer.pr_merged_status must map type 3 to 已合入主线(626904)"
+jq -e '.pools.tf_customer.exclude_status | index("已合入主线") != null' \
+  "$POOLS_JSON" >/dev/null \
+  && ok "tf_customer excludes 已合入主线 from scans" \
+  || bad "tf_customer.exclude_status missing 已合入主线"
+jq -e '.claim.done_statuses | index("已合入主线") == null' "$POOLS_JSON" >/dev/null \
+  && ok "已合入主线 is not a global completion status" \
+  || bad "已合入主线 must not be added to claim.done_statuses"
+if grep -Eq 'business_terminal_tags|Terraform已合入|568576' \
+    "$POOLS_JSON" "$(dirname "$POOLS_JSON")/../bridge/jarvis_dingtalk_bot.py"; then
+  bad "obsolete merged-tag constants remain in production config/code"
+else
+  ok "obsolete merged-tag constants removed"
+fi
+
 # S8: claim.ttl_min
 [ "$(jq '.claim.ttl_min' "$POOLS_JSON")" = "45" ] \
   && ok "claim.ttl_min 45" || bad "claim.ttl_min wrong"
