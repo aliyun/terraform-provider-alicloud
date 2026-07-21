@@ -37,11 +37,11 @@
 
 set -euo pipefail
 
-# Export BEFORE step 8 preflight runs. verify.sh reads JARVIS_BRIDGE_ROLE to
-# decide whether to skip dev-only tool checks (aliyun/cloudspec/gh). Step 9
-# writes it to bridge/jarvis.env for the runtime, but preflight runs first —
-# so we need it in the current process env for the subprocess bash preflight.sh
-# call inside step 8.
+# Export BEFORE step 8 preflight runs so any role-aware tooling in the
+# preflight chain sees worker mode; step 9 then persists it to bridge/jarvis.env
+# for the runtime. Note verify.sh runs the SAME full tool+cred check set for
+# every role — workers need gh/aliyun creds for the same triage/PR work the
+# scheduler host does (gh + aliyun install sudo-free from tarballs, deps.lock).
 export JARVIS_BRIDGE_ROLE="${JARVIS_BRIDGE_ROLE:-worker}"
 
 JARVIS_REPO_URL="${JARVIS_REPO_URL:-https://code.alibaba-inc.com/terraflow/jarvis-preview.git}"
@@ -178,6 +178,13 @@ if [ -d "$EXTRACT/home/.claude" ]; then
   # but overwrite anything from bundle.
   mkdir -p "$HOME/.claude"
   cp -Rp "$EXTRACT/home/.claude/." "$HOME/.claude/"
+fi
+# ~/.aliyun: aliyun CLI credentials (config.json, plaintext AK). verify.sh's
+# `aliyun sts GetCallerIdentity` cred check and triage OpenAPI 查证 need it.
+if [ -d "$EXTRACT/home/.aliyun" ]; then
+  mkdir -p "$HOME/.aliyun"
+  cp -Rp "$EXTRACT/home/.aliyun/." "$HOME/.aliyun/"
+  chmod 600 "$HOME/.aliyun/config.json" 2>/dev/null || true
 fi
 # ~/.git-credentials + ~/.gitconfig: git's `store` credential helper needs
 # both. cp -p preserves 0600 on ~/.git-credentials (mandatory — token is
