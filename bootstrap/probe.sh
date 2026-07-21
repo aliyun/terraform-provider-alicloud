@@ -117,7 +117,7 @@ _t1_last_run_get() {
                 if [ -n "$d" ]; then
                     v="$(date -u -j -f "%Y-%m-%dT%H:%M:%SZ" "$d" +%s 2>/dev/null || date -u -d "$d" +%s 2>/dev/null || echo 0)"
                 else
-                    v="$(stat -f %m "$f" 2>/dev/null || stat -c %Y "$f" 2>/dev/null || echo 0)"
+                    v="$(stat -c %Y "$f" 2>/dev/null || stat -f %m "$f" 2>/dev/null || echo 0)"
                 fi
                 [ -n "$v" ] && [ "$v" -gt "$latest" ] && latest="$v"
             fi
@@ -1733,7 +1733,7 @@ _archive_verdict_epoch() {
         v="$(date -u -j -f "%Y-%m-%dT%H:%M:%SZ" "$d" +%s 2>/dev/null || date -u -d "$d" +%s 2>/dev/null || echo 0)"
         [ -n "$v" ] && [ "$v" != "0" ] && echo "$v" && return
     fi
-    stat -f %m "$f" 2>/dev/null || stat -c %Y "$f" 2>/dev/null || echo 0
+    stat -c %Y "$f" 2>/dev/null || stat -f %m "$f" 2>/dev/null || echo 0
 }
 
 # _draft_status <path> — 抽 frontmatter status 值(小写),缺失/坏文件回空。
@@ -1855,7 +1855,7 @@ _archive_workdir_gc() {
             [ "$state_n" -gt 0 ] && continue
         fi
         # mtime 判老
-        mt="$(stat -f %m "$d" 2>/dev/null || stat -c %Y "$d" 2>/dev/null || echo "$now")"
+        mt="$(stat -c %Y "$d" 2>/dev/null || stat -f %m "$d" 2>/dev/null || echo "$now")"
         [ "$mt" -lt "$cutoff" ] || continue
         __ARCH_MOVED_WORKDIRS=$((__ARCH_MOVED_WORKDIRS+1))
         if [ "$dry" = "1" ]; then

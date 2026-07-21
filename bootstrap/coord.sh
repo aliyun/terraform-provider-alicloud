@@ -13,7 +13,7 @@ case "$cmd" in
      "$id" "$role" "$pid" "$(hostname)" "$(date -u +%FT%TZ)" > "$I/$id.json"; : > "$I/$id.hb"; echo "$id";;
  heartbeat) umask 077; : > "$I/${2}.hb";;
  dead) f="$I/${2}.hb"; pid="${2##*-}"; [ -f "$f" ] || exit 0
-   m=$(stat -f %m "$f" 2>/dev/null||stat -c %Y "$f"); age=$(( $(date +%s)-m ))
+   m=$(stat -c %Y "$f" 2>/dev/null||stat -f %m "$f" 2>/dev/null); age=$(( $(date +%s)-m ))
    [ "$age" -gt "$TTL" ] && exit 0
    kill -0 "$pid" 2>/dev/null && exit 1 || exit 0;;
  checkpoint) aid="$2"; st="$3"; wt="${4:-}"; br="${5:-}"; rp="${6:-}"; pb="${7:-}"; umask 077; tmp=$(mktemp "$T/.t.XXXX"); printf '{"aone_id":"%s","owner_instance":"%s","stage":"%s","worktree":"%s","branch":"%s","repo":"%s","pushed_branch":"%s","updated":"%s"}' "$aid" "${COORD_ID:-}" "$st" "$wt" "$br" "$rp" "$pb" "$(date -u +%FT%TZ)" >"$tmp" && mv "$tmp" "$T/$aid.json";;

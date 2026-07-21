@@ -290,7 +290,7 @@ _ledger_upsert() {
         # read the mtime (lock just vanished / transient), DO NOT steal — a failed stat
         # must not read as "ancient" or we'd yank a live holder's lock and lose updates.
         local lock_mtime
-        lock_mtime="$(stat -f %m "$lock" 2>/dev/null || stat -c %Y "$lock" 2>/dev/null || echo "")"
+        lock_mtime="$(stat -c %Y "$lock" 2>/dev/null || stat -f %m "$lock" 2>/dev/null || echo "")"
         if [ -n "$lock_mtime" ] && [ "$(( $(date +%s) - lock_mtime ))" -gt 10 ]; then
             rm -rf "$lock" 2>/dev/null
         fi
