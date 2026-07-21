@@ -12,11 +12,30 @@ jarvis_root() {
         echo "$JARVIS_ROOT"
         return
     fi
-    local git_common
-    git_common="$(git -C "$(dirname "${BASH_SOURCE[1]:-${BASH_SOURCE[0]}}")" \
-        rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" \
-        || git_common="$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" \
+    # Anchor at the CALLING script's dir (BASH_SOURCE[1] = whoever sourced us)
+    # so resolution targets the jarvis repo regardless of process CWD; fall
+    # back to CWD if that dir isn't a repo.
+    #
+    # NO `--path-format=absolute` here: that flag needs git ≥ 2.31, and older
+    # git (AliOS/RHEL yum builds) echoes the unknown flag as literal rev-parse
+    # output — "--path-format=absolute\n.." ended up inside cache/escalation
+    # paths on the first Linux worker, breaking the preflight stamp. Instead
+    # absolutize the (possibly relative) --git-common-dir via cd + pwd, which
+    # works on every git that has worktrees at all.
+    local anchor base git_common
+    anchor="$(cd "$(dirname "${BASH_SOURCE[1]:-${BASH_SOURCE[0]}}")" 2>/dev/null && pwd)"
+    base="${anchor:-$PWD}"
+    git_common="$(cd "$base" 2>/dev/null && git rev-parse --git-common-dir 2>/dev/null)" \
+        || { base="$PWD"; git_common="$(git rev-parse --git-common-dir 2>/dev/null)"; } \
         || { echo "lib.sh: not in a git repo" >&2; return 1; }
+    case "$git_common" in
+        /*) ;;
+        *) git_common="$base/$git_common" ;;
+    esac
+    # Canonicalize ../ segments; for worktrees --git-common-dir points at the
+    # MAIN repo's .git, which is exactly the semantic we want.
+    git_common="$(cd "$git_common" 2>/dev/null && pwd)" \
+        || { echo "lib.sh: git common dir unresolvable: $git_common" >&2; return 1; }
     # git-common-dir returns /path/to/repo/.git — strip trailing /.git
     echo "${git_common%/.git}"
 }
