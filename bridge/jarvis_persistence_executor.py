@@ -15,6 +15,7 @@ import hashlib
 import fcntl
 import logging
 import os
+import re
 import socket
 import threading
 import time
@@ -213,6 +214,10 @@ class SessionController:
     """
 
     TERMINAL_ACTIONS = {"complete", "fail", "suspend", "relinquish"}
+    _SENSITIVE_ERROR_ASSIGNMENT = re.compile(
+        r"(?i)\b(authorization|access[-_]?key(?:id|secret)?|token|password|secret)"
+        r"\b\s*[\"']?\s*[:=]\s*[\"']?(?:bearer\s+)?[^\s,;}\"']+")
+    _ACCESS_KEY_ID = re.compile(r"\bLTAI[A-Za-z0-9]{8,}\b")
 
     def __init__(self, client: ControlPlaneClient, worker_key: str,
                  lease: Mapping[str, Any], *,
@@ -335,6 +340,44 @@ class SessionController:
             deadline = self._lease_deadline
         return (deadline is not None
                 and self.clock() < deadline - self.lease_safety_margin)
+
+    @classmethod
+    def _safe_control_plane_error_message(cls, exc: BaseException) -> str:
+        message = " ".join(str(exc).split())
+        message = cls._SENSITIVE_ERROR_ASSIGNMENT.sub(
+            lambda match: "%s=[REDACTED]" % match.group(1), message)
+        message = cls._ACCESS_KEY_ID.sub("[REDACTED]", message)
+        return message[:300]
+
+    def _log_heartbeat_rejection(self, message: str,
+                                 exc: ControlPlaneError) -> None:
+        self.log.warning(
+            "%s session=%s error=%s status=%s code=%s message=%s",
+            message, self.session_id, type(exc).__name__,
+            getattr(exc, "status", None), getattr(exc, "code", ""),
+            self._safe_control_plane_error_message(exc))
+
+    def _heartbeat_request(self, detail: Mapping[str, Any]) -> Tuple[Any, float]:
+        request_started_at = self.clock()
+        response = self.client.heartbeat_session(
+            self.session_id, self.worker_key, self.fence_token, detail,
+            process_uuid=self.process_uuid,
+            request_id="jarvis-session-heartbeat-%s" % uuid.uuid4().hex)
+        return response, request_started_at
+
+    def _handle_unavailable_heartbeat(self,
+                                      exc: ControlPlaneUnavailable) -> bool:
+        self._notify_network_failure(exc)
+        if self._lease_proof_has_margin():
+            self.log.warning(
+                "session heartbeat temporarily unavailable session=%s; "
+                "retaining ownership within lease proof",
+                self.session_id)
+            return True
+        self._lose_ownership("lease_proof_expiring:heartbeat")
+        self.log.warning("session heartbeat failed session=%s error=%s",
+                         self.session_id, type(exc).__name__)
+        return False
 
     def bind_process(self, process: Any) -> Any:
         """Bind and durably publish the owned process-group leader.
@@ -510,35 +553,59 @@ class SessionController:
                     return True
                 if self._ownership_lost or self._pending_terminal is not None:
                     return False
+            payload = self._lease_detail(detail)
             try:
-                request_started_at = self.clock()
-                response = self.client.heartbeat_session(
-                    self.session_id, self.worker_key, self.fence_token,
-                    self._lease_detail(detail),
-                    process_uuid=self.process_uuid,
-                    request_id="jarvis-session-heartbeat-%s" % uuid.uuid4().hex)
+                response, request_started_at = self._heartbeat_request(payload)
                 self._refresh_lease_proof(response, request_started_at)
                 return True
             except StaleFence:
                 self._lose_ownership("stale_fence:heartbeat")
                 return False
             except ControlPlaneUnavailable as exc:
-                self._notify_network_failure(exc)
-                if self._lease_proof_has_margin():
+                return self._handle_unavailable_heartbeat(exc)
+            except ControlPlaneError as exc:
+                progress_excerpt = payload.get("progressExcerpt")
+                if progress_excerpt is None or not str(progress_excerpt).strip():
+                    self._lose_ownership("heartbeat_rejected")
+                    self._log_heartbeat_rejection(
+                        "session heartbeat rejected", exc)
+                    return False
+
+                # Progress is optional observability.  A server-side validation
+                # rejection or malformed success response must not revoke a
+                # still-valid lease before we try the canonical heartbeat shape.
+                # The retry retains the same session/worker/fence tuple and gets
+                # a distinct request id, so real ownership conflicts still fail
+                # closed below.
+                self._log_heartbeat_rejection(
+                    "session progress heartbeat rejected; retrying without progress",
+                    exc)
+                fallback_payload = dict(payload)
+                fallback_payload.pop("progressExcerpt", None)
+                try:
+                    response, request_started_at = self._heartbeat_request(
+                        fallback_payload)
+                    self._refresh_lease_proof(response, request_started_at)
                     self.log.warning(
-                        "session heartbeat temporarily unavailable session=%s; "
-                        "retaining ownership within lease proof",
+                        "session heartbeat renewed without progress session=%s",
                         self.session_id)
                     return True
-                self._lose_ownership("lease_proof_expiring:heartbeat")
-                self.log.warning("session heartbeat failed session=%s error=%s",
-                                 self.session_id, type(exc).__name__)
-                return False
-            except ControlPlaneError as exc:
-                self._lose_ownership("heartbeat_rejected")
-                self.log.warning("session heartbeat rejected session=%s code=%s",
-                                 self.session_id, getattr(exc, "code", ""))
-                return False
+                except StaleFence:
+                    self._lose_ownership("stale_fence:heartbeat")
+                    return False
+                except ControlPlaneUnavailable as fallback_exc:
+                    return self._handle_unavailable_heartbeat(fallback_exc)
+                except ControlPlaneError as fallback_exc:
+                    self._lose_ownership("heartbeat_rejected")
+                    self._log_heartbeat_rejection(
+                        "session heartbeat fallback rejected", fallback_exc)
+                    return False
+                except Exception as fallback_exc:
+                    self._lose_ownership("heartbeat_failed")
+                    self.log.warning(
+                        "session heartbeat fallback failed session=%s error=%s",
+                        self.session_id, type(fallback_exc).__name__)
+                    return False
             except Exception as exc:
                 self._lose_ownership("heartbeat_failed")
                 self.log.warning("session heartbeat failed session=%s error=%s",

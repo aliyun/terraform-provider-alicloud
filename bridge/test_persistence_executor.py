@@ -21,7 +21,9 @@ from jarvis_persistence_executor import (  # noqa: E402
 from jarvis_capacity import CapacityManager  # noqa: E402
 from jarvis_task_client import (  # noqa: E402
     ControlPlaneConflict,
+    ControlPlaneRejected,
     ControlPlaneUnavailable,
+    InvalidResponse,
     StaleFence,
 )
 
@@ -257,6 +259,93 @@ class SessionControllerTest(unittest.TestCase):
         self.assertEqual(stopped, [(process, "stale_fence:heartbeat")])
         self.assertEqual(client.named("complete_session"), [])
         self.assertEqual(client.named("fail_session"), [])
+
+    def test_progress_heartbeat_retries_without_snapshot_and_keeps_ownership(self):
+        clock = FakeClock()
+        client = FakeClient(heartbeat_session=[
+            InvalidResponse("control plane returned invalid JSON", status=200),
+            {"leaseExpireAt": "2026-07-21T02:30:00Z"},
+        ])
+        stopped = []
+        lifecycle = SessionController(
+            client, "mac:boot:proc", lease_response(), lease_seconds=45,
+            lease_safety_margin=10, clock=clock,
+            stop_process=lambda current, reason: stopped.append(
+                (current.process, reason)), logger=LOG)
+        self.assertTrue(lifecycle.start())
+        process = FakeProcess(4321)
+        lifecycle.bind_process(process)
+        clock.advance(5)
+
+        with self.assertLogs(LOG, level="WARNING") as captured:
+            self.assertTrue(lifecycle.heartbeat({"progressExcerpt": "latest output"}))
+
+        heartbeats = client.named("heartbeat_session")
+        self.assertEqual(len(heartbeats), 2)
+        self.assertEqual(heartbeats[0]["args"][3], {
+            "leaseSeconds": 45,
+            "progressExcerpt": "latest output",
+        })
+        self.assertEqual(heartbeats[1]["args"][3], {"leaseSeconds": 45})
+        self.assertNotEqual(heartbeats[0]["kwargs"]["request_id"],
+                            heartbeats[1]["kwargs"]["request_id"])
+        self.assertEqual(lifecycle.lease_deadline, 50)
+        self.assertFalse(lifecycle.ownership_lost)
+        self.assertEqual(stopped, [])
+        logs = "\n".join(captured.output)
+        self.assertIn("error=InvalidResponse status=200 code=", logs)
+        self.assertIn("heartbeat renewed without progress", logs)
+
+    def test_progress_heartbeat_fallback_rejection_stops_fail_closed(self):
+        client = FakeClient(heartbeat_session=[
+            ControlPlaneRejected(
+                "token=top-secret LTAI1234567890 invalid progress",
+                status=422, code="INVALID_PROGRESS"),
+            ControlPlaneRejected(
+                "heartbeat rejected", status=409, code="LEASE_REJECTED"),
+        ])
+        stopped = []
+        lifecycle = self.make(
+            client, stop_process=lambda current, reason: stopped.append(
+                (current.process, reason)))
+        self.assertTrue(lifecycle.start())
+        process = FakeProcess(4321)
+        lifecycle.bind_process(process)
+
+        with self.assertLogs(LOG, level="WARNING") as captured:
+            self.assertFalse(lifecycle.heartbeat(
+                {"progressExcerpt": "latest output"}))
+
+        self.assertEqual(len(client.named("heartbeat_session")), 2)
+        self.assertTrue(lifecycle.ownership_lost)
+        self.assertEqual(stopped, [(process, "heartbeat_rejected")])
+        logs = "\n".join(captured.output)
+        self.assertIn(
+            "error=ControlPlaneRejected status=422 code=INVALID_PROGRESS", logs)
+        self.assertIn(
+            "error=ControlPlaneRejected status=409 code=LEASE_REJECTED", logs)
+        self.assertIn("token=[REDACTED]", logs)
+        self.assertNotIn("top-secret", logs)
+        self.assertNotIn("LTAI1234567890", logs)
+
+    def test_rejected_heartbeat_without_progress_does_not_retry(self):
+        client = FakeClient(heartbeat_session=[
+            ControlPlaneRejected(
+                "heartbeat rejected", status=409, code="LEASE_REJECTED"),
+        ])
+        stopped = []
+        lifecycle = self.make(
+            client, stop_process=lambda current, reason: stopped.append(
+                (current.process, reason)))
+        self.assertTrue(lifecycle.start())
+        process = FakeProcess(4321)
+        lifecycle.bind_process(process)
+
+        self.assertFalse(lifecycle.heartbeat())
+
+        self.assertEqual(len(client.named("heartbeat_session")), 1)
+        self.assertTrue(lifecycle.ownership_lost)
+        self.assertEqual(stopped, [(process, "heartbeat_rejected")])
 
     def test_adopt_lease_swaps_fence_so_reheartbeat_survives(self):
         # A re-lease for the SAME running session rotates the fence; adopting it
