@@ -259,6 +259,12 @@ func resourceAlicloudDtsSynchronizationJob() *schema.Resource {
 				Optional: true,
 				ForceNew: false,
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"tags": tagsSchema(),
 		},
 	}
 }
@@ -381,6 +387,9 @@ func resourceAlicloudDtsSynchronizationJobCreate(d *schema.ResourceData, meta in
 	if v, ok := d.GetOk("dts_bis_label"); ok {
 		request["DtsBisLabel"] = v
 	}
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
+	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, false)
@@ -452,6 +461,7 @@ func resourceAlicloudDtsSynchronizationJobRead(d *schema.ResourceData, meta inte
 	d.Set("status", object["Status"])
 	d.Set("structure_initialization", migrationModeObj["StructureInitialization"])
 	d.Set("synchronization_direction", object["SynchronizationDirection"])
+	d.Set("resource_group_id", object["ResourceGroupId"])
 
 	parameters, err := dtsService.QueryChangedJobParameters(d.Id())
 	if err != nil {
@@ -463,13 +473,64 @@ func resourceAlicloudDtsSynchronizationJobRead(d *schema.ResourceData, meta inte
 	}
 	d.Set("job_parameters", parameters)
 
+	tagsRaw, err := dtsService.ListTagResources(fmt.Sprint(object["DtsInstanceID"]), "ALIYUN::DTS::INSTANCE")
+	if err != nil {
+		return WrapError(err)
+	}
+	if len(tagsRaw.([]interface{})) > 0 {
+		d.Set("tags", tagsToMap(tagsRaw))
+	}
+
 	return nil
 }
 func resourceAlicloudDtsSynchronizationJobUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	var err error
+	dtsService := DtsService{client}
 	d.Partial(true)
+
+	// resource_group_id is an instance-level attribute in DTS; migrate it via
+	// ConvertInstanceResourceGroup using the parent DTS instance id.
+	if !d.IsNewResource() && d.HasChange("resource_group_id") {
+		rgRequest := map[string]interface{}{
+			"ResourceId": d.Get("dts_instance_id"),
+			"RegionId":   client.RegionId,
+		}
+		if v, ok := d.GetOk("resource_group_id"); ok {
+			rgRequest["NewResourceGroupId"] = v
+		}
+		action := "ConvertInstanceResourceGroup"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("Dts", "2020-01-01", action, nil, rgRequest, false)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, rgRequest)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		if fmt.Sprint(response["Success"]) == "false" {
+			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+		}
+		d.SetPartial("resource_group_id")
+	}
+
+	// tags are attached to the parent DTS instance; DtsService.SetResourceTags
+	// rewrites ResourceType/ResourceId for the ALIYUN::DTS::INSTANCE:JOB marker.
+	if d.HasChange("tags") {
+		if err := dtsService.SetResourceTags(d, "ALIYUN::DTS::INSTANCE:JOB"); err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("tags")
+	}
 
 	update := false
 	request := map[string]interface{}{
