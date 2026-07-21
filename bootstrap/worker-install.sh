@@ -234,6 +234,12 @@ for f in .git-credentials .gitconfig; do
   fi
 done
 [ -f "$HOME/.git-credentials" ] && chmod 600 "$HOME/.git-credentials"
+# ssh→HTTPS rewrite for internal repos: workspaces.json registers ssh URLs
+# (scheduler macs clone via ssh keys) but workers are HTTPS+token only.
+# Idempotent backstop for bundles cut by an older packager whose .gitconfig
+# lacks the [url] section; newer bundles already carry it.
+git config --global url."https://code.alibaba-inc.com/".insteadOf \
+  "git@gitlab.alibaba-inc.com:" 2>/dev/null || true
 
 # 5b. Rewrite Mac-specific $HOME paths → this host's $HOME, best-effort.
 # Only rewrites when packager's $HOME was recorded and differs from ours.
