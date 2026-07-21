@@ -105,6 +105,9 @@ ok "openssl = $(openssl version 2>&1)"
 # minimal install skips it.
 command -v jq >/dev/null 2>&1 || sudo yum install -y jq
 ok "jq = $(jq --version 2>&1)"
+# unzip: cloudspec CLI ships as a zip (deps.lock) — needed at preflight install.
+command -v unzip >/dev/null 2>&1 || sudo yum install -y unzip
+ok "unzip = $(unzip -v 2>&1 | head -1)"
 
 # ---------------------------------------------------------------------------
 step "3. Fetch claude binary from OSS + sha256 verify"
@@ -209,12 +212,18 @@ if [ -n "$PACKAGER_HOME" ] && [ "$PACKAGER_HOME" != "$HOME" ]; then
 fi
 
 # 5c. Repo-scoped: overlay env + workspaces.local.json into $JARVIS_ROOT.
-[ -f "$EXTRACT/repo/bootstrap/.env" ] \
-  && cp -p "$EXTRACT/repo/bootstrap/.env" "$JARVIS_ROOT/bootstrap/.env"
-[ -f "$EXTRACT/repo/bridge/jarvis.env" ] \
-  && cp -p "$EXTRACT/repo/bridge/jarvis.env" "$JARVIS_ROOT/bridge/jarvis.env"
-[ -f "$EXTRACT/repo/config/workspaces.local.json" ] \
-  && cp -p "$EXTRACT/repo/config/workspaces.local.json" "$JARVIS_ROOT/config/workspaces.local.json"
+# if-blocks, NOT `[ -f ] && cp`: under set -e a bare `[ -f missing ] && cp`
+# returns 1 and kills the whole installer when an optional file is absent
+# from the bundle (workspaces.local.json is optional on the packager).
+if [ -f "$EXTRACT/repo/bootstrap/.env" ]; then
+  cp -p "$EXTRACT/repo/bootstrap/.env" "$JARVIS_ROOT/bootstrap/.env"
+fi
+if [ -f "$EXTRACT/repo/bridge/jarvis.env" ]; then
+  cp -p "$EXTRACT/repo/bridge/jarvis.env" "$JARVIS_ROOT/bridge/jarvis.env"
+fi
+if [ -f "$EXTRACT/repo/config/workspaces.local.json" ]; then
+  cp -p "$EXTRACT/repo/config/workspaces.local.json" "$JARVIS_ROOT/config/workspaces.local.json"
+fi
 
 # Rewrite Mac paths in env files too (JARVIS_ROOT / JARVIS_TATA_ROOT / CLAUDE_BIN etc)
 if [ -n "$PACKAGER_HOME" ] && [ "$PACKAGER_HOME" != "$HOME" ]; then
@@ -365,11 +374,37 @@ WantedBy=default.target
 EOF
 ok "wrote $unit"
 
-# enable-linger so user service survives logout
+# enable-linger so user service survives logout. On hosts where sudo is
+# intercepted by command control (sat_app whitelist), fall back to a user
+# crontab: @reboot for boot autostart + a */10 watchdog. run.sh start is
+# pidfile-guarded, so the watchdog is a no-op while the bridge is alive.
+# (RHEL7-lineage systemd doesn't kill user processes on logout by default,
+# so linger/cron only matter for boot autostart, not for ssh disconnect.)
+linger_ok=0
 if command -v loginctl >/dev/null 2>&1; then
-  sudo loginctl enable-linger "$USER" 2>/dev/null \
-    && ok "loginctl enable-linger $USER" \
-    || warn "enable-linger failed (may need root); service will only run while $USER is logged in"
+  if sudo loginctl enable-linger "$USER" 2>/dev/null; then
+    ok "loginctl enable-linger $USER"
+    linger_ok=1
+  else
+    warn "enable-linger failed (sudo blocked / needs root); installing crontab fallback"
+  fi
+fi
+if [ "$linger_ok" = 0 ]; then
+  cron_cmd="JARVIS_BRIDGE_ROLE=worker $JARVIS_ROOT/bridge/run.sh start"
+  cron_tmp=$(mktemp)
+  # Idempotent: strip any previous lines that invoke this repo's run.sh, then
+  # append the current pair. Survives re-runs and JARVIS_ROOT relocation.
+  crontab -l 2>/dev/null | grep -vF "$JARVIS_ROOT/bridge/run.sh" > "$cron_tmp" || true
+  {
+    printf '@reboot sleep 30 && %s\n' "$cron_cmd"
+    printf '*/10 * * * * %s >/dev/null 2>&1\n' "$cron_cmd"
+  } >> "$cron_tmp"
+  if crontab "$cron_tmp"; then
+    ok "crontab fallback installed (@reboot + */10 watchdog)"
+  else
+    warn "crontab install failed — start the worker manually after each reboot"
+  fi
+  rm -f "$cron_tmp"
 fi
 systemctl --user daemon-reload
 ok "systemctl --user daemon-reload done"
