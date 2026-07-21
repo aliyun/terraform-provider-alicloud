@@ -105,8 +105,10 @@ ok "openssl = $(openssl version 2>&1)"
 # minimal install skips it.
 command -v jq >/dev/null 2>&1 || sudo yum install -y jq
 ok "jq = $(jq --version 2>&1)"
-# unzip: cloudspec CLI ships as a zip (deps.lock) — needed at preflight install.
+# unzip/zip: cloudspec CLI ships as a zip (deps.lock install), and
+# cloudspec-build-linux.sh packages the fleet zip after a source build.
 command -v unzip >/dev/null 2>&1 || sudo yum install -y unzip
+command -v zip >/dev/null 2>&1 || sudo yum install -y zip
 ok "unzip = $(unzip -v 2>&1 | head -1)"
 
 # ---------------------------------------------------------------------------

@@ -70,7 +70,7 @@ if command -v cloudspec >/dev/null 2>&1; then
     echo "PASS cloudspec"
 else
     echo "WARN cloudspec — acube 上游缺 Linux 产物(cloudspec-linux-*.zip 全版本 500「下载失败」, mac 包正常); CloudSpec IDL 相关 Task 会缺 CLI 支持"
-    echo "     修复: 等上游补 Linux 构建(补上后下次 preflight 自动装, deps.lock 已就位), 或按安装文档手动装: https://aliyuque.antfin.com/cloudspec/model/cli-install"
+    echo "     修复: 跑 bash bootstrap/cloudspec-build-linux.sh 源码构建(官方 Linux 路径, 全程几分钟), 或等上游补产物后 preflight 自动装; 文档: https://aliyuque.antfin.com/cloudspec/model/cli-install"
     esc_dir="${JARVIS_ESCALATION_DIR:-$repo_root/escalation}"
     esc_file="$esc_dir/cloudspec-install-broken-$(date -u +%F).md"
     if [ ! -f "$esc_file" ]; then
@@ -85,8 +85,9 @@ else
             echo "只影响需要本地 \`cloudspec\` CLI 的 CloudSpec IDL 编辑/校验/build 类 Task。其他 Task 类型不受影响。故 verify 记 WARN 不硬失败。"
             echo ""
             echo "## 修复选项"
-            echo "1. 上游补 Linux 产物后 \`bash bootstrap/install.sh\` 自动装（deps.lock 免 sudo 流程已就位：zip → ~/.local/opt/cloudspec + symlink）。"
-            echo "2. 手动: 按安装文档 https://aliyuque.antfin.com/cloudspec/model/cli-install 的 Linux 方式装。"
+            echo "1. \`bash bootstrap/cloudspec-build-linux.sh\` 源码构建（官方 Linux 路径：clone cloudspec/cloudspec-cli + pyinstaller，全程几分钟，装到 ~/.local）。"
+            echo "2. 上游补 Linux 产物后 \`bash bootstrap/install.sh\` 自动装（deps.lock 免 sudo 流程已就位：zip → ~/.local/opt/cloudspec + symlink）。"
+            echo "3. 文档: https://aliyuque.antfin.com/cloudspec/model/cli-install"
         } > "$esc_file"
         echo "     已落 escalation 提示: $esc_file"
     fi
