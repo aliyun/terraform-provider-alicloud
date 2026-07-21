@@ -324,7 +324,7 @@ def _routine_notifier(handler):
 # ── PR-watch registry (方案A) ─────────────────────────────────────────────────
 # skill/persona 提交 PR 后按自治边界 release 成 jarvis-idle；DailyScheduler 的 nudge 选择器只捞
 # 标题/描述含特定词的 idle 单，terraform 发布单都不含 → 工单永久停在 jarvis-idle。此登记表 +
-# PrWatchScheduler 补缺口：客户池 PR 合并后补业务终态标签，其它池沿用 claim.sh finish 收尾。
+# PrWatchScheduler 补缺口：客户池需求 PR 合并后进入发布准备状态，其它池沿用 claim.sh finish 收尾。
 # 与 bootstrap/pr-watch.sh 共用同一持久登记表。CI/review 去重游标也必须落盘；否则 bridge
 # 重启会把所有 open PR 当成“未登记”，重复群播并丢失每个 head 的修复次数。
 PRWATCH_PATH = Path(REPO_ROOT) / ".my-day/bridge/pr-watch.json"
@@ -1483,66 +1483,73 @@ def _is_terraform_project(project):
         return False
 
 
-def _normalize_business_terminal_tags(value):
-    """Return valid pool-level business terminal tag specs as name/id strings."""
-    out = []
-    for raw in value if isinstance(value, list) else []:
-        if not isinstance(raw, dict):
-            continue
-        name = str(raw.get("name") or "").strip()
-        tag_id = str(raw.get("id") or "").strip()
-        if name and tag_id:
-            out.append({"name": name, "id": tag_id})
-    return out
+def _normalize_pr_merged_status(value):
+    """Return a valid pool-scoped PR-merged status spec or None."""
+    if not isinstance(value, dict):
+        return None
+    item_type = str(value.get("type") or "").strip()
+    name = str(value.get("name") or "").strip()
+    status_id = str(value.get("id") or "").strip()
+    if not item_type or not name or not status_id:
+        return None
+    return {"type": item_type, "name": name, "id": status_id}
 
 
-def _business_terminal_tag_map():
-    """Load pool-scoped business terminal tags from pools.json, fail-closed to none."""
+def _pr_merged_status_map():
+    """Load pool-scoped PR-merged status mappings from pools.json."""
     try:
         pools = json.loads(
             (Path(REPO_ROOT) / "config" / "pools.json").read_text()).get("pools", {})
     except Exception as exc:  # noqa: BLE001
-        log.warning("bridge: could not read business terminal tags from pools.json: %s", exc)
+        log.warning("bridge: could not read PR-merged status mappings: %s", exc)
         return {}
     out = {}
     for key, pool in (pools or {}).items():
-        specs = _normalize_business_terminal_tags(pool.get("business_terminal_tags"))
-        if specs:
-            out[str(key)] = specs
+        spec = _normalize_pr_merged_status(pool.get("pr_merged_status"))
+        if spec:
+            out[str(key)] = spec
     return out
 
 
-def _pool_business_terminal_tags(pool_key=None, project=None):
-    """Resolve business terminal tags by pool key or project id."""
+def _pool_pr_merged_status(pool_key=None, project=None):
+    """Resolve one PR-merged status mapping by pool key or project id."""
     target_key = str(pool_key or "")
     target_project = str(project or "")
     try:
         pools = json.loads(
             (Path(REPO_ROOT) / "config" / "pools.json").read_text()).get("pools", {})
     except Exception as exc:  # noqa: BLE001
-        log.warning("bridge: could not resolve business terminal tags: %s", exc)
-        return []
+        log.warning("bridge: could not resolve PR-merged status mapping: %s", exc)
+        return None
     if target_key and target_key in pools:
-        return _normalize_business_terminal_tags(
-            pools[target_key].get("business_terminal_tags"))
+        return _normalize_pr_merged_status(pools[target_key].get("pr_merged_status"))
     if target_project:
         for pool in pools.values():
             if str(pool.get("project") or "") == target_project:
-                return _normalize_business_terminal_tags(
-                    pool.get("business_terminal_tags"))
-    return []
+                return _normalize_pr_merged_status(pool.get("pr_merged_status"))
+    return None
 
 
-def _has_business_terminal_tag(item, tag_map=None):
-    """Whether an item carries a terminal tag configured for its own pool only."""
+def _item_type_value(item):
+    """Normalize the numeric workitem type emitted by list APIs."""
+    value = item.get("type") or item.get("workitemType") or ""
+    if isinstance(value, dict):
+        value = value.get("id") or value.get("value") or value.get("identifier") or ""
+    return str(value or "").strip()
+
+
+def _has_pr_merged_status(item, status_map=None):
+    """Whether this pool/type item is at its configured PR-merged stop-scan status."""
     pool_key = str(item.get("pool") or "")
-    specs = ((tag_map or {}).get(pool_key)
-             if tag_map is not None else _pool_business_terminal_tags(pool_key=pool_key))
-    if not specs:
+    spec = ((status_map or {}).get(pool_key)
+            if status_map is not None else _pool_pr_merged_status(pool_key=pool_key))
+    if not spec:
         return False
-    tokens = _tagset(item)
-    expected = {value for spec in specs for value in (spec["name"], spec["id"])}
-    return bool(tokens & expected)
+    status = item.get("status") or item.get("statusName") or ""
+    if isinstance(status, dict):
+        status = status.get("name") or status.get("displayValue") or ""
+    return (_item_type_value(item) == spec["type"]
+            and str(status or "").strip() == spec["name"])
 
 
 def _a1_command_env(terraform=False):
@@ -1663,6 +1670,56 @@ def _post_pr_tag_snapshot(iid, terraform=True):
         raise RuntimeError(
             "bridge claim readback returned invalid JSON for #%s" % iid) from exc
     return {"tags": set(names), "pairs": pairs}
+
+
+def _post_pr_workitem_snapshot(iid, terraform=True):
+    """Point-read authoritative project, numeric type, status id/name, and tags.
+
+    The PR-merged status transition is scoped to one project and one workitem type, so
+    missing or malformed identity fields are ambiguous and must fail closed.
+    """
+    proc = subprocess.run(
+        [str(REPO_ROOT / "bin" / "a1id"), "--", "project", "workitem",
+         "get", str(iid), "-f", "json"],
+        cwd=str(REPO_ROOT), timeout=60, capture_output=True, text=True,
+        env=_a1_command_env(terraform=terraform))
+    if proc.returncode != 0:
+        detail = ((proc.stderr or proc.stdout or "").strip())[-300:]
+        raise RuntimeError(
+            "post-PR workitem read failed for #%s (rc=%s): %s" %
+            (iid, proc.returncode, detail or "no detail"))
+    try:
+        payload = json.loads(proc.stdout or "{}")
+        fields = payload.get("fields")
+        if not isinstance(fields, list):
+            raise ValueError("workitem fields are not a list")
+        fmap = {str(field.get("identifier") or ""): field
+                for field in fields if isinstance(field, dict)}
+        space = fmap.get("space") or {}
+        item_type = fmap.get("workitemType") or {}
+        status = fmap.get("status") or {}
+        tag = fmap.get("tag") or {}
+        project = str(space.get("value") or "").strip()
+        workitem_type = str(item_type.get("value") or "").strip()
+        workitem_type_name = str(item_type.get("displayValue") or "").strip()
+        status_name = str(status.get("displayValue") or "").strip()
+        status_id = str(status.get("value") or "").strip()
+        if not (project.isdigit() and workitem_type and status_name and status_id):
+            raise ValueError("required project/type/status fields are missing")
+        tags = {value.strip() for value in
+                str(tag.get("displayValue") or "").replace("，", ",").split(",")
+                if value.strip()}
+    except (AttributeError, TypeError, ValueError) as exc:
+        raise RuntimeError(
+            "post-PR workitem read returned invalid JSON for #%s" % iid) from exc
+    return {
+        "project": project,
+        "workitem_type": workitem_type,
+        "workitem_type_name": workitem_type_name,
+        "status": status_name,
+        "status_id": status_id,
+        "tags": tags,
+    }
 
 
 def _post_pr_claim_visible(iid, terraform=True):
@@ -3309,7 +3366,7 @@ class AoneScheduler:
         self.dispatch_pools = {p.strip() for p in
                                os.environ.get("JARVIS_DISPATCH_POOLS", "").split(",") if p.strip()}
         self.dispatch_created_before = os.environ.get("JARVIS_DISPATCH_CREATED_BEFORE", "").strip()
-        self._business_terminal_tags_by_pool = _business_terminal_tag_map()
+        self._pr_merged_status_by_pool = _pr_merged_status_map()
 
     def _load_human_operators(self):
         """从 config/contacts.json 动态加载人类操作者白名单(name+flower+id)。
@@ -3365,7 +3422,7 @@ class AoneScheduler:
 
     @staticmethod
     def _read_pools():
-        """pools.json → [(key, project, exclude_status[], business_terminal_tags[])]。"""
+        """pools.json → [(key, project, exclude_status[], pr_merged_status|None)]。"""
         try:
             pools = json.loads(
                 (Path(REPO_ROOT) / "config" / "pools.json").read_text()).get("pools", {})
@@ -3377,8 +3434,7 @@ class AoneScheduler:
             proj = p.get("project")
             if proj:
                 out.append((key, str(proj), list(p.get("exclude_status") or []),
-                            _normalize_business_terminal_tags(
-                                p.get("business_terminal_tags"))))
+                            _normalize_pr_merged_status(p.get("pr_merged_status"))))
         return out
 
     @classmethod
@@ -3418,25 +3474,24 @@ class AoneScheduler:
             })
         return out
 
-    def _union_filters(self, exclude_status, business_terminal_tags=None):
+    def _union_filters(self, exclude_status, pr_merged_status=None):
         """一个池的四源过滤：assignee / tracker / idle / terminal done watch。"""
         worker_csv = ",".join(sorted(DIGITAL_WORKER_IDS))
         excl = "".join(" AND NOT status=%s" % s for s in (exclude_status or []))
-        terminal_excl = "".join(
-            " AND NOT tag=%s" % spec["name"]
-            for spec in _normalize_business_terminal_tags(business_terminal_tags))
+        merged = _normalize_pr_merged_status(pr_merged_status)
+        done_excl = " AND NOT status=%s" % merged["name"] if merged else ""
         return (
-            "assignedTo=%s%s%s" % (worker_csv, excl, terminal_excl),
-            "workitem.tracker=%s%s%s" % (worker_csv, excl, terminal_excl),
-            "tag=jarvis-idle%s%s" % (excl, terminal_excl),
-            "tag=jarvis-done%s" % terminal_excl,
+            "assignedTo=%s%s" % (worker_csv, excl),
+            "workitem.tracker=%s%s" % (worker_csv, excl),
+            "tag=jarvis-idle%s" % excl,
+            "tag=jarvis-done%s" % done_excl,
         )
 
     def _query_pool_union(self, key, project, exclude_status,
-                          business_terminal_tags=None):
+                          pr_merged_status=None):
         """一个池的 assignee∪tracker∪idle∪done 并集（按 id 去重）。四源查询
         并行发出（各自 a1 调用 best-effort），去重时 assignee 源优先。"""
-        filters = self._union_filters(exclude_status, business_terminal_tags)
+        filters = self._union_filters(exclude_status, pr_merged_status)
         with ThreadPoolExecutor(max_workers=len(filters),
                                 thread_name_prefix="aone-union") as ex:
             per_filter = list(ex.map(lambda f: self._a1_list(project, f), filters))
@@ -3460,8 +3515,8 @@ class AoneScheduler:
         items = []
         with ThreadPoolExecutor(max_workers=min(8, len(pools)),
                                 thread_name_prefix="aone-pool") as ex:
-            futures = [ex.submit(self._query_pool_union, key, project, excl, terminal_tags)
-                       for key, project, excl, terminal_tags in pools]
+            futures = [ex.submit(self._query_pool_union, key, project, excl, merged_status)
+                       for key, project, excl, merged_status in pools]
             for fut in futures:
                 try:
                     items.extend(fut.result())
@@ -3794,10 +3849,10 @@ class AoneScheduler:
         retry_ids = getattr(self, "_done_watch_retry", None)
         if retry_ids is None:
             retry_ids = self._done_watch_retry = set()
-        terminal_tag_map = getattr(self, "_business_terminal_tags_by_pool", None)
-        if terminal_tag_map is None:
-            terminal_tag_map = self._business_terminal_tags_by_pool = (
-                _business_terminal_tag_map())
+        merged_status_map = getattr(self, "_pr_merged_status_by_pool", None)
+        if merged_status_map is None:
+            merged_status_map = self._pr_merged_status_by_pool = (
+                _pr_merged_status_map())
         for it in items:
             iid = str(it.get("id", ""))
             if not iid:
@@ -3810,9 +3865,9 @@ class AoneScheduler:
             decide_dispatch = False
             if not self._in_scope(it):
                 action, reason = "skip", "out_of_scope"
-            elif _has_business_terminal_tag(it, terminal_tag_map):
+            elif _has_pr_merged_status(it, merged_status_map):
                 retry_ids.discard(iid)
-                action, reason = "skip", "business_terminal"
+                action, reason = "skip", "pr_merged_status"
             elif "jarvis-done" in tags:
                 if "jarvis-npe" in tags:
                     # NPE remains an explicit human routing gate after completion.
@@ -4205,7 +4260,7 @@ class AoneScheduler:
 
 class PrWatchScheduler:
     """PR-watch: 周期轮询内存 PR 观察登记表（重启后 autoregister 重建），跨会话看守已提交 PR
-    的**全生命周期**——open 窗口内 CI 失败自动派修复；合并后客户池补业务终态标签，其它池
+    的**全生命周期**——open 窗口内 CI 失败自动派修复；合并后客户池需求进入发布准备状态，其它池
     自动 claim.sh finish 收尾本工单，
     与 DailyScheduler 的 nudge 互为兜底。
 
@@ -4213,7 +4268,7 @@ class PrWatchScheduler:
     撑不住 PR 从提交到合并的几小时/几天，`gh pr checks` 只在那次会话里跑一次；DailyScheduler 的 nudge
     的选择器只捞标题/描述含特定词的 idle 单，terraform 发布单都不含 → open 窗口 CI 转红无人修、
     合并后工单永久停在 jarvis-idle。本调度器读登记表逐条查 PR 状态：
-      · merged        → 客户池补业务终态标签（不改状态）；其它池 claim.sh finish
+      · merged        → 客户池需求写入池级 PR-merged 状态；其它池 claim.sh finish
         <ticket> <project> 已完成（过 npe/终态 guard）→ 重要事件入账+摘除
       · closed 未合并 → 评论 + escalate 交人工，不 finish → 摘除
       · open + CI 有失败 → force 重派 headless jarvis 修 CI（_maybe_dispatch_ci_fix）；
@@ -4306,25 +4361,75 @@ class PrWatchScheduler:
             merged_text = (
                 "关联 PR 已合并，Terraform 研发侧已完成本次交付收口。\n\n"
                 "PR：[%s](%s)" % (pr_url.rstrip("/").rsplit("/", 1)[-1], pr_url))
-            business_terminal_tags = _pool_business_terminal_tags(project=project)
-            if business_terminal_tags:
-                if not self._ensure_business_terminal_tags(tid, project):
-                    log.warning(
-                        "PrWatchScheduler: business terminal tag #%s failed/readback drift; "
-                        "keep watching", tid)
+            merged_status = _pool_pr_merged_status(project=project)
+            if merged_status:
+                customer_merged_text = (
+                    "关联 PR 已合并，Terraform 研发侧已完成代码合入。\n\n"
+                    "PR：[%s](%s)" % (
+                        pr_url.rstrip("/").rsplit("/", 1)[-1], pr_url))
+                try:
+                    snapshot = self._workitem_snapshot(tid)
+                except Exception as exc:  # noqa: BLE001
+                    log.warning("PrWatchScheduler: merged-status point-read #%s failed: %s; "
+                                "keep watching", tid, exc)
                     return
-                customer_text = (
-                    merged_text + "\n\n已标记「%s」，工单状态保持不变。" %
-                    "、".join(spec["name"] for spec in business_terminal_tags))
-                if not _aone_event_enqueue(tid, project, merged_key, customer_text):
-                    log.warning(
-                        "PrWatchScheduler: customer merged event #%s not durable; keep watching",
-                        tid)
+                if self._snapshot_in_merged_scope(snapshot, merged_status, project):
+                    current_status = str(snapshot.get("status") or "")
+                    tags = set(snapshot.get("tags") or ())
+                    if current_status in _load_done_statuses():
+                        if not _aone_event_enqueue(
+                                tid, project, merged_key,
+                                customer_merged_text +
+                                "\n\n工单已处于终态，本轮不重复修改状态。"):
+                            log.warning("PrWatchScheduler: customer terminal event #%s not "
+                                        "durable; keep watching", tid)
+                            return
+                        log.info("PrWatchScheduler: #%s already terminal; unwatching", tid)
+                        _prwatch_remove(tid)
+                        return
+                    if "jarvis-npe" in tags:
+                        npe_key = "pr:%s:merged-npe:%s" % (
+                            pr_url, merged_at or "state-MERGED")
+                        if not _aone_event_enqueue(
+                                tid, project, npe_key,
+                                customer_merged_text +
+                                "\n\n工单当前带 jarvis-npe，未自动修改状态，"
+                                "已转人工确认。"):
+                            log.warning("PrWatchScheduler: customer merged-npe event #%s not "
+                                        "durable; keep watching", tid)
+                            return
+                        self._escalate(
+                            tid, "PR 已合并但工单带 jarvis-npe（人工介入），不自动收尾", pr_url)
+                        _prwatch_remove(tid)
+                        return
+                    if not self._snapshot_has_merged_status(snapshot, merged_status):
+                        if not self._update_merged_status(tid, merged_status):
+                            log.warning("PrWatchScheduler: merged-status update #%s failed; "
+                                        "keep watching", tid)
+                            return
+                        try:
+                            snapshot = self._workitem_snapshot(tid)
+                        except Exception as exc:  # noqa: BLE001
+                            log.warning("PrWatchScheduler: merged-status readback #%s failed: %s; "
+                                        "keep watching", tid, exc)
+                            return
+                        if (not self._snapshot_in_merged_scope(
+                                snapshot, merged_status, project)
+                                or not self._snapshot_has_merged_status(
+                                    snapshot, merged_status)):
+                            log.warning("PrWatchScheduler: merged-status readback drift #%s; "
+                                        "keep watching", tid)
+                            return
+                    customer_text = (
+                        customer_merged_text + "\n\n工单状态已更新为「%s」，作为发布准备阶段的"
+                        "停止扫描状态。" % merged_status["name"])
+                    if not _aone_event_enqueue(tid, project, merged_key, customer_text):
+                        log.warning("PrWatchScheduler: customer merged event #%s not durable; "
+                                    "keep watching", tid)
+                        return
+                    log.info("PrWatchScheduler: #%s PR merged status confirmed", tid)
+                    _prwatch_remove(tid)
                     return
-                log.info(
-                    "PrWatchScheduler: #%s PR merged and business terminal tag confirmed", tid)
-                _prwatch_remove(tid)
-                return
             if entry.get("finish_succeeded"):
                 if tf_writer:
                     if not _aone_event_enqueue(tid, project, merged_key, merged_text):
@@ -4976,155 +5081,43 @@ class PrWatchScheduler:
             return "npe"
         return "ok"
 
-    def _ensure_business_terminal_tags(self, tid, project):
-        """Conservatively converge pool business-terminal tags without silent drift.
+    def _workitem_snapshot(self, tid):
+        """Authoritative Aone point-read for the typed PR-merged transition."""
+        return _post_pr_workitem_snapshot(tid, terraform=True)
 
-        Aone exposes neither CAS nor atomic tag-add: ``--tag`` replaces the full set. Keep
-        every observed name/id in the durable PR-watch entry before writing, read again
-        immediately before each write, and perform at most two compensation writes. A
-        readback/confirmation drift returns False with the expected union retained for the
-        next tick; seeing the required tag alone can therefore never bypass an earlier loss.
-        All Aone I/O uses terraform-rd. Any read/write/registry failure is retryable.
-        """
-        required = _pool_business_terminal_tags(project=project)
-        if not required:
-            return True
+    @staticmethod
+    def _snapshot_in_merged_scope(snapshot, merged_status, project):
+        return (
+            str(snapshot.get("project") or "") == str(project or "")
+            and str(snapshot.get("workitem_type") or "") == merged_status["type"]
+        )
 
-        def _pairs(value):
-            out = []
-            for raw in value if isinstance(value, (list, tuple)) else []:
-                if isinstance(raw, dict):
-                    name = str(raw.get("name") or "").strip()
-                    tag_id = str(raw.get("id") or "").strip()
-                elif isinstance(raw, (list, tuple)) and len(raw) >= 2:
-                    name = str(raw[0] or "").strip()
-                    tag_id = str(raw[1] or "").strip()
-                else:
-                    continue
-                if name or tag_id:
-                    out.append({"name": name, "id": tag_id})
-            return out
+    @staticmethod
+    def _snapshot_has_merged_status(snapshot, merged_status):
+        return (
+            str(snapshot.get("status") or "") == merged_status["name"]
+            and str(snapshot.get("status_id") or "") == merged_status["id"]
+        )
 
-        def _merge(*groups):
-            out = []
-            positions = {}
-            for group in groups:
-                for pair in _pairs(group):
-                    key = ("id", pair["id"]) if pair["id"] else ("name", pair["name"])
-                    if key in positions:
-                        current = out[positions[key]]
-                        if pair["name"]:
-                            current["name"] = pair["name"]
-                        if pair["id"]:
-                            current["id"] = pair["id"]
-                    else:
-                        positions[key] = len(out)
-                        out.append(dict(pair))
-            return out
-
-        def _snapshot_pairs(snapshot):
-            return _pairs(snapshot.get("pairs") or [])
-
-        def _visible(snapshot, expected):
-            ids = {tag_id for _name, tag_id in snapshot.get("pairs", []) if tag_id}
-            names = set(snapshot.get("tags") or [])
-            return all((pair["id"] and pair["id"] in ids)
-                       or (pair["name"] and pair["name"] in names)
-                       for pair in _pairs(expected))
-
-        def _persist(expected):
-            if _prwatch_update(
-                    tid, business_terminal_expected_tags=_pairs(expected)):
-                return True
-            log.warning("PrWatchScheduler: cannot persist expected tags for #%s", tid)
-            return False
-
-        registry_entry = _prwatch_list().get(str(tid)) or {}
-        persisted = _pairs(registry_entry.get("business_terminal_expected_tags"))
-        required_pairs = _pairs(required)
+    @staticmethod
+    def _update_merged_status(tid, merged_status):
+        """Move a scoped customer requirement to its release-prep stop-scan status."""
         try:
-            before = _post_pr_tag_snapshot(tid, terraform=True)
+            proc = subprocess.run(
+                [str(REPO_ROOT / "bin" / "a1id"), "--", "project", "workitem",
+                 "update", str(tid), "--status", merged_status["name"]],
+                cwd=str(REPO_ROOT), timeout=60, capture_output=True, text=True,
+                env=_a1_command_env(terraform=True))
         except Exception as exc:  # noqa: BLE001
-            log.warning("PrWatchScheduler: tag point-read #%s failed: %s", tid, exc)
+            log.warning("PrWatchScheduler: merged-status update #%s raised: %s", tid, exc)
             return False
-        expected = _merge(persisted, _snapshot_pairs(before), required_pairs)
-        if not _persist(expected):
+        if proc.returncode != 0:
+            detail = ((proc.stderr or proc.stdout or "").strip())[-300:]
+            log.warning("PrWatchScheduler: merged-status update #%s rc=%d: %s",
+                        tid, proc.returncode, detail or "no detail")
             return False
+        return True
 
-        for attempt in range(2):
-            try:
-                current = _post_pr_tag_snapshot(tid, terraform=True)
-            except Exception as exc:  # noqa: BLE001
-                log.warning("PrWatchScheduler: pre-write tag read #%s failed: %s", tid, exc)
-                return False
-            expected = _merge(expected, _snapshot_pairs(current))
-            if not _persist(expected):
-                return False
-
-            if _visible(current, expected):
-                try:
-                    confirmed = _post_pr_tag_snapshot(tid, terraform=True)
-                except Exception as exc:  # noqa: BLE001
-                    log.warning("PrWatchScheduler: stable tag read #%s failed: %s", tid, exc)
-                    return False
-                prior_expected = expected
-                expected = _merge(expected, _snapshot_pairs(confirmed))
-                if not _persist(expected):
-                    return False
-                if _visible(confirmed, prior_expected) and _visible(confirmed, expected):
-                    return True
-                log.warning(
-                    "PrWatchScheduler: no-write tag drift #%s (attempt %d/2); compensate",
-                    tid, attempt + 1)
-
-            values = []
-            for pair in expected:
-                value = pair["id"] or pair["name"]
-                if value and value not in values:
-                    values.append(value)
-            try:
-                proc = subprocess.run(
-                    [str(REPO_ROOT / "bin" / "a1id"), "--", "project", "workitem",
-                     "update", str(tid), "--tag", ",".join(values)],
-                    cwd=str(REPO_ROOT), timeout=60, capture_output=True, text=True,
-                    env=_a1_command_env(terraform=True))
-            except Exception as exc:  # noqa: BLE001
-                log.warning("PrWatchScheduler: tag update #%s raised: %s", tid, exc)
-                return False
-            if proc.returncode != 0:
-                detail = ((proc.stderr or proc.stdout or "").strip())[-300:]
-                log.warning("PrWatchScheduler: tag update #%s rc=%d: %s",
-                            tid, proc.returncode, detail or "no detail")
-                return False
-            try:
-                after = _post_pr_tag_snapshot(tid, terraform=True)
-            except Exception as exc:  # noqa: BLE001
-                log.warning("PrWatchScheduler: tag readback #%s failed: %s", tid, exc)
-                return False
-            prior_expected = expected
-            expected = _merge(expected, _snapshot_pairs(after))
-            if not _persist(expected):
-                return False
-            if not _visible(after, prior_expected):
-                log.warning(
-                    "PrWatchScheduler: tag readback drift #%s (attempt %d/2); compensate",
-                    tid, attempt + 1)
-                continue
-            try:
-                confirmed = _post_pr_tag_snapshot(tid, terraform=True)
-            except Exception as exc:  # noqa: BLE001
-                log.warning("PrWatchScheduler: tag confirmation #%s failed: %s", tid, exc)
-                return False
-            prior_expected = expected
-            expected = _merge(expected, _snapshot_pairs(confirmed))
-            if not _persist(expected):
-                return False
-            if _visible(confirmed, prior_expected) and _visible(confirmed, expected):
-                return True
-            log.warning(
-                "PrWatchScheduler: tag confirmation drift #%s (attempt %d/2); compensate",
-                tid, attempt + 1)
-        return False
 
     def _finish(self, tid, project, status):
         """claim.sh finish <tid> <project> <status>. Returns proc.returncode；任何非零都由
@@ -6300,9 +6293,9 @@ class _NudgeJob:
 
     def _query_pool(self, key, project):
         rows = []
-        terminal_filter = "".join(
-            " AND NOT tag=%s" % spec["name"]
-            for spec in _pool_business_terminal_tags(pool_key=key))
+        merged_status = _pool_pr_merged_status(pool_key=key)
+        merged_filter = (
+            " AND NOT status=%s" % merged_status["name"] if merged_status else "")
         try:
             page = 1
             while page <= 100:
@@ -6310,8 +6303,8 @@ class _NudgeJob:
                     [str(REPO_ROOT / "bin" / "a1id"), "--",
                      "project", "workitem", "list",
                      "--project", project, "--filter",
-                     "tag=%s%s" % (self.IDLE_TAG, terminal_filter),
-                     "--columns", "id,title,status,tag,assignee,created,modified",
+                     "tag=%s%s" % (self.IDLE_TAG, merged_filter),
+                     "--columns", "id,title,status,tag,type,assignee,created,modified",
                      "--sort", "modified:asc", "--page", str(page), "--page-size", "1000",
                      "-f", "json"],
                     capture_output=True, text=True, timeout=90, cwd=str(REPO_ROOT))
@@ -6328,6 +6321,7 @@ class _NudgeJob:
                         "pool": key,
                         "pool_project": project,
                         "tag": it.get("tag"),
+                        "type": it.get("type") or it.get("workitemType") or "",
                         "status": it.get("status") or it.get("statusName") or "",
                         "description": it.get("description") or it.get("body") or "",
                         "assignee": (it.get("assignedTo") or it.get("assignee")
@@ -6403,7 +6397,7 @@ class _NudgeJob:
     def _query(self):
         """Collect all eligible rows, then fairly select at most ``max_n``."""
         cands = []
-        terminal_tag_map = _business_terminal_tag_map()
+        merged_status_map = _pr_merged_status_map()
         for key, project in self._pool_projects():
             rows = self._query_pool(key, project)
             if rows is None:
@@ -6412,7 +6406,7 @@ class _NudgeJob:
                 tags = _tagset(it)
                 if tags & {"jarvis-npe", "jarvis-claimed", "jarvis-done"}:
                     continue
-                if _has_business_terminal_tag(it, terminal_tag_map):
+                if _has_pr_merged_status(it, merged_status_map):
                     continue
                 if str(it.get("status") or "").strip() in TERMINAL_STATUSES:
                     continue

@@ -30,18 +30,18 @@
       "claim_required_field_defaults": {
         "140282": "有OpenAPI，资源未定义，开放平台维护"
       },
-      "business_terminal_tags": [
-        {
-          "name": "Terraform已合入",
-          "id": "568576"
-        }
-      ],
+      "pr_merged_status": {
+        "type": "3",
+        "name": "已合入主线",
+        "id": "626904"
+      },
       "exclude_status": [
         "Closed",
         "Fixed",
         "Invalid",
         "Won'tfix",
         "ByDesign",
+        "已合入主线",
         "已发布",
         "已发布待需求方验收",
         "已取消",

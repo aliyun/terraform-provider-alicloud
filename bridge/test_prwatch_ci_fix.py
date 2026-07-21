@@ -472,201 +472,226 @@ class PrWatchWriteIdentityAndOutcomeTest(_DispatchBase):
         self.assertEqual(comments, [])
         self.assertEqual(self.handler.broadcasts, [])
 
-    def test_customer_merged_adds_business_terminal_tag_without_finish(self):
+    @staticmethod
+    def _status_snapshot(project="1086837", workitem_type="3",
+                         status="问题解决中", status_id="155741", tags=()):
+        return {
+            "project": str(project),
+            "workitem_type": str(workitem_type),
+            "workitem_type_name": "需求问题" if str(workitem_type) == "3" else "其它类型",
+            "status": status,
+            "status_id": str(status_id),
+            "tags": set(tags),
+        }
+
+    def test_customer_type3_merged_updates_status_and_uses_rd(self):
         bot._prwatch_update(TID, project="1086837")
         self.sched._gh_pr_state = lambda _url: ("MERGED", "2026-07-01T00:00:00Z")
-        ensured = []
-        self.sched._ensure_business_terminal_tags = (
-            lambda tid, project: ensured.append((tid, project)) or True)
-        self.sched._finish = lambda *_a: self.fail("tf_customer merge must not finish")
-        self.sched._ticket_guard = lambda *_a: self.fail(
-            "business terminal branch must run before terminal/npe guard")
-
-        self.sched._check_one(TID, self._entry())
-
-        self.assertEqual(ensured, [(TID, "1086837")])
-        self.assertFalse(bot._prwatch_has(TID))
-        self.assertEqual(len(self.events), 1)
-        self.assertIn(":merged:", self.events[0][2])
-
-    def test_customer_merged_tag_failure_keeps_watch(self):
-        bot._prwatch_update(TID, project="1086837")
-        self.sched._gh_pr_state = lambda _url: ("MERGED", "2026-07-01T00:00:00Z")
-        self.sched._ensure_business_terminal_tags = lambda *_a: False
-        self.sched._finish = lambda *_a: self.fail("tag failure must not finish")
-
-        self.sched._check_one(TID, self._entry())
-
-        self.assertTrue(bot._prwatch_has(TID))
-        self.assertEqual(self.events, [])
-
-    def test_customer_merged_event_failure_keeps_watch_after_tag(self):
-        bot._prwatch_update(TID, project="1086837")
-        bot._aone_event_publish = lambda *_a, **_k: False
-        self.sched._gh_pr_state = lambda _url: ("MERGED", "2026-07-01T00:00:00Z")
-        self.sched._ensure_business_terminal_tags = lambda *_a: True
-        self.sched._finish = lambda *_a: self.fail("tf_customer merge must not finish")
-
-        self.sched._check_one(TID, self._entry())
-
-        self.assertTrue(bot._prwatch_has(TID))
-
-    def test_customer_legacy_finish_state_still_adds_tag_first(self):
-        bot._prwatch_update(TID, project="1086837", finish_succeeded=True)
-        self.sched._gh_pr_state = lambda _url: ("MERGED", "2026-07-01T00:00:00Z")
-        ensured = []
-        self.sched._ensure_business_terminal_tags = (
-            lambda tid, project: ensured.append((tid, project)) or True)
-        self.sched._ticket_guard = lambda *_a: self.fail("legacy state must bypass guard")
-
-        self.sched._check_one(TID, self._entry())
-
-        self.assertEqual(ensured, [(TID, "1086837")])
-        self.assertFalse(bot._prwatch_has(TID))
-
-    def test_business_terminal_tag_update_preserves_existing_ids_and_uses_rd(self):
-        bot._prwatch_update(TID, project="1086837")
-        before = {"fields": [{"identifier": "tag",
-                               "displayValue": "customer-tag, jarvis-idle",
-                               "value": "11, 22"}]}
-        after = {"fields": [{"identifier": "tag",
-                              "displayValue": "customer-tag, jarvis-idle, Terraform已合入",
-                              "value": "11, 22, 568576"}]}
+        snapshots = iter((
+            self._status_snapshot(),
+            self._status_snapshot(status="已合入主线", status_id="626904"),
+        ))
+        self.sched._workitem_snapshot = lambda _tid: next(snapshots)
+        self.sched._finish = lambda *_a: self.fail("customer type 3 must not finish")
         calls = []
 
         def fake(cmd, *a, **kw):
             calls.append((list(cmd), dict(kw.get("env") or {})))
-            if "update" in cmd:
-                return _fake_proc(0, "")
-            get_count = sum(1 for call, _env in calls if "get" in call)
-            return _fake_proc(0, json.dumps(before if get_count <= 2 else after))
+            return _fake_proc(0, "")
 
         bot.subprocess.run = fake
+        self.sched._check_one(TID, self._entry())
 
-        self.assertTrue(self.sched._ensure_business_terminal_tags(TID, "1086837"))
-        update = next(call for call in calls if "update" in call[0])
-        self.assertEqual(update[0][update[0].index("--tag") + 1], "11,22,568576")
-        self.assertEqual(update[1].get("JARVIS_A1_IDENTITY"), "terraform-rd")
-        self.assertEqual(update[1].get("JARVIS_A1_STRICT"), "1")
+        update, env = next(call for call in calls if "update" in call[0])
+        self.assertEqual(update[update.index("--status") + 1], "已合入主线")
+        self.assertNotIn("--tag", update)
+        self.assertEqual(env.get("JARVIS_A1_IDENTITY"), "terraform-rd")
+        self.assertEqual(env.get("JARVIS_A1_STRICT"), "1")
+        self.assertFalse(bot._prwatch_has(TID))
+        self.assertEqual(len(self.events), 1)
+        self.assertIn(":merged:", self.events[0][2])
 
-    def test_business_terminal_tag_already_present_is_idempotent(self):
-        current = {"fields": [{"identifier": "tag",
-                                "displayValue": "customer-tag, Terraform已合入",
-                                "value": "11, 568576"}]}
+    def test_customer_point_read_parses_authoritative_scope_type_status_and_tags(self):
+        payload = {"fields": [
+            {"identifier": "space", "value": "1086837",
+             "displayValue": "Terraform - 客户需求"},
+            {"identifier": "workitemType", "value": "3",
+             "displayValue": "需求问题"},
+            {"identifier": "status", "value": "626904",
+             "displayValue": "已合入主线"},
+            {"identifier": "tag", "value": "11,22",
+             "displayValue": "jarvis-idle,customer-tag"},
+        ]}
         calls = []
 
         def fake(cmd, *a, **kw):
-            calls.append(list(cmd))
-            return _fake_proc(0, json.dumps(current))
+            calls.append((list(cmd), dict(kw.get("env") or {})))
+            return _fake_proc(0, json.dumps(payload))
 
         bot.subprocess.run = fake
+        snapshot = bot.PrWatchScheduler._workitem_snapshot(self.sched, TID)
+        self.assertEqual(snapshot["project"], "1086837")
+        self.assertEqual(snapshot["workitem_type"], "3")
+        self.assertEqual(snapshot["workitem_type_name"], "需求问题")
+        self.assertEqual((snapshot["status"], snapshot["status_id"]),
+                         ("已合入主线", "626904"))
+        self.assertEqual(snapshot["tags"], {"jarvis-idle", "customer-tag"})
+        self.assertEqual(calls[0][1].get("JARVIS_A1_IDENTITY"), "terraform-rd")
+        self.assertEqual(calls[0][1].get("JARVIS_A1_STRICT"), "1")
 
-        self.assertTrue(self.sched._ensure_business_terminal_tags(TID, "1086837"))
-        self.assertEqual(len(calls), 3,
-                         "no-write success requires pre-write and stable confirmation reads")
-        self.assertTrue(all("update" not in call for call in calls))
+    def test_customer_type3_already_merged_status_is_idempotent(self):
+        bot._prwatch_update(TID, project="1086837")
+        self.sched._gh_pr_state = lambda _url: ("MERGED", "2026-07-01T00:00:00Z")
+        self.sched._workitem_snapshot = lambda _tid: self._status_snapshot(
+            status="已合入主线", status_id="626904")
+        self.sched._finish = lambda *_a: self.fail("customer type 3 must not finish")
+        bot.subprocess.run = lambda *_a, **_k: self.fail(
+            "already-confirmed merged status must not update")
+        self.sched._check_one(TID, self._entry())
+        self.assertFalse(bot._prwatch_has(TID))
+        self.assertEqual(len(self.events), 1)
 
-    def test_concurrent_tag_seen_before_update_is_preserved(self):
-        before = {"fields": [{"identifier": "tag",
-                               "displayValue": "customer-tag, jarvis-idle",
-                               "value": "11, 22"}]}
-        concurrent = {"fields": [{"identifier": "tag",
-                                   "displayValue": "customer-tag, jarvis-idle, reviewer-tag",
-                                   "value": "11, 22, 33"}]}
-        after = {"fields": [{"identifier": "tag",
-                              "displayValue": ("customer-tag, jarvis-idle, reviewer-tag, "
-                                               "Terraform已合入"),
-                              "value": "11, 22, 33, 568576"}]}
-        get_payloads = iter((before, concurrent, after, after))
-        calls = []
+    def test_customer_initial_read_failure_keeps_watch(self):
+        bot._prwatch_update(TID, project="1086837")
+        self.sched._gh_pr_state = lambda _url: ("MERGED", "2026-07-01T00:00:00Z")
+        self.sched._workitem_snapshot = lambda _tid: (_ for _ in ()).throw(
+            RuntimeError("read failed"))
+        self.sched._finish = lambda *_a: self.fail("read failure must not finish")
+        self.sched._check_one(TID, self._entry())
+        self.assertTrue(bot._prwatch_has(TID))
+        self.assertEqual(self.events, [])
 
-        def fake(cmd, *a, **kw):
-            calls.append(list(cmd))
-            if "update" in cmd:
-                return _fake_proc(0, "")
-            return _fake_proc(0, json.dumps(next(get_payloads)))
+    def test_customer_status_update_failure_keeps_watch(self):
+        bot._prwatch_update(TID, project="1086837")
+        self.sched._gh_pr_state = lambda _url: ("MERGED", "2026-07-01T00:00:00Z")
+        self.sched._workitem_snapshot = lambda _tid: self._status_snapshot()
+        self.sched._finish = lambda *_a: self.fail("update failure must not finish")
+        bot.subprocess.run = lambda *_a, **_k: _fake_proc(1, "update failed")
+        self.sched._check_one(TID, self._entry())
+        self.assertTrue(bot._prwatch_has(TID))
+        self.assertEqual(self.events, [])
 
-        bot.subprocess.run = fake
+    def test_customer_status_readback_failure_keeps_watch(self):
+        bot._prwatch_update(TID, project="1086837")
+        self.sched._gh_pr_state = lambda _url: ("MERGED", "2026-07-01T00:00:00Z")
+        snapshots = iter((self._status_snapshot(), RuntimeError("readback failed")))
 
-        self.assertTrue(self.sched._ensure_business_terminal_tags(TID, "1086837"))
-        update = next(call for call in calls if "update" in call)
-        self.assertEqual(set(update[update.index("--tag") + 1].split(",")),
-                         {"11", "22", "33", "568576"})
+        def snapshot(_tid):
+            value = next(snapshots)
+            if isinstance(value, Exception):
+                raise value
+            return value
 
-    def test_drift_expectation_survives_two_ticks_and_prevents_early_success(self):
-        tag_a = {"fields": [{"identifier": "tag",
-                              "displayValue": "customer-tag", "value": "11"}]}
-        tag_b_required = {"fields": [{"identifier": "tag",
-                                       "displayValue": "reviewer-tag, Terraform已合入",
-                                       "value": "33, 568576"}]}
-        converged = {"fields": [{"identifier": "tag",
-                                  "displayValue": ("customer-tag, reviewer-tag, "
-                                                   "Terraform已合入"),
-                                  "value": "11, 33, 568576"}]}
-        # Tick 1: both bounded writes are followed by a concurrent full-set write that
-        # leaves B+required but drops A. Tick 2 must not early-return merely because the
-        # required tag exists; durable expectation A+B+required forces compensation.
-        get_payloads = iter((
-            tag_a, tag_a, tag_b_required, tag_b_required, tag_b_required,
-            tag_b_required, tag_b_required, converged, converged,
-        ))
-        updates = []
+        self.sched._workitem_snapshot = snapshot
+        self.sched._finish = lambda *_a: self.fail("readback failure must not finish")
+        bot.subprocess.run = lambda *_a, **_k: _fake_proc(0, "")
+        self.sched._check_one(TID, self._entry())
+        self.assertTrue(bot._prwatch_has(TID))
+        self.assertEqual(self.events, [])
 
-        def fake(cmd, *a, **kw):
-            if "update" in cmd:
-                updates.append(list(cmd))
-                return _fake_proc(0, "")
-            return _fake_proc(0, json.dumps(next(get_payloads)))
+    def test_customer_status_readback_requires_exact_scope_type_and_status(self):
+        self.sched._gh_pr_state = lambda _url: ("MERGED", "2026-07-01T00:00:00Z")
+        mismatches = (
+            self._status_snapshot(project="528766", status="已合入主线",
+                                  status_id="626904"),
+            self._status_snapshot(workitem_type="36", status="已合入主线",
+                                  status_id="626904"),
+            self._status_snapshot(status="已合入主线", status_id="wrong"),
+            self._status_snapshot(status="问题解决中", status_id="155741"),
+        )
+        for index, after in enumerate(mismatches):
+            with self.subTest(after=after):
+                if not bot._prwatch_has(TID):
+                    bot._prwatch_add(TID, PR, "1086837", TITLE)
+                bot._prwatch_update(TID, project="1086837")
+                self.events.clear()
+                snapshots = iter((self._status_snapshot(), after))
+                self.sched._workitem_snapshot = lambda _tid, it=snapshots: next(it)
+                self.sched._finish = lambda *_a: self.fail(
+                    "invalid readback must not finish")
+                bot.subprocess.run = lambda *_a, **_k: _fake_proc(0, "")
+                self.sched._check_one(TID, self._entry())
+                self.assertTrue(bot._prwatch_has(TID), index)
+                self.assertEqual(self.events, [])
 
-        bot.subprocess.run = fake
-
-        self.assertFalse(self.sched._ensure_business_terminal_tags(TID, "1086837"))
-        expected = self._entry().get("business_terminal_expected_tags")
-        self.assertEqual({pair["id"] for pair in expected}, {"11", "33", "568576"})
+    def test_customer_merged_event_failure_keeps_watch_after_status(self):
+        bot._prwatch_update(TID, project="1086837")
+        bot._aone_event_publish = lambda *_a, **_k: False
+        self.sched._gh_pr_state = lambda _url: ("MERGED", "2026-07-01T00:00:00Z")
+        self.sched._workitem_snapshot = lambda _tid: self._status_snapshot(
+            status="已合入主线", status_id="626904")
+        self.sched._finish = lambda *_a: self.fail("customer type 3 must not finish")
+        self.sched._check_one(TID, self._entry())
         self.assertTrue(bot._prwatch_has(TID))
 
-        self.assertTrue(self.sched._ensure_business_terminal_tags(TID, "1086837"))
-        self.assertEqual(len(updates), 3)
-        final_value = updates[-1][updates[-1].index("--tag") + 1]
-        self.assertEqual(set(final_value.split(",")), {"11", "33", "568576"})
+    def test_customer_legacy_finish_state_still_converges_status_first(self):
+        bot._prwatch_update(TID, project="1086837", finish_succeeded=True)
+        self.sched._gh_pr_state = lambda _url: ("MERGED", "2026-07-01T00:00:00Z")
+        self.sched._workitem_snapshot = lambda _tid: self._status_snapshot(
+            status="已合入主线", status_id="626904")
+        self.sched._ticket_guard = lambda *_a: self.fail("status path must bypass guard")
+        self.sched._check_one(TID, self._entry())
+        self.assertFalse(bot._prwatch_has(TID))
+        self.assertEqual(len(self.events), 1)
 
-    def test_business_terminal_initial_read_failure_is_retryable(self):
-        bot.subprocess.run = lambda *_a, **_k: _fake_proc(1, "read failed")
-        self.assertFalse(self.sched._ensure_business_terminal_tags(TID, "1086837"))
-        self.assertTrue(bot._prwatch_has(TID))
+    def test_customer_non_type3_preserves_legacy_finish_for_all_other_types(self):
+        self.sched._gh_pr_state = lambda _url: ("MERGED", "2026-07-01T00:00:00Z")
+        self.sched._ticket_guard = lambda _tid: "ok"
+        finishes = []
+        self.sched._finish = lambda *args: finishes.append(args) or 0
+        for item_type in ("36", "38", "27", "349"):
+            with self.subTest(item_type=item_type):
+                if not bot._prwatch_has(TID):
+                    bot._prwatch_add(TID, PR, "1086837", TITLE)
+                bot._prwatch_update(TID, project="1086837")
+                self.events.clear()
+                self.sched._workitem_snapshot = lambda _tid, t=item_type: (
+                    self._status_snapshot(workitem_type=t))
+                self.sched._check_one(TID, self._entry())
+                self.assertFalse(bot._prwatch_has(TID))
+                self.assertEqual(finishes[-1], (TID, "1086837", "已完成"))
+                self.assertEqual(len(self.events), 1)
 
-    def test_business_terminal_update_failure_is_retryable(self):
-        before = {"fields": [{"identifier": "tag",
-                               "displayValue": "customer-tag", "value": "11"}]}
-        calls = []
+    def test_customer_registry_with_non_customer_point_read_preserves_legacy_path(self):
+        bot._prwatch_update(TID, project="1086837")
+        self.sched._gh_pr_state = lambda _url: ("MERGED", "2026-07-01T00:00:00Z")
+        self.sched._workitem_snapshot = lambda _tid: self._status_snapshot(
+            project="528766")
+        self.sched._ticket_guard = lambda _tid: "ok"
+        finishes = []
+        self.sched._finish = lambda *args: finishes.append(args) or 0
+        self.sched._check_one(TID, self._entry())
+        self.assertEqual(finishes, [(TID, "1086837", "已完成")])
+        self.assertFalse(bot._prwatch_has(TID))
 
-        def fake(cmd, *a, **kw):
-            calls.append(list(cmd))
-            if "update" in cmd:
-                return _fake_proc(1, "update failed")
-            return _fake_proc(0, json.dumps(before))
+    def test_customer_type3_terminal_guard_does_not_move_status(self):
+        bot._prwatch_update(TID, project="1086837")
+        self.sched._gh_pr_state = lambda _url: ("MERGED", "2026-07-01T00:00:00Z")
+        self.sched._workitem_snapshot = lambda _tid: self._status_snapshot(
+            status="已发布", status_id="terminal")
+        self.sched._finish = lambda *_a: self.fail("terminal customer must not finish")
+        bot.subprocess.run = lambda *_a, **_k: self.fail(
+            "terminal customer must not update status")
+        self.sched._check_one(TID, self._entry())
+        self.assertFalse(bot._prwatch_has(TID))
+        self.assertEqual(len(self.events), 1)
 
-        bot.subprocess.run = fake
-        self.assertFalse(self.sched._ensure_business_terminal_tags(TID, "1086837"))
-        self.assertEqual(sum("update" in call for call in calls), 1)
-        self.assertTrue(bot._prwatch_has(TID))
+    def test_customer_type3_npe_guard_does_not_move_status(self):
+        bot._prwatch_update(TID, project="1086837")
+        self.sched._gh_pr_state = lambda _url: ("MERGED", "2026-07-01T00:00:00Z")
+        self.sched._workitem_snapshot = lambda _tid: self._status_snapshot(
+            tags=("jarvis-npe",))
+        self.sched._finish = lambda *_a: self.fail("npe customer must not finish")
+        bot.subprocess.run = lambda *_a, **_k: self.fail(
+            "npe customer must not update status")
+        escalated = []
+        self.sched._escalate = lambda *_a: escalated.append(_a)
+        self.sched._check_one(TID, self._entry())
+        self.assertFalse(bot._prwatch_has(TID))
+        self.assertEqual(len(self.events), 1)
+        self.assertIn(":merged-npe:", self.events[0][2])
+        self.assertEqual(len(escalated), 1)
 
-    def test_business_terminal_readback_failure_is_retryable(self):
-        before = {"fields": [{"identifier": "tag",
-                               "displayValue": "customer-tag", "value": "11"}]}
-        get_count = 0
-
-        def fake(cmd, *a, **kw):
-            nonlocal get_count
-            if "update" in cmd:
-                return _fake_proc(0, "")
-            get_count += 1
-            return (_fake_proc(0, json.dumps(before)) if get_count <= 2
-                    else _fake_proc(1, "readback failed"))
-
-        bot.subprocess.run = fake
-        self.assertFalse(self.sched._ensure_business_terminal_tags(TID, "1086837"))
-        self.assertTrue(bot._prwatch_has(TID))
 
     def test_terraform_finish_publishes_one_merged_event_and_removes(self):
         self.sched._gh_pr_state = lambda _url: ("MERGED", "2026-07-01T00:00:00Z")
