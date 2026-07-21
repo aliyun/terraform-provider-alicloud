@@ -69,8 +69,8 @@ chk aliyun aliyun
 if command -v cloudspec >/dev/null 2>&1; then
     echo "PASS cloudspec"
 else
-    echo "WARN cloudspec — 上游 install URL (acube.aliyun-inc.com/api/v1/cloudspec/cli/download) 当前返回 500, 无法自动装; CloudSpec IDL 相关 Task 会缺 CLI 支持"
-    echo "     修复: 找有装 cloudspec 的 macOS/Linux 机器复制 binary 到 ~/.local/bin, 或等上游修复 https://code.alibaba-inc.com/cloudspec-mcp/cloudspec"
+    echo "WARN cloudspec — acube 上游缺 Linux 产物(cloudspec-linux-*.zip 全版本 500「下载失败」, mac 包正常); CloudSpec IDL 相关 Task 会缺 CLI 支持"
+    echo "     修复: 等上游补 Linux 构建(补上后下次 preflight 自动装, deps.lock 已就位), 或按安装文档手动装: https://aliyuque.antfin.com/cloudspec/model/cli-install"
     esc_dir="${JARVIS_ESCALATION_DIR:-$repo_root/escalation}"
     esc_file="$esc_dir/cloudspec-install-broken-$(date -u +%F).md"
     if [ ! -f "$esc_file" ]; then
@@ -79,14 +79,14 @@ else
             echo "# cloudspec CLI 装机失败 — $(date -u +%F)"
             echo ""
             echo "## 现象"
-            echo "\`bootstrap/install.sh\` 里 cloudspec 装法 (\`curl https://acube.aliyun-inc.com/api/v1/cloudspec/cli/install.sh | sudo bash\`) 里硬编码的 1.1.39 版本、以及所有其他试过的版本，从 acube.aliyun-inc.com 下载都返回 HTTP 500，脚本内部 unzip 一个空 zip 失败。"
+            echo "acube 下载端点 (\`acube.aliyun-inc.com/api/v1/cloudspec/cli/download/<ver>?file=cloudspec-linux-<arch>.zip\`) 对**所有版本、所有架构的 Linux 包**统一返回 HTTP 500（body=「下载失败:<ver>」）；同端点 mac 包正常（1.1.39 实测 200/47MB）。判定：上游从未发布 Linux 构建产物。"
             echo ""
             echo "## 影响面"
             echo "只影响需要本地 \`cloudspec\` CLI 的 CloudSpec IDL 编辑/校验/build 类 Task。其他 Task 类型不受影响。故 verify 记 WARN 不硬失败。"
             echo ""
             echo "## 修复选项"
-            echo "1. 上游 acube endpoint 修好后 \`bash bootstrap/install.sh\` 会自动重装。"
-            echo "2. 手动: 从已装 cloudspec 的机器 \`scp ~/.local/bin/cloudspec\` 过来，或从 https://code.alibaba-inc.com/cloudspec-mcp/cloudspec 源码编译。"
+            echo "1. 上游补 Linux 产物后 \`bash bootstrap/install.sh\` 自动装（deps.lock 免 sudo 流程已就位：zip → ~/.local/opt/cloudspec + symlink）。"
+            echo "2. 手动: 按安装文档 https://aliyuque.antfin.com/cloudspec/model/cli-install 的 Linux 方式装。"
         } > "$esc_file"
         echo "     已落 escalation 提示: $esc_file"
     fi
