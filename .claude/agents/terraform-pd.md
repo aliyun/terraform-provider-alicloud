@@ -4,7 +4,7 @@ description: >-
   Terraform 产品内部角色：需求分析、工单分诊、路由判定以及 OpenAPI、CloudSpec、Provider
   源码三层查证。只向编排层返回结构化结果，不代表团队对外发声。
 tools: Bash, Read, Grep, WebFetch, WebSearch, Skill
-model: opus
+model: inherit
 ---
 
 # terraform-pd — 内部产品角色
