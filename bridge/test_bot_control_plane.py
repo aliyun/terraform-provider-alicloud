@@ -54,6 +54,7 @@ class HandlerWiringTest(unittest.TestCase):
         "JARVIS_CONTROL_PLANE_BASE_URL", "JARVIS_CONTROL_PLANE_TOKEN",
         "JARVIS_HTML_REPORT_BASE_URL",
         "JARVIS_HTML_REPORT_TOKEN",
+        "JARVIS_BRIDGE_ROLE",
     )
 
     def setUp(self):
@@ -170,11 +171,23 @@ class HandlerWiringTest(unittest.TestCase):
         calls = []
         handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
         handler.persistence_executor = _Starter("worker", calls)
-        for name in ("scanner", "daily", "aone_reply_scheduler", "prwatch"):
+        for name in ("scanner", "daily", "aone_reply_scheduler", "prwatch",
+                     "external_operation_recovery"):
             setattr(handler, name, _Starter(name, calls))
         handler.start_schedulers()
         self.assertEqual(calls[0], "worker")
-        self.assertEqual(calls[-1], "prwatch")
+        self.assertEqual(calls[-1], "external_operation_recovery")
+
+    def test_worker_role_does_not_start_external_recovery_scheduler(self):
+        calls = []
+        handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
+        handler.persistence_executor = _Starter("worker", calls)
+        handler.external_operation_recovery = _Starter("recovery", calls)
+        os.environ["JARVIS_BRIDGE_ROLE"] = "worker"
+
+        handler.start_schedulers()
+
+        self.assertEqual(calls, ["worker"])
 
     def test_stop_helper_forwards_drain_policy(self):
         handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
@@ -182,6 +195,15 @@ class HandlerWiringTest(unittest.TestCase):
         handler.persistence_executor = worker
         self.assertTrue(handler.stop_persistence_executor(drain=True, timeout=7))
         self.assertEqual(worker.stop_calls, [(True, 7)])
+
+    def test_stop_helper_stops_external_recovery_loop_first(self):
+        handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
+        handler.persistence_executor = _FakePersistenceExecutor()
+        handler.external_operation_recovery = mock.Mock()
+
+        self.assertTrue(handler.stop_persistence_executor())
+
+        handler.external_operation_recovery.stop.assert_called_once_with()
 
     def test_task_client_defaults_to_pre_and_requires_token(self):
         for key in self.ENV_KEYS:

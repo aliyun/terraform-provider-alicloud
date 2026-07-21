@@ -161,18 +161,21 @@ pendingClaim（下次 prepare-claim 复用同 key 幂等收敛）。mid-task 回
 
 这类槽改写入 `state["orphanOperations"]`（`{operationId, operationKey, kind,
 aoneId, status, orphanedAt}` 记录列表），跨 incarnation 持久保留、重启不丢，
-交生产态 Reconciler / 人工按 operationId 收敛；pendingClaim 不带 key →
+但它只用于本机诊断，不是恢复候选真源。scheduler 角色的
+`ExternalOperationRecoveryScheduler` 从控制面
+`/operations/external-recovery-candidates` 分页取 current-generation 候选，按
+operationId 获取 token lease，续租后只读核验 Aone comment/status/tag；只有完整读回
+能确定 found/not-found 才 reconcile，网络错误/坏 JSON/歧义一律 release fail-closed。
+pendingClaim 不带 key →
 prepare-claim 派生全新 aone-claim key。orphan 记录不参与 PreToolUse guard
 放行判定（pendingOperation 槽已清）。prepare-claim 侧另有兜底：saved
 operationKey 非 `aone-claim:` 前缀一律弃用改派新 key（防 pre-fix 存量 state）。
 
 ## 已知边界
 
-- **重启后的服务端 UNKNOWN 槽只剩带外收敛**：replacement 把 mid-task 槽转入
-  orphanOperations（operationId/kind 不再丢，见上节），但本地 CLI 的 reconcile
-  只作用于当前 pendingOperation——orphan 记录的收敛仍需生产态 Reconciler /
-  人工经控制面按 operationId 处置；服务端 UNKNOWN 期间同 key 的 begin 会持续
-  409（新 incarnation 的 claim 用的是全新 key，不受影响）。
+- **本地 orphan 不驱动收敛**：replacement 仍保留 operationId/kind 供排障，但 bridge
+  只信控制面候选 API。这样迁机、重装或本地 ledger 丢失不会漏恢复，也不会因陈旧
+  orphan 误收敛已经 ACKED/换代的 operation。
 - **comment 跨 attempt 相同正文会各发一次**：operationKey 含 attempt 分量后，
   exactly-once 的粒度是「每个 lease attempt」——同 generation 复活的新
   Session/fence 若生成字节级相同的评论正文，会再发一条。这是有意语义

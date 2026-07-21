@@ -128,6 +128,7 @@ from jarvis_task_client import ControlPlaneClient, TaskEnvelope
 from jarvis_capacity import CapacityManager
 from jarvis_task_router import ExecutionRouter
 from jarvis_persistence_executor import PersistenceExecutor
+from jarvis_external_recovery import ExternalOperationRecoveryScheduler
 from tata_dws_history import (
     DWS_USER_NOT_IN_GROUP,
     DwsGroupHistory,
@@ -6294,10 +6295,14 @@ class JarvisHandler(AsyncChatbotHandler):
                 controller.runtime_session_id),
             logger=log,
         )
-        # Final component set (6): AoneScheduler(scan+dispatch+stale sub-tick),
+        self.external_operation_recovery = ExternalOperationRecoveryScheduler(
+            self.task_client,
+            getattr(self.persistence_executor, "worker_key", "external-recovery-scheduler"),
+            repo_root=REPO_ROOT, logger=log)
+        # Final component set: AoneScheduler(scan+dispatch+stale sub-tick),
         # PersistenceExecutor(control-plane Task lease), EphemeralExecutor(local jobs),
         # AoneReplyScheduler(SUSPENDED session wake), DailyScheduler(probe+nudge),
-        # PrWatchScheduler(PR lifecycle).
+        # PrWatchScheduler(PR lifecycle), and external-operation recovery.
         self.scanner = AoneScheduler(self, self.ephemeral_executor)
         self.daily = DailyScheduler(self, self.ephemeral_executor)
         self.aone_reply_scheduler = AoneReplyScheduler(self)
@@ -6340,9 +6345,15 @@ class JarvisHandler(AsyncChatbotHandler):
         self.daily.start()
         self.aone_reply_scheduler.start()
         self.prwatch.start()
+        recovery = getattr(self, "external_operation_recovery", None)
+        if recovery is not None:
+            recovery.start()
 
     def stop_persistence_executor(self, *, drain=False, timeout=None):
         """Stop the persistent Task executor once."""
+        recovery = getattr(self, "external_operation_recovery", None)
+        if recovery is not None:
+            recovery.stop()
         if self.persistence_executor.stopped:
             return True
         return self.persistence_executor.stop(drain=drain, timeout=timeout)

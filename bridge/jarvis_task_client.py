@@ -203,6 +203,11 @@ class ControlPlaneClient:
     SOURCE_STATUS_CANDIDATES_PATH = "tasks/source-status-candidates"
     SOURCE_STATUS_PATH = "tasks/{task_id}/source-status"
     PENDING_AONE_WAITS_PATH = "sessions/waits/aone-reply"
+    EXTERNAL_OPERATION_RECOVERY_CANDIDATES_PATH = (
+        "operations/external-recovery-candidates")
+    OPERATION_RECOVERY_LEASE_PATH = "operations/recovery/lease"
+    OPERATION_RECOVERY_RENEW_PATH = "operations/recovery/renew"
+    OPERATION_RECOVERY_RELEASE_PATH = "operations/recovery/release"
 
     def __init__(self, base_url: str, token: str = "", *, timeout: float = 10.0,
                  api_prefix: str = DEFAULT_PREFIX,
@@ -486,6 +491,53 @@ class ControlPlaneClient:
                             request_id: Optional[str] = None) -> Dict[str, Any]:
         return self._post(self.PATHS["operation_reconcile"], operation,
                           request_id=request_id)
+
+    def list_external_operation_recovery_candidates(
+            self, *, after_operation_id: int = 0, limit: int = 100) -> Any:
+        after = int(after_operation_id)
+        page_size = int(limit)
+        if after < 0:
+            raise ValueError("after_operation_id must not be negative")
+        if page_size <= 0 or page_size > 500:
+            raise ValueError("limit must be between 1 and 500")
+        return self._get("%s?%s" % (
+            self.EXTERNAL_OPERATION_RECOVERY_CANDIDATES_PATH,
+            urlencode({"afterOperationId": after, "limit": page_size})))
+
+    @staticmethod
+    def _operation_recovery_payload(operation_id: Any, worker_key: str,
+                                    recovery_token: str) -> Dict[str, Any]:
+        if operation_id is None or str(operation_id).strip() == "":
+            raise ValueError("operation_id must not be empty")
+        return {
+            "operationId": operation_id,
+            "workerKey": _nonblank(worker_key, "worker_key"),
+            "recoveryToken": _nonblank(recovery_token, "recovery_token"),
+        }
+
+    def lease_operation_recovery(self, operation_id: Any, worker_key: str,
+                                 recovery_token: str, *,
+                                 request_id: Optional[str] = None) -> Dict[str, Any]:
+        return self._post(
+            self.OPERATION_RECOVERY_LEASE_PATH,
+            self._operation_recovery_payload(operation_id, worker_key, recovery_token),
+            request_id=request_id)
+
+    def renew_operation_recovery(self, operation_id: Any, worker_key: str,
+                                 recovery_token: str, *,
+                                 request_id: Optional[str] = None) -> Dict[str, Any]:
+        return self._post(
+            self.OPERATION_RECOVERY_RENEW_PATH,
+            self._operation_recovery_payload(operation_id, worker_key, recovery_token),
+            request_id=request_id)
+
+    def release_operation_recovery(self, operation_id: Any, worker_key: str,
+                                   recovery_token: str, *,
+                                   request_id: Optional[str] = None) -> Dict[str, Any]:
+        return self._post(
+            self.OPERATION_RECOVERY_RELEASE_PATH,
+            self._operation_recovery_payload(operation_id, worker_key, recovery_token),
+            request_id=request_id)
 
     def get_task_by_aone(self, aone_id: str) -> Any:
         path = self.TASK_BY_AONE_PATH.format(
