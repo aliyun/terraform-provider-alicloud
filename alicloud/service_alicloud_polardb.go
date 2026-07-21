@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -13,6 +14,8 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/polardb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
@@ -510,7 +513,13 @@ func (s *PolarDBService) WaitForPolarDBConnection(id string, status Status, time
 			return nil
 		}
 		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.ConnectionString, id, ProviderERROR)
+			// object stays nil when the connection never became visible within the
+			// wait window, so it must not be dereferenced in the timeout message.
+			connectionString := ""
+			if object != nil {
+				connectionString = object.ConnectionString
+			}
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, connectionString, id, ProviderERROR)
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}
@@ -2340,4 +2349,120 @@ func (s *PolarDBService) DescribeAIDBClusterApiKeys(regionId string) (object map
 
 	object = v.(map[string]interface{})
 	return object, nil
+}
+
+// DescribePolarDBDynamoEndpointAddress resolves the DynamoDB-compatible endpoint address
+// (http://<connection_string>:<port>) of a PolarDB cluster. It prefers the Public address
+// and falls back to the first available one. It is mainly used on resource import, where
+// only the resource ID (which contains the db_cluster_id) is available.
+func (s *PolarDBService) DescribePolarDBDynamoEndpointAddress(dbClusterId string) (string, error) {
+	endpoints, err := s.DescribePolarDBInstanceNetInfo(dbClusterId)
+	if err != nil {
+		return "", WrapError(err)
+	}
+	fallback := ""
+	for _, endpoint := range endpoints {
+		if endpoint.EndpointType != "DynamoDB" {
+			continue
+		}
+		for _, address := range endpoint.AddressItems {
+			if address.ConnectionString == "" {
+				continue
+			}
+			addr := fmt.Sprintf("http://%s:%s", address.ConnectionString, address.Port)
+			if address.NetType == "Public" {
+				return addr, nil
+			}
+			if fallback == "" {
+				fallback = addr
+			}
+		}
+	}
+	if fallback != "" {
+		return fallback, nil
+	}
+	return "", WrapErrorf(NotFoundErr("PolarDBDynamoEndpoint", dbClusterId), NotFoundMsg, ProviderERROR)
+}
+
+// DescribePolarDBDynamoAccount finds the DynamoDB-type account of a PolarDB cluster and
+// returns its account name and DynamoDB auth password. The DynamoDB-compatible endpoint
+// only accepts this account (the provider AK/SK are rejected), so it is used on resource
+// import, where only the resource ID (which contains the db_cluster_id) is available.
+func (s *PolarDBService) DescribePolarDBDynamoAccount(dbClusterId string) (string, string, error) {
+	action := "DescribeAccounts"
+	request := map[string]interface{}{
+		"DBClusterId": dbClusterId,
+	}
+	var response map[string]interface{}
+	var err error
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = s.client.RpcPost("polardb", "2017-08-01", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return "", "", WrapErrorf(err, DefaultErrorMsg, dbClusterId, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.Accounts[*]", response)
+	if err != nil {
+		return "", "", WrapErrorf(NotFoundErr("PolarDBDynamoAccount", dbClusterId), NotFoundMsg, response)
+	}
+	for _, raw := range v.([]interface{}) {
+		account := raw.(map[string]interface{})
+		if fmt.Sprint(account["AccountType"]) != "DynamoDB" {
+			continue
+		}
+		accountName := fmt.Sprint(account["AccountName"])
+		authPassword := ""
+		if p, ok := account["DynamoDBAuthPassword"]; ok && p != nil {
+			authPassword = fmt.Sprint(p)
+		}
+		if accountName != "" && authPassword != "" {
+			return accountName, authPassword, nil
+		}
+	}
+	return "", "", WrapErrorf(NotFoundErr("PolarDBDynamoAccount", dbClusterId), NotFoundMsg, response)
+}
+
+// PolarDBDynamoTableStateRefreshFunc returns a StateRefreshFunc for DynamoDB table status
+func (s *PolarDBService) PolarDBDynamoTableStateRefreshFunc(dbClusterId, tableName, endpoint, accessKey, secretKey string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		dynamoClient, err := s.client.NewPolarDBDynamoClient(endpoint, accessKey, secretKey)
+		if err != nil {
+			return nil, "", WrapError(err)
+		}
+
+		output, err := dynamoClient.DescribeTable(context.Background(), &dynamodb.DescribeTableInput{
+			TableName: aws.String(tableName),
+		})
+		if err != nil {
+			if isDynamoNotFoundError(err) {
+				return nil, "", nil
+			}
+			if isDynamoRetryableError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapErrorf(err, DefaultErrorMsg, fmt.Sprintf("%s:%s", dbClusterId, tableName), "DescribeTable", AlibabaCloudSdkGoERROR)
+		}
+
+		if output.Table == nil {
+			return nil, "", fmt.Errorf("missing Table field in DescribeTable response")
+		}
+
+		status := string(output.Table.TableStatus)
+		if status == "" {
+			status = "ACTIVE"
+		}
+
+		return output.Table, status, nil
+	}
 }
