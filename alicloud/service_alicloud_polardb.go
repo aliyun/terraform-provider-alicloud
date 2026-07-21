@@ -13,6 +13,8 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/polardb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
@@ -2340,4 +2342,71 @@ func (s *PolarDBService) DescribeAIDBClusterApiKeys(regionId string) (object map
 
 	object = v.(map[string]interface{})
 	return object, nil
+}
+
+// DescribePolarDBDynamoEndpointAddress resolves the DynamoDB-compatible endpoint address
+// (http://<connection_string>:<port>) of a PolarDB cluster. It prefers the Public address
+// and falls back to the first available one. It is mainly used on resource import, where
+// only the resource ID (which contains the db_cluster_id) is available.
+func (s *PolarDBService) DescribePolarDBDynamoEndpointAddress(dbClusterId string) (string, error) {
+	endpoints, err := s.DescribePolarDBInstanceNetInfo(dbClusterId)
+	if err != nil {
+		return "", WrapError(err)
+	}
+	fallback := ""
+	for _, endpoint := range endpoints {
+		if endpoint.EndpointType != "DynamoDB" {
+			continue
+		}
+		for _, address := range endpoint.AddressItems {
+			if address.ConnectionString == "" {
+				continue
+			}
+			addr := fmt.Sprintf("http://%s:%s", address.ConnectionString, address.Port)
+			if address.NetType == "Public" {
+				return addr, nil
+			}
+			if fallback == "" {
+				fallback = addr
+			}
+		}
+	}
+	if fallback != "" {
+		return fallback, nil
+	}
+	return "", WrapErrorf(NotFoundErr("PolarDBDynamoEndpoint", dbClusterId), NotFoundMsg, ProviderERROR)
+}
+
+// PolarDBDynamoTableStateRefreshFunc returns a StateRefreshFunc for DynamoDB table status
+func (s *PolarDBService) PolarDBDynamoTableStateRefreshFunc(dbClusterId, tableName, endpoint, accessKey, secretKey string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		dynamoClient, err := s.client.NewPolarDBDynamoClient(endpoint, accessKey, secretKey)
+		if err != nil {
+			return nil, "", WrapError(err)
+		}
+
+		output, err := dynamoClient.DescribeTable(&dynamodb.DescribeTableInput{
+			TableName: aws.String(tableName),
+		})
+		if err != nil {
+			if isDynamoNotFoundError(err) {
+				return nil, "", nil
+			}
+			if isDynamoRetryableError(err) {
+				return nil, "", err
+			}
+			return nil, "", WrapErrorf(err, DefaultErrorMsg, fmt.Sprintf("%s:%s", dbClusterId, tableName), "DescribeTable", AlibabaCloudSdkGoERROR)
+		}
+
+		if output.Table == nil {
+			return nil, "", fmt.Errorf("missing Table field in DescribeTable response")
+		}
+
+		status := aws.StringValue(output.Table.TableStatus)
+		if status == "" {
+			status = "ACTIVE"
+		}
+
+		return output.Table, status, nil
+	}
 }

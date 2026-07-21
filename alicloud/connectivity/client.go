@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -62,6 +63,10 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/sts"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/yundun_dbaudit"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	awssession "github.com/aws/aws-sdk-go/aws/session"
+	awsdynamodb "github.com/aws/aws-sdk-go/service/dynamodb"
 	ossv2 "github.com/aliyun/alibabacloud-oss-go-sdk-v2/oss"
 	ossv2cred "github.com/aliyun/alibabacloud-oss-go-sdk-v2/oss/credentials"
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
@@ -396,6 +401,62 @@ func (client *AliyunClient) WithPolarDBClient(do func(*polardb.Client) (interfac
 	polarDBconn.SecureTransport = client.config.SecureTransport
 	client.polarDBconn = polarDBconn
 	return do(client.polarDBconn)
+}
+
+// NewPolarDBDynamoClient creates an AWS DynamoDB client configured for PolarDB's
+// DynamoDB-compatible endpoint. The endpoint is derived from the PolarDB cluster's
+// DynamoDB endpoint address. If accessKey/secretKey are empty, the provider's
+// credentials are used instead.
+func (client *AliyunClient) NewPolarDBDynamoClient(endpoint, accessKey, secretKey string) (*awsdynamodb.DynamoDB, error) {
+	if endpoint == "" {
+		return nil, fmt.Errorf("endpoint is required for PolarDB DynamoDB operations")
+	}
+
+	// Ensure endpoint uses HTTP protocol (PolarDB DynamoDB compatible endpoint does not support HTTPS)
+	if !strings.HasPrefix(endpoint, "http://") && !strings.HasPrefix(endpoint, "https://") {
+		endpoint = "http://" + endpoint
+	}
+	// Force HTTP if HTTPS was specified
+	endpoint = strings.Replace(endpoint, "https://", "http://", 1)
+
+	// Use resource-level AK/SK if provided, otherwise fall back to provider credentials
+	ak := accessKey
+	sk := secretKey
+	if ak == "" {
+		ak = client.AccessKey
+	}
+	if sk == "" {
+		sk = client.SecretKey
+	}
+
+	log.Printf("[DEBUG] NewPolarDBDynamoClient: endpoint=%s, account_name=%s", endpoint, ak)
+
+	creds := credentials.NewStaticCredentials(ak, sk, "")
+	sess, err := awssession.NewSession(&aws.Config{
+		Region:           aws.String("public"),
+		Credentials:      creds,
+		Endpoint:         aws.String(endpoint),
+		DisableSSL:       aws.Bool(true),
+		S3ForcePathStyle: aws.Bool(true),
+		// Keep SDK-level retries and per-request timeouts small so that a single API
+		// call fails fast (e.g. when the public endpoint is unreachable), letting the
+		// outer resource.Retry loop drive retries and surface the real error instead
+		// of one call blocking for the whole retry window.
+		MaxRetries: aws.Int(2),
+		HTTPClient: &http.Client{
+			Timeout: 15 * time.Second,
+			Transport: &http.Transport{
+				DialContext: (&net.Dialer{
+					Timeout: 10 * time.Second,
+				}).DialContext,
+			},
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create AWS session for DynamoDB: %#v", err)
+	}
+
+	return awsdynamodb.New(sess), nil
 }
 
 func (client *AliyunClient) WithSlbClient(do func(*slb.Client) (interface{}, error)) (interface{}, error) {

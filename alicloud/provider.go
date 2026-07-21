@@ -1576,6 +1576,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_polardb_account":                                       resourceAliCloudPolarDbAccount(),
 			"alicloud_polardb_account_privilege":                             resourceAlicloudPolarDBAccountPrivilege(),
 			"alicloud_polardb_endpoint":                                      resourceAlicloudPolarDBEndpoint(),
+			"alicloud_polardb_dynamo":                                        resourceAlicloudPolarDBDynamo(),
+			"alicloud_polardb_dynamo_item":                                   resourceAlicloudPolarDBDynamoItem(),
 			"alicloud_polardb_endpoint_address":                              resourceAlicloudPolarDBEndpointAddress(),
 			"alicloud_polardb_primary_endpoint":                              resourceAlicloudPolarDBPrimaryEndpoint(),
 			"alicloud_polardb_application":                                   resourceAlicloudPolarDBApplication(),
