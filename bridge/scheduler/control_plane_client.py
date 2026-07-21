@@ -98,6 +98,8 @@ class HttpScheduledJobControlPlane:
         path: str = DEFAULT_PATH,
         opener: Optional[Callable[..., Any]] = None,
         environ: Optional[Mapping[str, str]] = None,
+        worker_key: Optional[str] = None,
+        process_uuid: Optional[str] = None,
     ) -> None:
         env = os.environ if environ is None else environ
         resolved_base_url = base_url
@@ -122,11 +124,16 @@ class HttpScheduledJobControlPlane:
             raise ValueError("timeout must be positive")
         self.path = "/" + _nonblank(path, "path").strip("/")
         self._opener = opener or urlopen
+        if (worker_key is None) != (process_uuid is None):
+            raise ValueError("worker_key and process_uuid must be configured together")
+        self.worker_key = None if worker_key is None else _nonblank(worker_key, "worker_key")
+        self.process_uuid = (
+            None if process_uuid is None else _nonblank(process_uuid, "process_uuid"))
 
     def register(self, registrations: Sequence[JobRegistration]) -> Sequence[ScheduledJobState]:
-        payload = {
+        payload = self._identity_payload({
             "jobs": [self._registration_payload(registration) for registration in registrations],
-        }
+        })
         return self._states(self._request("POST", "/register", payload), "register")
 
     def list_jobs(self) -> Sequence[ScheduledJobState]:
@@ -136,7 +143,8 @@ class HttpScheduledJobControlPlane:
         """Recover only the server-reported interrupted slots, fail-closed otherwise."""
 
         response = self._object(
-            self._request("POST", "/recover-interrupted", None), "recover-interrupted")
+            self._request("POST", "/recover-interrupted", self._identity_payload({})),
+            "recover-interrupted")
         recovered = response.get("recovered")
         if type(recovered) is not int or recovered < 0:
             raise ScheduledJobControlPlaneProtocolError(
@@ -157,7 +165,8 @@ class HttpScheduledJobControlPlane:
     def start(self, job_key: str, scheduled_for: datetime) -> bool:
         response = self._object(self._request(
             "POST", self._job_path(job_key, "start"),
-            {"scheduledFor": _to_utc_timestamp(scheduled_for, "scheduled_for")},
+            self._identity_payload({
+                "scheduledFor": _to_utc_timestamp(scheduled_for, "scheduled_for")}),
         ), "start")
         admitted = response.get("admitted")
         if type(admitted) is not bool:
@@ -169,10 +178,10 @@ class HttpScheduledJobControlPlane:
     def complete(self, job_key: str, scheduled_for: datetime, next_run_at: datetime) -> None:
         response = self._request(
             "POST", self._job_path(job_key, "complete"),
-            {
+            self._identity_payload({
                 "scheduledFor": _to_utc_timestamp(scheduled_for, "scheduled_for"),
                 "nextRunAt": _to_utc_timestamp(next_run_at, "next_run_at"),
-            },
+            }),
         )
         self._state(response, "complete")
 
@@ -191,7 +200,7 @@ class HttpScheduledJobControlPlane:
             raise ValueError("next_run_at is required for retryable failures")
         if not retryable and next_run_at is not None:
             raise ValueError("next_run_at must be None for permanent failures")
-        payload = {
+        payload = self._identity_payload({
             "scheduledFor": _to_utc_timestamp(scheduled_for, "scheduled_for"),
             "retryable": retryable,
             "nextRunAt": (
@@ -199,7 +208,7 @@ class HttpScheduledJobControlPlane:
                 if next_run_at is not None else None
             ),
             "error": _nonblank(error, "error"),
-        }
+        })
         self._state(self._request("POST", self._job_path(job_key, "fail"), payload), "fail")
 
     def _registration_payload(self, registration: JobRegistration) -> dict[str, Any]:
@@ -224,12 +233,30 @@ class HttpScheduledJobControlPlane:
     def _endpoint(self, suffix: str) -> str:
         return self.base_url + self.path + suffix
 
+    def _identity_payload(self, payload: Mapping[str, Any]) -> dict[str, Any]:
+        """Attach the fixed Worker fence to every scheduled-job mutation.
+
+        The headers below fence GET/list as well.  Keeping the identity in the
+        mutation body makes the contract visible to the Java API and avoids a
+        proxy dropping non-standard headers; the server must require both and
+        reject a mismatch.
+        """
+
+        result = dict(payload)
+        if self.worker_key is not None:
+            result["workerKey"] = self.worker_key
+            result["processUuid"] = self.process_uuid
+        return result
+
     def _request(self, method: str, suffix: str, payload: Optional[Mapping[str, Any]]) -> Any:
         body = None
         headers = {
             "Accept": "application/json",
             "User-Agent": "jarvis-scheduled-job-control-plane/1",
         }
+        if self.worker_key is not None:
+            headers["X-Jarvis-Worker-Key"] = self.worker_key
+            headers["X-Jarvis-Process-Uuid"] = str(self.process_uuid)
         if payload is not None:
             body = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
             headers["Content-Type"] = "application/json"

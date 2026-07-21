@@ -39,17 +39,19 @@ Bridge restart 已保障业务 Session/SubAgent 不间断。
 ```text
 worker_key = bridge-scheduler
 capabilities.role = scheduler
+host_id = AgenticTools-Macmini.local
 ```
 
 该 Worker 使用已有的 `host_id`、`process_uuid`、`status` 和 heartbeat 表示当前 Scheduler 进程。
-远端 Bridge 必须先注册并保持这条固定 Worker 记录，才允许注册或更新 scheduled job；每个
+只有 `host_id=AgenticTools-Macmini.local` 的远端 Bridge 可以注册该固定 Worker；其它 host（包括
+开发机 `shanye.local`）必须被控制面拒绝。远端 Bridge 必须先注册并保持这条固定 Worker 记录，才允许注册或更新 scheduled job；每个
 `register/start/complete/fail/recover` 请求均携带 `worker_key` 与 `process_uuid`，控制面只接受
 当前 ACTIVE 的 `bridge-scheduler` 进程。
 
 job 不永久保存 Worker 外键。job 的定义和当前状态需要跨同一远端机器的进程重启保留；Worker
 身份只在请求处理时校验。Board 单独读取固定 Worker 展示 Scheduler 状态。
 
-远端专属凭证限制、固定 Worker 注册和 scheduled-job API 的 Worker/process 校验属于 C5，当前
+远端专属凭证限制、固定 Worker 注册（含 `AgenticTools-Macmini.local` 精确 host 校验）和 scheduled-job API 的 Worker/process 校验属于 C5，当前
 尚未实现或部署；本文件不宣称本机已经无法启动 Scheduler。
 
 ## 2. 范围与非目标
@@ -347,6 +349,24 @@ CREATE TABLE jarvis_scheduled_job (
 4. 连续两个完整周期对账一致并确认新的业务状态真源后，才停止读取旧状态文件。
 5. 双事件 ledger 在等价 durable outbox 验收前继续保留，不能随 scheduler 状态文件一起删除。
 
+### 8.3 控制面渐进迁移与旧链路兼容
+
+首版允许旧定时任务模块与新 `SchedulerEngine` 同进程共存，以 job 为最小迁移单元；这不是双写或
+双触发模式。默认全部 job 仍走旧链路。运维只可通过显式迁移清单把单个 job 切到新链路：
+
+```text
+JARVIS_SCHEDULER_ENABLE=1
+JARVIS_SCHEDULER_JOB_DAILY_PROBE=new
+```
+
+启动时 composition 必须构造唯一 `JobRoute`：清单内 job 仅由新 Engine 注册、计划和执行，旧模块
+对同一 job 必须停止旧 tick；清单外 job 仅保留旧模块，不能被新 Engine admission。未知 job、重复项、
+未开启 `JARVIS_SCHEDULER_ENABLE` 的迁移清单，或缺少旧/新路由实现，均在启动阶段 fail-closed。这样可以
+先迁移 `aone.scan`，观察完整周期后再逐项迁移，不会让两条链路对同一 job 同时产生 Task 或事件。
+
+本轮迁移只替换**调度控制路径**。job 原有的业务 cursor、daily marker、PR registry 和 event ledger
+仍由旧 runner 持有；D1 的数据面导出、迁移、对账和删除旧状态文件仍不在本轮范围。
+
 ## 9. Task 与事件不丢失契约
 
 ### 9.1 Aone scan
@@ -431,12 +451,14 @@ launchd 不得直接用 `kickstart -k` 跳过 quiesce/drain；必须先完成协
 ### 10.3 固定 Scheduler Worker 与中断恢复
 
 控制面使用已有 Worker 表的一条固定记录 `bridge-scheduler` 表示唯一 Scheduler。Scheduler
-启动先注册该 Worker（`capabilities.role=scheduler`），并以已有 `process_uuid` 与 heartbeat 保持
-当前进程身份。`bridge/run.sh` 的本机 PID 只用于本机进程管理，不是跨机器的 Scheduler 授权依据。
+启动先注册该 Worker（`host_id=AgenticTools-Macmini.local`、`capabilities.role=scheduler`），并以已有
+`process_uuid` 与 heartbeat 保持当前进程身份。`bridge/run.sh` 的本机 PID 只用于本机进程管理，不是
+跨机器的 Scheduler 授权依据。
 
 Scheduler composition 在首次 job 注册前必须完成以下顺序：
 
-1. 以远端 Scheduler 专属凭证注册固定 `bridge-scheduler` Worker；
+1. 以远端 Scheduler 专属凭证注册固定 `bridge-scheduler` Worker；控制面精确校验
+   `host_id=AgenticTools-Macmini.local` 和 `capabilities.role=scheduler`；
 2. 确认控制面返回的 Worker 为当前 `process_uuid` 且为 ACTIVE；
 3. 在每个 scheduled-job API 请求中携带该 `worker_key` 和 `process_uuid`；控制面在同一事务内校验；
 4. 注册完整 `JOBS` 快照；
@@ -525,7 +547,7 @@ bridge/
 | U2 | 已提交，待预发验证 | `jarvis_scheduled_job` 已创建；AutomationAgent Code Review `28719590` 包含注册、状态 API、恢复和 Board Scheduled Jobs 展示。该 Code Review 尚未完成 Java 21 预发验证。 |
 | U3 | 部分完成（控制面骨架） | Bridge MR `28675904` 已包含 import-safe `SchedulerEngine`、`ScannerRuntime`、slot admission、失败上报和本进程 stop admission。未接 legacy runner、数据面 publisher 或 Bridge composition。 |
 | C4 | 已提交，待预发联调 | Bridge MR `28675904` 已包含标准库 HTTP adapter：register/list/start/complete/fail/recover-interrupted、UTC 时间编解码、严格 `admitted` slot 准入及异常 fail-closed。AutomationAgent Code Review `28719590` 的 `start` 响应已包含 `{admitted, job}`。两端尚未完成预发联调。 |
-| C5 | 未开始 | 固定 `bridge-scheduler` Worker 注册、远端专属凭证限制、job API 的 `worker_key + process_uuid` 校验、Scheduler composition、READY/OFFLINE、quiesce admission，以及 Board Scheduler Worker 展示。该阶段不停止或重启 Task Worker。 |
+| C5 | 开发中 | Bridge 已实现固定 `bridge-scheduler`/`AgenticTools-Macmini.local` composition、远端专属凭证 gate、`worker_key + process_uuid` 透传、READY/OFFLINE、quiesce admission，以及 `daily.probe` 的旧/新单 job 切换；AutomationAgent 正在补固定 host、ACTIVE process 和 API 的服务端校验及 Board Worker 展示。该阶段不停止或重启 Task Worker。 |
 | C6 | 未开始 | 控制面预发验证：固定 Worker 拒绝非远端身份、重复启动拒绝、slot admission、interrupted recovery、Board 展示和控制面不可用 fail-closed。 |
 | D1 | 本轮不实施 | Daily/PR/Aone/Probe 的业务状态和 runner 旁路迁移脚本：导出、校验、回放、对账与原子切换，单独评审 |
 

@@ -22,6 +22,14 @@ from .control_plane_client import (
     ScheduledJobControlPlaneProtocolError, ScheduledJobControlPlaneRejected,
     ScheduledJobControlPlaneUnavailable,
 )
+from .composition import (
+    EmptyResultPublisher, SCHEDULER_HOST_ID, SCHEDULER_WORKER_KEY,
+    SchedulerComposition, SchedulerCompositionError,
+)
+from .migration import (
+    JOB_ENV_PREFIX, SCHEDULER_ENABLE_ENV, SchedulerMigrationError,
+    job_env_name, requested_new_jobs, scheduler_enabled, uses_new_engine,
+)
 
 __all__ = [
     "AdaptiveSchedule", "CapabilityValidationContext", "CheckpointUpgradePolicy", "CommandRunner", "DailySchedule",
@@ -36,4 +44,8 @@ __all__ = [
     "validate_registry", "HttpScheduledJobControlPlane", "ScheduledJobControlPlaneError",
     "ScheduledJobControlPlaneProtocolError", "ScheduledJobControlPlaneRejected",
     "ScheduledJobControlPlaneUnavailable",
+    "EmptyResultPublisher", "SCHEDULER_HOST_ID", "SCHEDULER_WORKER_KEY",
+    "SchedulerComposition", "SchedulerCompositionError", "JOB_ENV_PREFIX",
+    "SCHEDULER_ENABLE_ENV", "SchedulerMigrationError", "job_env_name",
+    "requested_new_jobs", "scheduler_enabled", "uses_new_engine",
 ]

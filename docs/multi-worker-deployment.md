@@ -39,6 +39,34 @@ spawns headless claude, reports back. Every added worker grows total lease
 capacity by its local `JARVIS_DISPATCH_MAX`. No coordination needed between
 workers — fenced `claimTask` on the control plane is the only interlock.
 
+## SchedulerEngine progressive cutover
+
+The legacy periodic loops remain the default.  The new `SchedulerEngine` is a
+separate, fenced control-plane path and may be started only on
+`AgenticTools-Macmini.local`, with `workerKey=bridge-scheduler`, a fresh
+`processUuid`, and a Scheduler-only control-plane credential.  It is not a
+Task executor and does not authorize any other host to run scheduler jobs.
+
+Use `bridge/jarvis.env` to enable it only for a named job.  A job has one route:
+`legacy` (default) or `new`; never enable both.  The first supported handover is
+`daily.probe`:
+
+```bash
+JARVIS_BRIDGE_ROLE=scheduler
+JARVIS_SCHEDULER_ENABLE=1
+JARVIS_SCHEDULER_CONTROL_PLANE_TOKEN=<scheduler-only-token>
+JARVIS_SCHEDULER_JOB_DAILY_PROBE=new
+bridge/run.sh start
+```
+
+Before this starts the Engine, Bridge verifies the host, registers and checks
+the ACTIVE Worker identity, registers the full job registry, recovers
+interrupted slots, and then begins polling.  The legacy `DailyScheduler`
+excludes only `daily.probe`; its existing `_ProbeJob` plus
+`daily-scheduler.json` marker are reused during the handover.  A configured
+`new` route without a runner mapping fails closed at startup, while a disabled
+global gate leaves every job on the legacy path.
+
 ## Push-only credential distribution
 
 Constraints on the worker side (AliOS 7.2):

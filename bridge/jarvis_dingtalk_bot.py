@@ -129,6 +129,10 @@ from jarvis_capacity import CapacityManager
 from jarvis_task_router import ExecutionRouter
 from jarvis_persistence_executor import PersistenceExecutor
 from jarvis_external_recovery import ExternalOperationRecoveryScheduler
+from scheduler import JobResult, JobResultStatus
+from scheduler.composition import SchedulerComposition
+from scheduler.jobs import JOBS
+from scheduler.migration import uses_new_engine
 from tata_dws_history import (
     DWS_USER_NOT_IN_GROUP,
     DwsGroupHistory,
@@ -316,6 +320,8 @@ logging.basicConfig(
 )
 log = logging.getLogger("jarvis-bot")
 
+_SCHEDULER_JOB_KEYS = tuple(definition.id for definition in JOBS)
+
 
 def _task_client_from_env():
     """Build the mandatory AutomationAgent Task client."""
@@ -337,6 +343,13 @@ def _task_client_from_env():
         token,
         timeout=float(os.environ.get("JARVIS_CONTROL_PLANE_TIMEOUT", "10")),
     )
+
+
+def _scheduler_owns_job(job_key):
+    """Single ownership gate used by legacy loops during progressive cutover."""
+    if os.environ.get("JARVIS_BRIDGE_ROLE", "scheduler") != "scheduler":
+        return False
+    return uses_new_engine(job_key, job_keys=_SCHEDULER_JOB_KEYS)
 
 
 def _aone_task_key(project, item_id):
@@ -7314,10 +7327,32 @@ class DailyScheduler:
     def __init__(self, handler, pool=None):
         self.handler = handler
         pool = pool if pool is not None else getattr(handler, "ephemeral_executor", None)
-        self.jobs = [j for j in (_NudgeJob(handler, pool), _ProbeJob(handler, pool))
-                     if j.enabled]
+        candidates = {
+            "daily.nudge": _NudgeJob(handler, pool),
+            "daily.probe": _ProbeJob(handler, pool),
+        }
+        # Keep objects for a controlled handover: the new Engine invokes the
+        # exact legacy job object and daily marker below, instead of duplicating
+        # its enqueue/state behavior in a second implementation.
+        self._all_jobs = candidates
+        self.jobs = []
+        for scheduler_key, job in candidates.items():
+            if not job.enabled:
+                continue
+            if _scheduler_owns_job(scheduler_key):
+                log.info("DailyScheduler: %s is owned by SchedulerEngine; legacy loop excluded",
+                         scheduler_key)
+                continue
+            self.jobs.append(job)
         self._last_run = self._load_state()  # job.name -> last-run date iso
         self._thread = None
+
+    def new_engine_runner(self, scheduler_key):
+        """Return an adapter that preserves the legacy job and marker semantics."""
+        job = self._all_jobs.get(scheduler_key)
+        if job is None:
+            raise ValueError("unknown DailyScheduler job %s" % scheduler_key)
+        return _LegacyDailyJobRunner(self, scheduler_key, job)
 
     def _load_state(self):
         try:
@@ -7340,6 +7375,24 @@ class DailyScheduler:
             os.replace(str(tmp), str(self.STATE_PATH))
         except Exception as e:  # noqa: BLE001
             log.warning("DailyScheduler: cannot persist %s: %s", self.STATE_PATH, e)
+
+    def _run_migrated_job(self, scheduler_key, job, scheduled_for):
+        """Run one Engine-admitted daily slot through the old job + marker.
+
+        A cutover later on the same day sees the old marker and therefore
+        completes the newly registered slot without firing the external probe a
+        second time.  On a fresh day, ``job.run`` and ``_mark_run`` are exactly
+        the legacy data path.
+        """
+        local_scheduled = scheduled_for.astimezone(_SHANGHAI_TZ).replace(tzinfo=None)
+        if self._last_run.get(job.name) == local_scheduled.date().isoformat():
+            log.info("DailyScheduler: %s already marked for %s; cutover skip",
+                     scheduler_key, local_scheduled.date().isoformat())
+            return True
+        result = job.run()
+        if result is not False:
+            self._mark_run(job, now=local_scheduled)
+        return result
 
     @property
     def enabled(self):
@@ -7372,6 +7425,30 @@ class DailyScheduler:
                 except Exception:  # noqa: BLE001 — never crash
                     log.exception("DailyScheduler job %s failed", job.name)
             time.sleep(self.CHECK_INTERVAL)
+
+
+class _LegacyDailyJobRunner:
+    """Adapter for the first progressive migration: ``daily.probe`` only."""
+
+    def __init__(self, scheduler, scheduler_key, job):
+        self.scheduler = scheduler
+        self.scheduler_key = scheduler_key
+        self.job = job
+
+    def run(self, definition, scheduled_for):
+        if definition.id != self.scheduler_key:
+            return JobResult(JobResultStatus.PERMANENT_FAILURE,
+                             error="daily runner received mismatched definition")
+        try:
+            result = self.scheduler._run_migrated_job(
+                self.scheduler_key, self.job, scheduled_for)
+        except Exception as exc:  # let SchedulerEngine retain the original due slot
+            return JobResult(JobResultStatus.RETRYABLE_FAILURE,
+                             error="legacy daily job failed: %s" % type(exc).__name__)
+        if result is False:
+            return JobResult(JobResultStatus.RETRYABLE_FAILURE,
+                             error="legacy daily job deferred")
+        return JobResult(JobResultStatus.SUCCEEDED)
 
 
 class _ProbeJob:
@@ -8239,6 +8316,15 @@ class JarvisHandler(AsyncChatbotHandler):
         # PrWatchScheduler(PR lifecycle), and external-operation recovery.
         self.scanner = AoneScheduler(self, self.ephemeral_executor)
         self.daily = DailyScheduler(self, self.ephemeral_executor)
+        # The composition layer is dormant unless JARVIS_SCHEDULER_ENABLE=1 and
+        # at least one JARVIS_SCHEDULER_JOB_<KEY>=new route is selected.  Only
+        # daily.probe has a runner adapter in this C5 slice; a request to move
+        # any other job fails closed before old loops are started.
+        self.scheduler_composition = SchedulerComposition(
+            task_client=self.task_client,
+            runners={"daily.probe": self.daily.new_engine_runner("daily.probe")},
+            logger=log,
+        )
         self.aone_reply_scheduler = AoneReplyScheduler(self)
         # PR 观察登记表轮询（方案A）：PR 合并后自动 finish 收尾，与 DailyScheduler 的 nudge 互为兜底。
         # 注：原 PersonaScheduler（评论区 tracker/@ 补位）已并入 AoneScheduler 统一探测（assignee∪
@@ -8275,6 +8361,7 @@ class JarvisHandler(AsyncChatbotHandler):
             return
         if role != "scheduler":
             log.warning("unknown JARVIS_BRIDGE_ROLE=%r; defaulting to scheduler", role)
+        self.scheduler_composition.start()
         self.scanner.start()
         self.daily.start()
         self.aone_reply_scheduler.start()
@@ -8285,6 +8372,9 @@ class JarvisHandler(AsyncChatbotHandler):
 
     def stop_persistence_executor(self, *, drain=False, timeout=None):
         """Stop the persistent Task executor once."""
+        scheduler = getattr(self, "scheduler_composition", None)
+        if scheduler is not None:
+            scheduler.stop(timeout=timeout)
         recovery = getattr(self, "external_operation_recovery", None)
         if recovery is not None:
             recovery.stop()

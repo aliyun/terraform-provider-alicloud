@@ -148,6 +148,31 @@ _decide_mode() {
   return 1
 }
 
+_validate_scheduler_cutover() {
+  # The new Engine is intentionally dormant by default.  Refuse a partial
+  # enablement before daemonizing, so a typo cannot suppress a legacy job while
+  # leaving it without its fenced Scheduler owner.
+  local enabled="${JARVIS_SCHEDULER_ENABLE:-0}"
+  case "$enabled" in
+    ''|0) return 0 ;;
+    1) ;;
+    *) err "JARVIS_SCHEDULER_ENABLE 只能为 0 或 1。"; return 2 ;;
+  esac
+  if [ "${JARVIS_BRIDGE_ROLE:-scheduler}" != "scheduler" ]; then
+    err "JARVIS_SCHEDULER_ENABLE=1 只能与 JARVIS_BRIDGE_ROLE=scheduler 一起使用。"
+    return 2
+  fi
+  if [ -z "${JARVIS_SCHEDULER_CONTROL_PLANE_TOKEN:-}" ]; then
+    err "JARVIS_SCHEDULER_ENABLE=1 需要独占 JARVIS_SCHEDULER_CONTROL_PLANE_TOKEN。"
+    return 2
+  fi
+  if ! env | grep -Eq '^JARVIS_SCHEDULER_JOB_[A-Z0-9_]+=new$'; then
+    err "JARVIS_SCHEDULER_ENABLE=1 还需要至少一个 JARVIS_SCHEDULER_JOB_<JOB>=new。"
+    return 2
+  fi
+  return 0
+}
+
 _mode_from_log() {  # infer running mode from the latest mode-defining banner in the log
   # Classify only on mode-UNIQUE banners: degraded bot prefixes its lines with
   # [NO-DINGTALK] and never opens a stream; full bot logs "starting DingTalk stream
@@ -289,6 +314,7 @@ cmd_start() {
   [ -f "$PIDFILE" ] && rm -f "$PIDFILE"   # stale pidfile
 
   _source_env
+  _validate_scheduler_cutover || return $?
   mkdir -p "$STATE_DIR"
 
   local mode
