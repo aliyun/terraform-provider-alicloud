@@ -283,6 +283,9 @@ _supervised_command() { # $1 = start|stop|restart|status
 # -- commands --------------------------------------------------------------
 cmd_start() {
   local pid unmanaged
+  # Human start = intent to run; clear the manual-stop sentinel so the cron
+  # watchdog resumes its keep-alive duty.
+  rm -f "$PIDFILE.manual-stop" 2>/dev/null || true
   if pid="$(_running_pid)"; then
     say "bridge 已在运行 (pid $pid) — 无需重复 start。"
     return 0
@@ -353,9 +356,27 @@ cmd_start() {
   return 0
 }
 
+cmd_watchdog() {
+  # cron entry (@reboot + */10 keep-alive on worker hosts): start the bridge
+  # ONLY when the operator has not deliberately stopped it. cmd_stop drops the
+  # manual-stop sentinel; only a human `run.sh start` clears it. Silent no-op
+  # while stopped-on-purpose or already running (cmd_start is pidfile-guarded).
+  if [ -f "$PIDFILE.manual-stop" ]; then
+    return 0
+  fi
+  cmd_start
+}
+
 cmd_stop() {
   local pid
-  pid="$(_read_pid)" || { say "bridge 未在运行 (无 pidfile)。"; return 0; }
+  # Operator-intent sentinel: `run.sh stop` means STAY stopped. The cron
+  # watchdog (run.sh watchdog) refuses to start while this file exists; only
+  # a human `run.sh start` clears it. Dropped even when nothing is running —
+  # stop expresses intent, not just process teardown. (Without this, the
+  # */10 watchdog resurrected a deliberately stopped worker within 10min.)
+  mkdir -p "$STATE_DIR" 2>/dev/null || true
+  touch "$PIDFILE.manual-stop" 2>/dev/null || true
+  pid="$(_read_pid)" || { say "bridge 未在运行 (无 pidfile)。已落 manual-stop 哨兵，watchdog 不会拉起。"; return 0; }
   if ! _alive "$pid"; then
     say "bridge 未在运行 (pid $pid 已退) — 清理 pidfile。"
     rm -f "$PIDFILE"
@@ -441,6 +462,7 @@ case "${1:-}" in
   start)          _supervised_command start ;;
   stop)           _supervised_command stop ;;
   restart)        _supervised_command restart ;;
+  watchdog)       _supervised_command watchdog ;;
   status)         _supervised_command status ;;
   logs)           cmd_logs ;;
   dry-run|dryrun) cmd_dryrun ;;

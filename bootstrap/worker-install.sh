@@ -202,6 +202,21 @@ if [ -d "$EXTRACT/home/.claude" ]; then
   # but overwrite anything from bundle.
   mkdir -p "$HOME/.claude"
   cp -Rp "$EXTRACT/home/.claude/." "$HOME/.claude/"
+  # Strip per-machine proxy env from every inherited claude config. A
+  # 127.0.0.1:<port> proxy only exists on the packager host; on a worker it
+  # black-holes EVERY model API call — claude dies with "API Error: Unable to
+  # connect to API (ConnectionRefused)" regardless of which gateway lane the
+  # session sticks to, because ~/.claude/settings.json merges into every lane.
+  for f in "$HOME/.claude/"*.json; do
+    [ -f "$f" ] || continue
+    if jq 'if .env then .env |= del(.HTTPS_PROXY,.HTTP_PROXY,.https_proxy,.http_proxy,.ALL_PROXY,.all_proxy,.NO_PROXY,.no_proxy) else . end' \
+         "$f" > "$f.tmp" 2>/dev/null; then
+      mv "$f.tmp" "$f"
+    else
+      rm -f "$f.tmp"
+    fi
+  done
+  ok "proxy env keys stripped from inherited ~/.claude/*.json (per-machine config never ships)"
 fi
 # ~/.aliyun: aliyun CLI credentials (config.json, plaintext AK). verify.sh's
 # `aliyun sts GetCallerIdentity` cred check and triage OpenAPI 查证 need it.
@@ -385,6 +400,17 @@ if grep -qE '^(export[[:space:]]+)?DINGTALK_APP_KEY=' "$env_file"; then
   grep -qE '^(export[[:space:]]+)?JARVIS_NO_DINGTALK=' "$env_file" \
     || printf 'JARVIS_NO_DINGTALK=1\n' >> "$env_file"
 fi
+# Model lanes: Linux workers use ONLY the glm lane (仓库主人 2026-07-21 指令) —
+# ideamo/ideamore are office-network mac lanes. Pin BOTH lanes to glm5.2.json:
+# strip any inherited multi-lane lines first (the bundle carries the
+# scheduler's jarvis.env verbatim), then append. Deliberately does NOT touch
+# JARVIS_TATA_SETTINGS (anchored regex excludes it).
+sed -i.bak -E '/^(export[[:space:]]+)?JARVIS_SETTINGS(_TF)?=/d' "$env_file" && rm -f "$env_file.bak"
+printf 'JARVIS_SETTINGS=$HOME/.claude/glm5.2.json\n'    >> "$env_file"
+printf 'JARVIS_SETTINGS_TF=$HOME/.claude/glm5.2.json\n' >> "$env_file"
+[ -f "$HOME/.claude/glm5.2.json" ] \
+  || warn "~/.claude/glm5.2.json missing — glm lane will fail to load; check the credential bundle"
+ok "model lanes pinned to glm5.2.json (worker policy: no ideamo/ideamore)"
 
 # ---------------------------------------------------------------------------
 step "10. Install systemd user unit"
@@ -434,7 +460,10 @@ if [ "$linger_ok" = 0 ]; then
     sudo yum install -y cronie >/dev/null 2>&1 || true
   fi
   if command -v crontab >/dev/null 2>&1; then
-    cron_cmd="JARVIS_BRIDGE_ROLE=worker $JARVIS_ROOT/bridge/run.sh start"
+    # `watchdog`, NOT `start`: it honors the manual-stop sentinel run.sh stop
+    # drops, so a deliberately stopped worker STAYS stopped instead of being
+    # resurrected within 10 minutes. Human `run.sh start` clears the sentinel.
+    cron_cmd="JARVIS_BRIDGE_ROLE=worker $JARVIS_ROOT/bridge/run.sh watchdog"
     cron_tmp=$(mktemp)
     # Idempotent: strip any previous lines that invoke this repo's run.sh, then
     # append the current pair. Survives re-runs and JARVIS_ROOT relocation.
