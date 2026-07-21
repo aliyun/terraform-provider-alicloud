@@ -2099,6 +2099,69 @@ class InteractiveWorkerTest(unittest.TestCase):
         self.assertEqual(envelope.desired_revision, expected)
         self.assertEqual(self._store().load()["current"]["title"], "")
 
+    def test_claim_reports_source_status_and_freezes_across_retry(self):
+        self._seed()
+        fake = FakeClient()
+        fake.claim_error = worker.ControlPlaneUnavailable("lost response")
+        with mock.patch.object(worker, "_client", return_value=fake), \
+                mock.patch.object(worker, "_nearest_runtime_client",
+                                  return_value="codex"):
+            with self.assertRaises(worker.ControlPlaneUnavailable):
+                worker.prepare_claim("84345050", "2100304",
+                                     "Original Aone title", "待处理")
+        pending = self._store().load()["pendingClaim"]
+        self.assertEqual(pending["title"], "Original Aone title")
+        self.assertEqual(pending["sourceStatus"], "待处理")
+        first_runtime = pending["runtimeSessionId"]
+
+        fake.claim_error = None
+        with mock.patch.object(worker, "_client", return_value=fake), \
+                mock.patch.object(worker, "_nearest_runtime_client",
+                                  return_value="codex"):
+            first = worker.prepare_claim("84345050", "2100304",
+                                         "Renamed Aone title", "处理中")
+        claim_calls = [c for c in fake.calls if c[0] == "claim_task"]
+        # The claim request id is frozen across the lost-response retry.
+        self.assertEqual(claim_calls[0][2]["request_id"],
+                         claim_calls[-1][2]["request_id"])
+        # The first observed source_status is frozen for every resent body; the
+        # retry's newer "处理中" must NOT leak into the envelope.
+        for call in claim_calls:
+            self.assertEqual(call[1][1].source_status, "待处理")
+        self.assertEqual(claim_calls[-1][1][1].to_dict()["sourceStatus"], "待处理")
+        self.assertEqual(first["runtimeSessionId"], first_runtime)
+
+    def test_blank_source_status_omitted_and_frozen_across_retry(self):
+        self._seed()
+        fake = FakeClient()
+        fake.claim_error = worker.ControlPlaneUnavailable("lost response")
+        with mock.patch.object(worker, "_client", return_value=fake), \
+                mock.patch.object(worker, "_nearest_runtime_client",
+                                  return_value="codex"):
+            with self.assertRaises(worker.ControlPlaneUnavailable):
+                worker.prepare_claim("84345050", "2100304", "Aone title", "   ")
+        # The blank observation is frozen in pendingClaim so a lost-response retry
+        # resends the identical sourceStatus-omitted body.
+        self.assertEqual(
+            self._store().load()["pendingClaim"]["sourceStatus"], "")
+
+        fake.claim_error = None
+        with mock.patch.object(worker, "_client", return_value=fake), \
+                mock.patch.object(worker, "_nearest_runtime_client",
+                                  return_value="codex"):
+            claim = worker.prepare_claim("84345050", "2100304",
+                                         "Aone title", "处理中")
+        envelope = [c for c in fake.calls if c[0] == "claim_task"][-1][1][1]
+        # Blank source_status normalizes to None and stays omitted on the retry;
+        # the retry's non-blank "处理中" must NOT leak into the resent body.
+        self.assertIsNone(envelope.source_status)
+        self.assertNotIn("sourceStatus", envelope.to_dict())
+        self.assertEqual(self._store().load()["current"]["title"], "Aone title")
+        # source_status does not feed the desired_revision hash.
+        expected = "interactive:%s" % worker.hashlib.sha256(
+            claim["runtimeSessionId"].encode()).hexdigest()[:32]
+        self.assertEqual(envelope.desired_revision, expected)
+
     def test_different_target_cannot_overwrite_inflight_local_claim(self):
         state = self._seed()
         state["pendingClaim"] = {

@@ -149,8 +149,8 @@ export CODEX_THREAD_ID="codex-test-thread"
 reset_case
 if ! run_claim claim 84345050 2100304; then
   bad "interactive claim succeeds"
-elif ! grep -q '^worker:cli prepare-claim 84345050 2100304 Interactive test title$' "$TEST_LOG"; then
-  bad "interactive claim forwards the itemId point-read title"
+elif ! grep -q '^worker:cli prepare-claim 84345050 2100304 Interactive test title 处理中$' "$TEST_LOG"; then
+  bad "interactive claim forwards the itemId title and pre-claim status"
 else
   prepare_line="$(grep -n 'worker:cli prepare-claim' "$TEST_LOG" | head -1 | cut -d: -f1)"
   tag_line="$(grep -n 'a1:project workitem update .*--tag' "$TEST_LOG" | head -1 | cut -d: -f1)"
@@ -161,6 +161,15 @@ else
   else
     bad "claim ordering"
   fi
+fi
+
+reset_case "" "待认领"
+if ! run_claim claim 84345050 2100304; then
+  bad "interactive claim with observed status succeeds"
+elif ! grep -q '^worker:cli prepare-claim 84345050 2100304 Interactive test title 待认领$' "$TEST_LOG"; then
+  bad "interactive claim forwards the observed pre-claim status"
+else
+  ok "interactive claim forwards the observed pre-claim status"
 fi
 
 reset_case
