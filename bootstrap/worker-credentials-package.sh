@@ -230,6 +230,12 @@ cat > "$STAGE/home/.gitconfig" <<GITCFG
     helper = store
 [credential "https://$GIT_HOST"]
     helper = store
+# Workers have no openssh-clients (by design — HTTPS + token only), but
+# config/workspaces.json registers internal repos with ssh URLs (works on the
+# scheduler mac via ssh keys). Rewrite them transparently so lazy workspace
+# clones just work through the credential store above.
+[url "https://$GIT_HOST/"]
+    insteadOf = git@gitlab.alibaba-inc.com:
 GITCFG
 chmod 644 "$STAGE/home/.gitconfig"
 # Record the HTTPS URL worker-install.sh should set as `origin`, overriding
