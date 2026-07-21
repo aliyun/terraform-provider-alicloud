@@ -6872,7 +6872,12 @@ class JarvisHandler(AsyncChatbotHandler):
             worker_id_file=os.environ.get(
                 "JARVIS_WORKER_ID_FILE",
                 os.path.join(jarvis_root(), ".my-day", "bridge", "worker-id")),
-            capabilities={"kinds": kinds},
+            capabilities={
+                "kinds": kinds,
+                "bridgeRole": os.environ.get("JARVIS_BRIDGE_ROLE", "scheduler"),
+                "workerMode": "PERSISTENT",
+                "client": "bridge",
+            },
             lease_seconds=int(os.environ.get("JARVIS_LEASE_SECONDS", "660")),
             lease_safety_margin=float(
                 os.environ.get("JARVIS_LEASE_SAFETY_MARGIN_SEC", "60")),

@@ -367,6 +367,7 @@ def _current_store() -> StateStore:
 def _capabilities(state: Mapping[str, Any]) -> Dict[str, Any]:
     capabilities = {
         "dispatch": {"pull": False},
+        "bridgeRole": os.environ.get("JARVIS_BRIDGE_ROLE", "interactive"),
         "workerMode": "INTERACTIVE",
         "workerKey": state.get("workerKey"),
         "client": state.get("client"),
@@ -2054,6 +2055,13 @@ def _build_incarnation_state(
             old_state.get("sessionPermit") if same_incarnation else None),
         "pendingClaim": (old_state.get("pendingClaim")
                          if same_incarnation else recovery_claim),
+        # Deterministic claim rejections are audit history, never an ownership
+        # fence.  Preserve them across incarnations without promoting them back
+        # into READY_TO_RECOVER.
+        "claimBlocks": [dict(record)
+                        for record in (old_state.get("claimBlocks") or [])
+                        if isinstance(record, Mapping)][-20:],
+        "lastClaimBlocked": old_state.get("lastClaimBlocked"),
         # A complete recovery claim absorbs an uncertain AONE_CLAIM slot into
         # receiptUnknown/operationKey and detaches a mid-task slot into an
         # orphanOperations record.  If lineage is too partial to construct
@@ -2917,6 +2925,91 @@ def _claim_cycle(state: Dict[str, Any], aone_id: str, project_id: str) -> Tuple[
     return cycle, runtime_id[:191]
 
 
+def _claim_block_value(response: Mapping[str, Any], *keys: str) -> Any:
+    """Read one allow-listed diagnostic field from a conflict response."""
+    containers = [response]
+    data = response.get("data") if isinstance(response, Mapping) else None
+    if isinstance(data, Mapping):
+        containers.append(data)
+    for container in containers:
+        for key in keys:
+            value = container.get(key)
+            if value is not None and value != "":
+                return value
+    return None
+
+
+def _record_deterministic_claim_block(
+        store: StateStore, expected_worker_key: str,
+        aone_id: str, project_id: str, claim_request_id: str,
+        error: ControlPlaneConflict) -> None:
+    """Move an acknowledged 409 out of the global fail-closed claim slot.
+
+    A transport failure must retain ``pendingClaim`` because the server may have
+    accepted the request.  A received HTTP 409 is different: the claim was
+    definitively rejected, so keeping ``CLAIMING`` would make the only allowed
+    recovery command repeat the same impossible request forever.  Persist a
+    bounded audit record using a request-id CAS, then release the blocking slot.
+    """
+    response = error.response if isinstance(error.response, Mapping) else {}
+    with store.locked():
+        latest = store.load_unlocked()
+        pending = latest.get("pendingClaim")
+        if (latest.get("workerKey") != expected_worker_key
+                or not isinstance(pending, Mapping)
+                or str(pending.get("aoneId")) != aone_id
+                or str(pending.get("projectId")) != project_id
+                or str(pending.get("claimRequestId")) != claim_request_id):
+            return
+        block: Dict[str, Any] = {
+            "aoneId": aone_id,
+            "projectId": project_id,
+            "phase": "CLAIM_BLOCKED",
+            "claimRequestId": claim_request_id,
+            "status": error.status,
+            "code": str(error.code or "Conflict.State")[:128],
+            "message": str(error)[:500],
+            "blockedAt": int(time.time()),
+        }
+        safe_fields = {
+            "taskId": ("taskId", "task_id"),
+            "sessionId": ("sessionId", "session_id"),
+            "currentState": ("currentState", "taskState", "state"),
+            "owner": ("owner", "workerKey", "leaseOwner"),
+            "workerHost": ("workerHost", "hostId"),
+            "leaseExpireAt": ("leaseExpireAt", "leaseExpiresAt"),
+            "lastHeartbeatAt": ("lastHeartbeatAt", "workerHeartbeatAt"),
+            "allowedAction": ("allowedAction", "nextAction"),
+            "allowedActions": ("allowedActions",),
+        }
+        for target, keys in safe_fields.items():
+            value = _claim_block_value(response, *keys)
+            if value is not None:
+                block[target] = value
+        blocks = [dict(item) for item in (latest.get("claimBlocks") or [])
+                  if isinstance(item, Mapping)
+                  and str(item.get("claimRequestId")) != claim_request_id]
+        blocks.append(block)
+        latest["claimBlocks"] = blocks[-20:]
+        latest["lastClaimBlocked"] = block
+        latest["pendingClaim"] = None
+        store.save_unlocked(latest)
+
+
+def _clear_claim_blocks(state: Dict[str, Any], aone_id: str,
+                        project_id: str) -> None:
+    blocks = [dict(item) for item in (state.get("claimBlocks") or [])
+              if isinstance(item, Mapping)
+              and not (str(item.get("aoneId")) == aone_id
+                       and str(item.get("projectId")) == project_id)]
+    state["claimBlocks"] = blocks[-20:]
+    last = state.get("lastClaimBlocked")
+    if (isinstance(last, Mapping)
+            and str(last.get("aoneId")) == aone_id
+            and str(last.get("projectId")) == project_id):
+        state.pop("lastClaimBlocked", None)
+
+
 def _matching_current(state: Mapping[str, Any], aone_id: str) -> Mapping[str, Any]:
     current = state.get("current")
     if not isinstance(current, Mapping) or str(current.get("aoneId")) != str(aone_id):
@@ -3037,11 +3130,17 @@ def prepare_claim(aone_id: str, project_id: str, title: str = "",
     # slots transactionally in assignTask. Reporting one lets an expired local
     # receipt-recovery session be resumed without permitting a second task.
     free_slots = 1
-    lease = _retry_unavailable(lambda: cp.claim_task(
-        state["workerKey"], envelope, runtime_session_id=runtime_id,
-        lease_seconds=lease_seconds, free_slots=free_slots,
-        process_uuid=state["processUuid"],
-        request_id=claim_request_id))
+    try:
+        lease = _retry_unavailable(lambda: cp.claim_task(
+            state["workerKey"], envelope, runtime_session_id=runtime_id,
+            lease_seconds=lease_seconds, free_slots=free_slots,
+            process_uuid=state["processUuid"],
+            request_id=claim_request_id))
+    except ControlPlaneConflict as exc:
+        _record_deterministic_claim_block(
+            store, str(state["workerKey"]), aone_id, project_id,
+            claim_request_id, exc)
+        raise
     task = lease.get("task") if isinstance(lease, Mapping) else None
     session = lease.get("session") if isinstance(lease, Mapping) else None
     if not isinstance(task, Mapping) or not isinstance(session, Mapping):
@@ -3108,6 +3207,7 @@ def prepare_claim(aone_id: str, project_id: str, title: str = "",
             latest, current, start_result,
             source="session-start", now=time.time())
         latest["pendingClaim"] = None
+        _clear_claim_blocks(latest, aone_id, project_id)
         latest.pop("lostOwnership", None)
         store.save_unlocked(latest)
 

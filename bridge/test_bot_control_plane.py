@@ -78,7 +78,12 @@ class HandlerWiringTest(unittest.TestCase):
         self.assertNotIn("probe", handler.execution_router.task_types)
         self.assertIsNotNone(handler.persistence_executor)
         self.assertEqual(_FakePersistenceExecutor.instances[-1].kwargs["capabilities"],
-                         {"kinds": sorted(handler.execution_router.task_types)})
+                         {
+                             "kinds": sorted(handler.execution_router.task_types),
+                             "bridgeRole": "scheduler",
+                             "workerMode": "PERSISTENT",
+                             "client": "bridge",
+                         })
         self.assertEqual(
             _FakePersistenceExecutor.instances[-1].kwargs["lease_safety_margin"], 60)
         self.assertEqual(
