@@ -461,7 +461,7 @@ bridge/
 | B0 | 已完成 | 组件 10→6、Aone 并集探测、控制面 wait、PR/每日本地持久状态 |
 | U1 | 未开始 | 模型、registry、修正后的纯 `TriggerPlanner` 及契约测试 |
 | U2 | 进行中 | 表已创建；AutomationAgent 已提交注册、状态 API 与 Board 查询实现，待预发流水线进入本 CR 后验收 |
-| U3 | 未开始 | `SchedulerEngine`、ScannerRuntime、Task/Event publisher、fake clock 测试 |
+| U3 | 部分完成（旁路骨架） | 已提供 import-safe `SchedulerEngine`、`ScannerRuntime`、Task/Event publisher Protocol 与聚焦 fake 测试：从控制面当前态规划到期 slot，`start` 未接纳时不执行，成功按“next due 校验 → durable publish → complete”提交，失败只上报一次 `fail`，并支持本进程 stop admission 与本地 slot 防重。当前只定义 CP Protocol/fake runtime，尚未挂接生产 HTTP client、真实 Task/Event publisher、legacy job runner 或 Bridge composition root；因此 U5 原子迁移前不得切流，U7 前不提供多实例/跨进程防重或安全 restart 保障。 |
 | U4 | 未开始 | 固化 Daily/PR 各自业务状态；双读对账；保留事件 ledger |
 | U5 | 未开始 | 逐项迁移 7 个 job；每项原子关旧开新，无双触发 |
 | U6 | 未开始 | 独立 Task Worker/service 与静态容量分区 |
