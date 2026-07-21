@@ -684,6 +684,89 @@ class AoneSchedulerUnionTest(unittest.TestCase):
         self.assertIn(bot.PERSONA_PUBLIC_WORKER, bot.DIGITAL_WORKER_IDS)
         self.assertTrue(bot.PERSONA_LEGACY_WORKER_IDS <= bot.DIGITAL_WORKER_IDS)
 
+    def test_source_status_reconcile_observes_terminal_aone_without_dispatch_upsert(self):
+        class Client:
+            def __init__(self):
+                self.updates = []
+
+            def list_source_status_candidates(self, **_kwargs):
+                return {"items": [{
+                    "taskId": 411, "aoneId": "84386065", "sourceStatus": "开发中",
+                }], "nextAfterTaskId": None, "hasMore": False}
+
+            def update_source_status(self, *args, **kwargs):
+                self.updates.append((args, kwargs))
+                return {"id": 411, "sourceStatus": "已发布"}
+
+        scanner = self._scanner()
+        client = Client()
+        scanner.execution_router = SimpleNamespace(client=client)
+        scanner._source_status_after_task_id = 0
+        with mock.patch.object(scanner, "_point_read_source_status",
+                               side_effect=lambda task: (task, "已发布")):
+            scanner._reconcile_source_statuses()
+
+        self.assertEqual(len(client.updates), 1)
+        args, kwargs = client.updates[0]
+        self.assertEqual(args, ("411", "84386065", "已发布"))
+        self.assertTrue(kwargs["request_id"].startswith("source-status:411:"))
+        self.assertEqual(scanner._source_status_after_task_id, 0)
+
+    def test_source_status_reconcile_pages_and_skips_unchanged_observation(self):
+        class Client:
+            def list_source_status_candidates(self, **_kwargs):
+                return {"items": [{
+                    "taskId": 570, "aoneId": "83884678", "sourceStatus": "问题解决中",
+                }], "nextAfterTaskId": 570, "hasMore": True}
+
+            def update_source_status(self, *_args, **_kwargs):
+                raise AssertionError("unchanged status must not be reported")
+
+        scanner = self._scanner()
+        scanner.execution_router = SimpleNamespace(client=Client())
+        scanner._source_status_after_task_id = 0
+        with mock.patch.object(scanner, "_point_read_source_status",
+                               side_effect=lambda task: (task, "问题解决中")):
+            scanner._reconcile_source_statuses()
+
+        self.assertEqual(scanner._source_status_after_task_id, 570)
+
+    def test_tick_dispatches_before_bounded_lifecycle_observation(self):
+        scanner = self._scanner()
+        scanner._tick_count = 0
+        scanner._prev_snapshot = {}
+        scanner.pending = {}
+        scanner._lock = threading.Lock()
+        scanner.auto = True
+        scanner.STALE_CHECK_EVERY = 4
+        scanner._load_human_operators = mock.Mock(return_value=set())
+        scanner._scan_union = mock.Mock(return_value=[{
+            "id": "84386065", "modified": "2026-07-20 12:00:00",
+        }])
+        calls = []
+        scanner._tick_auto = mock.Mock(side_effect=lambda *_args: calls.append("dispatch"))
+        scanner._reconcile_source_statuses_safely = mock.Mock(
+            side_effect=lambda: calls.append("lifecycle"))
+
+        scanner._tick()
+
+        self.assertEqual(calls, ["dispatch", "lifecycle"])
+        self.assertLessEqual(scanner.SOURCE_STATUS_PAGE_SIZE, 32)
+        self.assertLessEqual(scanner.SOURCE_STATUS_POINT_TIMEOUT_SECONDS, 10)
+
+    def test_source_status_point_read_uses_bounded_timeout(self):
+        completed = SimpleNamespace(returncode=0, stdout=json.dumps({
+            "fields": [{"identifier": "status", "displayValue": "已发布"}],
+        }), stderr="")
+        with mock.patch.object(bot.subprocess, "run", return_value=completed) as run:
+            task, status = bot.AoneScheduler._point_read_source_status({
+                "taskId": 411, "aoneId": "84386065",
+            })
+
+        self.assertEqual(task["taskId"], 411)
+        self.assertEqual(status, "已发布")
+        self.assertLessEqual(run.call_args.kwargs["timeout"], 10)
+
 
 class TaskBookendDispatchTest(unittest.TestCase):
     """B-proper: the control-plane Task run authors a structured result; the executor

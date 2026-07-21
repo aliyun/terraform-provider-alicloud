@@ -249,6 +249,29 @@ class ClientContractTest(unittest.TestCase):
             self.assertIsNone(req.data)
             self.assertNotIn("idempotency-key", headers(req))
 
+    def test_source_status_observation_uses_metadata_only_endpoints(self):
+        opener = RecordingOpener(responses=[
+            FakeResponse({"items": [], "nextAfterTaskId": None, "hasMore": False}),
+            FakeResponse({"id": 42, "sourceStatus": "已发布"}),
+        ])
+        client = self.make(opener)
+
+        page = client.list_source_status_candidates(after_task_id=12, limit=30)
+        updated = client.update_source_status(
+            "42", "84386065", "已发布", request_id="source-status-42")
+
+        self.assertFalse(page["hasMore"])
+        self.assertEqual(updated["sourceStatus"], "已发布")
+        self.assertEqual(opener.calls[0][0].full_url,
+                         "https://pre-agent.example/api/jarvis/v1/"
+                         "tasks/source-status-candidates?afterTaskId=12&limit=30")
+        self.assertEqual(opener.calls[1][0].full_url,
+                         "https://pre-agent.example/api/jarvis/v1/tasks/42/source-status")
+        self.assertEqual(body(opener.calls[1][0]),
+                         {"aoneId": "84386065", "sourceStatus": "已发布"})
+        self.assertEqual(headers(opener.calls[1][0])["idempotency-key"],
+                         "source-status-42")
+
     def test_pending_wait_query_validates_keyset_bounds(self):
         c = self.make(RecordingOpener())
         with self.assertRaises(ValueError):
