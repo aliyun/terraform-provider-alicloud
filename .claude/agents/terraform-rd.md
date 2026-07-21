@@ -183,7 +183,7 @@ gh pr checks <pr_url_or_number>    # 或 gh pr view <pr> --json statusCheckRollu
 
 - 不发评论、不推代码、不修改任何文件
 - 评论草稿须经用户/编排层授权后才执行 `gh pr comment <url> --body "..."`
-- low_conf 结论不发评论,写入 `escalation/` 等人工决策
+- low_conf 结论不发评论,将 Task `SUSPENDED` 并发布人工决策事件
 - 不合并 PR,不 push master,不直接发布
 
 ## 读 PR 流程

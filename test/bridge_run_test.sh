@@ -3,7 +3,7 @@
 #
 # 全程 mock: 用一个假 bot(桩 python)顶替 `python3 bridge/jarvis_dingtalk_bot.py`,
 # 状态目录/env 文件/python/bot 路径全部走 JARVIS_BRIDGE_* 覆盖到临时目录, 不碰真
-# .my-day、不连钉钉、不起真 claude、不写 coord 台账(JARVIS_BRIDGE_NO_COORD=1)。
+# .my-day、不连钉钉、不起真 claude。
 #
 # 覆盖: bash -n 语法; start 幂等/pidfile/模式判定(有无凭证 env + 走 jarvis.env source);
 #       stop 清理/重复 stop; restart 换 pid; status 运行/停止/模式; logs 非阻塞;
@@ -121,7 +121,6 @@ run() {
       JARVIS_BRIDGE_ENV="$JENV" \
       JARVIS_BRIDGE_START_WAIT="1.0" \
       JARVIS_BRIDGE_STOP_WAIT="1" \
-      JARVIS_BRIDGE_NO_COORD="1" \
       JARVIS_BRIDGE_TOOL_DIRS="$FAKE_BREW/sbin $FAKE_BREW/bin $FAKE_HOME/.local/bin" \
       JARVIS_BRIDGE_SUPERVISOR="${TEST_SUPERVISOR-}" \
       JARVIS_BRIDGE_LAUNCHCTL="$FAKECTL" \

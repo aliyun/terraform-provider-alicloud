@@ -51,8 +51,6 @@
   "paths": {
     "workdir": ".my-day/probe",
     "audit": "runs/probe",
-    "drafts": "escalation/probe-drafts",
-    "drafts_archived": "escalation/probe-drafts/archived",
     "playground_dir": null
   }
 }

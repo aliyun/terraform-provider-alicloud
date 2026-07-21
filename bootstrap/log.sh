@@ -1,16 +1,14 @@
 #!/bin/bash
 # bootstrap/log.sh — audit + dedup ledger for jarvis triage-loop
 #
-# Provides three functions:
+# Provides two functions:
 #   run_done <id> <summary> [state]  — write runs/<UTCdate>-<id>.md
 #                                       state ∈ {pending,merged} default pending
-#   escalate <id> <reason>   — write escalation/<id>.md
 #   seen <id>                — exit 0 if runs/ already has a file for id, else exit 1
 #
 # Repo-root-relative paths (via git rev-parse).
 # Override paths via env for testing:
 #   JARVIS_RUNS_DIR       — defaults to <repo_root>/runs
-#   JARVIS_ESCALATION_DIR — defaults to <repo_root>/escalation
 #
 # Guard: callable both sourced and as direct script (bash log.sh <fn> <args>).
 
@@ -47,44 +45,6 @@ EOF
 }
 
 # ---------------------------------------------------------------------------
-# escalate <id> <reason> [title]
-# Append-only audit record: escalation/<id>.md
-# First call creates the file with header + first section (including Aone link and title).
-# Subsequent calls append "---" separator + a new section.
-# NEVER truncates; one file per id.
-# ---------------------------------------------------------------------------
-escalate() {
-    local id="$1"
-    local reason="$2"
-    local title="${3:-}"
-    local esc_dir
-    esc_dir="$(lib_escalation_dir)"
-    local filepath="$esc_dir/${id}.md"
-    local aone_url="https://project.aone.alibaba-inc.com/issue/$id"
-
-    mkdir -p "$esc_dir"
-    if [ ! -f "$filepath" ]; then
-        {
-            echo "# Escalation: $id"
-            echo ""
-            [ -n "$title" ] && echo "**title:** $title"
-            echo "**id:** $id"
-            echo "**url:** $aone_url"
-            echo "**reason:** $reason"
-            echo "**timestamp:** $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-        } > "$filepath"
-    else
-        cat >> "$filepath" <<EOF
-
----
-
-**reason:** $reason
-**timestamp:** $(date -u +%Y-%m-%dT%H:%M:%SZ)
-EOF
-    fi
-}
-
-# ---------------------------------------------------------------------------
 # seen <id>
 # Exit 0 if any runs/ file for this id exists, else exit 1.
 # ---------------------------------------------------------------------------
@@ -111,14 +71,11 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
         run_done)
             run_done "${2:-}" "${3:-}" "${4:-}"
             ;;
-        escalate)
-            escalate "${2:-}" "${3:-}" "${4:-}"
-            ;;
         seen)
             seen "${2:-}"
             ;;
         *)
-            echo "Usage: log.sh {run_done|escalate|seen} [args...]" >&2
+            echo "Usage: log.sh {run_done|seen} [args...]" >&2
             exit 1
             ;;
     esac

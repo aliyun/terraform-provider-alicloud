@@ -18,8 +18,8 @@ jarvis_root() {
     #
     # NO `--path-format=absolute` here: that flag needs git ≥ 2.31, and older
     # git (AliOS/RHEL yum builds) echoes the unknown flag as literal rev-parse
-    # output — "--path-format=absolute\n.." ended up inside cache/escalation
-    # paths on the first Linux worker, breaking the preflight stamp. Instead
+    # output — "--path-format=absolute\n.." ended up inside generated cache paths
+    # on the first Linux worker, breaking the preflight stamp. Instead
     # absolutize the (possibly relative) --git-common-dir via cd + pwd, which
     # works on every git that has worktrees at all.
     local anchor base git_common
@@ -46,30 +46,24 @@ lib_runs_dir() {
     echo "${JARVIS_RUNS_DIR:-$(jarvis_root)/runs}"
 }
 
-# Standard escalation/ dir(P1.e 抽出:log.sh + sweep/watchdog 曾各自重复实现)。
-# 尊重 JARVIS_ESCALATION_DIR env override(测试用)。
-lib_escalation_dir() {
-    echo "${JARVIS_ESCALATION_DIR:-$(jarvis_root)/escalation}"
-}
-
-# Effective owner/self for claim-ledger attribution (cap Phase 2, D2).
+# Effective owner/self for claim-ledger attribution.
 # Resolution order:
-#   1. COORD_ID           — coord.sh instance id (triage-one / bridge loops export it)
+#   1. JARVIS_CLAIM_OWNER — explicit stable control-plane worker/session attribution
 #   2. cc-<session-id>    — interactive/headless Claude session; CLAUDE_CODE_SESSION_ID
 #                           is stable across all Bash tool subprocesses of one session,
 #                           so two different sessions get distinct owners and no longer
 #                           block each other in wrap-check.
 #   3. codex-<thread-id>   — interactive Codex thread; CODEX_THREAD_ID has the same
 #                           cross-tool stability as Claude's native session id.
-#   4. persisted hook id   — Claude's CLAUDE_ENV_FILE fallback when the native id is
+#   4. persisted hook id   — hook fallback when the native id is
 #                           absent from a later tool subprocess.
 #   5. ""                 — no stable source → ownerless (legacy behavior: wrap-check
 #                           still holds you to account, no regression).
 # claim.sh (writes owner) and wrap-check.sh (computes self) MUST both use this so the
 # values match within a session.
-coord_self() {
-    if [ -n "${COORD_ID:-}" ]; then
-        echo "$COORD_ID"
+claim_owner() {
+    if [ -n "${JARVIS_CLAIM_OWNER:-}" ]; then
+        echo "$JARVIS_CLAIM_OWNER"
     elif [ -n "${CLAUDE_CODE_SESSION_ID:-}" ]; then
         echo "cc-$CLAUDE_CODE_SESSION_ID"
     elif [ -n "${CODEX_THREAD_ID:-}" ]; then

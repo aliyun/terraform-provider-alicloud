@@ -11,26 +11,27 @@
 - Task 必须先进入控制面；控制面不可用时 fail-closed，不允许回退到本地无状态执行
 - `_decide` 逐单判定：终态 / `jarvis-done` / `jarvis-claimed` / `jarvis-npe` → skip；`jarvis-idle` 过人工介入门
 - **[人工点·可选]** 回退模式 `JARVIS_AUTO_DISPATCH=0`：新单入 pending，钉钉授权后才派（`plan.sh` 出计划）
-- 后台调度：ProbeScheduler（每日探测轮）/ RevisitScheduler（每日 idle 重访）/ ReconcileScheduler（周期对账）/ PersonaScheduler（评论区数字人接力，默认关）
+- 后台调度：ProbeScheduler（每日探测轮）/ RevisitScheduler（每日 idle 重访）/ AoneScheduler（扫描、stale/done 状态对账）/ PersonaScheduler（评论区数字人接力，默认关）
 
 ## 2. 单工单 Triage (headless)
 - `claim.sh claim` 认领（竞争锁，输了 SKIP）
 - `aone-triage` skill 查证（OpenAPI + Cloudspec 映射 + provider 源码）
-- autonomy 判定：auto 列表内自动执行到预发/CR；低置信/红线 → escalate
+- autonomy 判定：auto 列表内自动执行到预发/CR；低置信/红线 → Task `SUSPENDED` + needs-attention 事件
 - 遇必须人类决策 → Aone 评论 @人 + `[[SUSPEND:...]]` 挂起，WaitWatcher 收到回复后 `--resume` 唤醒
 - 收尾 bookend：`wrap.sh done`（评论+状态）→ `claim.sh release`（打 `jarvis-idle`）
 
 ## 3. 硬门 (Hard Gate)
 - **[人工点]** `release_prod` 永停，正式发布必须人工审批
 
-## 4. 收敛 (Reconcile)
-- `reconcile.sh all`：stale（超时 claim）/ orphan（实例已死）/ drift（台账对账）→ escalate
+## 4. 收敛 (Convergence)
+- 服务端 reaper：按 Worker/Session heartbeat、lease 与 fence 收敛中断执行
+- AoneScheduler：周期检查 stale claim 与 `jarvis-done`/Aone 完成态漂移，幂等发布告警
 - `wrap-check.sh` Stop 闸门：会话结束校验未完工工单已回填
-- `escalation/` 人工决策队列；`runs/` 审计
+- `SUSPENDED` Task + Aone 是人工决策真源；`runs/` 保留运行审计
 
 ---
 
 ## 人工审核点
 1. **正式发布**：`release_prod` 永停，人工审批
 2. **回退模式派发授权**：`JARVIS_AUTO_DISPATCH=0` 时钉钉逐单授权
-3. **escalation/ 队列**：低置信 / 红线 / 缺能力，人工拍板
+3. **needs-attention 事件**：低置信 / 红线 / 缺能力，人工拍板后恢复 Task

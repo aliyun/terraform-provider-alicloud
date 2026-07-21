@@ -17,19 +17,19 @@ Release a Terraform Provider resource together with its corresponding data sourc
 
 - **可自治**：全部开发/测试/开 PR/跑 ACC/回填 Aone 步骤，含 CloudSpec feature 分支上的 IDL 修复、`amp publish pre` 预发发布、从 pre 元数据重新生成，以及轮询处理评审评论。
 - **必须 escalate**：CloudSpec `prod`/`online` 正式发布与最终 **PR merge**。两者都属于 `release_prod`，jarvis 不得自动执行。
-- 因此原文"task is only complete after the PR is merged"是**对人跑者**的验收口径；对 jarvis，"PR 就绪（CI 绿+评论清）+ escalation 提交"即本轮收尾。
+- 因此原文"task is only complete after the PR is merged"是**对人跑者**的验收口径；对 jarvis，"PR 就绪（CI 绿+评论清）+ needs-attention 事件已发布"即本轮收尾。
 
 ## 无人值守决策规则（替代"询问用户"）
 
-jarvis 语境下，本 skill 所有"ask the user"节点按以下规则改走三通道：**规则内置**（有明确默认值自己决策+工单留痕）、**异步问工单**（在 Aone 评论提问，本轮释放，下轮 loop 续跑）、**escalation**（起草不发出）。
+jarvis 语境下，本 skill 所有"ask the user"节点按以下规则改走三通道：**规则内置**（有明确默认值自己决策+工单留痕）、**异步问工单**（在 Aone 评论提问，本轮挂起，下轮 loop 续跑）、**needs-attention**（Task `SUSPENDED`，由事件发布器请求人工决策）。
 
 | 原询问点 | 无人值守行为 |
 |---|---|
 | 未提供工单号 | triage 场景工单天然存在；缺则按 `loops/adhoc-intake.md` 建单，不问人 |
 | 镇元预发版 vs 线上版歧义 | 本 SOP 的接单闸门与修复后生成都固定以 **pre** 为真源；线上只可作为只读对照，禁止替代 pre。pre 不存在且需求明确 → 进入 CloudSpec 定义闭环；需求不明确 → 四人会审 |
 | 工单缺需求描述或无法判断 pre 定义是否满足需求 | 同时通知 @辰羿(320687)、@临钧(429768)、@过载(484483)、@原根(265607)，打 jarvis-idle 并挂起；禁止继续生成或 provider 开发 |
-| 修复方案需确认 | high_conf（OpenAPI+源码两层一致）→ 自动改+重跑 ACC，重试上限 3 次；low_conf → escalation |
-| PR 评论无法自行解决 | 起草回复入 `escalation/`，不自动发出 |
+| 修复方案需确认 | high_conf（OpenAPI+源码两层一致）→ 自动改+重跑 ACC，重试上限 3 次；low_conf → Task `SUSPENDED` |
+| PR 评论无法自行解决 | Task `SUSPENDED` + needs-attention 事件，不自动回复 |
 | 等待 PR merge | 见"Jarvis 自治边界"——CI 绿+评论清即收尾，merge 是人工硬门 |
 | Step 2 provider 仓本地路径 | 规则内置：`bootstrap/workspace.sh dir terraform_provider` 解析（CLAUDE.md #4），缺登记 → escalate(`missing_capability`)，不问人 |
 | Step 9 镇元用例 vs 手写 | 工单已给镇元用例 ID 清单 → 走镇元生成；否则默认**手写 + 100% 属性覆盖**；拿不准 → 异步问工单 |

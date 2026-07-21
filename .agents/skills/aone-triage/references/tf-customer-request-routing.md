@@ -332,7 +332,7 @@ bash bootstrap/notify-dingtalk.sh --dry-run <staffId> "<title>" "<body>"
 - 缺 `DINGTALK_APP_KEY/SECRET/TEMPLATE_ID` → stderr `[NOTIFY-SKIP: missing env]`,退 0
 - `JARVIS_NOTIFY_DINGTALK=0` → 全局关闭,退 0
 - staffId ∈ `config/dingtalk-optout.txt` → 个人 opt-out,退 0
-- 网络/API 失败 → 落 `escalation/notify-fail-<ts>-<staffId>.md`,退 0
+- 网络/API 失败 → 返回非零，由控制面事件账本重试；不落本地文件
 
 **staffId 假设**:阿里 empId(Aone 工号)= 钉钉 staffId,直接用 team-roster 里的工号即可。排障时可先 `notify-dingtalk.sh --dry-run <staffId> <title> <body>` 验证收件人与文案(打印不实发)。
 
@@ -560,7 +560,7 @@ bash bootstrap/notify-dingtalk.sh <工号> \
 
 ### 分支 D-临钧(生成器产出):走 acube V2 接口,jarvis 不手动建单
 
-生成器产出资源交给 acube 的 `TerraformVendorBuildTaskOpenapiController#createBuildTaskV2` 接口——接口内部**自动**在 terraform-alicloud (528766) 建关联单、指派临钧(429768)、触发生成/PR 工作流。jarvis 只负责:(1) 触发 build 任务,(2) 轮询 `queryAoneByTaskId` 拿 aoneId(60s 内),(3) 关联源单 + 指派临钧 + status 改「问题解决中」。**严禁**同时走 `a1 workitem create` 手动建单流程,否则双单污染临钧队列。60s 内查不到 aoneId → 升级 escalation,**禁**回退手动建单。
+生成器产出资源交给 acube 的 `TerraformVendorBuildTaskOpenapiController#createBuildTaskV2` 接口——接口内部**自动**在 terraform-alicloud (528766) 建关联单、指派临钧(429768)、触发生成/PR 工作流。jarvis 只负责:(1) 触发 build 任务,(2) 轮询 `queryAoneByTaskId` 拿 aoneId(60s 内),(3) 关联源单 + 指派临钧 + status 改「问题解决中」。**严禁**同时走 `a1 workitem create` 手动建单流程,否则双单污染临钧队列。60s 内查不到 aoneId → Task `SUSPENDED` 并发布 needs-attention 事件,**禁**回退手动建单。
 
 **完整 bash 脚本(含 workId/workName 抓取、轮询、关联)、接口 URL/body 详情、环境说明** 见 [acube-createBuildTaskV2-workflow.md](./acube-createBuildTaskV2-workflow.md)。
 
@@ -886,7 +886,7 @@ RD-only 幂等 publisher。关键细节:
 - ❌ **专属维护名单产品(ACK/SLS/MNS/OSS/ESS/OTS/EMR/RDS/PolarDB/MSE/ClickHouse)建 tf_provider(528766) 关联单** —— 违反分支 A 定义:该批产品 provider 由专人独立维护、不接 tf_provider 共享池,追踪走源客户单本身;建关联单等于污染专人队列 + 双档案。**正确**:源单 `--assignee <名单工号>` + `--status 问题解决中` + wrap done + release,评论走模板 C(不提关联单)。若该产品已有专人推的 PR/修复,走 Step 3 前置 Gate 短路,同样不建单
 - ❌ 强行 `--assignee` 指派专属名单以外的产品到过载/新山/镇元 agent —— 违反分工表,让本团队背不该背的锅
 - ❌ 生成器产出(临钧)场景还手动 `a1 workitem create` 建关联单 —— acube V2 createBuildTaskV2 已自动建单+指派临钧,重复建会双单,污染临钧研发队列
-- ❌ acube 60s 未返回 aoneId 就"降级"回手动 `a1 workitem create` —— 可能 acube 已建成功只是查询未及时,回退会双建;正确做法是升级 escalation 由人排查
+- ❌ acube 60s 未返回 aoneId 就"降级"回手动 `a1 workitem create` —— 可能 acube 已建成功只是查询未及时,回退会双建;正确做法是挂起 Task 并由 needs-attention 事件请人排查
 - ❌ 转单不复制原单优先级 / 不设短于原单 DDL 的截止日期 —— 关联单接手方无优先级参考,DDL 与原单齐会让下一棒无余量;规则:`--priority` 复制原单,`--cfs 计划截止日期` = 原单 DDL - 2 天(至少 today+1);原单无 DDL 时默认 today+3
 - ❌ Provider 源码查证跳过 Step 2 前置的 upstream PR 前扫,只 grep 本地 workspace 磁盘 —— workspace 的本地 branch 可能滞后 upstream 数十小时,且本地镜像不含 upstream PR 元数据;必先跑 `gh pr list --search` + `gh api contents?ref=master`,同题 recently-merged PR 直接引用避免重复建单
 - ❌ Step 3 执行路由前不扫评论区/状态 —— 查证+决策期间有时间窗口,原指派人(常被前线随机指派)可能已回帖修复/贴 PR/接手;不扫就转单会重复建关联单、让接手方收多余通知
@@ -917,6 +917,6 @@ RD-only 幂等 publisher。关键细节:
 ### E. 批量 / 流程
 
 - ❌ 批量 bookend 不检查 claim exit code —— lost race 后继续回复会污染工单历史。Terraform 正确写法：`if JARVIS_A1_IDENTITY=terraform-rd bash bootstrap/claim.sh claim $id $pool; then JARVIS_A1_IDENTITY=terraform-rd bash bootstrap/wrap.sh done ... && JARVIS_A1_IDENTITY=terraform-rd bash bootstrap/claim.sh release $id $pool; else echo "$id lost race, skip"; fi`(完整骨架见 `./batch-bookend-template.md`)
-- ❌ 批量 bookend / 长循环脚本单次超过 Bash 工具 2min timeout —— 13 单 × 3 步 × 每步 ~5-10s ≈ 130-200s 会被截断,中断时最后一单常处于 `jarvis-claimed` 状态没走 `release`,遗留僵尸 claim 阻塞下一轮 lost race。**规则**:批处理**单 Bash 调用限 4-5 单**(<60s),分批;`preflight.sh` 已在开局主动跑 `reconcile.sh stale` 清理僵尸,但会话中的实时截断仍需手动 `claim.sh release <id> <pool>` 补救
+- ❌ 批量 bookend / 长循环脚本单次超过 Bash 工具 2min timeout —— 13 单 × 3 步 × 每步 ~5-10s ≈ 130-200s 会被截断,中断时最后一单常处于 `jarvis-claimed` 状态没走 `release`,遗留僵尸 claim 阻塞下一轮 lost race。**规则**:批处理**单 Bash 调用限 4-5 单**(<60s),分批;Task 模式由服务端 reaper 与 AoneScheduler 收敛，会话内手工批处理被截断仍需 `claim.sh release <id> <pool>` 补救
 - ❌ 每日重访都发「追料」或重复摘录历史评论 —— 无变化、同 anchor 重复检测必须静默；只有
   满 8 天的新 epoch 才按固定模板 D 发一次 Aone @ + 钉钉私信

@@ -18,7 +18,7 @@ description: >-
 ## 前置
 - 先确认 `gh` 命令存在;Jarvis 代表执行 GitHub 写操作(评论/创建 PR/推分支)前必须 `bootstrap/github-identity.sh check`;写操作用 `bootstrap/github-identity.sh gh ...`,推分支用 `bootstrap/github-identity.sh push ...`,登录名必须是 `api-tool-agent`,禁止依赖本机 ambient `gh auth`、个人账号或 ambient git 凭据。
 - 评审看 alicloud(=upstream aliyun)PR;只读查证可读 upstream。改动若有,head/push 落 `api-tool-agent:<branch>`(见 `config/workspaces.json` `terraform_provider`)。
-- 写操作(评论/建单)先授权;低置信不发评论,写 `escalation/`。
+- 写操作(评论/建单)先授权;低置信不发评论,将 Task `SUSPENDED` 并发布人工决策事件。
 
 ## 1. 读 PR
 ```
@@ -73,7 +73,7 @@ bootstrap/github-identity.sh gh pr create --repo aliyun/terraform-provider-alicl
 - 上游 master 前进后,CI 若报 `jitterbit/get-changed-files` / `head commit ... is not ahead of the base commit`,先 `fetch` upstream,确认 PR commit 后 rebase 到最新 `origin/master`/`alicloud/master`,保持单提交再 force update `api-tool-agent:<branch>`。**force update 后 synchronize 事件仍必挂这两检查**(action 对 synchronize 比对 event.before→after,历史被改写 before 就不是 after 祖先)——rebase+push 后必须 `gh pr close` + `gh pr reopen` 触发 `reopened` 事件(比对 base..head)才能转绿;且 master 在 rebase 与 CI 起跑之间再前移也会挂(base.sha=master 当前 tip 必须是 head 祖先),操作要一气呵成,挂了就再追平重来(先例:PR 9977 连清三轮假红)。
 - 推送前先做单提交门禁: `git rev-list --count <base>..HEAD` 必须是 `1`;若 GitHub CI `Pull Request Max Commits` 报 `commitNum>1`,不要叠加修复提交,应 squash 成一个提交后再 force-with-lease 更新 `api-tool-agent:<branch>`。
   - 对**自有 fork `api-tool-agent:<branch>`（PR-head）的 force-push 是 `autonomy.md` 预授权的例行动作（`fork_push`）**：headless 下**直接执行,不 SUSPEND、不 escalate、不等工单评论放行**（授权来自策略,工单评论不作破坏性操作授权源）。前提:目标是自有 fork PR-head(非上游 `aliyun/…`、非任何 master)、内容已过 ACC 验收。force-push 上游 / master = `release_prod` 人工硬门,不在此列。
-- **commit 作者硬门(CLA)**:`license/cla` 报 "Contributor License Agreement is not signed yet" 多因 **commit 作者邮箱**不是 CLA-signed 的 `cloudspec_bot@alibaba-inc.com`(裸 `git commit` 会落本地伪身份如 `jarvis@jarvis.local`)。提交走 `bootstrap/github-identity.sh commit`;已错则 `bootstrap/github-identity.sh commit --amend --no-edit` 重署名后 force-push。CLA 校验的是作者,不是 push token / PR opener。参见 `escalation/archived/cap-github-commit-identity.md`。
+- **commit 作者硬门(CLA)**:`license/cla` 报 "Contributor License Agreement is not signed yet" 多因 **commit 作者邮箱**不是 CLA-signed 的 `cloudspec_bot@alibaba-inc.com`(裸 `git commit` 会落本地伪身份如 `jarvis@jarvis.local`)。提交走 `bootstrap/github-identity.sh commit`;已错则 `bootstrap/github-identity.sh commit --amend --no-edit` 重署名后 force-push。CLA 校验的是作者,不是 push token / PR opener。
 - PR 评论要求“可用 Example”时,先在本地用 PR provider 包/override 验证 `terraform init/validate`。示例必须含 `required_providers`,跨账号资源用 aliased providers;AK/SK 只通过 `sensitive` 变量或环境变量传入,禁止写真实值。
 - 跨账号 AccTest 不只看 `TF_ACC`:先隔离 ambient `ALICLOUD_ACCESS_KEY`/`ALICLOUD_SECRET_KEY`,再显式检查 `ALICLOUD_ACCESS_KEY_1/2` 解析到的账号是否符合预期。测试前置清理只用于清历史脏关系,不能替代 provider Delete;若 CLI/API 能清理关系,资源 Delete 也应实现同等删除并校验幂等。
 - CI 失败诊断必须按失败 check 的 job id 拉日志:先 `gh pr checks --json name,link,state,bucket,workflow`,从失败项 URL 拿 run/job,再用 `gh run view <run_id> --job <job_id> --log`;同一个 workflow 里的其它 job 日志不能替代失败 job。

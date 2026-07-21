@@ -4,10 +4,10 @@
 # Scenarios:
 #   1. Happy path: claim succeeds, wrap done succeeds → claim,done,release in order + prints DONE
 #   2. Missing status arg (only 4 args) → exit 1
-#   3. wrap done fails → escalate called, release NOT called, exit 1
-#   4. Claim lost race (exit 1) → prints SKIP, exits 0 (no escalate, no release, no done)
-#   6. Claim missing required field (exit 3) → candidates + escalate, no wrap/release
-#   7. Other claim failure → escalate + non-zero, not SKIP
+#   3. wrap done fails → release NOT called, exit 1
+#   4. Claim lost race (exit 1) → prints SKIP, exits 0 (no release, no done)
+#   6. Claim missing required field (exit 3) → candidates, no wrap/release
+#   7. Other claim failure → non-zero, not SKIP
 #
 # Run: bash test/triage_one_test.sh
 # Prints PASS and exits 0 on success; prints FAIL and exits 1 on any failure.
@@ -51,8 +51,8 @@ trap cleanup INT TERM EXIT
 STUB_DIR="$(mktemp -d)"
 JARVIS_ROOT_DIR="$(mktemp -d)"
 
-# Minimal pools.json so log.sh / wrap.sh don't bail
-mkdir -p "$JARVIS_ROOT_DIR/config" "$JARVIS_ROOT_DIR/runs" "$JARVIS_ROOT_DIR/escalation"
+# Minimal pools.json so wrap.sh doesn't bail
+mkdir -p "$JARVIS_ROOT_DIR/config" "$JARVIS_ROOT_DIR/runs"
 cp "$BOOTSTRAP_DIR/../config/pools.json" "$JARVIS_ROOT_DIR/config/pools.json"
 
 # ---------------------------------------------------------------------------
@@ -76,16 +76,6 @@ STUB
 chmod +x "$STUB_DIR/wrap.sh"
 
 # ---------------------------------------------------------------------------
-# Build stub log.sh — always succeeds, records calls
-# ---------------------------------------------------------------------------
-cat > "$STUB_DIR/log.sh" <<'STUB'
-#!/usr/bin/env bash
-echo "log $*" >> "${STUB_LOG:?STUB_LOG not set}"
-exit 0
-STUB
-chmod +x "$STUB_DIR/log.sh"
-
-# ---------------------------------------------------------------------------
 # Build stub aone-fields.sh — returns legal synthetic options for exit-3 handling
 # ---------------------------------------------------------------------------
 cat > "$STUB_DIR/aone-fields.sh" <<'STUB'
@@ -104,10 +94,8 @@ run_triage_one() {
     env \
         JARVIS_ROOT="$JARVIS_ROOT_DIR" \
         JARVIS_RUNS_DIR="$JARVIS_ROOT_DIR/runs" \
-        JARVIS_ESCALATION_DIR="$JARVIS_ROOT_DIR/escalation" \
         TRIAGE_CLAIM_CMD="$STUB_DIR/claim.sh" \
         TRIAGE_WRAP_CMD="$STUB_DIR/wrap.sh" \
-        TRIAGE_LOG_CMD="$STUB_DIR/log.sh" \
         TRIAGE_FIELDS_CMD="$STUB_DIR/aone-fields.sh" \
         STUB_LOG="$log_file" \
         "$@"
@@ -188,9 +176,9 @@ fi
 rm -f "$LOG2"
 
 # ===========================================================================
-# Test 3: wrap done fails → escalate called, release NOT called, exit 1
+# Test 3: wrap done fails → release NOT called, exit 1
 # ===========================================================================
-echo "Test 3: wrap done fails → escalate, no release, exit 1"
+echo "Test 3: wrap done fails → no release, exit 1"
 
 LOG3="$(mktemp)"
 
@@ -204,13 +192,6 @@ if [ "$exit3" -ne 0 ]; then
     assert_pass "wrap failure → non-zero exit"
 else
     assert_fail "wrap failure should exit non-zero" "got 0"
-fi
-
-# escalate must have been called for WI-003
-if grep -q "^log escalate WI-003" "$LOG3"; then
-    assert_pass "log escalate called for WI-003"
-else
-    assert_fail "log escalate should be called" "log: $(cat "$LOG3")"
 fi
 
 # release must NOT have been called
@@ -248,7 +229,7 @@ else
     assert_fail "lost race should print SKIP" "got: $output4"
 fi
 
-# wrap, escalate, release must NOT be called
+# wrap and release must NOT be called
 if grep -q "^wrap" "$LOG4" 2>/dev/null; then
     assert_fail "wrap should NOT be called on lost race" "log: $(cat "$LOG4")"
 else
@@ -264,52 +245,9 @@ fi
 rm -f "$LOG4"
 
 # ===========================================================================
-# Test 5 (C1): triage-one registers a real COORD_ID so the checkpoint
-#              owner_instance is non-empty (orphan-visible on crash).
+# Test 6: claim exit 3 → query legal candidates; do not wrap/release.
 # ===========================================================================
-echo "Test 5: COORD_ID registered → checkpoint owner_instance non-empty"
-
-LOG5="$(mktemp)"
-COORD_ROOT="$(mktemp -d)"
-mkdir -p "$COORD_ROOT/.my-day/instances" "$COORD_ROOT/.my-day/tasks"
-
-output5=$(env \
-    JARVIS_ROOT="$COORD_ROOT" \
-    TRIAGE_CLAIM_CMD="$STUB_DIR/claim.sh" \
-    TRIAGE_WRAP_CMD="$STUB_DIR/wrap.sh" \
-    TRIAGE_LOG_CMD="$STUB_DIR/log.sh" \
-    STUB_CLAIM_EXIT=0 \
-    STUB_WRAP_EXIT=0 \
-    STUB_LOG="$LOG5" \
-    bash "$TRIAGE_ONE" WI-005 pool-a proj-1 "all done" closed 2>/dev/null)
-
-exit5=$?
-
-if [ "$exit5" -eq 0 ]; then
-    assert_pass "Test5 exit code is 0"
-else
-    assert_fail "Test5 exit code should be 0" "got $exit5"
-fi
-
-task_file="$COORD_ROOT/.my-day/tasks/WI-005.json"
-if [ -f "$task_file" ]; then
-    owner=$(jq -r .owner_instance "$task_file" 2>/dev/null || echo "")
-    if [ -n "$owner" ] && [ "$owner" != "null" ]; then
-        assert_pass "checkpoint owner_instance is non-empty: $owner"
-    else
-        assert_fail "checkpoint owner_instance should be non-empty" "got: '$owner'"
-    fi
-else
-    assert_fail "checkpoint task file should exist" "$task_file missing"
-fi
-
-rm -f "$LOG5"
-rm -rf "$COORD_ROOT"
-
-# ===========================================================================
-# Test 6: claim exit 3 → query legal candidates + escalate; do not wrap/release.
-# ===========================================================================
-echo "Test 6: missing required field → candidates + escalate"
+echo "Test 6: missing required field → candidates"
 LOG6="$(mktemp)"
 output6=$(run_triage_one "$LOG6" STUB_CLAIM_EXIT=3 STUB_WRAP_EXIT=0 \
     bash "$TRIAGE_ONE" WI-006 pool-a proj-1 "summary" closed 2>&1)
@@ -317,8 +255,6 @@ exit6=$?
 [ "$exit6" -eq 1 ] && assert_pass "missing field → exit 1" || assert_fail "missing field exit" "got $exit6"
 grep -q '^fields missing WI-006' "$LOG6" \
     && assert_pass "missing field candidates queried" || assert_fail "fields helper not called" "$(cat "$LOG6")"
-grep -q '^log escalate WI-006 missing_required_field:' "$LOG6" \
-    && assert_pass "missing field escalated" || assert_fail "missing field not escalated" "$(cat "$LOG6")"
 echo "$output6" | grep -q 'MISSING_REQUIRED_FIELDS: WI-006.*"value":"bug"' \
     && assert_pass "legal candidate surfaced" || assert_fail "candidate missing" "$output6"
 if grep -Eq '^(wrap|claim release)' "$LOG6"; then
@@ -329,16 +265,14 @@ fi
 rm -f "$LOG6"
 
 # ===========================================================================
-# Test 7: non-race claim error → escalate and fail; never print SKIP.
+# Test 7: non-race claim error → fail; never print SKIP.
 # ===========================================================================
-echo "Test 7: generic claim failure → error escalation"
+echo "Test 7: generic claim failure → error"
 LOG7="$(mktemp)"
 output7=$(run_triage_one "$LOG7" STUB_CLAIM_EXIT=7 STUB_WRAP_EXIT=0 \
     bash "$TRIAGE_ONE" WI-007 pool-a proj-1 "summary" closed 2>&1)
 exit7=$?
 [ "$exit7" -eq 1 ] && assert_pass "generic claim failure → exit 1" || assert_fail "generic claim failure exit" "got $exit7"
-grep -q '^log escalate WI-007 claim_failed: rc=7' "$LOG7" \
-    && assert_pass "generic claim failure escalated" || assert_fail "generic failure not escalated" "$(cat "$LOG7")"
 if echo "$output7" | grep -q 'SKIP'; then
     assert_fail "generic claim failure must not look like lost race" "$output7"
 else

@@ -61,7 +61,7 @@ print(data.get("aoneId") or "")')
   sleep 10
 done
 if [ -z "$NEW_ID" ]; then
-  echo "acube 60s 内未返回 aoneId,升级 escalation/(不要回退到手动 a1 workitem create,可能双建)"
+  echo "acube 60s 内未返回 aoneId,挂起 Task 并发布 needs-attention 事件(不要回退到手动 a1 workitem create,可能双建)"
   bootstrap/log.sh escalate <源工单ID> "acube build task $task_id 60s 内未返回 aoneId,人工排查"
   exit 1
 fi
@@ -84,5 +84,5 @@ bin/a1id -- project workitem update <源工单ID> --status 问题解决中
 ## 关键纪律
 
 - acube 自动建单+指派+触发工作流是**原子动作**,jarvis 只做"查 aoneId + 关联源单"善后
-- 60s 内没查到 aoneId → 直接升级 escalation,**禁**回退手动 `a1 workitem create`,双建会污染临钧研发队列
+- 60s 内没查到 aoneId → 直接挂起 Task 并发布 needs-attention 事件，**禁**回退手动 `a1 workitem create`,双建会污染临钧研发队列
 - workId/workName 填当前 jarvis 身份工号,acube 侧任务日志能追到调用方

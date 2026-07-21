@@ -40,7 +40,7 @@ for k in '.provider.version' '.terraform.required_version' '.regions.focus' '.re
          '.tiers.tier0' '.tiers.tier1.enabled' '.tiers.tier1.prepaid_guard' '.tiers.tier1.desc' \
          '.limits.max_scenarios_per_run' '.limits.step_timeout_min' '.limits.daily_new_tickets' \
          '.ticket.mode' '.ticket.project' '.ticket.assignee' '.ticket.tag' '.ticket.category' \
-         '.paths.workdir' '.paths.audit' '.paths.drafts'; do
+         '.paths.workdir' '.paths.audit'; do
     if jq -e "$k != null" "$CONFIG" >/dev/null 2>&1; then ok "键存在 $k"; else bad "键缺失 $k"; fi
 done
 [ "$(jq -r '.tiers.tier1.enabled' "$CONFIG")" = "true" ] && ok "tier1.enabled 默认 true" || bad "tier1.enabled 应默认 true"
@@ -660,8 +660,7 @@ h2="$(cat "$oi/corpuspay/corpuscharged/scenario.yaml" 2>/dev/null)"
 # ===========================================================================
 
 # ---------------------------------------------------------------------------
-echo "Test 35: config v2.1 新键(paths.drafts_archived / limits.audit_retention_days / limits.workdir_retention_days / tier1.drift_enabled / tier1.drift_action_allow)"
-jq -e '.paths.drafts_archived != null' "$CONFIG" >/dev/null 2>&1 && ok "paths.drafts_archived 存在" || bad "缺 paths.drafts_archived"
+echo "Test 35: config v2.1 新键(limits.audit_retention_days / limits.workdir_retention_days / tier1.drift_enabled / tier1.drift_action_allow)"
 [ "$(jq -r '.limits.audit_retention_days' "$CONFIG")" = "60" ] && ok "audit_retention_days=60" || bad "audit_retention_days 应 60"
 [ "$(jq -r '.limits.workdir_retention_days' "$CONFIG")" = "7" ] && ok "workdir_retention_days=7" || bad "workdir_retention_days 应 7"
 [ "$(jq -r '.tiers.tier1.drift_enabled' "$CONFIG")" = "false" ] && ok "drift_enabled 默认 false" || bad "drift_enabled 应默认 false"
@@ -893,29 +892,9 @@ grep -qE "upgrader.*1\.283\.0" <<<"$OUT" && ok "upgrader --dry 显示旧 pin 1.2
 grep -q "upgrade_diff" <<<"$OUT" && ok "upgrader --dry 提到 upgrade_diff" || bad "upgrader --dry 未提 finding code"
 
 # ---------------------------------------------------------------------------
-echo "Test 44: archive --dry 沙箱(draft filed/rejected/pending 分拣 + verdict retention + workdir gc + 排除项)"
-arc="$tmp/archive_root"; mkdir -p "$arc/config" "$arc/escalation/probe-drafts" "$arc/runs/probe" "$arc/.my-day/probe"
+echo "Test 44: archive --dry 沙箱(verdict retention + workdir gc + 排除项)"
+arc="$tmp/archive_root"; mkdir -p "$arc/config" "$arc/runs/probe" "$arc/.my-day/probe"
 cp "$CONFIG" "$arc/config/probe.json"
-# 3 个 draft:filed / rejected-outdated / pending-review
-cat > "$arc/escalation/probe-drafts/d-filed.md" <<'MD'
----
-status: filed
-ticket: https://x
----
-# body
-MD
-cat > "$arc/escalation/probe-drafts/d-rej.md" <<'MD'
----
-status: rejected-outdated
----
-# body
-MD
-cat > "$arc/escalation/probe-drafts/d-pend.md" <<'MD'
----
-status: pending-review
----
-# body
-MD
 # 老 verdict(60+ 天前) → 应搬移(dry 只报)
 old_epoch=$(( $(date +%s) - 65*86400 ))
 echo '{"schema_version":1,"mode":"tier0","started_at":"2020-01-01T00:00:00Z"}' > "$arc/runs/probe/20200101-000000-old.json"
@@ -943,12 +922,9 @@ touch -t 202001010000 "$arc/.my-day/probe/20200101T000000Z-hasstate" 2>/dev/null
 # archive --dry:什么都不搬,但计数正确
 run_probe env JARVIS_ROOT="$arc" JARVIS_TF_PLAYGROUND="$arc/nope" bash "$PROBE" archive --dry
 [ "$RC" = "0" ] && ok "archive --dry 退 0" || bad "archive --dry 退 $RC"
-grep -q "drafts: moved=2" <<<"$OUT" && ok "--dry 计 2 个 draft 待移(filed+rejected)" || bad "--dry drafts 计数错: $OUT"
-grep -q "pending=1" <<<"$OUT" && ok "--dry pending 计 1" || bad "--dry pending 计数错"
 grep -q "verdicts: moved=1" <<<"$OUT" && ok "--dry 计 1 个 verdict 待移" || bad "--dry verdicts 计数错"
 grep -q "workdir: gc=1" <<<"$OUT" && ok "--dry 计 1 个 workdir 待 gc" || bad "--dry workdir 计数错"
 # 存量核对:dry 不动文件
-[ -f "$arc/escalation/probe-drafts/d-filed.md" ] && ok "--dry 未真移 filed draft" || bad "--dry 竟真移了 filed"
 [ -f "$arc/runs/probe/ledger.jsonl" ] && ok "--dry ledger.jsonl 排除项完整" || bad "--dry 动了 ledger"
 [ -f "$arc/runs/probe/2020-week-summary.md" ] && ok "--dry *-summary.md 排除项完整" || bad "--dry 动了 summary"
 [ -d "$arc/.my-day/probe/.plugin-cache" ] && ok "--dry .plugin-cache 排除项完整" || bad "--dry 动了 .plugin-cache"
@@ -960,9 +936,6 @@ grep -q "workdir: gc=1" <<<"$OUT" && ok "--dry 计 1 个 workdir 待 gc" || bad 
 echo "Test 45: archive 真跑(实际移文件 + 删目录 + ledger 追加)"
 run_probe env JARVIS_ROOT="$arc" JARVIS_TF_PLAYGROUND="$arc/nope" bash "$PROBE" archive
 [ "$RC" = "0" ] && ok "archive 真跑退 0" || bad "archive 真跑退 $RC"
-[ -f "$arc/escalation/probe-drafts/archived/d-filed.md" ] && ok "filed draft 已移入 archived/" || bad "filed 未移"
-[ -f "$arc/escalation/probe-drafts/archived/d-rej.md" ] && ok "rejected draft 已移入 archived/" || bad "rejected 未移"
-[ -f "$arc/escalation/probe-drafts/d-pend.md" ] && ok "pending-review draft 留原地" || bad "pending 被误移"
 ls "$arc/runs/probe/archive/"*/20200101-000000-old.json >/dev/null 2>&1 && ok "老 verdict 已入 archive/<YYYYMM>/" || bad "verdict retention 未生效"
 [ -f "$arc/runs/probe/ledger.jsonl" ] && ok "ledger.jsonl 未被搬" || bad "ledger 被误搬"
 [ -f "$arc/runs/probe/2020-week-summary.md" ] && ok "*-summary.md 未被搬" || bad "summary 被误搬"
@@ -984,16 +957,13 @@ run_probe env JARVIS_ROOT="$arc" JARVIS_TF_PLAYGROUND="$arc/nope" bash "$PROBE" 
 # 硬幂等:第二次 dry 计数必须全 0(前次已 archived 完毕,再无可搬)
 run_probe env JARVIS_ROOT="$arc" JARVIS_TF_PLAYGROUND="$arc/nope" bash "$PROBE" archive --dry
 [ "$RC" = "0" ] && ok "archive 二次 --dry 退 0" || bad "二次 --dry 退 $RC"
-grep -q "drafts: moved=0" <<<"$OUT"   && ok "二次 --dry drafts: moved=0"   || bad "二次 --dry drafts 应 0: $OUT"
 grep -q "verdicts: moved=0" <<<"$OUT" && ok "二次 --dry verdicts: moved=0" || bad "二次 --dry verdicts 应 0"
 grep -q "workdir: gc=0" <<<"$OUT"     && ok "二次 --dry workdir: gc=0"     || bad "二次 --dry workdir 应 0"
-# archived/ 下不允许嵌套 archived/(二次搬移会导致 archived/archived/xxx 出现)
-[ ! -d "$arc/escalation/probe-drafts/archived/archived" ] && ok "archived/ 下无嵌套 archived/(二次未误搬)" || bad "archived/ 下出现嵌套 archived/"
 ls "$arc/runs/probe/archive/"*/archive/ >/dev/null 2>&1 && bad "runs/probe/archive/*/archive/ 嵌套(二次搬移污染)" || ok "runs/probe/archive 下无嵌套 archive/"
-# ledger 尾行必须是本次 archive_dry,且 moved.drafts/verdicts/workdirs 全 0
+# ledger 尾行必须是本次 archive_dry,且 moved.verdicts/workdirs 全 0
 if [ -f "$arc/runs/probe/ledger.jsonl" ]; then
     last="$(tail -1 "$arc/runs/probe/ledger.jsonl")"
-    jq -e '.kind=="archive_dry" and .moved.drafts==0 and .moved.verdicts==0 and .moved.workdirs==0' <<<"$last" >/dev/null 2>&1 \
+    jq -e '.kind=="archive_dry" and (.moved|has("drafts")|not) and .moved.verdicts==0 and .moved.workdirs==0' <<<"$last" >/dev/null 2>&1 \
         && ok "ledger 尾行 archive_dry 且 moved 全 0(幂等台账证据)" \
         || bad "ledger 尾行异常: $last"
 fi

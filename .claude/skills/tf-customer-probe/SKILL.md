@@ -1,14 +1,13 @@
 ---
 name: tf-customer-probe
-description: Use when Jarvis should PROACTIVELY hunt for latent, not-yet-reported bugs in terraform-provider-alicloud by acting like a real customer — statically cross-check TF docs vs OpenAPI docs vs provider source (tier-0), and really apply real resources across the terraform lifecycle (tier-1), turning failures into severity-ranked Aone ticket drafts. Triggers 主动探测 / 合成客户 / synthetic customer / tf-probe / probe provider / 防患于未然 / 跑一轮场景探测 / 三方一致性扫描 / 发现潜在问题 / provider 体检. NOT for 已有工单处理(用 aone-triage)、GitHub PR 评审(用 terraform-pr-review)、跑远程 AccTest(用 invoke-terraform-acc-test-remote)、从零开发某个资源(用 provider-resource-dev)。
+description: Use when Jarvis should PROACTIVELY hunt for latent, not-yet-reported bugs in terraform-provider-alicloud by acting like a real customer — statically cross-check TF docs vs OpenAPI docs vs provider source (tier-0), and really apply real resources across the terraform lifecycle (tier-1), turning failures into severity-ranked Aone tickets. Triggers 主动探测 / 合成客户 / synthetic customer / tf-probe / probe provider / 防患于未然 / 跑一轮场景探测 / 三方一致性扫描 / 发现潜在问题 / provider 体检. NOT for 已有工单处理(用 aone-triage)、GitHub PR 评审(用 terraform-pr-review)、跑远程 AccTest(用 invoke-terraform-acc-test-remote)、从零开发某个资源(用 provider-resource-dev)。
 ---
 
 # tf-customer-probe —— 合成客户探测
 
 像真实客户一样,既**静态**核对文档与实现的一致性,又**真实 apply** 跑生命周期,主动发现 provider
-潜在问题;按危害分级产出 Aone 工单草稿,接回 aone-triage loop 形成「自己发现→自己建单→自己修→复跑回归」闭环。
+潜在问题;按危害分级产出 Aone 工单,接回 aone-triage loop 形成「自己发现→自己建单→自己修→复跑回归」闭环。
 
-- 能力全景/路线图:`escalation/cap-tf-customer-probe.md`
 - 循环 runbook:`loops/tf-probe.md`
 - 场景语料库=**独立 git 数据仓** `tf_playground`(gitlab `terraflow/tf_playground`,**直推 master + 工单报备**,非代码不走 MR),
   按云产品维度两级归档 `<product>/<id>/`(scenario.yaml + main.tf + checks.md,可选 step2/)。根解析优先级:
@@ -31,9 +30,9 @@ description: Use when Jarvis should PROACTIVELY hunt for latent, not-yet-reporte
 - **prepaid 销毁性守门**:apply 前扫 plan,命中 PrePaid/Subscription 计费类型默认阻断(`prepaid_block`)——原因不是钱
   (测试账号),是包年包月资源多数无法 API 销毁,破坏「零残留」。场景 `allow_prepaid: true` 或 config `prepaid_guard=false` 可豁免。
 - **零残留 + 只 destroy 本 run 自建资源**:state 隔离在 `.my-day/probe/<ts>-<id>/`,绝不碰生产存量;`sweep` 残留即停并升级。
-- **测试账号边界**:只用环境注入的**测试** AK/SK,绝不用生产账号;凭证值绝不落日志/verdict/draft/工单。
+- **测试账号边界**:只用环境注入的**测试** AK/SK,绝不用生产账号;凭证值绝不落日志/verdict/工单。
 - **tier-0 范围红线**:只核对**已接入 TF** 的面。云产品未接入 provider 的资源/参数**不报 gap**(那是需求不是 bug,走 tf_customer 需求路径)。
-- **probe 会话不 claim 工单**:本能力只**产出** draft/新单;由 aone-triage loop 后续认领修复(避免既当发现方又当认领方)。
+- **probe 会话不 claim 工单**:本能力只**产出**新单;由 aone-triage loop 后续认领修复(避免既当发现方又当认领方)。
 
 ## 流程
 
@@ -41,7 +40,7 @@ description: Use when Jarvis should PROACTIVELY hunt for latent, not-yet-reporte
 ```bash
 bootstrap/probe.sh doctor
 ```
-terraform/jq/凭证/config/**本地 provider 仓**(tier-0 依赖)/**probe-meta**(T0-mech OpenAPI 元数据获取层)。缺 terraform → tier-1 不可跑;缺 provider 仓 → tier-0 不可跑;缺 probe-meta(无 venv/凭证)→ tier-0 **自动降级**为纯 doc↔source + 全 queue(不阻断)。env 问题走 self-improve/escalation,不硬闯。
+terraform/jq/凭证/config/**本地 provider 仓**(tier-0 依赖)/**probe-meta**(T0-mech OpenAPI 元数据获取层)。缺 terraform → tier-1 不可跑;缺 provider 仓 → tier-0 不可跑;缺 probe-meta(无 venv/凭证)→ tier-0 **自动降级**为纯 doc↔source + 全 queue(不阻断)。env 问题走 self-improve；需人工介入时建 Aone 或挂起当前 Task，不硬闯。
 
 > **T0-mech 元数据层**:`bootstrap/probe-meta.sh`(fetch/cached-fetch/clear/available)薄封装 `amp-resource-metadata` skill 的
 > `get_api_definition.py`,带 `cache.sh` 7d 缓存(全量巡检才跑得起)。启用需 `amp-resource-metadata/scripts/setup.sh` 建 venv +
@@ -63,7 +62,7 @@ bootstrap/probe.sh tier0 --no-mech              # 关机械层(纯 doc↔source 
    行为一致性)/`unmapped_params`(snake→Camel 映射不上,如 convert 改名)/`enum_unparsed`(枚举非字面 slice)/
    `no_triple`(OSS SDK 风格抽不到 action)/`meta_unavailable`。对这些走 aone-triage/terraform-pd 双层查证,不一致产 `doc_api_gap`。
    **范围红线**:只核对已接入的 API/参数面,未接入 TF 的一律不报。
-3. findings 定级(见 `references/severity-rubric.md`,含 `api_gap_*` 表)→ 去重 → draft/建单。
+3. findings 定级(见 `references/severity-rubric.md`,含 `api_gap_*` 表)→ 去重 → 建单。
 
 ### B. tier-1 真实 apply 生命周期探测
 ```bash
@@ -85,11 +84,10 @@ bootstrap/probe.sh run <id> --dry              # 只看步骤计划(region 解�
 2. **查 provider 仓 CHANGELOG Unreleased 段**:已在 master 修掉的标「已修复未发布」**不建单**。
 3. `env_issues` 一律不建单(凭证/网络/prepaid/plan-only 都是环境噪声)。
 
-### D. 去重 → 产出工单(mode=file)
+### D. 去重 → 产出工单
 - 去重:a1 检索 528766 池 `jarvis-probe` 标签 + 标题关键词;GitHub `aliyun/terraform-provider-alicloud` open issues 只读检索;重复则**追加 evidence**不新建。
 - **generated 场景先过校订门**:`origin: generated` 且未经人工校订的场景跑出 `apply_fail`/`validate_fail` **先归「场景质量疑点」入人工校订队列,不直接建 bug 单**(机器抽文档+机械改造的配置本身可能有缺陷);须人工确认确系 provider 行为才升级。手写/回灌场景无此限。
-- `config.ticket.mode=file`(**当前默认**)→ 走 adhoc-intake 建单纪律(category `req`、project/assignee/tag 按 config),受 `daily_new_tickets` 上限,**直接建 Aone 单**。
-- `config.ticket.mode=draft`(**可回退开关**,切回即恢复 draft 人审)→ 按 `references/ticket-template.md` 写 `escalation/probe-drafts/<日期>-<资源或场景>-<code>.md`,头加 `status: pending-review`,**不写 Aone**。
+- `config.ticket.mode=file` 是唯一支持模式：走 adhoc-intake 建单纪律(category `req`、project/assignee/tag 按 config),受 `daily_new_tickets` 上限，直接建 Aone 单。低置信 finding 不落本地草稿，进入 generated 场景校订门或创建 needs-attention Aone。
 
 ### D.5. 建单后回写 ledger(kind=ticket)
 每建成一张 probe 工单,追加一条 `runs/probe/ledger.jsonl` 记录,供 board/`archive` 后续对账与消费:
@@ -101,24 +99,22 @@ jq -nc --arg ts "$(date -u +%FT%TZ)" \
        '{ts:$ts, kind:"ticket", ticket_id:$tid, finding_code:$code, verdict:$v}' \
     >> runs/probe/ledger.jsonl
 ```
-(mode=draft 不入 ledger;draft 归档由 `probe.sh archive` 按 frontmatter `status` 自动收纳。)
-
 ### E. 清理核查 + 归档 + 蒸馏 + 审计汇报
 ```bash
 bootstrap/probe.sh sweep     # 有残留立即停并升级
-bootstrap/probe.sh archive   # 幂等归档:draft 终态/verdict retention/workdir gc/plugin-cache 报告/待办清单(--dry 演习)
+bootstrap/probe.sh archive   # 幂等归档:verdict retention/workdir gc/plugin-cache 报告/待办清单(--dry 演习)
 ```
 `runs/probe/` 已由 runner 落盘。**收尾必做**：按 `references/knowledge-distillation.md` 契约把本轮学到的
 产品级知识蒸馏进 `<playground>/<product>/KNOWLEDGE.md`(触发点①probe 轮 Step E 收尾)。
 
-会话汇报:`tier0 扫描资源数 / findings / judgment_queue 数`,`tier1 场景数 / findings / draft 数 / env 问题数`,
-归档件数(drafts moved / verdicts moved / workdirs gc),蒸馏条目数(逐产品);逐 draft/工单附路径与建议优先级。
+会话汇报:`tier0 扫描资源数 / findings / judgment_queue 数`,`tier1 场景数 / findings / 工单数 / env 问题数`,
+归档件数(verdicts moved / workdirs gc),蒸馏条目数(逐产品);逐工单附链接与建议优先级。
 
 ## references
 
 | 文件 | 内容 |
 |------|------|
 | `references/severity-rubric.md` | tier-0/tier-1 finding 码默认 severity_hint + S1–S4 危害分级 + 升降级判则 + Aone 优先级映射 |
-| `references/ticket-template.md` | draft/工单标题与正文骨架、建单参数块、禁 AK/SK 与 AI 署名硬规则 |
+| `references/ticket-template.md` | 工单标题与正文骨架、建单参数块、禁 AK/SK 与 AI 署名硬规则 |
 | `references/scenario-authoring.md` | 场景来源优先级、persona 定义(beginner/composer/updater/importer/migrator/upgrader/refactorer/drifter/ds-checker/ci-runner)、新键(steps/expect_fail/upgrader/drifter)、prepaid 守门、region 声明、tier-0 范围红线 |
 | `references/knowledge-distillation.md` | 云产品 KNOWLEDGE.md 蒸馏契约(跨 skill 单点):五节结构 / 条目格式 / 触发点(probe/triage/dev)/ 收录判据 / sanitize / 毕业标准 |

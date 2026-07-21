@@ -114,7 +114,7 @@ JARVIS_A1_IDENTITY=terraform-rd bootstrap/wrap.sh done <id> \
 7. revisit 的模型 summary 只接受最长 240 字的单行纯文本；命中内部协议、敏感键、URL、
    RequestId/资源 ID、JSON/多行/超长时统一降级为「状态发生变化，详情见内部记录。」；
 8. dispatch 终态只发布固定 RD 摘要（kind/subtype/尝试次数/release 结果/下一步），原始 tail
-   只留本地 escalation；
+   将 Task 置为 `SUSPENDED` 并发布人工决策事件；
 9. 钉钉通过 `notify-dingtalk.sh --result-json --out-track-id` 返回
    sent/skipped/failed 与稳定 receipt；opt-out 记 suppressed，凭据/网络/API 失败保留 pending
    退避。`WORKER_*` 承接人按 `config/contacts.json.agent_fallbacks` 改发真人；

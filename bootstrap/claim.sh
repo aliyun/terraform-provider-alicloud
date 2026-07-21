@@ -260,9 +260,10 @@ _claim_prefix_path() { echo "$myday_dir/claim-prefix-$1.txt"; }
 # Usage: _ledger_upsert <id> <done_value>   (done_value: true|false)
 #
 # Each entry records the owning instance: {"id","done","owner"}. owner comes from
-# coord_self() (lib.sh): COORD_ID if set, else cc-<CLAUDE_CODE_SESSION_ID> for an
-# interactive/headless Claude session, else "". wrap-check.sh scopes its Stop block by
-# owner (via the same coord_self) so a session only hard-blocks on its own (or
+# claim_owner() (lib.sh): explicit JARVIS_CLAIM_OWNER, cc-<CLAUDE_CODE_SESSION_ID>,
+# or codex-<CODEX_THREAD_ID> for a control-plane/interactive session, else "".
+# wrap-check.sh scopes its Stop block by
+# owner (via the same claim_owner) so a session only hard-blocks on its own (or
 # ownerless legacy) claims — and, since D2, two different interactive sessions get
 # distinct cc-<sid> owners and stop blocking each other.
 #
@@ -280,7 +281,7 @@ _ledger_upsert() {
     local id="$1"
     local done_val="$2"
     local owner
-    owner="$(coord_self)"
+    owner="$(claim_owner)"
     mkdir -p "$myday_dir"
 
     local lock="$myday_dir/.claims.lock" acquired="" waited=0
@@ -626,8 +627,8 @@ case "$cmd" in
         # The point-read confirms *our own* write landed; by itself it does NOT arbitrate a
         # true race — two instances claiming near-simultaneously both see jarvis-claimed.
         # When JARVIS_CLAIM_SETTLE>0 a cross-machine arbitration round (step 4) breaks the
-        # tie via the reconcile timestamp範式; when it's 0 (default) behavior is unchanged
-        # and mutual exclusion still rests on the ledger + reconcile stale/drift sweep.
+        # tie via the claim-comment timestamp; when it's 0 (default) behavior is unchanged
+        # and interactive mutual exclusion still rests on the database fence.
         claimed_ok=""
         for _ in 1 2 3; do
             readback_tags="$(_get_tags "$workitem_id" 2>/dev/null || echo "")"
@@ -677,8 +678,8 @@ case "$cmd" in
             exit 0
         fi
 
-        # 4a. Write our claim comment. Format `jarvis-claim <host> <utc> <nonce>` keeps
-        # reconcile.sh's existing regex working (nonce trails the timestamp, non-breaking).
+        # 4a. Write our claim comment. Keep the timestamp prefix stable for
+        # claim-comment parsers; nonce trails it.
         nonce="$(head -c8 /dev/urandom 2>/dev/null | od -An -tx1 2>/dev/null | tr -d ' \n' | cut -c1-8)"
         [ -n "$nonce" ] || nonce="$(printf '%08x' $((RANDOM * RANDOM)))"
         $A1 project workitem comment create "$workitem_id" -m "jarvis-claim $host $utcnow $nonce" >/dev/null 2>&1 \
@@ -689,7 +690,7 @@ case "$cmd" in
         arb_comments="$($A1 project workitem comment list "$workitem_id" -f json 2>/dev/null || echo "[]")"
 
         # 4c. Total order over (epoch, nonce); the earliest claim wins. Echo the winner host.
-        # Reuses the reconcile UTC→epoch idea (calendar.timegm) inline to avoid sourcing.
+        # Parse the UTC claim-comment timestamp with calendar.timegm.
         winner_host="$(printf '%s' "$arb_comments" | python3 -c "
 import json, sys, re, calendar, datetime
 def epoch(ts):
@@ -843,7 +844,7 @@ if cands:
         # 与真源一致。若状态没能落地(done_status 被 workflow 拒 / 无 done_status 配置且当前非终态)，
         # 继续挂 jarvis-done 会造成「标签说 done、真源说没完」的黑洞——_decide 从此永久 skip 这单，
         # 人工催办/reopen 都不再触发重派。故此处降级：撤 jarvis-done、改打 jarvis-idle(交 idle 门 +
-        # RevisitScheduler 兜底重访/重派) + escalate 提示人工设正确状态或摘标签。
+        # RevisitScheduler 兜底重访/重派)；不再写本机人工告警 Markdown。
         wtype="$(_get_wtype "$workitem_id")"
         eff_status="$(_pool_done_status "$project_id" "$wtype")"
         # Optional caller override (4th arg): PrWatchScheduler passes 已完成 on PR merge.
@@ -899,7 +900,7 @@ if cands:
         fi
         rm -f "$(_claim_prefix_path "$workitem_id")"
         # finish 的 status 写与下方降级路径**不**叠 operation receipt：status 落地失败
-        # 已有 jarvis-idle 降级 + escalate 兜底（不留黑洞），降级 tag 写维持 best-effort，
+        # 已有 jarvis-idle 降级（不留黑洞），降级 tag 写维持 best-effort，
         # 再叠一层回执只会把可自愈路径变成 fail-closed 死路（docs/aone-operation-receipts.md）。
         cur_status="$(_get_status "$workitem_id")"
         status_ok=0   # 1 = Aone status 已落到合法完成态，jarvis-done 与真源一致
@@ -922,7 +923,8 @@ if cands:
         fi
 
         if [ "$status_ok" != "1" ]; then
-            # 状态未落到合法完成态 → 不留 jarvis-done 黑洞：降级为 jarvis-idle + escalate。
+            # 状态未落到合法完成态 → 不留 jarvis-done 黑洞：降级为 jarvis-idle，
+            # 由 AoneScheduler/RevisitScheduler 基于真源重访。
             _update_tags_merged "$workitem_id" "$IDLE_TAG" "$DONE_TAG"
             downgrade_tag_rc=$?
             if [ "$interactive_finish" = "1" ] && [ "$downgrade_tag_rc" -ne 0 ]; then
@@ -930,10 +932,7 @@ if cands:
                 [ "$downgrade_tag_rc" -eq 1 ] && downgrade_tag_rc=2
                 exit "$downgrade_tag_rc"
             fi
-            bash "$script_dir/log.sh" escalate "$workitem_id" \
-                "finish_status_unresolved: done_status='${eff_status:-<none>}' 未落地(当前='${cur_status:-<unknown>}',workitemType='${wtype:-?}')；已降级 jarvis-done→jarvis-idle，请人工设正确完成态或摘标签" \
-                "" >/dev/null 2>&1 || true
-            echo "claim.sh: finish $workitem_id — 状态未落合法完成态，已降级 jarvis-done→jarvis-idle 并 escalate（交 Revisit 兜底）" >&2
+            echo "claim.sh: finish $workitem_id — 状态未落合法完成态，已降级 jarvis-done→jarvis-idle（交 Revisit 兜底）" >&2
         fi
         if [ "$interactive_finish" = "1" ]; then
             if [ "$status_ok" = "1" ]; then

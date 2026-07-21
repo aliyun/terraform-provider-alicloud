@@ -1,13 +1,11 @@
-# ticket-template —— probe 工单/草稿骨架
+# ticket-template —— probe 工单骨架
 
-probe 发现的 provider 问题按此骨架建单：当前 `ticket.mode=file` 直接建 Aone 需求单（category `req`，池/指派/标签见下参数块）；
-`mode=draft`（可回退开关）时改落 `escalation/probe-drafts/<日期>-<资源或场景>-<code>.md`、不写 Aone。
+probe 发现的 provider 问题按此骨架直接建 Aone 需求单（`ticket.mode=file`，category `req`，池/指派/标签见下参数块）。
 
 ## 硬规则（写之前先记）
 
 - **禁贴 AK/SK**：任何凭证、SecretKey、token 绝不出现在标题/正文/日志摘录里。日志摘录只留字段名、错误码、RequestId。
 - **禁 AI 署名水印**：不写 `Co-Authored-By: Codex` / `🤖 Generated with Codex`；溯源只写「来源：jarvis tf-customer-probe」。
-- **draft 文件头**加 `status: pending-review`（未审核信号；未跟踪文件在 `git status` 天然充当待审队列）。
 
 ## 标题
 
@@ -19,10 +17,6 @@ probe 发现的 provider 问题按此骨架建单：当前 `ticket.mode=file` �
 ## 正文骨架
 
 ```markdown
----
-status: pending-review
----
-
 # [probe][<resource>] <一句话症状>
 
 ## 环境
@@ -55,11 +49,7 @@ status: pending-review
 - 来源：jarvis tf-customer-probe
 ```
 
-> **draft 归档语义**：`mode=draft` 时 draft 落 `escalation/probe-drafts/`，头 `status: pending-review`；
-> 人审改 `status: filed`(已建单)/`rejected*`(拒绝) 后，`probe.sh archive` 会把终态 draft 自动收纳到
-> `escalation/probe-drafts/archived/`（`pending-review`/未知 status 留原地进 archive 待办清单）。
-
-## 建单参数块（mode=file 建单用；mode=draft 时只记录不执行）
+## 建单参数块
 
 | 字段 | 值（来自 config/probe.json） |
 |------|------|

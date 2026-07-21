@@ -15,7 +15,7 @@
 #   4. 依赖 skill 缺失(streaming.py 不在)
 #
 # 失败(网络/API 错):
-#   stderr 打红,落 escalation/notify-fail-<ts>-<staffId>.md,退 0(不阻断 bookend)
+#   stderr 打红并返回结构化失败结果,退 0(不阻断 bookend)
 
 set -euo pipefail
 
@@ -173,21 +173,7 @@ send_args=(
 [ -n "$out_track_id" ] && send_args+=(--out-track-id "$out_track_id")
 send_out=""
 if ! send_out="$(python3 "${send_args[@]}" 2>&1)"; then
-  ts="$(date +%Y%m%d-%H%M%S)"
-  esc_dir="$(lib_escalation_dir)"
-  mkdir -p "$esc_dir"
-  fail_file="$esc_dir/notify-fail-${ts}-${staff_id}.md"
-  {
-    echo "# 钉钉私信失败: $staff_id"
-    echo ""
-    echo "- 时间: $(date -u +%FT%TZ)"
-    echo "- 标题: $title"
-    echo ""
-    echo "## 消息内容"
-    echo ""
-    printf '%s\n' "$message"
-  } > "$fail_file"
-  echo "[NOTIFY-FAIL] staffId=$staff_id -> $fail_file" >&2
+  echo "[NOTIFY-FAIL] staffId=$staff_id title=\"$title\"" >&2
   receipt="$(printf '%s\n' "$send_out" | python3 -c 'import json,sys
 value=""
 for line in sys.stdin:

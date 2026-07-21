@@ -118,7 +118,7 @@ fi
 
 | 症状 | 原因 | 修法 |
 |---|---|---|
-| 批处理中间被截断,残留 `jarvis-claimed` | Bash 工具 2min timeout;单批 > 4-5 单 | 分批;或手动 `claim.sh release <id> <pool>` 补;或跑 `reconcile.sh stale` |
+| 批处理中间被截断,残留 `jarvis-claimed` | Bash 工具 2min timeout;单批 > 4-5 单 | 分批;或手动 `claim.sh release <id> <pool>` 补；Task 模式由 reaper/AoneScheduler 收敛 |
 | 同一条评论发了 2 次 | claim 失败但 wrap 继续跑 | 走骨架 A 的 `if claim; then wrap; fi` 结构 |
 | `NEW_ID` 里带脏字符(标题 / 状态 / assignee) | `--quiet` 输出是**空格分隔**,tab 解析不到 | `awk '{print $1}'`(不带 -F) |
 | 评论正文里 `` `xxx` `` 显示 "command not found",`$var:字母` 拼成怪路径 | `wrap.sh done <<EOF` heredoc shell 展开 | 走 `--summary-file`,先 sed 预替换变量 |

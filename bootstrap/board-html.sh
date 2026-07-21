@@ -61,14 +61,13 @@ def tint(hexc): return hexc+"22"  # light bg from hue (~13% alpha), dark text st
 def probe_strip(p):
   # 飞轮健康度 stat 带:board.sh probe 聚合结果 → 一排 tile。空/失败则不渲染。
   if not p: return ""
-  f=p.get("findings") or {}; d=p.get("drafts") or {}; t=p.get("tickets") or {}
+  f=p.get("findings") or {}; t=p.get("tickets") or {}
   sc=p.get("scenarios") or {}; cov=p.get("tier0_coverage") or {}
   def tile(k,v,s="",warn=False):
     cls="ptile warn" if warn else "ptile"
     sub=f'<div class="ps">{e(s)}</div>' if s else ""
     # str(v) first: 现有 e() 用 (s or "") 会把整数 0 渲染成空,数值 tile 须显式 str 保 "0" 可见
     return f'<div class="{cls}"><div class="pk">{e(k)}</div><div class="pv">{e(str(v))}</div>{sub}</div>'
-  ar=d.get("adoption_rate"); ar_s=(str(round(ar*100))+"%") if ar is not None else "—"
   tot=t.get("total"); tot_s="—" if tot is None else str(tot); warn=(t.get("source")!="aone")
   bp=sc.get("by_product") or {}
   bptop=", ".join(f"{k} {v}" for k,v in sorted(bp.items(), key=lambda kv:-kv[1])[:3]) or "—"
@@ -77,7 +76,6 @@ def probe_strip(p):
   agtop=", ".join(f'{k.replace("api_gap_","")} {v}' for k,v in sorted(ag.items(), key=lambda kv:-kv[1])[:2]) or "无"
   tiles=[
     tile("本周发现", f.get("total",0), f'{f.get("rounds",0)} 轮 · tier0 {f.get("tier0_rounds",0)}/tier1 {f.get("tier1_rounds",0)}'),
-    tile("采纳率", ar_s, f'filed {d.get("filed",0)}/pend {d.get("pending",0)}/rej {d.get("rejected",0)}'),
     tile("建单", tot_s, ("降级·本地" if warn else f'关单 {t.get("closed",0)}'), warn),
     tile("api_gap", sum(ag.values()) if ag else 0, agtop),
     tile("场景总数", sc.get("total",0), bptop),

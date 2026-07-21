@@ -5,7 +5,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SCRIPT="$ROOT/bootstrap/notify-dingtalk.sh"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
-mkdir -p "$TMP/config" "$TMP/escalation"
+mkdir -p "$TMP/config"
 
 cat > "$TMP/streaming.py" <<'PY'
 import argparse, json, os, sys

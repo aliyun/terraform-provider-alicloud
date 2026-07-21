@@ -17,17 +17,16 @@
 # Sequence:
 #   1. claim.sh claim <id> <project>
 #      → exit 1 (lost race): print SKIP and exit 0
-#      → exit 3 (missing required field): print legal candidates, escalate, exit 1
-#      → other non-zero: escalate as claim failure, exit 1
+#      → exit 3 (missing required field): print legal candidates, exit 1
+#      → other non-zero: report claim failure, exit 1
 #   2. wrap.sh done <id> <summary> <status>
-#      → failure: log.sh escalate <id> "done failed"; do NOT release; exit 1
+#      → failure: do NOT release; exit 1
 #   3. claim.sh release <id> <project>
 #   4. print "DONE: <id>"; exit 0
 #
 # Override paths for testing:
 #   TRIAGE_CLAIM_CMD   — defaults to co-located claim.sh
 #   TRIAGE_WRAP_CMD    — defaults to co-located wrap.sh
-#   TRIAGE_LOG_CMD     — defaults to co-located log.sh
 #   TRIAGE_FIELDS_CMD  — defaults to co-located aone-fields.sh
 #
 # Respects JARVIS_ROOT env override.
@@ -55,22 +54,10 @@ status="$5"
 # ---------------------------------------------------------------------------
 CLAIM_CMD="${TRIAGE_CLAIM_CMD:-$script_dir/claim.sh}"
 WRAP_CMD="${TRIAGE_WRAP_CMD:-$script_dir/wrap.sh}"
-LOG_CMD="${TRIAGE_LOG_CMD:-$script_dir/log.sh}"
-COORD_CMD="${TRIAGE_COORD_CMD:-$script_dir/coord.sh}"
 FIELDS_CMD="${TRIAGE_FIELDS_CMD:-$script_dir/aone-fields.sh}"
 
 # ---------------------------------------------------------------------------
-# Register this triage instance for coordination tracking so checkpoints
-# have a real owner_instance and crashes leave a resumable record.
-# ---------------------------------------------------------------------------
-# Pass $$ (this bookend's real pid) so coord.sh dead can check liveness via kill -0;
-# without it register embeds coord.sh's own short-lived pid and the instance reads dead
-# immediately (see coord.sh register comment).
-COORD_ID=$(bash "$COORD_CMD" register triage "$$" 2>/dev/null || true)
-export COORD_ID
-
-# ---------------------------------------------------------------------------
-# Step 1: Claim — lost race → SKIP; missing required fields → candidates + escalation
+# Step 1: Claim — lost race → SKIP; missing required fields → print candidates
 # ---------------------------------------------------------------------------
 "$CLAIM_CMD" claim "$id" "$project"
 claim_rc=$?
@@ -79,34 +66,26 @@ if [ "$claim_rc" -eq 3 ]; then
         missing_json='[]'
     fi
     echo "MISSING_REQUIRED_FIELDS: $id $missing_json" >&2
-    "$LOG_CMD" escalate "$id" "missing_required_field: $missing_json"
     exit 1
 elif [ "$claim_rc" -eq 1 ]; then
     echo "SKIP: $id"
     exit 0
 elif [ "$claim_rc" -ne 0 ]; then
-    "$LOG_CMD" escalate "$id" "claim_failed: rc=$claim_rc"
     echo "ERROR: claim failed for $id (rc=$claim_rc)" >&2
     exit 1
 fi
 
-# Coord: mark instance as having claimed this item, with worktree/branch/repo
-# context so a crash leaves a resumable record.
-bash "$COORD_CMD" checkpoint "$id" claimed "$(pwd)" "$(git rev-parse --abbrev-ref HEAD 2>/dev/null)" "$(basename "$(pwd)")" || true
-
 # ---------------------------------------------------------------------------
-# Step 2: wrap.sh done — failure → escalate + exit 1 (no release)
+# Step 2: wrap.sh done — failure → exit 1 (no release)
 # ---------------------------------------------------------------------------
 if ! "$WRAP_CMD" done "$id" "$summary" "$status"; then
-    "$LOG_CMD" escalate "$id" "done failed"
+    echo "ERROR: done failed for $id; claim remains held" >&2
     exit 1
 fi
 
 # ---------------------------------------------------------------------------
 # Step 3: Release
 # ---------------------------------------------------------------------------
-# Coord: mark item as done before releasing the claim (non-blocking)
-bash "$COORD_CMD" checkpoint "$id" done || true
 "$CLAIM_CMD" release "$id" "$project"
 
 # ---------------------------------------------------------------------------

@@ -373,24 +373,24 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# Test 8: ledger records owner=COORD_ID on claim (INSERT)
+# Test 8: ledger records stable interactive owner on claim (INSERT)
 # ---------------------------------------------------------------------------
-echo "=== Test 8: claim writes owner=COORD_ID into ledger ==="
+echo "=== Test 8: claim writes interactive session owner into ledger ==="
 today="$(date -u +%F)"
 ledger="$tmpconfig/.my-day/claims-${today}.json"
 rm -f "$ledger"                    # start from a clean ledger for the owner cases
 printf '' > "$tmpstate"
 unset A1_GET_FAIL A1_UPDATE_NOOP
-export COORD_ID="inst-A"
+export JARVIS_CLAIM_OWNER="session-inst-A"
 run_claim claim
 echo "Exit: $rc"; echo "Ledger: $(cat "$ledger" 2>/dev/null)"; echo
 
 led_owner=$(jq -r --arg id "$WORKITEM_ID" '.[] | select(.id==$id) | .owner' "$ledger" 2>/dev/null)
 led_done=$(jq -r --arg id "$WORKITEM_ID" '.[] | select(.id==$id) | .done' "$ledger" 2>/dev/null)
-if [ "$led_owner" = "inst-A" ]; then
-    assert_pass "claim ledger entry owner == COORD_ID (inst-A)"
+if [ "$led_owner" = "session-inst-A" ]; then
+    assert_pass "claim ledger entry owner == session-inst-A"
 else
-    assert_fail "claim ledger owner should be inst-A, got '$led_owner'"
+    assert_fail "claim ledger owner should be session-inst-A, got '$led_owner'"
 fi
 if [ "$led_done" = "false" ]; then
     assert_pass "claim ledger entry done == false"
@@ -404,16 +404,16 @@ fi
 echo "=== Test 9: finish by other instance keeps original owner (coalesce) ==="
 printf 'jarvis-probe,jarvis-claimed' > "$tmpstate"
 unset A1_GET_FAIL A1_UPDATE_NOOP
-export COORD_ID="inst-B"           # a different instance closes it
+export JARVIS_CLAIM_OWNER="session-inst-B"  # a different session closes it
 run_claim finish
 echo "Exit: $rc"; echo "Ledger: $(cat "$ledger" 2>/dev/null)"; echo
 
 led_owner=$(jq -r --arg id "$WORKITEM_ID" '.[] | select(.id==$id) | .owner' "$ledger" 2>/dev/null)
 led_done=$(jq -r --arg id "$WORKITEM_ID" '.[] | select(.id==$id) | .done' "$ledger" 2>/dev/null)
-if [ "$led_owner" = "inst-A" ]; then
-    assert_pass "finish by inst-B preserves original owner inst-A (coalesce, no overwrite)"
+if [ "$led_owner" = "session-inst-A" ]; then
+    assert_pass "finish by inst-B preserves original owner session-inst-A (coalesce, no overwrite)"
 else
-    assert_fail "finish should keep owner inst-A, got '$led_owner'"
+    assert_fail "finish should keep owner session-inst-A, got '$led_owner'"
 fi
 if [ "$led_done" = "true" ]; then
     assert_pass "finish sets ledger done == true"
@@ -428,25 +428,24 @@ echo "=== Test 10: update backfills owner when original owner was empty ==="
 printf '[{"id":"%s","done":false,"owner":""}]' "$WORKITEM_ID" > "$ledger"
 printf 'jarvis-probe,jarvis-claimed' > "$tmpstate"
 unset A1_GET_FAIL A1_UPDATE_NOOP
-export COORD_ID="inst-C"
+export JARVIS_CLAIM_OWNER="session-inst-C"
 run_claim release
 echo "Exit: $rc"; echo "Ledger: $(cat "$ledger" 2>/dev/null)"; echo
-unset COORD_ID
+unset JARVIS_CLAIM_OWNER
 
 led_owner=$(jq -r --arg id "$WORKITEM_ID" '.[] | select(.id==$id) | .owner' "$ledger" 2>/dev/null)
-if [ "$led_owner" = "inst-C" ]; then
-    assert_pass "update backfills owner (empty → inst-C)"
+if [ "$led_owner" = "session-inst-C" ]; then
+    assert_pass "update backfills owner (empty → session-inst-C)"
 else
-    assert_fail "update should backfill empty owner to inst-C, got '$led_owner'"
+    assert_fail "update should backfill empty owner to session-inst-C, got '$led_owner'"
 fi
 
 # ---------------------------------------------------------------------------
-# Test 11 (D2): no COORD_ID but CLAUDE_CODE_SESSION_ID set → owner = cc-<sid>
+# Test 11: CLAUDE_CODE_SESSION_ID set → owner = cc-<sid>
 # ---------------------------------------------------------------------------
 echo "=== Test 11: interactive session owner = cc-<CLAUDE_CODE_SESSION_ID> ==="
-unset COORD_ID
 export CLAUDE_CODE_SESSION_ID="sess-D2"
-led_owner="$(source "$proj_root/bootstrap/lib.sh"; coord_self)"
+led_owner="$(source "$proj_root/bootstrap/lib.sh"; claim_owner)"
 if [ "$led_owner" = "cc-sess-D2" ]; then
     assert_pass "interactive claim owner == cc-sess-D2"
 else
@@ -455,24 +454,24 @@ fi
 unset CLAUDE_CODE_SESSION_ID
 
 # ---------------------------------------------------------------------------
-# Test 12 (D2): COORD_ID takes precedence over CLAUDE_CODE_SESSION_ID
+# Test 12: CODEX_THREAD_ID provides a stable native Codex owner
 # ---------------------------------------------------------------------------
-echo "=== Test 12: COORD_ID wins over CLAUDE_CODE_SESSION_ID ==="
-export COORD_ID="inst-P" CLAUDE_CODE_SESSION_ID="sess-Q"
-led_owner="$(source "$proj_root/bootstrap/lib.sh"; coord_self)"
-if [ "$led_owner" = "inst-P" ]; then
-    assert_pass "COORD_ID precedence: owner == inst-P (not cc-sess-Q)"
+echo "=== Test 12: native Codex owner = codex-<CODEX_THREAD_ID> ==="
+export CODEX_THREAD_ID="thread-Q"
+led_owner="$(source "$proj_root/bootstrap/lib.sh"; claim_owner)"
+if [ "$led_owner" = "codex-thread-Q" ]; then
+    assert_pass "native Codex owner == codex-thread-Q"
 else
-    assert_fail "COORD_ID should win, got '$led_owner'"
+    assert_fail "native Codex owner should be codex-thread-Q, got '$led_owner'"
 fi
-unset COORD_ID CLAUDE_CODE_SESSION_ID
+unset CODEX_THREAD_ID
 
 # ---------------------------------------------------------------------------
 # Test 13 (D1): concurrent claims of distinct ids → no lost update (mkdir lock)
 # ---------------------------------------------------------------------------
 echo "=== Test 13: concurrent ledger upserts keep all entries ==="
 rm -f "$ledger"
-unset COORD_ID CLAUDE_CODE_SESSION_ID A1_GET_FAIL A1_UPDATE_NOOP
+unset CLAUDE_CODE_SESSION_ID A1_GET_FAIL A1_UPDATE_NOOP
 N=12
 for i in $(seq 1 "$N"); do
     PATH="$tmpbin:$PATH" JARVIS_ROOT="$tmpconfig" JARVIS_CLAIM_READBACK_SLEEP=0 \
@@ -492,7 +491,7 @@ fi
 # ---------------------------------------------------------------------------
 echo "=== Test 14: finish uses per-pool done_status override ==="
 printf 'jarvis-claimed' > "$tmpstate"; : > "$tmpstatuscap"
-unset A1_GET_FAIL A1_UPDATE_NOOP A1_REJECT_STATUS COORD_ID
+unset A1_GET_FAIL A1_UPDATE_NOOP A1_REJECT_STATUS
 out=$(PATH="$tmpbin:$PATH" JARVIS_ROOT="$tmpconfig" bash "$proj_root/bootstrap/claim.sh" finish "$WORKITEM_ID" 2100304 2>&1); rc=$?
 cap=$(cat "$tmpstatuscap" 2>/dev/null); state=$(cat "$tmpstate" 2>/dev/null)
 echo "rc=$rc status_set='$cap' tags='$state'"
@@ -511,14 +510,13 @@ echo "rc=$rc status_set='$cap'"
 if [ "$cap" = "已发布待需求排期" ]; then assert_pass "global fallback: status set to 已发布待需求排期"; else assert_fail "global fallback wrong, got '$cap'"; fi
 
 # ---------------------------------------------------------------------------
-# Test 16: rejected status → finish DOWNGRADES jarvis-done → jarvis-idle + escalates.
+# Test 16: rejected status → finish DOWNGRADES jarvis-done → jarvis-idle.
 # 一致性闸门:done_status 落不到合法完成态时,继续挂 jarvis-done 会造成「标签 done、真源没完」
-# 的黑洞(_decide 永久 skip)。故降级为 jarvis-idle(交 idle 门/Revisit 兜底) + 写 escalation,
+# 的黑洞(_decide 永久 skip)。故降级为 jarvis-idle(交 idle 门/Revisit 兜底)，
 # 仍 exit 0 + warns(不 fatal,bookend 流程正常收尾)。
 # ---------------------------------------------------------------------------
-echo "=== Test 16: rejected status → downgrade jarvis-done→jarvis-idle + escalate ==="
+echo "=== Test 16: rejected status → downgrade jarvis-done→jarvis-idle ==="
 printf 'jarvis-claimed' > "$tmpstate"; : > "$tmpstatuscap"
-rm -f "$tmpconfig/escalation/$WORKITEM_ID.md"
 export A1_REJECT_STATUS="已发布待需求排期" A1_STATUS="处理中"
 out=$(PATH="$tmpbin:$PATH" JARVIS_ROOT="$tmpconfig" bash "$proj_root/bootstrap/claim.sh" finish "$WORKITEM_ID" 1086837 2>&1); rc=$?
 state=$(cat "$tmpstate" 2>/dev/null)
@@ -531,18 +529,13 @@ else
     assert_fail "rejected status: should downgrade to jarvis-idle without jarvis-done, got '$state'"
 fi
 if printf '%s' "$out" | grep -qi "warning"; then assert_pass "rejected status: emits warning"; else assert_fail "rejected status: no warning emitted"; fi
-if [ -f "$tmpconfig/escalation/$WORKITEM_ID.md" ] && grep -q "finish_status_unresolved" "$tmpconfig/escalation/$WORKITEM_ID.md"; then
-    assert_pass "rejected status: escalation file written with finish_status_unresolved"
-else
-    assert_fail "rejected status: expected escalation/$WORKITEM_ID.md with finish_status_unresolved"
-fi
 
 # ---------------------------------------------------------------------------
 # Test 16b: successful status write KEEPS jarvis-done (no spurious downgrade).
 # ---------------------------------------------------------------------------
 echo "=== Test 16b: finish with accepted status keeps jarvis-done ==="
 printf 'jarvis-claimed' > "$tmpstate"; : > "$tmpstatuscap"
-unset A1_GET_FAIL A1_UPDATE_NOOP A1_REJECT_STATUS COORD_ID
+unset A1_GET_FAIL A1_UPDATE_NOOP A1_REJECT_STATUS
 export A1_STATUS="处理中"
 out=$(PATH="$tmpbin:$PATH" JARVIS_ROOT="$tmpconfig" bash "$proj_root/bootstrap/claim.sh" finish "$WORKITEM_ID" 1086837 2>&1); rc=$?
 state=$(cat "$tmpstate" 2>/dev/null)
@@ -556,19 +549,18 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# Test 16c: 当前 status 已等于 per-pool done_status → 短路,不重推 status,不 escalate。
+# Test 16c: 当前 status 已等于 per-pool done_status → 短路,不重推 status。
 # Bug 现场:tf_provider 池 done_status="待发布" 不在全局 .claim.done_statuses 里(全局只
 # 收录"已发布"/"已完成"/"已拒绝"等,不含 per-池"待发布"),导致 wrap.sh done 已推到"待发布"
 # 后立刻 finish 时,_in_done_statuses 命中不了,走 elif 再推一次 "待发布" 触发 workflow
-# 空转拒绝,status_ok=0 降级 jarvis-done→jarvis-idle + escalate,把已完成态工单误判为
+# 空转拒绝,status_ok=0 降级 jarvis-done→jarvis-idle,把已完成态工单误判为
 # 未完成。修复:finish 分支加短路 `cur_status == eff_status` = 已终态。
 # 与 donecheck 的「合法完成态 = 全局 ∪ 各池 done_status」并集判据一致
 # (loops/aone-triage.md §三)。
 # ---------------------------------------------------------------------------
-echo "=== Test 16c: cur_status already at per-pool done_status → shortcut, no reject/escalate ==="
+echo "=== Test 16c: cur_status already at per-pool done_status → shortcut ==="
 printf 'jarvis-claimed' > "$tmpstate"; : > "$tmpstatuscap"
-rm -f "$tmpconfig/escalation/$WORKITEM_ID.md"
-unset A1_GET_FAIL A1_UPDATE_NOOP A1_REJECT_STATUS COORD_ID
+unset A1_GET_FAIL A1_UPDATE_NOOP A1_REJECT_STATUS
 # 当前状态已到 project 2100304 的 done_status "已完成"("已完成" 也不在全局 done_statuses,
 # 仅在 per-池 done_status),模拟 wrap.sh done 后立刻 finish 的收尾链路
 export A1_STATUS="已完成"
@@ -587,11 +579,6 @@ if printf '%s' "$state" | grep -q "jarvis-done" && ! printf '%s' "$state" | grep
 else
     assert_fail "already-at-per-pool-done: should keep jarvis-done without idle, got '$state'"
 fi
-if [ -f "$tmpconfig/escalation/$WORKITEM_ID.md" ]; then
-    assert_fail "already-at-per-pool-done: unexpected escalation file written"
-else
-    assert_pass "already-at-per-pool-done: no escalation (bug fix vs pre-patch behavior)"
-fi
 if printf '%s' "$out" | grep -qi "already terminal: 已完成"; then
     assert_pass "already-at-per-pool-done: log says already terminal"
 else
@@ -605,7 +592,7 @@ fi
 # ---------------------------------------------------------------------------
 echo "=== Test 17: per-category done_status — 功能缺陷 → Fixed ==="
 printf 'jarvis-claimed' > "$tmpstate"; : > "$tmpstatuscap"
-unset A1_GET_FAIL A1_UPDATE_NOOP A1_REJECT_STATUS COORD_ID
+unset A1_GET_FAIL A1_UPDATE_NOOP A1_REJECT_STATUS
 out=$(PATH="$tmpbin:$PATH" JARVIS_ROOT="$tmpconfig" A1_WTYPE=功能缺陷 \
     bash "$proj_root/bootstrap/claim.sh" finish "$WORKITEM_ID" 2100305 2>&1); rc=$?
 cap=$(cat "$tmpstatuscap" 2>/dev/null); state=$(cat "$tmpstate" 2>/dev/null)
@@ -618,7 +605,7 @@ if printf '%s' "$state" | grep -q "jarvis-done"; then assert_pass "per-category 
 # ---------------------------------------------------------------------------
 echo "=== Test 18: per-category done_status — 需求 → 已发布 ==="
 printf 'jarvis-claimed' > "$tmpstate"; : > "$tmpstatuscap"
-unset A1_GET_FAIL A1_UPDATE_NOOP A1_REJECT_STATUS COORD_ID
+unset A1_GET_FAIL A1_UPDATE_NOOP A1_REJECT_STATUS
 out=$(PATH="$tmpbin:$PATH" JARVIS_ROOT="$tmpconfig" A1_WTYPE=需求 \
     bash "$proj_root/bootstrap/claim.sh" finish "$WORKITEM_ID" 2100305 2>&1); rc=$?
 cap=$(cat "$tmpstatuscap" 2>/dev/null)
@@ -630,7 +617,7 @@ if [ "$cap" = "已发布" ]; then assert_pass "per-category 需求: status set t
 # ---------------------------------------------------------------------------
 echo "=== Test 19: per-category unknown type → first object value fallback ==="
 printf 'jarvis-claimed' > "$tmpstate"; : > "$tmpstatuscap"
-unset A1_GET_FAIL A1_UPDATE_NOOP A1_REJECT_STATUS COORD_ID
+unset A1_GET_FAIL A1_UPDATE_NOOP A1_REJECT_STATUS
 out=$(PATH="$tmpbin:$PATH" JARVIS_ROOT="$tmpconfig" A1_WTYPE=任务 \
     bash "$proj_root/bootstrap/claim.sh" finish "$WORKITEM_ID" 2100305 2>&1); rc=$?
 cap=$(cat "$tmpstatuscap" 2>/dev/null)
@@ -653,7 +640,7 @@ ARB_LOGB=$(mktemp); ARB_CAPB=$(mktemp); ARB_CNTB=$(mktemp)
 printf '' > "$ARB_STATE"          # start with no tags on the shared workitem
 printf '[]' > "$ARB_COMMENTS"     # empty comment stream
 ARB_ID="8001"
-unset COORD_ID CLAUDE_CODE_SESSION_ID
+unset CLAUDE_CODE_SESSION_ID
 
 # hostA claims first (earliest timestamp). JARVIS_ROOT=$tmpconfig so config/pools.json resolves.
 outA=$(PATH="$tmpbin:$PATH" JARVIS_ROOT="$tmpconfig" JARVIS_CLAIM_READBACK_SLEEP=0 \
@@ -708,8 +695,8 @@ fi
 # host-B's stderr explains the stand-down
 if echo "$outB" | grep -qi "arbitration"; then assert_pass "host-B emits arbitration stand-down message"; else assert_fail "host-B should mention arbitration, got: $outB"; fi
 
-# Both machines wrote reconcile-parseable claim comments (nonce after the UTC timestamp,
-# so reconcile.sh's existing regex still captures the timestamp).
+# Both machines wrote parseable claim comments (nonce after the UTC timestamp,
+# so claim-comment parsers still capture the timestamp).
 recon_ts=$(python3 -c "
 import json,sys,re
 cs=json.load(open('$ARB_COMMENTS'))
@@ -718,7 +705,7 @@ n=sum(1 for c in cs if pat.search(c.get('content','')))
 print(n)
 " 2>/dev/null || echo 0)
 if [ "$recon_ts" = "2" ]; then
-    assert_pass "both claim comments match reconcile.sh timestamp regex (nonce non-breaking)"
+    assert_pass "both claim comments preserve the timestamp prefix (nonce non-breaking)"
 else
     assert_fail "expected 2 reconcile-parseable comments, got $recon_ts"
 fi
@@ -748,7 +735,7 @@ rm -f "$ARB_STATE" "$ARB_COMMENTS" "$ARB_LOGA" "$ARB_CAPA" "$ARB_CNTA" "$ARB_LOG
 # Test 20: advance from a start state (string pool) — 待处理 → pool progress_status
 # ---------------------------------------------------------------------------
 echo "=== Test 20: claim advances status from start state (string pool → 处理中) ==="
-unset A1_GET_FAIL A1_UPDATE_NOOP A1_REJECT_STATUS A1_WTYPE COORD_ID JARVIS_CLAIM_PROGRESS
+unset A1_GET_FAIL A1_UPDATE_NOOP A1_REJECT_STATUS A1_WTYPE JARVIS_CLAIM_PROGRESS
 export A1_STATUS=待处理
 run_claim_prog 2100304          # with_override, progress_status="处理中"
 unset A1_STATUS
@@ -761,7 +748,7 @@ if [ "$cap" = "处理中" ]; then assert_pass "string pool: status advanced to �
 # Test 21: advance per-category (object pool) — 功能缺陷 → Open, 需求 → 问题解决中
 # ---------------------------------------------------------------------------
 echo "=== Test 21: claim advances per-category status (object pool) ==="
-unset A1_GET_FAIL A1_UPDATE_NOOP A1_REJECT_STATUS COORD_ID JARVIS_CLAIM_PROGRESS
+unset A1_GET_FAIL A1_UPDATE_NOOP A1_REJECT_STATUS JARVIS_CLAIM_PROGRESS
 export A1_STATUS=待处理 A1_WTYPE=功能缺陷
 run_claim_prog 2100305          # cat_override, progress_status={需求:问题解决中,功能缺陷:Open}
 cap=$(cat "$tmpstatuscap" 2>/dev/null)
@@ -779,7 +766,7 @@ unset A1_STATUS A1_WTYPE
 # Test 22: NO advance when current status is NOT a start state (no backward move)
 # ---------------------------------------------------------------------------
 echo "=== Test 22: claim does NOT advance status when not in start_statuses ==="
-unset A1_GET_FAIL A1_UPDATE_NOOP A1_REJECT_STATUS A1_WTYPE COORD_ID JARVIS_CLAIM_PROGRESS
+unset A1_GET_FAIL A1_UPDATE_NOOP A1_REJECT_STATUS A1_WTYPE JARVIS_CLAIM_PROGRESS
 export A1_STATUS=问题解决中     # mid-flight, not a start state
 run_claim_prog 2100304
 unset A1_STATUS
@@ -792,7 +779,7 @@ if [ -z "$cap" ]; then assert_pass "non-start state: no status write (stays empt
 # Test 23: rejected status is non-fatal — claim still exits 0 + WARN, tag still lands
 # ---------------------------------------------------------------------------
 echo "=== Test 23: claim resilient to a rejected status ==="
-unset A1_GET_FAIL A1_UPDATE_NOOP A1_WTYPE COORD_ID JARVIS_CLAIM_PROGRESS
+unset A1_GET_FAIL A1_UPDATE_NOOP A1_WTYPE JARVIS_CLAIM_PROGRESS
 export A1_STATUS=待处理 A1_REJECT_STATUS=处理中
 run_claim_prog 2100304          # string pool → progress 处理中, which a1 stub rejects
 unset A1_STATUS A1_REJECT_STATUS
@@ -806,7 +793,7 @@ if printf '%s' "$state" | grep -q "jarvis-claimed"; then assert_pass "rejected s
 # Test 24: JARVIS_CLAIM_PROGRESS=0 disables the status advance
 # ---------------------------------------------------------------------------
 echo "=== Test 24: JARVIS_CLAIM_PROGRESS=0 disables status advance ==="
-unset A1_GET_FAIL A1_UPDATE_NOOP A1_REJECT_STATUS A1_WTYPE COORD_ID
+unset A1_GET_FAIL A1_UPDATE_NOOP A1_REJECT_STATUS A1_WTYPE
 export A1_STATUS=待处理 JARVIS_CLAIM_PROGRESS=0
 run_claim_prog 2100304
 unset A1_STATUS JARVIS_CLAIM_PROGRESS
@@ -819,7 +806,7 @@ if [ -z "$cap" ]; then assert_pass "JARVIS_CLAIM_PROGRESS=0: no status write"; e
 # Test 25: no per-pool progress_status → global .claim.progress_status fallback
 # ---------------------------------------------------------------------------
 echo "=== Test 25: claim falls back to global progress_status ==="
-unset A1_GET_FAIL A1_UPDATE_NOOP A1_REJECT_STATUS A1_WTYPE COORD_ID JARVIS_CLAIM_PROGRESS
+unset A1_GET_FAIL A1_UPDATE_NOOP A1_REJECT_STATUS A1_WTYPE JARVIS_CLAIM_PROGRESS
 export A1_STATUS=新建            # another start state
 run_claim_prog 1086837          # no_override pool → global 处理中
 unset A1_STATUS
@@ -833,7 +820,7 @@ if [ "$cap" = "处理中" ]; then assert_pass "global fallback: status advanced 
 # ---------------------------------------------------------------------------
 echo "=== Test 26: finish status_override (4th arg) wins over resolved done_status ==="
 printf 'jarvis-claimed' > "$tmpstate"; : > "$tmpstatuscap"
-unset A1_GET_FAIL A1_UPDATE_NOOP A1_REJECT_STATUS A1_STATUS COORD_ID
+unset A1_GET_FAIL A1_UPDATE_NOOP A1_REJECT_STATUS A1_STATUS
 # project 1086837 (no per-pool override) would normally resolve to global 已发布待需求排期;
 # the 4th arg 已完成 must take precedence.
 out=$(PATH="$tmpbin:$PATH" JARVIS_ROOT="$tmpconfig" bash "$proj_root/bootstrap/claim.sh" finish "$WORKITEM_ID" 1086837 已完成 2>&1); rc=$?
@@ -849,7 +836,7 @@ if printf '%s' "$state" | grep -q "jarvis-done"; then assert_pass "status_overri
 # ---------------------------------------------------------------------------
 echo "=== Test 27: 3-arg finish unchanged when no override passed ==="
 printf 'jarvis-claimed' > "$tmpstate"; : > "$tmpstatuscap"
-unset A1_GET_FAIL A1_UPDATE_NOOP A1_REJECT_STATUS A1_STATUS COORD_ID
+unset A1_GET_FAIL A1_UPDATE_NOOP A1_REJECT_STATUS A1_STATUS
 out=$(PATH="$tmpbin:$PATH" JARVIS_ROOT="$tmpconfig" bash "$proj_root/bootstrap/claim.sh" finish "$WORKITEM_ID" 1086837 2>&1); rc=$?
 cap=$(cat "$tmpstatuscap" 2>/dev/null)
 echo "rc=$rc status_set='$cap'"

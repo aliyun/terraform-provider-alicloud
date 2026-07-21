@@ -78,14 +78,7 @@ ROOT10=""
 ROOT11=""
 ROOT12=""
 ROOT13=""
-ROOT14=""
-ROOT15=""
-ROOT16=""
-ROOT17=""
-ROOT18=""
-ROOT19=""
-ROOT20=""
-trap 'rm -rf "$FAKE_BIN_DIR" "$ROOT1" "$ROOT2" "$ROOT3" "$ROOT4" "$ROOT5" "$ROOT6" "$ROOT7" "$ROOT8" "$ROOT9" "$ROOT10" "$ROOT11" "$ROOT12" "$ROOT13" "$ROOT14" "$ROOT15" "$ROOT16" "$ROOT17" "$ROOT18" "$ROOT19" "$ROOT20" 2>/dev/null; exit' INT TERM EXIT
+trap 'rm -rf "$FAKE_BIN_DIR" "$ROOT1" "$ROOT2" "$ROOT3" "$ROOT4" "$ROOT5" "$ROOT6" "$ROOT7" "$ROOT8" "$ROOT9" "$ROOT10" "$ROOT11" "$ROOT12" "$ROOT13" 2>/dev/null; exit' INT TERM EXIT
 
 # ---------------------------------------------------------------------------
 # Test 1: done:false id, no runs/ file → exit 2
@@ -166,11 +159,10 @@ assert_stderr_contains() {
 }
 
 # ===========================================================================
-# Owner-scoping matrix (cap-claim-ledger-owner-scoping Phase 1)
-# self is set via COORD_ID; a claim's owner scopes whether the Stop hook blocks.
+# Owner-scoping matrix: a claim's stable session owner scopes whether the Stop hook blocks.
 # ===========================================================================
-SELF="inst-self-1"
-OTHER="inst-other-2"
+SELF="cc-inst-self-1"
+OTHER="cc-inst-other-2"
 
 # ---------------------------------------------------------------------------
 # Test 6: owner == self, no run_done → block (exit 2)
@@ -180,7 +172,7 @@ ROOT6="$(make_jarvis_root)"
 printf '[{"id":"WI-T6","done":false,"owner":"%s"}]\n' "$SELF" \
     > "$ROOT6/.my-day/claims-${today}.json"
 assert_exit_code "own claim, no run_done → exit 2" 2 \
-    env COORD_ID="$SELF" JARVIS_ROOT="$ROOT6" JARVIS_RUNS_DIR="$ROOT6/runs" bash "$WRAP_CHECK"
+    env CLAUDE_CODE_SESSION_ID="inst-self-1" JARVIS_ROOT="$ROOT6" JARVIS_RUNS_DIR="$ROOT6/runs" bash "$WRAP_CHECK"
 
 # ---------------------------------------------------------------------------
 # Test 7: owner == self, has run_done → pass (exit 0)
@@ -191,7 +183,7 @@ printf '[{"id":"WI-T7","done":false,"owner":"%s"}]\n' "$SELF" \
     > "$ROOT7/.my-day/claims-${today}.json"
 touch "$ROOT7/runs/${today}-WI-T7.md"
 assert_exit_code "own claim, run_done present → exit 0" 0 \
-    env COORD_ID="$SELF" JARVIS_ROOT="$ROOT7" JARVIS_RUNS_DIR="$ROOT7/runs" bash "$WRAP_CHECK"
+    env CLAUDE_CODE_SESSION_ID="inst-self-1" JARVIS_ROOT="$ROOT7" JARVIS_RUNS_DIR="$ROOT7/runs" bash "$WRAP_CHECK"
 
 # ---------------------------------------------------------------------------
 # Test 8: owner == other instance, no run_done → skip (exit 0) + WARN on stderr
@@ -201,9 +193,9 @@ ROOT8="$(make_jarvis_root)"
 printf '[{"id":"WI-T8","done":false,"owner":"%s"}]\n' "$OTHER" \
     > "$ROOT8/.my-day/claims-${today}.json"
 assert_exit_code "foreign claim, no run_done → skip exit 0" 0 \
-    env COORD_ID="$SELF" JARVIS_ROOT="$ROOT8" JARVIS_RUNS_DIR="$ROOT8/runs" bash "$WRAP_CHECK"
+    env CLAUDE_CODE_SESSION_ID="inst-self-1" JARVIS_ROOT="$ROOT8" JARVIS_RUNS_DIR="$ROOT8/runs" bash "$WRAP_CHECK"
 assert_stderr_contains "foreign claim emits skip/WARN line" "skip WI-T8" \
-    env COORD_ID="$SELF" JARVIS_ROOT="$ROOT8" JARVIS_RUNS_DIR="$ROOT8/runs" bash "$WRAP_CHECK"
+    env CLAUDE_CODE_SESSION_ID="inst-self-1" JARVIS_ROOT="$ROOT8" JARVIS_RUNS_DIR="$ROOT8/runs" bash "$WRAP_CHECK"
 
 # ---------------------------------------------------------------------------
 # Test 9: owner empty (legacy entry), no run_done → block (exit 2, no regression)
@@ -214,7 +206,7 @@ ROOT9="$(make_jarvis_root)"
 printf '[{"id":"WI-T9","done":false}]\n' \
     > "$ROOT9/.my-day/claims-${today}.json"
 assert_exit_code "legacy ownerless claim, no run_done → exit 2" 2 \
-    env COORD_ID="$SELF" JARVIS_ROOT="$ROOT9" JARVIS_RUNS_DIR="$ROOT9/runs" bash "$WRAP_CHECK"
+    env CLAUDE_CODE_SESSION_ID="inst-self-1" JARVIS_ROOT="$ROOT9" JARVIS_RUNS_DIR="$ROOT9/runs" bash "$WRAP_CHECK"
 
 # ---------------------------------------------------------------------------
 # Test 10: touched id whose claim owner is a foreign instance → skip (exit 0)
@@ -227,7 +219,7 @@ printf '[{"id":"WI-T10","done":true,"owner":"%s"}]\n' "$OTHER" \
     > "$ROOT10/.my-day/claims-${today}.json"
 printf '["WI-T10"]\n' > "$ROOT10/.my-day/touched-${today}.json"
 assert_exit_code "touched id owned by other instance → skip exit 0" 0 \
-    env COORD_ID="$SELF" JARVIS_ROOT="$ROOT10" JARVIS_RUNS_DIR="$ROOT10/runs" bash "$WRAP_CHECK"
+    env CLAUDE_CODE_SESSION_ID="inst-self-1" JARVIS_ROOT="$ROOT10" JARVIS_RUNS_DIR="$ROOT10/runs" bash "$WRAP_CHECK"
 
 # ---------------------------------------------------------------------------
 # Test 11: touched id with no claim entry (owner unknown="") → block (exit 2)
@@ -236,16 +228,16 @@ echo "Test 11: touched id, no claim/owner + no run file → exit 2 (treated as o
 ROOT11="$(make_jarvis_root)"
 printf '["WI-T11"]\n' > "$ROOT11/.my-day/touched-${today}.json"
 assert_exit_code "touched ownerless id, no run_done → exit 2" 2 \
-    env COORD_ID="$SELF" JARVIS_ROOT="$ROOT11" JARVIS_RUNS_DIR="$ROOT11/runs" bash "$WRAP_CHECK"
+    env CLAUDE_CODE_SESSION_ID="inst-self-1" JARVIS_ROOT="$ROOT11" JARVIS_RUNS_DIR="$ROOT11/runs" bash "$WRAP_CHECK"
 
 # ===========================================================================
 # D2: interactive sessions derive owner from CLAUDE_CODE_SESSION_ID (cc-<sid>)
-# via coord_self(). Two different sessions get distinct owners and must not block
+# via claim_owner(). Two different sessions get distinct owners and must not block
 # each other; a session is still held to account for its own claims.
 # ===========================================================================
 
 # ---------------------------------------------------------------------------
-# Test 12: claim owned by session A; session B (no COORD_ID, different sid) → skip (0)
+# Test 12: claim owned by session A; session B (different sid) → skip (0)
 # ---------------------------------------------------------------------------
 echo "Test 12: interactive — other session's claim → exit 0 (skip)"
 ROOT12="$(make_jarvis_root)"
@@ -263,99 +255,6 @@ printf '[{"id":"WI-T13","done":false,"owner":"cc-sess-A"}]\n' \
     > "$ROOT13/.my-day/claims-${today}.json"
 assert_exit_code "interactive own-session claim, no run_done → exit 2" 2 \
     env CLAUDE_CODE_SESSION_ID="sess-A" JARVIS_ROOT="$ROOT13" JARVIS_RUNS_DIR="$ROOT13/runs" bash "$WRAP_CHECK"
-
-# ===========================================================================
-# JARVIS_REQUIRE_PUSH externalization gate (opt-in; default 0 = no behavior change)
-# A coord task (.my-day/tasks/<id>.json) owned by self, stage!=done, with a non-empty
-# branch but an empty pushed_branch means the code was never externalized (pushed to a
-# remote). Only enforced when JARVIS_REQUIRE_PUSH=1.
-# ===========================================================================
-PSELF="inst-push-self"
-
-# Helper: write a coord task json
-make_task() {
-    local root="$1" aid="$2" owner="$3" stage="$4" branch="$5" pushed="$6"
-    mkdir -p "$root/.my-day/tasks"
-    printf '{"aone_id":"%s","owner_instance":"%s","stage":"%s","worktree":"/wt","branch":"%s","repo":"r","pushed_branch":"%s","updated":"now"}\n' \
-        "$aid" "$owner" "$stage" "$branch" "$pushed" > "$root/.my-day/tasks/$aid.json"
-}
-
-# ---------------------------------------------------------------------------
-# Test 14: REQUIRE_PUSH=1, own task, branch set, pushed_branch empty → exit 2
-# ---------------------------------------------------------------------------
-echo "Test 14: REQUIRE_PUSH=1 + own task branch set + pushed empty → exit 2"
-ROOT14="$(make_jarvis_root)"
-make_task "$ROOT14" "WI-T14" "$PSELF" "coding" "feat-x" ""
-# also give it a run_done so the ledger/touched path is clean (isolate the push gate)
-touch "$ROOT14/runs/${today}-WI-T14.md"
-assert_exit_code "unexternalized own task → exit 2" 2 \
-    env JARVIS_REQUIRE_PUSH=1 COORD_ID="$PSELF" JARVIS_ROOT="$ROOT14" JARVIS_RUNS_DIR="$ROOT14/runs" bash "$WRAP_CHECK"
-assert_stderr_contains "unexternalized task reports the id + push hint" "WI-T14" \
-    env JARVIS_REQUIRE_PUSH=1 COORD_ID="$PSELF" JARVIS_ROOT="$ROOT14" JARVIS_RUNS_DIR="$ROOT14/runs" bash "$WRAP_CHECK"
-assert_stderr_contains "unexternalized task mentions push" "push" \
-    env JARVIS_REQUIRE_PUSH=1 COORD_ID="$PSELF" JARVIS_ROOT="$ROOT14" JARVIS_RUNS_DIR="$ROOT14/runs" bash "$WRAP_CHECK"
-
-# ---------------------------------------------------------------------------
-# Test 15: DEFAULT (REQUIRE_PUSH unset), same un-pushed task → exit 0 (no regression)
-# ---------------------------------------------------------------------------
-echo "Test 15: default (REQUIRE_PUSH unset) + un-pushed task → exit 0"
-ROOT15="$(make_jarvis_root)"
-make_task "$ROOT15" "WI-T15" "$PSELF" "coding" "feat-x" ""
-touch "$ROOT15/runs/${today}-WI-T15.md"
-assert_exit_code "default: un-pushed task not enforced → exit 0" 0 \
-    env COORD_ID="$PSELF" JARVIS_ROOT="$ROOT15" JARVIS_RUNS_DIR="$ROOT15/runs" bash "$WRAP_CHECK"
-
-# ---------------------------------------------------------------------------
-# Test 16: REQUIRE_PUSH=1 but pushed_branch present → exit 0 (externalized, OK)
-#          and stage=done or empty branch are exempt.
-# ---------------------------------------------------------------------------
-echo "Test 16: REQUIRE_PUSH=1 + pushed present / done / no-branch → exit 0"
-ROOT16="$(make_jarvis_root)"
-make_task "$ROOT16" "WI-T16a" "$PSELF" "coding" "feat-x" "origin/feat-x"   # pushed → OK
-make_task "$ROOT16" "WI-T16b" "$PSELF" "done"   "feat-y" ""                # done → exempt
-make_task "$ROOT16" "WI-T16c" "$PSELF" "coding" ""       ""                # no branch → exempt
-make_task "$ROOT16" "WI-T16d" "inst-other" "coding" "feat-z" ""            # foreign owner → not ours
-touch "$ROOT16/runs/${today}-WI-T16a.md"
-# WI-T16a is pushed → the backfill gate (default on) also requires an Aone backfill; seed one
-# so this test stays focused on the push gate (backfill gate itself is Tests 17-20).
-printf '["WI-T16a"]\n' > "$ROOT16/.my-day/touched-${today}.json"
-assert_exit_code "externalized/done/no-branch/foreign → exit 0" 0 \
-    env JARVIS_REQUIRE_PUSH=1 COORD_ID="$PSELF" JARVIS_ROOT="$ROOT16" JARVIS_RUNS_DIR="$ROOT16/runs" bash "$WRAP_CHECK"
-
-# ===========================================================================
-# JARVIS_REQUIRE_BACKFILL gate（治「干完活不回帖」silent completion，默认开）
-# 一个 coord task 本会话所有、stage!=done、pushed_branch 非空，却没经 wrap.sh sync/done 回帖
-# Aone(不在 touched 台账) → block。设 =0 关。
-# ===========================================================================
-BSELF="inst-backfill-self"
-
-echo "Test 17: pushed 但无 Aone 回帖 → exit 2 (干完活不回帖)"
-ROOT17="$(make_jarvis_root)"
-make_task "$ROOT17" "WI-T17" "$BSELF" "acc" "feat-x" "origin/feat-x"
-assert_exit_code "pushed 未回帖 → exit 2" 2 \
-    env COORD_ID="$BSELF" JARVIS_ROOT="$ROOT17" JARVIS_RUNS_DIR="$ROOT17/runs" bash "$WRAP_CHECK"
-assert_stderr_contains "报告工单 id" "WI-T17" \
-    env COORD_ID="$BSELF" JARVIS_ROOT="$ROOT17" JARVIS_RUNS_DIR="$ROOT17/runs" bash "$WRAP_CHECK"
-
-echo "Test 18: pushed + 已回帖(touched) → exit 0"
-ROOT18="$(make_jarvis_root)"
-make_task "$ROOT18" "WI-T18" "$BSELF" "acc" "feat-x" "origin/feat-x"
-touch "$ROOT18/runs/${today}-WI-T18.md"   # touched id → 既有 missing 闸也需 run_done
-printf '["WI-T18"]\n' > "$ROOT18/.my-day/touched-${today}.json"
-assert_exit_code "pushed + 回帖 → exit 0" 0 \
-    env COORD_ID="$BSELF" JARVIS_ROOT="$ROOT18" JARVIS_RUNS_DIR="$ROOT18/runs" bash "$WRAP_CHECK"
-
-echo "Test 19: pushed 但 stage=done → 豁免 exit 0"
-ROOT19="$(make_jarvis_root)"
-make_task "$ROOT19" "WI-T19" "$BSELF" "done" "feat-x" "origin/feat-x"
-assert_exit_code "done 豁免 → exit 0" 0 \
-    env COORD_ID="$BSELF" JARVIS_ROOT="$ROOT19" JARVIS_RUNS_DIR="$ROOT19/runs" bash "$WRAP_CHECK"
-
-echo "Test 20: JARVIS_REQUIRE_BACKFILL=0 + pushed 未回帖 → exit 0 (闸关)"
-ROOT20="$(make_jarvis_root)"
-make_task "$ROOT20" "WI-T20" "$BSELF" "acc" "feat-x" "origin/feat-x"
-assert_exit_code "kill-switch 关闸 → exit 0" 0 \
-    env JARVIS_REQUIRE_BACKFILL=0 COORD_ID="$BSELF" JARVIS_ROOT="$ROOT20" JARVIS_RUNS_DIR="$ROOT20/runs" bash "$WRAP_CHECK"
 
 # ---------------------------------------------------------------------------
 # Summary

@@ -308,7 +308,7 @@ write_done() {
 
 # 位置正文 / 状态槽收到 `--flag` 形态的 token = 调用方把命令行参数放错了位置
 # （如 `done <id> --status X --summary-stdin`：--status 落入 else 分支被当 summary 静默贴出，
-# 真 summary 从 stdin 丢弃——见 escalation/cap-wrap-reject-flag-as-text.md / 工单 83843879）。
+# 真 summary 从 stdin 丢弃，避免把命令行参数误当正文。
 # 静默吞下会污染工单 + 丢真内容 + 静默改错状态；这里响亮报错而非当正文。
 # allow（可选）= 该槽合法的 `--` 值白名单（仅状态槽的 --no-status）。
 reject_flag_as_text() {  # args: value slot usage [allow]

@@ -2,7 +2,7 @@
 
 > 本 reference 是**跨 skill 单点维护**——tf-customer-probe（Step E 收尾）、aone-triage（bookend 收尾）、
 > provider-resource-dev（开发完成后）三处**都读它**（先例：provider-resource-dev/references/zhenyuan-verification.md
-> 的跨 skill 复用模式）。语料底座定位背书见 `escalation/cap-tf-customer-probe.md` 决策记录 2026-07-08。
+> 的跨 skill 复用模式）。
 
 ## 落点
 
@@ -107,7 +107,7 @@ playground 路径解析：`bootstrap/workspace.sh dir tf_playground` 或 env `JA
 
 即触发**起草 `.claude/skills/<product>-*` 产品级 skill**（如 `alicloud-vpc-quirks` / `alicloud-oss-lifecycle`），
 把稳定的产品级事实沉淀为可搜索、可 trigger 的 skill；KNOWLEDGE.md 继续作为**未稳定条目的写入队列**。
-毕业动作记 `escalation/cap-tf-customer-probe.md` 路线图 P3（"KNOWLEDGE → 产品级 skill 毕业"条）。
+毕业动作建 Aone 跟踪，并在相关产品 skill/reference 中记录（"KNOWLEDGE → 产品级 skill 毕业"）。
 
 ## 自检（写完看一遍）
 

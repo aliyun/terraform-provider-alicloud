@@ -2,7 +2,7 @@
 # test/board_probe_test.sh — hermetic tests for `bootstrap/board.sh probe`
 # (F3 度量看板 probe 飞轮健康度指标段)。
 #
-# 全离线:自造临时 JARVIS_ROOT(runs/probe verdict + escalation/probe-drafts + .my-day/probe
+# 全离线:自造临时 JARVIS_ROOT(runs/probe verdict + .my-day/probe
 # rotate state),playground 指 test/fixtures/probe/playground,a1 查询走 JARVIS_A1 stub
 # (成功 / 失败降级两条路径都覆盖)。不碰真实 a1 / 网络 / terraform。
 #
@@ -31,7 +31,7 @@ jqeq() {
 # ── 造临时 hermetic root ────────────────────────────────────────────────
 ROOT="$(mktemp -d)"
 trap 'rm -rf "$ROOT"' EXIT
-mkdir -p "$ROOT/config" "$ROOT/runs/probe" "$ROOT/escalation/probe-drafts" "$ROOT/.my-day/probe" "$ROOT/bin"
+mkdir -p "$ROOT/config" "$ROOT/runs/probe" "$ROOT/.my-day/probe" "$ROOT/bin"
 cp "$REAL_PROBE_CONFIG" "$ROOT/config/probe.json"
 # board-html.sh 的数组段需要 pools.json + scan.json(probe 段本身不读它们)
 cp "$PROJ_ROOT/config/pools.json" "$ROOT/config/pools.json"
@@ -81,19 +81,6 @@ cat > "$ROOT/runs/probe/archive/${D40_YM}/${D40}-${D40_HMS}-import-vpc.json" <<J
  "terraform_version":"1.9.0","region":"eu-central-1","started_at":"${D40_ISO}","duration_s":33,
  "findings":[],"env_issues":[],"cleanup":{"applied":true,"destroyed":true,"state_empty":true}}
 JSON
-
-# drafts frontmatter status:filed x2 / pending-review x1 / rejected x1 → 采纳率 filed/(filed+rejected)=2/3
-mkdraft() { printf -- '---\nstatus: %s\nticket: %s\n---\n\n# [probe][%s] demo\n' "$2" "${3:-}" "$1" > "$ROOT/escalation/probe-drafts/$1.md"; }
-mkdraft d-filed-a filed "https://x/1"
-mkdraft d-filed-b filed "https://x/2"
-mkdraft d-pending pending-review ""
-mkdraft d-reject  rejected ""
-
-# A4:drafts_archived 里的历史归档 draft 也计入 total + adoption_rate 分母(archive 命令搬进去的)
-mkdir -p "$ROOT/escalation/probe-drafts/archived"
-mkdraft_arc() { printf -- '---\nstatus: %s\nticket: %s\n---\n\n# [probe][%s] demo\n' "$2" "${3:-}" "$1" > "$ROOT/escalation/probe-drafts/archived/$1.md"; }
-mkdraft_arc d-arc-filed-1 filed "https://x/10"
-mkdraft_arc d-arc-rej-1   rejected ""
 
 # tier0 rotate 覆盖状态:3 资源(键数=已巡检资源数)
 cat > "$ROOT/.my-day/probe/t0mech-scanned.json" <<JSON
@@ -154,13 +141,6 @@ jqeq "$OUT" '.findings.api_gap.api_gap_type // 0' 0 "窗外 api_gap_type 已剔�
 jqeq "$OUT" '.findings.mech.on' 1 "本周 tier0 mech=on 计 1"
 jqeq "$OUT" '.findings.mech.degraded // 0' 0 "窗外 degraded 已剔除"
 
-echo "Test 3: drafts 段 — status 分布(含 archived/ 子目录) + 采纳率 filed/(filed+rejected)"
-jqeq "$OUT" '.drafts.total' 6 "drafts 总数=6(4 顶层 + 2 archived/)"
-jqeq "$OUT" '.drafts.filed' 3 "filed=3(2+1 archived)"
-jqeq "$OUT" '.drafts.pending' 1 "pending(含 pending-review)=1"
-jqeq "$OUT" '.drafts.rejected' 2 "rejected=2(1+1 archived)"
-jqeq "$OUT" '((.drafts.adoption_rate*1000)|round)' 600 "采纳率=3/5=0.6"
-
 echo "Test 4: tickets 段 — a1 成功路径 单量/状态分布/关单数"
 jqeq "$OUT" '.tickets.source' "aone" "tickets.source=aone"
 jqeq "$OUT" '.tickets.total' 5 "工单总数=5"
@@ -187,7 +167,6 @@ jqeq "$OUT2" '.tickets.total' "null" "降级 tickets.total=null"
 grep -qi "WARN" "$ERRF" && ok "降级打印 WARN 到 stderr" || bad "降级未打印 WARN"
 # 关键:降级只影响 tickets,其余段照常聚合
 jqeq "$OUT2" '.findings.total' 4 "降级后 findings 仍聚合=4"
-jqeq "$OUT2" '.drafts.filed' 3 "降级后 drafts 仍聚合 filed=3(含 archived)"
 jqeq "$OUT2" '.scenarios.total' 4 "降级后 scenarios 仍聚合=4"
 
 echo "Test 8: a1 输出非法 JSON 也走降级"
@@ -199,15 +178,13 @@ echo "Test 9: --text 人读摘要"
 TXT="$(JARVIS_A1="$A1_OK" bash "$BOARD" probe --text 2>/dev/null)"; RC9=$?
 [ "$RC9" = "0" ] && ok "--text 退 0" || bad "--text 退 $RC9"
 grep -qi "probe" <<<"$TXT" && ok "--text 含 probe 标题" || bad "--text 缺标题"
-grep -q "采纳率" <<<"$TXT" && ok "--text 含采纳率" || bad "--text 缺采纳率"
 
-echo "Test 10: 空数据不崩(全新 root,无 runs/probe 无 drafts)"
+echo "Test 10: 空数据不崩(全新 root,无 runs/probe)"
 EMPTY="$(mktemp -d)"; mkdir -p "$EMPTY/config"; cp "$REAL_PROBE_CONFIG" "$EMPTY/config/probe.json"
 OUT4="$(JARVIS_ROOT="$EMPTY" JARVIS_TF_PLAYGROUND="$EMPTY/nope" JARVIS_A1="$A1_FAIL" bash "$BOARD" probe 2>/dev/null)"; RC4=$?
 rm -rf "$EMPTY"
 [ "$RC4" = "0" ] && ok "空数据 probe 退 0" || bad "空数据 probe 退 $RC4"
 jqeq "$OUT4" '.findings.total' 0 "空数据 findings=0"
-jqeq "$OUT4" '.drafts.total' 0 "空数据 drafts=0"
 jqeq "$OUT4" '.scenarios.total' 0 "空数据 scenarios=0"
 jqeq "$OUT4" '.tier0_coverage.resources_scanned' 0 "空数据 tier0 覆盖=0"
 
@@ -219,7 +196,6 @@ if [ -f "$HTMLF" ]; then
     ok "board.html 已生成"
     grep -q 'class="probe"' "$HTMLF" && ok "html 含 probe 区块" || bad "html 缺 probe 区块"
     grep -q '本周发现' "$HTMLF" && ok "html 含'本周发现' tile" || bad "html 缺'本周发现' tile"
-    grep -q '采纳率' "$HTMLF" && ok "html 含'采纳率' tile" || bad "html 缺'采纳率' tile"
     grep -q 'tier0 覆盖' "$HTMLF" && ok "html 含'tier0 覆盖' tile" || bad "html 缺'tier0 覆盖' tile"
     grep -q 'class="pv">4<' "$HTMLF" && ok "html tile 数值渲染(findings.total=4 可见)" || bad "html tile 数值未渲染"
     grep -q 'data-pf="automation_platform"' "$HTMLF" && ok "html 含 automation_platform 池筛选项" || bad "html 缺 automation_platform 池筛选项"
@@ -231,7 +207,7 @@ fi
 echo "Test 11b: board-html.sh 合并配置池与看板数据池,HTML 属性安全转义"
 SYNTH_ROOT="$(mktemp -d)"
 mkdir -p "$SYNTH_ROOT/config" "$SYNTH_ROOT/.my-day" "$SYNTH_ROOT/docs" \
-    "$SYNTH_ROOT/runs/probe" "$SYNTH_ROOT/escalation/probe-drafts" "$SYNTH_ROOT/bin"
+    "$SYNTH_ROOT/runs/probe" "$SYNTH_ROOT/bin"
 cp "$REAL_PROBE_CONFIG" "$SYNTH_ROOT/config/probe.json"
 cat > "$SYNTH_ROOT/config/pools.json" <<'JSON'
 {
@@ -275,7 +251,7 @@ rm -rf "$SYNTH_ROOT"
 
 echo "Test 12a: A4 — findings 周窗口按 (code,resource,attribute) 去重(同日多轮 tier0 并存不重复计数)"
 DEDUP_ROOT="$(mktemp -d)"
-mkdir -p "$DEDUP_ROOT/config" "$DEDUP_ROOT/runs/probe" "$DEDUP_ROOT/escalation/probe-drafts" "$DEDUP_ROOT/.my-day/probe" "$DEDUP_ROOT/bin"
+mkdir -p "$DEDUP_ROOT/config" "$DEDUP_ROOT/runs/probe" "$DEDUP_ROOT/.my-day/probe" "$DEDUP_ROOT/bin"
 cp "$REAL_PROBE_CONFIG" "$DEDUP_ROOT/config/probe.json"
 cp "$PROJ_ROOT/config/pools.json" "$DEDUP_ROOT/config/pools.json"
 echo '[]' > "$DEDUP_ROOT/.my-day/scan.json"
@@ -297,7 +273,7 @@ rm -rf "$DEDUP_ROOT"
 # F5:不同 scenario_id 的 tier1 verdict 含相同 (code,stage,summary) → dedup key 加 scenario_id 后各算一份
 echo "Test 12b: F5 — tier1 verdict 去重 key 加 scenario_id,不同场景相同 code+stage+summary 不合并"
 F5_ROOT="$(mktemp -d)"
-mkdir -p "$F5_ROOT/config" "$F5_ROOT/runs/probe" "$F5_ROOT/escalation/probe-drafts" "$F5_ROOT/.my-day/probe" "$F5_ROOT/bin"
+mkdir -p "$F5_ROOT/config" "$F5_ROOT/runs/probe" "$F5_ROOT/.my-day/probe" "$F5_ROOT/bin"
 cp "$REAL_PROBE_CONFIG" "$F5_ROOT/config/probe.json"
 cp "$PROJ_ROOT/config/pools.json" "$F5_ROOT/config/pools.json"
 echo '[]' > "$F5_ROOT/.my-day/scan.json"
@@ -329,7 +305,7 @@ rm -rf "$F5_ROOT"
 
 echo "Test 12: 零值 tile 渲染为 '0'(不因 e() 的 (s or '') 而空白)"
 HROOT="$(mktemp -d)"
-mkdir -p "$HROOT/config" "$HROOT/.my-day" "$HROOT/runs/probe" "$HROOT/escalation/probe-drafts" "$HROOT/docs"
+mkdir -p "$HROOT/config" "$HROOT/.my-day" "$HROOT/runs/probe" "$HROOT/docs"
 cp "$REAL_PROBE_CONFIG" "$HROOT/config/probe.json"
 cp "$PROJ_ROOT/config/pools.json" "$HROOT/config/pools.json"
 echo '[]' > "$HROOT/.my-day/scan.json"

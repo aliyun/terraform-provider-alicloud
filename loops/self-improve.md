@@ -1,6 +1,6 @@
 # self-improve 自迭代 loop
 
-> 遇到不会干 / 缺环境 / 缺上下文 / 路由未命中 → 记能力缺口 → worktree 起草补丁 → 开 MR/PR → 等人工合并。
+> 遇到不会干 / 缺环境 / 缺上下文 / 路由未命中 → 在 Aone 记录能力缺口 → worktree 起草补丁 → 开 MR/PR → 等人工合并。
 > 绑 `autonomy.md` 的 `missing_capability` 触发；**永不自动合 master**。
 
 ---
@@ -14,17 +14,13 @@
 | 缺上下文 | 找不到 schema/池/源码映射 |
 | 路由未命中 | pools.json/workspaces.json 无匹配 |
 
-对应 `autonomy.md` 的 `missing_capability` escalate trigger。
+对应 `autonomy.md` 的 `missing_capability` trigger。
 
 ---
 
 ## 二、记缺口
 
-```
-escalation/cap-<slug>.md
-```
-
-内容：缺口类型、阻塞任务、缺什么、建议补丁、置信度。
+优先复用当前 Aone 工作项；没有可承载的工作项时，按 `loops/adhoc-intake.md` 在所属团队新建能力改造单。记录缺口类型、阻塞任务、缺什么、建议补丁、置信度和复现证据。需要人工决策时将控制面 Task 置为 `SUSPENDED`，由幂等事件发布器把问题写回 Aone；不落本地草稿文件。
 
 ---
 
@@ -44,7 +40,7 @@ worktree 切分支，补 loops/ 或 .claude/skills/ 或 config/ 之一：
 
 ## 四、MR/PR
 
-补丁开 MR/PR 等人工评审，关联 `cap-<slug>.md`。
+补丁开 MR/PR 等人工评审，关联 Aone 工作项。技术结论同步进相关 skill/reference，让其他机器和后续会话自然加载。
 
 ---
 
@@ -52,7 +48,7 @@ worktree 切分支，补 loops/ 或 .claude/skills/ 或 config/ 之一：
 
 | 结果 | 说明 |
 |------|------|
-| 入队 | cap 缺口 + 草案 PR 待人工合 |
+| 入队 | Aone 缺口记录 + 草案 PR 待人工合 |
 | 永不 | **绝不自动合 master**（redline 硬门） |
 
 ---
@@ -61,6 +57,6 @@ worktree 切分支，补 loops/ 或 .claude/skills/ 或 config/ 之一：
 
 | 工具 | 作用 |
 |------|------|
-| `escalation/cap-<slug>.md` | 缺口记录 |
+| Aone 工作项 | 缺口、证据、决策与进度真源 |
 | `autonomy.md missing_capability` | 触发器 |
-| `bootstrap/log.sh escalate` | 审计上报 |
+| 相关 `.claude/skills/*` / `loops/*` | 可复用技术知识与执行流程 |
