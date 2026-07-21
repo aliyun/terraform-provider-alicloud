@@ -2139,7 +2139,15 @@ def jarvis_cmd(session_id=None, terraform=False):
         member = pool[idx]
     else:
         member = pool[0]
-    return [claude_bin(), "--settings", _resolve_settings(member)]
+    # Headless runs bypass the interactive permission layer (no terminal to
+    # answer asks; the auto-mode classifier shares the lane's gateway token and
+    # starves behind the main stream on single-lane workers — canary saw every
+    # write fail-closed with "classifier temporarily unavailable"). Safety is
+    # owned by deterministic layers instead: PreToolUse hooks (worktree-guard,
+    # worker-fence, redline-guard), a1id/github-identity gates, and the
+    # control plane's fence/lease — none of which depend on a model verdict.
+    return [claude_bin(), "--settings", _resolve_settings(member),
+            "--permission-mode", "bypassPermissions"]
 
 
 AT_BOT_PREFIX = re.compile(r"^\s*@\S+\s*")
