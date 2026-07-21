@@ -2,8 +2,8 @@
 
 This module does not import legacy Bridge loops.  The caller supplies only the
 job runners it has explicitly migrated, which makes a mixed legacy/new rollout
-safe by construction.  Scheduler activation is fail-closed on the dedicated
-credential, host identity, Worker acknowledgement, or any job without a
+safe by construction.  Scheduler activation is fail-closed on the shared
+control-plane credential, host identity, Worker acknowledgement, or any job without a
 runner mapping.
 """
 
@@ -20,8 +20,10 @@ import uuid
 from typing import Any, Mapping, Optional
 
 try:  # bridge/run.sh executes from bridge/, package users import bridge.scheduler
+    from jarvis_persistence_executor import _default_boot_id
     from jarvis_task_client import ControlPlaneClient
 except ModuleNotFoundError:  # pragma: no cover - import path depends on composition root
+    from bridge.jarvis_persistence_executor import _default_boot_id
     from bridge.jarvis_task_client import ControlPlaneClient
 
 from .control_plane_client import HttpScheduledJobControlPlane
@@ -77,6 +79,7 @@ class SchedulerComposition:
         self.process_uuid = uuid.uuid4().hex
         self.worker_key = SCHEDULER_WORKER_KEY
         self.host_id = SCHEDULER_HOST_ID
+        self.boot_id = _scheduler_boot_id(self._environ, self.host_id)
         # Parse operational knobs only after the explicit enable gate.  A
         # dormant scheduler must not change legacy Bridge startup behavior.
         self._heartbeat_interval = 30.0
@@ -129,7 +132,7 @@ class SchedulerComposition:
             try:
                 control_plane = HttpScheduledJobControlPlane(
                     self._task_client.base_url,
-                    _scheduler_token(self._environ),
+                    _control_plane_token(self._task_client),
                     timeout=self._task_client.timeout,
                     worker_key=self.worker_key,
                     process_uuid=self.process_uuid,
@@ -221,11 +224,8 @@ class SchedulerComposition:
                 % (self.host_id, ",".join(sorted(value for value in observed if value))))
 
     def _worker_client(self) -> ControlPlaneClient:
-        return ControlPlaneClient(
-            self._task_client.base_url,
-            _scheduler_token(self._environ),
-            timeout=self._task_client.timeout,
-        )
+        _control_plane_token(self._task_client)
+        return self._task_client
 
     def _worker_payload(self, status: str) -> dict[str, Any]:
         return {
@@ -234,6 +234,7 @@ class SchedulerComposition:
             # ``host`` keeps the existing Worker endpoint compatible while C5
             # adds the canonical hostId check server-side.
             "host": self.host_id,
+            "bootId": self.boot_id,
             "processUuid": self.process_uuid,
             "status": status,
             "maxSlots": 1,
@@ -257,7 +258,8 @@ class SchedulerComposition:
                 self.worker_key, self._worker_payload(status),
                 process_uuid=self.process_uuid, request_id=request_id)
         if status == "ACTIVE":
-            _require_active_worker(response, self.worker_key, self.host_id, self.process_uuid)
+            _require_active_worker(
+                response, self.worker_key, self.host_id, self.boot_id, self.process_uuid)
             self._registered = True
             self._next_heartbeat = time.monotonic() + self._heartbeat_interval
 
@@ -281,17 +283,21 @@ class _RoutedRunner(JobRunner):
         return runner.run(definition, scheduled_for)
 
 
-def _scheduler_token(environ: Mapping[str, str]) -> str:
-    token = str(environ.get("JARVIS_SCHEDULER_CONTROL_PLANE_TOKEN", "")).strip()
+def _scheduler_boot_id(environ: Mapping[str, str], host_id: str) -> str:
+    configured = str(environ.get("JARVIS_BOOT_ID", "")).strip()
+    return configured or _default_boot_id(host_id)
+
+
+def _control_plane_token(client: ControlPlaneClient) -> str:
+    token = str(client.token or "").strip()
     if not token:
         raise SchedulerCompositionError(
-            "JARVIS_SCHEDULER_CONTROL_PLANE_TOKEN is required for SchedulerEngine; "
-            "do not reuse the general Task Worker credential")
+            "SchedulerEngine requires the shared Task control-plane token")
     return token
 
 
 def _require_active_worker(response: Any, worker_key: str, host_id: str,
-                           process_uuid: str) -> None:
+                           boot_id: str, process_uuid: str) -> None:
     if not isinstance(response, Mapping):
         raise SchedulerCompositionError("Scheduler Worker register response must be an object")
     worker = response.get("worker", response)
@@ -300,6 +306,7 @@ def _require_active_worker(response: Any, worker_key: str, host_id: str,
     expected = {
         "workerKey": worker_key,
         "hostId": host_id,
+        "bootId": boot_id,
         "processUuid": process_uuid,
         "status": "ACTIVE",
     }

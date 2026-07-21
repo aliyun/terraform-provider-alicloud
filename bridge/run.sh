@@ -162,8 +162,8 @@ _validate_scheduler_cutover() {
     err "JARVIS_SCHEDULER_ENABLE=1 只能与 JARVIS_BRIDGE_ROLE=scheduler 一起使用。"
     return 2
   fi
-  if [ -z "${JARVIS_SCHEDULER_CONTROL_PLANE_TOKEN:-}" ]; then
-    err "JARVIS_SCHEDULER_ENABLE=1 需要独占 JARVIS_SCHEDULER_CONTROL_PLANE_TOKEN。"
+  if [ -z "${JARVIS_CONTROL_PLANE_TOKEN:-}" ] && [ -z "${JARVIS_HTML_REPORT_TOKEN:-}" ]; then
+    err "JARVIS_SCHEDULER_ENABLE=1 需要 JARVIS_CONTROL_PLANE_TOKEN 或 JARVIS_HTML_REPORT_TOKEN。"
     return 2
   fi
   if ! env | grep -Eq '^JARVIS_SCHEDULER_JOB_[A-Z0-9_]+=new$'; then

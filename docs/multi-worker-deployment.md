@@ -44,8 +44,10 @@ workers — fenced `claimTask` on the control plane is the only interlock.
 The legacy periodic loops remain the default.  The new `SchedulerEngine` is a
 separate, fenced control-plane path and may be started only on
 `AgenticTools-Macmini.local`, with `workerKey=bridge-scheduler`, a fresh
-`processUuid`, and a Scheduler-only control-plane credential.  It is not a
-Task executor and does not authorize any other host to run scheduler jobs.
+`processUuid`, and the same control-plane token used by the Task API. Bridge
+first verifies its local hostname/FQDN, and AutomationAgent independently
+requires the exact allowed `hostId` for the fixed Worker. It is not a Task
+executor and does not authorize any other host to run scheduler jobs.
 
 Use `bridge/jarvis.env` to enable it only for a named job.  A job has one route:
 `legacy` (default) or `new`; never enable both.  The first supported handover is
@@ -54,7 +56,7 @@ Use `bridge/jarvis.env` to enable it only for a named job.  A job has one route:
 ```bash
 JARVIS_BRIDGE_ROLE=scheduler
 JARVIS_SCHEDULER_ENABLE=1
-JARVIS_SCHEDULER_CONTROL_PLANE_TOKEN=<scheduler-only-token>
+JARVIS_CONTROL_PLANE_TOKEN=<shared-control-plane-token>
 JARVIS_SCHEDULER_JOB_DAILY_PROBE=new
 bridge/run.sh start
 ```

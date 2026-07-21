@@ -51,8 +51,9 @@ host_id = AgenticTools-Macmini.local
 job 不永久保存 Worker 外键。job 的定义和当前状态需要跨同一远端机器的进程重启保留；Worker
 身份只在请求处理时校验。Board 单独读取固定 Worker 展示 Scheduler 状态。
 
-远端专属凭证限制、固定 Worker 注册（含 `AgenticTools-Macmini.local` 精确 host 校验）和 scheduled-job API 的 Worker/process 校验属于 C5，当前
-尚未实现或部署；本文件不宣称本机已经无法启动 Scheduler。
+统一控制面 token、固定 Worker 注册（含 Bridge 本机 hostname/FQDN 校验和 AutomationAgent
+对 `AgenticTools-Macmini.local` 的精确 host 校验）以及 scheduled-job API 的
+Worker/process 校验属于 C5；代码已提交，尚未完成预发验证或部署。
 
 ## 2. 范围与非目标
 
@@ -457,15 +458,15 @@ launchd 不得直接用 `kickstart -k` 跳过 quiesce/drain；必须先完成协
 
 Scheduler composition 在首次 job 注册前必须完成以下顺序：
 
-1. 以远端 Scheduler 专属凭证注册固定 `bridge-scheduler` Worker；控制面精确校验
+1. 使用 Task API 的同一个控制面 token 注册固定 `bridge-scheduler` Worker；Bridge 先精确
+   校验本机 hostname/FQDN，控制面再次精确校验
    `host_id=AgenticTools-Macmini.local` 和 `capabilities.role=scheduler`；
-2. 确认控制面返回的 Worker 为当前 `process_uuid` 且为 ACTIVE；
+2. 确认控制面返回的 Worker 为当前 `boot_id`、`process_uuid` 且为 ACTIVE；
 3. 在每个 scheduled-job API 请求中携带该 `worker_key` 和 `process_uuid`；控制面在同一事务内校验；
 4. 注册完整 `JOBS` 快照；
 5. 首次 `list/tick` 前显式执行 interrupted recovery。
 
-固定 Worker 的专属凭证限制和 scheduled-job API 的 Worker/process 校验尚未实现。未完成前，
-`bridge-scheduler` 只是目标契约，不构成跨机器启动防护。
+两侧 host 校验与 scheduled-job API 的 Worker/process 校验已提交，尚未完成预发验证。
 
 新实例完成 job `register` 后、首次 `list/tick` 前，composition 必须显式调用一次控制面
 `POST /api/jarvis/v1/scheduled-jobs/recover-interrupted`。该调用返回严格的
@@ -547,7 +548,7 @@ bridge/
 | U2 | 已提交，待预发验证 | `jarvis_scheduled_job` 已创建；AutomationAgent Code Review `28719590` 包含注册、状态 API、恢复和 Board Scheduled Jobs 展示。该 Code Review 尚未完成 Java 21 预发验证。 |
 | U3 | 部分完成（控制面骨架） | Bridge MR `28675904` 已包含 import-safe `SchedulerEngine`、`ScannerRuntime`、slot admission、失败上报和本进程 stop admission。未接 legacy runner、数据面 publisher 或 Bridge composition。 |
 | C4 | 已提交，待预发联调 | Bridge MR `28675904` 已包含标准库 HTTP adapter：register/list/start/complete/fail/recover-interrupted、UTC 时间编解码、严格 `admitted` slot 准入及异常 fail-closed。AutomationAgent Code Review `28719590` 的 `start` 响应已包含 `{admitted, job}`。两端尚未完成预发联调。 |
-| C5 | 开发中 | Bridge 已实现固定 `bridge-scheduler`/`AgenticTools-Macmini.local` composition、远端专属凭证 gate、`worker_key + process_uuid` 透传、READY/OFFLINE、quiesce admission，以及 `daily.probe` 的旧/新单 job 切换；AutomationAgent 正在补固定 host、ACTIVE process 和 API 的服务端校验及 Board Worker 展示。该阶段不停止或重启 Task Worker。 |
+| C5 | 已提交，待预发联调 | Bridge 已实现固定 `bridge-scheduler`/`AgenticTools-Macmini.local` composition、本机 hostname/FQDN gate、`boot_id + process_uuid` 注册确认、READY/OFFLINE、quiesce admission，以及 `daily.probe` 的旧/新单 job 切换；AutomationAgent 已提交固定 host、ACTIVE process 和 API 的服务端校验及 Board Worker 展示。两端复用同一控制面 token，并分别校验允许的 hostId。该阶段不停止或重启 Task Worker。 |
 | C6 | 未开始 | 控制面预发验证：固定 Worker 拒绝非远端身份、重复启动拒绝、slot admission、interrupted recovery、Board 展示和控制面不可用 fail-closed。 |
 | D1 | 本轮不实施 | Daily/PR/Aone/Probe 的业务状态和 runner 旁路迁移脚本：导出、校验、回放、对账与原子切换，单独评审 |
 
@@ -617,7 +618,10 @@ C4–C6 只完成控制面。D1 及独立 Task Worker/数据面验收前，禁�
 
 1. `jarvis_scheduled_job` 的 register/list/start/complete/fail/recover 契约在预发可用，且 Board 只读展示当前态。
 2. Bridge 以生产 HTTP adapter 注册并读取 job 状态；stale/duplicate slot 被拒绝时不执行 runner，控制面不可用时 fail-closed。
-3. 只有远端专属凭证注册的 ACTIVE `bridge-scheduler` Worker 可以调用 scheduled-job API；每个请求校验 `worker_key + process_uuid`。
+3. Bridge 本机与 AutomationAgent 两侧都精确校验允许的
+   `host_id=AgenticTools-Macmini.local`；只有统一控制面 token 注册的 ACTIVE
+   `bridge-scheduler` Worker 可以调用 scheduled-job API，每个请求校验
+   `worker_key + process_uuid`。
 4. Scheduler 可完成单实例的 READY/OFFLINE 与 admission quiesce；它不操作 `PersistenceExecutor`、Task、Session 或旧业务 loop。
 
 以下十项是原始的**全量目标**，保留为后续 D1 数据面迁移与独立 Task Worker 的验收条件，不代表本轮交付完成门：
