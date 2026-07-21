@@ -7557,6 +7557,14 @@ def main():
     load_env_file()
     key = os.environ.get("DINGTALK_APP_KEY")
     secret = os.environ.get("DINGTALK_APP_SECRET")
+    # Workers never run the DingTalk stream client — messaging is the scheduler
+    # host's job, and worker machines don't even install dingtalk_stream. The
+    # credential bundle / hand-carried env may still contain the scheduler's
+    # DINGTALK_* keys, so gate on role BEFORE the credential check.
+    if (os.environ.get("JARVIS_BRIDGE_ROLE", "scheduler") == "worker"
+            and os.environ.get("JARVIS_NO_DINGTALK") != "1"):
+        log.info("bridge role=worker: forcing no-dingtalk mode (stream client is scheduler-only)")
+        os.environ["JARVIS_NO_DINGTALK"] = "1"
     # 无钉钉降级(点火路径): JARVIS_NO_DINGTALK=1 显式开启即走降级, 凭证缺失也照起自动派发。
     if os.environ.get("JARVIS_NO_DINGTALK") == "1":
         sys.exit(_run_no_dingtalk())
@@ -7567,6 +7575,10 @@ def main():
         sys.exit(2)
     if not os.environ.get("DINGTALK_TEMPLATE_ID"):
         log.warning("DINGTALK_TEMPLATE_ID unset — replies will silently no-op")
+    if Credential is None:
+        log.error("dingtalk_stream SDK not importable but DingTalk credentials are set — "
+                  "install dingtalk-stream, or set JARVIS_NO_DINGTALK=1 to run degraded")
+        sys.exit(2)
     cred = Credential(key, secret)
     client = DingTalkStreamClient(cred)
     handler = JarvisHandler()
