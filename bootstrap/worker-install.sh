@@ -37,6 +37,13 @@
 
 set -euo pipefail
 
+# Export BEFORE step 8 preflight runs. verify.sh reads JARVIS_BRIDGE_ROLE to
+# decide whether to skip dev-only tool checks (aliyun/cloudspec/gh). Step 9
+# writes it to bridge/jarvis.env for the runtime, but preflight runs first —
+# so we need it in the current process env for the subprocess bash preflight.sh
+# call inside step 8.
+export JARVIS_BRIDGE_ROLE="${JARVIS_BRIDGE_ROLE:-worker}"
+
 JARVIS_REPO_URL="${JARVIS_REPO_URL:-https://code.alibaba-inc.com/terraflow/jarvis-preview.git}"
 JARVIS_ROOT="${JARVIS_ROOT:-$HOME/workspace/jarvis-preview}"
 CLAUDE_BIN="${CLAUDE_BIN:-$HOME/.local/bin/claude}"
