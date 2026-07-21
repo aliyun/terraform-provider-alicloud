@@ -13,7 +13,7 @@ Provides a Cloud SSO Access Configuration Provisioning resource.
 
 For information about Cloud SSO Access Configuration Provisioning and how to use it, see [What is Access Configuration Provisioning](https://www.alibabacloud.com/help/en/cloudsso/latest/api-cloudsso-2021-05-15-addpermissionpolicytoaccessconfiguration).
 
--> **NOTE:** Available since v1.148.0.
+-> **NOTE:** Available since v1.148.0. analyses, analyzes
 
 ## Example Usage
 
