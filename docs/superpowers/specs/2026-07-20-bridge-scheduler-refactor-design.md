@@ -18,17 +18,28 @@
 6. Aone、Aone Reply、PR 生命周期均保持 at-least-once：先持久化 Task 或事件 WAL，再推进各 runner 自己的业务 cursor，禁止用内存状态作为完成依据。
 7. Probe 继续是一次性 Ephemeral 作业，不扩展为 `probe_finding` Task；它受统一 Scheduler 管理，但不占用持久 Task Worker。
 
-本轮只交付设计，不修改现有调度实现、控制面或运行入口。
+### 1.1 本轮实施边界（2026-07-21 收敛）
+
+本轮先完成**整个调度控制面**，不将业务数据面迁入新框架。这里的控制面包括：
+
+- `jarvis_scheduled_job` 的注册、当前态、恢复和 Board 只读展示；
+- Scheduler 的 definition、slot admission、状态提交、停止接纳和控制面 HTTP 适配；
+- Scheduler 的单实例运行控制、READY/OFFLINE 以及可观测性接口。
+
+本轮明确不改 Aone/PR/Daily 的业务扫描、Task/Session 执行、业务 cursor、PR registry、daily
+marker 或事件 ledger；`PersistenceExecutor`/SubAgent 也不在本轮拆分。上述数据面迁移改为独立的
+旁路脚本：先导出、校验和回放，再在单独变更中原子切换。故本轮不得切换旧循环，也不得宣称
+Bridge restart 已保障业务 Session/SubAgent 不间断。
 
 ## 2. 范围与非目标
 
 ### 2.1 目标
 
 - 统一 interval、daily、adaptive 三类时间语义。
-- 统一 job 注册、校验、并发、防重入、超时、重试和可观测性；业务 cursor 仍由对应 runner 负责。
-- restart 后恢复未完成 slot，不丢 Aone/PR 更新，不制造重复业务副作用。
+- 统一 job 注册、校验、slot admission、状态上报和可观测性；业务 cursor 继续由现有数据面负责。
+- 控制面可恢复未完成 slot，但不触发或迁移 Aone/PR 的业务数据面。
 - Board 可查看所有 job 的周期、当前状态、最近结果和下一次执行时间。
-- 新增 job 时只增加 job 定义、runner 和契约测试，不再复制 daemon loop。
+- 新增 job 时只增加控制面 definition、状态契约和测试；实际 runner 迁移留给旁路数据面方案。
 
 ### 2.2 非目标
 
@@ -39,6 +50,9 @@
 - 不把 Board、Executor 或人工触发命令注册成定时 job。
 - 不在本次设计中把 Probe finding 持久化为 Task。
 - 不通过首版 scheduled-job 表实现多 Scheduler 选主、执行租约或通用扫描游标。
+- 不在本轮修改 Daily/PR 本地 JSON、Task/Session、事件 ledger 或任何业务 cursor；也不以
+  `jarvis_scheduled_job` 承载它们。
+- 不在本轮把 `PersistenceExecutor` 拆成独立服务，或迁移既有 Aone/PR/Probe runner。
 
 ## 3. 当前主干基线
 
@@ -393,7 +407,14 @@ launchd 不得直接用 `kickstart -k` 跳过 quiesce/drain；必须先完成协
 
 首版明确只有一个活动 Scheduler，不在 `jarvis_scheduled_job` 中预埋 owner、lease 和 version。单实例由 `bridge/run.sh`、PID/restart ID 和 supervisor 保证：旧 Scheduler 完全退出后，新实例才能进入 READY 并接收运行。
 
-新实例启动时执行等价状态归一：
+新实例完成 `register` 后、首次 `list/tick` 前，composition 必须显式调用一次控制面
+`POST /api/jarvis/v1/scheduled-jobs/recover-interrupted`。该调用返回严格的
+`{ "recovered": number, "jobs": [...] }`：`recovered` 必须与 `jobs` 数量相等，且每个
+返回 job 均为保留原 `next_run_at` 的 `IDLE`。HTTP、JSON 或响应契约不确定时 fail-closed，
+不得进入普通 tick。`SchedulerEngine.tick()` 不自动调用恢复，避免未完成启动协调的轮询意外
+改写控制面 `RUNNING` 状态。
+
+服务端等价状态归一：
 
 ```sql
 UPDATE jarvis_scheduled_job
@@ -461,22 +482,24 @@ bridge/
 | B0 | 已完成 | 组件 10→6、Aone 并集探测、控制面 wait、PR/每日本地持久状态 |
 | U1 | 未开始 | 模型、registry、修正后的纯 `TriggerPlanner` 及契约测试 |
 | U2 | 进行中 | 表已创建；AutomationAgent 已提交注册、状态 API 与 Board 查询实现，待预发流水线进入本 CR 后验收 |
-| U3 | 部分完成（旁路骨架） | 已提供 import-safe `SchedulerEngine`、`ScannerRuntime`、Task/Event publisher Protocol 与聚焦 fake 测试：从控制面当前态规划到期 slot，`start` 未接纳时不执行，成功按“next due 校验 → durable publish → complete”提交，失败只上报一次 `fail`，并支持本进程 stop admission 与本地 slot 防重。当前只定义 CP Protocol/fake runtime，尚未挂接生产 HTTP client、真实 Task/Event publisher、legacy job runner 或 Bridge composition root；因此 U5 原子迁移前不得切流，U7 前不提供多实例/跨进程防重或安全 restart 保障。 |
-| U4 | 未开始 | 固化 Daily/PR 各自业务状态；双读对账；保留事件 ledger |
-| U5 | 未开始 | 逐项迁移 7 个 job；每项原子关旧开新，无双触发 |
-| U6 | 未开始 | 独立 Task Worker/service 与静态容量分区 |
-| U7 | 未开始 | quiesce/drain/OFFLINE/READY restart 协议 |
-| U8 | 未开始 | 预发恢复验收、原子切换入口、清理旧 loop 与过期文档 |
+| U3 | 部分完成（控制面骨架） | 已提供 import-safe `SchedulerEngine`、`ScannerRuntime`、控制面/发布 Protocol 与聚焦 fake 测试：从控制面当前态规划到期 slot，`start` 未接纳时不执行，成功按“next due 校验 → durable publish → complete”提交，失败只上报一次 `fail`，并支持本进程 stop admission 与本地 slot 防重。下一步只补生产 HTTP adapter、composition 和运行控制；不接 legacy runner 或数据面 publisher。 |
+| C4 | 进行中 | 已提供 import-safe 标准库 HTTP adapter，覆盖 register/list/start/complete/fail/recover-interrupted、UTC 时间编解码、严格 `admitted` slot 准入与恢复 `{recovered,jobs}` 契约、网络/非 2xx/非法响应 fail-closed 单测；恢复只可由 composition 在启动阶段显式调用，仍待控制面预发 API 联调。 |
+| C5 | 未开始 | Scheduler composition、单实例 READY/OFFLINE、quiesce admission 与 Board/运行可观测性联调；不停止或重启 Task Worker |
+| C6 | 未开始 | 控制面预发验证：注册、状态恢复、重复 slot 拒绝、Board 展示和控制面不可用 fail-closed |
+| D1 | 本轮不实施 | Daily/PR/Aone/Probe 的业务状态和 runner 旁路迁移脚本：导出、校验、回放、对账与原子切换，单独评审 |
 
 执行顺序：
 
 ```text
-U1 → U2 → U3 → U4 → U5 → U6 → U7 → U8
+U1 → U2 → U3 → C4 → C5 → C6
 ```
 
-U6、U7、U8 完成前，禁止对外宣称 Bridge restart 保持业务 Session/SubAgent 不间断。
+C4–C6 只完成控制面。D1 及独立 Task Worker/数据面验收前，禁止对外宣称 Bridge restart 保持业务 Session/SubAgent 不间断。
 
 ## 14. 测试与验收门
+
+本轮只执行 14.1 中与控制面有关的门禁：状态 API、HTTP adapter、slot admission/recovery、Board
+和控制面不可用 fail-closed。14.2、14.3 是后续 D1 数据面迁移的验收清单，不构成本轮阻塞项。
 
 ### 14.1 契约测试
 
@@ -487,7 +510,7 @@ U6、U7、U8 完成前，禁止对外宣称 Bridge restart 保持业务 Session/
 - Task/Event 未明确 durable ACK 时，runner 的业务 cursor 不推进。
 - 控制面不可用必须 fail-closed；遗留 `RUNNING` 在启动时恢复为可立即重跑的 `IDLE`。
 
-### 14.2 迁移回归
+### 14.2 后续数据面迁移回归（D1，非本轮）
 
 - Aone 全量重扫不产生 Task storm，相同 `desired_revision` 幂等收敛。
 - Aone Reply restart 后从控制面恢复全部等待与 cursor。
@@ -496,7 +519,7 @@ U6、U7、U8 完成前，禁止对外宣称 Bridge restart 保持业务 Session/
 - Probe 中断后不标记成功，当天相同 slot 可再次运行。
 - 每个迁移 job 都证明旧 loop 与新 job 不会同时触发。
 
-### 14.3 Restart 验收
+### 14.3 后续跨数据面 restart 验收（D1 之后，非本轮）
 
 预发必须分别注入以下故障：
 
@@ -524,6 +547,14 @@ U6、U7、U8 完成前，禁止对外宣称 Bridge restart 保持业务 Session/
 4. **Aone/PR 更新会不会在 restart 时丢失？** 不会依赖通用 job checkpoint：Task 或事件 ledger/outbox 必须先获得 durable ACK，runner 才推进自己的业务 cursor；未知 ACK 使用相同 identity 重放。
 
 ## 16. 最终通过条件
+
+本轮控制面完成以以下条件为准：
+
+1. `jarvis_scheduled_job` 的 register/list/start/complete/fail/recover 契约在预发可用，且 Board 只读展示当前态。
+2. Bridge 以生产 HTTP adapter 注册并读取 job 状态；stale/duplicate slot 被拒绝时不执行 runner，控制面不可用时 fail-closed。
+3. Scheduler 可完成单实例的 READY/OFFLINE 与 admission quiesce；它不操作 `PersistenceExecutor`、Task、Session 或旧业务 loop。
+
+以下十项是原始的**全量目标**，保留为后续 D1 数据面迁移与独立 Task Worker 的验收条件，不代表本轮交付完成门：
 
 方案实施完成必须同时满足：
 

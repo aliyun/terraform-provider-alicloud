@@ -93,6 +93,14 @@ class ScheduledJobControlPlane(Protocol):
     def list_jobs(self) -> Sequence[ScheduledJobState]:
         """Return current job states from the control plane."""
 
+    def recover_interrupted(self) -> Sequence[ScheduledJobState]:
+        """Explicitly return interrupted ``RUNNING`` jobs to their original due slots.
+
+        This is a startup/composition operation, deliberately not part of
+        :meth:`SchedulerEngine.tick`.  The caller must complete registration,
+        recovery, and then normal planning in that order.
+        """
+
     def start(self, job_key: str, scheduled_for: datetime) -> bool:
         """Atomically admit the exact scheduled slot, or reject it as stale/duplicate."""
 
@@ -212,6 +220,16 @@ class SchedulerEngine:
         registrations = build_registrations(
             self._definitions, planner=self._planner, now=now, is_enabled=is_enabled)
         return tuple(self._control_plane.register(registrations))
+
+    def recover_interrupted(self) -> tuple[ScheduledJobState, ...]:
+        """Perform the one explicit recovery step before normal slot planning.
+
+        Recovery is intentionally never implicit in :meth:`tick`: a caller
+        that has not completed startup coordination must not mutate an
+        authoritative ``RUNNING`` slot merely by polling for due work.
+        """
+
+        return tuple(self._control_plane.recover_interrupted())
 
     def stop(self) -> None:
         """Stop accepting new jobs while allowing an admitted slot to finish its commit chain."""
