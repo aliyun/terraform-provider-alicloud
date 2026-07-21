@@ -1259,6 +1259,14 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 	}
 	if v, ok := d.GetOk("instance_class"); ok {
 		modifyInstanceSpecReq["InstanceClass"] = v
+		// Local-disk (classic architecture) instances require MajorVersion to be carried alongside
+		// InstanceClass when changing the spec via ModifyInstanceSpec; cloud-disk architecture
+		// specs (.ce/.ee) do not require it.
+		if !isCloudDiskSpec(fmt.Sprint(v)) {
+			if engineVersion, ok := d.GetOk("engine_version"); ok {
+				modifyInstanceSpecReq["MajorVersion"] = engineVersion
+			}
+		}
 	}
 
 	// read_only_count and slave_read_only_count may be changed after other attributes changed, like secondary_zone_id

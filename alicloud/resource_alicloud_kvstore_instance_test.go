@@ -2644,6 +2644,84 @@ func TestAccAliCloudKVStoreMemcacheInstance_vpctest(t *testing.T) {
 	})
 }
 
+// TestAccAliCloudKVStoreRedisInstance_classic_cluster_instance_class isolates the local-disk
+// (classic architecture) cluster instance_class change path. Changing the spec of a local-disk
+// instance via ModifyInstanceSpec requires MajorVersion to be carried alongside InstanceClass;
+// cloud-disk (.ce/.ee) specs do not. This case creates a local-disk cluster, reimports, then
+// modifies instance_class both up and back down to exercise that path in isolation.
+func TestAccAliCloudKVStoreRedisInstance_classic_cluster_instance_class(t *testing.T) {
+	var v r_kvstore.DBInstanceAttribute
+	checkoutSupportedRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
+	resourceId := "alicloud_kvstore_instance.default"
+	ra := resourceAttrInit(resourceId, AliCloudKVStoreMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &R_kvstoreService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeKvstoreInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccKvstoreRedisClassicClusterSpec%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudKVStoreRedisInstanceVpcBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_class":   "redis.amber.logic.sharding.1g.2db.0rodb.6proxy.multithread",
+					"db_instance_name": name,
+					"instance_type":    "Redis",
+					"engine_version":   "5.0",
+					"zone_id":          "${data.alicloud_kvstore_zones.default.zones.0.id}",
+					"vswitch_id":       "${data.alicloud_vswitches.default.ids.0}",
+					"shard_count":      "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_class":   "redis.amber.logic.sharding.1g.2db.0rodb.6proxy.multithread",
+						"db_instance_name": name,
+						"instance_type":    "Redis",
+						"engine_version":   "5.0",
+						"zone_id":          CHECKSET,
+						"vswitch_id":       CHECKSET,
+						"shard_count":      "2",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run", "auto_use_coupon", "backup_id", "business_info", "coupon_no", "dedicated_host_group_id", "effective_time", "force_upgrade", "global_instance", "global_instance_id", "order_type", "password", "period", "restore_time", "src_db_instance_id", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_class": "redis.amber.logic.sharding.2g.2db.0rodb.6proxy.multithread",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_class": "redis.amber.logic.sharding.2g.2db.0rodb.6proxy.multithread",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_class": "redis.amber.logic.sharding.1g.2db.0rodb.6proxy.multithread",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_class": "redis.amber.logic.sharding.1g.2db.0rodb.6proxy.multithread",
+					}),
+				),
+			},
+		},
+	})
+}
+
 var AliCloudKVStoreMap0 = map[string]string{
 	"connection_domain": CHECKSET,
 	"bandwidth":         CHECKSET,
