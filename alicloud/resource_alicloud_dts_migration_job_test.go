@@ -1,0 +1,1132 @@
+package alicloud
+
+import (
+	"fmt"
+	"log"
+	"os"
+	"reflect"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/PaesslerAG/jsonpath"
+	"github.com/agiledragon/gomonkey/v2"
+	"github.com/alibabacloud-go/tea-rpc/client"
+	util "github.com/alibabacloud-go/tea-utils/service"
+	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/stretchr/testify/assert"
+)
+
+func init() {
+	resource.AddTestSweepers(
+		"alicloud_dts_migration_job",
+		&resource.Sweeper{
+			Name: "alicloud_dts_migration_job",
+			F:    testSweepDTSMigrationJob,
+		})
+}
+
+func testSweepDTSMigrationJob(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+	}
+	action := "DescribeDtsJobs"
+	request := map[string]interface{}{}
+	request["JobType"] = "MIGRATION"
+	request["PageNumber"] = 1
+	request["MaxResults"] = PageSizeXLarge
+
+	var response map[string]interface{}
+	for {
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, false)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			log.Printf("[ERROR] %s get an error: %#v", action, err)
+			return nil
+		}
+
+		resp, err := jsonpath.Get("$.DtsJobList", response)
+		if formatInt(response["TotalCount"]) != 0 && err != nil {
+			log.Printf("[ERROR] Getting resource %s attribute by path %s failed!!! Body: %v.", "$.DtsJobList", action, err)
+			return nil
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+
+			if _, ok := item["DtsJobName"]; !ok {
+				continue
+			}
+			skip := true
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(item["DtsJobName"].(string)), strings.ToLower(prefix)) {
+					skip = false
+				}
+			}
+			if skip {
+				log.Printf("[INFO] Skipping DTS Migration Job: %s", item["DtsJobName"].(string))
+				continue
+			}
+			action := "DeleteDtsJob"
+			request := map[string]interface{}{
+				"DtsJobId": item["DtsJobId"],
+			}
+			_, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, false)
+			if err != nil {
+				log.Printf("[ERROR] Failed to delete DTS Migration Job (%s): %s", item["DtsJobId"].(string), err)
+			}
+			log.Printf("[INFO] Delete DTS Migration Job success: %s ", item["DtsJobId"].(string))
+		}
+		if len(result) < PageSizeLarge {
+			break
+		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+	return nil
+}
+
+func TestAccAliCloudDTSMigrationJob_basic0(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_dts_migration_job.default"
+	checkoutSupportedRegions(t, true, connectivity.DTSSupportRegions)
+	ra := resourceAttrInit(resourceId, AlicloudDTSMigrationJobMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &DtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDtsMigrationJob")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sdtsmigrationjob%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDTSMigrationJobBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"dts_instance_id":                    "${alicloud_dts_migration_instance.default.id}",
+					"dts_job_name":                       name,
+					"source_endpoint_instance_type":      "RDS",
+					"source_endpoint_instance_id":        "${alicloud_db_instance.default.0.id}",
+					"source_endpoint_engine_name":        "MySQL",
+					"source_endpoint_region":             "${var.region}",
+					"source_endpoint_user_name":          "${alicloud_rds_account.default.0.name}",
+					"source_endpoint_password":           "${var.password}",
+					"destination_endpoint_instance_type": "RDS",
+					"destination_endpoint_instance_id":   "${alicloud_db_instance.default.1.id}",
+					"destination_endpoint_engine_name":   "MySQL",
+					"destination_endpoint_region":        "${var.region}",
+					"destination_endpoint_user_name":     "${alicloud_rds_account.default.1.name}",
+					"destination_endpoint_password":      "${var.password}",
+					"db_list":                            `{\"tftestdatabase\":{\"name\":\"tftestdatabase\",\"all\":true}}`,
+					"structure_initialization":           "true",
+					"data_initialization":                "true",
+					"data_synchronization":               "true",
+					"depends_on":                         []string{"alicloud_db_account_privilege.default"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"dts_instance_id":                    CHECKSET,
+						"dts_job_name":                       name,
+						"source_endpoint_instance_type":      "RDS",
+						"source_endpoint_engine_name":        "MySQL",
+						"source_endpoint_region":             CHECKSET,
+						"source_endpoint_user_name":          CHECKSET,
+						"destination_endpoint_instance_type": "RDS",
+						"destination_endpoint_engine_name":   "MySQL",
+						"destination_endpoint_region":        CHECKSET,
+						"destination_endpoint_user_name":     CHECKSET,
+						"db_list":                            CHECKSET,
+						"structure_initialization":           "true",
+						"data_initialization":                "true",
+						"data_synchronization":               "true",
+					}),
+				),
+			},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"status": "Suspending",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"status": "Suspending",
+			//		}),
+			//	),
+			//},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "Migrating",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "Migrating",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"destination_endpoint_password", "source_endpoint_password"},
+			},
+		},
+	})
+}
+
+var AlicloudDTSMigrationJobMap0 = map[string]string{}
+
+func AlicloudDTSMigrationJobBasicDependence0(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+variable "region" {
+  default = "cn-beijing"
+}
+
+variable "password" {
+  default = "Test12345"
+}
+
+variable "database_name" {
+  default = "tftestdatabase"
+}
+
+// Filter the zones by the engine actually used below, and pick a zone that the fixture VPC has a
+// vswitch in. An unfiltered lookup returns an arbitrary zone, which left
+// data.alicloud_vswitches.default.ids empty and failed the plan with "Invalid index".
+data "alicloud_db_zones" "default" {
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_charge_type     = "PostPaid"
+  category                 = "HighAvailability"
+  db_instance_storage_type = "cloud_essd"
+}
+
+data "alicloud_db_instance_classes" "default" {
+  zone_id                  = data.alicloud_db_zones.default.zones[0].id
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_charge_type     = "PostPaid"
+  category                 = "HighAvailability"
+  db_instance_storage_type = "cloud_essd"
+}
+
+data "alicloud_vpcs" "default" {
+    name_regex = "^default-NODELETING$"
+}
+
+data "alicloud_vswitches" "default" {
+  vpc_id  = data.alicloud_vpcs.default.ids[0]
+  zone_id = data.alicloud_db_zones.default.zones[0].id
+}
+
+resource "alicloud_db_instance" "default" {
+  count                    = 2
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_type            = data.alicloud_db_instance_classes.default.instance_classes[0].instance_class
+  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes[0].storage_range.min
+  db_instance_storage_type = "cloud_essd"
+  vswitch_id               = data.alicloud_vswitches.default.ids[0]
+  instance_name    = join("", [var.name, count.index])
+}
+
+resource "alicloud_rds_account" "default" {
+  count            = 2
+  db_instance_id   = alicloud_db_instance.default[count.index].id
+  account_name     = join("", [var.database_name, count.index])
+  account_password = var.password
+}
+
+resource "alicloud_db_database" "default" {
+  count       = 2
+  instance_id = alicloud_db_instance.default[count.index].id
+  name        = var.database_name
+}
+
+resource "alicloud_db_account_privilege" "default" {
+  count        = 2
+  instance_id  = alicloud_db_instance.default[count.index].id
+  account_name = alicloud_rds_account.default[count.index].name
+  privilege    = "ReadWrite"
+  db_names     = [alicloud_db_database.default[count.index].name]
+}
+
+resource "alicloud_dts_migration_instance" "default" {
+  payment_type                     = "PayAsYouGo"
+  source_endpoint_engine_name      = "MySQL"
+  source_endpoint_region           = var.region
+  destination_endpoint_engine_name = "MySQL"
+  destination_endpoint_region      = var.region
+  instance_class                   = "small"
+  sync_architecture                = "oneway"
+}
+`, name)
+}
+
+func TestAccAliCloudDTSMigrationJob_ssl(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_dts_migration_job.default"
+	checkoutSupportedRegions(t, true, connectivity.DTSSupportRegions)
+	ra := resourceAttrInit(resourceId, AlicloudDTSMigrationJobMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &DtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDtsMigrationJob")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sdtsmigrationjobssl%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDTSMigrationJobSslDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"dts_instance_id":                    "${alicloud_dts_migration_instance.default.id}",
+					"dts_job_name":                       name,
+					"source_endpoint_instance_type":      "RDS",
+					"source_endpoint_instance_id":        "${alicloud_db_instance.default.0.id}",
+					"source_endpoint_engine_name":        "MySQL",
+					"source_endpoint_region":             "${data.alicloud_regions.default.regions.0.id}",
+					"source_endpoint_user_name":          "${alicloud_rds_account.default.0.name}",
+					"source_endpoint_password":           "${var.password}",
+					"destination_endpoint_instance_type": "RDS",
+					"destination_endpoint_instance_id":   "${alicloud_db_instance.default.1.id}",
+					"destination_endpoint_engine_name":   "MySQL",
+					"destination_endpoint_region":        "${data.alicloud_regions.default.regions.0.id}",
+					"destination_endpoint_user_name":     "${alicloud_rds_account.default.1.name}",
+					"destination_endpoint_password":      "${var.password}",
+					"db_list":                            `{\"tftestdatabase\":{\"name\":\"tftestdatabase\",\"all\":true}}`,
+					"source_endpoint_ssl":                "1",
+					"destination_endpoint_ssl":           "1",
+					"structure_initialization":           "true",
+					"data_initialization":                "true",
+					"data_synchronization":               "true",
+					"depends_on":                         []string{"alicloud_db_account_privilege.default"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"source_endpoint_ssl":      "1",
+						"destination_endpoint_ssl": "1",
+					}),
+				),
+			},
+			// Turn SSL off on both endpoints in place. The fields are not ForceNew, so this must
+			// go through ModifyDtsJob with ModifyTypeEnum=UPDATE_RESERVED rather than recreating
+			// the job.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"source_endpoint_ssl":      "0",
+					"destination_endpoint_ssl": "0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"source_endpoint_ssl":      "0",
+						"destination_endpoint_ssl": "0",
+					}),
+				),
+			},
+			// Turn SSL back on, covering the enable-by-update direction as well as disable.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"source_endpoint_ssl":      "1",
+					"destination_endpoint_ssl": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"source_endpoint_ssl":      "1",
+						"destination_endpoint_ssl": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"destination_endpoint_password", "source_endpoint_password"},
+			},
+		},
+	})
+}
+
+func AliCloudDTSMigrationJobSslDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+variable "password" {
+  default = "Test12345"
+}
+
+variable "database_name" {
+  default = "tftestdatabase"
+}
+
+// The current region is read from the provider rather than from ALICLOUD_REGION via
+// defaultRegionToTest: test Config strings are rendered before PreCheck runs, so an unset
+// ALICLOUD_REGION would interpolate an empty region and DTS would reject the instance.
+data "alicloud_regions" "default" {
+  current = true
+}
+
+data "alicloud_db_zones" "default" {
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_charge_type     = "PostPaid"
+  category                 = "HighAvailability"
+  db_instance_storage_type = "cloud_essd"
+}
+
+data "alicloud_db_instance_classes" "default" {
+  zone_id                  = data.alicloud_db_zones.default.zones.0.id
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  category                 = "HighAvailability"
+  db_instance_storage_type = "cloud_essd"
+  instance_charge_type     = "PostPaid"
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "172.16.0.0/16"
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "172.16.0.0/24"
+  zone_id      = data.alicloud_db_zones.default.zones.0.id
+  vswitch_name = var.name
+}
+
+resource "alicloud_db_instance" "default" {
+  count                    = 2
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_type            = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
+  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+  db_instance_storage_type = "cloud_essd"
+  vswitch_id               = alicloud_vswitch.default.id
+  instance_name            = join("", [var.name, count.index])
+  ssl_action               = "Open"
+}
+
+resource "alicloud_rds_account" "default" {
+  count            = 2
+  db_instance_id   = alicloud_db_instance.default[count.index].id
+  account_name     = join("", [var.database_name, count.index])
+  account_password = var.password
+}
+
+resource "alicloud_db_database" "default" {
+  count       = 2
+  instance_id = alicloud_db_instance.default[count.index].id
+  name        = var.database_name
+}
+
+resource "alicloud_db_account_privilege" "default" {
+  count        = 2
+  instance_id  = alicloud_db_instance.default[count.index].id
+  account_name = alicloud_rds_account.default[count.index].name
+  privilege    = "ReadWrite"
+  db_names     = [alicloud_db_database.default[count.index].name]
+}
+
+resource "alicloud_dts_migration_instance" "default" {
+  payment_type                     = "PayAsYouGo"
+  source_endpoint_engine_name      = "MySQL"
+  source_endpoint_region           = data.alicloud_regions.default.regions.0.id
+  destination_endpoint_engine_name = "MySQL"
+  destination_endpoint_region      = data.alicloud_regions.default.regions.0.id
+  instance_class                   = "small"
+  sync_architecture                = "oneway"
+}
+`, name)
+}
+
+func TestAccAliCloudDTSMigrationJob_vpcNat(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_dts_migration_job.default"
+	checkoutSupportedRegions(t, true, connectivity.DTSSupportRegions)
+	ra := resourceAttrInit(resourceId, AlicloudDTSMigrationJobMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &DtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDtsMigrationJob")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sdtsmigrationjobvpcnat%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDTSMigrationJobVpcNatDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			// The four VPC NAT vswitch attributes only exist on ConfigureDtsJob, so this step is
+			// what proves the request is accepted with them set — a rejected or misspelled
+			// parameter fails the create outright. The primary and secondary vswitches are in
+			// different zones, which is the arrangement the paired parameters exist for.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"dts_instance_id":                    "${alicloud_dts_migration_instance.default.id}",
+					"dts_job_name":                       name,
+					"source_endpoint_instance_type":      "RDS",
+					"source_endpoint_instance_id":        "${alicloud_db_instance.default.0.id}",
+					"source_endpoint_engine_name":        "MySQL",
+					"source_endpoint_region":             "${data.alicloud_regions.default.regions.0.id}",
+					"source_endpoint_user_name":          "${alicloud_rds_account.default.0.name}",
+					"source_endpoint_password":           "${var.password}",
+					"destination_endpoint_instance_type": "RDS",
+					"destination_endpoint_instance_id":   "${alicloud_db_instance.default.1.id}",
+					"destination_endpoint_engine_name":   "MySQL",
+					"destination_endpoint_region":        "${data.alicloud_regions.default.regions.0.id}",
+					"destination_endpoint_user_name":     "${alicloud_rds_account.default.1.name}",
+					"destination_endpoint_password":      "${var.password}",
+					"db_list":                            `{\"tftestdatabase\":{\"name\":\"tftestdatabase\",\"all\":true}}`,
+					"src_primary_vswitch_id":             "${alicloud_vswitch.primary.id}",
+					"src_secondary_vswitch_id":           "${alicloud_vswitch.secondary.id}",
+					"dest_primary_vswitch_id":            "${alicloud_vswitch.primary.id}",
+					"dest_secondary_vswitch_id":          "${alicloud_vswitch.secondary.id}",
+					"structure_initialization":           "true",
+					"data_initialization":                "true",
+					"data_synchronization":               "true",
+					"depends_on":                         []string{"alicloud_db_account_privilege.default"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"dts_job_name": name,
+					}),
+					// Compared against the vswitch resources rather than asserted with CHECKSET,
+					// so that a primary/secondary or src/dest swap in the create request mapping
+					// is caught instead of passing on any non-empty value.
+					resource.TestCheckResourceAttrPair(resourceId, "src_primary_vswitch_id", "alicloud_vswitch.primary", "id"),
+					resource.TestCheckResourceAttrPair(resourceId, "src_secondary_vswitch_id", "alicloud_vswitch.secondary", "id"),
+					resource.TestCheckResourceAttrPair(resourceId, "dest_primary_vswitch_id", "alicloud_vswitch.primary", "id"),
+					resource.TestCheckResourceAttrPair(resourceId, "dest_secondary_vswitch_id", "alicloud_vswitch.secondary", "id"),
+				),
+			},
+			// DTS does not return the vswitch ids on DescribeDtsJobDetail, so Read cannot set them
+			// and an imported job has them empty. They are ignored here for that reason, not
+			// because the values are expected to drift.
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"destination_endpoint_password", "source_endpoint_password", "src_primary_vswitch_id", "src_secondary_vswitch_id", "dest_primary_vswitch_id", "dest_secondary_vswitch_id"},
+			},
+		},
+	})
+}
+
+func AliCloudDTSMigrationJobVpcNatDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+variable "password" {
+  default = "Test12345"
+}
+
+variable "database_name" {
+  default = "tftestdatabase"
+}
+
+data "alicloud_regions" "default" {
+  current = true
+}
+
+data "alicloud_db_zones" "default" {
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_charge_type     = "PostPaid"
+  category                 = "HighAvailability"
+  db_instance_storage_type = "cloud_essd"
+}
+
+data "alicloud_db_instance_classes" "default" {
+  zone_id                  = data.alicloud_db_zones.default.zones.0.id
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  category                 = "HighAvailability"
+  db_instance_storage_type = "cloud_essd"
+  instance_charge_type     = "PostPaid"
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "172.16.0.0/16"
+}
+
+// The RDS instances live in the primary vswitch; the secondary is created only to be handed to
+// DTS as the standby side of the VPC NAT link, so it holds no resources of its own.
+resource "alicloud_vswitch" "primary" {
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "172.16.0.0/24"
+  zone_id      = data.alicloud_db_zones.default.zones.0.id
+  vswitch_name = "${var.name}-primary"
+}
+
+resource "alicloud_vswitch" "secondary" {
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "172.16.1.0/24"
+  zone_id      = data.alicloud_db_zones.default.zones.1.id
+  vswitch_name = "${var.name}-secondary"
+}
+
+resource "alicloud_db_instance" "default" {
+  count                    = 2
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_type            = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
+  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+  db_instance_storage_type = "cloud_essd"
+  vswitch_id               = alicloud_vswitch.primary.id
+  instance_name            = join("", [var.name, count.index])
+}
+
+resource "alicloud_rds_account" "default" {
+  count            = 2
+  db_instance_id   = alicloud_db_instance.default[count.index].id
+  account_name     = join("", [var.database_name, count.index])
+  account_password = var.password
+}
+
+resource "alicloud_db_database" "default" {
+  count       = 2
+  instance_id = alicloud_db_instance.default[count.index].id
+  name        = var.database_name
+}
+
+resource "alicloud_db_account_privilege" "default" {
+  count        = 2
+  instance_id  = alicloud_db_instance.default[count.index].id
+  account_name = alicloud_rds_account.default[count.index].name
+  privilege    = "ReadWrite"
+  db_names     = [alicloud_db_database.default[count.index].name]
+}
+
+resource "alicloud_dts_migration_instance" "default" {
+  payment_type                     = "PayAsYouGo"
+  source_endpoint_engine_name      = "MySQL"
+  source_endpoint_region           = data.alicloud_regions.default.regions.0.id
+  destination_endpoint_engine_name = "MySQL"
+  destination_endpoint_region      = data.alicloud_regions.default.regions.0.id
+  instance_class                   = "small"
+  sync_architecture                = "oneway"
+}
+`, name)
+}
+
+// lintignore: R001
+func TestUnitAlicloudDTSMigrationJob(t *testing.T) {
+	p := Provider().(*schema.Provider).ResourcesMap
+	d, _ := schema.InternalMap(p["alicloud_dts_migration_job"].Schema).Data(nil, nil)
+	dCreate, _ := schema.InternalMap(p["alicloud_dts_migration_job"].Schema).Data(nil, nil)
+	dCreate.MarkNewResource()
+	for key, value := range map[string]interface{}{
+		"dts_instance_id":                    "dts_instance_id",
+		"dts_job_name":                       "dts_job_name",
+		"source_endpoint_password":           "source_endpoint_password",
+		"source_endpoint_database_name":      "source_endpoint_database_name",
+		"source_endpoint_engine_name":        "MySQL",
+		"source_endpoint_ip":                 "source_endpoint_ip",
+		"source_endpoint_instance_id":        "source_endpoint_instance_id",
+		"source_endpoint_instance_type":      "RDS",
+		"source_endpoint_oracle_sid":         "source_endpoint_oracle_sid",
+		"source_endpoint_port":               "source_endpoint_port",
+		"source_endpoint_region":             "source_endpoint_region",
+		"source_endpoint_user_name":          "source_endpoint_user_name",
+		"source_endpoint_role":               "source_endpoint_role",
+		"source_endpoint_owner_id":           "source_endpoint_owner_id",
+		"destination_endpoint_database_name": "destination_endpoint_database_name",
+		"destination_endpoint_engine_name":   "MySQL",
+		"destination_endpoint_ip":            "destination_endpoint_ip",
+		"destination_endpoint_instance_id":   "destination_endpoint_instance_id",
+		"destination_endpoint_instance_type": "RDS",
+		"destination_endpoint_oracle_sid":    "destination_endpoint_oracle_sid",
+		"destination_endpoint_port":          "destination_endpoint_port",
+		"destination_endpoint_region":        "destination_endpoint_region",
+		"destination_endpoint_user_name":     "destination_endpoint_user_name",
+		"destination_endpoint_password":      "destination_endpoint_password",
+		"db_list":                            "db_list",
+		"structure_initialization":           true,
+		"data_initialization":                true,
+		"data_synchronization":               true,
+		"status":                             "Migrating",
+		"checkpoint":                         "checkpoint",
+	} {
+		err := dCreate.Set(key, value)
+		assert.Nil(t, err)
+		err = d.Set(key, value)
+		assert.Nil(t, err)
+	}
+	region := os.Getenv("ALICLOUD_REGION")
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		t.Skipf("Skipping the test case with err: %s", err)
+		t.Skipped()
+	}
+	rawClient = rawClient.(*connectivity.AliyunClient)
+	ReadMockResponse := map[string]interface{}{
+		"DtsJobId": "dts_job_id",
+		"Status":   "Migrating",
+		"DtsJobList": []interface{}{
+			map[string]interface{}{
+				"Checkpoint": "checkpoint",
+				"MigrationMode": map[string]interface{}{
+					"DataInitialization":       true,
+					"DataSynchronization":      true,
+					"structure_initialization": true,
+				},
+				"DbObject": "db_list",
+				"DestinationEndpoint": map[string]interface{}{
+					"DatabaseName": "destination_endpoint_database_name",
+					"EngineName":   "MySQL",
+					"Ip":           "destination_endpoint_ip",
+					"InstanceID":   "destination_endpoint_instance_id",
+					"InstanceType": "RDS",
+					"OracleSID":    "destination_endpoint_oracle_sid",
+					"Port":         "destination_endpoint_port",
+					"Region":       "destination_endpoint_region",
+					"UserName":     "destination_endpoint_user_name",
+				},
+				"DtsInstanceID": "dts_instance_id",
+				"DtsJobName":    "dts_job_name",
+				"PayType":       "PostPaid",
+				"SourceEndpoint": map[string]interface{}{
+					"DatabaseName": "source_endpoint_database_name",
+					"EngineName":   "MySQL",
+					"Ip":           "source_endpoint_ip",
+					"InstanceID":   "source_endpoint_instance_id",
+					"InstanceType": "RDS",
+					"OracleSID":    "source_endpoint_oracle_sid",
+					"Port":         "source_endpoint_port",
+					"Region":       "source_endpoint_region",
+					"UserName":     "source_endpoint_user_name",
+					"RoleName":     "source_endpoint_role",
+					"AliyunUid":    "source_endpoint_owner_id",
+				},
+				"Status":   "Migrating",
+				"DtsJobId": "dts_job_id",
+			},
+		},
+	}
+
+	SuspendingReadMockResponse := map[string]interface{}{
+		"DtsJobId": "dts_job_id",
+		"Status":   "Suspending",
+		"DtsJobList": []interface{}{
+			map[string]interface{}{
+				"Checkpoint": "checkpoint",
+				"MigrationMode": map[string]interface{}{
+					"DataInitialization":       true,
+					"DataSynchronization":      true,
+					"structure_initialization": true,
+				},
+				"DbObject": "db_list",
+				"DestinationEndpoint": map[string]interface{}{
+					"DatabaseName": "destination_endpoint_database_name",
+					"EngineName":   "MySQL",
+					"Ip":           "destination_endpoint_ip",
+					"InstanceID":   "destination_endpoint_instance_id",
+					"InstanceType": "RDS",
+					"OracleSID":    "destination_endpoint_oracle_sid",
+					"Port":         "destination_endpoint_port",
+					"Region":       "destination_endpoint_region",
+					"UserName":     "destination_endpoint_user_name",
+				},
+				"DtsInstanceID": "dts_instance_id",
+				"DtsJobName":    "dts_job_name",
+				"PayType":       "PostPaid",
+				"SourceEndpoint": map[string]interface{}{
+					"DatabaseName": "source_endpoint_database_name",
+					"EngineName":   "MySQL",
+					"Ip":           "source_endpoint_ip",
+					"InstanceID":   "source_endpoint_instance_id",
+					"InstanceType": "RDS",
+					"OracleSID":    "source_endpoint_oracle_sid",
+					"Port":         "source_endpoint_port",
+					"Region":       "source_endpoint_region",
+					"UserName":     "source_endpoint_user_name",
+					"RoleName":     "source_endpoint_role",
+					"AliyunUid":    "source_endpoint_owner_id",
+				},
+				"Status":   "Suspending",
+				"DtsJobId": "dts_job_id",
+			},
+		},
+	}
+
+	responseMock := map[string]func(errorCode string) (map[string]interface{}, error){
+		"RetryError": func(errorCode string) (map[string]interface{}, error) {
+			return nil, &tea.SDKError{
+				Code:       String(errorCode),
+				Data:       String(errorCode),
+				Message:    String(errorCode),
+				StatusCode: tea.Int(400),
+			}
+		},
+		"NotFoundError": func(errorCode string) (map[string]interface{}, error) {
+			return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_dts_migration_job", "dts_instance_id"))
+		},
+		"NoRetryError": func(errorCode string) (map[string]interface{}, error) {
+			return nil, &tea.SDKError{
+				Code:       String(errorCode),
+				Data:       String(errorCode),
+				Message:    String(errorCode),
+				StatusCode: tea.Int(400),
+			}
+		},
+		"CreateNormal": func(errorCode string) (map[string]interface{}, error) {
+			result := ReadMockResponse
+			return result, nil
+		},
+		"UpdateNormal": func(errorCode string) (map[string]interface{}, error) {
+			result := ReadMockResponse
+			return result, nil
+		},
+		"UpdateSuspendingNormal": func(errorCode string) (map[string]interface{}, error) {
+			result := SuspendingReadMockResponse
+			return result, nil
+		},
+		"DeleteNormal": func(errorCode string) (map[string]interface{}, error) {
+			result := ReadMockResponse
+			return result, nil
+		},
+		"ReadNormal": func(errorCode string) (map[string]interface{}, error) {
+			result := ReadMockResponse
+			return result, nil
+		},
+	}
+	// Create
+	t.Run("CreateClientAbnormal", func(t *testing.T) {
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewDtsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+			return nil, &tea.SDKError{
+				Code:       String("loadEndpoint error"),
+				Data:       String("loadEndpoint error"),
+				Message:    String("loadEndpoint error"),
+				StatusCode: tea.Int(400),
+			}
+		})
+		err := resourceAlicloudDtsMigrationJobCreate(d, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+	t.Run("CreateAbnormal", func(t *testing.T) {
+		retryFlag := true
+		noRetryFlag := true
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["CreateNormal"]("")
+		})
+		err := resourceAlicloudDtsMigrationJobCreate(d, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+	t.Run("CreateNormal", func(t *testing.T) {
+		retryFlag := false
+		noRetryFlag := false
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["CreateNormal"]("")
+		})
+		err := resourceAlicloudDtsMigrationJobCreate(dCreate, rawClient)
+		patches.Reset()
+		assert.Nil(t, err)
+	})
+	t.Run("CreateRetryableError", func(t *testing.T) {
+		retryFlag := false
+		noRetryFlag := true
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["CreateNormal"]("")
+		})
+		err := resourceAlicloudDtsMigrationJobCreate(d, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+
+	// Update
+	t.Run("UpdateClientAbnormal", func(t *testing.T) {
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewDtsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+			return nil, &tea.SDKError{
+				Code:       String("loadEndpoint error"),
+				Data:       String("loadEndpoint error"),
+				Message:    String("loadEndpoint error"),
+				StatusCode: tea.Int(400),
+			}
+		})
+
+		err := resourceAlicloudDtsMigrationJobUpdate(d, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+
+	// Set ID for Update and Delete Method
+	d.SetId("dts_job_id")
+
+	t.Run("UpdateModifyDtsMigrationJobSuspendingStatusAbnormal", func(t *testing.T) {
+		diff := terraform.NewInstanceDiff()
+		diff.SetAttribute("status", &terraform.ResourceAttrDiff{Old: "Migrating", New: "Suspending"})
+		resourceData1, _ := schema.InternalMap(p["alicloud_dts_migration_job"].Schema).Data(nil, diff)
+		resourceData1.SetId(d.Id())
+		retryFlag := true
+		noRetryFlag := true
+		patcheDescribe := gomonkey.ApplyMethod(reflect.TypeOf(&DtsService{}), "DescribeDtsMigrationJob", func(*DtsService, string) (map[string]interface{}, error) {
+			return responseMock["UpdateNormal"]("")
+		})
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["UpdateSuspendingNormal"]("")
+		})
+		err := resourceAlicloudDtsMigrationJobUpdate(resourceData1, rawClient)
+		patcheDescribe.Reset()
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+	t.Run("UpdateModifyDTSMigrationJobSuspendingStatusNoRetryErrorAbnormal", func(t *testing.T) {
+		diff := terraform.NewInstanceDiff()
+		diff.SetAttribute("status", &terraform.ResourceAttrDiff{Old: "Migrating", New: "Suspending"})
+		resourceData, _ := schema.InternalMap(p["alicloud_dts_migration_job"].Schema).Data(nil, diff)
+		resourceData.SetId(d.Id())
+		patcheDescribe := gomonkey.ApplyMethod(reflect.TypeOf(&DtsService{}), "DescribeDtsMigrationJob", func(*DtsService, string) (map[string]interface{}, error) {
+			return responseMock["UpdateNormal"]("")
+		})
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			return responseMock["NoRetryError"]("NoRetryError")
+		})
+		err := resourceAlicloudDtsMigrationJobUpdate(resourceData, rawClient)
+		patcheDescribe.Reset()
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+	t.Run("UpdateModifyDTSMigrationJobSuspendingStatusNoRetryErrorNormal", func(t *testing.T) {
+		diff := terraform.NewInstanceDiff()
+		diff.SetAttribute("status", &terraform.ResourceAttrDiff{Old: "Migrating", New: "Suspending"})
+		resourceData, _ := schema.InternalMap(p["alicloud_dts_migration_job"].Schema).Data(nil, diff)
+		resourceData.SetId(d.Id())
+		patcheDescribe := gomonkey.ApplyMethod(reflect.TypeOf(&DtsService{}), "DescribeDtsMigrationJob", func(*DtsService, string) (map[string]interface{}, error) {
+			return responseMock["UpdateNormal"]("")
+		})
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			return responseMock["UpdateSuspendingNormal"]("")
+		})
+		err := resourceAlicloudDtsMigrationJobUpdate(resourceData, rawClient)
+		patcheDescribe.Reset()
+		patches.Reset()
+		assert.Nil(t, err)
+	})
+	t.Run("UpdateModifyDtsMigrationJobMigratingStatusAbnormal", func(t *testing.T) {
+		diff := terraform.NewInstanceDiff()
+		diff.SetAttribute("status", &terraform.ResourceAttrDiff{Old: "Suspending", New: "Migrating"})
+		resourceData1, _ := schema.InternalMap(p["alicloud_dts_migration_job"].Schema).Data(nil, diff)
+		resourceData1.SetId(d.Id())
+		retryFlag := true
+		noRetryFlag := true
+		patcheDescribe := gomonkey.ApplyMethod(reflect.TypeOf(&DtsService{}), "DescribeDtsMigrationJob", func(*DtsService, string) (map[string]interface{}, error) {
+			return responseMock["UpdateSuspendingNormal"]("")
+		})
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["UpdateNormal"]("")
+		})
+		err := resourceAlicloudDtsMigrationJobUpdate(resourceData1, rawClient)
+		patcheDescribe.Reset()
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+	t.Run("UpdateModifyDTSMigrationJobMigratingStatusNoRetryErrorAbnormal", func(t *testing.T) {
+		diff := terraform.NewInstanceDiff()
+		diff.SetAttribute("status", &terraform.ResourceAttrDiff{Old: "Suspending", New: "Migrating"})
+		resourceData, _ := schema.InternalMap(p["alicloud_dts_migration_job"].Schema).Data(nil, diff)
+		resourceData.SetId(d.Id())
+		patcheDescribe := gomonkey.ApplyMethod(reflect.TypeOf(&DtsService{}), "DescribeDtsMigrationJob", func(*DtsService, string) (map[string]interface{}, error) {
+			return responseMock["UpdateSuspendingNormal"]("")
+		})
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			return responseMock["NoRetryError"]("NoRetryError")
+		})
+		err := resourceAlicloudDtsMigrationJobUpdate(resourceData, rawClient)
+		patcheDescribe.Reset()
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+	t.Run("UpdateModifyDTSMigrationJobMigratingStatusNoRetryErrorNormal", func(t *testing.T) {
+		diff := terraform.NewInstanceDiff()
+		diff.SetAttribute("status", &terraform.ResourceAttrDiff{Old: "Suspending", New: "Migrating"})
+		resourceData, _ := schema.InternalMap(p["alicloud_dts_migration_job"].Schema).Data(nil, diff)
+		resourceData.SetId(d.Id())
+		patcheDescribe := gomonkey.ApplyMethod(reflect.TypeOf(&DtsService{}), "DescribeDtsMigrationJob", func(*DtsService, string) (map[string]interface{}, error) {
+			return responseMock["UpdateSuspendingNormal"]("")
+		})
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			return responseMock["UpdateNormal"]("")
+		})
+		err := resourceAlicloudDtsMigrationJobUpdate(resourceData, rawClient)
+		patcheDescribe.Reset()
+		patches.Reset()
+		assert.Nil(t, err)
+	})
+
+	// Delete
+	t.Run("DeleteClientAbnormal", func(t *testing.T) {
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewDtsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+			return nil, &tea.SDKError{
+				Code:       String("loadEndpoint error"),
+				Data:       String("loadEndpoint error"),
+				Message:    String("loadEndpoint error"),
+				StatusCode: tea.Int(400),
+			}
+		})
+		err := resourceAlicloudDtsMigrationJobDelete(d, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+	t.Run("DeleteMockAbnormal", func(t *testing.T) {
+		retryFlag := true
+		noRetryFlag := true
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				retryFlag = false
+				// retry until the timeout comes
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["DeleteNormal"]("")
+		})
+		err := resourceAlicloudDtsMigrationJobDelete(d, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+	t.Run("DeleteMockNormal", func(t *testing.T) {
+		retryFlag := false
+		noRetryFlag := false
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["DeleteNormal"]("")
+		})
+		err := resourceAlicloudDtsMigrationJobDelete(d, rawClient)
+		patches.Reset()
+		assert.Nil(t, err)
+	})
+	t.Run("DeleteNonRetryableError", func(t *testing.T) {
+		retryFlag := false
+		noRetryFlag := true
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["DeleteNormal"]("")
+		})
+		err := resourceAlicloudDtsMigrationJobDelete(d, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+	t.Run("DeleteDescribeVpcDTSMigrationJobExpectedError", func(t *testing.T) {
+		patchRequest := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			return responseMock["NoRetryError"]("Forbidden.InstanceNotFound")
+		})
+		err := resourceAlicloudDtsMigrationJobDelete(d, rawClient)
+		patchRequest.Reset()
+		assert.Nil(t, err)
+	})
+
+	//Read
+	t.Run("ReadDescribeVpcDTSMigrationJobNotFound", func(t *testing.T) {
+		diff := terraform.NewInstanceDiff()
+		resourceData, _ := schema.InternalMap(p["alicloud_dts_migration_job"].Schema).Data(nil, diff)
+		resourceData.SetId(d.Id())
+		patcheDescribe := gomonkey.ApplyMethod(reflect.TypeOf(&DtsService{}), "DescribeDtsMigrationJob", func(*DtsService, string) (map[string]interface{}, error) {
+			return responseMock["NotFoundError"]("NotFoundError")
+		})
+		err := resourceAlicloudDtsMigrationJobRead(resourceData, rawClient)
+		patcheDescribe.Reset()
+		assert.Nil(t, err)
+	})
+	t.Run("ReadDescribeDTSMigrationJobAbnormal", func(t *testing.T) {
+		patcheDorequest := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			return responseMock["ReadNormal"]("")
+		})
+		err := resourceAlicloudDtsMigrationJobDelete(d, rawClient)
+		patcheDorequest.Reset()
+		assert.Nil(t, err)
+	})
+}

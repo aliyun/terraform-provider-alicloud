@@ -1,0 +1,229 @@
+name: Documentation Checks
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+    branches:
+      - master
+    paths:
+      - .github/markdownlint/website-docs.json
+      - .github/workflows/document-check.yml
+      - .go-version
+      - website/docs/**
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  route:
+    permissions:
+      checks: read
+      pull-requests: read
+    runs-on: terraform-ci-policy
+    timeout-minutes: 3
+    outputs:
+      runner: ${{ steps.select.outputs.runner }}
+    steps:
+      - name: Select runner
+        id: select
+        uses: aliyun/terraform-provider-alicloud/.github/actions/terraform-ci-select-policy@1c4bb6762031f53732611700cad5d71d1ec84dfe
+
+  markdown-link:
+    needs: route
+    runs-on: ${{ fromJSON(needs.route.outputs.runner) }}
+    permissions:
+      contents: read
+    steps:
+      - name: Check out event commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        with:
+          node-version: '20'
+      - name: Check Markdown links
+        run: |
+          find website/docs -type f -name '*.md' -print0 |
+            xargs -0 -r npx --yes markdown-link-check@3.14.2 \
+              --quiet --verbose --config .markdown-link-check.json
+
+  markdown-lint:
+    needs: route
+    runs-on: ${{ fromJSON(needs.route.outputs.runner) }}
+    permissions:
+      contents: read
+    steps:
+      - name: Check out event commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Resolve change range
+        id: change-range
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          PUSH_BASE_SHA: ${{ github.event.before }}
+          CI_BASE_REPOSITORY_URL: https://github.com/${{ github.repository }}.git
+          CI_BASE_REF: ${{ github.ref_name }}
+        run: scripts/ci/resolve-change-range.sh >> "$GITHUB_OUTPUT"
+      - name: Set up Node.js
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        with:
+          node-version: '20'
+      - name: Lint changed Markdown files
+        env:
+          DIFF_BASE: ${{ steps.change-range.outputs.diff_base }}
+          DIFF_HEAD: ${{ steps.change-range.outputs.diff_head }}
+        run: |
+          git diff --check "$DIFF_BASE" "$DIFF_HEAD" -- website/docs
+          markdown_files=()
+          while IFS= read -r -d '' changed_file; do
+            if [[ -f "$changed_file" ]] &&
+              [[ "$changed_file" == *.md || "$changed_file" == *.markdown ]]; then
+              markdown_files+=("$changed_file")
+            fi
+          done < <(
+            git diff --name-only -z --diff-filter=ACMR \
+              "$DIFF_BASE" "$DIFF_HEAD" -- website/docs
+          )
+          if (( ${#markdown_files[@]} == 0 )); then
+            echo "No Markdown files changed."
+            exit 0
+          fi
+          npx --yes markdownlint-cli@0.47.0 \
+            --config .github/markdownlint/website-docs.json \
+            -- "${markdown_files[@]}"
+
+  misspell:
+    needs: route
+    runs-on: ${{ fromJSON(needs.route.outputs.runner) }}
+    permissions:
+      contents: read
+    steps:
+      - name: Check out event commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: .go-version
+          cache: false
+      - name: misspell
+        run: |
+          go run github.com/client9/misspell/cmd/misspell@v0.3.4 \
+            -error \
+            -i 'bussiness,protocal,attemps,alltime,transfering' \
+            website/docs
+
+  terrafmt:
+    needs: route
+    runs-on: ${{ fromJSON(needs.route.outputs.runner) }}
+    permissions:
+      contents: read
+    steps:
+      - name: Check out event commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: .go-version
+          cache: false
+      - name: terrafmt
+        run: |
+          export PATH="$PATH:$(go env GOPATH)/bin"
+          go install github.com/katbyte/terrafmt@v0.5.7
+          terrafmt diff ./website --check --pattern '*.markdown'
+
+  basic-check:
+    needs: route
+    runs-on: ${{ fromJSON(needs.route.outputs.runner) }}
+    permissions:
+      contents: read
+    steps:
+      - name: Check out event commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Resolve change range
+        id: change-range
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          PUSH_BASE_SHA: ${{ github.event.before }}
+          CI_BASE_REPOSITORY_URL: https://github.com/${{ github.repository }}.git
+          CI_BASE_REF: ${{ github.ref_name }}
+        run: scripts/ci/resolve-change-range.sh >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: .go-version
+          cache: false
+      - name: Run basic checks
+        env:
+          DIFF_BASE: ${{ steps.change-range.outputs.diff_base }}
+          DIFF_HEAD: ${{ steps.change-range.outputs.diff_head }}
+        run: bash scripts/basic-check.sh
+
+  Content:
+    needs: route
+    runs-on: ${{ fromJSON(needs.route.outputs.runner) }}
+    permissions:
+      contents: read
+    steps:
+      - name: Check out event commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Resolve change range
+        id: change-range
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          PUSH_BASE_SHA: ${{ github.event.before }}
+          CI_BASE_REPOSITORY_URL: https://github.com/${{ github.repository }}.git
+          CI_BASE_REF: ${{ github.ref_name }}
+        run: scripts/ci/resolve-change-range.sh >> "$GITHUB_OUTPUT"
+      - name: Setup Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: .go-version
+          cache: false
+      - name: Checking the docs content
+        env:
+          DIFF_BASE: ${{ steps.change-range.outputs.diff_base }}
+          DIFF_HEAD: ${{ steps.change-range.outputs.diff_head }}
+        run: |
+          while IFS= read -r -d '' changed_file; do
+            if [[ -f "$changed_file" ]]; then
+              go run scripts/document/document_check.go "$changed_file"
+            fi
+          done < <(
+            git diff --name-only -z --diff-filter=ACMR \
+              "$DIFF_BASE" "$DIFF_HEAD" -- website/docs
+          )

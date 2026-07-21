@@ -1,0 +1,97 @@
+name: Golangci-Lint
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+    branches:
+      - master
+    paths:
+      - .github/workflows/acctest-terraform-lint.yml
+      - alicloud/*.go
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  route:
+    permissions:
+      checks: read
+      pull-requests: read
+    runs-on: terraform-ci-policy
+    timeout-minutes: 3
+    outputs:
+      classification: ${{ steps.select.outputs.classification }}
+      runner: ${{ steps.select.outputs.runner }}
+      heavy_runner: ${{ steps.select.outputs.heavy_runner }}
+    steps:
+      - name: Select runner
+        id: select
+        uses: aliyun/terraform-provider-alicloud/.github/actions/terraform-ci-select-policy@eaf310539de91ddbb455d3f5bcfd5de39037b432
+
+  errcheck:
+    name: runner / errcheck
+    needs: route
+    runs-on: ${{ fromJSON(needs.route.outputs.runner) }}
+    permissions:
+      contents: read
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: errcheck
+        uses: reviewdog/action-golangci-lint@4c4340f3ef9498ffe9a0dd3e589bc00e12e2d77c # v2.9.0
+        with:
+          go_version_file: .go-version
+          cache: false
+          golangci_lint_flags: '--tests=false --timeout=25m --default=none -E errcheck'
+          tool_name: errcheck
+          level: info
+          reviewdog_version: 'v0.21.0'
+          golangci_lint_version: 'v2.7.2'
+
+  tflint:
+    needs: route
+    runs-on: ${{ fromJSON(needs.route.outputs.heavy_runner) }}
+    permissions:
+      contents: read
+    steps:
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: .go-version
+          cache: false
+      - name: Resolve Go cache paths
+        id: go-cache
+        shell: bash
+        run: |
+          echo "module=$(go env GOMODCACHE)" >> "$GITHUB_OUTPUT"
+          echo "build=$(go env GOCACHE)" >> "$GITHUB_OUTPUT"
+      - name: Restore trusted Go cache
+        if: ${{ needs.route.outputs.classification == 'trusted' }}
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ${{ steps.go-cache.outputs.module }}
+            ${{ steps.go-cache.outputs.build }}
+          key: provider-go-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.go-version') }}-${{ hashFiles('**/go.sum') }}
+      - name: Install tfproviderlint
+        run: |
+          go install github.com/bflad/tfproviderlint/cmd/tfproviderlint@v0.31.0
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+      - run: ./scripts/run-tflint.sh
