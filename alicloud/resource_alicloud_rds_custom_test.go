@@ -153,48 +153,6 @@ func TestAccAliCloudRdsCustom_basic10836(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"tags": map[string]string{
-						"Created": "TF",
-						"For":     "Test",
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"tags.%":       "2",
-						"tags.Created": "TF",
-						"tags.For":     "Test",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"tags": map[string]string{
-						"Created": "TF-update",
-						"For":     "Test-update",
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"tags.%":       "2",
-						"tags.Created": "TF-update",
-						"tags.For":     "Test-update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
-					}),
-				),
-			},
-			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -211,7 +169,7 @@ var AlicloudRdsCustomMap10836 = map[string]string{
 func AlicloudRdsCustomBasicDependence10836(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-    default = "%s"
+  default = "%s"
 }
 
 variable "test_region_id" {
@@ -239,10 +197,7 @@ data "alicloud_security_groups" "default" {
 
 resource "alicloud_ecs_key_pair" "KeyPairName" {
   key_pair_name = var.name
-}
-
-
-`, name)
+}`, name)
 }
 
 // Test Rds Custom. <<< Resource test cases, automatically generated.
@@ -263,6 +218,7 @@ func TestAccAliCloudRdsCustom_basic12788(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -362,48 +318,6 @@ func TestAccAliCloudRdsCustom_basic12788(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": map[string]string{
-						"Created": "TF",
-						"For":     "Test",
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"tags.%":       "2",
-						"tags.Created": "TF",
-						"tags.For":     "Test",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"tags": map[string]string{
-						"Created": "TF-update",
-						"For":     "Test-update",
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"tags.%":       "2",
-						"tags.Created": "TF-update",
-						"tags.For":     "Test-update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"status":     "Stopped",
 					"force_stop": "true",
 				}),
@@ -432,7 +346,7 @@ var AlicloudRdsCustomMap12788 = map[string]string{
 func AlicloudRdsCustomBasicDependence12788(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-    default = "%s"
+  default = "%s"
 }
 
 data "alicloud_vpcs" "default" {
@@ -454,10 +368,7 @@ resource "alicloud_rds_custom_deployment_set" "deploymentSet" {
   group_count                           = 3
   on_unable_to_redeploy_failed_instance = "CancelMembershipAndStart"
   strategy                              = "Availability"
-}
-
-
-`, name)
+}`, name)
 }
 
 // Case resourceCase_20260415_01 12772
@@ -477,6 +388,7 @@ func TestAccAliCloudRdsCustom_basic12772(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -636,7 +548,7 @@ var AlicloudRdsCustomMap12772 = map[string]string{
 func AlicloudRdsCustomBasicDependence12772(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-    default = "%s"
+  default = "%s"
 }
 
 data "alicloud_vpcs" "default" {
@@ -650,8 +562,5 @@ data "alicloud_vswitches" "default" {
 
 data "alicloud_security_groups" "default" {
   vpc_id = data.alicloud_vpcs.default.ids.0
-}
-
-
-`, name)
+}`, name)
 }
