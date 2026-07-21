@@ -18,10 +18,14 @@ cache_dir="${JARVIS_CACHE_DIR:-$jarvis_root/.my-day/cache}"
 _safe_key() { printf '%s' "$1" | tr -c 'A-Za-z0-9._-' '_'; }
 _cache_file() { echo "$cache_dir/$(_safe_key "$1")"; }
 
-# mtime 距今秒数（macOS stat -f %m / GNU stat -c %Y）
+# mtime 距今秒数（GNU stat -c %Y 优先 / macOS stat -f %m 兜底）。
+# 顺序有讲究: GNU 的 `stat -f` 是文件系统模式, 失败时会把 "File: ..." 整块
+# 打到 stdout 再非零退出, `$(A || B)` 会把垃圾和 B 的输出一起捕获, 下游算术
+# 直接炸 "File: unbound variable"; 而 BSD 的 `stat -c` 失败时 stdout 干净。
 _age_sec() {
     local f="$1" m
-    m=$(stat -f %m "$f" 2>/dev/null || stat -c %Y "$f" 2>/dev/null) || return 1
+    m=$(stat -c %Y "$f" 2>/dev/null || stat -f %m "$f" 2>/dev/null) || return 1
+    case "$m" in ''|*[!0-9]*) return 1;; esac
     echo $(( $(date +%s) - m ))
 }
 

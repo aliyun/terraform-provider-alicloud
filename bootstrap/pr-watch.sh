@@ -31,7 +31,7 @@ _acquire_lock() {
     local acquired="" waited=0 lock_mtime
     while [ "$waited" -lt 50 ]; do
         if mkdir "$LOCK" 2>/dev/null; then acquired=1; break; fi
-        lock_mtime="$(stat -f %m "$LOCK" 2>/dev/null || stat -c %Y "$LOCK" 2>/dev/null || echo "")"
+        lock_mtime="$(stat -c %Y "$LOCK" 2>/dev/null || stat -f %m "$LOCK" 2>/dev/null || echo "")"
         if [ -n "$lock_mtime" ] && [ "$(( $(date +%s) - lock_mtime ))" -gt 10 ]; then
             rm -rf "$LOCK" 2>/dev/null
         fi

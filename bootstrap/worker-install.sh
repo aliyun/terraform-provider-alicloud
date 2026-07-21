@@ -392,21 +392,44 @@ if command -v loginctl >/dev/null 2>&1; then
   fi
 fi
 if [ "$linger_ok" = 0 ]; then
-  cron_cmd="JARVIS_BRIDGE_ROLE=worker $JARVIS_ROOT/bridge/run.sh start"
-  cron_tmp=$(mktemp)
-  # Idempotent: strip any previous lines that invoke this repo's run.sh, then
-  # append the current pair. Survives re-runs and JARVIS_ROOT relocation.
-  crontab -l 2>/dev/null | grep -vF "$JARVIS_ROOT/bridge/run.sh" > "$cron_tmp" || true
-  {
-    printf '@reboot sleep 30 && %s\n' "$cron_cmd"
-    printf '*/10 * * * * %s >/dev/null 2>&1\n' "$cron_cmd"
-  } >> "$cron_tmp"
-  if crontab "$cron_tmp"; then
-    ok "crontab fallback installed (@reboot + */10 watchdog)"
-  else
-    warn "crontab install failed — start the worker manually after each reboot"
+  # AliOS minimal images ship without cronie — install it first (sudo yum is
+  # on the command-control whitelist even where bare sudo isn't).
+  if ! command -v crontab >/dev/null 2>&1; then
+    info "crontab missing; installing cronie via yum"
+    sudo yum install -y cronie >/dev/null 2>&1 || true
   fi
-  rm -f "$cron_tmp"
+  if command -v crontab >/dev/null 2>&1; then
+    cron_cmd="JARVIS_BRIDGE_ROLE=worker $JARVIS_ROOT/bridge/run.sh start"
+    cron_tmp=$(mktemp)
+    # Idempotent: strip any previous lines that invoke this repo's run.sh, then
+    # append the current pair. Survives re-runs and JARVIS_ROOT relocation.
+    crontab -l 2>/dev/null | grep -vF "$JARVIS_ROOT/bridge/run.sh" > "$cron_tmp" || true
+    {
+      printf '@reboot sleep 30 && %s\n' "$cron_cmd"
+      printf '*/10 * * * * %s >/dev/null 2>&1\n' "$cron_cmd"
+    } >> "$cron_tmp"
+    if crontab "$cron_tmp"; then
+      ok "crontab fallback installed (@reboot + */10 watchdog)"
+    else
+      warn "crontab install failed — start the worker manually after each reboot"
+    fi
+    rm -f "$cron_tmp"
+    # Entries only fire if crond actually runs; a fresh cronie install is not
+    # reliably enabled. Best-effort start, with a whitelist hint if intercepted.
+    if ! pgrep -x crond >/dev/null 2>&1; then
+      if sudo systemctl enable --now crond 2>/dev/null; then
+        ok "crond enabled + started"
+      else
+        warn "crond not running and sudo systemctl was blocked — request whitelist for: sudo systemctl enable --now crond (until then cron entries won't fire)"
+      fi
+    fi
+  else
+    warn "crontab still unavailable (cronie install failed) — start the worker manually after each reboot"
+  fi
+  # Without linger, a `systemctl --user` unit is torn down with your LAST ssh
+  # session (user@UID manager stops). Prefer run.sh start — it daemonizes
+  # outside the session scope and the */10 watchdog resurrects it if needed.
+  warn "no linger: prefer '$JARVIS_ROOT/bridge/run.sh start' over systemctl --user (the unit dies on your last logout; run.sh survives it)"
 fi
 systemctl --user daemon-reload
 ok "systemctl --user daemon-reload done"
