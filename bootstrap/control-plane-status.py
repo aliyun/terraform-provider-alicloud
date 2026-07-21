@@ -6,9 +6,10 @@
   ready             READY 任务及 eligibleWorkerCount=0 的具体原因
   task <aone_id>    单工单全链路（task 状态/current session/fence/最近 5 条 event/
                     operations 回执状态）
+  operation <id>    单个 operation + Task/Session/fence/readbackSpec（只读）
 
-凭证由 wrapper 从主仓 gitignored bootstrap/.env + bridge/jarvis.env 加载
-（token 回退 JARVIS_HTML_REPORT_TOKEN）；控制面地址可显式覆盖，默认指向预发。
+凭证由 wrapper 经共享 machine runtime loader 加载（token 回退
+JARVIS_HTML_REPORT_TOKEN）；控制面地址可显式覆盖，默认指向预发。
 本文件只读环境变量、不读 env 文件。只有 ``discard-resume`` 是写操作，且必须显式 ``--yes``。
 
 退出码：0=成功；1=控制面无该工单任务；2=缺 token 配置；3=控制面请求失败。
@@ -189,6 +190,30 @@ def cmd_task(client, aone_id):
     return 0
 
 
+def cmd_operation(client, operation_id):
+    point = client.get_operation(operation_id)
+    if not isinstance(point, dict):
+        sys.stderr.write("error: unexpected operation point-read response\n")
+        return 3
+    operation = point.get("operation") if isinstance(point.get("operation"), dict) else {}
+    task = point.get("task") if isinstance(point.get("task"), dict) else {}
+    session = point.get("session") if isinstance(point.get("session"), dict) else {}
+    worker = point.get("worker") if isinstance(point.get("worker"), dict) else {}
+    readback = point.get("readbackSpec") if isinstance(point.get("readbackSpec"), dict) else {}
+    print("operation=%s type=%s status=%s target=%s" % (
+        operation.get("id", operation_id), operation.get("operationType"),
+        operation.get("status"), operation.get("target") or "-"))
+    print("task=%s state=%s generation=%s session=%s sessionState=%s fence=%s" % (
+        task.get("id", "-"), task.get("status", "-"), task.get("generation", "-"),
+        session.get("id", "-"), session.get("status", "-"),
+        session.get("fenceToken", "-")))
+    print("worker=%s lease=%s heartbeat=%s" % (
+        worker.get("workerKey", "-"), session.get("leaseExpireAt", "-"),
+        session.get("lastHeartbeatAt", "-")))
+    print("readbackSpec=%s" % readback)
+    return 0
+
+
 def cmd_discard_resume(client, task_id, session_id, reason, yes):
     if not yes:
         sys.stderr.write(
@@ -214,6 +239,8 @@ def main(argv=None):
                          help="maximum READY tasks to return (1-500, default: 100)")
     p_task = sub.add_parser("task", help="full chain for one Aone work item")
     p_task.add_argument("aone_id", help="Aone work item id, e.g. 84386065")
+    p_operation = sub.add_parser("operation", help="point-read one operation")
+    p_operation.add_argument("operation_id", type=int)
     p_discard = sub.add_parser(
         "discard-resume",
         help="cancel one exact legacy resumable session after operator review")
@@ -230,6 +257,8 @@ def main(argv=None):
             return cmd_ready(client, args.limit)
         if args.cmd == "task":
             return cmd_task(client, args.aone_id)
+        if args.cmd == "operation":
+            return cmd_operation(client, args.operation_id)
         return cmd_discard_resume(
             client, args.task_id, args.session_id, args.reason, args.yes)
     except ControlPlaneError as e:

@@ -246,6 +246,8 @@ EOF
     mkdir -p "$wrapper_only"
     cp "$repo_root/bootstrap/run-interactive-worker-hook.sh" \
         "$wrapper_only/run-interactive-worker-hook.sh"
+    cp "$repo_root/bootstrap/runtime-config.sh" \
+        "$wrapper_only/runtime-config.sh"
     bash "$wrapper_only/run-interactive-worker-hook.sh" codex PreToolUse \
         >"$tmp_out" 2>&1 <<EOF
 {"hook_event_name":"PreToolUse","session_id":"$codex_thread_id","turn_id":"t","tool_name":"Bash","tool_input":{"command":"a1 update"}}
@@ -398,6 +400,7 @@ make_fake_stop_scripts() {
     local dir="$1" wrap_rc="$2" worker_rc="$3"
     mkdir -p "$dir"
     cp "$repo_root/bootstrap/run-stop-hook.sh" "$dir/run-stop-hook.sh"
+    cp "$repo_root/bootstrap/runtime-config.sh" "$dir/runtime-config.sh"
     cat > "$dir/wrap-check.sh" <<'EOF'
 #!/usr/bin/env bash
 cat >/dev/null

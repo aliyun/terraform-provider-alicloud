@@ -333,6 +333,33 @@ class ClientContractTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             client.list_external_operation_recovery_candidates(limit=501)
 
+    def test_operation_point_read_and_not_started_use_distinct_contracts(self):
+        opener = RecordingOpener(responses=[
+            FakeResponse({"operation": {"id": 44}}),
+            FakeResponse({"operation": {"id": 44}}),
+            FakeResponse({"id": 44, "status": "FAILED_NOT_STARTED"}),
+        ])
+        client = self.make(opener)
+
+        client.get_operation(44)
+        client.get_operation_by_key(9, 3, "comment:key/one")
+        client.mark_operation_not_started({
+            "operation_id": 44, "worker_key": "worker-1", "fence_token": 7,
+            "process_uuid": "process-1", "reason": "rejected before send",
+        }, request_id="not-started-44")
+
+        paths = [call[0].full_url.rsplit("/api/jarvis/v1/", 1)[1]
+                 for call in opener.calls]
+        self.assertEqual(paths, [
+            "operations/44",
+            "operations/by-key?taskId=9&generation=3&operationKey=comment%3Akey%2Fone",
+            "operations/not-started",
+        ])
+        self.assertEqual(body(opener.calls[2][0]), {
+            "operationId": 44, "workerKey": "worker-1", "fenceToken": 7,
+            "processUuid": "process-1", "reason": "rejected before send",
+        })
+
     def test_pending_wait_query_validates_keyset_bounds(self):
         c = self.make(RecordingOpener())
         with self.assertRaises(ValueError):

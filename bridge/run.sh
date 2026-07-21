@@ -92,12 +92,14 @@ _resolve_paths_by_role() {
 
 # -- env sourcing (variables auto-exported for the bot) --------------------
 _source_env() {
-  set -a; set +u
-  # shellcheck disable=SC1090
-  [ -f "$BOOTSTRAP_ENV" ] && . "$BOOTSTRAP_ENV"
-  # shellcheck disable=SC1090
-  [ -f "$BRIDGE_ENV" ] && . "$BRIDGE_ENV"
-  set -u; set +a
+  # All Jarvis entrypoints share one machine-level credential loader. Explicit
+  # bridge paths remain compatibility inputs for installations that override
+  # the legacy file locations.
+  export JARVIS_INTERACTIVE_BOOTSTRAP_ENV="$BOOTSTRAP_ENV"
+  export JARVIS_INTERACTIVE_BRIDGE_ENV="$BRIDGE_ENV"
+  # shellcheck disable=SC1091
+  source "$REPO_ROOT/bootstrap/runtime-config.sh"
+  jarvis_load_runtime_config || return $?
 
   # Non-interactive SSH/launch shells on macOS commonly omit both the user-local
   # installer directory (a1) and Homebrew (claude). Normalize the standard tool

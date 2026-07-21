@@ -47,6 +47,7 @@ from jarvis_task_client import (  # noqa: E402
     ControlPlaneClient,
     ControlPlaneConflict,
     ControlPlaneError,
+    ControlPlaneRejected,
     ControlPlaneUnavailable,
     StaleFence,
     TaskEnvelope,
@@ -1023,6 +1024,29 @@ def _exact_standard_claim(event: Mapping[str, Any]) -> Optional[Tuple[str, str]]
     return remaining[1], remaining[2]
 
 
+def _exact_readonly_diagnostic(event: Mapping[str, Any]) -> bool:
+    """Allow only argument-validated, side-effect-free recovery diagnostics."""
+    tokens = _standalone_bash_tokens(event)
+    if tokens is None or not tokens or tokens[0] != "/bin/bash":
+        return False
+    status_script = str((REPO_ROOT / "bootstrap" / "control-plane-status.sh").resolve())
+    config_script = str((REPO_ROOT / "bootstrap" / "runtime-config.sh").resolve())
+    hook_script = str((REPO_ROOT / "bootstrap" / "run-interactive-worker-hook.sh").resolve())
+    if tokens == ["/bin/bash", config_script, "diagnose"]:
+        return True
+    if tokens == ["/bin/bash", hook_script, "cli", "status"]:
+        return True
+    if len(tokens) == 3 and tokens[1] == status_script and tokens[2] == "workers":
+        return True
+    if (len(tokens) == 4 and tokens[1] == status_script
+            and tokens[2] in ("task", "operation") and tokens[3].isdigit()):
+        return True
+    if (len(tokens) in (3, 5) and tokens[1] == status_script
+            and tokens[2] == "ready"):
+        return len(tokens) == 3 or (tokens[3] == "--limit" and tokens[4].isdigit())
+    return False
+
+
 def _external_receipt_recovery_target(
         state: Mapping[str, Any]) -> Optional[Tuple[str, str]]:
     """(aone_id, project_id) when the pending op is a frozen external-write
@@ -1057,7 +1081,7 @@ def _exact_receipt_recovery(
     wrap.sh keeps free TRAILING arguments (--summary-file/--summary-stdin/
     status …) because the comment body is data, not shell — composition is
     already rejected by _standalone_bash_tokens. Returns
-    ("wrap"|"claim", aone_id, project_id_or_None).
+    ("wrap:<subcommand>"|"claim:<subcommand>", aone_id, project_id_or_None).
     """
     tokens = _standalone_bash_tokens(event)
     if tokens is None or len(tokens) < 4 or tokens[0] != "/bin/bash":
@@ -1069,12 +1093,53 @@ def _exact_receipt_recovery(
             return None
         if not tokens[3].isdigit():
             return None
-        return "wrap", tokens[3], None
+        return "wrap:%s" % tokens[2], tokens[3], None
     if tokens[1] == claim_script:
         if (len(tokens) != 5 or tokens[2] not in ("release", "finish")
                 or not tokens[3].isdigit() or not tokens[4].isdigit()):
             return None
-        return "claim", tokens[3], tokens[4]
+        return "claim:%s" % tokens[2], tokens[3], tokens[4]
+    return None
+
+
+def _receipt_recovery_matches_kind(
+        state: Mapping[str, Any], command: Tuple[str, str, Optional[str]]) -> bool:
+    pending = state.get("pendingOperation")
+    if not isinstance(pending, Mapping):
+        return False
+    kind = str(pending.get("kind") or "")
+    action = command[0]
+    if kind == "comment":
+        return action in ("wrap:sync", "wrap:done", "wrap:done-no-status")
+    if kind == "status":
+        return action == "wrap:done"
+    if kind == "release-tag":
+        return action == "claim:release"
+    if kind == "finish-tag":
+        return action == "claim:finish"
+    return False
+
+
+def _exact_operation_recovery(event: Mapping[str, Any]) -> Optional[str]:
+    """Recognize direct, fenced receipt abort/reconcile recovery commands."""
+    tokens = _standalone_bash_tokens(event)
+    hook_script = str((REPO_ROOT / "bootstrap" / "run-interactive-worker-hook.sh").resolve())
+    if (tokens is None or len(tokens) < 6 or tokens[0] != "/bin/bash"
+            or tokens[1] != hook_script or tokens[2] != "cli"
+            or not tokens[4].isdigit()):
+        return None
+    if tokens[3] == "operation-abort":
+        if len(tokens) == 6 or (len(tokens) == 7 and tokens[6] == "--unknown"):
+            return tokens[4]
+        return None
+    if tokens[3] != "operation-reconcile":
+        return None
+    if len(tokens) == 6 and tokens[5] == "--not-found":
+        return tokens[4]
+    if (len(tokens) == 7
+            and ((tokens[5] == "--not-found" and tokens[6] == "--no-retry")
+                 or tokens[5] == "--found")):
+        return tokens[4]
     return None
 
 
@@ -1278,6 +1343,12 @@ def _guard_pre_tool_use(store: StateStore, client_name: str,
         if turn_reason:
             return turn_reason
 
+    # UNKNOWN and terminal-state recovery must never hide the evidence needed
+    # to choose a lawful next action. These exact commands are read-only and do
+    # not weaken task/session ownership fencing for mutations.
+    if _exact_readonly_diagnostic(event):
+        return None
+
     # claim.sh is itself the database-first recovery gate.  It is the only
     # command allowed through an uncertain/lost local state, and only for the
     # exact carried task. Its local CAS, server slot check and receipt still
@@ -1309,9 +1380,16 @@ def _guard_pre_tool_use(store: StateStore, client_name: str,
             if (recovery_target is not None
                     and recovery_command[1] == recovery_target[0]
                     and (recovery_command[2] is None
-                         or recovery_command[2] == recovery_target[1])):
+                         or recovery_command[2] == recovery_target[1])
+                    and _receipt_recovery_matches_kind(state, recovery_command)):
                 return None
         # 不匹配（subagent / 别的 aone / 无可恢复回执）→ 维持原有阻断语义。
+    operation_recovery_target = _exact_operation_recovery(event)
+    if operation_recovery_target and local_reason and binding is None:
+        recovery_target = _external_receipt_recovery_target(state)
+        if (recovery_target is not None
+                and operation_recovery_target == recovery_target[0]):
+            return None
     if local_reason:
         return local_reason
     current = state.get("current")
@@ -3588,10 +3666,64 @@ def operation_begin(aone_id: str, kind: str, material: str, *,
             store.save_unlocked(latest)
     if unknown_short_circuit is not None:
         return unknown_short_circuit
-    begun = cp.begin_operation(
-        operation_request,
-        request_id="jarvis-interactive-operation-begin-%s" %
-        hashlib.sha256(operation_key.encode()).hexdigest()[:24])
+    try:
+        begun = cp.begin_operation(
+            operation_request,
+            request_id="jarvis-interactive-operation-begin-%s" %
+            hashlib.sha256(operation_key.encode()).hexdigest()[:24])
+    except ControlPlaneRejected as exc:
+        # 400/401/403 are authoritative HTTP responses: the begin transaction
+        # did not run, therefore the Aone side effect cannot have started.
+        if exc.status in (400, 401, 403):
+            with store.locked():
+                latest = store.load_unlocked()
+                pending = latest.get("pendingOperation")
+                if (isinstance(pending, Mapping)
+                        and str(pending.get("operationKey")) == operation_key):
+                    latest["pendingOperation"] = None
+                    store.save_unlocked(latest)
+        raise
+    except StaleFence:
+        # A 412 proves this process no longer owns the assignment.  Keeping a
+        # receipt slot or suggesting another claim with the old fence would
+        # turn a deterministic ownership loss into an unrecoverable loop.
+        _clear_lost_current(
+            store, state["workerKey"], current["sessionId"],
+            current["fenceToken"], "stale_fence:operation_begin")
+        raise
+    except ControlPlaneConflict as exc:
+        # A 409 may mean the idempotent begin committed previously.  Preserve
+        # the key (and a returned operation id when available) so point-read
+        # can decide whether the external write is safe to resume.
+        with store.locked():
+            latest = store.load_unlocked()
+            pending = latest.get("pendingOperation")
+            if (isinstance(pending, Mapping)
+                    and str(pending.get("operationKey")) == operation_key):
+                frozen = dict(pending)
+                frozen["status"] = "UNKNOWN"
+                frozen["proceed"] = False
+                operation_id = _field(
+                    exc.response, "operationId", "operation_id", "id")
+                if operation_id is not None:
+                    frozen["operationId"] = operation_id
+                latest["pendingOperation"] = frozen
+                store.save_unlocked(latest)
+        raise
+    except ControlPlaneUnavailable:
+        # No response (including an indeterminate 5xx) cannot prove whether the
+        # transaction committed. Keep the key and expose point-read recovery.
+        with store.locked():
+            latest = store.load_unlocked()
+            pending = latest.get("pendingOperation")
+            if (isinstance(pending, Mapping)
+                    and str(pending.get("operationKey")) == operation_key):
+                frozen = dict(pending)
+                frozen["status"] = "UNKNOWN"
+                frozen["proceed"] = False
+                latest["pendingOperation"] = frozen
+                store.save_unlocked(latest)
+        raise
     operation = begun.get("operation") if isinstance(begun, Mapping) else None
     if not isinstance(operation, Mapping):
         raise RuntimeError("operation begin returned no receipt")
@@ -3684,7 +3816,7 @@ def operation_abort(aone_id: str, message: str, *,
     pending = _pending_operation(state)
     error = {"errorType": "AoneOperationFailed", "message": str(message)[:500]}
     if pending.get("operationId") is not None:
-        cp.fail_operation({
+        request = {
             "operationId": pending["operationId"],
             "workerKey": state["workerKey"],
             "processUuid": state["processUuid"],
@@ -3693,8 +3825,18 @@ def operation_abort(aone_id: str, message: str, *,
             "unknown": bool(unknown),
             "retryAllowed": not unknown,
             "retryAfterSeconds": 0,
-        }, request_id="jarvis-interactive-operation-abort-%s" %
-        hashlib.sha256(str(pending["operationId"]).encode()).hexdigest()[:24])
+        }
+        if unknown:
+            cp.fail_operation(
+                request, request_id="jarvis-interactive-operation-abort-%s" %
+                hashlib.sha256(str(pending["operationId"]).encode()).hexdigest()[:24])
+        else:
+            cp.mark_operation_not_started(
+                {key: value for key, value in request.items()
+                 if key not in ("error", "unknown", "retryAllowed", "retryAfterSeconds")}
+                | {"reason": str(message)[:500]},
+                request_id="jarvis-interactive-operation-not-started-%s" %
+                hashlib.sha256(str(pending["operationId"]).encode()).hexdigest()[:24])
     with store.locked():
         latest = store.load_unlocked()
         latest_pending = latest.get("pendingOperation")
@@ -3712,7 +3854,7 @@ def operation_abort(aone_id: str, message: str, *,
             frozen["status"] = "UNKNOWN"
             latest["pendingOperation"] = frozen
         else:
-            # 定性失败：服务端进 RETRY_WAIT，本地清槽，下轮重新 begin 重试。
+            # 服务端确认副作用未开始；本地 intent 可安全清理，下次 begin 可重试。
             latest["pendingOperation"] = None
         store.save_unlocked(latest)
     return {"aborted": True, "unknown": bool(unknown)}
@@ -3727,7 +3869,36 @@ def operation_reconcile(aone_id: str, *, found: bool,
     current = _matching_current(state, aone_id)
     pending = _pending_operation(state)
     if pending.get("operationId") is None:
-        raise RuntimeError("pending operation receipt has no operationId to reconcile")
+        try:
+            point = cp.get_operation_by_key(
+                current["taskId"], current["generation"], pending["operationKey"])
+        except ControlPlaneRejected as exc:
+            if exc.status != 404:
+                raise
+            # Point-read absence is authoritative: begin never committed, hence
+            # no external write was authorized. Clear the local tombstone.
+            with store.locked():
+                latest = store.load_unlocked()
+                if (isinstance(latest.get("pendingOperation"), Mapping)
+                        and str(latest["pendingOperation"].get("operationKey")) ==
+                        str(pending.get("operationKey"))):
+                    latest["pendingOperation"] = None
+                    store.save_unlocked(latest)
+            return {"proceed": False, "found": False, "notStarted": True}
+        operation = point.get("operation") if isinstance(point, Mapping) else None
+        operation_id = _field(operation, "id", "operationId") if isinstance(operation, Mapping) else None
+        if operation_id is None:
+            raise RuntimeError("operation point-read returned no receipt")
+        pending = dict(pending)
+        pending["operationId"] = operation_id
+        with store.locked():
+            latest = store.load_unlocked()
+            latest_pending = latest.get("pendingOperation")
+            if (not isinstance(latest_pending, Mapping)
+                    or str(latest_pending.get("operationKey")) != str(pending.get("operationKey"))):
+                raise ControlPlaneConflict("interactive worker changed during operation point-read")
+            latest["pendingOperation"] = pending
+            store.save_unlocked(latest)
     request: Dict[str, Any] = {
         "operationId": pending["operationId"],
         "workerKey": state["workerKey"],
