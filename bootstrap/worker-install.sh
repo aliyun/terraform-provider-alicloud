@@ -72,6 +72,29 @@ lowest=$(printf '%s\n2.17\n' "$glibc" | sort -V | awk 'NR==1')
 os_name=$(grep -E '^PRETTY_NAME=' /etc/os-release 2>/dev/null | cut -d= -f2 | tr -d '"')
 ok "OS=$os_name  arch=$arch  glibc=$glibc  kernel=$(uname -r)"
 
+# Cold-start latency admission probe. The fleet architecture spawns many
+# short-lived processes (a1id → guard → a1, claim.sh, claude); on a loaded
+# shared host whose page cache is constantly evicted by co-tenant services,
+# cold reads of interpreter/stdlib files can take 3-60s PER PROCESS — the
+# first canary degraded exactly this way (python cold start 64s → every a1
+# call timed out → orphan locks snowballed; see Aone 84550781). Measure a
+# python cold start now: warm caches make this optimistic, so a FAILURE here
+# is definitive while a pass is necessary-but-not-sufficient.
+py_probe_ms=0
+if command -v python3 >/dev/null 2>&1; then
+  t0=$(date +%s%N); python3 -c "import json,re,ssl" >/dev/null 2>&1; t1=$(date +%s%N)
+  py_probe_ms=$(( (t1 - t0) / 1000000 ))
+  if [ "$py_probe_ms" -gt 3000 ]; then
+    warn "python cold-start probe ${py_probe_ms}ms (>3000ms) — host storage/page-cache"
+    warn "pressure makes this machine UNSUITABLE for short-process fleet workloads."
+    warn "Set JARVIS_IGNORE_COLDSTART=1 to proceed anyway (not recommended)."
+    [ "${JARVIS_IGNORE_COLDSTART:-0}" = "1" ] \
+      || die "cold-start admission failed (${py_probe_ms}ms); pick a cleaner host"
+  else
+    ok "cold-start probe: python3 imports in ${py_probe_ms}ms"
+  fi
+fi
+
 # ---------------------------------------------------------------------------
 step "2. Install python3 (bridge needs 3.8+) and git if missing"
 have_py3() {
