@@ -242,6 +242,7 @@ class SchedulerComposition:
             "freeSlots": 1,
             "capabilities": {
                 "role": "scheduler",
+                "dispatch": {"pull": False},
                 "scheduledJobApi": "v1",
                 "jobKeys": [definition.id for definition in JOBS],
             },
@@ -319,6 +320,10 @@ def _require_active_worker(response: Any, worker_key: str, host_id: str,
     if not isinstance(capabilities, Mapping) or capabilities.get("role") != "scheduler":
         raise SchedulerCompositionError(
             "Scheduler Worker register acknowledgement lacks capabilities.role=scheduler")
+    dispatch = capabilities.get("dispatch")
+    if not isinstance(dispatch, Mapping) or dispatch.get("pull") is not False:
+        raise SchedulerCompositionError(
+            "Scheduler Worker register acknowledgement lacks capabilities.dispatch.pull=false")
 
 
 def _positive_float(value: Any, name: str) -> float:

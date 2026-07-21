@@ -39,6 +39,7 @@ Bridge restart 已保障业务 Session/SubAgent 不间断。
 ```text
 worker_key = bridge-scheduler
 capabilities.role = scheduler
+capabilities.dispatch.pull = false
 host_id = AgenticTools-Macmini.local
 ```
 
@@ -460,7 +461,8 @@ Scheduler composition 在首次 job 注册前必须完成以下顺序：
 
 1. 使用 Task API 的同一个控制面 token 注册固定 `bridge-scheduler` Worker；Bridge 先精确
    校验本机 hostname/FQDN，控制面再次精确校验
-   `host_id=AgenticTools-Macmini.local` 和 `capabilities.role=scheduler`；
+   `host_id=AgenticTools-Macmini.local`、`capabilities.role=scheduler` 和
+   `capabilities.dispatch.pull=false`；
 2. 确认控制面返回的 Worker 为当前 `boot_id`、`process_uuid` 且为 ACTIVE；
 3. 在每个 scheduled-job API 请求中携带该 `worker_key` 和 `process_uuid`；控制面在同一事务内校验；
 4. 注册完整 `JOBS` 快照；
@@ -548,7 +550,7 @@ bridge/
 | U2 | 已提交，待预发验证 | `jarvis_scheduled_job` 已创建；AutomationAgent Code Review `28719590` 包含注册、状态 API、恢复和 Board Scheduled Jobs 展示。该 Code Review 尚未完成 Java 21 预发验证。 |
 | U3 | 部分完成（控制面骨架） | Bridge MR `28675904` 已包含 import-safe `SchedulerEngine`、`ScannerRuntime`、slot admission、失败上报和本进程 stop admission。未接 legacy runner、数据面 publisher 或 Bridge composition。 |
 | C4 | 已提交，待预发联调 | Bridge MR `28675904` 已包含标准库 HTTP adapter：register/list/start/complete/fail/recover-interrupted、UTC 时间编解码、严格 `admitted` slot 准入及异常 fail-closed。AutomationAgent Code Review `28719590` 的 `start` 响应已包含 `{admitted, job}`。两端尚未完成预发联调。 |
-| C5 | 已提交，待预发联调 | Bridge 已实现固定 `bridge-scheduler`/`AgenticTools-Macmini.local` composition、本机 hostname/FQDN gate、`boot_id + process_uuid` 注册确认、READY/OFFLINE、quiesce admission，以及 `daily.probe` 的旧/新单 job 切换；AutomationAgent 已提交固定 host、ACTIVE process 和 API 的服务端校验及 Board Worker 展示。两端复用同一控制面 token，并分别校验允许的 hostId。该阶段不停止或重启 Task Worker。 |
+| C5 | 已提交，待预发联调 | Bridge 已实现固定 `bridge-scheduler`/`AgenticTools-Macmini.local` composition、本机 hostname/FQDN gate、`boot_id + process_uuid` 注册确认、`dispatch.pull=false`、READY/OFFLINE、quiesce admission，以及 `daily.probe` 的旧/新单 job 切换；AutomationAgent 已提交固定 host、ACTIVE process 和 API 的服务端校验及 Board Worker 展示。两端复用同一控制面 token，并分别校验允许的 hostId；Scheduler 不进入普通 Task queue-pull Worker 集合。该阶段不停止或重启 Task Worker。 |
 | C6 | 未开始 | 控制面预发验证：固定 Worker 拒绝非远端身份、重复启动拒绝、slot admission、interrupted recovery、Board 展示和控制面不可用 fail-closed。 |
 | D1 | 本轮不实施 | Daily/PR/Aone/Probe 的业务状态和 runner 旁路迁移脚本：导出、校验、回放、对账与原子切换，单独评审 |
 

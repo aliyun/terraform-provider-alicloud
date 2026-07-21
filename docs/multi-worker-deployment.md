@@ -47,7 +47,9 @@ separate, fenced control-plane path and may be started only on
 `processUuid`, and the same control-plane token used by the Task API. Bridge
 first verifies its local hostname/FQDN, and AutomationAgent independently
 requires the exact allowed `hostId` for the fixed Worker. It is not a Task
-executor and does not authorize any other host to run scheduler jobs.
+executor: Bridge advertises `capabilities.dispatch.pull=false`, and
+AutomationAgent rejects the fixed Scheduler registration unless that opt-out is
+explicit. It does not authorize any other host to run scheduler jobs.
 
 Use `bridge/jarvis.env` to enable it only for a named job.  A job has one route:
 `legacy` (default) or `new`; never enable both.  The first supported handover is
