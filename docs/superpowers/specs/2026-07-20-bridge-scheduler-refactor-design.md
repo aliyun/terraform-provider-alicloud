@@ -13,7 +13,7 @@
 1. Bridge 内只保留一个常驻 `SchedulerEngine`，所有时间驱动任务都通过显式 `JOBS` 注册表调度。
 2. 调度器只运行扫描或可重放维护，不直接执行需要长期恢复的业务工作；业务工作继续写入现有 Task 控制面。
 3. `PersistenceExecutor` 从 Bridge 拆成独立 Task Worker 服务。只有拆分完成后，才允许承诺 Bridge restart 不会终止正在运行的 Session/SubAgent。
-4. job 定义、当前 slot、checkpoint、状态、最近结果和 `next_due_at` 保存到控制面单行当前态，供恢复与 Board 展示；不新增 run 历史表。
+4. job 定义、当前 slot、checkpoint、状态、最近结果和 `next_run_at` 保存到控制面单行当前态，供恢复与 Board 展示；不新增 run 历史表。
 5. restart 采用 `QUIESCING → drain Scanner → Scheduler OFFLINE → 新实例 READY` 协议；Task Worker 不在 Bridge restart 的操作范围内。
 6. Aone、Aone Reply、PR 生命周期均保持 at-least-once：先持久化 Task 或事件 WAL，再推进 checkpoint，禁止用内存状态作为完成依据。
 7. Probe 继续是一次性 Ephemeral 作业，不扩展为 `probe_finding` Task；它受统一 Scheduler 管理，但不占用持久 Task Worker。
@@ -220,14 +220,92 @@ revision 升级不得复用旧 slot identity。旧分支的 `TriggerPlanner` 可
 | Bridge pause | 本地运维开关，可保留 |
 | PID、restart ID、READY | 本地进程握手文件，不作为业务恢复真源 |
 
-`jarvis_scheduled_job` 每个 `(scheduler_key, job_key)` 只有一行，至少保存：
+`jarvis_scheduled_job` 一行代表一个已注册 job，同时保存 job 定义和当前运行状态。
+详细属性统一放入 `definition` JSON；看板、调度和恢复需要频繁查询的字段单独展开：
 
-- definition revision/digest/snapshot、enabled；
-- status、current slot、last completed slot、checkpoint、next due；
-- current worker、state version、deadline；
-- last started/completed/error。
+| 字段 | 类型 | 含义与更新规则 |
+| --- | --- | --- |
+| `id` | `BIGINT` | 数据库自增主键，不参与调度 identity |
+| `job_key` | `VARCHAR(128)` | 稳定 job ID，例如 `aone.scan`，全表唯一 |
+| `job_name` | `VARCHAR(256)` | 看板展示名称 |
+| `definition` | `LONGTEXT` | definition JSON：revision、description、schedule、runner、timeout、retry 和 replay policy |
+| `enabled` | `TINYINT` | 是否允许调度；未出现在本次完整注册中的历史 job 置为 `0`，不删除 |
+| `status` | `VARCHAR(32)` | `IDLE`、`RUNNING`、`RECOVERING`、`ERROR`、`DISABLED` |
+| `next_run_at` | `DATETIME(3)` | 下次正常执行或失败重试时间；运行中、永久失败和禁用时为空 |
+| `current_slot` | `VARCHAR(256)` | 当前计划批次，使用 `job_key + revision + scheduled_for_utc`；重试和恢复复用原值 |
+| `current_worker_id` | `VARCHAR(128)` | 当前有权提交该 slot 结果的 Scheduler 实例 |
+| `lease_expire_at` | `DATETIME(3)` | 当前 Scheduler 所有权到期时间；过期的 `RUNNING` 可由新实例接管 |
+| `checkpoint` | `LONGTEXT` | 最近成功提交的扫描进度 JSON |
+| `last_started_at` | `DATETIME(3)` | 最近一次开始执行时间 |
+| `last_finished_at` | `DATETIME(3)` | 最近一次成功或失败结束时间 |
+| `last_error` | `VARCHAR(2048)` | 最近错误摘要，不保存凭证或完整业务载荷 |
+| `version` | `BIGINT` | CAS 乐观锁和旧实例 fencing；抢占、完成、失败、接管和启停时递增 |
+| `gmt_create` / `gmt_modified` | `DATETIME(3)` | 注册时间和最后更新时间 |
 
-不新增 run-history 表。
+建表定义固定为：
+
+```sql
+CREATE TABLE jarvis_scheduled_job (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  job_key VARCHAR(128) NOT NULL COMMENT '稳定 job ID',
+  job_name VARCHAR(256) NOT NULL COMMENT '看板展示名称',
+  definition LONGTEXT NOT NULL COMMENT 'job definition JSON',
+
+  enabled TINYINT NOT NULL DEFAULT 1 COMMENT '是否允许调度',
+  status VARCHAR(32) NOT NULL DEFAULT 'IDLE'
+    COMMENT 'IDLE/RUNNING/RECOVERING/ERROR/DISABLED',
+  next_run_at DATETIME(3) NULL COMMENT '下次执行或重试时间',
+
+  current_slot VARCHAR(256) NULL COMMENT '当前计划批次',
+  current_worker_id VARCHAR(128) NULL COMMENT '当前 Scheduler 实例',
+  lease_expire_at DATETIME(3) NULL COMMENT '执行所有权过期时间',
+
+  checkpoint LONGTEXT NULL COMMENT '已提交的扫描进度 JSON',
+  last_started_at DATETIME(3) NULL COMMENT '最近开始时间',
+  last_finished_at DATETIME(3) NULL COMMENT '最近完成时间',
+  last_error VARCHAR(2048) NULL COMMENT '最近错误摘要',
+
+  version BIGINT NOT NULL DEFAULT 0 COMMENT 'CAS 与 fencing 版本',
+  gmt_create DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  gmt_modified DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
+    ON UPDATE CURRENT_TIMESTAMP(3),
+
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_job_key (job_key),
+  KEY idx_schedule (enabled, status, next_run_at),
+  KEY idx_worker (current_worker_id, status)
+);
+```
+
+`definition` 示例：
+
+```json
+{
+  "revision": 1,
+  "description": "扫描工作项并生成持久化 Task",
+  "schedule": {"type": "interval", "seconds": 1800},
+  "runner": {"type": "handler", "key": "aone.scan"},
+  "timeoutSeconds": 300,
+  "retryDelaySeconds": 30,
+  "replayPolicy": "TASK_UPSERT_IDEMPOTENT"
+}
+```
+
+状态字段按以下规则更新：
+
+| 场景 | `status` | `next_run_at` | `current_slot` | `current_worker_id` | `lease_expire_at` | `version` |
+| --- | --- | --- | --- | --- | --- | --- |
+| 首次注册 | `IDLE` | 首次计划时间 | `NULL` | `NULL` | `NULL` | `0` |
+| 到期抢占 | `RUNNING` | `NULL` | 设置稳定 slot | 设置实例 ID | 设置租约 | `+1` |
+| 运行心跳 | `RUNNING` | `NULL` | 不变 | 不变 | 延长租约 | 不变 |
+| 成功完成 | `IDLE` | 下次计划时间 | `NULL` | `NULL` | `NULL` | `+1` |
+| 可重试失败 | `ERROR` | 重试时间 | 保留原 slot | `NULL` | `NULL` | `+1` |
+| 重试 | `RUNNING` | `NULL` | 复用原 slot | 设置新实例 | 设置新租约 | `+1` |
+| 租约过期接管 | `RECOVERING` | `NULL` | 复用原 slot | 替换为新实例 | 设置新租约 | `+1` |
+| 永久失败 | `ERROR` | `NULL` | 保留原 slot | `NULL` | `NULL` | `+1` |
+| 禁用 | `DISABLED` | `NULL` | `NULL` | `NULL` | `NULL` | `+1` |
+
+不新增 run-history 表；历史运行明细继续由日志和 Task/Session 时间线承担。
 
 ### 8.2 本地状态迁移
 
@@ -325,10 +403,10 @@ launchd 不得直接用 `kickstart -k` 跳过 quiesce/drain；必须先完成协
 job 状态更新必须匹配：
 
 ```text
-scheduler_key + job_key + current_worker_id + expected_state_version
+job_key + current_slot + current_worker_id + expected_version
 ```
 
-每次成功 CAS 递增 `state_version`。新 Worker 接管后，旧 Worker 的迟到结果、Task ACK 和 checkpoint 提交都必须被拒绝。
+除心跳续租外，每次成功 CAS 都递增 `version`。新 Worker 接管后，旧 Worker 的迟到结果、Task ACK 和 checkpoint 提交都必须被拒绝。
 
 ## 11. Board 与可观测性
 
@@ -338,10 +416,10 @@ scheduler_key + job_key + current_worker_id + expected_state_version
 | --- | --- |
 | job | id、description、revision、enabled |
 | schedule | interval/daily/adaptive 摘要与时区 |
-| current | status、current slot、worker、deadline |
-| next | `next_due_at`；永久失败或禁用时明确显示原因 |
-| latest | last started、last completed、duration、last error |
-| recovery | checkpoint 摘要、RECOVERING 状态、state version |
+| current | `status`、`current_slot`、`current_worker_id`、`lease_expire_at` |
+| next | `next_run_at`；永久失败或禁用时明确显示原因 |
+| latest | `last_started_at`、`last_finished_at`、duration、`last_error` |
+| recovery | checkpoint 摘要、RECOVERING 状态、`version` |
 
 Board 只读控制面当前态，不通过轮询 Bridge 内存拼装，也不触发 job。
 
