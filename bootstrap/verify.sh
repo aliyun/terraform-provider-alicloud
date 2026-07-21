@@ -185,9 +185,10 @@ for skill in \
     chk_skill "$skill"
 done
 
-if [ "$JARVIS_BRIDGE_ROLE" = "worker" ]; then
-    echo "SKIP cloudspec-core-snapshot (JARVIS_BRIDGE_ROLE=worker)"
-elif bash "$(git rev-parse --show-toplevel)/bootstrap/cloudspec-core.sh" check >/dev/null 2>&1; then
+# cloudspec-core snapshot check is pure repo-local file validation (lock file
+# + vendored skill mirror, jq only) — nothing scheduler-specific, every role
+# runs it. Last surviving worker-skip removed with the rest of the role gate.
+if bash "$repo_root/bootstrap/cloudspec-core.sh" check >/dev/null 2>&1; then
     echo "PASS cloudspec-core-snapshot"
 else
     echo "FAIL cloudspec-core-snapshot"

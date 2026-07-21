@@ -5,6 +5,19 @@ set -euo pipefail
 
 prog="$(basename "$0")"
 
+# Self-load the repo-local .env when JARVIS_GITHUB_TOKEN isn't already in the
+# environment. Direct invocations (verify.sh spawning us as a child process,
+# ad-hoc shells, cron) shouldn't depend on the caller pre-exporting the token —
+# the bridge runtime exports it, but nothing else is obligated to. set -a
+# exports every var .env defines even where a line forgets `export`.
+_ghid_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -z "${JARVIS_GITHUB_TOKEN:-}" ] && [ -f "$_ghid_dir/.env" ]; then
+    set -a
+    # shellcheck source=/dev/null
+    source "$_ghid_dir/.env" || true
+    set +a
+fi
+
 # Commit identity for jarvis-authored contributions. CLA-assistant keys on the
 # COMMIT AUTHOR email (not the push token / PR opener), so commits must be
 # authored as the CLA-signed api-tool-agent identity or the license/cla check
