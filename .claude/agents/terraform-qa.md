@@ -5,7 +5,7 @@ description: >-
   只向编排层返回结构化结果，不代表团队对外发声。
 tools: Bash, Read, Grep, WebFetch, Skill
 skills: [invoke-terraform-acc-test-remote]
-model: opus
+model: inherit
 ---
 
 # terraform-qa — 内部质量角色

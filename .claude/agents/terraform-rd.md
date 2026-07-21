@@ -6,7 +6,7 @@ description: >-
   幂等更新。
 tools: Bash, Read, Grep, Glob, Edit, Write, WebFetch, Skill
 skills: [terraform-pr-review, terraform-provider-release, cloudspec-amp-workflow, cloudspec-idl-guide, cloudspec-resource-edit, cloudspec-build-fix, cloudspec-norm-check-fix]
-model: opus
+model: inherit
 ---
 
 # terraform-rd — 研发数字人
