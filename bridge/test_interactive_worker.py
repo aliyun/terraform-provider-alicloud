@@ -216,6 +216,7 @@ class InteractiveWorkerTest(unittest.TestCase):
         self.assertEqual(len(registrations), 2)
         payload = registrations[0][1][0]
         self.assertFalse(payload["capabilities"]["dispatch"]["pull"])
+        self.assertEqual(payload["capabilities"]["bridgeRole"], "interactive")
         self.assertEqual(payload["maxSlots"], 1)
         self.assertNotIn("lease_task", [c[0] for c in fake.calls])
         self.assertEqual(daemon.call_count, 2)
@@ -2086,6 +2087,68 @@ class InteractiveWorkerTest(unittest.TestCase):
         self.assertNotEqual(next_claim["runtimeSessionId"], first_runtime)
         self.assertIn("cycle:2", next_claim["runtimeSessionId"])
 
+    def test_claim_conflict_becomes_nonblocking_audited_block(self):
+        self._seed()
+        fake = FakeClient()
+        fake.claim_error = worker.ControlPlaneConflict(
+            "control plane HTTP 409 Conflict.RecoveryRequired: "
+            "task is not claimable from state RECOVERY_REQUIRED",
+            status=409,
+            code="Conflict.RecoveryRequired",
+            response={
+                "code": "Conflict.RecoveryRequired",
+                "message": "task is not claimable",
+                "data": {
+                    "taskId": 645,
+                    "currentState": "RECOVERY_REQUIRED",
+                    "owner": "worker-old",
+                    "leaseExpireAt": "2026-07-21T12:00:00Z",
+                    "allowedAction": "ORPHAN_REQUEUE",
+                },
+            })
+        with mock.patch.object(worker, "_client", return_value=fake):
+            with self.assertRaises(worker.ControlPlaneConflict):
+                worker.prepare_claim("84345050", "2100304", "blocked")
+
+        state = self._store().load()
+        self.assertIsNone(state["pendingClaim"])
+        self.assertIsNone(state["current"])
+        self.assertEqual(state["lastClaimBlocked"]["phase"], "CLAIM_BLOCKED")
+        self.assertEqual(state["lastClaimBlocked"]["currentState"],
+                         "RECOVERY_REQUIRED")
+        self.assertEqual(state["lastClaimBlocked"]["allowedAction"],
+                         "ORPHAN_REQUEUE")
+        self.assertEqual(len(state["claimBlocks"]), 1)
+        self.assertIsNone(worker._local_tool_block_reason(state))
+
+        # A later independent claim is allowed and does not erase the audit for
+        # the blocked work item.
+        fake.claim_error = None
+        with mock.patch.object(worker, "_client", return_value=fake):
+            worker.prepare_claim("84345051", "2100304", "independent")
+        state = self._store().load()
+        self.assertEqual(state["current"]["aoneId"], "84345051")
+        self.assertEqual(state["claimBlocks"][0]["aoneId"], "84345050")
+
+    def test_claim_block_survives_incarnation_without_becoming_pending(self):
+        state = self._seed()
+        state["claimBlocks"] = [{
+            "aoneId": "84345050", "projectId": "2100304",
+            "phase": "CLAIM_BLOCKED", "claimRequestId": "claim-rejected",
+            "blockedAt": 100,
+        }]
+        state["lastClaimBlocked"] = dict(state["claimBlocks"][0])
+        rebuilt, same = worker._build_incarnation_state(
+            state, client_name="codex", session_id="native-thread-1",
+            host_pid=os.getpid(), host_process_started_at="new-process",
+            verify_command=True, cwd="/workspace", branch="worktree",
+            source="resume", now=200)
+        self.assertFalse(same)
+        self.assertIsNone(rebuilt["pendingClaim"])
+        self.assertEqual(rebuilt["claimBlocks"], state["claimBlocks"])
+        self.assertEqual(rebuilt["lastClaimBlocked"]["phase"],
+                         "CLAIM_BLOCKED")
+
     def test_blank_title_is_omitted_without_changing_interactive_revision(self):
         self._seed()
         fake = FakeClient()
@@ -2648,8 +2711,9 @@ class InteractiveWorkerTest(unittest.TestCase):
             }), 0)
         blocked = self._store().load()
         self.assertIsNone(blocked["current"])
-        self.assertEqual(blocked["pendingClaim"]["phase"], "READY_TO_RECOVER")
-        self.assertNotIn("claimRequestId", blocked["pendingClaim"])
+        self.assertIsNone(blocked["pendingClaim"])
+        self.assertEqual(blocked["lastClaimBlocked"]["phase"], "CLAIM_BLOCKED")
+        self.assertEqual(blocked["lastClaimBlocked"]["aoneId"], "84345050")
         self.assertIn("不得继续该单", output.getvalue())
 
     # --- mid-task external-write operation receipts (operation-begin/abort/reconcile) ---
