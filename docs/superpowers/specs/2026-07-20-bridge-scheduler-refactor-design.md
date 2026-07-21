@@ -31,6 +31,27 @@ marker 或事件 ledger；`PersistenceExecutor`/SubAgent 也不在本轮拆分�
 旁路脚本：先导出、校验和回放，再在单独变更中原子切换。故本轮不得切换旧循环，也不得宣称
 Bridge restart 已保障业务 Session/SubAgent 不间断。
 
+### 1.2 唯一远端 Scheduler Worker
+
+本轮的唯一 Scheduler 不新建表，也不向 `jarvis_scheduled_job` 增加 worker、run、lease、version
+字段。复用控制面现有 Worker 注册记录，固定使用：
+
+```text
+worker_key = bridge-scheduler
+capabilities.role = scheduler
+```
+
+该 Worker 使用已有的 `host_id`、`process_uuid`、`status` 和 heartbeat 表示当前 Scheduler 进程。
+远端 Bridge 必须先注册并保持这条固定 Worker 记录，才允许注册或更新 scheduled job；每个
+`register/start/complete/fail/recover` 请求均携带 `worker_key` 与 `process_uuid`，控制面只接受
+当前 ACTIVE 的 `bridge-scheduler` 进程。
+
+job 不永久保存 Worker 外键。job 的定义和当前状态需要跨同一远端机器的进程重启保留；Worker
+身份只在请求处理时校验。Board 单独读取固定 Worker 展示 Scheduler 状态。
+
+远端专属凭证限制、固定 Worker 注册和 scheduled-job API 的 Worker/process 校验属于 C5，当前
+尚未实现或部署；本文件不宣称本机已经无法启动 Scheduler。
+
 ## 2. 范围与非目标
 
 ### 2.1 目标
@@ -40,16 +61,17 @@ Bridge restart 已保障业务 Session/SubAgent 不间断。
 - 控制面可恢复未完成 slot，但不触发或迁移 Aone/PR 的业务数据面。
 - Board 可查看所有 job 的周期、当前状态、最近结果和下一次执行时间。
 - 新增 job 时只增加控制面 definition、状态契约和测试；实际 runner 迁移留给旁路数据面方案。
+- 只允许持有固定 `bridge-scheduler` Worker 身份的远端 Bridge 操作 scheduled job。
 
 ### 2.2 非目标
 
-- 不实现运行时动态注册、热 reload、多 Bridge 选主或跨主机迁移。
+- 不新增 Scheduler 专用表、通用选主表或跨主机迁移；单实例身份复用已有固定 Worker 记录。
 - 不把 Scanner run 建模为 Task、Session 或独立 Worker。
 - 不新增 `scheduled_job_run` 历史表。
 - 不改变现有 Task/Session 的业务状态机。
 - 不把 Board、Executor 或人工触发命令注册成定时 job。
 - 不在本次设计中把 Probe finding 持久化为 Task。
-- 不通过首版 scheduled-job 表实现多 Scheduler 选主、执行租约或通用扫描游标。
+- 不向首版 scheduled-job 表添加 `current_worker_id`、`current_run_id`、lease、version 或通用扫描游标。
 - 不在本轮修改 Daily/PR 本地 JSON、Task/Session、事件 ledger 或任何业务 cursor；也不以
   `jarvis_scheduled_job` 承载它们。
 - 不在本轮把 `PersistenceExecutor` 拆成独立服务，或迁移既有 Aone/PR/Probe runner。
@@ -114,6 +136,7 @@ flowchart LR
     end
 
     subgraph CP["控制面"]
+        SchedulerWorker["Worker: bridge-scheduler"]
         JobState["jarvis_scheduled_job"]
         Task["Task / Session"]
         Board["Worker / Job Board"]
@@ -125,8 +148,10 @@ flowchart LR
         Lease --> Agent
     end
 
-    Engine <-->|"register / update status"| JobState
+    Engine <-->|"register / heartbeat"| SchedulerWorker
+    Engine <-->|"worker_key + process_uuid\nregister / update status"| JobState
     Publisher -->|"tasks/upsert"| Task
+    SchedulerWorker --> Board
     JobState --> Board
     Task -->|"lease"| Lease
 ```
@@ -403,11 +428,24 @@ sequenceDiagram
 
 launchd 不得直接用 `kickstart -k` 跳过 quiesce/drain；必须先完成协议，再由 supervisor 拉起新进程。
 
-### 10.3 单实例约束与中断恢复
+### 10.3 固定 Scheduler Worker 与中断恢复
 
-首版明确只有一个活动 Scheduler，不在 `jarvis_scheduled_job` 中预埋 owner、lease 和 version。单实例由 `bridge/run.sh`、PID/restart ID 和 supervisor 保证：旧 Scheduler 完全退出后，新实例才能进入 READY 并接收运行。
+控制面使用已有 Worker 表的一条固定记录 `bridge-scheduler` 表示唯一 Scheduler。Scheduler
+启动先注册该 Worker（`capabilities.role=scheduler`），并以已有 `process_uuid` 与 heartbeat 保持
+当前进程身份。`bridge/run.sh` 的本机 PID 只用于本机进程管理，不是跨机器的 Scheduler 授权依据。
 
-新实例完成 `register` 后、首次 `list/tick` 前，composition 必须显式调用一次控制面
+Scheduler composition 在首次 job 注册前必须完成以下顺序：
+
+1. 以远端 Scheduler 专属凭证注册固定 `bridge-scheduler` Worker；
+2. 确认控制面返回的 Worker 为当前 `process_uuid` 且为 ACTIVE；
+3. 在每个 scheduled-job API 请求中携带该 `worker_key` 和 `process_uuid`；控制面在同一事务内校验；
+4. 注册完整 `JOBS` 快照；
+5. 首次 `list/tick` 前显式执行 interrupted recovery。
+
+固定 Worker 的专属凭证限制和 scheduled-job API 的 Worker/process 校验尚未实现。未完成前，
+`bridge-scheduler` 只是目标契约，不构成跨机器启动防护。
+
+新实例完成 job `register` 后、首次 `list/tick` 前，composition 必须显式调用一次控制面
 `POST /api/jarvis/v1/scheduled-jobs/recover-interrupted`。该调用返回严格的
 `{ "recovered": number, "jobs": [...] }`：`recovered` 必须与 `jobs` 数量相等，且每个
 返回 job 均为保留原 `next_run_at` 的 `IDLE`。HTTP、JSON 或响应契约不确定时 fail-closed，
@@ -423,7 +461,8 @@ SET status = 'IDLE',
 WHERE status = 'RUNNING';
 ```
 
-该更新不修改 `next_run_at`，原计划时间已经到期，因此会被立即重新执行。若未来确定支持多 Scheduler 选主，再单独引入 owner/lease/version；不为未确认场景提前增加字段。
+该更新不修改 `next_run_at`，原计划时间已经到期，因此会被立即重新执行。job 表保持当前
+字段；Worker 身份由每次请求的 `worker_key + process_uuid` 校验，不写入 job 行。
 
 ## 11. Board 与可观测性
 
@@ -437,7 +476,9 @@ WHERE status = 'RUNNING';
 | next | `next_run_at`；永久失败或禁用时明确显示原因 |
 | latest | `last_started_at`、`last_finished_at`、duration、`last_error` |
 
-Board 只读控制面当前态，不通过轮询 Bridge 内存拼装，也不触发 job。
+Board 只读控制面当前态，不通过轮询 Bridge 内存拼装，也不触发 job。Scheduled Jobs 区域之外，
+Board 还应展示固定 `bridge-scheduler` Worker 的 `host_id`、status、最近 heartbeat 与
+`process_uuid`；该展示属于 C5，当前未实现。
 
 ## 12. 代码结构
 
@@ -480,12 +521,12 @@ bridge/
 | 阶段 | 当前状态 | 交付与完成门 |
 | --- | --- | --- |
 | B0 | 已完成 | 组件 10→6、Aone 并集探测、控制面 wait、PR/每日本地持久状态 |
-| U1 | 未开始 | 模型、registry、修正后的纯 `TriggerPlanner` 及契约测试 |
-| U2 | 进行中 | 表已创建；AutomationAgent 已提交注册、状态 API 与 Board 查询实现，待预发流水线进入本 CR 后验收 |
-| U3 | 部分完成（控制面骨架） | 已提供 import-safe `SchedulerEngine`、`ScannerRuntime`、控制面/发布 Protocol 与聚焦 fake 测试：从控制面当前态规划到期 slot，`start` 未接纳时不执行，成功按“next due 校验 → durable publish → complete”提交，失败只上报一次 `fail`，并支持本进程 stop admission 与本地 slot 防重。下一步只补生产 HTTP adapter、composition 和运行控制；不接 legacy runner 或数据面 publisher。 |
-| C4 | 进行中 | 已提供 import-safe 标准库 HTTP adapter，覆盖 register/list/start/complete/fail/recover-interrupted、UTC 时间编解码、严格 `admitted` slot 准入与恢复 `{recovered,jobs}` 契约、网络/非 2xx/非法响应 fail-closed 单测；恢复只可由 composition 在启动阶段显式调用，仍待控制面预发 API 联调。 |
-| C5 | 未开始 | Scheduler composition、单实例 READY/OFFLINE、quiesce admission 与 Board/运行可观测性联调；不停止或重启 Task Worker |
-| C6 | 未开始 | 控制面预发验证：注册、状态恢复、重复 slot 拒绝、Board 展示和控制面不可用 fail-closed |
+| U1 | 已提交，待合入 | Bridge Job definition、显式 `JOBS` registry、`TriggerPlanner` 和契约测试已在 Bridge MR `28675904`。 |
+| U2 | 已提交，待预发验证 | `jarvis_scheduled_job` 已创建；AutomationAgent Code Review `28719590` 包含注册、状态 API、恢复和 Board Scheduled Jobs 展示。该 Code Review 尚未完成 Java 21 预发验证。 |
+| U3 | 部分完成（控制面骨架） | Bridge MR `28675904` 已包含 import-safe `SchedulerEngine`、`ScannerRuntime`、slot admission、失败上报和本进程 stop admission。未接 legacy runner、数据面 publisher 或 Bridge composition。 |
+| C4 | 已提交，待预发联调 | Bridge MR `28675904` 已包含标准库 HTTP adapter：register/list/start/complete/fail/recover-interrupted、UTC 时间编解码、严格 `admitted` slot 准入及异常 fail-closed。AutomationAgent Code Review `28719590` 的 `start` 响应已包含 `{admitted, job}`。两端尚未完成预发联调。 |
+| C5 | 未开始 | 固定 `bridge-scheduler` Worker 注册、远端专属凭证限制、job API 的 `worker_key + process_uuid` 校验、Scheduler composition、READY/OFFLINE、quiesce admission，以及 Board Scheduler Worker 展示。该阶段不停止或重启 Task Worker。 |
+| C6 | 未开始 | 控制面预发验证：固定 Worker 拒绝非远端身份、重复启动拒绝、slot admission、interrupted recovery、Board 展示和控制面不可用 fail-closed。 |
 | D1 | 本轮不实施 | Daily/PR/Aone/Probe 的业务状态和 runner 旁路迁移脚本：导出、校验、回放、对账与原子切换，单独评审 |
 
 执行顺序：
@@ -509,6 +550,8 @@ C4–C6 只完成控制面。D1 及独立 Task Worker/数据面验收前，禁�
 - 同 job 禁止 overlap，不同 job 允许在容量内并发。
 - Task/Event 未明确 durable ACK 时，runner 的业务 cursor 不推进。
 - 控制面不可用必须 fail-closed；遗留 `RUNNING` 在启动时恢复为可立即重跑的 `IDLE`。
+- 只有当前 ACTIVE 的 `bridge-scheduler` Worker 的 `worker_key + process_uuid` 可调用
+  scheduled-job 状态 API；非远端身份、过期进程或重复启动必须被控制面拒绝。
 
 ### 14.2 后续数据面迁移回归（D1，非本轮）
 
@@ -543,7 +586,7 @@ C4–C6 只完成控制面。D1 及独立 Task Worker/数据面验收前，禁�
 
 1. **Board 如何看调度？** 读取 `jarvis_scheduled_job` 当前态，展示 job、周期、状态、最近结果和 next due；Board 本身不是 job。
 2. **PersonaScheduler 与 ScanScheduler 是否合并？** 已合并。当前主干由 `AoneScheduler` 做 `assignedTo ∪ tracker ∪ idle-tagged work items` 并集探测；v14 只保留 `aone.scan`。
-3. **Bridge restart 是否会杀 SubAgent？** 当前会。目标方案先拆独立 Task Worker，再让 restart 只 quiesce/drain Scheduler/Scanner；U6–U8 是硬门。
+3. **Bridge restart 是否会杀 SubAgent？** 当前会；数据面独立与 Session 不间断不在本轮控制面范围，D1 后单独验收。
 4. **Aone/PR 更新会不会在 restart 时丢失？** 不会依赖通用 job checkpoint：Task 或事件 ledger/outbox 必须先获得 durable ACK，runner 才推进自己的业务 cursor；未知 ACK 使用相同 identity 重放。
 
 ## 16. 最终通过条件
@@ -552,7 +595,8 @@ C4–C6 只完成控制面。D1 及独立 Task Worker/数据面验收前，禁�
 
 1. `jarvis_scheduled_job` 的 register/list/start/complete/fail/recover 契约在预发可用，且 Board 只读展示当前态。
 2. Bridge 以生产 HTTP adapter 注册并读取 job 状态；stale/duplicate slot 被拒绝时不执行 runner，控制面不可用时 fail-closed。
-3. Scheduler 可完成单实例的 READY/OFFLINE 与 admission quiesce；它不操作 `PersistenceExecutor`、Task、Session 或旧业务 loop。
+3. 只有远端专属凭证注册的 ACTIVE `bridge-scheduler` Worker 可以调用 scheduled-job API；每个请求校验 `worker_key + process_uuid`。
+4. Scheduler 可完成单实例的 READY/OFFLINE 与 admission quiesce；它不操作 `PersistenceExecutor`、Task、Session 或旧业务 loop。
 
 以下十项是原始的**全量目标**，保留为后续 D1 数据面迁移与独立 Task Worker 的验收条件，不代表本轮交付完成门：
 
