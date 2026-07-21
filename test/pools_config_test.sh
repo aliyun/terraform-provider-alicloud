@@ -71,6 +71,12 @@ done
 jq -e '.pools.tf_provider.exclude_status | index("ByDesign") != null' "$POOLS_JSON" >/dev/null \
   && ok "tf_provider.exclude_status contains ByDesign" || bad "tf_provider.exclude_status missing ByDesign"
 
+jq -e '.pools.tf_customer.business_terminal_tags == [
+  {"name":"Terraform已合入","id":"568576"}
+]' "$POOLS_JSON" >/dev/null \
+  && ok "tf_customer business terminal tag is configured" \
+  || bad "tf_customer.business_terminal_tags must contain Terraform已合入(568576)"
+
 # S8: claim.ttl_min
 [ "$(jq '.claim.ttl_min' "$POOLS_JSON")" = "45" ] \
   && ok "claim.ttl_min 45" || bad "claim.ttl_min wrong"

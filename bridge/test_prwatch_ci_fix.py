@@ -472,6 +472,202 @@ class PrWatchWriteIdentityAndOutcomeTest(_DispatchBase):
         self.assertEqual(comments, [])
         self.assertEqual(self.handler.broadcasts, [])
 
+    def test_customer_merged_adds_business_terminal_tag_without_finish(self):
+        bot._prwatch_update(TID, project="1086837")
+        self.sched._gh_pr_state = lambda _url: ("MERGED", "2026-07-01T00:00:00Z")
+        ensured = []
+        self.sched._ensure_business_terminal_tags = (
+            lambda tid, project: ensured.append((tid, project)) or True)
+        self.sched._finish = lambda *_a: self.fail("tf_customer merge must not finish")
+        self.sched._ticket_guard = lambda *_a: self.fail(
+            "business terminal branch must run before terminal/npe guard")
+
+        self.sched._check_one(TID, self._entry())
+
+        self.assertEqual(ensured, [(TID, "1086837")])
+        self.assertFalse(bot._prwatch_has(TID))
+        self.assertEqual(len(self.events), 1)
+        self.assertIn(":merged:", self.events[0][2])
+
+    def test_customer_merged_tag_failure_keeps_watch(self):
+        bot._prwatch_update(TID, project="1086837")
+        self.sched._gh_pr_state = lambda _url: ("MERGED", "2026-07-01T00:00:00Z")
+        self.sched._ensure_business_terminal_tags = lambda *_a: False
+        self.sched._finish = lambda *_a: self.fail("tag failure must not finish")
+
+        self.sched._check_one(TID, self._entry())
+
+        self.assertTrue(bot._prwatch_has(TID))
+        self.assertEqual(self.events, [])
+
+    def test_customer_merged_event_failure_keeps_watch_after_tag(self):
+        bot._prwatch_update(TID, project="1086837")
+        bot._aone_event_publish = lambda *_a, **_k: False
+        self.sched._gh_pr_state = lambda _url: ("MERGED", "2026-07-01T00:00:00Z")
+        self.sched._ensure_business_terminal_tags = lambda *_a: True
+        self.sched._finish = lambda *_a: self.fail("tf_customer merge must not finish")
+
+        self.sched._check_one(TID, self._entry())
+
+        self.assertTrue(bot._prwatch_has(TID))
+
+    def test_customer_legacy_finish_state_still_adds_tag_first(self):
+        bot._prwatch_update(TID, project="1086837", finish_succeeded=True)
+        self.sched._gh_pr_state = lambda _url: ("MERGED", "2026-07-01T00:00:00Z")
+        ensured = []
+        self.sched._ensure_business_terminal_tags = (
+            lambda tid, project: ensured.append((tid, project)) or True)
+        self.sched._ticket_guard = lambda *_a: self.fail("legacy state must bypass guard")
+
+        self.sched._check_one(TID, self._entry())
+
+        self.assertEqual(ensured, [(TID, "1086837")])
+        self.assertFalse(bot._prwatch_has(TID))
+
+    def test_business_terminal_tag_update_preserves_existing_ids_and_uses_rd(self):
+        bot._prwatch_update(TID, project="1086837")
+        before = {"fields": [{"identifier": "tag",
+                               "displayValue": "customer-tag, jarvis-idle",
+                               "value": "11, 22"}]}
+        after = {"fields": [{"identifier": "tag",
+                              "displayValue": "customer-tag, jarvis-idle, Terraform已合入",
+                              "value": "11, 22, 568576"}]}
+        calls = []
+
+        def fake(cmd, *a, **kw):
+            calls.append((list(cmd), dict(kw.get("env") or {})))
+            if "update" in cmd:
+                return _fake_proc(0, "")
+            get_count = sum(1 for call, _env in calls if "get" in call)
+            return _fake_proc(0, json.dumps(before if get_count <= 2 else after))
+
+        bot.subprocess.run = fake
+
+        self.assertTrue(self.sched._ensure_business_terminal_tags(TID, "1086837"))
+        update = next(call for call in calls if "update" in call[0])
+        self.assertEqual(update[0][update[0].index("--tag") + 1], "11,22,568576")
+        self.assertEqual(update[1].get("JARVIS_A1_IDENTITY"), "terraform-rd")
+        self.assertEqual(update[1].get("JARVIS_A1_STRICT"), "1")
+
+    def test_business_terminal_tag_already_present_is_idempotent(self):
+        current = {"fields": [{"identifier": "tag",
+                                "displayValue": "customer-tag, Terraform已合入",
+                                "value": "11, 568576"}]}
+        calls = []
+
+        def fake(cmd, *a, **kw):
+            calls.append(list(cmd))
+            return _fake_proc(0, json.dumps(current))
+
+        bot.subprocess.run = fake
+
+        self.assertTrue(self.sched._ensure_business_terminal_tags(TID, "1086837"))
+        self.assertEqual(len(calls), 3,
+                         "no-write success requires pre-write and stable confirmation reads")
+        self.assertTrue(all("update" not in call for call in calls))
+
+    def test_concurrent_tag_seen_before_update_is_preserved(self):
+        before = {"fields": [{"identifier": "tag",
+                               "displayValue": "customer-tag, jarvis-idle",
+                               "value": "11, 22"}]}
+        concurrent = {"fields": [{"identifier": "tag",
+                                   "displayValue": "customer-tag, jarvis-idle, reviewer-tag",
+                                   "value": "11, 22, 33"}]}
+        after = {"fields": [{"identifier": "tag",
+                              "displayValue": ("customer-tag, jarvis-idle, reviewer-tag, "
+                                               "Terraform已合入"),
+                              "value": "11, 22, 33, 568576"}]}
+        get_payloads = iter((before, concurrent, after, after))
+        calls = []
+
+        def fake(cmd, *a, **kw):
+            calls.append(list(cmd))
+            if "update" in cmd:
+                return _fake_proc(0, "")
+            return _fake_proc(0, json.dumps(next(get_payloads)))
+
+        bot.subprocess.run = fake
+
+        self.assertTrue(self.sched._ensure_business_terminal_tags(TID, "1086837"))
+        update = next(call for call in calls if "update" in call)
+        self.assertEqual(set(update[update.index("--tag") + 1].split(",")),
+                         {"11", "22", "33", "568576"})
+
+    def test_drift_expectation_survives_two_ticks_and_prevents_early_success(self):
+        tag_a = {"fields": [{"identifier": "tag",
+                              "displayValue": "customer-tag", "value": "11"}]}
+        tag_b_required = {"fields": [{"identifier": "tag",
+                                       "displayValue": "reviewer-tag, Terraform已合入",
+                                       "value": "33, 568576"}]}
+        converged = {"fields": [{"identifier": "tag",
+                                  "displayValue": ("customer-tag, reviewer-tag, "
+                                                   "Terraform已合入"),
+                                  "value": "11, 33, 568576"}]}
+        # Tick 1: both bounded writes are followed by a concurrent full-set write that
+        # leaves B+required but drops A. Tick 2 must not early-return merely because the
+        # required tag exists; durable expectation A+B+required forces compensation.
+        get_payloads = iter((
+            tag_a, tag_a, tag_b_required, tag_b_required, tag_b_required,
+            tag_b_required, tag_b_required, converged, converged,
+        ))
+        updates = []
+
+        def fake(cmd, *a, **kw):
+            if "update" in cmd:
+                updates.append(list(cmd))
+                return _fake_proc(0, "")
+            return _fake_proc(0, json.dumps(next(get_payloads)))
+
+        bot.subprocess.run = fake
+
+        self.assertFalse(self.sched._ensure_business_terminal_tags(TID, "1086837"))
+        expected = self._entry().get("business_terminal_expected_tags")
+        self.assertEqual({pair["id"] for pair in expected}, {"11", "33", "568576"})
+        self.assertTrue(bot._prwatch_has(TID))
+
+        self.assertTrue(self.sched._ensure_business_terminal_tags(TID, "1086837"))
+        self.assertEqual(len(updates), 3)
+        final_value = updates[-1][updates[-1].index("--tag") + 1]
+        self.assertEqual(set(final_value.split(",")), {"11", "33", "568576"})
+
+    def test_business_terminal_initial_read_failure_is_retryable(self):
+        bot.subprocess.run = lambda *_a, **_k: _fake_proc(1, "read failed")
+        self.assertFalse(self.sched._ensure_business_terminal_tags(TID, "1086837"))
+        self.assertTrue(bot._prwatch_has(TID))
+
+    def test_business_terminal_update_failure_is_retryable(self):
+        before = {"fields": [{"identifier": "tag",
+                               "displayValue": "customer-tag", "value": "11"}]}
+        calls = []
+
+        def fake(cmd, *a, **kw):
+            calls.append(list(cmd))
+            if "update" in cmd:
+                return _fake_proc(1, "update failed")
+            return _fake_proc(0, json.dumps(before))
+
+        bot.subprocess.run = fake
+        self.assertFalse(self.sched._ensure_business_terminal_tags(TID, "1086837"))
+        self.assertEqual(sum("update" in call for call in calls), 1)
+        self.assertTrue(bot._prwatch_has(TID))
+
+    def test_business_terminal_readback_failure_is_retryable(self):
+        before = {"fields": [{"identifier": "tag",
+                               "displayValue": "customer-tag", "value": "11"}]}
+        get_count = 0
+
+        def fake(cmd, *a, **kw):
+            nonlocal get_count
+            if "update" in cmd:
+                return _fake_proc(0, "")
+            get_count += 1
+            return (_fake_proc(0, json.dumps(before)) if get_count <= 2
+                    else _fake_proc(1, "readback failed"))
+
+        bot.subprocess.run = fake
+        self.assertFalse(self.sched._ensure_business_terminal_tags(TID, "1086837"))
+        self.assertTrue(bot._prwatch_has(TID))
+
     def test_terraform_finish_publishes_one_merged_event_and_removes(self):
         self.sched._gh_pr_state = lambda _url: ("MERGED", "2026-07-01T00:00:00Z")
         self.sched._ticket_guard = lambda _tid: "ok"

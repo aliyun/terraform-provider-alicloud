@@ -323,8 +323,8 @@ def _routine_notifier(handler):
 
 # ── PR-watch registry (方案A) ─────────────────────────────────────────────────
 # skill/persona 提交 PR 后按自治边界 release 成 jarvis-idle；DailyScheduler 的 nudge 选择器只捞
-# 标题/描述含特定词的 idle 单，terraform 发布单都不含 → 工单永久停在 jarvis-idle、永不推到
-# 「已完成」。此登记表 + PrWatchScheduler 补缺口：PR 合并后自动 claim.sh finish 收尾。
+# 标题/描述含特定词的 idle 单，terraform 发布单都不含 → 工单永久停在 jarvis-idle。此登记表 +
+# PrWatchScheduler 补缺口：客户池 PR 合并后补业务终态标签，其它池沿用 claim.sh finish 收尾。
 # 与 bootstrap/pr-watch.sh 共用同一持久登记表。CI/review 去重游标也必须落盘；否则 bridge
 # 重启会把所有 open PR 当成“未登记”，重复群播并丢失每个 head 的修复次数。
 PRWATCH_PATH = Path(REPO_ROOT) / ".my-day/bridge/pr-watch.json"
@@ -550,9 +550,9 @@ def _prwatch_update(ticket, **fields):
             records = _prwatch_load()
             ent = records.get(str(ticket))
             if not isinstance(ent, dict):
-                return
+                return False
             ent.update(fields)
-            _prwatch_write(records)
+            return _prwatch_write(records)
         finally:
             _prwatch_release_file_lock(file_lock)
 
@@ -1483,6 +1483,68 @@ def _is_terraform_project(project):
         return False
 
 
+def _normalize_business_terminal_tags(value):
+    """Return valid pool-level business terminal tag specs as name/id strings."""
+    out = []
+    for raw in value if isinstance(value, list) else []:
+        if not isinstance(raw, dict):
+            continue
+        name = str(raw.get("name") or "").strip()
+        tag_id = str(raw.get("id") or "").strip()
+        if name and tag_id:
+            out.append({"name": name, "id": tag_id})
+    return out
+
+
+def _business_terminal_tag_map():
+    """Load pool-scoped business terminal tags from pools.json, fail-closed to none."""
+    try:
+        pools = json.loads(
+            (Path(REPO_ROOT) / "config" / "pools.json").read_text()).get("pools", {})
+    except Exception as exc:  # noqa: BLE001
+        log.warning("bridge: could not read business terminal tags from pools.json: %s", exc)
+        return {}
+    out = {}
+    for key, pool in (pools or {}).items():
+        specs = _normalize_business_terminal_tags(pool.get("business_terminal_tags"))
+        if specs:
+            out[str(key)] = specs
+    return out
+
+
+def _pool_business_terminal_tags(pool_key=None, project=None):
+    """Resolve business terminal tags by pool key or project id."""
+    target_key = str(pool_key or "")
+    target_project = str(project or "")
+    try:
+        pools = json.loads(
+            (Path(REPO_ROOT) / "config" / "pools.json").read_text()).get("pools", {})
+    except Exception as exc:  # noqa: BLE001
+        log.warning("bridge: could not resolve business terminal tags: %s", exc)
+        return []
+    if target_key and target_key in pools:
+        return _normalize_business_terminal_tags(
+            pools[target_key].get("business_terminal_tags"))
+    if target_project:
+        for pool in pools.values():
+            if str(pool.get("project") or "") == target_project:
+                return _normalize_business_terminal_tags(
+                    pool.get("business_terminal_tags"))
+    return []
+
+
+def _has_business_terminal_tag(item, tag_map=None):
+    """Whether an item carries a terminal tag configured for its own pool only."""
+    pool_key = str(item.get("pool") or "")
+    specs = ((tag_map or {}).get(pool_key)
+             if tag_map is not None else _pool_business_terminal_tags(pool_key=pool_key))
+    if not specs:
+        return False
+    tokens = _tagset(item)
+    expected = {value for spec in specs for value in (spec["name"], spec["id"])}
+    return bool(tokens & expected)
+
+
 def _a1_command_env(terraform=False):
     """Return a clean identity environment for an Aone subprocess."""
     env = os.environ.copy()
@@ -2347,7 +2409,18 @@ def _tagset(item):
     """Normalize an item's ``tag`` field (list | comma-string | None) to a set of strings."""
     t = item.get("tag")
     if isinstance(t, list):
-        return {str(x).strip() for x in t if str(x).strip()}
+        out = set()
+        for value in t:
+            if isinstance(value, dict):
+                for key in ("name", "displayValue", "id", "value"):
+                    token = str(value.get(key) or "").strip()
+                    if token:
+                        out.add(token)
+            else:
+                token = str(value).strip()
+                if token:
+                    out.add(token)
+        return out
     if isinstance(t, str):
         return {s.strip() for s in t.split(",") if s.strip()}
     return set()
@@ -3236,6 +3309,7 @@ class AoneScheduler:
         self.dispatch_pools = {p.strip() for p in
                                os.environ.get("JARVIS_DISPATCH_POOLS", "").split(",") if p.strip()}
         self.dispatch_created_before = os.environ.get("JARVIS_DISPATCH_CREATED_BEFORE", "").strip()
+        self._business_terminal_tags_by_pool = _business_terminal_tag_map()
 
     def _load_human_operators(self):
         """从 config/contacts.json 动态加载人类操作者白名单(name+flower+id)。
@@ -3291,7 +3365,7 @@ class AoneScheduler:
 
     @staticmethod
     def _read_pools():
-        """pools.json → [(key, project, exclude_status[])]。失败返回空列表。"""
+        """pools.json → [(key, project, exclude_status[], business_terminal_tags[])]。"""
         try:
             pools = json.loads(
                 (Path(REPO_ROOT) / "config" / "pools.json").read_text()).get("pools", {})
@@ -3302,7 +3376,9 @@ class AoneScheduler:
         for key, p in pools.items():
             proj = p.get("project")
             if proj:
-                out.append((key, str(proj), list(p.get("exclude_status") or [])))
+                out.append((key, str(proj), list(p.get("exclude_status") or []),
+                            _normalize_business_terminal_tags(
+                                p.get("business_terminal_tags"))))
         return out
 
     @classmethod
@@ -3342,21 +3418,25 @@ class AoneScheduler:
             })
         return out
 
-    def _union_filters(self, exclude_status):
+    def _union_filters(self, exclude_status, business_terminal_tags=None):
         """一个池的四源过滤：assignee / tracker / idle / terminal done watch。"""
         worker_csv = ",".join(sorted(DIGITAL_WORKER_IDS))
         excl = "".join(" AND NOT status=%s" % s for s in (exclude_status or []))
+        terminal_excl = "".join(
+            " AND NOT tag=%s" % spec["name"]
+            for spec in _normalize_business_terminal_tags(business_terminal_tags))
         return (
-            "assignedTo=%s%s" % (worker_csv, excl),          # 指派给数字人
-            "workitem.tracker=%s%s" % (worker_csv, excl),    # 参与/抄送数字人（人 @ 会自动抄送）
-            "tag=jarvis-idle%s" % excl,                       # idle 重访（吸收原 Revisit 非 tf 车道）
-            "tag=jarvis-done",                                # 终态评论监听，不排除终态 status
+            "assignedTo=%s%s%s" % (worker_csv, excl, terminal_excl),
+            "workitem.tracker=%s%s%s" % (worker_csv, excl, terminal_excl),
+            "tag=jarvis-idle%s%s" % (excl, terminal_excl),
+            "tag=jarvis-done%s" % terminal_excl,
         )
 
-    def _query_pool_union(self, key, project, exclude_status):
+    def _query_pool_union(self, key, project, exclude_status,
+                          business_terminal_tags=None):
         """一个池的 assignee∪tracker∪idle∪done 并集（按 id 去重）。四源查询
         并行发出（各自 a1 调用 best-effort），去重时 assignee 源优先。"""
-        filters = self._union_filters(exclude_status)
+        filters = self._union_filters(exclude_status, business_terminal_tags)
         with ThreadPoolExecutor(max_workers=len(filters),
                                 thread_name_prefix="aone-union") as ex:
             per_filter = list(ex.map(lambda f: self._a1_list(project, f), filters))
@@ -3380,8 +3460,8 @@ class AoneScheduler:
         items = []
         with ThreadPoolExecutor(max_workers=min(8, len(pools)),
                                 thread_name_prefix="aone-pool") as ex:
-            futures = [ex.submit(self._query_pool_union, key, project, excl)
-                       for key, project, excl in pools]
+            futures = [ex.submit(self._query_pool_union, key, project, excl, terminal_tags)
+                       for key, project, excl, terminal_tags in pools]
             for fut in futures:
                 try:
                     items.extend(fut.result())
@@ -3714,6 +3794,10 @@ class AoneScheduler:
         retry_ids = getattr(self, "_done_watch_retry", None)
         if retry_ids is None:
             retry_ids = self._done_watch_retry = set()
+        terminal_tag_map = getattr(self, "_business_terminal_tags_by_pool", None)
+        if terminal_tag_map is None:
+            terminal_tag_map = self._business_terminal_tags_by_pool = (
+                _business_terminal_tag_map())
         for it in items:
             iid = str(it.get("id", ""))
             if not iid:
@@ -3726,6 +3810,9 @@ class AoneScheduler:
             decide_dispatch = False
             if not self._in_scope(it):
                 action, reason = "skip", "out_of_scope"
+            elif _has_business_terminal_tag(it, terminal_tag_map):
+                retry_ids.discard(iid)
+                action, reason = "skip", "business_terminal"
             elif "jarvis-done" in tags:
                 if "jarvis-npe" in tags:
                     # NPE remains an explicit human routing gate after completion.
@@ -4118,14 +4205,16 @@ class AoneScheduler:
 
 class PrWatchScheduler:
     """PR-watch: 周期轮询内存 PR 观察登记表（重启后 autoregister 重建），跨会话看守已提交 PR
-    的**全生命周期**——open 窗口内 CI 失败自动派修复，合并后自动 claim.sh finish 收尾本工单，
+    的**全生命周期**——open 窗口内 CI 失败自动派修复；合并后客户池补业务终态标签，其它池
+    自动 claim.sh finish 收尾本工单，
     与 DailyScheduler 的 nudge 互为兜底。
 
     背景缺口：skill/persona 提交 PR 后按自治边界 release 成 jarvis-idle，单次 headless 会话
     撑不住 PR 从提交到合并的几小时/几天，`gh pr checks` 只在那次会话里跑一次；DailyScheduler 的 nudge
     的选择器只捞标题/描述含特定词的 idle 单，terraform 发布单都不含 → open 窗口 CI 转红无人修、
     合并后工单永久停在 jarvis-idle。本调度器读登记表逐条查 PR 状态：
-      · merged        → claim.sh finish <ticket> <project> 已完成（过 npe/终态 guard）→ 评论+播报+摘除
+      · merged        → 客户池补业务终态标签（不改状态）；其它池 claim.sh finish
+        <ticket> <project> 已完成（过 npe/终态 guard）→ 重要事件入账+摘除
       · closed 未合并 → 评论 + escalate 交人工，不 finish → 摘除
       · open + CI 有失败 → force 重派 headless jarvis 修 CI（_maybe_dispatch_ci_fix）；
         open + 新评审评论 → force 重派回应（_maybe_dispatch_comment_reply）；均走 fork_push 预授权 SOP、
@@ -4217,6 +4306,25 @@ class PrWatchScheduler:
             merged_text = (
                 "关联 PR 已合并，Terraform 研发侧已完成本次交付收口。\n\n"
                 "PR：[%s](%s)" % (pr_url.rstrip("/").rsplit("/", 1)[-1], pr_url))
+            business_terminal_tags = _pool_business_terminal_tags(project=project)
+            if business_terminal_tags:
+                if not self._ensure_business_terminal_tags(tid, project):
+                    log.warning(
+                        "PrWatchScheduler: business terminal tag #%s failed/readback drift; "
+                        "keep watching", tid)
+                    return
+                customer_text = (
+                    merged_text + "\n\n已标记「%s」，工单状态保持不变。" %
+                    "、".join(spec["name"] for spec in business_terminal_tags))
+                if not _aone_event_enqueue(tid, project, merged_key, customer_text):
+                    log.warning(
+                        "PrWatchScheduler: customer merged event #%s not durable; keep watching",
+                        tid)
+                    return
+                log.info(
+                    "PrWatchScheduler: #%s PR merged and business terminal tag confirmed", tid)
+                _prwatch_remove(tid)
+                return
             if entry.get("finish_succeeded"):
                 if tf_writer:
                     if not _aone_event_enqueue(tid, project, merged_key, merged_text):
@@ -4867,6 +4975,156 @@ class PrWatchScheduler:
         if "jarvis-npe" in names:
             return "npe"
         return "ok"
+
+    def _ensure_business_terminal_tags(self, tid, project):
+        """Conservatively converge pool business-terminal tags without silent drift.
+
+        Aone exposes neither CAS nor atomic tag-add: ``--tag`` replaces the full set. Keep
+        every observed name/id in the durable PR-watch entry before writing, read again
+        immediately before each write, and perform at most two compensation writes. A
+        readback/confirmation drift returns False with the expected union retained for the
+        next tick; seeing the required tag alone can therefore never bypass an earlier loss.
+        All Aone I/O uses terraform-rd. Any read/write/registry failure is retryable.
+        """
+        required = _pool_business_terminal_tags(project=project)
+        if not required:
+            return True
+
+        def _pairs(value):
+            out = []
+            for raw in value if isinstance(value, (list, tuple)) else []:
+                if isinstance(raw, dict):
+                    name = str(raw.get("name") or "").strip()
+                    tag_id = str(raw.get("id") or "").strip()
+                elif isinstance(raw, (list, tuple)) and len(raw) >= 2:
+                    name = str(raw[0] or "").strip()
+                    tag_id = str(raw[1] or "").strip()
+                else:
+                    continue
+                if name or tag_id:
+                    out.append({"name": name, "id": tag_id})
+            return out
+
+        def _merge(*groups):
+            out = []
+            positions = {}
+            for group in groups:
+                for pair in _pairs(group):
+                    key = ("id", pair["id"]) if pair["id"] else ("name", pair["name"])
+                    if key in positions:
+                        current = out[positions[key]]
+                        if pair["name"]:
+                            current["name"] = pair["name"]
+                        if pair["id"]:
+                            current["id"] = pair["id"]
+                    else:
+                        positions[key] = len(out)
+                        out.append(dict(pair))
+            return out
+
+        def _snapshot_pairs(snapshot):
+            return _pairs(snapshot.get("pairs") or [])
+
+        def _visible(snapshot, expected):
+            ids = {tag_id for _name, tag_id in snapshot.get("pairs", []) if tag_id}
+            names = set(snapshot.get("tags") or [])
+            return all((pair["id"] and pair["id"] in ids)
+                       or (pair["name"] and pair["name"] in names)
+                       for pair in _pairs(expected))
+
+        def _persist(expected):
+            if _prwatch_update(
+                    tid, business_terminal_expected_tags=_pairs(expected)):
+                return True
+            log.warning("PrWatchScheduler: cannot persist expected tags for #%s", tid)
+            return False
+
+        registry_entry = _prwatch_list().get(str(tid)) or {}
+        persisted = _pairs(registry_entry.get("business_terminal_expected_tags"))
+        required_pairs = _pairs(required)
+        try:
+            before = _post_pr_tag_snapshot(tid, terraform=True)
+        except Exception as exc:  # noqa: BLE001
+            log.warning("PrWatchScheduler: tag point-read #%s failed: %s", tid, exc)
+            return False
+        expected = _merge(persisted, _snapshot_pairs(before), required_pairs)
+        if not _persist(expected):
+            return False
+
+        for attempt in range(2):
+            try:
+                current = _post_pr_tag_snapshot(tid, terraform=True)
+            except Exception as exc:  # noqa: BLE001
+                log.warning("PrWatchScheduler: pre-write tag read #%s failed: %s", tid, exc)
+                return False
+            expected = _merge(expected, _snapshot_pairs(current))
+            if not _persist(expected):
+                return False
+
+            if _visible(current, expected):
+                try:
+                    confirmed = _post_pr_tag_snapshot(tid, terraform=True)
+                except Exception as exc:  # noqa: BLE001
+                    log.warning("PrWatchScheduler: stable tag read #%s failed: %s", tid, exc)
+                    return False
+                prior_expected = expected
+                expected = _merge(expected, _snapshot_pairs(confirmed))
+                if not _persist(expected):
+                    return False
+                if _visible(confirmed, prior_expected) and _visible(confirmed, expected):
+                    return True
+                log.warning(
+                    "PrWatchScheduler: no-write tag drift #%s (attempt %d/2); compensate",
+                    tid, attempt + 1)
+
+            values = []
+            for pair in expected:
+                value = pair["id"] or pair["name"]
+                if value and value not in values:
+                    values.append(value)
+            try:
+                proc = subprocess.run(
+                    [str(REPO_ROOT / "bin" / "a1id"), "--", "project", "workitem",
+                     "update", str(tid), "--tag", ",".join(values)],
+                    cwd=str(REPO_ROOT), timeout=60, capture_output=True, text=True,
+                    env=_a1_command_env(terraform=True))
+            except Exception as exc:  # noqa: BLE001
+                log.warning("PrWatchScheduler: tag update #%s raised: %s", tid, exc)
+                return False
+            if proc.returncode != 0:
+                detail = ((proc.stderr or proc.stdout or "").strip())[-300:]
+                log.warning("PrWatchScheduler: tag update #%s rc=%d: %s",
+                            tid, proc.returncode, detail or "no detail")
+                return False
+            try:
+                after = _post_pr_tag_snapshot(tid, terraform=True)
+            except Exception as exc:  # noqa: BLE001
+                log.warning("PrWatchScheduler: tag readback #%s failed: %s", tid, exc)
+                return False
+            prior_expected = expected
+            expected = _merge(expected, _snapshot_pairs(after))
+            if not _persist(expected):
+                return False
+            if not _visible(after, prior_expected):
+                log.warning(
+                    "PrWatchScheduler: tag readback drift #%s (attempt %d/2); compensate",
+                    tid, attempt + 1)
+                continue
+            try:
+                confirmed = _post_pr_tag_snapshot(tid, terraform=True)
+            except Exception as exc:  # noqa: BLE001
+                log.warning("PrWatchScheduler: tag confirmation #%s failed: %s", tid, exc)
+                return False
+            prior_expected = expected
+            expected = _merge(expected, _snapshot_pairs(confirmed))
+            if not _persist(expected):
+                return False
+            if _visible(confirmed, prior_expected) and _visible(confirmed, expected):
+                return True
+            log.warning(
+                "PrWatchScheduler: tag confirmation drift #%s (attempt %d/2); compensate",
+                tid, attempt + 1)
+        return False
 
     def _finish(self, tid, project, status):
         """claim.sh finish <tid> <project> <status>. Returns proc.returncode；任何非零都由
@@ -6042,13 +6300,17 @@ class _NudgeJob:
 
     def _query_pool(self, key, project):
         rows = []
+        terminal_filter = "".join(
+            " AND NOT tag=%s" % spec["name"]
+            for spec in _pool_business_terminal_tags(pool_key=key))
         try:
             page = 1
             while page <= 100:
                 r = subprocess.run(
                     [str(REPO_ROOT / "bin" / "a1id"), "--",
                      "project", "workitem", "list",
-                     "--project", project, "--filter", "tag=%s" % self.IDLE_TAG,
+                     "--project", project, "--filter",
+                     "tag=%s%s" % (self.IDLE_TAG, terminal_filter),
                      "--columns", "id,title,status,tag,assignee,created,modified",
                      "--sort", "modified:asc", "--page", str(page), "--page-size", "1000",
                      "-f", "json"],
@@ -6141,6 +6403,7 @@ class _NudgeJob:
     def _query(self):
         """Collect all eligible rows, then fairly select at most ``max_n``."""
         cands = []
+        terminal_tag_map = _business_terminal_tag_map()
         for key, project in self._pool_projects():
             rows = self._query_pool(key, project)
             if rows is None:
@@ -6148,6 +6411,8 @@ class _NudgeJob:
             for it in rows:
                 tags = _tagset(it)
                 if tags & {"jarvis-npe", "jarvis-claimed", "jarvis-done"}:
+                    continue
+                if _has_business_terminal_tag(it, terminal_tag_map):
                     continue
                 if str(it.get("status") or "").strip() in TERMINAL_STATUSES:
                     continue

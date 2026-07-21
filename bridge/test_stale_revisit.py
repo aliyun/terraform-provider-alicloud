@@ -6,6 +6,7 @@ import os
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from datetime import datetime
 from pathlib import Path
 
@@ -324,6 +325,24 @@ class CandidateFairnessTest(unittest.TestCase):
         rows = self.scheduler._query()
         self.assertEqual([row["id"] for row in rows], ["3"])
         self.assertTrue(rows[0]["terraform"])
+
+    def test_customer_business_terminal_tag_is_not_a_nudge_candidate(self):
+        self.scheduler._pool_projects = lambda: [("tf_customer", "1086837")]
+        self.scheduler._query_pool = lambda key, project: [{
+            "id": "4", "title": "merged customer request", "pool": key,
+            "pool_project": project,
+            "tag": ["jarvis-idle", "Terraform已合入"],
+            "status": "Open", "modified": "2026-07-01",
+        }]
+        self.assertEqual(self.scheduler._query(), [])
+
+    def test_customer_idle_query_excludes_business_terminal_tag(self):
+        completed = type("Proc", (), {"returncode": 0, "stdout": "[]", "stderr": ""})()
+        with mock.patch.object(bot.subprocess, "run", return_value=completed) as run:
+            self.scheduler._query_pool("tf_customer", "1086837")
+        cmd = run.call_args.args[0]
+        self.assertEqual(cmd[cmd.index("--filter") + 1],
+                         "tag=jarvis-idle AND NOT tag=Terraform已合入")
 
     def test_more_than_25_rows_rotate_without_starvation(self):
         rows = [

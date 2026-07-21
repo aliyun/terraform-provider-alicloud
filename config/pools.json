@@ -30,6 +30,12 @@
       "claim_required_field_defaults": {
         "140282": "有OpenAPI，资源未定义，开放平台维护"
       },
+      "business_terminal_tags": [
+        {
+          "name": "Terraform已合入",
+          "id": "568576"
+        }
+      ],
       "exclude_status": [
         "Closed",
         "Fixed",
