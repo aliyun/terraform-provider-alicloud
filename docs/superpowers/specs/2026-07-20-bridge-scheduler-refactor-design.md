@@ -229,7 +229,8 @@ revision 升级不得复用旧 slot identity。旧分支的 `TriggerPlanner` 可
 
 | 字段 | 类型 | 含义与更新规则 |
 | --- | --- | --- |
-| `job_key` | `VARCHAR(128)` | 稳定 job ID，例如 `aone.scan`，直接作为主键 |
+| `id` | `BIGINT UNSIGNED` | 数据库自增主键；只用于行标识，调度器不以它构造业务 identity |
+| `job_key` | `VARCHAR(128)` | 稳定 job ID，例如 `aone.scan`；有唯一索引，是注册、状态更新和 Board 关联键 |
 | `job_name` | `VARCHAR(256)` | 看板展示名称 |
 | `definition` | `LONGTEXT` | definition JSON：revision、description、schedule、runner、timeout、retry 和 replay policy |
 | `status` | `VARCHAR(32)` | `IDLE`、`RUNNING`、`ERROR`、`DISABLED`；是否正在运行直接看该字段 |
@@ -243,6 +244,7 @@ revision 升级不得复用旧 slot identity。旧分支的 `TriggerPlanner` 可
 
 ```sql
 CREATE TABLE jarvis_scheduled_job (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键 ID',
   job_key VARCHAR(128) NOT NULL COMMENT '稳定 job ID',
   job_name VARCHAR(256) NOT NULL COMMENT '看板展示名称',
   definition LONGTEXT NOT NULL COMMENT 'job definition JSON',
@@ -258,7 +260,8 @@ CREATE TABLE jarvis_scheduled_job (
   gmt_modified DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
     ON UPDATE CURRENT_TIMESTAMP(3),
 
-  PRIMARY KEY (job_key),
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_job_key (job_key),
   KEY idx_schedule (status, next_run_at)
 );
 ```
@@ -457,7 +460,7 @@ bridge/
 | --- | --- | --- |
 | B0 | 已完成 | 组件 10→6、Aone 并集探测、控制面 wait、PR/每日本地持久状态 |
 | U1 | 未开始 | 模型、registry、修正后的纯 `TriggerPlanner` 及契约测试 |
-| U2 | 未开始 | 精简 scheduled-job 表/API 与 Board 查询 |
+| U2 | 进行中 | 表已创建；AutomationAgent 已提交注册、状态 API 与 Board 查询实现，待预发流水线进入本 CR 后验收 |
 | U3 | 未开始 | `SchedulerEngine`、ScannerRuntime、Task/Event publisher、fake clock 测试 |
 | U4 | 未开始 | 固化 Daily/PR 各自业务状态；双读对账；保留事件 ledger |
 | U5 | 未开始 | 逐项迁移 7 个 job；每项原子关旧开新，无双触发 |
