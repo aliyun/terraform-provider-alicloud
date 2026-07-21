@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -129,6 +130,7 @@ func TestAccAliCloudNatGateway_basic(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNatGatewayBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
@@ -295,6 +297,7 @@ func TestAccAliCloudNatGateway_NetworkType(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNatGatewayBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
@@ -340,6 +343,144 @@ func TestAccAliCloudNatGateway_NetworkType(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudNatGateway_AvailabilityMode(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_nat_gateway.default"
+	ra := resourceAttrInit(resourceId, AliCloudNatGatewayMap1)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeNatGateway")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%snatgateway%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNatGatewayBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				// availability_mode is set to CrossAZ (cross-zone DR), which is also the
+				// API default, so this exercises the CrossAZ branch and confirms it is
+				// read back correctly along with the Read wiring.
+				Config: testAccConfig(map[string]interface{}{
+					"vpc_id":            "${alicloud_vpc.default.id}",
+					"nat_gateway_name":  "${var.name}",
+					"nat_type":          "Enhanced",
+					"vswitch_id":        "${alicloud_vswitch.default.id}",
+					"availability_mode": "CrossAZ",
+					"force":             "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpc_id":            CHECKSET,
+						"nat_gateway_name":  name,
+						"nat_type":          "Enhanced",
+						"vswitch_id":        CHECKSET,
+						"availability_mode": "CrossAZ",
+						"force":             "true",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run", "force"},
+			},
+		},
+	})
+}
+
+// TestAccAliCloudNatGateway_AvailabilityModeSingleAZ covers explicitly setting
+// availability_mode = SingleAZ (single-zone DR).
+//
+// NOTE: single-zone NAT is an account-level entitlement. On accounts without it,
+// CreateNatGateway returns InvalidParameter.SingleZone ("current user not support
+// create single zone nat"). This test pins the entitled account via
+// ALICLOUD_ACCESS_KEY_1/SECRET_KEY_1: the keys are embedded in an explicit
+// provider block so the default ALICLOUD_ACCESS_KEY cannot override them, and
+// the env vars are also overridden so every SDK client init path uses the
+// entitled account (mirrors resource_manager_handshake_acceptance_test.go).
+func TestAccAliCloudNatGateway_AvailabilityModeSingleAZ(t *testing.T) {
+	ak1 := strings.TrimSpace(os.Getenv("ALICLOUD_ACCESS_KEY_1"))
+	sk1 := strings.TrimSpace(os.Getenv("ALICLOUD_SECRET_KEY_1"))
+	if ak1 == "" || sk1 == "" {
+		t.Skipf("Skipping: set ALICLOUD_ACCESS_KEY_1/SECRET_KEY_1 to run single-zone NAT on an entitled account")
+	}
+	// Override the default credential env so every code path that reads
+	// ALICLOUD_ACCESS_KEY (testAccPreCheck, SDK client init) uses the
+	// single-zone-NAT-entitled account.
+	os.Setenv("ALICLOUD_ACCESS_KEY", ak1)
+	os.Setenv("ALICLOUD_SECRET_KEY", sk1)
+
+	var v map[string]interface{}
+	resourceId := "alicloud_nat_gateway.default"
+	ra := resourceAttrInit(resourceId, AliCloudNatGatewayMap1)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeNatGateway")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%snatgateway%d", defaultRegionToTest, rand)
+	// Explicit provider credentials so the default ALICLOUD_ACCESS_KEY cannot
+	// override the single-zone-NAT-entitled account pinned by ALICLOUD_ACCESS_KEY_1.
+	singleZoneNatDependence := func(n string) string {
+		return fmt.Sprintf(`
+	provider "alicloud" {
+	  access_key = "%s"
+	  secret_key = "%s"
+	}
+
+%s
+`, ak1, sk1, AliCloudNatGatewayBasicDependence0(n))
+	}
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, singleZoneNatDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vpc_id":            "${alicloud_vpc.default.id}",
+					"nat_gateway_name":  "${var.name}",
+					"nat_type":          "Enhanced",
+					"vswitch_id":        "${alicloud_vswitch.default.id}",
+					"availability_mode": "SingleAZ",
+					"force":             "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpc_id":            CHECKSET,
+						"nat_gateway_name":  name,
+						"nat_type":          "Enhanced",
+						"vswitch_id":        CHECKSET,
+						"availability_mode": "SingleAZ",
+						"force":             "true",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run", "force"},
+			},
+		},
+	})
+}
+
 func TestAccAliCloudNatGateway_PayByLcu(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nat_gateway.default"
@@ -354,6 +495,7 @@ func TestAccAliCloudNatGateway_PayByLcu(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNatGatewayBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
@@ -480,6 +622,7 @@ func TestAccAliCloudNatGateway_basic1(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNatGatewayBasicDependence1)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 			testAccPreCheck(t)
 			testAccPreCheckWithTime(t, []int{1})
 		},
@@ -549,6 +692,7 @@ func TestAccAliCloudNatGateway_basic2(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNatGatewayBasicDependence1)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 			testAccPreCheck(t)
 			testAccPreCheckWithTime(t, []int{1})
 		},
