@@ -664,7 +664,8 @@ class AoneSchedulerUnionTest(unittest.TestCase):
             return []
 
         s._a1_list = fake_a1_list
-        merged_status = {"type": "3", "name": "已合入主线", "id": "626904"}
+        merged_status = {"type": "3", "type_name": "需求问题",
+                         "name": "已合入主线", "id": "626904"}
         rows = s._query_pool_union(
             "tf_customer", "1086837", ["Closed", "已发布", "已合入主线"],
             merged_status)
@@ -696,7 +697,8 @@ class AoneSchedulerUnionTest(unittest.TestCase):
         with mock.patch.object(bot.AoneScheduler, "_read_pools",
                                return_value=[
                                    ("tf_customer", "1086837", ["已合入主线"],
-                                    {"type": "3", "name": "已合入主线",
+                                    {"type": "3", "type_name": "需求问题",
+                                     "name": "已合入主线",
                                      "id": "626904"}),
                                    ("tf_provider", "528766", [], None)]):
             calls = []
@@ -857,6 +859,28 @@ class AoneSchedulerUnionTest(unittest.TestCase):
                 }])[0]
                 self.assertEqual((result["action"], result["reason"]),
                                  ("skip", "pr_merged_status"))
+
+    def test_live_list_workitem_type_name_reaches_decide_defense(self):
+        payload = [{
+            "identifier": "84103828", "subject": "PR merged",
+            "workitemType": "需求问题", "status": "已合入主线", "tag": [],
+            "gmtModified": "2026-07-20 19:19:01",
+        }]
+        completed = SimpleNamespace(returncode=0, stdout=json.dumps(payload), stderr="")
+        with mock.patch.object(bot.subprocess, "run", return_value=completed):
+            rows = bot.AoneScheduler._a1_list("1086837", "assignedTo=worker")
+        self.assertEqual(rows[0]["type"], "需求问题")
+        rows[0].update(pool="tf_customer", pool_project="1086837")
+        s = self._scanner()
+        s.dispatch_pools = set()
+        s.dispatch_created_before = ""
+        s.pool = None
+        s.execution_router = SimpleNamespace(is_task=lambda _env: True)
+        s._claimed_human_comment = mock.Mock(side_effect=AssertionError(
+            "live merged status must short-circuit comment lookup"))
+        result = s._decide(rows)[0]
+        self.assertEqual((result["action"], result["reason"]),
+                         ("skip", "pr_merged_status"))
 
     def test_pr_merged_status_requires_configured_pool_type_and_status(self):
         s = self._scanner()

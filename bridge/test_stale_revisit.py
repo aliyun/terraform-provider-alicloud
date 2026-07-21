@@ -345,6 +345,21 @@ class CandidateFairnessTest(unittest.TestCase):
                          "tag=jarvis-idle AND NOT status=已合入主线")
         self.assertIn("type", cmd[cmd.index("--columns") + 1])
 
+    def test_live_list_workitem_type_name_reaches_nudge_memory_defense(self):
+        payload = [{
+            "identifier": "4", "subject": "merged customer request",
+            "workitemType": "需求问题", "status": "已合入主线",
+            "tag": ["jarvis-idle"], "gmtModified": "2026-07-01",
+        }]
+        completed = type("Proc", (), {
+            "returncode": 0, "stdout": json.dumps(payload), "stderr": ""})()
+        with mock.patch.object(bot.subprocess, "run", return_value=completed):
+            rows = self.scheduler._query_pool("tf_customer", "1086837")
+        self.assertEqual(rows[0]["type"], "需求问题")
+        self.scheduler._pool_projects = lambda: [("tf_customer", "1086837")]
+        self.scheduler._query_pool = lambda _key, _project: rows
+        self.assertEqual(self.scheduler._query(), [])
+
     def test_more_than_25_rows_rotate_without_starvation(self):
         rows = [
             {"id": str(i), "modified": "2026-07-%02d" % ((i % 28) + 1)}

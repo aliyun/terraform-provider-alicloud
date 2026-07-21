@@ -1488,11 +1488,17 @@ def _normalize_pr_merged_status(value):
     if not isinstance(value, dict):
         return None
     item_type = str(value.get("type") or "").strip()
+    item_type_name = str(value.get("type_name") or "").strip()
     name = str(value.get("name") or "").strip()
     status_id = str(value.get("id") or "").strip()
-    if not item_type or not name or not status_id:
+    if not item_type or not item_type_name or not name or not status_id:
         return None
-    return {"type": item_type, "name": name, "id": status_id}
+    return {
+        "type": item_type,
+        "type_name": item_type_name,
+        "name": name,
+        "id": status_id,
+    }
 
 
 def _pr_merged_status_map():
@@ -1548,7 +1554,7 @@ def _has_pr_merged_status(item, status_map=None):
     status = item.get("status") or item.get("statusName") or ""
     if isinstance(status, dict):
         status = status.get("name") or status.get("displayValue") or ""
-    return (_item_type_value(item) == spec["type"]
+    return (_item_type_value(item) in {spec["type"], spec["type_name"]}
             and str(status or "").strip() == spec["name"])
 
 

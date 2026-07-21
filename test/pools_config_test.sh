@@ -72,7 +72,7 @@ jq -e '.pools.tf_provider.exclude_status | index("ByDesign") != null' "$POOLS_JS
   && ok "tf_provider.exclude_status contains ByDesign" || bad "tf_provider.exclude_status missing ByDesign"
 
 jq -e '.pools.tf_customer.pr_merged_status == {
-  "type":"3", "name":"已合入主线", "id":"626904"
+  "type":"3", "type_name":"需求问题", "name":"已合入主线", "id":"626904"
 }' "$POOLS_JSON" >/dev/null \
   && ok "tf_customer PR-merged status is configured for type 3" \
   || bad "tf_customer.pr_merged_status must map type 3 to 已合入主线(626904)"

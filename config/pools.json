@@ -32,6 +32,7 @@
       },
       "pr_merged_status": {
         "type": "3",
+        "type_name": "需求问题",
         "name": "已合入主线",
         "id": "626904"
       },
