@@ -6796,6 +6796,18 @@ class JarvisHandler(AsyncChatbotHandler):
             log.info("dispatch_item #%s start (timeout=%ds, retry_max=%d)",
                      item_id, timeout, max_retries)
             cur_prompt, cur_resume = prompt, resume
+            # Cross-host lease guard: the Task/Session may carry a resume flag
+            # minted on ANOTHER host (multi-worker fleet) — Claude transcripts
+            # are per-machine, so --resume here would die with "No conversation
+            # found". Durable context lives in Aone + the SOP prompt; fall back
+            # to a fresh run instead of burning the retry budget.
+            if cur_resume and not _session_file_exists(sid):
+                log.warning(
+                    "dispatch_item #%s: resume requested but no local transcript "
+                    "for %s (cross-host lease or cleaned disk) — fresh start",
+                    item_id, sid)
+                cur_resume = False
+                cur_prompt = prompt
             while True:
                 runner_kwargs = {
                     "timeout": timeout,
@@ -6816,9 +6828,12 @@ class JarvisHandler(AsyncChatbotHandler):
                 if attempt >= max_retries:
                     break
                 attempt += 1
-                # resume iff the last attempt produced output (session likely already
-                # built); otherwise fall back to a fresh run with the original prompt.
-                if res.text:
+                # resume iff the last attempt produced output AND the transcript
+                # actually exists on THIS host. res.text alone is not evidence a
+                # session was built: on ``no_result`` it carries the last stderr
+                # line (e.g. "No conversation found with session ID: …"), and
+                # resuming on that burns every retry on the same wall.
+                if res.text and _session_file_exists(sid):
                     cur_resume = True
                     cur_prompt = "上一次执行因瞬时错误中断，请从中断处继续完成本工单的 SOP。"
                 else:
