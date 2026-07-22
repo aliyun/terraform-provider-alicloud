@@ -1803,6 +1803,147 @@ class AoneSchedulerUnionTest(unittest.TestCase):
         self.assertEqual(latest["content"], "最新评论")
 
 
+class ModelProviderFailureRoutingTest(unittest.TestCase):
+    def test_exact_headless_repro_normalizes_control_plane_error(self):
+        output = json.dumps({
+            "type": "result", "is_error": True, "subtype": "success",
+            "result": "API Error: 400 模型提供方错误",
+        })
+        result = bot._classify_result(output, "", 0)
+        self.assertEqual(result.subtype, "model_provider_error")
+        envelope = bot._task_failure_result(result, attempts=3)
+        self.assertEqual(envelope["error"]["subtype"], "model_provider_error")
+        self.assertEqual(envelope["error"]["attempts"], 3)
+
+    def test_contradictory_non_provider_success_becomes_execution_error(self):
+        result = bot.ClaudeResult("ordinary failure", True, "success")
+        self.assertEqual(
+            bot._task_failure_result(result)["error"]["subtype"],
+            "execution_error")
+
+    def test_master_staff_default(self):
+        with mock.patch.dict(os.environ, {}, clear=True):
+            self.assertEqual(bot.master_staff(), "320687")
+
+    def _dispatch_failed(self, text, subtype="success", dingtalk_result=True,
+                         staff="123456", sid="provider-session"):
+        handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
+        handler._post_death_cause = mock.Mock()
+        notices = []
+        with mock.patch.dict(os.environ, {"JARVIS_MASTER_STAFF": staff}), \
+             mock.patch.object(
+                 bot, "_release_claim_checked", return_value=True) as release, \
+             mock.patch.object(bot, "_aone_event_enqueue", return_value=True) as aone, \
+             mock.patch.object(
+                 bot, "_dingtalk_event_enqueue",
+                 return_value=dingtalk_result) as dingtalk:
+            handler._dispatch_failed(
+                "82952290", bot.ClaudeResult(text, True, subtype), notices.append,
+                "1086837", terraform=True, kind="ticket", sid=sid, attempts=3)
+        return aone, dingtalk, release, notices
+
+    def test_provider_failure_is_dingtalk_only_with_operator_recovery(self):
+        aone, dingtalk, release, notices = self._dispatch_failed(
+            "API Error: 400 模型提供方错误 Request" "Id=req-secret token=secret")
+        aone.assert_not_called()
+        dingtalk.assert_called_once()
+        args = dingtalk.call_args.args
+        self.assertEqual(args[2], "dispatch-model-provider:ticket:provider-session")
+        self.assertEqual(args[3], "123456")
+        body = args[5]
+        for expected in (
+                "workitem/82952290", "任务类型：ticket",
+                "失败原因：model_provider_error", "尝试次数：3",
+                "认领释放：已释放", "control-plane-status.sh task 82952290",
+                "RECOVERY_REQUIRED", "RESUMABLE",
+                "discard-resume <task_id> <session_id>"):
+            self.assertIn(expected, body)
+        for leaked in ("req-secret", "token=secret", "API Error: 400"):
+            self.assertNotIn(leaked, body)
+        release.assert_called_once_with("82952290", "1086837", terraform=True)
+        self.assertIn("model_provider_error", notices[0])
+
+    def test_provider_dingtalk_failure_never_falls_back_to_aone(self):
+        aone, dingtalk, _release, _notices = self._dispatch_failed(
+            "模型网关失败", dingtalk_result=False)
+        aone.assert_not_called()
+        dingtalk.assert_called_once()
+
+    def test_claim_release_rc_nonzero_is_reported_in_dingtalk_only(self):
+        handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
+        handler._post_death_cause = mock.Mock()
+        failed_release = SimpleNamespace(returncode=2)
+        with mock.patch.object(bot.subprocess, "run", return_value=failed_release), \
+             mock.patch.object(bot, "_aone_event_enqueue") as aone, \
+             mock.patch.object(
+                 bot, "_dingtalk_event_enqueue", return_value=True) as dingtalk:
+            handler._dispatch_failed(
+                "82952290",
+                bot.ClaudeResult("模型提供方错误", True, "success"),
+                lambda _text: None, "1086837", terraform=True, kind="ticket",
+                sid="release-failed-session", attempts=3)
+        aone.assert_not_called()
+        dingtalk.assert_called_once()
+        body = dingtalk.call_args.args[5]
+        self.assertIn("认领释放：释放失败", body)
+        self.assertNotIn("认领释放：已释放", body)
+
+    def test_failed_transport_is_durably_queued_for_dingtalk_retry(self):
+        failed = SimpleNamespace(
+            returncode=1,
+            stdout=json.dumps({"status": "failed", "reason": "gateway down"}),
+            stderr="gateway down")
+        with tempfile.TemporaryDirectory() as tmp, \
+             mock.patch.object(
+                 bot, "DINGTALK_EVENT_PATH", Path(tmp) / "dingtalk.json"), \
+             mock.patch.object(bot, "_is_terraform_project", return_value=True), \
+             mock.patch.object(bot.subprocess, "run", return_value=failed) as run:
+            first = bot._dingtalk_event_enqueue(
+                "82952290", "1086837", "dispatch-model-provider:ticket:stable",
+                "320687", "Jarvis 模型提供方故障", "safe operator recovery")
+            second = bot._dingtalk_event_enqueue(
+                "82952290", "1086837", "dispatch-model-provider:ticket:stable",
+                "320687", "Jarvis 模型提供方故障", "safe operator recovery")
+            ledger = bot._dingtalk_event_load()
+        self.assertTrue(first)
+        self.assertTrue(second)
+        self.assertEqual(run.call_count, 1, "backoff suppresses immediate duplicate transport")
+        self.assertEqual(len(ledger["pending"]), 1)
+        record = next(iter(ledger["pending"].values()))
+        self.assertEqual(record["state"], "failed")
+        self.assertEqual(record["attempts"], 1)
+
+    def test_other_terraform_failure_keeps_aone_important_event(self):
+        aone, dingtalk, _release, _notices = self._dispatch_failed(
+            "ordinary execution failure", subtype="error")
+        aone.assert_called_once()
+        self.assertEqual(aone.call_args.args[2],
+                         "dispatch:ticket:provider-session:error")
+        dingtalk.assert_not_called()
+
+    def test_customer_api_gateway_timeout_is_not_model_provider_failure(self):
+        aone, dingtalk, _release, _notices = self._dispatch_failed(
+            "customer API gateway timeout while calling Aone", subtype="error")
+        aone.assert_called_once()
+        self.assertEqual(aone.call_args.args[2],
+                         "dispatch:ticket:provider-session:error")
+        dingtalk.assert_not_called()
+
+    def test_authentication_subtype_without_model_context_is_not_provider_failure(self):
+        aone, dingtalk, _release, _notices = self._dispatch_failed(
+            "permission denied", subtype="authentication_error")
+        aone.assert_called_once()
+        self.assertEqual(
+            aone.call_args.args[2],
+            "dispatch:ticket:provider-session:authentication_error")
+        dingtalk.assert_not_called()
+
+    def test_same_session_uses_stable_dingtalk_event_key(self):
+        first = self._dispatch_failed("模型提供方错误", sid="same-session")[1]
+        second = self._dispatch_failed("模型提供方错误", sid="same-session")[1]
+        self.assertEqual(first.call_args.args[2], second.call_args.args[2])
+
+
 class TaskBookendDispatchTest(unittest.TestCase):
     """B-proper: the control-plane Task run authors a structured result; the executor
     (via _TaskAoneBookend) owns the single Aone write. The run never self-claims, so the
