@@ -311,6 +311,52 @@ class ClientContractTest(unittest.TestCase):
         self.assertEqual(headers(opener.calls[1][0])["idempotency-key"],
                          "source-status-42")
 
+    def test_task_attention_uses_control_plane_dedup_contract(self):
+        opener = RecordingOpener(responses=[
+            FakeResponse({"notify": True, "task": {"id": 42}}),
+            FakeResponse({"notify": False, "task": {"id": 42}}),
+        ])
+        client = self.make(opener)
+
+        stored = client.upsert_task_attention(
+            "task/42", "320687", "pr-review:abc", {
+                "reason": "CI is green",
+                "action": "Review and merge",
+                "pr_url": "https://example.test/pull/1",
+            }, request_id="attention-task-42")
+        cleared = client.clear_task_attention(
+            "task/42", event_key_prefix="task-waiting-human:",
+            request_id="attention-clear-task-42")
+
+        put, delete = [call[0] for call in opener.calls]
+        self.assertTrue(put.full_url.endswith(
+            "/api/jarvis/v1/tasks/task%2F42/attention"))
+        self.assertEqual(put.get_method(), "PUT")
+        self.assertEqual(body(put), {
+            "ownerStaffId": "320687",
+            "eventKey": "pr-review:abc",
+            "payload": {
+                "reason": "CI is green",
+                "action": "Review and merge",
+                "prUrl": "https://example.test/pull/1",
+            },
+        })
+        self.assertEqual(headers(put)["idempotency-key"], "attention-task-42")
+        self.assertTrue(stored["notify"])
+        self.assertEqual(
+            delete.full_url,
+            put.full_url + "?eventKeyPrefix=task-waiting-human%3A")
+        self.assertEqual(delete.get_method(), "DELETE")
+        self.assertIsNone(delete.data)
+        self.assertEqual(headers(delete)["idempotency-key"],
+                         "attention-clear-task-42")
+        self.assertFalse(cleared["notify"])
+
+        with self.assertRaises(TypeError):
+            client.upsert_task_attention("42", "320687", "key", [])
+        with self.assertRaises(ValueError):
+            client.upsert_task_attention("42", "", "key", {})
+
     def test_external_operation_recovery_uses_dedicated_page_and_token_paths(self):
         opener = RecordingOpener(responses=[
             FakeResponse({"items": [], "nextAfterOperationId": None, "hasMore": False}),

@@ -262,6 +262,100 @@ class _DispatchBase(unittest.TestCase):
         return bot._prwatch_list()[TID]
 
 
+class FakeAttentionClient:
+    def __init__(self, notify=False):
+        self.notify = notify
+        self.upserts = []
+        self.clears = []
+        self.fail_clear = False
+
+    def get_task_by_aone(self, aone_id):
+        self.last_aone_id = aone_id
+        return {"items": [
+            {"id": 17, "generation": 1},
+            {"taskId": 42, "generation": 2},
+        ]}
+
+    def upsert_task_attention(self, task_id, owner, event_key, payload):
+        self.upserts.append((task_id, owner, event_key, payload))
+        value = self.notify.pop(0) if isinstance(self.notify, list) else self.notify
+        return {"notify": value, "task": {"id": task_id}}
+
+    def clear_task_attention(self, task_id, *, event_key_prefix=None):
+        if self.fail_clear:
+            raise RuntimeError("control plane unavailable")
+        self.clears.append((task_id, event_key_prefix))
+        return {"notify": False, "task": {"id": task_id}}
+
+
+class AttentionProjectionTest(_DispatchBase):
+    def setUp(self):
+        super().setUp()
+        self.client = FakeAttentionClient(notify=[True, False])
+        self.handler.task_client = self.client
+        self.sched = bot.PrWatchScheduler(self.handler, self.pool)
+        self.sched._gh_pr_state = lambda _url: ("OPEN", None)
+        self.sched._gh_pr_comments = lambda _url: (None, None, None)
+        self.notices = []
+        self.sched._notify_attention = (
+            lambda owner, payload: self.notices.append((owner, payload)))
+
+    def test_green_pr_persists_attention_and_notifies_only_on_notify_true(self):
+        self.sched._gh_pr_ci = lambda _url: ("green-head", [], False)
+
+        self.sched._check_one(TID, self._entry())
+        self.sched._check_one(TID, self._entry())
+
+        self.assertEqual(self.client.last_aone_id, TID)
+        self.assertEqual(len(self.client.upserts), 2)
+        task_id, owner, event_key, payload = self.client.upserts[0]
+        self.assertEqual(task_id, "42", "latest Task generation must own attention")
+        self.assertEqual(owner, bot.master_staff())
+        self.assertTrue(event_key.startswith("pr-review-merge:"))
+        self.assertEqual(payload["kind"], "PR_REVIEW_MERGE")
+        self.assertEqual(payload["head"], "green-head")
+        self.assertEqual(
+            payload["aoneUrl"],
+            "https://project.aone.alibaba-inc.com/v2/project/%s/workitem/%s"
+            % (PROJ, TID))
+        self.assertEqual(payload["prUrl"], PR)
+        self.assertIn("review", payload["action"])
+        self.assertEqual(len(self.notices), 1,
+                         "bridge must obey control-plane notify and keep no local ledger")
+        self.assertEqual(self.events, [], "attention must not create an Aone comment event")
+
+    def test_pending_or_failing_ci_clears_stale_review_attention(self):
+        for ci in (("pending-head", [], True), ("failed-head", ["Compile"], False)):
+            with self.subTest(ci=ci):
+                self.sched._gh_pr_ci = lambda _url, value=ci: value
+                self.sched._check_one(TID, self._entry())
+        self.assertEqual(
+            self.client.clears, [("42", "pr-"), ("42", "pr-")])
+        self.assertEqual(self.client.upserts, [])
+        self.assertEqual(self.notices, [])
+
+    def test_merged_clear_failure_keeps_watch_for_next_tick(self):
+        self.client.fail_clear = True
+        self.sched._gh_pr_state = lambda _url: ("MERGED", "2026-07-01T00:00:00Z")
+        self.sched._finish = lambda *_a: self.fail(
+            "lifecycle must wait until attention clear converges")
+
+        self.sched._check_one(TID, self._entry())
+
+        self.assertTrue(bot._prwatch_has(TID))
+
+    def test_closed_pr_converts_attention_before_unwatch(self):
+        self.sched._gh_pr_state = lambda _url: ("CLOSED", None)
+        self.sched._check_one(TID, self._entry())
+
+        self.assertFalse(bot._prwatch_has(TID))
+        self.assertEqual(len(self.client.upserts), 1)
+        _task_id, _owner, key, payload = self.client.upserts[0]
+        self.assertTrue(key.startswith("pr-closed:"))
+        self.assertEqual(payload["kind"], "PR_CLOSED_DECISION")
+        self.assertEqual(len(self.notices), 1)
+
+
 class MaybeDispatchCiFixTest(_DispatchBase):
     def setUp(self):
         super().setUp()
