@@ -8055,3 +8055,113 @@ resource "alicloud_cs_managed_kubernetes" "defaultNppPcz" {
 }
 
 // Test Ack Nodepool. <<< Resource test cases, automatically generated.
+
+func TestAccAliCloudCSKubernetesNodePool_containerdConfig(t *testing.T) {
+	var v *cs.NodePoolDetail
+
+	resourceId := "alicloud_cs_kubernetes_node_pool.containerd_config"
+	ra := resourceAttrInit(resourceId, AlicloudAckNodepoolMap12069)
+
+	serviceFunc := func() interface{} {
+		return &CsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccNodePool-containerd-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudAckNodepoolBasicDependence12069)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":        name,
+					"cluster_id":  "${alicloud_cs_managed_kubernetes.defaultNppPcz.id}",
+					"vswitch_ids": []string{"${alicloud_vswitch.defaultT8D8ss.id}"},
+					"instance_types": []string{
+						"ecs.g7.xlarge",
+					},
+					"desired_size":         "1",
+					"system_disk_category": "cloud_essd",
+					"system_disk_size":     "40",
+					"image_type":           "AliyunLinux3ContainerOptimized",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":       name,
+						"cluster_id": CHECKSET,
+					}),
+				),
+			},
+			// check: containerd_config basic
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"containerd_config": []map[string]interface{}{{
+						"max_concurrent_downloads":    "10",
+						"ignore_image_defined_volume": "true",
+						"insecure_registries":         []string{"registry.example.com"},
+					}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"containerd_config.#":                             "1",
+						"containerd_config.0.max_concurrent_downloads":    "10",
+						"containerd_config.0.ignore_image_defined_volume": "true",
+						"containerd_config.0.insecure_registries.#":       "1",
+						"containerd_config.0.insecure_registries.0":       "registry.example.com",
+					}),
+				),
+			},
+			// check: containerd_config update
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"containerd_config": []map[string]interface{}{{
+						"max_concurrent_downloads":    "5",
+						"limit_core":                  "10",
+						"limit_no_file":               "1024",
+						"limit_mem_lock":              "65536",
+						"ignore_image_defined_volume": "true",
+						"insecure_registries":         []string{"registry.example.com"},
+						"registry_mirrors": []map[string]interface{}{{
+							"registry":      "docker.io",
+							"mirror":        "https://mirror.example.com",
+							"override_path": "true",
+						}},
+					}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"containerd_config.#":                                  "1",
+						"containerd_config.0.max_concurrent_downloads":         "5",
+						"containerd_config.0.limit_core":                       "10",
+						"containerd_config.0.limit_no_file":                    "1024",
+						"containerd_config.0.limit_mem_lock":                   "65536",
+						"containerd_config.0.ignore_image_defined_volume":      "true",
+						"containerd_config.0.insecure_registries.#":            "1",
+						"containerd_config.0.insecure_registries.0":            "registry.example.com",
+						"containerd_config.0.registry_mirrors.#":               "1",
+						"containerd_config.0.registry_mirrors.0.registry":      "docker.io",
+						"containerd_config.0.registry_mirrors.0.mirror":        "https://mirror.example.com",
+						"containerd_config.0.registry_mirrors.0.override_path": "true",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"eflo_node_group", "password", "rolling_policy", "update_nodes", "upgrade_policy"},
+			},
+		},
+	})
+}
