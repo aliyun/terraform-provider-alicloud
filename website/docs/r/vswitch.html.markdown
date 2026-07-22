@@ -133,7 +133,7 @@ The following arguments are supported:
   - When the VPC IPv6 address mask is `56`: `0` to `255`.
   - When the VPC IPv6 address mask is `60`: `0` to `15`.
 * `tags` - (Optional, Map, Available since v1.55.3) The tags of VSwitch.
-* `vswitch_name` - (Optional, Available since v1.119.0) The name of the VSwitch.
+* `vswitch_name` - (Optional, Available since v1.119.0) The name of the VSwitch. The name must be `1` to `128` characters in length, and cannot start with `http://` or `https://`.
 * `vpc_id` - (Optional, ForceNew) The VPC ID. **NOTE:** From version 1.233.0, if you do not set `is_default`, or set `is_default` to `false`, `vpc_id` is required.
 * `is_default` - (Optional, Computed, ForceNew, Bool, Available since v1.233.0) Specifies whether to create the default VSwitch. Default value: `false`. Valid values:
   - `true`: Creates a default vSwitch.
