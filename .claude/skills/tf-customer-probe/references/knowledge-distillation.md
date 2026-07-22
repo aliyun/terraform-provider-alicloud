@@ -7,7 +7,10 @@
 ## 落点
 
 **数据**在 `tf_playground/<product>/KNOWLEDGE.md`（独立数据仓 `terraflow/tf_playground`,直推 master + 工单报备,
-非代码不走 MR）。playground 根解析优先级(与场景库同):
+非代码不走 MR）。直推放行由 `bootstrap/push-master-allowlist` 承载(redline-guard 按 remote slug 豁免);
+push 命令须写成 `git -C <playground目录> push origin master` 或 `cd <playground目录> && git push origin master`
+——guard 需从命令文本解析仓目录核验 remote,裸 `git push` 无法核验会被 fail-closed 拦截。
+playground 根解析优先级(与场景库同):
 env `JARVIS_TF_PLAYGROUND` > config `paths.playground_dir` > `bootstrap/workspace.sh dir tf_playground` >
 默认 `<jarvis 父目录>/terraform_playground`。
 
