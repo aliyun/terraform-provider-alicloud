@@ -103,6 +103,16 @@ func resourceAliCloudRedisTairInstance() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"maintain_end_time": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"maintain_start_time": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"max_connections": {
 				Type:     schema.TypeInt,
 				Computed: true,
@@ -469,6 +479,12 @@ func resourceAliCloudRedisTairInstanceRead(d *schema.ResourceData, meta interfac
 	}
 	if objectRaw["InstanceType"] != nil {
 		d.Set("instance_type", objectRaw["InstanceType"])
+	}
+	if objectRaw["MaintainEndTime"] != nil {
+		d.Set("maintain_end_time", objectRaw["MaintainEndTime"])
+	}
+	if objectRaw["MaintainStartTime"] != nil {
+		d.Set("maintain_start_time", objectRaw["MaintainStartTime"])
 	}
 	if objectRaw["Connections"] != nil {
 		d.Set("max_connections", objectRaw["Connections"])
@@ -1193,6 +1209,40 @@ func resourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 				return WrapErrorf(err, IdMsg, d.Id())
 			}
 
+		}
+	}
+	update = false
+	action = "ModifyInstanceMaintainTime"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["InstanceId"] = d.Id()
+	request["RegionId"] = client.RegionId
+	if d.HasChange("maintain_end_time") {
+		update = true
+	}
+	request["MaintainEndTime"] = d.Get("maintain_end_time").(string)
+	if d.HasChange("maintain_start_time") {
+		update = true
+	}
+	request["MaintainStartTime"] = d.Get("maintain_start_time").(string)
+	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("R-kvstore", "2015-01-01", action, query, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
 	if d.HasChange("tags") {
