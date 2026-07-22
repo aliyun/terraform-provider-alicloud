@@ -16,6 +16,7 @@ description: Use when a Jarvis Terraform workflow needs to run terraform-provide
 - 跨账号资源只描述需要哪些环境变量，例如 `ALICLOUD_ACCESS_KEY_1` / `ALICLOUD_SECRET_KEY_1` / `ALICLOUD_ACCESS_KEY_2` / `ALICLOUD_SECRET_KEY_2`，不要展示值。
 - `cancel` 会停止远程 FC 异步任务；只有用户明确同意取消时才能调用。
 - API 报云产品业务错误时，以 `tf-debug.log` 的 RequestId 和请求参数为准，不凭本地复现猜测。
+- 历史 task 的 `run.log`/`tf-debug.log` 可随时用 `logs --task-id <n> --download-dir <dir>` 重新下载；PR 评审/工单追问请求证据时优先复用历史日志，不必重跑测试。RequestId 链路只走内部通道（Aone 评论/钉钉私信），不进公开 PR 评论——双通道模式见 terraform-pr-review skill。
 
 ## 1. 定位 provider 目录
 

@@ -83,6 +83,21 @@ items := v.([]interface{})
 items := convertToInterfaceArray(v)
 ```
 
+**Server-masked sensitive fields written back to state**
+
+Some query APIs return server-masked PII for sensitive attributes (e.g. email `test1@example.com` → `tes****1@example.com`, mobile middle digits starred; precedent: CAS `GetContact`/`ListContact`). Unconditionally `d.Set`-ing the masked read-back makes state diverge from config, producing a perpetual plan diff (the update-step post-apply plan check fails). A `DiffSuppressFunc` cannot reliably tell a masked `old` from a genuine change.
+
+Acceptable patterns — flag anything else:
+
+```go
+// ✅ masked-guard: keep the configured value when the response is masked/empty
+if v, ok := resp["Email"]; ok && !isMasked(v) { d.Set("email", v) }
+
+// ✅ or make the field write-only (never read back), documented as such
+```
+
+Evidence source when disputed: remote ACC `tf-debug.log` — plaintext in the Create/Update request vs masked values in the immediately following Get response proves the masking is server-side, not a provider bug.
+
 ## Important Notes
 
 - API parameter names differing from resource attribute names (e.g. `request["scheduleTime"] = d.Get("recurrence")`) **is not necessarily a bug**. Flag a warning, but do not judge it as an error.
