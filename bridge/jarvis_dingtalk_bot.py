@@ -796,6 +796,82 @@ def _dispatch_event_summary(kind, subtype, attempts, release_state):
            release_state))
 
 
+_MODEL_PROVIDER_ERROR_RE = re.compile(
+    r"(?:"
+    r"模型(?:提供方|供应商|网关).{0,24}(?:错误|失败|异常|不可用)"
+    r"|(?:model|llm|claude)[ _-]*(?:provider|gateway).{0,32}"
+    r"(?:error|failed|failure|unavailable|invalid|timeout)"
+    r")", re.IGNORECASE)
+_MODEL_PROVIDER_ERROR_SUBTYPES = frozenset({
+    "model_provider_error",
+})
+
+
+def _is_model_provider_failure(text, subtype=None):
+    """Identify bounded headless failures owned by the model provider/gateway."""
+    normalized_subtype = str(subtype or "").strip().lower()
+    return (normalized_subtype in _MODEL_PROVIDER_ERROR_SUBTYPES
+            or bool(_MODEL_PROVIDER_ERROR_RE.search(str(text or ""))))
+
+
+def _normalized_failure_subtype(text, subtype, is_error=True):
+    """Never persist a contradictory ``is_error=true, subtype=success`` envelope."""
+    value = str(subtype or "").strip() or "execution_error"
+    if not is_error:
+        return value
+    if _is_model_provider_failure(text, value):
+        return "model_provider_error"
+    if value.lower() == "success":
+        return "execution_error"
+    return value[:100]
+
+
+def _dispatch_model_provider_summary(ticket, project, kind, attempts, release_state):
+    """Sanitized, bounded operator notice for a recoverable model-provider outage."""
+    try:
+        attempt_count = max(1, int(attempts))
+    except (TypeError, ValueError):
+        attempt_count = 1
+    url = ("https://project.aone." "alibaba-inc.com/v2/project/%s/workitem/%s") % (
+        str(project), str(ticket))
+    return _aone_event_sanitize_text(
+        "Jarvis Terraform 自动处理因模型提供方故障停止。\n\n"
+        "- 工单：%s\n"
+        "- 任务类型：%s\n"
+        "- 失败原因：model_provider_error（模型提供方或网关请求失败）\n"
+        "- 尝试次数：%d\n"
+        "- 认领释放：%s\n\n"
+        "可操作恢复步骤：\n"
+        "1. 先检查模型网关可用性、额度和凭据。\n"
+        "2. 修复后运行 `bootstrap/control-plane-status.sh task %s` 复核 Task/Session。\n"
+        "3. 确认状态可恢复后，从控制面重新派发。\n"
+        "4. 若为 RECOVERY_REQUIRED 且旧 RESUMABLE 上下文持续损坏，"
+        "必须先人工复核 Task/Session，再运行 "
+        "`bootstrap/control-plane-status.sh discard-resume <task_id> <session_id> "
+        "--reason 'model provider recovery' --yes`，然后重新派发。"
+        % (url, _aone_event_source_part(kind), attempt_count,
+           release_state, str(ticket)), limit=_AONE_EVENT_TEXT_MAX)
+
+
+def _release_claim_checked(iid, project, terraform=False):
+    """Release a failed dispatch claim and expose the command's true outcome."""
+    try:
+        proc = subprocess.run(
+            [str(REPO_ROOT / "bootstrap" / "claim.sh"), "release",
+             str(iid), str(project)],
+            cwd=str(REPO_ROOT), timeout=60,
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            env=_a1_command_env(terraform=terraform))
+        if proc.returncode == 0:
+            return True
+        log.warning(
+            "_release_claim_checked #%s failed: claim.sh rc=%s",
+            iid, proc.returncode)
+    except Exception as e:  # noqa: BLE001
+        log.warning("_release_claim_checked #%s failed: %s", iid, e)
+    return False
+
+
 def _aone_event_digest(event_key):
     """Return a short digest of a stable semantic source; never expose the source."""
     source = str(event_key or "").strip()
@@ -3133,7 +3209,9 @@ def _task_failure_result(result, attempts=1):
     message = _aone_event_sanitize_text(
         getattr(result, "text", "") or getattr(result, "subtype", "") or
         "Jarvis execution failed", limit=1000)
-    subtype = str(getattr(result, "subtype", "") or "execution_error")[:100]
+    subtype = _normalized_failure_subtype(
+        message, getattr(result, "subtype", ""),
+        bool(getattr(result, "is_error", True)))
     lowered = message.lower()
     error_type = ("AoneClaimFailed" if
                   ("claim failed" in lowered or "missing_required_field" in lowered or
@@ -3180,11 +3258,13 @@ def _classify_result(out, err, rc):
         subtype = last.get("subtype") or ("success" if not is_error else "error")
         if rc != 0:
             is_error = True
+        subtype = _normalized_failure_subtype(text, subtype, is_error)
         return ClaudeResult(text, is_error, subtype)
     # No terminal result object at all.
     if rc != 0:
         last_err = (err or "").strip().splitlines()[-1:] or ["unknown"]
-        return ClaudeResult(last_err[0], True, "no_result")
+        subtype = _normalized_failure_subtype(last_err[0], "no_result", True)
+        return ClaudeResult(last_err[0], True, subtype)
     return ClaudeResult("", False, "no_result")
 
 
@@ -7977,8 +8057,9 @@ class JarvisHandler(AsyncChatbotHandler):
         sticky gateway/token selection stays put (a --resume that lands on a different
         gateway fails). Terminal errors (timeout / max-turns) fast-fail without retry.
         A clean SUSPEND is is_error=False so it breaks normally and suspends as before.
-        On final failure the death cause is posted to Aone and the claim released
-        (ticket kind only, via ``project``).
+        On final failure the claim is released (ticket kind only, via ``project``).
+        Terraform model-provider outages are operator-only DingTalk events; other
+        terminal failures keep their existing Aone routing.
 
         Probe rounds (item_id prefix "probe-") 额外把会话 final 文本落
         ``runs/probe/<item_id>-summary.md`` 供 board.sh 拉取/审计。
@@ -8021,6 +8102,12 @@ class JarvisHandler(AsyncChatbotHandler):
                     runner_kwargs["guarded"] = True
                 res = run_claude_buffered(cur_prompt, sid, cur_resume,
                                           **runner_kwargs)
+                if res.is_error:
+                    # Keep adapters/mocks and future runtimes from bypassing the
+                    # terminal JSON classifier's subtype normalization.
+                    res = ClaudeResult(
+                        res.text, True,
+                        _normalized_failure_subtype(res.text, res.subtype, True))
                 if not res.is_error:
                     break  # clean completion or SUSPEND (both is_error=False)
                 if res.subtype in ("timeout", "error_max_turns"):
@@ -8168,7 +8255,8 @@ class JarvisHandler(AsyncChatbotHandler):
                             item_id, project, event["semantic_source"], event["summary"]):
                         log.error("dispatch_item #%s revisit event could not be queued", item_id)
             # 成功路径:probe 轮把 final 文本落 summary.md(失败不落——tail 已由
-            # _dispatch_failed 贴 Aone 保留死因,避免 board.sh 拉到半截错误当结论)
+            # _dispatch_failed 保留本地死因并按错误类别路由终态事件，
+            # 避免 board.sh 拉到半截错误当结论。
             if str(item_id).startswith("probe-"):
                 self._write_probe_summary(str(item_id), final)
             try:
@@ -8231,15 +8319,20 @@ class JarvisHandler(AsyncChatbotHandler):
                          kind="ticket", sid="unknown-session", attempts=None):
         """Retries exhausted / terminal error: record the death cause, release the claim
         (ticket kind only — probe/revisit/wake pass project=None), and report the failure
-        through the caller-selected notice sink. Terraform keeps a local audit log and submits one terminal event to the
-        RD-only idempotent publisher; non-Terraform retains the legacy Aone death-cause
-        comment. Every step is best-effort and never raises."""
+        through the caller-selected notice sink. Terraform keeps a local audit log. Model
+        provider/gateway outages notify the master by idempotent DingTalk only; all other
+        Terraform terminal failures retain the RD-only Aone important event. Non-Terraform
+        retains the legacy Aone death-cause comment. Every step is best-effort and never
+        raises."""
         retries = int(os.environ.get("JARVIS_DISPATCH_RETRY_MAX", "2"))
         tail = (res.text or "").strip()
+        failure_subtype = _normalized_failure_subtype(
+            tail, getattr(res, "subtype", ""), bool(getattr(res, "is_error", True)))
+        model_provider_failure = _is_model_provider_failure(tail, failure_subtype)
         if len(tail) > 800:
             tail = "…" + tail[-800:]
         cause = ("headless 派发失败（已重试 %d 次）\nsubtype: %s\n---\n%s"
-                 % (retries, res.subtype, tail or "(无输出)"))
+                 % (retries, failure_subtype, tail or "(无输出)"))
         try:
             self._post_death_cause(item_id, cause, terraform=terraform)
         except Exception as e:  # noqa: BLE001
@@ -8249,26 +8342,46 @@ class JarvisHandler(AsyncChatbotHandler):
         if (project and str(item_id).isdigit()
                 and kind not in POST_PR_HEADLESS_KINDS):
             try:
-                _release_claim(item_id, project, terraform=terraform)
-                release_state = "已释放"
+                release_result = _release_claim_checked(
+                    item_id, project, terraform=terraform)
+                release_state = ("已释放" if release_result else "释放失败")
             except Exception as e:  # noqa: BLE001
                 release_state = "释放失败"
                 log.warning("_dispatch_failed #%s release failed: %s", item_id, e)
         if terraform and project and str(item_id).isdigit():
             try:
-                semantic_source = "dispatch:%s:%s:%s" % (
-                    _aone_event_source_part(kind),
-                    _aone_event_source_part(sid or "unknown-session"),
-                    _aone_event_source_part(res.subtype or "error"))
-                if not _aone_event_enqueue(
-                        item_id, project, semantic_source,
-                        _dispatch_event_summary(
-                            kind, res.subtype, attempts or (retries + 1), release_state)):
-                    log.error("_dispatch_failed #%s Aone event could not be queued", item_id)
+                normalized_kind = _aone_event_source_part(kind)
+                normalized_sid = _aone_event_source_part(sid or "unknown-session")
+                if model_provider_failure:
+                    # Same Task session + outage class is one semantic event. The
+                    # DingTalk ledger keeps failed transports pending for flush/retry.
+                    semantic_source = "dispatch-model-provider:%s:%s" % (
+                        normalized_kind, normalized_sid)
+                    if not _dingtalk_event_enqueue(
+                            item_id, project, semantic_source, master_staff(),
+                            "Jarvis 模型提供方故障",
+                            _dispatch_model_provider_summary(
+                                item_id, project, kind,
+                                attempts or (retries + 1), release_state)):
+                        log.error(
+                            "_dispatch_failed #%s DingTalk event could not be queued",
+                            item_id)
+                else:
+                    semantic_source = "dispatch:%s:%s:%s" % (
+                        normalized_kind, normalized_sid,
+                        _aone_event_source_part(failure_subtype or "error"))
+                    if not _aone_event_enqueue(
+                            item_id, project, semantic_source,
+                            _dispatch_event_summary(
+                                kind, failure_subtype,
+                                attempts or (retries + 1), release_state)):
+                        log.error(
+                            "_dispatch_failed #%s Aone event could not be queued", item_id)
             except Exception as e:  # noqa: BLE001
-                log.warning("_dispatch_failed #%s Aone event failed: %s", item_id, e)
+                log.warning("_dispatch_failed #%s terminal event failed: %s", item_id, e)
         try:
-            notify("⚠️ #%s 处理失败（已重试 %d 次）: %s …" % (item_id, retries, res.subtype))
+            notify("⚠️ #%s 处理失败（已重试 %d 次）: %s …" % (
+                item_id, retries, failure_subtype))
         except Exception as e:  # noqa: BLE001
             log.warning("_dispatch_failed #%s notify failed: %s", item_id, e)
 
