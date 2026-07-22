@@ -104,6 +104,23 @@ func resourceAliCloudImageImport() *schema.Resource {
 					},
 				},
 			},
+			"features": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"nvme_support": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ForceNew:     true,
+							Computed:     true,
+							ValidateFunc: StringInSlice([]string{"supported", "unsupported"}, false),
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -140,6 +157,17 @@ func resourceAliCloudImageImportCreate(d *schema.ResourceData, meta interface{})
 
 	if v, ok := d.GetOk("description"); ok {
 		request.Description = v.(string)
+	}
+
+	// Handle features including NVMe support
+	if v, ok := d.GetOk("features"); ok {
+		featuresList := v.([]interface{})
+		if len(featuresList) > 0 {
+			featuresMap := featuresList[0].(map[string]interface{})
+			if nvmeSupport, ok := featuresMap["nvme_support"]; ok && nvmeSupport.(string) != "" {
+				request.QueryParams["Features.NvmeSupport"] = nvmeSupport.(string)
+			}
+		}
 	}
 
 	diskDeviceMappings := d.Get("disk_device_mapping")
@@ -233,6 +261,15 @@ func resourceAliCloudImageImportRead(d *schema.ResourceData, meta interface{}) e
 	}
 
 	d.Set("disk_device_mapping", diskDeviceMappings)
+
+	// Set features
+	featuresMaps := make([]map[string]interface{}, 0)
+	featuresMap := make(map[string]interface{})
+	if object.Features.NvmeSupport != "" {
+		featuresMap["nvme_support"] = object.Features.NvmeSupport
+		featuresMaps = append(featuresMaps, featuresMap)
+		d.Set("features", featuresMaps)
+	}
 
 	return nil
 }

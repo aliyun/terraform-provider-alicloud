@@ -61,6 +61,9 @@ resource "alicloud_image_import" "default" {
   license_type = "Auto"
   image_name   = var.name
   description  = var.name
+  features {
+    nvme_support = "supported"
+  }
   disk_device_mapping {
     oss_bucket      = alicloud_oss_bucket.default.id
     oss_object      = alicloud_oss_bucket_object.default.id
@@ -84,6 +87,7 @@ The following arguments are supported:
 * `image_name` - (Optional) The name of the image. The `image_name` must be `2` to `128` characters in length. The `image_name` must start with a letter and cannot start with acs: or aliyun. The `image_name` cannot contain http:// or https://. The `image_name` can contain letters, digits, periods (.), colons (:), underscores (_), and hyphens (-).
 * `description` - (Optional) The description of the image. The `description` must be 2 to 256 characters in length and cannot start with http:// or https://.
 * `disk_device_mapping` - (Required, ForceNew, Set) The information about the custom image. See [`disk_device_mapping`](#disk_device_mapping) below.
+* `features` - (Optional, Computed) Features for the image. See [`features`](#features) below.
 
 ### `disk_device_mapping`
 
@@ -94,6 +98,14 @@ The disk_device_mapping supports the following:
 * `oss_object` - (Optional, ForceNew) The name (key) of the object that the uploaded image is stored as in the OSS bucket.
 * `device` - (Optional, ForceNew) The device name of the disk.
 * `disk_image_size` - (Optional, ForceNew, Int) The size of the disk. Default value: `5`.
+
+### `features`
+
+The features supports the following:
+
+* `nvme_support` - (Optional, ForceNew, Computed) Specifies whether to support the Non-Volatile Memory Express (NVMe) protocol. Valid values:
+  - `supported`: The image supports NVMe. Instances created from this image also support NVMe.
+  - `unsupported`: The image does not support NVMe. Instances created from this image do not support NVMe.
 
 ## Attributes Reference
 
