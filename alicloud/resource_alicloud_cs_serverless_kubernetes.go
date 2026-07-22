@@ -26,6 +26,7 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(60 * time.Minute),
+			Update: schema.DefaultTimeout(60 * time.Minute),
 			Delete: schema.DefaultTimeout(30 * time.Minute),
 		},
 
@@ -255,6 +256,17 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"encryption_provider_key": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				DiffSuppressFunc: kmsEncryptionDiffSuppressFunc,
+				Description:      "The ID of the Key Management Service (KMS) key that is used to encrypt Kubernetes Secrets.",
+			},
+			"disable_encryption": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
 			"delete_options": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -478,6 +490,10 @@ func resourceAlicloudCSServerlessKubernetesCreate(d *schema.ResourceData, meta i
 		request.CustomSan = tea.String(v.(string))
 	}
 
+	if v, ok := d.GetOk("encryption_provider_key"); ok {
+		request.EncryptionProviderKey = tea.String(v.(string))
+	}
+
 	if v, ok := d.GetOk("maintenance_window"); ok {
 		request.MaintenanceWindow = expandMaintenanceWindowConfigRoa(v.([]interface{}))
 	}
@@ -590,6 +606,12 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 	if v, ok := capabilities["PublicSLB"]; ok {
 		d.Set("endpoint_public_access_enabled", Interface2Bool(v))
 	}
+	if v, ok := capabilities["DisableEncryption"]; ok {
+		d.Set("disable_encryption", Interface2Bool(v))
+	}
+	if kmsKeyId, ok := capabilities["EncryptionKMSKeyId"]; ok {
+		d.Set("encryption_provider_key", Interface2String(kmsKeyId))
+	}
 	metadata := fetchClusterMetaDataMap(tea.StringValue(object.MetaData))
 	if v, ok := metadata["ExtraCertSAN"]; ok && v != nil {
 		l := expandStringList(v.([]interface{}))
@@ -658,6 +680,13 @@ func resourceAlicloudCSServerlessKubernetesUpdate(d *schema.ResourceData, meta i
 		err := migrateCluster(d, meta)
 		if err != nil {
 			return WrapError(err)
+		}
+	}
+
+	// update kms encryption
+	if !d.IsNewResource() && (d.HasChange("encryption_provider_key") || d.HasChange("disable_encryption")) {
+		if err := updateClusterKMSEncryption(d, meta); err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateKMSEncryption", AlibabaCloudSdkGoERROR)
 		}
 	}
 

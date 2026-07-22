@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_cs_serverless_kubernetes
 
--> **DEPRECATION NOTICE:** This resource has been deprecated since v1.276.0 and will be removed in a future release. Please use `alicloud_cs_managed_kubernetes` instead.
+-> **DEPRECATED:** This resource has been deprecated since v1.276.0 and will be removed in a future release. Please use `alicloud_cs_managed_kubernetes` instead.
 
 This resource will help you to manager a Serverless Kubernetes Cluster, see [What is serverless kubernetes](https://www.alibabacloud.com/help/en/ack/ack-managed-and-ack-dedicated/developer-reference/create-a-dedicated-kubernetes-cluster-that-supports-sandboxed-containers). The cluster is same as container service created by web console.
 
@@ -109,7 +109,7 @@ The following arguments are supported:
 * `security_group_id` - (Optional, ForceNew, Available since v1.91.0) The ID of the security group to which the ECS instances in the cluster belong. If it is not specified, a new Security group will be built.
 * `resource_group_id` - (Optional, Available since v1.101.0) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
 * `load_balancer_spec` - (Optional, Deprecated since v1.229.1) The cluster api server load balance instance specification, default `slb.s2.small`. For more information on how to select a LB instance specification, see [SLB instance overview](https://help.aliyun.com/document_detail/85931.html). Only works for **Create** Operation. 
-* `addons` - (Optional, Available since v1.91.0) You can specific network plugin, log component, ingress component and so on. See [`addons`](#addons) below. Only works for **Create** Operation, use [resource cs_kubernetes_addon](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cs_kubernetes_addon) to manage addons if cluster is created.
+* `addons` - (Optional, Available since v1.91.0) You can specific network plugin, log component, ingress component and so on. See [`addons`](#addons) below. Only works for **Create** Operation, use [resource cs_kubernetes_addon](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cs_kubernetes_addon) to manage addons if cluster is created. **Note: The parameter is immutable after resource creation.**
 * `time_zone` - (Optional, Available since v1.123.1) The time zone of the cluster.
 * `zone_id` - (Optional, Available since v1.123.1) When creating a cluster using automatic VPC creation, you need to specify the zone where the VPC is located. Only works for **Create** Operation.  
 * `service_cidr` - (Optional, ForceNew, Available since v1.123.1) CIDR block of the service network. The specified CIDR block cannot overlap with that of the VPC or those of the ACK clusters that are deployed in the VPC. The CIDR block cannot be modified after the cluster is created.
@@ -122,6 +122,10 @@ The following arguments are supported:
     - ack.pro.small: Professional serverless clusters.
 * `custom_san` - (Optional, Available since v1.229.1) Customize the certificate SAN, multiple IP or domain names are separated by English commas (,).
 -> **NOTE:** Make sure you have specified all certificate SANs before updating. Updating this field will lead APIServer to restart.
+* `encryption_provider_key` - (Optional, Available since v1.286.0) The ID of the Key Management Service (KMS) key that is used to encrypt Kubernetes Secrets.
+  -> **Note:** To enable encryption, you must specify both `encryption_provider_key` and `disable_encryption = false`. When `disable_encryption` is set to `true`, changes to `encryption_provider_key` will be ignored.
+* `disable_encryption` - (Optional, Computed, Available since v1.286.0) Whether to disable encryption for Kubernetes Secrets. Default value is `false`. Set to `true` to disable encryption.
+  -> **Note:** When enabling encryption, you must explicitly set `disable_encryption = false` along with `encryption_provider_key`. When disabling encryption, you only need to set `disable_encryption = true`, and the `encryption_provider_key` will be ignored.
 * `maintenance_window` - (Optional, Available since v1.232.0) The cluster maintenance window，effective only in the professional managed cluster. Managed node pool will use it. See [`maintenance_window`](#maintenance_window) below.
 * `operation_policy` - (Optional, Available since v1.232.0) The cluster automatic operation policy. See [`operation_policy`](#operation_policy) below.
 
