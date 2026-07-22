@@ -10,11 +10,11 @@ from bridge.scheduler.migration import (
 
 
 class SchedulerMigrationTests(unittest.TestCase):
-    def test_checked_in_registry_is_empty_until_a_job_is_migrated(self):
+    def test_checked_in_registry_contains_only_migrated_daily_probe(self):
         registry = REGISTRY
-        self.assertEqual(tuple(route.job_key for route in registry.routes), ())
-        self.assertEqual(JOBS, ())
-        self.assertEqual(registry.scheduler_job_keys(), frozenset())
+        self.assertEqual(tuple(route.job_key for route in registry.routes), ("daily.probe",))
+        self.assertEqual(tuple(job.id for job in JOBS), ("daily.probe",))
+        self.assertEqual(registry.scheduler_job_keys(), frozenset({"daily.probe"}))
 
     def test_business_enable_is_independent_from_route(self):
         probe = SimpleNamespace(enabled_env="JARVIS_PROBE_SCHED")

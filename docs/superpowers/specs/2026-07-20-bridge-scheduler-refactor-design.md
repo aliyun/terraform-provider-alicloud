@@ -26,10 +26,11 @@
 - Scheduler 的 definition、slot admission、状态提交、停止接纳和控制面 HTTP 适配；
 - Scheduler 的单实例运行控制、READY/OFFLINE 以及可观测性接口。
 
-本轮明确不改 Aone/PR/Daily 的业务扫描、Task/Session 执行、业务 cursor、PR registry、daily
-marker 或事件 ledger；`PersistenceExecutor`/SubAgent 也不在本轮拆分。上述数据面迁移改为独立的
-旁路脚本：先导出、校验和回放，再在单独变更中原子切换。故本轮不得切换旧循环，也不得宣称
-Bridge restart 已保障业务 Session/SubAgent 不间断。
+本轮不改 Aone/PR 的业务扫描、Task/Session 执行、业务 cursor、PR registry 或事件 ledger；
+`PersistenceExecutor`/SubAgent 也不在本轮拆分。`daily.probe` 是唯一例外：它没有业务 cursor，
+已迁入新 Scheduler 的独立 runner，并从旧 `DailyScheduler` 删除。其余数据面迁移仍采用独立的
+旁路脚本：先导出、校验和回放，再在单独变更中原子切换。本轮不得宣称 Bridge restart 已保障
+业务 Session/SubAgent 不间断。
 
 ### 1.2 唯一 Scheduler Worker
 
@@ -346,7 +347,8 @@ CREATE TABLE jarvis_scheduled_job (
 
 ### 8.2 本地状态迁移
 
-首版 job 表不承载业务 cursor/checkpoint。本地业务状态迁移仍采用“固化、双读校验、切换、延迟删除”，禁止先删本地文件：
+首版 job 表不承载业务 cursor/checkpoint。本地业务状态迁移仍采用“固化、双读校验、切换、延迟删除”，禁止先删本地文件。已迁移的
+`daily.probe` 没有业务状态文件；它以 Scheduler 的运行结果和重试状态为唯一调度状态。其余 job 遵循：
 
 1. `DailyScheduler` 的日期 marker 继续作为 daily runner 的独立业务状态，不能塞入 `jarvis_scheduled_job`。
 2. `pr-watch.json` 的 registry、cursor 和 dedupe 状态继续由 PR runner 所有，后续需要控制面化时使用独立业务状态接口。
@@ -359,14 +361,15 @@ CREATE TABLE jarvis_scheduled_job (
 ### 8.3 控制面渐进迁移与旧链路兼容
 
 首版允许旧定时任务模块与新 `SchedulerEngine` 同进程共存，以 job 为最小迁移单元；这不是双写或
-双触发模式。默认全部 job 仍走旧链路。运维只可编辑一个显式 YAML 注册表把 job 切到新链路：
+双触发模式。当前只有 `daily.probe` 走新链路，其余 job 仍走旧链路。运维只可编辑一个显式 YAML
+注册表把 job 切到新链路：
 
 ```text
 # 在 config/scheduler-jobs.yaml 新增目标 Job 的完整 definition，且声明
 # engine_runner: <Bridge runner 名称>
 ```
 
-YAML 中的 job 仅由新 Engine admission，旧模块必须停止同一 job 的旧 tick；未列出的 job 仅由旧模块执行，
+YAML 中的 job 仅由新 Engine admission，旧模块必须删除同一 job 的旧 tick；未列出的 job 仅由旧模块执行，
 不进入新控制面。已迁移 job 仍须满足 definition 的 `enabled_env`，业务开关关闭时不执行。未知 job、
 重复项、仍配置已废弃的
 `JARVIS_SCHEDULER_ENABLE`/`JARVIS_SCHEDULER_JOB_*`，或缺少新 runner 映射，均在启动阶段
@@ -399,8 +402,10 @@ fail-closed。这样只需编辑一个变量即可逐项迁移，且路由归属
 
 ### 9.4 Probe
 
-- `daily.probe` 仍为 Ephemeral；计划内 restart 必须等待本轮完成，异常崩溃可以中断本轮。
-- 未成功的 daily round 不得写入日期 marker，新 Scheduler 按 retry delay 在当天继续执行同一 round。
+- `daily.probe` 为 Ephemeral，唯一执行入口为 `scheduler/jobs/daily_probe.py`；旧 `DailyScheduler`
+  不再定义、注册或调用 probe。
+- 计划内 restart 必须等待本轮完成，异常崩溃可以中断本轮；可重试失败由 Scheduler 按 definition 的
+  `retry_delay_seconds` 重试，不写 local daily marker。
 - Probe 不使用 PersistenceExecutor，不引入 `probe_finding` Task。
 
 ## 10. 安全 restart
@@ -561,11 +566,11 @@ bridge/
 | B0 | 已完成 | 组件 10→6、Aone 并集探测、控制面 wait、PR/每日本地持久状态 |
 | U1 | 已提交，待合入 | Bridge Job definition、显式 `JOBS` registry、`TriggerPlanner` 和契约测试已在 Bridge MR `28675904`。 |
 | U2 | 已提交，待预发验证 | `jarvis_scheduled_job` 已创建；AutomationAgent Code Review `28719590` 包含注册、状态 API、恢复和 Board Scheduled Jobs 展示。该 Code Review 尚未完成 Java 21 预发验证。 |
-| U3 | 已提交，待预发联调 | Bridge MR `28675904` 已包含 import-safe `SchedulerEngine`、`ScannerRuntime`、slot admission、真实结束时间计算、终态幂等重试和 `daily.probe` legacy adapter；只有 `daily.probe` 可切到新链路。 |
+| U3 | 已提交，待预发联调 | Bridge MR `28675904` 已包含 import-safe `SchedulerEngine`、`ScannerRuntime`、slot admission、真实结束时间计算、终态幂等重试，以及独立的 `scheduler/jobs/daily_probe.py` runner；`daily.probe` 已注册到新链路且旧 `DailyScheduler` 入口已删除。 |
 | C4 | 已提交，待预发联调 | Bridge MR `28675904` 已包含标准库 HTTP adapter：register/list/start/complete/fail/recover-interrupted、UTC 时间编解码、`start` 原子预留下次时间及异常 fail-closed。AutomationAgent Code Review `28719590` 的 `start` 接收 `{scheduledFor,nextRunAt}` 并返回 `{admitted,job}`。两端尚未完成预发联调。 |
 | C5 | 已提交，待预发联调 | Bridge 已实现固定 `bridge-scheduler`、复用普通 Task token、`boot_id + process_uuid` 注册确认、30 秒 heartbeat、`dispatch.pull=false`、以 `config/scheduler-jobs.yaml` 统一驱动 Job 注册与旧入口屏蔽、READY/OFFLINE 和有界计划内 drain；超时取消 restart 并恢复 ACTIVE。AutomationAgent 已提交单 Worker 活跃进程冲突、既有 Worker timeout 接管、DRAINING 在途终态提交和 Board Worker 展示。`host_id` 只用于展示和迁移追踪；Scheduler 不进入普通 Task queue-pull Worker 集合。该阶段不停止或重启 Task Worker。 |
 | C6 | 未开始 | 控制面预发验证：重复启动拒绝、心跳超时接管、slot admission、interrupted recovery、Board 展示和控制面不可用 fail-closed。 |
-| D1 | 本轮不实施 | Daily/PR/Aone/Probe 的业务状态和 runner 旁路迁移脚本：导出、校验、回放、对账与原子切换，单独评审 |
+| D1 | 部分实施 | `daily.probe` 已迁移，无业务状态文件需要旁路迁移；Daily nudge、PR 与 Aone 的业务状态和 runner 仍需导出、校验、回放、对账与原子切换，单独评审。 |
 
 执行顺序：
 

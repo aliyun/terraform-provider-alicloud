@@ -30,9 +30,9 @@ def definition(*, revision: int = 1, schedule=None) -> ScheduledJobDefinition:
 
 
 class SchedulerCoreTests(unittest.TestCase):
-    def test_registry_is_yaml_loaded_and_empty_before_first_migration(self):
+    def test_registry_is_yaml_loaded_with_only_daily_probe(self):
         loaded = jobs.load_jobs()
-        self.assertEqual(loaded, ())
+        self.assertEqual(tuple(item.id for item in loaded), ("daily.probe",))
         self.assertIs(loaded, jobs.JOBS)
 
     def test_registry_materializes_generator_once_and_returns_tuple(self):

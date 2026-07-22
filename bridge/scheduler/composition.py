@@ -122,16 +122,6 @@ class SchedulerComposition:
         migrated = self._registry.scheduler_job_keys()
         if not migrated:
             return False
-        if "daily.probe" in migrated:
-            probe = next(definition for definition in definitions
-                         if definition.id == "daily.probe")
-            configured_hour = self._environ.get("JARVIS_PROBE_HOUR")
-            registry_hour = str(getattr(probe.schedule, "hour", ""))
-            if configured_hour is not None and configured_hour.strip() != registry_hour:
-                raise SchedulerCompositionError(
-                    "migrated daily.probe uses registry hour %s; "
-                    "remove JARVIS_PROBE_HOUR or set it to %s"
-                    % (registry_hour, registry_hour))
         self._heartbeat_interval = _positive_float(
             self._environ.get("JARVIS_SCHEDULER_HEARTBEAT_SEC", "30"),
             "JARVIS_SCHEDULER_HEARTBEAT_SEC")

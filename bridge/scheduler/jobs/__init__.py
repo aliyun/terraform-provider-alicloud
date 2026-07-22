@@ -6,6 +6,7 @@ from typing import Mapping
 
 from ..model import CapabilityValidationContext, ScheduledJobDefinition, definition_digest, validate_registry
 from ..registry import SchedulerRegistry, load_scheduler_registry
+from .daily_probe import RUNNER_KEY as DAILY_PROBE_RUNNER_KEY, DailyProbeRunner
 
 
 REGISTRY: SchedulerRegistry = load_scheduler_registry()
@@ -22,4 +23,7 @@ def load_jobs() -> tuple[ScheduledJobDefinition, ...]:
     return validate_registry(JOBS, context=JOB_CAPABILITIES, expected_digests=JOB_DIGESTS)
 
 
-__all__ = ["REGISTRY", "JOBS", "JOB_CAPABILITIES", "JOB_DIGESTS", "load_jobs"]
+__all__ = [
+    "REGISTRY", "JOBS", "JOB_CAPABILITIES", "JOB_DIGESTS", "load_jobs",
+    "DAILY_PROBE_RUNNER_KEY", "DailyProbeRunner",
+]

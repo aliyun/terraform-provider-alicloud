@@ -58,7 +58,6 @@ Env:
                                            (default = JARVIS_NOTIFY_GROUP).
   JARVIS_BROADCAST_TYPE                    broadcast conversation type (default "group").
   JARVIS_PROBE_SCHED                       1=enable daily tf-probe round (default); 0=off.
-  JARVIS_PROBE_HOUR                        local-time hour to fire the probe round (default "10").
   JARVIS_REVISIT_SCHED                     1=enable daily jarvis-idle revisit round (default); 0=off.
   JARVIS_REVISIT_HOUR                      local-time hour to fire the revisit round (default "9").
   JARVIS_REVISIT_MAX                       max jarvis-idle items inspected per round (default 100).
@@ -129,9 +128,12 @@ from jarvis_capacity import CapacityManager
 from jarvis_task_router import ExecutionRouter
 from jarvis_persistence_executor import PersistenceExecutor
 from jarvis_external_recovery import ExternalOperationRecoveryScheduler
-from scheduler import JobResult, JobResultStatus
 from scheduler.composition import SchedulerComposition
-from scheduler.jobs import REGISTRY as SCHEDULER_REGISTRY
+from scheduler.jobs import (
+    DAILY_PROBE_RUNNER_KEY,
+    DailyProbeRunner,
+    REGISTRY as SCHEDULER_REGISTRY,
+)
 from tata_dws_history import (
     DWS_USER_NOT_IN_GROUP,
     DwsGroupHistory,
@@ -339,13 +341,6 @@ def _task_client_from_env():
         token,
         timeout=float(os.environ.get("JARVIS_CONTROL_PLANE_TIMEOUT", "10")),
     )
-
-
-def _scheduler_owns_job(job_key):
-    """YAML-derived ownership gate used by legacy loops during cutover."""
-    if os.environ.get("JARVIS_BRIDGE_ROLE", "scheduler") != "scheduler":
-        return False
-    return job_key in SCHEDULER_REGISTRY.scheduler_job_keys()
 
 
 def _aone_task_key(project, item_id):
@@ -3326,6 +3321,28 @@ def _probe_prompt(round_id):
         "蒸馏条目数）汇报即可。"
         % round_id
     )
+
+
+def _daily_probe_context(handler, round_id):
+    """Build the immutable dispatch context for one Scheduler-owned probe run."""
+    target, target_type = broadcast_target(), broadcast_type()
+    prompt = _probe_prompt(round_id)
+    envelope = _task_envelope(
+        item_id=round_id,
+        project="",
+        task_type="probe",
+        source_type="TIMER",
+        source_ref={"schedule": "daily-probe", "date": round_id.removeprefix("probe-")},
+        desired_revision=round_id,
+        trigger="PROBE",
+        prompt=prompt,
+        recovery_policy="REPLAY_SAFE",
+        required_capabilities={"kinds": ["probe"]},
+        terraform=True,
+        target=target,
+        targetType=target_type,
+    )
+    return envelope, prompt, _routine_notifier(handler), target, target_type
 
 
 def _revisit_prompt(item_id, title, pool_project):
@@ -7323,32 +7340,14 @@ class DailyScheduler:
     def __init__(self, handler, pool=None):
         self.handler = handler
         pool = pool if pool is not None else getattr(handler, "ephemeral_executor", None)
-        candidates = {
-            "daily.nudge": _NudgeJob(handler, pool),
-            "daily.probe": _ProbeJob(handler, pool),
-        }
-        # Keep objects for a controlled handover: the new Engine invokes the
-        # exact legacy job object and daily marker below, instead of duplicating
-        # its enqueue/state behavior in a second implementation.
-        self._all_jobs = candidates
-        self.jobs = []
-        for scheduler_key, job in candidates.items():
-            if not job.enabled:
-                continue
-            if _scheduler_owns_job(scheduler_key):
-                log.info("DailyScheduler: %s is owned by SchedulerEngine; legacy loop excluded",
-                         scheduler_key)
-                continue
-            self.jobs.append(job)
+        # ``daily.probe`` has moved to ``scheduler/jobs/daily_probe.py`` and is
+        # registered only through ``config/scheduler-jobs.yaml``.  This legacy
+        # loop now owns its remaining job directly; it must not shadow a new
+        # Scheduler job through an ownership switch.
+        job = _NudgeJob(handler, pool)
+        self.jobs = [job] if job.enabled else []
         self._last_run = self._load_state()  # job.name -> last-run date iso
         self._thread = None
-
-    def new_engine_runner(self, scheduler_key):
-        """Return an adapter that preserves the legacy job and marker semantics."""
-        job = self._all_jobs.get(scheduler_key)
-        if job is None:
-            raise ValueError("unknown DailyScheduler job %s" % scheduler_key)
-        return _LegacyDailyJobRunner(self, scheduler_key, job)
 
     def _load_state(self):
         try:
@@ -7371,27 +7370,6 @@ class DailyScheduler:
             os.replace(str(tmp), str(self.STATE_PATH))
         except Exception as e:  # noqa: BLE001
             log.warning("DailyScheduler: cannot persist %s: %s", self.STATE_PATH, e)
-
-    def _run_migrated_job(self, scheduler_key, job, scheduled_for):
-        """Run one Engine-admitted daily slot through the old job + marker.
-
-        A cutover later on the same day sees the old marker and therefore
-        completes the newly registered slot without firing the external probe a
-        second time.  On a fresh day, ``job.run`` and ``_mark_run`` are exactly
-        the legacy data path.
-        """
-        local_scheduled = scheduled_for.astimezone(_SHANGHAI_TZ).replace(tzinfo=None)
-        if self._last_run.get(job.name) == local_scheduled.date().isoformat():
-            log.info("DailyScheduler: %s already marked for %s; cutover skip",
-                     scheduler_key, local_scheduled.date().isoformat())
-            return True
-        scheduler_run = getattr(job, "run_for_scheduler", None)
-        result = (scheduler_run(when=local_scheduled)
-                  if callable(scheduler_run)
-                  else job.run(when=local_scheduled))
-        if result is not False:
-            self._mark_run(job, now=local_scheduled)
-        return result
 
     @property
     def enabled(self):
@@ -7424,128 +7402,6 @@ class DailyScheduler:
                 except Exception:  # noqa: BLE001 — never crash
                     log.exception("DailyScheduler job %s failed", job.name)
             time.sleep(self.CHECK_INTERVAL)
-
-
-class _LegacyDailyJobRunner:
-    """Adapter for the first progressive migration: ``daily.probe`` only."""
-
-    def __init__(self, scheduler, scheduler_key, job):
-        self.scheduler = scheduler
-        self.scheduler_key = scheduler_key
-        self.job = job
-
-    def run(self, definition, scheduled_for):
-        if definition.id != self.scheduler_key:
-            return JobResult(JobResultStatus.PERMANENT_FAILURE,
-                             error="daily runner received mismatched definition")
-        try:
-            result = self.scheduler._run_migrated_job(
-                self.scheduler_key, self.job, scheduled_for)
-        except Exception as exc:  # let SchedulerEngine retain the original due slot
-            return JobResult(JobResultStatus.RETRYABLE_FAILURE,
-                             error="legacy daily job failed: %s" % type(exc).__name__)
-        if result is False:
-            return JobResult(JobResultStatus.RETRYABLE_FAILURE,
-                             error="legacy daily job deferred")
-        return JobResult(JobResultStatus.SUCCEEDED)
-
-
-class _ProbeJob:
-    """Daily tf-probe round: submit one探测任务. Pure探测轮 — the jarvis instance runs
-    loops/tf-probe.md and directly creates deduplicated Aone findings; the probe round
-    itself holds no ticket, so it has no bookend (免 claim/wrap)."""
-
-    def __init__(self, handler, pool=None):
-        self.name = "probe"
-        self.hour = int(os.environ.get("JARVIS_PROBE_HOUR", "10"))
-        self.enabled = os.environ.get("JARVIS_PROBE_SCHED", "1") != "0"
-        self.handler = handler
-        self.pool = pool if pool is not None else (getattr(handler, "ephemeral_executor", None))
-        self.execution_router = (
-            getattr(handler, "execution_router", None)
-            or ExecutionRouter(logger=log))
-
-    def round_id(self, when=None):
-        return "probe-%s" % (when or datetime.now()).date().isoformat()
-
-    def run(self, when=None):
-        """Preserve the legacy fire-and-forget daily-job contract."""
-
-        return self._run(when=when, wait_for_completion=False)
-
-    def run_for_scheduler(self, when=None):
-        """Return only after a SchedulerEngine-owned probe actually finishes."""
-
-        return self._run(when=when, wait_for_completion=True)
-
-    def _run(self, when=None, *, wait_for_completion):
-        # 返回契约: False = queue_full(本日不 mark, 下个 tick 重试); True/其它 = 视为成功。
-        # no-pool / 已去重 / 已 active 都视为已到位, mark 掉本日。
-        if self.handler is None:
-            log.warning("_ProbeJob: no handler; skip")
-            return True
-        rid = self.round_id(when)
-        prompt = _probe_prompt(rid)
-        tgt, ttype = broadcast_target(), broadcast_type()
-        notify = _routine_notifier(self.handler)
-        envelope = _task_envelope(
-            item_id=rid,
-            project="",
-            task_type="probe",
-            source_type="TIMER",
-            source_ref={"schedule": "daily-probe", "date": rid.removeprefix("probe-")},
-            desired_revision=rid,
-            trigger="PROBE",
-            prompt=prompt,
-            recovery_policy="REPLAY_SAFE",
-            required_capabilities={"kinds": ["probe"]},
-            terraform=True,
-            target=tgt,
-            targetType=ttype,
-        )
-        completion = threading.Event() if wait_for_completion else None
-        execution = {}
-
-        def local_submit():
-            if self.pool is None:
-                return False, "ephemeral_executor_unavailable"
-            sid = str(uuid.uuid4())
-            # tf-probe 是 Terraform 线探测 → 走 terraform 车道（ideamo/ideamore）。
-            if completion is None:
-                work = (lambda: self.handler.dispatch_item(
-                    rid, prompt, sid, False, notify, tgt, ttype,
-                    kind="probe", terraform=True))
-            else:
-                def work():
-                    try:
-                        result = self.handler.dispatch_item(
-                            rid, prompt, sid, False, notify, tgt, ttype,
-                            kind="probe", terraform=True)
-                        execution["result"] = result
-                        return result
-                    except Exception as exc:
-                        execution["error"] = exc
-                        raise
-                    finally:
-                        completion.set()
-            return self.pool.submit(rid, work, notify=notify, kind="probe")
-
-        route = self.execution_router.route(envelope)
-        ok, reason = self.execution_router.enqueue(
-            envelope, local_submit=local_submit)
-        if ok:
-            log.info("_ProbeJob: round %s accepted (durable=%s)", rid, route.needs_recovery)
-            if completion is not None and not route.needs_recovery:
-                completion.wait()
-                if execution.get("error") is not None:
-                    return False
-                if execution.get("result") in ("error", "cancelled"):
-                    return False
-            return True
-        log.info("_ProbeJob: round %s not submitted (%s)", rid, reason)
-        # A Task rejection must not mark today's round: the next scheduler tick
-        # retries instead of silently falling back to EphemeralJob execution.
-        return False if route.needs_recovery or reason == "queue_full" else True
 
 
 def _json_rows(value):
@@ -8352,7 +8208,16 @@ class JarvisHandler(AsyncChatbotHandler):
         # independently migrate a legacy job.
         self.scheduler_composition = SchedulerComposition(
             task_client=self.task_client,
-            runners={"daily.probe": self.daily.new_engine_runner("daily.probe")},
+            runners={
+                DAILY_PROBE_RUNNER_KEY: DailyProbeRunner(
+                    handler=self,
+                    pool=self.ephemeral_executor,
+                    execution_router=(getattr(self, "execution_router", None)
+                                      or ExecutionRouter(logger=log)),
+                    build_context=lambda round_id: _daily_probe_context(self, round_id),
+                    logger=log,
+                ),
+            },
             registry=SCHEDULER_REGISTRY,
             logger=log,
         )
