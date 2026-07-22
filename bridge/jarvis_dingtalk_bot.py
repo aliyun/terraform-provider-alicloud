@@ -2293,6 +2293,129 @@ def _resolve_settings(chain):
     return cands[-1]
 
 
+def _provider_route_file(session_id):
+    """Machine-local, token-free provider affinity for one Claude conversation."""
+    root = Path(os.environ.get("JARVIS_PROVIDER_ROUTE_DIR")
+                or Path.home() / ".cache" / "jarvis" / "provider-routes")
+    digest = hashlib.sha256(str(session_id).encode()).hexdigest()
+    return root / f"{digest}.json"
+
+
+def _settings_model(path):
+    try:
+        with open(path, encoding="utf-8") as stream:
+            env = json.load(stream).get("env") or {}
+        model = env.get("ANTHROPIC_MODEL")
+        return str(model).split("[")[0] if model else None
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _settings_candidates(member):
+    return [os.path.expanduser(value.strip())
+            for value in member.split(",") if value.strip()]
+
+
+def _load_provider_route(session_id, lane):
+    if not session_id:
+        return None
+    try:
+        route = json.loads(_provider_route_file(session_id).read_text(encoding="utf-8"))
+        if route.get("schemaVersion") != 1 or route.get("sessionId") != str(session_id):
+            return None
+        if route.get("lane") != lane:
+            return None
+        selected = route.get("settingsPath")
+        return selected if isinstance(selected, str) and selected else None
+    except (OSError, ValueError, TypeError):
+        return None
+
+
+def _persist_provider_route(session_id, lane, selected):
+    if not session_id or not selected:
+        return True
+    target = _provider_route_file(session_id)
+    payload = {
+        "schemaVersion": 1,
+        "sessionId": str(session_id),
+        "lane": lane,
+        "settingsPath": str(selected),
+        "model": _settings_model(selected),
+        "selectedAt": datetime.now(timezone.utc).isoformat(),
+    }
+    try:
+        target.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+        # A route contains no credential material, but keep the same private mode as
+        # the settings files whose path it records. replace() makes readers see a
+        # complete document even when dispatch/retry processes overlap.
+        temporary = target.with_name(f".{target.name}.{os.getpid()}.tmp")
+        temporary.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+        temporary.chmod(0o600)
+        temporary.replace(target)
+        return True
+    except OSError as exc:
+        log.warning("provider route persist failed session=%s: %s", session_id, exc)
+        return False
+
+
+def _infer_provider_route(session_id, candidates):
+    """Recover affinity for conversations created before route pinning existed.
+
+    Claude transcripts record the actual assistant model without exposing the
+    gateway token. Matching that model against the configured failover members is
+    safer than resolving today's first healthy member and silently moving an old
+    ``--resume`` request to another provider.
+    """
+    if not session_id:
+        return None
+    observed_model = None
+    projects = Path.home() / ".claude" / "projects"
+    try:
+        transcripts = list(projects.glob(f"*/{session_id}.jsonl"))
+    except OSError:
+        transcripts = []
+    for transcript in transcripts:
+        try:
+            with transcript.open(encoding="utf-8") as stream:
+                for line in stream:
+                    try:
+                        message = json.loads(line).get("message") or {}
+                    except (ValueError, TypeError):
+                        continue
+                    model = message.get("model") if isinstance(message, dict) else None
+                    if model and model != "<synthetic>":
+                        observed_model = str(model).split("[")[0]
+        except OSError:
+            continue
+    if not observed_model:
+        return None
+    matches = [path for path in candidates if _settings_model(path) == observed_model]
+    return matches[0] if len(matches) == 1 else None
+
+
+def _select_provider_settings(member, session_id, terraform, resume):
+    """Select once per conversation; never fail over an existing ``--resume``."""
+    lane = "terraform" if terraform else "default"
+    pinned = _load_provider_route(session_id, lane)
+    if pinned:
+        return pinned
+    candidates = _settings_candidates(member)
+    if resume:
+        selected = candidates[0] if len(candidates) == 1 else \
+            _infer_provider_route(session_id, candidates)
+        if not selected:
+            raise RuntimeError(
+                "model_provider_error: original provider route is unknown; "
+                "wait for an operator to start a new session")
+    else:
+        selected = _resolve_settings(member)
+    if not _persist_provider_route(session_id, lane, selected):
+        raise RuntimeError(
+            "model_provider_error: original provider route could not be pinned; "
+            "refusing an unsafe resumable launch")
+    return selected
+
+
 def tata_cmd():
     """Tata 基命令 = idea = claude --settings idea_settings.json（走 idealab 网关，
     自带 token，与主账号隔离）。JARVIS_TATA_SETTINGS 可覆盖设置档路径，
@@ -2312,7 +2435,7 @@ def tata_dws_history_enabled():
         "1", "true", "yes", "on")
 
 
-def jarvis_cmd(session_id=None, terraform=False):
+def jarvis_cmd(session_id=None, terraform=False, resume=False):
     """Jarvis 基命令 = claude --settings idea_settings.json（走 idealab 网关）。JARVIS_CC 可覆盖完整命令。
 
     **模型分层（车道）**：``terraform=True`` 走 ``JARVIS_SETTINGS_TF``（Terraform 线主力档链，
@@ -2327,6 +2450,8 @@ def jarvis_cmd(session_id=None, terraform=False):
       不同工单落不同档天然摊负载，但同一工单建会话轮与 --resume 轮必落同一档，否则
       resume 会串到别的网关/token，claude --resume 直接失败。
     - **逗号 `,` = failover 档链**：池内选中的那一档可再写成「主,备」，主档探活失败自动顶到备档。
+    首轮选中档会按 session_id 持久化；后续 ``--resume`` 只能复用原档，原 provider
+    不可用时显式失败并交由控制面决定等待或新建会话，不得静默 failover。
     单档时行为与旧版一致（不探活、零延迟）；缺 session_id（无从粘）退回第一档。"""
     cc = os.environ.get("JARVIS_CC")
     if cc:
@@ -2351,7 +2476,8 @@ def jarvis_cmd(session_id=None, terraform=False):
     # owned by deterministic layers instead: PreToolUse hooks (worktree-guard,
     # worker-fence, redline-guard), a1id/github-identity gates, and the
     # control plane's fence/lease — none of which depend on a model verdict.
-    return [claude_bin(), "--settings", _resolve_settings(member),
+    return [claude_bin(), "--settings",
+            _select_provider_settings(member, session_id, terraform, resume),
             "--permission-mode", "bypassPermissions"]
 
 
@@ -3137,7 +3263,7 @@ def run_claude_stream(text, session_id, resume, timeout=None, on_spawn=None, ter
     ``terraform`` selects the model 车道 (see jarvis_cmd)."""
     if timeout is None:
         timeout = int(os.environ.get("CLAUDE_TIMEOUT", "300"))
-    cmd = jarvis_cmd(session_id, terraform=terraform) + ["-p", text, "--output-format", "stream-json",
+    cmd = jarvis_cmd(session_id, terraform=terraform, resume=resume) + ["-p", text, "--output-format", "stream-json",
            "--include-partial-messages", "--verbose"]
     cmd += ["--resume", session_id] if resume else ["--session-id", session_id]
     deadline = time.time() + timeout
@@ -3301,7 +3427,7 @@ def run_claude_buffered(text, session_id, resume, timeout=None, on_spawn=None,
     effect)."""
     if timeout is None:
         timeout = int(os.environ.get("JARVIS_DISPATCH_TIMEOUT", "43200"))
-    argv = jarvis_cmd(session_id, terraform=terraform) + ["-p", text, "--output-format", "json"]
+    argv = jarvis_cmd(session_id, terraform=terraform, resume=resume) + ["-p", text, "--output-format", "json"]
     argv += ["--resume", session_id] if resume else ["--session-id", session_id]
     headless_argv = _headless_exec_command(session_id, argv)
     runtime = execution_runtime or DEFAULT_EXECUTION_RUNTIME
@@ -8270,7 +8396,10 @@ class JarvisHandler(AsyncChatbotHandler):
             return "done"
         except Exception as e:  # noqa: BLE001
             log.exception("dispatch_item #%s failed: %s", item_id, e)
-            res = ClaudeResult(str(e), True, "orchestrator_exception")
+            detail = str(e)
+            res = ClaudeResult(detail, True,
+                               _normalized_failure_subtype(
+                                   detail, "orchestrator_exception", True))
             self._dispatch_failed(
                 item_id, res, notify, project, terraform=terraform,
                 kind=kind, sid=sid, attempts=attempt + 1)
