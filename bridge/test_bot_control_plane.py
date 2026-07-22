@@ -34,7 +34,7 @@ class ProviderRouteAffinityTest(unittest.TestCase):
         }), encoding="utf-8")
         return str(path)
 
-    def test_resume_reuses_initial_failover_member_when_health_changes(self):
+    def test_resume_probes_and_reuses_only_initial_failover_member(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             ideamo = self._settings(root / "ideamo.json", "claude-opus")
@@ -55,7 +55,46 @@ class ProviderRouteAffinityTest(unittest.TestCase):
 
             self.assertEqual(first[2], glm)
             self.assertEqual(resumed[2], glm)
-            probe.assert_not_called()
+            probe.assert_called_once_with(glm)
+
+    def test_resume_fails_closed_when_original_member_is_unhealthy(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            primary = self._settings(root / "primary.json", "claude-opus")
+            fallback = self._settings(root / "fallback.json", "glm-5.2-fast-preview")
+            env = {
+                "JARVIS_SETTINGS_TF": f"{primary},{fallback}",
+                "JARVIS_PROVIDER_ROUTE_DIR": str(root / "routes"),
+                "CLAUDE_BIN": "claude",
+            }
+            with mock.patch.dict(os.environ, env, clear=False), \
+                    mock.patch.object(bot, "_probe_settings", return_value=True):
+                first = bot.jarvis_cmd("session-unhealthy", terraform=True, resume=False)
+            self.assertEqual(first[2], primary)
+
+            with mock.patch.dict(os.environ, env, clear=False), \
+                    mock.patch.object(bot, "_probe_settings", return_value=False) as probe:
+                with self.assertRaisesRegex(
+                        RuntimeError, "original provider route failed health check"):
+                    bot.jarvis_cmd("session-unhealthy", terraform=True, resume=True)
+
+            probe.assert_called_once_with(primary)
+
+    def test_resume_fails_closed_when_pinned_settings_file_is_corrupt(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            settings = self._settings(root / "provider.json", "claude-opus")
+            env = {
+                "JARVIS_SETTINGS_TF": settings,
+                "JARVIS_PROVIDER_ROUTE_DIR": str(root / "routes"),
+                "CLAUDE_BIN": "claude",
+            }
+            with mock.patch.dict(os.environ, env, clear=False):
+                bot.jarvis_cmd("session-corrupt", terraform=True, resume=False)
+                Path(settings).write_text("not-json", encoding="utf-8")
+                with self.assertRaisesRegex(
+                        RuntimeError, "original provider route failed health check"):
+                    bot.jarvis_cmd("session-corrupt", terraform=True, resume=True)
 
     def test_legacy_resume_infers_original_member_from_transcript_model(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -79,7 +118,7 @@ class ProviderRouteAffinityTest(unittest.TestCase):
                     "legacy-session", terraform=True, resume=True)
 
             self.assertEqual(resumed[2], glm)
-            probe.assert_not_called()
+            probe.assert_called_once_with(glm)
             route = json.loads(next((home / "routes").glob("*.json")).read_text())
             self.assertEqual(route["settingsPath"], glm)
             self.assertEqual(route["model"], "glm-5.2-fast-preview")

@@ -2259,7 +2259,8 @@ def _probe_settings(path, timeout=5):
     if not os.path.isfile(path):
         return False
     try:
-        env = json.load(open(path))["env"]
+        with open(path, encoding="utf-8") as stream:
+            env = json.load(stream)["env"]
         url = env["ANTHROPIC_BASE_URL"].rstrip("/") + "/v1/messages"
         body = json.dumps({
             "model": env["ANTHROPIC_MODEL"].split("[")[0],
@@ -2394,10 +2395,14 @@ def _infer_provider_route(session_id, candidates):
 
 
 def _select_provider_settings(member, session_id, terraform, resume):
-    """Select once per conversation; never fail over an existing ``--resume``."""
+    """Select once per conversation; probe only the original route on resume."""
     lane = "terraform" if terraform else "default"
     pinned = _load_provider_route(session_id, lane)
     if pinned:
+        if resume and not _probe_settings(pinned):
+            raise RuntimeError(
+                "model_provider_error: original provider route failed health check; "
+                "refusing cross-provider resume failover")
         return pinned
     candidates = _settings_candidates(member)
     if resume:
@@ -2413,6 +2418,10 @@ def _select_provider_settings(member, session_id, terraform, resume):
         raise RuntimeError(
             "model_provider_error: original provider route could not be pinned; "
             "refusing an unsafe resumable launch")
+    if resume and not _probe_settings(selected):
+        raise RuntimeError(
+            "model_provider_error: original provider route failed health check; "
+            "refusing cross-provider resume failover")
     return selected
 
 
@@ -2450,9 +2459,11 @@ def jarvis_cmd(session_id=None, terraform=False, resume=False):
       不同工单落不同档天然摊负载，但同一工单建会话轮与 --resume 轮必落同一档，否则
       resume 会串到别的网关/token，claude --resume 直接失败。
     - **逗号 `,` = failover 档链**：池内选中的那一档可再写成「主,备」，主档探活失败自动顶到备档。
-    首轮选中档会按 session_id 持久化；后续 ``--resume`` 只能复用原档，原 provider
-    不可用时显式失败并交由控制面决定等待或新建会话，不得静默 failover。
-    单档时行为与旧版一致（不探活、零延迟）；缺 session_id（无从粘）退回第一档。"""
+    首轮选中档会按 session_id 持久化；后续 ``--resume`` 只探活并复用原档，原 provider
+    不可用或配置损坏时显式失败并交由控制面决定等待或新建会话，不得探测备用档后
+    静默 failover。
+    新建会话的单档仍保持旧行为（不探活、零延迟）；恢复会话即使只有单档也会探活原档。
+    缺 session_id（无从粘）退回第一档。"""
     cc = os.environ.get("JARVIS_CC")
     if cc:
         return [cc]
