@@ -93,10 +93,10 @@ class HttpScheduledJobControlPlane:
     """Strict standard-library HTTP implementation of ``ScheduledJobControlPlane``.
 
     Explicit arguments win over environment configuration.  When they are not
-    supplied, this class follows the existing Bridge control-plane variables:
-    ``JARVIS_CONTROL_PLANE_BASE_URL``, ``JARVIS_CONTROL_PLANE_TOKEN`` and
-    ``JARVIS_CONTROL_PLANE_TIMEOUT`` (with the HTML-report variables as the
-    established base URL/token fallbacks).  Construction itself does no I/O.
+    supplied, this class follows ``JARVIS_CONTROL_PLANE_BASE_URL``, the dedicated
+    ``JARVIS_SCHEDULER_CONTROL_PLANE_TOKEN`` and ``JARVIS_CONTROL_PLANE_TIMEOUT``.
+    The Scheduler credential deliberately never falls back to the Task token.
+    Construction itself does no I/O.
     """
 
     DEFAULT_BASE_URL = "https://pre-agent.aliyun-inc.com"
@@ -124,10 +124,8 @@ class HttpScheduledJobControlPlane:
             )
         resolved_token = token
         if resolved_token is None:
-            resolved_token = (
-                env.get("JARVIS_CONTROL_PLANE_TOKEN", "").strip()
-                or env.get("JARVIS_HTML_REPORT_TOKEN", "").strip()
-            )
+            resolved_token = env.get(
+                "JARVIS_SCHEDULER_CONTROL_PLANE_TOKEN", "").strip()
         if timeout is None:
             timeout = float(env.get("JARVIS_CONTROL_PLANE_TIMEOUT", "10"))
         self.base_url = _nonblank(resolved_base_url, "base_url").rstrip("/")

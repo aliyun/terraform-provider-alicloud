@@ -2,8 +2,8 @@
 
 This module does not import legacy Bridge loops.  The caller supplies only the
 job runners it has explicitly migrated, which makes a mixed legacy/new rollout
-safe by construction.  Scheduler activation is fail-closed on the shared
-control-plane credential, host identity, Worker acknowledgement, or any job without a
+safe by construction.  Scheduler activation is fail-closed on the dedicated
+Scheduler credential, Worker acknowledgement, or any job without a
 runner mapping.
 """
 
@@ -20,10 +20,10 @@ from typing import Any, Mapping, Optional
 
 try:  # bridge/run.sh executes from bridge/, package users import bridge.scheduler
     from jarvis_persistence_executor import _default_boot_id
-    from jarvis_task_client import ControlPlaneClient
+    from jarvis_task_client import ControlPlaneClient, StaleFence
 except ModuleNotFoundError:  # pragma: no cover - import path depends on composition root
     from bridge.jarvis_persistence_executor import _default_boot_id
-    from bridge.jarvis_task_client import ControlPlaneClient
+    from bridge.jarvis_task_client import ControlPlaneClient, StaleFence
 
 from .control_plane_client import HttpScheduledJobControlPlane
 from .engine import DurableResultPublisher, SchedulerEngine
@@ -36,7 +36,6 @@ from .runtime import JobRunner, ScannerRuntime
 
 
 SCHEDULER_WORKER_KEY = "bridge-scheduler"
-SCHEDULER_HOST_ID = "AgenticTools-Macmini.local"
 
 
 class SchedulerCompositionError(RuntimeError):
@@ -78,12 +77,15 @@ class SchedulerComposition:
         self._heartbeat_stop = threading.Event()
         self._ready = False
         self._registered = False
+        self._scheduler_task_client: Optional[ControlPlaneClient] = None
         self._worker_status = "OFFLINE"
         self._lock = threading.RLock()
         self._worker_rpc_lock = threading.Lock()
         self.process_uuid = uuid.uuid4().hex
         self.worker_key = SCHEDULER_WORKER_KEY
-        self.host_id = SCHEDULER_HOST_ID
+        self.host_id = str(socket.gethostname() or socket.getfqdn()).strip()
+        if not self.host_id:
+            raise SchedulerCompositionError("Scheduler host identity is empty")
         self.boot_id = _scheduler_boot_id(self._environ, self.host_id)
         # Parse operational knobs only after the explicit enable gate.  A
         # dormant scheduler must not change legacy Bridge startup behavior.
@@ -141,7 +143,6 @@ class SchedulerComposition:
             raise SchedulerCompositionError(
                 "selected new Scheduler jobs have no Bridge runner mapping: %s"
                 % ", ".join(missing))
-        self._require_scheduler_host()
         with self._lock:
             if self._thread is not None:
                 return True
@@ -154,7 +155,7 @@ class SchedulerComposition:
                     self._register_worker(worker_client, "ACTIVE")
                 control_plane = HttpScheduledJobControlPlane(
                     self._task_client.base_url,
-                    _control_plane_token(self._task_client),
+                    worker_client.token,
                     timeout=self._task_client.timeout,
                     worker_key=self.worker_key,
                     process_uuid=self.process_uuid,
@@ -312,21 +313,28 @@ class SchedulerComposition:
                         return
                     self._register_worker(
                         self._worker_client(), self._worker_status)
+            except StaleFence:
+                self._log.error(
+                    "Scheduler heartbeat lost the current process fence; "
+                    "stopping new admissions")
+                with self._lock:
+                    engine = self._engine
+                    self._ready = False
+                    self._stop.set()
+                if engine is not None:
+                    engine.stop()
+                return
             except Exception as exc:
                 self._log.warning(
                     "Scheduler Worker %s heartbeat failed: %s",
                     self._worker_status, type(exc).__name__)
 
-    def _require_scheduler_host(self) -> None:
-        observed = {socket.gethostname().strip(), socket.getfqdn().strip()}
-        if self.host_id not in observed:
-            raise SchedulerCompositionError(
-                "SchedulerEngine may run only on %s; observed hostnames=%s"
-                % (self.host_id, ",".join(sorted(value for value in observed if value))))
-
     def _worker_client(self) -> ControlPlaneClient:
-        _control_plane_token(self._task_client)
-        return self._task_client
+        if self._scheduler_task_client is None:
+            token = _scheduler_control_plane_token(
+                self._environ, self._task_client.token)
+            self._scheduler_task_client = self._task_client.with_token(token)
+        return self._scheduler_task_client
 
     def _worker_payload(self, status: str) -> dict[str, Any]:
         return {
@@ -383,11 +391,15 @@ def _scheduler_boot_id(environ: Mapping[str, str], host_id: str) -> str:
     return configured or _default_boot_id(host_id)
 
 
-def _control_plane_token(client: ControlPlaneClient) -> str:
-    token = str(client.token or "").strip()
+def _scheduler_control_plane_token(
+        environ: Mapping[str, str], task_token: str) -> str:
+    token = str(environ.get("JARVIS_SCHEDULER_CONTROL_PLANE_TOKEN", "")).strip()
     if not token:
         raise SchedulerCompositionError(
-            "SchedulerEngine requires the shared Task control-plane token")
+            "SchedulerEngine requires JARVIS_SCHEDULER_CONTROL_PLANE_TOKEN")
+    if token == str(task_token or "").strip():
+        raise SchedulerCompositionError(
+            "Scheduler control-plane token must differ from the Task token")
     return token
 
 
@@ -446,6 +458,6 @@ def _stop_timeout(value: Optional[float], environ: Mapping[str, str]) -> float:
 
 
 __all__ = [
-    "EmptyResultPublisher", "SCHEDULER_HOST_ID", "SCHEDULER_WORKER_KEY",
+    "EmptyResultPublisher", "SCHEDULER_WORKER_KEY",
     "SchedulerComposition", "SchedulerCompositionError", "SchedulerMigrationError",
 ]

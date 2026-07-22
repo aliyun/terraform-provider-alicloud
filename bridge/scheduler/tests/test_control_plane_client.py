@@ -184,12 +184,20 @@ class HttpScheduledJobControlPlaneTests(unittest.TestCase):
     def test_constructor_reads_existing_control_plane_environment_only_when_constructed(self):
         client = HttpScheduledJobControlPlane(environ={
             "JARVIS_CONTROL_PLANE_BASE_URL": "https://control.example/",
-            "JARVIS_CONTROL_PLANE_TOKEN": "from-env",
+            "JARVIS_CONTROL_PLANE_TOKEN": "task-token-must-not-be-used",
+            "JARVIS_SCHEDULER_CONTROL_PLANE_TOKEN": "from-env",
             "JARVIS_CONTROL_PLANE_TIMEOUT": "7.5",
         })
         self.assertEqual(client.base_url, "https://control.example")
         self.assertEqual(client.token, "from-env")
         self.assertEqual(client.timeout, 7.5)
+
+    def test_constructor_never_falls_back_to_the_task_token(self):
+        client = HttpScheduledJobControlPlane(environ={
+            "JARVIS_CONTROL_PLANE_BASE_URL": "https://control.example/",
+            "JARVIS_CONTROL_PLANE_TOKEN": "task-token",
+        })
+        self.assertEqual(client.token, "")
 
 
 if __name__ == "__main__":

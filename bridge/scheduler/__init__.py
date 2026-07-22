@@ -23,7 +23,7 @@ from .control_plane_client import (
     ScheduledJobControlPlaneUnavailable,
 )
 from .composition import (
-    EmptyResultPublisher, SCHEDULER_HOST_ID, SCHEDULER_WORKER_KEY,
+    EmptyResultPublisher, SCHEDULER_WORKER_KEY,
     SchedulerComposition, SchedulerCompositionError,
 )
 from .migration import (
@@ -44,7 +44,7 @@ __all__ = [
     "validate_registry", "HttpScheduledJobControlPlane", "ScheduledJobControlPlaneError",
     "ScheduledJobControlPlaneProtocolError", "ScheduledJobControlPlaneRejected",
     "ScheduledJobControlPlaneUnavailable",
-    "EmptyResultPublisher", "SCHEDULER_HOST_ID", "SCHEDULER_WORKER_KEY",
+    "EmptyResultPublisher", "SCHEDULER_WORKER_KEY",
     "SchedulerComposition", "SchedulerCompositionError", "SCHEDULER_NEW_JOBS_ENV",
     "SchedulerMigrationError", "business_job_enabled", "requested_new_jobs",
     "uses_new_engine",

@@ -189,6 +189,20 @@ class ClientContractTest(unittest.TestCase):
         self.assertEqual(body(req)["desiredRevision"],
                          "modified:2026-07-15T01:02:03Z")
 
+    def test_scoped_token_clone_preserves_transport(self):
+        opener = RecordingOpener()
+        base = self.make(opener)
+        scheduler = base.with_token("scheduler-secret")
+
+        scheduler.register_worker(
+            {"workerKey": "bridge-scheduler"}, request_id="scheduler-register")
+
+        req, timeout = opener.calls[0]
+        hs = headers(req)
+        self.assertEqual(timeout, 4.5)
+        self.assertEqual(hs["authorization"], "Bearer scheduler-secret")
+        self.assertEqual(base.token, "super-secret")
+
     def test_all_worker_and_session_endpoints(self):
         opener = RecordingOpener(responses=[
             FakeResponse({}), FakeResponse({}), FakeResponse(raw=b"[]"),
