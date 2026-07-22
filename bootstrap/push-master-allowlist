@@ -1,0 +1,7 @@
+# redline-guard master-push 豁免仓清单：一行一个 remote slug。
+# 仅收契约明文允许「直推 master」的数据仓（非代码仓一律走 MR）。
+# 匹配带路径边界（":slug[.git]" / "/slug[.git]"），不做子串 over-match。
+#
+# tf_playground = 云产品知识蒸馏数据仓，契约=直推 master + 工单报备、非代码不走 MR
+# （.claude/skills/tf-customer-probe/references/knowledge-distillation.md「落点」节）
+terraflow/tf_playground
