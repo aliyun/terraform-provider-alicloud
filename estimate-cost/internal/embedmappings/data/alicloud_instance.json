@@ -1,0 +1,176 @@
+{
+  "resource": "alicloud_instance",
+  "billable": true,
+  "pricingTargets": [
+    {
+      "name": "create",
+      "actions": ["create"],
+      "openapi": {
+        "popCode": "Ecs",
+        "popVersion": "2014-05-26",
+        "apiName": "RunInstances"
+      },
+      "params": {
+        "RegionId":               {"from": "$.region",                          "fallbackEnv": "ALICLOUD_REGION", "required": true},
+        "ZoneId":                 {"from": "$.availability_zone"},
+        "InstanceType":           {"from": "$.instance_type",                   "required": true},
+        "ImageId":                {"from": "$.image_id",                        "required": true},
+        "InstanceChargeType":     {"from": "$.instance_charge_type",            "default": "PostPaid"},
+        "Period":                 {"from": "$.period",                          "when": {"$.instance_charge_type": "PrePaid"}},
+        "PeriodUnit":             {"from": "$.period_unit",                     "default": "Month", "when": {"$.instance_charge_type": "PrePaid"}},
+        "SpotStrategy":           {"from": "$.spot_strategy",                   "when": {"$.instance_charge_type": "PostPaid"}},
+        "SpotPriceLimit":         {"from": "$.spot_price_limit",                "when": {"$.instance_charge_type": "PostPaid"}},
+        "SpotDuration":           {"from": "$.spot_duration",                   "when": {"$.instance_charge_type": "PostPaid"}},
+        "InternetChargeType":     {"from": "$.internet_charge_type"},
+        "InternetMaxBandwidthOut":{"from": "$.internet_max_bandwidth_out"},
+        "SystemDisk.Category":         {"from": "$.system_disk_category",         "default": "cloud_efficiency"},
+        "SystemDisk.Size":             {"from": "$.system_disk_size"},
+        "SystemDisk.PerformanceLevel": {"from": "$.system_disk_performance_level"},
+        "SystemDisk.ProvisionedIops":  {"from": "$.system_disk_provisioned_iops"},
+        "SystemDisk.BurstingEnabled":  {"from": "$.system_disk_bursting_enabled"},
+        "DataDisk": {
+          "from":   "$.data_disks",
+          "expand": "indexed",
+          "fields": {
+            "Category":         {"from": "$item.category", "default": "cloud_efficiency"},
+            "Size":             {"from": "$item.size",     "required": true},
+            "PerformanceLevel": {"from": "$item.performance_level"},
+            "ProvisionedIops":  {"from": "$item.provisioned_iops"},
+            "BurstingEnabled":  {"from": "$item.bursting_enabled"}
+          }
+        },
+        "DedicatedHostId":        {"from": "$.dedicated_host_id"}
+      }
+    },
+
+    {
+      "name": "update_spec_prepaid",
+      "actions": ["update"],
+      "when": {"$.instance_charge_type": "PrePaid"},
+      "whenChanged": ["instance_type"],
+      "openapi": {
+        "popCode": "Ecs",
+        "popVersion": "2014-05-26",
+        "apiName": "ModifyPrepayInstanceSpec"
+      },
+      "params": {
+        "RegionId":     {"from": "$.region",            "fallbackEnv": "ALICLOUD_REGION", "required": true},
+        "InstanceId":   {"from": "$before.id",          "required": true},
+        "InstanceType": {"from": "$.instance_type",     "required": true},
+        "OperatorType": {"const": "upgrade"}
+      }
+    },
+
+    {
+      "name": "update_disk_resize_prepaid",
+      "actions": ["update"],
+      "when": {"$.instance_charge_type": "PrePaid"},
+      "whenChanged": ["system_disk_size"],
+      "openapi": {
+        "popCode": "Ecs",
+        "popVersion": "2014-05-26",
+        "apiName": "ResizeDisk"
+      },
+      "params": {
+        "RegionId": {"from": "$.region",                "fallbackEnv": "ALICLOUD_REGION", "required": true},
+        "DiskId":   {"from": "$before.system_disk_id",  "required": true},
+        "NewSize":  {"from": "$.system_disk_size",      "required": true},
+        "Type":     {"const": "online"}
+      }
+    },
+
+    {
+      "name": "update_spec_postpaid",
+      "actions": ["update"],
+      "when": {"$.instance_charge_type": "PostPaid"},
+      "whenChanged": ["instance_type"],
+      "openapi": {
+        "popCode": "Ecs",
+        "popVersion": "2014-05-26",
+        "apiName": "ModifyInstanceSpec"
+      },
+      "params": {
+        "RegionId":     {"from": "$.region",        "fallbackEnv": "ALICLOUD_REGION", "required": true},
+        "InstanceId":   {"from": "$before.id",      "required": true},
+        "InstanceType": {"from": "$.instance_type", "required": true}
+      }
+    },
+
+    {
+      "name": "update_network_spec_bandwidth",
+      "actions": ["update"],
+      "when": {"$.internet_charge_type": "PayByBandwidth"},
+      "whenChanged": ["internet_max_bandwidth_out", "internet_charge_type"],
+      "openapi": {
+        "popCode": "Ecs",
+        "popVersion": "2014-05-26",
+        "apiName": "ModifyInstanceNetworkSpec"
+      },
+      "params": {
+        "RegionId":                {"from": "$.region",                     "fallbackEnv": "ALICLOUD_REGION", "required": true},
+        "InstanceId":              {"from": "$before.id",                   "required": true},
+        "InternetMaxBandwidthOut": {"from": "$.internet_max_bandwidth_out", "required": true},
+        "NetworkChargeType":       {"from": "$.internet_charge_type",       "required": true},
+        "AutoPay":                 {"const": true}
+      }
+    },
+
+    {
+      "name": "update_charge_type_to_prepaid",
+      "actions": ["update"],
+      "when": {"$.instance_charge_type": "PrePaid", "$before.instance_charge_type": "PostPaid"},
+      "openapi": {
+        "popCode": "Ecs",
+        "popVersion": "2014-05-26",
+        "apiName": "ModifyInstanceChargeType"
+      },
+      "params": {
+        "RegionId":           {"from": "$.region",      "fallbackEnv": "ALICLOUD_REGION", "required": true},
+        "InstanceIds":        {"from": "$before.id",    "required": true, "wrapArray": true},
+        "InstanceChargeType": {"const": "PrePaid"},
+        "Period":             {"from": "$.period",      "default": 1},
+        "PeriodUnit":         {"from": "$.period_unit", "default": "Month"},
+        "AutoPay":            {"const": false}
+      }
+    },
+
+    {
+      "name": "update_image_replace_system_disk",
+      "actions": ["update"],
+      "whenChanged": ["image_id"],
+      "openapi": {
+        "popCode": "Ecs",
+        "popVersion": "2014-05-26",
+        "apiName": "ReplaceSystemDisk"
+      },
+      "params": {
+        "RegionId":        {"from": "$.region",           "fallbackEnv": "ALICLOUD_REGION", "required": true},
+        "InstanceId":      {"from": "$before.id",         "required": true},
+        "ImageId":         {"from": "$.image_id",         "required": true},
+        "SystemDisk.Size": {"from": "$.system_disk_size"}
+      }
+    },
+
+    {
+      "name": "update_system_disk_spec",
+      "actions": ["update"],
+      "whenChanged": ["system_disk_performance_level", "system_disk_provisioned_iops"],
+      "openapi": {
+        "popCode": "Ecs",
+        "popVersion": "2014-05-26",
+        "apiName": "ModifyDiskSpec"
+      },
+      "params": {
+        "RegionId":         {"from": "$.region",                        "fallbackEnv": "ALICLOUD_REGION", "required": true},
+        "DiskId":           {"from": "$before.system_disk_id",          "required": true},
+        "PerformanceLevel": {"from": "$.system_disk_performance_level"},
+        "ProvisionedIops":  {"from": "$.system_disk_provisioned_iops"},
+        "PricingContext.CurrentDisk.Size":           {"from": "$before.system_disk_size",     "required": true},
+        "PricingContext.CurrentDisk.Category":       {"from": "$before.system_disk_category", "required": true},
+        "PricingContext.CurrentDisk.Type":           {"const": "system"},
+        "PricingContext.CurrentDisk.DiskChargeType": {"from": "$before.instance_charge_type", "required": true},
+        "PricingContext.CurrentDisk.InstanceId":     {"from": "$before.id",                   "required": true}
+      }
+    }
+  ]
+}
