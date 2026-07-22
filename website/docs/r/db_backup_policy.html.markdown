@@ -79,6 +79,7 @@ The following arguments are supported:
 * `local_log_retention_hours` - (Optional, Available since v1.69.0) Instance log backup local retention hours. Valid when the `enable_backup_log` is `true`. Valid values: [0-7*24].
 * `local_log_retention_space` - (Optional, Available since v1.69.0) Instance log backup local retention space. Valid when the `enable_backup_log` is `true`. Valid values: [0-50].
 * `high_space_usage_protection` - (Optional, Available since v1.69.0) Instance high space usage protection policy. Valid when the `enable_backup_log` is `true`. Valid values are `Enable`, `Disable`.
+* `inc_backup_interval` - (Optional, Int, Available since v1.XXX) The frequency at which you want to perform incremental backup on the MySQL instance. Valid when the `enable_increment_data_backup` is `true` and instance is MySQL local disk. Valid values: [60, 120, 240, 360, 720].
 * `log_backup_frequency` - (Optional, Available since v1.69.0) Instance log backup frequency. Valid when the instance engine is `SQLServer`. Valid values are `LogInterval`.
 * `compress_type` - (Optional, Available since v1.69.0) The compress type of instance policy. Valid values are `1`, `4`, `8`.
 * `archive_backup_retention_period` - (Optional, Available since v1.69.0) Instance archive backup retention days. Valid when the `enable_backup_log` is `true` and instance is mysql local disk. Valid values: [30-1095], and `archive_backup_retention_period` must larger than `backup_retention_period` 730.
@@ -106,7 +107,8 @@ The following arguments are supported:
 * `enable_increment_data_backup` - (Optional, Bool, Available since v1.229.1) Specifies whether to enable incremental backup. Valid values:
   - false (default): disables the feature.
   - true: enables the feature.
-    ->**NOTE:** This parameter takes effect only on instances that run SQL Server with cloud disks. This parameter takes effect only when BackupPolicyMode is set to DataBackupPolicy.
+    ->**NOTE:** This parameter takes effect on instances that run SQL Server with cloud disks or MySQL with local disks. This parameter takes effect only when BackupPolicyMode is set to DataBackupPolicy.
+* `enable_pitr_protection` - (Optional, Bool, Available since v1.XXX) Specifies whether to enable PITR (Point-in-Time Recovery) on the MySQL instance. Valid values are `true`, `false`. This parameter takes effect only when `enable_backup_log` is `true` and BackupPolicyMode is set to DataBackupPolicy.
 * `log_backup_local_retention_number` - (Optional, Int, Available since v1.229.1)  The number of binary log files that you want to retain on the instance. Default value: 60. Valid values: 6 to 100.
   ->**NOTE:** This parameter takes effect only when you set the BackupPolicyMode parameter to LogBackupPolicy. If the instance runs MySQL, you can set this parameter to -1. The value -1 specifies that an unlimited number of binary log files can be retained on the instance.
 * `backup_method` - (Optional, Available since v1.229.1)  The backup method of the instance. Valid values:
