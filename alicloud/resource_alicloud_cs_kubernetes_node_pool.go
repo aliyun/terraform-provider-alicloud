@@ -3559,9 +3559,6 @@ func ConvertCsTags(d *schema.ResourceData) ([]cs.Tag, error) {
 
 func flattenTagsConfig(config []cs.Tag) map[string]string {
 	m := make(map[string]string, len(config))
-	if len(config) < 0 {
-		return m
-	}
 
 	for _, tag := range config {
 		if tag.Key != DefaultClusterTag {
