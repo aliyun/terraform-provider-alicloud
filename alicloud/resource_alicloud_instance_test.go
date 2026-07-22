@@ -1093,18 +1093,26 @@ func TestAccAliCloudECSInstancePrepaid(t *testing.T) {
 					}),
 				),
 			},
+			// Switch instance_charge_type from PostPaid to PrePaid while enabling auto
+			// renew in the same apply. This drives ModifyInstanceChargeType immediately
+			// followed by ModifyInstanceAutoRenewAttribute within a single update, which
+			// can transiently fail with ChargeTypeViolation or IncorrectInstanceStatus
+			// before the billing subsystem finishes applying the charge type change.
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"period":               "1",
 					"period_unit":          "Month",
 					"instance_charge_type": "PrePaid",
+					"renewal_status":       "AutoRenewal",
+					"auto_renew_period":    "1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"period":               "1",
 						"period_unit":          "Month",
-						"renewal_status":       CHECKSET,
 						"instance_charge_type": "PrePaid",
+						"renewal_status":       "AutoRenewal",
+						"auto_renew_period":    "1",
 					}),
 				),
 			},
@@ -1279,16 +1287,10 @@ func TestAccAliCloudECSInstancePrepaid(t *testing.T) {
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"period_unit": "Week",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"period_unit": "Week",
-					}),
-				),
-			},
+			// period_unit is only sent to the API during a charge type conversion
+			// (ModifyInstanceChargeType); there is no standalone API to change the
+			// billing period unit of an existing subscription instance in place, so a
+			// period_unit-only update step permanently leaves a non-empty plan.
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"renewal_status": "AutoRenewal",
