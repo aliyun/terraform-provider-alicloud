@@ -127,14 +127,6 @@ from jarvis_capacity import CapacityManager
 from jarvis_task_router import ExecutionRouter
 from jarvis_persistence_executor import PersistenceExecutor
 from jarvis_external_recovery import ExternalOperationRecoveryScheduler
-from scheduler.composition import SchedulerComposition
-from scheduler.jobs import (
-    DAILY_PROBE_RUNNER_KEY,
-    DailyProbeRunner,
-    REGISTRY as SCHEDULER_REGISTRY,
-    SCHEDULER_SMOKE_RUNNER_KEY,
-    SchedulerSmokeRunner,
-)
 from tata_dws_history import (
     DWS_USER_NOT_IN_GROUP,
     DwsGroupHistory,
@@ -8204,25 +8196,6 @@ class JarvisHandler(AsyncChatbotHandler):
         # PrWatchScheduler(PR lifecycle), and external-operation recovery.
         self.scanner = AoneScheduler(self, self.ephemeral_executor)
         self.daily = DailyScheduler(self, self.ephemeral_executor)
-        # scheduler/jobs/jobs.yaml is the sole ownership switch. This runner
-        # catalogue only resolves names declared by that registry; it cannot
-        # independently migrate a legacy job.
-        self.scheduler_composition = SchedulerComposition(
-            task_client=self.task_client,
-            runners={
-                DAILY_PROBE_RUNNER_KEY: DailyProbeRunner(
-                    handler=self,
-                    pool=self.ephemeral_executor,
-                    execution_router=(getattr(self, "execution_router", None)
-                                      or ExecutionRouter(logger=log)),
-                    build_context=lambda round_id: _daily_probe_context(self, round_id),
-                    logger=log,
-                ),
-                SCHEDULER_SMOKE_RUNNER_KEY: SchedulerSmokeRunner(logger=log),
-            },
-            registry=SCHEDULER_REGISTRY,
-            logger=log,
-        )
         self.aone_reply_scheduler = AoneReplyScheduler(self)
         # PR 观察登记表轮询（方案A）：PR 合并后自动 finish 收尾，与 DailyScheduler 的 nudge 互为兜底。
         # 注：原 PersonaScheduler（评论区 tracker/@ 补位）已并入 AoneScheduler 统一探测（assignee∪
@@ -8259,7 +8232,6 @@ class JarvisHandler(AsyncChatbotHandler):
             return
         if role != "scheduler":
             log.warning("unknown JARVIS_BRIDGE_ROLE=%r; defaulting to scheduler", role)
-        self.scheduler_composition.start()
         self.scanner.start()
         self.daily.start()
         self.aone_reply_scheduler.start()
@@ -8268,22 +8240,8 @@ class JarvisHandler(AsyncChatbotHandler):
         if recovery is not None:
             recovery.start()
 
-    def stop_persistence_executor(
-            self, *, drain=False, timeout=None, scheduler_timeout=None):
+    def stop_persistence_executor(self, *, drain=False, timeout=None):
         """Stop the persistent Task executor once."""
-        scheduler = getattr(self, "scheduler_composition", None)
-        if scheduler is not None:
-            scheduler_drained = scheduler.stop(
-                timeout=(timeout if scheduler_timeout is None else scheduler_timeout))
-            if not scheduler_drained:
-                # A planned Scheduler shutdown is fail-closed: keep this
-                # process alive and do not tear down shared executors while an
-                # admitted scheduled job is still finishing its terminal
-                # control-plane update. run.sh must not start a successor.
-                log.error(
-                    "Scheduler did not drain; keeping the current Bridge alive "
-                    "and refusing replacement startup")
-                return False
         recovery = getattr(self, "external_operation_recovery", None)
         if recovery is not None:
             recovery.stop()
@@ -9584,30 +9542,12 @@ def _release_claim(iid, project, terraform=False):
 
 
 def _stop_before_final_teardown(handler, *, context, timeout):
-    """Do not tear down shared executors while a new-Scheduler job is active."""
-
-    scheduler = getattr(handler, "scheduler_composition", None)
-    scheduler_timeout = timeout
-    if scheduler is not None and scheduler.enabled:
-        scheduler_timeout = float(os.environ.get(
-            "JARVIS_SCHEDULER_DRAIN_TIMEOUT_SECONDS",
-            os.environ.get(
-                "JARVIS_BRIDGE_STOP_WAIT",
-                os.environ.get("JARVIS_STOP_GRACE", "600"))))
-    while True:
-        try:
-            stopped = handler.stop_persistence_executor(
-                drain=True, timeout=timeout,
-                scheduler_timeout=scheduler_timeout)
-        except Exception as exc:  # noqa: BLE001
-            log.exception("%s PersistenceExecutor stop failed: %s", context, exc)
-            stopped = False
-        if stopped or scheduler is None or not scheduler.running:
-            return stopped
-        log.error(
-            "%s Scheduler still owns an admitted job; refusing final teardown "
-            "and retrying after 5 seconds", context)
-        time.sleep(5)
+    """Stop only legacy bridge executors; Scheduler owns its own process now."""
+    try:
+        return handler.stop_persistence_executor(drain=True, timeout=timeout)
+    except Exception as exc:  # noqa: BLE001
+        log.exception("%s PersistenceExecutor stop failed: %s", context, exc)
+        return False
 
 
 def _run_no_dingtalk():
@@ -9645,11 +9585,8 @@ def _run_no_dingtalk():
         except Exception as e:  # noqa: BLE001
             log.exception("[NO-DINGTALK] PersistenceExecutor stop failed: %s", e)
             stopped = False
-        if (os.environ.get("JARVIS_BRIDGE_ROLE", "scheduler") == "scheduler"
-                and not stopped):
-            log.error(
-                "[NO-DINGTALK] planned Scheduler stop remains in DRAINING; "
-                "skip worker termination and os._exit until a later stop retry")
+        if not stopped:
+            log.error("[NO-DINGTALK] PersistenceExecutor stop failed; skip final teardown")
             return
         try:
             ids = handler.ephemeral_executor.terminate_all(release_fn=_release_claim)
@@ -9661,8 +9598,8 @@ def _run_no_dingtalk():
     signal.signal(signal.SIGTERM, _graceful_stop)
     signal.signal(signal.SIGINT, _graceful_stop)
     log.info(
-        "Bridge READY pid=%s schedulerEngine=%s",
-        os.getpid(), handler.scheduler_composition.ready)
+        "Bridge READY pid=%s legacySchedulers=true",
+        os.getpid())
     stop = threading.Event()
     try:
         stop.wait()
@@ -9726,11 +9663,8 @@ def main():
         except Exception as e:  # noqa: BLE001
             log.exception("PersistenceExecutor stop failed: %s", e)
             stopped = False
-        if (os.environ.get("JARVIS_BRIDGE_ROLE", "scheduler") == "scheduler"
-                and not stopped):
-            log.error(
-                "planned Scheduler stop remains in DRAINING; skip worker "
-                "termination and os._exit until a later stop retry")
+        if not stopped:
+            log.error("PersistenceExecutor stop failed; skip final teardown")
             return
         try:
             ids = handler.ephemeral_executor.terminate_all(release_fn=_release_claim)
@@ -9747,8 +9681,8 @@ def main():
     signal.signal(signal.SIGTERM, _graceful_stop)
     signal.signal(signal.SIGINT, _graceful_stop)
     log.info(
-        "Bridge READY pid=%s schedulerEngine=%s",
-        os.getpid(), handler.scheduler_composition.ready)
+        "Bridge READY pid=%s legacySchedulers=true",
+        os.getpid())
     log.info("starting DingTalk stream listener…")
     try:
         client.start_forever()

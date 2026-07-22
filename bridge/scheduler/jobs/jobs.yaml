@@ -13,23 +13,9 @@
 # enabled        Job 是否执行；false 时仍注册到控制面，但状态为 DISABLED。
 version: 1
 jobs:
-  # 测试期间关闭真实 probe，防止 CURRENT_DAY 的补跑语义触发业务探测。
-  - key: daily.probe
-    revision: 1
-    description: Run the bounded daily probe as an Ephemeral job
-    purpose: DISCOVERY
-    engine_runner: daily.probe
-    schedule: {kind: daily, hour: 10, minute: 0, timezone: Asia/Shanghai}
-    runner: {kind: headless, builder_ref: bridge.daily_probe, protocol: bridge.scheduler.v1, session_policy: EPHEMERAL, lane: terraform}
-    misfire: CURRENT_DAY
-    timeout_seconds: 3600
-    retry_delay_seconds: 300
-    replay_policy: EPHEMERAL
-    enabled: false
-
   # 预发调度链路验证：三条 Job 分别覆盖 interval、daily、adaptive。runner 只写日志
   # 并返回 SUCCEEDED，不创建业务数据。验证结束后可将整个 smoke 区块注释为新增 Job
-  # 配置示例，并将 daily.probe 恢复为 enabled: true。
+  # 配置示例。业务 Job 迁移前必须先实现独立 runner，再单独加入此表。
   - key: smoke.interval
     revision: 1
     description: Verify interval planning, admission, and completion without business side effects
