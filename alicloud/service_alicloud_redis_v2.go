@@ -753,3 +753,130 @@ func (s *RedisServiceV2) DescribeAsyncDescribeBackups(d *schema.ResourceData, re
 }
 
 // DescribeAsyncDescribeBackups >>> Encapsulated.
+
+// DescribeRedisClusterBackupId <<< Resolve the cluster backup set id for a backup.
+
+// DescribeRedisClusterBackupId returns the cluster backup set id (cb-*) that owns the
+// given per-shard BackupId. Standalone instances legitimately have no cluster backup set;
+// an empty result with a nil error means "not a cluster backup", not a failure.
+func (s *RedisServiceV2) DescribeRedisClusterBackupId(instanceId string, backupId string) (string, error) {
+	response, err := s.describeClusterBackupList(instanceId, "")
+	if err != nil {
+		return "", err
+	}
+
+	for _, item := range redisRpcList(response["ClusterBackups"], "ClusterBackup") {
+		clusterBackup, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		clusterBackupId := fmt.Sprint(clusterBackup["ClusterBackupId"])
+		if clusterBackupId == "" || clusterBackupId == "<nil>" {
+			continue
+		}
+		for _, shard := range redisRpcList(clusterBackup["Backups"], "Backup") {
+			shardBackup, ok := shard.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			if fmt.Sprint(shardBackup["BackupId"]) == backupId {
+				return clusterBackupId, nil
+			}
+		}
+	}
+
+	return "", nil
+}
+
+// ListClusterBackupShardIds returns every shard BackupId that belongs to the given
+// cluster backup set. Used by resource_alicloud_redis_backup Delete to fan out shard-level
+// DeleteBackup calls (R-kvstore exposes no cluster-level delete API). An empty slice with
+// nil error means the cluster set is gone or has no shard backups — both are non-fatal.
+func (s *RedisServiceV2) ListClusterBackupShardIds(instanceId string, clusterBackupId string) ([]string, error) {
+	response, err := s.describeClusterBackupList(instanceId, clusterBackupId)
+	if err != nil {
+		return nil, err
+	}
+
+	shardIds := make([]string, 0)
+	for _, item := range redisRpcList(response["ClusterBackups"], "ClusterBackup") {
+		clusterBackup, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		if clusterBackupId != "" && fmt.Sprint(clusterBackup["ClusterBackupId"]) != clusterBackupId {
+			continue
+		}
+		for _, shard := range redisRpcList(clusterBackup["Backups"], "Backup") {
+			shardBackup, ok := shard.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			if id := fmt.Sprint(shardBackup["BackupId"]); id != "" && id != "<nil>" {
+				shardIds = append(shardIds, id)
+			}
+		}
+	}
+	return shardIds, nil
+}
+
+// describeClusterBackupList calls R-kvstore DescribeClusterBackupList with a wide UTC time
+// window that covers any live backup set. StartTime / EndTime are Required by the API even
+// when ClusterBackupId is supplied; a 30-day-back to 1-day-forward window absorbs clock
+// skew and long-lived retention without risking a false miss.
+func (s *RedisServiceV2) describeClusterBackupList(instanceId string, clusterBackupId string) (map[string]interface{}, error) {
+	client := s.client
+	var response map[string]interface{}
+	var err error
+
+	query := map[string]interface{}{
+		"InstanceId": instanceId,
+		"RegionId":   client.RegionId,
+		"PageSize":   100,
+	}
+	now := time.Now().UTC()
+	query["StartTime"] = now.Add(-30 * 24 * time.Hour).Format("2006-01-02T15:04Z")
+	query["EndTime"] = now.Add(24 * time.Hour).Format("2006-01-02T15:04Z")
+	if clusterBackupId != "" {
+		query["ClusterBackupId"] = clusterBackupId
+	}
+	action := "DescribeClusterBackupList"
+
+	// DescribeClusterBackupList only accepts GET (RpcPost is rejected with 403
+	// UnsupportedHTTPMethod), so all parameters go in the query and the body is nil.
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcGet("R-kvstore", "2015-01-01", action, query, nil)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, query)
+	if err != nil {
+		return nil, WrapErrorf(err, DefaultErrorMsg, instanceId, action, AlibabaCloudSdkGoERROR)
+	}
+	return response, nil
+}
+
+// redisRpcList normalizes an R-kvstore RPC list field that may arrive either as a flat
+// JSON array or wrapped in a single-key object ({"<elementKey>": [...]}).
+func redisRpcList(v interface{}, elementKey string) []interface{} {
+	switch t := v.(type) {
+	case []interface{}:
+		return t
+	case map[string]interface{}:
+		if inner, ok := t[elementKey]; ok {
+			if list, ok := inner.([]interface{}); ok {
+				return list
+			}
+		}
+	}
+	return nil
+}
+
+// DescribeRedisClusterBackupId >>> Encapsulated.
