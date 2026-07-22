@@ -7389,7 +7389,7 @@ class DailyScheduler:
             log.info("DailyScheduler: %s already marked for %s; cutover skip",
                      scheduler_key, local_scheduled.date().isoformat())
             return True
-        result = job.run()
+        result = job.run(when=local_scheduled)
         if result is not False:
             self._mark_run(job, now=local_scheduled)
         return result
@@ -7469,13 +7469,13 @@ class _ProbeJob:
     def round_id(self, when=None):
         return "probe-%s" % (when or datetime.now()).date().isoformat()
 
-    def run(self):
+    def run(self, when=None):
         # 返回契约: False = queue_full(本日不 mark, 下个 tick 重试); True/其它 = 视为成功。
         # no-pool / 已去重 / 已 active 都视为已到位, mark 掉本日。
         if self.handler is None:
             log.warning("_ProbeJob: no handler; skip")
             return True
-        rid = self.round_id()
+        rid = self.round_id(when)
         prompt = _probe_prompt(rid)
         tgt, ttype = broadcast_target(), broadcast_type()
         notify = _routine_notifier(self.handler)
@@ -9733,6 +9733,9 @@ def _run_no_dingtalk():
 
     signal.signal(signal.SIGTERM, _graceful_stop)
     signal.signal(signal.SIGINT, _graceful_stop)
+    log.info(
+        "Bridge READY pid=%s schedulerEngine=%s",
+        os.getpid(), handler.scheduler_composition.ready)
     stop = threading.Event()
     try:
         stop.wait()
@@ -9815,6 +9818,9 @@ def main():
 
     signal.signal(signal.SIGTERM, _graceful_stop)
     signal.signal(signal.SIGINT, _graceful_stop)
+    log.info(
+        "Bridge READY pid=%s schedulerEngine=%s",
+        os.getpid(), handler.scheduler_composition.ready)
     log.info("starting DingTalk stream listener…")
     try:
         client.start_forever()

@@ -18,7 +18,9 @@
 #
 # 可覆盖(测试/部署): JARVIS_BRIDGE_PYTHON(默认 python3) JARVIS_BRIDGE_BOT(默认本目录 bot)
 #   JARVIS_BRIDGE_STATE_DIR(默认 <repo>/.my-day/bridge) JARVIS_BRIDGE_BOOTSTRAP_ENV
-#   JARVIS_BRIDGE_ENV JARVIS_BRIDGE_START_WAIT(默认 2s) JARVIS_BRIDGE_STOP_WAIT / JARVIS_STOP_GRACE
+#   JARVIS_BRIDGE_ENV JARVIS_BRIDGE_START_WAIT(默认 2s)
+#   JARVIS_SCHEDULER_READY_WAIT(新 Scheduler READY 握手，默认 30s)
+#   JARVIS_BRIDGE_STOP_WAIT / JARVIS_STOP_GRACE
 #   (stop 宽限秒数, 默认 30s)。
 #   JARVIS_BRIDGE_SUPERVISOR=launchd 时 start/stop/restart/status 委托给 launchctl；可覆盖
 #   JARVIS_BRIDGE_LAUNCHCTL、JARVIS_BRIDGE_LAUNCHD_LABEL/DOMAIN/PLIST（测试/定制安装）。
@@ -39,6 +41,7 @@ LOG="$STATE_DIR/bot.log"
 BOOTSTRAP_ENV="${JARVIS_BRIDGE_BOOTSTRAP_ENV:-$REPO_ROOT/bootstrap/.env}"
 BRIDGE_ENV="${JARVIS_BRIDGE_ENV:-$SCRIPT_DIR/jarvis.env}"
 START_WAIT="${JARVIS_BRIDGE_START_WAIT:-2}"
+SCHEDULER_READY_WAIT="${JARVIS_SCHEDULER_READY_WAIT:-30}"
 say()  { printf '%s\n' "$*"; }
 err()  { printf '%s\n' "$*" >&2; }
 
@@ -71,6 +74,47 @@ _tail_log() {  # $1 = n
   if [ -f "$LOG" ]; then tail -n "$n" "$LOG"; else say "(暂无日志: $LOG)"; fi
 }
 
+_scheduler_ready_required() {
+  [ "${JARVIS_BRIDGE_ROLE:-scheduler}" = "scheduler" ] || return 1
+  [ -n "$(printf '%s' "${JARVIS_SCHEDULER_NEW_JOBS:-}" \
+    | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')" ]
+}
+
+_bridge_ready_in_log() { # $1 = pid, $2 = byte offset before start
+  local pid="$1" pre_sz="${2:-0}" size=0
+  [ -f "$LOG" ] || return 1
+  size="$(wc -c <"$LOG" 2>/dev/null | tr -d ' ')"
+  [ -n "$size" ] || size=0
+  [ "$size" -ge "$pre_sz" ] || pre_sz=0
+  tail -c "+$((pre_sz + 1))" "$LOG" 2>/dev/null \
+    | grep -F "Bridge READY pid=$pid " >/dev/null 2>&1
+}
+
+_wait_local_scheduler_ready() { # $1 = pid, $2 = log size before start
+  local pid="$1" pre_sz="$2" i=0 deadline=$(( SCHEDULER_READY_WAIT * 10 ))
+  while [ "$i" -lt "$deadline" ]; do
+    _alive "$pid" || return 1
+    _bridge_ready_in_log "$pid" "$pre_sz" && return 0
+    sleep 0.1
+    i=$((i + 1))
+  done
+  return 1
+}
+
+_wait_launchd_scheduler_ready() { # $1 = log size before kickstart
+  local pre_sz="$1" detail pid i=0 deadline=$(( SCHEDULER_READY_WAIT * 10 ))
+  while [ "$i" -lt "$deadline" ]; do
+    detail="$("$LAUNCHCTL_BIN" print "$LAUNCHD_SERVICE" 2>/dev/null || true)"
+    pid="$(printf '%s\n' "$detail" | sed -n 's/^[[:space:]]*pid = //p' | head -n1)"
+    if [ -n "$pid" ] && _alive "$pid" && _bridge_ready_in_log "$pid" "$pre_sz"; then
+      return 0
+    fi
+    sleep 0.1
+    i=$((i + 1))
+  done
+  return 1
+}
+
 # -- role-aware paths (call AFTER _source_env; env files may set JARVIS_BRIDGE_ROLE) --
 _resolve_paths_by_role() {
   local role="${JARVIS_BRIDGE_ROLE:-scheduler}"
@@ -96,6 +140,8 @@ _source_env() {
   # shellcheck disable=SC1091
   source "$REPO_ROOT/bootstrap/runtime-config.sh"
   jarvis_load_runtime_config || return $?
+  START_WAIT="${JARVIS_BRIDGE_START_WAIT:-2}"
+  SCHEDULER_READY_WAIT="${JARVIS_SCHEDULER_READY_WAIT:-30}"
 
   # Non-interactive SSH/launch shells on macOS commonly omit both the user-local
   # installer directory (a1) and Homebrew (claude). Normalize the standard tool
@@ -223,6 +269,7 @@ _launchd_loaded() {
 }
 
 cmd_launchd_start() {
+  local pre_sz=0 detail state pid
   _launchd_require || return 1
   _validate_scheduler_cutover || return $?
   if [ ! -f "$LAUNCHD_PLIST" ]; then
@@ -230,8 +277,22 @@ cmd_launchd_start() {
     err "请先运行: $SCRIPT_DIR/install-launchd.sh"
     return 1
   fi
+  [ -f "$LOG" ] && pre_sz="$(wc -c <"$LOG" 2>/dev/null | tr -d ' ')"
+  [ -n "$pre_sz" ] || pre_sz=0
 
-  if ! _launchd_loaded; then
+  if _launchd_loaded; then
+    detail="$("$LAUNCHCTL_BIN" print "$LAUNCHD_SERVICE" 2>/dev/null || true)"
+    state="$(printf '%s\n' "$detail" | sed -n 's/^[[:space:]]*state = //p' | head -n1)"
+    pid="$(printf '%s\n' "$detail" | sed -n 's/^[[:space:]]*pid = //p' | head -n1)"
+    if [ "$state" = "running" ] && [ -n "$pid" ]; then
+      if ! _scheduler_ready_required || _bridge_ready_in_log "$pid" 0; then
+        say "bridge 已由 launchd 运行 ($LAUNCHD_SERVICE, pid $pid)。"
+        return 0
+      fi
+      err "launchd 中的 bridge 尚未 READY；请使用 bridge/run.sh restart 做受控替换。"
+      return 1
+    fi
+  else
     say "注册 launchd service: $LAUNCHD_SERVICE"
     "$LAUNCHCTL_BIN" bootstrap "$LAUNCHD_DOMAIN" "$LAUNCHD_PLIST" || {
       err "launchd bootstrap 失败: $LAUNCHD_PLIST"
@@ -249,6 +310,14 @@ cmd_launchd_start() {
       err "launchd kickstart 失败: $LAUNCHD_SERVICE"
       return 1
     }
+  fi
+  if _scheduler_ready_required \
+      && ! _wait_launchd_scheduler_ready "$pre_sz"; then
+    err "launchd 已点火，但 Scheduler 在 ${SCHEDULER_READY_WAIT}s 内未 READY。日志尾 ↓"
+    _tail_log 20 >&2
+    "$LAUNCHCTL_BIN" disable "$LAUNCHD_SERVICE" >/dev/null 2>&1 || true
+    "$LAUNCHCTL_BIN" kill SIGTERM "$LAUNCHD_SERVICE" >/dev/null 2>&1 || true
+    return 1
   fi
   say "bridge 已交由 launchd 启动 ($LAUNCHD_SERVICE)。"
 }
@@ -290,7 +359,7 @@ cmd_launchd_restart() {
   # old process to drain, and start a replacement only after that exact PID has
   # exited. Never use `kickstart -k`: it starts the successor before the old
   # process has proved that its in-flight scheduled job committed.
-  local detail old_pid="" i=0 stop_wait
+  local detail old_pid="" i=0 stop_wait pre_sz=0
   detail="$("$LAUNCHCTL_BIN" print "$LAUNCHD_SERVICE" 2>/dev/null || true)"
   old_pid="$(printf '%s\n' "$detail" \
     | sed -n 's/^[[:space:]]*pid = //p' | head -n1)"
@@ -319,11 +388,21 @@ cmd_launchd_restart() {
     err "launchd restart 失败: 无法重新启用 $LAUNCHD_SERVICE"
     return 1
   }
+  [ -f "$LOG" ] && pre_sz="$(wc -c <"$LOG" 2>/dev/null | tr -d ' ')"
+  [ -n "$pre_sz" ] || pre_sz=0
   "$LAUNCHCTL_BIN" kickstart "$LAUNCHD_SERVICE" || {
     err "launchd restart 失败: $LAUNCHD_SERVICE"
     return 1
   }
-  say "Scheduler 已 drain，bridge 已由 launchd 重启 ($LAUNCHD_SERVICE)。"
+  if _scheduler_ready_required \
+      && ! _wait_launchd_scheduler_ready "$pre_sz"; then
+    err "旧 Scheduler 已 drain，但新实例在 ${SCHEDULER_READY_WAIT}s 内未 READY。"
+    _tail_log 20 >&2
+    "$LAUNCHCTL_BIN" disable "$LAUNCHD_SERVICE" >/dev/null 2>&1 || true
+    "$LAUNCHCTL_BIN" kill SIGTERM "$LAUNCHD_SERVICE" >/dev/null 2>&1 || true
+    return 1
+  fi
+  say "Scheduler 已 drain，新实例已 READY ($LAUNCHD_SERVICE)。"
 }
 
 cmd_launchd_status() {
@@ -404,7 +483,16 @@ cmd_start() {
   nohup "$PYTHON" "$BOT" >>"$LOG" 2>&1 &
   local newpid=$!
   printf '%s\n' "$newpid" >"$PIDFILE"
-  sleep "$START_WAIT"
+  if _scheduler_ready_required; then
+    if ! _wait_local_scheduler_ready "$newpid" "$pre_sz"; then
+      err "bridge 进程已点火，但 Scheduler 在 ${SCHEDULER_READY_WAIT}s 内未 READY。日志尾 ↓"
+      _tail_log 20 >&2
+      cmd_stop >/dev/null 2>&1 || true
+      return 1
+    fi
+  else
+    sleep "$START_WAIT"
+  fi
 
   if ! _alive "$newpid"; then
     err "bridge 启动失败: 进程 $newpid 已退出。日志尾 ↓"

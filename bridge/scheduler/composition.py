@@ -15,7 +15,6 @@ import logging
 import os
 import socket
 import threading
-import time
 import uuid
 from typing import Any, Mapping, Optional
 
@@ -74,10 +73,14 @@ class SchedulerComposition:
         self._log = logger or logging.getLogger(__name__)
         self._engine: Optional[SchedulerEngine] = None
         self._thread: Optional[threading.Thread] = None
+        self._heartbeat_thread: Optional[threading.Thread] = None
         self._stop = threading.Event()
+        self._heartbeat_stop = threading.Event()
         self._ready = False
         self._registered = False
+        self._worker_status = "OFFLINE"
         self._lock = threading.RLock()
+        self._worker_rpc_lock = threading.Lock()
         self.process_uuid = uuid.uuid4().hex
         self.worker_key = SCHEDULER_WORKER_KEY
         self.host_id = SCHEDULER_HOST_ID
@@ -86,7 +89,6 @@ class SchedulerComposition:
         # dormant scheduler must not change legacy Bridge startup behavior.
         self._heartbeat_interval = 30.0
         self._poll_interval = 5.0
-        self._next_heartbeat = 0.0
 
     @property
     def ready(self) -> bool:
@@ -111,6 +113,16 @@ class SchedulerComposition:
             (definition.id for definition in definitions), environ=self._environ)
         if not migrated:
             return False
+        if "daily.probe" in migrated:
+            probe = next(definition for definition in definitions
+                         if definition.id == "daily.probe")
+            configured_hour = self._environ.get("JARVIS_PROBE_HOUR")
+            registry_hour = str(getattr(probe.schedule, "hour", ""))
+            if configured_hour is not None and configured_hour.strip() != registry_hour:
+                raise SchedulerCompositionError(
+                    "migrated daily.probe uses registry hour %s; "
+                    "remove JARVIS_PROBE_HOUR or set it to %s"
+                    % (registry_hour, registry_hour))
         self._heartbeat_interval = _positive_float(
             self._environ.get("JARVIS_SCHEDULER_HEARTBEAT_SEC", "30"),
             "JARVIS_SCHEDULER_HEARTBEAT_SEC")
@@ -127,9 +139,12 @@ class SchedulerComposition:
             if self._thread is not None:
                 return True
             self._stop.clear()
+            self._heartbeat_stop.clear()
             worker_client = self._worker_client()
-            self._register_worker(worker_client, "ACTIVE")
             try:
+                with self._worker_rpc_lock:
+                    self._worker_status = "ACTIVE"
+                    self._register_worker(worker_client, "ACTIVE")
                 control_plane = HttpScheduledJobControlPlane(
                     self._task_client.base_url,
                     _control_plane_token(self._task_client),
@@ -156,7 +171,9 @@ class SchedulerComposition:
                 # A Worker that could register but could not complete the
                 # startup protocol must not remain ACTIVE and fence a retry.
                 try:
-                    self._register_worker(worker_client, "OFFLINE")
+                    with self._worker_rpc_lock:
+                        self._worker_status = "OFFLINE"
+                        self._register_worker(worker_client, "OFFLINE")
                 except Exception as offline_error:
                     self._log.warning(
                         "Scheduler Worker OFFLINE cleanup after failed startup failed: %s",
@@ -165,8 +182,14 @@ class SchedulerComposition:
                 raise
             self._engine = engine
             self._ready = True
+            self._heartbeat_thread = threading.Thread(
+                target=self._heartbeat_loop,
+                name="bridge-scheduler-heartbeat",
+                daemon=True,
+            )
             self._thread = threading.Thread(
                 target=self._loop, name="bridge-scheduler-engine", daemon=True)
+            self._heartbeat_thread.start()
             self._thread.start()
         self._log.info(
             "SchedulerEngine READY worker=%s hostId=%s processUuid=%s jobs=%s",
@@ -179,6 +202,7 @@ class SchedulerComposition:
         with self._lock:
             engine = self._engine
             thread = self._thread
+            heartbeat_thread = self._heartbeat_thread
             registered = self._registered
             if engine is None:
                 return True
@@ -187,7 +211,9 @@ class SchedulerComposition:
             self._stop.set()
         if registered:
             try:
-                self._register_worker(self._worker_client(), "DRAINING")
+                with self._worker_rpc_lock:
+                    self._worker_status = "DRAINING"
+                    self._register_worker(self._worker_client(), "DRAINING")
             except Exception as exc:  # preserve fail-closed ownership; do not lie OFFLINE
                 self._log.warning("Scheduler Worker DRAINING heartbeat failed: %s", type(exc).__name__)
         if thread is not None:
@@ -195,15 +221,25 @@ class SchedulerComposition:
             if thread.is_alive():
                 self._log.warning("Scheduler Engine did not drain before timeout; leaving Worker non-OFFLINE")
                 return False
+        self._heartbeat_stop.set()
+        if heartbeat_thread is not None:
+            heartbeat_thread.join(timeout=self._task_client.timeout + 1)
+            if heartbeat_thread.is_alive():
+                self._log.warning(
+                    "Scheduler heartbeat did not stop; leaving Worker non-OFFLINE")
+                return False
         offline = True
         if registered:
             try:
-                self._register_worker(self._worker_client(), "OFFLINE")
+                with self._worker_rpc_lock:
+                    self._worker_status = "OFFLINE"
+                    self._register_worker(self._worker_client(), "OFFLINE")
             except Exception as exc:
                 self._log.warning("Scheduler Worker OFFLINE update failed: %s", type(exc).__name__)
                 offline = False
         with self._lock:
             self._thread = None
+            self._heartbeat_thread = None
             self._engine = None
             self._registered = False
         return offline
@@ -211,13 +247,27 @@ class SchedulerComposition:
     def _loop(self) -> None:
         while not self._stop.is_set():
             try:
-                self._heartbeat_if_due()
                 engine = self._engine
                 if engine is not None:
                     engine.tick(datetime.now(timezone.utc))
             except Exception as exc:  # network/protocol faults close execution for this tick
                 self._log.exception("Scheduler Engine tick failed closed: %s", type(exc).__name__)
             self._stop.wait(self._poll_interval)
+
+    def _heartbeat_loop(self) -> None:
+        """Keep the Scheduler fence alive independently of long-running jobs."""
+
+        while not self._heartbeat_stop.wait(self._heartbeat_interval):
+            try:
+                with self._worker_rpc_lock:
+                    if self._worker_status not in ("ACTIVE", "DRAINING"):
+                        return
+                    self._register_worker(
+                        self._worker_client(), self._worker_status)
+            except Exception as exc:
+                self._log.warning(
+                    "Scheduler Worker %s heartbeat failed: %s",
+                    self._worker_status, type(exc).__name__)
 
     def _require_scheduler_host(self) -> None:
         observed = {socket.gethostname().strip(), socket.getfqdn().strip()}
@@ -265,13 +315,6 @@ class SchedulerComposition:
             _require_active_worker(
                 response, self.worker_key, self.host_id, self.boot_id, self.process_uuid)
             self._registered = True
-            self._next_heartbeat = time.monotonic() + self._heartbeat_interval
-
-    def _heartbeat_if_due(self) -> None:
-        if not self._registered or time.monotonic() < self._next_heartbeat:
-            return
-        self._register_worker(self._worker_client(), "ACTIVE")
-        self._next_heartbeat = time.monotonic() + self._heartbeat_interval
 
 
 class _RoutedRunner(JobRunner):

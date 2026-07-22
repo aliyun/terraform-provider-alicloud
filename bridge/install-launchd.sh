@@ -23,6 +23,7 @@ STATE_DIR="${JARVIS_BRIDGE_STATE_DIR:-$REPO_ROOT/.my-day/bridge}"
 LOG_PATH="${JARVIS_BRIDGE_LOG:-$STATE_DIR/bot.log}"
 LAUNCHD_PATH="${JARVIS_BRIDGE_LAUNCHD_PATH:-/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${HOME:-}/.local/bin}"
 RUN_SH="$SCRIPT_DIR/run.sh"
+READY_WAIT="${JARVIS_SCHEDULER_READY_WAIT:-30}"
 TMP_PLIST=""
 
 die() { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
@@ -146,9 +147,37 @@ if detail="$("$LAUNCHCTL_BIN" print "$SERVICE" 2>/dev/null)"; then
   "$LAUNCHCTL_BIN" bootout "$SERVICE" \
     || die "cannot unload drained launchd service: $SERVICE"
 fi
+pre_log_size=0
+[ -f "$LOG_PATH" ] && pre_log_size="$(wc -c <"$LOG_PATH" 2>/dev/null | tr -d ' ')"
+[ -n "$pre_log_size" ] || pre_log_size=0
 "$LAUNCHCTL_BIN" bootstrap "$DOMAIN" "$TARGET"
 "$LAUNCHCTL_BIN" enable "$SERVICE" >/dev/null 2>&1 || true
 "$LAUNCHCTL_BIN" kickstart "$SERVICE"
+
+i=0
+deadline=$(( READY_WAIT * 10 ))
+ready=0
+while [ "$i" -lt "$deadline" ]; do
+  detail="$("$LAUNCHCTL_BIN" print "$SERVICE" 2>/dev/null || true)"
+  pid="$(printf '%s\n' "$detail" | sed -n 's/^[[:space:]]*pid = //p' | head -n1)"
+  if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null && [ -f "$LOG_PATH" ]; then
+    log_size="$(wc -c <"$LOG_PATH" 2>/dev/null | tr -d ' ')"
+    [ -n "$log_size" ] || log_size=0
+    [ "$log_size" -ge "$pre_log_size" ] || pre_log_size=0
+    if tail -c "+$((pre_log_size + 1))" "$LOG_PATH" 2>/dev/null \
+        | grep -F "Bridge READY pid=$pid " >/dev/null 2>&1; then
+      ready=1
+      break
+    fi
+  fi
+  sleep 0.1
+  i=$((i + 1))
+done
+if [ "$ready" -ne 1 ]; then
+  "$LAUNCHCTL_BIN" disable "$SERVICE" >/dev/null 2>&1 || true
+  "$LAUNCHCTL_BIN" bootout "$SERVICE" >/dev/null 2>&1 || true
+  die "launchd service did not report Bridge READY within ${READY_WAIT}s: $SERVICE"
+fi
 
 printf 'Jarvis bridge is managed by launchd: %s\n' "$SERVICE"
 printf 'status: JARVIS_BRIDGE_SUPERVISOR=launchd %s status\n' "$RUN_SH"
