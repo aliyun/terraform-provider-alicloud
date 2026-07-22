@@ -45,9 +45,12 @@ class ScheduledJobControlPlaneRejected(ScheduledJobControlPlaneError):
 class ScheduledJobControlPlaneProtocolError(ScheduledJobControlPlaneRejected):
     """A 2xx response did not conform to the scheduled-job API contract."""
 
-    # The server may have committed before its response was lost or malformed.
-    # Retrying complete/fail is safe because those transitions are idempotent.
-    terminal_retryable = True
+    # A well-formed 2xx response that violates the contract (e.g. a missing or
+    # non-boolean ``admitted``) is a definitive server-side error, not transport
+    # uncertainty: retrying cannot resolve the ambiguity and ``start`` must fail
+    # closed rather than risk a second admission attempt.  Only genuine transport
+    # loss (``ScheduledJobControlPlaneUnavailable``) is retryable.
+    terminal_retryable = False
 
 
 def _nonblank(value: Any, name: str) -> str:
@@ -312,7 +315,7 @@ class HttpScheduledJobControlPlane:
         if self.worker_key is not None:
             headers["X-Jarvis-Worker-Key"] = self.worker_key
             headers["X-Jarvis-Process-Uuid"] = str(self.process_uuid)
-        if payload is not None:
+        if payload:
             body = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
             headers["Content-Type"] = "application/json"
         if self.token:
