@@ -21,7 +21,8 @@
 #   JARVIS_BRIDGE_ENV JARVIS_BRIDGE_START_WAIT(默认 2s)
 #   JARVIS_SCHEDULER_READY_WAIT(新 Scheduler READY 握手，默认 30s)
 #   JARVIS_BRIDGE_STOP_WAIT / JARVIS_STOP_GRACE
-#   (stop 宽限秒数, 默认 30s)。
+#   (普通 worker 默认 30s；启用新 Scheduler 时默认跟随
+#   JARVIS_SCHEDULER_DRAIN_TIMEOUT_SECONDS，默认 600s)。
 #   JARVIS_BRIDGE_SUPERVISOR=launchd 时 start/stop/restart/status 委托给 launchctl；可覆盖
 #   JARVIS_BRIDGE_LAUNCHCTL、JARVIS_BRIDGE_LAUNCHD_LABEL/DOMAIN/PLIST（测试/定制安装）。
 set -uo pipefail
@@ -78,6 +79,14 @@ _scheduler_ready_required() {
   [ "${JARVIS_BRIDGE_ROLE:-scheduler}" = "scheduler" ] || return 1
   [ -n "$(printf '%s' "${JARVIS_SCHEDULER_NEW_JOBS:-}" \
     | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')" ]
+}
+
+_bridge_stop_wait() {
+  if _scheduler_ready_required; then
+    printf '%s' "${JARVIS_BRIDGE_STOP_WAIT:-${JARVIS_SCHEDULER_DRAIN_TIMEOUT_SECONDS:-${JARVIS_STOP_GRACE:-600}}}"
+  else
+    printf '%s' "${JARVIS_BRIDGE_STOP_WAIT:-${JARVIS_STOP_GRACE:-30}}"
+  fi
 }
 
 _bridge_ready_in_log() { # $1 = pid, $2 = byte offset before start
@@ -363,7 +372,7 @@ cmd_launchd_restart() {
   detail="$("$LAUNCHCTL_BIN" print "$LAUNCHD_SERVICE" 2>/dev/null || true)"
   old_pid="$(printf '%s\n' "$detail" \
     | sed -n 's/^[[:space:]]*pid = //p' | head -n1)"
-  stop_wait="${JARVIS_BRIDGE_STOP_WAIT:-${JARVIS_STOP_GRACE:-30}}"
+  stop_wait="$(_bridge_stop_wait)"
   "$LAUNCHCTL_BIN" disable "$LAUNCHD_SERVICE" >/dev/null 2>&1 || {
     err "launchd restart 失败: 无法禁用 KeepAlive ($LAUNCHD_SERVICE)"
     return 1
@@ -379,8 +388,9 @@ cmd_launchd_restart() {
       i=$((i + 1))
     done
     if _alive "$old_pid"; then
-      err "Scheduler 在 ${stop_wait}s 内未 drain 完成；launchd 保持 disabled，不会启动新 Bridge。"
-      err "等待在途 job 完成后重新执行 bridge/run.sh restart。"
+      "$LAUNCHCTL_BIN" enable "$LAUNCHD_SERVICE" >/dev/null 2>&1 || true
+      err "Scheduler 在 ${stop_wait}s 内未 drain 完成；本命令不会主动启动新 Bridge。"
+      err "本次 restart 已取消并重新启用 KeepAlive；旧 Bridge 将恢复调度。"
       return 1
     fi
   fi
@@ -532,7 +542,7 @@ cmd_watchdog() {
 
 cmd_stop() {
   local pid stop_wait
-  stop_wait="${JARVIS_BRIDGE_STOP_WAIT:-${JARVIS_STOP_GRACE:-30}}"
+  stop_wait="$(_bridge_stop_wait)"
   # Operator-intent sentinel: `run.sh stop` means STAY stopped. The cron
   # watchdog (run.sh watchdog) refuses to start while this file exists; only
   # a human `run.sh start` clears it. Dropped even when nothing is running —

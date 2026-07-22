@@ -96,6 +96,13 @@ class SchedulerComposition:
             return self._ready
 
     @property
+    def running(self) -> bool:
+        """Whether this process still owns a live Scheduler Engine."""
+
+        with self._lock:
+            return self._engine is not None
+
+    @property
     def enabled(self) -> bool:
         return bool(requested_new_jobs(
             (definition.id for definition in JOBS), environ=self._environ))
@@ -197,7 +204,7 @@ class SchedulerComposition:
         return True
 
     def stop(self, *, timeout: Optional[float] = None) -> bool:
-        """Quiesce new admissions, drain the Engine loop, then mark OFFLINE."""
+        """Quiesce admissions and mark OFFLINE, or cancel a timed-out restart."""
 
         with self._lock:
             engine = self._engine
@@ -219,7 +226,10 @@ class SchedulerComposition:
         if thread is not None:
             thread.join(timeout=_stop_timeout(timeout, self._environ))
             if thread.is_alive():
-                self._log.warning("Scheduler Engine did not drain before timeout; leaving Worker non-OFFLINE")
+                self._log.warning(
+                    "Scheduler Engine did not drain before timeout; "
+                    "cancelling the planned restart")
+                self._cancel_drain(engine, thread, registered)
                 return False
         self._heartbeat_stop.set()
         if heartbeat_thread is not None:
@@ -243,6 +253,44 @@ class SchedulerComposition:
             self._engine = None
             self._registered = False
         return offline
+
+    def _cancel_drain(
+        self,
+        engine: SchedulerEngine,
+        thread: threading.Thread,
+        registered: bool,
+    ) -> None:
+        """Restore ACTIVE scheduling after the restart drain budget expires."""
+
+        if registered:
+            try:
+                with self._worker_rpc_lock:
+                    self._worker_status = "ACTIVE"
+                    self._register_worker(self._worker_client(), "ACTIVE")
+            except Exception as exc:
+                # Keep ACTIVE as the desired heartbeat state. Until the
+                # control plane acknowledges it, new starts remain fail-closed;
+                # the independent heartbeat loop will retry the transition.
+                self._log.warning(
+                    "Scheduler restart cancelled; ACTIVE restore is pending: %s",
+                    type(exc).__name__)
+        engine.resume()
+        self._stop.clear()
+        # If the old loop observed the stop event immediately before it was
+        # cleared, give it one scheduling turn to exit before deciding whether
+        # a replacement loop is needed.
+        thread.join(timeout=0.05)
+        with self._lock:
+            self._ready = True
+            if not thread.is_alive():
+                thread = threading.Thread(
+                    target=self._loop,
+                    name="bridge-scheduler-engine",
+                    daemon=True,
+                )
+                self._thread = thread
+                thread.start()
+        self._log.info("Scheduler planned restart cancelled; ACTIVE scheduling resumed")
 
     def _loop(self) -> None:
         while not self._stop.is_set():
@@ -384,7 +432,16 @@ def _positive_float(value: Any, name: str) -> float:
 
 def _stop_timeout(value: Optional[float], environ: Mapping[str, str]) -> float:
     if value is None:
-        value = environ.get("JARVIS_SCHEDULER_DRAIN_TIMEOUT", "30")
+        value = environ.get(
+            "JARVIS_SCHEDULER_DRAIN_TIMEOUT_SECONDS",
+            environ.get(
+                "JARVIS_BRIDGE_STOP_WAIT",
+                environ.get(
+                    "JARVIS_STOP_GRACE",
+                    environ.get("JARVIS_SCHEDULER_DRAIN_TIMEOUT", "600"),
+                ),
+            ),
+        )
     return max(0.0, float(value))
 
 

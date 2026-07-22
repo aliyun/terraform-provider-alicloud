@@ -12,6 +12,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 import json
 import os
+import time
 from typing import Any, Callable, Mapping, Optional, Sequence
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote
@@ -24,6 +25,8 @@ from .model import is_aware
 class ScheduledJobControlPlaneError(RuntimeError):
     """Base error for a scheduled-job control-plane operation that did not commit."""
 
+    terminal_retryable = False
+
     def __init__(self, message: str, *, status: Optional[int] = None) -> None:
         super().__init__(message)
         self.status = status
@@ -32,6 +35,8 @@ class ScheduledJobControlPlaneError(RuntimeError):
 class ScheduledJobControlPlaneUnavailable(ScheduledJobControlPlaneError):
     """The control plane cannot be safely reached or returned a 5xx response."""
 
+    terminal_retryable = True
+
 
 class ScheduledJobControlPlaneRejected(ScheduledJobControlPlaneError):
     """The server rejected a request or returned a malformed successful response."""
@@ -39,6 +44,10 @@ class ScheduledJobControlPlaneRejected(ScheduledJobControlPlaneError):
 
 class ScheduledJobControlPlaneProtocolError(ScheduledJobControlPlaneRejected):
     """A 2xx response did not conform to the scheduled-job API contract."""
+
+    # The server may have committed before its response was lost or malformed.
+    # Retrying complete/fail is safe because those transitions are idempotent.
+    terminal_retryable = True
 
 
 def _nonblank(value: Any, name: str) -> str:
@@ -74,6 +83,10 @@ def _from_utc_timestamp(value: Any, name: str) -> datetime:
         raise ScheduledJobControlPlaneProtocolError(
             f"control plane response {name} must include a timezone")
     return parsed.astimezone(timezone.utc)
+
+
+def _same_millisecond(left: datetime, right: datetime) -> bool:
+    return int(left.timestamp() * 1000) == int(right.timestamp() * 1000)
 
 
 class HttpScheduledJobControlPlane:
@@ -122,6 +135,10 @@ class HttpScheduledJobControlPlane:
         self.timeout = float(timeout)
         if self.timeout <= 0:
             raise ValueError("timeout must be positive")
+        self.retry_delay_seconds = float(
+            env.get("JARVIS_SCHEDULER_CONTROL_RETRY_SEC", "5"))
+        if self.retry_delay_seconds <= 0:
+            raise ValueError("JARVIS_SCHEDULER_CONTROL_RETRY_SEC must be positive")
         self.path = "/" + _nonblank(path, "path").strip("/")
         self._opener = opener or urlopen
         if (worker_key is None) != (process_uuid is None):
@@ -159,21 +176,59 @@ class HttpScheduledJobControlPlane:
         for job in jobs:
             if job.status is not ScheduledJobStatus.IDLE or job.next_run_at is None:
                 raise ScheduledJobControlPlaneProtocolError(
-                    "control plane recover-interrupted jobs must be IDLE with original nextRunAt")
+                    "control plane recover-interrupted jobs must be IDLE with reserved nextRunAt")
         return jobs
 
-    def start(self, job_key: str, scheduled_for: datetime) -> bool:
-        response = self._object(self._request(
-            "POST", self._job_path(job_key, "start"),
-            self._identity_payload({
-                "scheduledFor": _to_utc_timestamp(scheduled_for, "scheduled_for")}),
-        ), "start")
-        admitted = response.get("admitted")
-        if type(admitted) is not bool:
-            raise ScheduledJobControlPlaneProtocolError(
-                "control plane start response must include boolean admitted")
-        self._state(response.get("job"), "start.job")
-        return admitted
+    def start(
+        self, job_key: str, scheduled_for: datetime, next_run_at: datetime,
+    ) -> bool:
+        payload = self._identity_payload({
+            "scheduledFor": _to_utc_timestamp(scheduled_for, "scheduled_for"),
+            "nextRunAt": _to_utc_timestamp(next_run_at, "next_run_at"),
+        })
+        uncertain = False
+        while True:
+            try:
+                response = self._object(self._request(
+                    "POST", self._job_path(job_key, "start"), payload), "start")
+                admitted = response.get("admitted")
+                if type(admitted) is not bool:
+                    raise ScheduledJobControlPlaneProtocolError(
+                        "control plane start response must include boolean admitted")
+                state = self._state(response.get("job"), "start.job")
+                if admitted:
+                    return True
+                # This call has not launched the runner yet. If an earlier
+                # uncertain attempt reserved the exact successor, the retry's
+                # non-admission is proof that this process owns the admission.
+                if (uncertain
+                        and state.status is ScheduledJobStatus.RUNNING
+                        and state.next_run_at is not None
+                        and _same_millisecond(state.next_run_at, next_run_at)):
+                    return True
+                return False
+            except Exception as exc:
+                if uncertain and self._reserved_running(job_key, next_run_at):
+                    return True
+                if not getattr(exc, "terminal_retryable", False):
+                    raise
+                uncertain = True
+                time.sleep(self.retry_delay_seconds)
+
+    def _reserved_running(self, job_key: str, next_run_at: datetime) -> bool:
+        """Reconcile an uncertain start without authorizing a second invocation."""
+
+        try:
+            states = self.list_jobs()
+        except Exception:
+            return False
+        return any(
+            state.job_key == job_key
+            and state.status is ScheduledJobStatus.RUNNING
+            and state.next_run_at is not None
+            and _same_millisecond(state.next_run_at, next_run_at)
+            for state in states
+        )
 
     def complete(self, job_key: str, scheduled_for: datetime, next_run_at: datetime) -> None:
         response = self._request(

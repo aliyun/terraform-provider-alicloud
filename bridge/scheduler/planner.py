@@ -56,6 +56,28 @@ class TriggerPlanner:
             return due
         raise TypeError("definition.schedule must be supported")
 
+    def reserve_next_due(
+        self,
+        definition: ScheduledJobDefinition,
+        *,
+        slot_due_at: datetime,
+        started_at: datetime,
+    ) -> datetime:
+        """Reserve a safe fallback slot before the current invocation runs.
+
+        Advancing ``next_run_at`` at admission means an interrupted invocation
+        cannot erase the schedule.  Adaptive jobs initially reserve their
+        default delay and may refine it from ``JobResult.next_due_at`` after a
+        successful run.
+        """
+
+        return self.next_due(
+            definition,
+            slot_due_at=slot_due_at,
+            completed_at=started_at,
+            result=JobResult(JobResultStatus.SUCCEEDED),
+        )
+
     def slot_key(self, definition: ScheduledJobDefinition, scheduled_for: datetime) -> str:
         """Return the stable identity, including the definition revision."""
 

@@ -9,14 +9,23 @@ endpoint is deployed.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from enum import Enum
+import logging
 from threading import RLock
+import time
 from typing import Callable, Iterable, Mapping, Optional, Protocol, Sequence
 
 from .model import JobResult, JobResultStatus, ScheduledJobDefinition, definition_snapshot, is_aware
 from .planner import TriggerPlanner
-from .runtime import ScannerRuntime, ScannerStopped
+from .runtime import ScannerRuntime
+
+
+_LOG = logging.getLogger(__name__)
+
+
+def _utc_now() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 class ScheduledJobStatus(str, Enum):
@@ -94,15 +103,17 @@ class ScheduledJobControlPlane(Protocol):
         """Return current job states from the control plane."""
 
     def recover_interrupted(self) -> Sequence[ScheduledJobState]:
-        """Explicitly return interrupted ``RUNNING`` jobs to their original due slots.
+        """Return interrupted ``RUNNING`` jobs to their pre-reserved successors.
 
         This is a startup/composition operation, deliberately not part of
         :meth:`SchedulerEngine.tick`.  The caller must complete registration,
         recovery, and then normal planning in that order.
         """
 
-    def start(self, job_key: str, scheduled_for: datetime) -> bool:
-        """Atomically admit the exact scheduled slot, or reject it as stale/duplicate."""
+    def start(
+        self, job_key: str, scheduled_for: datetime, next_run_at: datetime,
+    ) -> bool:
+        """Admit one slot and atomically reserve its fallback successor."""
 
     def complete(self, job_key: str, scheduled_for: datetime, next_run_at: datetime) -> None:
         """Record a successful slot after all durable publications are acknowledged."""
@@ -191,6 +202,9 @@ class SchedulerEngine:
         runtime: ScannerRuntime,
         publisher: DurableResultPublisher,
         planner: Optional[TriggerPlanner] = None,
+        clock: Callable[[], datetime] = _utc_now,
+        terminal_retry_delay_seconds: float = 5.0,
+        sleeper: Callable[[float], None] = time.sleep,
     ) -> None:
         self._definitions = tuple(definitions)
         self._definitions_by_key = {definition.id: definition for definition in self._definitions}
@@ -200,6 +214,11 @@ class SchedulerEngine:
         self._runtime = runtime
         self._publisher = publisher
         self._planner = planner or TriggerPlanner()
+        self._clock = clock
+        self._terminal_retry_delay_seconds = float(terminal_retry_delay_seconds)
+        if self._terminal_retry_delay_seconds <= 0:
+            raise ValueError("terminal_retry_delay_seconds must be positive")
+        self._sleeper = sleeper
         self._lock = RLock()
         self._stopped = False
         self._active_slots: set[tuple[str, datetime]] = set()
@@ -238,6 +257,13 @@ class SchedulerEngine:
             self._stopped = True
         self._runtime.stop()
 
+    def resume(self) -> None:
+        """Resume admission after a planned restart exceeded its drain budget."""
+
+        self._runtime.resume()
+        with self._lock:
+            self._stopped = False
+
     def tick(self, now: datetime) -> tuple[ExecutionOutcome, ...]:
         """Fetch authoritative state, run each due slot once, and report its terminal state."""
 
@@ -250,43 +276,55 @@ class SchedulerEngine:
             if not self._claim_local(slot):
                 continue
             try:
-                if not self.accepting or not self._control_plane.start(slot.definition.id, slot.scheduled_for):
+                started_at = self._now()
+                reserved_next_run_at = self._planner.reserve_next_due(
+                    slot.definition,
+                    slot_due_at=slot.scheduled_for,
+                    started_at=started_at,
+                )
+                if not self.accepting or not self._control_plane.start(
+                    slot.definition.id, slot.scheduled_for, reserved_next_run_at,
+                ):
                     outcomes.append(ExecutionOutcome(slot.definition.id, slot.scheduled_for, ExecutionDisposition.START_REJECTED))
                     continue
-                outcomes.append(self._run_admitted(slot, now))
+                outcomes.append(self._run_admitted(slot))
             finally:
                 self._release_local(slot)
         return tuple(outcomes)
 
-    def _run_admitted(self, slot: ScheduledSlot, now: datetime) -> ExecutionOutcome:
-        try:
-            result = self._runtime.execute(slot.definition, slot.scheduled_for)
-        except ScannerStopped:
-            # The slot is already RUNNING in the control plane.  Do not falsely
-            # complete it; startup recovery will return it to IDLE for replay.
-            return ExecutionOutcome(slot.definition.id, slot.scheduled_for, ExecutionDisposition.START_REJECTED)
+    def _run_admitted(self, slot: ScheduledSlot) -> ExecutionOutcome:
+        result = self._runtime.execute_admitted(
+            slot.definition, slot.scheduled_for)
+
+        finished_at = self._now()
 
         if result.status is JobResultStatus.SUCCEEDED:
             try:
                 next_run_at = self._planner.next_due(
                     slot.definition,
                     slot_due_at=slot.scheduled_for,
-                    completed_at=now,
+                    completed_at=finished_at,
                     result=result,
                 )
             except Exception as exc:
-                return self._report_failure(slot, now, _permanent_failure_summary(exc))
+                return self._report_failure(
+                    slot, finished_at, _permanent_failure_summary(exc))
             try:
                 self._publisher.publish(slot.definition, result, slot.scheduled_for)
             except Exception as exc:
                 # A Task/event acknowledgement is unknown.  Do not complete the
                 # slot or advance its business cursor; replay through the stable
                 # identity on the retry path instead.
-                return self._report_failure(slot, now, _retryable_failure_summary(exc))
-            self._control_plane.complete(slot.definition.id, slot.scheduled_for, next_run_at)
+                return self._report_failure(
+                    slot, finished_at, _retryable_failure_summary(exc))
+            self._commit_terminal(
+                slot,
+                lambda: self._control_plane.complete(
+                    slot.definition.id, slot.scheduled_for, next_run_at),
+            )
             return ExecutionOutcome(slot.definition.id, slot.scheduled_for, ExecutionDisposition.COMPLETED)
 
-        return self._report_failure(slot, now, result)
+        return self._report_failure(slot, finished_at, result)
 
     def _report_failure(
         self,
@@ -296,15 +334,41 @@ class SchedulerEngine:
     ) -> ExecutionOutcome:
         retryable = result.status is JobResultStatus.RETRYABLE_FAILURE
         retry_at = now + timedelta(seconds=slot.definition.retry_delay_seconds) if retryable else None
-        self._control_plane.fail(
-            slot.definition.id,
-            slot.scheduled_for,
-            retryable=retryable,
-            next_run_at=retry_at,
-            error=result.error or "scheduled job failed without an error summary",
+        self._commit_terminal(
+            slot,
+            lambda: self._control_plane.fail(
+                slot.definition.id,
+                slot.scheduled_for,
+                retryable=retryable,
+                next_run_at=retry_at,
+                error=result.error or "scheduled job failed without an error summary",
+            ),
         )
         disposition = ExecutionDisposition.RETRYABLE_FAILURE if retryable else ExecutionDisposition.PERMANENT_FAILURE
         return ExecutionOutcome(slot.definition.id, slot.scheduled_for, disposition)
+
+    def _commit_terminal(self, slot: ScheduledSlot, operation: Callable[[], None]) -> None:
+        """Retry an ambiguous terminal transport failure without re-running the job."""
+
+        while True:
+            try:
+                operation()
+                return
+            except Exception as exc:
+                if not getattr(exc, "terminal_retryable", False):
+                    raise
+                _LOG.warning(
+                    "scheduled job terminal update will retry job=%s slot=%s error=%s",
+                    slot.definition.id,
+                    slot.scheduled_for.isoformat(),
+                    type(exc).__name__,
+                )
+                self._sleeper(self._terminal_retry_delay_seconds)
+
+    def _now(self) -> datetime:
+        value = self._clock()
+        _require_aware(value, "clock result")
+        return value
 
     def _claim_local(self, slot: ScheduledSlot) -> bool:
         key = (slot.definition.id, slot.scheduled_for)

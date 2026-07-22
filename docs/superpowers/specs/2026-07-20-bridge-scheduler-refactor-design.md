@@ -239,10 +239,11 @@ job 模块 import 时不得启动线程、访问网络、sleep 或写文件。`v
 
 所有时间使用带时区 datetime；持久化统一使用 UTC，daily 的自然日固定为 `Asia/Shanghai`。
 
-- interval：使用绝对计划序列。当前 slot 成功后，选择第一个严格晚于 `completed_at` 的计划时刻；不从完成时间重新计时。
-- daily：当天到点后可补跑，直到该自然日 slot 成功；不得保留“仅配置小时内执行”的现状限制，也不追补更早自然日。
-- adaptive：成功结果可给出 `next_due_at`；缺失时使用 default delay。超出 min/max 边界是协议错误，禁止静默 clamp。
-- retryable failure：保留当前 slot，按 `retry_delay_seconds` 重试。
+- 到期 admission：在 runner 启动前原子写入一个 fallback `next_run_at`，避免 runner 已启动但终态未回写时丢失后续计划。
+- interval：使用绝对计划序列。admission 时预留第一个严格晚于 `started_at` 的计划时刻；成功后按真实 `completed_at` 再次修正，避免长任务形成无意义积压。
+- daily：admission 时预留下一自然日同一时刻；当天到点后允许补跑，不追补更早自然日。
+- adaptive：admission 时先写 `started_at + default_delay`；成功结果可用 `next_due_at` 修正。超出 min/max 边界是协议错误，禁止静默 clamp。
+- retryable failure：使用真实失败时间加 `retry_delay_seconds` 覆盖 fallback 时间，形成新的重试计划。
 - permanent failure：保留当前 slot，清空 retry due，等待更高 revision 或人工恢复。
 
 slot key 固定由以下三元组生成：
@@ -277,7 +278,7 @@ revision 升级不得复用旧 slot identity。旧分支的 `TriggerPlanner` 可
 | `job_name` | `VARCHAR(256)` | 看板展示名称 |
 | `definition` | `LONGTEXT` | definition JSON：revision、description、schedule、runner、timeout、retry 和 replay policy |
 | `status` | `VARCHAR(32)` | `IDLE`、`RUNNING`、`ERROR`、`DISABLED`；是否正在运行直接看该字段 |
-| `next_run_at` | `DATETIME(3)` | 当前待执行的计划时间；运行中保留本次计划时间，成功后更新为下一次时间 |
+| `next_run_at` | `DATETIME(3)` | 下一次计划时间；当前 job admission 时提前推进，成功后可按真实完成时间修正 |
 | `last_started_at` | `DATETIME(3)` | 最近一次开始执行时间 |
 | `last_finished_at` | `DATETIME(3)` | 最近一次成功或失败结束时间 |
 | `last_error` | `VARCHAR(2048)` | 最近错误摘要，不保存凭证或完整业务载荷 |
@@ -328,12 +329,12 @@ CREATE TABLE jarvis_scheduled_job (
 | 场景 | `status` | `next_run_at` | 时间与错误字段 |
 | --- | --- | --- | --- |
 | 首次注册 | `IDLE` | 首次计划时间 | 三个最近结果字段均为空 |
-| 到期开始 | `RUNNING` | 保留本次计划时间 | `last_started_at=now`，清空 `last_error` |
-| 成功完成 | `IDLE` | 下次计划时间 | `last_finished_at=now`，清空 `last_error` |
+| 到期开始 | `RUNNING` | admission 时预留的下一次时间 | `last_started_at=now`，清空 `last_error` |
+| 成功完成 | `IDLE` | 保留 fallback，或按真实完成时间修正 | `last_finished_at=now`，清空 `last_error` |
 | 可重试失败 | `ERROR` | 重试时间 | `last_finished_at=now`，记录错误摘要 |
-| 重试开始 | `RUNNING` | 保留重试计划时间 | `last_started_at=now`，清空 `last_error` |
+| 重试开始 | `RUNNING` | admission 时再次预留下一个 fallback | `last_started_at=now`，清空 `last_error` |
 | 永久失败 | `ERROR` | `NULL` | `last_finished_at=now`，记录错误摘要 |
-| 异常中断恢复 | `IDLE` | 保留原计划时间 | 原 `RUNNING` 视为未完成并从 slot 起点立即重跑 |
+| 异常中断恢复 | `IDLE` | 保留 admission 时已预留的下一次时间 | 不恢复 Python 栈；到预留时间后重新执行 |
 | 禁用 | `DISABLED` | `NULL` | 保留最近一次运行结果 |
 | 重新启用 | `IDLE` | 重新计算计划时间 | 保留最近一次运行结果 |
 
@@ -395,7 +396,7 @@ fail-closed。这样只需编辑一个变量即可逐项迁移，且路由归属
 ### 9.4 Probe
 
 - `daily.probe` 仍为 Ephemeral；计划内 restart 必须等待本轮完成，异常崩溃可以中断本轮。
-- 未成功的 daily slot 不得标记完成，新 Scheduler 在当天窗口内补跑相同 slot。
+- 未成功的 daily round 不得写入日期 marker，新 Scheduler 按 retry delay 在当天继续执行同一 round。
 - Probe 不使用 PersistenceExecutor，不引入 `probe_finding` Task。
 
 ## 10. 安全 restart
@@ -427,12 +428,13 @@ sequenceDiagram
     alt 完整链在 drain deadline 前完成
         Scan-->>Old: JobResult
         Old->>CP: Task/Event durable ACK
-        Old->>CP: update status + next_run_at
+        Old->>CP: update terminal status; refine next_run_at when needed
         Old->>CP: Scheduler Worker OFFLINE
         CLI->>New: start(restart_id)
         New-->>CLI: READY(restart_id)
     else drain deadline 到达
-        Note over Old: 保持 DRAINING，继续等待在途 job
+        Old->>CP: restore Scheduler Worker ACTIVE
+        Note over Old: 取消本次 restart，恢复调度
         Note over CLI,New: restart 失败；不得启动新进程
     end
 ```
@@ -443,8 +445,8 @@ sequenceDiagram
 2. 在 admission lock 内关闭 trigger gate，不再启动新 Scanner。
 3. Worker 标记为 `DRAINING` 后不得 admission 新 slot，但相同 `process_uuid` 的在途 job 可以继续
    `complete/fail`，完成“结果校验 → Task/Event durable ACK → 更新 status/next_run_at”完整提交链。
-4. drain deadline 到达时不杀 Scanner、不标记 OFFLINE、不启动新进程；restart 返回失败，旧进程
-   保持 `DRAINING` 并继续等待，运维可延长等待或显式选择异常中断处置。
+4. drain deadline 默认 600 秒，可由 `JARVIS_SCHEDULER_DRAIN_TIMEOUT_SECONDS` 调整。到期时不杀
+   Scanner、不标记 OFFLINE、不启动新进程；restart 返回失败，旧进程恢复 ACTIVE 并继续调度。
 5. 所有 active Scanner 完成后，旧 Scheduler 标记 OFFLINE 并退出。
 6. 旧进程退出后才启动新 Scheduler；只有收到相同 restart ID 的 READY，restart 才返回成功。
 
@@ -473,17 +475,17 @@ Scheduler composition 在首次 job 注册前必须完成以下顺序：
 新实例完成 job `register` 后、首次 `list/tick` 前，composition 必须显式调用一次控制面
 `POST /api/jarvis/v1/scheduled-jobs/recover-interrupted`。该调用返回严格的
 `{ "recovered": number, "jobs": [...] }`：`recovered` 必须与 `jobs` 数量相等，且每个
-返回 job 均为保留原 `next_run_at` 的 `IDLE`。HTTP、JSON 或响应契约不确定时 fail-closed，
+返回 job 均为保留 admission 时已预留 `next_run_at` 的 `IDLE`。HTTP、JSON 或响应契约不确定时 fail-closed，
 不得进入普通 tick。`SchedulerEngine.tick()` 不自动调用恢复，避免未完成启动协调的轮询意外
 改写控制面 `RUNNING` 状态。
 
 计划内 restart 不产生需要恢复的半途 job。只有进程崩溃、机器重启或人工强制终止等异常中断，
-才把遗留 `RUNNING` 归一为 `IDLE`，保留原 `next_run_at` 并从相同 slot 起点幂等重跑。控制面
+才把遗留 `RUNNING` 归一为 `IDLE`，保留 admission 时已写入的后续计划。控制面
 不保存 Python 调用栈、局部变量或外部 API 的半完成状态，因此首版本不承诺从任意代码位置继续。
 
 后续断点续跑只采用 job-owned checkpoint：每个 job 自己定义持久化阶段、cursor、升级策略和
-恢复入口，在完成 checkpoint 的 durable ACK 后推进；Scheduler 只把同一 `scheduled_for` 交还
-runner。未声明 checkpoint 能力的 job 永远从 slot 起点重跑，不向 `jarvis_scheduled_job` 增加
+恢复入口，在完成 checkpoint 的 durable ACK 后推进。未声明 checkpoint 能力的 job 不从任意
+代码位置继续，不向 `jarvis_scheduled_job` 增加
 通用 checkpoint 字段。
 
 服务端等价状态归一：
@@ -495,7 +497,7 @@ SET status = 'IDLE',
 WHERE status = 'RUNNING';
 ```
 
-该更新不修改 `next_run_at`，原计划时间已经到期，因此会被立即重新执行。job 表保持当前
+该更新不修改 `next_run_at`；该值已在 admission 时推进，job 到预留时间后再次执行。job 表保持当前
 字段；Worker 身份由每次请求的 `worker_key + process_uuid` 校验，不写入 job 行。
 
 ## 11. Board 与可观测性
@@ -507,7 +509,7 @@ WHERE status = 'RUNNING';
 | job | `job_key`、`job_name`、description、revision |
 | schedule | interval/daily/adaptive 摘要与时区 |
 | current | `status`；`RUNNING` 即当前正在执行，`DISABLED` 即已禁用 |
-| next | `next_run_at`；永久失败或禁用时明确显示原因 |
+| next | `next_run_at`；RUNNING 时也展示已预留的后续计划；永久失败或禁用时明确显示原因 |
 | latest | `last_started_at`、`last_finished_at`、duration、`last_error` |
 
 Board 只读控制面当前态，不通过轮询 Bridge 内存拼装，也不触发 job。Scheduled Jobs 区域之外，
@@ -557,9 +559,9 @@ bridge/
 | B0 | 已完成 | 组件 10→6、Aone 并集探测、控制面 wait、PR/每日本地持久状态 |
 | U1 | 已提交，待合入 | Bridge Job definition、显式 `JOBS` registry、`TriggerPlanner` 和契约测试已在 Bridge MR `28675904`。 |
 | U2 | 已提交，待预发验证 | `jarvis_scheduled_job` 已创建；AutomationAgent Code Review `28719590` 包含注册、状态 API、恢复和 Board Scheduled Jobs 展示。该 Code Review 尚未完成 Java 21 预发验证。 |
-| U3 | 部分完成（控制面骨架） | Bridge MR `28675904` 已包含 import-safe `SchedulerEngine`、`ScannerRuntime`、slot admission、失败上报和本进程 stop admission。未接 legacy runner、数据面 publisher 或 Bridge composition。 |
-| C4 | 已提交，待预发联调 | Bridge MR `28675904` 已包含标准库 HTTP adapter：register/list/start/complete/fail/recover-interrupted、UTC 时间编解码、严格 `admitted` slot 准入及异常 fail-closed。AutomationAgent Code Review `28719590` 的 `start` 响应已包含 `{admitted, job}`。两端尚未完成预发联调。 |
-| C5 | 已提交，待预发联调 | Bridge 已实现固定 `bridge-scheduler`/`AgenticTools-Macmini.local` composition、本机 hostname/FQDN gate、`boot_id + process_uuid` 注册确认、`dispatch.pull=false`、统一 `JARVIS_SCHEDULER_NEW_JOBS` 路由、READY/OFFLINE 和计划内 drain；AutomationAgent 已提交固定 host、ACTIVE process、DRAINING 在途终态提交和 API 的服务端校验及 Board Worker 展示。两端复用同一控制面 token，并分别校验允许的 hostId；Scheduler 不进入普通 Task queue-pull Worker 集合。该阶段不停止或重启 Task Worker。 |
+| U3 | 已提交，待预发联调 | Bridge MR `28675904` 已包含 import-safe `SchedulerEngine`、`ScannerRuntime`、slot admission、真实结束时间计算、终态幂等重试和 `daily.probe` legacy adapter；只有 `daily.probe` 可切到新链路。 |
+| C4 | 已提交，待预发联调 | Bridge MR `28675904` 已包含标准库 HTTP adapter：register/list/start/complete/fail/recover-interrupted、UTC 时间编解码、`start` 原子预留下次时间及异常 fail-closed。AutomationAgent Code Review `28719590` 的 `start` 接收 `{scheduledFor,nextRunAt}` 并返回 `{admitted,job}`。两端尚未完成预发联调。 |
+| C5 | 已提交，待预发联调 | Bridge 已实现固定 `bridge-scheduler`/`AgenticTools-Macmini.local` composition、本机 hostname/FQDN gate、`boot_id + process_uuid` 注册确认、`dispatch.pull=false`、统一 `JARVIS_SCHEDULER_NEW_JOBS` 路由、READY/OFFLINE 和有界计划内 drain；超时取消 restart 并恢复 ACTIVE。AutomationAgent 已提交固定 host、ACTIVE process、DRAINING 在途终态提交和 API 的服务端校验及 Board Worker 展示。两端复用同一控制面 token，并分别校验允许的 hostId；Scheduler 不进入普通 Task queue-pull Worker 集合。该阶段不停止或重启 Task Worker。 |
 | C6 | 未开始 | 控制面预发验证：固定 Worker 拒绝非远端身份、重复启动拒绝、slot admission、interrupted recovery、Board 展示和控制面不可用 fail-closed。 |
 | D1 | 本轮不实施 | Daily/PR/Aone/Probe 的业务状态和 runner 旁路迁移脚本：导出、校验、回放、对账与原子切换，单独评审 |
 
@@ -583,7 +585,7 @@ C4–C6 只完成控制面。D1 及独立 Task Worker/数据面验收前，禁�
 - slot identity 必须包含 revision；失败结果不得生成下一 slot。
 - 同 job 禁止 overlap，不同 job 允许在容量内并发。
 - Task/Event 未明确 durable ACK 时，runner 的业务 cursor 不推进。
-- 控制面不可用必须 fail-closed；遗留 `RUNNING` 在启动时恢复为可立即重跑的 `IDLE`。
+- 控制面不可用必须 fail-closed；遗留 `RUNNING` 在启动时恢复为保留已预留后续计划的 `IDLE`。
 - 只有当前 ACTIVE 的 `bridge-scheduler` Worker 的 `worker_key + process_uuid` 可调用
   scheduled-job 状态 API；非远端身份、过期进程或重复启动必须被控制面拒绝。
 
@@ -593,7 +595,7 @@ C4–C6 只完成控制面。D1 及独立 Task Worker/数据面验收前，禁�
 - Aone Reply restart 后从控制面恢复全部等待与 cursor。
 - Daily marker 导入后，当天不重复；错过整点可在当天补跑。
 - PR registry/cursor 导入后不漏 PR；事件 ledger 重放不重复发布。
-- Probe 中断后不标记成功，当天相同 slot 可再次运行。
+- Bridge 正常运行时 Probe 异常不标记成功，并按真实失败时间进入重试计划。
 - 每个迁移 job 都证明旧 loop 与新 job 不会同时触发。
 
 ### 14.3 后续跨数据面 restart 验收（D1 之后，非本轮）
@@ -609,7 +611,7 @@ C4–C6 只完成控制面。D1 及独立 Task Worker/数据面验收前，禁�
 
 通过标准：
 
-- 未完成 Scanner 对应的 `RUNNING` 被恢复为 `IDLE`，保留原计划时间并立即重跑。
+- 未完成 Scanner 对应的 `RUNNING` 被恢复为 `IDLE`，保留 admission 时已预留的后续计划。
 - Aone/PR 更新没有被 runner 的业务 cursor 越过。
 - 重复 Task/事件由稳定 identity 收敛。
 - 旧 Scheduler 完全退出后新实例才进入 READY，不存在两个 Scheduler 同时写 job 状态。
@@ -642,11 +644,12 @@ C4–C6 只完成控制面。D1 及独立 Task Worker/数据面验收前，禁�
 
 1. 所有生产定时职责都来自唯一 `JOBS` 注册表，不存在隐藏 sub-tick 或自建永久调度线程。
 2. 7 个 job 的 schedule、状态、next due 和最近结果可在 Board 查询。
-3. `jarvis_scheduled_job` 只保存注册定义和当前状态；遗留 `RUNNING` 可在启动时恢复为立即重跑。
+3. `jarvis_scheduled_job` 只保存注册定义和当前状态；admission 先推进后续计划，遗留 `RUNNING` 可在启动时恢复为 `IDLE`。
 4. Aone/PR discovery 使用 at-least-once 与稳定 Task identity；事件使用稳定 ledger/outbox key。
 5. 任一未明确 durable ACK 的 Task/事件都不会被业务 cursor 越过。
-6. 计划内 Scheduler restart 等待 Scanner 完成；异常中断时未完成 job 保留原计划时间，并从
-   slot 起点幂等重跑。后续只有声明 job-owned checkpoint 的 job 才允许从持久化阶段继续。
+6. 计划内 Scheduler restart 在有界时间内等待 Scanner 完成，超时取消 restart 并恢复旧进程；
+   异常中断时未完成 job 保留 admission 时已预留的后续计划。后续只有声明 job-owned checkpoint
+   的 job 才允许从持久化阶段继续。
 7. 独立 Task Worker 不被 Bridge restart 操作，活动 Session/SubAgent 实测不中断。
 8. 首版只有一个活动 Scheduler；旧进程未退出或新实例未 READY 时 restart 不成功。
 9. Daily/PR 各自业务状态完成固化和双读对账后才停止读取旧文件；事件 ledger 在等价 outbox 上线前不删除。

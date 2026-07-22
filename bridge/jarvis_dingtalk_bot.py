@@ -7389,7 +7389,10 @@ class DailyScheduler:
             log.info("DailyScheduler: %s already marked for %s; cutover skip",
                      scheduler_key, local_scheduled.date().isoformat())
             return True
-        result = job.run(when=local_scheduled)
+        scheduler_run = getattr(job, "run_for_scheduler", None)
+        result = (scheduler_run(when=local_scheduled)
+                  if callable(scheduler_run)
+                  else job.run(when=local_scheduled))
         if result is not False:
             self._mark_run(job, now=local_scheduled)
         return result
@@ -7470,6 +7473,16 @@ class _ProbeJob:
         return "probe-%s" % (when or datetime.now()).date().isoformat()
 
     def run(self, when=None):
+        """Preserve the legacy fire-and-forget daily-job contract."""
+
+        return self._run(when=when, wait_for_completion=False)
+
+    def run_for_scheduler(self, when=None):
+        """Return only after a SchedulerEngine-owned probe actually finishes."""
+
+        return self._run(when=when, wait_for_completion=True)
+
+    def _run(self, when=None, *, wait_for_completion):
         # 返回契约: False = queue_full(本日不 mark, 下个 tick 重试); True/其它 = 视为成功。
         # no-pool / 已去重 / 已 active 都视为已到位, mark 掉本日。
         if self.handler is None:
@@ -7494,15 +7507,31 @@ class _ProbeJob:
             target=tgt,
             targetType=ttype,
         )
+        completion = threading.Event() if wait_for_completion else None
+        execution = {}
 
         def local_submit():
             if self.pool is None:
                 return False, "ephemeral_executor_unavailable"
             sid = str(uuid.uuid4())
             # tf-probe 是 Terraform 线探测 → 走 terraform 车道（ideamo/ideamore）。
-            work = (lambda: self.handler.dispatch_item(
-                rid, prompt, sid, False, notify, tgt, ttype,
-                kind="probe", terraform=True))
+            if completion is None:
+                work = (lambda: self.handler.dispatch_item(
+                    rid, prompt, sid, False, notify, tgt, ttype,
+                    kind="probe", terraform=True))
+            else:
+                def work():
+                    try:
+                        result = self.handler.dispatch_item(
+                            rid, prompt, sid, False, notify, tgt, ttype,
+                            kind="probe", terraform=True)
+                        execution["result"] = result
+                        return result
+                    except Exception as exc:
+                        execution["error"] = exc
+                        raise
+                    finally:
+                        completion.set()
             return self.pool.submit(rid, work, notify=notify, kind="probe")
 
         route = self.execution_router.route(envelope)
@@ -7510,6 +7539,12 @@ class _ProbeJob:
             envelope, local_submit=local_submit)
         if ok:
             log.info("_ProbeJob: round %s accepted (durable=%s)", rid, route.needs_recovery)
+            if completion is not None and not route.needs_recovery:
+                completion.wait()
+                if execution.get("error") is not None:
+                    return False
+                if execution.get("result") in ("error", "cancelled"):
+                    return False
             return True
         log.info("_ProbeJob: round %s not submitted (%s)", rid, reason)
         # A Task rejection must not mark today's round: the next scheduler tick
@@ -8370,11 +8405,13 @@ class JarvisHandler(AsyncChatbotHandler):
         if recovery is not None:
             recovery.start()
 
-    def stop_persistence_executor(self, *, drain=False, timeout=None):
+    def stop_persistence_executor(
+            self, *, drain=False, timeout=None, scheduler_timeout=None):
         """Stop the persistent Task executor once."""
         scheduler = getattr(self, "scheduler_composition", None)
         if scheduler is not None:
-            scheduler_drained = scheduler.stop(timeout=timeout)
+            scheduler_drained = scheduler.stop(
+                timeout=(timeout if scheduler_timeout is None else scheduler_timeout))
             if not scheduler_drained:
                 # A planned Scheduler shutdown is fail-closed: keep this
                 # process alive and do not tear down shared executors while an
@@ -9683,6 +9720,33 @@ def _release_claim(iid, project, terraform=False):
         log.warning("_release_claim #%s failed: %s", iid, e)
 
 
+def _stop_before_final_teardown(handler, *, context, timeout):
+    """Do not tear down shared executors while a new-Scheduler job is active."""
+
+    scheduler = getattr(handler, "scheduler_composition", None)
+    scheduler_timeout = timeout
+    if scheduler is not None and scheduler.enabled:
+        scheduler_timeout = float(os.environ.get(
+            "JARVIS_SCHEDULER_DRAIN_TIMEOUT_SECONDS",
+            os.environ.get(
+                "JARVIS_BRIDGE_STOP_WAIT",
+                os.environ.get("JARVIS_STOP_GRACE", "600"))))
+    while True:
+        try:
+            stopped = handler.stop_persistence_executor(
+                drain=True, timeout=timeout,
+                scheduler_timeout=scheduler_timeout)
+        except Exception as exc:  # noqa: BLE001
+            log.exception("%s PersistenceExecutor stop failed: %s", context, exc)
+            stopped = False
+        if stopped or scheduler is None or not scheduler.running:
+            return stopped
+        log.error(
+            "%s Scheduler still owns an admitted job; refusing final teardown "
+            "and retrying after 5 seconds", context)
+        time.sleep(5)
+
+
 def _run_no_dingtalk():
     """无钉钉降级模式启动(JARVIS_NO_DINGTALK=1 点火路径): 不建 DingTalk client/stream,
     不初始化 TataPool; 只起 PersistenceExecutor + AoneScheduler(扫单派发+stale 子任务) +
@@ -9742,8 +9806,9 @@ def _run_no_dingtalk():
     except KeyboardInterrupt:  # fallback if signal registration was pre-empted
         pass
     finally:
-        handler.stop_persistence_executor(
-            drain=True,
+        _stop_before_final_teardown(
+            handler,
+            context="[NO-DINGTALK]",
             timeout=float(os.environ.get("JARVIS_WORKER_DRAIN_TIMEOUT", "30")))
         handler.ephemeral_executor.shutdown(wait=False, cancel_futures=True)
     return 0
@@ -9825,8 +9890,9 @@ def main():
     try:
         client.start_forever()
     finally:
-        handler.stop_persistence_executor(
-            drain=True,
+        _stop_before_final_teardown(
+            handler,
+            context="DingTalk",
             timeout=float(os.environ.get("JARVIS_WORKER_DRAIN_TIMEOUT", "30")))
         handler.ephemeral_executor.shutdown(wait=False, cancel_futures=True)
         if handler.pool is not None:

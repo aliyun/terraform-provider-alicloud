@@ -96,12 +96,15 @@ class HttpScheduledJobControlPlaneTests(unittest.TestCase):
         client = self.client(opener)
 
         states = client.list_jobs()
-        admitted = client.start("aone.scan", at(9))
+        admitted = client.start("aone.scan", at(9), at(10))
 
         self.assertEqual(states[0].next_run_at, at(9))
         self.assertFalse(admitted)
         request, _ = opener.calls[1]
-        self.assertEqual(payload(request), {"scheduledFor": "2026-07-21T09:00:00.000+00:00"})
+        self.assertEqual(payload(request), {
+            "scheduledFor": "2026-07-21T09:00:00.000+00:00",
+            "nextRunAt": "2026-07-21T10:00:00.000+00:00",
+        })
         self.assertTrue(request.full_url.endswith("/aone.scan/start"))
 
     def test_recover_interrupted_posts_without_body_and_strictly_parses_response(self):
@@ -175,7 +178,8 @@ class HttpScheduledJobControlPlaneTests(unittest.TestCase):
         for response in ({"job": state(status="RUNNING")}, {"admitted": "true", "job": state(status="RUNNING")}):
             with self.subTest(response=response):
                 with self.assertRaises(ScheduledJobControlPlaneProtocolError):
-                    self.client(RecordingOpener([FakeResponse(response)])).start("aone.scan", at(9))
+                    self.client(RecordingOpener([FakeResponse(response)])).start(
+                        "aone.scan", at(9), at(10))
 
     def test_constructor_reads_existing_control_plane_environment_only_when_constructed(self):
         client = HttpScheduledJobControlPlane(environ={

@@ -53,8 +53,9 @@ class ScannerRuntime:
     """Run one bounded scanner at a time and map adapter failures to ``JobResult``.
 
     ``stop`` is deliberately admission-only in this first runtime slice: it
-    prevents *new* scanners but lets an already admitted invocation return its
-    result, so ``SchedulerEngine`` can make the terminal control-plane update.
+    prevents *new* scanners while ``execute_admitted`` lets a slot already
+    committed by the control plane return its result, so ``SchedulerEngine``
+    can make the terminal update.
     U7 adds process-group cancellation and deadline handling around this seam.
     """
 
@@ -76,6 +77,12 @@ class ScannerRuntime:
         with self._lock:
             self._stopped = True
 
+    def resume(self) -> None:
+        """Re-open admission when a bounded planned restart is cancelled."""
+
+        with self._lock:
+            self._stopped = False
+
     def execute(self, definition: ScheduledJobDefinition, scheduled_for: datetime) -> JobResult:
         """Execute one slot without publishing work or mutating scheduler state."""
 
@@ -83,6 +90,19 @@ class ScannerRuntime:
         with self._lock:
             if self._stopped:
                 raise ScannerStopped(f"scheduler is stopping; refusing {invocation.job_key}")
+        return self._execute_runner(definition, invocation)
+
+    def execute_admitted(
+        self, definition: ScheduledJobDefinition, scheduled_for: datetime,
+    ) -> JobResult:
+        """Finish a control-plane-admitted slot even if drain starts concurrently."""
+
+        invocation = ScannerInvocation(definition.id, scheduled_for)
+        return self._execute_runner(definition, invocation)
+
+    def _execute_runner(
+        self, definition: ScheduledJobDefinition, invocation: ScannerInvocation,
+    ) -> JobResult:
         try:
             result = self._runner.run(definition, invocation.scheduled_for)
             if not isinstance(result, JobResult):

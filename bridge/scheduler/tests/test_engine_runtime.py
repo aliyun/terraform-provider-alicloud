@@ -55,8 +55,8 @@ class FakeControlPlane:
         )
         return tuple(state for state in self.states if state.status is ScheduledJobStatus.IDLE)
 
-    def start(self, job_key, scheduled_for):
-        self.starts.append((job_key, scheduled_for))
+    def start(self, job_key, scheduled_for, next_run_at):
+        self.starts.append((job_key, scheduled_for, next_run_at))
         return self.start_result
 
     def complete(self, job_key, scheduled_for, next_run_at):
@@ -117,12 +117,14 @@ class SchedulerEngineTests(unittest.TestCase):
         control = FakeControlPlane((ScheduledJobState("aone.scan", ScheduledJobStatus.IDLE, due),), start_result=False)
         runner = FakeRunner()
         publisher = FakePublisher()
-        engine = SchedulerEngine((definition(),), control_plane=control, runtime=ScannerRuntime(runner), publisher=publisher)
+        engine = SchedulerEngine(
+            (definition(),), control_plane=control, runtime=ScannerRuntime(runner),
+            publisher=publisher, clock=lambda: at(9))
 
         outcomes = engine.tick(at(9))
 
         self.assertEqual([item.disposition for item in outcomes], [ExecutionDisposition.START_REJECTED])
-        self.assertEqual(control.starts, [("aone.scan", due)])
+        self.assertEqual(control.starts, [("aone.scan", due, at(9, 1))])
         self.assertEqual(runner.calls, [])
         self.assertEqual(publisher.calls, [])
         self.assertEqual(control.completions, [])
@@ -132,7 +134,9 @@ class SchedulerEngineTests(unittest.TestCase):
         due = at(8)
         control = FakeControlPlane((ScheduledJobState("aone.scan", ScheduledJobStatus.IDLE, due),))
         runner = FakeRunner(error=RetryableJobError("temporary network issue"))
-        engine = SchedulerEngine((definition(),), control_plane=control, runtime=ScannerRuntime(runner), publisher=FakePublisher())
+        engine = SchedulerEngine(
+            (definition(),), control_plane=control, runtime=ScannerRuntime(runner),
+            publisher=FakePublisher(), clock=lambda: at(9))
 
         outcomes = engine.tick(at(9))
 
@@ -148,19 +152,25 @@ class SchedulerEngineTests(unittest.TestCase):
         control = FakeControlPlane((ScheduledJobState("aone.scan", ScheduledJobStatus.IDLE, due),))
         runner = FakeRunner(JobResult(JobResultStatus.SUCCEEDED))
         publisher = FakePublisher()
-        engine = SchedulerEngine((definition(),), control_plane=control, runtime=ScannerRuntime(runner), publisher=publisher)
+        times = iter((at(9, 1), at(9, 3)))
+        engine = SchedulerEngine(
+            (definition(),), control_plane=control, runtime=ScannerRuntime(runner),
+            publisher=publisher, clock=lambda: next(times))
 
         outcomes = engine.tick(at(9, 1))
 
         self.assertEqual([item.disposition for item in outcomes], [ExecutionDisposition.COMPLETED])
         self.assertEqual(len(publisher.calls), 1)
-        self.assertEqual(control.completions, [("aone.scan", due, at(9, 2))])
+        self.assertEqual(control.starts, [("aone.scan", due, at(9, 2))])
+        self.assertEqual(control.completions, [("aone.scan", due, at(9, 4))])
 
     def test_stop_closes_admission_and_does_not_start_a_new_scanner(self):
         due = at(8)
         control = FakeControlPlane((ScheduledJobState("aone.scan", ScheduledJobStatus.IDLE, due),))
         runner = FakeRunner()
-        engine = SchedulerEngine((definition(),), control_plane=control, runtime=ScannerRuntime(runner), publisher=FakePublisher())
+        engine = SchedulerEngine(
+            (definition(),), control_plane=control, runtime=ScannerRuntime(runner),
+            publisher=FakePublisher(), clock=lambda: at(9))
 
         engine.stop()
 
@@ -169,11 +179,14 @@ class SchedulerEngineTests(unittest.TestCase):
         self.assertEqual(control.starts, [])
         self.assertEqual(runner.calls, [])
 
-    def test_startup_recovery_is_explicit_and_makes_the_original_due_slot_plannable(self):
-        due = at(8)
-        control = FakeControlPlane((ScheduledJobState("aone.scan", ScheduledJobStatus.RUNNING, due),))
+    def test_startup_recovery_is_explicit_and_preserves_the_reserved_successor(self):
+        reserved = at(10)
+        control = FakeControlPlane((
+            ScheduledJobState("aone.scan", ScheduledJobStatus.RUNNING, reserved),))
         runner = FakeRunner()
-        engine = SchedulerEngine((definition(),), control_plane=control, runtime=ScannerRuntime(runner), publisher=FakePublisher())
+        engine = SchedulerEngine(
+            (definition(),), control_plane=control, runtime=ScannerRuntime(runner),
+            publisher=FakePublisher(), clock=lambda: at(9))
 
         self.assertEqual(engine.register(at(9))[0].status, ScheduledJobStatus.RUNNING)
         self.assertEqual(plan_due_slots((definition(),), control.list_jobs(), now=at(9)), ())
@@ -185,14 +198,12 @@ class SchedulerEngineTests(unittest.TestCase):
         outcomes = engine.tick(at(9))
 
         self.assertEqual([(state.job_key, state.status, state.next_run_at) for state in recovered], [
-            ("aone.scan", ScheduledJobStatus.IDLE, due),
+            ("aone.scan", ScheduledJobStatus.IDLE, reserved),
         ])
         self.assertEqual(control.recoveries, 1)
-        self.assertEqual([(slot.definition.id, slot.scheduled_for) for slot in planned], [
-            ("aone.scan", due),
-        ])
-        self.assertEqual([item.disposition for item in outcomes], [ExecutionDisposition.COMPLETED])
-        self.assertEqual(runner.calls, [("aone.scan", due)])
+        self.assertEqual(planned, ())
+        self.assertEqual(outcomes, ())
+        self.assertEqual(runner.calls, [])
 
     def test_runtime_stop_rejects_future_runner_invocations(self):
         runtime = ScannerRuntime(FakeRunner())
