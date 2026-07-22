@@ -3,7 +3,6 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -167,9 +166,16 @@ func (s *ElasticsearchService) getKibanaPvlNetworkInfo(id string) (interface{}, 
 		return nil
 	})
 
-	instanceMap := jsonToMap(listKibanaPvlNetworkResp.GetHttpContentString())
+	if err != nil {
+		return nil, err
+	}
+
+	instanceMap, err := jsonToMap(listKibanaPvlNetworkResp.GetHttpContentString())
+	if err != nil {
+		return nil, WrapErrorf(err, "parse kibana pvl network response error for instance %s", id)
+	}
 	resultMap := instanceMap["Result"]
-	return resultMap, err
+	return resultMap, nil
 }
 
 func (s *ElasticsearchService) updateKibanaPrivatePvlNetwork(d *schema.ResourceData, content map[string]interface{}, meta interface{}) error {
@@ -190,14 +196,23 @@ func (s *ElasticsearchService) updateKibanaPrivatePvlNetwork(d *schema.ResourceD
 		return WrapErrorf(err, "get kibana pvl info error %s", d.Id())
 	}
 
-	pvlInfoArr := pvlInfoInterface.([]interface{})
-
-	if len(pvlInfoArr) == 0 {
-		return WrapErrorf(err, "get kibana pvl info empty %s", d.Id())
+	pvlInfoArr, ok := pvlInfoInterface.([]interface{})
+	if !ok {
+		return fmt.Errorf("unexpected type for kibana pvl network info of instance %s", d.Id())
 	}
 
-	pvlInfo := pvlInfoArr[0]
-	pvlId := pvlInfo.(map[string]interface{})["pvlId"].(string)
+	if len(pvlInfoArr) == 0 {
+		return fmt.Errorf("get kibana pvl info empty for instance %s", d.Id())
+	}
+
+	pvlInfoMap, ok := pvlInfoArr[0].(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("unexpected pvl info element type for instance %s", d.Id())
+	}
+	pvlId, ok := pvlInfoMap["pvlId"].(string)
+	if !ok {
+		return fmt.Errorf("pvlId not found or invalid type in kibana pvl info for instance %s", d.Id())
+	}
 	updateKibanaPvlNetworkReq.QueryParams["pvlId"] = pvlId
 
 	// retry
@@ -1077,13 +1092,13 @@ func closeHttps(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
-func jsonToMap(content string) map[string]interface{} {
+func jsonToMap(content string) (map[string]interface{}, error) {
 	var dataMap map[string]interface{}
 
 	err := json.Unmarshal([]byte(content), &dataMap)
 	if err != nil {
-		log.Fatalf("parse json to map error: %v", err)
+		return nil, fmt.Errorf("parse json to map error: %v", err)
 	}
 
-	return dataMap
+	return dataMap, nil
 }
