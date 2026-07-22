@@ -46,7 +46,7 @@ resource "alicloud_hbr_hana_instance" "example" {
   hana_name            = "terraform-example-${random_integer.default.result}"
   host                 = "1.1.1.1"
   instance_number      = 1
-  password             = "YouPassword123"
+  password             = "YouPassword123@"
   resource_group_id    = data.alicloud_resource_manager_resource_groups.example.groups.0.id
   sid                  = "HXE"
   use_ssl              = false

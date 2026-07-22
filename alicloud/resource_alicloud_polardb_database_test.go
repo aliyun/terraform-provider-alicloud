@@ -152,7 +152,7 @@ resource "alicloud_polardb_cluster" "default" {
 resource "alicloud_polardb_account" "default" {
   db_cluster_id       = alicloud_polardb_cluster.default.id
   account_name        = var.name
-  account_password    = "Example1234"
+  account_password    = "Example1234@"
 }
 `, name)
 }
@@ -302,13 +302,13 @@ resource "alicloud_polardb_cluster" "default" {
 resource "alicloud_polardb_account" "default" {
   db_cluster_id       = alicloud_polardb_cluster.default.id
   account_name        = var.name
-  account_password    = "Example1234"
+  account_password    = "Example1234@"
 }
 
 resource "alicloud_polardb_account" "update" {
   db_cluster_id       = alicloud_polardb_cluster.default.id
   account_name        = "${var.name}update"
-  account_password    = "Example1234"
+  account_password    = "Example1234@"
 }
 `, name)
 }

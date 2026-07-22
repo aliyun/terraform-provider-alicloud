@@ -127,7 +127,7 @@ func AliCloudBastionhostHostAccountUserAttachmentBasicDependence0(name string) s
   		host_account_name = "${var.name}-${count.index}"
   		host_id           = alicloud_bastionhost_host.default.host_id
   		protocol_name     = "SSH"
-  		password          = "YourPassword12345"
+  		password          = "YourPassword12345@"
 	}
 
 	resource "alicloud_bastionhost_user" "default" {

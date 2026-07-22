@@ -71,7 +71,7 @@ resource "alicloud_cs_edge_kubernetes" "default" {
   worker_instance_types          = [data.alicloud_instance_types.default.instance_types.0.id]
   version                        = "1.26.3-aliyun.1"
   worker_number                  = 1
-  password                       = "Test12345"
+  password                       = "Test12345@"
   pod_cidr                       = "10.99.0.0/16"
   service_cidr                   = "172.16.0.0/16"
   worker_instance_charge_type    = "PostPaid"
@@ -129,7 +129,7 @@ resource "alicloud_cs_edge_kubernetes" "default" {
   worker_instance_types          = [data.alicloud_instance_types.default.instance_types.0.id]
   cluster_spec                   = "ack.pro.small"
   worker_number                  = 1
-  password                       = "Test12345"
+  password                       = "Test12345@"
   pod_cidr                       = "10.99.0.0/16"
   service_cidr                   = "172.16.0.0/16"
   worker_instance_charge_type    = "PostPaid"

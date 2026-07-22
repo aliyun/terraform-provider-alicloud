@@ -88,7 +88,7 @@ resource "alicloud_db_instance" "default" {
 resource "alicloud_db_account" "default" {
   db_instance_id   = alicloud_db_instance.default.id
   account_name     = "tfexamplename"
-  account_password = "Example12345"
+  account_password = "Example12345@"
   account_type     = "Normal"
 }
 

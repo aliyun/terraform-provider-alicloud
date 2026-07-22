@@ -125,7 +125,7 @@ resource "alicloud_gpdb_elastic_instance" "default" {
 resource "alicloud_gpdb_account" "default" {
   account_name        = var.name
   db_instance_id      = alicloud_gpdb_elastic_instance.default.id
-  account_password    = "TFTest123"
+  account_password    = "TFTest123@"
   account_description = var.name
 }
 

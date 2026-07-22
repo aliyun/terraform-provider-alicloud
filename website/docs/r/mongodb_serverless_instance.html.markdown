@@ -36,7 +36,7 @@ data "alicloud_vswitches" "default" {
 data "alicloud_resource_manager_resource_groups" "default" {}
 
 resource "alicloud_mongodb_serverless_instance" "example" {
-  account_password        = "Abc12345"
+  account_password        = "Abc12345@"
   db_instance_description = "example_value"
   db_instance_storage     = 5
   storage_engine          = "WiredTiger"

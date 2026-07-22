@@ -241,7 +241,7 @@ func resourceEdasK8sClusterConfigDependence(name string) string {
 		  name = var.name
 		  worker_vswitch_ids = [local.vswitch_id]
 		  worker_number = "2"
-		  password =                    "Test12345"
+		  password =                    "Test12345@"
 		  pod_cidr =                   "172.20.0.0/16"
 		  service_cidr =               "172.21.0.0/20"
 		  worker_disk_size =            "50"

@@ -177,7 +177,7 @@ resource "alicloud_ens_instance" "defaultXKjq1W" {
   image_id                   = "centos_6_08_64_20G_alibase_20171208"
   payment_type               = "Subscription"
   instance_type              = "ens.sn1.stiny"
-  password                   = "12345678abcABC"
+  password                   = "12345678abcABC@"
   status                     = "Running"
   amount                     = "1"
   internet_charge_type       = "95BandwidthByMonth"

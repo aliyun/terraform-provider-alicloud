@@ -235,7 +235,7 @@ resource "alicloud_vswitch" "default" {
 }
 
 resource "alicloud_mongodb_serverless_instance" "default" {
-  account_password        = "Abc12345"
+  account_password        = "Abc12345@"
   db_instance_description = var.name
   db_instance_storage     = 5
   capacity_unit           = 100

@@ -82,7 +82,7 @@ resource "alicloud_db_instance" "example" {
 resource "alicloud_rds_account" "example" {
   db_instance_id   = alicloud_db_instance.example.id
   account_name     = "test_mysql"
-  account_password = "N1cetest"
+  account_password = "N1cetest@"
 }
 
 resource "alicloud_db_database" "example" {

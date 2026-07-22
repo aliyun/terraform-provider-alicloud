@@ -441,7 +441,7 @@ func TestAccAliCloudCSKubernetes_prepaid(t *testing.T) {
 					"master_period":                  "1",
 					"master_period_unit":             "Month",
 					"pod_vswitch_ids":                []string{"${local.vswitch_id}"},
-					"password":                       "Yourpassword1234",
+					"password":                       "Yourpassword1234@",
 					"service_cidr":                   "172.18.0.0/16",
 					"enable_ssh":                     "false",
 					"install_cloud_monitor":          "true",
@@ -470,7 +470,7 @@ func TestAccAliCloudCSKubernetes_prepaid(t *testing.T) {
 						"master_instance_charge_type":    "PrePaid",
 						"master_period":                  "1",
 						"master_period_unit":             "Month",
-						"password":                       "Yourpassword1234",
+						"password":                       "Yourpassword1234@",
 						"service_cidr":                   "172.18.0.0/16",
 						"enable_ssh":                     "false",
 						"install_cloud_monitor":          "true",
@@ -591,7 +591,7 @@ resource "alicloud_cs_kubernetes_node_pool" "default" {
   node_pool_name                = var.name
   vswitch_ids                   = [local.vswitch_id]
   instance_types                = [var.instance_type]
-  password                      = "Test12345"
+  password                      = "Test12345@"
   system_disk_size              = 50
   system_disk_category          = "cloud_essd"
   instance_charge_type          = "PostPaid"
@@ -647,7 +647,7 @@ resource "alicloud_cs_kubernetes_node_pool" "default" {
   node_pool_name                = var.name
   vswitch_ids                   = [local.vswitch_id]
   instance_types                = [data.alicloud_instance_types.default.instance_types.0.id]
-  password                      = "Test12345"
+  password                      = "Test12345@"
   system_disk_size              = 50
   system_disk_category          = "cloud_essd"
   system_disk_performance_level = "PL0"

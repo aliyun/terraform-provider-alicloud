@@ -43,7 +43,7 @@ func TestAccAliCloudPolarDBZonalAccount_life(t *testing.T) {
 					"db_cluster_id":       "${alicloud_polardb_zonal_db_cluster.cluster.id}",
 					"account_name":        "from_terraform",
 					"account_type":        "Normal",
-					"account_password":    "Ali123789",
+					"account_password":    "Ali123789@",
 					"account_description": "from_terraform",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -56,11 +56,11 @@ func TestAccAliCloudPolarDBZonalAccount_life(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"account_password": "Ali123798",
+					"account_password": "Ali123798@",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"account_password": "Ali123798",
+						"account_password": "Ali123798@",
 					}),
 				),
 			},

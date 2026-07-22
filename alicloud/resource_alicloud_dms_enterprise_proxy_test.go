@@ -44,7 +44,7 @@ func TestAccAlicloudDMSEnterpriseProxy_basic0(t *testing.T) {
 					"instance_id": "${alicloud_dms_enterprise_instance.default.instance_id}",
 					"tid":         "${data.alicloud_dms_user_tenants.default.ids.0}",
 					"username":    "tftestnormal",
-					"password":    "Test12345",
+					"password":    "Test12345@",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -107,7 +107,7 @@ resource "alicloud_db_instance" "instance" {
 resource "alicloud_db_account" "account" {
 	instance_id = "${alicloud_db_instance.instance.id}"
 	name        = "tftestnormal"
-	password    = "Test12345"
+	password    = "Test12345@"
 	type        = "Normal"
 }
 

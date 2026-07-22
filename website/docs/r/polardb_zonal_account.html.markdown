@@ -69,7 +69,7 @@ resource "alicloud_polardb_zonal_db_cluster" "default" {
 resource "alicloud_polardb_zonal_account" "default" {
   db_cluster_id    = alicloud_polardb_zonal_db_cluster.default.id
   account_name     = "terraform_example"
-  account_password = "Example1234"
+  account_password = "Example1234@"
 }
 ```
 

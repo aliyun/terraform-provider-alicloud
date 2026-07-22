@@ -154,23 +154,23 @@ func SkipTestAccAlicloudDirectMailMailAddress_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"password": "Tf12345678password",
+					"password": "Tf12345678password@",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"password": "Tf12345678password",
+						"password": "Tf12345678password@",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"reply_address": "r2@xxx.changes.com.cn",
-					"password":      "Tf987654321password",
+					"password":      "Tf987654321password@",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"reply_address": "r2@xxx.changes.com.cn",
-						"password":      "Tf987654321password",
+						"password":      "Tf987654321password@",
 					}),
 				),
 			},

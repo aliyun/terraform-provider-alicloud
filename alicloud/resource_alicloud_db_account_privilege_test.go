@@ -291,7 +291,7 @@ resource "alicloud_db_database" "default" {
 resource "alicloud_db_account" "default" {
   instance_id = alicloud_db_instance.default.id
   name = "tftestprivilege"
-  password = "Test12345"
+  password = "Test12345@"
   description = "from terraform"
 }
 `, name)
@@ -369,7 +369,7 @@ resource "alicloud_db_database" "default" {
 resource "alicloud_db_account" "default" {
   instance_id = alicloud_db_instance.default.id
   name = "tftestprivilege"
-  password = "Test12345"
+  password = "Test12345@"
   description = "from terraform"
 }
 `, name)
@@ -438,7 +438,7 @@ resource "alicloud_db_database" "default" {
 resource "alicloud_db_account" "default" {
   db_instance_id = alicloud_db_instance.default.id
   account_name = "tftestprivilege"
-  account_password = "Test12345"
+  account_password = "Test12345@"
   description = "from terraform"
 }
 `, name)

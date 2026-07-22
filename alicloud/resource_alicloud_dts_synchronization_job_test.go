@@ -372,7 +372,7 @@ func AliCloudDTSSynchronizationJobBasicDependence0(name string) string {
 	resource "alicloud_rds_account" "source_account" {
   		db_instance_id   = alicloud_db_instance.source.id
   		account_name     = "test_mysql"
-  		account_password = "N1cetest"
+  		account_password = "N1cetest@"
 	}
 
 	resource "alicloud_db_account_privilege" "source_privilege" {
@@ -395,7 +395,7 @@ func AliCloudDTSSynchronizationJobBasicDependence0(name string) string {
 	resource "alicloud_rds_account" "target_account" {
   		db_instance_id   = alicloud_db_instance.target.id
   		account_name     = "test_mysql"
-  		account_password = "N1cetest"
+  		account_password = "N1cetest@"
 	}
 
 	## DTS Data Synchronization
@@ -474,7 +474,7 @@ func AliCloudDTSSynchronizationJobBasicDependence1(name string) string {
 	resource "alicloud_polardb_account" "source_account" {
   		db_cluster_id    = alicloud_polardb_cluster.source.id
   		account_name     = "test_polardb"
-  		account_password = "N1cetest"
+  		account_password = "N1cetest@"
 	}
 
 	resource "alicloud_polardb_account_privilege" "source_privilege" {
@@ -497,7 +497,7 @@ func AliCloudDTSSynchronizationJobBasicDependence1(name string) string {
 	resource "alicloud_rds_account" "target_account" {
   		db_instance_id   = alicloud_db_instance.target.id
   		account_name     = "test_mysql"
-  		account_password = "N1cetest"
+  		account_password = "N1cetest@"
 	}
 
 	## DTS Data Synchronization

@@ -43,7 +43,7 @@ resource "alicloud_sag_client_user" "default" {
   bandwidth = "20"
   user_mail = "tf-example@abc.com"
   user_name = var.name
-  password  = "example1234"
+  password  = "Example1234@"
   client_ip = "192.1.10.0"
 }
 

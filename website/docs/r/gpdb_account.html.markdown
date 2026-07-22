@@ -67,7 +67,7 @@ resource "alicloud_gpdb_instance" "default" {
 resource "alicloud_gpdb_account" "default" {
   account_name        = "tf_example"
   db_instance_id      = alicloud_gpdb_instance.default.id
-  account_password    = "Example1234"
+  account_password    = "Example1234@"
   account_description = "tf_example"
 }
 ```

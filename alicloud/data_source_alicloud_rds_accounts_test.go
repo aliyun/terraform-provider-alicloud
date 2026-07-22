@@ -93,7 +93,7 @@ data "alicloud_db_instances" "default" {
 resource "alicloud_rds_account" "default" {
   db_instance_id = data.alicloud_db_instances.default.ids.0
   account_name        = "tftestnormal000"
-  account_password    = "Test12345"
+  account_password    = "Test12345@"
 }
 data "alicloud_rds_accounts" "default" {	
 	%s

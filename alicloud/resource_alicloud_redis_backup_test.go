@@ -94,7 +94,7 @@ resource "alicloud_kvstore_instance" "default" {
   port           = "6379"
   payment_type   = "PrePaid"
   instance_type  = "Redis"
-  password       = "123456_tf"
+  password       = "123456_Tf"
   engine_version = "5.0"
   zone_id        = var.zone_id
   vswitch_id     = local.vswitch_id

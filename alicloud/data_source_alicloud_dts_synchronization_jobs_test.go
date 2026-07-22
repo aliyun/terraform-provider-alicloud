@@ -142,7 +142,7 @@ resource "alicloud_db_database" "db" {
 resource "alicloud_db_account" "account" {
   db_instance_id      = alicloud_db_instance.dest.id
   account_name        = "tftestdts"
-  account_password    = "Test12345"
+  account_password    = "Test12345@"
   account_description = "from terraform"
 }
 
@@ -163,7 +163,7 @@ resource "alicloud_db_database" "db_r" {
 resource "alicloud_db_account" "account_r" {
   db_instance_id      = alicloud_db_instance.source.id
   account_name        = "tftestdts"
-  account_password    = "Test12345"
+  account_password    = "Test12345@"
   account_description = "from terraform"
 }
 
@@ -183,14 +183,14 @@ resource "alicloud_dts_synchronization_job" "default" {
   source_endpoint_region              = var.region_id
   source_endpoint_database_name       = "tfaccountpri_0"
   source_endpoint_user_name           = "tftestdts"
-  source_endpoint_password            = "Test12345"
+  source_endpoint_password            = "Test12345@"
   destination_endpoint_instance_type  = "RDS"
   destination_endpoint_instance_id    = alicloud_db_instance.dest.id
   destination_endpoint_engine_name    = "MySQL"
   destination_endpoint_region         = var.region_id
   destination_endpoint_database_name  = "tfaccountpri_0"
   destination_endpoint_user_name      = "tftestdts"
-  destination_endpoint_password       = "Test12345"
+  destination_endpoint_password       = "Test12345@"
   db_list                             = "{\"tfaccountpri_0\":{\"name\":\"tfaccountpri_0\",\"all\":true,\"state\":\"normal\"}}"
   structure_initialization            = "true"
   data_initialization                 = "true"

@@ -195,7 +195,7 @@ resource "alicloud_db_database" "default" {
 resource "alicloud_rds_account" "default" {
   db_instance_id = alicloud_db_instance.default.id
   account_name        = "tftestnormal000"
-  account_password    = "Test12345"
+  account_password    = "Test12345@"
 }
 resource "alicloud_db_account_privilege" "default" {
   instance_id  = alicloud_db_instance.default.id

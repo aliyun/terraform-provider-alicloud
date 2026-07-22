@@ -137,7 +137,7 @@ resource "alicloud_cs_kubernetes" "default" {
   master_vswitch_ids          = ["${local.vswitch_id}","${local.vswitch_id}","${local.vswitch_id}"]
   new_nat_gateway             = true
   master_instance_types       = ["${data.alicloud_instance_types.default_m.instance_types.0.id}","${data.alicloud_instance_types.default_m.instance_types.0.id}","${data.alicloud_instance_types.default_m.instance_types.0.id}"]
-  password                    = "Yourpassword1234"
+  password                    = "Yourpassword1234@"
   pod_cidr                    = cidrsubnet("10.0.0.0/8", 8, 33)
   service_cidr                = cidrsubnet("172.16.0.0/16", 4, 4)
   install_cloud_monitor       = true

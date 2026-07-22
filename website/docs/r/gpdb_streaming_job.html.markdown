@@ -91,7 +91,7 @@ resource "alicloud_gpdb_streaming_job" "default" {
   db_instance_id  = alicloud_gpdb_instance.defaulth2ghc1.id
   dest_table      = "customer"
   data_source_id  = alicloud_gpdb_streaming_data_source.defaultcDQItu.data_source_id
-  password        = "example_001"
+  password        = "Example_001"
   job_config      = <<EOF
 ATABASE: adb_sampledata_tpch
 USER: example_001

@@ -54,7 +54,7 @@ data "alicloud_polardb_clusters" "polardb_clusters_ds" {
 resource "alicloud_polardb_account" "account" {
   db_cluster_id       = data.alicloud_polardb_clusters.polardb_clusters_ds.clusters.0.id
   account_name        = "tfnormal_01"
-  account_password    = "Test12345"
+  account_password    = "Test12345@"
   account_description = "tf_account_description"
   account_type        = "Normal"
 }

@@ -91,7 +91,7 @@ resource "alicloud_mongodb_sharding_instance" "default" {
 }
 
 resource "alicloud_mongodb_node" "default" {
-  account_password  = "q1w2e3r4!"
+  account_password  = "Q1w2e3r4!"
   auto_pay          = "true"
   node_class        = "mdb.shard.4x.large.d"
   shard_direct      = "false"

@@ -38,7 +38,7 @@ func TestAccAliCloudClickHouseEnterpriseDBClusterAccount_basic10563(t *testing.T
 					"description":    "test_desc",
 					"db_instance_id": "${alicloud_click_house_enterprise_db_cluster.defaultWrovOd.id}",
 					"account_type":   "NormalAccount",
-					"password":       "abc123456!",
+					"password":       "Abc123456!",
 					"dml_auth_setting": []map[string]interface{}{
 						{
 							"dml_authority": "0",
@@ -56,7 +56,7 @@ func TestAccAliCloudClickHouseEnterpriseDBClusterAccount_basic10563(t *testing.T
 						"description":    "test_desc",
 						"db_instance_id": CHECKSET,
 						"account_type":   "NormalAccount",
-						"password":       "abc123456!",
+						"password":       "Abc123456!",
 					}),
 				),
 			},
@@ -72,11 +72,11 @@ func TestAccAliCloudClickHouseEnterpriseDBClusterAccount_basic10563(t *testing.T
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"password": "abc1234567!",
+					"password": "Abc1234567!",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"password": "abc1234567!",
+						"password": "Abc1234567!",
 					}),
 				),
 			},

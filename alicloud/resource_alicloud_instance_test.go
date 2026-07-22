@@ -293,11 +293,11 @@ func TestAccAliCloudECSInstanceBasic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"password": "Password123",
+					"password": "Password123@",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"password": "Password123",
+						"password": "Password123@",
 					}),
 				),
 			},
@@ -660,11 +660,11 @@ func TestAccAliCloudECSInstanceVpc(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"password": "Password123",
+					"password": "Password123@",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"password": "Password123",
+						"password": "Password123@",
 					}),
 				),
 			},
@@ -1192,11 +1192,11 @@ func TestAccAliCloudECSInstancePrepaid(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"password": "Password123",
+					"password": "Password123@",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"password": "Password123",
+						"password": "Password123@",
 					}),
 				),
 			},
@@ -1963,7 +1963,7 @@ func TestAccAliCloudECSInstanceSecondaryIps(t *testing.T) {
 					"instance_name":                 "${var.name}",
 					"internet_charge_type":          "PayByTraffic",
 					"instance_charge_type":          "PostPaid",
-					"password":                      "Tftest123",
+					"password":                      "Tftest123@",
 					"user_data":                     "${base64encode(\"I am the user data\")}",
 					"security_enhancement_strategy": "Active",
 					"internet_max_bandwidth_out":    "5",
@@ -1977,7 +1977,7 @@ func TestAccAliCloudECSInstanceSecondaryIps(t *testing.T) {
 						"vswitch_id":                    CHECKSET,
 						"secondary_private_ips.#":       "1",
 						"instance_name":                 name,
-						"password":                      "Tftest123",
+						"password":                      "Tftest123@",
 						"internet_max_bandwidth_out":    "5",
 						"public_ip":                     CHECKSET,
 						"security_enhancement_strategy": "Active",
@@ -2045,7 +2045,7 @@ func TestAccAliCloudECSInstanceSecondaryIpCount(t *testing.T) {
 					"instance_name":                      "${var.name}",
 					"internet_charge_type":               "PayByTraffic",
 					"instance_charge_type":               "PostPaid",
-					"password":                           "Tftest123",
+					"password":                           "Tftest123@",
 					"user_data":                          "I_am_user_data",
 					"security_enhancement_strategy":      "Active",
 					"internet_max_bandwidth_out":         "5",
@@ -2057,7 +2057,7 @@ func TestAccAliCloudECSInstanceSecondaryIpCount(t *testing.T) {
 						"image_id":                           CHECKSET,
 						"vswitch_id":                         CHECKSET,
 						"instance_name":                      name,
-						"password":                           "Tftest123",
+						"password":                           "Tftest123@",
 						"internet_max_bandwidth_out":         "5",
 						"allocate_public_ip":                 "true",
 						"public_ip":                          CHECKSET,

@@ -164,7 +164,7 @@ resource "alicloud_gpdb_instance" "defaultJXWSlW" {
 resource "alicloud_gpdb_account" "default1" {
   account_name        = format("%%s%%s", var.name, "1")
   db_instance_id      = alicloud_gpdb_instance.defaultJXWSlW.id
-  account_password    = "Example1234"
+  account_password    = "Example1234@"
   account_description = "tf_example"
   account_type        = "Normal"
 }
@@ -172,7 +172,7 @@ resource "alicloud_gpdb_account" "default1" {
 resource "alicloud_gpdb_account" "default2" {
   account_name        = format("%%s%%s", var.name, "2")
   db_instance_id      = alicloud_gpdb_instance.defaultJXWSlW.id
-  account_password    = "Example1234"
+  account_password    = "Example1234@"
   account_description = "tf_example"
   account_type        = "Normal"
 }
@@ -180,7 +180,7 @@ resource "alicloud_gpdb_account" "default2" {
 resource "alicloud_gpdb_account" "default3" {
   account_name        = format("%%s%%s", var.name, "3")
   db_instance_id      = alicloud_gpdb_instance.defaultJXWSlW.id
-  account_password    = "Example1234"
+  account_password    = "Example1234@"
   account_description = "tf_example"
   account_type        = "Normal"
 }

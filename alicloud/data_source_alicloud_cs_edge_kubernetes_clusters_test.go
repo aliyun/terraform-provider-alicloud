@@ -149,7 +149,7 @@ resource "alicloud_cs_edge_kubernetes" "default" {
   proxy_mode                  = "ipvs"
   worker_instance_types       = ["${data.alicloud_instance_types.default.instance_types.0.id}"]
   worker_number               = 2
-  password                    = "Yourpassword1234"
+  password                    = "Yourpassword1234@"
   pod_cidr                    = cidrsubnet("10.0.0.0/8", 8, 30)
   service_cidr                = cidrsubnet("172.16.0.0/16", 4, 2)
   install_cloud_monitor       = true

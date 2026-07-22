@@ -161,7 +161,7 @@ resource "alicloud_ehpc_cluster" "default" {
   manager_instance_type = data.alicloud_instance_types.default.instance_types.0.id
   os_tag                = "CentOS_7.6_64"
   scheduler_type        = "pbs"
-  password              = "your-password123"
+  password              = "Your-password123"
   vswitch_id            = data.alicloud_vswitches.default.ids.0
   vpc_id                = data.alicloud_vpcs.default.ids.0
   zone_id               = data.alicloud_zones.default.zones.0.id

@@ -64,7 +64,7 @@ resource "alicloud_db_database" "db" {
 resource "alicloud_db_account" "account" {
   db_instance_id      = alicloud_db_instance.instance.id
   account_name        = "tfexample"
-  account_password    = "Example12345"
+  account_password    = "Example12345@"
   account_description = "from terraform"
 }
 

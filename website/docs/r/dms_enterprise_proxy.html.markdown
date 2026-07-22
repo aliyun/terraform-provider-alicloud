@@ -94,7 +94,7 @@ resource "alicloud_db_instance" "default" {
 resource "alicloud_db_account" "default" {
   db_instance_id   = alicloud_db_instance.default.id
   account_name     = "tfexamplename"
-  account_password = "Example12345"
+  account_password = "Example12345@"
   account_type     = "Normal"
 }
 
@@ -118,7 +118,7 @@ resource "alicloud_dms_enterprise_instance" "default" {
 
 resource "alicloud_dms_enterprise_proxy" "default" {
   instance_id = alicloud_dms_enterprise_instance.default.instance_id
-  password    = "Example12345"
+  password    = "Example12345@"
   username    = "tfexamplename"
   tid         = data.alicloud_dms_user_tenants.default.ids.0
 }

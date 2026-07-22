@@ -85,7 +85,7 @@ resource "alicloud_db_instance" "default" {
 resource "alicloud_rds_account" "default" {
   db_instance_id   = alicloud_db_instance.default.id
   account_name     = var.name
-  account_password = "Example1234"
+  account_password = "Example1234@"
 }
 
 resource "alicloud_db_database" "default" {

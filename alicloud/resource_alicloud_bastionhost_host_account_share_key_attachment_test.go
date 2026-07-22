@@ -103,7 +103,7 @@ func AliCloudBastionhostHostAccountShareKeyAttachmentBasicDependence0(name strin
   		host_account_name = var.name
   		host_id           = alicloud_bastionhost_host.default.host_id
   		protocol_name     = "SSH"
-  		password          = "YourPassword12345"
+  		password          = "YourPassword12345@"
 	}
 
 	resource "alicloud_bastionhost_host_share_key" "default" {

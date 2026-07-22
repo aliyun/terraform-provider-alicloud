@@ -42,7 +42,7 @@ func TestAccAliCloudGPDBAccount_basic0(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"db_instance_id":      "${alicloud_gpdb_elastic_instance.default.id}",
 					"account_name":        name,
-					"account_password":    "TFTest123",
+					"account_password":    "TFTest123@",
 					"account_description": name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -55,7 +55,7 @@ func TestAccAliCloudGPDBAccount_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"account_password": "TFTest123" + "update",
+					"account_password": "TFTest123@" + "update",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{}),
@@ -130,7 +130,7 @@ func TestAccAliCloudGPDBAccount_basic1(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"db_instance_id":      "${alicloud_gpdb_elastic_instance.default.id}",
 					"account_name":        name,
-					"account_password":    "TFTest123",
+					"account_password":    "TFTest123@",
 					"account_description": name,
 					"account_type":        "Normal",
 					"database_name":       name,
@@ -145,7 +145,7 @@ func TestAccAliCloudGPDBAccount_basic1(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"account_password": "TFTest123" + "update",
+					"account_password": "TFTest123@" + "update",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{}),

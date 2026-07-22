@@ -124,7 +124,7 @@ resource "alicloud_nas_access_rule" "queue_minimal_test_access_rule" {
 resource "alicloud_ehpc_cluster_v2" "queue_minimal_cluster_test" {
   depends_on = [alicloud_nas_access_rule.queue_minimal_test_access_rule]
   cluster_credentials {
-    password = "aliHPC123"
+    password = "aliHPC123@"
   }
   cluster_vpc_id    = alicloud_vpc.queue_minimal_test_vpc.id
   cluster_category  = "Standard"
@@ -445,7 +445,7 @@ resource "alicloud_vswitch" "queue_autoscale_test_vswitch_modified" {
 resource "alicloud_ehpc_cluster_v2" "queue_autoscale_cluster_test" {
   depends_on = [alicloud_nas_access_rule.queue_autoscale_test_access_rule]
   cluster_credentials {
-    password = "aliHPC123"
+    password = "aliHPC123@"
   }
   cluster_vpc_id      = alicloud_vpc.queue_autoscale_test_vpc.id
   cluster_category    = "Standard"
@@ -733,7 +733,7 @@ resource "alicloud_vswitch" "queue_prepaid_test_vswitch_modified" {
 resource "alicloud_ehpc_cluster_v2" "queue_prepaid_cluster_test" {
   depends_on = [alicloud_nas_access_rule.queue_prepaid_test_access_rule]
   cluster_credentials {
-    password = "aliHPC123"
+    password = "aliHPC123@"
   }
   cluster_vpc_id      = alicloud_vpc.queue_prepaid_test_vpc.id
   cluster_category    = "Standard"
@@ -1023,7 +1023,7 @@ resource "alicloud_nas_access_rule" "queue_vswitchIds_test_access_rule" {
 resource "alicloud_ehpc_cluster_v2" "queue_vswitchids_test_cluster" {
   depends_on = [alicloud_nas_access_rule.queue_vswitchIds_test_access_rule]
   cluster_credentials {
-    password = "aliHPC123"
+    password = "aliHPC123@"
   }
   cluster_vpc_id    = alicloud_vpc.queue_vswitchIds_test_vpc.id
   cluster_category  = "Standard"

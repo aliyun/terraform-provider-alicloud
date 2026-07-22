@@ -41,7 +41,7 @@ func SkipTestAccAlicloudMongoDBServerlessInstance_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"account_password":    "Abc12345",
+					"account_password":    "Abc12345@",
 					"db_instance_storage": "5",
 					"capacity_unit":       "100",
 					"engine_version":      "4.2",
@@ -197,7 +197,7 @@ func SkipTestAccAlicloudMongoDBServerlessInstance_basic1(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"auto_renew":              "false",
-					"account_password":        "Abc12345",
+					"account_password":        "Abc12345@",
 					"capacity_unit":           "100",
 					"db_instance_storage":     "5",
 					"storage_engine":          "WiredTiger",

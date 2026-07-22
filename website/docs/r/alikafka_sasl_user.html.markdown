@@ -77,7 +77,7 @@ resource "alicloud_alikafka_instance" "default" {
 resource "alicloud_alikafka_sasl_user" "default" {
   instance_id = alicloud_alikafka_instance.default.id
   username    = var.name
-  password    = "tf_example123"
+  password    = "Tf_example123"
 }
 ```
 

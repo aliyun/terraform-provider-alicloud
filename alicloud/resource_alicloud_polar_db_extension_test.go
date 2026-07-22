@@ -108,7 +108,7 @@ resource "alicloud_polardb_cluster" "resource_DBCluster_test_01" {
 resource "alicloud_polardb_account" "resource_Account_test" {
   db_cluster_id    = alicloud_polardb_cluster.resource_DBCluster_test_01.id
   account_name     = "nzh"
-  account_password = "Ali123456"
+  account_password = "Ali123456@"
   account_type     = "Super"
 }
 

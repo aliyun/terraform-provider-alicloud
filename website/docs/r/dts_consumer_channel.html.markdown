@@ -82,7 +82,7 @@ resource "alicloud_db_instance" "example" {
 resource "alicloud_rds_account" "example" {
   db_instance_id   = alicloud_db_instance.example.id
   account_name     = "example_name"
-  account_password = "example_1234"
+  account_password = "Example_1234"
 }
 
 resource "alicloud_db_database" "example" {
@@ -118,7 +118,7 @@ resource "alicloud_dts_consumer_channel" "example" {
   dts_instance_id          = alicloud_dts_subscription_job.example.dts_instance_id
   consumer_group_name      = var.name
   consumer_group_user_name = "example"
-  consumer_group_password  = "example1234"
+  consumer_group_password  = "Example1234@"
 }
 ```
 

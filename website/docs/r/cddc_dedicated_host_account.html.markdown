@@ -72,7 +72,7 @@ resource "alicloud_cddc_dedicated_host" "default" {
 
 resource "alicloud_cddc_dedicated_host_account" "default" {
   account_name      = var.name
-  account_password  = "Password1234"
+  account_password  = "Password1234@"
   dedicated_host_id = alicloud_cddc_dedicated_host.default.dedicated_host_id
   account_type      = "Normal"
 }
