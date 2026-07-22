@@ -751,7 +751,7 @@ func (s *RdsService) GrantAccountPrivilege(id, dbName string) error {
 	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
 		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 		if err != nil {
-			if IsExpectedErrors(err, OperationDeniedDBStatus) || IsExpectedErrors(err, []string{"InvalidDB.NotFound"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, OperationDeniedDBStatus) || IsExpectedErrors(err, []string{"InvalidDB.NotFound", "InvalidAccountName.NotFound"}) || NeedRetry(err) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
