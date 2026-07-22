@@ -90,9 +90,17 @@ else
   ok "obsolete merged-tag constants removed"
 fi
 
-# S8: claim.ttl_min
-[ "$(jq '.claim.ttl_min' "$POOLS_JSON")" = "45" ] \
-  && ok "claim.ttl_min 45" || bad "claim.ttl_min wrong"
+# S8: status-aware claim health policy (legacy timeout is no longer global)
+[ "$(jq '.claim.health.check_interval_sec' "$POOLS_JSON")" = "300" ] \
+  && ok "claim health interval 300s" || bad "claim health interval wrong"
+[ "$(jq '.claim.health.heartbeat_grace_min' "$POOLS_JSON")" = "15" ] \
+  && ok "claim heartbeat grace 15min" || bad "claim heartbeat grace wrong"
+[ "$(jq '.claim.health.confirmation_interval_min' "$POOLS_JSON")" = "5" ] \
+  && ok "claim confirmation interval 5min" || bad "claim confirmation interval wrong"
+[ "$(jq '.claim.health.legacy_fallback_min' "$POOLS_JSON")" = "180" ] \
+  && ok "legacy no-task fallback 180min" || bad "legacy no-task fallback wrong"
+[ "$(jq '.claim | has("ttl_min")' "$POOLS_JSON")" = "false" ] \
+  && ok "global claim ttl removed" || bad "global claim ttl still present"
 
 # S9: api_toolkit.done_status 现为 per-category 对象——项目 2100304 的 status 枚举按工单类型不同：
 # 「产品类需求」完成态「已发布」、「功能缺陷/线上问题」是「Fixed」(枚举 Open/Fixed/Won'tfix/…)、

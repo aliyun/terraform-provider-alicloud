@@ -42,7 +42,8 @@ cat > "$tmpconfig/config/pools.json" << 'JSON'
     "done_status": "已发布待需求排期",
     "progress_status": "处理中",
     "start_statuses": ["待处理", "新建", "New", "待认领", "Reopen"],
-    "ttl_min": 45
+    "health": {"check_interval_sec": 300, "heartbeat_grace_min": 15,
+               "confirmation_interval_min": 5, "legacy_fallback_min": 180}
   },
   "pools": {
     "with_override": { "project": 2100304, "name": "override pool", "done_status": "已完成", "progress_status": "处理中" },

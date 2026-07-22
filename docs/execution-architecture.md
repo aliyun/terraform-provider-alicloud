@@ -126,9 +126,16 @@ has ever seen the assignment, and the Task would be parked forever.  The
 persistent channel closes that hole: `ScanScheduler` atomically persists the
 Aone `jarvis-claimed` inventory to `.my-day/bridge/claimed-snapshot.json` on
 every scan tick, and the scheduler cross-checks each snapshot entry against
-the control plane (a snapshot entry without a Task row is a legacy claim and
-is announced by AoneScheduler for manual resolution; per-tick corroboration is capped by
-`JARVIS_RECOVERY_SNAPSHOT_MAX`).  The local ledger is therefore only a
+the control plane (a snapshot entry without a Task row is a legacy recovery
+candidate; per-tick corroboration is capped by
+`JARVIS_RECOVERY_SNAPSHOT_MAX`).  ClaimHealthScheduler independently checks the
+same claimed inventory at most every five minutes.  It treats advancing
+RUNNING/LEASED Session health and unexpired AONE_REPLY/MANUAL waits as healthy,
+allows 15 minutes from the last healthy Session heartbeat for lease/reaper
+convergence, and requires two observations at least five minutes apart for a
+missing Task, terminal residue, or malformed control-plane structure.  The
+180-minute legacy fallback applies only after `tasks/by-aone` successfully
+returns no Task; a failed control-plane query is silent.  The local ledger is therefore only a
 fast-channel accelerator plus debounce/round bookkeeping — never the source
 of candidate truth.  Candidates from both channels are deduplicated and
 corroborated through `tasks/by-aone` plus the Task timeline.  Recovery then

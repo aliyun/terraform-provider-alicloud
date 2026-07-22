@@ -25,7 +25,7 @@
 
 ## 4. 收敛 (Convergence)
 - 服务端 reaper：按 Worker/Session heartbeat、lease 与 fence 收敛中断执行
-- AoneScheduler：周期检查 stale claim 与 `jarvis-done`/Aone 完成态漂移，幂等发布告警
+- AoneScheduler：扫描/派发并检查 `jarvis-done`/Aone 完成态漂移；ClaimHealthScheduler 独立以 ≤5min 节奏对账 claimed 工单与 Task/Session 心跳，异常经 Aone/钉钉双通道幂等发布
 - `wrap-check.sh` Stop 闸门：会话结束校验未完工工单已回填
 - `SUSPENDED` Task + Aone 是人工决策真源；`runs/` 保留运行审计
 
