@@ -51,7 +51,7 @@ Env:
                                            _decide 过滤); 控制面按 desired_revision 幂等 + DISPATCH_MAX
                                            限流, 不会重启风暴。
   JARVIS_DISPATCH_MAX                      max concurrent headless dispatch workers (default 3).
-  JARVIS_STALE_CHECK_EVERY                 stale-claim reconcile 子任务每 N 个 scan tick 跑一次 (默认 4).
+  JARVIS_CLAIM_HEALTH_INTERVAL_SEC         claim 健康检查周期 (默认/上限 300s).
   JARVIS_DISPATCH_QUEUE_MAX                pending queue depth beyond the concurrency cap
                                            before new dispatches are dropped (default 20).
   JARVIS_BROADCAST_TARGET                  where auto-dispatch/probe/revisit broadcasts land
@@ -3465,15 +3465,15 @@ class AoneScheduler:
     plane deduplicates by ``desired_revision`` and caps concurrency at
     ``JARVIS_DISPATCH_MAX``.
 
-    A low-frequency sub-tick (every ``STALE_CHECK_EVERY`` ticks) reconciles stale
-    ``jarvis-claimed`` tickets (claim age > TTL → broadcast alert). Board sync runs once
-    at the tail of every tick.
+    A separate health loop (at most every five minutes) reconciles ``jarvis-claimed``
+    tickets against the control-plane Task/Session timeline.  Claim age alone is only a
+    180-minute fallback for legacy claims that have no Task. Board sync runs once at the
+    tail of every scan tick.
 
     Runs as a daemon thread; errors are logged and skipped, never crash the bridge.
     """
 
-    # Stale-claim reconcile sub-tick cadence (every N scan ticks).
-    STALE_CHECK_EVERY = int(os.environ.get("JARVIS_STALE_CHECK_EVERY", "4"))
+    CLAIM_HEALTH_MAX_INTERVAL_SECONDS = 300
     # Lifecycle observation is intentionally bounded and runs after dispatch. A large
     # tracked history must not hold new Aone work behind hundreds of point reads.
     SOURCE_STATUS_PAGE_SIZE = int(os.environ.get("JARVIS_SOURCE_STATUS_PAGE_SIZE", "32"))
@@ -3489,13 +3489,28 @@ class AoneScheduler:
             or ExecutionRouter(logger=log))
         self.auto = os.environ.get("JARVIS_AUTO_DISPATCH", "1") != "0"
         self.interval = int(os.environ.get("JARVIS_SCAN_INTERVAL", "1800"))
+        health_cfg = self._claim_health_config()
+        configured_health_interval = int(os.environ.get(
+            "JARVIS_CLAIM_HEALTH_INTERVAL_SEC",
+            str(health_cfg["check_interval_sec"])))
+        self.claim_health_interval = max(
+            30, min(self.CLAIM_HEALTH_MAX_INTERVAL_SECONDS,
+                    configured_health_interval))
+        self.claim_heartbeat_grace_sec = health_cfg["heartbeat_grace_min"] * 60
+        self.claim_confirmation_sec = health_cfg["confirmation_interval_min"] * 60
+        self.claim_legacy_fallback_min = health_cfg["legacy_fallback_min"]
         self.notify_target = os.environ.get("JARVIS_NOTIFY_GROUP", "cidy1mv+qvMEybkqTXcsXTOeQ==")
         self._prev_snapshot = {}         # id -> full item snapshot (new/updated diff via modified)
-        self._tick_count = 0             # drives the stale-claim reconcile sub-tick
         self._source_status_after_task_id = 0
         self.pending = {}                # id -> item dict, awaiting authorization (fallback mode)
         self._lock = threading.Lock()    # guards self.pending
         self._thread = None
+        self._claim_health_thread = None
+        # iid -> {signature, first_seen}.  This is deliberately fail-safe and
+        # process-local: a restart restarts corroboration instead of carrying a stale
+        # suspicion into a new process.
+        self._claim_health_observations = {}
+        self._claim_health_activity_cache = {}
         self._human_cache = {}           # per-tick cache of _human_touched(iid) → bool
         self._human_comment_cache = {}   # per-tick cache of latest human comment or None
         self._activity_cache = {}        # per-tick cache of Aone activity list
@@ -3552,6 +3567,10 @@ class AoneScheduler:
     def start(self):
         self._thread = threading.Thread(target=self._loop, daemon=True, name="AoneScheduler")
         self._thread.start()
+        self._claim_health_thread = threading.Thread(
+            target=self._claim_health_loop, daemon=True,
+            name="ClaimHealthScheduler")
+        self._claim_health_thread.start()
 
     def authorize(self, item_id):
         """Authorize a single pending item (fallback mode).  Returns the item dict or None."""
@@ -3591,6 +3610,34 @@ class AoneScheduler:
                 out.append((key, str(proj), list(p.get("exclude_status") or []),
                             _normalize_pr_merged_status(p.get("pr_merged_status"))))
         return out
+
+    @staticmethod
+    def _claim_health_config():
+        """Load the status-aware claim health policy.
+
+        Invalid/missing config falls back to conservative values.  In particular,
+        ``legacy_fallback_min`` is not a general claim timeout: it is consulted only
+        after a successful control-plane point read proves there is no Task.
+        """
+        defaults = {
+            "check_interval_sec": 300,
+            "heartbeat_grace_min": 15,
+            "confirmation_interval_min": 5,
+            "legacy_fallback_min": 180,
+        }
+        try:
+            data = json.loads(
+                (Path(REPO_ROOT) / "config" / "pools.json").read_text())
+            configured = data.get("claim", {}).get("health", {})
+            if not isinstance(configured, dict):
+                return defaults
+            result = {}
+            for key, fallback in defaults.items():
+                value = int(configured.get(key, fallback))
+                result[key] = value if value > 0 else fallback
+            return result
+        except Exception:  # noqa: BLE001
+            return defaults
 
     @classmethod
     def _a1_list(cls, project, filter_expr):
@@ -3678,6 +3725,36 @@ class AoneScheduler:
                 except Exception as e:  # noqa: BLE001 — 单池失败不作废本轮
                     log.warning("AoneScheduler: pool union query failed: %s", e)
         return items
+
+    def _scan_claimed(self):
+        """Read the current claimed inventory independently from dispatch scans.
+
+        This deliberately uses an exact tag query without pool ``exclude_status``:
+        terminal Aone rows carrying a residual claim are part of the health surface.
+        Individual Aone query failures stay best-effort and can only suppress an
+        observation, never manufacture one.
+        """
+        pools = self._read_pools()
+        if not pools:
+            return None
+
+        def query(entry):
+            key, project, _exclude, _merged = entry
+            rows = self._a1_list(project, "tag=jarvis-claimed")
+            for item in rows:
+                item["pool"] = key
+                item["pool_project"] = str(project)
+            return rows
+
+        items = []
+        with ThreadPoolExecutor(max_workers=min(8, len(pools)),
+                                thread_name_prefix="claim-health-aone") as ex:
+            for future in [ex.submit(query, entry) for entry in pools]:
+                try:
+                    items.extend(future.result())
+                except Exception as exc:  # noqa: BLE001
+                    log.warning("ClaimHealthScheduler: claimed query failed: %s", exc)
+        return {str(item.get("id")): item for item in items if item.get("id")}
 
     @staticmethod
     def _point_read_source_status(task):
@@ -3829,6 +3906,40 @@ class AoneScheduler:
             raise RuntimeError("Aone activity query failed for #%s" % iid)
         return data or []
 
+    def _claim_health_activities(self, iid, strict=False):
+        """Activity read isolated from the discovery thread's per-tick cache."""
+        iid = str(iid)
+        cache = getattr(self, "_claim_health_activity_cache", None)
+        if cache is None:
+            cache = self._claim_health_activity_cache = {}
+        if iid in cache:
+            cached = cache[iid]
+            if cached is None and strict:
+                raise RuntimeError("Aone activity query failed for #%s" % iid)
+            return cached or []
+        data = None
+        try:
+            result = subprocess.run(
+                [str(REPO_ROOT / "bin" / "a1id"), "--", "project", "workitem",
+                 "activity", iid, "-f", "json"],
+                capture_output=True, text=True, timeout=60, cwd=str(REPO_ROOT))
+            if result.returncode == 0:
+                parsed = json.loads(result.stdout)
+                if isinstance(parsed, list):
+                    data = parsed
+                else:
+                    log.warning("claim-health: invalid activity response #%s", iid)
+            else:
+                log.warning("claim-health: activity query failed #%s rc=%d: %s",
+                            iid, result.returncode,
+                            (result.stderr or "").strip()[:200])
+        except Exception as exc:  # noqa: BLE001
+            log.warning("claim-health: activity error #%s: %s", iid, exc)
+        cache[iid] = data
+        if data is None and strict:
+            raise RuntimeError("Aone activity query failed for #%s" % iid)
+        return data or []
+
     def _human_commented(self, iid):
         """Aone 评论中是否存在晚于上次进入 idle 的人工评论。
 
@@ -3924,16 +4035,10 @@ class AoneScheduler:
                 latest = event_at
         return latest
 
-    def _last_tag_added_epoch(self, iid, tag, strict=False):
-        """Stable digest for the latest tag-add transition, or ``legacy`` if absent.
-
-        Aone's timestamps are only second-granularity, so the activity id (when present)
-        participates in the digest.  A successful activity query with no retained
-        transition uses one conservative legacy epoch; a failed query raises in strict
-        mode and is retried next scan rather than creating an unstable event key.
-        """
+    def _tag_added_epoch(self, activities, tag):
+        """Stable digest for a tag-add transition in an already-read activity list."""
         latest = None
-        for act in self._activities(iid, strict=strict):
+        for act in activities:
             if not isinstance(act, dict):
                 continue
             if str(act.get("property", "")).strip() != "标签":
@@ -3955,6 +4060,21 @@ class AoneScheduler:
             return "legacy"
         source = "\x00".join(latest[1:])
         return hashlib.sha256(source.encode("utf-8")).hexdigest()[:16]
+
+    def _last_tag_added_epoch(self, iid, tag, strict=False):
+        """Stable digest for the latest tag-add transition, or ``legacy`` if absent.
+
+        Aone's timestamps are only second-granularity, so the activity id (when present)
+        participates in the digest.  A successful activity query with no retained
+        transition uses one conservative legacy epoch; a failed query raises in strict
+        mode and is retried next scan rather than creating an unstable event key.
+        """
+        return self._tag_added_epoch(
+            self._activities(iid, strict=strict), tag)
+
+    def _claim_health_tag_epoch(self, iid, tag):
+        return self._tag_added_epoch(
+            self._claim_health_activities(iid, strict=True), tag)
 
     def _reconcile_done_status_drifts(self, items):
         """Publish ``jarvis-done``/business-status drift through durable event ledgers.
@@ -4288,6 +4408,28 @@ class AoneScheduler:
                 log.exception("AoneScheduler tick failed; will retry next interval")
             time.sleep(self.interval)
 
+    def _claim_health_loop(self):
+        """Run claim health independently from the 30-minute discovery cadence."""
+        while True:
+            started_at = time.monotonic()
+            try:
+                if not (REPO_ROOT / ".my-day" / "bridge" / "pause").exists():
+                    # Keep this cache separate from the discovery thread's human-gate
+                    # cache: resetting the shared dict here would race a scan tick.
+                    self._claim_health_activity_cache = {}
+                    snapshot = self._scan_claimed()
+                    if snapshot is not None:
+                        self._reconcile_stale_claims(snapshot)
+                    # Terraform events may be ledger-backed.  Flush both independent
+                    # channels on the health cadence so an alert does not wait for the
+                    # next discovery scan.
+                    _aone_event_flush()
+                    _dingtalk_event_flush()
+            except Exception:  # noqa: BLE001 — health reporting never stops discovery
+                log.exception("ClaimHealthScheduler tick failed; will retry")
+            elapsed = time.monotonic() - started_at
+            time.sleep(max(1, self.claim_health_interval - elapsed))
+
     def _tick(self):
         """Scan the Aone pool union, diff against the previous snapshot; feed both new and
         externally-updated items into the dispatch decision (auto) / card (supervised).
@@ -4300,7 +4442,6 @@ class AoneScheduler:
         if (REPO_ROOT / ".my-day" / "bridge" / "pause").exists():
             log.info("AoneScheduler: pause flag present (.my-day/bridge/pause), skip this tick")
             return
-        self._tick_count += 1
         self._human_cache = {}   # per-tick cache reset for _human_touched
         self._human_comment_cache = {}
         self._activity_cache = {}
@@ -4369,13 +4510,6 @@ class AoneScheduler:
                 self._tick_auto(new_items, updated_items, retry_done_items)
             else:
                 self._tick_supervised(new_items, updated_items)
-
-        # Low-frequency stale-claim reconcile sub-tick (in-lined ReconcileScheduler).
-        if self._tick_count % self.STALE_CHECK_EVERY == 0:
-            try:
-                self._reconcile_stale_claims(cur_snapshot)
-            except Exception:  # noqa: BLE001 — reconcile failure never fails the scan tick
-                log.exception("stale-claim reconcile sub-tick failed")
 
         # Lifecycle observation follows discovery/dispatch and uses a small bounded page,
         # so terminal-status point reads cannot delay newly actionable work.
@@ -4484,56 +4618,548 @@ class AoneScheduler:
         except Exception:  # noqa: BLE001
             log.exception("AoneScheduler failed to push notification card")
 
-    # -- stale-claim reconcile sub-tick (in-lined ReconcileScheduler) ----------
+    # -- status-aware claimed-ticket health -----------------------------------
 
-    def _reconcile_stale_claims(self, snapshot):
-        """Low-frequency safety net (every ``STALE_CHECK_EVERY`` ticks): flag
-        ``jarvis-claimed`` tickets whose claim has outlived the TTL. A hard-killed
-        instance (SIGKILL / power loss) bypasses the wrap-check Stop hook, so its claim
-        would otherwise sit forever. We only alert through the durable Aone/DingTalk
-        event ledgers — the control-plane session lease + reaper own actual recovery.
+    _CLAIM_ACTIVE_TASK_STATES = frozenset(("LEASED", "RUNNING", "FINALIZING"))
+    _CLAIM_TERMINAL_TASK_STATES = frozenset(
+        ("SUCCEEDED", "FAILED_FINAL", "CANCELED"))
+    _CLAIM_RECOVERING_TASK_STATES = frozenset(
+        ("READY", "RETRY_WAIT"))
+    _CLAIM_WAIT_TYPES = frozenset(("AONE_REPLY", "MANUAL", "TIMER"))
 
-        TTL comes from config/pools.json ``.claim.ttl_min`` (default 45 min). Claim age is
-        read from the Aone activity that applied the jarvis-claimed tag (best-effort; if we
-        cannot resolve an age we skip rather than false-alarm). The event key is anchored
-        to the latest claim-tag epoch, so one stuck claim is delivered once per channel
-        while a later re-claim creates a new alert epoch."""
-        ttl_min = self._claim_ttl_min()
-        stale = []
-        for it in snapshot.values():
-            if "jarvis-claimed" not in _tagset(it):
-                continue
-            age_min = self._claim_age_min(str(it.get("id", "")))
-            if age_min is not None and age_min > ttl_min:
-                stale.append((it, age_min))
-        if not stale:
-            return
-        aone_url = "https://project.aone.alibaba-inc.com/v2/project/%s/req/%s"
-        delivered = 0
-        for it, age_min in stale:
-            project = str(it.get("pool_project") or "")
-            iid = str(it.get("id", ""))
-            if not iid.isdigit() or not project:
-                continue
+    @staticmethod
+    def _parse_control_time(value):
+        if isinstance(value, (int, float)) and not isinstance(value, bool):
+            epoch = float(value)
+            if epoch > 10_000_000_000:
+                epoch /= 1000.0
+            return epoch if epoch > 0 else None
+        raw = str(value or "").strip()
+        if not raw:
+            return None
+        try:
+            epoch = float(raw)
+            if epoch > 10_000_000_000:
+                epoch /= 1000.0
+            return epoch if epoch > 0 else None
+        except ValueError:
+            pass
+        try:
+            parsed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        except ValueError:
+            return None
+        if parsed.tzinfo is None:
+            return None
+        return parsed.timestamp()
+
+    @staticmethod
+    def _task_rows(response):
+        if isinstance(response, list):
+            return (list(response)
+                    if all(isinstance(row, dict) for row in response) else None)
+        if isinstance(response, dict) and isinstance(response.get("items"), list):
+            return (list(response["items"])
+                    if all(isinstance(row, dict) for row in response["items"])
+                    else None)
+        if isinstance(response, dict) and (
+                response.get("id") is not None or response.get("taskId") is not None):
+            return [response]
+        return None
+
+    @staticmethod
+    def _current_task(tasks):
+        def number(value):
             try:
-                claim_epoch = self._last_tag_added_epoch(
-                    iid, "jarvis-claimed", strict=True)
-            except RuntimeError:
-                log.warning("stale-claim alert #%s activity unavailable; retry next round", iid)
+                return int(value)
+            except (TypeError, ValueError):
+                return -1
+        return max(tasks, key=lambda task: (
+            number(task.get("generation")),
+            number(task.get("id") if task.get("id") is not None
+                   else task.get("taskId"))))
+
+    @staticmethod
+    def _current_session(task, timeline):
+        sessions = timeline.get("sessions")
+        if not isinstance(sessions, list):
+            return None, False
+        current_id = task.get("currentSessionId")
+        if current_id is None:
+            return None, True
+        for session in sessions:
+            if (isinstance(session, dict)
+                    and str(session.get("id")) == str(current_id)):
+                return session, True
+        return None, True
+
+    @classmethod
+    def _control_plane_epoch(cls, task, session=None):
+        parts = (
+            "task-%s" % (task.get("id") or task.get("taskId") or "unknown"),
+            "g-%s" % (task.get("generation") if task.get("generation") is not None
+                       else "unknown"),
+            "s-%s" % ((session or {}).get("id")
+                       or task.get("currentSessionId") or "none"),
+            "f-%s" % ((session or {}).get("fenceToken") or "none"),
+        )
+        return _aone_event_source_part(":".join(parts), limit=120)
+
+    @staticmethod
+    def _session_lineage_issue(task, session):
+        """Return a stable reason when a current Session is not owned by this Task epoch."""
+        task_id = task.get("id") if task.get("id") is not None else task.get("taskId")
+        session_task_id = session.get("taskId")
+        if task_id is None or session_task_id is None:
+            return "Task/Session lineage is missing taskId"
+        if str(task_id) != str(session_task_id):
+            return "Task/Session taskId lineage mismatches"
+        task_generation = task.get("generation")
+        session_generation = session.get("generation")
+        if task_generation is None or session_generation is None:
+            return "Task/Session lineage is missing generation"
+        if str(task_generation) != str(session_generation):
+            return "Task/Session generation lineage mismatches"
+        return None
+
+    @classmethod
+    def _last_health_epoch(cls, session, timeline):
+        values = []
+        for key in ("lastHeartbeatAt", "heartbeatAt", "startedAt", "leasedAt",
+                    "createdAt"):
+            parsed = cls._parse_control_time(session.get(key))
+            if parsed is not None:
+                values.append(parsed)
+        for event in timeline.get("events") or []:
+            if not isinstance(event, dict):
                 continue
-            event_key = "stale-claim:%s:%s" % (iid, claim_epoch)
-            ticket_url = aone_url % (project, iid)
+            event_type = str(event.get("eventType") or "").upper()
+            if not any(token in event_type for token in
+                       ("HEARTBEAT", "START", "LEASE")):
+                continue
+            event_session = event.get("sessionId")
+            if (event_session is not None
+                    and str(event_session) != str(session.get("id"))):
+                continue
+            parsed = cls._parse_control_time(event.get("occurredAt"))
+            if parsed is not None:
+                values.append(parsed)
+        return max(values) if values else None
+
+    @staticmethod
+    def _timeline_task_consistent(task, timeline):
+        embedded = timeline.get("task")
+        if embedded is None:
+            return True
+        if not isinstance(embedded, dict):
+            return False
+        aliases = (("id", "taskId"), ("generation",), ("status",),
+                   ("currentSessionId",), ("stateVersion",))
+        for names in aliases:
+            left = next((task.get(name) for name in names if task.get(name) is not None), None)
+            right = next((embedded.get(name) for name in names
+                          if embedded.get(name) is not None), None)
+            if left is None or right is None:
+                continue
+            if names == ("status",):
+                if str(left).upper() != str(right).upper():
+                    return False
+            elif str(left) != str(right):
+                return False
+        return True
+
+    def _inspect_claim_task(self, iid, task, client, now_epoch):
+        task_id = task.get("id") if task.get("id") is not None else task.get("taskId")
+        if task_id is None:
+            return {
+                "category": "control-plane-structure",
+                "epoch": "task-id-missing",
+                "confirm": True,
+                "detail": "current Task has no id",
+            }
+        try:
+            timeline = client.get_task_timeline(str(task_id))
+        except Exception as exc:  # noqa: BLE001
+            log.warning("ClaimHealthScheduler: timeline #%s task=%s failed: %s",
+                        iid, task_id, exc)
+            return False
+        if not isinstance(timeline, dict):
+            return {
+                "category": "control-plane-structure",
+                "epoch": self._control_plane_epoch(task),
+                "confirm": True,
+                "detail": "Task timeline response is malformed",
+            }
+        if not self._timeline_task_consistent(task, timeline):
+            log.info("ClaimHealthScheduler: concurrent task/timeline epoch #%s task=%s",
+                     iid, task_id)
+            return False
+
+        session, sessions_valid = self._current_session(task, timeline)
+        epoch = self._control_plane_epoch(task, session)
+        status = str(task.get("status") or "").strip().upper()
+        if not sessions_valid or not status:
+            return {
+                "category": "control-plane-structure", "epoch": epoch,
+                "confirm": True, "detail": "Task/session structure is incomplete",
+            }
+        if status in self._CLAIM_TERMINAL_TASK_STATES:
+            return {
+                "category": "terminal-claim-residue", "epoch": epoch,
+                "confirm": True, "detail": "Task is %s but claim tag remains" % status,
+            }
+        if status == "FINALIZING":
+            return None
+        if status in ("LEASED", "RUNNING"):
+            if session is None:
+                return {
+                    "category": "control-plane-structure", "epoch": epoch,
+                    "confirm": True, "detail": "%s Task has no current Session" % status,
+                }
+            lineage_issue = self._session_lineage_issue(task, session)
+            if lineage_issue:
+                return {
+                    "category": "control-plane-structure", "epoch": epoch,
+                    "confirm": True, "detail": lineage_issue,
+                }
+            session_status = str(session.get("status") or "").strip().upper()
+            if status == "LEASED" and session_status not in ("LEASED", "RUNNING"):
+                return {
+                    "category": "control-plane-structure", "epoch": epoch,
+                    "confirm": True,
+                    "detail": "LEASED Task has %s Session"
+                              % (session_status or "unknown"),
+                }
+            if status == "RUNNING" and session_status != "RUNNING":
+                return {
+                    "category": "control-plane-structure", "epoch": epoch,
+                    "confirm": True,
+                    "detail": "RUNNING Task has %s Session"
+                              % (session_status or "unknown"),
+                }
+            lease_expire_at = self._parse_control_time(session.get("leaseExpireAt"))
+            if lease_expire_at is None:
+                return False
+            if status == "LEASED":
+                silent_sec = max(0, int(now_epoch - lease_expire_at))
+                if lease_expire_at > now_epoch or silent_sec < self.claim_heartbeat_grace_sec:
+                    return None
+                lost_epoch = _aone_event_source_part(
+                    "%s:lease-%d" % (epoch, int(lease_expire_at)), limit=160)
+                return {
+                    "category": "heartbeat-lost", "epoch": lost_epoch,
+                    "confirm": False,
+                    "detail": "LEASED session lease expired %d minutes ago"
+                              % (silent_sec // 60),
+                    "age_min": silent_sec // 60,
+                }
+
+            session_heartbeat = self._last_health_epoch(session, timeline)
+            if session_heartbeat is None:
+                return {
+                    "category": "control-plane-structure", "epoch": epoch,
+                    "confirm": True,
+                    "detail": "RUNNING Session has no heartbeat timestamp",
+                }
+
+            current_worker = timeline.get("currentWorker")
+            if current_worker is None:
+                # The server clears currentWorker as soon as the lease is no longer
+                # authoritative.  Once both the lease and the 15-minute heartbeat
+                # convergence window are past, null is positive lost-contact evidence.
+                silent_sec = max(0, int(now_epoch - session_heartbeat))
+                if lease_expire_at > now_epoch:
+                    return False
+                if silent_sec < self.claim_heartbeat_grace_sec:
+                    return None
+                lost_epoch = _aone_event_source_part(
+                    "%s:hb-%d:lease-%d" % (
+                        epoch, int(session_heartbeat), int(lease_expire_at)), limit=160)
+                return {
+                    "category": "heartbeat-lost", "epoch": lost_epoch,
+                    "confirm": False,
+                    "detail": "last healthy heartbeat was %d minutes ago"
+                              % (silent_sec // 60),
+                    "age_min": silent_sec // 60,
+                }
+            if not isinstance(current_worker, dict):
+                return {
+                    "category": "control-plane-structure", "epoch": epoch,
+                    "confirm": True, "detail": "current Worker shape is invalid",
+                }
+            if isinstance(current_worker.get("worker"), dict):
+                current_worker = current_worker["worker"]
+            session_worker_id = session.get("currentWorkerId")
+            worker_id = current_worker.get("id")
+            if (session_worker_id is None or worker_id is None
+                    or str(session_worker_id) != str(worker_id)):
+                return {
+                    "category": "control-plane-structure", "epoch": epoch,
+                    "confirm": True, "detail": "Session/Worker ownership link mismatches",
+                }
+            worker_status = str(
+                current_worker.get("status")
+                or current_worker.get("activityStatus") or "").strip().upper()
+            if worker_status != "ACTIVE":
+                return {
+                    "category": "control-plane-structure", "epoch": epoch,
+                    "confirm": True,
+                    "detail": "current Worker is %s" % (worker_status or "unknown"),
+                }
+            worker_heartbeat = self._parse_control_time(
+                current_worker.get("lastHeartbeatAt"))
+            if worker_heartbeat is None:
+                return {
+                    "category": "control-plane-structure", "epoch": epoch,
+                    "confirm": True, "detail": "current Worker has no heartbeat timestamp",
+                }
+            heartbeat_at = min(session_heartbeat, worker_heartbeat)
+            silent_sec = max(0, int(now_epoch - heartbeat_at))
+            if silent_sec < self.claim_heartbeat_grace_sec:
+                # The lease may already have expired; the explicit 15-minute window is
+                # for lease/reaper convergence from the last healthy heartbeat.
+                return None
+            if lease_expire_at > now_epoch:
+                return False
+            lost_epoch = _aone_event_source_part(
+                "%s:hb-%d:lease-%d" % (
+                    epoch, int(heartbeat_at), int(lease_expire_at)), limit=160)
+            return {
+                "category": "heartbeat-lost", "epoch": lost_epoch,
+                "confirm": False,
+                "detail": "last healthy heartbeat was %d minutes ago"
+                          % (silent_sec // 60),
+                "age_min": silent_sec // 60,
+            }
+        if status == "SUSPENDED":
+            if session is None:
+                return {
+                    "category": "control-plane-structure", "epoch": epoch,
+                    "confirm": True, "detail": "SUSPENDED Task has no current Session",
+                }
+            lineage_issue = self._session_lineage_issue(task, session)
+            if lineage_issue:
+                return {
+                    "category": "control-plane-structure", "epoch": epoch,
+                    "confirm": True, "detail": lineage_issue,
+                }
+            session_status = str(session.get("status") or "").strip().upper()
+            if session_status != "SUSPENDED":
+                return {
+                    "category": "control-plane-structure", "epoch": epoch,
+                    "confirm": True,
+                    "detail": "SUSPENDED Task has %s Session"
+                              % (session_status or "unknown"),
+                }
+            wait_type = str(session.get("waitType") or "").strip().upper()
+            raw_wait_expire = session.get("waitExpireAt")
+            wait_expire_at = self._parse_control_time(raw_wait_expire)
+            if (wait_type in ("AONE_REPLY", "MANUAL")
+                    and not str(raw_wait_expire or "").strip()):
+                return None
+            if str(raw_wait_expire or "").strip() and wait_expire_at is None:
+                return False
+            if wait_type in self._CLAIM_WAIT_TYPES and (
+                    wait_expire_at is not None and wait_expire_at > now_epoch):
+                return None
+            if wait_type in self._CLAIM_WAIT_TYPES and wait_expire_at is not None:
+                return {
+                    "category": "expired-wait", "epoch": epoch,
+                    "confirm": True,
+                    "detail": "%s wait expired" % wait_type,
+                }
+            return {
+                "category": "control-plane-structure", "epoch": epoch,
+                "confirm": True, "detail": "SUSPENDED wait metadata is incomplete",
+            }
+        if status == "RECOVERY_REQUIRED":
+            return {
+                "category": "recovery-required", "epoch": epoch,
+                "confirm": True, "detail": "Task requires manual recovery",
+            }
+        if status in self._CLAIM_RECOVERING_TASK_STATES:
+            return None
+        return {
+            "category": "control-plane-structure", "epoch": epoch,
+            "confirm": True, "detail": "unknown Task status %s" % status,
+        }
+
+    def _inspect_claim_health(self, item, now_epoch):
+        """Return one anomaly dict, ``None`` for healthy, or ``False`` if inconclusive."""
+        iid = str(item.get("id") or "")
+        client = getattr(getattr(self, "execution_router", None), "client", None)
+        if client is None:
+            return False
+        try:
+            response = client.get_task_by_aone(iid)
+        except Exception as exc:  # noqa: BLE001
+            log.warning("ClaimHealthScheduler: task point-read #%s failed: %s", iid, exc)
+            return False
+        tasks = self._task_rows(response)
+        if tasks is None:
+            return {
+                "category": "control-plane-structure",
+                "epoch": "malformed-task-response",
+                "confirm": True,
+                "detail": "Task point-read response is malformed",
+            }
+        if not tasks:
+            age_min = self._claim_age_min(iid)
+            if age_min is None or age_min < self.claim_legacy_fallback_min:
+                return None
+            return {
+                "category": "legacy-no-task", "epoch": "no-task",
+                "confirm": True, "detail": "no Task after %d minutes" % age_min,
+                "age_min": age_min,
+            }
+
+        seen_rows = {}
+        for task in tasks:
+            identity = (str(task.get("id") or task.get("taskId")),
+                        str(task.get("generation")))
+            shape = (str(task.get("status")), str(task.get("currentSessionId")),
+                     str(task.get("stateVersion")))
+            if identity in seen_rows and seen_rows[identity] != shape:
+                return False
+            seen_rows[identity] = shape
+
+        primary = self._current_task(tasks)
+        primary_result = self._inspect_claim_task(iid, primary, client, now_epoch)
+        if primary_result is False or primary_result is None:
+            return primary_result
+        # by-aone may expose historical generations.  A credible healthy active/current
+        # row suppresses a terminal-residue alert; conflicting active epochs are
+        # inconclusive until the next point read instead of choosing max blindly.
+        active_statuses = self._CLAIM_ACTIVE_TASK_STATES | {"SUSPENDED"} \
+            | self._CLAIM_RECOVERING_TASK_STATES
+        primary_identity = (
+            str(primary.get("id") or primary.get("taskId")),
+            str(primary.get("generation")),
+        )
+        for task in tasks:
+            identity = (
+                str(task.get("id") or task.get("taskId")),
+                str(task.get("generation")),
+            )
+            if identity == primary_identity:
+                continue
+            if str(task.get("status") or "").upper() not in active_statuses:
+                continue
+            other = self._inspect_claim_task(iid, task, client, now_epoch)
+            if other is None:
+                return None
+            return False
+        return primary_result
+
+    @staticmethod
+    def _claim_anomaly_fingerprint(anomaly):
+        """Stable semantic anchor; excludes changing ages and observation times."""
+        category = str(anomaly.get("category") or "unknown").strip().lower()
+        if category == "control-plane-structure":
+            detail = re.sub(
+                r"\s+", " ", str(anomaly.get("detail") or "unknown").strip().lower())
+            digest = hashlib.sha256(detail.encode("utf-8")).hexdigest()[:12]
+            return "structure-%s" % digest
+        return _aone_event_source_part(category, limit=48)
+
+    def _confirmed_claim_anomaly(self, iid, anomaly, now_monotonic):
+        observations = getattr(self, "_claim_health_observations", None)
+        if observations is None:
+            observations = self._claim_health_observations = {}
+        signature = "%s:%s:%s:%s" % (
+            anomaly["category"], anomaly["epoch"],
+            anomaly.get("fingerprint") or "unanchored",
+            anomaly.get("claim_epoch") or "unbound")
+        previous = observations.get(iid)
+        if previous is None or previous.get("signature") != signature:
+            observations[iid] = {"signature": signature, "first_seen": now_monotonic}
+            return not anomaly.get("confirm", False)
+        if not anomaly.get("confirm", False):
+            return True
+        return now_monotonic - previous["first_seen"] >= self.claim_confirmation_sec
+
+    def _reconcile_stale_claims(self, snapshot, now_epoch=None, now_monotonic=None):
+        """Alert only for control-plane corroborated unhealthy claim epochs.
+
+        RUNNING/LEASED duration is irrelevant while Session health advances.  A missing
+        heartbeat gets a 15-minute lease/reaper convergence grace.  No-Task, terminal
+        residue, expired wait, recovery-required and malformed-state observations need
+        two matching reads at least five minutes apart.  A control-plane read failure is
+        neither an anomaly nor a confirmation.
+        """
+        now_epoch = float(now_epoch if now_epoch is not None else time.time())
+        now_monotonic = float(
+            now_monotonic if now_monotonic is not None else time.monotonic())
+        observations = getattr(self, "_claim_health_observations", None)
+        if observations is None:
+            observations = self._claim_health_observations = {}
+        current_ids = {
+            str(item.get("id") or "") for item in snapshot.values()
+            if isinstance(item, dict) and "jarvis-claimed" in _tagset(item)
+        }
+        for old_iid in set(observations) - current_ids:
+            observations.pop(old_iid, None)
+
+        alerts = []
+        for item in snapshot.values():
+            if not isinstance(item, dict) or "jarvis-claimed" not in _tagset(item):
+                continue
+            iid = str(item.get("id") or "")
+            if not iid.isdigit():
+                continue
+            anomaly = self._inspect_claim_health(item, now_epoch)
+            if anomaly is False:
+                continue
+            if anomaly is None:
+                observations.pop(iid, None)
+                continue
+            anomaly = dict(anomaly)
+            anomaly["fingerprint"] = self._claim_anomaly_fingerprint(anomaly)
+            if anomaly.get("confirm", False):
+                try:
+                    anomaly["claim_epoch"] = self._claim_health_tag_epoch(
+                        iid, "jarvis-claimed")
+                except RuntimeError:
+                    # Confirmation must never cross a release/re-claim epoch.  An
+                    # unavailable activity read is inconclusive, not a confirmation.
+                    continue
+            if self._confirmed_claim_anomaly(iid, anomaly, now_monotonic):
+                alerts.append((item, anomaly))
+
+        delivered = 0
+        for item, anomaly in alerts:
+            iid = str(item.get("id"))
+            project = str(item.get("pool_project") or "")
+            if not project:
+                continue
+            claim_epoch = anomaly.get("claim_epoch")
+            if not claim_epoch:
+                try:
+                    claim_epoch = self._claim_health_tag_epoch(
+                        iid, "jarvis-claimed")
+                except RuntimeError:
+                    log.warning(
+                        "claim-health alert #%s activity unavailable; retry next round", iid)
+                    continue
+            category = anomaly["category"]
+            control_epoch = anomaly["epoch"]
+            fingerprint = anomaly["fingerprint"]
+            event_key = "claim-health:%s:%s:%s:%s:%s" % (
+                iid, category, control_epoch, fingerprint, claim_epoch)
+            ticket_url = (
+                "https://project.aone.alibaba-inc.com/v2/project/%s/req/%s"
+                % (project, iid))
             aone_text = (
-                "### 超时认领告警\n\n"
-                "检测到 `jarvis-claimed` 已持续约 %d 分钟，超过 %d 分钟阈值。"
-                "控制面 reaper 会负责 Session 恢复；请人工核对工单是否仍有活跃执行。"
-                "本次仅告警，系统未修改标签或状态。" % (age_min, ttl_min))
+                "### 认领健康告警\n\n"
+                "`jarvis-claimed` 的控制面状态异常（`%s`）：%s。"
+                "健康 RUNNING/LEASED 任务不会按总执行时长告警；"
+                "本次仅告警，系统未修改标签或状态。"
+                % (category, anomaly["detail"]))
             dm_text = (
-                "工单 [#%s](%s) 的 `jarvis-claimed` 已持续约 %d 分钟（阈值 %d 分钟）。"
-                "请核对是否仍有活跃执行；本次仅告警，系统未修改标签或状态。"
-                % (iid, ticket_url, age_min, ttl_min))
+                "工单 [#%s](%s) 的认领健康异常（`%s`）：%s。"
+                "本次仅告警，系统未修改标签或状态。"
+                % (iid, ticket_url, category, anomaly["detail"]))
             terraform = _is_terraform_ticket(
-                it.get("pool", ""), it.get("title", ""))
+                item.get("pool", ""), item.get("title", ""))
             allow_non_tf = not _is_terraform_project(project)
             try:
                 aone_ok = _aone_event_enqueue(
@@ -4542,36 +5168,29 @@ class AoneScheduler:
                     identity=PERSONA_PUBLIC_IDENTITY if terraform else "jarvis")
             except Exception as exc:  # noqa: BLE001 — channels are independent
                 aone_ok = False
-                log.warning("stale-claim Aone enqueue #%s failed: %s", iid, exc)
+                log.warning("claim-health Aone enqueue #%s failed: %s", iid, exc)
             try:
                 dm_ok = _dingtalk_event_enqueue(
                     iid, project, event_key, master_staff(),
-                    "Jarvis 超时认领告警", dm_text,
+                    "Jarvis 认领健康告警", dm_text,
                     allow_non_tf=allow_non_tf)
             except Exception as exc:  # noqa: BLE001 — channels are independent
                 dm_ok = False
-                log.warning("stale-claim DingTalk enqueue #%s failed: %s", iid, exc)
+                log.warning("claim-health DingTalk enqueue #%s failed: %s", iid, exc)
             delivered += int(aone_ok and dm_ok)
             log.warning(
-                "stale-claim alert #%s age=%dmin aone=%s dm=%s",
-                iid, age_min, aone_ok, dm_ok)
-        log.warning("stale-claim reconcile: candidates=%d delivered=%d",
-                    len(stale), delivered)
-
-    @staticmethod
-    def _claim_ttl_min():
-        try:
-            cfg = json.loads((Path(REPO_ROOT) / "config" / "pools.json").read_text())
-            return int(cfg.get("claim", {}).get("ttl_min", 45))
-        except Exception:  # noqa: BLE001
-            return 45
+                "claim-health alert #%s category=%s epoch=%s aone=%s dm=%s",
+                iid, category, control_epoch, aone_ok, dm_ok)
+        if alerts:
+            log.warning("claim-health reconcile: candidates=%d delivered=%d",
+                        len(alerts), delivered)
 
     def _claim_age_min(self, iid):
         """Minutes since the jarvis-claimed tag was applied, or None if unresolved.
-        Reuses the per-tick activity cache and the tag-transition parser shared with
-        the idle human-gate path (property=标签, newValue gains jarvis-claimed)."""
+        Uses the health loop's isolated activity cache so a 30-minute discovery cache
+        cannot leak an old claim epoch into a newer health observation."""
         latest = None
-        for act in self._activities(iid):
+        for act in self._claim_health_activities(iid):
             if not isinstance(act, dict):
                 continue
             if str(act.get("property", "")).strip() != "标签":

@@ -57,7 +57,8 @@ cat > "$POOLS_TMP" <<'EOF'
     "label": "jarvis-claimed",
     "idle_label": "jarvis-idle",
     "done_label": "jarvis-done",
-    "ttl_min": 45
+    "health": {"check_interval_sec": 300, "heartbeat_grace_min": 15,
+               "confirmation_interval_min": 5, "legacy_fallback_min": 180}
   }
 }
 EOF

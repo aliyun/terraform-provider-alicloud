@@ -319,6 +319,11 @@
       "Reopen",
       "已排期"
     ],
-    "ttl_min": 45
+    "health": {
+      "check_interval_sec": 300,
+      "heartbeat_grace_min": 15,
+      "confirmation_interval_min": 5,
+      "legacy_fallback_min": 180
+    }
   }
 }

@@ -116,7 +116,7 @@ bootstrap/claim.sh release <id> <pool-project>                                # 
 bridge scheduler 统一承担收敛，不再运行本地 reconcile 脚本：
 
 - 服务端 reaper 按 Worker/Session heartbeat、lease 和 fence 收敛死亡执行，并把可恢复 Task 放回恢复链路。
-- AoneScheduler 周期检查超时 `jarvis-claimed`，通过幂等事件发布器广播 needs-attention；有 Task 的工单以控制面状态为准，无 Task 的 legacy claim 只告警、不凭本地历史猜测 release。
+- ClaimHealthScheduler 最多每 5 分钟对账 `jarvis-claimed` 与控制面 Task/Session/timeline：健康 RUNNING/LEASED 不按总时长告警，未过期 AONE_REPLY/MANUAL wait 静默，心跳失联留 15 分钟给 lease/reaper 收敛；无 Task/终态残留/结构异常需间隔至少 5 分钟的两次确认。仅控制面明确无 Task 时才用 180 分钟 legacy fallback；单次查询失败静默重试。告警仍走 Aone/钉钉双通道幂等 ledger，不自动 release。
 - AoneScheduler 对账 `jarvis-done` 标签与合法完成态集合（`.claim.done_statuses` ∪ 各池 `.done_status`，含 tf_provider `待发布`），漂移时发布一次状态告警。
 - `claim.sh finish` 若 done_status 未能落地，立即降级 `jarvis-done`→`jarvis-idle` 并返回失败，由当前 Task 进入 needs-attention，避免制造跳过黑洞。
 

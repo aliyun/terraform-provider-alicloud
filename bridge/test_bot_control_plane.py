@@ -10,6 +10,7 @@ import tempfile
 import threading
 import time
 import unittest
+from datetime import datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
@@ -777,12 +778,10 @@ class AoneSchedulerUnionTest(unittest.TestCase):
 
     def test_tick_dispatches_before_bounded_lifecycle_observation(self):
         scanner = self._scanner()
-        scanner._tick_count = 0
         scanner._prev_snapshot = {}
         scanner.pending = {}
         scanner._lock = threading.Lock()
         scanner.auto = True
-        scanner.STALE_CHECK_EVERY = 4
         scanner._load_human_operators = mock.Mock(return_value=set())
         scanner._scan_union = mock.Mock(return_value=[{
             "id": "84386065", "modified": "2026-07-20 12:00:00",
@@ -937,41 +936,430 @@ class AoneSchedulerUnionTest(unittest.TestCase):
             first,
             scanner._last_tag_added_epoch("84551585", "jarvis-done", strict=True))
 
-    def test_stale_claim_uses_durable_dual_channel_epoch(self):
-        scanner = self._scanner()
-        scanner._claim_age_min = mock.Mock(return_value=61)
-        scanner._last_tag_added_epoch = mock.Mock(return_value="claimepoch")
-        item = {
-            "id": "84551585", "title": "超时认领", "pool": "api_toolkit",
+    @staticmethod
+    def _claimed_item():
+        return {
+            "id": "84551585", "title": "认领健康检查", "pool": "api_toolkit",
             "pool_project": "2100304", "tag": ["jarvis-claimed"],
         }
-        with mock.patch.object(scanner, "_claim_ttl_min", return_value=45), \
-             mock.patch.object(bot, "_aone_event_enqueue", return_value=True) as aone, \
-             mock.patch.object(bot, "_dingtalk_event_enqueue", return_value=True) as dm:
-            scanner._reconcile_stale_claims({"84551585": item})
 
-        self.assertEqual(aone.call_args.args[2],
-                         "stale-claim:84551585:claimepoch")
+    def _health_scanner(self, client):
+        scanner = self._scanner()
+        scanner.execution_router = SimpleNamespace(client=client)
+        scanner.claim_heartbeat_grace_sec = 15 * 60
+        scanner.claim_confirmation_sec = 5 * 60
+        scanner.claim_legacy_fallback_min = 180
+        scanner._claim_health_observations = {}
+        scanner._claim_age_min = mock.Mock(return_value=600)
+        scanner._claim_health_tag_epoch = mock.Mock(return_value="claimepoch")
+        return scanner
+
+    @staticmethod
+    def _active_client(status, heartbeat_at):
+        heartbeat_epoch = datetime.fromisoformat(
+            heartbeat_at.replace("Z", "+00:00")).timestamp()
+        client = mock.Mock()
+        client.get_task_by_aone.return_value = [{
+            "id": 700, "generation": 8, "status": status,
+            "currentSessionId": 901,
+        }]
+        client.get_task_timeline.return_value = {
+            "sessions": [{
+                "id": 901, "status": status, "fenceToken": 12,
+                "taskId": 700, "generation": 8, "currentWorkerId": 77,
+                "lastHeartbeatAt": heartbeat_at,
+                "leaseExpireAt": datetime.fromtimestamp(
+                    heartbeat_epoch + 660, timezone.utc).isoformat(),
+            }],
+            "currentWorker": {
+                "id": 77, "status": "ACTIVE", "lastHeartbeatAt": heartbeat_at,
+            },
+            "events": [],
+        }
+        return client
+
+    def test_claim_health_running_and_leased_ignore_total_claim_age(self):
+        now = 1_800_000_000
+        heartbeat = datetime.fromtimestamp(
+            now - 60, timezone.utc).isoformat().replace("+00:00", "Z")
+        for status in ("RUNNING", "LEASED"):
+            with self.subTest(status=status):
+                scanner = self._health_scanner(
+                    self._active_client(status, heartbeat))
+                anomaly = scanner._inspect_claim_health(self._claimed_item(), now)
+                self.assertIsNone(anomaly)
+                scanner._claim_age_min.assert_not_called()
+
+    def test_claim_health_unexpired_or_open_ended_waits_are_healthy(self):
+        now = 1_800_000_000
+        for wait_type, wait_expire in (
+                ("AONE_REPLY", None), ("MANUAL", None),
+                ("AONE_REPLY", now + 3600), ("MANUAL", now + 3600),
+                ("TIMER", now + 3600)):
+            client = mock.Mock()
+            client.get_task_by_aone.return_value = [{
+                "id": 700, "generation": 8, "status": "SUSPENDED",
+                "currentSessionId": 901,
+            }]
+            session = {
+                "id": 901, "status": "SUSPENDED", "fenceToken": 12,
+                "taskId": 700, "generation": 8,
+                "waitType": wait_type,
+            }
+            if wait_expire is not None:
+                session["waitExpireAt"] = datetime.fromtimestamp(
+                    wait_expire, timezone.utc).isoformat()
+            client.get_task_timeline.return_value = {
+                "sessions": [session], "events": [],
+            }
+            with self.subTest(wait_type=wait_type, wait_expire=wait_expire):
+                scanner = self._health_scanner(client)
+                self.assertIsNone(
+                    scanner._inspect_claim_health(self._claimed_item(), now))
+
+    def test_claim_health_suspended_session_lineage_mismatch_is_structure(self):
+        now = 1_800_000_000
+        mutations = (
+            ("cross-task", {"taskId": 701}),
+            ("cross-generation", {"generation": 9}),
+            ("wrong-status", {"status": "RUNNING"}),
+        )
+        for name, mutation in mutations:
+            client = mock.Mock()
+            client.get_task_by_aone.return_value = [{
+                "id": 700, "generation": 8, "status": "SUSPENDED",
+                "currentSessionId": 901,
+            }]
+            session = {
+                "id": 901, "taskId": 700, "generation": 8,
+                "status": "SUSPENDED", "fenceToken": 12,
+                "waitType": "AONE_REPLY",
+            }
+            session.update(mutation)
+            client.get_task_timeline.return_value = {
+                "sessions": [session], "events": [],
+            }
+            with self.subTest(name=name):
+                anomaly = self._health_scanner(client)._inspect_claim_health(
+                    self._claimed_item(), now)
+                self.assertEqual(anomaly["category"], "control-plane-structure")
+                self.assertTrue(anomaly["confirm"])
+
+    def test_claim_health_suspended_lineage_mismatch_needs_two_confirmations(self):
+        client = mock.Mock()
+        client.get_task_by_aone.return_value = [{
+            "id": 700, "generation": 8, "status": "SUSPENDED",
+            "currentSessionId": 901,
+        }]
+        client.get_task_timeline.return_value = {
+            "sessions": [{
+                "id": 901, "taskId": 701, "generation": 8,
+                "status": "SUSPENDED", "fenceToken": 12,
+                "waitType": "AONE_REPLY",
+            }], "events": [],
+        }
+        scanner = self._health_scanner(client)
+        snapshot = {"84551585": self._claimed_item()}
+        with mock.patch.object(bot, "_aone_event_enqueue", return_value=True) as aone, \
+             mock.patch.object(bot, "_dingtalk_event_enqueue", return_value=True):
+            scanner._reconcile_stale_claims(
+                snapshot, now_epoch=1000, now_monotonic=1000)
+            aone.assert_not_called()
+            scanner._reconcile_stale_claims(
+                snapshot, now_epoch=1300, now_monotonic=1300)
+        self.assertIn("control-plane-structure", aone.call_args.args[2])
+
+    def test_claim_health_heartbeat_grace_starts_at_last_healthy_heartbeat(self):
+        now = 1_800_000_000
+        fresh = datetime.fromtimestamp(
+            now - 14 * 60, timezone.utc).isoformat()
+        stale = datetime.fromtimestamp(
+            now - 16 * 60, timezone.utc).isoformat()
+        self.assertIsNone(self._health_scanner(
+            self._active_client("RUNNING", fresh))._inspect_claim_health(
+                self._claimed_item(), now))
+        anomaly = self._health_scanner(
+            self._active_client("RUNNING", stale))._inspect_claim_health(
+                self._claimed_item(), now)
+        self.assertEqual(anomaly["category"], "heartbeat-lost")
+        self.assertFalse(anomaly["confirm"])
+        self.assertIn("f-12", anomaly["epoch"])
+        self.assertIn("hb-", anomaly["epoch"])
+        self.assertIn("lease-", anomaly["epoch"])
+
+    def test_claim_health_finalizing_and_leased_do_not_need_running_heartbeat(self):
+        now = 1_800_000_000
+        finalizing = mock.Mock()
+        finalizing.get_task_by_aone.return_value = [{
+            "id": 700, "generation": 8, "status": "FINALIZING",
+            "currentSessionId": 901,
+        }]
+        finalizing.get_task_timeline.return_value = {
+            "sessions": [{"id": 901, "status": "CLOSED"}], "events": [],
+        }
+        self.assertIsNone(self._health_scanner(finalizing)._inspect_claim_health(
+            self._claimed_item(), now))
+
+        leased = mock.Mock()
+        leased.get_task_by_aone.return_value = [{
+            "id": 701, "generation": 3, "status": "LEASED",
+            "currentSessionId": 902,
+        }]
+        leased.get_task_timeline.return_value = {
+            "sessions": [{
+                "id": 902, "taskId": 701, "generation": 3,
+                "status": "LEASED", "fenceToken": 2,
+                "leaseExpireAt": now + 60,
+            }], "events": [],
+        }
+        self.assertIsNone(self._health_scanner(leased)._inspect_claim_health(
+            self._claimed_item(), now))
+
+    def test_claim_health_multi_row_healthy_active_suppresses_terminal_residue(self):
+        now = 1_800_000_000
+        heartbeat = datetime.fromtimestamp(now - 60, timezone.utc).isoformat()
+        active = self._active_client("RUNNING", heartbeat)
+        client = mock.Mock()
+        client.get_task_by_aone.return_value = [
+            {"id": 800, "generation": 8, "status": "SUCCEEDED"},
+            active.get_task_by_aone.return_value[0],
+        ]
+        terminal_timeline = {"sessions": [], "events": []}
+        active_timeline = active.get_task_timeline.return_value
+        client.get_task_timeline.side_effect = lambda task_id: (
+            terminal_timeline if task_id == "800" else active_timeline)
+        self.assertIsNone(self._health_scanner(client)._inspect_claim_health(
+            self._claimed_item(), now))
+
+    def test_claim_health_timeline_epoch_mismatch_is_inconclusive(self):
+        now = 1_800_000_000
+        heartbeat = datetime.fromtimestamp(now - 60, timezone.utc).isoformat()
+        client = self._active_client("RUNNING", heartbeat)
+        client.get_task_timeline.return_value["task"] = {
+            "id": 700, "generation": 9, "status": "RUNNING",
+            "currentSessionId": 901,
+        }
+        self.assertIs(
+            self._health_scanner(client)._inspect_claim_health(
+                self._claimed_item(), now), False)
+
+    def test_claim_health_running_null_worker_uses_expired_lease_and_session_heartbeat(self):
+        now = 1_800_000_000
+        heartbeat = datetime.fromtimestamp(now - 60, timezone.utc).isoformat()
+        client = self._active_client("RUNNING", heartbeat)
+        timeline = client.get_task_timeline.return_value
+        timeline["currentWorker"] = None
+        timeline["sessions"][0]["leaseExpireAt"] = now - 1
+        self.assertIsNone(self._health_scanner(client)._inspect_claim_health(
+            self._claimed_item(), now))
+        stale = datetime.fromtimestamp(now - 16 * 60, timezone.utc).isoformat()
+        timeline["sessions"][0]["lastHeartbeatAt"] = stale
+        timeline["sessions"][0]["leaseExpireAt"] = now - 300
+        anomaly = self._health_scanner(client)._inspect_claim_health(
+            self._claimed_item(), now)
+        self.assertEqual(anomaly["category"], "heartbeat-lost")
+
+    def test_claim_health_running_worker_link_and_status_use_actual_ids(self):
+        now = 1_800_000_000
+        heartbeat = datetime.fromtimestamp(now - 60, timezone.utc).isoformat()
+        client = self._active_client("RUNNING", heartbeat)
+        timeline = client.get_task_timeline.return_value
+        timeline["currentWorker"]["id"] = 88
+        mismatch = self._health_scanner(client)._inspect_claim_health(
+            self._claimed_item(), now)
+        self.assertEqual(mismatch["category"], "control-plane-structure")
+        self.assertTrue(mismatch["confirm"])
+        timeline["currentWorker"]["id"] = 77
+        timeline["currentWorker"]["status"] = "OFFLINE"
+        inactive = self._health_scanner(client)._inspect_claim_health(
+            self._claimed_item(), now)
+        self.assertEqual(inactive["category"], "control-plane-structure")
+        self.assertTrue(inactive["confirm"])
+
+    def test_claim_health_time_parser_accepts_epoch_and_rejects_naive(self):
+        self.assertEqual(bot.AoneScheduler._parse_control_time(1_800_000_000),
+                         1_800_000_000)
+        self.assertEqual(bot.AoneScheduler._parse_control_time(1_800_000_000_000),
+                         1_800_000_000)
+        offset_time = "2027-01-15T09:00:00+08:00"
+        self.assertEqual(bot.AoneScheduler._parse_control_time(offset_time),
+                         datetime.fromisoformat(offset_time).timestamp())
+        self.assertIsNone(bot.AoneScheduler._parse_control_time(
+            "2027-01-15 01:00:00"))
+        self.assertIsNone(bot.AoneScheduler._parse_control_time("not-a-time"))
+
+    def test_claim_health_structural_anomalies_need_two_reads_five_minutes_apart(self):
+        client = mock.Mock()
+        client.get_task_by_aone.return_value = [{
+            "id": 700, "generation": 8, "status": "SUCCEEDED",
+            "currentSessionId": 901,
+        }]
+        client.get_task_timeline.return_value = {
+            "sessions": [{"id": 901, "status": "CLOSED", "fenceToken": 12}],
+            "events": [],
+        }
+        scanner = self._health_scanner(client)
+        snapshot = {"84551585": self._claimed_item()}
+        with mock.patch.object(bot, "_aone_event_enqueue", return_value=True) as aone, \
+             mock.patch.object(bot, "_dingtalk_event_enqueue", return_value=True) as dm:
+            scanner._reconcile_stale_claims(
+                snapshot, now_epoch=1000, now_monotonic=1000)
+            scanner._reconcile_stale_claims(
+                snapshot, now_epoch=1299, now_monotonic=1299)
+            aone.assert_not_called()
+            dm.assert_not_called()
+            scanner._reconcile_stale_claims(
+                snapshot, now_epoch=1300, now_monotonic=1300)
+        self.assertIn("terminal-claim-residue", aone.call_args.args[2])
+        self.assertIn("task-700:g-8:s-901:f-12", aone.call_args.args[2])
         self.assertEqual(aone.call_args.kwargs,
                          {"allow_non_tf": True, "identity": "jarvis"})
-        self.assertEqual(dm.call_args.args[2],
-                         "stale-claim:84551585:claimepoch")
+        self.assertEqual(dm.call_args.args[2], aone.call_args.args[2])
         self.assertEqual(dm.call_args.args[3], bot.master_staff())
-        self.assertNotIn("escalation", aone.call_args.args[3])
 
-    def test_stale_claim_activity_failure_emits_no_unstable_event(self):
-        scanner = self._scanner()
-        scanner._claim_age_min = mock.Mock(return_value=61)
-        scanner._last_tag_added_epoch = mock.Mock(
-            side_effect=RuntimeError("activity unavailable"))
-        item = {
-            "id": "84551585", "title": "超时认领", "pool": "api_toolkit",
-            "pool_project": "2100304", "tag": ["jarvis-claimed"],
+    def test_claim_health_running_or_leased_corrupted_session_is_confirmed_structure(self):
+        now = 1_800_000_000
+        for task_status, session_status in (
+                ("RUNNING", "CORRUPTED"), ("LEASED", "CLOSED")):
+            client = mock.Mock()
+            client.get_task_by_aone.return_value = [{
+                "id": 700, "generation": 8, "status": task_status,
+                "currentSessionId": 901,
+            }]
+            client.get_task_timeline.return_value = {
+                "sessions": [{
+                    "id": 901, "taskId": 700, "generation": 8,
+                    "status": session_status, "fenceToken": 12,
+                }], "events": [],
+            }
+            with self.subTest(task=task_status, session=session_status):
+                anomaly = self._health_scanner(client)._inspect_claim_health(
+                    self._claimed_item(), now)
+                self.assertEqual(anomaly["category"], "control-plane-structure")
+                self.assertTrue(anomaly["confirm"])
+
+    def test_claim_health_confirmation_is_bound_to_claim_epoch(self):
+        scanner = self._health_scanner(mock.Mock())
+        scanner._inspect_claim_health = mock.Mock(return_value={
+            "category": "terminal-claim-residue",
+            "epoch": "task-700:g-8:s-901:f-12",
+            "confirm": True,
+            "detail": "terminal residue",
+        })
+        claim_epoch = {"value": "claim-a"}
+        scanner._claim_health_tag_epoch.side_effect = (
+            lambda *_args: claim_epoch["value"])
+        snapshot = {"84551585": self._claimed_item()}
+        with mock.patch.object(bot, "_aone_event_enqueue", return_value=True) as aone, \
+             mock.patch.object(bot, "_dingtalk_event_enqueue", return_value=True):
+            scanner._reconcile_stale_claims(
+                snapshot, now_epoch=1000, now_monotonic=1000)
+            claim_epoch["value"] = "claim-b"
+            scanner._reconcile_stale_claims(
+                snapshot, now_epoch=1300, now_monotonic=1300)
+            aone.assert_not_called()
+            scanner._reconcile_stale_claims(
+                snapshot, now_epoch=1600, now_monotonic=1600)
+        self.assertIn("claim-b", aone.call_args.args[2])
+
+    def test_claim_health_structure_detail_change_restarts_confirmation(self):
+        scanner = self._health_scanner(mock.Mock())
+        anomaly_a = {
+            "category": "control-plane-structure",
+            "epoch": "task-700:g-8:s-901:f-12",
+            "confirm": True,
+            "detail": "RUNNING Task has CORRUPTED Session",
         }
-        with mock.patch.object(scanner, "_claim_ttl_min", return_value=45), \
-             mock.patch.object(bot, "_aone_event_enqueue") as aone, \
+        anomaly_b = dict(
+            anomaly_a, detail="Session/Worker ownership link mismatches")
+        scanner._inspect_claim_health = mock.Mock(
+            side_effect=[anomaly_a, anomaly_b, anomaly_b])
+        snapshot = {"84551585": self._claimed_item()}
+        with mock.patch.object(bot, "_aone_event_enqueue", return_value=True) as aone, \
+             mock.patch.object(bot, "_dingtalk_event_enqueue", return_value=True):
+            scanner._reconcile_stale_claims(
+                snapshot, now_epoch=1000, now_monotonic=1000)
+            scanner._reconcile_stale_claims(
+                snapshot, now_epoch=1300, now_monotonic=1300)
+            aone.assert_not_called()
+            scanner._reconcile_stale_claims(
+                snapshot, now_epoch=1600, now_monotonic=1600)
+        fingerprint_a = scanner._claim_anomaly_fingerprint(anomaly_a)
+        fingerprint_b = scanner._claim_anomaly_fingerprint(anomaly_b)
+        self.assertNotEqual(fingerprint_a, fingerprint_b)
+        self.assertIn(fingerprint_b, aone.call_args.args[2])
+        self.assertNotIn(fingerprint_a, aone.call_args.args[2])
+
+    def test_claim_health_no_task_uses_only_legacy_180_minute_fallback(self):
+        client = mock.Mock()
+        client.get_task_by_aone.return_value = []
+        scanner = self._health_scanner(client)
+        scanner._claim_age_min.return_value = 179
+        self.assertIsNone(scanner._inspect_claim_health(self._claimed_item(), 1000))
+        scanner._claim_age_min.return_value = 180
+        anomaly = scanner._inspect_claim_health(self._claimed_item(), 1000)
+        self.assertEqual(anomaly["category"], "legacy-no-task")
+        self.assertTrue(anomaly["confirm"])
+
+    def test_claim_health_expired_wait_and_malformed_state_require_confirmation(self):
+        now = 1_800_000_000
+        client = mock.Mock()
+        client.get_task_by_aone.return_value = [{
+            "id": 700, "generation": 8, "status": "SUSPENDED",
+            "currentSessionId": 901,
+        }]
+        client.get_task_timeline.return_value = {
+            "sessions": [{
+                "id": 901, "status": "SUSPENDED", "fenceToken": 12,
+                "taskId": 700, "generation": 8,
+                "waitType": "MANUAL",
+                "waitExpireAt": datetime.fromtimestamp(
+                    now - 1, timezone.utc).isoformat(),
+            }], "events": [],
+        }
+        scanner = self._health_scanner(client)
+        expired = scanner._inspect_claim_health(self._claimed_item(), now)
+        self.assertEqual(expired["category"], "expired-wait")
+        self.assertTrue(expired["confirm"])
+        client.get_task_timeline.return_value = {"sessions": "broken", "events": []}
+        malformed = scanner._inspect_claim_health(self._claimed_item(), now)
+        self.assertEqual(malformed["category"], "control-plane-structure")
+        self.assertTrue(malformed["confirm"])
+
+    def test_claim_health_interval_is_capped_at_five_minutes(self):
+        handler = SimpleNamespace(
+            ephemeral_executor=None,
+            execution_router=SimpleNamespace(client=mock.Mock()),
+        )
+        with mock.patch.dict(os.environ, {
+                "JARVIS_CLAIM_HEALTH_INTERVAL_SEC": "900"}):
+            scanner = bot.AoneScheduler(handler)
+        self.assertEqual(scanner.claim_health_interval, 300)
+
+    def test_claim_health_single_control_plane_failure_never_alerts(self):
+        client = mock.Mock()
+        client.get_task_by_aone.side_effect = RuntimeError("temporary 503")
+        scanner = self._health_scanner(client)
+        with mock.patch.object(bot, "_aone_event_enqueue") as aone, \
              mock.patch.object(bot, "_dingtalk_event_enqueue") as dm:
-            scanner._reconcile_stale_claims({"84551585": item})
+            scanner._reconcile_stale_claims(
+                {"84551585": self._claimed_item()}, now_epoch=1000)
+        aone.assert_not_called()
+        dm.assert_not_called()
+        self.assertEqual(scanner._claim_health_observations, {})
+
+    def test_claim_health_activity_failure_emits_no_unstable_event(self):
+        now = 1_800_000_000
+        heartbeat = datetime.fromtimestamp(
+            now - 16 * 60, timezone.utc).isoformat()
+        scanner = self._health_scanner(
+            self._active_client("RUNNING", heartbeat))
+        scanner._claim_health_tag_epoch.side_effect = RuntimeError(
+            "activity unavailable")
+        with mock.patch.object(bot, "_aone_event_enqueue") as aone, \
+             mock.patch.object(bot, "_dingtalk_event_enqueue") as dm:
+            scanner._reconcile_stale_claims(
+                {"84551585": self._claimed_item()}, now_epoch=now)
         aone.assert_not_called()
         dm.assert_not_called()
 
@@ -1167,8 +1555,6 @@ class AoneSchedulerUnionTest(unittest.TestCase):
     def test_done_watch_is_incremental_and_modified_rechecks(self):
         s = self._scanner()
         s.auto = True
-        s._tick_count = 0
-        s.STALE_CHECK_EVERY = 999
         s._prev_snapshot = {}
         s.pending = {}
         s._lock = threading.Lock()
