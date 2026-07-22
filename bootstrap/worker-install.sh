@@ -144,8 +144,23 @@ command -v openssl >/dev/null 2>&1 || sudo yum install -y openssl
 ok "openssl = $(openssl version 2>&1)"
 # jq: bootstrap/claim.sh + bootstrap/verify.sh parse Aone JSON via jq — without
 # it every claim call and every jq-check in preflight silently fails. AliOS
-# minimal install skips it.
-command -v jq >/dev/null 2>&1 || sudo yum install -y jq
+# minimal install skips it, and some hosts' repo sets don't carry jq at all —
+# fall back to the static upstream binary (same GitHub releases host the uv
+# python step already downloads from). Lands in /usr/local/bin + /usr/bin
+# symlink like the python3 shim: cron's default PATH omits /usr/local/bin.
+JQ_SHA256="5942c9b0934e510ee61eb3e30273f1b3fe2590df93933a93d7c58b81d19c8ff5"  # jq-1.7.1 linux-amd64
+if ! command -v jq >/dev/null 2>&1; then
+  if ! sudo yum install -y jq; then
+    info "yum has no jq package; installing static jq-1.7.1 binary"
+    curl -fL -o "/tmp/jq.$$" \
+      https://github.com/jqlang/jq/releases/download/jq-1.7.1/jq-linux-amd64
+    echo "$JQ_SHA256  /tmp/jq.$$" | sha256sum -c - >/dev/null \
+      || die "jq binary sha256 mismatch — refusing to install"
+    chmod +x "/tmp/jq.$$"
+    sudo mv "/tmp/jq.$$" /usr/local/bin/jq
+    sudo ln -sfn /usr/local/bin/jq /usr/bin/jq
+  fi
+fi
 ok "jq = $(jq --version 2>&1)"
 # unzip/zip: cloudspec CLI ships as a zip (deps.lock install), and
 # cloudspec-build-linux.sh packages the fleet zip after a source build.
