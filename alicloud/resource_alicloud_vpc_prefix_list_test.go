@@ -136,6 +136,9 @@ func TestAccAlicloudVPCPrefixList_basic0(t *testing.T) {
 							"cidr":        "192.168.0.0/16",
 							"description": "${var.name}",
 						},
+						{
+							"cidr":       "192.168.1.0/24",
+						},
 					},
 					"prefix_list_name":        "${var.name}",
 					"prefix_list_description": "${var.name}",
@@ -144,7 +147,7 @@ func TestAccAlicloudVPCPrefixList_basic0(t *testing.T) {
 					testAccCheck(map[string]string{
 						"ip_version":              "IPV4",
 						"max_entries":             "50",
-						"entrys.#":                "1",
+						"entrys.#":                "2",
 						"prefix_list_name":        name,
 						"prefix_list_description": name,
 					}),
