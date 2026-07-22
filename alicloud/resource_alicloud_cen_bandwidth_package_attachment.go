@@ -87,6 +87,12 @@ func resourceAlicloudCenBandwidthPackageAttachmentRead(d *schema.ResourceData, m
 		return WrapError(err)
 	}
 
+	if len(object.CenIds.CenId) < 1 {
+		// The attachment is no longer associated with any CEN; treat it as gone.
+		d.SetId("")
+		return nil
+	}
+
 	d.Set("instance_id", object.CenIds.CenId[0])
 	d.Set("bandwidth_package_id", object.CenBandwidthPackageId)
 
