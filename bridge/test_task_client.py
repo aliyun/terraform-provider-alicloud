@@ -16,6 +16,7 @@ from jarvis_task_client import (  # noqa: E402
     ControlPlaneClient,
     ControlPlaneConflict,
     ControlPlaneUnavailable,
+    HandoffRequested,
     InvalidResponse,
     StaleFence,
     TaskEnvelope,
@@ -189,16 +190,23 @@ class ClientContractTest(unittest.TestCase):
                          "modified:2026-07-15T01:02:03Z")
 
     def test_all_worker_and_session_endpoints(self):
-        opener = RecordingOpener(responses=[FakeResponse({}) for _ in range(9)])
+        opener = RecordingOpener(responses=[
+            FakeResponse({}), FakeResponse({}), FakeResponse(raw=b"[]"),
+            *[FakeResponse({}) for _ in range(8)],
+        ])
         c = self.make(opener)
         c.register_worker({"worker_key": "mac:boot:pid"}, request_id="r1")
         c.heartbeat_worker("w1", {"status": "ACTIVE"}, process_uuid="p1", request_id="r2")
+        self.assertEqual(
+            c.list_force_handoff_requests("w1", process_uuid="p1"), [])
         c.lease_task("w1", lease_seconds=45,
                      capabilities={"kinds": ["probe"]}, process_uuid="p1",
                      request_id="r3")
         c.start_session("s1", "w1", 7, {"pid": 99}, process_uuid="p1", request_id="r4")
         c.heartbeat_session("s1", "w1", 7, {"progress": "running"},
                             process_uuid="p1", request_id="r5")
+        c.acknowledge_force_handoff(
+            "s1", "w1", 7, process_uuid="p1", request_id="r5-ack")
         c.suspend_session("s1", "w1", 7, {"wait_for": "320687"},
                           process_uuid="p1", request_id="r6")
         c.complete_session("s1", "w1", 7, {"result": "done"},
@@ -211,17 +219,21 @@ class ClientContractTest(unittest.TestCase):
         paths = [call[0].full_url.rsplit("/api/jarvis/v1/", 1)[1]
                  for call in opener.calls]
         self.assertEqual(paths, [
-            "workers/register", "workers/w1/heartbeat", "tasks/lease",
-            "sessions/s1/start", "sessions/s1/heartbeat", "sessions/s1/suspend",
+            "workers/register", "workers/w1/heartbeat",
+            "workers/w1/handoff-requests?processUuid=p1", "tasks/lease",
+            "sessions/s1/start", "sessions/s1/heartbeat",
+            "sessions/s1/handoff-ack", "sessions/s1/suspend",
             "sessions/s1/complete", "sessions/s1/fail", "sessions/s1/relinquish",
         ])
         self.assertEqual(body(opener.calls[0][0])["workerKey"], "mac:boot:pid")
-        lease = body(opener.calls[2][0])
+        lease = body(opener.calls[3][0])
         self.assertEqual(lease["workerKey"], "w1")
         self.assertEqual(lease["leaseSeconds"], 45)
         self.assertEqual(body(opener.calls[1][0])["processUuid"], "p1")
-        self.assertEqual(body(opener.calls[2][0])["processUuid"], "p1")
-        for req, _timeout in opener.calls[3:]:
+        handoff_ack = body(opener.calls[6][0])
+        self.assertEqual(handoff_ack["oldFenceToken"], 7)
+        self.assertNotIn("fenceToken", handoff_ack)
+        for req, _timeout in opener.calls[4:6] + opener.calls[7:]:
             payload = body(req)
             self.assertNotIn("sessionId", payload)
             self.assertEqual(payload["workerKey"], "w1")
@@ -429,6 +441,26 @@ class ClientContractTest(unittest.TestCase):
             with self.assertRaises(StaleFence):
                 self.make(RecordingOpener(error=err)).heartbeat_session(
                     "s", "w", 1, request_id="r")
+
+    def test_handoff_requested_code_maps_specific_stale_fence(self):
+        err = HTTPError(
+            "https://x", 412, "Precondition", {},
+            io.BytesIO(b'{"code":"PreconditionFailed.HandoffRequested",'
+                         b'"message":"stop and acknowledge"}'))
+
+        with self.assertRaises(HandoffRequested):
+            self.make(RecordingOpener(error=err)).heartbeat_session(
+                "s", "w", 1, request_id="r")
+
+    def test_handoff_request_poll_tolerates_older_control_plane_404(self):
+        err = HTTPError(
+            "https://x", 404, "Not Found", {},
+            io.BytesIO(b'{"message":"not found"}'))
+
+        requests = self.make(RecordingOpener(error=err)).list_force_handoff_requests(
+            "w", process_uuid="p")
+
+        self.assertEqual(requests, [])
 
     def test_network_and_5xx_are_unavailable_without_token_leak(self):
         with self.assertRaises(ControlPlaneUnavailable) as got:

@@ -7569,10 +7569,10 @@ class JarvisHandler(AsyncChatbotHandler):
         """
         proc = getattr(controller, "process", None)
         if proc is None:
-            return
+            return True
         try:
             if proc.poll() is not None:
-                return
+                return True
         except Exception:  # noqa: BLE001
             pass
 
@@ -7593,7 +7593,7 @@ class JarvisHandler(AsyncChatbotHandler):
                 pass
         try:
             proc.wait(timeout=grace)
-            return
+            return True
         except subprocess.TimeoutExpired:
             pass
         except Exception:  # noqa: BLE001
@@ -7613,9 +7613,10 @@ class JarvisHandler(AsyncChatbotHandler):
         except Exception:  # noqa: BLE001
             log.exception("Task session %s process could not be reaped (%s)",
                           getattr(controller, "session_id", "?"), reason)
-            return
+            return False
         log.warning("Task session %s process force-killed after %.1fs (%s)",
                     getattr(controller, "session_id", "?"), grace, reason)
+        return True
 
     def _execute_task_lease(self, lease, controller):
         """Translate one frozen Task lease into the shared execution runtime."""

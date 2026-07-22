@@ -29,7 +29,9 @@ from jarvis_task_client import (
     ControlPlaneClient,
     ControlPlaneConflict,
     ControlPlaneError,
+    ControlPlaneRejected,
     ControlPlaneUnavailable,
+    HandoffRequested,
     StaleFence,
 )
 
@@ -149,7 +151,7 @@ def parse_lease_response(response: Any) -> Optional[Dict[str, Any]]:
     return canonical
 
 
-StopProcess = Callable[["SessionController", str], None]
+StopProcess = Callable[["SessionController", str], Optional[bool]]
 NetworkFailure = Callable[[BaseException], None]
 
 
@@ -275,6 +277,9 @@ class SessionController:
         self._ownership_lost = False
         self._stop_requested = False
         self._stop_hook_called = False
+        self._stop_hook_running = False
+        self._stop_hook_succeeded = False
+        self._stop_condition = threading.Condition(self._lock)
         self._stop_reason: Optional[str] = None
         # Monotonic local proof, refreshed only after a successful fenced
         # start/heartbeat.  The server also returns leaseExpireAt; it is retained
@@ -402,6 +407,7 @@ class SessionController:
                     # handle.  The earlier stop hook saw process=None, so permit one
                     # synchronous retry now that there is something concrete to kill.
                     self._stop_hook_called = False
+                    self._stop_hook_succeeded = False
             if stop_after_bind:
                 self.request_stop(stop_reason)
                 return process
@@ -419,6 +425,10 @@ class SessionController:
             except ControlPlaneUnavailable as exc:
                 self._notify_network_failure(exc)
                 self._lose_ownership("control_plane_unavailable:bind_process")
+                raise
+            except HandoffRequested:
+                self._lose_ownership(
+                    "force_handoff:bind_process", acknowledge_handoff=True)
                 raise
             except StaleFence:
                 self._lose_ownership("stale_fence:bind_process")
@@ -482,7 +492,7 @@ class SessionController:
                 self.log.exception("session network-failure callback crashed session=%s",
                                    self.session_id)
 
-    def request_stop(self, reason: str) -> None:
+    def request_stop(self, reason: str) -> bool:
         reason = _nonblank(reason, "reason")
         with self._lock:
             self._stop_requested = True
@@ -490,20 +500,69 @@ class SessionController:
                 self._stop_reason = reason
             effective_reason = self._stop_reason
             if self._stop_hook_called:
-                return
+                while self._stop_hook_running:
+                    self._stop_condition.wait()
+                return self._stop_hook_succeeded
             self._stop_hook_called = True
+            self._stop_hook_running = True
+        succeeded = True
         if self.stop_process is not None:
             try:
-                self.stop_process(self, effective_reason)
+                succeeded = self.stop_process(self, effective_reason) is not False
             except Exception:
+                succeeded = False
                 self.log.exception("stop_process hook crashed session=%s",
                                    self.session_id)
+        with self._lock:
+            self._stop_hook_running = False
+            self._stop_hook_succeeded = succeeded
+            if not succeeded:
+                # A failed stop must never authorize handoff. Let the next
+                # directive retry the idempotent local termination hook.
+                self._stop_hook_called = False
+            self._stop_condition.notify_all()
+        return succeeded
 
-    def _lose_ownership(self, reason: str) -> None:
+    def _acknowledge_force_handoff(self) -> None:
+        """Best-effort ACK after the local process tree is synchronously stopped.
+
+        Most stale fences are ordinary lease races and the control plane returns a
+        harmless conflict. A real forced handoff remains suspended when this call
+        cannot be delivered, so transport failure never opens a second execution.
+        """
+        try:
+            self.client.acknowledge_force_handoff(
+                self.session_id, self.worker_key, self.fence_token,
+                process_uuid=self.process_uuid,
+                request_id="jarvis-force-handoff-ack-%s-%s" % (
+                    self.session_id, self.fence_token))
+        except (ControlPlaneConflict, ControlPlaneRejected, StaleFence) as exc:
+            self.log.debug(
+                "no pending force handoff for fenced session=%s code=%s",
+                self.session_id, getattr(exc, "code", ""))
+        except ControlPlaneUnavailable as exc:
+            self.log.warning(
+                "force handoff ACK unavailable session=%s error=%s",
+                self.session_id, self._safe_control_plane_error_message(exc))
+        except Exception:
+            self.log.exception("force handoff ACK failed session=%s", self.session_id)
+
+    def _lose_ownership(self, reason: str, *, acknowledge_handoff: bool = False) -> None:
         with self._lock:
             self._ownership_lost = True
             self._pending_terminal = None
-        self.request_stop(reason)
+        stopped = self.request_stop(reason)
+        if acknowledge_handoff and stopped:
+            self._acknowledge_force_handoff()
+
+    def accept_force_handoff_request(self, old_fence_token: Any) -> bool:
+        """Stop this exact owned attempt and ACK a worker-level handoff directive."""
+        with self._transition_lock:
+            if str(old_fence_token) != str(self.fence_token):
+                return False
+            self._lose_ownership(
+                "force_handoff:worker_directive", acknowledge_handoff=True)
+            return True
 
     def start(self, detail: Optional[Mapping[str, Any]] = None) -> bool:
         with self._transition_lock:
@@ -520,6 +579,10 @@ class SessionController:
                     request_id=self._request_id("start"))
             except ControlPlaneUnavailable as exc:
                 self._notify_network_failure(exc)
+                return False
+            except HandoffRequested:
+                self._lose_ownership(
+                    "force_handoff:start", acknowledge_handoff=True)
                 return False
             except StaleFence:
                 self._lose_ownership("stale_fence:start")
@@ -558,6 +621,10 @@ class SessionController:
                 response, request_started_at = self._heartbeat_request(payload)
                 self._refresh_lease_proof(response, request_started_at)
                 return True
+            except HandoffRequested:
+                self._lose_ownership(
+                    "force_handoff:heartbeat", acknowledge_handoff=True)
+                return False
             except StaleFence:
                 self._lose_ownership("stale_fence:heartbeat")
                 return False
@@ -590,6 +657,10 @@ class SessionController:
                         "session heartbeat renewed without progress session=%s",
                         self.session_id)
                     return True
+                except HandoffRequested:
+                    self._lose_ownership(
+                        "force_handoff:heartbeat", acknowledge_handoff=True)
+                    return False
                 except StaleFence:
                     self._lose_ownership("stale_fence:heartbeat")
                     return False
@@ -688,6 +759,10 @@ class SessionController:
                 # Keep the desired terminal transition pending.  No terminal ACK
                 # was committed; the worker pauses leasing and retries on recovery.
                 self._notify_network_failure(exc)
+                return False
+            except HandoffRequested:
+                self._lose_ownership(
+                    "force_handoff:%s" % action, acknowledge_handoff=True)
                 return False
             except StaleFence:
                 self._lose_ownership("stale_fence:%s" % action)
@@ -877,6 +952,15 @@ class PersistenceExecutor:
             self._network_healthy = True
             self._last_error = None
 
+    def _advertised_capabilities(self) -> Dict[str, Any]:
+        capabilities = dict(self.capabilities)
+        raw_control_plane = capabilities.get("controlPlane")
+        control_plane = (dict(raw_control_plane)
+                         if isinstance(raw_control_plane, Mapping) else {})
+        control_plane["forceHandoffAck"] = True
+        capabilities["controlPlane"] = control_plane
+        return capabilities
+
     def _worker_payload(self, status: str) -> Dict[str, Any]:
         return {
             "workerKey": self.worker_key,
@@ -887,7 +971,7 @@ class PersistenceExecutor:
             "maxSlots": self.max_slots,
             "activeSessions": self.active_count(),
             "freeSlots": self.available_slots(),
-            "capabilities": dict(self.capabilities),
+            "capabilities": self._advertised_capabilities(),
         }
 
     def _register(self) -> bool:
@@ -919,6 +1003,9 @@ class PersistenceExecutor:
                 self._worker_payload("DRAINING" if self.draining else "ACTIVE"),
                 process_uuid=self.process_uuid,
                 request_id="jarvis-worker-heartbeat-%s" % uuid.uuid4().hex)
+            requests = self.client.list_force_handoff_requests(
+                self.worker_key, process_uuid=self.process_uuid)
+            self._process_force_handoff_requests(requests)
         except Exception as exc:
             self._mark_network_failure(exc)
             self.log.warning("worker heartbeat failed worker=%s error=%s",
@@ -928,6 +1015,34 @@ class PersistenceExecutor:
             self._last_worker_heartbeat = now
         self._mark_network_healthy()
         return True
+
+    def _process_force_handoff_requests(self, requests: Any) -> None:
+        if not isinstance(requests, list):
+            raise LeaseProtocolError("force handoff requests must be a list")
+        for request in requests:
+            if not isinstance(request, Mapping):
+                raise LeaseProtocolError("force handoff request must be an object")
+            session_id = _nonblank(
+                _field(request, "sessionId", "session_id"), "session_id")
+            old_fence = _field(request, "oldFenceToken", "old_fence_token")
+            if old_fence is None or str(old_fence).strip() == "":
+                raise LeaseProtocolError("old_fence_token must not be empty")
+            with self._lock:
+                record = self._sessions.get(session_id)
+            if record is not None:
+                if record.controller.accept_force_handoff_request(old_fence):
+                    continue
+                self.log.warning(
+                    "ignored mismatched force handoff directive session=%s", session_id)
+                continue
+            # The same registered worker process no longer tracks this Session,
+            # so there is no local execution left to stop. ACKing is safe and lets
+            # suspended/resumable ownership move without waiting for timeout.
+            self.client.acknowledge_force_handoff(
+                session_id, self.worker_key, old_fence,
+                process_uuid=self.process_uuid,
+                request_id="jarvis-force-handoff-ack-%s-%s" % (
+                    session_id, old_fence))
 
     def run_once(self) -> bool:
         """Register/heartbeat and perform at most one lease poll."""
@@ -954,7 +1069,7 @@ class PersistenceExecutor:
             return True
         try:
             response = self.client.lease_task(
-                self.worker_key, capabilities=self.capabilities,
+                self.worker_key, capabilities=self._advertised_capabilities(),
                 lease_seconds=self.lease_seconds,
                 process_uuid=self.process_uuid,
                 request_id="jarvis-worker-lease-%s" % uuid.uuid4().hex)
