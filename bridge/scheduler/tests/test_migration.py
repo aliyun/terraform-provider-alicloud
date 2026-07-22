@@ -2,11 +2,10 @@ from __future__ import annotations
 
 import unittest
 
-from bridge.scheduler.jobs import JOBS
+from bridge.scheduler.jobs import JOBS, REGISTRY
 from bridge.scheduler.migration import (
     SchedulerMigrationError, business_job_enabled,
 )
-from bridge.scheduler.registry import load_scheduler_registry
 
 
 JOB_KEYS = tuple(definition.id for definition in JOBS)
@@ -14,7 +13,7 @@ JOB_KEYS = tuple(definition.id for definition in JOBS)
 
 class SchedulerMigrationTests(unittest.TestCase):
     def test_checked_in_registry_is_the_complete_ownership_snapshot(self):
-        registry = load_scheduler_registry(known_job_keys=JOB_KEYS)
+        registry = REGISTRY
         self.assertEqual(
             frozenset(route.job_key for route in registry.routes),
             frozenset(JOB_KEYS),

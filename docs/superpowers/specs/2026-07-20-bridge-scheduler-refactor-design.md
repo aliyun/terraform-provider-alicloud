@@ -364,7 +364,7 @@ CREATE TABLE jarvis_scheduled_job (
 ```text
 # 编辑 config/scheduler-jobs.yaml：将目标 Job 配置为
 # owner: scheduler
-# runner: <Bridge runner 名称>
+# engine_runner: <Bridge runner 名称>
 ```
 
 `owner: scheduler` 的 job 仅由新 Engine admission，旧模块必须停止同一 job 的旧 tick；

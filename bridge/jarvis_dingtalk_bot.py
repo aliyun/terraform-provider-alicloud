@@ -131,8 +131,7 @@ from jarvis_persistence_executor import PersistenceExecutor
 from jarvis_external_recovery import ExternalOperationRecoveryScheduler
 from scheduler import JobResult, JobResultStatus
 from scheduler.composition import SchedulerComposition
-from scheduler.jobs import JOBS
-from scheduler.registry import load_scheduler_registry
+from scheduler.jobs import REGISTRY as SCHEDULER_REGISTRY
 from tata_dws_history import (
     DWS_USER_NOT_IN_GROUP,
     DwsGroupHistory,
@@ -320,10 +319,6 @@ logging.basicConfig(
 )
 log = logging.getLogger("jarvis-bot")
 
-_SCHEDULER_JOB_KEYS = tuple(definition.id for definition in JOBS)
-_SCHEDULER_REGISTRY = load_scheduler_registry(known_job_keys=_SCHEDULER_JOB_KEYS)
-
-
 def _task_client_from_env():
     """Build the mandatory AutomationAgent Task client."""
     base_url = (
@@ -350,7 +345,7 @@ def _scheduler_owns_job(job_key):
     """YAML-derived ownership gate used by legacy loops during cutover."""
     if os.environ.get("JARVIS_BRIDGE_ROLE", "scheduler") != "scheduler":
         return False
-    return _SCHEDULER_REGISTRY.route_for(job_key).scheduler_owned
+    return SCHEDULER_REGISTRY.route_for(job_key).scheduler_owned
 
 
 def _aone_task_key(project, item_id):
@@ -8358,7 +8353,7 @@ class JarvisHandler(AsyncChatbotHandler):
         self.scheduler_composition = SchedulerComposition(
             task_client=self.task_client,
             runners={"daily.probe": self.daily.new_engine_runner("daily.probe")},
-            registry=_SCHEDULER_REGISTRY,
+            registry=SCHEDULER_REGISTRY,
             logger=log,
         )
         self.aone_reply_scheduler = AoneReplyScheduler(self)

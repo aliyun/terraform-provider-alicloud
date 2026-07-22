@@ -1,23 +1,86 @@
-# Scheduler routing registry. This is the only source of job ownership.
-#
-# owner: scheduler  -> register and execute through SchedulerEngine; the legacy
-#                      entry point for this job is suppressed.
-# owner: legacy     -> SchedulerEngine registers the definition as DISABLED;
-#                      the legacy entry point remains responsible for it.
-# runner is required for owner: scheduler and names a Bridge runner adapter.
+# Complete Scheduler registry. bridge/scheduler/jobs/__init__.py loads this file.
+# owner controls new-vs-legacy ownership; engine_runner names the local Bridge
+# adapter and is required only after a job is migrated to owner: scheduler.
 version: 1
 jobs:
   - key: aone.scan
+    revision: 1
+    description: Discover Aone work and upsert ticket Tasks
+    purpose: DISCOVERY
     owner: legacy
+    schedule: {kind: interval, interval_seconds: 1800, run_immediately: true}
+    runner: {kind: handler, handler_key: aone.scan}
+    misfire: COALESCE
+    timeout_seconds: 300
+    retry_delay_seconds: 30
+    replay_policy: TASK_UPSERT_IDEMPOTENT
+    enabled_env: JARVIS_SCAN_ENABLE
   - key: aone.stale_claim
+    revision: 1
+    description: Publish stale-claim maintenance events
+    purpose: MAINTENANCE
     owner: legacy
+    schedule: {kind: interval, interval_seconds: 7200, run_immediately: false}
+    runner: {kind: handler, handler_key: aone.stale_claim}
+    misfire: COALESCE
+    timeout_seconds: 300
+    retry_delay_seconds: 60
+    replay_policy: EVENT_LEDGER_IDEMPOTENT
   - key: daily.nudge
+    revision: 1
+    description: Publish daily idle-work reminders through event ledgers
+    purpose: MAINTENANCE
     owner: legacy
+    schedule: {kind: daily, hour: 9, minute: 0, timezone: Asia/Shanghai}
+    runner: {kind: handler, handler_key: daily.nudge}
+    misfire: CURRENT_DAY
+    timeout_seconds: 900
+    retry_delay_seconds: 300
+    replay_policy: EVENT_LEDGER_IDEMPOTENT
+    enabled_env: JARVIS_REVISIT_SCHED
   - key: daily.probe
+    revision: 1
+    description: Run the bounded daily probe as an Ephemeral job
+    purpose: DISCOVERY
     owner: legacy
+    schedule: {kind: daily, hour: 10, minute: 0, timezone: Asia/Shanghai}
+    runner: {kind: headless, builder_ref: bridge.daily_probe, protocol: bridge.scheduler.v1, session_policy: EPHEMERAL, lane: terraform}
+    misfire: CURRENT_DAY
+    timeout_seconds: 3600
+    retry_delay_seconds: 300
+    replay_policy: EPHEMERAL
+    enabled_env: JARVIS_PROBE_SCHED
   - key: aone.reply
+    revision: 1
+    description: Discover durable Aone replies and upsert wake Tasks
+    purpose: DISCOVERY
     owner: legacy
+    schedule: {kind: adaptive, min_delay_seconds: 5, default_delay_seconds: 30, max_delay_seconds: 900, run_immediately: true}
+    runner: {kind: handler, handler_key: aone.reply}
+    misfire: WAIT_FOR_COMPLETION
+    timeout_seconds: 300
+    retry_delay_seconds: 15
+    replay_policy: TASK_UPSERT_IDEMPOTENT
   - key: pr.watch
+    revision: 1
+    description: Discover PR updates and write durable lifecycle intent
+    purpose: DISCOVERY
     owner: legacy
+    schedule: {kind: adaptive, min_delay_seconds: 600, default_delay_seconds: 3600, max_delay_seconds: 3600, run_immediately: false}
+    runner: {kind: handler, handler_key: pr.watch}
+    misfire: WAIT_FOR_COMPLETION
+    timeout_seconds: 900
+    retry_delay_seconds: 60
+    replay_policy: TASK_UPSERT_IDEMPOTENT
+    enabled_env: JARVIS_PRWATCH_ENABLE
   - key: pr.lifecycle
+    revision: 1
+    description: Consume durable PR lifecycle intent through event ledgers
+    purpose: MAINTENANCE
     owner: legacy
+    schedule: {kind: adaptive, min_delay_seconds: 30, default_delay_seconds: 60, max_delay_seconds: 600, run_immediately: true}
+    runner: {kind: handler, handler_key: pr.lifecycle}
+    misfire: WAIT_FOR_COMPLETION
+    timeout_seconds: 900
+    retry_delay_seconds: 30
+    replay_policy: EVENT_LEDGER_IDEMPOTENT

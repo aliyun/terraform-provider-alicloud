@@ -59,7 +59,7 @@ the new control plane. The first supported handover is `daily.probe`:
 # config/scheduler-jobs.yaml
 - key: daily.probe
   owner: scheduler
-  runner: daily.probe
+  engine_runner: daily.probe
 ```
 
 The YAML loader depends on `PyYAML`, installed into the isolated Bridge venv by

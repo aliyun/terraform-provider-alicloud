@@ -84,9 +84,8 @@ _tail_log() {  # $1 = n
 _scheduler_ready_required() {
   [ "${JARVIS_BRIDGE_ROLE:-scheduler}" = "scheduler" ] || return 1
   PYTHONPATH="$REPO_ROOT${PYTHONPATH:+:$PYTHONPATH}" "$PYTHON" -c '
-from bridge.scheduler.jobs import JOBS
-from bridge.scheduler.registry import load_scheduler_registry
-registry = load_scheduler_registry(known_job_keys=(job.id for job in JOBS))
+from bridge.scheduler.jobs import REGISTRY
+registry = REGISTRY
 raise SystemExit(0 if registry.scheduler_job_keys() else 1)
 ' >/dev/null 2>&1
 }
@@ -218,14 +217,14 @@ _validate_scheduler_cutover() {
   if ! validation_error="$(PYTHONPATH="$python_path" "$PYTHON" -c '
 import os
 import sys
-from bridge.scheduler.jobs import JOBS
-from bridge.scheduler.registry import SchedulerRegistryError, load_scheduler_registry
+from bridge.scheduler.jobs import REGISTRY
+from bridge.scheduler.registry import SchedulerRegistryError
 try:
     if os.environ.get("JARVIS_SCHEDULER_NEW_JOBS", "").strip():
         raise SchedulerRegistryError(
             "JARVIS_SCHEDULER_NEW_JOBS is no longer supported; "
             "edit config/scheduler-jobs.yaml instead")
-    registry = load_scheduler_registry(known_job_keys=(job.id for job in JOBS))
+    registry = REGISTRY
     if (registry.scheduler_job_keys()
             and os.environ.get("JARVIS_BRIDGE_ROLE", "scheduler") == "scheduler"
             and not (
