@@ -7341,7 +7341,7 @@ class DailyScheduler:
         self.handler = handler
         pool = pool if pool is not None else getattr(handler, "ephemeral_executor", None)
         # ``daily.probe`` has moved to ``scheduler/jobs/daily_probe.py`` and is
-        # registered only through ``config/scheduler-jobs.yaml``.  This legacy
+        # registered only through ``scheduler/jobs/jobs.yaml``.  This legacy
         # loop now owns its remaining job directly; it must not shadow a new
         # Scheduler job through an ownership switch.
         job = _NudgeJob(handler, pool)
@@ -8203,7 +8203,7 @@ class JarvisHandler(AsyncChatbotHandler):
         # PrWatchScheduler(PR lifecycle), and external-operation recovery.
         self.scanner = AoneScheduler(self, self.ephemeral_executor)
         self.daily = DailyScheduler(self, self.ephemeral_executor)
-        # config/scheduler-jobs.yaml is the sole ownership switch. This runner
+        # scheduler/jobs/jobs.yaml is the sole ownership switch. This runner
         # catalogue only resolves names declared by that registry; it cannot
         # independently migrate a legacy job.
         self.scheduler_composition = SchedulerComposition(

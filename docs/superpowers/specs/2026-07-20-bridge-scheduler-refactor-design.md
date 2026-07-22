@@ -352,7 +352,7 @@ CREATE TABLE jarvis_scheduled_job (
 
 1. `DailyScheduler` 的日期 marker 继续作为 daily runner 的独立业务状态，不能塞入 `jarvis_scheduled_job`。
 2. `pr-watch.json` 的 registry、cursor 和 dedupe 状态继续由 PR runner 所有，后续需要控制面化时使用独立业务状态接口。
-3. 迁移期旧 loop 和新 job 不得同时触发；`config/scheduler-jobs.yaml` 只列出新链路 job，
+3. 迁移期旧 loop 和新 job 不得同时触发；`bridge/scheduler/jobs/jobs.yaml` 只列出新链路 job，
    同时驱动其注册和同名旧入口屏蔽；未列出的 job 完全由旧模块负责。`enabled_env` 只决定
    已迁移 job 的业务启停。
 4. 连续两个完整周期对账一致并确认新的业务状态真源后，才停止读取旧状态文件。
@@ -365,7 +365,7 @@ CREATE TABLE jarvis_scheduled_job (
 注册表把 job 切到新链路：
 
 ```text
-# 在 config/scheduler-jobs.yaml 新增目标 Job 的完整 definition，且声明
+# 在 bridge/scheduler/jobs/jobs.yaml 新增目标 Job 的完整 definition，且声明
 # engine_runner: <Bridge runner 名称>
 ```
 
@@ -568,7 +568,7 @@ bridge/
 | U2 | 已提交，待预发验证 | `jarvis_scheduled_job` 已创建；AutomationAgent Code Review `28719590` 包含注册、状态 API、恢复和 Board Scheduled Jobs 展示。该 Code Review 尚未完成 Java 21 预发验证。 |
 | U3 | 已提交，待预发联调 | Bridge MR `28675904` 已包含 import-safe `SchedulerEngine`、`ScannerRuntime`、slot admission、真实结束时间计算、终态幂等重试，以及独立的 `scheduler/jobs/daily_probe.py` runner；`daily.probe` 已注册到新链路且旧 `DailyScheduler` 入口已删除。 |
 | C4 | 已提交，待预发联调 | Bridge MR `28675904` 已包含标准库 HTTP adapter：register/list/start/complete/fail/recover-interrupted、UTC 时间编解码、`start` 原子预留下次时间及异常 fail-closed。AutomationAgent Code Review `28719590` 的 `start` 接收 `{scheduledFor,nextRunAt}` 并返回 `{admitted,job}`。两端尚未完成预发联调。 |
-| C5 | 已提交，待预发联调 | Bridge 已实现固定 `bridge-scheduler`、复用普通 Task token、`boot_id + process_uuid` 注册确认、30 秒 heartbeat、`dispatch.pull=false`、以 `config/scheduler-jobs.yaml` 统一驱动 Job 注册与旧入口屏蔽、READY/OFFLINE 和有界计划内 drain；超时取消 restart 并恢复 ACTIVE。AutomationAgent 已提交单 Worker 活跃进程冲突、既有 Worker timeout 接管、DRAINING 在途终态提交和 Board Worker 展示。`host_id` 只用于展示和迁移追踪；Scheduler 不进入普通 Task queue-pull Worker 集合。该阶段不停止或重启 Task Worker。 |
+| C5 | 已提交，待预发联调 | Bridge 已实现固定 `bridge-scheduler`、复用普通 Task token、`boot_id + process_uuid` 注册确认、30 秒 heartbeat、`dispatch.pull=false`、以 `bridge/scheduler/jobs/jobs.yaml` 统一驱动 Job 注册与旧入口屏蔽、READY/OFFLINE 和有界计划内 drain；超时取消 restart 并恢复 ACTIVE。AutomationAgent 已提交单 Worker 活跃进程冲突、既有 Worker timeout 接管、DRAINING 在途终态提交和 Board Worker 展示。`host_id` 只用于展示和迁移追踪；Scheduler 不进入普通 Task queue-pull Worker 集合。该阶段不停止或重启 Task Worker。 |
 | C6 | 未开始 | 控制面预发验证：重复启动拒绝、心跳超时接管、slot admission、interrupted recovery、Board 展示和控制面不可用 fail-closed。 |
 | D1 | 部分实施 | `daily.probe` 已迁移，无业务状态文件需要旁路迁移；Daily nudge、PR 与 Aone 的业务状态和 runner 仍需导出、校验、回放、对账与原子切换，单独评审。 |
 

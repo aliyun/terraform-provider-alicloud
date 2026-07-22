@@ -1,4 +1,4 @@
-"""Load the complete production Job registry from ``config/scheduler-jobs.yaml``."""
+"""Load the complete production Job registry from the adjacent ``jobs.yaml``."""
 
 from __future__ import annotations
 

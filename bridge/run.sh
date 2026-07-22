@@ -209,7 +209,7 @@ _decide_mode() {
 }
 
 _validate_scheduler_cutover() {
-  # config/scheduler-jobs.yaml is the sole ownership source. Keep the old
+  # bridge/scheduler/jobs/jobs.yaml is the sole ownership source. Keep the old
   # environment switch fail-closed so a stale launchd environment cannot create
   # a second, invisible routing rule.
   local validation_error python_path
@@ -223,7 +223,7 @@ try:
     if os.environ.get("JARVIS_SCHEDULER_NEW_JOBS", "").strip():
         raise SchedulerRegistryError(
             "JARVIS_SCHEDULER_NEW_JOBS is no longer supported; "
-            "edit config/scheduler-jobs.yaml instead")
+            "edit bridge/scheduler/jobs/jobs.yaml instead")
     registry = REGISTRY
     if (registry.scheduler_job_keys()
             and os.environ.get("JARVIS_BRIDGE_ROLE", "scheduler") == "scheduler"

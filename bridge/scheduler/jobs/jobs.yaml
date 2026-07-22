@@ -1,0 +1,28 @@
+# Scheduler Job 的唯一注册表。
+#
+# 文件中只列出已迁移到新 Scheduler 的 Job。未出现在此处的任务仍完全由旧链路
+# 执行，既不会注册到 jarvis_scheduled_job，也不会显示为 DISABLED。每次迁移一个
+# Job 时，先实现同目录的 runner，再新增一条完整定义，并删除该 Job 的旧入口。
+#
+# key            稳定 Job 标识，也是控制面 job_key；迁移后不得重命名。
+# revision       definition 语义变化时递增；用于识别已登记 Job 是否需要更新。
+# engine_runner  Bridge 内 runner 的名称；必须能在 jobs/__init__.py 的 runner 映射中解析。
+# schedule       支持 interval / daily / adaptive；daily 使用明确的 IANA 时区。
+# runner         执行契约；headless Job 必须声明 builder_ref、protocol 和 session_policy。
+# misfire        停机后错过计划的处理策略；CURRENT_DAY 仅补当天的 daily slot。
+# enabled_env    可选业务开关，值只允许 1 或 0；关闭后 Job 保持注册但不执行。
+version: 1
+jobs:
+  # 纯探测任务：没有业务 cursor 或 local marker，调度状态由 Scheduler 控制面维护。
+  - key: daily.probe
+    revision: 1
+    description: Run the bounded daily probe as an Ephemeral job
+    purpose: DISCOVERY
+    engine_runner: daily.probe
+    schedule: {kind: daily, hour: 10, minute: 0, timezone: Asia/Shanghai}
+    runner: {kind: headless, builder_ref: bridge.daily_probe, protocol: bridge.scheduler.v1, session_policy: EPHEMERAL, lane: terraform}
+    misfire: CURRENT_DAY
+    timeout_seconds: 3600
+    retry_delay_seconds: 300
+    replay_policy: EPHEMERAL
+    enabled_env: JARVIS_PROBE_SCHED

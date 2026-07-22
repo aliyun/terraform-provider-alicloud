@@ -49,14 +49,14 @@ status, and heartbeat ensure that only one Scheduler process owns admission at
 a time. It is not a Task executor: Bridge advertises
 `capabilities.dispatch.pull=false` and does not pull the public Task queue.
 
-Use `config/scheduler-jobs.yaml` as the complete new-engine registration
+Use `bridge/scheduler/jobs/jobs.yaml` as the complete new-engine registration
 registry. It contains only migrated jobs; each is registered and owned by the
 new Engine while its legacy entry point is suppressed. Legacy jobs are absent
 from this file and never enter the new control plane. The first supported
 handover is `daily.probe`:
 
 ```bash
-# config/scheduler-jobs.yaml
+# bridge/scheduler/jobs/jobs.yaml
 - key: daily.probe
   engine_runner: daily.probe
 ```

@@ -1,6 +1,6 @@
 """Independent business enablement for Scheduler job definitions.
 
-Ownership routing lives exclusively in ``config/scheduler-jobs.yaml``.  This
+Ownership routing lives exclusively in ``bridge/scheduler/jobs/jobs.yaml``.  This
 module intentionally contains no route-selection configuration.
 """
 

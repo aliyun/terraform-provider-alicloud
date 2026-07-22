@@ -52,7 +52,7 @@ class SchedulerRegistry:
 
 
 def default_registry_path() -> Path:
-    return Path(__file__).resolve().parents[2] / "config" / "scheduler-jobs.yaml"
+    return Path(__file__).resolve().parent / "jobs" / "jobs.yaml"
 
 
 def load_scheduler_registry(
