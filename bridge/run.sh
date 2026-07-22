@@ -203,7 +203,7 @@ _validate_scheduler_cutover() {
   # One comma-separated list is the sole ownership switch. Empty means all
   # legacy. Python's import-safe JOBS registry is the single source for exact
   # keys, duplicate detection, and deprecated-variable rejection.
-  local selected validation_error python_path task_token scheduler_token
+  local selected validation_error python_path
   selected="$(printf '%s' "${JARVIS_SCHEDULER_NEW_JOBS:-}" \
     | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
   # Executor-only Task workers do not instantiate the Scheduler owner. Ignore
@@ -216,21 +216,11 @@ _validate_scheduler_cutover() {
     err "JARVIS_SCHEDULER_NEW_JOBS 非空时只能与 JARVIS_BRIDGE_ROLE=scheduler 一起使用。"
     return 2
   fi
-  if [ -n "$selected" ]; then
-    task_token="${JARVIS_CONTROL_PLANE_TOKEN:-${JARVIS_HTML_REPORT_TOKEN:-}}"
-    scheduler_token="${JARVIS_SCHEDULER_CONTROL_PLANE_TOKEN:-}"
-    if [ -z "$task_token" ]; then
-      err "JARVIS_SCHEDULER_NEW_JOBS 非空时仍需要普通 Task 控制面 token。"
-      return 2
-    fi
-    if [ -z "$scheduler_token" ]; then
-      err "JARVIS_SCHEDULER_NEW_JOBS 非空时需要 JARVIS_SCHEDULER_CONTROL_PLANE_TOKEN。"
-      return 2
-    fi
-    if [ "$task_token" = "$scheduler_token" ]; then
-      err "Scheduler token 必须与普通 Task 控制面 token 不同。"
-      return 2
-    fi
+  if [ -n "$selected" ] \
+     && [ -z "${JARVIS_CONTROL_PLANE_TOKEN:-}" ] \
+     && [ -z "${JARVIS_HTML_REPORT_TOKEN:-}" ]; then
+    err "JARVIS_SCHEDULER_NEW_JOBS 非空时需要 JARVIS_CONTROL_PLANE_TOKEN 或 JARVIS_HTML_REPORT_TOKEN。"
+    return 2
   fi
   python_path="$REPO_ROOT${PYTHONPATH:+:$PYTHONPATH}"
   if ! validation_error="$(PYTHONPATH="$python_path" "$PYTHON" -c '

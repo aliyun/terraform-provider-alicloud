@@ -230,17 +230,6 @@ class ControlPlaneClient:
         self.api_prefix = prefix.rstrip("/")
         self._opener = opener or urlopen
 
-    def with_token(self, token: str) -> "ControlPlaneClient":
-        """Clone transport settings with a distinct scoped machine credential."""
-
-        return ControlPlaneClient(
-            self.base_url,
-            _nonblank(token, "token"),
-            timeout=self.timeout,
-            api_prefix=self.api_prefix,
-            opener=self._opener,
-        )
-
     @staticmethod
     def new_request_id() -> str:
         return "jarvis-%s" % uuid.uuid4()

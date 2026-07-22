@@ -43,21 +43,20 @@ capabilities.dispatch.pull = false
 ```
 
 该 Worker 使用已有的 `host_id`、`process_uuid`、`status` 和 heartbeat 表示当前 Scheduler 进程。
-`host_id` 只记录实际运行位置，不参与授权。Bridge 必须使用独立的 Scheduler token 注册并保持
+`host_id` 只记录实际运行位置，不参与授权。Bridge 复用普通 Task 控制面 token 注册并保持
 这条固定 Worker 记录，才允许注册或更新 scheduled job；每个
 `register/start/complete/fail/recover` 请求均携带 `worker_key` 与 `process_uuid`，控制面只接受
 当前 ACTIVE 的 `bridge-scheduler` 进程。
 
-普通 Task token 与 Scheduler token 必须不同。普通 token 不能注册或心跳 `bridge-scheduler`，也不能
-调用 scheduled-job API。固定 `worker_key` 保证数据库只有一条 Scheduler 记录；当前进程默认每 30 秒
-发一次 heartbeat，控制面默认以 90 秒为接管超时。旧进程未 OFFLINE 且 heartbeat 未超时前，新进程
+第一版不增加 Scheduler 专用 token 或额外鉴权。固定 `worker_key` 保证数据库只有一条 Scheduler
+记录；当前进程默认每 30 秒发一次 heartbeat。旧进程未 OFFLINE 且 heartbeat 未超时前，新进程
 注册必须返回冲突；正常迁移先将旧进程置为 OFFLINE，异常迁移等待心跳超时后接管。
 
 job 不永久保存 Worker 外键。job 的定义和当前状态需要跨同一远端机器的进程重启保留；Worker
 身份只在请求处理时校验。Board 单独读取固定 Worker 展示 Scheduler 状态。
 
-Scheduler 独立 token、固定 Worker 注册、心跳接管和 scheduled-job API 的 Worker/process 校验属于
-C5；代码已提交，尚未完成预发验证或部署。
+固定 Worker 注册、心跳接管和 scheduled-job API 的 Worker/process 校验属于 C5；代码已提交，
+尚未完成预发验证或部署。
 
 ## 2. 范围与非目标
 
@@ -458,21 +457,20 @@ launchd 不得直接用 `kickstart -k` 跳过 quiesce/drain；必须先完成协
 ### 10.3 固定 Scheduler Worker 与中断恢复
 
 控制面使用已有 Worker 表的一条固定记录 `bridge-scheduler` 表示唯一 Scheduler。Scheduler
-启动先使用 Scheduler token 注册该 Worker（`capabilities.role=scheduler`），并以已有
+启动先使用普通 Task 控制面 token 注册该 Worker（`capabilities.role=scheduler`），并以已有
 `process_uuid` 与 heartbeat 保持当前进程身份。`bridge/run.sh` 的本机 PID 只用于本机进程管理，不是
 跨机器的 Scheduler 授权依据。
 
 Scheduler composition 在首次 job 注册前必须完成以下顺序：
 
-1. 使用 `JARVIS_SCHEDULER_CONTROL_PLANE_TOKEN` 注册固定 `bridge-scheduler` Worker；控制面使用
-   独立的 `JARVIS_SCHEDULER_CONTROL_PLANE_SERVER_TOKEN` 认证，并校验
-   `capabilities.role=scheduler` 和 `capabilities.dispatch.pull=false`；
+1. 使用 `JARVIS_CONTROL_PLANE_TOKEN`（缺省回退 `JARVIS_HTML_REPORT_TOKEN`）注册固定
+   `bridge-scheduler` Worker；
 2. 确认控制面返回的 Worker 为当前 `boot_id`、`process_uuid` 且为 ACTIVE；
 3. 在每个 scheduled-job API 请求中携带该 `worker_key` 和 `process_uuid`；控制面在同一事务内校验；
 4. 注册完整 `JOBS` 快照；
 5. 首次 `list/tick` 前显式执行 interrupted recovery。
 
-Scheduler token、心跳接管与 scheduled-job API 的 Worker/process 校验已提交，尚未完成预发验证。
+固定 Worker、心跳接管与 scheduled-job API 的 Worker/process 校验已提交，尚未完成预发验证。
 
 新实例完成 job `register` 后、首次 `list/tick` 前，composition 必须显式调用一次控制面
 `POST /api/jarvis/v1/scheduled-jobs/recover-interrupted`。该调用返回严格的
@@ -563,8 +561,8 @@ bridge/
 | U2 | 已提交，待预发验证 | `jarvis_scheduled_job` 已创建；AutomationAgent Code Review `28719590` 包含注册、状态 API、恢复和 Board Scheduled Jobs 展示。该 Code Review 尚未完成 Java 21 预发验证。 |
 | U3 | 已提交，待预发联调 | Bridge MR `28675904` 已包含 import-safe `SchedulerEngine`、`ScannerRuntime`、slot admission、真实结束时间计算、终态幂等重试和 `daily.probe` legacy adapter；只有 `daily.probe` 可切到新链路。 |
 | C4 | 已提交，待预发联调 | Bridge MR `28675904` 已包含标准库 HTTP adapter：register/list/start/complete/fail/recover-interrupted、UTC 时间编解码、`start` 原子预留下次时间及异常 fail-closed。AutomationAgent Code Review `28719590` 的 `start` 接收 `{scheduledFor,nextRunAt}` 并返回 `{admitted,job}`。两端尚未完成预发联调。 |
-| C5 | 已提交，待预发联调 | Bridge 已实现固定 `bridge-scheduler`、独立 Scheduler token、`boot_id + process_uuid` 注册确认、30 秒 heartbeat、`dispatch.pull=false`、统一 `JARVIS_SCHEDULER_NEW_JOBS` 路由、READY/OFFLINE 和有界计划内 drain；超时取消 restart 并恢复 ACTIVE。AutomationAgent 已提交 Scheduler token 身份校验、单 Worker 活跃进程冲突、90 秒心跳接管、DRAINING 在途终态提交和 Board Worker 展示。`host_id` 只用于展示和迁移追踪；Scheduler 不进入普通 Task queue-pull Worker 集合。该阶段不停止或重启 Task Worker。 |
-| C6 | 未开始 | 控制面预发验证：普通 token 拒绝 Scheduler 操作、重复启动拒绝、心跳超时接管、slot admission、interrupted recovery、Board 展示和控制面不可用 fail-closed。 |
+| C5 | 已提交，待预发联调 | Bridge 已实现固定 `bridge-scheduler`、复用普通 Task token、`boot_id + process_uuid` 注册确认、30 秒 heartbeat、`dispatch.pull=false`、统一 `JARVIS_SCHEDULER_NEW_JOBS` 路由、READY/OFFLINE 和有界计划内 drain；超时取消 restart 并恢复 ACTIVE。AutomationAgent 已提交单 Worker 活跃进程冲突、既有 Worker timeout 接管、DRAINING 在途终态提交和 Board Worker 展示。`host_id` 只用于展示和迁移追踪；Scheduler 不进入普通 Task queue-pull Worker 集合。该阶段不停止或重启 Task Worker。 |
+| C6 | 未开始 | 控制面预发验证：重复启动拒绝、心跳超时接管、slot admission、interrupted recovery、Board 展示和控制面不可用 fail-closed。 |
 | D1 | 本轮不实施 | Daily/PR/Aone/Probe 的业务状态和 runner 旁路迁移脚本：导出、校验、回放、对账与原子切换，单独评审 |
 
 执行顺序：
@@ -588,9 +586,8 @@ C4–C6 只完成控制面。D1 及独立 Task Worker/数据面验收前，禁�
 - 同 job 禁止 overlap，不同 job 允许在容量内并发。
 - Task/Event 未明确 durable ACK 时，runner 的业务 cursor 不推进。
 - 控制面不可用必须 fail-closed；遗留 `RUNNING` 在启动时恢复为保留已预留后续计划的 `IDLE`。
-- 只有 Scheduler token 认证且当前 ACTIVE 的 `bridge-scheduler` Worker 的
-  `worker_key + process_uuid` 可调用 scheduled-job 状态 API；普通 token、过期进程或重复启动必须
-  被控制面拒绝。
+- 只有当前 ACTIVE 的 `bridge-scheduler` Worker 的 `worker_key + process_uuid` 可调用
+  scheduled-job 状态 API；过期进程或重复启动必须被控制面拒绝。
 
 ### 14.2 后续数据面迁移回归（D1，非本轮）
 
@@ -635,9 +632,8 @@ C4–C6 只完成控制面。D1 及独立 Task Worker/数据面验收前，禁�
 
 1. `jarvis_scheduled_job` 的 register/list/start/complete/fail/recover 契约在预发可用，且 Board 只读展示当前态。
 2. Bridge 以生产 HTTP adapter 注册并读取 job 状态；stale/duplicate slot 被拒绝时不执行 runner，控制面不可用时 fail-closed。
-3. 普通 Task token 与 Scheduler token 必须不同；只有 Scheduler token 注册的 ACTIVE
-   `bridge-scheduler` Worker 可以调用 scheduled-job API，每个请求校验
-   `worker_key + process_uuid`。`host_id` 不参与授权。
+3. 只有当前 ACTIVE 的 `bridge-scheduler` Worker 可以调用 scheduled-job API，每个请求校验
+   `worker_key + process_uuid`。复用普通 Task token，`host_id` 不参与授权。
 4. Scheduler 可完成单实例的 READY/OFFLINE 与 admission quiesce；它不操作 `PersistenceExecutor`、Task、Session 或旧业务 loop。
 
 以下十项是原始的**全量目标**，保留为后续 D1 数据面迁移与独立 Task Worker 的验收条件，不代表本轮交付完成门：
