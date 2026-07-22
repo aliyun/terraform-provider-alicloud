@@ -182,14 +182,12 @@ class SchedulerComposition:
                     runtime=ScannerRuntime(_RoutedRunner(job_runners)),
                     publisher=EmptyResultPublisher(),
                 )
-                # Register the complete immutable registry; unmigrated jobs are
-                # explicitly DISABLED on the new control plane and remain legacy-owned.
+                # Only YAML-declared Scheduler jobs are registered. Legacy jobs
+                # never enter this control-plane registry.
                 engine.register(
                     datetime.now(timezone.utc),
-                    is_enabled=lambda definition: (
-                        definition.id in migrated
-                        and business_job_enabled(definition, environ=self._environ)
-                    ))
+                    is_enabled=lambda definition: business_job_enabled(
+                        definition, environ=self._environ))
                 engine.recover_interrupted()
             except Exception:
                 # A Worker that could register but could not complete the

@@ -30,13 +30,9 @@ def definition(*, revision: int = 1, schedule=None) -> ScheduledJobDefinition:
 
 
 class SchedulerCoreTests(unittest.TestCase):
-    def test_registry_is_explicit_complete_and_import_safe(self):
+    def test_registry_is_yaml_loaded_and_empty_before_first_migration(self):
         loaded = jobs.load_jobs()
-        self.assertEqual(tuple(item.id for item in loaded), (
-            "aone.scan", "aone.stale_claim", "daily.nudge", "daily.probe",
-            "aone.reply", "pr.watch", "pr.lifecycle",
-        ))
-        self.assertNotIn("persona.scan", {item.id for item in loaded})
+        self.assertEqual(loaded, ())
         self.assertIs(loaded, jobs.JOBS)
 
     def test_registry_materializes_generator_once_and_returns_tuple(self):

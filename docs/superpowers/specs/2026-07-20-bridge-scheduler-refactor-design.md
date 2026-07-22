@@ -340,7 +340,7 @@ CREATE TABLE jarvis_scheduled_job (
 | 禁用 | `DISABLED` | `NULL` | 保留最近一次运行结果 |
 | 重新启用 | `IDLE` | 重新计算计划时间 | 保留最近一次运行结果 |
 
-每次启动用完整 `JOBS` 注册表 upsert：已存在的 job 更新 `job_name` 和 `definition`；本次未注册但表中仍存在的历史 job 只改为 `DISABLED`，不删除记录。重新出现时再恢复为 `IDLE` 并计算 `next_run_at`。
+每次启动只对 YAML 中已迁移的 `JOBS` 做 upsert：已存在的 job 更新 `job_name` 和 `definition`；未出现在 YAML 的旧任务不进入新控制面，也不会被注册为 `DISABLED`。
 
 不新增 run-history 表；历史运行明细继续由日志和 Task/Session 时间线承担。
 
@@ -350,9 +350,9 @@ CREATE TABLE jarvis_scheduled_job (
 
 1. `DailyScheduler` 的日期 marker 继续作为 daily runner 的独立业务状态，不能塞入 `jarvis_scheduled_job`。
 2. `pr-watch.json` 的 registry、cursor 和 dedupe 状态继续由 PR runner 所有，后续需要控制面化时使用独立业务状态接口。
-3. 迁移期旧 loop 和新 job 不得同时触发；`config/scheduler-jobs.yaml` 是唯一的新旧归属与
-   注册清单：`owner: scheduler` 同时驱动新链路注册和旧入口屏蔽，`owner: legacy` 保持旧入口；
-   `enabled_env` 只决定业务启停。
+3. 迁移期旧 loop 和新 job 不得同时触发；`config/scheduler-jobs.yaml` 只列出新链路 job，
+   同时驱动其注册和同名旧入口屏蔽；未列出的 job 完全由旧模块负责。`enabled_env` 只决定
+   已迁移 job 的业务启停。
 4. 连续两个完整周期对账一致并确认新的业务状态真源后，才停止读取旧状态文件。
 5. 双事件 ledger 在等价 durable outbox 验收前继续保留，不能随 scheduler 状态文件一起删除。
 
@@ -362,14 +362,13 @@ CREATE TABLE jarvis_scheduled_job (
 双触发模式。默认全部 job 仍走旧链路。运维只可编辑一个显式 YAML 注册表把 job 切到新链路：
 
 ```text
-# 编辑 config/scheduler-jobs.yaml：将目标 Job 配置为
-# owner: scheduler
+# 在 config/scheduler-jobs.yaml 新增目标 Job 的完整 definition，且声明
 # engine_runner: <Bridge runner 名称>
 ```
 
-`owner: scheduler` 的 job 仅由新 Engine admission，旧模块必须停止同一 job 的旧 tick；
-`owner: legacy` 的 job 仅由旧模块执行，新控制面登记为 `DISABLED`。Scheduler-owned job 仍须满足
-definition 的 `enabled_env`，业务开关关闭时新旧链路均不执行。未知 job、重复项、仍配置已废弃的
+YAML 中的 job 仅由新 Engine admission，旧模块必须停止同一 job 的旧 tick；未列出的 job 仅由旧模块执行，
+不进入新控制面。已迁移 job 仍须满足 definition 的 `enabled_env`，业务开关关闭时不执行。未知 job、
+重复项、仍配置已废弃的
 `JARVIS_SCHEDULER_ENABLE`/`JARVIS_SCHEDULER_JOB_*`，或缺少新 runner 映射，均在启动阶段
 fail-closed。这样只需编辑一个变量即可逐项迁移，且路由归属与业务启停不会相互覆盖。
 

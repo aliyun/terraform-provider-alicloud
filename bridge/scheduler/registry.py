@@ -21,12 +21,11 @@ class SchedulerRegistryError(ValueError):
 @dataclass(frozen=True)
 class SchedulerJobRoute:
     job_key: str
-    owner: str
-    runner: Optional[str] = None
+    runner: str
 
     @property
     def scheduler_owned(self) -> bool:
-        return self.owner == "scheduler"
+        return True
 
 
 @dataclass(frozen=True)
@@ -71,8 +70,8 @@ def load_scheduler_registry(
     if not isinstance(raw, Mapping) or set(raw) != {"version", "jobs"} or raw["version"] != 1:
         raise SchedulerRegistryError("scheduler registry requires only version: 1 and jobs: %s" % target)
     rows = raw["jobs"]
-    if not isinstance(rows, list) or not rows:
-        raise SchedulerRegistryError("scheduler registry jobs must be a nonempty list: %s" % target)
+    if not isinstance(rows, list):
+        raise SchedulerRegistryError("scheduler registry jobs must be a list: %s" % target)
     routes = []
     definitions = []
     seen = set()
@@ -80,21 +79,16 @@ def load_scheduler_registry(
         if not isinstance(row, Mapping):
             raise SchedulerRegistryError("invalid job entry #%s in %s" % (index, target))
         key = _required_text(row, "key", index, target)
-        owner = _required_text(row, "owner", index, target)
         engine_runner = _optional_text(row.get("engine_runner"), index, target)
         if key in seen:
             raise SchedulerRegistryError("duplicate job key in %s: %s" % (target, key))
         seen.add(key)
-        if owner not in {"legacy", "scheduler"}:
-            raise SchedulerRegistryError("job %s owner must be legacy or scheduler" % key)
-        if owner == "scheduler" and not engine_runner:
-            raise SchedulerRegistryError("scheduler-owned job requires engine_runner: %s" % key)
-        if owner == "legacy" and engine_runner is not None:
-            raise SchedulerRegistryError("legacy job cannot declare engine_runner: %s" % key)
+        if not engine_runner:
+            raise SchedulerRegistryError("every new-registry job requires engine_runner: %s" % key)
         definition = _definition_from_row(row, index, target)
         if definition.id != key:
             raise SchedulerRegistryError("job key/id mismatch in %s: %s" % (target, key))
-        routes.append(SchedulerJobRoute(key, owner, engine_runner))
+        routes.append(SchedulerJobRoute(key, engine_runner))
         definitions.append(definition)
     return SchedulerRegistry(tuple(routes), tuple(definitions))
 
@@ -119,7 +113,7 @@ def _definition_from_row(
 ) -> "ScheduledJobDefinition":
     from .model import JobPurpose, MisfirePolicy, ReplayPolicy, ScheduledJobDefinition
     expected = {
-        "key", "revision", "description", "purpose", "owner", "engine_runner",
+        "key", "revision", "description", "purpose", "engine_runner",
         "schedule", "runner", "misfire", "timeout_seconds", "retry_delay_seconds",
         "replay_policy", "enabled_env",
     }

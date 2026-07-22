@@ -345,7 +345,7 @@ def _scheduler_owns_job(job_key):
     """YAML-derived ownership gate used by legacy loops during cutover."""
     if os.environ.get("JARVIS_BRIDGE_ROLE", "scheduler") != "scheduler":
         return False
-    return SCHEDULER_REGISTRY.route_for(job_key).scheduler_owned
+    return job_key in SCHEDULER_REGISTRY.scheduler_job_keys()
 
 
 def _aone_task_key(project, item_id):
