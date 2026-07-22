@@ -954,6 +954,81 @@ class AoneSchedulerUnionTest(unittest.TestCase):
         scanner._claim_health_tag_epoch = mock.Mock(return_value="claimepoch")
         return scanner
 
+    def _immediate_claim_health_alert_scanner(self):
+        scanner = self._health_scanner(mock.Mock())
+        scanner._inspect_claim_health = mock.Mock(return_value={
+            "category": "heartbeat-lost",
+            "epoch": "task-700:g-8:s-901:f-12",
+            "confirm": False,
+            "detail": "RUNNING heartbeat exceeded the grace period",
+        })
+        return scanner
+
+    def test_master_staff_defaults_and_honors_env_override(self):
+        with mock.patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("JARVIS_MASTER_STAFF", None)
+            self.assertEqual(bot.master_staff(), "320687")
+        with mock.patch.dict(
+                os.environ, {"JARVIS_MASTER_STAFF": " 998877 "}):
+            self.assertEqual(bot.master_staff(), "998877")
+
+    def test_claim_health_only_enqueues_dingtalk_to_master_staff(self):
+        snapshot = {"84551585": self._claimed_item()}
+        for configured, expected in (("", "320687"), ("998877", "998877")):
+            with self.subTest(master_staff=configured or "default"), \
+                    mock.patch.dict(
+                        os.environ, {"JARVIS_MASTER_STAFF": configured}), \
+                    mock.patch.object(bot, "_aone_event_enqueue") as aone, \
+                    mock.patch.object(
+                        bot, "_dingtalk_event_enqueue",
+                        return_value=True) as dingtalk:
+                self._immediate_claim_health_alert_scanner()._reconcile_stale_claims(
+                    snapshot, now_epoch=1000, now_monotonic=1000)
+            aone.assert_not_called()
+            dingtalk.assert_called_once()
+            self.assertEqual(dingtalk.call_args.args[3], expected)
+
+    def test_claim_health_dingtalk_convergence_uses_stable_idempotency_key(self):
+        scanner = self._immediate_claim_health_alert_scanner()
+        snapshot = {"84551585": self._claimed_item()}
+        with mock.patch.object(bot, "_aone_event_enqueue") as aone, \
+             mock.patch.object(bot, "_dingtalk_event_enqueue",
+                               return_value=True) as dingtalk, \
+             self.assertLogs("jarvis-bot", level="WARNING") as captured:
+            scanner._reconcile_stale_claims(
+                snapshot, now_epoch=1000, now_monotonic=1000)
+            scanner._reconcile_stale_claims(
+                snapshot, now_epoch=1300, now_monotonic=1300)
+
+        aone.assert_not_called()
+        self.assertEqual(dingtalk.call_count, 2)
+        self.assertEqual(
+            dingtalk.call_args_list[0].args[2],
+            dingtalk.call_args_list[1].args[2])
+        logs = "\n".join(captured.output)
+        self.assertEqual(logs.count("candidates=1 delivered=1"), 2)
+        self.assertNotIn("aone=", logs.lower())
+
+    def test_claim_health_dingtalk_failure_is_not_delivered(self):
+        snapshot = {"84551585": self._claimed_item()}
+        failures = (False, RuntimeError("ledger unavailable"))
+        for failure in failures:
+            scanner = self._immediate_claim_health_alert_scanner()
+            kwargs = ({"side_effect": failure} if isinstance(failure, Exception)
+                      else {"return_value": failure})
+            with self.subTest(failure=repr(failure)), \
+                    mock.patch.object(bot, "_aone_event_enqueue") as aone, \
+                    mock.patch.object(
+                        bot, "_dingtalk_event_enqueue", **kwargs) as dingtalk, \
+                    self.assertLogs("jarvis-bot", level="WARNING") as captured:
+                scanner._reconcile_stale_claims(
+                    snapshot, now_epoch=1000, now_monotonic=1000)
+            aone.assert_not_called()
+            dingtalk.assert_called_once()
+            logs = "\n".join(captured.output)
+            self.assertIn("candidates=1 delivered=0", logs)
+            self.assertNotIn("aone=", logs.lower())
+
     @staticmethod
     def _active_client(status, heartbeat_at):
         heartbeat_epoch = datetime.fromisoformat(
@@ -1060,14 +1135,16 @@ class AoneSchedulerUnionTest(unittest.TestCase):
         }
         scanner = self._health_scanner(client)
         snapshot = {"84551585": self._claimed_item()}
-        with mock.patch.object(bot, "_aone_event_enqueue", return_value=True) as aone, \
-             mock.patch.object(bot, "_dingtalk_event_enqueue", return_value=True):
+        with mock.patch.object(bot, "_aone_event_enqueue") as aone, \
+             mock.patch.object(bot, "_dingtalk_event_enqueue",
+                               return_value=True) as dingtalk:
             scanner._reconcile_stale_claims(
                 snapshot, now_epoch=1000, now_monotonic=1000)
             aone.assert_not_called()
             scanner._reconcile_stale_claims(
                 snapshot, now_epoch=1300, now_monotonic=1300)
-        self.assertIn("control-plane-structure", aone.call_args.args[2])
+        aone.assert_not_called()
+        self.assertIn("control-plane-structure", dingtalk.call_args.args[2])
 
     def test_claim_health_heartbeat_grace_starts_at_last_healthy_heartbeat(self):
         now = 1_800_000_000
@@ -1200,7 +1277,7 @@ class AoneSchedulerUnionTest(unittest.TestCase):
         }
         scanner = self._health_scanner(client)
         snapshot = {"84551585": self._claimed_item()}
-        with mock.patch.object(bot, "_aone_event_enqueue", return_value=True) as aone, \
+        with mock.patch.object(bot, "_aone_event_enqueue") as aone, \
              mock.patch.object(bot, "_dingtalk_event_enqueue", return_value=True) as dm:
             scanner._reconcile_stale_claims(
                 snapshot, now_epoch=1000, now_monotonic=1000)
@@ -1210,12 +1287,11 @@ class AoneSchedulerUnionTest(unittest.TestCase):
             dm.assert_not_called()
             scanner._reconcile_stale_claims(
                 snapshot, now_epoch=1300, now_monotonic=1300)
-        self.assertIn("terminal-claim-residue", aone.call_args.args[2])
-        self.assertIn("task-700:g-8:s-901:f-12", aone.call_args.args[2])
-        self.assertEqual(aone.call_args.kwargs,
-                         {"allow_non_tf": True, "identity": "jarvis"})
-        self.assertEqual(dm.call_args.args[2], aone.call_args.args[2])
+        aone.assert_not_called()
+        self.assertIn("terminal-claim-residue", dm.call_args.args[2])
+        self.assertIn("task-700:g-8:s-901:f-12", dm.call_args.args[2])
         self.assertEqual(dm.call_args.args[3], bot.master_staff())
+        self.assertEqual(dm.call_args.kwargs, {"allow_non_tf": True})
 
     def test_claim_health_running_or_leased_corrupted_session_is_confirmed_structure(self):
         now = 1_800_000_000
@@ -1250,8 +1326,9 @@ class AoneSchedulerUnionTest(unittest.TestCase):
         scanner._claim_health_tag_epoch.side_effect = (
             lambda *_args: claim_epoch["value"])
         snapshot = {"84551585": self._claimed_item()}
-        with mock.patch.object(bot, "_aone_event_enqueue", return_value=True) as aone, \
-             mock.patch.object(bot, "_dingtalk_event_enqueue", return_value=True):
+        with mock.patch.object(bot, "_aone_event_enqueue") as aone, \
+             mock.patch.object(bot, "_dingtalk_event_enqueue",
+                               return_value=True) as dingtalk:
             scanner._reconcile_stale_claims(
                 snapshot, now_epoch=1000, now_monotonic=1000)
             claim_epoch["value"] = "claim-b"
@@ -1260,7 +1337,8 @@ class AoneSchedulerUnionTest(unittest.TestCase):
             aone.assert_not_called()
             scanner._reconcile_stale_claims(
                 snapshot, now_epoch=1600, now_monotonic=1600)
-        self.assertIn("claim-b", aone.call_args.args[2])
+        aone.assert_not_called()
+        self.assertIn("claim-b", dingtalk.call_args.args[2])
 
     def test_claim_health_structure_detail_change_restarts_confirmation(self):
         scanner = self._health_scanner(mock.Mock())
@@ -1275,8 +1353,9 @@ class AoneSchedulerUnionTest(unittest.TestCase):
         scanner._inspect_claim_health = mock.Mock(
             side_effect=[anomaly_a, anomaly_b, anomaly_b])
         snapshot = {"84551585": self._claimed_item()}
-        with mock.patch.object(bot, "_aone_event_enqueue", return_value=True) as aone, \
-             mock.patch.object(bot, "_dingtalk_event_enqueue", return_value=True):
+        with mock.patch.object(bot, "_aone_event_enqueue") as aone, \
+             mock.patch.object(bot, "_dingtalk_event_enqueue",
+                               return_value=True) as dingtalk:
             scanner._reconcile_stale_claims(
                 snapshot, now_epoch=1000, now_monotonic=1000)
             scanner._reconcile_stale_claims(
@@ -1287,8 +1366,9 @@ class AoneSchedulerUnionTest(unittest.TestCase):
         fingerprint_a = scanner._claim_anomaly_fingerprint(anomaly_a)
         fingerprint_b = scanner._claim_anomaly_fingerprint(anomaly_b)
         self.assertNotEqual(fingerprint_a, fingerprint_b)
-        self.assertIn(fingerprint_b, aone.call_args.args[2])
-        self.assertNotIn(fingerprint_a, aone.call_args.args[2])
+        aone.assert_not_called()
+        self.assertIn(fingerprint_b, dingtalk.call_args.args[2])
+        self.assertNotIn(fingerprint_a, dingtalk.call_args.args[2])
 
     def test_claim_health_no_task_uses_only_legacy_180_minute_fallback(self):
         client = mock.Mock()

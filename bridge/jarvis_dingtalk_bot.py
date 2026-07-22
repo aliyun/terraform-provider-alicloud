@@ -5148,39 +5148,23 @@ class AoneScheduler:
             ticket_url = (
                 "https://project.aone.alibaba-inc.com/v2/project/%s/req/%s"
                 % (project, iid))
-            aone_text = (
-                "### 认领健康告警\n\n"
-                "`jarvis-claimed` 的控制面状态异常（`%s`）：%s。"
-                "健康 RUNNING/LEASED 任务不会按总执行时长告警；"
-                "本次仅告警，系统未修改标签或状态。"
-                % (category, anomaly["detail"]))
-            dm_text = (
+            dingtalk_text = (
                 "工单 [#%s](%s) 的认领健康异常（`%s`）：%s。"
                 "本次仅告警，系统未修改标签或状态。"
                 % (iid, ticket_url, category, anomaly["detail"]))
-            terraform = _is_terraform_ticket(
-                item.get("pool", ""), item.get("title", ""))
             allow_non_tf = not _is_terraform_project(project)
             try:
-                aone_ok = _aone_event_enqueue(
-                    iid, project, event_key, aone_text,
-                    allow_non_tf=allow_non_tf,
-                    identity=PERSONA_PUBLIC_IDENTITY if terraform else "jarvis")
-            except Exception as exc:  # noqa: BLE001 — channels are independent
-                aone_ok = False
-                log.warning("claim-health Aone enqueue #%s failed: %s", iid, exc)
-            try:
-                dm_ok = _dingtalk_event_enqueue(
+                dingtalk_ok = _dingtalk_event_enqueue(
                     iid, project, event_key, master_staff(),
-                    "Jarvis 认领健康告警", dm_text,
+                    "Jarvis 认领健康告警", dingtalk_text,
                     allow_non_tf=allow_non_tf)
-            except Exception as exc:  # noqa: BLE001 — channels are independent
-                dm_ok = False
+            except Exception as exc:  # noqa: BLE001 — retry on the next health pass
+                dingtalk_ok = False
                 log.warning("claim-health DingTalk enqueue #%s failed: %s", iid, exc)
-            delivered += int(aone_ok and dm_ok)
+            delivered += int(dingtalk_ok)
             log.warning(
-                "claim-health alert #%s category=%s epoch=%s aone=%s dm=%s",
-                iid, category, control_epoch, aone_ok, dm_ok)
+                "claim-health alert #%s category=%s epoch=%s dingtalk=%s",
+                iid, category, control_epoch, dingtalk_ok)
         if alerts:
             log.warning("claim-health reconcile: candidates=%d delivered=%d",
                         len(alerts), delivered)
