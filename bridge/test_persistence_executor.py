@@ -23,6 +23,7 @@ from jarvis_task_client import (  # noqa: E402
     ControlPlaneConflict,
     ControlPlaneRejected,
     ControlPlaneUnavailable,
+    HandoffRequested,
     InvalidResponse,
     StaleFence,
 )
@@ -57,6 +58,8 @@ class FakeClient:
             value = values.pop(0)
         elif name == "lease_task":
             value = {}
+        elif name == "list_force_handoff_requests":
+            value = []
         else:
             value = {"accepted": True}
         if isinstance(value, BaseException):
@@ -72,6 +75,9 @@ class FakeClient:
     def heartbeat_worker(self, *args, **kwargs):
         return self._call("heartbeat_worker", *args, **kwargs)
 
+    def list_force_handoff_requests(self, *args, **kwargs):
+        return self._call("list_force_handoff_requests", *args, **kwargs)
+
     def lease_task(self, *args, **kwargs):
         return self._call("lease_task", *args, **kwargs)
 
@@ -80,6 +86,9 @@ class FakeClient:
 
     def heartbeat_session(self, *args, **kwargs):
         return self._call("heartbeat_session", *args, **kwargs)
+
+    def acknowledge_force_handoff(self, *args, **kwargs):
+        return self._call("acknowledge_force_handoff", *args, **kwargs)
 
     def complete_session(self, *args, **kwargs):
         return self._call("complete_session", *args, **kwargs)
@@ -246,7 +255,7 @@ class SessionControllerTest(unittest.TestCase):
         })
 
     def test_stale_fence_stops_the_bound_process_without_terminal_ack(self):
-        client = FakeClient(heartbeat_session=[StaleFence("old")])
+        client = FakeClient(heartbeat_session=[HandoffRequested("handoff")])
         stopped = []
         lifecycle = self.make(
             client, stop_process=lambda current, reason: stopped.append(
@@ -256,9 +265,50 @@ class SessionControllerTest(unittest.TestCase):
         lifecycle.bind_process(process)
         self.assertFalse(lifecycle.heartbeat())
         self.assertTrue(lifecycle.ownership_lost)
-        self.assertEqual(stopped, [(process, "stale_fence:heartbeat")])
+        self.assertEqual(stopped, [(process, "force_handoff:heartbeat")])
+        handoff_ack = client.named("acknowledge_force_handoff")
+        self.assertEqual(len(handoff_ack), 1)
+        self.assertEqual(handoff_ack[0]["args"], ("s1", "mac:boot:proc", 7))
+        self.assertEqual(handoff_ack[0]["kwargs"]["process_uuid"], "unknown")
         self.assertEqual(client.named("complete_session"), [])
         self.assertEqual(client.named("fail_session"), [])
+
+    def test_force_handoff_ack_failure_keeps_ownership_revoked(self):
+        client = FakeClient(
+            heartbeat_session=[HandoffRequested("handoff")],
+            acknowledge_force_handoff=[ControlPlaneUnavailable("offline")])
+        lifecycle = self.make(client, stop_process=lambda current, reason: None)
+        lifecycle.start()
+
+        self.assertFalse(lifecycle.heartbeat())
+
+        self.assertTrue(lifecycle.ownership_lost)
+        self.assertEqual(len(client.named("acknowledge_force_handoff")), 1)
+        self.assertEqual(client.named("complete_session"), [])
+
+    def test_force_handoff_does_not_ack_when_local_stop_fails(self):
+        client = FakeClient(heartbeat_session=[HandoffRequested("handoff")])
+
+        def fail_stop(_controller, _reason):
+            raise RuntimeError("process did not stop")
+
+        lifecycle = self.make(client, stop_process=fail_stop)
+        lifecycle.start()
+
+        self.assertFalse(lifecycle.heartbeat())
+
+        self.assertTrue(lifecycle.ownership_lost)
+        self.assertEqual(client.named("acknowledge_force_handoff"), [])
+
+    def test_ordinary_stale_fence_does_not_send_handoff_ack(self):
+        client = FakeClient(heartbeat_session=[StaleFence("old")])
+        lifecycle = self.make(client, stop_process=lambda current, reason: None)
+        lifecycle.start()
+
+        self.assertFalse(lifecycle.heartbeat())
+
+        self.assertTrue(lifecycle.ownership_lost)
+        self.assertEqual(client.named("acknowledge_force_handoff"), [])
 
     def test_progress_heartbeat_retries_without_snapshot_and_keeps_ownership(self):
         clock = FakeClock()
@@ -561,9 +611,13 @@ class PersistenceExecutorTest(unittest.TestCase):
         register = client.named("register_worker")[0]
         self.assertEqual(register["args"][0]["workerKey"], "mac:boot:proc")
         self.assertEqual(register["args"][0]["maxSlots"], 2)
+        self.assertTrue(register["args"][0]["capabilities"]
+                        ["controlPlane"]["forceHandoffAck"])
         lease_call = client.named("lease_task")[0]
         self.assertNotIn("free_slots", lease_call["kwargs"])
         self.assertEqual(lease_call["kwargs"]["lease_seconds"], 45)
+        self.assertTrue(lease_call["kwargs"]["capabilities"]
+                        ["controlPlane"]["forceHandoffAck"])
         start_payload = client.named("start_session")[0]["args"][3]
         self.assertEqual(start_payload["leaseSeconds"], 45)
         self.assertEqual(start_payload["runtimeSessionId"], "runtime-new")
@@ -648,6 +702,42 @@ class PersistenceExecutorTest(unittest.TestCase):
         executor.run_all()
         self.assertEqual(executed, [], "lost queued work must never start")
         self.assertEqual(worker.active_count(), 0)
+
+    def test_worker_handoff_directive_stops_tracked_session_before_ack(self):
+        client = FakeClient(
+            lease_task=[lease_response()],
+            list_force_handoff_requests=[[], [{
+                "sessionId": "s1", "oldFenceToken": 7,
+                "targetWorkerKey": "worker-2",
+            }]])
+        executor = ManualExecutor()
+        stopped = []
+        worker = self.make(
+            client, lambda *_args: None,
+            lambda lifecycle, reason: stopped.append(
+                (lifecycle.session_id, reason)), executor=executor)
+        self.assertTrue(worker.run_once())
+
+        self.assertTrue(worker._heartbeat_worker_if_due(force=True))
+
+        self.assertEqual(stopped, [("s1", "force_handoff:worker_directive")])
+        ack = client.named("acknowledge_force_handoff")
+        self.assertEqual(len(ack), 1)
+        self.assertEqual(ack[0]["args"], ("s1", "mac:boot:proc", 7))
+        self.assertTrue(worker._sessions["s1"].controller.ownership_lost)
+
+    def test_worker_handoff_directive_acks_when_session_is_no_longer_local(self):
+        client = FakeClient(list_force_handoff_requests=[[{
+            "sessionId": "s9", "oldFenceToken": 4,
+            "targetWorkerKey": "worker-2",
+        }]])
+        worker = self.make(client, lambda *_args: None, lambda *_args: None)
+
+        self.assertTrue(worker.run_once())
+
+        ack = client.named("acknowledge_force_handoff")
+        self.assertEqual(len(ack), 1)
+        self.assertEqual(ack[0]["args"], ("s9", "mac:boot:proc", 4))
 
     def test_session_heartbeat_includes_best_effort_progress_excerpt(self):
         client = FakeClient(lease_task=[lease_response()], heartbeat_session=[{}])

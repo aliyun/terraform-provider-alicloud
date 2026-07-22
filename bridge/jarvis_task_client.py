@@ -42,6 +42,10 @@ class StaleFence(ControlPlaneError):
     """The caller no longer owns the session lease (HTTP 412/STALE_FENCE)."""
 
 
+class HandoffRequested(StaleFence):
+    """The lease was fenced for an operator-requested two-phase handoff."""
+
+
 class InvalidResponse(ControlPlaneError):
     """The server returned a successful but malformed response."""
 
@@ -194,6 +198,7 @@ class ControlPlaneClient:
         "operation_reconcile": "operations/reconcile",
     }
     WORKER_HEARTBEAT_PATH = "workers/{worker_key}/heartbeat"
+    WORKER_HANDOFF_REQUESTS_PATH = "workers/{worker_key}/handoff-requests"
     WORKERS_PATH = "workers"
     WORKER_STATE_PATH = "workers/{worker_key}/state"
     SESSION_ACTION_PATH = "sessions/{session_id}/{action}"
@@ -263,6 +268,8 @@ class ControlPlaneClient:
                    or detail.get("error_code") or "")
         message = self._error_message(status, detail)
         kwargs = {"status": status, "code": code, "response": detail}
+        if code.lower() == "preconditionfailed.handoffrequested":
+            raise HandoffRequested(message, **kwargs)
         if status == 412 or code.upper() == "STALE_FENCE":
             raise StaleFence(message, **kwargs)
         if status == 409:
@@ -358,6 +365,24 @@ class ControlPlaneClient:
             worker_key=self._path_segment(worker_key, "worker_key"))
         return self._post(path, payload, request_id=request_id)
 
+    def list_force_handoff_requests(
+            self, worker_key: str, *, process_uuid: str) -> Any:
+        path = self.WORKER_HANDOFF_REQUESTS_PATH.format(
+            worker_key=self._path_segment(worker_key, "worker_key"))
+        query = urlencode({"processUuid": _nonblank(process_uuid, "process_uuid")})
+        try:
+            result = self._get(path + "?" + query)
+        except ControlPlaneRejected as exc:
+            # Rolling deployment compatibility: workers may update before the
+            # control plane exposes handoff directives. An older 404 means there
+            # cannot yet be a durable request to miss.
+            if exc.status == 404:
+                return []
+            raise
+        if not isinstance(result, list):
+            raise InvalidResponse("force handoff requests response must be an array")
+        return result
+
     def lease_task(self, worker_key: str, *, lease_seconds: int = 300,
                    capabilities: Optional[Any] = None,
                    process_uuid: Optional[str] = None,
@@ -446,6 +471,29 @@ class ControlPlaneClient:
                           request_id: Optional[str] = None) -> Dict[str, Any]:
         return self._session_transition("heartbeat", session_id, worker_key, fence_token,
                                         detail, request_id, process_uuid)
+
+    def acknowledge_force_handoff(
+            self, session_id: str, worker_key: str, fence_token: Any, *,
+            process_uuid: Optional[str] = None,
+            request_id: Optional[str] = None) -> Dict[str, Any]:
+        """Confirm that the fenced local process has stopped.
+
+        The control plane keeps a forced handoff non-dispatchable until this ACK
+        arrives. ``fence_token`` is the worker's last owned token; the server
+        validates that the pending handoff advanced it exactly once.
+        """
+        if fence_token is None or str(fence_token).strip() == "":
+            raise ValueError("fence_token must not be empty")
+        path = self.SESSION_ACTION_PATH.format(
+            session_id=self._path_segment(session_id, "session_id"),
+            action="handoff-ack")
+        payload = {
+            "workerKey": _nonblank(worker_key, "worker_key"),
+            "oldFenceToken": fence_token,
+        }
+        if process_uuid is not None:
+            payload["processUuid"] = _nonblank(process_uuid, "process_uuid")
+        return self._post(path, payload, request_id=request_id)
 
     def suspend_session(self, session_id: str, worker_key: str, fence_token: Any,
                         detail: Optional[Mapping[str, Any]] = None, *,
