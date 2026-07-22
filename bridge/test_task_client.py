@@ -325,7 +325,8 @@ class ClientContractTest(unittest.TestCase):
                 "pr_url": "https://example.test/pull/1",
             }, request_id="attention-task-42")
         cleared = client.clear_task_attention(
-            "task/42", request_id="attention-clear-task-42")
+            "task/42", event_key_prefix="task-waiting-human:",
+            request_id="attention-clear-task-42")
 
         put, delete = [call[0] for call in opener.calls]
         self.assertTrue(put.full_url.endswith(
@@ -342,7 +343,9 @@ class ClientContractTest(unittest.TestCase):
         })
         self.assertEqual(headers(put)["idempotency-key"], "attention-task-42")
         self.assertTrue(stored["notify"])
-        self.assertEqual(delete.full_url, put.full_url)
+        self.assertEqual(
+            delete.full_url,
+            put.full_url + "?eventKeyPrefix=task-waiting-human%3A")
         self.assertEqual(delete.get_method(), "DELETE")
         self.assertIsNone(delete.data)
         self.assertEqual(headers(delete)["idempotency-key"],

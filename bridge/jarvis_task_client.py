@@ -650,10 +650,21 @@ class ControlPlaneClient:
         return self._mutation("PUT", path, payload=body, request_id=request_id)
 
     def clear_task_attention(self, task_id: Any, *,
+                             event_key_prefix: Optional[str] = None,
                              request_id: Optional[str] = None) -> Dict[str, Any]:
-        """Clear a Task's current human-attention projection."""
+        """Clear a Task's current human-attention projection.
+
+        ``event_key_prefix`` makes cleanup producer-scoped: the control plane only
+        clears the projection when its current event key starts with that prefix.
+        This prevents task bookends and PR Watch from deleting each other's state.
+        """
         path = self.TASK_ATTENTION_PATH.format(
             task_id=self._path_segment(task_id, "task_id"))
+        if event_key_prefix is not None:
+            path = "%s?%s" % (path, urlencode({
+                "eventKeyPrefix": _nonblank(
+                    event_key_prefix, "event_key_prefix"),
+            }))
         return self._mutation("DELETE", path, request_id=request_id)
 
     def list_pending_aone_reply_waits(self, *, after_session_id: int = 0,

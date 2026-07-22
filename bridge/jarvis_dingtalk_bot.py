@@ -1601,6 +1601,117 @@ def master_staff():
     return (os.environ.get("JARVIS_MASTER_STAFF") or "320687").strip()
 
 
+def _attention_owner_staff_id(value):
+    """Resolve a human attention owner, falling back to the bridge master.
+
+    ``suspend_wait_for`` historically accepted either a DingTalk staff id or a
+    name/flower token.  Keep that compatibility at the attention boundary while
+    ensuring robot identities are never messaged directly.
+    """
+    raw = str(value or "").strip()
+    if raw and not raw.upper().startswith("WORKER_"):
+        if re.fullmatch(r"(?:\d+|WB\d+)", raw, re.IGNORECASE):
+            return raw
+        try:
+            by_token, _fallbacks = _contact_directory()
+            record = by_token.get(raw.lower())
+            staff_id = str((record or {}).get("id") or "").strip()
+            if staff_id and not staff_id.upper().startswith("WORKER_"):
+                return staff_id
+        except Exception as exc:  # noqa: BLE001 — safe fallback is the master
+            log.warning("attention: owner resolution failed for %r: %s", raw, exc)
+    return master_staff()
+
+
+def _notify_task_attention(owner_staff_id, payload):
+    """Send one best-effort private notice; intentionally has no local retry ledger."""
+    reason = str(payload.get("reason") or "需要人工关注")
+    action = str(payload.get("action") or "请打开看板查看并处理")
+    aone_url = str(payload.get("aoneUrl") or "")
+    pr_url = str(payload.get("prUrl") or "")
+    lines = ["Jarvis 检测到一个需要你关注的工单。", "", "原因：%s" % reason,
+             "建议操作：%s" % action]
+    if aone_url:
+        lines.append("Aone：%s" % aone_url)
+    if pr_url:
+        lines.append("PR：%s" % pr_url)
+    try:
+        proc = subprocess.run(
+            [str(REPO_ROOT / "bootstrap" / "notify-dingtalk.sh"),
+             str(owner_staff_id), "Jarvis 工单关注提醒", "--body-stdin"],
+            input="\n".join(lines), capture_output=True, text=True, timeout=30)
+        if proc.returncode != 0:
+            log.warning("attention: DingTalk failed rc=%s: %s", proc.returncode,
+                        (proc.stderr or "").strip()[:200])
+    except Exception as exc:  # noqa: BLE001 — notification never changes Task outcome
+        log.warning("attention: DingTalk failed: %s", exc)
+
+
+class _TaskAttentionPublisher:
+    """Control-plane-first human-attention projection shared by all producers.
+
+    The control plane owns event de-duplication and returns ``notify=true`` only for
+    a newly changed attention epoch.  A lost notification is acceptable because the
+    board is the source of truth; bridge deliberately keeps no notification ledger.
+    """
+
+    def __init__(self, client, notifier=None, source="task", required=False):
+        self.client = client
+        self.notifier = notifier or _notify_task_attention
+        self.source = str(source or "task")
+        self.required = bool(required)
+
+    def upsert(self, task_id, owner_staff_id, event_key, payload):
+        method = getattr(self.client, "upsert_task_attention", None)
+        if not callable(method):
+            if self.required:
+                log.warning("attention[%s]: persistence client is unavailable",
+                            self.source)
+                return False
+            return True
+        owner = _attention_owner_staff_id(owner_staff_id)
+        try:
+            response = method(str(task_id), owner, str(event_key), dict(payload))
+        except Exception as exc:  # noqa: BLE001 — caller controls lifecycle retry
+            if getattr(exc, "status", None) == 404:
+                log.info("attention[%s]: control-plane API unavailable for Task %s",
+                         self.source, task_id)
+                # PR Watch is backward-compatible with an older control plane, but
+                # task-owned human waits must never become SUSPENDED without their
+                # durable board projection.
+                return not self.required
+            log.warning("attention[%s]: persist Task %s failed: %s",
+                        self.source, task_id, exc)
+            return False
+        if not isinstance(response, dict):
+            log.warning("attention[%s]: invalid response for Task %s: %r",
+                        self.source, task_id, response)
+            return False
+        if response.get("notify") is True:
+            # The notifier itself is best effort.  A failure must not affect the
+            # already-persisted attention or the Task lifecycle.
+            try:
+                self.notifier(owner, dict(payload))
+            except Exception as exc:  # noqa: BLE001
+                log.warning("attention[%s]: notifier failed for Task %s: %s",
+                            self.source, task_id, exc)
+        return True
+
+    def clear(self, task_id, event_key_prefix=None):
+        method = getattr(self.client, "clear_task_attention", None)
+        if not callable(method):
+            return not self.required
+        try:
+            method(str(task_id), event_key_prefix=event_key_prefix)
+            return True
+        except Exception as exc:  # noqa: BLE001 — observable, caller decides convergence
+            if getattr(exc, "status", None) == 404:
+                return not self.required
+            log.warning("attention[%s]: clear Task %s failed: %s",
+                        self.source, task_id, exc)
+            return False
+
+
 def api_tool_staff():
     """API 工具团队联系人白名单（staffId 工号集合）：命中即可委派 Jarvis 升级重型处理。
     来源 config/contacts.json 的 id 字段；master_staff() 恒包含（兜底，文件缺失也放行 master）；
@@ -2034,10 +2145,30 @@ class _TaskAoneBookend:
             if expected_comment_cursor is not None else None)
         task = getattr(controller, "task", None) or {}
         session = getattr(controller, "session", None) or {}
-        self.task_id = self._field(task, "id", "taskId", "task_id") or self.item_id
+        raw_task_id = self._field(task, "id", "taskId", "task_id")
+        self.attention_task_id = (
+            str(raw_task_id).strip() if raw_task_id is not None else None)
+        if not self.attention_task_id:
+            self.attention_task_id = None
+        # Reply idempotency retains the historical Aone-id fallback, but attention must
+        # never send an Aone workitem id to the Task API.
+        self.task_id = self.attention_task_id or self.item_id
         self.generation = str(
             self._field(session, "generation")
             or self._field(task, "generation") or "1")
+        self.task_client = getattr(controller, "client", None)
+        self._attention = _TaskAttentionPublisher(
+            self.task_client, source="task-bookend", required=True)
+        frozen_payload = self._field(session, "inputPayload", "input_payload")
+        if isinstance(frozen_payload, str):
+            try:
+                frozen_payload = json.loads(frozen_payload)
+            except (TypeError, ValueError):
+                frozen_payload = {}
+        if not isinstance(frozen_payload, dict):
+            frozen_payload = {}
+        self.title = str(
+            frozen_payload.get("title") or self._field(task, "title") or "").strip()
         self._claimed = False
         self._released = False
         self._lock = threading.RLock()
@@ -2078,6 +2209,15 @@ class _TaskAoneBookend:
         self.capture_comment_baseline()
         if self.controller is not None:
             self.controller.bind_process(process)
+        # A newly leased/woken Aone generation is active again. Clear the previous
+        # TASK_WAITING_HUMAN projection before executing work. Post-PR helper Tasks do
+        # not own that gate: clearing here could erase PRWatch's review attention and
+        # make the next watch tick notify again.
+        if self.writes_reply:
+            if not self.clear_attention():
+                raise RuntimeError(
+                    "human-attention cleanup failed for Task %s"
+                    % (self.attention_task_id or "<missing>"))
         with self._lock:
             if not self._claimed:
                 _claim_workitem(
@@ -2176,6 +2316,48 @@ class _TaskAoneBookend:
         """Human-comment cursor consumed by this generation, never a terminal reread."""
         return str(self.capture_comment_baseline() or 0)
 
+    def _attention_payload(self, result=None, legacy_info=None):
+        result = result if isinstance(result, dict) else {}
+        legacy_info = legacy_info if isinstance(legacy_info, dict) else {}
+        unresolved = str(
+            result.get("unresolved") or legacy_info.get("reason") or "").strip()
+        reason = _aone_event_sanitize_text(
+            unresolved or "任务执行已暂停，当前需要人工参与后才能继续。",
+            limit=500)
+        return {
+            "kind": "TASK_WAITING_HUMAN",
+            "reason": reason,
+            "action": "请打开 Aone 工单补充信息或确认下一步；回复后任务会自动恢复。",
+            "aoneId": self.item_id,
+            "aoneUrl": (
+                "https://project.aone.alibaba-inc.com/v2/project/%s/workitem/%s"
+                % (self.project, self.item_id)) if self.project else "",
+            "title": self.title,
+            "taskGeneration": self.generation,
+            "waitFor": str(
+                result.get("suspend_wait_for") or legacy_info.get("wait_for") or ""
+            ).strip(),
+        }
+
+    def set_waiting_attention(self, result=None, legacy_info=None):
+        """Project one stable wait epoch and notify only when the server requests it."""
+        if self.attention_task_id is None:
+            log.warning("attention[task-bookend]: Task id missing for Aone #%s",
+                        self.item_id)
+            return False
+        payload = self._attention_payload(result=result, legacy_info=legacy_info)
+        owner = _attention_owner_staff_id(payload.get("waitFor"))
+        event_key = "task-waiting-human:%s:%s" % (self.task_id, self.generation)
+        return self._attention.upsert(
+            self.attention_task_id, owner, event_key, payload)
+
+    def clear_attention(self):
+        """Clear only this producer's prior wait when a Task starts/resumes."""
+        if self.attention_task_id is None:
+            return False
+        return self._attention.clear(
+            self.attention_task_id, event_key_prefix="task-waiting-human:")
+
     def commit(self, result):
         """Write the single RD reply then the terminal tag for a finished run.
 
@@ -2209,6 +2391,10 @@ class _TaskAoneBookend:
         if outcome == "suspend" and not handed_off:
             # Keep the claim for AoneReplyScheduler. Its wait cursor is the generation
             # baseline, so a comment racing after the pre-read is still observed.
+            if not self.set_waiting_attention(result=result):
+                raise RuntimeError(
+                    "human-attention projection was not persisted for Task %s"
+                    % (self.attention_task_id or "<missing>"))
             return False
 
         if outcome == "done" and not handed_off:
@@ -5680,17 +5866,13 @@ class PrWatchScheduler:
             if task_id is None:
                 log.info("PrWatchScheduler: no control-plane Task for #%s attention", tid)
                 return True
-            response = self.task_client.upsert_task_attention(
-                task_id, owner_staff_id, event_key, payload)
         except Exception as exc:  # noqa: BLE001 — scheduler retries projection next tick
-            if getattr(exc, "status", None) == 404:
-                log.info("PrWatchScheduler: attention API unavailable for #%s", tid)
-                return True
-            log.warning("PrWatchScheduler: persist attention #%s failed: %s", tid, exc)
+            log.warning("PrWatchScheduler: resolve attention Task #%s failed: %s", tid, exc)
             return False
-        if response.get("notify") is True:
-            self._notify_attention(owner_staff_id, payload)
-        return True
+        return _TaskAttentionPublisher(
+            self.task_client, notifier=self._notify_attention,
+            source="pr-watch").upsert(
+                task_id, owner_staff_id, event_key, payload)
 
     def _clear_attention(self, tid):
         if self.task_client is None:
@@ -5699,36 +5881,16 @@ class PrWatchScheduler:
             task_id = self._attention_task_id(tid)
             if task_id is None:
                 return True
-            self.task_client.clear_task_attention(task_id)
-            return True
         except Exception as exc:  # noqa: BLE001 — keep PR watch so clear can converge
-            if getattr(exc, "status", None) == 404:
-                return True
-            log.warning("PrWatchScheduler: clear attention #%s failed: %s", tid, exc)
+            log.warning("PrWatchScheduler: resolve clear Task #%s failed: %s", tid, exc)
             return False
+        return _TaskAttentionPublisher(
+            self.task_client, source="pr-watch").clear(
+                task_id, event_key_prefix="pr-")
 
     @staticmethod
     def _notify_attention(owner_staff_id, payload):
-        reason = str(payload.get("reason") or "需要人工关注")
-        action = str(payload.get("action") or "请打开看板查看并处理")
-        aone_url = str(payload.get("aoneUrl") or "")
-        pr_url = str(payload.get("prUrl") or "")
-        lines = ["Jarvis 检测到一个需要你关注的工单。", "", "原因：%s" % reason,
-                 "建议操作：%s" % action]
-        if aone_url:
-            lines.append("Aone：%s" % aone_url)
-        if pr_url:
-            lines.append("PR：%s" % pr_url)
-        try:
-            proc = subprocess.run(
-                [str(REPO_ROOT / "bootstrap" / "notify-dingtalk.sh"),
-                 str(owner_staff_id), "Jarvis 工单关注提醒", "--body-stdin"],
-                input="\n".join(lines), capture_output=True, text=True, timeout=30)
-            if proc.returncode != 0:
-                log.warning("PrWatchScheduler: attention DingTalk failed rc=%s: %s",
-                            proc.returncode, (proc.stderr or "").strip()[:200])
-        except Exception as exc:  # noqa: BLE001 — best effort, deliberately no retry
-            log.warning("PrWatchScheduler: attention DingTalk failed: %s", exc)
+        _notify_task_attention(owner_staff_id, payload)
 
     def _ensure_registry_title(self, tid, entry):
         """Best-effort migration for pre-title/failed-read PR registry entries."""
@@ -8310,7 +8472,16 @@ class JarvisHandler(AsyncChatbotHandler):
             comment_result_required = bool(
                 task_bookend is not None
                 and task_bookend.expected_comment_cursor is not None)
-            if comment_result_required:
+            structured_result = None
+            if (not res.is_error and task_bookend is not None
+                    and task_bookend.writes_reply):
+                _structured_clean, structured_result = extract_task_result(final)
+            if structured_result is not None:
+                # A valid task result is authoritative.  Some older prompts/models
+                # still emit a legacy SUSPEND alongside it; parsing that first could
+                # bypass the structured reply/handled-comment gates.
+                info = None
+            elif comment_result_required:
                 # A legacy [[SUSPEND]] must not bypass handled_comment_id validation.
                 # A valid AONE_RESULT outcome=suspend is processed below instead.
                 info = None
@@ -8328,6 +8499,23 @@ class JarvisHandler(AsyncChatbotHandler):
                     info = self._maybe_suspend(final, sid, target, target_type,
                                                terraform=terraform)
             if info:
+                if session_controller is not None and task_bookend is not None:
+                    if str(info.get("aone_id") or "") != str(item_id):
+                        res_err = ClaudeResult(
+                            final or "", True, "invalid_suspend_target")
+                        self._dispatch_failed(
+                            item_id, res_err, notify, project,
+                            terraform=terraform, kind=kind, sid=sid,
+                            attempts=attempt + 1)
+                        log.warning(
+                            "dispatch_item #%s legacy suspend targets #%s; "
+                            "failing closed", item_id, info.get("aone_id"))
+                        return (_task_failure_result(res_err, attempt + 1)
+                                if session_controller is not None else "error")
+                    if not task_bookend.set_waiting_attention(legacy_info=info):
+                        raise RuntimeError(
+                            "human-attention projection was not persisted for Task %s"
+                            % (task_bookend.attention_task_id or "<missing>"))
                 wl = self._workitem_line(info["aone_id"])
                 line = wl[0] if isinstance(wl, tuple) else wl
                 notify("⏸️ 工单已挂起，等待 @%s 回复\n%s" % (
@@ -8370,7 +8558,9 @@ class JarvisHandler(AsyncChatbotHandler):
                 # executor commits the single Aone write here. A clean exit WITHOUT a
                 # valid [[AONE_RESULT]] means the run did not finish its SOP → fail closed
                 # (retryable), never a silent SUCCEEDED (the false-completion this fixes).
-                _clean, tr = extract_task_result(final)
+                tr = structured_result
+                if tr is None:
+                    _clean, tr = extract_task_result(final)
                 unhandled_comment = (
                     tr is not None
                     and not task_bookend.handles_expected_comment(tr))

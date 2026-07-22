@@ -1960,6 +1960,11 @@ class TaskBookendDispatchTest(unittest.TestCase):
 
     def _controller(self):
         return SimpleNamespace(
+            client=SimpleNamespace(
+                upsert_task_attention=mock.Mock(
+                    return_value={"notify": False}),
+                clear_task_attention=mock.Mock(
+                    return_value={"notify": False})),
             task={"id": 603, "generation": 1},
             session={"generation": 1},
             runtime_session_id="rt-1", resumed=False)
@@ -1976,7 +1981,7 @@ class TaskBookendDispatchTest(unittest.TestCase):
                                        expected_comment_cursor=expected_comment_cursor,
                                        comment_reader=comment_reader,
                                        handoff_writer=handoff_writer)
-        calls = {"maybe_suspend": suspend_mock}
+        calls = {"maybe_suspend": suspend_mock, "bookend": bookend}
         h._dispatch_failed = lambda *a, **k: calls.setdefault("failed", a)
         with mock.patch.object(bot, "run_claude_buffered",
                                return_value=bot.ClaudeResult(final, False, "success")), \
@@ -2118,6 +2123,26 @@ class TaskBookendDispatchTest(unittest.TestCase):
         calls["maybe_suspend"].assert_not_called()
         self.assertIn("reply", calls)
 
+    def test_structured_result_wins_over_legacy_suspend_for_ordinary_task(self):
+        out, calls = self._run(
+            '[[SUSPEND:{"aone_id":"wrong-ticket","wait_for":"wrong"}]]\n'
+            '[[AONE_RESULT:{"outcome":"idle","reply_body":"structured wins"}]]',
+            legacy_suspend_info={"aone_id": "wrong-ticket", "wait_for": "wrong"})
+        self.assertEqual(out, "done")
+        calls["maybe_suspend"].assert_not_called()
+        self.assertIn("reply", calls)
+        self.assertIn("release", calls)
+
+    def test_legacy_suspend_for_other_ticket_fails_closed_without_attention(self):
+        out, calls = self._run(
+            '[[SUSPEND:{"aone_id":"99999999","wait_for":"320687"}]]',
+            legacy_suspend_info={"aone_id": "99999999", "wait_for": "320687"})
+        self.assertEqual(out["status"], "error")
+        self.assertEqual(out["error"]["subtype"], "invalid_suspend_target")
+        self.assertIn("failed", calls)
+        calls["bookend"].task_client.upsert_task_attention.assert_not_called()
+        self.assertNotIn("reply", calls)
+
     def test_comment_between_scans_is_handed_off_before_release(self):
         comments = iter([
             {"id": 10, "creator": "reviewer", "content": "baseline"},
@@ -2233,6 +2258,195 @@ class TaskBookendDispatchTest(unittest.TestCase):
         self.assertEqual(out, "done")
         self.assertEqual(calls["reply"].get("identity"), "jarvis")
         self.assertTrue(calls["reply"].get("allow_non_tf"))
+
+
+class _BookendAttentionClient:
+    """Small control-plane double with the real attention de-dup contract."""
+
+    def __init__(self):
+        self.current = {}
+        self.upserts = []
+        self.clears = []
+        self.fail_upsert = False
+        self.fail_clear = False
+
+    def upsert_task_attention(self, task_id, owner, event_key, payload):
+        if self.fail_upsert:
+            raise RuntimeError("control plane unavailable")
+        previous = self.current.get(str(task_id))
+        projection = (str(owner), str(event_key))
+        self.current[str(task_id)] = projection
+        self.upserts.append((str(task_id), str(owner), str(event_key), payload))
+        return {"notify": previous != projection}
+
+    def clear_task_attention(self, task_id, *, event_key_prefix=None):
+        if self.fail_clear:
+            raise RuntimeError("control plane unavailable")
+        self.clears.append((str(task_id), event_key_prefix))
+        previous = self.current.get(str(task_id))
+        if (event_key_prefix is None
+                or (previous and str(previous[1]).startswith(event_key_prefix))):
+            self.current.pop(str(task_id), None)
+        return {"notify": False}
+
+
+class TaskWaitingHumanAttentionTest(unittest.TestCase):
+    def _bookend(self, *, task_id=603, generation=7, writes_reply=True):
+        client = _BookendAttentionClient()
+        ctrl = SimpleNamespace(
+            client=client,
+            bind_process=mock.Mock(),
+            task=({"id": task_id, "generation": generation, "title": "任务标题"}
+                  if task_id is not None else {"generation": generation}),
+            session={
+                "generation": generation,
+                "inputPayload": {"title": "冻结标题"},
+            },
+        )
+        bookend = bot._TaskAoneBookend(
+            ctrl, "84407231", "1086837", True,
+            "ticket" if writes_reply else "pr_ci_fix",
+            writes_reply=writes_reply)
+        notices = []
+        bookend._attention.notifier = (
+            lambda owner, payload: notices.append((owner, payload)))
+        return bookend, client, notices
+
+    def test_pre_pr_suspend_persists_once_and_notifies_only_first_epoch(self):
+        bookend, client, notices = self._bookend()
+        result = {
+            "outcome": "suspend",
+            "reply_body": "等待确认",
+            "unresolved": "需要确认发布范围",
+            "suspend_wait_for": "新山",
+        }
+        with mock.patch.object(bot, "_aone_event_enqueue", return_value=True):
+            self.assertFalse(bookend.commit(result))
+            self.assertFalse(bookend.commit(result))
+
+        self.assertEqual(len(client.upserts), 2)
+        task_id, owner, event_key, payload = client.upserts[0]
+        self.assertEqual(task_id, "603")
+        self.assertEqual(owner, "521957")
+        self.assertEqual(event_key, "task-waiting-human:603:7")
+        self.assertEqual(payload["kind"], "TASK_WAITING_HUMAN")
+        self.assertEqual(payload["reason"], "需要确认发布范围")
+        self.assertEqual(payload["title"], "冻结标题")
+        self.assertEqual(payload["taskGeneration"], "7")
+        self.assertEqual(
+            payload["aoneUrl"],
+            "https://project.aone.alibaba-inc.com/v2/project/1086837/workitem/84407231")
+        self.assertEqual(len(notices), 1)
+
+    def test_unknown_owner_defaults_to_master(self):
+        bookend, client, _notices = self._bookend()
+        self.assertTrue(bookend.set_waiting_attention(
+            result={"suspend_wait_for": "reviewer"}))
+        self.assertEqual(client.upserts[0][1], bot.master_staff())
+
+    def test_legacy_suspend_persists_reason_and_returns_wait_state(self):
+        bookend, client, notices = self._bookend()
+        handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
+        handler._last_comment_id = lambda _iid: 10
+        handler._workitem_line = lambda _iid: "#84407231"
+        handler._maybe_suspend = bot.JarvisHandler._maybe_suspend.__get__(
+            handler, bot.JarvisHandler)
+        with mock.patch.object(
+                bot, "run_claude_buffered",
+                return_value=bot.ClaudeResult(
+                    '[[SUSPEND:{"aone_id":"84407231","wait_for":"320687",'
+                    '"reason":"等待访问授权"}]]', False, "success")):
+            outcome = handler.dispatch_item(
+                "84407231", "prompt", "sid", False, lambda _text: None,
+                "target", "group", project="1086837", kind="ticket",
+                terraform=True, session_controller=bookend.controller,
+                task_bookend=bookend)
+        self.assertEqual(outcome["status"], "suspended")
+        self.assertEqual(client.upserts[0][3]["reason"], "等待访问授权")
+        self.assertEqual(len(notices), 1)
+
+    def test_bind_clears_wait_attention_but_post_pr_bind_does_not(self):
+        bookend, client, _notices = self._bookend()
+        client.current["603"] = ("320687", "task-waiting-human:603:6")
+        with mock.patch.object(bot, "_claim_workitem"):
+            bookend.bind_process(object())
+        self.assertEqual(client.clears, [("603", "task-waiting-human:")])
+        self.assertNotIn("603", client.current)
+
+        post_pr, post_client, _ = self._bookend(writes_reply=False)
+        post_client.current["603"] = ("320687", "pr-review")
+        with mock.patch.object(bot, "_claim_workitem"):
+            post_pr.bind_process(object())
+        self.assertEqual(post_client.clears, [])
+        self.assertIn("603", post_client.current)
+
+    def test_done_idle_do_not_delete_prwatch_attention_created_after_bind(self):
+        for outcome in ("done", "idle"):
+            with self.subTest(outcome=outcome):
+                bookend, client, _notices = self._bookend()
+                with mock.patch.object(bot, "_claim_workitem"):
+                    bookend.bind_process(object())
+                client.current["603"] = ("320687", "pr-review-after-bind")
+                with mock.patch.object(bot, "_aone_event_enqueue", return_value=True), \
+                     mock.patch.object(bot, "_finish_workitem"), \
+                     mock.patch.object(bot, "_release_post_pr_claim"):
+                    bookend.commit({"outcome": outcome, "reply_body": "完成"})
+                self.assertEqual(
+                    client.clears, [("603", "task-waiting-human:")])
+                self.assertEqual(
+                    client.current["603"], ("320687", "pr-review-after-bind"))
+
+    def test_bind_clear_failure_fails_closed_before_aone_claim(self):
+        bookend, client, _notices = self._bookend()
+        client.fail_clear = True
+        with mock.patch.object(bot, "_claim_workitem") as claim:
+            with self.assertRaisesRegex(RuntimeError, "cleanup failed"):
+                bookend.bind_process(object())
+        claim.assert_not_called()
+
+    def test_notifier_failure_is_best_effort_after_attention_persisted(self):
+        bookend, client, _notices = self._bookend()
+        bookend._attention.notifier = mock.Mock(
+            side_effect=RuntimeError("DingTalk unavailable"))
+        self.assertTrue(bookend.set_waiting_attention(
+            result={"suspend_wait_for": "320687"}))
+        self.assertEqual(len(client.upserts), 1)
+
+    def test_required_publisher_treats_404_as_failure_but_optional_is_compatible(self):
+        error = RuntimeError("not found")
+        error.status = 404
+        client = SimpleNamespace(
+            upsert_task_attention=mock.Mock(side_effect=error))
+        self.assertFalse(bot._TaskAttentionPublisher(
+            client, required=True).upsert("603", "320687", "task:key", {}))
+        self.assertTrue(bot._TaskAttentionPublisher(
+            client, required=False).upsert("603", "320687", "pr-key", {}))
+
+    def test_persist_failure_fails_suspend_closed(self):
+        bookend, client, _notices = self._bookend()
+        client.fail_upsert = True
+        with mock.patch.object(bot, "_aone_event_enqueue", return_value=True):
+            with self.assertRaisesRegex(RuntimeError, "projection was not persisted"):
+                bookend.commit({
+                    "outcome": "suspend", "reply_body": "等待",
+                    "suspend_wait_for": "320687",
+                })
+
+    def test_notification_failure_does_not_fail_persisted_suspend(self):
+        bookend, client, _notices = self._bookend()
+        bookend._attention.notifier = mock.Mock(side_effect=RuntimeError("dingtalk down"))
+        with mock.patch.object(bot, "_aone_event_enqueue", return_value=True):
+            self.assertFalse(bookend.commit({
+                "outcome": "suspend", "reply_body": "等待",
+                "suspend_wait_for": "320687",
+            }))
+        self.assertEqual(len(client.upserts), 1)
+
+    def test_missing_control_plane_task_id_never_falls_back_to_aone_id(self):
+        bookend, client, _notices = self._bookend(task_id=None)
+        self.assertFalse(bookend.set_waiting_attention(
+            result={"suspend_wait_for": "320687"}))
+        self.assertEqual(client.upserts, [])
 
 
 class PostPrRerouteDispatchTest(unittest.TestCase):

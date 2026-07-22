@@ -281,10 +281,10 @@ class FakeAttentionClient:
         value = self.notify.pop(0) if isinstance(self.notify, list) else self.notify
         return {"notify": value, "task": {"id": task_id}}
 
-    def clear_task_attention(self, task_id):
+    def clear_task_attention(self, task_id, *, event_key_prefix=None):
         if self.fail_clear:
             raise RuntimeError("control plane unavailable")
-        self.clears.append(task_id)
+        self.clears.append((task_id, event_key_prefix))
         return {"notify": False, "task": {"id": task_id}}
 
 
@@ -329,7 +329,8 @@ class AttentionProjectionTest(_DispatchBase):
             with self.subTest(ci=ci):
                 self.sched._gh_pr_ci = lambda _url, value=ci: value
                 self.sched._check_one(TID, self._entry())
-        self.assertEqual(self.client.clears, ["42", "42"])
+        self.assertEqual(
+            self.client.clears, [("42", "pr-"), ("42", "pr-")])
         self.assertEqual(self.client.upserts, [])
         self.assertEqual(self.notices, [])
 
