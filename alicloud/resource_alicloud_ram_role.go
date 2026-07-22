@@ -4,6 +4,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -66,6 +67,7 @@ func resourceAliCloudRamRole() *schema.Resource {
 				Computed:      true,
 				ForceNew:      true,
 				ConflictsWith: []string{"name"},
+				ValidateFunc:  validation.StringMatch(regexp.MustCompile(`^[A-Za-z0-9.-]{1,64}$`), "The name of the RAM role must be 1 to 64 characters in length and can contain letters, digits, periods (.), and hyphens (-)."),
 			},
 			"tags": tagsSchema(),
 			"name": {
