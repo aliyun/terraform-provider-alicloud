@@ -175,6 +175,13 @@ func resourceAliCloudNatGateway() *schema.Resource {
 					},
 				},
 			},
+			"availability_mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"CrossAZ", "SingleAZ"}, false),
+			},
 		},
 	}
 }
@@ -263,6 +270,10 @@ func resourceAliCloudNatGatewayCreate(d *schema.ResourceData, meta interface{}) 
 		request["AccessMode"] = accessModeJson
 	}
 
+	if v, ok := d.GetOk("availability_mode"); ok {
+		request["AvailabilityMode"] = v
+	}
+
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		request["ClientToken"] = buildClientToken("CreateNatGateway")
@@ -322,6 +333,7 @@ func resourceAliCloudNatGatewayRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("instance_charge_type", object["InstanceChargeType"])
 	d.Set("network_type", object["NetworkType"])
 	d.Set("eip_bind_mode", object["EipBindMode"])
+	d.Set("availability_mode", object["AvailabilityMode"])
 	//if object["InstanceChargeType"] == "PrePaid" {
 	//	period, err := computePeriodByUnit(object["CreationTime"], object["ExpiredTime"], d.Get("period").(int), "Month")
 	//	if err != nil {

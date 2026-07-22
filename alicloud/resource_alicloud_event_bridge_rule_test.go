@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -9,9 +10,28 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
+func TestAccAliCloudEventBridgeRule_regionPreCheck(t *testing.T) {
+	t.Setenv("ALICLOUD_ACCESS_KEY", "test-access-key")
+	t.Setenv("ALICLOUD_SECRET_KEY", "test-secret-key")
+	t.Setenv("ALICLOUD_REGION", "")
+
+	region := testAccEventBridgeRuleRegion(t)
+	if region == "" {
+		t.Fatal("testAccEventBridgeRuleRegion returned an empty region")
+	}
+	if got := os.Getenv("ALICLOUD_REGION"); region != got {
+		t.Fatalf("testAccEventBridgeRuleRegion = %q, ALICLOUD_REGION = %q", region, got)
+	}
+}
+
+func testAccEventBridgeRuleRegion(t *testing.T) string {
+	testAccPreCheckWithRegions(t, true, connectivity.EventBridgeSupportRegions)
+	return os.Getenv("ALICLOUD_REGION")
+}
+
 func TestAccAliCloudEventBridgeRule_basic0(t *testing.T) {
 	var v map[string]interface{}
-	testAccPreCheckWithRegions(t, true, connectivity.EventBridgeSupportRegions)
+	region := testAccEventBridgeRuleRegion(t)
 	resourceId := "alicloud_event_bridge_rule.default"
 	ra := resourceAttrInit(resourceId, AliCloudEventBridgeRuleMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -20,15 +40,17 @@ func TestAccAliCloudEventBridgeRule_basic0(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%seventbridgerule%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEventBridgeRuleBasicDependence0)
+	name := fmt.Sprintf("tf-testacc%seventbridgerule%d", region, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, func(name string) string {
+		return AliCloudEventBridgeRuleBasicDependence0(name, region)
+	})
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -193,7 +215,7 @@ func TestAccAliCloudEventBridgeRule_basic0(t *testing.T) {
 
 func TestAccAliCloudEventBridgeRule_basic0_twin(t *testing.T) {
 	var v map[string]interface{}
-	testAccPreCheckWithRegions(t, true, connectivity.EventBridgeSupportRegions)
+	region := testAccEventBridgeRuleRegion(t)
 	resourceId := "alicloud_event_bridge_rule.default"
 	ra := resourceAttrInit(resourceId, AliCloudEventBridgeRuleMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -202,15 +224,17 @@ func TestAccAliCloudEventBridgeRule_basic0_twin(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%seventbridgerule%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEventBridgeRuleBasicDependence0)
+	name := fmt.Sprintf("tf-testacc%seventbridgerule%d", region, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, func(name string) string {
+		return AliCloudEventBridgeRuleBasicDependence0(name, region)
+	})
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -275,7 +299,7 @@ var AliCloudEventBridgeRuleMap0 = map[string]string{
 	"status": CHECKSET,
 }
 
-func AliCloudEventBridgeRuleBasicDependence0(name string) string {
+func AliCloudEventBridgeRuleBasicDependence0(name, region string) string {
 	return fmt.Sprintf(` 
 	variable "name" {
   		default = "%[1]s"
@@ -296,5 +320,111 @@ func AliCloudEventBridgeRuleBasicDependence0(name string) string {
   		mns_endpoint = format("acs:mns:%[2]s:%%s:queues/%%s", data.alicloud_account.default.id, alicloud_mns_queue.default.name)
   		fnf_endpoint   = format("acs:fnf:%[2]s:%%s:flow/$${flow}", data.alicloud_account.default.id)
 	}
-`, name, defaultRegionToTest)
+`, name, region)
+}
+
+func TestAccAliCloudEventBridgeRule_apacheKafkaSelf(t *testing.T) {
+	var v map[string]interface{}
+	region := testAccEventBridgeRuleRegion(t)
+	resourceId := "alicloud_event_bridge_rule.default"
+	ra := resourceAttrInit(resourceId, AliCloudEventBridgeRuleMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EventbridgeService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEventBridgeRule")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%seventbridgerule%d", region, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, func(name string) string {
+		return AliCloudEventBridgeRuleBasicDependence0(name, region)
+	})
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"event_bus_name": "${alicloud_event_bridge_event_bus.default.event_bus_name}",
+					"rule_name":      name,
+					"filter_pattern": `{\"source\":[\"crmabc.newsletter\"],\"type\":[\"UserSignUp\", \"UserLogin\"]}`,
+					"targets": []map[string]interface{}{
+						{
+							"target_id": name,
+							"type":      "ApacheKafkaSelf",
+							"endpoint":  "192.168.0.1:9092",
+							"param_list": []map[string]interface{}{
+								{
+									"resource_key": "Bootstraps",
+									"form":         "CONSTANT",
+									"value":        "192.168.0.1:9092",
+								},
+								{
+									"resource_key": "Topic",
+									"form":         "CONSTANT",
+									"value":        name,
+								},
+								{
+									"resource_key": "NetworkType",
+									"form":         "CONSTANT",
+									"value":        "PublicNetwork",
+								},
+								{
+									"resource_key": "SecurityProtocol",
+									"form":         "CONSTANT",
+									"value":        "SASL_PLAINTEXT",
+								},
+								{
+									"resource_key": "SaslMechanism",
+									"form":         "CONSTANT",
+									"value":        "PLAIN",
+								},
+								{
+									"resource_key": "SaslUser",
+									"form":         "CONSTANT",
+									"value":        "kafkaUser",
+								},
+								{
+									"resource_key": "SaslPassword",
+									"form":         "CONSTANT",
+									"value":        "kafkaPassword",
+								},
+								{
+									"resource_key": "Key",
+									"form":         "CONSTANT",
+									"value":        "eventKey",
+								},
+								{
+									"resource_key": "Value",
+									"form":         "ORIGINAL",
+								},
+								{
+									"resource_key": "Acks",
+									"form":         "CONSTANT",
+									"value":        "1",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rule_name":      CHECKSET,
+						"event_bus_name": name,
+						"filter_pattern": "{\"source\":[\"crmabc.newsletter\"],\"type\":[\"UserSignUp\", \"UserLogin\"]}",
+						"targets.#":      "1",
+						"targets.0.type": "ApacheKafkaSelf",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
 }

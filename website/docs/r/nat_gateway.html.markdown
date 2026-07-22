@@ -113,14 +113,14 @@ The following arguments are supported:
 * `payment_type` - (Optional, ForceNew, Available since v1.121.0) The billing method of the NAT gateway. Valid values are `PayAsYouGo`. Default to `PayAsYouGo`.
 * `period` - (Optional, Available since v1.45.0) The duration that you will buy the resource, in month. It is valid when `payment_type` is `Subscription`. Valid values: [1-9, 12, 24, 36]. At present, the provider does not support modify "period" and you can do that via web console. **NOTE:** International station only supports `Subscription`.
 -> **NOTE:** The attribute `period` is only used to create Subscription instance or modify the PayAsYouGo instance to Subscription. Once effect, it will not be modified that means running `terraform apply` will not effect the resource.
-* `nat_type` - (Optional, Available since v1.102.0) The type of NAT gateway. Valid values: `Enhanced`. **NOTE:** From version 1.137.0, `nat_type` cannot be set to `Normal`.
-* `vswitch_id` - (Optional, Available since v1.102.0) The id of VSwitch.
+* `nat_type` - (Optional, Available since v1.102.0) The type of NAT gateway. Valid values: `Enhanced`. **NOTE:** From version 1.137.0, `nat_type` cannot be set to `Normal`. The parameter is immutable after resource creation.
+* `vswitch_id` - (Optional, Available since v1.102.0) The id of VSwitch. The parameter is immutable after resource creation.
 * `internet_charge_type` - (Optional, ForceNew, Available since v1.121.0) The internet charge type. Valid values `PayByLcu`. The `PayByLcu` is only support enhanced NAT. **NOTE:** From version 1.137.0, `internet_charge_type` cannot be set to `PayBySpec`.
 * `tags` - (Optional, Available since v1.121.0) The tags of NAT gateway.
 * `deletion_protection` - (Optional, Available since v1.124.4) Whether enable the deletion protection or not. Default value: `false`.
   - true: Enable deletion protection.
   - false: Disable deletion protection.
-* `network_type` - (Optional, Available since v1.136.0) Indicates the type of the created NAT gateway. Valid values `internet` and `intranet`. `internet`: Internet NAT Gateway. `intranet`: VPC NAT Gateway.
+* `network_type` - (Optional, Available since v1.136.0) Indicates the type of the created NAT gateway. Valid values `internet` and `intranet`. `internet`: Internet NAT Gateway. `intranet`: VPC NAT Gateway. The parameter is immutable after resource creation.
 * `eip_bind_mode` - (Optional, Available since v1.184.0) The EIP binding mode of the NAT gateway. Default value: `MULTI_BINDED`. Valid values:
   - `MULTI_BINDED`: Multi EIP network card visible mode.
   - `NAT`: EIP normal mode, compatible with IPv4 gateway.
@@ -131,6 +131,9 @@ The following arguments are supported:
   - `true`: Enable.
   - `false`: Disable.
 * `access_mode` - (Optional, ForceNew, Set, Available since v1.235.0) The access mode for reverse access to the VPC NAT gateway. See [`access_mode`](#access_mode) below.
+* `availability_mode` - (Optional, ForceNew, Computed, Available since v1.285.0) The disaster recovery mode of the NAT gateway. **NOTE:** `availability_mode` requires `nat_type` to be set to `Enhanced`. Valid values:
+  - `CrossAZ`: cross-zone disaster recovery (default). The NAT gateway is deployed across multiple zones.
+  - `SingleAZ`: single-zone disaster recovery. The NAT gateway is deployed in a single zone.
 * `name` - (Optional, ForceNew, Deprecated since v1.121.0) Field `name` has been deprecated from provider version 1.121.0. New field `nat_gateway_name` instead.
 * `instance_charge_type` - (Optional, ForceNew, Deprecated since v1.121.0) Field `instance_charge_type` has been deprecated from provider version 1.121.0. New field `payment_type` instead.
 

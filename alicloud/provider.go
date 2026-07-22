@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -176,6 +175,7 @@ func Provider() *schema.Provider {
 			"alicloud_apig_plugins":                               dataSourceAliCloudApigPlugins(),
 			"alicloud_apig_domains":                               dataSourceAliCloudApigDomains(),
 			"alicloud_express_connect_router_vpc_associations":    dataSourceAliCloudExpressConnectRouterVpcAssociations(),
+			"alicloud_ssl_certificates_service_companies":         dataSourceAliCloudSslCertificatesServiceCompanies(),
 			"alicloud_express_connect_router_tr_associations":     dataSourceAliCloudExpressConnectRouterTrAssociations(),
 			"alicloud_express_connect_router_vbr_child_instances": dataSourceAliCloudExpressConnectRouterVbrChildInstances(),
 			"alicloud_cr_artifact_lifecycle_rules":                dataSourceAliCloudCrArtifactLifecycleRules(),
@@ -267,6 +267,7 @@ func Provider() *schema.Provider {
 			"alicloud_ram_roles":                                        dataSourceAliCloudRamRoles(),
 			"alicloud_ram_policies":                                     dataSourceAliCloudRamPolicies(),
 			"alicloud_ram_policy_document":                              dataSourceAliCloudRamPolicyDocument(),
+			"alicloud_ram_access_key_policy":                            dataSourceAlicloudRamAccessKeyPolicy(),
 			"alicloud_security_groups":                                  dataSourceAlicloudSecurityGroups(),
 			"alicloud_security_group_rules":                             dataSourceAlicloudSecurityGroupRules(),
 			"alicloud_slbs":                                             dataSourceAlicloudSlbLoadBalancers(),
@@ -364,6 +365,7 @@ func Provider() *schema.Provider {
 			"alicloud_nas_mount_targets":                                dataSourceAlicloudNasMountTargets(),
 			"alicloud_nas_file_systems":                                 dataSourceAlicloudFileSystems(),
 			"alicloud_nas_protocols":                                    dataSourceAlicloudNasProtocols(),
+			"alicloud_nas_log_analyses":                                 dataSourceAliCloudNasLogAnalyses(),
 			"alicloud_cas_certificates":                                 dataSourceAliCloudSslCertificatesServiceCertificates(),
 			"alicloud_common_bandwidth_packages":                        dataSourceAlicloudCommonBandwidthPackages(),
 			"alicloud_route_tables":                                     dataSourceAlicloudRouteTables(),
@@ -943,6 +945,7 @@ func Provider() *schema.Provider {
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_gpdb_api_key":                                         resourceAliCloudGpdbApiKey(),
 			"alicloud_apig_plugin":                                          resourceAliCloudApigPlugin(),
+			"alicloud_ssl_certificates_service_company":                     resourceAliCloudSslCertificatesServiceCompany(),
 			"alicloud_apig_plugin_class":                                    resourceAliCloudApigPluginClass(),
 			"alicloud_apig_domain":                                          resourceAliCloudApigDomain(),
 			"alicloud_cr_artifact_lifecycle_rule":                           resourceAliCloudCrArtifactLifecycleRule(),
@@ -1394,6 +1397,7 @@ func Provider() *schema.Provider {
 			"alicloud_nas_mount_target":                                     resourceAliCloudNasMountTarget(),
 			"alicloud_nas_access_group":                                     resourceAliCloudNasAccessGroup(),
 			"alicloud_nas_access_rule":                                      resourceAliCloudNasAccessRule(),
+			"alicloud_nas_log_analysis":                                     resourceAliCloudNasLogAnalysis(),
 			"alicloud_nas_smb_acl_attachment":                               resourceAlicloudNasSmbAclAttachment(),
 			"alicloud_tag_meta_tag":                                         resourceAlicloudTagMetaTag(),
 			// "alicloud_subnet" aims to match aws usage habit.
@@ -1439,6 +1443,7 @@ func Provider() *schema.Provider {
 			"alicloud_ram_user":                      resourceAlicloudRamUser(),
 			"alicloud_ram_account_password_policy":   resourceAlicloudRamAccountPasswordPolicy(),
 			"alicloud_ram_access_key":                resourceAliCloudRamAccessKey(),
+			"alicloud_ram_access_key_policy":         resourceAliCloudRamAccessKeyPolicy(),
 			"alicloud_ram_login_profile":             resourceAliCloudRamLoginProfile(),
 			"alicloud_ram_group":                     resourceAliCloudRamGroup(),
 			"alicloud_ram_role":                      resourceAliCloudRamRole(),
@@ -4131,6 +4136,27 @@ var deprecatedEndpointMap = map[string]string{
 	"cloudapi":         "apigateway",
 }
 
+// defaultConfigPath returns the default location of the aliyun CLI shared
+// config file under the user's home directory. It is used by
+// getConfigFromProfile when the caller has not configured
+// shared_credentials_file.
+//
+// The home directory is resolved through homedir.Dir(), which falls back to
+// the OS user database when HOME / USERPROFILE are unset. This avoids the
+// previous behaviour of building the path with
+// fmt.Sprintf("%s/.aliyun/config.json", os.Getenv("USERPROFILE")) which, when
+// USERPROFILE is empty (Windows service accounts, minimal containers), yields
+// "/.aliyun/config.json" that os.Stat resolves to the current drive root and
+// silently leaves the profile unloaded, surfacing as an opaque authentication
+// failure. Using filepath.Join also ensures OS-correct path separators.
+func defaultConfigPath() (string, error) {
+	home, err := homedir.Dir()
+	if err != nil {
+		return "", WrapError(err)
+	}
+	return filepath.Join(home, ".aliyun", "config.json"), nil
+}
+
 func getConfigFromProfile(d *schema.ResourceData, ProfileKey string) (interface{}, error) {
 
 	if providerConfig == nil {
@@ -4144,10 +4170,11 @@ func getConfigFromProfile(d *schema.ResourceData, ProfileKey string) (interface{
 			return nil, WrapError(err)
 		}
 		if profilePath == "" {
-			profilePath = fmt.Sprintf("%s/.aliyun/config.json", os.Getenv("HOME"))
-			if runtime.GOOS == "windows" {
-				profilePath = fmt.Sprintf("%s/.aliyun/config.json", os.Getenv("USERPROFILE"))
+			configPath, err := defaultConfigPath()
+			if err != nil {
+				return nil, WrapError(err)
 			}
+			profilePath = configPath
 		}
 		providerConfig = make(map[string]interface{})
 		_, err = os.Stat(profilePath)
