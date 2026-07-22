@@ -201,7 +201,7 @@ func slbAclsDescriptionAttributes(d *schema.ResourceData, acls []slb.Acl, client
 		}
 		tags, err := slbService.ListTagResources(response.AclId, "acl")
 		if err != nil {
-			return nil
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_slb_acls", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		mapping["tags"] = tagsToMap(tags)
 
