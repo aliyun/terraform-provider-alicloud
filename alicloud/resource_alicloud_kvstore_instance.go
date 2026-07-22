@@ -304,6 +304,14 @@ func resourceAliCloudKvstoreInstance() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"storage_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"cloud_essd", "cloud_essd_pl1", "cloud_essd_pl2", "cloud_essd_pl3"}, false),
+				Description:  "The storage type of the instance. Valid values: `cloud_essd`, `cloud_essd_pl1`, `cloud_essd_pl2`, `cloud_essd_pl3`. Required when creating Redis 7.0 and above instances.",
+			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -546,6 +554,10 @@ func resourceAliCloudKvstoreInstanceCreate(d *schema.ResourceData, meta interfac
 		request["SrcDBInstanceId"] = v
 	}
 
+	if v, ok := d.GetOk("storage_type"); ok {
+		request["StorageType"] = v
+	}
+
 	if v, ok := d.GetOk("zone_id"); ok {
 		request["ZoneId"] = v
 	} else if v, ok := d.GetOk("availability_zone"); ok {
@@ -691,6 +703,7 @@ func resourceAliCloudKvstoreInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("shard_count", object["ShardCount"])
 	d.Set("read_only_count", object["ReadOnlyCount"])
 	d.Set("slave_read_only_count", object["SlaveReadOnlyCount"])
+	d.Set("storage_type", object["StorageType"])
 	d.Set("status", object["InstanceStatus"])
 	if v, ok := object["Tags"].(map[string]interface{}); ok {
 		d.Set("tags", tagsToMap(v["Tag"]))
