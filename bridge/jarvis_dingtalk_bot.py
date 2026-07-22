@@ -5305,6 +5305,10 @@ class PrWatchScheduler:
     def __init__(self, handler, pool=None):
         self.handler = handler
         self.pool = pool
+        self.task_client = (
+            getattr(handler, "task_client", None)
+            or getattr(getattr(handler, "execution_router", None), "client", None)
+        )
         self.interval = int(os.environ.get("JARVIS_PRWATCH_INTERVAL", "3600"))
         # #3 双档轮询：有 active entry（CI 失败/pending）时下一轮用快档，纯等合并用慢档。
         self._active_interval = int(os.environ.get("JARVIS_PRWATCH_ACTIVE_INTERVAL", "600"))
@@ -5370,6 +5374,11 @@ class PrWatchScheduler:
             return
         merged = bool(merged_at) or state == "MERGED"
         if merged:
+            # Do not remove the only durable retry source until the board projection
+            # has converged.  A missing Task/older control plane is a no-op; a transient
+            # control-plane failure keeps the watch entry for the next tick.
+            if not self._clear_attention(tid):
+                return
             merged_key = "pr:%s:merged:%s" % (
                 pr_url, merged_at or "state-MERGED")
             merged_text = (
@@ -5532,6 +5541,16 @@ class PrWatchScheduler:
             _prwatch_remove(tid)
             return
         if state == "CLOSED" and not merged_at:
+            closed_payload = self._attention_payload(
+                tid, entry,
+                reason="关联 PR 未合并即被关闭，需要人工确认工单去向。",
+                action="请检查 PR 关闭原因，决定重新打开/补充修改，或人工关闭工单。",
+                kind="PR_CLOSED_DECISION")
+            if not self._set_attention(
+                    tid, master_staff(),
+                    self._attention_event_key("pr-closed", pr_url),
+                    closed_payload):
+                return
             if tf_writer:
                 if not _aone_event_enqueue(
                         tid, project, "pr:%s:closed" % pr_url,
@@ -5554,10 +5573,162 @@ class PrWatchScheduler:
             return
         # open PR → open 窗口推进：CI 失败自动派修复(#1) + 新评审评论自动派回应(#2)。
         # 返回 active（CI 失败/pending）→ #3 双档轮询走快档；CI 绿/查询失败 → 慢档等合并。
-        active = self._maybe_dispatch_ci_fix(tid, entry)
+        ci = self._gh_pr_ci(pr_url)
+        active = self._maybe_dispatch_ci_fix(tid, entry, ci=ci)
+        head, failing, pending = ci
+        if head is not None:
+            current_entry = _prwatch_list().get(str(tid), entry)
+            if current_entry.get("ci_fix_escalated"):
+                payload = self._attention_payload(
+                    tid, current_entry,
+                    reason="关联 PR 的 CI 自动修复已达到上限，需要人工处理。",
+                    action="请检查失败的 CI，修复后重新运行检查并继续 review/merge。",
+                    kind="PR_CI_FAILED",
+                    extra={"failingChecks": list(failing or [])[:20], "head": head})
+                self._set_attention(
+                    tid, master_staff(),
+                    self._attention_event_key("pr-ci-failed", pr_url, head),
+                    payload)
+            elif failing or pending:
+                # CI 仍由自动流程推进或尚未出结果，不应继续显示为“等待人工 review”。
+                self._clear_attention(tid)
+            else:
+                payload = self._attention_payload(
+                    tid, current_entry,
+                    reason="关联 PR 的 CI 已通过，当前等待人工 review/merge。",
+                    action="请 review 代码；确认无误后合并 PR。",
+                    kind="PR_REVIEW_MERGE",
+                    extra={"head": head})
+                self._set_attention(
+                    tid, master_staff(),
+                    self._attention_event_key("pr-review-merge", pr_url, head),
+                    payload)
         # 评论与 CI 正交，每轮都查（entry 的 ci_fix 字段与 last_seen_comment 不重叠，传原 entry 即可）。
         self._maybe_dispatch_comment_reply(tid, entry)
         return bool(active)
+
+    @staticmethod
+    def _attention_event_key(kind, *parts):
+        """Compact stable semantic key; a new PR head is a new review event."""
+        material = "\n".join(str(part or "") for part in parts)
+        digest = hashlib.sha256(material.encode("utf-8")).hexdigest()[:24]
+        return "%s:%s" % (str(kind), digest)
+
+    @staticmethod
+    def _attention_payload(tid, entry, *, reason, action, kind, extra=None):
+        project = str(entry.get("project") or "").strip()
+        pr_url = str(entry.get("pr_url") or "").strip()
+        payload = {
+            "kind": str(kind),
+            "reason": str(reason),
+            "action": str(action),
+            "aoneId": str(tid),
+            "aoneUrl": (
+                "https://project.aone.alibaba-inc.com/v2/project/%s/workitem/%s"
+                % (project, tid)) if project else "",
+            "prUrl": pr_url,
+            "title": str(entry.get("title") or "").strip(),
+        }
+        payload.update(dict(extra or {}))
+        return payload
+
+    @staticmethod
+    def _attention_task_rows(response):
+        if isinstance(response, list):
+            return [row for row in response if isinstance(row, dict)]
+        if isinstance(response, dict) and isinstance(response.get("items"), list):
+            return [row for row in response["items"] if isinstance(row, dict)]
+        if isinstance(response, dict) and (
+                response.get("id") is not None or response.get("taskId") is not None):
+            return [response]
+        return []
+
+    def _attention_task_id(self, tid):
+        if self.task_client is None:
+            return None
+        response = self.task_client.get_task_by_aone(str(tid))
+        rows = self._attention_task_rows(response)
+        if not rows:
+            return None
+
+        def numeric(row, key):
+            try:
+                return int(row.get(key))
+            except (TypeError, ValueError):
+                return -1
+
+        current = max(rows, key=lambda row: (
+            numeric(row, "generation"),
+            numeric(row, "id") if row.get("id") is not None
+            else numeric(row, "taskId")))
+        task_id = current.get("id")
+        if task_id is None:
+            task_id = current.get("taskId")
+        return str(task_id).strip() or None
+
+    def _set_attention(self, tid, owner_staff_id, event_key, payload):
+        """Persist first, then send one best-effort private notice when instructed.
+
+        No notification ledger or retry lives in bridge.  If the response is lost after
+        the control-plane commit, a later call observes ``notify=false`` and the notice is
+        intentionally lost; the board remains the source of truth.
+        """
+        if self.task_client is None:
+            return True
+        try:
+            task_id = self._attention_task_id(tid)
+            if task_id is None:
+                log.info("PrWatchScheduler: no control-plane Task for #%s attention", tid)
+                return True
+            response = self.task_client.upsert_task_attention(
+                task_id, owner_staff_id, event_key, payload)
+        except Exception as exc:  # noqa: BLE001 — scheduler retries projection next tick
+            if getattr(exc, "status", None) == 404:
+                log.info("PrWatchScheduler: attention API unavailable for #%s", tid)
+                return True
+            log.warning("PrWatchScheduler: persist attention #%s failed: %s", tid, exc)
+            return False
+        if response.get("notify") is True:
+            self._notify_attention(owner_staff_id, payload)
+        return True
+
+    def _clear_attention(self, tid):
+        if self.task_client is None:
+            return True
+        try:
+            task_id = self._attention_task_id(tid)
+            if task_id is None:
+                return True
+            self.task_client.clear_task_attention(task_id)
+            return True
+        except Exception as exc:  # noqa: BLE001 — keep PR watch so clear can converge
+            if getattr(exc, "status", None) == 404:
+                return True
+            log.warning("PrWatchScheduler: clear attention #%s failed: %s", tid, exc)
+            return False
+
+    @staticmethod
+    def _notify_attention(owner_staff_id, payload):
+        reason = str(payload.get("reason") or "需要人工关注")
+        action = str(payload.get("action") or "请打开看板查看并处理")
+        aone_url = str(payload.get("aoneUrl") or "")
+        pr_url = str(payload.get("prUrl") or "")
+        lines = ["Jarvis 检测到一个需要你关注的工单。", "", "原因：%s" % reason,
+                 "建议操作：%s" % action]
+        if aone_url:
+            lines.append("Aone：%s" % aone_url)
+        if pr_url:
+            lines.append("PR：%s" % pr_url)
+        try:
+            proc = subprocess.run(
+                [str(REPO_ROOT / "bootstrap" / "notify-dingtalk.sh"),
+                 str(owner_staff_id), "Jarvis 工单关注提醒", "--body-stdin"],
+                input="\n".join(lines), capture_output=True, text=True, timeout=30)
+            if proc.returncode != 0:
+                log.warning("PrWatchScheduler: attention DingTalk failed rc=%s: %s",
+                            proc.returncode, (proc.stderr or "").strip()[:200])
+        except Exception as exc:  # noqa: BLE001 — best effort, deliberately no retry
+            log.warning("PrWatchScheduler: attention DingTalk failed: %s", exc)
 
     def _ensure_registry_title(self, tid, entry):
         """Best-effort migration for pre-title/failed-read PR registry entries."""
@@ -5636,7 +5807,7 @@ class PrWatchScheduler:
                 pending = True  # queued / in-progress / pending → 未出结果
         return (head, failing, pending)
 
-    def _maybe_dispatch_ci_fix(self, tid, entry):
+    def _maybe_dispatch_ci_fix(self, tid, entry, ci=None):
         """open PR：CI 有失败项且尚未针对当前 head 派过修复 → force 重派一个 headless jarvis 去修
         （走 pr-review / resource-dev SOP + 预授权 fork_push）。防抖三层：
           · per-head 去重（ci_fix_sha == 当前 head → 本轮不重复派，等修复推新 commit 换 head）；
@@ -5649,7 +5820,8 @@ class PrWatchScheduler:
             return False
         if self.pool is None:
             return False
-        head, failing, pending = self._gh_pr_ci(entry.get("pr_url"))
+        head, failing, pending = (
+            ci if ci is not None else self._gh_pr_ci(entry.get("pr_url")))
         if head is None:
             return False  # 查询失败 → 保留观察，正常档
         if not failing:

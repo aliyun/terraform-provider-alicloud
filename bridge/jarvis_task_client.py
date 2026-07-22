@@ -208,6 +208,7 @@ class ControlPlaneClient:
     READY_TASK_DIAGNOSTICS_PATH = "tasks/ready-diagnostics"
     SOURCE_STATUS_CANDIDATES_PATH = "tasks/source-status-candidates"
     SOURCE_STATUS_PATH = "tasks/{task_id}/source-status"
+    TASK_ATTENTION_PATH = "tasks/{task_id}/attention"
     PENDING_AONE_WAITS_PATH = "sessions/waits/aone-reply"
     EXTERNAL_OPERATION_RECOVERY_CANDIDATES_PATH = (
         "operations/external-recovery-candidates")
@@ -339,6 +340,15 @@ class ControlPlaneClient:
 
     def _get(self, suffix: str) -> Any:
         return self._request("GET", suffix)
+
+    def _mutation(self, method: str, suffix: str, *,
+                  payload: Optional[Mapping[str, Any]] = None,
+                  request_id: Optional[str] = None) -> Dict[str, Any]:
+        parsed = self._request(method, suffix, payload=payload,
+                               request_id=request_id)
+        if not isinstance(parsed, dict):
+            raise InvalidResponse("control plane mutation response must be an object")
+        return parsed
 
     def upsert_task(self, envelope: TaskEnvelope, *,
                     request_id: Optional[str] = None) -> Dict[str, Any]:
@@ -617,6 +627,34 @@ class ControlPlaneClient:
         path = self.TASK_BY_AONE_PATH.format(
             aone_id=self._path_segment(aone_id, "aone_id"))
         return self._get(path)
+
+    def upsert_task_attention(
+            self, task_id: Any, owner_staff_id: str, event_key: str,
+            payload: Mapping[str, Any], *,
+            request_id: Optional[str] = None) -> Dict[str, Any]:
+        """Persist the current human-attention projection for one Task.
+
+        The control plane is the deduplication source.  Its ``notify`` response is
+        true only for the first event or when the owner/event key changes; callers
+        must not keep a second local notification ledger.
+        """
+        if not isinstance(payload, Mapping):
+            raise TypeError("payload must be a mapping")
+        path = self.TASK_ATTENTION_PATH.format(
+            task_id=self._path_segment(task_id, "task_id"))
+        body = {
+            "ownerStaffId": _nonblank(owner_staff_id, "owner_staff_id"),
+            "eventKey": _nonblank(event_key, "event_key"),
+            "payload": dict(payload),
+        }
+        return self._mutation("PUT", path, payload=body, request_id=request_id)
+
+    def clear_task_attention(self, task_id: Any, *,
+                             request_id: Optional[str] = None) -> Dict[str, Any]:
+        """Clear a Task's current human-attention projection."""
+        path = self.TASK_ATTENTION_PATH.format(
+            task_id=self._path_segment(task_id, "task_id"))
+        return self._mutation("DELETE", path, request_id=request_id)
 
     def list_pending_aone_reply_waits(self, *, after_session_id: int = 0,
                                       limit: int = 100) -> Any:
