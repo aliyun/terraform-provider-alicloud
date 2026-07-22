@@ -250,7 +250,7 @@ class ScheduledJobDefinition:
     timeout_seconds: float
     retry_delay_seconds: float
     replay_policy: ReplayPolicy
-    enabled_env: Optional[str] = None
+    enabled: bool = True
     checkpoint_upgrade: CheckpointUpgradePolicy = CheckpointUpgradePolicy.RESET_FULL
     checkpoint_upgrader_key: Optional[str] = None
 
@@ -381,8 +381,8 @@ def validate_job_definition(definition: ScheduledJobDefinition) -> None:
     _require_positive_number(definition.retry_delay_seconds, "retry_delay_seconds")
     _require_enum(definition.replay_policy, ReplayPolicy, "replay_policy")
     _require_enum(definition.checkpoint_upgrade, CheckpointUpgradePolicy, "checkpoint_upgrade")
-    if definition.enabled_env is not None and (not isinstance(definition.enabled_env, str) or not _ENV_NAME_RE.fullmatch(definition.enabled_env)):
-        raise ValueError("enabled_env must be a valid environment variable name")
+    if not isinstance(definition.enabled, bool):
+        raise ValueError("enabled must be a bool")
     if definition.checkpoint_upgrade in (
         CheckpointUpgradePolicy.RESET_OVERLAP,
         CheckpointUpgradePolicy.MIGRATE,
@@ -436,7 +436,7 @@ def definition_snapshot(definition: ScheduledJobDefinition) -> dict[str, Any]:
         "timeout_seconds": definition.timeout_seconds,
         "retry_delay_seconds": definition.retry_delay_seconds,
         "replay_policy": definition.replay_policy.value,
-        "enabled_env": definition.enabled_env,
+        "enabled": definition.enabled,
         "checkpoint_upgrade": definition.checkpoint_upgrade.value,
         "checkpoint_upgrader_key": definition.checkpoint_upgrader_key,
     }

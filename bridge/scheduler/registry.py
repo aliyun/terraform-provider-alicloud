@@ -115,7 +115,7 @@ def _definition_from_row(
     expected = {
         "key", "revision", "description", "purpose", "engine_runner",
         "schedule", "runner", "misfire", "timeout_seconds", "retry_delay_seconds",
-        "replay_policy", "enabled_env",
+        "replay_policy", "enabled",
     }
     unknown = set(row).difference(expected)
     if unknown:
@@ -133,7 +133,7 @@ def _definition_from_row(
             timeout_seconds=_required_number(row, "timeout_seconds", index, path),
             retry_delay_seconds=_required_number(row, "retry_delay_seconds", index, path),
             replay_policy=ReplayPolicy(_required_text(row, "replay_policy", index, path)),
-            enabled_env=_optional_text(row.get("enabled_env"), index, path),
+            enabled=_required_bool(row, "enabled", index, path),
         )
     except (TypeError, ValueError) as exc:
         raise SchedulerRegistryError("invalid job definition #%s in %s: %s" % (
@@ -195,6 +195,13 @@ def _required_number(row: Mapping[str, Any], field: str, index: int, path: Path)
     value = row.get(field)
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise SchedulerRegistryError("job #%s requires number %s in %s" % (index, field, path))
+    return value
+
+
+def _required_bool(row: Mapping[str, Any], field: str, index: int, path: Path) -> bool:
+    value = row.get(field)
+    if not isinstance(value, bool):
+        raise SchedulerRegistryError("job #%s requires boolean %s in %s" % (index, field, path))
     return value
 
 

@@ -27,9 +27,6 @@ except ModuleNotFoundError:  # pragma: no cover - import path depends on composi
 from .control_plane_client import HttpScheduledJobControlPlane
 from .engine import DurableResultPublisher, SchedulerEngine
 from .jobs import JOBS, load_jobs
-from .migration import (
-    SchedulerMigrationError, business_job_enabled,
-)
 from .model import JobResult, ScheduledJobDefinition
 from .registry import SchedulerRegistry
 from .runtime import JobRunner, ScannerRuntime
@@ -176,8 +173,7 @@ class SchedulerComposition:
                 # never enter this control-plane registry.
                 engine.register(
                     datetime.now(timezone.utc),
-                    is_enabled=lambda definition: business_job_enabled(
-                        definition, environ=self._environ))
+                    is_enabled=lambda definition: definition.enabled)
                 engine.recover_interrupted()
             except Exception:
                 # A Worker that could register but could not complete the
@@ -447,5 +443,5 @@ def _stop_timeout(value: Optional[float], environ: Mapping[str, str]) -> float:
 
 __all__ = [
     "EmptyResultPublisher", "SCHEDULER_WORKER_KEY",
-    "SchedulerComposition", "SchedulerCompositionError", "SchedulerMigrationError",
+    "SchedulerComposition", "SchedulerCompositionError",
 ]

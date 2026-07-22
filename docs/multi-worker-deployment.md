@@ -68,12 +68,11 @@ that installer, run `bash bootstrap/bridge-python.sh` once before
 
 Before this starts the Engine, Bridge verifies the host, registers and checks
 the ACTIVE Worker identity, registers the full job registry, recovers
-interrupted slots, and then begins polling.  The legacy `DailyScheduler`
-excludes only `daily.probe`; its existing `_ProbeJob` plus
-`daily-scheduler.json` marker are reused during the handover.  A configured
-new job without a runner mapping fails closed at startup. Each definition's
-`enabled_env` remains an independent business switch; for example,
-`JARVIS_PROBE_SCHED=0` registers a routed `daily.probe` as `DISABLED`.
+interrupted slots, and then begins polling. `daily.probe` runs only through
+`scheduler/jobs/daily_probe.py`; the legacy `DailyScheduler` has no probe
+entry point. A configured new job without a runner mapping fails closed at
+startup. Each definition's `enabled` boolean controls whether it is runnable;
+`enabled: false` registers a routed Job as `DISABLED`.
 
 A planned Scheduler restart closes admission, registers the Worker as
 `DRAINING`, and waits for the admitted job to finish before starting a new

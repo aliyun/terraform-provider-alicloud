@@ -26,9 +26,6 @@ from .composition import (
     EmptyResultPublisher, SCHEDULER_WORKER_KEY,
     SchedulerComposition, SchedulerCompositionError,
 )
-from .migration import (
-    SchedulerMigrationError, business_job_enabled,
-)
 from .registry import (
     SchedulerJobRoute, SchedulerRegistry, SchedulerRegistryError,
     default_registry_path, load_scheduler_registry,
@@ -48,7 +45,7 @@ __all__ = [
     "ScheduledJobControlPlaneProtocolError", "ScheduledJobControlPlaneRejected",
     "ScheduledJobControlPlaneUnavailable",
     "EmptyResultPublisher", "SCHEDULER_WORKER_KEY",
-    "SchedulerComposition", "SchedulerCompositionError", "SchedulerMigrationError",
-    "business_job_enabled", "SchedulerJobRoute", "SchedulerRegistry",
+    "SchedulerComposition", "SchedulerCompositionError",
+    "SchedulerJobRoute", "SchedulerRegistry",
     "SchedulerRegistryError", "default_registry_path", "load_scheduler_registry",
 ]

@@ -57,7 +57,6 @@ Env:
   JARVIS_BROADCAST_TARGET                  where auto-dispatch/probe/revisit broadcasts land
                                            (default = JARVIS_NOTIFY_GROUP).
   JARVIS_BROADCAST_TYPE                    broadcast conversation type (default "group").
-  JARVIS_PROBE_SCHED                       1=enable daily tf-probe round (default); 0=off.
   JARVIS_REVISIT_SCHED                     1=enable daily jarvis-idle revisit round (default); 0=off.
   JARVIS_REVISIT_HOUR                      local-time hour to fire the revisit round (default "9").
   JARVIS_REVISIT_MAX                       max jarvis-idle items inspected per round (default 100).

@@ -209,7 +209,7 @@ v14 只迁移当前主干真实存在的时间驱动职责，不复活已删除�
 | `timeout_seconds` | 正数 |
 | `retry_delay_seconds` | 可重试失败后重跑同一 slot 的间隔 |
 | `replay_policy` | `TASK_UPSERT_IDEMPOTENT`、`EVENT_LEDGER_IDEMPOTENT` 或 `EPHEMERAL` |
-| `enabled_env` | 可选，只决定业务是否启用；与新旧链路归属分离，只在 start/restart 时读取 |
+| `enabled` | 必填布尔值；只决定业务是否启用，与新旧链路归属分离；修改后在 start/restart 时读取 |
 | `checkpoint_upgrade` | `RESET_FULL`、`RESET_OVERLAP` 或 `MIGRATE` |
 
 job 模块 import 时不得启动线程、访问网络、sleep 或写文件。`validate_registry()` 必须先把 iterable 单次物化为有序 tuple，校验后返回同一个 tuple；`load_jobs()` 直接返回校验结果。
@@ -353,7 +353,7 @@ CREATE TABLE jarvis_scheduled_job (
 1. `DailyScheduler` 的日期 marker 继续作为 daily runner 的独立业务状态，不能塞入 `jarvis_scheduled_job`。
 2. `pr-watch.json` 的 registry、cursor 和 dedupe 状态继续由 PR runner 所有，后续需要控制面化时使用独立业务状态接口。
 3. 迁移期旧 loop 和新 job 不得同时触发；`bridge/scheduler/jobs/jobs.yaml` 只列出新链路 job，
-   同时驱动其注册和同名旧入口屏蔽；未列出的 job 完全由旧模块负责。`enabled_env` 只决定
+   同时驱动其注册和同名旧入口屏蔽；未列出的 job 完全由旧模块负责。`enabled` 只决定
    已迁移 job 的业务启停。
 4. 连续两个完整周期对账一致并确认新的业务状态真源后，才停止读取旧状态文件。
 5. 双事件 ledger 在等价 durable outbox 验收前继续保留，不能随 scheduler 状态文件一起删除。
@@ -370,7 +370,7 @@ CREATE TABLE jarvis_scheduled_job (
 ```
 
 YAML 中的 job 仅由新 Engine admission，旧模块必须删除同一 job 的旧 tick；未列出的 job 仅由旧模块执行，
-不进入新控制面。已迁移 job 仍须满足 definition 的 `enabled_env`，业务开关关闭时不执行。未知 job、
+不进入新控制面。已迁移 job 由 definition 的 `enabled` 决定是否执行。未知 job、
 重复项、仍配置已废弃的
 `JARVIS_SCHEDULER_ENABLE`/`JARVIS_SCHEDULER_JOB_*`，或缺少新 runner 映射，均在启动阶段
 fail-closed。这样只需编辑一个变量即可逐项迁移，且路由归属与业务启停不会相互覆盖。

@@ -1,12 +1,7 @@
 from __future__ import annotations
 
 import unittest
-from types import SimpleNamespace
-
 from bridge.scheduler.jobs import JOBS, REGISTRY
-from bridge.scheduler.migration import (
-    SchedulerMigrationError, business_job_enabled,
-)
 
 
 class SchedulerMigrationTests(unittest.TestCase):
@@ -16,17 +11,8 @@ class SchedulerMigrationTests(unittest.TestCase):
         self.assertEqual(tuple(job.id for job in JOBS), ("daily.probe",))
         self.assertEqual(registry.scheduler_job_keys(), frozenset({"daily.probe"}))
 
-    def test_business_enable_is_independent_from_route(self):
-        probe = SimpleNamespace(enabled_env="JARVIS_PROBE_SCHED")
-        reply = SimpleNamespace(enabled_env=None)
-        self.assertFalse(business_job_enabled(
-            probe, environ={"JARVIS_PROBE_SCHED": "0"}))
-        self.assertTrue(business_job_enabled(
-            probe, environ={"JARVIS_PROBE_SCHED": "1"}))
-        self.assertTrue(business_job_enabled(reply, environ={}))
-        with self.assertRaisesRegex(SchedulerMigrationError, "must be 0 or 1"):
-            business_job_enabled(
-                probe, environ={"JARVIS_PROBE_SCHED": "sometimes"})
+    def test_business_enable_is_part_of_the_definition(self):
+        self.assertTrue(JOBS[0].enabled)
 
 
 if __name__ == "__main__":

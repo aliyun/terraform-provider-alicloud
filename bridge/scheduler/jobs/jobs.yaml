@@ -10,7 +10,7 @@
 # schedule       支持 interval / daily / adaptive；daily 使用明确的 IANA 时区。
 # runner         执行契约；headless Job 必须声明 builder_ref、protocol 和 session_policy。
 # misfire        停机后错过计划的处理策略；CURRENT_DAY 仅补当天的 daily slot。
-# enabled_env    可选业务开关，值只允许 1 或 0；关闭后 Job 保持注册但不执行。
+# enabled        Job 是否执行；false 时仍注册到控制面，但状态为 DISABLED。
 version: 1
 jobs:
   # 纯探测任务：没有业务 cursor 或 local marker，调度状态由 Scheduler 控制面维护。
@@ -25,4 +25,4 @@ jobs:
     timeout_seconds: 3600
     retry_delay_seconds: 300
     replay_policy: EPHEMERAL
-    enabled_env: JARVIS_PROBE_SCHED
+    enabled: true
