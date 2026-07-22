@@ -13,7 +13,7 @@
 # enabled        Job 是否执行；false 时仍注册到控制面，但状态为 DISABLED。
 version: 1
 jobs:
-  # 纯探测任务：没有业务 cursor 或 local marker，调度状态由 Scheduler 控制面维护。
+  # 测试期间关闭真实 probe，防止 CURRENT_DAY 的补跑语义触发业务探测。
   - key: daily.probe
     revision: 1
     description: Run the bounded daily probe as an Ephemeral job
@@ -24,5 +24,47 @@ jobs:
     misfire: CURRENT_DAY
     timeout_seconds: 3600
     retry_delay_seconds: 300
+    replay_policy: EPHEMERAL
+    enabled: false
+
+  # 预发调度链路验证：三条 Job 分别覆盖 interval、daily、adaptive。runner 只写日志
+  # 并返回 SUCCEEDED，不创建业务数据。验证结束后可将整个 smoke 区块注释为新增 Job
+  # 配置示例，并将 daily.probe 恢复为 enabled: true。
+  - key: smoke.interval
+    revision: 1
+    description: Verify interval planning, admission, and completion without business side effects
+    purpose: MAINTENANCE
+    engine_runner: scheduler.smoke
+    schedule: {kind: interval, interval_seconds: 60, run_immediately: true}
+    runner: {kind: handler, handler_key: scheduler.smoke}
+    misfire: COALESCE
+    timeout_seconds: 30
+    retry_delay_seconds: 10
+    replay_policy: EPHEMERAL
+    enabled: true
+
+  - key: smoke.daily
+    revision: 1
+    description: Verify daily planning and CURRENT_DAY misfire handling without business side effects
+    purpose: MAINTENANCE
+    engine_runner: scheduler.smoke
+    schedule: {kind: daily, hour: 10, minute: 0, timezone: Asia/Shanghai}
+    runner: {kind: handler, handler_key: scheduler.smoke}
+    misfire: CURRENT_DAY
+    timeout_seconds: 30
+    retry_delay_seconds: 10
+    replay_policy: EPHEMERAL
+    enabled: true
+
+  - key: smoke.adaptive
+    revision: 1
+    description: Verify adaptive planning and next-run calculation without business side effects
+    purpose: MAINTENANCE
+    engine_runner: scheduler.smoke
+    schedule: {kind: adaptive, min_delay_seconds: 30, default_delay_seconds: 60, max_delay_seconds: 120, run_immediately: true}
+    runner: {kind: handler, handler_key: scheduler.smoke}
+    misfire: COALESCE
+    timeout_seconds: 30
+    retry_delay_seconds: 10
     replay_policy: EPHEMERAL
     enabled: true

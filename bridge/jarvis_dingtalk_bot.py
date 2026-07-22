@@ -132,6 +132,8 @@ from scheduler.jobs import (
     DAILY_PROBE_RUNNER_KEY,
     DailyProbeRunner,
     REGISTRY as SCHEDULER_REGISTRY,
+    SCHEDULER_SMOKE_RUNNER_KEY,
+    SchedulerSmokeRunner,
 )
 from tata_dws_history import (
     DWS_USER_NOT_IN_GROUP,
@@ -8216,6 +8218,7 @@ class JarvisHandler(AsyncChatbotHandler):
                     build_context=lambda round_id: _daily_probe_context(self, round_id),
                     logger=log,
                 ),
+                SCHEDULER_SMOKE_RUNNER_KEY: SchedulerSmokeRunner(logger=log),
             },
             registry=SCHEDULER_REGISTRY,
             logger=log,

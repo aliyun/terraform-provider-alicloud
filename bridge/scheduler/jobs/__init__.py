@@ -7,6 +7,7 @@ from typing import Mapping
 from ..model import CapabilityValidationContext, ScheduledJobDefinition, definition_digest, validate_registry
 from ..registry import SchedulerRegistry, load_scheduler_registry
 from .daily_probe import RUNNER_KEY as DAILY_PROBE_RUNNER_KEY, DailyProbeRunner
+from .smoke import RUNNER_KEY as SCHEDULER_SMOKE_RUNNER_KEY, SchedulerSmokeRunner
 
 
 REGISTRY: SchedulerRegistry = load_scheduler_registry()
@@ -14,7 +15,7 @@ JOBS: tuple[ScheduledJobDefinition, ...] = REGISTRY.definitions
 
 JOB_CAPABILITIES = CapabilityValidationContext(
     headless_builder_protocols={("bridge.daily_probe", "bridge.scheduler.v1")},
-    handler_keys={"aone.scan", "aone.stale_claim", "daily.nudge", "aone.reply", "pr.watch", "pr.lifecycle"},
+    handler_keys={"aone.scan", "aone.stale_claim", "daily.nudge", "aone.reply", "pr.watch", "pr.lifecycle", "scheduler.smoke"},
 )
 JOB_DIGESTS: Mapping[str, str] = {definition.id: definition_digest(definition) for definition in JOBS}
 
@@ -26,4 +27,5 @@ def load_jobs() -> tuple[ScheduledJobDefinition, ...]:
 __all__ = [
     "REGISTRY", "JOBS", "JOB_CAPABILITIES", "JOB_DIGESTS", "load_jobs",
     "DAILY_PROBE_RUNNER_KEY", "DailyProbeRunner",
+    "SCHEDULER_SMOKE_RUNNER_KEY", "SchedulerSmokeRunner",
 ]

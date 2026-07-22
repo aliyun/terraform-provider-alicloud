@@ -27,8 +27,10 @@
 - Scheduler 的单实例运行控制、READY/OFFLINE 以及可观测性接口。
 
 本轮不改 Aone/PR 的业务扫描、Task/Session 执行、业务 cursor、PR registry 或事件 ledger；
-`PersistenceExecutor`/SubAgent 也不在本轮拆分。`daily.probe` 是唯一例外：它没有业务 cursor，
-已迁入新 Scheduler 的独立 runner，并从旧 `DailyScheduler` 删除。其余数据面迁移仍采用独立的
+`PersistenceExecutor`/SubAgent 也不在本轮拆分。`daily.probe` 是唯一业务 runner 例外：它没有业务 cursor，
+已迁入新 Scheduler 的独立 runner，并从旧 `DailyScheduler` 删除。预发验证期间额外登记
+`smoke.interval`、`smoke.daily` 和 `smoke.adaptive`；三者只记录日志并
+返回成功，用来覆盖三种时间语义，验证后注释为新增 Job 的配置示例。其余数据面迁移仍采用独立的
 旁路脚本：先导出、校验和回放，再在单独变更中原子切换。本轮不得宣称 Bridge restart 已保障
 业务 Session/SubAgent 不间断。
 
@@ -566,7 +568,7 @@ bridge/
 | B0 | 已完成 | 组件 10→6、Aone 并集探测、控制面 wait、PR/每日本地持久状态 |
 | U1 | 已提交，待合入 | Bridge Job definition、显式 `JOBS` registry、`TriggerPlanner` 和契约测试已在 Bridge MR `28675904`。 |
 | U2 | 已提交，待预发验证 | `jarvis_scheduled_job` 已创建；AutomationAgent Code Review `28719590` 包含注册、状态 API、恢复和 Board Scheduled Jobs 展示。该 Code Review 尚未完成 Java 21 预发验证。 |
-| U3 | 已提交，待预发联调 | Bridge MR `28675904` 已包含 import-safe `SchedulerEngine`、`ScannerRuntime`、slot admission、真实结束时间计算、终态幂等重试，以及独立的 `scheduler/jobs/daily_probe.py` runner；`daily.probe` 已注册到新链路且旧 `DailyScheduler` 入口已删除。 |
+| U3 | 已提交，待预发联调 | Bridge MR `28675904` 已包含 import-safe `SchedulerEngine`、`ScannerRuntime`、slot admission、真实结束时间计算、终态幂等重试，以及独立的 `scheduler/jobs/daily_probe.py` runner；`daily.probe` 已注册到新链路且旧 `DailyScheduler` 入口已删除。预发临时启用三种 `smoke.*` Job 覆盖 interval、daily、adaptive；它们不创建业务数据。 |
 | C4 | 已提交，待预发联调 | Bridge MR `28675904` 已包含标准库 HTTP adapter：register/list/start/complete/fail/recover-interrupted、UTC 时间编解码、`start` 原子预留下次时间及异常 fail-closed。AutomationAgent Code Review `28719590` 的 `start` 接收 `{scheduledFor,nextRunAt}` 并返回 `{admitted,job}`。两端尚未完成预发联调。 |
 | C5 | 已提交，待预发联调 | Bridge 已实现固定 `bridge-scheduler`、复用普通 Task token、`boot_id + process_uuid` 注册确认、30 秒 heartbeat、`dispatch.pull=false`、以 `bridge/scheduler/jobs/jobs.yaml` 统一驱动 Job 注册与旧入口屏蔽、READY/OFFLINE 和有界计划内 drain；超时取消 restart 并恢复 ACTIVE。AutomationAgent 已提交单 Worker 活跃进程冲突、既有 Worker timeout 接管、DRAINING 在途终态提交和 Board Worker 展示。`host_id` 只用于展示和迁移追踪；Scheduler 不进入普通 Task queue-pull Worker 集合。该阶段不停止或重启 Task Worker。 |
 | C6 | 未开始 | 控制面预发验证：重复启动拒绝、心跳超时接管、slot admission、interrupted recovery、Board 展示和控制面不可用 fail-closed。 |
