@@ -42,27 +42,30 @@ workers — fenced `claimTask` on the control plane is the only interlock.
 ## SchedulerEngine progressive cutover
 
 The legacy periodic loops remain the default.  The new `SchedulerEngine` is a
-separate, fenced control-plane path and may be started only on
-`AgenticTools-Macmini.local`, with `workerKey=bridge-scheduler`, a fresh
-`processUuid`, and the same control-plane token used by the Task API. Bridge
-first verifies its local hostname/FQDN, and AutomationAgent independently
-requires the exact allowed `hostId` for the fixed Worker. It is not a Task
-executor: Bridge advertises `capabilities.dispatch.pull=false`, and
-AutomationAgent rejects the fixed Scheduler registration unless that opt-out is
-explicit. It does not authorize any other host to run scheduler jobs.
+separate, fenced control-plane path with `workerKey=bridge-scheduler`, a fresh
+`processUuid`, and the same control-plane token used by the Task API. `hostId`
+is recorded for observability only. The fixed Worker key, current process UUID,
+status, and heartbeat ensure that only one Scheduler process owns admission at
+a time. It is not a Task executor: Bridge advertises
+`capabilities.dispatch.pull=false` and does not pull the public Task queue.
 
-Use `bridge/jarvis.env` to select new-engine ownership with one variable.
-`JARVIS_SCHEDULER_NEW_JOBS` is a comma-separated list: listed jobs are owned by
-the new Engine, unlisted jobs remain on legacy, and an empty value means all
-legacy. Unknown, blank, or duplicate keys fail closed. The first supported
-handover is `daily.probe`:
+Use `config/scheduler-jobs.yaml` as the complete new-engine ownership and
+registration registry. A job with `owner: scheduler` is registered and owned
+by the new Engine, while its legacy entry point is suppressed. A job with
+`owner: legacy` remains on its legacy loop and is registered as `DISABLED` in
+the new control plane. The first supported handover is `daily.probe`:
 
 ```bash
-JARVIS_BRIDGE_ROLE=scheduler
-JARVIS_CONTROL_PLANE_TOKEN=<shared-control-plane-token>
-JARVIS_SCHEDULER_NEW_JOBS=daily.probe
-bridge/run.sh start
+# config/scheduler-jobs.yaml
+- key: daily.probe
+  owner: scheduler
+  runner: daily.probe
 ```
+
+The YAML loader depends on `PyYAML`, installed into the isolated Bridge venv by
+`bootstrap/worker-install.sh`. On a scheduler host that was not bootstrapped by
+that installer, run `bash bootstrap/bridge-python.sh` once before
+`bridge/run.sh start`; the run script automatically prefers `.venv/bridge`.
 
 Before this starts the Engine, Bridge verifies the host, registers and checks
 the ACTIVE Worker identity, registers the full job registry, recovers

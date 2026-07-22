@@ -350,22 +350,25 @@ CREATE TABLE jarvis_scheduled_job (
 
 1. `DailyScheduler` 的日期 marker 继续作为 daily runner 的独立业务状态，不能塞入 `jarvis_scheduled_job`。
 2. `pr-watch.json` 的 registry、cursor 和 dedupe 状态继续由 PR runner 所有，后续需要控制面化时使用独立业务状态接口。
-3. 迁移期旧 loop 和新 job 不得同时触发；所有 job 只通过统一的
-   `JARVIS_SCHEDULER_NEW_JOBS` 清单决定新旧归属，`enabled_env` 只决定业务启停。
+3. 迁移期旧 loop 和新 job 不得同时触发；`config/scheduler-jobs.yaml` 是唯一的新旧归属与
+   注册清单：`owner: scheduler` 同时驱动新链路注册和旧入口屏蔽，`owner: legacy` 保持旧入口；
+   `enabled_env` 只决定业务启停。
 4. 连续两个完整周期对账一致并确认新的业务状态真源后，才停止读取旧状态文件。
 5. 双事件 ledger 在等价 durable outbox 验收前继续保留，不能随 scheduler 状态文件一起删除。
 
 ### 8.3 控制面渐进迁移与旧链路兼容
 
 首版允许旧定时任务模块与新 `SchedulerEngine` 同进程共存，以 job 为最小迁移单元；这不是双写或
-双触发模式。默认全部 job 仍走旧链路。运维只可通过一个显式迁移清单把 job 切到新链路：
+双触发模式。默认全部 job 仍走旧链路。运维只可编辑一个显式 YAML 注册表把 job 切到新链路：
 
 ```text
-JARVIS_SCHEDULER_NEW_JOBS=daily.probe,aone.scan
+# 编辑 config/scheduler-jobs.yaml：将目标 Job 配置为
+# owner: scheduler
+# runner: <Bridge runner 名称>
 ```
 
-该变量为空时全部 job 走旧链路；逗号清单内 job 仅由新 Engine admission，旧模块必须停止同一
-job 的旧 tick；清单外 job 仅由旧模块执行，新控制面登记为 `DISABLED`。清单内 job 仍须满足
+`owner: scheduler` 的 job 仅由新 Engine admission，旧模块必须停止同一 job 的旧 tick；
+`owner: legacy` 的 job 仅由旧模块执行，新控制面登记为 `DISABLED`。Scheduler-owned job 仍须满足
 definition 的 `enabled_env`，业务开关关闭时新旧链路均不执行。未知 job、重复项、仍配置已废弃的
 `JARVIS_SCHEDULER_ENABLE`/`JARVIS_SCHEDULER_JOB_*`，或缺少新 runner 映射，均在启动阶段
 fail-closed。这样只需编辑一个变量即可逐项迁移，且路由归属与业务启停不会相互覆盖。
@@ -561,7 +564,7 @@ bridge/
 | U2 | 已提交，待预发验证 | `jarvis_scheduled_job` 已创建；AutomationAgent Code Review `28719590` 包含注册、状态 API、恢复和 Board Scheduled Jobs 展示。该 Code Review 尚未完成 Java 21 预发验证。 |
 | U3 | 已提交，待预发联调 | Bridge MR `28675904` 已包含 import-safe `SchedulerEngine`、`ScannerRuntime`、slot admission、真实结束时间计算、终态幂等重试和 `daily.probe` legacy adapter；只有 `daily.probe` 可切到新链路。 |
 | C4 | 已提交，待预发联调 | Bridge MR `28675904` 已包含标准库 HTTP adapter：register/list/start/complete/fail/recover-interrupted、UTC 时间编解码、`start` 原子预留下次时间及异常 fail-closed。AutomationAgent Code Review `28719590` 的 `start` 接收 `{scheduledFor,nextRunAt}` 并返回 `{admitted,job}`。两端尚未完成预发联调。 |
-| C5 | 已提交，待预发联调 | Bridge 已实现固定 `bridge-scheduler`、复用普通 Task token、`boot_id + process_uuid` 注册确认、30 秒 heartbeat、`dispatch.pull=false`、统一 `JARVIS_SCHEDULER_NEW_JOBS` 路由、READY/OFFLINE 和有界计划内 drain；超时取消 restart 并恢复 ACTIVE。AutomationAgent 已提交单 Worker 活跃进程冲突、既有 Worker timeout 接管、DRAINING 在途终态提交和 Board Worker 展示。`host_id` 只用于展示和迁移追踪；Scheduler 不进入普通 Task queue-pull Worker 集合。该阶段不停止或重启 Task Worker。 |
+| C5 | 已提交，待预发联调 | Bridge 已实现固定 `bridge-scheduler`、复用普通 Task token、`boot_id + process_uuid` 注册确认、30 秒 heartbeat、`dispatch.pull=false`、以 `config/scheduler-jobs.yaml` 统一驱动 Job 注册与旧入口屏蔽、READY/OFFLINE 和有界计划内 drain；超时取消 restart 并恢复 ACTIVE。AutomationAgent 已提交单 Worker 活跃进程冲突、既有 Worker timeout 接管、DRAINING 在途终态提交和 Board Worker 展示。`host_id` 只用于展示和迁移追踪；Scheduler 不进入普通 Task queue-pull Worker 集合。该阶段不停止或重启 Task Worker。 |
 | C6 | 未开始 | 控制面预发验证：重复启动拒绝、心跳超时接管、slot admission、interrupted recovery、Board 展示和控制面不可用 fail-closed。 |
 | D1 | 本轮不实施 | Daily/PR/Aone/Probe 的业务状态和 runner 旁路迁移脚本：导出、校验、回放、对账与原子切换，单独评审 |
 

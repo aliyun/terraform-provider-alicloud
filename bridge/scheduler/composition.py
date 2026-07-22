@@ -28,9 +28,10 @@ from .control_plane_client import HttpScheduledJobControlPlane
 from .engine import DurableResultPublisher, SchedulerEngine
 from .jobs import JOBS, load_jobs
 from .migration import (
-    SchedulerMigrationError, business_job_enabled, requested_new_jobs,
+    SchedulerMigrationError, business_job_enabled,
 )
 from .model import JobResult, ScheduledJobDefinition
+from .registry import SchedulerRegistry
 from .runtime import JobRunner, ScannerRuntime
 
 
@@ -62,11 +63,14 @@ class SchedulerComposition:
     """Own the Scheduler Worker lifecycle and the single Engine polling thread."""
 
     def __init__(self, *, task_client: ControlPlaneClient,
-                 runners: Mapping[str, JobRunner],
+                 runners: Mapping[str, JobRunner], registry: SchedulerRegistry,
                  environ: Optional[Mapping[str, str]] = None,
                  logger: Optional[logging.Logger] = None) -> None:
         self._task_client = task_client
+        # ``runners`` is an implementation catalogue keyed by runner name;
+        # ownership is defined only by the checked-in YAML registry.
         self._runners = dict(runners)
+        self._registry = registry
         self._environ = os.environ if environ is None else environ
         self._log = logger or logging.getLogger(__name__)
         self._engine: Optional[SchedulerEngine] = None
@@ -104,20 +108,18 @@ class SchedulerComposition:
 
     @property
     def enabled(self) -> bool:
-        return bool(requested_new_jobs(
-            (definition.id for definition in JOBS), environ=self._environ))
+        return bool(self._registry.scheduler_job_keys())
 
     def start(self) -> bool:
         """Register/verify the fixed Worker, register jobs, recover, then poll.
 
-        ``False`` means ``JARVIS_SCHEDULER_NEW_JOBS`` is empty. Any
-        selected-but-unmapped job raises before a legacy loop
-        can be suppressed, so the operator cannot lose a job during cutover.
+        ``False`` means the checked-in registry has no Scheduler-owned jobs.
+        Any configured-but-unmapped runner raises before a legacy loop can be
+        suppressed, so the operator cannot lose a job during cutover.
         """
 
         definitions = load_jobs()
-        migrated = requested_new_jobs(
-            (definition.id for definition in definitions), environ=self._environ)
+        migrated = self._registry.scheduler_job_keys()
         if not migrated:
             return False
         if "daily.probe" in migrated:
@@ -136,11 +138,27 @@ class SchedulerComposition:
         self._poll_interval = _positive_float(
             self._environ.get("JARVIS_SCHEDULER_POLL_SEC", "5"),
             "JARVIS_SCHEDULER_POLL_SEC")
-        missing = sorted(migrated.difference(self._runners))
+        configured_runners = {
+            job_key: self._registry.runner_for(job_key)
+            for job_key in migrated
+        }
+        missing = sorted(
+            job_key for job_key, runner_name in configured_runners.items()
+            if runner_name not in self._runners)
         if missing:
             raise SchedulerCompositionError(
-                "selected new Scheduler jobs have no Bridge runner mapping: %s"
+                "Scheduler-owned jobs have no Bridge runner mapping: %s"
                 % ", ".join(missing))
+        used_runners = frozenset(configured_runners.values())
+        unused = sorted(set(self._runners).difference(used_runners))
+        if unused:
+            raise SchedulerCompositionError(
+                "Bridge runner mappings are not declared by scheduler registry: %s"
+                % ", ".join(unused))
+        job_runners = {
+            job_key: self._runners[runner_name]
+            for job_key, runner_name in configured_runners.items()
+        }
         with self._lock:
             if self._thread is not None:
                 return True
@@ -161,7 +179,7 @@ class SchedulerComposition:
                 engine = SchedulerEngine(
                     definitions,
                     control_plane=control_plane,
-                    runtime=ScannerRuntime(_RoutedRunner(self._runners)),
+                    runtime=ScannerRuntime(_RoutedRunner(job_runners)),
                     publisher=EmptyResultPublisher(),
                 )
                 # Register the complete immutable registry; unmigrated jobs are

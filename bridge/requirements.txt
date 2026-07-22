@@ -1,0 +1,2 @@
+# Runtime dependencies for bridge/run.sh and the launchd service.
+PyYAML==6.0.2

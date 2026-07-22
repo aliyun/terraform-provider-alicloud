@@ -132,7 +132,7 @@ from jarvis_external_recovery import ExternalOperationRecoveryScheduler
 from scheduler import JobResult, JobResultStatus
 from scheduler.composition import SchedulerComposition
 from scheduler.jobs import JOBS
-from scheduler.migration import uses_new_engine
+from scheduler.registry import load_scheduler_registry
 from tata_dws_history import (
     DWS_USER_NOT_IN_GROUP,
     DwsGroupHistory,
@@ -321,6 +321,7 @@ logging.basicConfig(
 log = logging.getLogger("jarvis-bot")
 
 _SCHEDULER_JOB_KEYS = tuple(definition.id for definition in JOBS)
+_SCHEDULER_REGISTRY = load_scheduler_registry(known_job_keys=_SCHEDULER_JOB_KEYS)
 
 
 def _task_client_from_env():
@@ -346,10 +347,10 @@ def _task_client_from_env():
 
 
 def _scheduler_owns_job(job_key):
-    """Single ownership gate used by legacy loops during progressive cutover."""
+    """YAML-derived ownership gate used by legacy loops during cutover."""
     if os.environ.get("JARVIS_BRIDGE_ROLE", "scheduler") != "scheduler":
         return False
-    return uses_new_engine(job_key, job_keys=_SCHEDULER_JOB_KEYS)
+    return _SCHEDULER_REGISTRY.route_for(job_key).scheduler_owned
 
 
 def _aone_task_key(project, item_id):
@@ -8351,13 +8352,13 @@ class JarvisHandler(AsyncChatbotHandler):
         # PrWatchScheduler(PR lifecycle), and external-operation recovery.
         self.scanner = AoneScheduler(self, self.ephemeral_executor)
         self.daily = DailyScheduler(self, self.ephemeral_executor)
-        # JARVIS_SCHEDULER_NEW_JOBS is the sole ownership switch. Only
-        # daily.probe has a runner adapter in this C5 slice; selecting any other
-        # job fails closed before old loops are started. Each definition's
-        # enabled_env remains an independent business on/off switch.
+        # config/scheduler-jobs.yaml is the sole ownership switch. This runner
+        # catalogue only resolves names declared by that registry; it cannot
+        # independently migrate a legacy job.
         self.scheduler_composition = SchedulerComposition(
             task_client=self.task_client,
             runners={"daily.probe": self.daily.new_engine_runner("daily.probe")},
+            registry=_SCHEDULER_REGISTRY,
             logger=log,
         )
         self.aone_reply_scheduler = AoneReplyScheduler(self)

@@ -30,7 +30,13 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-PYTHON="${JARVIS_BRIDGE_PYTHON:-python3}"
+if [ -n "${JARVIS_BRIDGE_PYTHON:-}" ]; then
+  PYTHON="$JARVIS_BRIDGE_PYTHON"
+elif [ -x "$REPO_ROOT/.venv/bridge/bin/python" ]; then
+  PYTHON="$REPO_ROOT/.venv/bridge/bin/python"
+else
+  PYTHON="python3"
+fi
 BOT="${JARVIS_BRIDGE_BOT:-$SCRIPT_DIR/jarvis_dingtalk_bot.py}"
 STATE_DIR="${JARVIS_BRIDGE_STATE_DIR:-$REPO_ROOT/.my-day/bridge}"
 # PIDFILE/LOG default to scheduler role; _resolve_paths_by_role() re-derives after
@@ -77,8 +83,12 @@ _tail_log() {  # $1 = n
 
 _scheduler_ready_required() {
   [ "${JARVIS_BRIDGE_ROLE:-scheduler}" = "scheduler" ] || return 1
-  [ -n "$(printf '%s' "${JARVIS_SCHEDULER_NEW_JOBS:-}" \
-    | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')" ]
+  PYTHONPATH="$REPO_ROOT${PYTHONPATH:+:$PYTHONPATH}" "$PYTHON" -c '
+from bridge.scheduler.jobs import JOBS
+from bridge.scheduler.registry import load_scheduler_registry
+registry = load_scheduler_registry(known_job_keys=(job.id for job in JOBS))
+raise SystemExit(0 if registry.scheduler_job_keys() else 1)
+' >/dev/null 2>&1
 }
 
 _bridge_stop_wait() {
@@ -200,36 +210,30 @@ _decide_mode() {
 }
 
 _validate_scheduler_cutover() {
-  # One comma-separated list is the sole ownership switch. Empty means all
-  # legacy. Python's import-safe JOBS registry is the single source for exact
-  # keys, duplicate detection, and deprecated-variable rejection.
-  local selected validation_error python_path
-  selected="$(printf '%s' "${JARVIS_SCHEDULER_NEW_JOBS:-}" \
-    | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
-  # Executor-only Task workers do not instantiate the Scheduler owner. Ignore
-  # stale scheduler-only migration variables there unless someone incorrectly
-  # asks that worker to own a new scheduled job.
-  if [ "${JARVIS_BRIDGE_ROLE:-scheduler}" = "worker" ] && [ -z "$selected" ]; then
-    return 0
-  fi
-  if [ -n "$selected" ] && [ "${JARVIS_BRIDGE_ROLE:-scheduler}" != "scheduler" ]; then
-    err "JARVIS_SCHEDULER_NEW_JOBS 非空时只能与 JARVIS_BRIDGE_ROLE=scheduler 一起使用。"
-    return 2
-  fi
-  if [ -n "$selected" ] \
-     && [ -z "${JARVIS_CONTROL_PLANE_TOKEN:-}" ] \
-     && [ -z "${JARVIS_HTML_REPORT_TOKEN:-}" ]; then
-    err "JARVIS_SCHEDULER_NEW_JOBS 非空时需要 JARVIS_CONTROL_PLANE_TOKEN 或 JARVIS_HTML_REPORT_TOKEN。"
-    return 2
-  fi
+  # config/scheduler-jobs.yaml is the sole ownership source. Keep the old
+  # environment switch fail-closed so a stale launchd environment cannot create
+  # a second, invisible routing rule.
+  local validation_error python_path
   python_path="$REPO_ROOT${PYTHONPATH:+:$PYTHONPATH}"
   if ! validation_error="$(PYTHONPATH="$python_path" "$PYTHON" -c '
+import os
 import sys
 from bridge.scheduler.jobs import JOBS
-from bridge.scheduler.migration import SchedulerMigrationError, requested_new_jobs
+from bridge.scheduler.registry import SchedulerRegistryError, load_scheduler_registry
 try:
-    requested_new_jobs((definition.id for definition in JOBS))
-except SchedulerMigrationError as exc:
+    if os.environ.get("JARVIS_SCHEDULER_NEW_JOBS", "").strip():
+        raise SchedulerRegistryError(
+            "JARVIS_SCHEDULER_NEW_JOBS is no longer supported; "
+            "edit config/scheduler-jobs.yaml instead")
+    registry = load_scheduler_registry(known_job_keys=(job.id for job in JOBS))
+    if (registry.scheduler_job_keys()
+            and os.environ.get("JARVIS_BRIDGE_ROLE", "scheduler") == "scheduler"
+            and not (
+        os.environ.get("JARVIS_CONTROL_PLANE_TOKEN", "").strip()
+        or os.environ.get("JARVIS_HTML_REPORT_TOKEN", "").strip())):
+        raise SchedulerRegistryError(
+            "Scheduler-owned jobs require JARVIS_CONTROL_PLANE_TOKEN or JARVIS_HTML_REPORT_TOKEN")
+except SchedulerRegistryError as exc:
     print(exc, file=sys.stderr)
     raise SystemExit(2)
 ' 2>&1)"; then

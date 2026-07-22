@@ -1,0 +1,23 @@
+# Scheduler routing registry. This is the only source of job ownership.
+#
+# owner: scheduler  -> register and execute through SchedulerEngine; the legacy
+#                      entry point for this job is suppressed.
+# owner: legacy     -> SchedulerEngine registers the definition as DISABLED;
+#                      the legacy entry point remains responsible for it.
+# runner is required for owner: scheduler and names a Bridge runner adapter.
+version: 1
+jobs:
+  - key: aone.scan
+    owner: legacy
+  - key: aone.stale_claim
+    owner: legacy
+  - key: daily.nudge
+    owner: legacy
+  - key: daily.probe
+    owner: legacy
+  - key: aone.reply
+    owner: legacy
+  - key: pr.watch
+    owner: legacy
+  - key: pr.lifecycle
+    owner: legacy
