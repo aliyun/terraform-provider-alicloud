@@ -17,8 +17,8 @@ jobs:
   # 并返回 SUCCEEDED，不创建业务数据。验证结束后可将整个 smoke 区块注释为新增 Job
   # 配置示例。业务 Job 迁移前必须先实现独立 runner，再单独加入此表。
   - key: smoke.interval
-    revision: 1
-    description: Verify interval planning, admission, and completion without business side effects
+    revision: 2
+    description: 验证固定间隔任务的计划、准入与完成，不产生业务副作用
     purpose: MAINTENANCE
     engine_runner: scheduler.smoke
     schedule: {kind: interval, interval_seconds: 60, run_immediately: true}
@@ -30,8 +30,8 @@ jobs:
     enabled: true
 
   - key: smoke.daily
-    revision: 1
-    description: Verify daily planning and CURRENT_DAY misfire handling without business side effects
+    revision: 2
+    description: 验证每日任务的计划与当天错过执行处理，不产生业务副作用
     purpose: MAINTENANCE
     engine_runner: scheduler.smoke
     schedule: {kind: daily, hour: 10, minute: 0, timezone: Asia/Shanghai}
@@ -43,8 +43,8 @@ jobs:
     enabled: true
 
   - key: smoke.adaptive
-    revision: 1
-    description: Verify adaptive planning and next-run calculation without business side effects
+    revision: 2
+    description: 验证自适应任务的计划与下一次执行时间计算，不产生业务副作用
     purpose: MAINTENANCE
     engine_runner: scheduler.smoke
     schedule: {kind: adaptive, min_delay_seconds: 30, default_delay_seconds: 60, max_delay_seconds: 120, run_immediately: true}
