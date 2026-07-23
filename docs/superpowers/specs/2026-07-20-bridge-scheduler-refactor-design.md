@@ -14,11 +14,10 @@ definition 注册、计划、slot 准入、执行、终态、心跳和有界停�
 
 `JARVIS_BRIDGE_ROLE` 的边界：
 
-- `scheduler`（唯一一台）：运行 `bridge/run.sh start` 作为 Task 执行器，并运行
-  `bridge/scheduler.sh start` 作为全部周期 Job 的唯一调度器。
-- `worker`（可多台）：只运行 `bridge/run.sh start`。`bridge/scheduler.sh start` 会在启动前
+- `scheduler`（唯一一台）：运行 `bridge/run.sh start`，作为 Task 执行器和全部周期 Job 的唯一调度器。
+- `worker`（可多台）：只运行 `bridge/run.sh start`。Scheduler 会在启动前
   fail-closed，拒绝注册 Scheduler Worker 或执行任何 Job。
-- 未知 role 同样被 `scheduler.sh` 拒绝，不能回退为 scheduler。
+- 未知 role 同样被 `run.sh` 拒绝，不能回退为 scheduler。
 
 ## 2. 总体链路
 
@@ -145,8 +144,7 @@ ACTIVE Worker → registry/runner 校验 → register → recover-interrupted �
 
 ```bash
 bridge/run.sh start
-bridge/scheduler.sh start
-bridge/scheduler.sh status
+bridge/run.sh status
 ```
 
 worker 主机只能执行第一条。真实 Probe 仍需要单独授权。
@@ -156,7 +154,6 @@ worker 主机只能执行第一条。真实 Probe 仍需要单独授权。
 ```text
 bridge/
   main.py                         # Scheduler composition root + role fence
-  scheduler.sh                    # scheduler-only start / stop / status
   headless/                       # 通用 Headless 契约与 Jarvis 窄适配
   scheduler/
     model.py                      # Job / schedule / runner / result

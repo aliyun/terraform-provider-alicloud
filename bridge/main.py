@@ -3,7 +3,7 @@
 
 This process deliberately contains no DingTalk stream, legacy scanner, PR/reply
 watcher, or Task queue worker.  It is the sole runtime behind
-``bridge/scheduler.sh`` while the legacy bridge remains in
+``bridge/run.sh`` while the legacy bridge remains in
 ``jarvis_dingtalk_bot.py``.
 """
 
@@ -16,7 +16,7 @@ import sys
 import threading
 from typing import Any
 
-try:  # Executed by bridge/scheduler.sh from the bridge directory.
+try:  # Executed by bridge/run.sh from the bridge directory.
     from jarvis_task_client import ControlPlaneClient
     from scheduler.registry import JOBS, REGISTRY
     from scheduler.role import require_scheduler_role

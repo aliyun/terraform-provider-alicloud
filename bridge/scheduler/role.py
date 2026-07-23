@@ -13,7 +13,7 @@ def require_scheduler_role(environ: Mapping[str, str] | None = None) -> None:
         "JARVIS_BRIDGE_ROLE", "scheduler").strip()
     if role != "scheduler":
         raise RuntimeError(
-            "bridge/scheduler.sh requires JARVIS_BRIDGE_ROLE=scheduler; "
+            "bridge/run.sh requires JARVIS_BRIDGE_ROLE=scheduler for periodic jobs; "
             "worker hosts run bridge/run.sh only")
 
 

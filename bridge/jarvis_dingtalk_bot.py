@@ -8178,12 +8178,12 @@ class JarvisHandler(AsyncChatbotHandler):
         """Start only the durable Task executor.
 
         All periodic jobs, including scheduler-role sensing and recovery work,
-        are owned by the separate ``bridge/scheduler.sh`` process.  Both roles
+        are owned by the same ``bridge/run.sh`` lifecycle.  Both roles
         may run this executor; only ``JARVIS_BRIDGE_ROLE=scheduler`` may start
         the SchedulerEngine entry point.
         """
         self.persistence_executor.start()
-        log.info("bridge role=%s: executor started; periodic jobs are owned by scheduler.sh",
+        log.info("bridge role=%s: executor started; periodic jobs are owned by run.sh",
                  os.environ.get("JARVIS_BRIDGE_ROLE", "scheduler"))
 
     def stop_persistence_executor(self, *, drain=False, timeout=None):
@@ -9461,15 +9461,15 @@ def _stop_before_final_teardown(handler, *, context, timeout):
 def _run_no_dingtalk():
     """无钉钉降级模式启动(JARVIS_NO_DINGTALK=1 点火路径): 不建 DingTalk client/stream,
     不初始化 TataPool; 只起 PersistenceExecutor。所有周期 Job 由独立的
-    ``bridge/scheduler.sh`` 进程执行。
+    ``bridge/run.sh`` 管理。
     卡片/播报统一降级为 [BROADCAST] 日志行(→ bot.log); 入站 Tata 门面停用(无 stream)。
     阻塞至进程收到中断信号。"""
     log.warning("[NO-DINGTALK] 降级模式启动: 无 DingTalk client/stream/TataPool; "
-                "仅启动 Task executor，周期 Job 交由 scheduler.sh；"
+                "仅启动 Task executor，周期 Job 交由 run.sh；"
                 "卡片/播报 → [BROADCAST] 日志行; 入站 Tata 门面停用。")
     handler = JarvisHandler(no_dingtalk=True)
     handler.start_schedulers()
-    log.info("[NO-DINGTALK] executor ready — 周期 Job 请通过 bridge/scheduler.sh 管理; "
+    log.info("[NO-DINGTALK] executor ready — 周期 Job 请通过 bridge/run.sh 管理; "
              "卡片/播报以 [BROADCAST] 日志行落 bot.log。")
 
     # 优雅停止(与全功能 main() 同款, 吸收 master f7f1f72): run.sh stop 发 SIGTERM → 整树杀在跑
@@ -9545,7 +9545,7 @@ def main():
     if handler.pool is not None:
         handler.pool.prewarm()  # 预热 N 个 generic 常驻进程, 首批消息免冷启
     handler.start_schedulers()
-    log.info("Bridge executor started; periodic jobs are owned by bridge/scheduler.sh")
+    log.info("Bridge executor started; periodic jobs are owned by bridge/run.sh")
 
     def _graceful_stop(signum, _frame):
         log.info("signal %s received — graceful stop: kill workers + release claims", signum)

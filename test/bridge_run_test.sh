@@ -48,6 +48,13 @@ hasnot() { case "$2" in *"$1"*) no "$3 [unexpected '$1']";; *) ok "$3";; esac; }
 cat >"$FAKEPY" <<'FAKE'
 #!/usr/bin/env bash
 ts="$(date '+%Y-%m-%d %H:%M:%S')"
+if [ "${1:-}" = "-c" ]; then exit 0; fi
+for a in "$@"; do
+  if [ "${a##*/}" = "main.py" ]; then
+    echo "$ts INFO [MainThread] Scheduler READY pid=$$ worker=bridge-scheduler jobs=fake"
+    exec sleep 300
+  fi
+done
 for a in "$@"; do
   if [ "$a" = "--dry-run-once" ]; then
     echo "$ts INFO [MainThread] dry-run ok (fake bot) PATH=$PATH JARVIS_ROOT=${JARVIS_ROOT:-}"
@@ -120,6 +127,8 @@ run() {
       JARVIS_BRIDGE_BOOTSTRAP_ENV="$BSENV" \
       JARVIS_BRIDGE_ENV="$JENV" \
       JARVIS_BRIDGE_START_WAIT="1.0" \
+      JARVIS_BRIDGE_ROLE="${TEST_ROLE:-scheduler}" \
+      JARVIS_CONTROL_PLANE_TOKEN="test-token" \
       JARVIS_BRIDGE_STOP_WAIT="1" \
       JARVIS_BRIDGE_TOOL_DIRS="$FAKE_BREW/sbin $FAKE_BREW/bin $FAKE_HOME/.local/bin" \
       JARVIS_BRIDGE_SUPERVISOR="${TEST_SUPERVISOR-}" \
@@ -173,6 +182,17 @@ hasnot "降级" "$out" "start(full/env): no degraded hint when creds present"
 st="$(run status 2>&1)"
 has "全功能" "$st" "status(full): mode = full"
 run stop >/dev/null 2>&1
+
+# --- T2b: scheduler role owns both processes through the same run.sh -------
+fresh
+out="$(TEST_ROLE=scheduler run start 2>&1)"; rc=$?
+[ "$rc" = 0 ] && ok "start(scheduler): exit 0" || no "start(scheduler): exit 0 (got $rc)"
+[ -f "$STATE/bot.pid" ] && ok "start(scheduler): executor pidfile written" || no "start(scheduler): executor pidfile"
+[ -f "$STATE/scheduler.pid" ] && ok "start(scheduler): scheduler pidfile written" || no "start(scheduler): scheduler pidfile"
+st="$(TEST_ROLE=scheduler run status 2>&1)"
+has "scheduler: RUNNING" "$st" "status(scheduler): reports Scheduler through run.sh"
+TEST_ROLE=scheduler run stop >/dev/null 2>&1
+[ ! -f "$STATE/scheduler.pid" ] && ok "stop(scheduler): scheduler pidfile removed" || no "stop(scheduler): scheduler pidfile removed"
 
 # --- T3: full mode via sourcing bridge/jarvis.env (creds NOT in env) --------
 fresh
@@ -269,34 +289,34 @@ kill -0 "$p1" 2>/dev/null && no "stop(deaf): process gone after SIGKILL" || ok "
 
 # --- T13: daemon is a true foreground entrypoint ---------------------------
 fresh
-out="$(TEST_BOT_MODE=once TEST_KEY=k TEST_SECRET=s run daemon 2>&1)"; rc=$?
+out="$(TEST_ROLE=worker TEST_BOT_MODE=once TEST_KEY=k TEST_SECRET=s run daemon 2>&1)"; rc=$?
 [ "$rc" = 0 ] && ok "daemon: foreground child exit is propagated" || no "daemon: foreground child exit is propagated (got $rc)"
 has "foreground daemon" "$out" "daemon: reports foreground mode"
-has "JARVIS_NO_DINGTALK=0" "$out" "daemon: sources env and keeps full mode"
+has "JARVIS_NO_DINGTALK=1" "$out" "daemon(worker): forces degraded mode"
 [ ! -f "$STATE/bot.pid" ] && ok "daemon: does not write local pidfile" || no "daemon: does not write local pidfile"
 
 # --- T14: launchd-supervised lifecycle uses only fake launchctl ------------
 fresh
 rm -rf "$FAKECTL_STATE"; mkdir -p "$FAKECTL_STATE"
-out="$(TEST_SUPERVISOR=launchd run start 2>&1)"; rc=$?
+out="$(TEST_ROLE=worker TEST_SUPERVISOR=launchd run start 2>&1)"; rc=$?
 [ "$rc" = 0 ] && ok "launchd start: exit 0" || no "launchd start: exit 0 (got $rc)"
 calls="$(cat "$FAKECTL_STATE/calls" 2>/dev/null)"
 has "bootstrap gui/4242 $LPLIST" "$calls" "launchd start: bootstraps configured plist"
 has "kickstart -k gui/4242/com.jarvis.test" "$calls" "launchd start: kickstarts service"
 [ ! -f "$STATE/bot.pid" ] && ok "launchd start: no local bot process/pidfile" || no "launchd start: no local pidfile"
-st="$(TEST_SUPERVISOR=launchd run status 2>&1)"
+st="$(TEST_ROLE=worker TEST_SUPERVISOR=launchd run status 2>&1)"
 has "RUNNING" "$st" "launchd status: parses fake launchctl state"
 has "pid 4242" "$st" "launchd status: reports launchd pid"
 : >"$FAKECTL_STATE/calls"
-out="$(TEST_SUPERVISOR=launchd run restart 2>&1)"; rc=$?
+out="$(TEST_ROLE=worker TEST_SUPERVISOR=launchd run restart 2>&1)"; rc=$?
 [ "$rc" = 0 ] && ok "launchd restart: exit 0" || no "launchd restart: exit 0 (got $rc)"
 calls="$(cat "$FAKECTL_STATE/calls")"
 has "enable gui/4242/com.jarvis.test" "$calls" "launchd restart: keeps service enabled"
 has "kickstart -k gui/4242/com.jarvis.test" "$calls" "launchd restart: replaces running process"
 hasnot "bootout gui/4242/com.jarvis.test" "$calls" "launchd restart: keeps service registered"
-out="$(TEST_SUPERVISOR=launchd run stop 2>&1)"; rc=$?
+out="$(TEST_ROLE=worker TEST_SUPERVISOR=launchd run stop 2>&1)"; rc=$?
 [ "$rc" = 0 ] && ok "launchd stop: exit 0" || no "launchd stop: exit 0 (got $rc)"
-st="$(TEST_SUPERVISOR=launchd run status 2>&1)"
+st="$(TEST_ROLE=worker TEST_SUPERVISOR=launchd run status 2>&1)"
 has "STOPPED" "$st" "launchd status: reports stopped after bootout"
 
 # --- T15: installer renders absolute plist and converges idempotently -------

@@ -10,8 +10,8 @@
 #     (自动派发+各调度器照常, 卡片/播报落 bot.log; 配好凭证后 run.sh restart 即回全功能)。
 #   · nohup 守护 + 写 pidfile, 启动后自检(进程仍活 + 日志首行非 ERROR), 失败退非零并打印日志尾。
 # stop 优雅停止: 发 SIGTERM → bot 自身 SIGTERM handler 收尾在跑 worker 并 release
-#   其已认领工单；超时保留 SIGKILL 兜底。新 Scheduler 由 scheduler.sh
-#   独立管理，不属于本脚本的生命周期。
+#   其已认领工单；scheduler 角色会先 drain 已准入 Job，再停止执行器；drain 超时
+#   则拒绝替换，避免打断已准入的周期任务。
 #
 # 依赖 F 线 JARVIS_NO_DINGTALK(bridge 降级模式, 分支 worktree-f3-nodingtalk / MR-4)。若该能力
 # 尚未合并, 缺凭证时旧 bot 会忽略 flag、因缺凭证退 2 —— 本脚本的启动自检会如实报错并提示先合 MR-4。
@@ -45,6 +45,10 @@ LOG="$STATE_DIR/bot.log"
 BOOTSTRAP_ENV="${JARVIS_BRIDGE_BOOTSTRAP_ENV:-$REPO_ROOT/bootstrap/.env}"
 BRIDGE_ENV="${JARVIS_BRIDGE_ENV:-$SCRIPT_DIR/jarvis.env}"
 START_WAIT="${JARVIS_BRIDGE_START_WAIT:-2}"
+SCHEDULER_PIDFILE="$STATE_DIR/scheduler.pid"
+SCHEDULER_LOG="$STATE_DIR/scheduler.log"
+SCHEDULER_READY_WAIT="${JARVIS_SCHEDULER_READY_WAIT:-30}"
+SCHEDULER_DRAIN_WAIT="${JARVIS_SCHEDULER_DRAIN_TIMEOUT_SECONDS:-600}"
 say()  { printf '%s\n' "$*"; }
 err()  { printf '%s\n' "$*" >&2; }
 
@@ -104,6 +108,85 @@ _resolve_paths_by_role() {
       return 2 ;;
   esac
   return 0
+}
+
+_scheduler_enabled() { [ "${JARVIS_BRIDGE_ROLE:-scheduler}" = "scheduler" ]; }
+
+_scheduler_read_pid() {
+  [ -f "$SCHEDULER_PIDFILE" ] || return 1
+  local p; p="$(cat "$SCHEDULER_PIDFILE" 2>/dev/null || true)"
+  [ -n "$p" ] || return 1
+  printf '%s' "$p"
+}
+
+_scheduler_running_pid() {
+  local p; p="$(_scheduler_read_pid)" || return 1
+  _alive "$p" && { printf '%s' "$p"; return 0; }
+  return 1
+}
+
+_scheduler_validate() {
+  _scheduler_enabled || return 0
+  PYTHONPATH="$SCRIPT_DIR:$REPO_ROOT${PYTHONPATH:+:$PYTHONPATH}" "$PYTHON" -c '
+from scheduler.registry import REGISTRY
+if not REGISTRY.scheduler_job_keys():
+    raise SystemExit("scheduler registry is empty")
+' || return $?
+  if [ -z "${JARVIS_CONTROL_PLANE_TOKEN:-}" ] && [ -z "${JARVIS_HTML_REPORT_TOKEN:-}" ]; then
+    err "scheduler control-plane token is required"
+    return 2
+  fi
+}
+
+_scheduler_start() {
+  _scheduler_enabled || return 0
+  local pid i=0 deadline=$(( SCHEDULER_READY_WAIT * 10 ))
+  if pid="$(_scheduler_running_pid)"; then
+    say "scheduler 已在运行 (pid $pid)"
+    return 0
+  fi
+  rm -f "$SCHEDULER_PIDFILE"
+  _scheduler_validate || return $?
+  mkdir -p "$STATE_DIR"
+  nohup "$PYTHON" "$SCRIPT_DIR/main.py" >>"$SCHEDULER_LOG" 2>&1 &
+  pid=$!
+  printf '%s\n' "$pid" >"$SCHEDULER_PIDFILE"
+  while [ "$i" -lt "$deadline" ]; do
+    _alive "$pid" || { err "scheduler 启动失败"; tail -n 20 "$SCHEDULER_LOG" >&2; rm -f "$SCHEDULER_PIDFILE"; return 1; }
+    if grep -F "Scheduler READY pid=$pid " "$SCHEDULER_LOG" >/dev/null 2>&1; then
+      say "scheduler 已启动 (pid $pid, log=$SCHEDULER_LOG)"
+      return 0
+    fi
+    sleep 0.1; i=$((i + 1))
+  done
+  err "scheduler 未在 ${SCHEDULER_READY_WAIT}s 内 READY"
+  return 1
+}
+
+_scheduler_stop() {
+  _scheduler_enabled || return 0
+  local pid i=0 deadline=$(( SCHEDULER_DRAIN_WAIT * 10 ))
+  pid="$(_scheduler_read_pid)" || { say "scheduler 未运行"; return 0; }
+  _alive "$pid" || { rm -f "$SCHEDULER_PIDFILE"; say "scheduler 已停止"; return 0; }
+  kill -TERM "$pid"
+  say "scheduler 正在 drain (pid $pid, 宽限 ${SCHEDULER_DRAIN_WAIT}s)"
+  while [ "$i" -lt "$deadline" ] && _alive "$pid"; do sleep 0.1; i=$((i + 1)); done
+  if _alive "$pid"; then
+    err "scheduler 仍有已准入 Job 未完成；保持当前进程，不停止 bridge。"
+    return 1
+  fi
+  rm -f "$SCHEDULER_PIDFILE"
+  say "scheduler 已停止 (graceful)"
+}
+
+_scheduler_status() {
+  _scheduler_enabled || return 0
+  local pid
+  if pid="$(_scheduler_running_pid)"; then
+    say "scheduler: RUNNING (pid $pid, log=$SCHEDULER_LOG)"
+  else
+    say "scheduler: STOPPED"
+  fi
 }
 
 # -- env sourcing (variables auto-exported for the bot) --------------------
@@ -408,6 +491,11 @@ cmd_start() {
   esac
 
   say "bridge 已启动 (pid $newpid, mode=$mode)。日志: $LOG"
+  if ! _scheduler_start; then
+    err "scheduler 启动失败；回滚刚启动的 bridge executor。"
+    _stop_bridge_only >/dev/null 2>&1 || true
+    return 1
+  fi
   return 0
 }
 
@@ -422,7 +510,7 @@ cmd_watchdog() {
   cmd_start
 }
 
-cmd_stop() {
+_stop_bridge_only() {
   local pid stop_wait
   stop_wait="$(_bridge_stop_wait)"
   # Operator-intent sentinel: `run.sh stop` means STAY stopped. The cron
@@ -456,6 +544,11 @@ cmd_stop() {
   return 0
 }
 
+cmd_stop() {
+  _scheduler_stop || return $?
+  _stop_bridge_only
+}
+
 cmd_restart() { cmd_stop || return $?; cmd_start; }
 
 cmd_status() {
@@ -469,6 +562,7 @@ cmd_status() {
     say "  log:     $LOG"
     say "  --- 最近 5 行日志 ---"
     _tail_log 5
+    _scheduler_status
     return 0
   fi
   if [ -f "$PIDFILE" ]; then
@@ -476,6 +570,7 @@ cmd_status() {
   else
     say "bridge: STOPPED  (无 pidfile)"
   fi
+  _scheduler_status
   return 0
 }
 
@@ -485,6 +580,10 @@ cmd_logs() {
   say "实时跟随:  tail -f \"$LOG\""
   say "--- 最近 20 行 ---"
   _tail_log 20
+  if _scheduler_enabled; then
+    say "--- scheduler 最近 20 行 ($SCHEDULER_LOG) ---"
+    tail -n 20 "$SCHEDULER_LOG" 2>/dev/null || true
+  fi
   return 0
 }
 
@@ -503,7 +602,22 @@ cmd_daemon() {
   local mode
   if _decide_mode; then mode="full"; else mode="degraded"; fi
   say "bridge foreground daemon 启动 (mode=$mode, role=${JARVIS_BRIDGE_ROLE:-scheduler}, pid=$$): $PYTHON $BOT"
-  exec "$PYTHON" "$BOT"
+  if ! _scheduler_enabled; then
+    exec "$PYTHON" "$BOT"
+  fi
+  _scheduler_start || return $?
+  "$PYTHON" "$BOT" &
+  local bot_pid=$!
+  _daemon_shutdown() {
+    _scheduler_stop || return $?
+    kill -TERM "$bot_pid" 2>/dev/null || true
+    wait "$bot_pid" 2>/dev/null || true
+  }
+  trap '_daemon_shutdown; exit 0' TERM INT
+  wait "$bot_pid"
+  local rc=$?
+  _scheduler_stop || return $?
+  return "$rc"
 }
 
 usage() {

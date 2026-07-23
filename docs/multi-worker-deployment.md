@@ -26,9 +26,8 @@ multiple hosts by splitting the bridge into two roles.
                                      total = 5 + N×3 slots
 ```
 
-**Scheduler role** — runs both `bridge/run.sh start` (Task executor) and
-`bridge/scheduler.sh start` (the one `bridge-scheduler` Worker owning every
-periodic Job). Local business state (`.my-day/bridge/pr-watch.json`, event
+**Scheduler role** — runs `bridge/run.sh start`, which starts both the Task executor
+and the one `bridge-scheduler` Worker owning every periodic Job. Local business state (`.my-day/bridge/pr-watch.json`, event
 ledgers and claimed observations) is per-host and cannot be shared. **Exactly
 one host in the fleet runs scheduler.** The scheduler launcher rejects any
 role other than `JARVIS_BRIDGE_ROLE=scheduler` before it can register a Worker.

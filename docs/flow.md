@@ -5,8 +5,7 @@
 - `bootstrap/preflight.sh` 24h 闸门（install + verify），全绿才干活
 
 ## 1. 扫描与派发 (bridge)
-- `bridge/run.sh start` 常驻：只启动 `PersistenceExecutor`；scheduler 角色额外以
-  `bridge/scheduler.sh start` 运行全部周期 Job
+- `bridge/run.sh start` 是唯一入口：scheduler 角色同时启动 `PersistenceExecutor` 与全部周期 Job；worker 角色只启动执行器
 - `ExecutionRouter` 只按可恢复性分类：业务工单/重访/唤醒/PR 跟进 → `Task`；probe/本地检查/一次性命令 → `EphemeralJob`
 - `PersistenceExecutor` 从控制面 lease Task；`EphemeralExecutor` 执行本地一次性作业；两者共享 `CapacityManager` 与 `ExecutionRuntime`
 - Task 必须先进入控制面；控制面不可用时 fail-closed，不允许回退到本地无状态执行
