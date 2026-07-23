@@ -19,6 +19,9 @@ Usage:
   aone-fields.sh fill <workitem-id> <field-id>=<value> [<field-id>=<value> ...]
   aone-fields.sh auto-fill <workitem-id>
   aone-fields.sh preflight <workitem-id> [expected-project-id]
+  aone-fields.sh inspect <workitem-id> [expected-project-id]
+  aone-fields.sh apply <workitem-id> <expected-project-id> <expected-type-id> \
+    <expected-revision> <candidate-digest> <field-id>=<value> [...]
 EOF
 }
 
@@ -27,6 +30,24 @@ valid_id() {
         ""|*[![:alnum:]_.-]*) return 1 ;;
         *) return 0 ;;
     esac
+}
+
+sha256_24() {
+    if command -v shasum >/dev/null 2>&1; then
+        shasum -a 256 | awk '{print substr($1,1,24)}'
+    else
+        sha256sum | awk '{print substr($1,1,24)}'
+    fi
+}
+
+inspection_digest() {
+    local canonical
+    canonical="$(jq -S -c '{
+      missing:(.missing // []),
+      assignments:(.assignments // []),
+      unresolved:(.unresolved // [])
+    }')" || return 1
+    printf '%s' "$canonical" | sha256_24
 }
 
 normalize_options() {
@@ -221,6 +242,247 @@ preflight_result() {
 
 cmd="${1:-}"
 case "$cmd" in
+    inspect)
+        [ "$#" -eq 2 ] || [ "$#" -eq 3 ] || { usage; exit 2; }
+        workitem_id="$2"
+        expected_project="${3:-}"
+        valid_id "$workitem_id" || {
+            echo "aone-fields.sh: invalid workitem id '$workitem_id'" >&2
+            exit 2
+        }
+        [ -z "$expected_project" ] || valid_id "$expected_project" || {
+            echo "aone-fields.sh: invalid expected project id '$expected_project'" >&2
+            exit 2
+        }
+
+        if ! wi_json="$($A1 project workitem get "$workitem_id" -f json 2>/dev/null)"; then
+            jq -c -n --arg id "$workitem_id" \
+                '{status:"failed",errorType:"field_inspection_failed",
+                  failureReason:"workitem_lookup_error",workitemId:$id}'
+            exit 3
+        fi
+        project_id="$(workitem_value "$wi_json" space)"
+        type_id="$(workitem_value "$wi_json" workitemType)"
+        title="$(printf '%s' "$wi_json" | jq -r '
+            .title // ((.fields // []) |
+            map(select((.fieldIdentifier // .identifier // "") == "title")) |
+            .[0] | (.displayValue // .value // "")) // ""
+        ' 2>/dev/null)"
+        description="$(printf '%s' "$wi_json" | jq -r '
+            .description // .body // ((.fields // []) |
+            map(select((.fieldIdentifier // .identifier // "") == "description")) |
+            .[0] | (.displayValue // .value // "")) // ""
+        ' 2>/dev/null)"
+        revision="$(printf '%s' "$wi_json" | jq -r '
+            .modifiedAt // .modified // .gmtModified // .updatedAt //
+            .updateTime // .gmtModifiedAt // ""
+        ' 2>/dev/null)"
+        if [ -z "$project_id" ] || [ -z "$type_id" ]; then
+            jq -c -n --arg id "$workitem_id" --arg project "$project_id" \
+                --arg type "$type_id" \
+                '{status:"failed",errorType:"field_inspection_failed",
+                  failureReason:"context_lookup_error",workitemId:$id,
+                  project:$project,workitemType:$type}'
+            exit 3
+        fi
+        if [ -n "$expected_project" ] && [ "$project_id" != "$expected_project" ]; then
+            jq -c -n --arg id "$workitem_id" --arg project "$project_id" \
+                --arg type "$type_id" --arg expected "$expected_project" \
+                '{status:"failed",errorType:"field_inspection_failed",
+                  failureReason:"project_mismatch",workitemId:$id,
+                  project:$project,workitemType:$type,expectedProject:$expected}'
+            exit 3
+        fi
+        if ! missing_json="$(bash "$0" missing "$workitem_id")"; then
+            jq -c -n --arg id "$workitem_id" --arg project "$project_id" \
+                --arg type "$type_id" \
+                '{status:"failed",errorType:"field_inspection_failed",
+                  failureReason:"required_fields_lookup_error",workitemId:$id,
+                  project:$project,workitemType:$type}'
+            exit 3
+        fi
+        if [ "$(printf '%s' "$missing_json" | jq 'length')" -eq 0 ]; then
+            jq -c -n --arg id "$workitem_id" --arg project "$project_id" \
+                --arg type "$type_id" --arg revision "$revision" \
+                --arg title "$title" --arg description "$description" '
+                {
+                  status:"ready",errorType:null,workitemId:$id,project:$project,
+                  workitemType:$type,revision:$revision,title:$title,
+                  description:$description,missing:[],assignments:[],unresolved:[]
+                }'
+            exit 0
+        fi
+        policy="$(pool_policy "$project_id")"
+        if ! resolution="$(resolve_missing "$missing_json" "$policy" "$title")"; then
+            jq -c -n --arg id "$workitem_id" --arg project "$project_id" \
+                --arg type "$type_id" \
+                '{status:"failed",errorType:"field_inspection_failed",
+                  failureReason:"resolution_error",workitemId:$id,
+                  project:$project,workitemType:$type}'
+            exit 3
+        fi
+        assignments="$(printf '%s' "$resolution" | jq -c '.assignments')"
+        unresolved="$(printf '%s' "$resolution" | jq -c '.unresolved')"
+        jq -c -n --arg id "$workitem_id" --arg project "$project_id" \
+            --arg type "$type_id" --arg revision "$revision" \
+            --arg title "$title" --arg description "$description" \
+            --argjson missing "$missing_json" --argjson assignments "$assignments" \
+            --argjson unresolved "$unresolved" '
+            {
+              status:"repair_required",errorType:null,workitemId:$id,
+              project:$project,workitemType:$type,revision:$revision,
+              title:$title,description:$description,missing:$missing,
+              assignments:$assignments,unresolved:$unresolved
+            }'
+        ;;
+
+    apply)
+        [ "$#" -ge 7 ] || { usage; exit 2; }
+        workitem_id="$2"
+        expected_project="$3"
+        expected_type="$4"
+        expected_revision="$5"
+        expected_digest="$6"
+        valid_id "$workitem_id" || {
+            echo "aone-fields.sh: invalid workitem id '$workitem_id'" >&2
+            exit 2
+        }
+        valid_id "$expected_project" || {
+            echo "aone-fields.sh: invalid expected project id '$expected_project'" >&2
+            exit 2
+        }
+        valid_id "$expected_type" || {
+            echo "aone-fields.sh: invalid expected workitem type '$expected_type'" >&2
+            exit 2
+        }
+        case "$expected_digest" in
+            [0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]) ;;
+            *) echo "aone-fields.sh: invalid candidate digest" >&2; exit 2 ;;
+        esac
+        shift 6
+        requested='[]'
+        cfs_args=()
+        for spec in "$@"; do
+            case "$spec" in
+                *=*) field_id="${spec%%=*}"; value="${spec#*=}" ;;
+                *) echo "aone-fields.sh: invalid field assignment '$spec'" >&2; exit 2 ;;
+            esac
+            if ! valid_id "$field_id" || [ -z "$value" ]; then
+                echo "aone-fields.sh: invalid field assignment '$spec'" >&2
+                exit 2
+            fi
+            requested="$(printf '%s' "$requested" | jq -c \
+                --arg id "$field_id" --arg value "$value" \
+                '. + [{id:$id,value:$value}]')"
+            cfs_args+=(--cfs "$field_id=$value")
+        done
+        if [ "$(printf '%s' "$requested" | jq '[.[].id] | unique | length')" \
+                -ne "$(printf '%s' "$requested" | jq 'length')" ]; then
+            echo "aone-fields.sh: duplicate field assignment" >&2
+            exit 4
+        fi
+        if ! before="$(bash "$0" inspect "$workitem_id" "$expected_project")"; then
+            echo "aone-fields.sh: failed to inspect immediately before apply" >&2
+            exit 3
+        fi
+        if [ "$(printf '%s' "$before" | jq -r '.status')" != "repair_required" ]; then
+            echo "aone-fields.sh: workitem no longer requires the proposed repair" >&2
+            exit 3
+        fi
+        actual_type="$(printf '%s' "$before" | jq -r '.workitemType // ""')"
+        actual_revision="$(printf '%s' "$before" | jq -r '.revision // ""')"
+        actual_digest="$(printf '%s' "$before" | inspection_digest)"
+        if [ "$actual_type" != "$expected_type" ] \
+                || [ "$actual_revision" != "$expected_revision" ] \
+                || [ "$actual_digest" != "$expected_digest" ]; then
+            printf 'aone-fields.sh: repair snapshot drift: type=%s revision=%s digest=%s\n' \
+                "$actual_type" "$actual_revision" "$actual_digest" >&2
+            exit 3
+        fi
+        validation="$(jq -c -n --argjson before "$before" \
+            --argjson requested "$requested" '
+            def first_nonempty($values):
+              [$values[] | select(. != null) | tostring | select(length > 0)][0] // "";
+            def option_value:
+              first_nonempty([
+                .value, .Value, .identifier, .Identifier, .id, .Id,
+                .displayValue, .DisplayValue, .name, .Name, .path, .Path
+              ]);
+            ($before.missing | map({key:(.id|tostring),value:.}) | from_entries) as $fields |
+            ($before.missing | map(.id|tostring) | sort) as $expected |
+            ($requested | map(.id|tostring) | sort) as $actual |
+            {
+              complete:($expected == $actual),
+              illegal:[
+                $requested[] |
+                . as $row |
+                ($fields[$row.id].options // []) as $options |
+                select(($options | map(option_value) | index($row.value)) == null) |
+                {id:$row.id,value:$row.value}
+              ]
+            }
+        ')"
+        if [ "$(printf '%s' "$validation" | jq -r '.complete')" != "true" ] \
+                || [ "$(printf '%s' "$validation" | jq '.illegal | length')" -ne 0 ]; then
+            printf 'aone-fields.sh: assignments rejected by current candidate set: %s\n' \
+                "$validation" >&2
+            exit 4
+        fi
+        if ! update_output="$($A1 project workitem update "$workitem_id" \
+                "${cfs_args[@]}" 2>&1)"; then
+            printf 'aone-fields.sh: repair update failed: %s\n' "$update_output" >&2
+            exit 3
+        fi
+        if ! after="$(bash "$0" inspect "$workitem_id" "$expected_project")"; then
+            echo "aone-fields.sh: repair readback failed" >&2
+            exit 3
+        fi
+        if [ "$(printf '%s' "$after" | jq -r '.status')" != "ready" ]; then
+            printf 'aone-fields.sh: repair readback still blocked: %s\n' "$after" >&2
+            exit 3
+        fi
+        if ! actual_wi="$($A1 project workitem get "$workitem_id" -f json 2>/dev/null)"; then
+            echo "aone-fields.sh: canonical value readback failed" >&2
+            exit 3
+        fi
+        readback="$(jq -c -n --argjson wi "$actual_wi" \
+            --argjson requested "$requested" '
+            def ident: (.fieldIdentifier // .identifier // "" | tostring);
+            def actual_value:
+              if (.value != null and .value != "" and .value != [] and .value != {})
+              then (.value | tostring)
+              else (.displayValue // "" | tostring)
+              end;
+            (($wi.fields // []) |
+             map({key:ident,value:actual_value}) | from_entries) as $actual |
+            [$requested[] | {id:.id,value:($actual[.id] // "")}]
+        ')"
+        mismatches="$(jq -c -n --argjson requested "$requested" \
+            --argjson readback "$readback" '
+            ($readback | map({key:.id,value:.value}) | from_entries) as $actual |
+            [$requested[] | select(($actual[.id] // "") != .value) |
+             {id:.id,expected:.value,actual:($actual[.id] // "")}]
+        ')"
+        if [ "$(printf '%s' "$mismatches" | jq 'length')" -ne 0 ]; then
+            jq -c -n --arg id "$workitem_id" --arg project "$expected_project" \
+                --arg type "$expected_type" --arg revision "$expected_revision" \
+                --argjson assignments "$requested" --argjson readback "$readback" \
+                --argjson mismatches "$mismatches" '
+                {
+                  status:"failed",errorType:"field_apply_readback_mismatch",
+                  failureReason:"assignment_conflict_after_readback",
+                  workitemId:$id,project:$project,workitemType:$type,
+                  revision:$revision,assignments:$assignments,
+                  readback:$readback,mismatches:$mismatches,filled:true,
+                  missing:[],unresolved:[]
+                }'
+            exit 3
+        fi
+        printf '%s' "$after" | jq -c --argjson assignments "$requested" \
+            --argjson readback "$readback" \
+            '. + {assignments:$assignments,readback:$readback,filled:true}'
+        ;;
+
     missing)
         [ "$#" -eq 2 ] || { usage; exit 2; }
         workitem_id="$2"

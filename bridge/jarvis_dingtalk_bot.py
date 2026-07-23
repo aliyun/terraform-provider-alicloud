@@ -140,6 +140,12 @@ from jarvis_execution_runtime import (
     DEFAULT_EXECUTION_RUNTIME,
     DEFAULT_PROCESS_GUARDIAN,
 )
+from jarvis_field_repair import (
+    FIELD_REPAIR_KIND,
+    FieldRepairTransient,
+    FieldRepairWorker,
+    build_field_repair_envelope,
+)
 
 # The DingTalk SDK is only needed by the live WebSocket path in main(). Guard the
 # import so the module still loads for the hermetic test suite and --dry-run-once
@@ -3994,6 +4000,14 @@ class AoneScheduler:
         self.execution_router = (
             getattr(handler, "execution_router", None)
             or ExecutionRouter(logger=log))
+        self.field_repair_worker = (
+            getattr(handler, "field_repair_worker", None)
+            or FieldRepairWorker(
+                repo_root=REPO_ROOT,
+                client=getattr(self.execution_router, "client", None),
+                runtime=DEFAULT_EXECUTION_RUNTIME,
+                claude_bin=claude_bin(),
+            ))
         self.auto = os.environ.get("JARVIS_AUTO_DISPATCH", "1") != "0"
         self.interval = int(os.environ.get("JARVIS_SCAN_INTERVAL", "1800"))
         health_cfg = self._claim_health_config()
@@ -4884,11 +4898,25 @@ class AoneScheduler:
         terraform = _is_terraform_ticket(pool_key, title)
         tgt, ttype = broadcast_target(), broadcast_type()
         notify = _routine_notifier(self.handler)
-        preflight_ok, _preflight_result = _aone_preflight(
-            iid, pool_project, terraform=terraform)
-        if not preflight_ok:
-            return False, "preflight_validation_failed"
         envelope = self._envelope(item, context)
+        field_worker = getattr(self, "field_repair_worker", None)
+        if field_worker is None:
+            # Compatibility seam for narrow __new__-constructed test adapters.
+            # Live schedulers always receive FieldRepairWorker in __init__.
+            preflight_ok, _preflight_result = _aone_preflight(
+                iid, pool_project, terraform=terraform)
+            if not preflight_ok:
+                return False, "preflight_validation_failed"
+        else:
+            try:
+                inspection = field_worker.inspect(
+                    iid, pool_project, terraform=terraform)
+            except FieldRepairTransient:
+                return False, "field_inspection_failed"
+            if inspection["status"] == "repair_required":
+                repair = build_field_repair_envelope(
+                    inspection, envelope, source_revision=context["revision"])
+                return self.execution_router.enqueue(repair)
 
         def local_submit():
             if self.pool is None or self.handler is None:
@@ -8162,6 +8190,12 @@ class JarvisHandler(AsyncChatbotHandler):
 
         max_slots = int(os.environ.get("JARVIS_DISPATCH_MAX", "3"))
         self.execution_runtime = DEFAULT_EXECUTION_RUNTIME
+        self.field_repair_worker = FieldRepairWorker(
+            repo_root=REPO_ROOT,
+            client=self.task_client,
+            runtime=self.execution_runtime,
+            claude_bin=claude_bin(),
+        )
         self.capacity_manager = CapacityManager(max_slots)
         self.ephemeral_executor = EphemeralExecutor(
             max_workers=max_slots,
@@ -8361,6 +8395,26 @@ class JarvisHandler(AsyncChatbotHandler):
         project = str(payload.get("project") or "")
         terraform = bool(payload.get("terraform"))
         expected_comment_cursor = payload.get("expectedCommentCursor")
+        if kind == FIELD_REPAIR_KIND:
+            # This branch intentionally precedes _TaskAoneBookend.  The repair
+            # Session owns only field inspection/selection/apply and continuation
+            # upsert; it never claims, comments, tags, changes owner/status, or
+            # launches the normal business Agent.
+            worker = getattr(self, "field_repair_worker", None)
+            if worker is None:
+                raise RuntimeError("field repair worker is unavailable")
+            return worker.execute(payload, controller)
+        field_worker = getattr(self, "field_repair_worker", None)
+        if kind in TASK_BOOKEND_KINDS and field_worker is not None:
+            # Historical/restored business Tasks already own a lease/fence. Repair
+            # missing fields synchronously inside that ownership boundary, before
+            # _TaskAoneBookend and Agent launch. Starting another READY repair Task
+            # here would race the current RUNNING business Task across workers.
+            repair_result = field_worker.repair_only(
+                item_id, project, terraform=terraform,
+                controller=controller)
+            if repair_result.get("status") != "completed":
+                return repair_result
         # Executor owns the Aone bookend (B-proper: the run writes nothing to Aone; the
         # executor commits from this thread). A terraform reply/claim must be written as
         # terraform-rd; if that identity is not logged in, fail the Task CLOSED (retryable)
@@ -9047,15 +9101,6 @@ class JarvisHandler(AsyncChatbotHandler):
         project = str(project or "")
         item_id = str(item_id)
         source_type = "AONE" if item_id.isdigit() else "LOCAL"
-        if source_type == "AONE" and task_type == "ticket":
-            preflight_ok, _preflight_result = _aone_preflight(
-                item_id, project, terraform=terraform)
-            if not preflight_ok:
-                reason = "preflight_validation_failed"
-                self._quick_card(
-                    target, "🟠 工单 #%s 未派发（%s）。" % (item_id, reason),
-                    target_type)
-                return False, reason
         source_ref = (_source_ref_with_title(
                           {"aoneId": item_id, "projectId": project}, title)
                       if source_type == "AONE"
@@ -9077,6 +9122,41 @@ class JarvisHandler(AsyncChatbotHandler):
             target=target,
             targetType=target_type,
         )
+        if source_type == "AONE" and task_type == "ticket":
+            field_worker = getattr(self, "field_repair_worker", None)
+            if field_worker is None:
+                # Compatibility for narrow __new__ test adapters. Live handlers
+                # always have FieldRepairWorker.
+                preflight_ok, _preflight_result = _aone_preflight(
+                    item_id, project, terraform=terraform)
+                if not preflight_ok:
+                    reason = "preflight_validation_failed"
+                    self._quick_card(
+                        target, "🟠 工单 #%s 未派发（%s）。" % (
+                            item_id, reason),
+                        target_type)
+                    return False, reason
+            else:
+                try:
+                    inspection = field_worker.inspect(
+                        item_id, project, terraform=terraform)
+                except FieldRepairTransient:
+                    reason = "field_inspection_failed"
+                    self._quick_card(
+                        target, "🟠 工单 #%s 未派发（%s）。" % (
+                            item_id, reason),
+                        target_type)
+                    return False, reason
+                if inspection["status"] == "repair_required":
+                    repair = build_field_repair_envelope(
+                        inspection, envelope, source_revision=revision)
+                    ok, reason = self.execution_router.enqueue(repair)
+                    if not ok:
+                        self._quick_card(
+                            target, "🟠 工单 #%s 未派发（%s）。" % (
+                                item_id, reason),
+                            target_type)
+                    return ok, reason
 
         def local_submit():
             work = lambda: self._dispatch_bg(
