@@ -63,7 +63,56 @@
 9. State 差异和替换路径；
 10. 已知的 Provider 代码和 Schema 位置；
 11. 需要产品团队确认的问题；
-12. 后续排查使用的只读命令。
+12. 后续排查使用的只读命令；
+13. `template/main.tf` 的唯一完整 `hcl` fence；
+14. 使用同一 HCL 的在线 Terraform 预填链接；
+15. 交付包、fmt/init/validate、在线预览和平台状态。
+
+## 报告交付包契约
+
+默认交付 `REPORT.md`、`REPORT.html`、`template/main.tf`、`template/README.md`，init 生成
+lockfile 时保留 `template/.terraform.lock.hcl`。禁止交付 `.terraform/`、plan、state/backup、
+原始 TF_LOG、crash log、tfvars、凭据、可执行 HTML、base64 或 data URI。
+
+安全扫描覆盖包内所有 UTF-8 文本，包括 `.txt`。JSON/HCL/YAML/Shell 中
+`accessKeyId`、`accessKeySecret`、`api_token` 等字段只在带有实际值时判为凭据；仅列举字段名
+的文档允许通过。HTML 检查先解码 entity，`java&#x73;cript:`、编码后的 `on*=` 等仍须拒绝。
+
+`template/main.tf` 是唯一 HCL 源，必须以 UTF-8 换行结束。`REPORT.md` 只能有一个完整
+`hcl` fence；`REPORT.html` 只能有一个 `language-hcl` code block；两者解码后都必须与
+`main.tf` 字节相同。`profile` 变量固定为：
+
+```hcl
+variable "profile" {
+  type     = string
+  default  = null
+  nullable = true
+}
+```
+
+凭据只通过 `TF_VAR_profile` 或本地 CLI Profile 传入。
+
+在线链接必须使用固定 query、同一 13 位时间戳两次，并令 `params` 精确等同 Java
+`URLEncoder.encode(mainTf, UTF_8).replace("+", "%20")`。不得双重编码。链接只预填代码，
+不执行 Terraform。
+
+## 验证和平台状态
+
+用 `scripts/validate-report-package.py` 统一执行安全扫描、字节/URL/profile 校验，以及
+`terraform fmt -check -recursive`、隔离 `init -backend=false -input=false -no-color`、
+`validate -no-color`。退出码 `0` 为通过，`2` 为确定性错误，`3` 为外部或平台阻塞。
+Terraform 子进程只接收 PATH、locale、代理/证书、临时目录等白名单环境以及新建的隔离
+HOME/TF_DATA_DIR；禁止继承 `TF_CLI_ARGS*`、`TF_VAR_*` 和任何云凭据。
+
+在线预览记录必须包含 `success=true`、`status=uploaded`、`reportId` 和只读
+`/reports/aone/.../view` 路由；要求在线交付时，再用匿名 GET 验证 HTTP 200、`text/html`、
+标题、完整 HCL 和至少一个非空用户 marker。绝对 `url` 的 scheme/host/port 必须等于
+`--preview-origin`，原始 path 必须逐字等于 `viewUrl`，且禁止 userinfo、query、fragment、
+百分号编码和重定向。GET 禁止携带 Authorization/Cookie。HTTP preview origin 只允许本机
+loopback 测试。
+
+报告 HTML 必须为零脚本静态文档。Viewer 复制能力归 AutomationAgent 平台，当前状态记录为
+`platform_blocked`；不得用 `<script>`、`<button>`、`on*=` 或其他上传内容绕过。
 
 ## 结论约束
 

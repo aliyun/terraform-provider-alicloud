@@ -30,9 +30,9 @@ Default target is preprod: `https://pre-agent.aliyun-inc.com`.
 
 ## Token Handling
 
-Uploads use `Authorization: Bearer $JARVIS_HTML_REPORT_TOKEN` when the variable is set. The helper also loads missing variables from `bootstrap/.env`, which is gitignored.
+Uploads require `Authorization: Bearer $JARVIS_HTML_REPORT_TOKEN`. The helper also loads missing variables from `bootstrap/.env`, which is gitignored.
 
-Never commit the plaintext token to tracked files, skill files, tests, or Aone comments. If the token is missing, ask for it to be configured in the environment or gitignored `bootstrap/.env`; do not fall back to personal browser cookies or a personal BUC session for this server-token upload path.
+Never commit the plaintext token to tracked files, skill files, tests, or Aone comments. If the token is missing, the helper must return exit code `3`; JSONL mode emits `success:false,status:blocked,code:missing_token` before any curl or Aone call. Ask for it to be configured in the environment or gitignored `bootstrap/.env`; do not fall back to personal browser cookies or a personal BUC session for this server-token upload path.
 
 ## Image Handling (WAF constraint)
 
@@ -65,6 +65,15 @@ Credential boundary: HTML report upload only relies on `JARVIS_HTML_REPORT_TOKEN
 
 Keep screenshots reasonably compressed (e.g. `sips -Z 900 -s format jpeg`). Text/tables/CSS in the HTML are fine; only base64 image blobs trip the gate.
 
+## Executable HTML and Viewer boundary
+
+Upload only static HTML. Any inline script, including a local-only copy button, can be rejected by
+the pre-agent WAF with `rgv587_flag:sm`. Do not add `<script>`, `<button>`, `on*=`,
+`javascript:` or other executable markup, and **禁止规避** or disguise the WAF signature.
+
+Viewer-side HCL copy is owned by the AutomationAgent app/viewer. Until the platform implements it,
+record `viewer_copy=platform_blocked`; do not emulate the feature inside uploaded HTML.
+
 ## Workflows
 
 For a local report:
@@ -96,6 +105,12 @@ The returned review link must be the public readonly route:
 ```text
 /reports/aone/<aone-id>/<report-id>/view
 ```
+
+The helper rejects any mismatched `/buc/*` or other route. In JSONL mode a successful upload emits
+`success:true,status:uploaded` together with `reportId`, `viewUrl`, and the absolute `url`.
+Rejected, malformed, transport-failed, or wrong-route server responses are never echoed. JSONL mode
+emits a fixed `success:false,status:failed,code:<sanitized-code>` record so a reflected bearer token
+or backend detail cannot leak through stderr/stdout.
 
 If a viewer sees `{"error":"buc_required" ...}`, the shared link is probably a stale `/buc/*` URL or the deployed service is returning the wrong view route. Re-upload after the preprod fix or manually switch to the `/reports/aone/.../view` route only when the report id is known.
 

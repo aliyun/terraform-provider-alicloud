@@ -12,6 +12,9 @@ curl_log="$tmpdir/curl.log"
 a1_log="$tmpdir/a1.log"
 mkdir -p "$tmpbin"
 trap 'rm -rf "$tmpdir"' EXIT
+# Keep tests hermetic: do not source the machine-level Jarvis runtime token.
+export JARVIS_RUNTIME_CONFIG_LOADED=1
+export JARVIS_ROOT="$proj_root"
 
 PASS=0
 FAIL=0
@@ -48,7 +51,13 @@ echo "$@" >> "$CURL_LOG"
 target="${@: -1}"
 case "$target" in
   */api/reports/aone/*)
-    echo '{"success":true,"code":"SUCCESS","message":"成功","data":{"aoneId":"83843879","reportId":"rid-123","objectKey":"reports/aone/83843879/rid-123.html","viewUrl":"/reports/aone/83843879/rid-123/view","size":42}}'
+    if [ "${FAKE_REFLECT_TOKEN:-0}" = "1" ]; then
+      echo '{"success":false,"detail":"Authorization: Bearer test-token"}'
+    elif [ "${FAKE_BAD_VIEW_ROUTE:-0}" = "1" ]; then
+      echo '{"success":true,"code":"SUCCESS","message":"成功","data":{"aoneId":"FAKE_AONE_ID","reportId":"rid-123","objectKey":"reports/aone/FAKE_AONE_ID/rid-123.html","viewUrl":"/buc/reports/aone/FAKE_AONE_ID/rid-123/view","size":42}}'
+    else
+      echo '{"success":true,"code":"SUCCESS","message":"成功","data":{"aoneId":"FAKE_AONE_ID","reportId":"rid-123","objectKey":"reports/aone/FAKE_AONE_ID/rid-123.html","viewUrl":"/reports/aone/FAKE_AONE_ID/rid-123/view","size":42}}'
+    fi
     ;;
   *)
     echo "unexpected curl target: $target" >&2
@@ -110,69 +119,134 @@ make_fake_curl
 html="$tmpdir/report.html"
 printf '<html>ok</html>' > "$html"
 : > "$curl_log"
-output=$(CURL_LOG="$curl_log" JARVIS_CURL_BIN="$tmpbin/curl" \
-    bash "$proj_root/bootstrap/html-report-preview.sh" upload 83843879 "$html" --base-url https://pre.example 2>&1)
+output=$(CURL_LOG="$curl_log" JARVIS_CURL_BIN="$tmpbin/curl" JARVIS_HTML_REPORT_TOKEN="test-token" \
+    bash "$proj_root/bootstrap/html-report-preview.sh" upload FAKE_AONE_ID "$html" --base-url https://pre.example 2>&1)
 exit_code=$?
 echo "$output"
 if [ "$exit_code" -eq 0 ]; then assert_pass "upload exits 0"; else assert_fail "upload should exit 0, got $exit_code"; fi
-assert_contains "$output" "https://pre.example/reports/aone/83843879/rid-123/view" "upload prints absolute view URL"
+assert_contains "$output" "https://pre.example/reports/aone/FAKE_AONE_ID/rid-123/view" "upload prints absolute view URL"
 assert_file_contains "$curl_log" "file=@$html;type=text/html" "upload sends multipart file field"
-assert_file_contains "$curl_log" "https://pre.example/api/reports/aone/83843879" "upload posts to AutomationAgent server-token endpoint"
+assert_file_contains "$curl_log" "https://pre.example/api/reports/aone/FAKE_AONE_ID" "upload posts to AutomationAgent server-token endpoint"
 
-echo "=== Test 2: upload sends server token when configured ==="
+echo "=== Test 2: default base URL is pre-agent and JSONL records success state ==="
 : > "$curl_log"
 output=$(CURL_LOG="$curl_log" JARVIS_CURL_BIN="$tmpbin/curl" JARVIS_HTML_REPORT_TOKEN="test-token" \
-    bash "$proj_root/bootstrap/html-report-preview.sh" upload 83843879 "$html" --base-url https://pre.example 2>&1)
+    JARVIS_HTML_REPORT_BASE_URL="" \
+    bash "$proj_root/bootstrap/html-report-preview.sh" upload FAKE_AONE_ID "$html" --format jsonl 2>&1)
 exit_code=$?
 echo "$output"
 if [ "$exit_code" -eq 0 ]; then assert_pass "token upload exits 0"; else assert_fail "token upload should exit 0, got $exit_code"; fi
 assert_file_contains "$curl_log" "Authorization: Bearer test-token" "upload sends Authorization bearer token"
+assert_file_contains "$curl_log" "https://pre-agent.aliyun-inc.com/api/reports/aone/FAKE_AONE_ID" "default upload targets pre-agent"
+if jq -e '.success == true and .status == "uploaded" and .reportId == "rid-123" and .viewUrl == "/reports/aone/FAKE_AONE_ID/rid-123/view"' >/dev/null <<<"$output"; then
+    assert_pass "JSONL exposes uploaded status and readonly route"
+else
+    assert_fail "JSONL must expose success/uploaded/reportId/viewUrl (got: $output)"
+fi
 
-echo "=== Test 3: reject non-HTML before curl ==="
+echo "=== Test 3: missing token blocks before curl or Aone ==="
+: > "$curl_log"
+: > "$a1_log"
+output=$(CURL_LOG="$curl_log" A1_LOG="$a1_log" JARVIS_CURL_BIN="$tmpbin/curl" \
+    JARVIS_A1_BIN="$tmpbin/a1id" JARVIS_HTML_REPORT_TOKEN="" \
+    bash "$proj_root/bootstrap/html-report-preview.sh" upload FAKE_AONE_ID "$html" --format jsonl 2>&1)
+exit_code=$?
+echo "$output"
+if [ "$exit_code" -eq 3 ]; then assert_pass "missing token exits 3"; else assert_fail "missing token should exit 3, got $exit_code"; fi
+if jq -e '.success == false and .status == "blocked" and .code == "missing_token"' >/dev/null <<<"$output"; then
+    assert_pass "missing token emits structured blocked record"
+else
+    assert_fail "missing token JSONL contract mismatch (got: $output)"
+fi
+if [ ! -s "$curl_log" ] && [ ! -s "$a1_log" ]; then
+    assert_pass "missing token performs no curl or Aone call"
+else
+    assert_fail "missing token must not call curl/Aone"
+fi
+
+echo "=== Test 4: reject non-HTML before curl ==="
 txt="$tmpdir/report.txt"
 printf 'not html' > "$txt"
 : > "$curl_log"
-output=$(CURL_LOG="$curl_log" JARVIS_CURL_BIN="$tmpbin/curl" \
-    bash "$proj_root/bootstrap/html-report-preview.sh" upload 83843879 "$txt" --base-url https://pre.example 2>&1)
+output=$(CURL_LOG="$curl_log" JARVIS_CURL_BIN="$tmpbin/curl" JARVIS_HTML_REPORT_TOKEN="test-token" \
+    bash "$proj_root/bootstrap/html-report-preview.sh" upload FAKE_AONE_ID "$txt" --base-url https://pre.example 2>&1)
 exit_code=$?
 echo "$output"
 if [ "$exit_code" -ne 0 ]; then assert_pass "non-html exits nonzero"; else assert_fail "non-html should fail"; fi
 if [ ! -s "$curl_log" ]; then assert_pass "non-html does not call curl"; else assert_fail "non-html should not call curl (log: $(cat "$curl_log"))"; fi
 
-echo "=== Test 4: zip upload extracts all HTML members ==="
+echo "=== Test 5: zip upload extracts all HTML members ==="
 zip_path="$tmpdir/reports.zip"
 make_zip "$zip_path"
 : > "$curl_log"
-output=$(CURL_LOG="$curl_log" JARVIS_CURL_BIN="$tmpbin/curl" \
-    bash "$proj_root/bootstrap/html-report-preview.sh" upload 83843879 "$zip_path" --base-url https://pre.example 2>&1)
+output=$(CURL_LOG="$curl_log" JARVIS_CURL_BIN="$tmpbin/curl" JARVIS_HTML_REPORT_TOKEN="test-token" \
+    bash "$proj_root/bootstrap/html-report-preview.sh" upload FAKE_AONE_ID "$zip_path" --base-url https://pre.example 2>&1)
 exit_code=$?
 echo "$output"
 if [ "$exit_code" -eq 0 ]; then assert_pass "zip upload exits 0"; else assert_fail "zip upload should exit 0, got $exit_code"; fi
-upload_calls=$(grep -c "api/reports/aone/83843879" "$curl_log" || true)
+upload_calls=$(grep -c "api/reports/aone/FAKE_AONE_ID" "$curl_log" || true)
 if [ "$upload_calls" -eq 2 ]; then assert_pass "zip uploads two HTML files"; else assert_fail "zip should upload 2 HTML files, got $upload_calls"; fi
 assert_contains "$output" "report-a.html" "zip output includes first member label"
 assert_contains "$output" "report-b.htm" "zip output includes nested member label"
 
-echo "=== Test 5: from-aone uses latest attachment and can comment links back ==="
+echo "=== Test 6: from-aone uses latest attachment and can comment links back ==="
 make_fake_a1id
 : > "$curl_log"
 : > "$a1_log"
 output=$(A1_DOWNLOAD_FIXTURE="$zip_path" A1_LOG="$a1_log" CURL_LOG="$curl_log" \
 JARVIS_A1_BIN="$tmpbin/a1id" JARVIS_CURL_BIN="$tmpbin/curl" \
-    bash "$proj_root/bootstrap/html-report-preview.sh" from-aone 83843879 --base-url https://pre.example --comment 2>&1)
+JARVIS_HTML_REPORT_TOKEN="test-token" \
+    bash "$proj_root/bootstrap/html-report-preview.sh" from-aone FAKE_AONE_ID --base-url https://pre.example --comment 2>&1)
 exit_code=$?
 echo "$output"
 if [ "$exit_code" -eq 0 ]; then assert_pass "from-aone exits 0"; else assert_fail "from-aone should exit 0, got $exit_code"; fi
-assert_file_contains "$a1_log" "project workitem attachment list 83843879 -f json" "from-aone lists attachments"
-assert_file_contains "$a1_log" "project workitem attachment download 83843879 222" "from-aone downloads latest attachment"
-assert_file_contains "$a1_log" "project workitem comment create 83843879 -m" "from-aone comments when requested"
-assert_contains "$output" "https://pre.example/reports/aone/83843879/rid-123/view" "from-aone prints absolute preview URL"
+assert_file_contains "$a1_log" "project workitem attachment list FAKE_AONE_ID -f json" "from-aone lists attachments"
+assert_file_contains "$a1_log" "project workitem attachment download FAKE_AONE_ID 222" "from-aone downloads latest attachment"
+assert_file_contains "$a1_log" "project workitem comment create FAKE_AONE_ID -m" "from-aone comments when requested"
+assert_contains "$output" "https://pre.example/reports/aone/FAKE_AONE_ID/rid-123/view" "from-aone prints absolute preview URL"
 # Aone 评论渲染 quirk 契约:评论区按 markdown 渲染,可点击链接唯一格式 = [text](url)
 # (84307546 评论 124870464 四格式对照实测:裸 URL/HTML 锚均为死文本)
 if grep -Fq -- "](https://" "$a1_log"; then
     assert_pass "comment uses markdown [text](url) links (the only clickable form)"
 else
     assert_fail "comment must use markdown [text](url) links (a1 log: $(cat "$a1_log" 2>/dev/null))"
+fi
+
+echo "=== Test 7: reject a non-readonly viewer route ==="
+: > "$curl_log"
+output=$(CURL_LOG="$curl_log" JARVIS_CURL_BIN="$tmpbin/curl" JARVIS_HTML_REPORT_TOKEN="test-token" \
+    FAKE_BAD_VIEW_ROUTE=1 \
+    bash "$proj_root/bootstrap/html-report-preview.sh" upload FAKE_AONE_ID "$html" --base-url https://pre.example --format jsonl 2>&1)
+exit_code=$?
+echo "$output"
+if [ "$exit_code" -ne 0 ]; then
+    assert_pass "wrong viewer route is rejected"
+else
+    assert_fail "wrong viewer route must fail"
+fi
+
+echo "=== Test 8: sanitize a rejected response that reflects credentials ==="
+: > "$curl_log"
+output=$(CURL_LOG="$curl_log" JARVIS_CURL_BIN="$tmpbin/curl" JARVIS_HTML_REPORT_TOKEN="test-token" \
+    FAKE_REFLECT_TOKEN=1 \
+    bash "$proj_root/bootstrap/html-report-preview.sh" upload FAKE_AONE_ID "$html" \
+    --base-url https://pre.example --format jsonl 2>&1)
+exit_code=$?
+echo "$output"
+if [ "$exit_code" -ne 0 ]; then
+    assert_pass "reflected failure exits nonzero"
+else
+    assert_fail "reflected failure must fail"
+fi
+if jq -e '.success == false and .status == "failed" and .code == "upload_rejected"' >/dev/null <<<"$output"; then
+    assert_pass "reflected failure emits fixed sanitized JSON"
+else
+    assert_fail "reflected failure JSON contract mismatch (got: $output)"
+fi
+if grep -Fq -- "test-token" <<<"$output"; then
+    assert_fail "reflected failure leaked the token"
+else
+    assert_pass "reflected failure does not leak the token"
 fi
 
 echo ""

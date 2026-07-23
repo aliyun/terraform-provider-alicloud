@@ -29,7 +29,7 @@ load_env_defaults() {
 
 load_env_defaults
 
-DEFAULT_BASE_URL="${JARVIS_HTML_REPORT_BASE_URL:-https://agent.aliyun-inc.com}"
+DEFAULT_BASE_URL="${JARVIS_HTML_REPORT_BASE_URL:-https://pre-agent.aliyun-inc.com}"
 CURL_BIN="${JARVIS_CURL_BIN:-curl}"
 A1_BIN="${JARVIS_A1_BIN:-$jarvis_root/bin/a1id}"
 
@@ -40,14 +40,39 @@ Usage:
   bootstrap/html-report-preview.sh from-aone <aone-id> [--attachment-id ID|--all] [--base-url URL] [--comment] [--format markdown|jsonl]
 
 Defaults:
-  --base-url defaults to $JARVIS_HTML_REPORT_BASE_URL or https://agent.aliyun-inc.com
-  Set $JARVIS_HTML_REPORT_TOKEN to send Authorization: Bearer <token>.
+  --base-url defaults to $JARVIS_HTML_REPORT_BASE_URL or https://pre-agent.aliyun-inc.com
+  $JARVIS_HTML_REPORT_TOKEN is required for every upload.
   from-aone uploads the newest .html/.htm/.zip attachment unless --attachment-id or --all is set.
 EOF
 }
 
 die() {
     echo "html-report-preview: $*" >&2
+    exit 1
+}
+
+blocked_missing_token() {
+    local message
+    message="JARVIS_HTML_REPORT_TOKEN is required; no curl or Aone request was sent"
+    if [ "$output_format" = "jsonl" ]; then
+        jq -cn \
+            --arg message "$message" \
+            '{success:false,status:"blocked",code:"missing_token",message:$message}'
+    else
+        printf 'html-report-preview: blocked (missing_token): %s\n' "$message"
+    fi
+    exit 3
+}
+
+upload_failed() {
+    local code="$1"
+    if [ "$output_format" = "jsonl" ]; then
+        jq -cn \
+            --arg code "$code" \
+            '{success:false,status:"failed",code:$code,message:"HTML report upload failed"}'
+    else
+        printf 'html-report-preview: upload failed (%s)\n' "$code" >&2
+    fi
     exit 1
 }
 
@@ -201,18 +226,19 @@ upload_one() {
     local response
     local curl_args=(-fsS -X POST)
 
-    if [ -n "${JARVIS_HTML_REPORT_TOKEN:-}" ]; then
-        curl_args+=(-H "Authorization: Bearer $JARVIS_HTML_REPORT_TOKEN")
-    fi
+    curl_args+=(-H "Authorization: Bearer $JARVIS_HTML_REPORT_TOKEN")
 
     # WAF classification gate requires X-Request-Context header (pre-agent rgv587 Anti-Bot)
     local waf_header="${JARVIS_HTML_REPORT_WAF_HEADER:-rctx_a3f90b7e2d41c8f6}"
     curl_args+=(-H "X-Request-Context: $waf_header")
 
-    response="$("$CURL_BIN" "${curl_args[@]}" -F "file=@$file;type=text/html" "$endpoint")" \
-        || die "upload failed for $label"
-    if ! jq -e '.success == true and .data.viewUrl != null' >/dev/null <<<"$response"; then
-        die "upload failed for $label: $response"
+    if ! response="$("$CURL_BIN" "${curl_args[@]}" \
+        -F "file=@$file;type=text/html" "$endpoint" 2>/dev/null)"; then
+        upload_failed "transport_error"
+    fi
+    if ! jq -e '.success == true and .data.viewUrl != null' \
+        >/dev/null 2>&1 <<<"$response"; then
+        upload_failed "upload_rejected"
     fi
 
     local view_url report_id object_key size absolute_url
@@ -221,6 +247,10 @@ upload_one() {
     object_key="$(jq -r '.data.objectKey // ""' <<<"$response")"
     size="$(jq -r '.data.size // ""' <<<"$response")"
     absolute_url="$(join_url "$base_url" "$view_url")"
+    if [ -z "$report_id" ] ||
+       [ "$view_url" != "/reports/aone/$aone_id/$report_id/view" ]; then
+        upload_failed "invalid_view_route"
+    fi
 
     if [ "$output_format" = "jsonl" ]; then
         jq -cn \
@@ -230,7 +260,7 @@ upload_one() {
             --arg reportId "$report_id" \
             --arg objectKey "$object_key" \
             --arg size "$size" \
-            '{label:$label,url:$url,viewUrl:$viewUrl,reportId:$reportId,objectKey:$objectKey,size:$size}'
+            '{success:true,status:"uploaded",label:$label,url:$url,viewUrl:$viewUrl,reportId:$reportId,objectKey:$objectKey,size:$size}'
     else
         printf -- '- %s: %s\n' "$label" "$absolute_url"
     fi
@@ -338,6 +368,7 @@ case "$cmd" in
 esac
 
 is_safe_aone_id "$aone_id" || die "Aone ID format is invalid: $aone_id"
+[ -n "${JARVIS_HTML_REPORT_TOKEN:-}" ] || blocked_missing_token
 
 tmp_dir="$(mktemp -d)"
 links=()
