@@ -35,7 +35,13 @@ for skill in \
     "--acl private" \
     "oss sign" \
     "--timeout 15768000" \
-    "GET-signed URL"; do
+    "GET-signed URL" \
+    "rgv587_flag:sm" \
+    "inline script" \
+    "禁止规避" \
+    "platform_blocked" \
+    "never echoed" \
+    "success:false,status:failed"; do
     if ! grep -q -- "$term" "$skill"; then
       echo "html_report_preview_skill_sync_test: missing '$term' in $skill" >&2
       exit 1

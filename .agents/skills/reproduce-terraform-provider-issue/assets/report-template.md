@@ -1,5 +1,7 @@
 # {{TITLE}}
 
+<!-- TERRAFORM_REPRO_REPORT -->
+
 ## 1. 现场状态
 
 - 创建时间：`{{CREATE_WINDOW}}`
@@ -91,3 +93,21 @@
 ```bash
 {{READ_ONLY_COMMANDS}}
 ```
+
+## 14. 完整 Terraform HCL
+
+以下代码块必须由 `template/main.tf` 原样注入，作为报告和在线预填的唯一 HCL 来源。
+
+```hcl
+{{FULL_MAIN_TF}}
+```
+
+## 15. 在线预填与交付验证
+
+- 在线预填：[打开在线 Terraform 调试页]({{ONLINE_TERRAFORM_URL}})
+- 交付文件：`REPORT.md`、`REPORT.html`、`template/main.tf`、`template/README.md`
+- Lockfile：{{LOCKFILE_STATUS}}
+- 包校验：`{{PACKAGE_VALIDATION_STATUS}}`
+- 在线预览：{{PREVIEW_STATUS_AND_URL}}
+- Viewer 复制：`platform_blocked`（平台能力，报告 HTML 不注入复制脚本）
+- 验证 marker：`TERRAFORM_REPRO_REPORT`

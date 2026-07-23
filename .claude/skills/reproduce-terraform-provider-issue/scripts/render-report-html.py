@@ -36,13 +36,40 @@ FORBIDDEN_HTML_RE = re.compile(
     r"|(?:href|src)\s*=\s*['\"]?\s*javascript:",
     flags=re.IGNORECASE,
 )
+FORBIDDEN_RENDERED_HTML_RE = re.compile(
+    r"<\s*(?:script|iframe|object|embed|base|form|input|button)\b"
+    r"|\bon[a-z]+\s*="
+    r"|(?:href|src)\s*=\s*['\"]?\s*javascript:",
+    flags=re.IGNORECASE,
+)
+LANGUAGE_TAG_RE = re.compile(r"[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*")
+
+
+def decode_html_entities(value: str) -> str:
+    decoded = value
+    for _ in range(3):
+        candidate = html.unescape(decoded)
+        if candidate == decoded:
+            break
+        decoded = candidate
+    return decoded
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("input", type=Path)
     parser.add_argument("output", type=Path)
+    parser.add_argument(
+        "--lang",
+        default="zh-CN",
+        help="document language tag (default: zh-CN)",
+    )
     args = parser.parse_args()
+    if not LANGUAGE_TAG_RE.fullmatch(args.lang):
+        raise SystemExit(
+            "render-report-html: --lang must be a simple BCP-47 language tag"
+        )
+    language = html.escape(args.lang, quote=True)
 
     try:
         import markdown
@@ -52,9 +79,10 @@ def main() -> int:
         ) from error
 
     source = args.input.read_text(encoding="utf-8")
-    if re.search(r"data:image/[^;]+;base64,", source, flags=re.IGNORECASE):
+    decoded_source = decode_html_entities(source)
+    if re.search(r"data:image/[^;]+;base64,", decoded_source, flags=re.IGNORECASE):
         raise SystemExit("render-report-html: base64 images are forbidden by report WAF")
-    if FORBIDDEN_HTML_RE.search(source):
+    if FORBIDDEN_HTML_RE.search(decoded_source):
         raise SystemExit("render-report-html: executable HTML is forbidden in reports")
 
     title_match = re.search(r"^#\s+(.+)$", source, flags=re.MULTILINE)
@@ -65,7 +93,7 @@ def main() -> int:
         output_format="html5",
     )
     document = f"""<!doctype html>
-<html lang="zh-CN">
+<html lang="{language}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -75,8 +103,11 @@ def main() -> int:
 <body><main>{body}</main></body>
 </html>
 """
-    if "data:image" in document.lower():
+    decoded_document = decode_html_entities(document)
+    if "data:image" in decoded_document.lower():
         raise SystemExit("render-report-html: rendered HTML contains a base64 image")
+    if FORBIDDEN_RENDERED_HTML_RE.search(decoded_document):
+        raise SystemExit("render-report-html: rendered executable HTML is forbidden")
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(document, encoding="utf-8")
@@ -87,6 +118,7 @@ def main() -> int:
                 "bytes": len(document.encode("utf-8")),
                 "base64_images": 0,
                 "title": title,
+                "lang": args.lang,
             },
             ensure_ascii=False,
         )
