@@ -35,6 +35,7 @@ else
   PYTHON="python3"
 fi
 BOT="${JARVIS_BRIDGE_BOT:-$SCRIPT_DIR/jarvis_dingtalk_bot.py}"
+TASK_WORKER="${JARVIS_TASK_WORKER:-$SCRIPT_DIR/task_worker.py}"
 STATE_DIR="${JARVIS_BRIDGE_STATE_DIR:-$REPO_ROOT/.my-day/bridge}"
 # PIDFILE/LOG default to scheduler role; _resolve_paths_by_role() re-derives after
 # _source_env so JARVIS_BRIDGE_ROLE from env files applies. Worker role uses
@@ -49,6 +50,8 @@ SCHEDULER_PIDFILE="$STATE_DIR/scheduler.pid"
 SCHEDULER_LOG="$STATE_DIR/scheduler.log"
 SCHEDULER_READY_WAIT="${JARVIS_SCHEDULER_READY_WAIT:-30}"
 SCHEDULER_DRAIN_WAIT="${JARVIS_SCHEDULER_DRAIN_TIMEOUT_SECONDS:-600}"
+TASK_WORKER_PIDFILE="$STATE_DIR/task-worker.pid"
+TASK_WORKER_LOG="$STATE_DIR/task-worker.log"
 say()  { printf '%s\n' "$*"; }
 err()  { printf '%s\n' "$*" >&2; }
 
@@ -102,7 +105,7 @@ _resolve_paths_by_role() {
     scheduler)
       PIDFILE="$STATE_DIR/bot.pid";        LOG="$STATE_DIR/bot.log" ;;
     worker)
-      PIDFILE="$STATE_DIR/bot-worker.pid"; LOG="$STATE_DIR/bot-worker.log" ;;
+      PIDFILE="$TASK_WORKER_PIDFILE"; LOG="$TASK_WORKER_LOG" ;;
     *)
       err "unsupported JARVIS_BRIDGE_ROLE=$role (accept: scheduler|worker)"
       return 2 ;;
@@ -177,6 +180,76 @@ _scheduler_stop() {
   fi
   rm -f "$SCHEDULER_PIDFILE"
   say "scheduler 已停止 (graceful)"
+}
+
+_task_worker_read_pid() {
+  [ -f "$TASK_WORKER_PIDFILE" ] || return 1
+  local p; p="$(cat "$TASK_WORKER_PIDFILE" 2>/dev/null || true)"
+  [ -n "$p" ] || return 1
+  printf '%s' "$p"
+}
+
+_task_worker_running_pid() {
+  local p; p="$(_task_worker_read_pid)" || return 1
+  _alive "$p" && { printf '%s' "$p"; return 0; }
+  return 1
+}
+
+_task_worker_validate() {
+  if [ -z "${JARVIS_CONTROL_PLANE_TOKEN:-}" ] && [ -z "${JARVIS_HTML_REPORT_TOKEN:-}" ]; then
+    err "task worker control-plane token is required"
+    return 2
+  fi
+}
+
+_task_worker_start() {
+  local pid i=0 deadline=$(( SCHEDULER_READY_WAIT * 10 ))
+  if pid="$(_task_worker_running_pid)"; then
+    say "task worker 已在运行 (pid $pid)"
+    return 0
+  fi
+  rm -f "$TASK_WORKER_PIDFILE"
+  _task_worker_validate || return $?
+  mkdir -p "$STATE_DIR"
+  nohup "$PYTHON" "$TASK_WORKER" >>"$TASK_WORKER_LOG" 2>&1 &
+  pid=$!
+  printf '%s\n' "$pid" >"$TASK_WORKER_PIDFILE"
+  while [ "$i" -lt "$deadline" ]; do
+    _alive "$pid" || { err "task worker 启动失败"; tail -n 20 "$TASK_WORKER_LOG" >&2; rm -f "$TASK_WORKER_PIDFILE"; return 1; }
+    if grep -F "Task worker READY pid=$pid " "$TASK_WORKER_LOG" >/dev/null 2>&1; then
+      say "task worker 已启动 (pid $pid, log=$TASK_WORKER_LOG)"
+      return 0
+    fi
+    sleep 0.1; i=$((i + 1))
+  done
+  err "task worker 未在 ${SCHEDULER_READY_WAIT}s 内 READY"
+  return 1
+}
+
+_task_worker_stop() {
+  local pid i=0 stop_wait deadline
+  pid="$(_task_worker_read_pid)" || { say "task worker 未运行"; return 0; }
+  _alive "$pid" || { rm -f "$TASK_WORKER_PIDFILE"; say "task worker 已停止"; return 0; }
+  stop_wait="$(_bridge_stop_wait)"
+  deadline=$(( stop_wait * 10 ))
+  say "停止 task worker (pid $pid): 发 SIGTERM，宽限 ${stop_wait}s…"
+  kill -TERM "$pid"
+  while [ "$i" -lt "$deadline" ] && _alive "$pid"; do sleep 0.1; i=$((i + 1)); done
+  if _alive "$pid"; then
+    err "task worker 在 ${stop_wait}s 内未停止；保持进程以避免中断 Session。"
+    return 1
+  fi
+  rm -f "$TASK_WORKER_PIDFILE"
+  say "task worker 已停止 (graceful)"
+}
+
+_task_worker_status() {
+  local pid
+  if pid="$(_task_worker_running_pid)"; then
+    say "task worker: RUNNING (pid $pid, log=$TASK_WORKER_LOG)"
+  else
+    say "task worker: STOPPED"
+  fi
 }
 
 _scheduler_status() {
@@ -426,8 +499,19 @@ cmd_start() {
   # Human start = intent to run; clear the manual-stop sentinel so the cron
   # watchdog resumes its keep-alive duty.
   rm -f "$PIDFILE.manual-stop" 2>/dev/null || true
+  _source_env
+  # A worker host runs only the independently supervised Task worker.  It must
+  # never create a DingTalk listener or a SchedulerEngine process.
+  if [ "${JARVIS_BRIDGE_ROLE:-scheduler}" = "worker" ]; then
+    _task_worker_start
+    return $?
+  fi
   if pid="$(_running_pid)"; then
     say "bridge 已在运行 (pid $pid) — 无需重复 start。"
+    # The listener and durable worker have independent lifecycles.  A watchdog
+    # start must repair a missing worker without replacing the healthy bot.
+    _task_worker_start || return $?
+    _scheduler_start || return $?
     return 0
   fi
   unmanaged="$(_unmanaged_bot_pids)"
@@ -438,7 +522,6 @@ cmd_start() {
   fi
   [ -f "$PIDFILE" ] && rm -f "$PIDFILE"   # stale pidfile
 
-  _source_env
   mkdir -p "$STATE_DIR"
 
   local mode
@@ -491,8 +574,13 @@ cmd_start() {
   esac
 
   say "bridge 已启动 (pid $newpid, mode=$mode)。日志: $LOG"
+  if ! _task_worker_start; then
+    err "task worker 启动失败；回滚刚启动的 bridge。"
+    _stop_bridge_only >/dev/null 2>&1 || true
+    return 1
+  fi
   if ! _scheduler_start; then
-    err "scheduler 启动失败；回滚刚启动的 bridge executor。"
+    err "scheduler 启动失败；回滚刚启动的 bridge（task worker 保持运行以保护已租约 Session）。"
     _stop_bridge_only >/dev/null 2>&1 || true
     return 1
   fi
@@ -546,10 +634,23 @@ _stop_bridge_only() {
 
 cmd_stop() {
   _scheduler_stop || return $?
+  _task_worker_stop || return $?
   _stop_bridge_only
 }
 
-cmd_restart() { cmd_stop || return $?; cmd_start; }
+cmd_restart() {
+  _source_env
+  if [ "${JARVIS_BRIDGE_ROLE:-scheduler}" = "worker" ]; then
+    _task_worker_stop || return $?
+    _task_worker_start
+    return $?
+  fi
+  # Scheduler restarts intentionally leave the independent Task worker alive;
+  # this keeps its leased Sessions fenced to the same worker process.
+  _scheduler_stop || return $?
+  _stop_bridge_only || return $?
+  cmd_start
+}
 
 cmd_status() {
   local pid
@@ -563,6 +664,7 @@ cmd_status() {
     say "  --- 最近 5 行日志 ---"
     _tail_log 5
     _scheduler_status
+    _task_worker_status
     return 0
   fi
   if [ -f "$PIDFILE" ]; then
@@ -571,6 +673,7 @@ cmd_status() {
     say "bridge: STOPPED  (无 pidfile)"
   fi
   _scheduler_status
+  _task_worker_status
   return 0
 }
 
@@ -584,6 +687,8 @@ cmd_logs() {
     say "--- scheduler 最近 20 行 ($SCHEDULER_LOG) ---"
     tail -n 20 "$SCHEDULER_LOG" 2>/dev/null || true
   fi
+  say "--- task worker 最近 20 行 ($TASK_WORKER_LOG) ---"
+  tail -n 20 "$TASK_WORKER_LOG" 2>/dev/null || true
   return 0
 }
 
@@ -603,8 +708,9 @@ cmd_daemon() {
   if _decide_mode; then mode="full"; else mode="degraded"; fi
   say "bridge foreground daemon 启动 (mode=$mode, role=${JARVIS_BRIDGE_ROLE:-scheduler}, pid=$$): $PYTHON $BOT"
   if ! _scheduler_enabled; then
-    exec "$PYTHON" "$BOT"
+    exec "$PYTHON" "$TASK_WORKER"
   fi
+  _task_worker_start || return $?
   _scheduler_start || return $?
   "$PYTHON" "$BOT" &
   local bot_pid=$!

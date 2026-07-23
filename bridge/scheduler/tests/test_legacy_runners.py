@@ -11,9 +11,12 @@ from bridge.scheduler import (
     AdaptiveSchedule, HandlerRunner, IntervalSchedule, MisfirePolicy,
     ScheduledJobDefinition,
 )
-from bridge.scheduler.runners.legacy import (
-    AoneClaimHealthRunner, AoneScanRunner, PrWatchRunner, SchedulerRuntimeContext,
+from bridge.scheduler.runners.aone import (
+    AoneClaimHealthRunner, AoneRuntimeContext, AoneScanRunner,
 )
+from bridge.scheduler.runners.pr import PrWatchRunner, PrWatchRuntimeContext
+from bridge.scheduler.runners.nudge import DailyNudgeRunner, NudgeRuntimeContext
+from bridge.scheduler.runners import build_runners
 
 
 UTC = timezone.utc
@@ -48,7 +51,7 @@ class SchedulerRuntimeRunnerTests(unittest.TestCase):
                 context=context, pool=pool) or scanner,
         )
         client = object()
-        context = SchedulerRuntimeContext(
+        context = AoneRuntimeContext(
             task_client=client,
             repo_root=Path("/repo"),
             logger=logging.getLogger(__name__),
@@ -61,6 +64,92 @@ class SchedulerRuntimeRunnerTests(unittest.TestCase):
         self.assertTrue(context.no_dingtalk)
         self.assertIsNone(observed["pool"])
         self.assertIs(observed["context"], context)
+
+    def test_catalogue_registers_dedicated_aone_runners(self):
+        runners = build_runners(
+            logger=logging.getLogger(__name__),
+            task_client=object(),
+            worker_key="scheduler-test",
+            repo_root=Path("/repo"),
+        )
+
+        self.assertIsInstance(runners["aone.scan"], AoneScanRunner)
+        self.assertIsInstance(runners["aone.claim-health"], AoneClaimHealthRunner)
+
+    def test_nudge_context_runs_without_constructing_a_handler(self):
+        observed = {}
+
+        class NudgeJob:
+            enabled = True
+
+            def __init__(self, context):
+                observed["context"] = context
+
+            def run(self):
+                observed["runs"] = observed.get("runs", 0) + 1
+
+        context = NudgeRuntimeContext(
+            legacy_module=SimpleNamespace(_NudgeJob=NudgeJob))
+        runner = DailyNudgeRunner(
+            job_id="daily.nudge", context=context,
+            logger=logging.getLogger(__name__))
+
+        result = runner.run(
+            interval_definition("daily.nudge"), datetime.now(UTC))
+
+        self.assertEqual(result.status.value, "SUCCEEDED")
+        self.assertEqual(observed["runs"], 1)
+        self.assertIs(observed["context"], context)
+        self.assertIsNone(context.ephemeral_executor)
+        self.assertIsNone(context.execution_router)
+
+    def test_catalogue_registers_dedicated_nudge_runner(self):
+        runners = build_runners(
+            logger=logging.getLogger(__name__),
+            task_client=object(),
+            worker_key="scheduler-test",
+            repo_root=Path("/repo"),
+        )
+
+        self.assertIsInstance(runners["daily.nudge"], DailyNudgeRunner)
+
+    def test_pr_watch_context_constructs_no_handler_or_local_executor(self):
+        watcher = object()
+        observed = {}
+
+        class Router:
+            def __init__(self, *, client, logger):
+                observed["router"] = (client, logger)
+
+        module = SimpleNamespace(
+            ExecutionRouter=Router,
+            PrWatchScheduler=lambda context, pool: observed.update(
+                context=context, pool=pool) or watcher,
+        )
+        client = object()
+        context = PrWatchRuntimeContext(
+            task_client=client,
+            logger=logging.getLogger(__name__),
+            legacy_module=module,
+        )
+
+        self.assertIs(context.watcher, watcher)
+        self.assertIs(context.task_client, client)
+        self.assertIsNone(context.ephemeral_executor)
+        self.assertTrue(context.no_dingtalk)
+        self.assertFalse(hasattr(context, "handler"))
+        self.assertIsNone(observed["pool"])
+        self.assertIs(observed["context"], context)
+
+    def test_catalogue_registers_dedicated_pr_watch_runner(self):
+        runners = build_runners(
+            logger=logging.getLogger(__name__),
+            task_client=object(),
+            worker_key="scheduler-test",
+            repo_root=Path("/repo"),
+        )
+
+        self.assertIsInstance(runners["pr.watch"], PrWatchRunner)
 
     def test_aone_scan_runs_one_tick_without_starting_a_legacy_loop(self):
         scanner = SimpleNamespace(_tick_calls=0)
@@ -103,7 +192,7 @@ class SchedulerRuntimeRunnerTests(unittest.TestCase):
             _aone_event_flush=lambda: None,
             _dingtalk_event_flush=lambda: None,
         )
-        context = SimpleNamespace(prwatch=watcher, module=module)
+        context = SimpleNamespace(watcher=watcher, module=module)
         runner = PrWatchRunner(job_id="pr.watch", context=context,
                                logger=logging.getLogger(__name__))
         definition = ScheduledJobDefinition(

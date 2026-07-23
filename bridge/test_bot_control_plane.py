@@ -191,32 +191,16 @@ class HandlerWiringTest(unittest.TestCase):
             else:
                 os.environ[key] = value
 
-    def test_worker_capability_matches_fixed_task_types(self):
+    def test_handler_keeps_task_implementation_but_not_worker_process(self):
         client = object()
-        with mock.patch.object(bot, "_task_client_from_env", return_value=client), \
-                mock.patch.object(bot, "PersistenceExecutor", _FakePersistenceExecutor):
+        with mock.patch.object(bot, "_task_client_from_env", return_value=client):
             handler = bot.JarvisHandler(no_dingtalk=True)
         self.assertIn("ticket", handler.execution_router.task_types)
         self.assertIn("wake", handler.execution_router.task_types)
         self.assertNotIn("probe", handler.execution_router.task_types)
-        self.assertIsNotNone(handler.persistence_executor)
-        self.assertEqual(_FakePersistenceExecutor.instances[-1].kwargs["capabilities"],
-                         {
-                             "kinds": sorted(handler.execution_router.task_types),
-                             "bridgeRole": "scheduler",
-                             "workerMode": "PERSISTENT",
-                             "client": "bridge",
-                         })
-        self.assertEqual(
-            _FakePersistenceExecutor.instances[-1].kwargs["lease_safety_margin"], 60)
-        self.assertEqual(
-            _FakePersistenceExecutor.instances[-1].kwargs["lease_seconds"], 660)
-        self.assertIs(_FakePersistenceExecutor.instances[-1].args[1],
-                      handler.ephemeral_executor.capacity_manager)
+        self.assertFalse(hasattr(handler, "persistence_executor"))
         self.assertIs(handler.execution_runtime,
                       handler.ephemeral_executor.execution_runtime)
-        self.assertTrue(callable(
-            _FakePersistenceExecutor.instances[-1].kwargs["progress"]))
         for obsolete in ("task_router", "local_worker", "dispatch_pool"):
             self.assertFalse(hasattr(handler, obsolete))
 
@@ -294,22 +278,6 @@ class HandlerWiringTest(unittest.TestCase):
 
         self.assertIn("access_key_secret=[REDACTED]", excerpt)
         self.assertNotIn("super-secret-value", excerpt)
-
-    def test_start_schedulers_starts_only_executor_after_periodic_cutover(self):
-        calls = []
-        handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
-        handler.persistence_executor = _Starter("worker", calls)
-        for name in ("scanner", "daily", "prwatch"):
-            setattr(handler, name, _Starter(name, calls))
-        handler.start_schedulers()
-        self.assertEqual(calls, ["worker"])
-
-    def test_stop_helper_forwards_drain_policy(self):
-        handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
-        worker = _FakePersistenceExecutor()
-        handler.persistence_executor = worker
-        self.assertTrue(handler.stop_persistence_executor(drain=True, timeout=7))
-        self.assertEqual(worker.stop_calls, [(True, 7)])
 
     def test_task_client_defaults_to_pre_and_requires_token(self):
         for key in self.ENV_KEYS:

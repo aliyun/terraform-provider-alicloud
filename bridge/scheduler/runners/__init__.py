@@ -22,12 +22,19 @@ from .daily_probe import (
     RUNNER_KEY as DAILY_PROBE_RUNNER_KEY,
     DailyProbeRunner,
 )
-from .legacy import (
+from .pr import (
+    PR_WATCH_RUNNER_KEY,
+    PrWatchRunner,
+    build_pr_watch_runners,
+)
+from .nudge import (
+    DAILY_NUDGE_RUNNER_KEY,
+    build_nudge_runners,
+)
+from .aone import (
     AONE_CLAIM_HEALTH_RUNNER_KEY,
     AONE_SCAN_RUNNER_KEY,
-    DAILY_NUDGE_RUNNER_KEY,
-    PR_WATCH_RUNNER_KEY,
-    build_legacy_runners,
+    build_aone_runners,
 )
 from .reply import (
     RUNNER_KEY as AONE_REPLY_RUNNER_KEY,
@@ -80,7 +87,13 @@ def build_runners(
             logger=logger,
         ),
     }
-    runners.update(build_legacy_runners(
+    runners.update(build_pr_watch_runners(
+        logger=logger,
+        task_client=task_client,
+        repo_root=repo_root,
+    ))
+    runners.update(build_nudge_runners(logger=logger))
+    runners.update(build_aone_runners(
         logger=logger,
         task_client=task_client,
         repo_root=repo_root,
@@ -103,6 +116,7 @@ __all__ = [
     "EXTERNAL_RECOVERY_RUNNER_KEY",
     "ExternalRecoveryRunner",
     "PR_WATCH_RUNNER_KEY",
+    "PrWatchRunner",
     "HANDLER_KEYS",
     "HEADLESS_BUILDER_PROTOCOLS",
     "RUNNER_KEYS",

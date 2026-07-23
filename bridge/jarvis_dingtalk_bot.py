@@ -131,7 +131,6 @@ try:
 except ModuleNotFoundError:  # bridge/run.sh executes this module from bridge/.
     from execution.wake import WakePersistence
     from execution.persistent_task import PersistentTaskExecution, stop_task_process
-from jarvis_persistence_executor import PersistenceExecutor
 from tata_dws_history import (
     DWS_USER_NOT_IN_GROUP,
     DwsGroupHistory,
@@ -2239,7 +2238,7 @@ class _TaskAoneBookend:
       * ``commit`` (writes_reply=True) writes the run's structured result exactly once —
         the single RD reply comment (terraform-rd for terraform lines, jarvis otherwise)
         then the terminal tag (done→finish / idle→release; suspend leaves it claimed for
-        the AoneReplyScheduler). ``release_idle`` (writes_reply=False, post-PR pr_ci_fix /
+        the scheduler-owned reply runner). ``release_idle`` (writes_reply=False, post-PR pr_ci_fix /
         pr_comment_reply) drops the claim to jarvis-idle on clean completion with no reply.
 
     Idempotency is per task generation: a same-generation crash/retry reuses the reply
@@ -2486,7 +2485,7 @@ class _TaskAoneBookend:
         durably enqueued (posted or pending→flush) before the terminal tag; a ledger I/O
         failure raises so the caller fails the Task closed (retryable) rather than
         stranding the reply. ``done``→finish (jarvis-done + pool done_status),
-        ``idle``→release (jarvis-idle), ``suspend``→leave claimed for the AoneReplyScheduler.
+        ``idle``→release (jarvis-idle), ``suspend``→leave claimed for the reply runner.
 
         Integrity flags (soft gate): if the result carries ``code_pushed`` or
         ``backfill_done`` as explicit False, warn but do not block — the hard gate
@@ -2510,7 +2509,7 @@ class _TaskAoneBookend:
                 "task reply comment not durably captured for #%s" % self.item_id)
         outcome = result.get("outcome")
         if outcome == "suspend" and not handed_off:
-            # Keep the claim for AoneReplyScheduler. Its wait cursor is the generation
+            # Keep the claim for the reply runner. Its wait cursor is the generation
             # baseline, so a comment racing after the pre-read is still observed.
             if not self.set_waiting_attention(result=result):
                 raise RuntimeError(
@@ -4014,8 +4013,6 @@ class AoneScheduler:
         self._source_status_after_task_id = 0
         self.pending = {}                # id -> item dict, awaiting authorization (fallback mode)
         self._lock = threading.Lock()    # guards self.pending
-        self._thread = None
-        self._claim_health_thread = None
         # iid -> {signature, first_seen}.  This is deliberately fail-safe and
         # process-local: a restart restarts corroboration instead of carrying a stale
         # suspicion into a new process.
@@ -4071,16 +4068,6 @@ class AoneScheduler:
             return ops
         except Exception:  # noqa: BLE001
             return set()
-
-    # -- public API ----------------------------------------------------------
-
-    def start(self):
-        self._thread = threading.Thread(target=self._loop, daemon=True, name="AoneScheduler")
-        self._thread.start()
-        self._claim_health_thread = threading.Thread(
-            target=self._claim_health_loop, daemon=True,
-            name="ClaimHealthScheduler")
-        self._claim_health_thread.start()
 
     def authorize(self, item_id):
         """Authorize a single pending item (fallback mode).  Returns the item dict or None."""
@@ -4926,41 +4913,6 @@ class AoneScheduler:
 
         return self.execution_router.enqueue(envelope, local_submit=local_submit)
 
-    # -- loop / tick ---------------------------------------------------------
-
-    def _loop(self):
-        while True:
-            try:
-                if not (REPO_ROOT / ".my-day" / "bridge" / "pause").exists():
-                    _aone_event_flush()
-                    _dingtalk_event_flush()
-                self._tick()
-            except Exception:  # noqa: BLE001 — never crash
-                log.exception("AoneScheduler tick failed; will retry next interval")
-            time.sleep(self.interval)
-
-    def _claim_health_loop(self):
-        """Run claim health independently from the 30-minute discovery cadence."""
-        while True:
-            started_at = time.monotonic()
-            try:
-                if not (REPO_ROOT / ".my-day" / "bridge" / "pause").exists():
-                    # Keep this cache separate from the discovery thread's human-gate
-                    # cache: resetting the shared dict here would race a scan tick.
-                    self._claim_health_activity_cache = {}
-                    snapshot = self._scan_claimed()
-                    if snapshot is not None:
-                        self._reconcile_stale_claims(snapshot)
-                    # Terraform events may be ledger-backed.  Flush both independent
-                    # channels on the health cadence so an alert does not wait for the
-                    # next discovery scan.
-                    _aone_event_flush()
-                    _dingtalk_event_flush()
-            except Exception:  # noqa: BLE001 — health reporting never stops discovery
-                log.exception("ClaimHealthScheduler tick failed; will retry")
-            elapsed = time.monotonic() - started_at
-            time.sleep(max(1, self.claim_health_interval - elapsed))
-
     def _tick(self):
         """Scan the Aone pool union, diff against the previous snapshot; feed both new and
         externally-updated items into the dispatch decision (auto) / card (supervised).
@@ -5769,31 +5721,6 @@ class PrWatchScheduler:
         self._autoreg = os.environ.get("JARVIS_PRWATCH_AUTOREG", "1") == "1"
         self._last_autoreg_at = 0.0
         self._autoreg_warned = set()  # 已提示过「无法解析工单号」的 PR url，避免刷屏
-        self._thread = None
-
-    def start(self):
-        if not self.enabled:
-            log.info("PrWatchScheduler disabled (set JARVIS_PRWATCH_ENABLE=1 to enable)")
-            return
-        self._thread = threading.Thread(target=self._loop, daemon=True, name="PrWatchScheduler")
-        self._thread.start()
-
-    def _loop(self):
-        while True:
-            # Sleep first: 避免 bridge 重启冷启动时立刻对所有登记 PR 打 gh 造成风暴。
-            # 睡眠时长走 #3 双档：上轮有 active entry → 快档，否则慢档。
-            time.sleep(self._next_interval)
-            active = False
-            try:
-                # Flush 独立事件台账；即使对应 PR watch 条目已在上一轮摘除，pending
-                # 的 RD 更新仍会继续补偿。
-                _aone_event_flush()
-                _dingtalk_event_flush()
-                active = self._tick()
-            except Exception:  # noqa: BLE001 — never crash
-                log.exception("PrWatchScheduler tick failed; will retry next interval")
-            self._next_interval = self._active_interval if active else self.interval
-
     def _tick(self):
         """Returns True if any watched PR is active（CI 失败/pending）→ 下一轮走快档。"""
         # 运行时暂停闸：与 AoneScheduler 复用同一个 pause 标记。
@@ -6825,163 +6752,9 @@ class PrWatchScheduler:
             log.warning("PrWatchScheduler: escalate broadcast #%s failed: %s", tid, e)
 
 
-# AoneReplyScheduler comment-poll back-off tiers + control-plane suspend wait expiry (14 days).
-WAIT_TIERS = [
-    (30 * 60,       120),    # first 30 min: every 2 min
-    (2 * 3600,      600),    # 30 min–2 h:   every 10 min
-    (float('inf'),  1800),   # 2 h+:         every 30 min
-]
+# Control-plane suspend wait expiry (14 days). Comment polling is owned by
+# ``bridge.scheduler.runners.reply.ReplyRunner``.
 WAIT_EXPIRE_SEC = 14 * 24 * 3600  # 14 days
-
-
-class AoneReplyScheduler:
-    """Wake control-plane-owned Sessions from durable Aone wait conditions.
-
-    Single data source (control-plane ``list_pending_aone_reply_waits``), fixed period
-    (``JARVIS_MANAGED_WAIT_SENSOR_SEC``, default 30s). For each SUSPENDED+AONE_REPLY
-    session it polls that ticket's Aone comments (gradual back-off via WAIT_TIERS) and,
-    on a new human reply past the wait cursor, calls ``_wake`` to push SUSPENDED→READY.
-
-    The control plane is the only current-state authority.  ``_poll_state`` only
-    throttles Aone reads; losing it on bridge restart makes polling temporarily
-    more eager but cannot lose a wait or advance its durable cursor.
-    """
-
-    def __init__(self, handler):
-        self.handler = handler
-        self.interval = max(5, int(os.environ.get(
-            "JARVIS_MANAGED_WAIT_SENSOR_SEC", "30")))
-        self.page_size = max(1, min(500, int(os.environ.get(
-            "JARVIS_MANAGED_WAIT_PAGE_SIZE", "100"))))
-        self._poll_state = {}  # session id -> {first_seen, last_poll}
-        self._thread = None
-
-    def start(self):
-        self._thread = threading.Thread(
-            target=self._loop, daemon=True, name="AoneReplyScheduler")
-        self._thread.start()
-
-    def _loop(self):
-        while True:
-            try:
-                self._tick()
-            except Exception:  # noqa: BLE001
-                log.exception("AoneReplyScheduler tick failed")
-            time.sleep(self.interval)
-
-    @staticmethod
-    def _poll_interval(first_seen):
-        """Gradual back-off (WAIT_TIERS) keyed on how long the wait has been observed."""
-        age = time.time() - first_seen
-        for threshold, interval in WAIT_TIERS:
-            if age < threshold:
-                return interval
-        return WAIT_TIERS[-1][1]
-
-    def _fetch_comments(self, aone_id):
-        try:
-            r = subprocess.run(
-                [str(REPO_ROOT / "bin" / "a1id"), "--",
-                 "project", "workitem", "comment", "list", str(aone_id), "-f", "json"],
-                capture_output=True, text=True, timeout=30, cwd=str(REPO_ROOT))
-            return json.loads(r.stdout) if r.returncode == 0 else None
-        except Exception:  # noqa: BLE001
-            return None
-
-    def _list_waits(self):
-        after = 0
-        while True:
-            page = self.handler.task_client.list_pending_aone_reply_waits(
-                after_session_id=after, limit=self.page_size)
-            if not isinstance(page, dict) or not isinstance(page.get("items"), list):
-                raise ValueError("control plane pending wait page is invalid")
-            for item in page["items"]:
-                if isinstance(item, dict):
-                    yield item
-            if not page.get("hasMore"):
-                return
-            next_after = page.get("nextAfterSessionId")
-            try:
-                next_after = int(next_after)
-            except (TypeError, ValueError) as exc:
-                raise ValueError("control plane pending wait cursor is invalid") from exc
-            if next_after <= after:
-                raise ValueError("control plane pending wait cursor did not advance")
-            after = next_after
-
-    @staticmethod
-    def _comment_id(comment):
-        try:
-            return int(comment.get("id"))
-        except (AttributeError, TypeError, ValueError):
-            return None
-
-    def _tick(self):
-        now = time.time()
-        seen = set()
-        try:
-            waits = list(self._list_waits())
-        except Exception as exc:  # noqa: BLE001
-            # A 503, timeout, or malformed response leaves every wait untouched in
-            # the control plane.  The next tick reconstructs the complete set.
-            log.warning("AoneReplyScheduler list failed; will retry: %s", exc)
-            return
-        for item in waits:
-            task = item.get("task") if isinstance(item.get("task"), dict) else {}
-            session = (item.get("session")
-                       if isinstance(item.get("session"), dict) else {})
-            session_id = str(session.get("id") or "").strip()
-            aone_id = str(session.get("waitKey") or task.get("aoneId") or "").strip()
-            if not session_id or not aone_id.isdigit():
-                log.warning("AoneReplyScheduler ignored invalid wait task=%s session=%s",
-                            task.get("taskKey"), session_id or "<empty>")
-                continue
-            seen.add(session_id)
-            state = self._poll_state.setdefault(
-                session_id, {"first_seen": now, "last_poll": 0})
-            if now - state["last_poll"] < self._poll_interval(state["first_seen"]):
-                continue
-            state["last_poll"] = now
-            comments = self._fetch_comments(aone_id)
-            if comments is None:
-                continue
-            try:
-                baseline = int(session.get("waitCursor") or 0)
-            except (TypeError, ValueError):
-                baseline = 0
-            new_comments = []
-            for comment in comments:
-                cid = self._comment_id(comment)
-                creator = str(comment.get("creator") or "").strip()
-                content = str(comment.get("content") or "").strip()
-                if (cid is not None and cid > baseline
-                        and AoneScheduler._is_human_comment(creator, content)):
-                    new_comments.append(comment)
-            if not new_comments:
-                continue
-            new_comments.sort(key=lambda comment: self._comment_id(comment) or 0)
-            frozen = session.get("inputPayload")
-            if not isinstance(frozen, dict):
-                frozen = task.get("payload") if isinstance(task.get("payload"), dict) else {}
-            wake_context = {
-                "session_id": session.get("runtimeSessionId"),
-                "terraform": bool(frozen.get("terraform")),
-                "project": str(frozen.get("project") or
-                               (task.get("sourceRef") or {}).get("projectId") or ""),
-                "target": str(frozen.get("target") or broadcast_target()),
-                "target_type": str(frozen.get("targetType") or broadcast_type()),
-                "title": str(frozen.get("title") or
-                             (task.get("sourceRef") or {}).get("title") or ""),
-            }
-            log.info("AoneReplyScheduler: #%s session=%s got %d reply comment(s)",
-                     aone_id, session_id, len(new_comments))
-            if not self.handler._wake(aone_id, wake_context, new_comments):
-                log.warning("AoneReplyScheduler: wake #%s not durably accepted; will retry",
-                            aone_id)
-        # Entries absent from the complete control-plane snapshot are no longer
-        # waiting.  Removing only throttle metadata has no correctness effect.
-        for session_id in set(self._poll_state) - seen:
-            self._poll_state.pop(session_id, None)
 
 
 class EphemeralExecutor:
@@ -7309,7 +7082,6 @@ class DailyScheduler:
         job = _NudgeJob(handler, pool)
         self.jobs = [job] if job.enabled else []
         self._last_run = self._load_state()  # job.name -> last-run date iso
-        self._thread = None
 
     def _load_state(self):
         try:
@@ -7342,29 +7114,6 @@ class DailyScheduler:
         if now.hour != job.hour:
             return False
         return self._last_run.get(job.name) != now.date().isoformat()
-
-    def start(self):
-        if not self.jobs:
-            log.info("DailyScheduler disabled (no jobs enabled)")
-            return
-        self._thread = threading.Thread(target=self._loop, daemon=True, name="DailyScheduler")
-        self._thread.start()
-
-    def _loop(self):
-        while True:
-            for job in self.jobs:
-                try:
-                    if self._due(job):
-                        log.info("DailyScheduler: firing %s round", job.name)
-                        if job.run() is not False:
-                            self._mark_run(job)
-                        else:
-                            log.info("DailyScheduler: %s deferred (queue_full); retry next tick",
-                                     job.name)
-                except Exception:  # noqa: BLE001 — never crash
-                    log.exception("DailyScheduler job %s failed", job.name)
-            time.sleep(self.CHECK_INTERVAL)
-
 
 def _json_rows(value):
     if isinstance(value, list):
@@ -8142,35 +7891,8 @@ class JarvisHandler(AsyncChatbotHandler):
             broadcast_target=broadcast_target,
             broadcast_type=broadcast_type,
         )
-        self.persistence_executor = PersistenceExecutor(
-            self.task_client,
-            self.capacity_manager,
-            self.persistent_task_execution.execute,
-            lambda controller, reason: stop_task_process(controller, reason, logger=log),
-            worker_id_file=os.environ.get(
-                "JARVIS_WORKER_ID_FILE",
-                os.path.join(jarvis_root(), ".my-day", "bridge", "worker-id")),
-            capabilities={
-                "kinds": kinds,
-                "bridgeRole": os.environ.get("JARVIS_BRIDGE_ROLE", "scheduler"),
-                "workerMode": "PERSISTENT",
-                "client": "bridge",
-            },
-            lease_seconds=int(os.environ.get("JARVIS_LEASE_SECONDS", "660")),
-            lease_safety_margin=float(
-                os.environ.get("JARVIS_LEASE_SAFETY_MARGIN_SEC", "60")),
-            lease_interval=float(os.environ.get("JARVIS_LEASE_POLL_SEC", "2")),
-            worker_heartbeat_interval=float(
-                os.environ.get("JARVIS_WORKER_HEARTBEAT_SEC", "30")),
-            session_heartbeat_interval=float(
-                os.environ.get("JARVIS_SESSION_HEARTBEAT_SEC", "30")),
-            retry_interval=float(os.environ.get("JARVIS_CONTROL_PLANE_RETRY_SEC", "5")),
-            progress=lambda _lease, controller: _session_progress_excerpt(
-                controller.runtime_session_id),
-            logger=log,
-        )
-        # Remaining Scheduler-owned ticks are constructed here for the adapters in
-        # ``bridge/scheduler/runners/legacy.py``.  Their loops are never started
+        # Remaining Scheduler-owned domain objects are constructed for the dedicated
+        # runner adapters. Their loops are never started
         # by this process: SchedulerEngine owns the only cadence/admission path.
         self.scanner = AoneScheduler(self, self.ephemeral_executor)
         self.daily = DailyScheduler(self, self.ephemeral_executor)
@@ -8187,24 +7909,6 @@ class JarvisHandler(AsyncChatbotHandler):
                  self.ephemeral_executor.max_workers,
                  ",".join("%s@%s" % (j.name, j.hour) for j in self.daily.jobs) or "<none>",
                  sorted(self.execution_router.task_types))
-
-    def start_schedulers(self):
-        """Start only the durable Task executor.
-
-        All periodic jobs, including scheduler-role sensing and recovery work,
-        are owned by the same ``bridge/run.sh`` lifecycle.  Both roles
-        may run this executor; only ``JARVIS_BRIDGE_ROLE=scheduler`` may start
-        the SchedulerEngine entry point.
-        """
-        self.persistence_executor.start()
-        log.info("bridge role=%s: executor started; periodic jobs are owned by run.sh",
-                 os.environ.get("JARVIS_BRIDGE_ROLE", "scheduler"))
-
-    def stop_persistence_executor(self, *, drain=False, timeout=None):
-        """Stop the persistent Task executor once."""
-        if self.persistence_executor.stopped:
-            return True
-        return self.persistence_executor.stop(drain=drain, timeout=timeout)
 
     @staticmethod
     def _stop_task_process(controller, reason):
@@ -8317,7 +8021,7 @@ class JarvisHandler(AsyncChatbotHandler):
         enriched info (with the wait cursor); else None.
 
         Control-plane Task runs (``task_owned=True``) persist the SUSPENDED session via
-        their SessionController, and AoneReplyScheduler resumes them on the next Aone reply.
+        their SessionController, and the scheduler reply runner resumes them on the next Aone reply.
         The legacy interactive card path (``task_owned=False``, only reachable under
         JARVIS_HANDOFF_MODE=exec) surfaces the suspend on its card but is not durably
         auto-woken — re-delegate to resume. ``terraform`` persists the model 车道."""
@@ -9249,34 +8953,30 @@ def _release_claim(iid, project, terraform=False):
 
 
 def _stop_before_final_teardown(handler, *, context, timeout):
-    """Stop only legacy bridge executors; Scheduler owns its own process now."""
-    try:
-        return handler.stop_persistence_executor(drain=True, timeout=timeout)
-    except Exception as exc:  # noqa: BLE001
-        log.exception("%s PersistenceExecutor stop failed: %s", context, exc)
-        return False
+    """Task execution is owned by the independent task_worker process."""
+    del handler, context, timeout
+    return True
 
 
 def _run_no_dingtalk():
     """无钉钉降级模式启动(JARVIS_NO_DINGTALK=1 点火路径): 不建 DingTalk client/stream,
-    不初始化 TataPool; 只起 PersistenceExecutor。所有周期 Job 由独立的
-    ``bridge/run.sh`` 管理。
+    不初始化 TataPool; durable Task execution is handled by the separate
+    ``task_worker.py`` process. 所有周期 Job 由独立的 ``bridge/run.sh`` 管理。
     卡片/播报统一降级为 [BROADCAST] 日志行(→ bot.log); 入站 Tata 门面停用(无 stream)。
     阻塞至进程收到中断信号。"""
     log.warning("[NO-DINGTALK] 降级模式启动: 无 DingTalk client/stream/TataPool; "
                 "仅启动 Task executor，周期 Job 交由 run.sh；"
                 "卡片/播报 → [BROADCAST] 日志行; 入站 Tata 门面停用。")
     handler = JarvisHandler(no_dingtalk=True)
-    handler.start_schedulers()
-    log.info("[NO-DINGTALK] executor ready — 周期 Job 请通过 bridge/run.sh 管理; "
-             "卡片/播报以 [BROADCAST] 日志行落 bot.log。")
+    log.info("[NO-DINGTALK] bridge ready — Task executor is task_worker.py; "
+             "周期 Job 请通过 bridge/run.sh 管理; 卡片/播报以 [BROADCAST] 日志行落 bot.log。")
 
-    # 优雅停止(与全功能 main() 同款, 吸收 master f7f1f72): run.sh stop 发 SIGTERM → 整树杀在跑
-    # worker(进程组) + release 其已认领工单, 再退出。降级模式无 TataPool, 故不 shutdown pool。
+    # The durable worker has its own signal lifecycle.  This process only owns
+    # the no-DingTalk bridge dependencies and its ephemeral subprocesses.
     def _graceful_stop(signum, _frame):
         log.info("[NO-DINGTALK] signal %s received — graceful stop: kill workers + release claims", signum)
         try:
-            stopped = handler.stop_persistence_executor(drain=False)
+            stopped = True
         except Exception as e:  # noqa: BLE001
             log.exception("[NO-DINGTALK] PersistenceExecutor stop failed: %s", e)
             stopped = False
@@ -9343,13 +9043,12 @@ def main():
     client.register_callback_handler(ChatbotMessage.TOPIC, handler)
     if handler.pool is not None:
         handler.pool.prewarm()  # 预热 N 个 generic 常驻进程, 首批消息免冷启
-    handler.start_schedulers()
-    log.info("Bridge executor started; periodic jobs are owned by bridge/run.sh")
+    log.info("Bridge ready; Task executor and periodic jobs are owned by bridge/run.sh")
 
     def _graceful_stop(signum, _frame):
         log.info("signal %s received — graceful stop: kill workers + release claims", signum)
         try:
-            stopped = handler.stop_persistence_executor(drain=False)
+            stopped = True
         except Exception as e:  # noqa: BLE001
             log.exception("PersistenceExecutor stop failed: %s", e)
             stopped = False
