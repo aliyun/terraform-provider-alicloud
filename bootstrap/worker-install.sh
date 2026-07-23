@@ -508,6 +508,18 @@ ok "wrote $unit"
 # pidfile-guarded, so the watchdog is a no-op while the bridge is alive.
 # (RHEL7-lineage systemd doesn't kill user processes on logout by default,
 # so linger/cron only matter for boot autostart, not for ssh disconnect.)
+# Probe the per-user systemd instance FIRST: on some AliOS hosts it's absent
+# (no user D-Bus session — daemon-reload dies with 'Failed to get D-Bus
+# connection') while `loginctl enable-linger` still exits 0. Linger success
+# alone must not skip the cron fallback, and the reload must not kill the
+# install three lines before the finish line.
+user_mgr_ok=0
+if systemctl --user daemon-reload 2>/dev/null; then
+  user_mgr_ok=1
+  ok "systemctl --user daemon-reload done"
+else
+  warn "no per-user systemd/D-Bus — the unit file is inert on this host; cron watchdog manages the worker instead"
+fi
 linger_ok=0
 if command -v loginctl >/dev/null 2>&1; then
   if sudo loginctl enable-linger "$USER" 2>/dev/null; then
@@ -517,7 +529,7 @@ if command -v loginctl >/dev/null 2>&1; then
     warn "enable-linger failed (sudo blocked / needs root); installing crontab fallback"
   fi
 fi
-if [ "$linger_ok" = 0 ]; then
+if [ "$linger_ok" = 0 ] || [ "$user_mgr_ok" = 0 ]; then
   # AliOS minimal images ship without cronie — install it first (sudo yum is
   # on the command-control whitelist even where bare sudo isn't).
   if ! command -v crontab >/dev/null 2>&1; then
@@ -560,8 +572,6 @@ if [ "$linger_ok" = 0 ]; then
   # outside the session scope and the */10 watchdog resurrects it if needed.
   warn "no linger: prefer '$JARVIS_ROOT/bridge/run.sh start' over systemctl --user (the unit dies on your last logout; run.sh survives it)"
 fi
-systemctl --user daemon-reload
-ok "systemctl --user daemon-reload done"
 
 # ---------------------------------------------------------------------------
 step "Done · worker install complete"
