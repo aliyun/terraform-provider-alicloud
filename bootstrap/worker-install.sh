@@ -95,6 +95,27 @@ if command -v python3 >/dev/null 2>&1; then
   fi
 fi
 
+# Old (4.x) kernels on idle VMs can have a starved entropy pool — anything
+# needing seeded randomness (TLS handshakes, getrandom) then blocks, sometimes
+# indefinitely (the "RNDGETENTCNT ... will block until entropy is available"
+# spam seen mid-install). Kernels >= 5.6 never block. Seed a daemon when low.
+ent_avail=$(cat /proc/sys/kernel/random/entropy_avail 2>/dev/null || echo 9999)
+if [ "$ent_avail" -lt 500 ]; then
+  info "entropy pool low ($ent_avail); installing an entropy daemon"
+  sudo yum install -y haveged 2>/dev/null || sudo yum install -y rng-tools 2>/dev/null || true
+  sudo systemctl enable --now haveged 2>/dev/null \
+    || sudo systemctl enable --now rngd 2>/dev/null \
+    || sudo haveged -w 1024 2>/dev/null || true
+  sleep 2
+  ent_after=$(cat /proc/sys/kernel/random/entropy_avail 2>/dev/null || echo 0)
+  if [ "$ent_after" -lt 500 ]; then
+    warn "entropy still low ($ent_after) — steps needing randomness may stall;"
+    warn "fix the host's entropy source (haveged / rngd / host-side virtio-rng)"
+  else
+    ok "entropy pool seeded: $ent_avail → $ent_after"
+  fi
+fi
+
 # ---------------------------------------------------------------------------
 step "2. Install python3 (bridge needs 3.8+) and git if missing"
 have_py3() {
@@ -487,6 +508,18 @@ ok "wrote $unit"
 # pidfile-guarded, so the watchdog is a no-op while the bridge is alive.
 # (RHEL7-lineage systemd doesn't kill user processes on logout by default,
 # so linger/cron only matter for boot autostart, not for ssh disconnect.)
+# Probe the per-user systemd instance FIRST: on some AliOS hosts it's absent
+# (no user D-Bus session — daemon-reload dies with 'Failed to get D-Bus
+# connection') while `loginctl enable-linger` still exits 0. Linger success
+# alone must not skip the cron fallback, and the reload must not kill the
+# install three lines before the finish line.
+user_mgr_ok=0
+if systemctl --user daemon-reload 2>/dev/null; then
+  user_mgr_ok=1
+  ok "systemctl --user daemon-reload done"
+else
+  warn "no per-user systemd/D-Bus — the unit file is inert on this host; cron watchdog manages the worker instead"
+fi
 linger_ok=0
 if command -v loginctl >/dev/null 2>&1; then
   if sudo loginctl enable-linger "$USER" 2>/dev/null; then
@@ -496,7 +529,7 @@ if command -v loginctl >/dev/null 2>&1; then
     warn "enable-linger failed (sudo blocked / needs root); installing crontab fallback"
   fi
 fi
-if [ "$linger_ok" = 0 ]; then
+if [ "$linger_ok" = 0 ] || [ "$user_mgr_ok" = 0 ]; then
   # AliOS minimal images ship without cronie — install it first (sudo yum is
   # on the command-control whitelist even where bare sudo isn't).
   if ! command -v crontab >/dev/null 2>&1; then
@@ -539,8 +572,6 @@ if [ "$linger_ok" = 0 ]; then
   # outside the session scope and the */10 watchdog resurrects it if needed.
   warn "no linger: prefer '$JARVIS_ROOT/bridge/run.sh start' over systemctl --user (the unit dies on your last logout; run.sh survives it)"
 fi
-systemctl --user daemon-reload
-ok "systemctl --user daemon-reload done"
 
 # ---------------------------------------------------------------------------
 step "Done · worker install complete"
