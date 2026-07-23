@@ -95,6 +95,27 @@ if command -v python3 >/dev/null 2>&1; then
   fi
 fi
 
+# Old (4.x) kernels on idle VMs can have a starved entropy pool — anything
+# needing seeded randomness (TLS handshakes, getrandom) then blocks, sometimes
+# indefinitely (the "RNDGETENTCNT ... will block until entropy is available"
+# spam seen mid-install). Kernels >= 5.6 never block. Seed a daemon when low.
+ent_avail=$(cat /proc/sys/kernel/random/entropy_avail 2>/dev/null || echo 9999)
+if [ "$ent_avail" -lt 500 ]; then
+  info "entropy pool low ($ent_avail); installing an entropy daemon"
+  sudo yum install -y haveged 2>/dev/null || sudo yum install -y rng-tools 2>/dev/null || true
+  sudo systemctl enable --now haveged 2>/dev/null \
+    || sudo systemctl enable --now rngd 2>/dev/null \
+    || sudo haveged -w 1024 2>/dev/null || true
+  sleep 2
+  ent_after=$(cat /proc/sys/kernel/random/entropy_avail 2>/dev/null || echo 0)
+  if [ "$ent_after" -lt 500 ]; then
+    warn "entropy still low ($ent_after) — steps needing randomness may stall;"
+    warn "fix the host's entropy source (haveged / rngd / host-side virtio-rng)"
+  else
+    ok "entropy pool seeded: $ent_avail → $ent_after"
+  fi
+fi
+
 # ---------------------------------------------------------------------------
 step "2. Install python3 (bridge needs 3.8+) and git if missing"
 have_py3() {
