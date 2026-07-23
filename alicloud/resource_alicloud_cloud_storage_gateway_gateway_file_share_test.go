@@ -18,7 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudCloudStorageGatewayGatewayFileShare_basic0(t *testing.T) {
+func TestAccAliCloudCloudStorageGatewayGatewayFileShare_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cloud_storage_gateway_gateway_file_share.default"
 	ra := resourceAttrInit(resourceId, AlicloudCloudStorageGatewayGatewayFileShareMap0)
@@ -293,7 +293,7 @@ func TestAccAlicloudCloudStorageGatewayGatewayFileShare_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCloudStorageGatewayGatewayFileShare_basic1(t *testing.T) {
+func TestAccAliCloudCloudStorageGatewayGatewayFileShare_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cloud_storage_gateway_gateway_file_share.default"
 	ra := resourceAttrInit(resourceId, AlicloudCloudStorageGatewayGatewayFileShareMap0)
@@ -534,7 +534,7 @@ func TestAccAlicloudCloudStorageGatewayGatewayFileShare_basic1(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCloudStorageGatewayGatewayFileShare_basic2(t *testing.T) {
+func TestAccAliCloudCloudStorageGatewayGatewayFileShare_basic2(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cloud_storage_gateway_gateway_file_share.default"
 	ra := resourceAttrInit(resourceId, AlicloudCloudStorageGatewayGatewayFileShareMap0)
@@ -628,7 +628,7 @@ func TestAccAlicloudCloudStorageGatewayGatewayFileShare_basic2(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCloudStorageGatewayGatewayFileShare_basic3(t *testing.T) {
+func TestAccAliCloudCloudStorageGatewayGatewayFileShare_basic3(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cloud_storage_gateway_gateway_file_share.default"
 	ra := resourceAttrInit(resourceId, AlicloudCloudStorageGatewayGatewayFileShareMap0)
@@ -779,13 +779,19 @@ gateway_name             = var.name
 }
 
 resource "alicloud_cloud_storage_gateway_gateway_cache_disk" "default" {
-cache_disk_category   = "cloud_efficiency"
+cache_disk_category   = "cloud_essd"
+performance_level     = "PL1"
 gateway_id            = alicloud_cloud_storage_gateway_gateway.default.id
 cache_disk_size_in_gb = 50
 }
 
 resource "alicloud_oss_bucket" "default" {
   bucket = var.name
+}
+
+resource "alicloud_oss_bucket_transfer_acceleration" "default" {
+  bucket  = alicloud_oss_bucket.default.bucket
+  enabled = true
 }
 `, name)
 }
@@ -996,6 +1002,33 @@ func TestUnitAlicloudCloudStorageGatewayGatewayFileShare(t *testing.T) {
 			break
 		}
 	}
+
+	// Create: a DescribeTasks failure after the task has completed must surface as an
+	// error instead of being silently swallowed (otherwise Create returns success with
+	// no ID set, leaving an orphaned resource / duplicate creation on the next apply).
+	dDescribeTasksFail, _ := schema.InternalMap(p["alicloud_cloud_storage_gateway_gateway_file_share"].Schema).Data(nil, nil)
+	dDescribeTasksFail.MarkNewResource()
+	for key, value := range attributes {
+		_ = dDescribeTasksFail.Set(key, value)
+	}
+	describeTasksCallCount := 0
+	patches = gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+		if *action == "DescribeTasks" {
+			describeTasksCallCount++
+			// The first DescribeTasks call happens inside WaitForState (the task
+			// reaches "task.state.completed" and WaitForState returns after a single
+			// refresh). Fail the subsequent standalone DescribeTasks call so the test
+			// exercises the post-WaitForState error path in Create.
+			if describeTasksCallCount > 1 {
+				return failedResponseMock("NonRetryableError")
+			}
+		}
+		return ReadMockResponse, nil
+	})
+	err = resourceAlicloudCloudStorageGatewayGatewayFileShareCreate(dDescribeTasksFail, rawClient)
+	patches.Reset()
+	assert.NotNil(t, err)
+	assert.Equal(t, "", dDescribeTasksFail.Id())
 
 	// Update
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewHcsSgwClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
