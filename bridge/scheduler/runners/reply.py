@@ -2,64 +2,53 @@
 
 from __future__ import annotations
 
-import importlib
 import json
 import os
 from datetime import datetime
 from pathlib import Path
 import subprocess
 import time
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
-try:
-    from bridge.execution.wake import WakePersistence
-except ModuleNotFoundError:  # pragma: no cover - bridge/main.py top-level import.
-    from execution.wake import WakePersistence
+from bridge.jarvis_task_router import ExecutionRouter
+if TYPE_CHECKING:
+    from bridge.task_runtime import WakePersistence
 
 from ..model import JobResult, JobResultStatus, ScheduledJobDefinition, is_aware
+from .aone import (
+    AoneRuntime,
+    HEADLESS_POLICY_REVISION,
+    REPO_ROOT,
+    _task_result_instructions,
+    broadcast_target,
+    broadcast_type,
+)
 
 
 RUNNER_KEY = "aone.reply"
 WAIT_TIERS = ((30 * 60, 120), (2 * 3600, 600), (float("inf"), 1800))
 
 
-def _load_legacy_module() -> Any:
-    try:
-        return importlib.import_module("bridge.jarvis_dingtalk_bot")
-    except ModuleNotFoundError:  # pragma: no cover - bridge/main.py path.
-        return importlib.import_module("jarvis_dingtalk_bot")
-
-
 class ReplyRunner:
     """Perform one control-plane wait scan without constructing ``JarvisHandler``."""
 
-    def __init__(self, *, task_client: Any, logger: Any,
-                 legacy_module: Any | None = None) -> None:
+    def __init__(self, *, task_client: Any, logger: Any) -> None:
         self._task_client = task_client
         self._logger = logger
-        self._module = legacy_module
         self._page_size = max(1, min(500, int(os.environ.get(
             "JARVIS_MANAGED_WAIT_PAGE_SIZE", "100"))))
         self._poll_state: dict[str, dict[str, float]] = {}
         self._wake: WakePersistence | None = None
 
     @property
-    def _legacy(self) -> Any:
-        if self._module is None:
-            self._module = _load_legacy_module()
-        return self._module
-
-    @property
     def _wake_persistence(self) -> WakePersistence:
         if self._wake is None:
-            module = self._legacy
-            router = module.ExecutionRouter(client=self._task_client, logger=self._logger)
+            from bridge.task_runtime import WakePersistence
+            router = ExecutionRouter(client=self._task_client, logger=self._logger)
             self._wake = WakePersistence(
                 execution_router=router,
-                result_instructions=module._task_result_instructions,
-                policy_revision=module.HEADLESS_POLICY_REVISION,
-                title_for=module.JarvisHandler._workitem_title,
-                project_for=module.JarvisHandler._workitem_project,
+                result_instructions=_task_result_instructions,
+                policy_revision=HEADLESS_POLICY_REVISION,
             )
         return self._wake
 
@@ -74,10 +63,10 @@ class ReplyRunner:
     def _fetch_comments(self, aone_id: str) -> list[dict[str, Any]] | None:
         try:
             result = subprocess.run(
-                [str(Path(self._legacy.REPO_ROOT) / "bin" / "a1id"), "--",
+                [str(REPO_ROOT / "bin" / "a1id"), "--",
                  "project", "workitem", "comment", "list", str(aone_id), "-f", "json"],
                 capture_output=True, text=True, timeout=30,
-                cwd=str(self._legacy.REPO_ROOT))
+                cwd=str(REPO_ROOT))
             return json.loads(result.stdout) if result.returncode == 0 else None
         except Exception:  # noqa: BLE001 - a failed poll remains retryable.
             return None
@@ -108,7 +97,7 @@ class ReplyRunner:
             return None
 
     def _is_human_comment(self, creator: str, content: str) -> bool:
-        return self._legacy.AoneScheduler._is_human_comment(creator, content)
+        return AoneRuntime._is_human_comment(creator, content)
 
     def _tick(self) -> None:
         now = time.time()
@@ -159,8 +148,8 @@ class ReplyRunner:
                 "terraform": bool(frozen.get("terraform")),
                 "project": str(frozen.get("project") or
                                (task.get("sourceRef") or {}).get("projectId") or ""),
-                "target": str(frozen.get("target") or self._legacy.broadcast_target()),
-                "target_type": str(frozen.get("targetType") or self._legacy.broadcast_type()),
+                "target": str(frozen.get("target") or broadcast_target()),
+                "target_type": str(frozen.get("targetType") or broadcast_type()),
                 "title": str(frozen.get("title") or
                              (task.get("sourceRef") or {}).get("title") or ""),
             }

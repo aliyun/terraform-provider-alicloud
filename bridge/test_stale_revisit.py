@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """Hermetic tests for Terraform >=8-day stale reminder and dual-channel delivery."""
-import importlib.util
 import json
 import os
 import sys
@@ -11,11 +10,8 @@ from datetime import datetime
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-spec = importlib.util.spec_from_file_location(
-    "jarvis_dingtalk_bot", HERE / "jarvis_dingtalk_bot.py")
-bot = importlib.util.module_from_spec(spec)
-sys.modules["jarvis_dingtalk_bot"] = bot
-spec.loader.exec_module(bot)
+sys.path.insert(0, str(HERE.parent))
+from bridge.scheduler.runners import aone as bot  # noqa: E402
 
 PROJECT = "528766"
 TICKET = "90000001"
@@ -211,8 +207,7 @@ class OwnerResolutionTest(unittest.TestCase):
 class SchedulerBoundaryTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
-        self.scheduler = bot._NudgeJob(
-            handler=None, pool=None, stale_days=8, max_n=5)
+        self.scheduler = bot.DailyNudge(stale_days=8, max_n=5)
         self.scheduler._ticket_timeline = lambda _item: ([], [])
         self.orig_aone = bot._aone_event_enqueue
         self.orig_dm = bot._dingtalk_event_enqueue
@@ -289,7 +284,7 @@ class SchedulerBoundaryTest(unittest.TestCase):
 class CandidateFairnessTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
-        self.scheduler = bot._NudgeJob(handler=None, pool=None, max_n=5)
+        self.scheduler = bot.DailyNudge(max_n=5)
 
     def tearDown(self):
         self.tmp.cleanup()

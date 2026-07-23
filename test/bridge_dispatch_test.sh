@@ -468,13 +468,12 @@ class HeadlessProbeBoundaryTest(unittest.TestCase):
         self.assertFalse(hasattr(b.JarvisHandler, "_write_probe_summary"))
 
     def test_probe_is_registered_disabled_on_revision_two(self):
-        jobs_yaml = (Path(sys.argv[1]) / "bridge" / "scheduler" / "jobs.yaml").read_text()
-        self.assertIn("key: daily.probe", jobs_yaml)
-        self.assertIn("revision: 2", jobs_yaml)
-        self.assertIn("kind: headless", jobs_yaml)
-        self.assertIn("builder_ref: probe.daily", jobs_yaml)
-        self.assertIn("protocol: probe-result-v1", jobs_yaml)
-        self.assertIn("enabled: false", jobs_yaml)
+        from scheduler.jobs import JOBS
+        probe = next(item for item in JOBS if item.id == "daily.probe")
+        self.assertEqual(probe.revision, 2)
+        self.assertEqual(probe.runner.builder_ref, "probe.daily")
+        self.assertEqual(probe.runner.protocol, "probe-result-v1")
+        self.assertFalse(probe.enabled)
 
 
 class WaitWatcherExpireClassRefTest(unittest.TestCase):

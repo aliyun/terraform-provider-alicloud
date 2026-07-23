@@ -49,39 +49,37 @@ cat >"$FAKEPY" <<'FAKE'
 #!/usr/bin/env bash
 ts="$(date '+%Y-%m-%d %H:%M:%S')"
 if [ "${1:-}" = "-c" ]; then exit 0; fi
-for a in "$@"; do
-  if [ "${a##*/}" = "main.py" ]; then
-    [ -n "${FAKE_PROCESS_STATE:-}" ] && printf '%s\n' "$$" >"$FAKE_PROCESS_STATE/scheduler-started"
-    case "${FAKE_SCHEDULER_MODE:-ready}" in
-      exit)
-        echo "$ts ERROR [MainThread] fake scheduler immediate exit"
-        exit 2 ;;
-      no-ready)
-        echo "$ts INFO [MainThread] fake scheduler deliberately not READY"
-        exec sleep 300 ;;
-      *)
-        echo "$ts INFO [MainThread] Scheduler READY pid=$$ worker=bridge-scheduler jobs=fake"
-        exec sleep 300 ;;
-    esac
-  fi
-  if [ "${a##*/}" = "task_worker.py" ]; then
-    [ -n "${FAKE_PROCESS_STATE:-}" ] && printf '%s\n' "$$" >"$FAKE_PROCESS_STATE/task-worker-started"
-    case "${FAKE_TASK_WORKER_MODE:-ready}" in
-      exit)
-        echo "$ts ERROR [MainThread] fake task worker immediate exit"
-        exit 2 ;;
-      no-ready)
-        echo "$ts INFO [MainThread] fake task worker deliberately not READY"
-        exec sleep 300 ;;
-      once)
-        echo "$ts INFO [MainThread] foreground once JARVIS_NO_DINGTALK=${JARVIS_NO_DINGTALK:-0}"
-        exit 0 ;;
-      *)
-        echo "$ts INFO [MainThread] Task worker READY pid=$$ worker=fake"
-        exec sleep 300 ;;
-    esac
-  fi
-done
+if [ "${1:-}" = "-m" ] && [ "${2:-}" = "bridge.main" ]; then
+  [ -n "${FAKE_PROCESS_STATE:-}" ] && printf '%s\n' "$$" >"$FAKE_PROCESS_STATE/scheduler-started"
+  case "${FAKE_SCHEDULER_MODE:-ready}" in
+    exit)
+      echo "$ts ERROR [MainThread] fake scheduler immediate exit"
+      exit 2 ;;
+    no-ready)
+      echo "$ts INFO [MainThread] fake scheduler deliberately not READY"
+      exec sleep 300 ;;
+    *)
+      echo "$ts INFO [MainThread] Scheduler READY pid=$$ worker=bridge-scheduler jobs=fake"
+      exec sleep 300 ;;
+  esac
+fi
+if [ "${1:-}" = "-m" ] && [ "${2:-}" = "bridge.task_worker" ]; then
+  [ -n "${FAKE_PROCESS_STATE:-}" ] && printf '%s\n' "$$" >"$FAKE_PROCESS_STATE/task-worker-started"
+  case "${FAKE_TASK_WORKER_MODE:-ready}" in
+    exit)
+      echo "$ts ERROR [MainThread] fake task worker immediate exit"
+      exit 2 ;;
+    no-ready)
+      echo "$ts INFO [MainThread] fake task worker deliberately not READY"
+      exec sleep 300 ;;
+    once)
+      echo "$ts INFO [MainThread] foreground once JARVIS_NO_DINGTALK=${JARVIS_NO_DINGTALK:-0}"
+      exit 0 ;;
+    *)
+      echo "$ts INFO [MainThread] Task worker READY pid=$$ worker=fake"
+      exec sleep 300 ;;
+  esac
+fi
 for a in "$@"; do
   if [ "$a" = "--dry-run-once" ]; then
     echo "$ts INFO [MainThread] dry-run ok (fake bot) PATH=$PATH JARVIS_ROOT=${JARVIS_ROOT:-}"
@@ -161,8 +159,13 @@ case "${1:-}" in
     printf '%s\n' "$pid" >"$state/pid"
     if [ -n "${FAKE_LAUNCHCTL_LOG:-}" ]; then
       mkdir -p "$(dirname "$FAKE_LAUNCHCTL_LOG")"
-      printf '%s INFO [MainThread] Bridge READY pid=%s mode=fake\n' \
-        "$(date '+%Y-%m-%d %H:%M:%S')" "$pid" >>"$FAKE_LAUNCHCTL_LOG"
+      if [ "${JARVIS_BRIDGE_ROLE:-scheduler}" = "worker" ]; then
+        printf '%s INFO [MainThread] Task worker READY pid=%s worker=fake\n' \
+          "$(date '+%Y-%m-%d %H:%M:%S')" "$pid" >>"$FAKE_LAUNCHCTL_LOG"
+      else
+        printf '%s INFO [MainThread] Bridge READY pid=%s role=supervisor\n' \
+          "$(date '+%Y-%m-%d %H:%M:%S')" "$pid" >>"$FAKE_LAUNCHCTL_LOG"
+      fi
     fi ;;
   *)
     echo "unexpected fake launchctl command: $*" >&2

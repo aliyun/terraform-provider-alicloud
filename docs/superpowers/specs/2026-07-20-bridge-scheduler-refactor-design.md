@@ -8,9 +8,8 @@ Bridge 的所有周期 Job 已由独立、单实例、fail-closed 的 `Scheduler
 它以固定 Worker `bridge-scheduler` 对接 AutomationAgent scheduled-job 控制面，负责
 definition 注册、计划、slot 准入、执行、终态、心跳和有界停止。
 
-`jarvis_dingtalk_bot.py` 不再启动任何周期线程，只启动 `PersistenceExecutor`。旧业务
-逻辑保留为一次性 `tick`，由 `bridge/scheduler/runners/legacy.py` 适配；因此任一周期任务
-只有 SchedulerEngine 一个 cadence/admission 入口。
+`jarvis_dingtalk_bot.py` 不再构造或启动任何周期 Scheduler。周期业务由专用 runner
+直接拥有，因此任一周期任务只有 SchedulerEngine 一个 cadence/admission 入口。
 
 `JARVIS_BRIDGE_ROLE` 的边界：
 
@@ -23,7 +22,7 @@ definition 注册、计划、slot 准入、执行、终态、心跳和有界停�
 
 ```mermaid
 flowchart LR
-  Y["jobs.yaml\n唯一 Job 注册表"] --> R["Registry / capability validation"]
+  Y["jobs.py / JOBS\n唯一 Job 定义"] --> R["definition / capability validation"]
   R --> S["SchedulerService\nworker=bridge-scheduler"]
   S --> E["SchedulerEngine\nplan + admission + terminal"]
   E --> X["runner\n单次业务 tick / Headless"]
@@ -32,32 +31,24 @@ flowchart LR
   CP --> B["Scheduled Jobs Board"]
 ```
 
-- `SchedulerService` 先注册 ACTIVE Worker，再注册完整 YAML definition、恢复 interrupted slot，
+- `SchedulerService` 先注册 ACTIVE Worker，再注册完整显式 definition、恢复 interrupted slot，
   最后才开始 tick；任一步无法确认就不调度。
 - 同一 `job_key` 永不并发；不同 Job 最多使用 `JARVIS_SCHEDULER_MAX_CONCURRENCY`（默认 4）个槽位。
 - `SchedulerEngine` 只信任控制面当前态；本地 cursor 仅服务业务逻辑，不能替代 Job 状态。
 - `PersistenceExecutor` 仍是执行基础设施，不是 scheduled Job；scheduler 和 worker 角色都会启动它。
 
-## 3. 注册表与 runner 契约
+## 3. Job 定义与 runner 契约
 
-唯一注册表：`bridge/scheduler/jobs.yaml`。计划频率只在 YAML 中声明；旧的
+唯一 Job 定义：`bridge/scheduler/jobs.py` 的 `JOBS` 元组。计划频率只在 Python 定义中声明；旧的
 `JARVIS_SCAN_INTERVAL`、`JARVIS_MANAGED_WAIT_SENSOR_SEC`、`JARVIS_CLAIM_HEALTH_INTERVAL_SEC`、
 `JARVIS_PRWATCH_INTERVAL`、`JARVIS_EXTERNAL_RECOVERY_INTERVAL` 不再控制新 Scheduler cadence。
 对应的 enable 开关仍是业务 kill switch，但不会改变控制面 definition。
 
-```yaml
-- key: <domain.action>               # 稳定 job_key，发布后不可改名
-  revision: <positive-int>           # definition 语义变化时递增
-  description: <中文说明>             # Board 直接展示
-  schedule: <interval | daily | adaptive>
-  runner: <handler | headless>
-  misfire: <compatible-policy>
-  retry_delay_seconds: <positive-number>
-  enabled: <boolean>
-```
+每项定义显式给出稳定 `key`、`revision`、Board description、schedule、runner、misfire、
+retry delay 与 `enabled`。`enabled:false` 仍注册到控制面，但状态为 `DISABLED`。
 
-`enabled:false` 仍注册到控制面，但状态为 `DISABLED`。重新启用或变更任何执行语义必须提高
-`revision`。所有持久化时间使用 UTC；daily 固定 `Asia/Shanghai`。slot identity 为：
+重新启用或变更任何执行语义必须提高 `revision`。所有持久化时间使用 UTC；daily 固定
+`Asia/Shanghai`。slot identity 为：
 
 ```text
 job_key + definition_revision + scheduled_for_utc
@@ -88,19 +79,20 @@ fail-closed。`JobResult` 仅允许 `SUCCEEDED`、`RETRYABLE_FAILURE`、`PERMANE
 `daily.probe` 是唯一刻意停用的 Job。其真实 Terraform 操作必须先取得明确业务授权；启用和再次
 禁用都应提高 revision，且当天 10:00 后启用会按 `CURRENT_DAY` 补跑一次。
 
-## 5. 旧逻辑的迁移方式
+## 5. 周期职责映射
 
 | 原循环 | 新 Job | 新 runner 做的事 | 保留的业务状态 |
 | --- | --- | --- | --- |
-| `AoneScheduler._loop` | `aone.scan` | 调用一次 `_tick()` | 快照、Task 去重、事件 ledger |
-| `AoneScheduler._claim_health_loop` | `aone.claim-health` | 一次扫描、reconcile、双通道 flush | claim 观察与控制面 cursor |
-| `DailyScheduler` 的 `_NudgeJob` | `daily.nudge` | 调用一次 `run()` | idle 选择与催办 event ledger |
-| `AoneReplyScheduler._loop` | `aone.reply` | 调用一次 `_tick()` | 仅本地 read throttle；控制面 wait cursor 为真源 |
-| `PrWatchScheduler._loop` | `pr.watch` | flush 后调用 `_tick()`，返回 active/idle next due | PR 注册表与 per-head 去重 |
-| `ExternalOperationRecoveryScheduler._loop` | `external.recovery` | 调用一次 `_tick()` | 控制面 recovery token、分页 cursor |
+| 领域职责 | 新 Job | runner | 保留的业务状态 |
+| --- | --- | --- | --- |
+| Aone 扫描 | `aone.scan` | `runners/aone.py` | 快照、Task 去重、事件 ledger |
+| Claim 健康检查 | `aone.claim-health` | `runners/aone.py` | claim 观察与控制面 cursor |
+| 每日催办 | `daily.nudge` | `runners/aone.py` | idle 选择与催办 event ledger |
+| Aone 回复唤醒 | `aone.reply` | `runners/reply.py` | 仅本地 read throttle；控制面 wait cursor 为真源 |
+| PR 生命周期 | `pr.watch` | `runners/pr.py` | PR 注册表与 per-head 去重 |
+| 外部回执收敛 | `external.recovery` | `runners/recovery.py` | recovery token、分页 cursor |
 
-`legacy.py` 不调用上述类的 `.start()`，所以不会形成第二条线程或第二个 sleep loop。`DailyScheduler`
-的本地 day marker 不再参与调度；daily slot 的幂等与补跑由控制面负责。
+runner 不创建常驻线程或自行 sleep；daily slot 的幂等与补跑由控制面负责。
 
 ## 6. Worker、Board 与恢复
 
@@ -120,7 +112,7 @@ Board 是只读观察面，不轮询 Bridge 内存也不能触发 Job。它展�
 启动与停止：
 
 ```text
-ACTIVE Worker → registry/runner 校验 → register → recover-interrupted → READY
+ACTIVE Worker → definition/runner 校验 → register → recover-interrupted → READY
 停止 admission → DRAINING → 等待在途 future → OFFLINE
 ```
 
@@ -132,10 +124,10 @@ ACTIVE Worker → registry/runner 校验 → register → recover-interrupted �
 
 本次迁移已覆盖：
 
-- YAML registry、runner catalogue 和全部七个 Job definition 的一致性；
+- 显式 `JOBS`、runner 装配和全部七个 Job definition 的一致性；
 - interval/daily/adaptive 的计划、slot identity、retry 边界、同 Job 不并发与跨 Job 有界并发；
-- 六个 legacy adapter 都只执行一次 tick；claim-health flush 和 PR adaptive next due 的语义；
-- `JARVIS_BRIDGE_ROLE=worker` 被新入口拒绝；旧 `JarvisHandler.start_schedulers()` 只启动 executor；
+- 所有 runner 都只执行一次 tick；claim-health flush 和 PR adaptive next due 的语义；
+- `JARVIS_BRIDGE_ROLE=worker` 被 Scheduler 入口拒绝；worker 仅启动独立 Task executor；
 - `daily.probe` 的 Headless 协议、cleanup gate 和摘要原子写入仍保持隔离。
 
 本地验证时不应直接以真实 token 启动所有迁移 Job；`aone.scan`、`daily.nudge`、`pr.watch` 和
@@ -153,19 +145,22 @@ worker 主机只能执行第一条。真实 Probe 仍需要单独授权。
 
 ```text
 bridge/
-  main.py                         # Scheduler composition root + role fence
-  headless/                       # 通用 Headless 契约与 Jarvis 窄适配
+  main.py                         # SchedulerService composition root + role fence
+  task_worker.py                  # 独立 Persistent Task Worker composition root
+  headless_runtime.py             # Headless 执行窄接口
+  task_runtime.py                 # 持久 Task / wake / bookend 执行边界
   scheduler/
     model.py                      # Job / schedule / runner / result
-    registry.py                   # YAML 解析与能力校验
+    jobs.py                       # 七个显式 Job 定义
     engine.py                     # 计划、准入、执行与终态提交
     control_plane_client.py        # AutomationAgent HTTP 边界
     service.py                     # 固定 Worker、心跳、READY 与 drain
-    role.py                        # JARVIS_BRIDGE_ROLE fail-closed fence
-    jobs.yaml                      # 全量周期 Job 注册表
     runners/
-      legacy.py                    # 旧业务 tick 的一次性适配器
-      daily_probe.py
+      aone.py                     # scan / claim-health / nudge
+      pr.py                        # PR watch
+      reply.py                     # Aone reply wake
+      recovery.py                  # 外部回执收敛
+      daily_probe.py               # 显式禁用的 daily probe
 ```
 
 不变边界：调度控制面不代替 Task/Session 控制面；`jarvis_scheduled_job` 不保存通用执行 lease、

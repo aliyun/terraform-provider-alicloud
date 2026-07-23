@@ -6,20 +6,20 @@ from pathlib import Path
 from typing import Any
 
 if (__package__ or "").startswith("bridge."):
-    from bridge.headless.jarvis_adapter import (
+    from bridge.headless_runtime import (
+        HeadlessRuntime,
         jarvis_transcript_exists,
         run_jarvis_attempt,
     )
-    from bridge.headless.runtime import HeadlessRuntime
 else:  # bridge/main.py imports scheduler as a top-level package.
-    from headless.jarvis_adapter import (
+    from headless_runtime import (
+        HeadlessRuntime,
         jarvis_transcript_exists,
         run_jarvis_attempt,
     )
-    from headless.runtime import HeadlessRuntime
 
 from .daily_probe import (
-    RUNNER_KEY as DAILY_PROBE_RUNNER_KEY,
+    JOB_KEY as DAILY_PROBE_RUNNER_KEY,
     DailyProbeRunner,
 )
 from .pr import (
@@ -27,13 +27,10 @@ from .pr import (
     PrWatchRunner,
     build_pr_watch_runners,
 )
-from .nudge import (
-    DAILY_NUDGE_RUNNER_KEY,
-    build_nudge_runners,
-)
 from .aone import (
     AONE_CLAIM_HEALTH_RUNNER_KEY,
     AONE_SCAN_RUNNER_KEY,
+    DAILY_NUDGE_RUNNER_KEY,
     build_aone_runners,
 )
 from .reply import (
@@ -45,6 +42,7 @@ from .recovery import (
     ExternalRecoveryRunner,
 )
 HANDLER_KEYS = frozenset({
+    DAILY_PROBE_RUNNER_KEY,
     AONE_SCAN_RUNNER_KEY,
     AONE_CLAIM_HEALTH_RUNNER_KEY,
     DAILY_NUDGE_RUNNER_KEY,
@@ -52,8 +50,7 @@ HANDLER_KEYS = frozenset({
     PR_WATCH_RUNNER_KEY,
     EXTERNAL_RECOVERY_RUNNER_KEY,
 })
-HEADLESS_BUILDER_PROTOCOLS = frozenset({DAILY_PROBE_RUNNER_KEY})
-RUNNER_KEYS = HANDLER_KEYS | HEADLESS_BUILDER_PROTOCOLS
+RUNNER_KEYS = HANDLER_KEYS
 
 
 def build_runners(
@@ -92,7 +89,6 @@ def build_runners(
         task_client=task_client,
         repo_root=repo_root,
     ))
-    runners.update(build_nudge_runners(logger=logger))
     runners.update(build_aone_runners(
         logger=logger,
         task_client=task_client,
@@ -118,7 +114,6 @@ __all__ = [
     "PR_WATCH_RUNNER_KEY",
     "PrWatchRunner",
     "HANDLER_KEYS",
-    "HEADLESS_BUILDER_PROTOCOLS",
     "RUNNER_KEYS",
     "build_runners",
 ]

@@ -12,19 +12,16 @@ import uuid
 from typing import Any, Mapping
 from zoneinfo import ZoneInfo
 
-if (__package__ or "").startswith("bridge."):
-    from bridge.headless import (
-        HeadlessRequest,
-        HeadlessRuntime,
-        Lane,
-        SessionPolicy,
-    )
-else:  # bridge/main.py imports scheduler as a top-level package.
-    from headless import HeadlessRequest, HeadlessRuntime, Lane, SessionPolicy
+from bridge.headless_runtime import (
+    HeadlessRequest,
+    HeadlessRuntime,
+    Lane,
+    SessionPolicy,
+)
 
 from ..model import (
     DailySchedule,
-    HeadlessRunner,
+    HandlerRunner,
     JobResult,
     JobResultStatus,
     ScheduledJobDefinition,
@@ -32,9 +29,7 @@ from ..model import (
 
 
 JOB_KEY = "daily.probe"
-BUILDER_REF = "probe.daily"
 PROTOCOL = "probe-result-v1"
-RUNNER_KEY = (BUILDER_REF, PROTOCOL)
 _SHANGHAI = ZoneInfo("Asia/Shanghai")
 _RESULT_RE = re.compile(r"\[\[PROBE_RESULT:(.*?)\]\]", re.DOTALL)
 
@@ -92,18 +87,13 @@ class DailyProbeRunner:
         error = _definition_error(definition)
         if error:
             return JobResult(JobResultStatus.PERMANENT_FAILURE, error=error)
-        runner = definition.runner
-        assert isinstance(runner, HeadlessRunner)
         try:
-            session_policy = SessionPolicy(runner.session_policy)
-            lane = Lane(runner.lane or Lane.DEFAULT.value)
             request = HeadlessRequest(
                 prompt=probe_prompt(
                     _round_id(definition.schedule, scheduled_for)),
                 session_id=str(uuid.uuid4()),
-                session_policy=session_policy,
-                lane=lane,
-                model=runner.model,
+                session_policy=SessionPolicy.NEW,
+                lane=Lane.TERRAFORM,
                 timeout_seconds=_positive_float(
                     self._environ.get("JARVIS_DISPATCH_TIMEOUT", "43200"),
                     "JARVIS_DISPATCH_TIMEOUT",
@@ -199,16 +189,10 @@ def _definition_error(definition: ScheduledJobDefinition) -> str | None:
     if not isinstance(definition.schedule, DailySchedule):
         return "daily probe requires a daily schedule"
     runner = definition.runner
-    if not isinstance(runner, HeadlessRunner):
-        return "daily probe requires a headless runner"
-    if (runner.builder_ref, runner.protocol) != RUNNER_KEY:
-        return "daily probe builder/protocol is not registered"
-    if runner.session_policy != SessionPolicy.NEW.value:
-        return "daily probe requires session_policy NEW"
-    if (runner.lane or "") != Lane.TERRAFORM.value:
-        return "daily probe requires lane terraform"
-    if runner.model is not None:
-        return "daily probe model override is unsupported"
+    if not isinstance(runner, HandlerRunner):
+        return "daily probe requires a handler runner"
+    if runner.handler_key != JOB_KEY:
+        return "daily probe handler is not registered"
     return None
 
 
@@ -288,10 +272,8 @@ def _bounded(value: str, limit: int = 500) -> str:
 
 
 __all__ = [
-    "BUILDER_REF",
     "DailyProbeRunner",
     "JOB_KEY",
     "PROTOCOL",
-    "RUNNER_KEY",
     "probe_prompt",
 ]

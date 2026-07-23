@@ -12,14 +12,18 @@ import time
 import unittest
 from datetime import datetime, timezone
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from types import SimpleNamespace
 from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-import jarvis_dingtalk_bot as bot
-from jarvis_persistence_executor import SessionController
-from jarvis_task_router import EnqueueResult
+from bridge import jarvis_dingtalk_bot as bot
+from bridge import task_runtime as task_runtime_module
+from bridge.scheduler.runners import aone
+from bridge.scheduler.runners import pr
+from bridge.jarvis_persistence_executor import SessionController
+from bridge.jarvis_task_router import EnqueueResult
 
 
 class ProviderRouteAffinityTest(unittest.TestCase):
@@ -855,7 +859,7 @@ class AoneSchedulerUnionTest(unittest.TestCase):
     """AoneScheduler 统一探测：assignee∪tracker∪idle∪done 并集去重。"""
 
     def _scanner(self):
-        s = bot.AoneScheduler.__new__(bot.AoneScheduler)
+        s = aone.AoneRuntime.__new__(aone.AoneRuntime)
         return s
 
     def test_query_pool_union_merges_four_sources_and_dedups(self):
@@ -884,7 +888,7 @@ class AoneSchedulerUnionTest(unittest.TestCase):
         ids = sorted(r["id"] for r in rows)
         self.assertEqual(ids, ["1", "2", "3", "4"], "四源并集按 id 去重（#1 只保留一次）")
         # 四源查询并行发出 → seen_filters 顺序不定，按集合断言。
-        worker_csv = ",".join(sorted(bot.DIGITAL_WORKER_IDS))
+        worker_csv = ",".join(sorted(aone.DIGITAL_WORKER_IDS))
         self.assertEqual(len(seen_filters), 4, "assignee/tracker/idle/done 四源各查一次")
         # 每源都叠加 pools.json 状态排除
         ordinary = [f for f in seen_filters if not f.startswith("tag=jarvis-done")]
@@ -906,7 +910,7 @@ class AoneSchedulerUnionTest(unittest.TestCase):
 
     def test_scan_union_iterates_pools(self):
         s = self._scanner()
-        with mock.patch.object(bot.AoneScheduler, "_read_pools",
+        with mock.patch.object(aone.AoneRuntime, "_read_pools",
                                return_value=[
                                    ("tf_customer", "1086837", ["已合入主线"],
                                     {"type": "3", "type_name": "需求问题",
@@ -926,26 +930,29 @@ class AoneSchedulerUnionTest(unittest.TestCase):
 
     def test_scan_union_no_pools_returns_none(self):
         s = self._scanner()
-        with mock.patch.object(bot.AoneScheduler, "_read_pools", return_value=[]):
+        with mock.patch.object(aone.AoneRuntime, "_read_pools", return_value=[]):
             self.assertIsNone(s._scan_union())
 
     def test_digital_worker_ids_single_source(self):
         # 单一真源含编排层 + 公开 RD + 旧 PD/QA 兼容 worker
-        self.assertIn(bot.JARVIS_ORCH_WORKER, bot.DIGITAL_WORKER_IDS)
-        self.assertIn(bot.PERSONA_PUBLIC_WORKER, bot.DIGITAL_WORKER_IDS)
-        self.assertTrue(bot.PERSONA_LEGACY_WORKER_IDS <= bot.DIGITAL_WORKER_IDS)
+        self.assertIn(aone.JARVIS_ORCH_WORKER, aone.DIGITAL_WORKER_IDS)
+        self.assertIn(aone.PERSONA_PUBLIC_WORKER, aone.DIGITAL_WORKER_IDS)
+        self.assertTrue(aone.PERSONA_LEGACY_WORKER_IDS <= aone.DIGITAL_WORKER_IDS)
 
-    def test_supervised_pending_is_removed_only_after_durable_acceptance(self):
+    def test_supervised_authorization_rechecks_live_aone_state(self):
         s = self._scanner()
-        s._lock = threading.Lock()
-        s.pending = {"1": {"id": "1"}, "2": {"id": "2"}}
+        s._scan_union = mock.Mock(return_value=[
+            {"id": "1"}, {"id": "2"}, {"id": "3"}])
+        s._decide = lambda items: [
+            {"id": item["id"], "item": item,
+             "action": "skip" if item["id"] == "3" else "dispatch"}
+            for item in items
+        ]
         self.assertEqual(s.authorize("1"), {"id": "1"})
-        self.assertIn("1", s.pending)
         self.assertEqual(
             sorted(item["id"] for item in s.authorize_all()), ["1", "2"])
-        self.assertEqual(set(s.pending), {"1", "2"})
         s.complete_authorization("1")
-        self.assertEqual(set(s.pending), {"2"})
+        self.assertEqual(s._scan_union.call_count, 2)
 
     def test_source_status_reconcile_observes_terminal_aone_without_dispatch_upsert(self):
         class Client:
@@ -1021,8 +1028,8 @@ class AoneSchedulerUnionTest(unittest.TestCase):
         completed = SimpleNamespace(returncode=0, stdout=json.dumps({
             "fields": [{"identifier": "status", "displayValue": "已发布"}],
         }), stderr="")
-        with mock.patch.object(bot.subprocess, "run", return_value=completed) as run:
-            task, status = bot.AoneScheduler._point_read_source_status({
+        with mock.patch.object(aone.subprocess, "run", return_value=completed) as run:
+            task, status = aone.AoneRuntime._point_read_source_status({
                 "taskId": 411, "aoneId": "84386065",
             })
 
@@ -1031,13 +1038,13 @@ class AoneSchedulerUnionTest(unittest.TestCase):
         self.assertLessEqual(run.call_args.kwargs["timeout"], 10)
 
     def test_legit_done_statuses_include_pool_parking_states(self):
-        statuses = bot._load_legit_done_statuses()
+        statuses = aone._load_legit_done_statuses()
         self.assertIn("已完成", statuses)
         self.assertIn("待发布", statuses)
 
     def test_done_status_drift_enqueues_both_channels_with_lane_identity(self):
         cases = (
-            ("tf_customer", "1086837", bot.PERSONA_PUBLIC_IDENTITY, False),
+            ("tf_customer", "1086837", aone.PERSONA_PUBLIC_IDENTITY, False),
             ("api_toolkit", "2100304", "jarvis", True),
         )
         for pool, project, identity, allow_non_tf in cases:
@@ -1050,24 +1057,24 @@ class AoneSchedulerUnionTest(unittest.TestCase):
                     "pool_project": project, "status": "开发中",
                     "tag": ["jarvis-done"],
                 }
-                with mock.patch.object(bot, "_load_legit_done_statuses",
+                with mock.patch.object(aone, "_load_legit_done_statuses",
                                        return_value=frozenset({"已完成"})), \
-                     mock.patch.object(bot, "_aone_event_enqueue",
-                                       return_value=True) as aone, \
-                     mock.patch.object(bot, "_dingtalk_event_enqueue",
+                     mock.patch.object(aone, "_aone_event_enqueue",
+                                       return_value=True) as event_enqueue, \
+                     mock.patch.object(aone, "_dingtalk_event_enqueue",
                                        return_value=True) as dingtalk:
                     scanner._reconcile_done_status_drifts([item])
 
-                event_key = aone.call_args.args[2]
+                event_key = event_enqueue.call_args.args[2]
                 self.assertRegex(
                     event_key,
                     r"^done-status-drift:84551585:doneepoch:[0-9a-f]{16}$")
-                self.assertEqual(aone.call_args.kwargs, {
+                self.assertEqual(event_enqueue.call_args.kwargs, {
                     "allow_non_tf": allow_non_tf,
                     "identity": identity,
                 })
                 self.assertEqual(dingtalk.call_args.args[2], event_key)
-                self.assertEqual(dingtalk.call_args.args[3], bot.master_staff())
+                self.assertEqual(dingtalk.call_args.args[3], aone.master_staff())
                 self.assertEqual(dingtalk.call_args.kwargs,
                                  {"allow_non_tf": allow_non_tf})
                 self.assertNotIn("84551585", scanner._done_drift_retry)
@@ -1081,13 +1088,13 @@ class AoneSchedulerUnionTest(unittest.TestCase):
             "pool_project": "2100304", "status": "开发中",
             "tag": ["jarvis-done"],
         }
-        with mock.patch.object(bot, "_load_legit_done_statuses",
+        with mock.patch.object(aone, "_load_legit_done_statuses",
                                return_value=frozenset({"已完成"})), \
-             mock.patch.object(bot, "_aone_event_enqueue",
-                               side_effect=RuntimeError("ledger unavailable")) as aone, \
-             mock.patch.object(bot, "_dingtalk_event_enqueue", return_value=True) as dingtalk:
+             mock.patch.object(aone, "_aone_event_enqueue",
+                               side_effect=RuntimeError("ledger unavailable")) as event_enqueue, \
+             mock.patch.object(aone, "_dingtalk_event_enqueue", return_value=True) as dingtalk:
             scanner._reconcile_done_status_drifts([item])
-        aone.assert_called_once()
+        event_enqueue.assert_called_once()
         dingtalk.assert_called_once()
         self.assertEqual(scanner._done_drift_retry, {"84551585"})
 
@@ -1098,11 +1105,11 @@ class AoneSchedulerUnionTest(unittest.TestCase):
             "id": "84551585", "pool_project": "2100304", "status": "开发中",
             "tag": ["jarvis-done"],
         }
-        with mock.patch.object(bot, "_load_legit_done_statuses", return_value=None), \
-             mock.patch.object(bot, "_aone_event_enqueue") as aone, \
-             mock.patch.object(bot, "_dingtalk_event_enqueue") as dingtalk:
+        with mock.patch.object(aone, "_load_legit_done_statuses", return_value=None), \
+             mock.patch.object(aone, "_aone_event_enqueue") as event_enqueue, \
+             mock.patch.object(aone, "_dingtalk_event_enqueue") as dingtalk:
             scanner._reconcile_done_status_drifts([item])
-        aone.assert_not_called()
+        event_enqueue.assert_not_called()
         dingtalk.assert_not_called()
         self.assertEqual(scanner._done_drift_retry, {"84551585"})
 
@@ -1114,24 +1121,24 @@ class AoneSchedulerUnionTest(unittest.TestCase):
             "pool_project": "2100304", "status": "已完成",
             "tag": ["jarvis-done"],
         }
-        with mock.patch.object(bot, "_load_legit_done_statuses",
+        with mock.patch.object(aone, "_load_legit_done_statuses",
                                return_value=frozenset({"已完成"})), \
-             mock.patch.object(bot, "_aone_event_enqueue") as aone, \
-             mock.patch.object(bot, "_dingtalk_event_enqueue") as dingtalk:
+             mock.patch.object(aone, "_aone_event_enqueue") as event_enqueue, \
+             mock.patch.object(aone, "_dingtalk_event_enqueue") as dingtalk:
             scanner._reconcile_done_status_drifts([item])
-        aone.assert_not_called()
+        event_enqueue.assert_not_called()
         dingtalk.assert_not_called()
         self.assertEqual(scanner._done_drift_retry, set())
 
         item["status"] = "开发中"
         scanner._last_tag_added_epoch = mock.Mock(
             side_effect=RuntimeError("activity unavailable"))
-        with mock.patch.object(bot, "_load_legit_done_statuses",
+        with mock.patch.object(aone, "_load_legit_done_statuses",
                                return_value=frozenset({"已完成"})), \
-             mock.patch.object(bot, "_aone_event_enqueue") as aone, \
-             mock.patch.object(bot, "_dingtalk_event_enqueue") as dingtalk:
+             mock.patch.object(aone, "_aone_event_enqueue") as event_enqueue, \
+             mock.patch.object(aone, "_dingtalk_event_enqueue") as dingtalk:
             scanner._reconcile_done_status_drifts([item])
-        aone.assert_not_called()
+        event_enqueue.assert_not_called()
         dingtalk.assert_not_called()
         self.assertEqual(scanner._done_drift_retry, {"84551585"})
 
@@ -1185,10 +1192,10 @@ class AoneSchedulerUnionTest(unittest.TestCase):
     def test_master_staff_defaults_and_honors_env_override(self):
         with mock.patch.dict(os.environ, {}, clear=False):
             os.environ.pop("JARVIS_MASTER_STAFF", None)
-            self.assertEqual(bot.master_staff(), "320687")
+            self.assertEqual(aone.master_staff(), "320687")
         with mock.patch.dict(
                 os.environ, {"JARVIS_MASTER_STAFF": " 998877 "}):
-            self.assertEqual(bot.master_staff(), "998877")
+            self.assertEqual(aone.master_staff(), "998877")
 
     def test_claim_health_only_enqueues_dingtalk_to_master_staff(self):
         snapshot = {"84551585": self._claimed_item()}
@@ -1196,29 +1203,29 @@ class AoneSchedulerUnionTest(unittest.TestCase):
             with self.subTest(master_staff=configured or "default"), \
                     mock.patch.dict(
                         os.environ, {"JARVIS_MASTER_STAFF": configured}), \
-                    mock.patch.object(bot, "_aone_event_enqueue") as aone, \
+                    mock.patch.object(aone, "_aone_event_enqueue") as event_enqueue, \
                     mock.patch.object(
-                        bot, "_dingtalk_event_enqueue",
+                        aone, "_dingtalk_event_enqueue",
                         return_value=True) as dingtalk:
                 self._immediate_claim_health_alert_scanner()._reconcile_stale_claims(
                     snapshot, now_epoch=1000, now_monotonic=1000)
-            aone.assert_not_called()
+            event_enqueue.assert_not_called()
             dingtalk.assert_called_once()
             self.assertEqual(dingtalk.call_args.args[3], expected)
 
     def test_claim_health_dingtalk_convergence_uses_stable_idempotency_key(self):
         scanner = self._immediate_claim_health_alert_scanner()
         snapshot = {"84551585": self._claimed_item()}
-        with mock.patch.object(bot, "_aone_event_enqueue") as aone, \
-             mock.patch.object(bot, "_dingtalk_event_enqueue",
+        with mock.patch.object(aone, "_aone_event_enqueue") as event_enqueue, \
+             mock.patch.object(aone, "_dingtalk_event_enqueue",
                                return_value=True) as dingtalk, \
-             self.assertLogs("jarvis-bot", level="WARNING") as captured:
+             self.assertLogs("jarvis-scheduler", level="WARNING") as captured:
             scanner._reconcile_stale_claims(
                 snapshot, now_epoch=1000, now_monotonic=1000)
             scanner._reconcile_stale_claims(
                 snapshot, now_epoch=1300, now_monotonic=1300)
 
-        aone.assert_not_called()
+        event_enqueue.assert_not_called()
         self.assertEqual(dingtalk.call_count, 2)
         self.assertEqual(
             dingtalk.call_args_list[0].args[2],
@@ -1235,13 +1242,13 @@ class AoneSchedulerUnionTest(unittest.TestCase):
             kwargs = ({"side_effect": failure} if isinstance(failure, Exception)
                       else {"return_value": failure})
             with self.subTest(failure=repr(failure)), \
-                    mock.patch.object(bot, "_aone_event_enqueue") as aone, \
+                    mock.patch.object(aone, "_aone_event_enqueue") as event_enqueue, \
                     mock.patch.object(
-                        bot, "_dingtalk_event_enqueue", **kwargs) as dingtalk, \
-                    self.assertLogs("jarvis-bot", level="WARNING") as captured:
+                        aone, "_dingtalk_event_enqueue", **kwargs) as dingtalk, \
+                    self.assertLogs("jarvis-scheduler", level="WARNING") as captured:
                 scanner._reconcile_stale_claims(
                     snapshot, now_epoch=1000, now_monotonic=1000)
-            aone.assert_not_called()
+            event_enqueue.assert_not_called()
             dingtalk.assert_called_once()
             logs = "\n".join(captured.output)
             self.assertIn("candidates=1 delivered=0", logs)
@@ -1353,15 +1360,15 @@ class AoneSchedulerUnionTest(unittest.TestCase):
         }
         scanner = self._health_scanner(client)
         snapshot = {"84551585": self._claimed_item()}
-        with mock.patch.object(bot, "_aone_event_enqueue") as aone, \
-             mock.patch.object(bot, "_dingtalk_event_enqueue",
+        with mock.patch.object(aone, "_aone_event_enqueue") as event_enqueue, \
+             mock.patch.object(aone, "_dingtalk_event_enqueue",
                                return_value=True) as dingtalk:
             scanner._reconcile_stale_claims(
                 snapshot, now_epoch=1000, now_monotonic=1000)
-            aone.assert_not_called()
+            event_enqueue.assert_not_called()
             scanner._reconcile_stale_claims(
                 snapshot, now_epoch=1300, now_monotonic=1300)
-        aone.assert_not_called()
+        event_enqueue.assert_not_called()
         self.assertIn("control-plane-structure", dingtalk.call_args.args[2])
 
     def test_claim_health_heartbeat_grace_starts_at_last_healthy_heartbeat(self):
@@ -1472,16 +1479,16 @@ class AoneSchedulerUnionTest(unittest.TestCase):
         self.assertTrue(inactive["confirm"])
 
     def test_claim_health_time_parser_accepts_epoch_and_rejects_naive(self):
-        self.assertEqual(bot.AoneScheduler._parse_control_time(1_800_000_000),
+        self.assertEqual(aone.AoneRuntime._parse_control_time(1_800_000_000),
                          1_800_000_000)
-        self.assertEqual(bot.AoneScheduler._parse_control_time(1_800_000_000_000),
+        self.assertEqual(aone.AoneRuntime._parse_control_time(1_800_000_000_000),
                          1_800_000_000)
         offset_time = "2027-01-15T09:00:00+08:00"
-        self.assertEqual(bot.AoneScheduler._parse_control_time(offset_time),
+        self.assertEqual(aone.AoneRuntime._parse_control_time(offset_time),
                          datetime.fromisoformat(offset_time).timestamp())
-        self.assertIsNone(bot.AoneScheduler._parse_control_time(
+        self.assertIsNone(aone.AoneRuntime._parse_control_time(
             "2027-01-15 01:00:00"))
-        self.assertIsNone(bot.AoneScheduler._parse_control_time("not-a-time"))
+        self.assertIsNone(aone.AoneRuntime._parse_control_time("not-a-time"))
 
     def test_claim_health_structural_anomalies_need_two_reads_five_minutes_apart(self):
         client = mock.Mock()
@@ -1495,20 +1502,20 @@ class AoneSchedulerUnionTest(unittest.TestCase):
         }
         scanner = self._health_scanner(client)
         snapshot = {"84551585": self._claimed_item()}
-        with mock.patch.object(bot, "_aone_event_enqueue") as aone, \
-             mock.patch.object(bot, "_dingtalk_event_enqueue", return_value=True) as dm:
+        with mock.patch.object(aone, "_aone_event_enqueue") as event_enqueue, \
+             mock.patch.object(aone, "_dingtalk_event_enqueue", return_value=True) as dm:
             scanner._reconcile_stale_claims(
                 snapshot, now_epoch=1000, now_monotonic=1000)
             scanner._reconcile_stale_claims(
                 snapshot, now_epoch=1299, now_monotonic=1299)
-            aone.assert_not_called()
+            event_enqueue.assert_not_called()
             dm.assert_not_called()
             scanner._reconcile_stale_claims(
                 snapshot, now_epoch=1300, now_monotonic=1300)
-        aone.assert_not_called()
+        event_enqueue.assert_not_called()
         self.assertIn("terminal-claim-residue", dm.call_args.args[2])
         self.assertIn("task-700:g-8:s-901:f-12", dm.call_args.args[2])
-        self.assertEqual(dm.call_args.args[3], bot.master_staff())
+        self.assertEqual(dm.call_args.args[3], aone.master_staff())
         self.assertEqual(dm.call_args.kwargs, {"allow_non_tf": True})
 
     def test_claim_health_running_or_leased_corrupted_session_is_confirmed_structure(self):
@@ -1544,18 +1551,18 @@ class AoneSchedulerUnionTest(unittest.TestCase):
         scanner._claim_health_tag_epoch.side_effect = (
             lambda *_args: claim_epoch["value"])
         snapshot = {"84551585": self._claimed_item()}
-        with mock.patch.object(bot, "_aone_event_enqueue") as aone, \
-             mock.patch.object(bot, "_dingtalk_event_enqueue",
+        with mock.patch.object(aone, "_aone_event_enqueue") as event_enqueue, \
+             mock.patch.object(aone, "_dingtalk_event_enqueue",
                                return_value=True) as dingtalk:
             scanner._reconcile_stale_claims(
                 snapshot, now_epoch=1000, now_monotonic=1000)
             claim_epoch["value"] = "claim-b"
             scanner._reconcile_stale_claims(
                 snapshot, now_epoch=1300, now_monotonic=1300)
-            aone.assert_not_called()
+            event_enqueue.assert_not_called()
             scanner._reconcile_stale_claims(
                 snapshot, now_epoch=1600, now_monotonic=1600)
-        aone.assert_not_called()
+        event_enqueue.assert_not_called()
         self.assertIn("claim-b", dingtalk.call_args.args[2])
 
     def test_claim_health_structure_detail_change_restarts_confirmation(self):
@@ -1571,20 +1578,20 @@ class AoneSchedulerUnionTest(unittest.TestCase):
         scanner._inspect_claim_health = mock.Mock(
             side_effect=[anomaly_a, anomaly_b, anomaly_b])
         snapshot = {"84551585": self._claimed_item()}
-        with mock.patch.object(bot, "_aone_event_enqueue") as aone, \
-             mock.patch.object(bot, "_dingtalk_event_enqueue",
+        with mock.patch.object(aone, "_aone_event_enqueue") as event_enqueue, \
+             mock.patch.object(aone, "_dingtalk_event_enqueue",
                                return_value=True) as dingtalk:
             scanner._reconcile_stale_claims(
                 snapshot, now_epoch=1000, now_monotonic=1000)
             scanner._reconcile_stale_claims(
                 snapshot, now_epoch=1300, now_monotonic=1300)
-            aone.assert_not_called()
+            event_enqueue.assert_not_called()
             scanner._reconcile_stale_claims(
                 snapshot, now_epoch=1600, now_monotonic=1600)
         fingerprint_a = scanner._claim_anomaly_fingerprint(anomaly_a)
         fingerprint_b = scanner._claim_anomaly_fingerprint(anomaly_b)
         self.assertNotEqual(fingerprint_a, fingerprint_b)
-        aone.assert_not_called()
+        event_enqueue.assert_not_called()
         self.assertIn(fingerprint_b, dingtalk.call_args.args[2])
         self.assertNotIn(fingerprint_a, dingtalk.call_args.args[2])
 
@@ -1631,18 +1638,18 @@ class AoneSchedulerUnionTest(unittest.TestCase):
         )
         with mock.patch.dict(os.environ, {
                 "JARVIS_CLAIM_HEALTH_INTERVAL_SEC": "900"}):
-            scanner = bot.AoneScheduler(handler)
+            scanner = aone.AoneRuntime(handler)
         self.assertEqual(scanner.claim_health_interval, 300)
 
     def test_claim_health_single_control_plane_failure_never_alerts(self):
         client = mock.Mock()
         client.get_task_by_aone.side_effect = RuntimeError("temporary 503")
         scanner = self._health_scanner(client)
-        with mock.patch.object(bot, "_aone_event_enqueue") as aone, \
-             mock.patch.object(bot, "_dingtalk_event_enqueue") as dm:
+        with mock.patch.object(aone, "_aone_event_enqueue") as event_enqueue, \
+             mock.patch.object(aone, "_dingtalk_event_enqueue") as dm:
             scanner._reconcile_stale_claims(
                 {"84551585": self._claimed_item()}, now_epoch=1000)
-        aone.assert_not_called()
+        event_enqueue.assert_not_called()
         dm.assert_not_called()
         self.assertEqual(scanner._claim_health_observations, {})
 
@@ -1654,19 +1661,19 @@ class AoneSchedulerUnionTest(unittest.TestCase):
             self._active_client("RUNNING", heartbeat))
         scanner._claim_health_tag_epoch.side_effect = RuntimeError(
             "activity unavailable")
-        with mock.patch.object(bot, "_aone_event_enqueue") as aone, \
-             mock.patch.object(bot, "_dingtalk_event_enqueue") as dm:
+        with mock.patch.object(aone, "_aone_event_enqueue") as event_enqueue, \
+             mock.patch.object(aone, "_dingtalk_event_enqueue") as dm:
             scanner._reconcile_stale_claims(
                 {"84551585": self._claimed_item()}, now_epoch=now)
-        aone.assert_not_called()
+        event_enqueue.assert_not_called()
         dm.assert_not_called()
 
     def test_headless_prompts_suspend_via_control_plane_without_local_artifact(self):
         prompts = (
             bot._revisit_prompt("84551585", "Terraform", "1086837"),
-            bot._pr_ci_fix_prompt(
+            pr._pr_ci_fix_prompt(
                 "84551585", "https://example.test/pull/1", "528766", ["ci"]),
-            bot._pr_comment_reply_prompt(
+            pr._pr_comment_reply_prompt(
                 "84551585", "https://example.test/pull/1", "528766",
                 "reviewer", "needs decision"),
         )
@@ -1741,8 +1748,8 @@ class AoneSchedulerUnionTest(unittest.TestCase):
             "gmtModified": "2026-07-20 19:19:01",
         }]
         completed = SimpleNamespace(returncode=0, stdout=json.dumps(payload), stderr="")
-        with mock.patch.object(bot.subprocess, "run", return_value=completed):
-            rows = bot.AoneScheduler._a1_list("1086837", "assignedTo=worker")
+        with mock.patch.object(aone.subprocess, "run", return_value=completed):
+            rows = aone.AoneRuntime._a1_list("1086837", "assignedTo=worker")
         self.assertEqual(rows[0]["type"], "需求问题")
         rows[0].update(pool="tf_customer", pool_project="1086837")
         s = self._scanner()
@@ -1945,14 +1952,14 @@ class AoneSchedulerUnionTest(unittest.TestCase):
         self.assertEqual(s._dispatch.call_count, 2)
 
     def test_same_second_comment_counts_as_after_claim(self):
-        cutoff = bot.datetime(2026, 7, 20, 19, 20, 0)
+        cutoff = aone.datetime(2026, 7, 20, 19, 20, 0)
         comment = {"id": 1, "creator": "reviewer",
                    "createdAt": "2026-07-20 19:20:00", "content": "same second"}
-        self.assertTrue(bot.AoneScheduler._is_human_comment_after(comment, cutoff))
+        self.assertTrue(aone.AoneRuntime._is_human_comment_after(comment, cutoff))
 
     def test_trigger_comment_cannot_close_prompt_fence(self):
         marker = "<<<PERSONA_TRIGGER_COMMENT_END>>>"
-        context = bot._ticket_dispatch_context({
+        context = aone._ticket_dispatch_context({
             "id": "1", "title": "x", "pool": "other", "pool_project": "2",
             "modified": "m",
         }, {"id": 9, "creator": "x", "createdAt": "t",
@@ -1968,9 +1975,9 @@ class AoneSchedulerUnionTest(unittest.TestCase):
             enqueue=lambda _envelope, local_submit=None: local_submit())
         item = {"id": "1", "title": "x", "pool": "other", "pool_project": "2",
                 "modified": "m"}
-        context = bot._ticket_dispatch_context(item, {
+        context = aone._ticket_dispatch_context(item, {
             "id": 9, "creator": "x", "createdAt": "t", "content": "new"})
-        with mock.patch.object(bot, "_aone_preflight",
+        with mock.patch.object(aone, "_aone_preflight",
                                return_value=(True, {"status": "ok"})):
             accepted, reason = s._dispatch(item, dispatch_context=context)
         self.assertFalse(accepted)
@@ -1985,7 +1992,7 @@ class AoneSchedulerUnionTest(unittest.TestCase):
         pool_key = "tf_" + "customer"
         item = {"id": "84608993", "title": "generic Provider issue",
                 "pool": pool_key, "pool_project": "1086837", "modified": "m"}
-        with mock.patch.object(bot, "_aone_preflight",
+        with mock.patch.object(aone, "_aone_preflight",
                                return_value=(False, {
                                    "status": "failed",
                                    "errorType": "preflight_validation_failed",
@@ -2006,7 +2013,7 @@ class AoneSchedulerUnionTest(unittest.TestCase):
         pool_key = "tf_" + "customer"
         item = {"id": "84608993", "title": "generic Provider issue",
                 "pool": pool_key, "pool_project": "1086837", "modified": "m"}
-        with mock.patch.object(bot, "_aone_preflight",
+        with mock.patch.object(aone, "_aone_preflight",
                                return_value=(True, {"status": "ok"})):
             accepted, reason = s._dispatch(item)
         self.assertTrue(accepted)
@@ -2034,7 +2041,7 @@ class AoneSchedulerUnionTest(unittest.TestCase):
         s.execution_router = SimpleNamespace(
             enqueue=mock.Mock(return_value=EnqueueResult(True, "task_persisted")))
         with mock.patch.object(
-                bot, "_aone_preflight",
+                aone, "_aone_preflight",
                 return_value=(True, {"status": "ok"})) as preflight:
             outcomes = [s._dispatch(row) for row in rows]
         self.assertEqual(len(rows), 3)
@@ -2073,7 +2080,7 @@ class AoneSchedulerUnionTest(unittest.TestCase):
     def test_latest_human_comment_after_idle_is_selected(self):
         s = self._scanner()
         s._human_comment_cache = {}
-        s._last_idle_at = lambda _iid: bot.datetime(2026, 7, 20, 19, 0, 0)
+        s._last_idle_at = lambda _iid: aone.datetime(2026, 7, 20, 19, 0, 0)
         comments = [
             {"id": 10, "creator": "alice", "createdAt": "2026-07-20 19:10:00",
              "content": "旧评论"},
@@ -2083,7 +2090,7 @@ class AoneSchedulerUnionTest(unittest.TestCase):
              "content": "机器人评论"},
         ]
         response = SimpleNamespace(returncode=0, stdout=json.dumps(comments), stderr="")
-        with mock.patch.object(bot.subprocess, "run", return_value=response):
+        with mock.patch.object(aone.subprocess, "run", return_value=response):
             latest = s._human_comment("84103828")
         self.assertEqual(str(latest["id"]), "12")
         self.assertEqual(latest["content"], "最新评论")
@@ -2119,19 +2126,19 @@ class ModelProviderFailureRoutingTest(unittest.TestCase):
         with mock.patch.dict(os.environ, {"JARVIS_MASTER_STAFF": staff}), \
              mock.patch.object(
                  bot, "_release_claim_checked", return_value=True) as release, \
-             mock.patch.object(bot, "_aone_event_enqueue", return_value=True) as aone, \
+             mock.patch.object(bot, "_aone_event_enqueue", return_value=True) as event_enqueue, \
              mock.patch.object(
                  bot, "_dingtalk_event_enqueue",
                  return_value=dingtalk_result) as dingtalk:
             handler._dispatch_failed(
                 "82952290", bot.ClaudeResult(text, True, subtype), notices.append,
                 "1086837", terraform=True, kind="ticket", sid=sid, attempts=3)
-        return aone, dingtalk, release, notices
+        return event_enqueue, dingtalk, release, notices
 
     def test_provider_failure_is_dingtalk_only_with_operator_recovery(self):
-        aone, dingtalk, release, notices = self._dispatch_failed(
+        event_enqueue, dingtalk, release, notices = self._dispatch_failed(
             "API Error: 400 模型提供方错误 Request" "Id=req-secret token=secret")
-        aone.assert_not_called()
+        event_enqueue.assert_not_called()
         dingtalk.assert_called_once()
         args = dingtalk.call_args.args
         self.assertEqual(args[2], "dispatch-model-provider:ticket:provider-session")
@@ -2150,9 +2157,9 @@ class ModelProviderFailureRoutingTest(unittest.TestCase):
         self.assertIn("model_provider_error", notices[0])
 
     def test_provider_dingtalk_failure_never_falls_back_to_aone(self):
-        aone, dingtalk, _release, _notices = self._dispatch_failed(
+        event_enqueue, dingtalk, _release, _notices = self._dispatch_failed(
             "模型网关失败", dingtalk_result=False)
-        aone.assert_not_called()
+        event_enqueue.assert_not_called()
         dingtalk.assert_called_once()
 
     def test_claim_release_rc_nonzero_is_reported_in_dingtalk_only(self):
@@ -2160,7 +2167,7 @@ class ModelProviderFailureRoutingTest(unittest.TestCase):
         handler._post_death_cause = mock.Mock()
         failed_release = SimpleNamespace(returncode=2)
         with mock.patch.object(bot.subprocess, "run", return_value=failed_release), \
-             mock.patch.object(bot, "_aone_event_enqueue") as aone, \
+             mock.patch.object(bot, "_aone_event_enqueue") as event_enqueue, \
              mock.patch.object(
                  bot, "_dingtalk_event_enqueue", return_value=True) as dingtalk:
             handler._dispatch_failed(
@@ -2168,7 +2175,7 @@ class ModelProviderFailureRoutingTest(unittest.TestCase):
                 bot.ClaudeResult("模型提供方错误", True, "success"),
                 lambda _text: None, "1086837", terraform=True, kind="ticket",
                 sid="release-failed-session", attempts=3)
-        aone.assert_not_called()
+        event_enqueue.assert_not_called()
         dingtalk.assert_called_once()
         body = dingtalk.call_args.args[5]
         self.assertIn("认领释放：释放失败", body)
@@ -2181,16 +2188,16 @@ class ModelProviderFailureRoutingTest(unittest.TestCase):
             stderr="gateway down")
         with tempfile.TemporaryDirectory() as tmp, \
              mock.patch.object(
-                 bot, "DINGTALK_EVENT_PATH", Path(tmp) / "dingtalk.json"), \
-             mock.patch.object(bot, "_is_terraform_project", return_value=True), \
-             mock.patch.object(bot.subprocess, "run", return_value=failed) as run:
-            first = bot._dingtalk_event_enqueue(
+                 aone, "DINGTALK_EVENT_PATH", Path(tmp) / "dingtalk.json"), \
+             mock.patch.object(aone, "_is_terraform_project", return_value=True), \
+             mock.patch.object(aone.subprocess, "run", return_value=failed) as run:
+            first = aone._dingtalk_event_enqueue(
                 "82952290", "1086837", "dispatch-model-provider:ticket:stable",
                 "320687", "Jarvis 模型提供方故障", "safe operator recovery")
-            second = bot._dingtalk_event_enqueue(
+            second = aone._dingtalk_event_enqueue(
                 "82952290", "1086837", "dispatch-model-provider:ticket:stable",
                 "320687", "Jarvis 模型提供方故障", "safe operator recovery")
-            ledger = bot._dingtalk_event_load()
+            ledger = aone._dingtalk_event_load()
         self.assertTrue(first)
         self.assertTrue(second)
         self.assertEqual(run.call_count, 1, "backoff suppresses immediate duplicate transport")
@@ -2200,27 +2207,27 @@ class ModelProviderFailureRoutingTest(unittest.TestCase):
         self.assertEqual(record["attempts"], 1)
 
     def test_other_terraform_failure_keeps_aone_important_event(self):
-        aone, dingtalk, _release, _notices = self._dispatch_failed(
+        event_enqueue, dingtalk, _release, _notices = self._dispatch_failed(
             "ordinary execution failure", subtype="error")
-        aone.assert_called_once()
-        self.assertEqual(aone.call_args.args[2],
+        event_enqueue.assert_called_once()
+        self.assertEqual(event_enqueue.call_args.args[2],
                          "dispatch:ticket:provider-session:error")
         dingtalk.assert_not_called()
 
     def test_customer_api_gateway_timeout_is_not_model_provider_failure(self):
-        aone, dingtalk, _release, _notices = self._dispatch_failed(
+        event_enqueue, dingtalk, _release, _notices = self._dispatch_failed(
             "customer API gateway timeout while calling Aone", subtype="error")
-        aone.assert_called_once()
-        self.assertEqual(aone.call_args.args[2],
+        event_enqueue.assert_called_once()
+        self.assertEqual(event_enqueue.call_args.args[2],
                          "dispatch:ticket:provider-session:error")
         dingtalk.assert_not_called()
 
     def test_authentication_subtype_without_model_context_is_not_provider_failure(self):
-        aone, dingtalk, _release, _notices = self._dispatch_failed(
+        event_enqueue, dingtalk, _release, _notices = self._dispatch_failed(
             "permission denied", subtype="authentication_error")
-        aone.assert_called_once()
+        event_enqueue.assert_called_once()
         self.assertEqual(
-            aone.call_args.args[2],
+            event_enqueue.call_args.args[2],
             "dispatch:ticket:provider-session:authentication_error")
         dingtalk.assert_not_called()
 
@@ -2271,13 +2278,13 @@ class TaskBookendDispatchTest(unittest.TestCase):
         h._dispatch_failed = lambda *a, **k: calls.setdefault("failed", a)
         with mock.patch.object(bot, "run_claude_buffered",
                                return_value=bot.ClaudeResult(final, False, "success")), \
-             mock.patch.object(bot, "_claim_workitem",
+             mock.patch.object(task_runtime_module, "_claim_workitem",
                                side_effect=lambda *a, **k: calls.setdefault("claim", a)), \
-             mock.patch.object(bot, "_aone_event_enqueue",
+             mock.patch.object(task_runtime_module, "_aone_event_enqueue",
                                side_effect=lambda *a, **k: calls.setdefault("reply", (a, k)) or True), \
-             mock.patch.object(bot, "_finish_workitem",
+             mock.patch.object(task_runtime_module, "_finish_workitem",
                                side_effect=lambda *a, **k: calls.setdefault("finish", a)), \
-             mock.patch.object(bot, "_release_post_pr_claim",
+             mock.patch.object(task_runtime_module, "_release_post_pr_claim",
                                side_effect=lambda *a, **k: calls.setdefault("release", a)):
             out = h.dispatch_item(
                 "84407231", "prompt", "sid", False, lambda _t: None,
@@ -2310,8 +2317,8 @@ class TaskBookendDispatchTest(unittest.TestCase):
             "https://code.example/cr/123",
             "https://code.example/mr/456",
         ]
-        with mock.patch.object(bot, "_aone_event_enqueue", return_value=True) as enqueue, \
-             mock.patch.object(bot, "_release_post_pr_claim"):
+        with mock.patch.object(task_runtime_module, "_aone_event_enqueue", return_value=True) as enqueue, \
+             mock.patch.object(task_runtime_module, "_release_post_pr_claim"):
             bookend.commit({
                 "outcome": "idle",
                 "reply_body": "修复已完成",
@@ -2321,7 +2328,7 @@ class TaskBookendDispatchTest(unittest.TestCase):
         self.assertEqual(
             queued,
             "修复已完成\n\n关联：%s" % " ".join(links))
-        public = bot._aone_event_prepare_text(queued)
+        public = aone._aone_event_prepare_text(queued)
         for link in links:
             self.assertIn("[%s](%s)" % (link, link), public)
         self.assertNotIn("关联：https://", public)
@@ -2373,14 +2380,14 @@ class TaskBookendDispatchTest(unittest.TestCase):
         ctrl = self._controller()
         ctrl.bind_process = mock.Mock()
         process = object()
-        with mock.patch.object(bot, "_claim_workitem") as claim:
+        with mock.patch.object(task_runtime_module, "_claim_workitem") as claim:
             comment = bot._TaskAoneBookend(
                 ctrl, "84407231", "1086837", True, "ticket",
                 expected_comment_cursor="124900001")
             comment.bind_process(process)
             claim.assert_called_once_with(
                 "84407231", "1086837", terraform=True, reopen_done=True)
-        with mock.patch.object(bot, "_claim_workitem") as claim:
+        with mock.patch.object(task_runtime_module, "_claim_workitem") as claim:
             ordinary = bot._TaskAoneBookend(
                 ctrl, "84407231", "1086837", True, "ticket")
             ordinary.bind_process(process)
@@ -2450,9 +2457,9 @@ class TaskBookendDispatchTest(unittest.TestCase):
             ctrl, "84407231", "1086837", True, "ticket",
             comment_reader=lambda: next(comments), handoff_writer=write_handoff)
         bookend.capture_comment_baseline()
-        with mock.patch.object(bot, "_aone_event_enqueue",
+        with mock.patch.object(task_runtime_module, "_aone_event_enqueue",
                                side_effect=lambda *a, **k: order.append("reply") or True), \
-             mock.patch.object(bot, "_release_post_pr_claim",
+             mock.patch.object(task_runtime_module, "_release_post_pr_claim",
                                side_effect=lambda *a, **k: order.append("release")):
             self.assertTrue(bookend.commit(
                 {"outcome": "idle", "reply_body": "current generation done"}))
@@ -2470,8 +2477,8 @@ class TaskBookendDispatchTest(unittest.TestCase):
             self._controller(), "84407231", "1086837", True, "ticket",
             comment_reader=lambda: comment, handoff_writer=handed_off.append)
         bookend.capture_comment_baseline()
-        with mock.patch.object(bot, "_aone_event_enqueue", return_value=True), \
-             mock.patch.object(bot, "_release_post_pr_claim") as release:
+        with mock.patch.object(task_runtime_module, "_aone_event_enqueue", return_value=True), \
+             mock.patch.object(task_runtime_module, "_release_post_pr_claim") as release:
             self.assertFalse(bookend.commit(
                 {"outcome": "idle", "reply_body": "no new comment"}))
         self.assertEqual(handed_off, [])
@@ -2489,8 +2496,8 @@ class TaskBookendDispatchTest(unittest.TestCase):
             self._controller(), "84407231", "1086837", True, "ticket",
             comment_reader=lambda: next(comments), handoff_writer=fail_handoff)
         bookend.capture_comment_baseline()
-        with mock.patch.object(bot, "_aone_event_enqueue") as reply, \
-             mock.patch.object(bot, "_release_post_pr_claim") as release:
+        with mock.patch.object(task_runtime_module, "_aone_event_enqueue") as reply, \
+             mock.patch.object(task_runtime_module, "_release_post_pr_claim") as release:
             with self.assertRaisesRegex(RuntimeError, "paused"):
                 bookend.commit({"outcome": "idle", "reply_body": "must not land"})
         reply.assert_not_called()
@@ -2534,9 +2541,9 @@ class TaskBookendDispatchTest(unittest.TestCase):
                                return_value=bot.ClaudeResult(
                                    '[[AONE_RESULT:{"outcome":"idle","reply_body":"x"}]]',
                                    False, "success")), \
-             mock.patch.object(bot, "_aone_event_enqueue",
+             mock.patch.object(task_runtime_module, "_aone_event_enqueue",
                                side_effect=lambda *a, **k: calls.setdefault("reply", k) or True), \
-             mock.patch.object(bot, "_release_post_pr_claim", lambda *a, **k: None):
+             mock.patch.object(task_runtime_module, "_release_post_pr_claim", lambda *a, **k: None):
             out = h.dispatch_item(
                 "999", "p", "sid", False, lambda _t: None, "tgt", "group",
                 project="2100304", kind="ticket", terraform=False,
@@ -2606,7 +2613,7 @@ class TaskWaitingHumanAttentionTest(unittest.TestCase):
             "unresolved": "需要确认发布范围",
             "suspend_wait_for": "新山",
         }
-        with mock.patch.object(bot, "_aone_event_enqueue", return_value=True):
+        with mock.patch.object(task_runtime_module, "_aone_event_enqueue", return_value=True):
             self.assertFalse(bookend.commit(result))
             self.assertFalse(bookend.commit(result))
 
@@ -2654,14 +2661,14 @@ class TaskWaitingHumanAttentionTest(unittest.TestCase):
     def test_bind_clears_wait_attention_but_post_pr_bind_does_not(self):
         bookend, client, _notices = self._bookend()
         client.current["603"] = ("320687", "task-waiting-human:603:6")
-        with mock.patch.object(bot, "_claim_workitem"):
+        with mock.patch.object(task_runtime_module, "_claim_workitem"):
             bookend.bind_process(object())
         self.assertEqual(client.clears, [("603", "task-waiting-human:")])
         self.assertNotIn("603", client.current)
 
         post_pr, post_client, _ = self._bookend(writes_reply=False)
         post_client.current["603"] = ("320687", "pr-review")
-        with mock.patch.object(bot, "_claim_workitem"):
+        with mock.patch.object(task_runtime_module, "_claim_workitem"):
             post_pr.bind_process(object())
         self.assertEqual(post_client.clears, [])
         self.assertIn("603", post_client.current)
@@ -2670,12 +2677,12 @@ class TaskWaitingHumanAttentionTest(unittest.TestCase):
         for outcome in ("done", "idle"):
             with self.subTest(outcome=outcome):
                 bookend, client, _notices = self._bookend()
-                with mock.patch.object(bot, "_claim_workitem"):
+                with mock.patch.object(task_runtime_module, "_claim_workitem"):
                     bookend.bind_process(object())
                 client.current["603"] = ("320687", "pr-review-after-bind")
-                with mock.patch.object(bot, "_aone_event_enqueue", return_value=True), \
-                     mock.patch.object(bot, "_finish_workitem"), \
-                     mock.patch.object(bot, "_release_post_pr_claim"):
+                with mock.patch.object(task_runtime_module, "_aone_event_enqueue", return_value=True), \
+                     mock.patch.object(task_runtime_module, "_finish_workitem"), \
+                     mock.patch.object(task_runtime_module, "_release_post_pr_claim"):
                     bookend.commit({"outcome": outcome, "reply_body": "完成"})
                 self.assertEqual(
                     client.clears, [("603", "task-waiting-human:")])
@@ -2685,7 +2692,7 @@ class TaskWaitingHumanAttentionTest(unittest.TestCase):
     def test_bind_clear_failure_fails_closed_before_aone_claim(self):
         bookend, client, _notices = self._bookend()
         client.fail_clear = True
-        with mock.patch.object(bot, "_claim_workitem") as claim:
+        with mock.patch.object(task_runtime_module, "_claim_workitem") as claim:
             with self.assertRaisesRegex(RuntimeError, "cleanup failed"):
                 bookend.bind_process(object())
         claim.assert_not_called()
@@ -2711,7 +2718,7 @@ class TaskWaitingHumanAttentionTest(unittest.TestCase):
     def test_persist_failure_fails_suspend_closed(self):
         bookend, client, _notices = self._bookend()
         client.fail_upsert = True
-        with mock.patch.object(bot, "_aone_event_enqueue", return_value=True):
+        with mock.patch.object(task_runtime_module, "_aone_event_enqueue", return_value=True):
             with self.assertRaisesRegex(RuntimeError, "projection was not persisted"):
                 bookend.commit({
                     "outcome": "suspend", "reply_body": "等待",
@@ -2721,7 +2728,7 @@ class TaskWaitingHumanAttentionTest(unittest.TestCase):
     def test_notification_failure_does_not_fail_persisted_suspend(self):
         bookend, client, _notices = self._bookend()
         bookend._attention.notifier = mock.Mock(side_effect=RuntimeError("dingtalk down"))
-        with mock.patch.object(bot, "_aone_event_enqueue", return_value=True):
+        with mock.patch.object(task_runtime_module, "_aone_event_enqueue", return_value=True):
             self.assertFalse(bookend.commit({
                 "outcome": "suspend", "reply_body": "等待",
                 "suspend_wait_for": "320687",
@@ -2766,13 +2773,13 @@ class PostPrRerouteDispatchTest(unittest.TestCase):
                                           "JARVIS_DISPATCH_RETRY_BACKOFF": "0"}), \
              mock.patch.object(bot, "run_claude_buffered",
                                return_value=bot.ClaudeResult(final, is_error, "success")), \
-             mock.patch.object(bot, "_claim_workitem",
+             mock.patch.object(task_runtime_module, "_claim_workitem",
                                side_effect=lambda *a, **k: calls.__setitem__("claim", calls["claim"] + 1)), \
-             mock.patch.object(bot, "_release_post_pr_claim",
+             mock.patch.object(task_runtime_module, "_release_post_pr_claim",
                                side_effect=lambda *a, **k: calls.__setitem__("release", calls["release"] + 1)), \
-             mock.patch.object(bot, "_finish_workitem",
+             mock.patch.object(task_runtime_module, "_finish_workitem",
                                side_effect=lambda *a, **k: calls.__setitem__("finish", calls["finish"] + 1)), \
-             mock.patch.object(bot, "_aone_event_enqueue",
+             mock.patch.object(task_runtime_module, "_aone_event_enqueue",
                                side_effect=lambda *a, **k: calls.__setitem__("reply", calls["reply"] + 1) or True):
             # bind (claim) then dispatch, mirroring _execute_task_lease on_spawn=bind_process
             bookend.bind_process(SimpleNamespace(pid=1))
@@ -2827,7 +2834,7 @@ class PostPrRerouteDispatchTest(unittest.TestCase):
         # Simulate the completion twice (a re-lease re-runs release_idle): still one write.
         _out, _calls, bk = self._run("pr_ci_fix", "ok")
         released_before = None
-        with mock.patch.object(bot, "_release_post_pr_claim") as rel:
+        with mock.patch.object(task_runtime_module, "_release_post_pr_claim") as rel:
             bk.release_idle()        # second call after the dispatch already released
             bk.release_idle()
             released_before = rel.call_count

@@ -10,7 +10,7 @@ from unittest import mock
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from jarvis_external_recovery import (  # noqa: E402
+from bridge.jarvis_external_recovery import (  # noqa: E402
     ExternalOperationRecoveryScheduler,
     RecoveryInconclusive,
 )

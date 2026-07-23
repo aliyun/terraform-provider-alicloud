@@ -10,7 +10,7 @@ from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-import task_worker
+from bridge import task_worker
 
 
 class _Executor:
@@ -84,28 +84,13 @@ class TaskWorkerTest(unittest.TestCase):
         field_worker = mock.Mock()
         field_factory = mock.Mock(return_value=field_worker)
         with mock.patch.object(
-                task_worker.bot, "JarvisHandler",
-                side_effect=AssertionError("Bot must not be constructed")) as handler, \
-                mock.patch.object(
-                    task_worker.bot, "AoneScheduler",
-                    side_effect=AssertionError("scanner must not be constructed")) as scanner, \
-                mock.patch.object(
-                    task_worker.bot, "DailyScheduler",
-                    side_effect=AssertionError("daily must not be constructed")) as daily, \
-                mock.patch.object(
-                    task_worker.bot, "PrWatchScheduler",
-                    side_effect=AssertionError("prwatch must not be constructed")) as prwatch, \
-                mock.patch.object(task_worker.bot, "claude_bin", return_value="/bin/claude"):
+                task_worker, "claude_bin", return_value="/bin/claude"):
             runtime = task_worker.TaskExecutionRuntime(
                 task_client=client,
                 field_repair_worker_factory=field_factory,
                 ephemeral_executor_factory=pool_factory,
             )
 
-        handler.assert_not_called()
-        scanner.assert_not_called()
-        daily.assert_not_called()
-        prwatch.assert_not_called()
         self.assertIs(runtime.task_client, client)
         self.assertIs(runtime.field_repair_worker, field_worker)
         self.assertIs(runtime.ephemeral_executor, pool)

@@ -9,7 +9,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from jarvis_capacity import CapacityManager, CapacitySnapshot  # noqa: E402
+from bridge.jarvis_capacity import CapacityManager, CapacitySnapshot  # noqa: E402
 
 
 class CapacityManagerTest(unittest.TestCase):

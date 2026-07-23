@@ -21,4 +21,4 @@
 | Aone 回复触发 Task 唤醒 | 不主动发公共群 | 控制面从 `SUSPENDED` 转 `READY`，生命周期静默；原交互会话可继续显示结果。 |
 | 用户在群里主动 @机器人/授权/委派 | 按原会话回复 | 这是请求-响应，不属于主动群消息。 |
 
-实现约束：`aone.scan`、`pr.watch`、`daily.nudge` runner 与持久化执行器统一使用 routine 日志 sink；只有审批卡片和 `PrWatchScheduler._escalate` 可以主动调用群 broadcast。
+实现约束：`aone.scan`、`pr.watch`、`daily.nudge` runner 与持久化执行器统一使用 routine 日志 sink；只有审批卡片和 PR runner 的升级路径可以主动调用群 broadcast。

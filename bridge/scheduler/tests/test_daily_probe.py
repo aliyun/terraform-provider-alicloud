@@ -8,18 +8,16 @@ import unittest
 from unittest import mock
 from zoneinfo import ZoneInfo
 
-from bridge.headless import HeadlessResult, Lane, SessionPolicy
+from bridge.headless_runtime import HeadlessResult, Lane, SessionPolicy
 from bridge.scheduler.model import (
     DailySchedule,
-    HeadlessRunner,
+    HandlerRunner,
     JobResultStatus,
     MisfirePolicy,
     ScheduledJobDefinition,
 )
 from bridge.scheduler.runners.daily_probe import (
-    BUILDER_REF,
     DailyProbeRunner,
-    PROTOCOL,
     probe_prompt,
 )
 
@@ -33,12 +31,7 @@ def definition() -> ScheduledJobDefinition:
         2,
         "probe",
         DailySchedule(10, 0, "Asia/Shanghai"),
-        HeadlessRunner(
-            BUILDER_REF,
-            PROTOCOL,
-            SessionPolicy.NEW.value,
-            Lane.TERRAFORM.value,
-        ),
+        HandlerRunner("daily.probe"),
         MisfirePolicy.CURRENT_DAY,
         300,
         False,

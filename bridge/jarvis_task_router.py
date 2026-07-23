@@ -14,7 +14,7 @@ from __future__ import annotations
 import logging
 from typing import Callable, Iterable, NamedTuple, Optional, Tuple
 
-from jarvis_task_client import (
+from bridge.jarvis_task_client import (
     ControlPlaneClient,
     ControlPlaneError,
     ControlPlaneUnavailable,

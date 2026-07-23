@@ -77,7 +77,7 @@ _unmanaged_bot_pids() {
   # JARVIS_BRIDGE_BOT.
   [ -n "${JARVIS_BRIDGE_BOT:-}" ] && return 0
   command -v pgrep >/dev/null 2>&1 || return 0
-  pgrep -f '[j]arvis_dingtalk_bot.py' 2>/dev/null || true
+  pgrep -f '[j]arvis_dingtalk_bot' 2>/dev/null || true
 }
 
 _tail_log() {  # $1 = n
@@ -126,14 +126,14 @@ _rollback_started_process() { # $1 = pid, $2 = pidfile, $3 = label
   return 0
 }
 
-_bridge_ready_in_log() { # $1 = pid, $2 = byte offset before start
-  local pid="$1" pre_sz="${2:-0}" size=0
+_bridge_ready_in_log() { # $1 = launchd-owned pid
+  local pid="$1"
   [ -f "$LOG" ] || return 1
-  size="$(wc -c <"$LOG" 2>/dev/null | tr -d ' ')"
-  [ -n "$size" ] || size=0
-  [ "$size" -ge "$pre_sz" ] || pre_sz=0
-  tail -c "+$((pre_sz + 1))" "$LOG" 2>/dev/null \
-    | grep -F "Bridge READY pid=$pid " >/dev/null 2>&1
+  if [ "${JARVIS_BRIDGE_ROLE:-scheduler}" = "worker" ]; then
+    grep -F "Task worker READY pid=$pid " "$LOG" >/dev/null 2>&1
+  else
+    grep -F "Bridge READY pid=$pid role=supervisor" "$LOG" >/dev/null 2>&1
+  fi
 }
 
 # -- role-aware paths (call AFTER _source_env; env files may set JARVIS_BRIDGE_ROLE) --
@@ -153,24 +153,25 @@ _resolve_paths_by_role() {
 
 _scheduler_enabled() { [ "${JARVIS_BRIDGE_ROLE:-scheduler}" = "scheduler" ]; }
 
-_scheduler_read_pid() {
-  [ -f "$SCHEDULER_PIDFILE" ] || return 1
-  local p; p="$(cat "$SCHEDULER_PIDFILE" 2>/dev/null || true)"
+_component_read_pid() {
+  local pidfile="$1" p
+  [ -f "$pidfile" ] || return 1
+  p="$(cat "$pidfile" 2>/dev/null || true)"
   [ -n "$p" ] || return 1
   printf '%s' "$p"
 }
 
-_scheduler_running_pid() {
-  local p; p="$(_scheduler_read_pid)" || return 1
+_component_running_pid() {
+  local p; p="$(_component_read_pid "$1")" || return 1
   _alive "$p" && { printf '%s' "$p"; return 0; }
   return 1
 }
 
 _scheduler_validate() {
   _scheduler_enabled || return 0
-  PYTHONPATH="$SCRIPT_DIR:$REPO_ROOT${PYTHONPATH:+:$PYTHONPATH}" "$PYTHON" -c '
-from scheduler.registry import REGISTRY
-if not REGISTRY.scheduler_job_keys():
+  PYTHONPATH="$REPO_ROOT${PYTHONPATH:+:$PYTHONPATH}" "$PYTHON" -c '
+from bridge.scheduler.jobs import JOBS
+if not JOBS:
     raise SystemExit("scheduler registry is empty")
 ' || return $?
   if [ -z "${JARVIS_CONTROL_PLANE_TOKEN:-}" ] && [ -z "${JARVIS_HTML_REPORT_TOKEN:-}" ]; then
@@ -179,43 +180,60 @@ if not REGISTRY.scheduler_job_keys():
   fi
 }
 
-_scheduler_start() {
-  _scheduler_enabled || return 0
-  local pid i=0 deadline=$(( SCHEDULER_READY_WAIT * 10 ))
-  SCHEDULER_STARTED_PID=""
-  if pid="$(_scheduler_running_pid)"; then
-    say "scheduler 已在运行 (pid $pid)"
+_task_worker_validate() {
+  if [ -z "${JARVIS_CONTROL_PLANE_TOKEN:-}" ] && [ -z "${JARVIS_HTML_REPORT_TOKEN:-}" ]; then
+    err "task worker control-plane token is required"
+    return 2
+  fi
+}
+
+_component_start() {
+  local label="$1" pidfile="$2" logfile="$3" ready="$4" ready_wait="$5" validate="$6"
+  shift 6
+  local pid i=0 deadline=$(( ready_wait * 10 ))
+  COMPONENT_STARTED_PID=""
+  if pid="$(_component_running_pid "$pidfile")"; then
+    say "$label 已在运行 (pid $pid)"
     return 0
   fi
-  rm -f "$SCHEDULER_PIDFILE"
-  _scheduler_validate || return $?
+  rm -f "$pidfile"
+  "$validate" || return $?
   mkdir -p "$STATE_DIR"
-  nohup "$PYTHON" "$SCRIPT_DIR/main.py" >>"$SCHEDULER_LOG" 2>&1 &
+  nohup "$@" >>"$logfile" 2>&1 &
   pid=$!
-  SCHEDULER_STARTED_PID="$pid"
-  printf '%s\n' "$pid" >"$SCHEDULER_PIDFILE"
+  COMPONENT_STARTED_PID="$pid"
+  printf '%s\n' "$pid" >"$pidfile"
   while [ "$i" -lt "$deadline" ]; do
     if ! _alive "$pid"; then
-      err "scheduler 启动失败"
-      tail -n 20 "$SCHEDULER_LOG" >&2
-      _rollback_started_process "$pid" "$SCHEDULER_PIDFILE" "scheduler" || true
+      err "$label 启动失败"
+      tail -n 20 "$logfile" >&2
+      _rollback_started_process "$pid" "$pidfile" "$label" || true
       return 1
     fi
-    if grep -F "Scheduler READY pid=$pid " "$SCHEDULER_LOG" >/dev/null 2>&1; then
-      say "scheduler 已启动 (pid $pid, log=$SCHEDULER_LOG)"
+    if grep -F "$ready pid=$pid " "$logfile" >/dev/null 2>&1; then
+      say "$label 已启动 (pid $pid, log=$logfile)"
       return 0
     fi
     sleep 0.1; i=$((i + 1))
   done
-  err "scheduler 未在 ${SCHEDULER_READY_WAIT}s 内 READY"
-  _rollback_started_process "$pid" "$SCHEDULER_PIDFILE" "scheduler" || true
+  err "$label 未在 ${ready_wait}s 内 READY"
+  _rollback_started_process "$pid" "$pidfile" "$label" || true
   return 1
+}
+
+_scheduler_start() {
+  _scheduler_enabled || return 0
+  _component_start \
+    "scheduler" "$SCHEDULER_PIDFILE" "$SCHEDULER_LOG" "Scheduler READY" \
+    "$SCHEDULER_READY_WAIT" _scheduler_validate \
+    env "PYTHONPATH=$REPO_ROOT${PYTHONPATH:+:$PYTHONPATH}" \
+    "$PYTHON" -m bridge.main
 }
 
 _scheduler_stop() {
   _scheduler_enabled || return 0
   local pid i=0 deadline=$(( SCHEDULER_DRAIN_WAIT * 10 ))
-  pid="$(_scheduler_read_pid)" || { say "scheduler 未运行"; return 0; }
+  pid="$(_component_read_pid "$SCHEDULER_PIDFILE")" || { say "scheduler 未运行"; return 0; }
   _alive "$pid" || { rm -f "$SCHEDULER_PIDFILE"; say "scheduler 已停止"; return 0; }
   kill -TERM "$pid"
   say "scheduler 正在 drain (pid $pid, 宽限 ${SCHEDULER_DRAIN_WAIT}s)"
@@ -228,61 +246,28 @@ _scheduler_stop() {
   say "scheduler 已停止 (graceful)"
 }
 
-_task_worker_read_pid() {
-  [ -f "$TASK_WORKER_PIDFILE" ] || return 1
-  local p; p="$(cat "$TASK_WORKER_PIDFILE" 2>/dev/null || true)"
-  [ -n "$p" ] || return 1
-  printf '%s' "$p"
-}
-
-_task_worker_running_pid() {
-  local p; p="$(_task_worker_read_pid)" || return 1
-  _alive "$p" && { printf '%s' "$p"; return 0; }
-  return 1
-}
-
-_task_worker_validate() {
-  if [ -z "${JARVIS_CONTROL_PLANE_TOKEN:-}" ] && [ -z "${JARVIS_HTML_REPORT_TOKEN:-}" ]; then
-    err "task worker control-plane token is required"
-    return 2
-  fi
-}
-
 _task_worker_start() {
-  local pid i=0 deadline=$(( SCHEDULER_READY_WAIT * 10 ))
   TASK_WORKER_STARTED_PID=""
-  if pid="$(_task_worker_running_pid)"; then
-    say "task worker 已在运行 (pid $pid)"
-    return 0
+  if [ -n "${JARVIS_TASK_WORKER:-}" ]; then
+    _component_start \
+      "task worker" "$TASK_WORKER_PIDFILE" "$TASK_WORKER_LOG" "Task worker READY" \
+      "$SCHEDULER_READY_WAIT" _task_worker_validate \
+      "$PYTHON" "$TASK_WORKER"
+  else
+    _component_start \
+      "task worker" "$TASK_WORKER_PIDFILE" "$TASK_WORKER_LOG" "Task worker READY" \
+      "$SCHEDULER_READY_WAIT" _task_worker_validate \
+      env "PYTHONPATH=$REPO_ROOT${PYTHONPATH:+:$PYTHONPATH}" \
+      "$PYTHON" -m bridge.task_worker
   fi
-  rm -f "$TASK_WORKER_PIDFILE"
-  _task_worker_validate || return $?
-  mkdir -p "$STATE_DIR"
-  nohup "$PYTHON" "$TASK_WORKER" >>"$TASK_WORKER_LOG" 2>&1 &
-  pid=$!
-  TASK_WORKER_STARTED_PID="$pid"
-  printf '%s\n' "$pid" >"$TASK_WORKER_PIDFILE"
-  while [ "$i" -lt "$deadline" ]; do
-    if ! _alive "$pid"; then
-      err "task worker 启动失败"
-      tail -n 20 "$TASK_WORKER_LOG" >&2
-      _rollback_started_process "$pid" "$TASK_WORKER_PIDFILE" "task worker" || true
-      return 1
-    fi
-    if grep -F "Task worker READY pid=$pid " "$TASK_WORKER_LOG" >/dev/null 2>&1; then
-      say "task worker 已启动 (pid $pid, log=$TASK_WORKER_LOG)"
-      return 0
-    fi
-    sleep 0.1; i=$((i + 1))
-  done
-  err "task worker 未在 ${SCHEDULER_READY_WAIT}s 内 READY"
-  _rollback_started_process "$pid" "$TASK_WORKER_PIDFILE" "task worker" || true
-  return 1
+  local rc=$?
+  TASK_WORKER_STARTED_PID="${COMPONENT_STARTED_PID:-}"
+  return "$rc"
 }
 
 _task_worker_stop() {
   local pid i=0 stop_wait deadline
-  pid="$(_task_worker_read_pid)" || { say "task worker 未运行"; return 0; }
+  pid="$(_component_read_pid "$TASK_WORKER_PIDFILE")" || { say "task worker 未运行"; return 0; }
   _alive "$pid" || { rm -f "$TASK_WORKER_PIDFILE"; say "task worker 已停止"; return 0; }
   stop_wait="$(_bridge_stop_wait)"
   deadline=$(( stop_wait * 10 ))
@@ -297,23 +282,22 @@ _task_worker_stop() {
   say "task worker 已停止 (graceful)"
 }
 
-_task_worker_status() {
-  local pid
-  if pid="$(_task_worker_running_pid)"; then
-    say "task worker: RUNNING (pid $pid, log=$TASK_WORKER_LOG)"
+_component_status() {
+  local label="$1" pidfile="$2" logfile="$3" pid
+  if pid="$(_component_running_pid "$pidfile")"; then
+    say "$label: RUNNING (pid $pid, log=$logfile)"
   else
-    say "task worker: STOPPED"
+    say "$label: STOPPED"
   fi
+}
+
+_task_worker_status() {
+  _component_status "task worker" "$TASK_WORKER_PIDFILE" "$TASK_WORKER_LOG"
 }
 
 _scheduler_status() {
   _scheduler_enabled || return 0
-  local pid
-  if pid="$(_scheduler_running_pid)"; then
-    say "scheduler: RUNNING (pid $pid, log=$SCHEDULER_LOG)"
-  else
-    say "scheduler: STOPPED"
-  fi
+  _component_status "scheduler" "$SCHEDULER_PIDFILE" "$SCHEDULER_LOG"
 }
 
 # -- env sourcing (variables auto-exported for the bot) --------------------
@@ -327,6 +311,8 @@ _source_env() {
   source "$REPO_ROOT/bootstrap/runtime-config.sh"
   jarvis_load_runtime_config || return $?
   START_WAIT="${JARVIS_BRIDGE_START_WAIT:-2}"
+  SCHEDULER_READY_WAIT="${JARVIS_SCHEDULER_READY_WAIT:-30}"
+  SCHEDULER_DRAIN_WAIT="${JARVIS_SCHEDULER_DRAIN_TIMEOUT_SECONDS:-600}"
   # Non-interactive SSH/launch shells on macOS commonly omit both the user-local
   # installer directory (a1) and Homebrew (claude). Normalize the standard tool
   # locations before spawning the daemon so registration implies an executable
@@ -413,26 +399,23 @@ _launchd_loaded() {
 }
 
 cmd_launchd_start() {
-  local pre_sz=0 detail state pid
+  local detail state pid
   _launchd_require || return 1
   if [ ! -f "$LAUNCHD_PLIST" ]; then
     err "launchd plist 不存在: $LAUNCHD_PLIST"
     err "请先运行: $SCRIPT_DIR/install-launchd.sh"
     return 1
   fi
-  [ -f "$LOG" ] && pre_sz="$(wc -c <"$LOG" 2>/dev/null | tr -d ' ')"
-  [ -n "$pre_sz" ] || pre_sz=0
-
   if _launchd_loaded; then
     detail="$("$LAUNCHCTL_BIN" print "$LAUNCHD_SERVICE" 2>/dev/null || true)"
     state="$(printf '%s\n' "$detail" | sed -n 's/^[[:space:]]*state = //p' | head -n1)"
     pid="$(printf '%s\n' "$detail" | sed -n 's/^[[:space:]]*pid = //p' | head -n1)"
     if [ "$state" = "running" ] && [ -n "$pid" ]; then
-      if _bridge_ready_in_log "$pid" 0; then
+      if _bridge_ready_in_log "$pid"; then
         say "bridge 已由 launchd 运行 ($LAUNCHD_SERVICE, pid $pid)。"
         return 0
       fi
-      err "launchd 中的 bridge 尚未 READY；请使用 bridge/run.sh restart 做受控替换。"
+      err "launchd 中的 bridge 尚未 READY；请检查日志或执行受控 restart。"
       return 1
     fi
   else
@@ -480,7 +463,7 @@ cmd_launchd_restart() {
   # The launchd daemon owns the Bot and standalone Scheduler. Replace those
   # together while the PID-bound marker keeps the independent Task worker
   # alive across the planned restart.
-  local detail old_pid="" i=0 stop_wait pre_sz=0 preserve_worker=0
+  local detail old_pid="" i=0 stop_wait preserve_worker=0
   detail="$("$LAUNCHCTL_BIN" print "$LAUNCHD_SERVICE" 2>/dev/null || true)"
   old_pid="$(printf '%s\n' "$detail" \
     | sed -n 's/^[[:space:]]*pid = //p' | head -n1)"
@@ -524,8 +507,6 @@ cmd_launchd_restart() {
     err "launchd restart 失败: 无法重新启用 $LAUNCHD_SERVICE"
     return 1
   }
-  [ -f "$LOG" ] && pre_sz="$(wc -c <"$LOG" 2>/dev/null | tr -d ' ')"
-  [ -n "$pre_sz" ] || pre_sz=0
   "$LAUNCHCTL_BIN" kickstart "$LAUNCHD_SERVICE" || {
     err "launchd restart 失败: $LAUNCHD_SERVICE"
     return 1
@@ -569,7 +550,6 @@ cmd_start() {
   # Human start = intent to run; clear the manual-stop sentinel so the cron
   # watchdog resumes its keep-alive duty.
   rm -f "$PIDFILE.manual-stop" 2>/dev/null || true
-  _source_env
   # A worker host runs only the independently supervised Task worker.  It must
   # never create a DingTalk listener or a SchedulerEngine process.
   if [ "${JARVIS_BRIDGE_ROLE:-scheduler}" = "worker" ]; then
@@ -624,8 +604,13 @@ cmd_start() {
   [ -f "$LOG" ] && pre_sz="$(wc -c <"$LOG" 2>/dev/null | tr -d ' ')"
   [ -n "$pre_sz" ] || pre_sz=0
 
-  say "启动 bridge: $PYTHON $BOT  (mode=$mode, role=${JARVIS_BRIDGE_ROLE:-scheduler}, log=$LOG)"
-  nohup "$PYTHON" "$BOT" >>"$LOG" 2>&1 &
+  say "启动 bridge: $PYTHON ${JARVIS_BRIDGE_BOT:-bridge.jarvis_dingtalk_bot}  (mode=$mode, role=${JARVIS_BRIDGE_ROLE:-scheduler}, log=$LOG)"
+  if [ -n "${JARVIS_BRIDGE_BOT:-}" ]; then
+    nohup "$PYTHON" "$BOT" >>"$LOG" 2>&1 &
+  else
+    PYTHONPATH="$REPO_ROOT${PYTHONPATH:+:$PYTHONPATH}" \
+      nohup "$PYTHON" -m bridge.jarvis_dingtalk_bot >>"$LOG" 2>&1 &
+  fi
   local newpid=$!
   printf '%s\n' "$newpid" >"$PIDFILE"
   sleep "$START_WAIT"
@@ -721,7 +706,6 @@ cmd_stop() {
 }
 
 cmd_restart() {
-  _source_env
   if [ "${JARVIS_BRIDGE_ROLE:-scheduler}" = "worker" ]; then
     _task_worker_stop || return $?
     _task_worker_start
@@ -777,8 +761,12 @@ cmd_logs() {
 cmd_dryrun() {
   _source_env
   _decide_mode || true   # 与 start 同样判定/导出降级 flag, 仅不写 pidfile
-  say "dry-run: $PYTHON $BOT --dry-run-once"
-  exec "$PYTHON" "$BOT" --dry-run-once
+  say "dry-run: $PYTHON ${JARVIS_BRIDGE_BOT:-bridge.jarvis_dingtalk_bot} --dry-run-once"
+  if [ -n "${JARVIS_BRIDGE_BOT:-}" ]; then
+    exec "$PYTHON" "$BOT" --dry-run-once
+  fi
+  PYTHONPATH="$REPO_ROOT${PYTHONPATH:+:$PYTHONPATH}" \
+    exec "$PYTHON" -m bridge.jarvis_dingtalk_bot --dry-run-once
 }
 
 # launchd/systemd 等外部 supervisor 使用的前台入口。这里不 fork、不 nohup、不写 pidfile；
@@ -786,7 +774,7 @@ cmd_dryrun() {
 cmd_daemon() {
   _source_env
   mkdir -p "$STATE_DIR"
-  local mode bot_pid="" shutdown_started=0 preserve_task_worker=0
+  local mode bot_pid="" shutdown_started=0 preserve_task_worker=0 rc=0
   _daemon_shutdown() {
     local shutdown_rc=0 step_rc=0 preserve_pid=""
     # A supervisor may stop us while the standalone components are still
@@ -823,10 +811,14 @@ cmd_daemon() {
   }
   trap '_daemon_shutdown; shutdown_rc=$?; trap - TERM INT; exit "$shutdown_rc"' TERM INT
   if _decide_mode; then mode="full"; else mode="degraded"; fi
-  say "bridge foreground daemon 启动 (mode=$mode, role=${JARVIS_BRIDGE_ROLE:-scheduler}, pid=$$): $PYTHON $BOT"
+  say "bridge foreground daemon 启动 (mode=$mode, role=${JARVIS_BRIDGE_ROLE:-scheduler}, pid=$$): $PYTHON ${JARVIS_BRIDGE_BOT:-bridge.jarvis_dingtalk_bot}"
   if ! _scheduler_enabled; then
     trap - TERM INT
-    exec "$PYTHON" "$TASK_WORKER"
+    if [ -n "${JARVIS_TASK_WORKER:-}" ]; then
+      exec "$PYTHON" "$TASK_WORKER"
+    fi
+    PYTHONPATH="$REPO_ROOT${PYTHONPATH:+:$PYTHONPATH}" \
+      exec "$PYTHON" -m bridge.task_worker
   fi
   local worker_started_pid=""
   _task_worker_start || return $?
@@ -837,10 +829,23 @@ cmd_daemon() {
     fi
     return 1
   fi
-  "$PYTHON" "$BOT" &
+  if [ -n "${JARVIS_BRIDGE_BOT:-}" ]; then
+    "$PYTHON" "$BOT" &
+  else
+    PYTHONPATH="$REPO_ROOT${PYTHONPATH:+:$PYTHONPATH}" \
+      "$PYTHON" -m bridge.jarvis_dingtalk_bot &
+  fi
   bot_pid=$!
+  sleep "$START_WAIT"
+  if ! _alive "$bot_pid"; then
+    wait "$bot_pid" 2>/dev/null
+    rc=$?
+    _daemon_shutdown
+    return "$rc"
+  fi
+  say "Bridge READY pid=$$ role=supervisor"
   wait "$bot_pid"
-  local rc=$?
+  rc=$?
   trap - TERM INT
   _daemon_shutdown
   local shutdown_rc=$?

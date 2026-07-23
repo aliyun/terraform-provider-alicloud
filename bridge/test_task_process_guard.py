@@ -13,7 +13,7 @@ from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-import jarvis_dingtalk_bot as bot
+from bridge import jarvis_dingtalk_bot as bot
 
 
 BRIDGE_DIR = Path(__file__).resolve().parent

@@ -9,30 +9,25 @@ acknowledgement or any job without a runner mapping.
 from __future__ import annotations
 
 from datetime import datetime, timezone
-import hashlib
 import logging
 import os
 import socket
 import threading
 import time
 import uuid
-from typing import Any, Mapping, Optional
+from typing import Any, Mapping, Optional, Sequence
 
-try:  # bridge/run.sh executes from bridge/, package users import bridge.scheduler
-    from jarvis_persistence_executor import _default_boot_id
-    from jarvis_task_client import ControlPlaneClient, StaleFence
-except ModuleNotFoundError:  # pragma: no cover - import path depends on composition root
-    from bridge.jarvis_persistence_executor import _default_boot_id
-    from bridge.jarvis_task_client import ControlPlaneClient, StaleFence
+from bridge.jarvis_persistence_executor import _default_boot_id
+from bridge.jarvis_task_client import ControlPlaneClient, StaleFence
 
 from .control_plane_client import HttpScheduledJobControlPlane
 from .engine import (
     JobRunner,
     RunnerDispatcher,
-    ScannerRuntime,
     SchedulerEngine,
 )
-from .registry import JOBS, SchedulerRegistry, load_jobs
+from .jobs import JOBS, runner_key
+from .model import ScheduledJobDefinition
 
 
 SCHEDULER_WORKER_KEY = "bridge-scheduler"
@@ -46,14 +41,13 @@ class SchedulerService:
     """Own the Scheduler Worker lifecycle and the single Engine polling thread."""
 
     def __init__(self, *, task_client: ControlPlaneClient,
-                 runners: Mapping[object, JobRunner], registry: SchedulerRegistry,
+                 runners: Mapping[object, JobRunner],
+                 definitions: Sequence[ScheduledJobDefinition] = JOBS,
                  environ: Optional[Mapping[str, str]] = None,
                  logger: Optional[logging.Logger] = None) -> None:
         self._task_client = task_client
-        # ``runners`` is an implementation catalogue keyed by runner name;
-        # ownership is defined only by the checked-in YAML registry.
         self._runners = dict(runners)
-        self._registry = registry
+        self._definitions = tuple(definitions)
         self._environ = os.environ if environ is None else environ
         self._log = logger or logging.getLogger(__name__)
         self._engine: Optional[SchedulerEngine] = None
@@ -90,10 +84,6 @@ class SchedulerService:
         with self._lock:
             return self._engine is not None
 
-    @property
-    def enabled(self) -> bool:
-        return bool(self._registry.scheduler_job_keys())
-
     def start(self) -> bool:
         """Register/verify the fixed Worker, register jobs, recover, then poll.
 
@@ -102,9 +92,8 @@ class SchedulerService:
         suppressed, so the operator cannot lose a job during cutover.
         """
 
-        definitions = load_jobs()
-        migrated = self._registry.scheduler_job_keys()
-        if not migrated:
+        definitions = self._definitions
+        if not definitions:
             return False
         self._heartbeat_interval = _positive_float(
             self._environ.get("JARVIS_SCHEDULER_HEARTBEAT_SEC", "30"),
@@ -115,7 +104,7 @@ class SchedulerService:
         self._max_concurrency = _positive_int(
             self._environ.get("JARVIS_SCHEDULER_MAX_CONCURRENCY", "4"),
             "JARVIS_SCHEDULER_MAX_CONCURRENCY")
-        configured_runners = self._registry.runner_keys()
+        configured_runners = frozenset(runner_key(item) for item in definitions)
         missing = sorted((
             runner_name for runner_name in configured_runners
             if runner_name not in self._runners), key=_runner_label)
@@ -136,7 +125,7 @@ class SchedulerService:
                 return True
             self._stop.clear()
             self._heartbeat_stop.clear()
-            worker_client = self._worker_client()
+            worker_client = self._task_client
             try:
                 with self._worker_rpc_lock:
                     self._worker_status = "ACTIVE"
@@ -145,20 +134,18 @@ class SchedulerService:
                     self._task_client.base_url,
                     self._task_client.token,
                     timeout=self._task_client.timeout,
+                    retry_delay_seconds=float(self._environ.get(
+                        "JARVIS_SCHEDULER_CONTROL_RETRY_SEC", "5")),
                     worker_key=self.worker_key,
                     process_uuid=self.process_uuid,
                 )
                 engine = SchedulerEngine(
                     definitions,
                     control_plane=control_plane,
-                    runtime=ScannerRuntime(RunnerDispatcher(self._runners)),
+                    runtime=RunnerDispatcher(self._runners),
                     max_workers=self._max_concurrency,
                 )
-                # Only YAML-declared Scheduler jobs are registered. Legacy jobs
-                # never enter this control-plane registry.
-                engine.register(
-                    datetime.now(timezone.utc),
-                    is_enabled=lambda definition: definition.enabled)
+                engine.register(datetime.now(timezone.utc))
                 engine.recover_interrupted()
             except Exception:
                 # A Worker that could register but could not complete the
@@ -186,7 +173,8 @@ class SchedulerService:
             self._thread.start()
         self._log.info(
             "SchedulerEngine READY worker=%s hostId=%s processUuid=%s jobs=%s",
-            self.worker_key, self.host_id, self.process_uuid, ",".join(sorted(migrated)))
+            self.worker_key, self.host_id, self.process_uuid,
+            ",".join(sorted(definition.id for definition in definitions)))
         return True
 
     def stop(self, *, timeout: Optional[float] = None) -> bool:
@@ -208,7 +196,7 @@ class SchedulerService:
             try:
                 with self._worker_rpc_lock:
                     self._worker_status = "DRAINING"
-                    self._register_worker(self._worker_client(), "DRAINING")
+                    self._register_worker(self._task_client, "DRAINING")
             except Exception as exc:  # preserve fail-closed ownership; do not lie OFFLINE
                 self._log.warning("Scheduler Worker DRAINING heartbeat failed: %s", type(exc).__name__)
         if thread is not None:
@@ -238,17 +226,21 @@ class SchedulerService:
             try:
                 with self._worker_rpc_lock:
                     self._worker_status = "OFFLINE"
-                    self._register_worker(self._worker_client(), "OFFLINE")
+                    self._register_worker(self._task_client, "OFFLINE")
             except Exception as exc:
                 self._log.warning("Scheduler Worker OFFLINE update failed: %s", type(exc).__name__)
                 offline = False
+        if not offline:
+            # Keep the drained Engine/registration state so the caller can
+            # retry the OFFLINE transition without losing the Worker fence.
+            return False
         with self._lock:
             engine.shutdown()
             self._thread = None
             self._heartbeat_thread = None
             self._engine = None
             self._registered = False
-        return offline
+        return True
 
     def _cancel_drain(
         self,
@@ -262,7 +254,7 @@ class SchedulerService:
             try:
                 with self._worker_rpc_lock:
                     self._worker_status = "ACTIVE"
-                    self._register_worker(self._worker_client(), "ACTIVE")
+                    self._register_worker(self._task_client, "ACTIVE")
             except Exception as exc:
                 # Keep ACTIVE as the desired heartbeat state. Until the
                 # control plane acknowledges it, new starts remain fail-closed;
@@ -307,7 +299,7 @@ class SchedulerService:
                     if self._worker_status not in ("ACTIVE", "DRAINING"):
                         return
                     self._register_worker(
-                        self._worker_client(), self._worker_status)
+                        self._task_client, self._worker_status)
             except StaleFence:
                 self._log.error(
                     "Scheduler heartbeat lost the current process fence; "
@@ -323,9 +315,6 @@ class SchedulerService:
                 self._log.warning(
                     "Scheduler Worker %s heartbeat failed: %s",
                     self._worker_status, type(exc).__name__)
-
-    def _worker_client(self) -> ControlPlaneClient:
-        return self._task_client
 
     def _worker_payload(self, status: str) -> dict[str, Any]:
         with self._lock:
@@ -346,14 +335,13 @@ class SchedulerService:
                 "role": "scheduler",
                 "dispatch": {"pull": False},
                 "scheduledJobApi": "v1",
-                "jobKeys": [definition.id for definition in JOBS],
+                "jobKeys": [definition.id for definition in self._definitions],
             },
         }
 
     def _register_worker(self, client: ControlPlaneClient, status: str) -> None:
         request_id = "jarvis-scheduler-worker-%s-%s" % (
-            status.lower(), hashlib.sha256(
-                (self.process_uuid + uuid.uuid4().hex).encode("utf-8")).hexdigest()[:16])
+            status.lower(), uuid.uuid4().hex[:16])
         if status == "ACTIVE" and not self._registered:
             response = client.register_worker(self._worker_payload(status), request_id=request_id)
         else:

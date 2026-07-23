@@ -22,8 +22,6 @@ from zoneinfo import ZoneInfo
 from .model import (
     AdaptiveSchedule,
     DailySchedule,
-    HandlerRunner,
-    HeadlessRunner,
     IntervalSchedule,
     JobResult,
     JobResultStatus,
@@ -50,13 +48,9 @@ class TriggerPlanner:
         _require_aware(now, "now")
         schedule = definition.schedule
         if isinstance(schedule, IntervalSchedule):
-            if definition.misfire is not MisfirePolicy.COALESCE:
-                raise ValueError("interval schedule requires COALESCE misfire")
             return now if schedule.run_immediately else now + timedelta(
                 seconds=schedule.interval_seconds)
         if isinstance(schedule, DailySchedule):
-            if definition.misfire is not MisfirePolicy.CURRENT_DAY:
-                raise ValueError("daily schedule requires CURRENT_DAY misfire")
             local_now = now.astimezone(_SHANGHAI)
             return datetime.combine(
                 local_now.date(),
@@ -64,12 +58,6 @@ class TriggerPlanner:
                 tzinfo=_SHANGHAI,
             )
         if isinstance(schedule, AdaptiveSchedule):
-            if definition.misfire not in (
-                MisfirePolicy.COALESCE,
-                MisfirePolicy.WAIT_FOR_COMPLETION,
-            ):
-                raise ValueError(
-                    "adaptive schedule requires COALESCE or WAIT_FOR_COMPLETION misfire")
             return now if schedule.run_immediately else now + timedelta(
                 seconds=schedule.default_delay_seconds)
         raise TypeError("definition.schedule must be supported")
@@ -183,10 +171,6 @@ class PermanentJobError(Exception):
     """A runner may raise this when retrying the current slot cannot succeed."""
 
 
-class ScannerStopped(RuntimeError):
-    """Raised when a new runner invocation is requested after admission closes."""
-
-
 class JobRunner(Protocol):
     def run(
         self, definition: ScheduledJobDefinition, scheduled_for: datetime,
@@ -195,7 +179,7 @@ class JobRunner(Protocol):
 
 
 class RunnerDispatcher:
-    """Resolve the executable runner from ``definition.runner`` only."""
+    """Resolve and execute a runner, mapping adapter failures to ``JobResult``."""
 
     def __init__(self, runners: Mapping[object, JobRunner]) -> None:
         self._runners = dict(runners)
@@ -203,81 +187,17 @@ class RunnerDispatcher:
     def run(
         self, definition: ScheduledJobDefinition, scheduled_for: datetime,
     ) -> JobResult:
-        runner_definition = definition.runner
-        if isinstance(runner_definition, HandlerRunner):
-            key: object = runner_definition.handler_key
-            label = runner_definition.handler_key
-        elif isinstance(runner_definition, HeadlessRunner):
-            key = (runner_definition.builder_ref, runner_definition.protocol)
-            label = "%s/%s" % key
-        else:  # model validation normally makes this unreachable
-            raise PermanentJobError("unsupported runner definition")
         try:
-            runner = self._runners[key]
-        except KeyError as exc:
-            raise PermanentJobError(
-                "no registered runner: %s" % label) from exc
-        return runner.run(definition, scheduled_for)
-
-
-@dataclass(frozen=True)
-class ScannerInvocation:
-    job_key: str
-    scheduled_for: datetime
-
-    def __post_init__(self) -> None:
-        if not self.job_key:
-            raise ValueError("job_key must be nonblank")
-        _require_aware(self.scheduled_for, "scheduled_for")
-
-
-class ScannerRuntime:
-    """Bound one runner invocation and map adapter failures to ``JobResult``."""
-
-    def __init__(self, runner: JobRunner) -> None:
-        if not hasattr(runner, "run"):
-            raise TypeError("runner must implement run(definition, scheduled_for)")
-        self._runner = runner
-        self._lock = RLock()
-        self._stopped = False
-
-    @property
-    def accepting(self) -> bool:
-        with self._lock:
-            return not self._stopped
-
-    def stop(self) -> None:
-        with self._lock:
-            self._stopped = True
-
-    def resume(self) -> None:
-        with self._lock:
-            self._stopped = False
-
-    def execute(
-        self, definition: ScheduledJobDefinition, scheduled_for: datetime,
-    ) -> JobResult:
-        invocation = ScannerInvocation(definition.id, scheduled_for)
-        with self._lock:
-            if self._stopped:
-                raise ScannerStopped(
-                    f"scheduler is stopping; refusing {invocation.job_key}")
-        return self._execute_runner(definition, invocation)
-
-    def execute_admitted(
-        self, definition: ScheduledJobDefinition, scheduled_for: datetime,
-    ) -> JobResult:
-        return self._execute_runner(
-            definition, ScannerInvocation(definition.id, scheduled_for))
-
-    def _execute_runner(
-        self, definition: ScheduledJobDefinition, invocation: ScannerInvocation,
-    ) -> JobResult:
-        try:
-            result = self._runner.run(definition, invocation.scheduled_for)
+            runner = self._runners[definition.runner.handler_key]
+            result = runner.run(definition, scheduled_for)
             if not isinstance(result, JobResult):
                 raise PermanentJobError("runner returned a non-JobResult value")
             return result
+        except KeyError as exc:
+            return JobResult(
+                JobResultStatus.PERMANENT_FAILURE,
+                error="no registered runner: %s" % definition.runner.handler_key,
+            )
         except RetryableJobError as exc:
             return JobResult(
                 JobResultStatus.RETRYABLE_FAILURE, error=_error_summary(exc))
@@ -340,20 +260,6 @@ class ScheduledSlot:
             raise ValueError("scheduled_for must be timezone-aware")
 
 
-class ExecutionDisposition(str, Enum):
-    START_REJECTED = "START_REJECTED"
-    COMPLETED = "COMPLETED"
-    RETRYABLE_FAILURE = "RETRYABLE_FAILURE"
-    PERMANENT_FAILURE = "PERMANENT_FAILURE"
-
-
-@dataclass(frozen=True)
-class ExecutionOutcome:
-    job_key: str
-    scheduled_for: datetime
-    disposition: ExecutionDisposition
-
-
 class ScheduledJobControlPlane(Protocol):
     """Adapter seam matching AutomationAgent's register/list/start/complete/fail lifecycle.
 
@@ -402,20 +308,18 @@ def build_registrations(
     *,
     planner: TriggerPlanner,
     now: datetime,
-    is_enabled: Callable[[ScheduledJobDefinition], bool] = lambda definition: True,
 ) -> tuple[JobRegistration, ...]:
     """Purely construct the complete registration snapshot for one Engine start."""
 
     _require_aware(now, "now")
     registrations = []
     for definition in definitions:
-        enabled = bool(is_enabled(definition))
         registrations.append(JobRegistration(
             job_key=definition.id,
             job_name=definition.id,
             definition=definition_snapshot(definition),
-            next_run_at=planner.initial_due(definition, now) if enabled else None,
-            enabled=enabled,
+            next_run_at=planner.initial_due(definition, now) if definition.enabled else None,
+            enabled=definition.enabled,
         ))
     return tuple(registrations)
 
@@ -454,7 +358,7 @@ class SchedulerEngine:
         definitions: Iterable[ScheduledJobDefinition],
         *,
         control_plane: ScheduledJobControlPlane,
-        runtime: ScannerRuntime,
+        runtime: RunnerDispatcher,
         planner: Optional[TriggerPlanner] = None,
         clock: Callable[[], datetime] = _utc_now,
         terminal_retry_delay_seconds: float = 5.0,
@@ -491,8 +395,7 @@ class SchedulerEngine:
         self._lock = RLock()
         self._stopped = False
         self._active_job_keys: set[str] = set()
-        self._active_futures: set[Future[ExecutionOutcome]] = set()
-        self._completed_outcomes: list[ExecutionOutcome] = []
+        self._active_futures: set[Future[None]] = set()
 
     @property
     def accepting(self) -> bool:
@@ -505,15 +408,12 @@ class SchedulerEngine:
             return len(self._active_job_keys)
 
     def register(
-        self,
-        now: datetime,
-        *,
-        is_enabled: Callable[[ScheduledJobDefinition], bool] = lambda definition: True,
+        self, now: datetime,
     ) -> tuple[ScheduledJobState, ...]:
         """Register all definitions before any candidate admission is attempted."""
 
         registrations = build_registrations(
-            self._definitions, planner=self._planner, now=now, is_enabled=is_enabled)
+            self._definitions, planner=self._planner, now=now)
         return tuple(self._control_plane.register(registrations))
 
     def recover_interrupted(self) -> tuple[ScheduledJobState, ...]:
@@ -531,12 +431,10 @@ class SchedulerEngine:
 
         with self._lock:
             self._stopped = True
-        self._runtime.stop()
 
     def resume(self) -> None:
         """Resume admission after a planned restart exceeded its drain budget."""
 
-        self._runtime.resume()
         with self._lock:
             self._stopped = False
 
@@ -566,14 +464,13 @@ class SchedulerEngine:
         if executor is not None:
             executor.shutdown(wait=True, cancel_futures=False)
 
-    def tick(self, now: datetime) -> tuple[ExecutionOutcome, ...]:
+    def tick(self, now: datetime) -> None:
         """Admit due slots; long jobs run concurrently across distinct job keys."""
 
         _require_aware(now, "now")
         if not self.accepting:
-            return ()
+            return
         states = self._control_plane.list_jobs()
-        outcomes = list(self._take_completed_outcomes())
         for slot in plan_due_slots(self._definitions, states, now=now):
             if not self._claim_local(slot):
                 continue
@@ -588,10 +485,9 @@ class SchedulerEngine:
                 if not self.accepting or not self._control_plane.start(
                     slot.definition.id, slot.scheduled_for, reserved_next_run_at,
                 ):
-                    outcomes.append(ExecutionOutcome(slot.definition.id, slot.scheduled_for, ExecutionDisposition.START_REJECTED))
                     continue
                 if self._executor is None:
-                    outcomes.append(self._run_admitted(slot))
+                    self._run_admitted(slot)
                 else:
                     future = self._executor.submit(self._run_admitted, slot)
                     with self._lock:
@@ -603,15 +499,14 @@ class SchedulerEngine:
             finally:
                 if release_here:
                     self._release_local(slot)
-        return tuple(outcomes)
 
     def _finish_future(
         self,
         slot: ScheduledSlot,
-        future: Future[ExecutionOutcome],
+        future: Future[None],
     ) -> None:
         try:
-            outcome = future.result()
+            future.result()
         except Exception as exc:
             _LOG.exception(
                 "scheduled job worker crashed job=%s slot=%s error=%s",
@@ -619,22 +514,13 @@ class SchedulerEngine:
                 slot.scheduled_for.isoformat(),
                 type(exc).__name__,
             )
-        else:
-            with self._lock:
-                self._completed_outcomes.append(outcome)
         finally:
             with self._lock:
                 self._active_futures.discard(future)
             self._release_local(slot)
 
-    def _take_completed_outcomes(self) -> tuple[ExecutionOutcome, ...]:
-        with self._lock:
-            values = tuple(self._completed_outcomes)
-            self._completed_outcomes.clear()
-            return values
-
-    def _run_admitted(self, slot: ScheduledSlot) -> ExecutionOutcome:
-        result = self._runtime.execute_admitted(
+    def _run_admitted(self, slot: ScheduledSlot) -> None:
+        result = self._runtime.run(
             slot.definition, slot.scheduled_for)
 
         finished_at = self._now()
@@ -648,23 +534,23 @@ class SchedulerEngine:
                     result=result,
                 )
             except Exception as exc:
-                return self._report_failure(
+                self._report_failure(
                     slot, finished_at, _permanent_failure_summary(exc))
+                return
             self._commit_terminal(
                 slot,
                 lambda: self._control_plane.complete(
                     slot.definition.id, slot.scheduled_for, next_run_at),
             )
-            return ExecutionOutcome(slot.definition.id, slot.scheduled_for, ExecutionDisposition.COMPLETED)
-
-        return self._report_failure(slot, finished_at, result)
+            return
+        self._report_failure(slot, finished_at, result)
 
     def _report_failure(
         self,
         slot: ScheduledSlot,
         now: datetime,
         result: JobResult,
-    ) -> ExecutionOutcome:
+    ) -> None:
         retryable = result.status is JobResultStatus.RETRYABLE_FAILURE
         retry_at = (
             self._planner.retry_due(
@@ -691,8 +577,6 @@ class SchedulerEngine:
                 error=error,
             ),
         )
-        disposition = ExecutionDisposition.RETRYABLE_FAILURE if retryable else ExecutionDisposition.PERMANENT_FAILURE
-        return ExecutionOutcome(slot.definition.id, slot.scheduled_for, disposition)
 
     def _commit_terminal(self, slot: ScheduledSlot, operation: Callable[[], None]) -> None:
         """Retry an ambiguous terminal transport failure without re-running the job."""

@@ -13,30 +13,37 @@ import os
 import signal
 import sys
 import threading
+import subprocess
+import json
 from pathlib import Path
 from typing import Any
 
-try:  # Executed by bridge/run.sh from the bridge directory.
-    import jarvis_dingtalk_bot as bot
-    from execution.persistent_task import PersistentTaskExecution, stop_task_process
-    from jarvis_capacity import CapacityManager
-    from jarvis_execution_runtime import DEFAULT_EXECUTION_RUNTIME
-    from jarvis_field_repair import FIELD_REPAIR_KIND, FieldRepairWorker
-    from jarvis_persistence_executor import PersistenceExecutor
-    from jarvis_task_client import ControlPlaneClient
-    from jarvis_task_router import ExecutionRouter
-except ModuleNotFoundError:  # Package import for tests and tools.
-    from bridge import jarvis_dingtalk_bot as bot
-    from bridge.execution.persistent_task import (
-        PersistentTaskExecution,
-        stop_task_process,
-    )
-    from bridge.jarvis_capacity import CapacityManager
-    from bridge.jarvis_execution_runtime import DEFAULT_EXECUTION_RUNTIME
-    from bridge.jarvis_field_repair import FIELD_REPAIR_KIND, FieldRepairWorker
-    from bridge.jarvis_persistence_executor import PersistenceExecutor
-    from bridge.jarvis_task_client import ControlPlaneClient
-    from bridge.jarvis_task_router import ExecutionRouter
+from bridge.task_runtime import (
+    POST_PR_HEADLESS_KINDS,
+    TASK_BOOKEND_KINDS,
+    PersistentTaskExecution,
+    TaskAoneBookend,
+    _a1_command_env,
+    _aone_event_sanitize_text,
+    dispatch_item,
+    extract_suspend,
+    normalized_failure_subtype,
+    release_claim,
+    stop_task_process,
+    terraform_rd_ready,
+)
+from bridge.jarvis_capacity import CapacityManager
+from bridge.jarvis_execution_runtime import (
+    DEFAULT_EXECUTION_RUNTIME,
+    EphemeralExecutor,
+    claude_bin,
+    jarvis_root,
+    session_progress_excerpt,
+)
+from bridge.jarvis_field_repair import FIELD_REPAIR_KIND, FieldRepairWorker
+from bridge.jarvis_persistence_executor import PersistenceExecutor
+from bridge.jarvis_task_client import ControlPlaneClient
+from bridge.jarvis_task_router import ExecutionRouter
 
 
 LOG = logging.getLogger("jarvis-task-worker")
@@ -84,17 +91,6 @@ class TaskExecutionRuntime:
     it owns no DingTalk streaming state and no Aone/Daily/PR Scheduler objects.
     """
 
-    # These methods contain the established headless execution/bookend behavior.
-    # Reuse them as unbound implementation methods until that state machine is
-    # fully extracted; none of them requires JarvisHandler.__init__.
-    dispatch_item = bot.JarvisHandler.dispatch_item
-    _maybe_suspend = bot.JarvisHandler._maybe_suspend
-    _completion_broadcast = bot.JarvisHandler._completion_broadcast
-    _dispatch_failed = bot.JarvisHandler._dispatch_failed
-    _post_death_cause = staticmethod(bot.JarvisHandler._post_death_cause)
-    _workitem_line = staticmethod(bot.JarvisHandler._workitem_line)
-    _last_comment_id = staticmethod(bot.JarvisHandler._last_comment_id)
-
     def __init__(
         self,
         *,
@@ -102,7 +98,7 @@ class TaskExecutionRuntime:
         execution_router_factory: Any = ExecutionRouter,
         capacity_manager_factory: Any = CapacityManager,
         field_repair_worker_factory: Any = FieldRepairWorker,
-        ephemeral_executor_factory: Any = bot.EphemeralExecutor,
+        ephemeral_executor_factory: Any = EphemeralExecutor,
     ) -> None:
         self.task_client = (
             task_client if task_client is not None else _task_client_from_env())
@@ -115,7 +111,7 @@ class TaskExecutionRuntime:
             repo_root=REPO_ROOT,
             client=self.task_client,
             runtime=self.execution_runtime,
-            claude_bin=bot.claude_bin(),
+            claude_bin=claude_bin(),
         )
         self.ephemeral_executor = ephemeral_executor_factory(
             max_workers=max_slots,
@@ -125,18 +121,130 @@ class TaskExecutionRuntime:
         self.persistent_task_execution = PersistentTaskExecution(
             enabled_kinds=lambda: self.execution_router.task_types,
             dispatch_item=self.dispatch_item,
-            task_bookend=lambda *args, **kwargs: bot._TaskAoneBookend(
-                *args, **kwargs),
-            terraform_rd_ready=bot._terraform_rd_ready,
+            task_bookend=TaskAoneBookend,
+            terraform_rd_ready=terraform_rd_ready,
             routine_notice=_routine_notice,
             quick_card=_quick_card,
             field_repair_worker=self.field_repair_worker,
             field_repair_kind=FIELD_REPAIR_KIND,
-            task_bookend_kinds=bot.TASK_BOOKEND_KINDS,
-            post_pr_headless_kinds=bot.POST_PR_HEADLESS_KINDS,
-            broadcast_target=bot.broadcast_target,
-            broadcast_type=bot.broadcast_type,
+            task_bookend_kinds=TASK_BOOKEND_KINDS,
+            post_pr_headless_kinds=POST_PR_HEADLESS_KINDS,
+            broadcast_target=lambda: os.environ.get(
+                "JARVIS_BROADCAST_TARGET", ""),
+            broadcast_type=lambda: os.environ.get(
+                "JARVIS_BROADCAST_TYPE", "group"),
         )
+
+    def dispatch_item(self, *args, **kwargs):
+        return dispatch_item(self, *args, **kwargs)
+
+    @staticmethod
+    def _last_comment_id(item_id):
+        try:
+            result = subprocess.run(
+                [str(REPO_ROOT / "bin" / "a1id"), "--", "project",
+                 "workitem", "comment", "list", str(item_id), "-f", "json"],
+                capture_output=True, text=True, timeout=30,
+                cwd=str(REPO_ROOT))
+            if result.returncode == 0:
+                return max(
+                    (comment.get("id", 0)
+                     for comment in json.loads(result.stdout)),
+                    default=0)
+        except Exception:  # noqa: BLE001
+            pass
+        return 0
+
+    def _maybe_suspend(self, final_text, _sid, _target, _target_type,
+                       **_kwargs):
+        info = extract_suspend(final_text or "")[1]
+        if info:
+            info = dict(info)
+            info["wait_cursor"] = self._last_comment_id(info["aone_id"])
+        return info
+
+    @staticmethod
+    def _workitem_line(item_id):
+        item_id = str(item_id)
+        if not item_id.isdigit():
+            return "#%s" % item_id
+        try:
+            result = subprocess.run(
+                [str(REPO_ROOT / "bin" / "a1id"), "--", "project",
+                 "workitem", "get", item_id, "-f", "json"],
+                capture_output=True, text=True, timeout=30,
+                cwd=str(REPO_ROOT))
+            if result.returncode:
+                return "#%s" % item_id
+            item = json.loads(result.stdout)
+            fields = {
+                field.get("identifier"): field
+                for field in item.get("fields", [])
+                if isinstance(field, dict)
+            }
+            display = lambda key: (
+                (fields.get(key) or {}).get("displayValue")
+                or (fields.get(key) or {}).get("value") or "")
+            project = (fields.get("space") or {}).get("value") or ""
+            priority = display("priority")
+            return (
+                "- [#%s](https://project.aone.alibaba-inc.com/v2/project/%s/"
+                "req/%s) %s%s" % (
+                    item_id, project, item_id,
+                    str(item.get("title") or "").strip(),
+                    " [%s]" % priority if priority else ""),
+                display("tag"),
+            )
+        except Exception:  # noqa: BLE001
+            return "#%s" % item_id
+
+    def _completion_broadcast(self, item_id):
+        result = self._workitem_line(item_id)
+        if not isinstance(result, tuple):
+            return ("✅ 工单 #%s 处理完成（headless）" % item_id
+                    if str(item_id).isdigit()
+                    else "✅ 任务 #%s 处理完成" % item_id)
+        line, tags = result
+        prefix = next((
+            text for tag, text in (
+                ("jarvis-done", "✅ 工单处理完成"),
+                ("jarvis-idle", "⏸️ 工单阶段完成·待人工接手"),
+                ("jarvis-claimed", "⚠️ 工单处理结束但未收尾（仍 claimed）"),
+            ) if tag in tags), "⚠️ 本轮未处理该工单（未获认领）")
+        return prefix + "\n" + line
+
+    @staticmethod
+    def _post_death_cause(item_id, cause, terraform=False):
+        if not str(item_id).isdigit() or terraform:
+            LOG.warning("Task #%s death cause: %s", item_id,
+                        str(cause).replace("\n", " | ")[:500])
+            return
+        try:
+            subprocess.run(
+                [str(REPO_ROOT / "bootstrap" / "wrap.sh"), "sync",
+                 str(item_id), "--summary-stdin"],
+                input=cause, cwd=str(REPO_ROOT), text=True, timeout=90,
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                env=_a1_command_env(terraform=False))
+        except Exception as exc:  # noqa: BLE001
+            LOG.warning("Task #%s death-cause write failed: %s", item_id, exc)
+
+    def _dispatch_failed(self, item_id, result, notify, project,
+                         terraform=False, kind="ticket", **_kwargs):
+        tail = (result.text or "").strip()
+        subtype = normalized_failure_subtype(
+            tail, getattr(result, "subtype", ""),
+            bool(getattr(result, "is_error", True)))
+        cause = "headless 派发失败\nsubtype: %s\n---\n%s" % (
+            subtype, tail[-800:] or "(无输出)")
+        self._post_death_cause(item_id, cause, terraform=terraform)
+        if (project and str(item_id).isdigit()
+                and kind not in POST_PR_HEADLESS_KINDS):
+            try:
+                release_claim(item_id, project, terraform=terraform)
+            except Exception as exc:  # noqa: BLE001
+                LOG.warning("Task #%s claim release failed: %s", item_id, exc)
+        notify("⚠️ #%s 后台处理失败（%s）" % (item_id, subtype))
 
 
 class TaskWorker:
@@ -148,8 +256,8 @@ class TaskWorker:
         *,
         executor_factory: Any = PersistenceExecutor,
         stop_process: Any = stop_task_process,
-        release_claim: Any = bot._release_claim,
-        progress: Any = bot._session_progress_excerpt,
+        release_claim: Any = release_claim,
+        progress: Any = session_progress_excerpt,
     ):
         self.runtime = runtime
         self.executor = executor_factory(
@@ -159,7 +267,7 @@ class TaskWorker:
             lambda controller, reason: stop_process(controller, reason, logger=LOG),
             worker_id_file=os.environ.get(
                 "JARVIS_WORKER_ID_FILE",
-                os.path.join(bot.jarvis_root(), ".my-day", "bridge", "worker-id")),
+                os.path.join(jarvis_root(), ".my-day", "bridge", "worker-id")),
             capabilities={
                 "kinds": sorted(runtime.execution_router.task_types),
                 "bridgeRole": os.environ.get("JARVIS_BRIDGE_ROLE", "scheduler"),
@@ -176,7 +284,8 @@ class TaskWorker:
                 os.environ.get("JARVIS_SESSION_HEARTBEAT_SEC", "30")),
             retry_interval=float(os.environ.get("JARVIS_CONTROL_PLANE_RETRY_SEC", "5")),
             progress=lambda _lease, controller: progress(
-                controller.runtime_session_id),
+                controller.runtime_session_id,
+                sanitizer=_aone_event_sanitize_text),
             logger=LOG,
         )
         self._release_claim = release_claim

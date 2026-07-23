@@ -7,10 +7,11 @@ import socket
 import unittest
 from urllib.error import HTTPError, URLError
 
-from bridge.scheduler import (
-    HttpScheduledJobControlPlane, JobRegistration, ScheduledJobControlPlaneProtocolError,
-    ScheduledJobControlPlaneRejected, ScheduledJobControlPlaneUnavailable, ScheduledJobStatus,
+from bridge.scheduler.control_plane_client import (
+    HttpScheduledJobControlPlane, ScheduledJobControlPlaneProtocolError,
+    ScheduledJobControlPlaneRejected, ScheduledJobControlPlaneUnavailable,
 )
+from bridge.scheduler.engine import JobRegistration, ScheduledJobStatus
 
 
 UTC = timezone.utc
@@ -180,16 +181,6 @@ class HttpScheduledJobControlPlaneTests(unittest.TestCase):
                 with self.assertRaises(ScheduledJobControlPlaneProtocolError):
                     self.client(RecordingOpener([FakeResponse(response)])).start(
                         "aone.scan", at(9), at(10))
-
-    def test_constructor_reads_existing_control_plane_environment_only_when_constructed(self):
-        client = HttpScheduledJobControlPlane(environ={
-            "JARVIS_CONTROL_PLANE_BASE_URL": "https://control.example/",
-            "JARVIS_CONTROL_PLANE_TOKEN": "from-env",
-            "JARVIS_CONTROL_PLANE_TIMEOUT": "7.5",
-        })
-        self.assertEqual(client.base_url, "https://control.example")
-        self.assertEqual(client.token, "from-env")
-        self.assertEqual(client.timeout, 7.5)
 
 if __name__ == "__main__":
     unittest.main()

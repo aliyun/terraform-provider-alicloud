@@ -1,15 +1,17 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 import threading
 import unittest
 
-from bridge.scheduler import (
-    DailySchedule, ExecutionDisposition, HandlerRunner, IntervalSchedule, JobResult,
-    JobResultStatus, MisfirePolicy, RetryableJobError,
-    RunnerDispatcher,
-    ScheduledJobDefinition, ScheduledJobState, ScheduledJobStatus, SchedulerEngine,
-    ScannerRuntime, TriggerPlanner, build_registrations, plan_due_slots,
+from bridge.scheduler.engine import (
+    RetryableJobError, RunnerDispatcher, ScheduledJobState, ScheduledJobStatus,
+    SchedulerEngine, TriggerPlanner, build_registrations, plan_due_slots,
+)
+from bridge.scheduler.model import (
+    DailySchedule, HandlerRunner, IntervalSchedule, JobResult, JobResultStatus,
+    MisfirePolicy, ScheduledJobDefinition,
 )
 
 
@@ -111,8 +113,8 @@ class SchedulerEngineTests(unittest.TestCase):
 
     def test_registration_plans_enabled_initial_due_without_control_plane_io(self):
         registrations = build_registrations(
-            (definition(),), planner=TriggerPlanner(),
-            now=at(9), is_enabled=lambda _: False,
+            (replace(definition(), enabled=False),),
+            planner=TriggerPlanner(), now=at(9),
         )
         self.assertEqual(len(registrations), 1)
         self.assertFalse(registrations[0].enabled)
@@ -124,12 +126,12 @@ class SchedulerEngineTests(unittest.TestCase):
         control = FakeControlPlane((ScheduledJobState("aone.scan", ScheduledJobStatus.IDLE, due),), start_result=False)
         runner = FakeRunner()
         engine = SchedulerEngine(
-            (definition(),), control_plane=control, runtime=ScannerRuntime(runner),
+            (definition(),), control_plane=control,
+            runtime=RunnerDispatcher({"aone.scan": runner}),
             clock=lambda: at(9))
 
-        outcomes = engine.tick(at(9))
+        engine.tick(at(9))
 
-        self.assertEqual([item.disposition for item in outcomes], [ExecutionDisposition.START_REJECTED])
         self.assertEqual(control.starts, [("aone.scan", due, at(9, 1))])
         self.assertEqual(runner.calls, [])
         self.assertEqual(control.completions, [])
@@ -140,12 +142,12 @@ class SchedulerEngineTests(unittest.TestCase):
         control = FakeControlPlane((ScheduledJobState("aone.scan", ScheduledJobStatus.IDLE, due),))
         runner = FakeRunner(error=RetryableJobError("temporary network issue"))
         engine = SchedulerEngine(
-            (definition(),), control_plane=control, runtime=ScannerRuntime(runner),
+            (definition(),), control_plane=control,
+            runtime=RunnerDispatcher({"aone.scan": runner}),
             clock=lambda: at(9))
 
-        outcomes = engine.tick(at(9))
+        engine.tick(at(9))
 
-        self.assertEqual([item.disposition for item in outcomes], [ExecutionDisposition.RETRYABLE_FAILURE])
         self.assertEqual(len(control.failures), 1)
         job_key, scheduled_for, retryable, retry_at, error = control.failures[0]
         self.assertEqual((job_key, scheduled_for, retryable, retry_at), ("aone.scan", due, True, at(9) + timedelta(seconds=5)))
@@ -165,16 +167,12 @@ class SchedulerEngineTests(unittest.TestCase):
         engine = SchedulerEngine(
             (daily,),
             control_plane=control,
-            runtime=ScannerRuntime(runner),
+            runtime=RunnerDispatcher({"daily.probe": runner}),
             clock=lambda: failed_at,
         )
 
-        outcomes = engine.tick(failed_at)
+        engine.tick(failed_at)
 
-        self.assertEqual(
-            [item.disposition for item in outcomes],
-            [ExecutionDisposition.PERMANENT_FAILURE],
-        )
         job_key, scheduled_for, retryable, retry_at, error = control.failures[0]
         self.assertEqual(
             (job_key, scheduled_for, retryable, retry_at),
@@ -188,12 +186,12 @@ class SchedulerEngineTests(unittest.TestCase):
         runner = FakeRunner(JobResult(JobResultStatus.SUCCEEDED))
         times = iter((at(9, 1), at(9, 3)))
         engine = SchedulerEngine(
-            (definition(),), control_plane=control, runtime=ScannerRuntime(runner),
+            (definition(),), control_plane=control,
+            runtime=RunnerDispatcher({"aone.scan": runner}),
             clock=lambda: next(times))
 
-        outcomes = engine.tick(at(9, 1))
+        engine.tick(at(9, 1))
 
-        self.assertEqual([item.disposition for item in outcomes], [ExecutionDisposition.COMPLETED])
         self.assertEqual(control.starts, [("aone.scan", due, at(9, 2))])
         self.assertEqual(control.completions, [("aone.scan", due, at(9, 4))])
 
@@ -202,13 +200,14 @@ class SchedulerEngineTests(unittest.TestCase):
         control = FakeControlPlane((ScheduledJobState("aone.scan", ScheduledJobStatus.IDLE, due),))
         runner = FakeRunner()
         engine = SchedulerEngine(
-            (definition(),), control_plane=control, runtime=ScannerRuntime(runner),
+            (definition(),), control_plane=control,
+            runtime=RunnerDispatcher({"aone.scan": runner}),
             clock=lambda: at(9))
 
         engine.stop()
 
         self.assertFalse(engine.accepting)
-        self.assertEqual(engine.tick(at(9)), ())
+        self.assertIsNone(engine.tick(at(9)))
         self.assertEqual(control.starts, [])
         self.assertEqual(runner.calls, [])
 
@@ -218,38 +217,32 @@ class SchedulerEngineTests(unittest.TestCase):
             ScheduledJobState("aone.scan", ScheduledJobStatus.RUNNING, reserved),))
         runner = FakeRunner()
         engine = SchedulerEngine(
-            (definition(),), control_plane=control, runtime=ScannerRuntime(runner),
+            (definition(),), control_plane=control,
+            runtime=RunnerDispatcher({"aone.scan": runner}),
             clock=lambda: at(9))
 
         self.assertEqual(engine.register(at(9))[0].status, ScheduledJobStatus.RUNNING)
         self.assertEqual(plan_due_slots((definition(),), control.list_jobs(), now=at(9)), ())
-        self.assertEqual(engine.tick(at(9)), ())
+        self.assertIsNone(engine.tick(at(9)))
         self.assertEqual(control.recoveries, 0)
 
         recovered = engine.recover_interrupted()
         planned = plan_due_slots((definition(),), control.list_jobs(), now=at(9))
-        outcomes = engine.tick(at(9))
+        engine.tick(at(9))
 
         self.assertEqual([(state.job_key, state.status, state.next_run_at) for state in recovered], [
             ("aone.scan", ScheduledJobStatus.IDLE, reserved),
         ])
         self.assertEqual(control.recoveries, 1)
         self.assertEqual(planned, ())
-        self.assertEqual(outcomes, ())
         self.assertEqual(runner.calls, [])
-
-    def test_runtime_stop_rejects_future_runner_invocations(self):
-        runtime = ScannerRuntime(FakeRunner())
-        runtime.stop()
-        with self.assertRaisesRegex(RuntimeError, "refusing"):
-            runtime.execute(definition(), at(9))
 
     def test_runner_definition_is_the_only_handler_routing_source(self):
         runner = FakeRunner()
         item = definition("aone.scan")
-        runtime = ScannerRuntime(RunnerDispatcher({"aone.scan": runner}))
+        runtime = RunnerDispatcher({"aone.scan": runner})
 
-        result = runtime.execute(item, at(9))
+        result = runtime.run(item, at(9))
 
         self.assertEqual(result.status, JobResultStatus.SUCCEEDED)
         self.assertEqual(runner.calls, [("aone.scan", at(9))])
@@ -276,10 +269,10 @@ class SchedulerEngineTests(unittest.TestCase):
         engine = SchedulerEngine(
             definitions,
             control_plane=control,
-            runtime=ScannerRuntime(RunnerDispatcher({
+            runtime=RunnerDispatcher({
                 "aone.scan": first,
                 "aone.reply": second,
-            })),
+            }),
             clock=lambda: at(9),
             max_workers=2,
         )
@@ -306,7 +299,7 @@ class SchedulerEngineTests(unittest.TestCase):
         engine = SchedulerEngine(
             (definition("aone.scan"),),
             control_plane=control,
-            runtime=ScannerRuntime(RunnerDispatcher({"aone.scan": runner})),
+            runtime=RunnerDispatcher({"aone.scan": runner}),
             clock=lambda: at(9),
             max_workers=2,
         )
@@ -337,7 +330,7 @@ class SchedulerEngineTests(unittest.TestCase):
         engine = SchedulerEngine(
             definitions,
             control_plane=control,
-            runtime=ScannerRuntime(RunnerDispatcher(runners)),
+            runtime=RunnerDispatcher(runners),
             clock=lambda: at(9),
             max_workers=2,
         )

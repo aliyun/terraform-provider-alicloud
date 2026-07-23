@@ -4,13 +4,13 @@ from datetime import datetime, timedelta, timezone
 import unittest
 from zoneinfo import ZoneInfo
 
-from bridge.scheduler import (
-    AdaptiveSchedule, CapabilityValidationContext, DailySchedule, HandlerRunner,
-    IntervalSchedule, JobResult, JobResultStatus, MisfirePolicy,
-    ScheduledJobDefinition, TriggerPlanner, definition_digest,
-    definition_snapshot, validate_registry,
+from bridge.main import require_scheduler_role
+from bridge.scheduler.engine import TriggerPlanner
+from bridge.scheduler.model import (
+    AdaptiveSchedule, DailySchedule, HandlerRunner, IntervalSchedule, JobResult,
+    JobResultStatus, MisfirePolicy, ScheduledJobDefinition, definition_snapshot,
 )
-import bridge.scheduler.registry as registry
+import bridge.scheduler.jobs as jobs
 
 
 UTC = timezone.utc
@@ -30,28 +30,27 @@ def definition(*, revision: int = 1, schedule=None) -> ScheduledJobDefinition:
 
 
 class SchedulerCoreTests(unittest.TestCase):
-    def test_registry_is_yaml_loaded_with_all_migrated_jobs(self):
-        loaded = registry.load_jobs()
-        self.assertEqual(tuple(item.id for item in loaded),
+    def test_registry_contains_all_migrated_jobs(self):
+        self.assertEqual(tuple(item.id for item in jobs.JOBS),
                          ("daily.probe", "aone.scan", "aone.claim-health",
                           "daily.nudge", "aone.reply", "pr.watch",
                           "external.recovery"))
-        self.assertIs(loaded, registry.JOBS)
+        self.assertEqual(jobs.JOB_KEYS, jobs.RUNNER_KEYS)
+        self.assertTrue(all(isinstance(item.runner, HandlerRunner)
+                            for item in jobs.JOBS))
+        self.assertFalse(jobs.JOBS[0].enabled)
+        self.assertEqual(jobs.JOBS[0].revision, 2)
+        self.assertEqual(set(definition_snapshot(jobs.JOBS[0])), {
+            "id", "revision", "description", "schedule", "runner", "misfire",
+            "retry_delay_seconds", "enabled",
+        })
 
-    def test_registry_materializes_generator_once_and_returns_tuple(self):
-        seen = []
-        item = definition()
-        def source():
-            seen.append("once")
-            yield item
-        value = validate_registry(source(), context=CapabilityValidationContext(handler_keys={"aone.scan"}))
-        self.assertEqual(seen, ["once"])
-        self.assertEqual(value, (item,))
-
-    def test_registry_rejects_digest_revision_drift(self):
-        item = definition(revision=2)
-        with self.assertRaisesRegex(ValueError, "digest mismatch"):
-            validate_registry((item,), context=CapabilityValidationContext(handler_keys={"aone.scan"}), expected_digests={"aone.scan": "0" * 64})
+    def test_only_scheduler_role_can_start_periodic_jobs(self):
+        require_scheduler_role({"JARVIS_BRIDGE_ROLE": "scheduler"})
+        for role in ("worker", "unknown"):
+            with self.subTest(role=role), self.assertRaisesRegex(
+                    RuntimeError, "JARVIS_BRIDGE_ROLE=scheduler"):
+                require_scheduler_role({"JARVIS_BRIDGE_ROLE": role})
 
     def test_failure_result_cannot_commit_success_state(self):
         with self.assertRaisesRegex(ValueError, "failure results"):

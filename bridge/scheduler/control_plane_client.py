@@ -11,7 +11,6 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 import json
-import os
 import time
 from typing import Any, Callable, Mapping, Optional, Sequence
 from urllib.error import HTTPError, URLError
@@ -95,53 +94,32 @@ def _same_millisecond(left: datetime, right: datetime) -> bool:
 class HttpScheduledJobControlPlane:
     """Strict standard-library HTTP implementation of ``ScheduledJobControlPlane``.
 
-    Explicit arguments win over environment configuration.  When they are not
-    supplied, this class follows the existing Bridge control-plane variables:
-    ``JARVIS_CONTROL_PLANE_BASE_URL``, ``JARVIS_CONTROL_PLANE_TOKEN`` and
-    ``JARVIS_CONTROL_PLANE_TIMEOUT`` (with the HTML-report variables as the
-    established base URL/token fallbacks). Construction itself does no I/O.
+    Environment resolution belongs to the composition root; construction
+    itself does no I/O.
     """
 
-    DEFAULT_BASE_URL = "https://pre-agent.aliyun-inc.com"
     DEFAULT_PATH = "/api/jarvis/v1/scheduled-jobs"
 
     def __init__(
         self,
-        base_url: Optional[str] = None,
-        token: Optional[str] = None,
+        base_url: str,
+        token: str = "",
         *,
-        timeout: Optional[float] = None,
+        timeout: float = 10,
+        retry_delay_seconds: float = 5,
         path: str = DEFAULT_PATH,
         opener: Optional[Callable[..., Any]] = None,
-        environ: Optional[Mapping[str, str]] = None,
         worker_key: Optional[str] = None,
         process_uuid: Optional[str] = None,
     ) -> None:
-        env = os.environ if environ is None else environ
-        resolved_base_url = base_url
-        if resolved_base_url is None:
-            resolved_base_url = (
-                env.get("JARVIS_CONTROL_PLANE_BASE_URL", "").strip()
-                or env.get("JARVIS_HTML_REPORT_BASE_URL", "").strip()
-                or self.DEFAULT_BASE_URL
-            )
-        resolved_token = token
-        if resolved_token is None:
-            resolved_token = (
-                env.get("JARVIS_CONTROL_PLANE_TOKEN", "").strip()
-                or env.get("JARVIS_HTML_REPORT_TOKEN", "").strip()
-            )
-        if timeout is None:
-            timeout = float(env.get("JARVIS_CONTROL_PLANE_TIMEOUT", "10"))
-        self.base_url = _nonblank(resolved_base_url, "base_url").rstrip("/")
-        self.token = str(resolved_token or "")
+        self.base_url = _nonblank(base_url, "base_url").rstrip("/")
+        self.token = str(token or "")
         self.timeout = float(timeout)
         if self.timeout <= 0:
             raise ValueError("timeout must be positive")
-        self.retry_delay_seconds = float(
-            env.get("JARVIS_SCHEDULER_CONTROL_RETRY_SEC", "5"))
+        self.retry_delay_seconds = float(retry_delay_seconds)
         if self.retry_delay_seconds <= 0:
-            raise ValueError("JARVIS_SCHEDULER_CONTROL_RETRY_SEC must be positive")
+            raise ValueError("retry_delay_seconds must be positive")
         self.path = "/" + _nonblank(path, "path").strip("/")
         self._opener = opener or urlopen
         if (worker_key is None) != (process_uuid is None):

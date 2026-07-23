@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 import logging
 import unittest
 
-from bridge.scheduler import (
+from bridge.scheduler.model import (
     HandlerRunner,
     IntervalSchedule,
     JobResultStatus,

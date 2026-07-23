@@ -3,7 +3,7 @@ from __future__ import annotations
 from types import SimpleNamespace
 import unittest
 
-from bridge.headless import (
+from bridge.headless_runtime import (
     HeadlessRequest,
     HeadlessRuntime,
     Lane,

@@ -5,11 +5,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-import hashlib
-import json
 import math
 import re
-from typing import Any, Iterable, Mapping, Optional, Union
+from typing import Any, Mapping, Optional, Union
 
 
 class JobResultStatus(str, Enum):
@@ -27,23 +25,6 @@ class MisfirePolicy(str, Enum):
 _JOB_ID_RE = re.compile(r"^[a-z][a-z0-9_-]*\.[a-z][a-z0-9_-]*$")
 
 
-class _FrozenDict(dict):
-    """JSON-compatible mapping that remains immutable after construction."""
-
-    def _immutable(self, *args: Any, **kwargs: Any) -> None:
-        del args, kwargs
-        raise TypeError("JSON value is immutable")
-
-    __setitem__ = _immutable
-    __delitem__ = _immutable
-    clear = _immutable
-    pop = _immutable
-    popitem = _immutable
-    setdefault = _immutable
-    update = _immutable
-    __ior__ = _immutable
-
-
 def _require_nonblank(value: Any, name: str) -> None:
     if not isinstance(value, str) or not value.strip():
         raise ValueError(f"{name} must be a nonblank string")
@@ -54,25 +35,6 @@ def _require_positive_number(value: Any, name: str) -> None:
         raise ValueError(f"{name} must be a finite positive number")
     if not math.isfinite(float(value)) or value <= 0:
         raise ValueError(f"{name} must be a finite positive number")
-
-
-def _freeze_json(value: Any, name: str = "value") -> Any:
-    if value is None or isinstance(value, (str, bool, int)):
-        return value
-    if isinstance(value, float):
-        if not math.isfinite(value):
-            raise ValueError(f"{name} must be JSON serializable")
-        return value
-    if isinstance(value, Mapping):
-        items = []
-        for key, item in value.items():
-            if not isinstance(key, str):
-                raise TypeError(f"{name} must have string object keys")
-            items.append((key, _freeze_json(item, name)))
-        return _FrozenDict(items)
-    if isinstance(value, (list, tuple)):
-        return tuple(_freeze_json(item, name) for item in value)
-    raise TypeError(f"{name} must be JSON serializable")
 
 
 def is_aware(value: datetime) -> bool:
@@ -139,43 +101,18 @@ class AdaptiveSchedule:
 
 
 @dataclass(frozen=True)
-class HeadlessRunner:
-    """Fail-closed declaration for one registered headless builder protocol."""
-
-    builder_ref: str
-    protocol: str
-    session_policy: str
-    lane: Optional[str] = None
-    model: Optional[str] = None
-
-    def __post_init__(self) -> None:
-        for name in ("builder_ref", "protocol", "session_policy"):
-            _require_nonblank(getattr(self, name), name)
-        for name in ("lane", "model"):
-            value = getattr(self, name)
-            if value is not None:
-                _require_nonblank(value, name)
-        if self.session_policy not in ("NEW", "RESUME"):
-            raise ValueError("session_policy must be NEW or RESUME")
-        if self.lane not in (None, "default", "terraform"):
-            raise ValueError("lane must be default or terraform")
-        if self.model is not None:
-            raise ValueError(
-                "model override is not supported by the Jarvis headless adapter")
-
-
-@dataclass(frozen=True)
 class HandlerRunner:
     handler_key: str
-    payload: Any = field(default_factory=dict)
+    payload: Mapping[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         _require_nonblank(self.handler_key, "handler_key")
-        object.__setattr__(self, "payload", _freeze_json(self.payload, "payload"))
+        if not isinstance(self.payload, Mapping):
+            raise TypeError("payload must be a mapping")
+        object.__setattr__(self, "payload", dict(self.payload))
 
 
 ScheduleDefinition = Union[IntervalSchedule, DailySchedule, AdaptiveSchedule]
-RunnerDefinition = Union[HeadlessRunner, HandlerRunner]
 
 
 @dataclass(frozen=True)
@@ -184,7 +121,7 @@ class ScheduledJobDefinition:
     revision: int
     description: str
     schedule: ScheduleDefinition
-    runner: RunnerDefinition
+    runner: HandlerRunner
     misfire: MisfirePolicy
     retry_delay_seconds: float
     enabled: bool = True
@@ -213,32 +150,6 @@ class JobResult:
                 raise ValueError("failure results must not carry next_due_at")
 
 
-@dataclass(frozen=True)
-class CapabilityValidationContext:
-    headless_builder_protocols: frozenset[tuple[str, str]] = frozenset()
-    handler_keys: frozenset[str] = frozenset()
-
-    def __post_init__(self) -> None:
-        pairs = set()
-        for pair in self.headless_builder_protocols:
-            if (
-                isinstance(pair, (str, bytes))
-                or not isinstance(pair, (tuple, list))
-                or len(pair) != 2
-            ):
-                raise TypeError(
-                    "headless_builder_protocols must contain (builder_ref, protocol) pairs")
-            builder_ref, protocol = pair
-            _require_nonblank(builder_ref, "builder_ref")
-            _require_nonblank(protocol, "protocol")
-            pairs.add((builder_ref, protocol))
-        handlers = frozenset(self.handler_keys)
-        for handler_key in handlers:
-            _require_nonblank(handler_key, "handler_keys")
-        object.__setattr__(self, "headless_builder_protocols", frozenset(pairs))
-        object.__setattr__(self, "handler_keys", handlers)
-
-
 def validate_job_definition(definition: ScheduledJobDefinition) -> None:
     if type(definition) is not ScheduledJobDefinition:
         raise TypeError("definition must be a ScheduledJobDefinition")
@@ -257,8 +168,8 @@ def validate_job_definition(definition: ScheduledJobDefinition) -> None:
         AdaptiveSchedule,
     ):
         raise TypeError("schedule must be exactly one supported schedule dataclass")
-    if type(definition.runner) not in (HeadlessRunner, HandlerRunner):
-        raise TypeError("runner must be exactly one supported runner dataclass")
+    if type(definition.runner) is not HandlerRunner:
+        raise TypeError("runner must be a HandlerRunner")
     if not isinstance(definition.misfire, MisfirePolicy):
         raise ValueError("misfire must be a MisfirePolicy")
     allowed_misfires = {
@@ -277,14 +188,6 @@ def validate_job_definition(definition: ScheduledJobDefinition) -> None:
         definition.retry_delay_seconds, "retry_delay_seconds")
     if not isinstance(definition.enabled, bool):
         raise ValueError("enabled must be a bool")
-
-
-def _snapshot_json(value: Any) -> Any:
-    if isinstance(value, Mapping):
-        return {key: _snapshot_json(item) for key, item in value.items()}
-    if isinstance(value, tuple):
-        return [_snapshot_json(item) for item in value]
-    return value
 
 
 def definition_snapshot(definition: ScheduledJobDefinition) -> dict[str, Any]:
@@ -311,22 +214,11 @@ def definition_snapshot(definition: ScheduledJobDefinition) -> dict[str, Any]:
             "max_delay_seconds": schedule.max_delay_seconds,
             "run_immediately": schedule.run_immediately,
         }
-    runner = definition.runner
-    if isinstance(runner, HeadlessRunner):
-        runner_snapshot = {
-            "kind": "headless",
-            "builder_ref": runner.builder_ref,
-            "protocol": runner.protocol,
-            "session_policy": runner.session_policy,
-            "lane": runner.lane,
-            "model": runner.model,
-        }
-    else:
-        runner_snapshot = {
-            "kind": "handler",
-            "handler_key": runner.handler_key,
-            "payload": _snapshot_json(runner.payload),
-        }
+    runner_snapshot = {
+        "kind": "handler",
+        "handler_key": definition.runner.handler_key,
+        "payload": dict(definition.runner.payload),
+    }
     return {
         "id": definition.id,
         "revision": definition.revision,
@@ -337,76 +229,17 @@ def definition_snapshot(definition: ScheduledJobDefinition) -> dict[str, Any]:
         "retry_delay_seconds": definition.retry_delay_seconds,
         "enabled": definition.enabled,
     }
-
-
-def definition_digest(definition: ScheduledJobDefinition) -> str:
-    serialized = json.dumps(
-        definition_snapshot(definition),
-        sort_keys=True,
-        separators=(",", ":"),
-        allow_nan=False,
-    )
-    return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
-
-
-def validate_registry(
-    definitions: Iterable[ScheduledJobDefinition],
-    *,
-    context: CapabilityValidationContext,
-    expected_digests: Optional[Mapping[str, str]] = None,
-) -> tuple[ScheduledJobDefinition, ...]:
-    if not isinstance(context, CapabilityValidationContext):
-        raise TypeError("context must be a CapabilityValidationContext")
-    try:
-        registry = tuple(definitions)
-    except TypeError as exc:
-        raise TypeError(
-            "definitions must be an iterable of ScheduledJobDefinition") from exc
-    digests = dict(expected_digests) if expected_digests is not None else None
-    seen_ids: set[str] = set()
-    for definition in registry:
-        validate_job_definition(definition)
-        if definition.id in seen_ids:
-            raise ValueError(f"duplicate scheduled job id: {definition.id}")
-        seen_ids.add(definition.id)
-        if (
-            digests is not None
-            and digests.get(definition.id) != definition_digest(definition)
-        ):
-            raise ValueError(f"definition digest mismatch: {definition.id}")
-        runner = definition.runner
-        if (
-            isinstance(runner, HeadlessRunner)
-            and (runner.builder_ref, runner.protocol)
-            not in context.headless_builder_protocols
-        ):
-            raise ValueError("unregistered headless builder protocol")
-        if (
-            isinstance(runner, HandlerRunner)
-            and runner.handler_key not in context.handler_keys
-        ):
-            raise ValueError(f"unregistered handler key: {runner.handler_key}")
-    if digests is not None and set(digests) != seen_ids:
-        raise ValueError("definition digest registry keys must exactly match job ids")
-    return registry
-
-
 __all__ = [
     "AdaptiveSchedule",
-    "CapabilityValidationContext",
     "DailySchedule",
     "HandlerRunner",
-    "HeadlessRunner",
     "IntervalSchedule",
     "JobResult",
     "JobResultStatus",
     "MisfirePolicy",
-    "RunnerDefinition",
     "ScheduleDefinition",
     "ScheduledJobDefinition",
-    "definition_digest",
     "definition_snapshot",
     "is_aware",
     "validate_job_definition",
-    "validate_registry",
 ]

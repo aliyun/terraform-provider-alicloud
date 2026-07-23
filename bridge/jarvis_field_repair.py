@@ -16,8 +16,8 @@ import os
 from pathlib import Path
 from typing import Any, Dict, Mapping, Optional, Sequence
 
-from jarvis_execution_runtime import DEFAULT_EXECUTION_RUNTIME, ExecutionResult
-from jarvis_task_client import TaskEnvelope
+from bridge.jarvis_execution_runtime import DEFAULT_EXECUTION_RUNTIME, ExecutionResult
+from bridge.jarvis_task_client import TaskEnvelope
 
 
 FIELD_REPAIR_KIND = "field_repair"

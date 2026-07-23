@@ -10,15 +10,17 @@ from unittest import mock
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
+sys.path.insert(0, str(HERE.parent))
 
-from jarvis_execution_runtime import ExecutionResult  # noqa: E402
-from jarvis_field_repair import (  # noqa: E402
+from bridge.jarvis_execution_runtime import ExecutionResult  # noqa: E402
+from bridge.jarvis_field_repair import (  # noqa: E402
     FieldRepairWorker,
     build_field_repair_envelope,
 )
-from jarvis_task_client import TaskEnvelope  # noqa: E402
-from jarvis_task_router import EnqueueResult  # noqa: E402
-import jarvis_dingtalk_bot as bot  # noqa: E402
+from bridge.jarvis_task_client import TaskEnvelope  # noqa: E402
+from bridge.jarvis_task_router import EnqueueResult  # noqa: E402
+from bridge import jarvis_dingtalk_bot as bot  # noqa: E402
+from bridge.scheduler.runners.aone import AoneRuntime  # noqa: E402
 
 
 def continuation(revision="modified:2026-07-23T08:00:00Z"):
@@ -418,7 +420,7 @@ class FieldRepairBridgeIntegrationTest(unittest.TestCase):
         }
 
     def test_scheduler_missing_fields_persists_only_repair_task(self):
-        scanner = bot.AoneScheduler.__new__(bot.AoneScheduler)
+        scanner = AoneRuntime.__new__(AoneRuntime)
         scanner.handler = None
         scanner.pool = None
         scanner.field_repair_worker = SimpleNamespace(
@@ -434,7 +436,7 @@ class FieldRepairBridgeIntegrationTest(unittest.TestCase):
                          ["field_repair"])
 
     def test_scheduler_complete_fields_persists_business_task_without_repair(self):
-        scanner = bot.AoneScheduler.__new__(bot.AoneScheduler)
+        scanner = AoneRuntime.__new__(AoneRuntime)
         scanner.handler = None
         scanner.pool = None
         ready = dict(inspection(), status="ready", missing=[],

@@ -14,23 +14,25 @@ import os
 import signal
 import sys
 import threading
-from typing import Any
+import time
+from typing import Any, Mapping
 
-try:  # Executed by bridge/run.sh from the bridge directory.
-    from jarvis_task_client import ControlPlaneClient
-    from scheduler.registry import JOBS, REGISTRY
-    from scheduler.role import require_scheduler_role
-    from scheduler.runners import build_runners
-    from scheduler.service import SCHEDULER_WORKER_KEY, SchedulerService
-except ModuleNotFoundError:  # Package import for tests and tools.
-    from bridge.jarvis_task_client import ControlPlaneClient
-    from bridge.scheduler.registry import JOBS, REGISTRY
-    from bridge.scheduler.role import require_scheduler_role
-    from bridge.scheduler.runners import build_runners
-    from bridge.scheduler.service import SCHEDULER_WORKER_KEY, SchedulerService
+from bridge.jarvis_task_client import ControlPlaneClient
+from bridge.scheduler.jobs import JOBS
+from bridge.scheduler.runners import build_runners
+from bridge.scheduler.service import SCHEDULER_WORKER_KEY, SchedulerService
 
 
 LOG = logging.getLogger("jarvis-scheduler")
+
+
+def require_scheduler_role(environ: Mapping[str, str] | None = None) -> None:
+    role = (os.environ if environ is None else environ).get(
+        "JARVIS_BRIDGE_ROLE", "scheduler").strip()
+    if role != "scheduler":
+        raise RuntimeError(
+            "bridge/run.sh requires JARVIS_BRIDGE_ROLE=scheduler for periodic jobs; "
+            "worker hosts run bridge/run.sh only")
 
 
 def _task_client_from_env() -> ControlPlaneClient:
@@ -63,7 +65,7 @@ def build_scheduler() -> SchedulerService:
             worker_key=SCHEDULER_WORKER_KEY,
             repo_root=os.path.dirname(os.path.dirname(__file__)),
         ),
-        registry=REGISTRY,
+        definitions=JOBS,
         logger=LOG,
     )
 
@@ -93,7 +95,7 @@ def main() -> int:
     # second Scheduler while the first still owns the job.
     while not scheduler.stop():
         LOG.error("Scheduler drain timed out; keeping this process alive and retrying")
-        stop.wait(5)
+        time.sleep(5)
     return 0
 
 

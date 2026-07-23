@@ -24,8 +24,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Dict, Mapping, Optional, Tuple
 
-from jarvis_capacity import CapacityManager, CapacityPermit
-from jarvis_task_client import (
+from bridge.jarvis_capacity import CapacityManager, CapacityPermit
+from bridge.jarvis_task_client import (
     ControlPlaneClient,
     ControlPlaneConflict,
     ControlPlaneError,
