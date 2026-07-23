@@ -34,12 +34,44 @@ cat > "$tmp/bin/a1" <<'STUB'
 #!/usr/bin/env bash
 echo "$*" >> "$A1_TEST_LOG"
 if [ "$1 $2 $3" = "project workitem get" ]; then
+  if [ -f "$A1_TEST_STATE.updated" ] && [ "${A1_READBACK_FAIL:-}" = "1" ]; then
+    exit 8
+  fi
+  get_count="$(cat "$A1_TEST_STATE.get_count" 2>/dev/null || printf '0')"
+  get_count=$((get_count + 1))
+  printf '%s\n' "$get_count" > "$A1_TEST_STATE.get_count"
+  if [ "${A1_DRIFT_BEFORE_UPDATE:-}" = "project" ] \
+      && [ ! -f "$A1_TEST_STATE.updated" ] && [ "$get_count" -ge 3 ]; then
+    jq '(.fields[] | select(.identifier=="space") | .value) = "528766"' "$A1_TEST_WI"
+    exit 0
+  fi
+  if [ "${A1_DRIFT_AFTER_UPDATE:-}" = "type" ] \
+      && [ -f "$A1_TEST_STATE.updated" ]; then
+    jq '(.fields[] | select(.identifier=="workitemType") | .value) = "99"' "$A1_TEST_WI"
+    exit 0
+  fi
+  if [ "${A1_CONFLICT_AFTER_UPDATE:-}" = "140282" ] \
+      && [ -f "$A1_TEST_STATE.updated" ]; then
+    jq '(.fields[] | select(.identifier=="140282") | .value) = "manual"' "$A1_TEST_WI"
+    exit 0
+  fi
   cat "$A1_TEST_WI"; exit 0
 fi
 if [ "$1 $2 $3 $4" = "project workitem field list" ]; then
   cat "$A1_TEST_FIELDS"; exit 0
 fi
 if [ "$1 $2 $3 $4" = "project workitem field options" ]; then
+  if [ "${A1_OPTIONS_FAIL_FIELD:-}" = "$5" ]; then
+    exit 7
+  fi
+  if [ "${A1_GENERIC_FIXTURES:-}" = "1" ]; then
+    case "$5" in
+      140097) printf '[{"value":"","identifier":"terraform","displayValue":"Terraform"},{"value":"mongodb","identifier":"ignored-second-key","displayValue":"MongoDB"}]\n' ;;
+      140282) printf '[{"value":"defined","displayValue":"有OpenAPI，资源未定义，开放平台维护"},{"value":"manual","displayValue":"手工资源"}]\n' ;;
+      107239) printf '[{"Identifier":"906688","Name":"API 工具","Path":"产品/API 工具"},{"Identifier":"891438","Name":"云数据库 MongoDB 版","Path":"产品/MongoDB"}]\n' ;;
+    esac
+    exit 0
+  fi
   if [ "${A1_AUTO_FIXTURES:-}" != "1" ]; then
     printf '[{"identifier":"bug","value":"bug","displayValue":"缺陷"}]\n'; exit 0
   fi
@@ -52,6 +84,28 @@ if [ "$1 $2 $3 $4" = "project workitem field options" ]; then
   exit 0
 fi
 if [ "$1 $2 $3" = "project workitem update" ]; then
+  [ "${A1_UPDATE_FAIL:-}" != "1" ] || exit 6
+  touch "$A1_TEST_STATE.updated"
+  if [ "${A1_MUTATE_ON_UPDATE:-}" = "1" ]; then
+    shift 3
+    while [ "$#" -gt 0 ]; do
+      if [ "$1" = "--cfs" ] && [ "$#" -ge 2 ]; then
+        field_id="${2%%=*}"
+        field_value="${2#*=}"
+        next="$A1_TEST_STATE.next"
+        jq --arg id "$field_id" --arg value "$field_value" '
+          (.fields // []) |= map(
+            if ((.fieldIdentifier // .identifier // "") | tostring) == $id
+            then .value = $value | .displayValue = $value
+            else .
+            end)
+        ' "$A1_TEST_WI" > "$next" && mv "$next" "$A1_TEST_WI"
+        shift 2
+      else
+        shift
+      fi
+    done
+  fi
   exit 0
 fi
 exit 9
@@ -59,6 +113,7 @@ STUB
 chmod +x "$tmp/bin/a1"
 
 export A1_TEST_LOG="$log" A1_TEST_WI="$tmp/workitem.json" A1_TEST_FIELDS="$tmp/fields.json"
+export A1_TEST_STATE="$tmp/a1-state"
 export JARVIS_A1=a1 JARVIS_ROOT="$root"
 PASS=0; FAIL=0
 ok() { echo "PASS: $1"; PASS=$((PASS + 1)); }
@@ -87,6 +142,38 @@ PATH="$tmp/bin:$PATH" bash "$root/bootstrap/aone-fields.sh" missing 'bad/id' >/d
 [ "$rc" -eq 2 ] && ok "missing rejects unsafe workitem id" || bad "unsafe id should exit 2, got $rc"
 
 cat > "$tmp/workitem.json" <<'JSON'
+{"title":"all required fields already present","fields":[
+  {"identifier":"workitemType","value":"36","displayValue":"需求问题"},
+  {"identifier":"space","value":"1086837","displayValue":"Terraform customer"},
+  {"identifier":"140282","value":"defined","displayValue":"有OpenAPI，资源未定义，开放平台维护"}
+]}
+JSON
+cat > "$tmp/fields.json" <<'JSON'
+[
+  {"identifier":"140282","displayName":"Terraform需求类型","isRequired":true,"sourceType":"team","format":"list","options":[]}
+]
+JSON
+: > "$log"
+preflight_out="$(PATH="$tmp/bin:$PATH" bash "$root/bootstrap/aone-fields.sh" preflight 9001 1086837 2>"$tmp/preflight.err")"; rc=$?
+[ "$rc" -eq 0 ] && printf '%s' "$preflight_out" | jq -e '
+  .status == "ok" and .errorType == null and .workitemId == "9001" and
+  .project == "1086837" and .workitemType == "36" and
+  .assignments == [] and .unresolved == [] and .readback == [] and .filled == false
+' >/dev/null && [ "$(grep -c 'project workitem update' "$log" || true)" -eq 0 ] \
+  && ok "preflight complete item is a stable no-op" \
+  || bad "preflight complete item failed rc=$rc out=$preflight_out err=$(cat "$tmp/preflight.err") log=$(cat "$log")"
+
+rm -f "$A1_TEST_STATE.get_count" "$A1_TEST_STATE.updated"
+: > "$log"
+preflight_out="$(PATH="$tmp/bin:$PATH" A1_DRIFT_BEFORE_UPDATE=project \
+  bash "$root/bootstrap/aone-fields.sh" preflight 9001 1086837 2>/dev/null)"; rc=$?
+[ "$rc" -eq 3 ] && printf '%s' "$preflight_out" | jq -e '
+  .failureReason=="context_drift_noop_readback" and .filled==false
+' >/dev/null && [ "$(grep -c 'workitem update' "$log" || true)" -eq 0 ] \
+  && ok "complete no-op item still fences context drift" \
+  || bad "no-op context drift was not fenced rc=$rc out=$preflight_out log=$(cat "$log")"
+
+cat > "$tmp/workitem.json" <<'JSON'
 {"title":"support alicloud_mongodb_sharding_instance named whitelist groups","fields":[
   {"identifier":"workitemType","value":"36","displayValue":"需求问题"},
   {"identifier":"space","value":"1086837","displayValue":"Terraform customer"},
@@ -108,10 +195,167 @@ auto_out="$(PATH="$tmp/bin:$PATH" A1_AUTO_FIXTURES=1 bash "$root/bootstrap/aone-
   && ok "auto-fill resolves configured default and unique title matches" \
   || bad "auto-fill failed rc=$rc out=$auto_out err=$(cat "$tmp/auto.err")"
 grep -q -- '--cfs 140097=mongodb' "$log" \
-  && grep -q -- '--cfs 140282=有OpenAPI，资源未定义，开放平台维护' "$log" \
+  && grep -q -- '--cfs 140282=defined' "$log" \
   && grep -q -- '--cfs 107239=891438' "$log" \
   && ok "auto-fill submits every required field in one update" \
   || bad "auto-fill assignments missing: $(cat "$log")"
+
+cat > "$tmp/workitem.json" <<'JSON'
+{"title":"Provider required fields regression","fields":[
+  {"identifier":"workitemType","value":"36","displayValue":"需求问题"},
+  {"identifier":"space","value":"1086837","displayValue":"Terraform customer"},
+  {"identifier":"140097","value":"","displayValue":""},
+  {"identifier":"140282","value":"","displayValue":""},
+  {"identifier":"107239","value":"","displayValue":""}
+]}
+JSON
+cat > "$tmp/fields.json" <<'JSON'
+[
+  {"identifier":"140097","displayName":"涉及云产品","isRequired":true,"sourceType":"team","format":"list","options":[]},
+  {"identifier":"140282","displayName":"Terraform需求类型","isRequired":true,"sourceType":"team","format":"list","options":[]},
+  {"identifier":"107239","displayName":"归属产品","isRequired":true,"sourceType":"team","format":"list","options":[]}
+]
+JSON
+rm -f "$A1_TEST_STATE.updated"
+: > "$log"
+preflight_out="$(PATH="$tmp/bin:$PATH" A1_GENERIC_FIXTURES=1 A1_MUTATE_ON_UPDATE=1 \
+  bash "$root/bootstrap/aone-fields.sh" preflight 84608993 1086837 2>"$tmp/generic.err")"; rc=$?
+[ "$rc" -eq 0 ] && printf '%s' "$preflight_out" | jq -e '
+  .status == "ok" and .filled == true and .readback == [] and
+  ([.assignments[] | select(.id=="140097" and .value=="terraform" and .source=="validated_fallback")] | length) == 1 and
+  ([.assignments[] | select(.id=="140282" and .value=="defined" and .source=="configured_default")] | length) == 1 and
+  ([.assignments[] | select(.id=="107239" and .value=="906688" and .source=="validated_fallback")] | length) == 1
+' >/dev/null \
+  && [ "$(grep -c 'project workitem update' "$log" || true)" -eq 1 ] \
+  && [ "$(grep -c 'project workitem field options' "$log" || true)" -eq 3 ] \
+  && ok "preflight validates generic fallbacks, empty value identifiers, uppercase product options, one update and readback" \
+  || bad "generic preflight failed rc=$rc out=$preflight_out err=$(cat "$tmp/generic.err") log=$(cat "$log")"
+
+# An explicit value survives preflight; the completed item performs no second update.
+: > "$log"
+preflight_out="$(PATH="$tmp/bin:$PATH" A1_GENERIC_FIXTURES=1 A1_MUTATE_ON_UPDATE=1 \
+  bash "$root/bootstrap/aone-fields.sh" preflight 84608993 1086837)"; rc=$?
+[ "$rc" -eq 0 ] && [ "$(grep -c 'project workitem update' "$log" || true)" -eq 0 ] \
+  && ok "preflight never overwrites explicit values" \
+  || bad "explicit values were not a no-op rc=$rc out=$preflight_out log=$(cat "$log")"
+
+# Project drift fails before field lookup/update.
+: > "$log"
+preflight_out="$(PATH="$tmp/bin:$PATH" A1_GENERIC_FIXTURES=1 \
+  bash "$root/bootstrap/aone-fields.sh" preflight 84608993 528766)"; rc=$?
+[ "$rc" -eq 3 ] && printf '%s' "$preflight_out" | jq -e '
+  .status=="failed" and .errorType=="preflight_validation_failed" and
+  .failureReason=="project_mismatch" and
+  .unresolved[0].expectedProject=="528766" and .unresolved[0].actualProject=="1086837"
+' >/dev/null \
+  && [ "$(grep -c 'field list\\|workitem update' "$log" || true)" -eq 0 ] \
+  && ok "preflight project mismatch fails closed before mutation" \
+  || bad "project mismatch contract failed rc=$rc out=$preflight_out log=$(cat "$log")"
+
+reset_generic_item() {
+  rm -f "$A1_TEST_STATE.updated" "$A1_TEST_STATE.get_count"
+  jq '(.fields // []) |= map(
+    if ((.identifier // "") == "140097" or (.identifier // "") == "140282" or
+        (.identifier // "") == "107239")
+    then .value = "" | .displayValue = ""
+    else .
+    end)' "$tmp/workitem.json" > "$tmp/reset.json"
+  mv "$tmp/reset.json" "$tmp/workitem.json"
+  : > "$log"
+}
+
+reset_generic_item
+preflight_out="$(PATH="$tmp/bin:$PATH" A1_GENERIC_FIXTURES=1 A1_OPTIONS_FAIL_FIELD=140097 \
+  bash "$root/bootstrap/aone-fields.sh" preflight 84608993 1086837 2>/dev/null)"; rc=$?
+[ "$rc" -eq 3 ] && printf '%s' "$preflight_out" | jq -e '
+  .failureReason=="unresolved_required_fields" and
+  any(.unresolved[]; .id=="140097" and .reason=="options_lookup_error") and
+  .filled==false
+' >/dev/null && [ "$(grep -c 'workitem update' "$log" || true)" -eq 0 ] \
+  && ok "options lookup failure never blind-fills" \
+  || bad "options lookup failure did not fail closed rc=$rc out=$preflight_out log=$(cat "$log")"
+
+reset_generic_item
+preflight_out="$(PATH="$tmp/bin:$PATH" A1_GENERIC_FIXTURES=1 A1_UPDATE_FAIL=1 \
+  bash "$root/bootstrap/aone-fields.sh" preflight 84608993 1086837 2>/dev/null)"; rc=$?
+[ "$rc" -eq 3 ] && printf '%s' "$preflight_out" | jq -e '
+  .failureReason=="update_error" and .filled==false and (.assignments|length)==3
+' >/dev/null && [ "$(grep -c 'workitem update' "$log" || true)" -eq 1 ] \
+  && ok "update failure returns stable validation failure" \
+  || bad "update failure contract failed rc=$rc out=$preflight_out log=$(cat "$log")"
+
+reset_generic_item
+preflight_out="$(PATH="$tmp/bin:$PATH" A1_GENERIC_FIXTURES=1 A1_MUTATE_ON_UPDATE=1 A1_READBACK_FAIL=1 \
+  bash "$root/bootstrap/aone-fields.sh" preflight 84608993 1086837 2>/dev/null)"; rc=$?
+[ "$rc" -eq 3 ] && printf '%s' "$preflight_out" | jq -e '
+  .failureReason=="readback_error" and .filled==true and .readback==[]
+' >/dev/null && [ "$(grep -c 'workitem update' "$log" || true)" -eq 1 ] \
+  && ok "readback lookup failure fails closed after one update" \
+  || bad "readback lookup failure contract failed rc=$rc out=$preflight_out log=$(cat "$log")"
+
+reset_generic_item
+preflight_out="$(PATH="$tmp/bin:$PATH" A1_GENERIC_FIXTURES=1 \
+  bash "$root/bootstrap/aone-fields.sh" preflight 84608993 1086837 2>/dev/null)"; rc=$?
+[ "$rc" -eq 3 ] && printf '%s' "$preflight_out" | jq -e '
+  .failureReason=="readback_not_empty" and .filled==true and (.readback|length)==3
+' >/dev/null && [ "$(grep -c 'workitem update' "$log" || true)" -eq 1 ] \
+  && ok "non-empty readback fails closed" \
+  || bad "non-empty readback contract failed rc=$rc out=$preflight_out log=$(cat "$log")"
+
+reset_generic_item
+preflight_out="$(PATH="$tmp/bin:$PATH" A1_GENERIC_FIXTURES=1 A1_MUTATE_ON_UPDATE=1 \
+  A1_DRIFT_BEFORE_UPDATE=project \
+  bash "$root/bootstrap/aone-fields.sh" preflight 84608993 1086837 2>/dev/null)"; rc=$?
+[ "$rc" -eq 3 ] && printf '%s' "$preflight_out" | jq -e '
+  .failureReason=="context_drift_before_update" and .filled==false
+' >/dev/null && [ "$(grep -c 'workitem update' "$log" || true)" -eq 0 ] \
+  && ok "project drift immediately before update fails closed" \
+  || bad "pre-update project drift was not fenced rc=$rc out=$preflight_out log=$(cat "$log")"
+
+reset_generic_item
+preflight_out="$(PATH="$tmp/bin:$PATH" A1_GENERIC_FIXTURES=1 A1_MUTATE_ON_UPDATE=1 \
+  A1_DRIFT_AFTER_UPDATE=type \
+  bash "$root/bootstrap/aone-fields.sh" preflight 84608993 1086837 2>/dev/null)"; rc=$?
+[ "$rc" -eq 3 ] && printf '%s' "$preflight_out" | jq -e '
+  .failureReason=="context_drift_after_readback" and .filled==true
+' >/dev/null && [ "$(grep -c 'workitem update' "$log" || true)" -eq 1 ] \
+  && ok "workitem type drift after update fails closed" \
+  || bad "post-update type drift was not fenced rc=$rc out=$preflight_out log=$(cat "$log")"
+
+reset_generic_item
+preflight_out="$(PATH="$tmp/bin:$PATH" A1_GENERIC_FIXTURES=1 A1_MUTATE_ON_UPDATE=1 \
+  A1_CONFLICT_AFTER_UPDATE=140282 \
+  bash "$root/bootstrap/aone-fields.sh" preflight 84608993 1086837 2>/dev/null)"; rc=$?
+[ "$rc" -eq 3 ] && printf '%s' "$preflight_out" | jq -e '
+  .failureReason=="assignment_conflict_after_readback" and .filled==true and
+  any(.unresolved[]; .id=="140282" and .expected=="defined" and .actual=="manual")
+' >/dev/null && [ "$(grep -c 'workitem update' "$log" || true)" -eq 1 ] \
+  && ok "concurrent legal non-empty assignment change fails closed" \
+  || bad "assignment conflict was not fenced rc=$rc out=$preflight_out log=$(cat "$log")"
+
+# No configured policy and multiple candidates remains unresolved.
+cat > "$tmp/workitem.json" <<'JSON'
+{"title":"Provider generic issue","fields":[
+  {"identifier":"workitemType","value":"36","displayValue":"需求问题"},
+  {"identifier":"space","value":"528766","displayValue":"provider"},
+  {"identifier":"140097","value":"","displayValue":""}
+]}
+JSON
+cat > "$tmp/fields.json" <<'JSON'
+[
+  {"identifier":"140097","displayName":"涉及云产品","isRequired":true,"sourceType":"team","format":"list","options":[]}
+]
+JSON
+rm -f "$A1_TEST_STATE.updated" "$A1_TEST_STATE.get_count"
+: > "$log"
+preflight_out="$(PATH="$tmp/bin:$PATH" A1_AUTO_FIXTURES=1 \
+  bash "$root/bootstrap/aone-fields.sh" preflight 9002 528766 2>/dev/null)"; rc=$?
+[ "$rc" -eq 3 ] && printf '%s' "$preflight_out" | jq -e '
+  .failureReason=="unresolved_required_fields" and
+  .unresolved[0].reason=="no_title_match" and .filled==false
+' >/dev/null && [ "$(grep -c 'workitem update' "$log" || true)" -eq 0 ] \
+  && ok "ambiguous required field remains unresolved" \
+  || bad "unresolved contract failed rc=$rc out=$preflight_out log=$(cat "$log")"
 
 echo "Results: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]

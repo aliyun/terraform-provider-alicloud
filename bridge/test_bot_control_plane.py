@@ -708,9 +708,11 @@ class TaskAoneAssociationTest(unittest.TestCase):
         handler.execution_router = Router()
         handler.ephemeral_executor = object()
         handler._quick_card = mock.Mock()
-        handler._submit_card(
-            "84345050", "group", "group", "go", "runtime", False,
-            project="2100304", title="Aone card title")
+        with mock.patch.object(bot, "_aone_preflight",
+                               return_value=(True, {"status": "ok"})):
+            handler._submit_card(
+                "84345050", "group", "group", "go", "runtime", False,
+                project="2100304", title="Aone card title")
         envelope = captured["envelope"]
         self.assertEqual(envelope.source_ref, {
             "aoneId": "84345050", "projectId": "2100304",
@@ -718,6 +720,148 @@ class TaskAoneAssociationTest(unittest.TestCase):
         })
         self.assertNotIn("title", envelope.payload)
         self.assertNotIn("Aone card title", envelope.desired_revision)
+
+    def test_supervised_aone_ticket_preflight_failure_never_enqueues(self):
+        handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
+        handler.execution_router = SimpleNamespace(enqueue=mock.Mock())
+        handler.ephemeral_executor = object()
+        handler._quick_card = mock.Mock()
+        with mock.patch.object(bot, "_aone_preflight",
+                               return_value=(False, {
+                                   "status": "failed",
+                                   "errorType": "preflight_validation_failed",
+                               })) as preflight:
+            result = handler._submit_card(
+                "84608993", "group", "group", "go", "runtime", False,
+                project="1086837", task_type="ticket", terraform=True)
+        self.assertEqual(result, (False, "preflight_validation_failed"))
+        preflight.assert_called_once_with("84608993", "1086837", terraform=True)
+        handler.execution_router.enqueue.assert_not_called()
+        handler._quick_card.assert_called_once()
+
+    def test_non_ticket_aone_card_does_not_run_required_field_preflight(self):
+        handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
+        handler.execution_router = SimpleNamespace(
+            enqueue=mock.Mock(return_value=EnqueueResult(True, "task_persisted")))
+        handler.ephemeral_executor = object()
+        handler._quick_card = mock.Mock()
+        with mock.patch.object(bot, "_aone_preflight") as preflight:
+            result = handler._submit_card(
+                "84608993", "group", "group", "go", "runtime", False,
+                project="1086837", task_type="wake")
+        self.assertTrue(result[0])
+        preflight.assert_not_called()
+
+
+class AonePreflightHelperTest(unittest.TestCase):
+    @staticmethod
+    def _valid_result(**changes):
+        result = {
+            "status": "ok",
+            "errorType": None,
+            "workitemId": "84608993",
+            "project": "1086837",
+            "workitemType": "36",
+            "assignments": [],
+            "unresolved": [],
+            "readback": [],
+            "filled": False,
+        }
+        result.update(changes)
+        return result
+
+    def test_per_item_lock_serializes_concurrent_preflight_and_one_update(self):
+        state = {"active": 0, "max_active": 0, "updated": False, "updates": 0}
+        state_lock = threading.Lock()
+
+        def fake_run(*_args, **_kwargs):
+            with state_lock:
+                state["active"] += 1
+                state["max_active"] = max(state["max_active"], state["active"])
+                filled = not state["updated"]
+                if filled:
+                    state["updated"] = True
+                    state["updates"] += 1
+            time.sleep(0.05)
+            with state_lock:
+                state["active"] -= 1
+            return SimpleNamespace(
+                returncode=0,
+                stdout=json.dumps({
+                    "status": "ok",
+                    "errorType": None,
+                    "workitemId": "84608993",
+                    "project": "1086837",
+                    "workitemType": "36",
+                    "assignments": ([{"id": "140282", "value": "defined"}]
+                                    if filled else []),
+                    "unresolved": [],
+                    "readback": [],
+                    "filled": filled,
+                }),
+                stderr="")
+
+        results = []
+        with mock.patch.object(bot.subprocess, "run", side_effect=fake_run):
+            threads = [
+                threading.Thread(
+                    target=lambda: results.append(
+                        bot._aone_preflight("84608993", "1086837")))
+                for _ in range(2)
+            ]
+            for thread in threads:
+                thread.start()
+            for thread in threads:
+                thread.join()
+        self.assertEqual(state["max_active"], 1)
+        self.assertEqual(state["updates"], 1)
+        self.assertEqual(len(results), 2)
+        self.assertTrue(all(ok for ok, _result in results))
+
+    def test_timeout_is_structured_fail_closed_result(self):
+        with mock.patch.object(
+                bot.subprocess, "run",
+                side_effect=subprocess.TimeoutExpired("preflight", 1)):
+            ok, result = bot._aone_preflight("84608994", "1086837")
+        self.assertFalse(ok)
+        self.assertEqual(result["errorType"], "preflight_validation_failed")
+        self.assertEqual(result["failureReason"], "timeout")
+
+    def test_terraform_preflight_uses_strict_rd_identity_environment(self):
+        response = SimpleNamespace(
+            returncode=0, stdout=json.dumps(self._valid_result()), stderr="")
+        with mock.patch.object(bot.subprocess, "run", return_value=response) as run:
+            ok, _result = bot._aone_preflight(
+                "84608993", "1086837", terraform=True)
+        self.assertTrue(ok)
+        env = run.call_args.kwargs["env"]
+        self.assertEqual(env["JARVIS_A1_IDENTITY"], "terraform-rd")
+        self.assertEqual(env["JARVIS_A1_STRICT"], "1")
+
+    def test_incomplete_or_inconsistent_success_contract_fails_closed(self):
+        invalid_results = (
+            {"status": "ok"},
+            self._valid_result(workitemId="other"),
+            self._valid_result(project="528766"),
+            self._valid_result(unresolved=[{"id": "140097"}]),
+            self._valid_result(readback=[{"id": "140097"}]),
+            self._valid_result(errorType="unexpected"),
+            self._valid_result(assignments={}),
+            self._valid_result(filled=1),
+            self._valid_result(workitemType=""),
+        )
+        for index, payload in enumerate(invalid_results):
+            with self.subTest(index=index, payload=payload):
+                response = SimpleNamespace(
+                    returncode=0, stdout=json.dumps(payload), stderr="")
+                with mock.patch.object(
+                        bot.subprocess, "run", return_value=response):
+                    ok, result = bot._aone_preflight(
+                        "84608993", "1086837", terraform=True)
+                self.assertFalse(ok)
+                self.assertEqual(result["errorType"],
+                                 "preflight_validation_failed")
+                self.assertEqual(result["failureReason"], "invalid_result")
 
 
 class WakeRoutingTest(unittest.TestCase):
@@ -850,6 +994,18 @@ class AoneSchedulerUnionTest(unittest.TestCase):
         self.assertIn(bot.JARVIS_ORCH_WORKER, bot.DIGITAL_WORKER_IDS)
         self.assertIn(bot.PERSONA_PUBLIC_WORKER, bot.DIGITAL_WORKER_IDS)
         self.assertTrue(bot.PERSONA_LEGACY_WORKER_IDS <= bot.DIGITAL_WORKER_IDS)
+
+    def test_supervised_pending_is_removed_only_after_durable_acceptance(self):
+        s = self._scanner()
+        s._lock = threading.Lock()
+        s.pending = {"1": {"id": "1"}, "2": {"id": "2"}}
+        self.assertEqual(s.authorize("1"), {"id": "1"})
+        self.assertIn("1", s.pending)
+        self.assertEqual(
+            sorted(item["id"] for item in s.authorize_all()), ["1", "2"])
+        self.assertEqual(set(s.pending), {"1", "2"})
+        s.complete_authorization("1")
+        self.assertEqual(set(s.pending), {"2"})
 
     def test_source_status_reconcile_observes_terminal_aone_without_dispatch_upsert(self):
         class Client:
@@ -1878,10 +2034,82 @@ class AoneSchedulerUnionTest(unittest.TestCase):
                 "modified": "m"}
         context = bot._ticket_dispatch_context(item, {
             "id": 9, "creator": "x", "createdAt": "t", "content": "new"})
-        accepted, reason = s._dispatch(item, dispatch_context=context)
+        with mock.patch.object(bot, "_aone_preflight",
+                               return_value=(True, {"status": "ok"})):
+            accepted, reason = s._dispatch(item, dispatch_context=context)
         self.assertFalse(accepted)
         self.assertEqual(reason, "comment_requires_control_plane")
         s.handler.dispatch_item.assert_not_called()
+
+    def test_dispatch_preflight_failure_never_enqueues(self):
+        s = self._scanner()
+        s.handler = None
+        s.pool = None
+        s.execution_router = SimpleNamespace(enqueue=mock.Mock())
+        pool_key = "tf_" + "customer"
+        item = {"id": "84608993", "title": "generic Provider issue",
+                "pool": pool_key, "pool_project": "1086837", "modified": "m"}
+        with mock.patch.object(bot, "_aone_preflight",
+                               return_value=(False, {
+                                   "status": "failed",
+                                   "errorType": "preflight_validation_failed",
+                               })) as preflight:
+            accepted, reason = s._dispatch(item)
+        self.assertEqual((accepted, reason),
+                         (False, "preflight_validation_failed"))
+        preflight.assert_called_once_with(
+            "84608993", "1086837", terraform=True)
+        s.execution_router.enqueue.assert_not_called()
+
+    def test_dispatch_preflight_success_enqueues(self):
+        s = self._scanner()
+        s.handler = None
+        s.pool = None
+        s.execution_router = SimpleNamespace(
+            enqueue=mock.Mock(return_value=EnqueueResult(True, "task_persisted")))
+        pool_key = "tf_" + "customer"
+        item = {"id": "84608993", "title": "generic Provider issue",
+                "pool": pool_key, "pool_project": "1086837", "modified": "m"}
+        with mock.patch.object(bot, "_aone_preflight",
+                               return_value=(True, {"status": "ok"})):
+            accepted, reason = s._dispatch(item)
+        self.assertTrue(accepted)
+        self.assertEqual(reason, "task_persisted")
+        s.execution_router.enqueue.assert_called_once()
+
+    def test_assignee_tracker_and_idle_sources_share_dispatch_preflight_gate(self):
+        s = self._scanner()
+        idle_filter = "tag=" + "jarvis-" + "idle"
+        pool_key = "tf_" + "customer"
+
+        def fake_a1_list(_project, flt):
+            if flt.startswith("assignedTo="):
+                return [{"id": "1", "title": "assigned"}]
+            if flt.startswith("workitem.tracker="):
+                return [{"id": "2", "title": "tracked"}]
+            if flt.startswith(idle_filter):
+                return [{"id": "3", "title": "idle"}]
+            return []
+
+        s._a1_list = fake_a1_list
+        rows = s._query_pool_union(pool_key, "1086837", [], None)
+        s.handler = None
+        s.pool = None
+        s.execution_router = SimpleNamespace(
+            enqueue=mock.Mock(return_value=EnqueueResult(True, "task_persisted")))
+        with mock.patch.object(
+                bot, "_aone_preflight",
+                return_value=(True, {"status": "ok"})) as preflight:
+            outcomes = [s._dispatch(row) for row in rows]
+        self.assertEqual(len(rows), 3)
+        self.assertTrue(all(accepted for accepted, _reason in outcomes))
+        self.assertEqual(
+            sorted(call.args for call in preflight.call_args_list),
+            [("1", "1086837"), ("2", "1086837"), ("3", "1086837")])
+        self.assertTrue(all(
+            call.kwargs == {"terraform": True}
+            for call in preflight.call_args_list))
+        self.assertEqual(s.execution_router.enqueue.call_count, 3)
 
     def test_ordinary_ticket_keeps_modified_revision_without_comment_cursor(self):
         item = {"id": "1", "title": "普通变更", "pool": "other",

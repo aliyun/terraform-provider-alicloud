@@ -176,12 +176,115 @@ POST_PR_HEADLESS_KINDS = frozenset(("pr_ci_fix", "pr_comment_reply"))
 # explicit result instead of silently succeeding while leaving ``jarvis-claimed``.
 TASK_BOOKEND_KINDS = frozenset(("ticket", "persona", "wake"))
 
+_AONE_PREFLIGHT_LOCKS = {}
+_AONE_PREFLIGHT_LOCKS_GUARD = threading.Lock()
+
 TATA_PROMPT = (
     "你是 Tata，钉钉里的轻量助手。日常陪聊、答疑、查资料，语气简洁友好。"
     "你不能直接动仓库、发布或调 IaC，也不能查 Aone/工单/需求。只要用户要干真活（查证/开发/运维/查或碰工单/查 Aone）"
     "就在回复最后单起一行 [[JARVIS]] <一句话任务>，由系统转交 Jarvis 处理，别自己拒绝或说没权限。"
     "纯闲聊问候（如“在吗”“你好”“你是谁”）才不写这行——绝不要用它来说明“无需/不需要转交”。"
 )
+
+
+def _aone_preflight(workitem_id, expected_project=None, terraform=False):
+    """Validate/fill required Aone fields under a per-item process lock.
+
+    The shell helper owns the stable result contract and the update/readback
+    transaction.  This wrapper only serializes same-process dispatch paths,
+    bounds execution time, and turns every malformed/failed response into the
+    same fail-closed bridge decision.
+    """
+    workitem_id = str(workitem_id)
+    expected_project = str(expected_project or "")
+    with _AONE_PREFLIGHT_LOCKS_GUARD:
+        item_lock = _AONE_PREFLIGHT_LOCKS.setdefault(
+            workitem_id, threading.Lock())
+    try:
+        timeout = max(1, min(
+            300, int(os.environ.get("JARVIS_AONE_PREFLIGHT_TIMEOUT", "30"))))
+    except ValueError:
+        timeout = 30
+    command = [
+        "bash", str(REPO_ROOT / "bootstrap" / "aone-fields.sh"),
+        "preflight", workitem_id,
+    ]
+    if expected_project:
+        command.append(expected_project)
+    with item_lock:
+        try:
+            proc = subprocess.run(
+                command, capture_output=True, text=True, timeout=timeout,
+                env=_a1_command_env(terraform=terraform))
+        except subprocess.TimeoutExpired:
+            result = {
+                "status": "failed",
+                "errorType": "preflight_validation_failed",
+                "workitemId": workitem_id,
+                "project": expected_project,
+                "failureReason": "timeout",
+            }
+            log.error("aone_preflight %s", json.dumps(
+                result, ensure_ascii=False, sort_keys=True))
+            return False, result
+        except Exception as exc:  # noqa: BLE001
+            result = {
+                "status": "failed",
+                "errorType": "preflight_validation_failed",
+                "workitemId": workitem_id,
+                "project": expected_project,
+                "failureReason": "spawn_error",
+                "detail": type(exc).__name__,
+            }
+            log.error("aone_preflight %s", json.dumps(
+                result, ensure_ascii=False, sort_keys=True))
+            return False, result
+
+        parsed = True
+        try:
+            result = json.loads(proc.stdout)
+            if not isinstance(result, dict):
+                raise ValueError("result is not an object")
+        except (TypeError, ValueError, json.JSONDecodeError):
+            parsed = False
+            result = {
+                "status": "failed",
+                "errorType": "preflight_validation_failed",
+                "workitemId": workitem_id,
+                "project": expected_project,
+                "failureReason": "invalid_result",
+            }
+        success_contract = (
+            parsed
+            and result.get("status") == "ok"
+            and result.get("errorType") is None
+            and str(result.get("workitemId") or "") == workitem_id
+            and (not expected_project
+                 or str(result.get("project") or "") == expected_project)
+            and bool(str(result.get("workitemType") or "").strip())
+            and isinstance(result.get("assignments"), list)
+            and result.get("unresolved") == []
+            and result.get("readback") == []
+            and isinstance(result.get("filled"), bool)
+        )
+        ok = proc.returncode == 0 and success_contract
+        if proc.returncode == 0 and not success_contract:
+            result = {
+                "status": "failed",
+                "errorType": "preflight_validation_failed",
+                "workitemId": workitem_id,
+                "project": expected_project,
+                "failureReason": "invalid_result",
+            }
+        if not ok:
+            result["status"] = "failed"
+            result["errorType"] = "preflight_validation_failed"
+        log_method = log.info if ok else log.error
+        log_method("aone_preflight rc=%s result=%s stderr=%s",
+                   proc.returncode,
+                   json.dumps(result, ensure_ascii=False, sort_keys=True),
+                   (proc.stderr or "").strip()[-500:])
+        return ok, result
 # idealab 网关吃掉 --append-system-prompt, 改在常驻进程对话首轮注入身份做 priming。
 TATA_PRIMING = TATA_PROMPT + "\n\n(从现在起按以上身份回应, 只回一个'好'确认)"
 TATA_DWS_ONBOARDING_MESSAGE = (
@@ -3979,14 +4082,17 @@ class AoneScheduler:
     def authorize(self, item_id):
         """Authorize a single pending item (fallback mode).  Returns the item dict or None."""
         with self._lock:
-            return self.pending.pop(str(item_id), None)
+            return self.pending.get(str(item_id))
 
     def authorize_all(self):
         """Authorize all pending items (fallback mode).  Returns list of item dicts."""
         with self._lock:
-            items = list(self.pending.values())
-            self.pending.clear()
-            return items
+            return list(self.pending.values())
+
+    def complete_authorization(self, item_id):
+        """Remove a pending item only after its dispatch was durably accepted."""
+        with self._lock:
+            self.pending.pop(str(item_id), None)
 
     # -- scan + decide (pure-ish, unit-testable) -----------------------------
 
@@ -4778,6 +4884,10 @@ class AoneScheduler:
         terraform = _is_terraform_ticket(pool_key, title)
         tgt, ttype = broadcast_target(), broadcast_type()
         notify = _routine_notifier(self.handler)
+        preflight_ok, _preflight_result = _aone_preflight(
+            iid, pool_project, terraform=terraform)
+        if not preflight_ok:
+            return False, "preflight_validation_failed"
         envelope = self._envelope(item, context)
 
         def local_submit():
@@ -8937,6 +9047,15 @@ class JarvisHandler(AsyncChatbotHandler):
         project = str(project or "")
         item_id = str(item_id)
         source_type = "AONE" if item_id.isdigit() else "LOCAL"
+        if source_type == "AONE" and task_type == "ticket":
+            preflight_ok, _preflight_result = _aone_preflight(
+                item_id, project, terraform=terraform)
+            if not preflight_ok:
+                reason = "preflight_validation_failed"
+                self._quick_card(
+                    target, "🟠 工单 #%s 未派发（%s）。" % (item_id, reason),
+                    target_type)
+                return False, reason
         source_ref = (_source_ref_with_title(
                           {"aoneId": item_id, "projectId": project}, title)
                       if source_type == "AONE"
@@ -9170,13 +9289,19 @@ class JarvisHandler(AsyncChatbotHandler):
                     prompt = _ticket_prompt(item["id"], item.get("title", ""),
                                             item.get("pool", ""), item.get("pool_project", ""))
                     tf = _is_terraform_ticket(item.get("pool", ""), item.get("title", ""))
-                    self._quick_card(card_target,
-                                     "⚙️ 已接收工单 #%s，后台处理中…" % item["id"], card_type)
-                    self._submit_card(item["id"], card_target, card_type,
-                                      prompt, str(uuid.uuid4()), False, terraform=tf,
-                                      project=item.get("pool_project"),
-                                      title=item.get("title"))
-                    return AckMessage.STATUS_OK, "dispatched"
+                    accepted, reason = self._submit_card(
+                        item["id"], card_target, card_type,
+                        prompt, str(uuid.uuid4()), False, terraform=tf,
+                        project=item.get("pool_project"),
+                        title=item.get("title"))
+                    if accepted:
+                        self.scanner.complete_authorization(item["id"])
+                        self._quick_card(
+                            card_target,
+                            "⚙️ 已接收工单 #%s，后台处理中…" % item["id"],
+                            card_type)
+                        return AckMessage.STATUS_OK, "dispatched"
+                    return AckMessage.STATUS_OK, reason
                 else:
                     self._quick_card(card_target, "工单 #%s 不在待处理列表中。" % auth_m.group(1), card_type)
                     return AckMessage.STATUS_OK, "not_pending"
@@ -9184,19 +9309,33 @@ class JarvisHandler(AsyncChatbotHandler):
                 items = self.scanner.authorize_all()
                 if items:
                     ids = []
+                    failed = []
                     for item in items:
                         prompt = _ticket_prompt(item["id"], item.get("title", ""),
                                                 item.get("pool", ""), item.get("pool_project", ""))
                         tf = _is_terraform_ticket(item.get("pool", ""), item.get("title", ""))
-                        self._submit_card(item["id"], card_target, card_type,
-                                          prompt, str(uuid.uuid4()), False, terraform=tf,
-                                          project=item.get("pool_project"),
-                                          title=item.get("title"))
-                        ids.append(str(item["id"]))
-                    self._quick_card(card_target,
-                                     "⚙️ 已提交 %d 条工单后台处理: %s" % (
-                                         len(ids), ", ".join("#" + i for i in ids)),
-                                     card_type)
+                        accepted, reason = self._submit_card(
+                            item["id"], card_target, card_type,
+                            prompt, str(uuid.uuid4()), False, terraform=tf,
+                            project=item.get("pool_project"),
+                            title=item.get("title"))
+                        if accepted:
+                            self.scanner.complete_authorization(item["id"])
+                            ids.append(str(item["id"]))
+                        else:
+                            failed.append((str(item["id"]), reason))
+                    if ids:
+                        self._quick_card(
+                            card_target,
+                            "⚙️ 已提交 %d 条工单后台处理: %s" % (
+                                len(ids), ", ".join("#" + i for i in ids)),
+                            card_type)
+                    if failed:
+                        log.warning(
+                            "supervised dispatch rejected and retained: %s",
+                            ", ".join("#%s=%s" % row for row in failed))
+                        return (AckMessage.STATUS_OK,
+                                "dispatched_partial" if ids else failed[0][1])
                     return AckMessage.STATUS_OK, "dispatched_all"
                 else:
                     self._quick_card(card_target, "当前没有待处理的工单。", card_type)
