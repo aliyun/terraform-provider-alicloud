@@ -1,5 +1,17 @@
 # Error Diagnosis Patterns for Remote ACC Tests
 
+## 0. 归类入口
+
+每次 FAIL 必须先在 SKILL.md §6「FAIL 定性:四分类」里归到 A/B/C/D 中的一种:
+
+- **A** — 后端云产品 API 问题(行为/文档/合同不合理)
+- **B** — 测试用例问题(HCL / precheck / 依赖固定 ID)
+- **C1** — 手写 Resource/DataSource 代码 bug
+- **C2** — CloudSpec 资源定义 bug(修 cspec)
+- **D** — 生成器 bug(cspec 正确、生成产物错;修生成器再重新生成)
+
+本文件的每条 pattern 末尾都标注了归属分类,可作为快速匹配材料。**不能只匹配 pattern 就交差**——SKILL.md §6.1 的取证步骤(FAIL 位置 → tf-debug 对齐 → API 契约核对 → provider 代码核对 → cspec 核对 → 若资源为生成器产出,追加生成器模板/规则核对)必须走完,证据齐了再定性。
+
 ## 1. No Tests Executed (Name Mismatch)
 
 When `--test-case` is **not** specified, the runner matches `TestAccAliCloud{Namespace}{ResourceTypeCode}*`. If `run.log` reports 0 tests:
