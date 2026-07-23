@@ -51,8 +51,35 @@ ts="$(date '+%Y-%m-%d %H:%M:%S')"
 if [ "${1:-}" = "-c" ]; then exit 0; fi
 for a in "$@"; do
   if [ "${a##*/}" = "main.py" ]; then
-    echo "$ts INFO [MainThread] Scheduler READY pid=$$ worker=bridge-scheduler jobs=fake"
-    exec sleep 300
+    [ -n "${FAKE_PROCESS_STATE:-}" ] && printf '%s\n' "$$" >"$FAKE_PROCESS_STATE/scheduler-started"
+    case "${FAKE_SCHEDULER_MODE:-ready}" in
+      exit)
+        echo "$ts ERROR [MainThread] fake scheduler immediate exit"
+        exit 2 ;;
+      no-ready)
+        echo "$ts INFO [MainThread] fake scheduler deliberately not READY"
+        exec sleep 300 ;;
+      *)
+        echo "$ts INFO [MainThread] Scheduler READY pid=$$ worker=bridge-scheduler jobs=fake"
+        exec sleep 300 ;;
+    esac
+  fi
+  if [ "${a##*/}" = "task_worker.py" ]; then
+    [ -n "${FAKE_PROCESS_STATE:-}" ] && printf '%s\n' "$$" >"$FAKE_PROCESS_STATE/task-worker-started"
+    case "${FAKE_TASK_WORKER_MODE:-ready}" in
+      exit)
+        echo "$ts ERROR [MainThread] fake task worker immediate exit"
+        exit 2 ;;
+      no-ready)
+        echo "$ts INFO [MainThread] fake task worker deliberately not READY"
+        exec sleep 300 ;;
+      once)
+        echo "$ts INFO [MainThread] foreground once JARVIS_NO_DINGTALK=${JARVIS_NO_DINGTALK:-0}"
+        exit 0 ;;
+      *)
+        echo "$ts INFO [MainThread] Task worker READY pid=$$ worker=fake"
+        exec sleep 300 ;;
+    esac
   fi
 done
 for a in "$@"; do
@@ -78,6 +105,7 @@ case "${FAKE_BOT_MODE:-stay}" in
     echo "$ts INFO [MainThread] foreground once JARVIS_NO_DINGTALK=${JARVIS_NO_DINGTALK:-0}"
     exit 0 ;;
   *)
+    [ -n "${FAKE_PROCESS_STATE:-}" ] && printf '%s\n' "$$" >"$FAKE_PROCESS_STATE/bot-started"
     # Mirror the real bot's dual-line startup: the degraded bot prefixes EVERY line with
     # [NO-DINGTALK]; both modes log "scan scheduler started" (an ambiguous non-discriminator).
     if [ "${JARVIS_NO_DINGTALK:-}" = "1" ]; then
@@ -103,15 +131,39 @@ printf '%s\n' "$*" >>"$state/calls"
 case "${1:-}" in
   print)
     [ -f "$state/loaded" ] || exit 113
-    printf '%s\n' '{' '    state = running' '    pid = 4242' '}' ;;
+    pid="$(cat "$state/pid" 2>/dev/null || true)"
+    if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+      printf '%s\n' '{' '    state = running' "    pid = $pid" '}'
+    else
+      printf '%s\n' '{' '    state = waiting' '}'
+    fi ;;
   bootstrap)
     touch "$state/loaded" ;;
   bootout)
-    rm -f "$state/loaded" ;;
-  enable)
+    pid="$(cat "$state/pid" 2>/dev/null || true)"
+    [ -n "$pid" ] && kill -TERM "$pid" 2>/dev/null || true
+    rm -f "$state/loaded" "$state/pid" ;;
+  enable|disable)
     : ;;
+  kill)
+    pid="$(cat "$state/pid" 2>/dev/null || true)"
+    [ -n "$pid" ] && kill -TERM "$pid" 2>/dev/null || true
+    rm -f "$state/pid" ;;
   kickstart)
-    [ -f "$state/loaded" ] || exit 1 ;;
+    [ -f "$state/loaded" ] || exit 1
+    pid="$(cat "$state/pid" 2>/dev/null || true)"
+    if [ "${2:-}" = "-k" ] && [ -n "$pid" ]; then
+      kill -TERM "$pid" 2>/dev/null || true
+      rm -f "$state/pid"
+    fi
+    sleep 300 </dev/null >/dev/null 2>&1 &
+    pid=$!
+    printf '%s\n' "$pid" >"$state/pid"
+    if [ -n "${FAKE_LAUNCHCTL_LOG:-}" ]; then
+      mkdir -p "$(dirname "$FAKE_LAUNCHCTL_LOG")"
+      printf '%s INFO [MainThread] Bridge READY pid=%s mode=fake\n' \
+        "$(date '+%Y-%m-%d %H:%M:%S')" "$pid" >>"$FAKE_LAUNCHCTL_LOG"
+    fi ;;
   *)
     echo "unexpected fake launchctl command: $*" >&2
     exit 2 ;;
@@ -130,6 +182,8 @@ run() {
       JARVIS_BRIDGE_ROLE="${TEST_ROLE:-scheduler}" \
       JARVIS_CONTROL_PLANE_TOKEN="test-token" \
       JARVIS_BRIDGE_STOP_WAIT="1" \
+      JARVIS_BRIDGE_START_ROLLBACK_WAIT="1" \
+      JARVIS_SCHEDULER_READY_WAIT="${TEST_READY_WAIT:-1}" \
       JARVIS_BRIDGE_TOOL_DIRS="$FAKE_BREW/sbin $FAKE_BREW/bin $FAKE_HOME/.local/bin" \
       JARVIS_BRIDGE_SUPERVISOR="${TEST_SUPERVISOR-}" \
       JARVIS_BRIDGE_LAUNCHCTL="$FAKECTL" \
@@ -137,22 +191,39 @@ run() {
       JARVIS_BRIDGE_LAUNCHD_DOMAIN="gui/4242" \
       JARVIS_BRIDGE_LAUNCHD_PLIST="$LPLIST" \
       FAKE_LAUNCHCTL_STATE="$FAKECTL_STATE" \
+      FAKE_LAUNCHCTL_LOG="$STATE/bot.log" \
       HOME="$FAKE_HOME" \
       PATH="$FAKE_BREW/bin:$FAKE_BREW/sbin:/usr/bin:/bin:/usr/sbin:/sbin" \
       DINGTALK_APP_KEY="${TEST_KEY-}" \
       DINGTALK_APP_SECRET="${TEST_SECRET-}" \
       JARVIS_NO_DINGTALK="" \
       FAKE_BOT_MODE="${TEST_BOT_MODE:-stay}" \
+      FAKE_SCHEDULER_MODE="${TEST_SCHEDULER_MODE:-ready}" \
+      FAKE_TASK_WORKER_MODE="${TEST_TASK_WORKER_MODE:-ready}" \
+      FAKE_PROCESS_STATE="$STATE" \
       bash "$RUNSH" "$@"
 }
 
 pidval() { cat "$STATE/bot.pid" 2>/dev/null || echo ""; }
+state_pid() { cat "$STATE/$1" 2>/dev/null || echo ""; }
+kill_test_processes() {
+  local name p
+  # Only pidfiles prove current ownership.  Diagnostic "*-started" markers may
+  # outlive a clean stop and their numeric pid can later be reused by this test.
+  for name in bot.pid scheduler.pid task-worker.pid; do
+    p="$(state_pid "$name")"
+    [ -n "$p" ] && kill -9 "$p" 2>/dev/null || true
+  done
+}
 fresh() {
-  local p; p="$(pidval)"; [ -n "$p" ] && kill -9 "$p" 2>/dev/null
+  kill_test_processes
   rm -rf "$STATE"; mkdir -p "$STATE"
 }
 cleanup() {
-  local p; p="$(pidval)"; [ -n "$p" ] && kill -9 "$p" 2>/dev/null
+  local launchd_pid
+  kill_test_processes
+  launchd_pid="$(cat "$FAKECTL_STATE/pid" 2>/dev/null || true)"
+  [ -n "$launchd_pid" ] && kill -9 "$launchd_pid" 2>/dev/null || true
   rm -rf "$TMP"
 }
 trap cleanup EXIT
@@ -193,6 +264,7 @@ st="$(TEST_ROLE=scheduler run status 2>&1)"
 has "scheduler: RUNNING" "$st" "status(scheduler): reports Scheduler through run.sh"
 TEST_ROLE=scheduler run stop >/dev/null 2>&1
 [ ! -f "$STATE/scheduler.pid" ] && ok "stop(scheduler): scheduler pidfile removed" || no "stop(scheduler): scheduler pidfile removed"
+[ ! -f "$STATE/task-worker.pid" ] && ok "stop(scheduler): task worker pidfile removed" || no "stop(scheduler): task worker pidfile removed"
 
 # --- T3: full mode via sourcing bridge/jarvis.env (creds NOT in env) --------
 fresh
@@ -248,6 +320,45 @@ has "PATH=$FAKE_HOME/.local/bin:$FAKE_BREW/bin:$FAKE_BREW/sbin:/usr/bin:/bin:/us
 has "JARVIS_ROOT=$repo_root" "$out" \
   "dry-run: review worktree stays on its own wrappers and configuration"
 
+# --- T8b: standalone runtime READY failures are fully rolled back -----------
+fresh
+out="$(TEST_TASK_WORKER_MODE=no-ready TEST_READY_WAIT=1 run start 2>&1)"; rc=$?
+worker_started="$(state_pid task-worker-started)"
+[ "$rc" != 0 ] && ok "start(task worker READY timeout): non-zero exit" || no "start(task worker READY timeout): non-zero exit"
+[ ! -f "$STATE/task-worker.pid" ] && ok "start(task worker READY timeout): pidfile removed" || no "start(task worker READY timeout): pidfile removed"
+[ -n "$worker_started" ] && ! kill -0 "$worker_started" 2>/dev/null \
+  && ok "start(task worker READY timeout): child terminated" \
+  || no "start(task worker READY timeout): child terminated"
+[ ! -f "$STATE/bot.pid" ] && ok "start(task worker READY timeout): bot rolled back" || no "start(task worker READY timeout): bot rolled back"
+
+fresh
+out="$(TEST_SCHEDULER_MODE=no-ready TEST_READY_WAIT=1 run start 2>&1)"; rc=$?
+scheduler_started="$(state_pid scheduler-started)"
+worker_started="$(state_pid task-worker-started)"
+[ "$rc" != 0 ] && ok "start(scheduler READY timeout): non-zero exit" || no "start(scheduler READY timeout): non-zero exit"
+[ ! -f "$STATE/scheduler.pid" ] && ok "start(scheduler READY timeout): scheduler pidfile removed" || no "start(scheduler READY timeout): scheduler pidfile removed"
+[ -n "$scheduler_started" ] && ! kill -0 "$scheduler_started" 2>/dev/null \
+  && ok "start(scheduler READY timeout): scheduler child terminated" \
+  || no "start(scheduler READY timeout): scheduler child terminated"
+[ ! -f "$STATE/task-worker.pid" ] && ok "start(scheduler READY timeout): new worker pidfile removed" || no "start(scheduler READY timeout): new worker pidfile removed"
+[ -n "$worker_started" ] && ! kill -0 "$worker_started" 2>/dev/null \
+  && ok "start(scheduler READY timeout): new worker terminated" \
+  || no "start(scheduler READY timeout): new worker terminated"
+[ ! -f "$STATE/bot.pid" ] && ok "start(scheduler READY timeout): bot rolled back" || no "start(scheduler READY timeout): bot rolled back"
+
+# A worker that predates this start attempt may own leased Sessions and must be
+# retained when the newly-created scheduler fails.
+fresh
+TEST_ROLE=worker run start >/dev/null 2>&1
+worker_before="$(state_pid task-worker.pid)"
+out="$(TEST_ROLE=scheduler TEST_SCHEDULER_MODE=no-ready TEST_READY_WAIT=1 run start 2>&1)"; rc=$?
+worker_after="$(state_pid task-worker.pid)"
+[ "$rc" != 0 ] && ok "start(scheduler timeout/pre-existing worker): non-zero exit" || no "start(scheduler timeout/pre-existing worker): non-zero exit"
+[ -n "$worker_before" ] && [ "$worker_before" = "$worker_after" ] && kill -0 "$worker_after" 2>/dev/null \
+  && ok "start(scheduler timeout/pre-existing worker): existing worker preserved" \
+  || no "start(scheduler timeout/pre-existing worker): existing worker preserved"
+TEST_ROLE=worker run stop >/dev/null 2>&1
+
 # --- T9: status when stopped -----------------------------------------------
 fresh
 out="$(run status 2>&1)"
@@ -265,11 +376,16 @@ run stop >/dev/null 2>&1
 fresh
 run start >/dev/null 2>&1
 p1="$(pidval)"
+worker_before="$(state_pid task-worker.pid)"
 out="$(run restart 2>&1)"; rc=$?
 [ "$rc" = 0 ] && ok "restart: exit 0" || no "restart: exit 0 (got $rc)"
 p2="$(pidval)"
 [ -n "$p2" ] && [ "$p1" != "$p2" ] && ok "restart: new pid" || no "restart: new pid ($p1 -> $p2)"
 kill -0 "$p1" 2>/dev/null && no "restart: old process gone" || ok "restart: old process gone"
+worker_after="$(state_pid task-worker.pid)"
+[ -n "$worker_before" ] && [ "$worker_before" = "$worker_after" ] && kill -0 "$worker_after" 2>/dev/null \
+  && ok "restart(scheduler): existing task worker remains alive" \
+  || no "restart(scheduler): existing task worker remains alive"
 run stop >/dev/null 2>&1
 
 # --- T12: graceful stop semantics (吸收 master f7f1f72 优雅停止) --------------
@@ -289,11 +405,98 @@ kill -0 "$p1" 2>/dev/null && no "stop(deaf): process gone after SIGKILL" || ok "
 
 # --- T13: daemon is a true foreground entrypoint ---------------------------
 fresh
-out="$(TEST_ROLE=worker TEST_BOT_MODE=once TEST_KEY=k TEST_SECRET=s run daemon 2>&1)"; rc=$?
+out="$(TEST_ROLE=worker TEST_TASK_WORKER_MODE=once TEST_KEY=k TEST_SECRET=s run daemon 2>&1)"; rc=$?
 [ "$rc" = 0 ] && ok "daemon: foreground child exit is propagated" || no "daemon: foreground child exit is propagated (got $rc)"
 has "foreground daemon" "$out" "daemon: reports foreground mode"
 has "JARVIS_NO_DINGTALK=1" "$out" "daemon(worker): forces degraded mode"
 [ ! -f "$STATE/bot.pid" ] && ok "daemon: does not write local pidfile" || no "daemon: does not write local pidfile"
+
+# Scheduler-role daemon owns all three components.  TERM must stop the
+# separately-nohup'd worker as well as scheduler and bot.
+fresh
+(
+  export JARVIS_BRIDGE_PYTHON="$FAKEPY"
+  export JARVIS_BRIDGE_BOT="$BOTFILE"
+  export JARVIS_BRIDGE_STATE_DIR="$STATE"
+  export JARVIS_BRIDGE_BOOTSTRAP_ENV="$BSENV"
+  export JARVIS_BRIDGE_ENV="$JENV"
+  export JARVIS_BRIDGE_ROLE="scheduler"
+  export JARVIS_CONTROL_PLANE_TOKEN="test-token"
+  export JARVIS_BRIDGE_STOP_WAIT="1"
+  export JARVIS_BRIDGE_START_ROLLBACK_WAIT="1"
+  export JARVIS_SCHEDULER_READY_WAIT="1"
+  export JARVIS_BRIDGE_TOOL_DIRS="$FAKE_BREW/sbin $FAKE_BREW/bin $FAKE_HOME/.local/bin"
+  export HOME="$FAKE_HOME"
+  export PATH="$FAKE_BREW/bin:$FAKE_BREW/sbin:/usr/bin:/bin:/usr/sbin:/sbin"
+  export FAKE_BOT_MODE="stay"
+  export FAKE_SCHEDULER_MODE="ready"
+  export FAKE_TASK_WORKER_MODE="ready"
+  export FAKE_PROCESS_STATE="$STATE"
+  exec bash "$RUNSH" daemon
+) >"$STATE/daemon.log" 2>&1 &
+daemon_pid=$!
+i=0
+while [ "$i" -lt 30 ] && { [ ! -f "$STATE/task-worker.pid" ] || [ ! -f "$STATE/scheduler.pid" ]; }; do
+  sleep 0.1
+  i=$((i + 1))
+done
+daemon_worker="$(state_pid task-worker.pid)"
+daemon_scheduler="$(state_pid scheduler.pid)"
+kill -TERM "$daemon_pid" 2>/dev/null || true
+wait "$daemon_pid" 2>/dev/null; daemon_rc=$?
+[ "$daemon_rc" = 0 ] && ok "daemon(scheduler): TERM exits cleanly" || no "daemon(scheduler): TERM exits cleanly (got $daemon_rc)"
+[ -n "$daemon_worker" ] && ! kill -0 "$daemon_worker" 2>/dev/null \
+  && ok "daemon(scheduler): TERM stops task worker" \
+  || no "daemon(scheduler): TERM stops task worker"
+[ -n "$daemon_scheduler" ] && ! kill -0 "$daemon_scheduler" 2>/dev/null \
+  && ok "daemon(scheduler): TERM stops scheduler" \
+  || no "daemon(scheduler): TERM stops scheduler"
+[ ! -f "$STATE/task-worker.pid" ] && ok "daemon(scheduler): worker pidfile removed" || no "daemon(scheduler): worker pidfile removed"
+
+# A launchd-controlled restart uses a PID-bound one-shot marker.  The same
+# daemon TERM must then replace bot+scheduler without fencing leased Task work.
+fresh
+(
+  export JARVIS_BRIDGE_PYTHON="$FAKEPY"
+  export JARVIS_BRIDGE_BOT="$BOTFILE"
+  export JARVIS_BRIDGE_STATE_DIR="$STATE"
+  export JARVIS_BRIDGE_BOOTSTRAP_ENV="$BSENV"
+  export JARVIS_BRIDGE_ENV="$JENV"
+  export JARVIS_BRIDGE_ROLE="scheduler"
+  export JARVIS_CONTROL_PLANE_TOKEN="test-token"
+  export JARVIS_BRIDGE_STOP_WAIT="1"
+  export JARVIS_SCHEDULER_READY_WAIT="1"
+  export JARVIS_BRIDGE_TOOL_DIRS="$FAKE_BREW/sbin $FAKE_BREW/bin $FAKE_HOME/.local/bin"
+  export HOME="$FAKE_HOME"
+  export PATH="$FAKE_BREW/bin:$FAKE_BREW/sbin:/usr/bin:/bin:/usr/sbin:/sbin"
+  export FAKE_BOT_MODE="stay"
+  export FAKE_SCHEDULER_MODE="ready"
+  export FAKE_TASK_WORKER_MODE="ready"
+  export FAKE_PROCESS_STATE="$STATE"
+  exec bash "$RUNSH" daemon
+) >"$STATE/daemon-restart.log" 2>&1 &
+daemon_pid=$!
+i=0
+while [ "$i" -lt 30 ] && { [ ! -f "$STATE/task-worker.pid" ] || [ ! -f "$STATE/scheduler.pid" ]; }; do
+  sleep 0.1
+  i=$((i + 1))
+done
+daemon_worker="$(state_pid task-worker.pid)"
+daemon_scheduler="$(state_pid scheduler.pid)"
+printf '%s\n' "$daemon_pid" >"$STATE/preserve-task-worker-once"
+kill -TERM "$daemon_pid" 2>/dev/null || true
+wait "$daemon_pid" 2>/dev/null; daemon_rc=$?
+[ "$daemon_rc" = 0 ] && ok "daemon(restart): TERM exits cleanly" || no "daemon(restart): TERM exits cleanly (got $daemon_rc)"
+[ -n "$daemon_worker" ] && kill -0 "$daemon_worker" 2>/dev/null \
+  && ok "daemon(restart): preserves task worker" \
+  || no "daemon(restart): preserves task worker"
+[ -n "$daemon_scheduler" ] && ! kill -0 "$daemon_scheduler" 2>/dev/null \
+  && ok "daemon(restart): stops scheduler" \
+  || no "daemon(restart): stops scheduler"
+[ ! -f "$STATE/preserve-task-worker-once" ] \
+  && ok "daemon(restart): consumes one-shot marker" \
+  || no "daemon(restart): consumes one-shot marker"
+TEST_ROLE=worker run stop >/dev/null 2>&1
 
 # --- T14: launchd-supervised lifecycle uses only fake launchctl ------------
 fresh
@@ -306,13 +509,17 @@ has "kickstart -k gui/4242/com.jarvis.test" "$calls" "launchd start: kickstarts 
 [ ! -f "$STATE/bot.pid" ] && ok "launchd start: no local bot process/pidfile" || no "launchd start: no local pidfile"
 st="$(TEST_ROLE=worker TEST_SUPERVISOR=launchd run status 2>&1)"
 has "RUNNING" "$st" "launchd status: parses fake launchctl state"
-has "pid 4242" "$st" "launchd status: reports launchd pid"
+launchd_pid="$(cat "$FAKECTL_STATE/pid")"
+has "pid $launchd_pid" "$st" "launchd status: reports launchd pid"
 : >"$FAKECTL_STATE/calls"
 out="$(TEST_ROLE=worker TEST_SUPERVISOR=launchd run restart 2>&1)"; rc=$?
 [ "$rc" = 0 ] && ok "launchd restart: exit 0" || no "launchd restart: exit 0 (got $rc)"
 calls="$(cat "$FAKECTL_STATE/calls")"
 has "enable gui/4242/com.jarvis.test" "$calls" "launchd restart: keeps service enabled"
-has "kickstart -k gui/4242/com.jarvis.test" "$calls" "launchd restart: replaces running process"
+has "disable gui/4242/com.jarvis.test" "$calls" "launchd restart: disables KeepAlive during drain"
+has "kill SIGTERM gui/4242/com.jarvis.test" "$calls" "launchd restart: requests graceful drain"
+has "kickstart gui/4242/com.jarvis.test" "$calls" "launchd restart: starts replacement without overlap"
+hasnot "kickstart -k gui/4242/com.jarvis.test" "$calls" "launchd restart: avoids overlapping replacement"
 hasnot "bootout gui/4242/com.jarvis.test" "$calls" "launchd restart: keeps service registered"
 out="$(TEST_ROLE=worker TEST_SUPERVISOR=launchd run stop 2>&1)"; rc=$?
 [ "$rc" = 0 ] && ok "launchd stop: exit 0" || no "launchd stop: exit 0 (got $rc)"
@@ -332,6 +539,7 @@ install_fake() {
       JARVIS_BRIDGE_STATE_DIR="$TMP/install-state" \
       JARVIS_BRIDGE_ENV="$JENV" \
       FAKE_LAUNCHCTL_STATE="$FAKECTL_STATE" \
+      FAKE_LAUNCHCTL_LOG="$TMP/install-state/bot.log" \
       bash "$INSTALLER"
 }
 iout="$(install_fake 2>&1)"; rc=$?
@@ -353,7 +561,7 @@ PY
 [ "$state_mode" = "0o700" ] && ok "install-launchd: state directory is 0700" || no "install-launchd: state directory is 0700 (got $state_mode)"
 calls="$(cat "$FAKECTL_STATE/calls")"
 has "bootstrap gui/4242 $INSTALLED_PLIST" "$calls" "install-launchd: bootstraps rendered plist"
-has "kickstart -k gui/4242/com.jarvis.test" "$calls" "install-launchd: kickstarts rendered service"
+has "kickstart gui/4242/com.jarvis.test" "$calls" "install-launchd: kickstarts rendered service without overlap"
 iout2="$(install_fake 2>&1)"; rc=$?
 [ "$rc" = 0 ] && ok "install-launchd: repeat install exits 0" || no "install-launchd: repeat install exits 0 (got $rc)"
 has "unchanged" "$iout2" "install-launchd: repeat render is idempotent"

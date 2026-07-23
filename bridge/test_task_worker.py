@@ -40,7 +40,7 @@ class TaskWorkerTest(unittest.TestCase):
         else:
             os.environ["JARVIS_BRIDGE_ROLE"] = self.old_role
 
-    def _handler(self):
+    def _runtime(self):
         self.execute = mock.Mock()
         self.pool = mock.Mock()
         return SimpleNamespace(
@@ -52,12 +52,11 @@ class TaskWorkerTest(unittest.TestCase):
         )
 
     def test_composes_executor_outside_jarvis_handler(self):
-        handler = self._handler()
-        with mock.patch.object(task_worker.bot, "jarvis_root", return_value="/repo"):
-            worker = task_worker.TaskWorker(handler, executor_factory=_Executor)
+        runtime = self._runtime()
+        worker = task_worker.TaskWorker(runtime, executor_factory=_Executor)
 
-        self.assertIs(worker.executor.args[0], handler.task_client)
-        self.assertIs(worker.executor.args[1], handler.capacity_manager)
+        self.assertIs(worker.executor.args[0], runtime.task_client)
+        self.assertIs(worker.executor.args[1], runtime.capacity_manager)
         self.assertIs(worker.executor.args[2], self.execute)
         self.assertEqual(worker.executor.kwargs["capabilities"], {
             "kinds": ["ticket", "wake"],
@@ -66,17 +65,69 @@ class TaskWorkerTest(unittest.TestCase):
             "client": "bridge",
         })
 
-    def test_stop_owns_executor_and_handler_subprocess_cleanup(self):
-        handler = self._handler()
-        with mock.patch.object(task_worker.bot, "jarvis_root", return_value="/repo"), \
-                mock.patch.object(task_worker.bot, "_release_claim") as release:
-            worker = task_worker.TaskWorker(handler, executor_factory=_Executor)
-            self.assertTrue(worker.stop(drain=True, timeout=7))
+    def test_stop_owns_executor_and_runtime_subprocess_cleanup(self):
+        runtime = self._runtime()
+        release = mock.Mock()
+        worker = task_worker.TaskWorker(
+            runtime, executor_factory=_Executor, release_claim=release)
+        self.assertTrue(worker.stop(drain=True, timeout=7))
 
         self.assertEqual(worker.executor.stop_calls, [(True, 7)])
-        handler.ephemeral_executor.terminate_all.assert_called_once_with(release_fn=release)
-        handler.ephemeral_executor.shutdown.assert_called_once_with(
+        runtime.ephemeral_executor.terminate_all.assert_called_once_with(release_fn=release)
+        runtime.ephemeral_executor.shutdown.assert_called_once_with(
             wait=False, cancel_futures=True)
+
+    def test_runtime_composition_does_not_construct_bot_or_schedulers(self):
+        client = object()
+        pool = mock.Mock()
+        pool_factory = mock.Mock(return_value=pool)
+        field_worker = mock.Mock()
+        field_factory = mock.Mock(return_value=field_worker)
+        with mock.patch.object(
+                task_worker.bot, "JarvisHandler",
+                side_effect=AssertionError("Bot must not be constructed")) as handler, \
+                mock.patch.object(
+                    task_worker.bot, "AoneScheduler",
+                    side_effect=AssertionError("scanner must not be constructed")) as scanner, \
+                mock.patch.object(
+                    task_worker.bot, "DailyScheduler",
+                    side_effect=AssertionError("daily must not be constructed")) as daily, \
+                mock.patch.object(
+                    task_worker.bot, "PrWatchScheduler",
+                    side_effect=AssertionError("prwatch must not be constructed")) as prwatch, \
+                mock.patch.object(task_worker.bot, "claude_bin", return_value="/bin/claude"):
+            runtime = task_worker.TaskExecutionRuntime(
+                task_client=client,
+                field_repair_worker_factory=field_factory,
+                ephemeral_executor_factory=pool_factory,
+            )
+
+        handler.assert_not_called()
+        scanner.assert_not_called()
+        daily.assert_not_called()
+        prwatch.assert_not_called()
+        self.assertIs(runtime.task_client, client)
+        self.assertIs(runtime.field_repair_worker, field_worker)
+        self.assertIs(runtime.ephemeral_executor, pool)
+        self.assertFalse(hasattr(runtime, "scanner"))
+        self.assertFalse(hasattr(runtime, "daily"))
+        self.assertFalse(hasattr(runtime, "prwatch"))
+        self.assertEqual(
+            runtime.execution_router.task_types,
+            {
+                "field_repair", "ticket", "revisit", "persona", "wake",
+                "pr_ci_fix", "pr_comment_reply",
+            },
+        )
+        self.assertEqual(runtime.capacity_manager.capacity, 3)
+        self.assertIs(
+            runtime.persistent_task_execution._field_repair_worker,
+            field_worker,
+        )
+        self.assertIs(
+            runtime.persistent_task_execution._dispatch_item.__self__,
+            runtime,
+        )
 
 
 if __name__ == "__main__":

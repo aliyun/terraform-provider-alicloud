@@ -52,6 +52,7 @@ SCHEDULER_READY_WAIT="${JARVIS_SCHEDULER_READY_WAIT:-30}"
 SCHEDULER_DRAIN_WAIT="${JARVIS_SCHEDULER_DRAIN_TIMEOUT_SECONDS:-600}"
 TASK_WORKER_PIDFILE="$STATE_DIR/task-worker.pid"
 TASK_WORKER_LOG="$STATE_DIR/task-worker.log"
+PRESERVE_TASK_WORKER_ONCE="$STATE_DIR/preserve-task-worker-once"
 say()  { printf '%s\n' "$*"; }
 err()  { printf '%s\n' "$*" >&2; }
 
@@ -86,6 +87,43 @@ _tail_log() {  # $1 = n
 
 _bridge_stop_wait() {
   printf '%s' "${JARVIS_BRIDGE_STOP_WAIT:-${JARVIS_STOP_GRACE:-30}}"
+}
+
+_remove_pidfile_if_matches() { # $1 = pidfile, $2 = pid
+  local pidfile="$1" expected_pid="$2" current_pid=""
+  [ -f "$pidfile" ] || return 0
+  current_pid="$(cat "$pidfile" 2>/dev/null || true)"
+  [ "$current_pid" = "$expected_pid" ] && rm -f "$pidfile"
+}
+
+_rollback_started_process() { # $1 = pid, $2 = pidfile, $3 = label
+  # A process that never reached READY owns no durable lifecycle yet.  Always
+  # reap the exact child started by this shell; do not route this through the
+  # graceful runtime stop functions, which may intentionally preserve leased
+  # work and therefore leave a failed-start orphan behind.
+  local pid="$1" pidfile="$2" label="$3"
+  local i=0 rollback_wait="${JARVIS_BRIDGE_START_ROLLBACK_WAIT:-5}"
+  local deadline=$(( rollback_wait * 10 ))
+  if _alive "$pid"; then
+    kill -TERM "$pid" 2>/dev/null || true
+    while [ "$i" -lt "$deadline" ] && _alive "$pid"; do
+      sleep 0.1
+      i=$((i + 1))
+    done
+  fi
+  if _alive "$pid"; then
+    err "$label 启动回滚超时，强制终止 pid $pid"
+    kill -KILL "$pid" 2>/dev/null || true
+  fi
+  # The process is a direct child of this run.sh invocation. wait both reaps a
+  # killed child and observes an already-exited startup failure.
+  wait "$pid" 2>/dev/null || true
+  if _alive "$pid"; then
+    err "$label 启动回滚失败: pid $pid 仍在运行"
+    return 1
+  fi
+  _remove_pidfile_if_matches "$pidfile" "$pid"
+  return 0
 }
 
 _bridge_ready_in_log() { # $1 = pid, $2 = byte offset before start
@@ -144,6 +182,7 @@ if not REGISTRY.scheduler_job_keys():
 _scheduler_start() {
   _scheduler_enabled || return 0
   local pid i=0 deadline=$(( SCHEDULER_READY_WAIT * 10 ))
+  SCHEDULER_STARTED_PID=""
   if pid="$(_scheduler_running_pid)"; then
     say "scheduler 已在运行 (pid $pid)"
     return 0
@@ -153,9 +192,15 @@ _scheduler_start() {
   mkdir -p "$STATE_DIR"
   nohup "$PYTHON" "$SCRIPT_DIR/main.py" >>"$SCHEDULER_LOG" 2>&1 &
   pid=$!
+  SCHEDULER_STARTED_PID="$pid"
   printf '%s\n' "$pid" >"$SCHEDULER_PIDFILE"
   while [ "$i" -lt "$deadline" ]; do
-    _alive "$pid" || { err "scheduler 启动失败"; tail -n 20 "$SCHEDULER_LOG" >&2; rm -f "$SCHEDULER_PIDFILE"; return 1; }
+    if ! _alive "$pid"; then
+      err "scheduler 启动失败"
+      tail -n 20 "$SCHEDULER_LOG" >&2
+      _rollback_started_process "$pid" "$SCHEDULER_PIDFILE" "scheduler" || true
+      return 1
+    fi
     if grep -F "Scheduler READY pid=$pid " "$SCHEDULER_LOG" >/dev/null 2>&1; then
       say "scheduler 已启动 (pid $pid, log=$SCHEDULER_LOG)"
       return 0
@@ -163,6 +208,7 @@ _scheduler_start() {
     sleep 0.1; i=$((i + 1))
   done
   err "scheduler 未在 ${SCHEDULER_READY_WAIT}s 内 READY"
+  _rollback_started_process "$pid" "$SCHEDULER_PIDFILE" "scheduler" || true
   return 1
 }
 
@@ -204,6 +250,7 @@ _task_worker_validate() {
 
 _task_worker_start() {
   local pid i=0 deadline=$(( SCHEDULER_READY_WAIT * 10 ))
+  TASK_WORKER_STARTED_PID=""
   if pid="$(_task_worker_running_pid)"; then
     say "task worker 已在运行 (pid $pid)"
     return 0
@@ -213,9 +260,15 @@ _task_worker_start() {
   mkdir -p "$STATE_DIR"
   nohup "$PYTHON" "$TASK_WORKER" >>"$TASK_WORKER_LOG" 2>&1 &
   pid=$!
+  TASK_WORKER_STARTED_PID="$pid"
   printf '%s\n' "$pid" >"$TASK_WORKER_PIDFILE"
   while [ "$i" -lt "$deadline" ]; do
-    _alive "$pid" || { err "task worker 启动失败"; tail -n 20 "$TASK_WORKER_LOG" >&2; rm -f "$TASK_WORKER_PIDFILE"; return 1; }
+    if ! _alive "$pid"; then
+      err "task worker 启动失败"
+      tail -n 20 "$TASK_WORKER_LOG" >&2
+      _rollback_started_process "$pid" "$TASK_WORKER_PIDFILE" "task worker" || true
+      return 1
+    fi
     if grep -F "Task worker READY pid=$pid " "$TASK_WORKER_LOG" >/dev/null 2>&1; then
       say "task worker 已启动 (pid $pid, log=$TASK_WORKER_LOG)"
       return 0
@@ -223,6 +276,7 @@ _task_worker_start() {
     sleep 0.1; i=$((i + 1))
   done
   err "task worker 未在 ${SCHEDULER_READY_WAIT}s 内 READY"
+  _rollback_started_process "$pid" "$TASK_WORKER_PIDFILE" "task worker" || true
   return 1
 }
 
@@ -423,19 +477,31 @@ cmd_launchd_restart() {
     return
   fi
 
-  # This only replaces the legacy Bot. The standalone Scheduler has its own
-  # launcher and is never restarted by bridge/run.sh.
-  local detail old_pid="" i=0 stop_wait pre_sz=0
+  # The launchd daemon owns the Bot and standalone Scheduler. Replace those
+  # together while the PID-bound marker keeps the independent Task worker
+  # alive across the planned restart.
+  local detail old_pid="" i=0 stop_wait pre_sz=0 preserve_worker=0
   detail="$("$LAUNCHCTL_BIN" print "$LAUNCHD_SERVICE" 2>/dev/null || true)"
   old_pid="$(printf '%s\n' "$detail" \
     | sed -n 's/^[[:space:]]*pid = //p' | head -n1)"
   stop_wait="$(_bridge_stop_wait)"
+  if [ "${JARVIS_BRIDGE_ROLE:-scheduler}" = "scheduler" ] && [ -n "$old_pid" ]; then
+    # The foreground daemon owns bot+scheduler+worker. A planned restart must
+    # replace only bot+scheduler so leased Task Sessions retain their worker
+    # process/fence. Bind the one-shot marker to the exact daemon PID so a
+    # stale file can never weaken a later full stop.
+    mkdir -p "$STATE_DIR"
+    printf '%s\n' "$old_pid" >"$PRESERVE_TASK_WORKER_ONCE"
+    preserve_worker=1
+  fi
   "$LAUNCHCTL_BIN" disable "$LAUNCHD_SERVICE" >/dev/null 2>&1 || {
+    [ "$preserve_worker" -eq 1 ] && rm -f "$PRESERVE_TASK_WORKER_ONCE"
     err "launchd restart 失败: 无法禁用 KeepAlive ($LAUNCHD_SERVICE)"
     return 1
   }
   if [ -n "$old_pid" ]; then
     "$LAUNCHCTL_BIN" kill SIGTERM "$LAUNCHD_SERVICE" || {
+      [ "$preserve_worker" -eq 1 ] && rm -f "$PRESERVE_TASK_WORKER_ONCE"
       err "launchd restart 失败: 无法请求旧 bridge 优雅停止"
       return 1
     }
@@ -445,11 +511,15 @@ cmd_launchd_restart() {
       i=$((i + 1))
     done
     if _alive "$old_pid"; then
+      [ "$preserve_worker" -eq 1 ] && rm -f "$PRESERVE_TASK_WORKER_ONCE"
       "$LAUNCHCTL_BIN" enable "$LAUNCHD_SERVICE" >/dev/null 2>&1 || true
       err "bridge 在 ${stop_wait}s 内未停止；本次 restart 已取消。"
       return 1
     fi
   fi
+  # The old daemon normally consumes the marker in its TERM handler. If it
+  # exited before doing so, remove the stale PID-bound marker now.
+  [ "$preserve_worker" -eq 1 ] && rm -f "$PRESERVE_TASK_WORKER_ONCE"
   "$LAUNCHCTL_BIN" enable "$LAUNCHD_SERVICE" >/dev/null 2>&1 || {
     err "launchd restart 失败: 无法重新启用 $LAUNCHD_SERVICE"
     return 1
@@ -495,7 +565,7 @@ _supervised_command() { # $1 = start|stop|restart|status
 
 # -- commands --------------------------------------------------------------
 cmd_start() {
-  local pid unmanaged
+  local pid unmanaged worker_started_pid=""
   # Human start = intent to run; clear the manual-stop sentinel so the cron
   # watchdog resumes its keep-alive duty.
   rm -f "$PIDFILE.manual-stop" 2>/dev/null || true
@@ -511,7 +581,15 @@ cmd_start() {
     # The listener and durable worker have independent lifecycles.  A watchdog
     # start must repair a missing worker without replacing the healthy bot.
     _task_worker_start || return $?
-    _scheduler_start || return $?
+    worker_started_pid="${TASK_WORKER_STARTED_PID:-}"
+    if ! _scheduler_start; then
+      # Preserve only a worker that existed before this start invocation.  A
+      # freshly-created companion must not survive a partially failed start.
+      if [ -n "$worker_started_pid" ]; then
+        _rollback_started_process "$worker_started_pid" "$TASK_WORKER_PIDFILE" "task worker" || true
+      fi
+      return 1
+    fi
     return 0
   fi
   unmanaged="$(_unmanaged_bot_pids)"
@@ -579,8 +657,12 @@ cmd_start() {
     _stop_bridge_only >/dev/null 2>&1 || true
     return 1
   fi
+  worker_started_pid="${TASK_WORKER_STARTED_PID:-}"
   if ! _scheduler_start; then
-    err "scheduler 启动失败；回滚刚启动的 bridge（task worker 保持运行以保护已租约 Session）。"
+    err "scheduler 启动失败；回滚本轮新启动的组件。"
+    if [ -n "$worker_started_pid" ]; then
+      _rollback_started_process "$worker_started_pid" "$TASK_WORKER_PIDFILE" "task worker" || true
+    fi
     _stop_bridge_only >/dev/null 2>&1 || true
     return 1
   fi
@@ -704,25 +786,65 @@ cmd_dryrun() {
 cmd_daemon() {
   _source_env
   mkdir -p "$STATE_DIR"
-  local mode
+  local mode bot_pid="" shutdown_started=0 preserve_task_worker=0
+  _daemon_shutdown() {
+    local shutdown_rc=0 step_rc=0 preserve_pid=""
+    # A supervisor may stop us while the standalone components are still
+    # starting. Install this handler before spawning anything and make it
+    # idempotent so both the signal and normal-exit paths can share it.
+    if [ "$shutdown_started" -eq 1 ]; then
+      return 0
+    fi
+    shutdown_started=1
+    if [ -f "$PRESERVE_TASK_WORKER_ONCE" ]; then
+      preserve_pid="$(cat "$PRESERVE_TASK_WORKER_ONCE" 2>/dev/null || true)"
+      rm -f "$PRESERVE_TASK_WORKER_ONCE"
+      if [ "$preserve_pid" = "$$" ]; then
+        preserve_task_worker=1
+      fi
+    fi
+    _scheduler_stop
+    step_rc=$?
+    [ "$step_rc" -eq 0 ] || shutdown_rc="$step_rc"
+    if [ -n "$bot_pid" ]; then
+      kill -TERM "$bot_pid" 2>/dev/null || true
+      wait "$bot_pid" 2>/dev/null || true
+    fi
+    if [ "$preserve_task_worker" -eq 0 ]; then
+      _task_worker_stop
+      step_rc=$?
+      if [ "$shutdown_rc" -eq 0 ] && [ "$step_rc" -ne 0 ]; then
+        shutdown_rc="$step_rc"
+      fi
+    else
+      say "受控 restart：保留 task worker 及其已租约 Session。"
+    fi
+    return "$shutdown_rc"
+  }
+  trap '_daemon_shutdown; shutdown_rc=$?; trap - TERM INT; exit "$shutdown_rc"' TERM INT
   if _decide_mode; then mode="full"; else mode="degraded"; fi
   say "bridge foreground daemon 启动 (mode=$mode, role=${JARVIS_BRIDGE_ROLE:-scheduler}, pid=$$): $PYTHON $BOT"
   if ! _scheduler_enabled; then
+    trap - TERM INT
     exec "$PYTHON" "$TASK_WORKER"
   fi
+  local worker_started_pid=""
   _task_worker_start || return $?
-  _scheduler_start || return $?
+  worker_started_pid="${TASK_WORKER_STARTED_PID:-}"
+  if ! _scheduler_start; then
+    if [ -n "$worker_started_pid" ]; then
+      _rollback_started_process "$worker_started_pid" "$TASK_WORKER_PIDFILE" "task worker" || true
+    fi
+    return 1
+  fi
   "$PYTHON" "$BOT" &
-  local bot_pid=$!
-  _daemon_shutdown() {
-    _scheduler_stop || return $?
-    kill -TERM "$bot_pid" 2>/dev/null || true
-    wait "$bot_pid" 2>/dev/null || true
-  }
-  trap '_daemon_shutdown; exit 0' TERM INT
+  bot_pid=$!
   wait "$bot_pid"
   local rc=$?
-  _scheduler_stop || return $?
+  trap - TERM INT
+  _daemon_shutdown
+  local shutdown_rc=$?
+  [ "$shutdown_rc" -eq 0 ] || return "$shutdown_rc"
   return "$rc"
 }
 

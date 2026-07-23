@@ -6188,9 +6188,9 @@ class PrWatchScheduler:
             ci_fix_escalated 停自动修（仍看守合并）；该状态覆盖连续失败/pending epoch，CI 全绿
             时清零并为未来失败开启新 epoch；
           · EphemeralExecutor 的 active-set（并发互斥）+ claim.sh（真锁）。
-        返回 active bool（CI 失败或 pending = 快档轮询，驱动 #3 双档周期）。pool 为空 / 查询失败
-        → False；CI 全绿 → False；escalated failure → False（转人工，不再快轮询）。绝不在
-        unknown 上派。"""
+        返回 active bool（CI 失败或 pending = 快档轮询，驱动 #3 双档周期）。pool 为空时仍将
+        可恢复 Task 持久化到控制面，只禁用本地回退；查询失败 → False；CI 全绿 → False；
+        escalated failure → False（转人工，不再快轮询）。绝不在 unknown 上派。"""
         head, failing, pending = (
             ci if ci is not None else self._gh_pr_ci(entry.get("pr_url")))
         if head is None:
@@ -6215,8 +6215,6 @@ class PrWatchScheduler:
                 # the boolean.  Bind them to the first actually failing head we observe;
                 # pending/green heads must never synthesize a CI-failed alert.
                 _prwatch_update(tid, ci_fix_escalated_head=head)
-            return False
-        if self.pool is None:
             return False
         if entry.get("ci_fix_sha") == head:
             return True  # 本 head 已派过修复 → 不刷屏，但仍失败中 → 快档轮询等修复推新 head
@@ -6282,6 +6280,8 @@ class PrWatchScheduler:
 
         def local_submit():
             # force=True 越过 24h 去重台账；active-set 仍防并发重入。
+            if self.pool is None:
+                return False, "local_executor_unavailable"
             return self.pool.submit(
                 tid, work, notify=notify, force=True,
                 kind="pr_ci_fix", project=project, terraform=True)
@@ -6421,15 +6421,14 @@ class PrWatchScheduler:
     def _maybe_dispatch_comment_reply(self, tid, entry):
         """open PR：出现**新的**评审评论（非我方/非 bot、key 与 last_seen_comment 不同）→ force
         重派一个 pr_comment_reply 实例回应（#2）。首次观察只 baseline-seed last_seen_comment、
-        不回应既有评论（那是提交时已在的/首轮已处理）。pool 空 / 无此类评论 / 查询失败 → 不动。
+        不回应既有评论（那是提交时已在的/首轮已处理）。pool 空时仍将可恢复 Task 持久化到控制面，
+        只禁用本地回退；无此类评论 / 查询失败 → 不动。
 
         **老台账兼容（三路合流升级）**：早期 last_seen_comment 以裸 URL 或裸 ``#issuecomment-<id>``
         写入；三路合流后 key 变为 ``issue-<id>`` / ``pr-<id>`` / ``review-<id>``。用尾部数字
         兜底判定：若老 last 的尾部数字与当前 issue-<id> 一致 → 已见（silently 升级到新格式，
         不派）；否则 → 视为新评论（升级到新格式 + 正常派发）。这样重启后不会误把老基线判成新
         评论一次性刷屏。"""
-        if self.pool is None:
-            return
         key, author, snippet = self._gh_pr_comments(entry.get("pr_url"))
         if key is None:
             return  # 无评审评论 / 查询失败
@@ -6485,6 +6484,8 @@ class PrWatchScheduler:
         )
 
         def local_submit():
+            if self.pool is None:
+                return False, "local_executor_unavailable"
             return self.pool.submit(
                 tid, work, notify=notify, force=True,
                 kind="pr_comment_reply", project=project, terraform=True)

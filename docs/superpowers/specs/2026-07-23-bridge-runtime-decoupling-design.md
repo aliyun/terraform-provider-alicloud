@@ -11,9 +11,11 @@ nudge 与 PR 各有专用 runner 模块，且 `build_runners()` 直接装配它�
 import-safe 兼容标记。
 
 这仍只是运行时编排拆分，不是完整领域代码迁移：部分 runner 会按需导入 Bot 中暂存的业务状态机
-（例如 `AoneScheduler`、`_NudgeJob`、`PrWatchScheduler`）；task worker 也通过
-`JarvisHandler(no_dingtalk=True)` 取得当前的 Task callback。因此当前不能宣称 Scheduler 或 worker
-已完全脱离 `jarvis_dingtalk_bot.py`，更不能以此文档宣称已部署、已预发验证或已验证 restart 行为。
+（例如 `AoneScheduler`、`_NudgeJob`、`PrWatchScheduler`）。task worker 已改由
+`TaskExecutionRuntime` 直接组合控制面、路由、容量与 Task callback，不再构造 `JarvisHandler` 或
+任一定时 Scheduler；但该 runtime 仍从 Bot 模块复用未绑定的 headless 方法、bookend 与纯函数。因此
+当前不能宣称 Scheduler 或 worker 已完全脱离 `jarvis_dingtalk_bot.py`，更不能以此文档宣称已部署、
+已预发验证或已完成真实 restart 验收。
 
 最终目标是将三个运行时完全分离：
 
@@ -87,15 +89,16 @@ clients, runtime -> 标准库及窄外部 SDK
 3. Scheduler Worker：`main.py` -> `SchedulerService`。
 
 `run.sh` 为 task worker 使用单独 pidfile/log。在新启动路径中，Bot 启动后再启动 task worker，
-然后启动 Scheduler；若 Scheduler 启动失败，脚本停止刚启动的 Bot，但保留 task worker 以保护既有
-lease。停止路径分别向 Scheduler 与 worker 发送终止请求，超时时保留对应进程。上述仅为代码路径，
-尚无真实部署、重启或预发验证结论。
+然后启动 Scheduler；若 Scheduler 启动失败，脚本停止刚启动的 Bot，并只回滚本轮新建的 worker，
+启动前已经存在的 worker 则保留以保护既有 lease。完整 stop 会停止 Scheduler、Bot 与 worker；受控
+restart 通过 PID 绑定的一次性标记仅替换 Scheduler/Bot，继续保留 worker。READY 超时会终止准确的
+本轮子进程并清理匹配 pidfile。上述行为已通过 hermetic 进程测试，尚无真实部署、重启或预发验证结论。
 
 ### 3.2 Worker host
 
 `JARVIS_BRIDGE_ROLE=worker bridge/run.sh start` 仅启动 `task_worker.py`，不启动 DingTalk listener
-或 SchedulerEngine。当前 worker 仍导入 Bot 以构造无 DingTalk handler 和 Task callback，因此
-“worker 不 import Bot”仍是后续目标。
+或 SchedulerEngine。当前 worker 不构造 `JarvisHandler`，但仍导入 Bot 以复用未绑定的 headless
+执行方法、bookend、EphemeralExecutor 与纯函数，因此“worker 不 import Bot”仍是后续目标。
 
 ### 3.3 DingTalk host
 
@@ -123,13 +126,15 @@ Runner 只可保存可重建的业务 cursor（例如 PR 观察记录）；slot 
 ## 5. Persistent Task 执行边界
 
 当前 `task_worker.py` 独立拥有 `PersistenceExecutor` 的创建、启动、信号停止与 executor stop
-生命周期，并由 `run.sh` 以独立 pidfile/log 管理。它通过 handler 的
-`persistent_task_execution.execute` 提供 lease callback，且停止时清理该 handler 持有的 ephemeral
-executor。
+生命周期，并由 `run.sh` 以独立 pidfile/log 管理。`TaskExecutionRuntime` 直接组合
+`ControlPlaneClient`、`ExecutionRouter`、`CapacityManager`、`FieldRepairWorker`、
+`EphemeralExecutor` 与 `PersistentTaskExecution`，并提供 lease callback；停止时清理由该 runtime
+持有的 ephemeral executor。
 
-因此 worker 可在没有 SchedulerEngine 或 DingTalk stream 的机器上运行，但 task fence、任务结果
-处理、session/process guard 和 task bookend 仍在 Bot 依赖链。`aone.reply` 只持久化 wake；真正的
-resumed headless execution 仍由任意可用 worker lease 后执行。
+因此 worker 可在没有 SchedulerEngine 或 DingTalk stream 的机器上运行，且不会初始化 Bot handler
+或定时 Scheduler；但任务结果处理、session/process guard、task bookend 与 EphemeralExecutor 的
+实现仍在 Bot 模块依赖链。`aone.reply` 只持久化 wake；真正的 resumed headless execution 仍由任意
+可用 worker lease 后执行。
 
 ## 6. 迁移步骤与状态
 
@@ -157,11 +162,12 @@ context 按需调用；尚未删除其领域实现。
 仍复用 Bot 中的 `PrWatchScheduler`；恢复 runner 使用独立的
 `ExternalOperationRecoveryScheduler`。PR registry/event-ledger 的格式迁移不在本次范围。
 
-### M4：独立 Task Worker 入口与生命周期（已完成入口拆分，callback 迁移未完成）
+### M4：独立 Task Worker 入口与生命周期（已完成组合根拆分，callback 模块迁移未完成）
 
 `task_worker.py` 已独立创建、启动和停止 `PersistenceExecutor`，并使 worker role 不启动
-Scheduler/Bot stream。下一步是将任务结果处理、session/process guard 和 task bookend 迁至独立
-模块，使其不再通过 `JarvisHandler(no_dingtalk=True)` 取得 callback。
+Scheduler/Bot stream。`TaskExecutionRuntime` 不再构造 `JarvisHandler` 或业务 Scheduler。下一步是
+将尚在 Bot 模块中的未绑定 headless 方法、任务结果处理、session/process guard、task bookend 与
+EphemeralExecutor 实现迁至独立模块，彻底移除 worker 对 Bot 模块的 import。
 
 ### M5：收缩 DingTalk adapter（未开始）
 

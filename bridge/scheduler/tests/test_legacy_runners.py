@@ -22,6 +22,15 @@ from bridge.scheduler.runners import build_runners
 UTC = timezone.utc
 
 
+class RecordingTaskClient:
+    def __init__(self):
+        self.upserts = []
+
+    def upsert_desired_task(self, envelope, *, request_id):
+        self.upserts.append((envelope, request_id))
+        return {"accepted": True, "reason": "task_persisted"}
+
+
 def interval_definition(job_id: str) -> ScheduledJobDefinition:
     return ScheduledJobDefinition(
         job_id, 1, "test", IntervalSchedule(60, True), HandlerRunner(job_id),
@@ -140,6 +149,78 @@ class SchedulerRuntimeRunnerTests(unittest.TestCase):
         self.assertFalse(hasattr(context, "handler"))
         self.assertIsNone(observed["pool"])
         self.assertIs(observed["context"], context)
+
+    def test_pr_watch_context_persists_ci_fix_without_local_pool(self):
+        from bridge import jarvis_dingtalk_bot as module
+
+        client = RecordingTaskClient()
+        with TemporaryDirectory() as directory:
+            original_path = module.PRWATCH_PATH
+            module.PRWATCH_PATH = Path(directory) / "pr-watch.json"
+            try:
+                module._prwatch_add(
+                    "test-item", "https://example.test/pull/1", "test-project",
+                    "Scheduler refactor")
+                context = PrWatchRuntimeContext(
+                    task_client=client,
+                    logger=logging.getLogger(__name__),
+                    legacy_module=module,
+                )
+                watcher = context.watcher
+                watcher._gh_pr_ci = lambda _url: (
+                    "head-1", ["unit-tests"], False)
+
+                active = watcher._maybe_dispatch_ci_fix(
+                    "test-item", module._prwatch_list()["test-item"])
+                persisted = module._prwatch_list()["test-item"]
+            finally:
+                module.PRWATCH_PATH = original_path
+
+        self.assertTrue(active)
+        self.assertIsNone(watcher.pool)
+        self.assertEqual(len(client.upserts), 1)
+        envelope, request_id = client.upserts[0]
+        self.assertEqual(envelope.task_type, "pr_ci_fix")
+        self.assertEqual(envelope.source_ref["head"], "head-1")
+        self.assertEqual(persisted["ci_fix_sha"], "head-1")
+        self.assertEqual(persisted["ci_fix_attempts"], 1)
+        self.assertEqual(request_id, envelope.request_id("upsert"))
+
+    def test_pr_watch_context_persists_comment_reply_without_local_pool(self):
+        from bridge import jarvis_dingtalk_bot as module
+
+        client = RecordingTaskClient()
+        with TemporaryDirectory() as directory:
+            original_path = module.PRWATCH_PATH
+            module.PRWATCH_PATH = Path(directory) / "pr-watch.json"
+            try:
+                module._prwatch_add(
+                    "test-item", "https://example.test/pull/1", "test-project",
+                    "Scheduler refactor")
+                module._prwatch_update(
+                    "test-item", last_seen_comment="issue-1")
+                context = PrWatchRuntimeContext(
+                    task_client=client,
+                    logger=logging.getLogger(__name__),
+                    legacy_module=module,
+                )
+                watcher = context.watcher
+                watcher._gh_pr_comments = lambda _url: (
+                    "review-2", "reviewer", "please update")
+
+                watcher._maybe_dispatch_comment_reply(
+                    "test-item", module._prwatch_list()["test-item"])
+                persisted = module._prwatch_list()["test-item"]
+            finally:
+                module.PRWATCH_PATH = original_path
+
+        self.assertIsNone(watcher.pool)
+        self.assertEqual(len(client.upserts), 1)
+        envelope, request_id = client.upserts[0]
+        self.assertEqual(envelope.task_type, "pr_comment_reply")
+        self.assertEqual(envelope.source_ref["commentKey"], "review-2")
+        self.assertEqual(persisted["last_seen_comment"], "review-2")
+        self.assertEqual(request_id, envelope.request_id("upsert"))
 
     def test_catalogue_registers_dedicated_pr_watch_runner(self):
         runners = build_runners(
