@@ -55,6 +55,11 @@ if [ "$1 $2 $3" = "project workitem get" ]; then
     jq '(.fields[] | select(.identifier=="140282") | .value) = "manual"' "$A1_TEST_WI"
     exit 0
   fi
+  if [ "${A1_CONFLICT_AFTER_UPDATE:-}" = "140097" ] \
+      && [ -f "$A1_TEST_STATE.updated" ]; then
+    jq '(.fields[] | select(.identifier=="140097") | .value) = "redis"' "$A1_TEST_WI"
+    exit 0
+  fi
   cat "$A1_TEST_WI"; exit 0
 fi
 if [ "$1 $2 $3 $4" = "project workitem field list" ]; then
@@ -356,6 +361,77 @@ preflight_out="$(PATH="$tmp/bin:$PATH" A1_AUTO_FIXTURES=1 \
 ' >/dev/null && [ "$(grep -c 'workitem update' "$log" || true)" -eq 0 ] \
   && ok "ambiguous required field remains unresolved" \
   || bad "unresolved contract failed rc=$rc out=$preflight_out log=$(cat "$log")"
+
+inspect_out="$(PATH="$tmp/bin:$PATH" A1_AUTO_FIXTURES=1 \
+  bash "$root/bootstrap/aone-fields.sh" inspect 9002 528766 2>/dev/null)"; rc=$?
+[ "$rc" -eq 0 ] && printf '%s' "$inspect_out" | jq -e '
+  .status=="repair_required" and .workitemId=="9002" and .project=="528766" and
+  (.missing | length)==1 and .assignments==[] and
+  .unresolved[0].id=="140097" and (.unresolved[0].options | length)==2
+' >/dev/null && [ "$(grep -c 'workitem update' "$log" || true)" -eq 0 ] \
+  && ok "inspect returns deterministic and unresolved repair context without mutation" \
+  || bad "inspect contract failed rc=$rc out=$inspect_out log=$(cat "$log")"
+inspect_canonical="$(printf '%s' "$inspect_out" | jq -S -c '{
+  missing:(.missing // []),assignments:(.assignments // []),
+  unresolved:(.unresolved // [])
+}')"
+inspect_digest="$(printf '%s' "$inspect_canonical" | shasum -a 256 \
+  | awk '{print substr($1,1,24)}')"
+inspect_type="$(printf '%s' "$inspect_out" | jq -r '.workitemType')"
+inspect_revision="$(printf '%s' "$inspect_out" | jq -r '.revision')"
+
+: > "$log"
+PATH="$tmp/bin:$PATH" A1_AUTO_FIXTURES=1 A1_MUTATE_ON_UPDATE=1 \
+  bash "$root/bootstrap/aone-fields.sh" apply 9002 528766 \
+  "$inspect_type" "$inspect_revision" 000000000000000000000000 \
+  '140097=mongodb' >/dev/null 2>&1; rc=$?
+[ "$rc" -eq 3 ] && [ "$(grep -c 'workitem update' "$log" || true)" -eq 0 ] \
+  && ok "apply snapshot drift fails closed before mutation" \
+  || bad "snapshot drift was not fenced rc=$rc log=$(cat "$log")"
+
+: > "$log"
+PATH="$tmp/bin:$PATH" A1_AUTO_FIXTURES=1 A1_MUTATE_ON_UPDATE=1 \
+  bash "$root/bootstrap/aone-fields.sh" apply 9002 528766 \
+  "$inspect_type" "$inspect_revision" "$inspect_digest" \
+  '140097=not-a-candidate' >/dev/null 2>&1; rc=$?
+[ "$rc" -eq 4 ] && [ "$(grep -c 'workitem update' "$log" || true)" -eq 0 ] \
+  && ok "apply rejects values outside the fresh candidate set before mutation" \
+  || bad "illegal apply was not rejected rc=$rc log=$(cat "$log")"
+
+: > "$log"
+PATH="$tmp/bin:$PATH" A1_AUTO_FIXTURES=1 A1_MUTATE_ON_UPDATE=1 \
+  A1_CONFLICT_AFTER_UPDATE=140097 \
+  bash "$root/bootstrap/aone-fields.sh" apply 9002 528766 \
+  "$inspect_type" "$inspect_revision" "$inspect_digest" \
+  '140097=mongodb' >"$tmp/apply-mismatch.out" 2>/dev/null; rc=$?
+[ "$rc" -eq 3 ] && printf '%s' "$(cat "$tmp/apply-mismatch.out")" | jq -e '
+  .errorType=="field_apply_readback_mismatch" and
+  .readback==[{"id":"140097","value":"redis"}] and
+  .mismatches==[{"id":"140097","expected":"mongodb","actual":"redis"}]
+' >/dev/null && [ "$(grep -c 'workitem update' "$log" || true)" -eq 1 ] \
+  && ok "apply reads and rejects conflicting canonical values" \
+  || bad "canonical mismatch was not detected rc=$rc out=$(cat "$tmp/apply-mismatch.out") log=$(cat "$log")"
+
+cat > "$tmp/workitem.json" <<'JSON'
+{"title":"Provider generic issue","fields":[
+  {"identifier":"workitemType","value":"36","displayValue":"需求问题"},
+  {"identifier":"space","value":"528766","displayValue":"provider"},
+  {"identifier":"140097","value":"","displayValue":""}
+]}
+JSON
+rm -f "$A1_TEST_STATE.updated" "$A1_TEST_STATE.get_count"
+: > "$log"
+apply_out="$(PATH="$tmp/bin:$PATH" A1_AUTO_FIXTURES=1 A1_MUTATE_ON_UPDATE=1 \
+  bash "$root/bootstrap/aone-fields.sh" apply 9002 528766 \
+  "$inspect_type" "$inspect_revision" "$inspect_digest" \
+  '140097=mongodb' 2>"$tmp/apply.err")"; rc=$?
+[ "$rc" -eq 0 ] && printf '%s' "$apply_out" | jq -e '
+  .status=="ready" and .filled==true and .missing==[] and .unresolved==[] and
+  .assignments==[{"id":"140097","value":"mongodb"}] and
+  .readback==[{"id":"140097","value":"mongodb"}]
+' >/dev/null && [ "$(grep -c 'workitem update' "$log" || true)" -eq 1 ] \
+  && ok "apply validates, updates once, and returns an empty readback" \
+  || bad "legal apply failed rc=$rc out=$apply_out err=$(cat "$tmp/apply.err") log=$(cat "$log")"
 
 echo "Results: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]
