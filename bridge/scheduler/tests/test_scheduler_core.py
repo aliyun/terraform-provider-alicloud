@@ -33,7 +33,8 @@ class SchedulerCoreTests(unittest.TestCase):
     def test_registry_is_yaml_loaded_with_all_smoke_schedule_types(self):
         loaded = registry.load_jobs()
         self.assertEqual(tuple(item.id for item in loaded),
-                         ("smoke.interval", "smoke.daily", "smoke.adaptive"))
+                         ("smoke.interval", "smoke.daily", "smoke.adaptive",
+                          "daily.probe"))
         self.assertIs(loaded, registry.JOBS)
 
     def test_registry_materializes_generator_once_and_returns_tuple(self):
@@ -71,9 +72,45 @@ class SchedulerCoreTests(unittest.TestCase):
 
     def test_daily_misfire_replays_current_day_then_advances_one_day(self):
         planner = TriggerPlanner()
-        daily = definition(schedule=DailySchedule(10, 0))
+        daily = ScheduledJobDefinition(
+            "daily.scan", 1, "daily", DailySchedule(10, 0),
+            HandlerRunner("daily.scan"), MisfirePolicy.CURRENT_DAY, 300,
+        )
         self.assertEqual(planner.initial_due(daily, at(3)), at(2))
         self.assertEqual(planner.next_due(daily, slot_due_at=at(2), completed_at=at(3), result=JobResult(JobResultStatus.SUCCEEDED)), at(2) + timedelta(days=1))
+
+    def test_daily_retry_never_crosses_the_next_plan_boundary(self):
+        planner = TriggerPlanner()
+        daily = ScheduledJobDefinition(
+            "daily.scan", 1, "daily", DailySchedule(10, 0),
+            HandlerRunner("daily.scan"), MisfirePolicy.CURRENT_DAY, 300,
+        )
+        slot = datetime(2026, 7, 23, 10, 0, tzinfo=SHANGHAI)
+        self.assertEqual(
+            planner.retry_due(
+                daily,
+                slot_due_at=slot,
+                failed_at=datetime(2026, 7, 24, 9, 54, tzinfo=SHANGHAI),
+            ),
+            datetime(2026, 7, 24, 9, 59, tzinfo=SHANGHAI),
+        )
+        self.assertIsNone(planner.retry_due(
+            daily,
+            slot_due_at=slot,
+            failed_at=datetime(2026, 7, 24, 9, 55, tzinfo=SHANGHAI),
+        ))
+
+    def test_schedule_and_misfire_combinations_fail_closed(self):
+        with self.assertRaisesRegex(ValueError, "does not support"):
+            ScheduledJobDefinition(
+                "daily.scan", 1, "daily", DailySchedule(10, 0),
+                HandlerRunner("daily.scan"), MisfirePolicy.COALESCE, 300,
+            )
+        with self.assertRaisesRegex(ValueError, "does not support"):
+            ScheduledJobDefinition(
+                "aone.scan", 1, "interval", IntervalSchedule(60, True),
+                HandlerRunner("aone.scan"), MisfirePolicy.CURRENT_DAY, 5,
+            )
 
     def test_adaptive_out_of_bounds_is_protocol_error_not_clamped(self):
         planner = TriggerPlanner()

@@ -140,7 +140,7 @@ class AdaptiveSchedule:
 
 @dataclass(frozen=True)
 class HeadlessRunner:
-    """Declaration retained for the next probe migration slice."""
+    """Fail-closed declaration for one registered headless builder protocol."""
 
     builder_ref: str
     protocol: str
@@ -155,6 +155,13 @@ class HeadlessRunner:
             value = getattr(self, name)
             if value is not None:
                 _require_nonblank(value, name)
+        if self.session_policy not in ("NEW", "RESUME"):
+            raise ValueError("session_policy must be NEW or RESUME")
+        if self.lane not in (None, "default", "terraform"):
+            raise ValueError("lane must be default or terraform")
+        if self.model is not None:
+            raise ValueError(
+                "model override is not supported by the Jarvis headless adapter")
 
 
 @dataclass(frozen=True)
@@ -254,6 +261,18 @@ def validate_job_definition(definition: ScheduledJobDefinition) -> None:
         raise TypeError("runner must be exactly one supported runner dataclass")
     if not isinstance(definition.misfire, MisfirePolicy):
         raise ValueError("misfire must be a MisfirePolicy")
+    allowed_misfires = {
+        IntervalSchedule: frozenset({MisfirePolicy.COALESCE}),
+        DailySchedule: frozenset({MisfirePolicy.CURRENT_DAY}),
+        AdaptiveSchedule: frozenset({
+            MisfirePolicy.COALESCE,
+            MisfirePolicy.WAIT_FOR_COMPLETION,
+        }),
+    }
+    if definition.misfire not in allowed_misfires[type(definition.schedule)]:
+        raise ValueError(
+            "%s schedule does not support misfire %s"
+            % (type(definition.schedule).__name__, definition.misfire.value))
     _require_positive_number(
         definition.retry_delay_seconds, "retry_delay_seconds")
     if not isinstance(definition.enabled, bool):

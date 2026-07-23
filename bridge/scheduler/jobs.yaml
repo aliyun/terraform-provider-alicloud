@@ -8,9 +8,9 @@
 # revision       definition 语义变化时递增；用于识别已登记 Job 是否需要更新。
 # description    面向控制台的中文任务说明。
 # schedule       支持 interval / daily / adaptive；daily 使用明确的 IANA 时区。
-# runner         唯一执行契约；handler_key 必须在 runners/ 中注册。
+# runner         唯一执行契约；handler_key 或 builder_ref/protocol 必须在 runners/ 中注册。
 # misfire        停机后错过计划的处理策略；CURRENT_DAY 仅补当天的 daily slot。
-# retry_delay_seconds  可重试失败后再次执行同一 slot 的等待时间。
+# retry_delay_seconds  可重试失败后再次执行同一 slot 的等待时间；daily 不跨下一计划边界。
 # enabled        Job 是否执行；false 时仍注册到控制面，但状态为 DISABLED。
 version: 1
 jobs:
@@ -43,3 +43,14 @@ jobs:
     misfire: COALESCE
     retry_delay_seconds: 10
     enabled: true
+
+  # 首次只注册到控制面验证 definition/看板，不执行真实探测。确认后通过单独变更将
+  # revision 升至 3 并设置 enabled: true，避免当天 10:00 后首次启动触发 CURRENT_DAY 补跑。
+  - key: daily.probe
+    revision: 2
+    description: 每日启动独立 Terraform Headless 会话执行合成客户探测并归档摘要
+    schedule: {kind: daily, hour: 10, minute: 0, timezone: Asia/Shanghai}
+    runner: {kind: headless, builder_ref: probe.daily, protocol: probe-result-v1, session_policy: NEW, lane: terraform}
+    misfire: CURRENT_DAY
+    retry_delay_seconds: 300
+    enabled: false

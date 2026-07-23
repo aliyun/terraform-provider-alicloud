@@ -36,6 +36,18 @@ class SchedulerRegistry:
             if isinstance(definition.runner, HandlerRunner)
         )
 
+    def headless_builder_protocols(self) -> frozenset[tuple[str, str]]:
+        from .model import HeadlessRunner
+
+        return frozenset(
+            (definition.runner.builder_ref, definition.runner.protocol)
+            for definition in self.definitions
+            if isinstance(definition.runner, HeadlessRunner)
+        )
+
+    def runner_keys(self) -> frozenset[object]:
+        return self.handler_keys() | self.headless_builder_protocols()
+
 
 def default_registry_path() -> Path:
     return Path(__file__).resolve().parent / "jobs.yaml"
@@ -180,13 +192,16 @@ def _required_bool(row: Mapping[str, Any], field: str, index: int, path: Path) -
 
 
 from .model import CapabilityValidationContext, ScheduledJobDefinition, validate_registry
-from .runners import RUNNER_KEYS
+from .runners import HANDLER_KEYS, HEADLESS_BUILDER_PROTOCOLS
 
 
 REGISTRY = load_scheduler_registry()
 JOBS: tuple[ScheduledJobDefinition, ...] = validate_registry(
     REGISTRY.definitions,
-    context=CapabilityValidationContext(handler_keys=RUNNER_KEYS),
+    context=CapabilityValidationContext(
+        handler_keys=HANDLER_KEYS,
+        headless_builder_protocols=HEADLESS_BUILDER_PROTOCOLS,
+    ),
 )
 
 

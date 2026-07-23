@@ -144,6 +144,15 @@ from jarvis_field_repair import (
     FieldRepairWorker,
     build_field_repair_envelope,
 )
+if (__package__ or "").startswith("bridge."):
+    from bridge.headless import (
+        HeadlessRequest,
+        HeadlessRuntime,
+        Lane,
+        SessionPolicy,
+    )
+else:  # bridge/run.sh executes this module from bridge/ as a top-level module.
+    from headless import HeadlessRequest, HeadlessRuntime, Lane, SessionPolicy
 
 # The DingTalk SDK is only needed by the live WebSocket path in main(). Guard the
 # import so the module still loads for the hermetic test suite and --dry-run-once
@@ -3292,50 +3301,6 @@ def _ticket_dispatch_context(item, trigger_comment=None):
         "comment_cursor": cursor,
         "comment": comment,
     }
-
-
-def _probe_prompt(round_id):
-    """Prompt for the daily tf-probe round (pure探测轮, no Aone bookend)."""
-    return (
-        "【headless 探测轮 %s】你是 Jarvis headless 实例，按 loops/tf-probe.md 跑一轮合成客户探测：\n"
-        "1) bootstrap/probe.sh doctor 预检（不绿则记缺口后退出）。\n"
-        "2) tier-0：bootstrap/probe.sh tier0 增量扫本轮涉及资源，judgment_queue 走双层查证。\n"
-        "3) tier-1：bootstrap/probe.sh list 挑最久未跑的 ≤ config.limits.max_scenarios_per_run 个场景，"
-        "逐个 bootstrap/probe.sh run <id>（region 默认 focus）。\n"
-        "4) findings 处置严格按 .claude/skills/tf-customer-probe SKILL.md Step C/D 与 "
-        "config/probe.json ticket.mode 执行：有效 finding 去重后直接创建 Aone，不写本地中间工单文件"
-        "（去重+日上限纪律见 skill）。\n"
-        "5) bootstrap/probe.sh sweep 清残留（残留退 1 即停并升级）。\n"
-        "6) bootstrap/probe.sh archive 归档已建单 finding / 超期 verdict / 工作目录。\n"
-        "7) 按 .claude/skills/tf-customer-probe/references/knowledge-distillation.md 契约把本轮学到的"
-        "产品级知识蒸馏进 playground <product>/KNOWLEDGE.md，并在轮次汇报列出。\n"
-        "这是纯探测轮，不持有工单、免 bookend；结束把轮次摘要"
-        "（tier0 资源数/findings、tier1 场景数/Aone 新建或去重数/env 数、归档件数、"
-        "蒸馏条目数）汇报即可。"
-        % round_id
-    )
-
-
-def _daily_probe_context(handler, round_id):
-    """Build the immutable dispatch context for one Scheduler-owned probe run."""
-    target, target_type = broadcast_target(), broadcast_type()
-    prompt = _probe_prompt(round_id)
-    envelope = _task_envelope(
-        item_id=round_id,
-        project="",
-        task_type="probe",
-        source_type="TIMER",
-        source_ref={"schedule": "daily-probe", "date": round_id.removeprefix("probe-")},
-        desired_revision=round_id,
-        trigger="PROBE",
-        prompt=prompt,
-        recovery_policy="REPLAY_SAFE",
-        required_capabilities={"kinds": ["probe"]},
-        terraform=True,
-        target=target,
-        targetType=target_type,
-    )
-    return envelope, prompt, _routine_notifier(handler), target, target_type
 
 
 def _revisit_prompt(item_id, title, pool_project):
@@ -7333,9 +7298,9 @@ class DailyScheduler:
     def __init__(self, handler, pool=None):
         self.handler = handler
         pool = pool if pool is not None else getattr(handler, "ephemeral_executor", None)
-        # ``daily.probe`` remains disabled until its new Scheduler runner is
-        # migrated end to end. This legacy loop owns only the remaining nudge
-        # job and must not shadow a future Scheduler registration.
+        # ``daily.probe`` is owned exclusively by the standalone Scheduler.
+        # This legacy loop retains only nudge and must never shadow the
+        # headless runner, including while Probe is registered DISABLED.
         job = _NudgeJob(handler, pool)
         self.jobs = [job] if job.enabled else []
         self._last_run = self._load_state()  # job.name -> last-run date iso
@@ -8692,74 +8657,55 @@ class JarvisHandler(AsyncChatbotHandler):
         Terraform model-provider outages are operator-only DingTalk events; other
         terminal failures keep their existing Aone routing.
 
-        Probe rounds (item_id prefix "probe-") 额外把会话 final 文本落
-        ``runs/probe/<item_id>-summary.md`` 供 board.sh 拉取/审计。
-
         EphemeralJob execution returns done / suspended / error. Task execution
         returns a structured wait-current-state mapping when it suspends."""
         max_retries = int(os.environ.get("JARVIS_DISPATCH_RETRY_MAX", "2"))
         backoff = int(os.environ.get("JARVIS_DISPATCH_RETRY_BACKOFF", "30"))
         timeout = int(os.environ.get("JARVIS_DISPATCH_TIMEOUT", "43200"))
-        attempt = 0
+        attempts = 1
         try:
             # Live EphemeralJob tracking is owned by EphemeralExecutor._active (in-memory);
             # Task work is reconstructed exclusively from jarvis_task/jarvis_session. Neither
             # path keeps a second on-disk current-state copy.
             log.info("dispatch_item #%s start (timeout=%ds, retry_max=%d)",
                      item_id, timeout, max_retries)
-            cur_prompt, cur_resume = prompt, resume
-            # Cross-host lease guard: the Task/Session may carry a resume flag
-            # minted on ANOTHER host (multi-worker fleet) — Claude transcripts
-            # are per-machine, so --resume here would die with "No conversation
-            # found". Durable context lives in Aone + the SOP prompt; fall back
-            # to a fresh run instead of burning the retry budget.
-            if cur_resume and not _session_file_exists(sid):
-                log.warning(
-                    "dispatch_item #%s: resume requested but no local transcript "
-                    "for %s (cross-host lease or cleaned disk) — fresh start",
-                    item_id, sid)
-                cur_resume = False
-                cur_prompt = prompt
-            while True:
+            execution_runtime = getattr(self, "execution_runtime", None)
+
+            def run_attempt(headless_attempt):
                 runner_kwargs = {
-                    "timeout": timeout,
-                    "on_spawn": on_spawn,
-                    "terraform": terraform,
+                    "timeout": headless_attempt.request.timeout_seconds,
+                    "on_spawn": headless_attempt.request.on_spawn,
+                    "terraform": (
+                        headless_attempt.request.lane is Lane.TERRAFORM),
                 }
-                execution_runtime = getattr(self, "execution_runtime", None)
+                if headless_attempt.request.guarded:
+                    runner_kwargs["guarded"] = True
                 if execution_runtime is not None:
                     runner_kwargs["execution_runtime"] = execution_runtime
-                if session_controller is not None:
-                    runner_kwargs["guarded"] = True
-                res = run_claude_buffered(cur_prompt, sid, cur_resume,
-                                          **runner_kwargs)
-                if res.is_error:
-                    # Keep adapters/mocks and future runtimes from bypassing the
-                    # terminal JSON classifier's subtype normalization.
-                    res = ClaudeResult(
-                        res.text, True,
-                        _normalized_failure_subtype(res.text, res.subtype, True))
-                if not res.is_error:
-                    break  # clean completion or SUSPEND (both is_error=False)
-                if res.subtype in ("timeout", "error_max_turns"):
-                    break  # terminal error → fast fail, a retry won't help
-                if attempt >= max_retries:
-                    break
-                attempt += 1
-                # resume iff the last attempt produced output AND the transcript
-                # actually exists on THIS host. res.text alone is not evidence a
-                # session was built: on ``no_result`` it carries the last stderr
-                # line (e.g. "No conversation found with session ID: …"), and
-                # resuming on that burns every retry on the same wall.
-                if res.text and _session_file_exists(sid):
-                    cur_resume = True
-                    cur_prompt = "上一次执行因瞬时错误中断，请从中断处继续完成本工单的 SOP。"
-                else:
-                    cur_resume = False
-                    cur_prompt = prompt
-                log.warning("dispatch_item #%s transient error (subtype=%s); retry %d/%d",
-                            item_id, res.subtype, attempt, max_retries)
-                time.sleep(min(backoff * attempt, 300))
+                return run_claude_buffered(
+                    headless_attempt.prompt,
+                    headless_attempt.request.session_id,
+                    headless_attempt.resume,
+                    **runner_kwargs)
+
+            res = HeadlessRuntime(
+                run_attempt,
+                transcript_exists=_session_file_exists,
+                sleeper=time.sleep,
+                logger=log,
+            ).execute(HeadlessRequest(
+                prompt=prompt,
+                session_id=sid,
+                session_policy=(
+                    SessionPolicy.RESUME if resume else SessionPolicy.NEW),
+                lane=Lane.TERRAFORM if terraform else Lane.DEFAULT,
+                timeout_seconds=timeout,
+                max_retries=max_retries,
+                retry_backoff_seconds=backoff,
+                on_spawn=on_spawn,
+                guarded=session_controller is not None,
+            ))
+            attempts = res.attempts
             final = res.text
             # Shutdown cleanup owns process termination and claim release. Avoid
             # publishing a second execution failure while the executor is closing.
@@ -8803,11 +8749,11 @@ class JarvisHandler(AsyncChatbotHandler):
                         self._dispatch_failed(
                             item_id, res_err, notify, project,
                             terraform=terraform, kind=kind, sid=sid,
-                            attempts=attempt + 1)
+                            attempts=attempts)
                         log.warning(
                             "dispatch_item #%s legacy suspend targets #%s; "
                             "failing closed", item_id, info.get("aone_id"))
-                        return (_task_failure_result(res_err, attempt + 1)
+                        return (_task_failure_result(res_err, attempts)
                                 if session_controller is not None else "error")
                     if not task_bookend.set_waiting_attention(legacy_info=info):
                         raise RuntimeError(
@@ -8831,10 +8777,10 @@ class JarvisHandler(AsyncChatbotHandler):
             if res.is_error:
                 self._dispatch_failed(
                     item_id, res, notify, project, terraform=terraform,
-                    kind=kind, sid=sid, attempts=attempt + 1)
+                    kind=kind, sid=sid, attempts=attempts)
                 log.info("dispatch_item #%s failed (subtype=%s, attempts=%d)",
-                         item_id, res.subtype, attempt + 1)
-                return (_task_failure_result(res, attempt + 1)
+                         item_id, res.subtype, attempts)
+                return (_task_failure_result(res, attempts)
                         if session_controller is not None else "error")
             if task_bookend is not None and not task_bookend.writes_reply:
                 # Post-PR (pr_ci_fix / pr_comment_reply): the run only did GitHub work and
@@ -8867,11 +8813,11 @@ class JarvisHandler(AsyncChatbotHandler):
                     res_err = ClaudeResult(final or "", True, subtype)
                     self._dispatch_failed(
                         item_id, res_err, notify, project, terraform=terraform,
-                        kind=kind, sid=sid, attempts=attempt + 1)
+                        kind=kind, sid=sid, attempts=attempts)
                     log.warning(
                         "dispatch_item #%s invalid task result (%s); failing closed",
                         item_id, subtype)
-                    return (_task_failure_result(res_err, attempt + 1)
+                    return (_task_failure_result(res_err, attempts)
                             if session_controller is not None else "error")
                 terminal_handoff = task_bookend.commit(tr)
                 if tr["outcome"] == "suspend":
@@ -8913,11 +8859,6 @@ class JarvisHandler(AsyncChatbotHandler):
                     if not _aone_event_enqueue(
                             item_id, project, event["semantic_source"], event["summary"]):
                         log.error("dispatch_item #%s revisit event could not be queued", item_id)
-            # 成功路径:probe 轮把 final 文本落 summary.md(失败不落——tail 已由
-            # _dispatch_failed 保留本地死因并按错误类别路由终态事件，
-            # 避免 board.sh 拉到半截错误当结论。
-            if str(item_id).startswith("probe-"):
-                self._write_probe_summary(str(item_id), final)
             try:
                 notify(self._completion_broadcast(item_id))
             except Exception as e:  # noqa: BLE001
@@ -8935,20 +8876,9 @@ class JarvisHandler(AsyncChatbotHandler):
                                    detail, "orchestrator_exception", True))
             self._dispatch_failed(
                 item_id, res, notify, project, terraform=terraform,
-                kind=kind, sid=sid, attempts=attempt + 1)
-            return (_task_failure_result(res, attempt + 1)
+                kind=kind, sid=sid, attempts=attempts)
+            return (_task_failure_result(res, attempts)
                     if session_controller is not None else "error")
-
-    @staticmethod
-    def _write_probe_summary(round_id, final_text):
-        """Persist a probe round's final text to runs/probe/<rid>-summary.md.
-        Best-effort: I/O failures only log, never abort the completion path."""
-        try:
-            target_dir = Path(REPO_ROOT) / "runs" / "probe"
-            target_dir.mkdir(parents=True, exist_ok=True)
-            (target_dir / ("%s-summary.md" % round_id)).write_text(final_text or "")
-        except Exception as e:  # noqa: BLE001 — summary 落盘失败不阻塞收尾
-            log.warning("probe summary write failed for %s: %s", round_id, e)
 
     @staticmethod
     def _post_death_cause(item_id, cause, terraform=False):

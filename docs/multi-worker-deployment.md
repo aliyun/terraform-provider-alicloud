@@ -68,19 +68,22 @@ that installer, run `bash bootstrap/bridge-python.sh` once before
 
 Before this starts the Engine, Bridge verifies the host, registers and checks
 the ACTIVE Worker identity, registers the full job registry, recovers
-interrupted slots, and then begins polling. `daily.probe` is not yet migrated
-and remains disabled until its new runner and headless execution adapter land
-together. A configured new job without a runner mapping fails closed at
-startup. Each definition's `enabled` boolean controls whether it is runnable;
-`enabled: false` registers a routed Job as `DISABLED`.
+interrupted slots, and then begins polling. `daily.probe` revision 2 is
+registered through the generic headless adapter but intentionally remains
+`enabled: false` for the first control-plane/board-only rollout. Real Probe
+execution requires a separate authorization and revision 3. A configured job
+without a handler or builder/protocol mapping fails closed at startup. Each
+definition's `enabled` boolean controls whether it is runnable; `enabled:
+false` registers a routed Job as `DISABLED`.
 
 A planned Scheduler restart closes admission, registers the Worker as
 `DRAINING`, and waits for the admitted job to finish before starting a new
 process. The Scheduler path never falls back to `SIGKILL`, and launchd restart
 disables KeepAlive and avoids `kickstart -k`; a drain timeout leaves the old
-process in place and refuses successor startup. An unexpected process crash is
-recovered by replaying the same scheduled slot from the beginning. Generic
-checkpoint/resume is deferred to job-specific implementations.
+process in place and refuses successor startup. Distinct job keys use a
+bounded worker pool while the same key never overlaps. Planned stop closes
+admission and waits for active headless futures without killing them. An
+unexpected process crash recovers the scheduled slot from the control plane.
 
 ## Push-only credential distribution
 

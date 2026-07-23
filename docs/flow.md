@@ -11,7 +11,7 @@
 - Task 必须先进入控制面；控制面不可用时 fail-closed，不允许回退到本地无状态执行
 - `_decide` 逐单判定：终态 / `jarvis-done` / `jarvis-claimed` / `jarvis-npe` → skip；`jarvis-idle` 过人工介入门
 - **[人工点·可选]** 回退模式 `JARVIS_AUTO_DISPATCH=0`：新单入 pending，钉钉授权后才派（`plan.sh` 出计划）
-- 后台调度：ProbeScheduler（每日探测轮）/ RevisitScheduler（每日 idle 重访）/ AoneScheduler（扫描、stale/done 状态对账）/ PersonaScheduler（评论区数字人接力，默认关）
+- 后台调度：统一 Scheduler 从 `bridge/scheduler/jobs.yaml` 注册 Headless/Handler Job（`daily.probe` 当前默认关闭）；RevisitScheduler 负责每日 idle 重访，AoneScheduler 负责扫描及 stale/done 状态对账，PersonaScheduler 负责评论区数字人接力（默认关）
 
 ## 2. 单工单 Triage (headless)
 - `claim.sh claim` 认领（竞争锁，输了 SKIP）

@@ -14,6 +14,7 @@ import logging
 import os
 import socket
 import threading
+import time
 import uuid
 from typing import Any, Mapping, Optional
 
@@ -45,7 +46,7 @@ class SchedulerService:
     """Own the Scheduler Worker lifecycle and the single Engine polling thread."""
 
     def __init__(self, *, task_client: ControlPlaneClient,
-                 runners: Mapping[str, JobRunner], registry: SchedulerRegistry,
+                 runners: Mapping[object, JobRunner], registry: SchedulerRegistry,
                  environ: Optional[Mapping[str, str]] = None,
                  logger: Optional[logging.Logger] = None) -> None:
         self._task_client = task_client
@@ -75,6 +76,7 @@ class SchedulerService:
         # dormant scheduler must not change legacy Bridge startup behavior.
         self._heartbeat_interval = 30.0
         self._poll_interval = 5.0
+        self._max_concurrency = 4
 
     @property
     def ready(self) -> bool:
@@ -110,19 +112,25 @@ class SchedulerService:
         self._poll_interval = _positive_float(
             self._environ.get("JARVIS_SCHEDULER_POLL_SEC", "5"),
             "JARVIS_SCHEDULER_POLL_SEC")
-        configured_runners = self._registry.handler_keys()
-        missing = sorted(
+        self._max_concurrency = _positive_int(
+            self._environ.get("JARVIS_SCHEDULER_MAX_CONCURRENCY", "4"),
+            "JARVIS_SCHEDULER_MAX_CONCURRENCY")
+        configured_runners = self._registry.runner_keys()
+        missing = sorted((
             runner_name for runner_name in configured_runners
-            if runner_name not in self._runners)
+            if runner_name not in self._runners), key=_runner_label)
         if missing:
             raise SchedulerServiceError(
-                "Scheduler-owned jobs have no registered handler: %s"
-                % ", ".join(missing))
-        unused = sorted(set(self._runners).difference(configured_runners))
+                "Scheduler-owned jobs have no registered runner: %s"
+                % ", ".join(_runner_label(item) for item in missing))
+        unused = sorted(
+            set(self._runners).difference(configured_runners),
+            key=_runner_label,
+        )
         if unused:
             raise SchedulerServiceError(
-                "registered handlers are not declared by scheduler registry: %s"
-                % ", ".join(unused))
+                "registered runners are not declared by scheduler registry: %s"
+                % ", ".join(_runner_label(item) for item in unused))
         with self._lock:
             if self._thread is not None:
                 return True
@@ -144,6 +152,7 @@ class SchedulerService:
                     definitions,
                     control_plane=control_plane,
                     runtime=ScannerRuntime(RunnerDispatcher(self._runners)),
+                    max_workers=self._max_concurrency,
                 )
                 # Only YAML-declared Scheduler jobs are registered. Legacy jobs
                 # never enter this control-plane registry.
@@ -193,6 +202,8 @@ class SchedulerService:
             engine.stop()
             self._ready = False
             self._stop.set()
+        drain_timeout = _stop_timeout(timeout, self._environ)
+        deadline = time.monotonic() + drain_timeout
         if registered:
             try:
                 with self._worker_rpc_lock:
@@ -201,13 +212,20 @@ class SchedulerService:
             except Exception as exc:  # preserve fail-closed ownership; do not lie OFFLINE
                 self._log.warning("Scheduler Worker DRAINING heartbeat failed: %s", type(exc).__name__)
         if thread is not None:
-            thread.join(timeout=_stop_timeout(timeout, self._environ))
+            thread.join(timeout=max(0.0, deadline - time.monotonic()))
             if thread.is_alive():
                 self._log.warning(
                     "Scheduler Engine did not drain before timeout; "
                     "cancelling the planned restart")
                 self._cancel_drain(engine, thread, registered)
                 return False
+        if not engine.wait_for_active(
+                timeout=max(0.0, deadline - time.monotonic())):
+            self._log.warning(
+                "Scheduler admitted jobs did not drain before timeout; "
+                "cancelling the planned restart")
+            self._cancel_drain(engine, thread, registered)
+            return False
         self._heartbeat_stop.set()
         if heartbeat_thread is not None:
             heartbeat_thread.join(timeout=self._task_client.timeout + 1)
@@ -225,6 +243,7 @@ class SchedulerService:
                 self._log.warning("Scheduler Worker OFFLINE update failed: %s", type(exc).__name__)
                 offline = False
         with self._lock:
+            engine.shutdown()
             self._thread = None
             self._heartbeat_thread = None
             self._engine = None
@@ -309,6 +328,8 @@ class SchedulerService:
         return self._task_client
 
     def _worker_payload(self, status: str) -> dict[str, Any]:
+        with self._lock:
+            active = self._engine.active_count if self._engine is not None else 0
         return {
             "workerKey": self.worker_key,
             "hostId": self.host_id,
@@ -318,9 +339,9 @@ class SchedulerService:
             "bootId": self.boot_id,
             "processUuid": self.process_uuid,
             "status": status,
-            "maxSlots": 1,
-            "activeSessions": 0,
-            "freeSlots": 1,
+            "maxSlots": self._max_concurrency,
+            "activeSessions": active,
+            "freeSlots": max(0, self._max_concurrency - active),
             "capabilities": {
                 "role": "scheduler",
                 "dispatch": {"pull": False},
@@ -387,6 +408,22 @@ def _positive_float(value: Any, name: str) -> float:
     if parsed <= 0:
         raise SchedulerServiceError("%s must be a positive number" % name)
     return parsed
+
+
+def _positive_int(value: Any, name: str) -> int:
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError) as exc:
+        raise SchedulerServiceError("%s must be a positive integer" % name) from exc
+    if parsed <= 0 or str(parsed) != str(value).strip():
+        raise SchedulerServiceError("%s must be a positive integer" % name)
+    return parsed
+
+
+def _runner_label(value: object) -> str:
+    if isinstance(value, tuple) and len(value) == 2:
+        return "%s/%s" % value
+    return str(value)
 
 
 def _stop_timeout(value: Optional[float], environ: Mapping[str, str]) -> float:
