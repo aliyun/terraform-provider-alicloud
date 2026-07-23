@@ -852,9 +852,7 @@ variable "name" {
   default = "%s"
 }
 
-data "alicloud_zones" "default" {
-  available_resource_creation = "VSwitch"
-}
+data "alicloud_enhanced_nat_available_zones" "enhanced" {}
 
 data "alicloud_cs_kubernetes_version" "kubernetes_versions" {
   cluster_type = "ManagedKubernetes"
@@ -873,7 +871,7 @@ resource "alicloud_vswitch" "vswitches" {
   count        = 1
   vpc_id       = alicloud_vpc.vpc.0.id
   cidr_block   = format("192.168.%%d.0/24", count.index + 1)
-  zone_id      = data.alicloud_zones.default.zones[count.index].id
+  zone_id      = data.alicloud_enhanced_nat_available_zones.enhanced.zones[count.index].zone_id
   vswitch_name = var.name
 }
 
@@ -1022,7 +1020,7 @@ func TestAccAliCloudCSManagedKubernetes_basic12341(t *testing.T) {
 					},
 					"is_enterprise_security_group": "true",
 					"zone_ids": []string{
-						"${var.zone_id}"},
+						"${data.alicloud_enhanced_nat_available_zones.enhanced.zones.0.zone_id}"},
 					"cluster_spec":        "ack.pro.small",
 					"deletion_protection": "false",
 					"version":             "1.32.7-aliyun.1",
@@ -1131,8 +1129,7 @@ variable "cluster_name" {
   default = "test-create-cluster"
 }
 
-variable "zone_id" {
-  default = "cn-hangzhou-g"
+data "alicloud_enhanced_nat_available_zones" "enhanced" {
 }
 
 variable "cluster_name_update" {

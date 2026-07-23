@@ -2083,6 +2083,10 @@ func resourceAliCloudAckNodepoolRead(d *schema.ResourceData, meta interface{}) e
 
 		if v, ok := kubelet_configurationRaw["readOnlyPort"].(json.Number); ok {
 			kubeletConfigurationMap["read_only_port"] = v.String()
+		} else if v, err := jsonpath.Get("$[0].read_only_port", d.Get("kubelet_configuration")); err == nil && v != nil && v != "" {
+			// the API omits readOnlyPort when it is 0; keep the configured
+			// value so the apply does not produce a perpetual diff
+			kubeletConfigurationMap["read_only_port"] = v
 		}
 
 		if v, ok := kubelet_configurationRaw["registryBurst"].(json.Number); ok {
@@ -2133,6 +2137,22 @@ func resourceAliCloudAckNodepoolRead(d *schema.ResourceData, meta interface{}) e
 			tracingMaps = append(tracingMaps, tracingMap)
 		}
 		kubeletConfigurationMap["tracing"] = tracingMaps
+		// The API omits kubelet fields holding zero values (false booleans,
+		// "0" numbers, empty lists). Backfill them from the configured value
+		// so the post-apply plan stays empty under terraform-plugin-sdk v2.
+		if cfgList, ok := d.Get("kubelet_configuration").([]interface{}); ok && len(cfgList) > 0 {
+			if cfgMap, ok := cfgList[0].(map[string]interface{}); ok {
+				for k, cv := range cfgMap {
+					ev, exists := kubeletConfigurationMap[k]
+					if exists && !isKubeletValueEmpty(ev) {
+						continue
+					}
+					if !isKubeletValueEmpty(cv) {
+						kubeletConfigurationMap[k] = cv
+					}
+				}
+			}
+		}
 		kubeletConfigurationMaps = append(kubeletConfigurationMaps, kubeletConfigurationMap)
 	}
 	if err := d.Set("kubelet_configuration", kubeletConfigurationMaps); err != nil {
@@ -2185,6 +2205,10 @@ func resourceAliCloudAckNodepoolRead(d *schema.ResourceData, meta interface{}) e
 			autoRepairPolicyMap["restart_node"] = auto_repair_policyRaw["restart_node"]
 
 			autoRepairPolicyMaps = append(autoRepairPolicyMaps, autoRepairPolicyMap)
+		} else if v, err := jsonpath.Get("$[0].auto_repair_policy[0].restart_node", d.Get("management")); err == nil && v != nil {
+			// the API omits the policy object when the feature is disabled;
+			// keep the configured value to avoid a perpetual diff
+			autoRepairPolicyMaps = append(autoRepairPolicyMaps, map[string]interface{}{"restart_node": v})
 		}
 		managementMap["auto_repair_policy"] = autoRepairPolicyMaps
 		autoUpgradePolicyMaps := make([]map[string]interface{}, 0)
@@ -2197,6 +2221,10 @@ func resourceAliCloudAckNodepoolRead(d *schema.ResourceData, meta interface{}) e
 			autoUpgradePolicyMap["auto_upgrade_kubelet"] = auto_upgrade_policyRaw["auto_upgrade_kubelet"]
 
 			autoUpgradePolicyMaps = append(autoUpgradePolicyMaps, autoUpgradePolicyMap)
+		} else if v, err := jsonpath.Get("$[0].auto_upgrade_policy[0].auto_upgrade_kubelet", d.Get("management")); err == nil && v != nil {
+			// the API omits the policy object when the feature is disabled;
+			// keep the configured value to avoid a perpetual diff
+			autoUpgradePolicyMaps = append(autoUpgradePolicyMaps, map[string]interface{}{"auto_upgrade_kubelet": v})
 		}
 		managementMap["auto_upgrade_policy"] = autoUpgradePolicyMaps
 		autoVulFixPolicyMaps := make([]map[string]interface{}, 0)
@@ -2210,6 +2238,19 @@ func resourceAliCloudAckNodepoolRead(d *schema.ResourceData, meta interface{}) e
 			autoVulFixPolicyMap["vul_level"] = auto_vul_fix_policyRaw["vul_level"]
 
 			autoVulFixPolicyMaps = append(autoVulFixPolicyMaps, autoVulFixPolicyMap)
+		} else {
+			// the API omits the policy object when the feature is disabled;
+			// keep the configured values to avoid a perpetual diff
+			fallbackVulFixMap := make(map[string]interface{})
+			if v, err := jsonpath.Get("$[0].auto_vul_fix_policy[0].restart_node", d.Get("management")); err == nil && v != nil {
+				fallbackVulFixMap["restart_node"] = v
+			}
+			if v, err := jsonpath.Get("$[0].auto_vul_fix_policy[0].vul_level", d.Get("management")); err == nil && v != nil && v != "" {
+				fallbackVulFixMap["vul_level"] = v
+			}
+			if len(fallbackVulFixMap) > 0 {
+				autoVulFixPolicyMaps = append(autoVulFixPolicyMaps, fallbackVulFixMap)
+			}
 		}
 		managementMap["auto_vul_fix_policy"] = autoVulFixPolicyMaps
 		managementMaps = append(managementMaps, managementMap)
@@ -3641,4 +3682,23 @@ func diffInstances(old []string, new []string) (attach []string, remove []string
 	}
 
 	return
+}
+
+// isKubeletValueEmpty reports whether a kubelet_configuration value carries no
+// information (nil, empty string, empty list/map), so a configured value may
+// backfill it when the API omits zero values from its response.
+func isKubeletValueEmpty(v interface{}) bool {
+	switch t := v.(type) {
+	case nil:
+		return true
+	case string:
+		return t == ""
+	case []interface{}:
+		return len(t) == 0
+	case map[string]interface{}:
+		return len(t) == 0
+	case []map[string]interface{}:
+		return len(t) == 0
+	}
+	return false
 }

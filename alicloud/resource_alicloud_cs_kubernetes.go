@@ -259,6 +259,11 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"cluster_spec": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"proxy_mode": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -835,10 +840,10 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	//d.Set("maintenance_window", flattenMaintenanceWindowConfig(&object.MaintenanceWindow))
 
 	//request.Parameters
-	if v, ok := object.Parameters["MasterVSwitchIds"]; ok {
+	if v, ok := object.Parameters["MasterVSwitchIds"]; ok && object.Profile != EdgeProfile {
 		d.Set("master_vswitch_ids", strings.Split(Interface2String(v), ","))
 	}
-	if v, ok := object.Parameters["MasterSystemDiskCategory"]; ok {
+	if v, ok := object.Parameters["MasterSystemDiskCategory"]; ok && object.Profile != EdgeProfile {
 		category := Interface2String(v)
 		d.Set("master_disk_category", category)
 		if category == string(DiskCloudESSD) {
@@ -847,13 +852,13 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 			}
 		}
 	}
-	if v, ok := object.Parameters["MasterSystemDiskSize"]; ok {
+	if v, ok := object.Parameters["MasterSystemDiskSize"]; ok && object.Profile != EdgeProfile {
 		d.Set("master_disk_size", formatInt(v))
 	}
-	if v, ok := object.Parameters["MasterSnapshotPolicyId"]; ok {
+	if v, ok := object.Parameters["MasterSnapshotPolicyId"]; ok && object.Profile != EdgeProfile {
 		d.Set("master_disk_snapshot_policy_id", Interface2String(v))
 	}
-	if v, ok := object.Parameters["MasterInstanceChargeType"]; ok {
+	if v, ok := object.Parameters["MasterInstanceChargeType"]; ok && object.Profile != EdgeProfile {
 		chargeType := Interface2String(v)
 		d.Set("master_instance_charge_type", chargeType)
 		if chargeType == string(PrePaid) {
@@ -871,7 +876,7 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 			}
 		}
 	}
-	if v, ok := object.Parameters["MasterInstanceTypes"]; ok {
+	if v, ok := object.Parameters["MasterInstanceTypes"]; ok && object.Profile != EdgeProfile {
 		d.Set("master_instance_types", strings.Split(Interface2String(v), ","))
 	}
 	if object.ClusterType != "Kubernetes" {
@@ -918,7 +923,7 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 		}
 		d.Set("master_nodes", fetchMasterNodes(d, meta))
 	}
-	if v, ok := object.Parameters["PodVswitchIds"]; ok {
+	if v, ok := object.Parameters["PodVswitchIds"]; ok && object.Profile != EdgeProfile {
 		l := make([]string, 0)
 		err := json.Unmarshal([]byte(Interface2String(v)), &l)
 		if err == nil && len(l) > 0 {
@@ -940,7 +945,7 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 
 	// Cluster Metadata
 	metadata := object.GetMetaData()
-	if v, ok := metadata["ExtraCertSAN"]; ok && v != nil {
+	if v, ok := metadata["ExtraCertSAN"]; ok && v != nil && object.Profile != EdgeProfile {
 		l := expandStringList(v.([]interface{}))
 		d.Set("custom_san", strings.Join(l, ","))
 	}
@@ -997,7 +1002,7 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 		return nil
 	}
 
-	if err = setCerts(d, meta, d.Get("skip_set_certificate_authority").(bool)); err != nil {
+	if err = setCerts(d, meta, d.Get("skip_set_certificate_authority").(bool), true); err != nil {
 		return WrapError(err)
 	}
 
@@ -1028,10 +1033,12 @@ func resourceAlicloudCSKubernetesDelete(d *schema.ResourceData, meta interface{}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	var resp *roacs.DeleteClusterResponse
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		resp, err = client.DeleteCluster(tea.String(d.Id()), args)
 		if err != nil {
-			if NeedRetry(err) {
+			// dependent resources (SLB/ENI/SG) created by the cluster may
+			// still be detaching shortly after the test steps finish
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"DependencyViolation.Resource"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -1558,6 +1565,7 @@ func fetchMasterNodes(d *schema.ResourceData, meta interface{}) []map[string]int
 func fetchWorkerNodes(d *schema.ResourceData, meta interface{}) []map[string]interface{} {
 	csClient, err := meta.(*connectivity.AliyunClient).NewRoaCsClient()
 	if err != nil {
+		log.Printf("[WARN] failed to initialize ACK client while reading worker nodes for cluster %s: %s", d.Id(), err)
 		return nil
 	}
 	var response *roacs.DescribeClusterNodePoolsResponse
@@ -1575,19 +1583,28 @@ func fetchWorkerNodes(d *schema.ResourceData, meta interface{}) []map[string]int
 	})
 
 	if err != nil {
+		log.Printf("[WARN] failed to describe node pools for cluster %s: %s", d.Id(), err)
 		return nil
 	}
 	nodepoolId := ""
-	if response.Body != nil && response.Body.Nodepools != nil {
+	hasNodePools := response != nil && response.Body != nil && len(response.Body.Nodepools) > 0
+	if hasNodePools {
 		for _, nodepool := range response.Body.Nodepools {
-			if *nodepool.NodepoolInfo.Type == defaultNodePoolType && *nodepool.NodepoolInfo.Name == "default-nodepool" {
-				nodepoolId = *nodepool.NodepoolInfo.NodepoolId
+			if nodepool == nil || nodepool.NodepoolInfo == nil || tea.StringValue(nodepool.NodepoolInfo.Type) != defaultNodePoolType {
+				continue
+			}
+			if tea.BoolValue(nodepool.NodepoolInfo.IsDefault) || tea.StringValue(nodepool.NodepoolInfo.Name) == "default-nodepool" {
+				nodepoolId = tea.StringValue(nodepool.NodepoolInfo.NodepoolId)
 				break
 			}
 		}
 	}
-	if nodepoolId == "" {
+	if hasNodePools && nodepoolId == "" {
+		log.Printf("[WARN] no default ESS node pool was found for cluster %s", d.Id())
 		return nil
+	}
+	if !hasNodePools {
+		log.Printf("[DEBUG] no node pool view is available for cluster %s; falling back to the legacy all-nodes query", d.Id())
 	}
 
 	var nodes []*roacs.DescribeClusterNodesResponseBodyNodes
@@ -1597,7 +1614,9 @@ func fetchWorkerNodes(d *schema.ResourceData, meta interface{}) []map[string]int
 		request := &roacs.DescribeClusterNodesRequest{
 			PageNumber: tea.String(strconv.Itoa(num)),
 			PageSize:   tea.String(strconv.Itoa(size)),
-			NodepoolId: tea.String(nodepoolId),
+		}
+		if nodepoolId != "" {
+			request.NodepoolId = tea.String(nodepoolId)
 		}
 		var response *roacs.DescribeClusterNodesResponse
 		wait = incrementalWait(3*time.Second, 3*time.Second)
@@ -1614,9 +1633,10 @@ func fetchWorkerNodes(d *schema.ResourceData, meta interface{}) []map[string]int
 		})
 
 		if err != nil {
+			log.Printf("[WARN] failed to describe worker nodes for cluster %s: %s", d.Id(), err)
 			return nil
 		}
-		if response.Body == nil || response.Body.Nodes == nil {
+		if response == nil || response.Body == nil || response.Body.Nodes == nil {
 			break
 		}
 		if len(response.Body.Nodes) > 0 {
@@ -1629,10 +1649,17 @@ func fetchWorkerNodes(d *schema.ResourceData, meta interface{}) []map[string]int
 	}
 	var workerNodes []map[string]interface{}
 	for _, node := range nodes {
+		if node == nil || tea.StringValue(node.InstanceRole) == "Master" {
+			continue
+		}
+		privateIp := ""
+		if len(node.IpAddress) > 0 {
+			privateIp = tea.StringValue(node.IpAddress[0])
+		}
 		workerNodes = append(workerNodes, map[string]interface{}{
-			"id":         node.InstanceId,
-			"name":       node.NodeName,
-			"private_ip": node.IpAddress[0],
+			"id":         tea.StringValue(node.InstanceId),
+			"name":       tea.StringValue(node.NodeName),
+			"private_ip": privateIp,
 		})
 	}
 

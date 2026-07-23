@@ -996,7 +996,7 @@ func resourceAlicloudCSManagedKubernetesRead(d *schema.ResourceData, meta interf
 		return nil
 	}
 
-	if err = setCerts(d, meta, d.Get("skip_set_certificate_authority").(bool)); err != nil {
+	if err = setCerts(d, meta, d.Get("skip_set_certificate_authority").(bool), true); err != nil {
 		return WrapError(err)
 	}
 

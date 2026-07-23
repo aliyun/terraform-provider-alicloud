@@ -2,12 +2,15 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
+	"reflect"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 // Test Ack PolicyInstance. >>> Resource test cases, automatically generated.
@@ -28,9 +31,9 @@ func TestAccAliCloudCSKubernetesPolicyInstance_basic(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.ManagedKubernetesSupportedRegions)
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceID,
+		IDRefreshName:     resourceID,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -46,10 +49,14 @@ func TestAccAliCloudCSKubernetesPolicyInstance_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"action":       "deny",
-						"namespaces.#": "0",
-						"cluster_id":   CHECKSET,
-						"policy_name":  CHECKSET,
+						"action":                 "deny",
+						"namespaces.#":           "0",
+						"parameters.%":           "3",
+						"parameters.hostNetwork": "false",
+						"parameters.min":         "30",
+						"parameters.max":         "300",
+						"cluster_id":             CHECKSET,
+						"policy_name":            CHECKSET,
 					}),
 				),
 			},
@@ -65,8 +72,12 @@ func TestAccAliCloudCSKubernetesPolicyInstance_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"action":       "warn",
-						"namespaces.#": "3",
+						"action":                 "warn",
+						"namespaces.#":           "3",
+						"parameters.%":           "3",
+						"parameters.hostNetwork": "true",
+						"parameters.min":         "50",
+						"parameters.max":         "500",
 					}),
 				),
 			},
@@ -81,13 +92,65 @@ func TestAccAliCloudCSKubernetesPolicyInstance_basic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceID,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"parameters"},
+				ResourceName:      resourceID,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
+}
+
+func TestUnitCSKubernetesPolicyInstanceParametersForState(t *testing.T) {
+	input := map[string]interface{}{
+		"string": "value",
+		"bool":   false,
+		"int":    30,
+		"object": map[string]interface{}{
+			"z": 3,
+			"a": true,
+		},
+		"list": []interface{}{3, true, "value"},
+	}
+	expected := map[string]interface{}{
+		"string": "value",
+		"bool":   "false",
+		"int":    "30",
+		"object": `{"a":true,"z":3}`,
+		"list":   `[3,true,"value"]`,
+	}
+
+	actual, err := policyParametersForState(input)
+	if err != nil {
+		t.Fatalf("policyParametersForState returned an error: %v", err)
+	}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("policyParametersForState() = %#v, want %#v", actual, expected)
+	}
+
+	resourceData := schema.TestResourceDataRaw(t, resourceAliCloudCSKubernetesPolicyInstance().Schema, nil)
+	if err := resourceData.Set("parameters", actual); err != nil {
+		t.Fatalf("setting normalized policy parameters in state returned an error: %v", err)
+	}
+
+	roundTrip := NormalizeMap(actual)
+	roundTripJSON, err := json.Marshal(roundTrip)
+	if err != nil {
+		t.Fatalf("marshalling round-trip policy parameters returned an error: %v", err)
+	}
+	inputJSON, err := json.Marshal(input)
+	if err != nil {
+		t.Fatalf("marshalling input policy parameters returned an error: %v", err)
+	}
+	if string(roundTripJSON) != string(inputJSON) {
+		t.Fatalf("NormalizeMap(policyParametersForState()) = %s, want %s", roundTripJSON, inputJSON)
+	}
+}
+
+func TestUnitCSKubernetesPolicyInstanceParametersForStateUnsupportedType(t *testing.T) {
+	_, err := policyParametersForState(map[string]interface{}{"invalid": make(chan int)})
+	if err == nil {
+		t.Fatal("policyParametersForState should reject unsupported value types")
+	}
 }
 
 var AliCloudCSKubernetesPolicyInstanceMap = map[string]string{

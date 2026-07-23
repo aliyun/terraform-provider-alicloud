@@ -10,7 +10,9 @@ import (
 )
 
 func TestAccAlicloudAckNodepoolDataSource(t *testing.T) {
-	testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
+	// eu-central-1 no longer has 4c8g worker instance stock; use cn-hangzhou,
+	// the same proven region as the other ACK nodepool tests
+	testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 	rand := acctest.RandIntRange(1000000, 9999999)
 
 	ClusterIdConf := dataSourceTestAccConfig{
@@ -129,11 +131,12 @@ variable "name" {
 	default = "tf-testAccAckNodepool%d"
 }
 
-data "alicloud_enhanced_nat_available_zones" "enhanced" {
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
 }
 
 data "alicloud_instance_types" "cloud_efficiency" {
-  availability_zone    = data.alicloud_enhanced_nat_available_zones.enhanced.zones.0.zone_id
+  availability_zone    = data.alicloud_zones.default.zones.0.id
   cpu_core_count       = 4
   memory_size          = 8
   kubernetes_node_role = "Worker"
@@ -148,14 +151,14 @@ resource "alicloud_vswitch" "default" {
   vswitch_name = var.name
   cidr_block   = "10.4.0.0/24"
   vpc_id       = alicloud_vpc.default.id
-  zone_id      = data.alicloud_enhanced_nat_available_zones.enhanced.zones.0.zone_id
+  zone_id      = data.alicloud_zones.default.zones.0.id
 }
 
 resource "alicloud_cs_managed_kubernetes" "default" {
   name_prefix          = var.name
   cluster_spec         = "ack.pro.small"
   worker_vswitch_ids   = [alicloud_vswitch.default.id]
-  new_nat_gateway      = true
+  new_nat_gateway      = false
   pod_cidr             = cidrsubnet("10.0.0.0/8", 8, 36)
   service_cidr         = cidrsubnet("172.16.0.0/16", 4, 7)
   slb_internet_enabled = true

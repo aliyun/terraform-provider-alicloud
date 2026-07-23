@@ -107,6 +107,11 @@ func resourceAlicloudCSKubernetesPermissionsRead(d *schema.ResourceData, meta in
 	var perms []*cs.DescribeUserPermissionResponseBody
 	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
 		perms, err = describeUserPermissions(client, uid)
+		// returning NonRetryableError(nil) on success worked under SDK v1 but
+		// yields "empty non-retryable error received" under terraform-plugin-sdk v2
+		if err == nil {
+			return nil
+		}
 		if isRetryforThrottling(err) {
 			time.Sleep(1 * time.Minute)
 		} else if tea.BoolValue(tea.Retryable(err)) {
@@ -195,6 +200,11 @@ func manageUserPermissions(mode, uid string, meta interface{}, permissions []int
 	// call sdk update cluster permissions for user
 	err = resource.Retry(60*time.Minute, func() *resource.RetryError {
 		_, err := client.UpdateUserPermissions(&uid, updateUserPermissionsRequest)
+		// returning NonRetryableError(nil) on success worked under SDK v1 but
+		// yields "empty non-retryable error received" under terraform-plugin-sdk v2
+		if err == nil {
+			return nil
+		}
 		if isRetryforThrottling(err) {
 			time.Sleep(1 * time.Minute)
 		} else if isRetryforConflict(err) || tea.BoolValue(tea.Retryable(err)) {
@@ -211,6 +221,11 @@ func manageUserPermissions(mode, uid string, meta interface{}, permissions []int
 
 	_ = resource.Retry(2*time.Minute, func() *resource.RetryError {
 		_, err := client.DescribeUserPermission(&uid)
+		// returning NonRetryableError(nil) on success worked under SDK v1 but
+		// yields "empty non-retryable error received" under terraform-plugin-sdk v2
+		if err == nil {
+			return nil
+		}
 		if isRetryforThrottling(err) {
 			time.Sleep(1 * time.Minute)
 		} else if tea.BoolValue(tea.Retryable(err)) {

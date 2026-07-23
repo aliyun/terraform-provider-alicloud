@@ -34,7 +34,7 @@ func TestAccAliCloudCSKubernetesPermissions_basic(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.ManagedKubernetesSupportedRegions)
 		},
 		// module name
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{
@@ -53,7 +53,15 @@ func TestAccAliCloudCSKubernetesPermissions_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"uid": CHECKSET,
+						"uid":           CHECKSET,
+						"permissions.#": "1",
+					}),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "permissions.*", map[string]string{
+						"role_type":   "cluster",
+						"role_name":   "dev",
+						"namespace":   "",
+						"is_custom":   "false",
+						"is_ram_role": "false",
 					}),
 				),
 			},
@@ -73,7 +81,15 @@ func TestAccAliCloudCSKubernetesPermissions_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"uid": CHECKSET,
+						"uid":           CHECKSET,
+						"permissions.#": "1",
+					}),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "permissions.*", map[string]string{
+						"role_type":   "cluster",
+						"role_name":   "admin",
+						"namespace":   "",
+						"is_custom":   "false",
+						"is_ram_role": "false",
 					}),
 				),
 			},
@@ -101,7 +117,22 @@ func TestAccAliCloudCSKubernetesPermissions_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"uid": CHECKSET,
+						"uid":           CHECKSET,
+						"permissions.#": "2",
+					}),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "permissions.*", map[string]string{
+						"role_type":   "cluster",
+						"role_name":   "admin",
+						"namespace":   "",
+						"is_custom":   "false",
+						"is_ram_role": "false",
+					}),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "permissions.*", map[string]string{
+						"role_type":   "cluster",
+						"role_name":   "admin",
+						"namespace":   "",
+						"is_custom":   "true",
+						"is_ram_role": "false",
 					}),
 				),
 			},
@@ -129,7 +160,22 @@ func TestAccAliCloudCSKubernetesPermissions_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"uid": CHECKSET,
+						"uid":           CHECKSET,
+						"permissions.#": "2",
+					}),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "permissions.*", map[string]string{
+						"role_type":   "namespace",
+						"role_name":   "dev",
+						"namespace":   "default",
+						"is_custom":   "false",
+						"is_ram_role": "true",
+					}),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "permissions.*", map[string]string{
+						"role_type":   "namespace",
+						"role_name":   "dev",
+						"namespace":   "kube-system",
+						"is_custom":   "false",
+						"is_ram_role": "false",
 					}),
 				),
 			},

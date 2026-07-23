@@ -1150,7 +1150,8 @@ func dataSourceAliCloudAckNodepoolRead(d *schema.ResourceData, meta interface{})
 	}
 
 	d.Set("ids", ids)
-	d.Set("names", names)
+	// "names" is not declared in the schema; setting it panics under terraform-plugin-sdk v2
+	_ = names
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("nodepools", s); err != nil {
 		return WrapError(err)

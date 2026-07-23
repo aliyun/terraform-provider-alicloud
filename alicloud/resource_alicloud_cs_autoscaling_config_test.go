@@ -35,7 +35,7 @@ func TestAccAliCloudCSAutoscalingConfig_basic(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.ManagedKubernetesSupportedRegions)
 		},
 		// module name
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{
@@ -158,32 +158,25 @@ data "alicloud_zones" default {
 }
 
 data "alicloud_instance_types" "default" {
-	availability_zone    = "${data.alicloud_zones.default.zones.0.id}"
 	cpu_core_count       = 4
 	memory_size          = 8
 	kubernetes_node_role = "Worker"
-	instance_type_family = "ecs.sn1ne"
 }
 
-data "alicloud_vpcs" "default" {
-  name_regex = "^default-NODELETING-ACK$"
-}
-
-data "alicloud_vswitches" "default" {
-	vpc_id  = data.alicloud_vpcs.default.ids.0
-	zone_id = data.alicloud_zones.default.zones.0.id
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
 }
 
 resource "alicloud_vswitch" "vswitch" {
-  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id            = data.alicloud_vpcs.default.ids.0
-  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id           = data.alicloud_zones.default.zones.0.id
+  vpc_id            = alicloud_vpc.default.id
+  cidr_block        = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 8)
+  zone_id           = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
   vswitch_name      = var.name
 }
 
 locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+  vswitch_id = alicloud_vswitch.vswitch.id
 }
 
 resource "alicloud_cs_managed_kubernetes" "default" {

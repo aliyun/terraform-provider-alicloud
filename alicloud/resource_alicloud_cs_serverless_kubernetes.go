@@ -566,7 +566,9 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 	d.Set("cluster_spec", object.ClusterSpec)
 
 	if object.Timezone != nil {
-		d.Set("timezone", object.Timezone)
+		if err := d.Set("time_zone", tea.StringValue(object.Timezone)); err != nil {
+			return WrapError(err)
+		}
 	}
 
 	if err := d.Set("tags", flattenTags(object.Tags)); err != nil {
@@ -636,7 +638,7 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 		return nil
 	}
 
-	if err = setCerts(d, meta, true); err != nil {
+	if err = setCerts(d, meta, true, false); err != nil {
 		return WrapError(err)
 	}
 
@@ -646,7 +648,7 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 func resourceAlicloudCSServerlessKubernetesUpdate(d *schema.ResourceData, meta interface{}) error {
 	invoker := NewInvoker()
 	// modifyCluster
-	if !d.IsNewResource() && d.HasChanges("resource_group_id", "name", "name_prefix", "deletion_protection", "custom_san", "maintenance_window", "operation_policy", "enable_rrsa") {
+	if !d.IsNewResource() && d.HasChanges("resource_group_id", "name", "name_prefix", "deletion_protection", "custom_san", "maintenance_window", "operation_policy", "enable_rrsa", "time_zone") {
 		if err := modifyServerlessCluster(d, meta, &invoker); err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifyCluster", AlibabaCloudSdkGoERROR)
 		}
@@ -776,8 +778,8 @@ func modifyServerlessCluster(d *schema.ResourceData, meta interface{}, invoker *
 		updated = true
 	}
 
-	if d.HasChange("timezone") {
-		request.SetTimezone(d.Get("timezone").(string))
+	if d.HasChange("time_zone") {
+		request.SetTimezone(d.Get("time_zone").(string))
 		updated = true
 	}
 

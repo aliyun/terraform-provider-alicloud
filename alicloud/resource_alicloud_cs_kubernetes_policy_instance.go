@@ -2,8 +2,11 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
+	"reflect"
+	"strconv"
 	"strings"
 	"time"
 
@@ -185,13 +188,84 @@ func resourceAliCloudCSKubernetesPolicyInstanceRead(d *schema.ResourceData, meta
 		if err == nil {
 			// Apply type conversion to the parameters
 			convertedParams := NormalizeMap(paramsMap)
-			d.Set("parameters", convertedParams)
+			stateParams, err := policyParametersForState(convertedParams)
+			if err != nil {
+				return WrapError(err)
+			}
+			if err := d.Set("parameters", stateParams); err != nil {
+				return WrapError(err)
+			}
 		} else {
 			log.Printf("[WARN] Failed to parse policy_parameters as YAML: %v", err)
 		}
 	}
 
 	return nil
+}
+
+// policyParametersForState converts the heterogeneous values returned by the
+// policy API to the map-of-strings representation declared by the Terraform
+// schema. Composite values are JSON encoded so their state representation is
+// deterministic. NormalizeMap restores the policy's supported bool, integer,
+// map, and list values when the state is sent on create/update.
+func policyParametersForState(parameters map[string]interface{}) (map[string]interface{}, error) {
+	result := make(map[string]interface{}, len(parameters))
+	for key, value := range parameters {
+		stringValue, err := policyParameterValueForState(value)
+		if err != nil {
+			return nil, fmt.Errorf("converting policy parameter %q for state: %w", key, err)
+		}
+		result[key] = stringValue
+	}
+	return result, nil
+}
+
+func policyParameterValueForState(value interface{}) (string, error) {
+	switch typed := value.(type) {
+	case nil:
+		return "null", nil
+	case string:
+		return typed, nil
+	case bool:
+		return strconv.FormatBool(typed), nil
+	case int:
+		return strconv.Itoa(typed), nil
+	case int8:
+		return strconv.FormatInt(int64(typed), 10), nil
+	case int16:
+		return strconv.FormatInt(int64(typed), 10), nil
+	case int32:
+		return strconv.FormatInt(int64(typed), 10), nil
+	case int64:
+		return strconv.FormatInt(typed, 10), nil
+	case uint:
+		return strconv.FormatUint(uint64(typed), 10), nil
+	case uint8:
+		return strconv.FormatUint(uint64(typed), 10), nil
+	case uint16:
+		return strconv.FormatUint(uint64(typed), 10), nil
+	case uint32:
+		return strconv.FormatUint(uint64(typed), 10), nil
+	case uint64:
+		return strconv.FormatUint(typed, 10), nil
+	case float32:
+		return strconv.FormatFloat(float64(typed), 'g', -1, 32), nil
+	case float64:
+		return strconv.FormatFloat(typed, 'g', -1, 64), nil
+	case json.Number:
+		return typed.String(), nil
+	}
+
+	valueKind := reflect.ValueOf(value).Kind()
+	if valueKind == reflect.Map || valueKind == reflect.Slice || valueKind == reflect.Array {
+		encoded, err := json.Marshal(value)
+		if err != nil {
+			return "", err
+		}
+		return string(encoded), nil
+	}
+
+	return "", fmt.Errorf("unsupported value type %T", value)
 }
 
 func resourceAliCloudCSKubernetesPolicyInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
