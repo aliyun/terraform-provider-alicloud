@@ -7333,10 +7333,9 @@ class DailyScheduler:
     def __init__(self, handler, pool=None):
         self.handler = handler
         pool = pool if pool is not None else getattr(handler, "ephemeral_executor", None)
-        # ``daily.probe`` has moved to ``scheduler/jobs/daily_probe.py`` and is
-        # registered only through ``scheduler/jobs/jobs.yaml``.  This legacy
-        # loop now owns its remaining job directly; it must not shadow a new
-        # Scheduler job through an ownership switch.
+        # ``daily.probe`` remains disabled until its new Scheduler runner is
+        # migrated end to end. This legacy loop owns only the remaining nudge
+        # job and must not shadow a future Scheduler registration.
         job = _NudgeJob(handler, pool)
         self.jobs = [job] if job.enabled else []
         self._last_run = self._load_state()  # job.name -> last-run date iso

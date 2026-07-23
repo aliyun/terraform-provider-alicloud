@@ -1,15 +1,16 @@
 # Scheduler Job 的唯一注册表。
 #
-# 文件中只列出已迁移到新 Scheduler 的 Job。未出现在此处的任务仍完全由旧链路
-# 执行，既不会注册到 jarvis_scheduled_job，也不会显示为 DISABLED。每次迁移一个
-# Job 时，先实现同目录的 runner，再新增一条完整定义，并删除该 Job 的旧入口。
+# 文件中只列出已迁移到新 Scheduler 的 Job。未出现在此处的任务不会注册到
+# jarvis_scheduled_job。每次迁移一个 Job 时，先实现 runners/ 下的 runner，再新增
+# 一条完整定义，并删除该 Job 的旧入口。
 #
 # key            稳定 Job 标识，也是控制面 job_key；迁移后不得重命名。
 # revision       definition 语义变化时递增；用于识别已登记 Job 是否需要更新。
-# engine_runner  Bridge 内 runner 的名称；必须能在 jobs/__init__.py 的 runner 映射中解析。
+# description    面向控制台的中文任务说明。
 # schedule       支持 interval / daily / adaptive；daily 使用明确的 IANA 时区。
-# runner         执行契约；headless Job 必须声明 builder_ref、protocol 和 session_policy。
+# runner         唯一执行契约；handler_key 必须在 runners/ 中注册。
 # misfire        停机后错过计划的处理策略；CURRENT_DAY 仅补当天的 daily slot。
+# retry_delay_seconds  可重试失败后再次执行同一 slot 的等待时间。
 # enabled        Job 是否执行；false 时仍注册到控制面，但状态为 DISABLED。
 version: 1
 jobs:
@@ -17,40 +18,28 @@ jobs:
   # 并返回 SUCCEEDED，不创建业务数据。验证结束后可将整个 smoke 区块注释为新增 Job
   # 配置示例。业务 Job 迁移前必须先实现独立 runner，再单独加入此表。
   - key: smoke.interval
-    revision: 2
+    revision: 3
     description: 验证固定间隔任务的计划、准入与完成，不产生业务副作用
-    purpose: MAINTENANCE
-    engine_runner: scheduler.smoke
     schedule: {kind: interval, interval_seconds: 60, run_immediately: true}
     runner: {kind: handler, handler_key: scheduler.smoke}
     misfire: COALESCE
-    timeout_seconds: 30
     retry_delay_seconds: 10
-    replay_policy: EPHEMERAL
     enabled: true
 
   - key: smoke.daily
-    revision: 2
+    revision: 3
     description: 验证每日任务的计划与当天错过执行处理，不产生业务副作用
-    purpose: MAINTENANCE
-    engine_runner: scheduler.smoke
     schedule: {kind: daily, hour: 10, minute: 0, timezone: Asia/Shanghai}
     runner: {kind: handler, handler_key: scheduler.smoke}
     misfire: CURRENT_DAY
-    timeout_seconds: 30
     retry_delay_seconds: 10
-    replay_policy: EPHEMERAL
     enabled: true
 
   - key: smoke.adaptive
-    revision: 2
+    revision: 3
     description: 验证自适应任务的计划与下一次执行时间计算，不产生业务副作用
-    purpose: MAINTENANCE
-    engine_runner: scheduler.smoke
     schedule: {kind: adaptive, min_delay_seconds: 30, default_delay_seconds: 60, max_delay_seconds: 120, run_immediately: true}
     runner: {kind: handler, handler_key: scheduler.smoke}
     misfire: COALESCE
-    timeout_seconds: 30
     retry_delay_seconds: 10
-    replay_policy: EPHEMERAL
     enabled: true

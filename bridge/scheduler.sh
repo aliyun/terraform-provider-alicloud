@@ -27,7 +27,7 @@ validate() {
   [ -x "$PYTHON" ] || { err "scheduler Python 不存在: $PYTHON"; return 2; }
   PYTHONPATH="$SCRIPT_DIR:$REPO_ROOT${PYTHONPATH:+:$PYTHONPATH}" "$PYTHON" -c '
 import os
-from scheduler.jobs import REGISTRY
+from scheduler.registry import REGISTRY
 if not REGISTRY.scheduler_job_keys():
     raise SystemExit("scheduler registry is empty")
 if not (os.environ.get("JARVIS_CONTROL_PLANE_TOKEN") or os.environ.get("JARVIS_HTML_REPORT_TOKEN")):

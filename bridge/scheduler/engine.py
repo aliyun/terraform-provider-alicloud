@@ -9,23 +9,234 @@ endpoint is deployed.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, time as wall_time, timedelta, timezone
 from enum import Enum
 import logging
+from math import floor
 from threading import RLock
 import time
 from typing import Callable, Iterable, Mapping, Optional, Protocol, Sequence
+from zoneinfo import ZoneInfo
 
-from .model import JobResult, JobResultStatus, ScheduledJobDefinition, definition_snapshot, is_aware
-from .planner import TriggerPlanner
-from .runtime import ScannerRuntime
+from .model import (
+    AdaptiveSchedule,
+    DailySchedule,
+    HandlerRunner,
+    IntervalSchedule,
+    JobResult,
+    JobResultStatus,
+    ScheduledJobDefinition,
+    definition_snapshot,
+    is_aware,
+)
 
 
 _LOG = logging.getLogger(__name__)
+_SHANGHAI = ZoneInfo("Asia/Shanghai")
+_UTC = timezone.utc
 
 
 def _utc_now() -> datetime:
     return datetime.now(timezone.utc)
+
+
+class TriggerPlanner:
+    """Pure due-time and slot-identity calculations."""
+
+    def initial_due(self, definition: ScheduledJobDefinition, now: datetime) -> datetime:
+        _require_aware(now, "now")
+        schedule = definition.schedule
+        if isinstance(schedule, IntervalSchedule):
+            return now if schedule.run_immediately else now + timedelta(
+                seconds=schedule.interval_seconds)
+        if isinstance(schedule, DailySchedule):
+            local_now = now.astimezone(_SHANGHAI)
+            return datetime.combine(
+                local_now.date(),
+                wall_time(schedule.hour, schedule.minute),
+                tzinfo=_SHANGHAI,
+            )
+        if isinstance(schedule, AdaptiveSchedule):
+            return now if schedule.run_immediately else now + timedelta(
+                seconds=schedule.default_delay_seconds)
+        raise TypeError("definition.schedule must be supported")
+
+    def next_due(
+        self,
+        definition: ScheduledJobDefinition,
+        *,
+        slot_due_at: datetime,
+        completed_at: datetime,
+        result: JobResult,
+    ) -> datetime:
+        _require_aware(slot_due_at, "slot_due_at")
+        _require_aware(completed_at, "completed_at")
+        if not isinstance(result, JobResult) or result.status is not JobResultStatus.SUCCEEDED:
+            raise ValueError("only a successful result may create a new slot")
+        schedule = definition.schedule
+        if isinstance(schedule, IntervalSchedule):
+            delta = (completed_at - slot_due_at).total_seconds()
+            steps = 1 if delta < 0 else max(
+                1, floor(delta / schedule.interval_seconds) + 1)
+            return slot_due_at + timedelta(
+                seconds=steps * schedule.interval_seconds)
+        if isinstance(schedule, DailySchedule):
+            local_slot = slot_due_at.astimezone(_SHANGHAI)
+            return datetime.combine(
+                local_slot.date() + timedelta(days=1),
+                wall_time(schedule.hour, schedule.minute),
+                tzinfo=_SHANGHAI,
+            )
+        if isinstance(schedule, AdaptiveSchedule):
+            due = result.next_due_at or completed_at + timedelta(
+                seconds=schedule.default_delay_seconds)
+            lower = completed_at + timedelta(seconds=schedule.min_delay_seconds)
+            upper = completed_at + timedelta(seconds=schedule.max_delay_seconds)
+            if due < lower or due > upper:
+                raise ValueError("adaptive next_due_at is outside the declared bounds")
+            return due
+        raise TypeError("definition.schedule must be supported")
+
+    def reserve_next_due(
+        self,
+        definition: ScheduledJobDefinition,
+        *,
+        slot_due_at: datetime,
+        started_at: datetime,
+    ) -> datetime:
+        """Reserve a safe fallback slot before the current invocation runs."""
+
+        return self.next_due(
+            definition,
+            slot_due_at=slot_due_at,
+            completed_at=started_at,
+            result=JobResult(JobResultStatus.SUCCEEDED),
+        )
+
+    def slot_key(
+        self, definition: ScheduledJobDefinition, scheduled_for: datetime,
+    ) -> str:
+        _require_aware(scheduled_for, "scheduled_for")
+        utc = scheduled_for.astimezone(_UTC)
+        return (
+            f"{definition.id}@r{definition.revision}@"
+            f"{utc.strftime('%Y-%m-%dT%H:%M:%S.%fZ')}"
+        )
+
+
+class RetryableJobError(Exception):
+    """A runner may raise this when retrying the current slot is safe."""
+
+
+class PermanentJobError(Exception):
+    """A runner may raise this when retrying the current slot cannot succeed."""
+
+
+class ScannerStopped(RuntimeError):
+    """Raised when a new runner invocation is requested after admission closes."""
+
+
+class JobRunner(Protocol):
+    def run(
+        self, definition: ScheduledJobDefinition, scheduled_for: datetime,
+    ) -> JobResult:
+        """Run one admitted slot and return a validated result."""
+
+
+class RunnerDispatcher:
+    """Resolve the executable runner from ``definition.runner`` only."""
+
+    def __init__(self, handlers: Mapping[str, JobRunner]) -> None:
+        self._handlers = dict(handlers)
+
+    def run(
+        self, definition: ScheduledJobDefinition, scheduled_for: datetime,
+    ) -> JobResult:
+        runner_definition = definition.runner
+        if not isinstance(runner_definition, HandlerRunner):
+            raise PermanentJobError(
+                "runner kind is declared but has no execution adapter")
+        try:
+            runner = self._handlers[runner_definition.handler_key]
+        except KeyError as exc:
+            raise PermanentJobError(
+                "no registered handler: %s" % runner_definition.handler_key) from exc
+        return runner.run(definition, scheduled_for)
+
+
+@dataclass(frozen=True)
+class ScannerInvocation:
+    job_key: str
+    scheduled_for: datetime
+
+    def __post_init__(self) -> None:
+        if not self.job_key:
+            raise ValueError("job_key must be nonblank")
+        _require_aware(self.scheduled_for, "scheduled_for")
+
+
+class ScannerRuntime:
+    """Bound one runner invocation and map adapter failures to ``JobResult``."""
+
+    def __init__(self, runner: JobRunner) -> None:
+        if not hasattr(runner, "run"):
+            raise TypeError("runner must implement run(definition, scheduled_for)")
+        self._runner = runner
+        self._lock = RLock()
+        self._stopped = False
+
+    @property
+    def accepting(self) -> bool:
+        with self._lock:
+            return not self._stopped
+
+    def stop(self) -> None:
+        with self._lock:
+            self._stopped = True
+
+    def resume(self) -> None:
+        with self._lock:
+            self._stopped = False
+
+    def execute(
+        self, definition: ScheduledJobDefinition, scheduled_for: datetime,
+    ) -> JobResult:
+        invocation = ScannerInvocation(definition.id, scheduled_for)
+        with self._lock:
+            if self._stopped:
+                raise ScannerStopped(
+                    f"scheduler is stopping; refusing {invocation.job_key}")
+        return self._execute_runner(definition, invocation)
+
+    def execute_admitted(
+        self, definition: ScheduledJobDefinition, scheduled_for: datetime,
+    ) -> JobResult:
+        return self._execute_runner(
+            definition, ScannerInvocation(definition.id, scheduled_for))
+
+    def _execute_runner(
+        self, definition: ScheduledJobDefinition, invocation: ScannerInvocation,
+    ) -> JobResult:
+        try:
+            result = self._runner.run(definition, invocation.scheduled_for)
+            if not isinstance(result, JobResult):
+                raise PermanentJobError("runner returned a non-JobResult value")
+            return result
+        except RetryableJobError as exc:
+            return JobResult(
+                JobResultStatus.RETRYABLE_FAILURE, error=_error_summary(exc))
+        except PermanentJobError as exc:
+            return JobResult(
+                JobResultStatus.PERMANENT_FAILURE, error=_error_summary(exc))
+        except Exception as exc:
+            return JobResult(
+                JobResultStatus.RETRYABLE_FAILURE, error=_error_summary(exc))
+
+
+def _error_summary(exc: Exception) -> str:
+    message = " ".join(str(exc).split())
+    summary = type(exc).__name__ if not message else f"{type(exc).__name__}: {message}"
+    return summary[:2048]
 
 
 class ScheduledJobStatus(str, Enum):
@@ -130,13 +341,6 @@ class ScheduledJobControlPlane(Protocol):
         """Record exactly one terminal failure for the admitted slot."""
 
 
-class DurableResultPublisher(Protocol):
-    """Publish successful observations only after their result protocol is validated."""
-
-    def publish(self, definition: ScheduledJobDefinition, result: JobResult, scheduled_for: datetime) -> None:
-        """Return only after Task/event durable acknowledgement is known."""
-
-
 def build_registrations(
     definitions: Iterable[ScheduledJobDefinition],
     *,
@@ -200,7 +404,6 @@ class SchedulerEngine:
         *,
         control_plane: ScheduledJobControlPlane,
         runtime: ScannerRuntime,
-        publisher: DurableResultPublisher,
         planner: Optional[TriggerPlanner] = None,
         clock: Callable[[], datetime] = _utc_now,
         terminal_retry_delay_seconds: float = 5.0,
@@ -212,7 +415,6 @@ class SchedulerEngine:
             raise ValueError("definitions must have unique job ids")
         self._control_plane = control_plane
         self._runtime = runtime
-        self._publisher = publisher
         self._planner = planner or TriggerPlanner()
         self._clock = clock
         self._terminal_retry_delay_seconds = float(terminal_retry_delay_seconds)
@@ -309,14 +511,6 @@ class SchedulerEngine:
             except Exception as exc:
                 return self._report_failure(
                     slot, finished_at, _permanent_failure_summary(exc))
-            try:
-                self._publisher.publish(slot.definition, result, slot.scheduled_for)
-            except Exception as exc:
-                # A Task/event acknowledgement is unknown.  Do not complete the
-                # slot or advance its business cursor; replay through the stable
-                # identity on the retry path instead.
-                return self._report_failure(
-                    slot, finished_at, _retryable_failure_summary(exc))
             self._commit_terminal(
                 slot,
                 lambda: self._control_plane.complete(
@@ -390,10 +584,6 @@ def _require_aware(value: datetime, name: str) -> None:
 
 def _permanent_failure_summary(exc: Exception) -> JobResult:
     return _failure_summary(exc, JobResultStatus.PERMANENT_FAILURE)
-
-
-def _retryable_failure_summary(exc: Exception) -> JobResult:
-    return _failure_summary(exc, JobResultStatus.RETRYABLE_FAILURE)
 
 
 def _failure_summary(exc: Exception, status: JobResultStatus) -> JobResult:

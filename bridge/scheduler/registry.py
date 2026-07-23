@@ -1,4 +1,4 @@
-"""Versioned YAML registry for Scheduler job ownership and runner routing."""
+"""Load and validate the Scheduler job registry and its runner capabilities."""
 
 from __future__ import annotations
 
@@ -19,40 +19,26 @@ class SchedulerRegistryError(ValueError):
 
 
 @dataclass(frozen=True)
-class SchedulerJobRoute:
-    job_key: str
-    runner: str
-
-    @property
-    def scheduler_owned(self) -> bool:
-        return True
-
-
-@dataclass(frozen=True)
 class SchedulerRegistry:
-    """Validated complete ownership snapshot used by both Bridge paths."""
+    """Validated complete ownership snapshot for the standalone Scheduler."""
 
-    routes: tuple[SchedulerJobRoute, ...]
     definitions: tuple["ScheduledJobDefinition", ...]
 
-    def route_for(self, job_key: str) -> SchedulerJobRoute:
-        for route in self.routes:
-            if route.job_key == job_key:
-                return route
-        raise SchedulerRegistryError("job is not declared in scheduler registry: %s" % job_key)
-
     def scheduler_job_keys(self) -> frozenset[str]:
-        return frozenset(route.job_key for route in self.routes if route.scheduler_owned)
+        return frozenset(definition.id for definition in self.definitions)
 
-    def runner_for(self, job_key: str) -> str:
-        route = self.route_for(job_key)
-        if not route.scheduler_owned or not route.runner:
-            raise SchedulerRegistryError("job is not scheduler-owned: %s" % job_key)
-        return route.runner
+    def handler_keys(self) -> frozenset[str]:
+        from .model import HandlerRunner
+
+        return frozenset(
+            definition.runner.handler_key
+            for definition in self.definitions
+            if isinstance(definition.runner, HandlerRunner)
+        )
 
 
 def default_registry_path() -> Path:
-    return Path(__file__).resolve().parent / "jobs" / "jobs.yaml"
+    return Path(__file__).resolve().parent / "jobs.yaml"
 
 
 def load_scheduler_registry(
@@ -72,25 +58,20 @@ def load_scheduler_registry(
     rows = raw["jobs"]
     if not isinstance(rows, list):
         raise SchedulerRegistryError("scheduler registry jobs must be a list: %s" % target)
-    routes = []
     definitions = []
     seen = set()
     for index, row in enumerate(rows, start=1):
         if not isinstance(row, Mapping):
             raise SchedulerRegistryError("invalid job entry #%s in %s" % (index, target))
         key = _required_text(row, "key", index, target)
-        engine_runner = _optional_text(row.get("engine_runner"), index, target)
         if key in seen:
             raise SchedulerRegistryError("duplicate job key in %s: %s" % (target, key))
         seen.add(key)
-        if not engine_runner:
-            raise SchedulerRegistryError("every new-registry job requires engine_runner: %s" % key)
         definition = _definition_from_row(row, index, target)
         if definition.id != key:
             raise SchedulerRegistryError("job key/id mismatch in %s: %s" % (target, key))
-        routes.append(SchedulerJobRoute(key, engine_runner))
         definitions.append(definition)
-    return SchedulerRegistry(tuple(routes), tuple(definitions))
+    return SchedulerRegistry(tuple(definitions))
 
 
 def _required_text(row: Mapping[str, object], field: str, index: int, path: Path) -> str:
@@ -111,11 +92,10 @@ def _optional_text(value: object, index: int, path: Path) -> Optional[str]:
 def _definition_from_row(
     row: Mapping[str, Any], index: int, path: Path,
 ) -> "ScheduledJobDefinition":
-    from .model import JobPurpose, MisfirePolicy, ReplayPolicy, ScheduledJobDefinition
+    from .model import MisfirePolicy, ScheduledJobDefinition
     expected = {
-        "key", "revision", "description", "purpose", "engine_runner",
-        "schedule", "runner", "misfire", "timeout_seconds", "retry_delay_seconds",
-        "replay_policy", "enabled",
+        "key", "revision", "description", "schedule", "runner", "misfire",
+        "retry_delay_seconds", "enabled",
     }
     unknown = set(row).difference(expected)
     if unknown:
@@ -126,13 +106,10 @@ def _definition_from_row(
             id=_required_text(row, "key", index, path),
             revision=_required_int(row, "revision", index, path),
             description=_required_text(row, "description", index, path),
-            purpose=JobPurpose(_required_text(row, "purpose", index, path)),
             schedule=_schedule_from_yaml(row.get("schedule"), index, path),
             runner=_runner_from_yaml(row.get("runner"), index, path),
             misfire=MisfirePolicy(_required_text(row, "misfire", index, path)),
-            timeout_seconds=_required_number(row, "timeout_seconds", index, path),
             retry_delay_seconds=_required_number(row, "retry_delay_seconds", index, path),
-            replay_policy=ReplayPolicy(_required_text(row, "replay_policy", index, path)),
             enabled=_required_bool(row, "enabled", index, path),
         )
     except (TypeError, ValueError) as exc:
@@ -158,7 +135,7 @@ def _schedule_from_yaml(value: object, index: int, path: Path) -> object:
 
 
 def _runner_from_yaml(value: object, index: int, path: Path) -> object:
-    from .model import CommandRunner, HandlerRunner, HeadlessRunner
+    from .model import HandlerRunner, HeadlessRunner
     if not isinstance(value, Mapping):
         raise SchedulerRegistryError("job #%s runner must be a mapping in %s" % (index, path))
     kind = _required_text(value, "kind", index, path)
@@ -168,9 +145,6 @@ def _runner_from_yaml(value: object, index: int, path: Path) -> object:
     if kind == "headless":
         _require_exact_fields(value, {"kind", "builder_ref", "protocol", "session_policy", "lane", "model"}, "runner", index, path, optional={"lane", "model"})
         return HeadlessRunner(value["builder_ref"], value["protocol"], value["session_policy"], value.get("lane"), value.get("model"))
-    if kind == "command":
-        _require_exact_fields(value, {"kind", "argv", "workspace_key", "env_allowlist"}, "runner", index, path, optional={"env_allowlist"})
-        return CommandRunner(tuple(value["argv"]), value["workspace_key"], tuple(value.get("env_allowlist", ())))
     raise SchedulerRegistryError("job #%s has unsupported runner kind %s" % (index, kind))
 
 
@@ -205,7 +179,29 @@ def _required_bool(row: Mapping[str, Any], field: str, index: int, path: Path) -
     return value
 
 
+from .model import CapabilityValidationContext, ScheduledJobDefinition, validate_registry
+from .runners import RUNNER_KEYS
+
+
+REGISTRY = load_scheduler_registry()
+JOBS: tuple[ScheduledJobDefinition, ...] = validate_registry(
+    REGISTRY.definitions,
+    context=CapabilityValidationContext(handler_keys=RUNNER_KEYS),
+)
+
+
+def load_jobs() -> tuple[ScheduledJobDefinition, ...]:
+    """Return the already validated immutable registry snapshot."""
+
+    return JOBS
+
+
 __all__ = [
-    "SchedulerJobRoute", "SchedulerRegistry", "SchedulerRegistryError",
-    "default_registry_path", "load_scheduler_registry",
+    "JOBS",
+    "REGISTRY",
+    "SchedulerRegistry",
+    "SchedulerRegistryError",
+    "default_registry_path",
+    "load_jobs",
+    "load_scheduler_registry",
 ]

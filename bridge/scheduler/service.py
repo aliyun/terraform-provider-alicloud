@@ -1,4 +1,4 @@
-"""Bridge composition root for the fixed, fenced scheduled-job worker.
+"""Lifecycle service for the fixed, fenced scheduled-job worker.
 
 This module does not import legacy Bridge loops.  The caller supplies only the
 job runners it has explicitly migrated, which makes a mixed legacy/new rollout
@@ -25,38 +25,23 @@ except ModuleNotFoundError:  # pragma: no cover - import path depends on composi
     from bridge.jarvis_task_client import ControlPlaneClient, StaleFence
 
 from .control_plane_client import HttpScheduledJobControlPlane
-from .engine import DurableResultPublisher, SchedulerEngine
-from .jobs import JOBS, load_jobs
-from .model import JobResult, ScheduledJobDefinition
-from .registry import SchedulerRegistry
-from .runtime import JobRunner, ScannerRuntime
+from .engine import (
+    JobRunner,
+    RunnerDispatcher,
+    ScannerRuntime,
+    SchedulerEngine,
+)
+from .registry import JOBS, SchedulerRegistry, load_jobs
 
 
 SCHEDULER_WORKER_KEY = "bridge-scheduler"
 
 
-class SchedulerCompositionError(RuntimeError):
+class SchedulerServiceError(RuntimeError):
     """A Scheduler startup/shutdown precondition was not safely satisfied."""
 
 
-class EmptyResultPublisher(DurableResultPublisher):
-    """Accept only jobs whose runner has no separate durable observation payload.
-
-    The first compatible job, ``daily.probe``, performs its bounded enqueue in
-    its runner and returns no observations.  A later Task/Event producing
-    migration must replace this publisher with its durable acknowledgement
-    adapter rather than silently dropping observations.
-    """
-
-    def publish(self, definition: ScheduledJobDefinition, result: JobResult,
-                scheduled_for: datetime) -> None:
-        del scheduled_for
-        if result.observations:
-            raise SchedulerCompositionError(
-                "%s returned observations but has no durable publisher" % definition.id)
-
-
-class SchedulerComposition:
+class SchedulerService:
     """Own the Scheduler Worker lifecycle and the single Engine polling thread."""
 
     def __init__(self, *, task_client: ControlPlaneClient,
@@ -84,7 +69,7 @@ class SchedulerComposition:
         self.worker_key = SCHEDULER_WORKER_KEY
         self.host_id = str(socket.gethostname() or socket.getfqdn()).strip()
         if not self.host_id:
-            raise SchedulerCompositionError("Scheduler host identity is empty")
+            raise SchedulerServiceError("Scheduler host identity is empty")
         self.boot_id = _scheduler_boot_id(self._environ, self.host_id)
         # Parse operational knobs only after the explicit enable gate.  A
         # dormant scheduler must not change legacy Bridge startup behavior.
@@ -125,27 +110,19 @@ class SchedulerComposition:
         self._poll_interval = _positive_float(
             self._environ.get("JARVIS_SCHEDULER_POLL_SEC", "5"),
             "JARVIS_SCHEDULER_POLL_SEC")
-        configured_runners = {
-            job_key: self._registry.runner_for(job_key)
-            for job_key in migrated
-        }
+        configured_runners = self._registry.handler_keys()
         missing = sorted(
-            job_key for job_key, runner_name in configured_runners.items()
+            runner_name for runner_name in configured_runners
             if runner_name not in self._runners)
         if missing:
-            raise SchedulerCompositionError(
-                "Scheduler-owned jobs have no Bridge runner mapping: %s"
+            raise SchedulerServiceError(
+                "Scheduler-owned jobs have no registered handler: %s"
                 % ", ".join(missing))
-        used_runners = frozenset(configured_runners.values())
-        unused = sorted(set(self._runners).difference(used_runners))
+        unused = sorted(set(self._runners).difference(configured_runners))
         if unused:
-            raise SchedulerCompositionError(
-                "Bridge runner mappings are not declared by scheduler registry: %s"
+            raise SchedulerServiceError(
+                "registered handlers are not declared by scheduler registry: %s"
                 % ", ".join(unused))
-        job_runners = {
-            job_key: self._runners[runner_name]
-            for job_key, runner_name in configured_runners.items()
-        }
         with self._lock:
             if self._thread is not None:
                 return True
@@ -166,8 +143,7 @@ class SchedulerComposition:
                 engine = SchedulerEngine(
                     definitions,
                     control_plane=control_plane,
-                    runtime=ScannerRuntime(_RoutedRunner(job_runners)),
-                    publisher=EmptyResultPublisher(),
+                    runtime=ScannerRuntime(RunnerDispatcher(self._runners)),
                 )
                 # Only YAML-declared Scheduler jobs are registered. Legacy jobs
                 # never enter this control-plane registry.
@@ -369,19 +345,6 @@ class SchedulerComposition:
             self._registered = True
 
 
-class _RoutedRunner(JobRunner):
-    def __init__(self, runners: Mapping[str, JobRunner]) -> None:
-        self._runners = dict(runners)
-
-    def run(self, definition: ScheduledJobDefinition, scheduled_for: datetime) -> JobResult:
-        try:
-            runner = self._runners[definition.id]
-        except KeyError as exc:
-            raise SchedulerCompositionError(
-                "no runner mapping for admitted job %s" % definition.id) from exc
-        return runner.run(definition, scheduled_for)
-
-
 def _scheduler_boot_id(environ: Mapping[str, str], host_id: str) -> str:
     configured = str(environ.get("JARVIS_BOOT_ID", "")).strip()
     return configured or _default_boot_id(host_id)
@@ -390,10 +353,10 @@ def _scheduler_boot_id(environ: Mapping[str, str], host_id: str) -> str:
 def _require_active_worker(response: Any, worker_key: str, host_id: str,
                            boot_id: str, process_uuid: str) -> None:
     if not isinstance(response, Mapping):
-        raise SchedulerCompositionError("Scheduler Worker register response must be an object")
+        raise SchedulerServiceError("Scheduler Worker register response must be an object")
     worker = response.get("worker", response)
     if not isinstance(worker, Mapping):
-        raise SchedulerCompositionError("Scheduler Worker register response.worker must be an object")
+        raise SchedulerServiceError("Scheduler Worker register response.worker must be an object")
     expected = {
         "workerKey": worker_key,
         "hostId": host_id,
@@ -403,16 +366,16 @@ def _require_active_worker(response: Any, worker_key: str, host_id: str,
     }
     mismatched = [name for name, value in expected.items() if worker.get(name) != value]
     if mismatched:
-        raise SchedulerCompositionError(
+        raise SchedulerServiceError(
             "Scheduler Worker register acknowledgement rejected/mismatched fields: %s"
             % ", ".join(mismatched))
     capabilities = worker.get("capabilities")
     if not isinstance(capabilities, Mapping) or capabilities.get("role") != "scheduler":
-        raise SchedulerCompositionError(
+        raise SchedulerServiceError(
             "Scheduler Worker register acknowledgement lacks capabilities.role=scheduler")
     dispatch = capabilities.get("dispatch")
     if not isinstance(dispatch, Mapping) or dispatch.get("pull") is not False:
-        raise SchedulerCompositionError(
+        raise SchedulerServiceError(
             "Scheduler Worker register acknowledgement lacks capabilities.dispatch.pull=false")
 
 
@@ -420,9 +383,9 @@ def _positive_float(value: Any, name: str) -> float:
     try:
         parsed = float(value)
     except (TypeError, ValueError) as exc:
-        raise SchedulerCompositionError("%s must be a positive number" % name) from exc
+        raise SchedulerServiceError("%s must be a positive number" % name) from exc
     if parsed <= 0:
-        raise SchedulerCompositionError("%s must be a positive number" % name)
+        raise SchedulerServiceError("%s must be a positive number" % name)
     return parsed
 
 
@@ -442,6 +405,5 @@ def _stop_timeout(value: Optional[float], environ: Mapping[str, str]) -> float:
 
 
 __all__ = [
-    "EmptyResultPublisher", "SCHEDULER_WORKER_KEY",
-    "SchedulerComposition", "SchedulerCompositionError",
+    "SCHEDULER_WORKER_KEY", "SchedulerService", "SchedulerServiceError",
 ]

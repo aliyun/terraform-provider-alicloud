@@ -18,12 +18,14 @@ from typing import Any
 
 try:  # Executed by bridge/scheduler.sh from the bridge directory.
     from jarvis_task_client import ControlPlaneClient
-    from scheduler.composition import SchedulerComposition
-    from scheduler.jobs import JOBS, REGISTRY, SCHEDULER_SMOKE_RUNNER_KEY, SchedulerSmokeRunner
+    from scheduler.registry import JOBS, REGISTRY
+    from scheduler.runners import build_runners
+    from scheduler.service import SchedulerService
 except ModuleNotFoundError:  # Package import for tests and tools.
     from bridge.jarvis_task_client import ControlPlaneClient
-    from bridge.scheduler.composition import SchedulerComposition
-    from bridge.scheduler.jobs import JOBS, REGISTRY, SCHEDULER_SMOKE_RUNNER_KEY, SchedulerSmokeRunner
+    from bridge.scheduler.registry import JOBS, REGISTRY
+    from bridge.scheduler.runners import build_runners
+    from bridge.scheduler.service import SchedulerService
 
 
 LOG = logging.getLogger("jarvis-scheduler")
@@ -46,12 +48,10 @@ def _task_client_from_env() -> ControlPlaneClient:
     )
 
 
-def build_scheduler() -> SchedulerComposition:
-    return SchedulerComposition(
+def build_scheduler() -> SchedulerService:
+    return SchedulerService(
         task_client=_task_client_from_env(),
-        runners={
-            SCHEDULER_SMOKE_RUNNER_KEY: SchedulerSmokeRunner(logger=LOG),
-        },
+        runners=build_runners(logger=LOG),
         registry=REGISTRY,
         logger=LOG,
     )

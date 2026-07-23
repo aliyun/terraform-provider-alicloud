@@ -49,16 +49,16 @@ status, and heartbeat ensure that only one Scheduler process owns admission at
 a time. It is not a Task executor: Bridge advertises
 `capabilities.dispatch.pull=false` and does not pull the public Task queue.
 
-Use `bridge/scheduler/jobs/jobs.yaml` as the complete new-engine registration
+Use `bridge/scheduler/jobs.yaml` as the complete new-engine registration
 registry. It contains only migrated jobs; each is registered and owned by the
-new Engine while its legacy entry point is suppressed. Legacy jobs are absent
-from this file and never enter the new control plane. The first supported
-handover is `daily.probe`:
+new Engine after its legacy entry point is removed. Legacy jobs are absent
+from this file and never enter the new control plane. The current validation
+slice contains only side-effect-free `smoke.*` jobs:
 
-```bash
-# bridge/scheduler/jobs/jobs.yaml
-- key: daily.probe
-  engine_runner: daily.probe
+```yaml
+# bridge/scheduler/jobs.yaml
+- key: smoke.interval
+  runner: {kind: handler, handler_key: scheduler.smoke}
 ```
 
 The YAML loader depends on `PyYAML`, installed into the isolated Bridge venv by
@@ -68,9 +68,9 @@ that installer, run `bash bootstrap/bridge-python.sh` once before
 
 Before this starts the Engine, Bridge verifies the host, registers and checks
 the ACTIVE Worker identity, registers the full job registry, recovers
-interrupted slots, and then begins polling. `daily.probe` runs only through
-`scheduler/jobs/daily_probe.py`; the legacy `DailyScheduler` has no probe
-entry point. A configured new job without a runner mapping fails closed at
+interrupted slots, and then begins polling. `daily.probe` is not yet migrated
+and remains disabled until its new runner and headless execution adapter land
+together. A configured new job without a runner mapping fails closed at
 startup. Each definition's `enabled` boolean controls whether it is runnable;
 `enabled: false` registers a routed Job as `DISABLED`.
 
