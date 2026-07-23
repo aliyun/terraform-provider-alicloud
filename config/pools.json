@@ -30,6 +30,10 @@
       "claim_required_field_defaults": {
         "140282": "有OpenAPI，资源未定义，开放平台维护"
       },
+      "claim_required_field_fallbacks": {
+        "140097": "terraform/Terraform",
+        "107239": "906688"
+      },
       "pr_merged_status": {
         "type": "3",
         "type_name": "需求问题",

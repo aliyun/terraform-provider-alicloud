@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Query and fill required custom fields that block updates to legacy Aone workitems.
-# `missing` returns legal candidates, `fill` writes explicit assignments, and `auto-fill`
-# makes only deterministic choices: a configured pool default, a single legal option, or
-# one uniquely matching product option inferred from the workitem title.
+# `missing` returns legal candidates, `fill` writes explicit assignments, `auto-fill`
+# makes only deterministic choices, and `preflight` provides the fail-closed dispatch
+# gate used by the bridge.
 
 set -uo pipefail
 
@@ -18,6 +18,7 @@ Usage:
   aone-fields.sh missing <workitem-id>
   aone-fields.sh fill <workitem-id> <field-id>=<value> [<field-id>=<value> ...]
   aone-fields.sh auto-fill <workitem-id>
+  aone-fields.sh preflight <workitem-id> [expected-project-id]
 EOF
 }
 
@@ -32,10 +33,189 @@ normalize_options() {
     jq -c '
         if type == "array" then .
         elif type == "object" and (.options | type) == "array" then .options
+        elif type == "object" and (.Options | type) == "array" then .Options
         elif type == "object" and (.items | type) == "array" then .items
+        elif type == "object" and (.Items | type) == "array" then .Items
         elif type == "object" and (.data | type) == "array" then .data
-        elif type == "object" and (has("identifier") or has("value") or has("displayValue")) then [.]
+        elif type == "object" and (.Data | type) == "array" then .Data
+        elif type == "object" and
+             (has("identifier") or has("Identifier") or has("value") or
+              has("Value") or has("displayValue") or has("DisplayValue") or
+              has("name") or has("Name") or has("path") or has("Path")) then [.]
         else [] end
+    '
+}
+
+workitem_value() {
+    local wi_json="$1" identifier="$2"
+    printf '%s' "$wi_json" | jq -r --arg id "$identifier" '
+        (.fields // [])
+        | map(select((.fieldIdentifier // .identifier // "") == $id))
+        | .[0]
+        | (.value // .displayValue // empty)
+    ' 2>/dev/null
+}
+
+context_matches() {
+    local wi_json="$1" expected_project="$2" expected_type="$3"
+    [ "$(workitem_value "$wi_json" space)" = "$expected_project" ] \
+        && [ "$(workitem_value "$wi_json" workitemType)" = "$expected_type" ]
+}
+
+assignment_mismatches() {
+    local wi_json="$1" assignments="$2"
+    jq -c -n --argjson wi "$wi_json" --argjson assignments "$assignments" '
+        def ident: (.fieldIdentifier // .identifier // "" | tostring);
+        def actual_value:
+            if (.value != null and .value != "" and .value != [] and .value != {})
+            then (.value | tostring)
+            else (.displayValue // "" | tostring)
+            end;
+        (($wi.fields // []) |
+         map({key:ident, value:actual_value}) | from_entries) as $actual |
+        [$assignments[] |
+         (.value | tostring) as $expected |
+         select(($actual[.id] // "") != $expected) |
+         {id:.id, expected:$expected, actual:($actual[.id] // "")}]
+    '
+}
+
+pool_policy() {
+    local project_id="$1"
+    jq -c --arg p "$project_id" '
+        [.pools[]? | select((.project | tostring) == $p)] | .[0] // {} |
+        {
+          defaults: (.claim_required_field_defaults // {}),
+          fallbacks: (.claim_required_field_fallbacks // {})
+        }
+    ' "$pools_cfg" 2>/dev/null || printf '{"defaults":{},"fallbacks":{}}'
+}
+
+resolve_missing() {
+    local missing_json="$1" policy_json="$2" title="$3"
+    jq -c -n --argjson missing "$missing_json" \
+        --argjson policy "$policy_json" --arg title "$title" '
+        def first_nonempty($values):
+            [$values[] | select(. != null) | tostring | select(length > 0)][0] // "";
+        def option_value:
+            first_nonempty([
+              .value, .Value, .identifier, .Identifier, .id, .Id,
+              .displayValue, .DisplayValue, .name, .Name, .path, .Path
+            ]);
+        def option_label:
+            first_nonempty([
+              .displayValue, .DisplayValue, .name, .Name, .label, .Label,
+              .path, .Path, .value, .Value, .identifier, .Identifier
+            ]);
+        def option_aliases:
+            [
+              .value, .Value, .identifier, .Identifier, .id, .Id,
+              .displayValue, .DisplayValue, .name, .Name, .label, .Label,
+              .path, .Path
+              | select(. != null) | tostring | select(length > 0) | ascii_downcase
+            ] | unique;
+        def configured_terms:
+            if . == null then []
+            elif type == "array" then map(tostring)
+            else tostring | split("/")
+            end
+            | map(select(length > 0) | ascii_downcase) | unique;
+        def configured_matches($options; $configured):
+            ($configured | configured_terms) as $terms |
+            [$options[] | . as $option |
+             select(any($terms[]; . as $term |
+                    any(($option | option_aliases)[]; . == $term)))]
+            | unique_by(option_value);
+        def title_tokens:
+            ascii_downcase | [scan("[a-z0-9]+") as $token |
+            $token | select(length >= 3) |
+            select(["alicloud","terraform","resource","data","service","instance",
+                    "company","information","group","whitelist","named","sharding",
+                    "provider"] | index($token) == null) |
+            select(test("[a-z]"))] | unique;
+        ($title | title_tokens) as $tokens |
+        ($policy.defaults // {}) as $defaults |
+        ($policy.fallbacks // {}) as $fallbacks |
+        [$missing[] |
+            . as $field |
+            (($defaults[$field.id] // $defaults[$field.name] // null)) as $default |
+            (($fallbacks[$field.id] // $fallbacks[$field.name] // null)) as $fallback |
+            (($field.options // []) | map(select(option_value != "")) |
+             unique_by(option_value)) as $options |
+            ($options | map(. as $option | . + {
+                _score: ([$tokens[] as $token |
+                    select((((($option | option_label) + " " + ($option | option_value)) |
+                             ascii_downcase) | contains($token)))] | length)
+            })) as $scored |
+            (($scored | map(._score) | max) // 0) as $best |
+            ($scored | map(select(._score == $best and $best > 0))) as $title_matches |
+            (configured_matches($options; $default)) as $default_matches |
+            (configured_matches($options; $fallback)) as $fallback_matches |
+            if ($field.optionsLookupError // false) then
+                {kind:"unresolved", id:$field.id, name:$field.name,
+                 reason:"options_lookup_error", options:[]}
+            elif ($title_matches | length) == 1 then
+                {kind:"assignment", id:$field.id, name:$field.name,
+                 value:($title_matches[0] | option_value), source:"title_match"}
+            elif $default != null then
+                if ($default_matches | length) == 1 then
+                    {kind:"assignment", id:$field.id, name:$field.name,
+                     value:($default_matches[0] | option_value),
+                     source:"configured_default"}
+                else
+                    {kind:"unresolved", id:$field.id, name:$field.name,
+                     reason:"configured_default_not_unique",
+                     configured:$default,
+                     options:($options | map({value:option_value, displayValue:option_label}))}
+                end
+            elif ($options | length) == 1 then
+                {kind:"assignment", id:$field.id, name:$field.name,
+                 value:($options[0] | option_value), source:"single_option"}
+            elif $fallback != null then
+                if ($fallback_matches | length) == 1 then
+                    {kind:"assignment", id:$field.id, name:$field.name,
+                     value:($fallback_matches[0] | option_value),
+                     source:"validated_fallback"}
+                else
+                    {kind:"unresolved", id:$field.id, name:$field.name,
+                     reason:"configured_fallback_not_unique",
+                     configured:$fallback,
+                     options:($options | map({value:option_value, displayValue:option_label}))}
+                end
+            else
+                {kind:"unresolved", id:$field.id, name:$field.name,
+                 reason:(if ($options | length) == 0 then "no_legal_options"
+                         elif $best == 0 then "no_title_match"
+                         else "ambiguous_title_match" end),
+                 options:($options | map({value:option_value, displayValue:option_label}))}
+            end
+        ] as $rows |
+        {assignments:[$rows[] | select(.kind=="assignment") | del(.kind)],
+         unresolved:[$rows[] | select(.kind=="unresolved") | del(.kind)]}
+    '
+}
+
+preflight_result() {
+    local status="$1" error_type="$2" workitem_id="$3" project_id="$4"
+    local type_id="$5" assignments="$6" unresolved="$7" readback="$8"
+    local filled="$9" failure_reason="${10:-}"
+    jq -c -n --arg status "$status" --arg error_type "$error_type" \
+        --arg workitem_id "$workitem_id" --arg project "$project_id" \
+        --arg workitem_type "$type_id" --argjson assignments "$assignments" \
+        --argjson unresolved "$unresolved" --argjson readback "$readback" \
+        --argjson filled "$filled" --arg failure_reason "$failure_reason" '
+        {
+          status:$status,
+          errorType:(if $error_type == "" then null else $error_type end),
+          workitemId:$workitem_id,
+          project:$project,
+          workitemType:$workitem_type,
+          assignments:$assignments,
+          unresolved:$unresolved,
+          readback:$readback,
+          filled:$filled
+        }
+        + (if $failure_reason == "" then {} else {failureReason:$failure_reason} end)
     '
 }
 
@@ -50,14 +230,8 @@ case "$cmd" in
             echo "aone-fields.sh: failed to get workitem $workitem_id" >&2
             exit 1
         fi
-        type_id="$(printf '%s' "$wi_json" | jq -r '
-            (.fields // []) | map(select((.fieldIdentifier // .identifier // "") == "workitemType")) |
-            .[0] | (.value // .displayValue // empty)
-        ' 2>/dev/null)"
-        project_id="$(printf '%s' "$wi_json" | jq -r '
-            (.fields // []) | map(select((.fieldIdentifier // .identifier // "") == "space")) |
-            .[0] | (.value // .displayValue // empty)
-        ' 2>/dev/null)"
+        type_id="$(workitem_value "$wi_json" workitemType)"
+        project_id="$(workitem_value "$wi_json" space)"
         if [ -z "$type_id" ] || [ -z "$project_id" ]; then
             echo "aone-fields.sh: cannot resolve workitem type/project for $workitem_id" >&2
             exit 1
@@ -171,61 +345,13 @@ case "$cmd" in
             echo "aone-fields.sh: failed to get workitem $workitem_id for inference" >&2
             exit 3
         fi
-        project_id="$(printf '%s' "$wi_json" | jq -r '
-            (.fields // []) | map(select((.fieldIdentifier // .identifier // "") == "space")) |
-            .[0] | (.value // .displayValue // empty)
-        ' 2>/dev/null)"
+        project_id="$(workitem_value "$wi_json" space)"
         title="$(printf '%s' "$wi_json" | jq -r '
             .title // ((.fields // []) | map(select((.fieldIdentifier // .identifier // "") == "title")) |
             .[0] | (.displayValue // .value // "")) // ""
         ' 2>/dev/null)"
-        defaults="$(jq -c --arg p "$project_id" '
-            [.pools[]? | select((.project | tostring) == $p) |
-             (.claim_required_field_defaults // {})] | .[0] // {}
-        ' "$pools_cfg" 2>/dev/null || printf '{}')"
-        if ! resolution="$(jq -c -n --argjson missing "$missing_json" \
-                --argjson defaults "$defaults" --arg title "$title" '
-            def option_value: (.value // .identifier // .id // .displayValue // .name // "" | tostring);
-            def option_label: (.displayValue // .name // .label // .value // .identifier // "" | tostring);
-            def title_tokens:
-                ascii_downcase | [scan("[a-z0-9]+") as $token |
-                $token | select(length >= 3) |
-                select(["alicloud","terraform","resource","data","service","instance",
-                        "company","information","group","whitelist","named","sharding"] |
-                       index($token) == null) |
-                select(test("[a-z]"))] | unique;
-            ($title | title_tokens) as $tokens |
-            [$missing[] |
-                . as $field |
-                (($defaults[$field.id] // $defaults[$field.name] // "") | tostring) as $default |
-                (($field.options // []) | map(select(option_value != ""))) as $options |
-                ($options | map(. as $option | . + {
-                    _score: ([$tokens[] as $token |
-                        select((((($option | option_label) + " " + ($option | option_value)) |
-                                 ascii_downcase) | contains($token)))] | length)
-                })) as $scored |
-                (($scored | map(._score) | max) // 0) as $best |
-                ($scored | map(select(._score == $best and $best > 0))) as $matches |
-                if $default != "" then
-                    {kind:"assignment", id:$field.id, name:$field.name,
-                     value:$default, source:"configured_default"}
-                elif ($options | length) == 1 then
-                    {kind:"assignment", id:$field.id, name:$field.name,
-                     value:($options[0] | option_value), source:"single_option"}
-                elif ($matches | length) == 1 then
-                    {kind:"assignment", id:$field.id, name:$field.name,
-                     value:($matches[0] | option_value), source:"title_match"}
-                else
-                    {kind:"unresolved", id:$field.id, name:$field.name,
-                     reason:(if ($options | length) == 0 then "no_legal_options"
-                             elif $best == 0 then "no_title_match"
-                             else "ambiguous_title_match" end),
-                     options:($options | map({value:option_value, displayValue:option_label}))}
-                end
-            ] as $rows |
-            {assignments:[$rows[] | select(.kind=="assignment") | del(.kind)],
-             unresolved:[$rows[] | select(.kind=="unresolved") | del(.kind)]}
-        ')"; then
+        policy="$(pool_policy "$project_id")"
+        if ! resolution="$(resolve_missing "$missing_json" "$policy" "$title")"; then
             echo "aone-fields.sh: failed to resolve deterministic field values" >&2
             exit 3
         fi
@@ -252,6 +378,144 @@ case "$cmd" in
                 '. + {filled:false, updateError:$error}')"
             exit "$rc"
         fi
+        ;;
+
+    preflight)
+        [ "$#" -eq 2 ] || [ "$#" -eq 3 ] || { usage; exit 2; }
+        workitem_id="$2"
+        expected_project="${3:-}"
+        valid_id "$workitem_id" || {
+            echo "aone-fields.sh: invalid workitem id '$workitem_id'" >&2
+            exit 2
+        }
+        [ -z "$expected_project" ] || valid_id "$expected_project" || {
+            echo "aone-fields.sh: invalid expected project id '$expected_project'" >&2
+            exit 2
+        }
+
+        if ! wi_json="$($A1 project workitem get "$workitem_id" -f json 2>/dev/null)"; then
+            preflight_result failed preflight_validation_failed "$workitem_id" "" \
+                "" '[]' '[]' '[]' false workitem_lookup_error
+            exit 3
+        fi
+        project_id="$(workitem_value "$wi_json" space)"
+        type_id="$(workitem_value "$wi_json" workitemType)"
+        title="$(printf '%s' "$wi_json" | jq -r '
+            .title // ((.fields // []) |
+            map(select((.fieldIdentifier // .identifier // "") == "title")) |
+            .[0] | (.displayValue // .value // "")) // ""
+        ' 2>/dev/null)"
+        if [ -z "$project_id" ] || [ -z "$type_id" ]; then
+            preflight_result failed preflight_validation_failed "$workitem_id" \
+                "$project_id" "$type_id" '[]' '[]' '[]' false context_lookup_error
+            exit 3
+        fi
+        if [ -n "$expected_project" ] && [ "$project_id" != "$expected_project" ]; then
+            unresolved="$(jq -c -n --arg expected "$expected_project" \
+                --arg actual "$project_id" \
+                '[{reason:"project_mismatch",expectedProject:$expected,actualProject:$actual}]')"
+            preflight_result failed preflight_validation_failed "$workitem_id" \
+                "$project_id" "$type_id" '[]' "$unresolved" '[]' false project_mismatch
+            exit 3
+        fi
+        if ! missing_json="$(bash "$0" missing "$workitem_id")"; then
+            preflight_result failed preflight_validation_failed "$workitem_id" \
+                "$project_id" "$type_id" '[]' '[]' '[]' false required_fields_lookup_error
+            exit 3
+        fi
+        if [ "$(printf '%s' "$missing_json" | jq 'length')" -eq 0 ]; then
+            if ! noop_readback_json="$($A1 project workitem get "$workitem_id" \
+                    -f json 2>/dev/null)"; then
+                preflight_result failed preflight_validation_failed "$workitem_id" \
+                    "$project_id" "$type_id" '[]' '[]' '[]' false \
+                    context_read_noop_error
+                exit 3
+            fi
+            if ! context_matches "$noop_readback_json" "$project_id" "$type_id"; then
+                preflight_result failed preflight_validation_failed "$workitem_id" \
+                    "$project_id" "$type_id" '[]' '[]' '[]' false \
+                    context_drift_noop_readback
+                exit 3
+            fi
+            preflight_result ok "" "$workitem_id" "$project_id" "$type_id" \
+                '[]' '[]' '[]' false
+            exit 0
+        fi
+
+        policy="$(pool_policy "$project_id")"
+        if ! resolution="$(resolve_missing "$missing_json" "$policy" "$title")"; then
+            preflight_result failed preflight_validation_failed "$workitem_id" \
+                "$project_id" "$type_id" '[]' '[]' "$missing_json" false resolution_error
+            exit 3
+        fi
+        assignments="$(printf '%s' "$resolution" | jq -c '.assignments')"
+        unresolved="$(printf '%s' "$resolution" | jq -c '.unresolved')"
+        if [ "$(printf '%s' "$unresolved" | jq 'length')" -ne 0 ] \
+                || [ "$(printf '%s' "$assignments" | jq 'length')" -eq 0 ]; then
+            preflight_result failed preflight_validation_failed "$workitem_id" \
+                "$project_id" "$type_id" "$assignments" "$unresolved" \
+                "$missing_json" false unresolved_required_fields
+            exit 3
+        fi
+
+        cfs_args=()
+        while IFS=$'\t' read -r field_id value; do
+            [ -n "$field_id" ] && [ -n "$value" ] || continue
+            cfs_args+=(--cfs "$field_id=$value")
+        done < <(printf '%s' "$assignments" | jq -r '.[] | [.id,.value] | @tsv')
+        if ! before_update_json="$($A1 project workitem get "$workitem_id" -f json \
+                2>/dev/null)"; then
+            preflight_result failed preflight_validation_failed "$workitem_id" \
+                "$project_id" "$type_id" "$assignments" '[]' "$missing_json" \
+                false context_read_before_update_error
+            exit 3
+        fi
+        if ! context_matches "$before_update_json" "$project_id" "$type_id"; then
+            preflight_result failed preflight_validation_failed "$workitem_id" \
+                "$project_id" "$type_id" "$assignments" '[]' "$missing_json" \
+                false context_drift_before_update
+            exit 3
+        fi
+        if ! update_output="$($A1 project workitem update "$workitem_id" \
+                "${cfs_args[@]}" 2>&1)"; then
+            preflight_result failed preflight_validation_failed "$workitem_id" \
+                "$project_id" "$type_id" "$assignments" '[]' "$missing_json" \
+                false update_error
+            exit 3
+        fi
+        if ! readback="$(bash "$0" missing "$workitem_id")"; then
+            preflight_result failed preflight_validation_failed "$workitem_id" \
+                "$project_id" "$type_id" "$assignments" '[]' '[]' true readback_error
+            exit 3
+        fi
+        if [ "$(printf '%s' "$readback" | jq 'length')" -ne 0 ]; then
+            preflight_result failed preflight_validation_failed "$workitem_id" \
+                "$project_id" "$type_id" "$assignments" "$readback" "$readback" \
+                true readback_not_empty
+            exit 3
+        fi
+        if ! final_wi_json="$($A1 project workitem get "$workitem_id" -f json \
+                2>/dev/null)"; then
+            preflight_result failed preflight_validation_failed "$workitem_id" \
+                "$project_id" "$type_id" "$assignments" '[]' "$readback" \
+                true context_read_after_readback_error
+            exit 3
+        fi
+        if ! context_matches "$final_wi_json" "$project_id" "$type_id"; then
+            preflight_result failed preflight_validation_failed "$workitem_id" \
+                "$project_id" "$type_id" "$assignments" '[]' "$readback" \
+                true context_drift_after_readback
+            exit 3
+        fi
+        mismatches="$(assignment_mismatches "$final_wi_json" "$assignments")"
+        if [ "$(printf '%s' "$mismatches" | jq 'length')" -ne 0 ]; then
+            preflight_result failed preflight_validation_failed "$workitem_id" \
+                "$project_id" "$type_id" "$assignments" "$mismatches" \
+                "$readback" true assignment_conflict_after_readback
+            exit 3
+        fi
+        preflight_result ok "" "$workitem_id" "$project_id" "$type_id" \
+            "$assignments" '[]' "$readback" true
         ;;
 
     help|-h|--help)
