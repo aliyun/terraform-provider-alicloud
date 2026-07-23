@@ -132,6 +132,20 @@ class GhPrCiParseTest(unittest.TestCase):
         _, failing, _ = self.sched._gh_pr_ci(PR)
         self.assertEqual(sorted(failing), ["x", "y"])
 
+    def test_empty_rollup_is_pending_unknown(self):
+        self._patch({"headRefOid": "new-head", "statusCheckRollup": []})
+
+        self.assertEqual(
+            self.sched._gh_pr_ci(PR), ("new-head", [], True),
+            "a head with no populated checks is not evidence that CI is green")
+
+    def test_rollup_without_recognizable_check_is_pending_unknown(self):
+        self._patch({"headRefOid": "new-head", "statusCheckRollup": [
+            None, {"name": "metadata-only"}, "unexpected"]})
+
+        self.assertEqual(
+            self.sched._gh_pr_ci(PR), ("new-head", [], True))
+
     def test_query_failure_returns_none(self):
         bot.subprocess.run = lambda *a, **k: _fake_proc(1, "")
         self.assertEqual(self.sched._gh_pr_ci(PR), (None, None, False))
@@ -263,8 +277,9 @@ class _DispatchBase(unittest.TestCase):
 
 
 class FakeAttentionClient:
-    def __init__(self, notify=False):
+    def __init__(self, notify=None):
         self.notify = notify
+        self.current = {}
         self.upserts = []
         self.clears = []
         self.fail_clear = False
@@ -277,21 +292,33 @@ class FakeAttentionClient:
         ]}
 
     def upsert_task_attention(self, task_id, owner, event_key, payload):
+        previous = self.current.get(str(task_id))
+        projection = (str(owner), str(event_key))
+        self.current[str(task_id)] = projection
         self.upserts.append((task_id, owner, event_key, payload))
-        value = self.notify.pop(0) if isinstance(self.notify, list) else self.notify
+        if isinstance(self.notify, list):
+            value = self.notify.pop(0)
+        elif self.notify is not None:
+            value = self.notify
+        else:
+            value = previous != projection
         return {"notify": value, "task": {"id": task_id}}
 
     def clear_task_attention(self, task_id, *, event_key_prefix=None):
         if self.fail_clear:
             raise RuntimeError("control plane unavailable")
         self.clears.append((task_id, event_key_prefix))
+        previous = self.current.get(str(task_id))
+        if (event_key_prefix is None
+                or (previous and previous[1].startswith(event_key_prefix))):
+            self.current.pop(str(task_id), None)
         return {"notify": False, "task": {"id": task_id}}
 
 
 class AttentionProjectionTest(_DispatchBase):
     def setUp(self):
         super().setUp()
-        self.client = FakeAttentionClient(notify=[True, False])
+        self.client = FakeAttentionClient()
         self.handler.task_client = self.client
         self.sched = bot.PrWatchScheduler(self.handler, self.pool)
         self.sched._gh_pr_state = lambda _url: ("OPEN", None)
@@ -333,6 +360,134 @@ class AttentionProjectionTest(_DispatchBase):
             self.client.clears, [("42", "pr-"), ("42", "pr-")])
         self.assertEqual(self.client.upserts, [])
         self.assertEqual(self.notices, [])
+
+    def test_escalated_pending_clears_attention_without_review_or_failure_notice(self):
+        bot._prwatch_update(
+            TID, ci_fix_sha="failed-head", ci_fix_attempts=3,
+            ci_fix_escalated=True, ci_fix_escalated_head="failed-head")
+        self.sched._gh_pr_ci = lambda _url: ("pending-head", [], True)
+
+        active = self.sched._check_one(TID, self._entry())
+
+        self.assertTrue(active, "pending must keep the fast polling interval")
+        self.assertEqual(self.client.clears, [("42", "pr-")])
+        self.assertEqual(self.client.upserts, [])
+        self.assertEqual(self.notices, [])
+        self.assertTrue(self._entry()["ci_fix_escalated"],
+                        "pending is still part of the same unresolved CI epoch")
+
+    def test_escalated_empty_rollup_keeps_epoch_and_fast_polling(self):
+        bot._prwatch_update(
+            TID, ci_fix_sha="failed-head", ci_fix_attempts=3,
+            ci_fix_escalated=True, ci_fix_escalated_head="failed-head")
+        self.client.current["42"] = (
+            bot.master_staff(), "pr-review-merge:stale-attention")
+        original_run = bot.subprocess.run
+        self.addCleanup(setattr, bot.subprocess, "run", original_run)
+        bot.subprocess.run = lambda *a, **k: _fake_proc(0, json.dumps({
+            "headRefOid": "new-head", "statusCheckRollup": []}))
+
+        active = self.sched._check_one(TID, self._entry())
+
+        self.assertTrue(active, "an empty rollup must stay on the fast polling interval")
+        self.assertEqual(self.client.clears, [("42", "pr-")],
+                         "pending/unknown CI must clear stale PR attention")
+        self.assertNotIn("42", self.client.current)
+        self.assertEqual(self.client.upserts, [],
+                         "unknown CI must project neither review nor failure attention")
+        self.assertEqual(self.notices, [])
+        self.assertEqual(self.events, [])
+        entry = self._entry()
+        self.assertEqual(entry["ci_fix_sha"], "failed-head")
+        self.assertEqual(entry["ci_fix_attempts"], 3)
+        self.assertTrue(entry["ci_fix_escalated"])
+        self.assertEqual(entry["ci_fix_escalated_head"], "failed-head")
+
+    def test_failure_after_pending_notifies_once_for_new_attention_epoch(self):
+        bot._prwatch_update(
+            TID, ci_fix_sha="s3", ci_fix_attempts=3,
+            ci_fix_escalated=True, ci_fix_escalated_head="s4")
+
+        self.sched._gh_pr_ci = lambda _url: ("s4", ["Compile"], False)
+        self.sched._check_one(TID, self._entry())
+        self.sched._gh_pr_ci = lambda _url: ("s4", [], True)
+        self.sched._check_one(TID, self._entry())
+        self.sched._gh_pr_ci = lambda _url: ("s4", ["Compile"], False)
+        self.sched._check_one(TID, self._entry())
+        self.sched._check_one(TID, self._entry())
+
+        self.assertEqual(len(self.notices), 2,
+                         "clear makes the returning failure a new attention epoch")
+        self.assertEqual(len(self.client.clears), 1)
+        failed_keys = [call[2] for call in self.client.upserts]
+        self.assertEqual(len(set(failed_keys)), 1,
+                         "the durable CI failure epoch key remains stable")
+
+    def test_escalated_green_resets_epoch_and_projects_review_merge(self):
+        bot._prwatch_update(
+            TID, ci_fix_sha="failed-head", ci_fix_attempts=3,
+            ci_fix_escalated=True, ci_fix_escalated_head="failed-head")
+        self.sched._gh_pr_ci = lambda _url: ("green-head", [], False)
+
+        active = self.sched._check_one(TID, self._entry())
+
+        self.assertFalse(active)
+        self.assertEqual(self.client.clears, [])
+        self.assertEqual(len(self.client.upserts), 1)
+        _task_id, _owner, key, payload = self.client.upserts[0]
+        self.assertTrue(key.startswith("pr-review-merge:"))
+        self.assertEqual(payload["kind"], "PR_REVIEW_MERGE")
+        self.assertEqual(payload["head"], "green-head")
+        entry = self._entry()
+        self.assertEqual(entry["ci_fix_attempts"], 0)
+        self.assertIsNone(entry["ci_fix_sha"])
+        self.assertFalse(entry["ci_fix_escalated"])
+        self.assertIsNone(entry["ci_fix_escalated_head"])
+
+    def test_real_failure_at_limit_notifies_once_across_restart(self):
+        bot._prwatch_update(TID, ci_fix_sha="s3", ci_fix_attempts=3)
+        self.sched._gh_pr_ci = lambda _url: ("s4", ["Compile"], False)
+
+        self.sched._check_one(TID, self._entry())
+        persisted = self._entry()
+        self.assertTrue(persisted["ci_fix_escalated"])
+        self.assertEqual(persisted["ci_fix_escalated_head"], "s4")
+
+        # Recreate the scheduler to prove the JSON registry state is sufficient to
+        # restore dedup after a process restart. Control plane returns notify=False for
+        # the same semantic event key on the second projection.
+        restarted = bot.PrWatchScheduler(self.handler, self.pool)
+        restarted._gh_pr_state = lambda _url: ("OPEN", None)
+        restarted._gh_pr_ci = lambda _url: ("s4", ["Compile"], False)
+        restarted._gh_pr_comments = lambda _url: (None, None, None)
+        restarted._notify_attention = self.sched._notify_attention
+        restarted._check_one(TID, self._entry())
+
+        self.assertEqual(len(self.pool.submitted), 0)
+        self.assertEqual(len(self.client.upserts), 2)
+        self.assertEqual(self.client.upserts[0][2], self.client.upserts[1][2],
+                         "same failure epoch must reuse one attention event key")
+        self.assertEqual(
+            [call[3]["failingChecks"] for call in self.client.upserts],
+            [["Compile"], ["Compile"]])
+        self.assertEqual(len(self.notices), 1)
+        self.assertEqual(len(self.events), 1,
+                         "exhaustion Aone event must also remain idempotent")
+
+    def test_persisted_legacy_escalation_only_alerts_on_real_failure(self):
+        bot._prwatch_update(
+            TID, ci_fix_sha="old-head", ci_fix_attempts=3,
+            ci_fix_escalated=True)
+        self.sched._gh_pr_ci = lambda _url: ("current-failing-head", ["Test"], False)
+
+        self.sched._check_one(TID, self._entry())
+
+        self.assertEqual(len(self.client.upserts), 1)
+        _task_id, _owner, _key, payload = self.client.upserts[0]
+        self.assertEqual(payload["kind"], "PR_CI_FAILED")
+        self.assertEqual(payload["failingChecks"], ["Test"])
+        self.assertEqual(
+            self._entry()["ci_fix_escalated_head"], "current-failing-head")
 
     def test_merged_clear_failure_keeps_watch_for_next_tick(self):
         self.client.fail_clear = True
@@ -439,6 +594,7 @@ class MaybeDispatchCiFixTest(_DispatchBase):
             self.sched._maybe_dispatch_ci_fix(TID, self._entry())
         self.assertEqual(len(self.pool.submitted), 3, "自动修复上限 3 次")
         self.assertTrue(self._entry().get("ci_fix_escalated"))
+        self.assertEqual(self._entry().get("ci_fix_escalated_head"), "s4")
         self.assertEqual(comments, [], "Terraform 重要事件必须走统一 publisher，不走 legacy _comment")
         self.assertEqual(len(self.events), 1)
         self.assertIn("ci-exhausted:s4:3", self.events[0][2])
@@ -446,6 +602,26 @@ class MaybeDispatchCiFixTest(_DispatchBase):
         active = self.sched._maybe_dispatch_ci_fix(TID, self._entry())
         self.assertEqual(len(self.pool.submitted), 3)
         self.assertFalse(active, "escalated 后转人工 → 不再快档")
+
+    def test_green_resets_persisted_failure_epoch_and_retry_budget(self):
+        bot._prwatch_update(
+            TID, ci_fix_sha="old-head", ci_fix_attempts=3,
+            ci_fix_escalated=True, ci_fix_escalated_head="failed-head")
+        self._ci = ("green-head", [], False)
+
+        active = self.sched._maybe_dispatch_ci_fix(TID, self._entry())
+
+        self.assertFalse(active)
+        entry = self._entry()
+        self.assertEqual(entry["ci_fix_attempts"], 0)
+        self.assertIsNone(entry["ci_fix_sha"])
+        self.assertFalse(entry["ci_fix_escalated"])
+        self.assertIsNone(entry["ci_fix_escalated_head"])
+
+        self._ci = ("future-failure", ["Compile"], False)
+        self.sched._maybe_dispatch_ci_fix(TID, self._entry())
+        self.assertEqual(len(self.pool.submitted), 1)
+        self.assertEqual(self._entry()["ci_fix_attempts"], 1)
 
 
 class EscalateMessageTest(_DispatchBase):

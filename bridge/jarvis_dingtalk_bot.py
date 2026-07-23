@@ -543,7 +543,8 @@ def _prwatch_remove(ticket):
 def _prwatch_update(ticket, **fields):
     """Merge bookkeeping fields into an existing watch entry (no-op if absent). Used by
     PrWatchScheduler to record CI-fix dedup state (ci_fix_sha / ci_fix_attempts /
-    ci_fix_escalated / last_ci_fix_at) without disturbing pr_url/project/submitted_at."""
+    ci_fix_escalated / ci_fix_escalated_head / last_ci_fix_at) without disturbing
+    pr_url/project/submitted_at."""
     with _prwatch_lock:
         file_lock = _prwatch_acquire_file_lock()
         try:
@@ -5901,7 +5902,16 @@ class PrWatchScheduler:
         head, failing, pending = ci
         if head is not None:
             current_entry = _prwatch_list().get(str(tid), entry)
-            if current_entry.get("ci_fix_escalated"):
+            if failing and current_entry.get("ci_fix_escalated"):
+                # ci_fix_escalated is durable failure-epoch state, not evidence that the
+                # *current* head is failing.  Keep the event key stable for the whole
+                # contiguous failure epoch so restarts/new failing heads do not notify
+                # repeatedly while attention remains projected.  A pending transition
+                # intentionally clears attention; a later failure is then a new actionable
+                # attention epoch and may notify once again. Current failing checks always
+                # drive the projection payload.
+                escalation_head = str(
+                    current_entry.get("ci_fix_escalated_head") or head)
                 payload = self._attention_payload(
                     tid, current_entry,
                     reason="关联 PR 的 CI 自动修复已达到上限，需要人工处理。",
@@ -5910,7 +5920,8 @@ class PrWatchScheduler:
                     extra={"failingChecks": list(failing or [])[:20], "head": head})
                 self._set_attention(
                     tid, master_staff(),
-                    self._attention_event_key("pr-ci-failed", pr_url, head),
+                    self._attention_event_key(
+                        "pr-ci-failed", pr_url, escalation_head),
                     payload)
             elif failing or pending:
                 # CI 仍由自动流程推进或尚未出结果，不应继续显示为“等待人工 review”。
@@ -6071,8 +6082,8 @@ class PrWatchScheduler:
         <url> --json headRefOid,statusCheckRollup. failing = CheckRun.conclusion ∈
         _CI_FAIL_CONCLUSIONS OR StatusContext.state ∈ {FAILURE,ERROR}; green = conclusion ∈
         {SUCCESS,NEUTRAL,SKIPPED} OR state==SUCCESS；其余（queued/in-progress/pending）→ pending
-        （驱动 #3 双档轮询快档）。任何 query/parse failure → (None, None, False)，caller 保留观察、
-        绝不在 unknown 上派修复。"""
+        （驱动 #3 双档轮询快档）；rollup 为空或无可识别检查也视为 pending/unknown。
+        任何 query/parse failure → (None, None, False)，caller 保留观察、绝不在 unknown 上派修复。"""
         gh_id = str(Path(REPO_ROOT) / "bootstrap" / "github-identity.sh")
         try:
             proc = subprocess.run(
@@ -6093,17 +6104,26 @@ class PrWatchScheduler:
         head = str(d.get("headRefOid") or "")
         failing = []
         pending = False
+        recognized = 0
         for c in (d.get("statusCheckRollup") or []):
             if not isinstance(c, dict):
                 continue
             concl = str(c.get("conclusion") or "").upper()
             state = str(c.get("state") or "").upper()
+            status = str(c.get("status") or "").upper()
+            if not (concl or state or status):
+                continue
+            recognized += 1
             if concl in _CI_FAIL_CONCLUSIONS or state in ("FAILURE", "ERROR"):
                 failing.append(str(c.get("name") or c.get("context") or "?"))
             elif concl in ("SUCCESS", "NEUTRAL", "SKIPPED") or state == "SUCCESS":
                 continue
             else:
                 pending = True  # queued / in-progress / pending → 未出结果
+        if recognized == 0:
+            # GitHub may expose a new head before any check suite has populated the
+            # rollup.  That is an unknown/pending CI state, never proof of recovery.
+            pending = True
         return (head, failing, pending)
 
     def _maybe_dispatch_ci_fix(self, tid, entry, ci=None):
@@ -6111,20 +6131,39 @@ class PrWatchScheduler:
         （走 pr-review / resource-dev SOP + 预授权 fork_push）。防抖三层：
           · per-head 去重（ci_fix_sha == 当前 head → 本轮不重复派，等修复推新 commit 换 head）；
           · 累计不同失败 head 超上限（JARVIS_PRWATCH_CI_FIX_MAX，默认 3）→ escalate 一次后置
-            ci_fix_escalated 停自动修（仍看守合并）；
+            ci_fix_escalated 停自动修（仍看守合并）；该状态覆盖连续失败/pending epoch，CI 全绿
+            时清零并为未来失败开启新 epoch；
           · EphemeralExecutor 的 active-set（并发互斥）+ claim.sh（真锁）。
         返回 active bool（CI 失败或 pending = 快档轮询，驱动 #3 双档周期）。pool 为空 / 查询失败
-        → False；CI 全绿 → False；escalated → False（转人工，不再快轮询）。绝不在 unknown 上派。"""
-        if entry.get("ci_fix_escalated"):
-            return False
-        if self.pool is None:
-            return False
+        → False；CI 全绿 → False；escalated failure → False（转人工，不再快轮询）。绝不在
+        unknown 上派。"""
         head, failing, pending = (
             ci if ci is not None else self._gh_pr_ci(entry.get("pr_url")))
         if head is None:
             return False  # 查询失败 → 保留观察，正常档
         if not failing:
-            return bool(pending)  # 绿→慢档；pending→快档等结果，但不派修复
+            if not pending and any((
+                    entry.get("ci_fix_sha"), entry.get("ci_fix_attempts"),
+                    entry.get("ci_fix_escalated"),
+                    entry.get("ci_fix_escalated_head"))):
+                # A fully green head is the explicit end of a contiguous CI-failure
+                # epoch.  Persist the reset so a bridge restart cannot project a stale
+                # escalation or deny the next independent failure a fresh retry budget.
+                if not _prwatch_update(
+                        tid, ci_fix_sha=None, ci_fix_attempts=0,
+                        ci_fix_escalated=False, ci_fix_escalated_head=None):
+                    log.warning("PrWatchScheduler: #%s CI recovery state reset failed; retry",
+                                tid)
+            return bool(pending)  # 绿→慢档并结束 epoch；pending→快档但保留 epoch
+        if entry.get("ci_fix_escalated"):
+            if not entry.get("ci_fix_escalated_head"):
+                # Forward-compatible recovery for old registry rows that persisted only
+                # the boolean.  Bind them to the first actually failing head we observe;
+                # pending/green heads must never synthesize a CI-failed alert.
+                _prwatch_update(tid, ci_fix_escalated_head=head)
+            return False
+        if self.pool is None:
+            return False
         if entry.get("ci_fix_sha") == head:
             return True  # 本 head 已派过修复 → 不刷屏，但仍失败中 → 快档轮询等修复推新 head
         attempts = int(entry.get("ci_fix_attempts") or 0)
@@ -6154,7 +6193,8 @@ class PrWatchScheduler:
                                 "keep automatic state unchanged", tid, rc)
                     return True
             self._escalate(tid, "PR CI 反复失败超过自动修复上限(%d)，请人工介入" % max_attempts, entry.get("pr_url"))
-            _prwatch_update(tid, ci_fix_escalated=True)
+            _prwatch_update(
+                tid, ci_fix_escalated=True, ci_fix_escalated_head=head)
             return False  # 转人工 → 不再快档
         prompt = _pr_ci_fix_prompt(tid, entry.get("pr_url"), project, failing)
         notify = _routine_notifier(self.handler)
