@@ -24,12 +24,18 @@ from .daily_probe import (
 )
 from .legacy import (
     AONE_CLAIM_HEALTH_RUNNER_KEY,
-    AONE_REPLY_RUNNER_KEY,
     AONE_SCAN_RUNNER_KEY,
     DAILY_NUDGE_RUNNER_KEY,
-    EXTERNAL_RECOVERY_RUNNER_KEY,
     PR_WATCH_RUNNER_KEY,
     build_legacy_runners,
+)
+from .reply import (
+    RUNNER_KEY as AONE_REPLY_RUNNER_KEY,
+    ReplyRunner,
+)
+from .recovery import (
+    RUNNER_KEY as EXTERNAL_RECOVERY_RUNNER_KEY,
+    ExternalRecoveryRunner,
 )
 HANDLER_KEYS = frozenset({
     AONE_SCAN_RUNNER_KEY,
@@ -46,6 +52,9 @@ RUNNER_KEYS = HANDLER_KEYS | HEADLESS_BUILDER_PROTOCOLS
 def build_runners(
     *,
     logger: Any,
+    task_client: Any,
+    worker_key: str,
+    repo_root: Path,
     headless_runtime: HeadlessRuntime | None = None,
     summary_root: Path | None = None,
 ) -> dict[object, object]:
@@ -64,8 +73,22 @@ def build_runners(
             summary_root=root,
             logger=logger,
         ),
+        EXTERNAL_RECOVERY_RUNNER_KEY: ExternalRecoveryRunner(
+            task_client=task_client,
+            worker_key=worker_key,
+            repo_root=repo_root,
+            logger=logger,
+        ),
     }
-    runners.update(build_legacy_runners(logger=logger))
+    runners.update(build_legacy_runners(
+        logger=logger,
+        task_client=task_client,
+        repo_root=repo_root,
+    ))
+    runners[AONE_REPLY_RUNNER_KEY] = ReplyRunner(
+        task_client=task_client,
+        logger=logger,
+    )
     return runners
 
 
@@ -76,7 +99,9 @@ __all__ = [
     "AONE_SCAN_RUNNER_KEY",
     "DAILY_NUDGE_RUNNER_KEY",
     "DailyProbeRunner",
+    "ReplyRunner",
     "EXTERNAL_RECOVERY_RUNNER_KEY",
+    "ExternalRecoveryRunner",
     "PR_WATCH_RUNNER_KEY",
     "HANDLER_KEYS",
     "HEADLESS_BUILDER_PROTOCOLS",

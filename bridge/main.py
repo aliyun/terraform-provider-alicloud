@@ -21,13 +21,13 @@ try:  # Executed by bridge/run.sh from the bridge directory.
     from scheduler.registry import JOBS, REGISTRY
     from scheduler.role import require_scheduler_role
     from scheduler.runners import build_runners
-    from scheduler.service import SchedulerService
+    from scheduler.service import SCHEDULER_WORKER_KEY, SchedulerService
 except ModuleNotFoundError:  # Package import for tests and tools.
     from bridge.jarvis_task_client import ControlPlaneClient
     from bridge.scheduler.registry import JOBS, REGISTRY
     from bridge.scheduler.role import require_scheduler_role
     from bridge.scheduler.runners import build_runners
-    from bridge.scheduler.service import SchedulerService
+    from bridge.scheduler.service import SCHEDULER_WORKER_KEY, SchedulerService
 
 
 LOG = logging.getLogger("jarvis-scheduler")
@@ -54,9 +54,15 @@ def _task_client_from_env() -> ControlPlaneClient:
 
 def build_scheduler() -> SchedulerService:
     require_scheduler_role()
+    task_client = _task_client_from_env()
     return SchedulerService(
-        task_client=_task_client_from_env(),
-        runners=build_runners(logger=LOG),
+        task_client=task_client,
+        runners=build_runners(
+            logger=LOG,
+            task_client=task_client,
+            worker_key=SCHEDULER_WORKER_KEY,
+            repo_root=os.path.dirname(os.path.dirname(__file__)),
+        ),
         registry=REGISTRY,
         logger=LOG,
     )

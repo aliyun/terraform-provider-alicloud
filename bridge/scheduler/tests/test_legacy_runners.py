@@ -12,7 +12,7 @@ from bridge.scheduler import (
     ScheduledJobDefinition,
 )
 from bridge.scheduler.runners.legacy import (
-    AoneClaimHealthRunner, AoneScanRunner, LegacyBridgeContext, PrWatchRunner,
+    AoneClaimHealthRunner, AoneScanRunner, PrWatchRunner, SchedulerRuntimeContext,
 )
 
 
@@ -26,12 +26,46 @@ def interval_definition(job_id: str) -> ScheduledJobDefinition:
     )
 
 
-class LegacyRunnerTests(unittest.TestCase):
+class SchedulerRuntimeRunnerTests(unittest.TestCase):
+    def test_runtime_context_constructs_no_handler_or_local_executor(self):
+        scanner = object()
+        observed = {}
+
+        class Router:
+            def __init__(self, *, client, logger):
+                observed["router"] = (client, logger)
+
+        class FieldRepair:
+            def __init__(self, **kwargs):
+                observed["field_repair"] = kwargs
+
+        module = SimpleNamespace(
+            ExecutionRouter=Router,
+            FieldRepairWorker=FieldRepair,
+            DEFAULT_EXECUTION_RUNTIME=object(),
+            claude_bin=lambda: "claude",
+            AoneScheduler=lambda context, pool: observed.update(
+                context=context, pool=pool) or scanner,
+        )
+        client = object()
+        context = SchedulerRuntimeContext(
+            task_client=client,
+            repo_root=Path("/repo"),
+            logger=logging.getLogger(__name__),
+            legacy_module=module,
+        )
+
+        self.assertIs(context.scanner, scanner)
+        self.assertIs(context.task_client, client)
+        self.assertIsNone(context.ephemeral_executor)
+        self.assertTrue(context.no_dingtalk)
+        self.assertIsNone(observed["pool"])
+        self.assertIs(observed["context"], context)
+
     def test_aone_scan_runs_one_tick_without_starting_a_legacy_loop(self):
         scanner = SimpleNamespace(_tick_calls=0)
         scanner._tick = lambda: setattr(scanner, "_tick_calls", scanner._tick_calls + 1)
-        handler = SimpleNamespace(scanner=scanner)
-        context = LegacyBridgeContext(handler_factory=lambda: handler)
+        context = SimpleNamespace(scanner=scanner)
         runner = AoneScanRunner(job_id="aone.scan", context=context,
                                 logger=logging.getLogger(__name__))
 
@@ -41,20 +75,18 @@ class LegacyRunnerTests(unittest.TestCase):
         self.assertEqual(result.status.value, "SUCCEEDED")
 
     def test_claim_health_keeps_flush_after_reconciliation(self):
+        order = []
+        scanner = SimpleNamespace(_claim_health_activity_cache={})
+        scanner._scan_claimed = lambda: order.append("scan") or {"one": {}}
+        scanner._reconcile_stale_claims = lambda snapshot: order.append(
+            "reconcile:%s" % sorted(snapshot))
         with TemporaryDirectory() as directory:
-            order = []
-            scanner = SimpleNamespace(_claim_health_activity_cache={})
-            scanner._scan_claimed = lambda: order.append("scan") or {"one": {}}
-            scanner._reconcile_stale_claims = lambda snapshot: order.append(
-                "reconcile:%s" % sorted(snapshot))
-            handler = SimpleNamespace(scanner=scanner)
             module = SimpleNamespace(
                 REPO_ROOT=Path(directory),
                 _aone_event_flush=lambda: order.append("aone-flush"),
                 _dingtalk_event_flush=lambda: order.append("dingtalk-flush"),
             )
-            context = LegacyBridgeContext(handler_factory=lambda: handler,
-                                          legacy_module=module)
+            context = SimpleNamespace(scanner=scanner, module=module)
             runner = AoneClaimHealthRunner(
                 job_id="aone.claim-health", context=context,
                 logger=logging.getLogger(__name__))
@@ -67,13 +99,11 @@ class LegacyRunnerTests(unittest.TestCase):
     def test_pr_watch_returns_legacy_active_backoff_as_next_due(self):
         watcher = SimpleNamespace(enabled=True, _active_interval=10, interval=300)
         watcher._tick = lambda: True
-        handler = SimpleNamespace(prwatch=watcher)
         module = SimpleNamespace(
             _aone_event_flush=lambda: None,
             _dingtalk_event_flush=lambda: None,
         )
-        context = LegacyBridgeContext(handler_factory=lambda: handler,
-                                      legacy_module=module)
+        context = SimpleNamespace(prwatch=watcher, module=module)
         runner = PrWatchRunner(job_id="pr.watch", context=context,
                                logger=logging.getLogger(__name__))
         definition = ScheduledJobDefinition(

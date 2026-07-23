@@ -125,8 +125,13 @@ from urllib.error import URLError
 from jarvis_task_client import ControlPlaneClient, TaskEnvelope
 from jarvis_capacity import CapacityManager
 from jarvis_task_router import ExecutionRouter
+try:
+    from bridge.execution.wake import WakePersistence
+    from bridge.execution.persistent_task import PersistentTaskExecution, stop_task_process
+except ModuleNotFoundError:  # bridge/run.sh executes this module from bridge/.
+    from execution.wake import WakePersistence
+    from execution.persistent_task import PersistentTaskExecution, stop_task_process
 from jarvis_persistence_executor import PersistenceExecutor
-from jarvis_external_recovery import ExternalOperationRecoveryScheduler
 from tata_dws_history import (
     DWS_USER_NOT_IN_GROUP,
     DwsGroupHistory,
@@ -8123,11 +8128,25 @@ class JarvisHandler(AsyncChatbotHandler):
             capacity_manager=self.capacity_manager,
             execution_runtime=self.execution_runtime)
         kinds = sorted(self.execution_router.task_types)
+        self.persistent_task_execution = PersistentTaskExecution(
+            enabled_kinds=lambda: self.execution_router.task_types,
+            dispatch_item=self.dispatch_item,
+            task_bookend=lambda *args, **kwargs: _TaskAoneBookend(*args, **kwargs),
+            terraform_rd_ready=_terraform_rd_ready,
+            routine_notice=self._routine_notice,
+            quick_card=self._quick_card,
+            field_repair_worker=self.field_repair_worker,
+            field_repair_kind=FIELD_REPAIR_KIND,
+            task_bookend_kinds=TASK_BOOKEND_KINDS,
+            post_pr_headless_kinds=POST_PR_HEADLESS_KINDS,
+            broadcast_target=broadcast_target,
+            broadcast_type=broadcast_type,
+        )
         self.persistence_executor = PersistenceExecutor(
             self.task_client,
             self.capacity_manager,
-            self._execute_task_lease,
-            self._stop_task_process,
+            self.persistent_task_execution.execute,
+            lambda controller, reason: stop_task_process(controller, reason, logger=log),
             worker_id_file=os.environ.get(
                 "JARVIS_WORKER_ID_FILE",
                 os.path.join(jarvis_root(), ".my-day", "bridge", "worker-id")),
@@ -8150,16 +8169,11 @@ class JarvisHandler(AsyncChatbotHandler):
                 controller.runtime_session_id),
             logger=log,
         )
-        self.external_operation_recovery = ExternalOperationRecoveryScheduler(
-            self.task_client,
-            getattr(self.persistence_executor, "worker_key", "external-recovery-scheduler"),
-            repo_root=REPO_ROOT, logger=log)
-        # Scheduler-owned ticks are constructed here for the adapters in
+        # Remaining Scheduler-owned ticks are constructed here for the adapters in
         # ``bridge/scheduler/runners/legacy.py``.  Their loops are never started
         # by this process: SchedulerEngine owns the only cadence/admission path.
         self.scanner = AoneScheduler(self, self.ephemeral_executor)
         self.daily = DailyScheduler(self, self.ephemeral_executor)
-        self.aone_reply_scheduler = AoneReplyScheduler(self)
         # PR 观察登记表轮询（方案A）：PR 合并后自动 finish 收尾，与 DailyScheduler 的 nudge 互为兜底。
         # 注：原 PersonaScheduler（评论区 tracker/@ 补位）已并入 AoneScheduler 统一探测（assignee∪
         # tracker∪idle 并集），不再单列调度器。
@@ -8194,178 +8208,28 @@ class JarvisHandler(AsyncChatbotHandler):
 
     @staticmethod
     def _stop_task_process(controller, reason):
-        """Fence-loss/stop hook: synchronously stop the owned process group.
-
-        Losing the server-side fence is a hard ownership boundary.  A best-effort
-        SIGTERM is insufficient here: Claude (or one of its descendants) may delay
-        shutdown and keep performing external work after the lease was revoked.
-        Give the group a short graceful window, then force SIGKILL and reap the
-        leader before returning to the Session controller loop.
-        """
-        proc = getattr(controller, "process", None)
-        if proc is None:
-            return True
-        try:
-            if proc.poll() is not None:
-                return True
-        except Exception:  # noqa: BLE001
-            pass
-
-        try:
-            grace = float(os.environ.get("JARVIS_TASK_STOP_GRACE_SEC", "5"))
-        except (TypeError, ValueError):
-            grace = 5.0
-        grace = max(0.0, min(grace, 60.0))
-
-        try:
-            os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
-            log.warning("Task session %s process stopping (%s)",
-                        getattr(controller, "session_id", "?"), reason)
-        except (ProcessLookupError, OSError, AttributeError):
-            try:
-                proc.terminate()
-            except Exception:  # noqa: BLE001
-                pass
-        try:
-            proc.wait(timeout=grace)
-            return True
-        except subprocess.TimeoutExpired:
-            pass
-        except Exception:  # noqa: BLE001
-            # A non-Popen adapter may not implement timed wait correctly.  The
-            # fencing invariant still requires the force-kill attempt below.
-            pass
-
-        try:
-            os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
-        except (ProcessLookupError, OSError, AttributeError):
-            try:
-                proc.kill()
-            except Exception:  # noqa: BLE001
-                pass
-        try:
-            proc.wait(timeout=5)
-        except Exception:  # noqa: BLE001
-            log.exception("Task session %s process could not be reaped (%s)",
-                          getattr(controller, "session_id", "?"), reason)
-            return False
-        log.warning("Task session %s process force-killed after %.1fs (%s)",
-                    getattr(controller, "session_id", "?"), grace, reason)
-        return True
+        """Compatibility hook for direct callers."""
+        return stop_task_process(controller, reason, logger=log)
 
     def _execute_task_lease(self, lease, controller):
-        """Translate one frozen Task lease into the shared execution runtime."""
-        task = lease.get("task") if isinstance(lease, dict) else None
-        if not isinstance(task, dict):
-            raise ValueError("Task lease.task must be an object")
-        session = lease.get("session") if isinstance(lease, dict) else None
-        if not isinstance(session, dict):
-            raise ValueError("Task lease.session must be an object")
-        # jarvis_task is the newest desired/current state and may advance while an
-        # already-fenced attempt is still running.  Execute the immutable snapshot
-        # stored on jarvis_session so a response retry or process restart cannot run
-        # revision r2 while reporting completion for r1. A lease without the
-        # immutable Session snapshot is invalid and must fail closed.
-        if "inputPayload" not in session:
-            raise ValueError("Task session input snapshot is missing")
-        payload = session.get("inputPayload")
-        if payload is None:
-            # A present null is the immutable input for this generation, not a
-            # signal to read the Task's newer desired payload. Fail closed so
-            # generation gN can never execute gN+1 input after a restart.
-            raise ValueError("Task session input snapshot is null")
-        if isinstance(payload, str):
-            try:
-                payload = json.loads(payload)
-            except (TypeError, ValueError) as exc:
-                raise ValueError("Task payload must be JSON object") from exc
-        if not isinstance(payload, dict):
-            raise ValueError("Task payload must be an object")
-        kind = str(payload.get("kind") or task.get("taskType") or "").strip().lower()
-        enabled = self.execution_router.task_types
-        if "*" not in enabled and kind not in enabled:
-            raise ValueError("TASK kind is not enabled: %s" % (kind or "<empty>"))
-        item_id = str(payload.get("itemId") or task.get("aoneId") or
-                      task.get("taskKey") or "").strip()
-        prompt = str(payload.get("prompt") or "")
-        if not item_id or not prompt:
-            raise ValueError("Task requires itemId and prompt")
-        target = str(payload.get("target") or broadcast_target())
-        target_type = str(payload.get("targetType") or broadcast_type())
-        project = str(payload.get("project") or "")
-        terraform = bool(payload.get("terraform"))
-        expected_comment_cursor = payload.get("expectedCommentCursor")
-        if kind == FIELD_REPAIR_KIND:
-            # This branch intentionally precedes _TaskAoneBookend.  The repair
-            # Session owns only field inspection/selection/apply and continuation
-            # upsert; it never claims, comments, tags, changes owner/status, or
-            # launches the normal business Agent.
-            worker = getattr(self, "field_repair_worker", None)
-            if worker is None:
-                raise RuntimeError("field repair worker is unavailable")
-            return worker.execute(payload, controller)
-        field_worker = getattr(self, "field_repair_worker", None)
-        if kind in TASK_BOOKEND_KINDS and field_worker is not None:
-            # Historical/restored business Tasks already own a lease/fence. Repair
-            # missing fields synchronously inside that ownership boundary, before
-            # _TaskAoneBookend and Agent launch. Starting another READY repair Task
-            # here would race the current RUNNING business Task across workers.
-            repair_result = field_worker.repair_only(
-                item_id, project, terraform=terraform,
-                controller=controller)
-            if repair_result.get("status") != "completed":
-                return repair_result
-        # Executor owns the Aone bookend (B-proper: the run writes nothing to Aone; the
-        # executor commits from this thread). A terraform reply/claim must be written as
-        # terraform-rd; if that identity is not logged in, fail the Task CLOSED (retryable)
-        # rather than record SUCCEEDED with no Aone write. Never fall back to jarvis.
-        task_bookend = None
-        if kind in POST_PR_HEADLESS_KINDS:
-            # Post-PR (pr_ci_fix / pr_comment_reply) reroute through _TaskAoneBookend with
-            # writes_reply=False: idempotent claim on bind, release-to-idle on clean
-            # completion, no Aone reply (post-PR replies go to GitHub / the RD event
-            # publisher). Envelopes are REPLAY_SAFE, so a re-lease re-claims/re-runs
-            # idempotently — no fenced-operation recovery needed.
-            if not _terraform_rd_ready():
-                raise RuntimeError(
-                    "terraform-rd identity not ready; refusing to run post-PR Task #%s "
-                    "closed-fail (no silent SUCCEEDED)" % item_id)
-            task_bookend = _TaskAoneBookend(
-                controller, item_id, project, True, kind, writes_reply=False)
-        elif kind in TASK_BOOKEND_KINDS:
-            if terraform and not _terraform_rd_ready():
-                raise RuntimeError(
-                    "terraform-rd identity not ready; refusing to run Task #%s "
-                    "closed-fail (no silent SUCCEEDED)" % item_id)
-            task_bookend = _TaskAoneBookend(
-                controller, item_id, project, terraform, kind,
-                expected_comment_cursor=expected_comment_cursor)
-        if task_bookend is not None:
-            # Point-read before model execution so comments arriving during the run can
-            # be durably handed to the next desired generation at terminal bookend.
-            task_bookend.capture_comment_baseline()
-        on_spawn = (task_bookend.bind_process if task_bookend is not None
-                    else controller.bind_process)
-        # Durable scanner/PR/probe work records lifecycle in Task/Aone only.  The sole
-        # exception is an explicit interactive adhoc handoff, whose result belongs in the
-        # originating conversation and is request-response rather than a proactive alert.
-        notify = ((lambda text: self._quick_card(target, text, target_type))
-                  if kind == "adhoc" else _routine_notifier(self))
-        return self.dispatch_item(
-            item_id,
-            prompt,
-            controller.runtime_session_id,
-            controller.resumed,
-            notify,
-            target,
-            target_type,
-            on_spawn=on_spawn,
-            project=project,
-            kind=kind,
-            terraform=terraform,
-            session_controller=controller,
-            task_bookend=task_bookend,
-        )
+        """Compatibility adapter for tests and legacy direct callers."""
+        execution = getattr(self, "persistent_task_execution", None)
+        if execution is None:
+            execution = PersistentTaskExecution(
+                enabled_kinds=lambda: self.execution_router.task_types,
+                dispatch_item=self.dispatch_item,
+                task_bookend=lambda *args, **kwargs: _TaskAoneBookend(*args, **kwargs),
+                terraform_rd_ready=_terraform_rd_ready,
+                routine_notice=self._routine_notice,
+                quick_card=self._quick_card,
+                field_repair_worker=getattr(self, "field_repair_worker", None),
+                field_repair_kind=FIELD_REPAIR_KIND,
+                task_bookend_kinds=TASK_BOOKEND_KINDS,
+                post_pr_headless_kinds=POST_PR_HEADLESS_KINDS,
+                broadcast_target=broadcast_target,
+                broadcast_type=broadcast_type,
+            )
+        return execution.execute(lease, controller)
 
 
     def _tata_session(self, scope_key):
@@ -9102,84 +8966,19 @@ class JarvisHandler(AsyncChatbotHandler):
                     pass
 
     def _wake(self, aone_id, task, new_comments):
-        """Durably observe and enqueue a suspended task reply.
-
-        Returns whether ownership was accepted.  AoneReplyScheduler only removes its
-        persisted wait record after True, so a control-plane/local-capacity failure
-        is retried instead of losing the wake-up.
-        """
-        reply_text = "\n".join(
-            "@%s: %s" % (c.get("creator", "?"), c.get("content", "")) for c in new_comments)
-        tf = bool(task.get("terraform"))  # 复原挂起前的车道，唤醒续跑必落同一网关
-        prompt = (
-            "工单 #%s 收到新回复:\n%s\n\n请继续处理。\n\n%s"
-            % (aone_id, reply_text, _task_result_instructions(aone_id, tf)))
-        wl = self._workitem_line(aone_id)
-        line = wl[0] if isinstance(wl, tuple) else wl
-        project = str(task.get("project") or self._workitem_project(aone_id) or "")
-        comment_ids = []
-        for comment in new_comments:
-            try:
-                comment_ids.append(int(comment.get("id")))
-            except (TypeError, ValueError):
-                pass
-        if comment_ids:
-            cursor = max(comment_ids)
-            revision = "comment:%s" % cursor
-        else:
-            cursor = None
-            revision = "comments:%s" % hashlib.sha256(
-                reply_text.encode("utf-8")).hexdigest()[:20]
-        wake_title = str(task.get("title") or "").strip()
-        if not wake_title:
-            wake_title = self._workitem_title(aone_id)
-        envelope = _task_envelope(
-            item_id=str(aone_id),
-            project=project,
-            task_type="wake",
-            source_type="AONE",
-            source_ref=_source_ref_with_title(
-                {"aoneId": str(aone_id), "projectId": project}, wake_title),
-            desired_revision=revision,
-            trigger="WAKE",
-            prompt=prompt,
-            source_status=task.get("sourceStatus"),
-            recovery_policy="RESUME_ONLY",
-            comment_cursor=cursor,
-            priorRuntimeSessionId=task.get("session_id"),
-            terraform=tf,
-            target=task["target"],
-            targetType=task["target_type"],
-        )
-
-        def local_submit():
-            if self.no_dingtalk:
-                # 降级模式无 live 卡片可流 → 走 headless dispatch_item 续跑。
-                notify = self._broadcast
-                work = (lambda: self.dispatch_item(
-                    aone_id, prompt, task["session_id"], True,
-                    notify, task["target"], task["target_type"],
-                    project=project, kind="wake", terraform=tf))
-                return self.ephemeral_executor.submit(
-                    aone_id, work, notify=notify, force=True, kind="wake",
-                    project=project, terraform=tf)
-            # force=True: a resumed ticket may still sit inside the 24h dedup window.
-            work = lambda: self._dispatch_bg(
-                task["target"], task["target_type"], prompt, aone_id,
-                task["session_id"], True, terraform=tf, project=project)
-            return self.ephemeral_executor.submit(
-                aone_id, work, force=True, kind="wake", project=project,
-                notify=lambda text: self._quick_card(
-                    task["target"], text, task["target_type"]),
-                terraform=tf)
-
-        result = self.execution_router.enqueue(
-            envelope, local_submit=local_submit)
-        if not result.accepted:
-            log.warning("wake #%s was not accepted (%s)", aone_id, result.reason)
-            return False
-        self._routine_notice("工单收到回复，Task 已进入唤醒队列: %s" % line)
-        return True
+        """Compatibility entry point for interactive callers of wake persistence."""
+        accepted = WakePersistence(
+            execution_router=self.execution_router,
+            result_instructions=_task_result_instructions,
+            policy_revision=HEADLESS_POLICY_REVISION,
+            title_for=self._workitem_title,
+            project_for=self._workitem_project,
+            line_for=self._workitem_line,
+            routine_notice=self._routine_notice,
+        ).enqueue(aone_id, task, new_comments)
+        if not accepted:
+            log.warning("wake #%s was not accepted", aone_id)
+        return accepted
 
     @staticmethod
     def _last_comment_id(aone_id):

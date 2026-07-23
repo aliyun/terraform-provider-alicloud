@@ -12,7 +12,7 @@ from datetime import datetime, timedelta, timezone
 import importlib
 from pathlib import Path
 from threading import RLock
-from typing import Any, Callable
+from typing import Any
 
 from ..model import (
     JobResult,
@@ -25,9 +25,7 @@ from ..model import (
 AONE_SCAN_RUNNER_KEY = "aone.scan"
 AONE_CLAIM_HEALTH_RUNNER_KEY = "aone.claim-health"
 DAILY_NUDGE_RUNNER_KEY = "daily.nudge"
-AONE_REPLY_RUNNER_KEY = "aone.reply"
 PR_WATCH_RUNNER_KEY = "pr.watch"
-EXTERNAL_RECOVERY_RUNNER_KEY = "external.recovery"
 
 
 def _load_legacy_module() -> Any:
@@ -39,14 +37,25 @@ def _load_legacy_module() -> Any:
         return importlib.import_module("jarvis_dingtalk_bot")
 
 
-class LegacyBridgeContext:
-    """Lazily construct one no-DingTalk handler shared by all adapters."""
+class SchedulerRuntimeContext:
+    """Minimal dependency container for the remaining unextracted job classes.
 
-    def __init__(self, *, handler_factory: Callable[[], Any] | None = None,
-                 legacy_module: Any | None = None) -> None:
-        self._handler_factory = handler_factory
-        self._handler: Any | None = None
+    This is deliberately *not* a ``JarvisHandler`` substitute.  It has no
+    DingTalk client, local executor, persistence executor, worker watchdog, or
+    background thread.  The legacy job classes only receive the explicit
+    control-plane collaborators they still need while their domain logic is
+    being moved into dedicated runner modules.
+    """
+
+    def __init__(self, *, task_client: Any, repo_root: Path,
+                 logger: Any, legacy_module: Any | None = None) -> None:
+        self._task_client = task_client
+        self._repo_root = repo_root
+        self._log = logger
         self._module: Any | None = legacy_module
+        self._scanner: Any | None = None
+        self._daily: Any | None = None
+        self._prwatch: Any | None = None
         self._lock = RLock()
 
     @property
@@ -56,13 +65,48 @@ class LegacyBridgeContext:
                 self._module = _load_legacy_module()
             return self._module
 
-    @property
-    def handler(self) -> Any:
+    def _build_runtime_dependencies(self) -> None:
+        """Build only synchronous control-plane collaborators on first use."""
         with self._lock:
-            if self._handler is None:
-                factory = self._handler_factory
-                self._handler = factory() if factory else self.module.JarvisHandler(no_dingtalk=True)
-            return self._handler
+            if hasattr(self, "task_client"):
+                return
+            module = self.module
+            self.task_client = self._task_client
+            self.execution_router = module.ExecutionRouter(
+                client=self.task_client, logger=self._log)
+            self.field_repair_worker = module.FieldRepairWorker(
+                repo_root=self._repo_root,
+                client=self.task_client,
+                runtime=module.DEFAULT_EXECUTION_RUNTIME,
+                claude_bin=module.claude_bin(),
+            )
+            # Explicitly make the prohibited local execution path unavailable.
+            self.ephemeral_executor = None
+            self.no_dingtalk = True
+
+    @property
+    def scanner(self) -> Any:
+        with self._lock:
+            if self._scanner is None:
+                self._build_runtime_dependencies()
+                self._scanner = self.module.AoneScheduler(self, pool=None)
+            return self._scanner
+
+    @property
+    def daily(self) -> Any:
+        with self._lock:
+            if self._daily is None:
+                self._build_runtime_dependencies()
+                self._daily = self.module.DailyScheduler(self, pool=None)
+            return self._daily
+
+    @property
+    def prwatch(self) -> Any:
+        with self._lock:
+            if self._prwatch is None:
+                self._build_runtime_dependencies()
+                self._prwatch = self.module.PrWatchScheduler(self, pool=None)
+            return self._prwatch
 
 
 class _LegacyRunner:
@@ -93,7 +137,7 @@ class AoneScanRunner(_LegacyRunner):
         invalid = self._matches(definition, scheduled_for)
         if invalid:
             return invalid
-        self._context.handler.scanner._tick()
+        self._context.scanner._tick()
         return self._success()
 
 
@@ -108,7 +152,7 @@ class AoneClaimHealthRunner(_LegacyRunner):
         if (Path(module.REPO_ROOT) / ".my-day" / "bridge" / "pause").exists():
             self._log.info("aone.claim-health: pause flag present; skip this slot")
             return self._success()
-        scanner = self._context.handler.scanner
+        scanner = self._context.scanner
         scanner._claim_health_activity_cache = {}
         snapshot = scanner._scan_claimed()
         if snapshot is not None:
@@ -125,20 +169,11 @@ class DailyNudgeRunner(_LegacyRunner):
             return invalid
         # The legacy feature flag remains a kill switch.  YAML owns the cadence;
         # this flag only determines whether the business action is performed.
-        job = self._context.module._NudgeJob(self._context.handler)
+        job = self._context.module._NudgeJob(self._context)
         if not job.enabled:
             self._log.info("daily.nudge disabled by JARVIS_REVISIT_SCHED")
             return self._success()
         job.run()
-        return self._success()
-
-
-class AoneReplyRunner(_LegacyRunner):
-    def run(self, definition: ScheduledJobDefinition, scheduled_for: datetime) -> JobResult:
-        invalid = self._matches(definition, scheduled_for)
-        if invalid:
-            return invalid
-        self._context.handler.aone_reply_scheduler._tick()
         return self._success()
 
 
@@ -149,7 +184,7 @@ class PrWatchRunner(_LegacyRunner):
         invalid = self._matches(definition, scheduled_for)
         if invalid:
             return invalid
-        watcher = self._context.handler.prwatch
+        watcher = self._context.prwatch
         if not watcher.enabled:
             self._log.info("pr.watch disabled by JARVIS_PRWATCH_ENABLE")
             return self._success()
@@ -161,23 +196,12 @@ class PrWatchRunner(_LegacyRunner):
         return self._success(next_due_at=datetime.now(timezone.utc) + timedelta(seconds=delay))
 
 
-class ExternalRecoveryRunner(_LegacyRunner):
-    def run(self, definition: ScheduledJobDefinition, scheduled_for: datetime) -> JobResult:
-        invalid = self._matches(definition, scheduled_for)
-        if invalid:
-            return invalid
-        recovery = self._context.handler.external_operation_recovery
-        if not recovery.enabled:
-            self._log.info("external.recovery disabled by JARVIS_EXTERNAL_RECOVERY_ENABLE")
-            return self._success()
-        recovery._tick()
-        return self._success()
+def build_legacy_runners(*, logger: Any, task_client: Any,
+                         repo_root: Path) -> dict[str, object]:
+    """Build remaining adapters around the Scheduler-only runtime context."""
 
-
-def build_legacy_runners(*, logger: Any) -> dict[str, object]:
-    """Build all migrated business-loop adapters around one lazy handler."""
-
-    context = LegacyBridgeContext()
+    context = SchedulerRuntimeContext(
+        task_client=task_client, repo_root=repo_root, logger=logger)
     return {
         AONE_SCAN_RUNNER_KEY: AoneScanRunner(
             job_id="aone.scan", context=context, logger=logger),
@@ -185,18 +209,14 @@ def build_legacy_runners(*, logger: Any) -> dict[str, object]:
             job_id="aone.claim-health", context=context, logger=logger),
         DAILY_NUDGE_RUNNER_KEY: DailyNudgeRunner(
             job_id="daily.nudge", context=context, logger=logger),
-        AONE_REPLY_RUNNER_KEY: AoneReplyRunner(
-            job_id="aone.reply", context=context, logger=logger),
         PR_WATCH_RUNNER_KEY: PrWatchRunner(
             job_id="pr.watch", context=context, logger=logger),
-        EXTERNAL_RECOVERY_RUNNER_KEY: ExternalRecoveryRunner(
-            job_id="external.recovery", context=context, logger=logger),
     }
 
 
 __all__ = [
-    "AONE_CLAIM_HEALTH_RUNNER_KEY", "AONE_REPLY_RUNNER_KEY", "AONE_SCAN_RUNNER_KEY",
-    "DAILY_NUDGE_RUNNER_KEY", "EXTERNAL_RECOVERY_RUNNER_KEY", "PR_WATCH_RUNNER_KEY",
-    "AoneClaimHealthRunner", "AoneReplyRunner", "AoneScanRunner", "DailyNudgeRunner",
-    "ExternalRecoveryRunner", "LegacyBridgeContext", "PrWatchRunner", "build_legacy_runners",
+    "AONE_CLAIM_HEALTH_RUNNER_KEY", "AONE_SCAN_RUNNER_KEY",
+    "DAILY_NUDGE_RUNNER_KEY", "PR_WATCH_RUNNER_KEY",
+    "AoneClaimHealthRunner", "AoneScanRunner", "DailyNudgeRunner",
+    "PrWatchRunner", "SchedulerRuntimeContext", "build_legacy_runners",
 ]

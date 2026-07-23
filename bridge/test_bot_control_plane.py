@@ -299,21 +299,9 @@ class HandlerWiringTest(unittest.TestCase):
         calls = []
         handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
         handler.persistence_executor = _Starter("worker", calls)
-        for name in ("scanner", "daily", "aone_reply_scheduler", "prwatch",
-                     "external_operation_recovery"):
+        for name in ("scanner", "daily", "prwatch"):
             setattr(handler, name, _Starter(name, calls))
         handler.start_schedulers()
-        self.assertEqual(calls, ["worker"])
-
-    def test_worker_role_does_not_start_external_recovery_scheduler(self):
-        calls = []
-        handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
-        handler.persistence_executor = _Starter("worker", calls)
-        handler.external_operation_recovery = _Starter("recovery", calls)
-        os.environ["JARVIS_BRIDGE_ROLE"] = "worker"
-
-        handler.start_schedulers()
-
         self.assertEqual(calls, ["worker"])
 
     def test_stop_helper_forwards_drain_policy(self):
@@ -322,15 +310,6 @@ class HandlerWiringTest(unittest.TestCase):
         handler.persistence_executor = worker
         self.assertTrue(handler.stop_persistence_executor(drain=True, timeout=7))
         self.assertEqual(worker.stop_calls, [(True, 7)])
-
-    def test_stop_helper_does_not_stop_scheduler_owned_recovery_loop(self):
-        handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
-        handler.persistence_executor = _FakePersistenceExecutor()
-        handler.external_operation_recovery = mock.Mock()
-
-        self.assertTrue(handler.stop_persistence_executor())
-
-        handler.external_operation_recovery.stop.assert_not_called()
 
     def test_task_client_defaults_to_pre_and_requires_token(self):
         for key in self.ENV_KEYS:
@@ -343,20 +322,17 @@ class HandlerWiringTest(unittest.TestCase):
         self.assertEqual(client.token, "shared-token")
 
 
-class AoneReplySchedulerTest(unittest.TestCase):
-    def _handler(self, pages, comments, wake_result=True):
+class AoneReplyRunnerTest(unittest.TestCase):
+    def _runner(self, pages, comments, wake_result=True):
         client = mock.Mock()
         client.list_pending_aone_reply_waits.side_effect = pages
-        handler = SimpleNamespace(
-            task_client=client,
-            _wake=mock.Mock(return_value=wake_result),
-        )
-        return handler
-
-    def _sensor(self, handler, comments):
-        sensor = bot.AoneReplyScheduler(handler)
-        sensor._fetch_comments = mock.Mock(return_value=comments)
-        return sensor
+        from bridge.scheduler.runners.reply import ReplyRunner
+        runner = ReplyRunner(task_client=client, logger=mock.Mock())
+        runner._fetch_comments = mock.Mock(return_value=comments)
+        runner._is_human_comment = lambda creator, content: creator != "open-jarvis"
+        runner._wake = mock.Mock()
+        runner._wake.enqueue.return_value = wake_result
+        return runner
 
     @staticmethod
     def _wait(session_id=10, cursor="40"):
@@ -388,13 +364,12 @@ class AoneReplySchedulerTest(unittest.TestCase):
             {"id": "43", "creator": "human", "content": "reply"},
             {"id": "42", "creator": "human-2", "content": "earlier reply"},
         ]
-        handler = self._handler([page], comments)
-        sensor = self._sensor(handler, comments)
+        sensor = self._runner([page], comments)
 
         sensor._tick()
 
-        handler._wake.assert_called_once()
-        aone_id, context, observed = handler._wake.call_args.args
+        sensor._wake.enqueue.assert_called_once()
+        aone_id, context, observed = sensor._wake.enqueue.call_args.args
         self.assertEqual(aone_id, "84345050")
         self.assertEqual(context["session_id"], "runtime-1")
         self.assertTrue(context["terraform"])
@@ -402,25 +377,23 @@ class AoneReplySchedulerTest(unittest.TestCase):
         self.assertEqual([int(c["id"]) for c in observed], [42, 43])
 
     def test_list_failure_keeps_local_throttle_and_retries_without_wake(self):
-        handler = self._handler([RuntimeError("503")], [])
-        sensor = self._sensor(handler, [])
+        sensor = self._runner([RuntimeError("503")], [])
         sensor._poll_state["10"] = {"first_seen": 1, "last_poll": 2}
 
         sensor._tick()
 
         self.assertIn("10", sensor._poll_state)
-        handler._wake.assert_not_called()
+        sensor._wake.enqueue.assert_not_called()
 
     def test_failed_wake_keeps_wait_discovery_retryable(self):
         page = {"items": [self._wait()], "nextAfterSessionId": 10, "hasMore": False}
         comments = [{"id": 41, "creator": "human", "content": "reply"}]
-        handler = self._handler([page], comments, wake_result=False)
-        sensor = self._sensor(handler, comments)
+        sensor = self._runner([page], comments, wake_result=False)
 
         sensor._tick()
 
         self.assertIn("10", sensor._poll_state)
-        handler._wake.assert_called_once()
+        sensor._wake.enqueue.assert_called_once()
 
 class TaskExecutionTest(unittest.TestCase):
     def test_process_spawned_after_fence_loss_is_immediately_force_killed(self):
