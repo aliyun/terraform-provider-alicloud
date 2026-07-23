@@ -19,19 +19,19 @@ multiple hosts by splitting the bridge into two roles.
               │  (macmini)   │  │(linux)│  │(linux)│  │(linux)│
               │              │  │       │  │       │  │       │
               │ • PersistExec│  │•Persist│  │•Persist│  │•Persist│
-              │ • AoneSched  │  │ Exec  │  │ Exec  │  │ Exec  │
-              │ • DailySched │  │       │  │       │  │       │
-              │ • PrWatch    │  │       │  │       │  │       │
-              │ • AoneReply  │  │       │  │       │  │       │
+              │ • Scheduler  │  │ Exec  │  │ Exec  │  │ Exec  │
+              │   Engine     │  │       │  │       │  │       │
               └──────────────┘  └───────┘  └───────┘  └───────┘
                  5 slots         3 slots    3 slots    3 slots
                                      total = 5 + N×3 slots
 ```
 
-**Scheduler role** — the Task producer + all periodic sensor loops. Local state
-(`.my-day/bridge/pr-watch.json`, `daily-scheduler.json`, event ledgers,
-`claimed-snapshot.json`) is per-host and cannot be shared. **Exactly one host
-in the fleet runs scheduler.** Currently: the macmini in Dallas.
+**Scheduler role** — runs both `bridge/run.sh start` (Task executor) and
+`bridge/scheduler.sh start` (the one `bridge-scheduler` Worker owning every
+periodic Job). Local business state (`.my-day/bridge/pr-watch.json`, event
+ledgers and claimed observations) is per-host and cannot be shared. **Exactly
+one host in the fleet runs scheduler.** The scheduler launcher rejects any
+role other than `JARVIS_BRIDGE_ROLE=scheduler` before it can register a Worker.
 
 **Worker role** — executor-only. `PersistenceExecutor.start()` then blocks on
 `run_forever()`. Leases Tasks from control plane by its own `workerKey`,
@@ -39,10 +39,12 @@ spawns headless claude, reports back. Every added worker grows total lease
 capacity by its local `JARVIS_DISPATCH_MAX`. No coordination needed between
 workers — fenced `claimTask` on the control plane is the only interlock.
 
-## SchedulerEngine progressive cutover
+## SchedulerEngine ownership
 
-The legacy periodic loops remain the default.  The new `SchedulerEngine` is a
-separate, fenced control-plane path with `workerKey=bridge-scheduler`, a fresh
+All periodic jobs are owned by the new `SchedulerEngine`; the legacy Bridge
+process no longer starts scanner, daily, reply, PR-watch or recovery threads.
+Their business logic is invoked as one bounded runner tick by SchedulerEngine.
+The engine is a fenced control-plane path with `workerKey=bridge-scheduler`, a fresh
 `processUuid`, and the same control-plane token used by the Task API. `hostId`
 is recorded for observability only. The fixed Worker key, current process UUID,
 status, and heartbeat ensure that only one Scheduler process owns admission at
@@ -50,23 +52,16 @@ a time. It is not a Task executor: Bridge advertises
 `capabilities.dispatch.pull=false` and does not pull the public Task queue.
 
 Use `bridge/scheduler/jobs.yaml` as the complete new-engine registration
-registry. It contains only migrated jobs; each is registered and owned by the
-new Engine after its legacy entry point is removed. Legacy jobs are absent
-from this file and never enter the new control plane. The current validation
-slice contains only side-effect-free `smoke.*` jobs:
-
-```yaml
-# bridge/scheduler/jobs.yaml
-- key: smoke.interval
-  runner: {kind: handler, handler_key: scheduler.smoke}
-```
+registry. It contains `aone.scan`, `aone.claim-health`, `daily.nudge`,
+`aone.reply`, `pr.watch`, `external.recovery` 与 disabled `daily.probe`。
+No periodic job is allowed to have a second legacy loop.
 
 The YAML loader depends on `PyYAML`, installed into the isolated Bridge venv by
 `bootstrap/worker-install.sh`. On a scheduler host that was not bootstrapped by
 that installer, run `bash bootstrap/bridge-python.sh` once before
 `bridge/run.sh start`; the run script automatically prefers `.venv/bridge`.
 
-Before this starts the Engine, Bridge verifies the host, registers and checks
+Before this starts the Engine, Bridge verifies the scheduler role, registers and checks
 the ACTIVE Worker identity, registers the full job registry, recovers
 interrupted slots, and then begins polling. `daily.probe` revision 2 is
 registered through the generic headless adapter but intentionally remains
@@ -382,9 +377,9 @@ Worker/Task/Session state in the control plane is the only coordination truth;
 there is no local PID-based coord fallback. Cross-host recovery goes through
 two channels already implemented in the control plane (`docs/execution-architecture.md`):
 
-1. **Fast channel**: bridge scheduler's tick watches `/workers` for
+1. **Fast channel**: `aone.claim-health` tick watches `/workers` for
    STALE/OFFLINE Workers and remembers their assignments.
-2. **Persistent channel**: `AoneScheduler` atomically snapshots the
+2. **Persistent channel**: `aone.claim-health` atomically snapshots the
    `jarvis-claimed` Aone inventory to `.my-day/bridge/claimed-snapshot.json`
    every tick and corroborates each entry with the control plane's Task
    timeline. Snapshot lives only on scheduler host — this is why exactly one

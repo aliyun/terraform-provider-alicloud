@@ -20,10 +20,19 @@ source_runtime() {
   export JARVIS_ROOT="${JARVIS_ROOT:-$REPO_ROOT}"
 }
 
+require_scheduler_role() {
+  local role="${JARVIS_BRIDGE_ROLE:-scheduler}"
+  [ "$role" = "scheduler" ] || {
+    err "scheduler 仅允许 JARVIS_BRIDGE_ROLE=scheduler 启动；worker 只运行 bridge/run.sh"
+    return 2
+  }
+}
+
 read_pid() { [ -f "$PIDFILE" ] && cat "$PIDFILE"; }
 alive() { [ -n "${1:-}" ] && kill -0 "$1" 2>/dev/null; }
 
 validate() {
+  require_scheduler_role || return $?
   [ -x "$PYTHON" ] || { err "scheduler Python 不存在: $PYTHON"; return 2; }
   PYTHONPATH="$SCRIPT_DIR:$REPO_ROOT${PYTHONPATH:+:$PYTHONPATH}" "$PYTHON" -c '
 import os
@@ -38,6 +47,7 @@ if not (os.environ.get("JARVIS_CONTROL_PLANE_TOKEN") or os.environ.get("JARVIS_H
 start() {
   local pid i=0 deadline=$(( READY_WAIT * 10 ))
   source_runtime || return $?
+  require_scheduler_role || return $?
   if pid="$(read_pid)" && alive "$pid"; then
     say "scheduler 已在运行 (pid $pid)"
     return 0

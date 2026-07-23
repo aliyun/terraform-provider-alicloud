@@ -22,10 +22,23 @@ from .daily_probe import (
     RUNNER_KEY as DAILY_PROBE_RUNNER_KEY,
     DailyProbeRunner,
 )
-from .smoke import RUNNER_KEY as SCHEDULER_SMOKE_RUNNER_KEY, SchedulerSmokeRunner
-
-
-HANDLER_KEYS = frozenset({SCHEDULER_SMOKE_RUNNER_KEY})
+from .legacy import (
+    AONE_CLAIM_HEALTH_RUNNER_KEY,
+    AONE_REPLY_RUNNER_KEY,
+    AONE_SCAN_RUNNER_KEY,
+    DAILY_NUDGE_RUNNER_KEY,
+    EXTERNAL_RECOVERY_RUNNER_KEY,
+    PR_WATCH_RUNNER_KEY,
+    build_legacy_runners,
+)
+HANDLER_KEYS = frozenset({
+    AONE_SCAN_RUNNER_KEY,
+    AONE_CLAIM_HEALTH_RUNNER_KEY,
+    DAILY_NUDGE_RUNNER_KEY,
+    AONE_REPLY_RUNNER_KEY,
+    PR_WATCH_RUNNER_KEY,
+    EXTERNAL_RECOVERY_RUNNER_KEY,
+})
 HEADLESS_BUILDER_PROTOCOLS = frozenset({DAILY_PROBE_RUNNER_KEY})
 RUNNER_KEYS = HANDLER_KEYS | HEADLESS_BUILDER_PROTOCOLS
 
@@ -45,23 +58,28 @@ def build_runners(
     )
     root = summary_root or (
         Path(__file__).resolve().parents[3] / "runs" / "probe")
-    return {
-        SCHEDULER_SMOKE_RUNNER_KEY: SchedulerSmokeRunner(logger=logger),
+    runners = {
         DAILY_PROBE_RUNNER_KEY: DailyProbeRunner(
             runtime=runtime,
             summary_root=root,
             logger=logger,
         ),
     }
+    runners.update(build_legacy_runners(logger=logger))
+    return runners
 
 
 __all__ = [
     "DAILY_PROBE_RUNNER_KEY",
+    "AONE_CLAIM_HEALTH_RUNNER_KEY",
+    "AONE_REPLY_RUNNER_KEY",
+    "AONE_SCAN_RUNNER_KEY",
+    "DAILY_NUDGE_RUNNER_KEY",
     "DailyProbeRunner",
+    "EXTERNAL_RECOVERY_RUNNER_KEY",
+    "PR_WATCH_RUNNER_KEY",
     "HANDLER_KEYS",
     "HEADLESS_BUILDER_PROTOCOLS",
     "RUNNER_KEYS",
-    "SCHEDULER_SMOKE_RUNNER_KEY",
-    "SchedulerSmokeRunner",
     "build_runners",
 ]

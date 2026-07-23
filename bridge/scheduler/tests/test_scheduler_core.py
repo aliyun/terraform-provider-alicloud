@@ -30,11 +30,12 @@ def definition(*, revision: int = 1, schedule=None) -> ScheduledJobDefinition:
 
 
 class SchedulerCoreTests(unittest.TestCase):
-    def test_registry_is_yaml_loaded_with_all_smoke_schedule_types(self):
+    def test_registry_is_yaml_loaded_with_all_migrated_jobs(self):
         loaded = registry.load_jobs()
         self.assertEqual(tuple(item.id for item in loaded),
-                         ("smoke.interval", "smoke.daily", "smoke.adaptive",
-                          "daily.probe"))
+                         ("daily.probe", "aone.scan", "aone.claim-health",
+                          "daily.nudge", "aone.reply", "pr.watch",
+                          "external.recovery"))
         self.assertIs(loaded, registry.JOBS)
 
     def test_registry_materializes_generator_once_and_returns_tuple(self):

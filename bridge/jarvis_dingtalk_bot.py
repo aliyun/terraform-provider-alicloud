@@ -8154,10 +8154,9 @@ class JarvisHandler(AsyncChatbotHandler):
             self.task_client,
             getattr(self.persistence_executor, "worker_key", "external-recovery-scheduler"),
             repo_root=REPO_ROOT, logger=log)
-        # Final component set: AoneScheduler(scan+dispatch+stale sub-tick),
-        # PersistenceExecutor(control-plane Task lease), EphemeralExecutor(local jobs),
-        # AoneReplyScheduler(SUSPENDED session wake), DailyScheduler(probe+nudge),
-        # PrWatchScheduler(PR lifecycle), and external-operation recovery.
+        # Scheduler-owned ticks are constructed here for the adapters in
+        # ``bridge/scheduler/runners/legacy.py``.  Their loops are never started
+        # by this process: SchedulerEngine owns the only cadence/admission path.
         self.scanner = AoneScheduler(self, self.ephemeral_executor)
         self.daily = DailyScheduler(self, self.ephemeral_executor)
         self.aone_reply_scheduler = AoneReplyScheduler(self)
@@ -8176,39 +8175,19 @@ class JarvisHandler(AsyncChatbotHandler):
                  sorted(self.execution_router.task_types))
 
     def start_schedulers(self):
-        """Start PersistenceExecutor; scheduler-role bridge also starts sensors/periodic loops.
+        """Start only the durable Task executor.
 
-        JARVIS_BRIDGE_ROLE=scheduler (default): full bridge — Task producer, sensors,
-        PR/wake/daily loops. Exactly one host in the fleet should run scheduler (Task
-        producer and PR/wake/daily state live in local .my-day files; two schedulers
-        double-upsert Tasks and double-publish events).
-
-        JARVIS_BRIDGE_ROLE=worker: executor-only — leases Tasks from the control plane
-        and spawns; no scheduling. Every additional worker adds JARVIS_DISPATCH_MAX
-        slots to the shared lease pool.
+        All periodic jobs, including scheduler-role sensing and recovery work,
+        are owned by the separate ``bridge/scheduler.sh`` process.  Both roles
+        may run this executor; only ``JARVIS_BRIDGE_ROLE=scheduler`` may start
+        the SchedulerEngine entry point.
         """
-        # Register/lease loop first.  Sensors may then publish a desired revision
-        # knowing a worker is already available to converge it.
         self.persistence_executor.start()
-        role = os.environ.get("JARVIS_BRIDGE_ROLE", "scheduler")
-        if role == "worker":
-            log.info("bridge role=worker: executor-only, skipping schedulers")
-            return
-        if role != "scheduler":
-            log.warning("unknown JARVIS_BRIDGE_ROLE=%r; defaulting to scheduler", role)
-        self.scanner.start()
-        self.daily.start()
-        self.aone_reply_scheduler.start()
-        self.prwatch.start()
-        recovery = getattr(self, "external_operation_recovery", None)
-        if recovery is not None:
-            recovery.start()
+        log.info("bridge role=%s: executor started; periodic jobs are owned by scheduler.sh",
+                 os.environ.get("JARVIS_BRIDGE_ROLE", "scheduler"))
 
     def stop_persistence_executor(self, *, drain=False, timeout=None):
         """Stop the persistent Task executor once."""
-        recovery = getattr(self, "external_operation_recovery", None)
-        if recovery is not None:
-            recovery.stop()
         if self.persistence_executor.stopped:
             return True
         return self.persistence_executor.stop(drain=drain, timeout=timeout)
@@ -9481,29 +9460,17 @@ def _stop_before_final_teardown(handler, *, context, timeout):
 
 def _run_no_dingtalk():
     """无钉钉降级模式启动(JARVIS_NO_DINGTALK=1 点火路径): 不建 DingTalk client/stream,
-    不初始化 TataPool; 只起 PersistenceExecutor + AoneScheduler(扫单派发+stale 子任务) +
-    DailyScheduler(probe/nudge) + AoneReplyScheduler + PrWatchScheduler。
-    卡片/播报统一降级为 [BROADCAST] 日志行(→ bot.log); AoneReplyScheduler 挂起/唤醒照常(轮询走 a1,
-    唤醒走控制面), "@人通知"降级为日志 + 既有 Aone 评论。入站 Tata 门面停用(无 stream)。
+    不初始化 TataPool; 只起 PersistenceExecutor。所有周期 Job 由独立的
+    ``bridge/scheduler.sh`` 进程执行。
+    卡片/播报统一降级为 [BROADCAST] 日志行(→ bot.log); 入站 Tata 门面停用(无 stream)。
     阻塞至进程收到中断信号。"""
     log.warning("[NO-DINGTALK] 降级模式启动: 无 DingTalk client/stream/TataPool; "
-                "自动派发 + Scan/Daily/AoneReply/PrWatch 调度器照常; "
+                "仅启动 Task executor，周期 Job 交由 scheduler.sh；"
                 "卡片/播报 → [BROADCAST] 日志行; 入站 Tata 门面停用。")
     handler = JarvisHandler(no_dingtalk=True)
-    # PersistenceExecutor first, then every sensor/scheduler.
     handler.start_schedulers()
-    # scan/daily log lines only make sense in scheduler role — in worker role
-    # start_schedulers returned early and those threads never started; printing
-    # scanner.interval / daily.jobs is misleading (the values exist as instance
-    # attrs but no thread was launched).
-    if os.environ.get("JARVIS_BRIDGE_ROLE", "scheduler") != "worker":
-        log.info("[NO-DINGTALK] scan scheduler started (interval=%ss auto_dispatch=%s target=%s broadcast=%s)",
-                 handler.scanner.interval, handler.scanner.auto,
-                 handler.scanner.notify_target, broadcast_target())
-        log.info("[NO-DINGTALK] daily(%s)",
-                 ",".join(j.name for j in handler.daily.jobs))
-    log.info("[NO-DINGTALK] ready — 阻塞运行; 卡片/播报以 [BROADCAST] 日志行落 bot.log。"
-             "配好钉钉凭证后去掉 JARVIS_NO_DINGTALK 即回全功能模式。")
+    log.info("[NO-DINGTALK] executor ready — 周期 Job 请通过 bridge/scheduler.sh 管理; "
+             "卡片/播报以 [BROADCAST] 日志行落 bot.log。")
 
     # 优雅停止(与全功能 main() 同款, 吸收 master f7f1f72): run.sh stop 发 SIGTERM → 整树杀在跑
     # worker(进程组) + release 其已认领工单, 再退出。降级模式无 TataPool, 故不 shutdown pool。
@@ -9527,7 +9494,7 @@ def _run_no_dingtalk():
     signal.signal(signal.SIGTERM, _graceful_stop)
     signal.signal(signal.SIGINT, _graceful_stop)
     log.info(
-        "Bridge READY pid=%s legacySchedulers=true",
+        "Bridge READY pid=%s periodicJobs=scheduler-engine",
         os.getpid())
     stop = threading.Event()
     try:
@@ -9577,13 +9544,8 @@ def main():
     client.register_callback_handler(ChatbotMessage.TOPIC, handler)
     if handler.pool is not None:
         handler.pool.prewarm()  # 预热 N 个 generic 常驻进程, 首批消息免冷启
-    # PersistenceExecutor first, then every sensor/scheduler.
     handler.start_schedulers()
-    log.info("scan scheduler started (interval=%ss auto_dispatch=%s target=%s broadcast=%s)",
-             handler.scanner.interval, handler.scanner.auto,
-             handler.scanner.notify_target, broadcast_target())
-    log.info("daily scheduler: jobs=%s",
-             ",".join("%s@%s" % (j.name, j.hour) for j in handler.daily.jobs))
+    log.info("Bridge executor started; periodic jobs are owned by bridge/scheduler.sh")
 
     def _graceful_stop(signum, _frame):
         log.info("signal %s received — graceful stop: kill workers + release claims", signum)

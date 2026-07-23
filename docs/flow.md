@@ -5,13 +5,14 @@
 - `bootstrap/preflight.sh` 24h 闸门（install + verify），全绿才干活
 
 ## 1. 扫描与派发 (bridge)
-- `bridge/run.sh start` 常驻：ScanScheduler 定时跑 `scan.sh --force`，扫 `config/pools.json` 登记的池
+- `bridge/run.sh start` 常驻：只启动 `PersistenceExecutor`；scheduler 角色额外以
+  `bridge/scheduler.sh start` 运行全部周期 Job
 - `ExecutionRouter` 只按可恢复性分类：业务工单/重访/唤醒/PR 跟进 → `Task`；probe/本地检查/一次性命令 → `EphemeralJob`
 - `PersistenceExecutor` 从控制面 lease Task；`EphemeralExecutor` 执行本地一次性作业；两者共享 `CapacityManager` 与 `ExecutionRuntime`
 - Task 必须先进入控制面；控制面不可用时 fail-closed，不允许回退到本地无状态执行
 - `_decide` 逐单判定：终态 / `jarvis-done` / `jarvis-claimed` / `jarvis-npe` → skip；`jarvis-idle` 过人工介入门
 - **[人工点·可选]** 回退模式 `JARVIS_AUTO_DISPATCH=0`：新单入 pending，钉钉授权后才派（`plan.sh` 出计划）
-- 后台调度：统一 Scheduler 从 `bridge/scheduler/jobs.yaml` 注册 Headless/Handler Job（`daily.probe` 当前默认关闭）；RevisitScheduler 负责每日 idle 重访，AoneScheduler 负责扫描及 stale/done 状态对账，PersonaScheduler 负责评论区数字人接力（默认关）
+- 后台调度：统一 Scheduler 从 `bridge/scheduler/jobs.yaml` 注册全部 Headless/Handler Job（`daily.probe` 当前默认关闭）；`aone.scan`、`aone.claim-health`、`daily.nudge`、`aone.reply`、`pr.watch` 与 `external.recovery` 都以一次性 runner tick 执行
 
 ## 2. 单工单 Triage (headless)
 - `claim.sh claim` 认领（竞争锁，输了 SKIP）
@@ -25,7 +26,7 @@
 
 ## 4. 收敛 (Convergence)
 - 服务端 reaper：按 Worker/Session heartbeat、lease 与 fence 收敛中断执行
-- AoneScheduler：扫描/派发并检查 `jarvis-done`/Aone 完成态漂移；ClaimHealthScheduler 独立以 ≤5min 节奏对账 claimed 工单与 Task/Session 心跳，异常经 Aone/钉钉双通道幂等发布
+- `aone.scan`：扫描/派发并检查完成标记/Aone 完成态漂移；`aone.claim-health` 以 5 分钟节奏对账已认领工单与 Task/Session 心跳，异常经 Aone/钉钉双通道幂等发布
 - `wrap-check.sh` Stop 闸门：会话结束校验未完工工单已回填
 - `SUSPENDED` Task + Aone 是人工决策真源；`runs/` 保留运行审计
 

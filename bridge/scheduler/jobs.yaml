@@ -1,8 +1,7 @@
 # Scheduler Job 的唯一注册表。
 #
-# 文件中只列出已迁移到新 Scheduler 的 Job。未出现在此处的任务不会注册到
-# jarvis_scheduled_job。每次迁移一个 Job 时，先实现 runners/ 下的 runner，再新增
-# 一条完整定义，并删除该 Job 的旧入口。
+# 本表是 Bridge 全部周期 Job 的唯一注册表。任何 Job 的 cadence 都只由这里定义；
+# runners/ 只保留一次执行的业务逻辑，不能自行创建循环或 sleep。
 #
 # key            稳定 Job 标识，也是控制面 job_key；迁移后不得重命名。
 # revision       definition 语义变化时递增；用于识别已登记 Job 是否需要更新。
@@ -14,36 +13,6 @@
 # enabled        Job 是否执行；false 时仍注册到控制面，但状态为 DISABLED。
 version: 1
 jobs:
-  # 预发调度链路验证：三条 Job 分别覆盖 interval、daily、adaptive。runner 只写日志
-  # 并返回 SUCCEEDED，不创建业务数据。验证结束后可将整个 smoke 区块注释为新增 Job
-  # 配置示例。业务 Job 迁移前必须先实现独立 runner，再单独加入此表。
-  - key: smoke.interval
-    revision: 3
-    description: 验证固定间隔任务的计划、准入与完成，不产生业务副作用
-    schedule: {kind: interval, interval_seconds: 60, run_immediately: true}
-    runner: {kind: handler, handler_key: scheduler.smoke}
-    misfire: COALESCE
-    retry_delay_seconds: 10
-    enabled: true
-
-  - key: smoke.daily
-    revision: 3
-    description: 验证每日任务的计划与当天错过执行处理，不产生业务副作用
-    schedule: {kind: daily, hour: 10, minute: 0, timezone: Asia/Shanghai}
-    runner: {kind: handler, handler_key: scheduler.smoke}
-    misfire: CURRENT_DAY
-    retry_delay_seconds: 10
-    enabled: true
-
-  - key: smoke.adaptive
-    revision: 3
-    description: 验证自适应任务的计划与下一次执行时间计算，不产生业务副作用
-    schedule: {kind: adaptive, min_delay_seconds: 30, default_delay_seconds: 60, max_delay_seconds: 120, run_immediately: true}
-    runner: {kind: handler, handler_key: scheduler.smoke}
-    misfire: COALESCE
-    retry_delay_seconds: 10
-    enabled: true
-
   # 首次只注册到控制面验证 definition/看板，不执行真实探测。确认后通过单独变更将
   # revision 升至 3 并设置 enabled: true，避免当天 10:00 后首次启动触发 CURRENT_DAY 补跑。
   - key: daily.probe
@@ -54,3 +23,57 @@ jobs:
     misfire: CURRENT_DAY
     retry_delay_seconds: 300
     enabled: false
+
+  - key: aone.scan
+    revision: 1
+    description: 扫描 Aone 指派、跟踪与待处理任务并写入控制面任务队列
+    schedule: {kind: interval, interval_seconds: 1800, run_immediately: true}
+    runner: {kind: handler, handler_key: aone.scan}
+    misfire: COALESCE
+    retry_delay_seconds: 60
+    enabled: true
+
+  - key: aone.claim-health
+    revision: 1
+    description: 核验已认领工单与控制面会话状态，并补偿生命周期事件
+    schedule: {kind: interval, interval_seconds: 300, run_immediately: true}
+    runner: {kind: handler, handler_key: aone.claim-health}
+    misfire: COALESCE
+    retry_delay_seconds: 30
+    enabled: true
+
+  - key: daily.nudge
+    revision: 1
+    description: 每日检查 Terraform 待处理任务并对停滞事项发送双通道催办
+    schedule: {kind: daily, hour: 9, minute: 0, timezone: Asia/Shanghai}
+    runner: {kind: handler, handler_key: daily.nudge}
+    misfire: CURRENT_DAY
+    retry_delay_seconds: 300
+    enabled: true
+
+  - key: aone.reply
+    revision: 1
+    description: 轮询控制面中等待 Aone 人工回复的会话，并在收到回复后唤醒
+    schedule: {kind: interval, interval_seconds: 30, run_immediately: true}
+    runner: {kind: handler, handler_key: aone.reply}
+    misfire: COALESCE
+    retry_delay_seconds: 10
+    enabled: true
+
+  - key: pr.watch
+    revision: 1
+    description: 看守已登记 PR 的评审、CI 与合并生命周期，并按活跃度动态调整检查间隔
+    schedule: {kind: adaptive, min_delay_seconds: 5, default_delay_seconds: 3600, max_delay_seconds: 604800, run_immediately: false}
+    runner: {kind: handler, handler_key: pr.watch}
+    misfire: WAIT_FOR_COMPLETION
+    retry_delay_seconds: 60
+    enabled: true
+
+  - key: external.recovery
+    revision: 1
+    description: 核验控制面中未知的 Aone 外部操作回执，确认后安全收敛
+    schedule: {kind: interval, interval_seconds: 300, run_immediately: true}
+    runner: {kind: handler, handler_key: external.recovery}
+    misfire: COALESCE
+    retry_delay_seconds: 30
+    enabled: true

@@ -19,16 +19,20 @@ from typing import Any
 try:  # Executed by bridge/scheduler.sh from the bridge directory.
     from jarvis_task_client import ControlPlaneClient
     from scheduler.registry import JOBS, REGISTRY
+    from scheduler.role import require_scheduler_role
     from scheduler.runners import build_runners
     from scheduler.service import SchedulerService
 except ModuleNotFoundError:  # Package import for tests and tools.
     from bridge.jarvis_task_client import ControlPlaneClient
     from bridge.scheduler.registry import JOBS, REGISTRY
+    from bridge.scheduler.role import require_scheduler_role
     from bridge.scheduler.runners import build_runners
     from bridge.scheduler.service import SchedulerService
 
 
 LOG = logging.getLogger("jarvis-scheduler")
+
+
 def _task_client_from_env() -> ControlPlaneClient:
     base_url = (
         os.environ.get("JARVIS_CONTROL_PLANE_BASE_URL", "").strip()
@@ -49,6 +53,7 @@ def _task_client_from_env() -> ControlPlaneClient:
 
 
 def build_scheduler() -> SchedulerService:
+    require_scheduler_role()
     return SchedulerService(
         task_client=_task_client_from_env(),
         runners=build_runners(logger=LOG),
