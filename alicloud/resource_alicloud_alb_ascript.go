@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -321,7 +320,7 @@ func resourceAliCloudAlbAScriptUpdate(d *schema.ResourceData, meta interface{}) 
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("Alb", "2020-06-16", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"-21013", "IdempotenceProcessing", "SystemBusy", "IncorrectStatus.AScript"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
