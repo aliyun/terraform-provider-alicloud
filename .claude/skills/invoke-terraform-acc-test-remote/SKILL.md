@@ -16,7 +16,6 @@ description: Use when a Jarvis Terraform workflow needs to run terraform-provide
 - 跨账号资源只描述需要哪些环境变量，例如 `ALICLOUD_ACCESS_KEY_1` / `ALICLOUD_SECRET_KEY_1` / `ALICLOUD_ACCESS_KEY_2` / `ALICLOUD_SECRET_KEY_2`，不要展示值。
 - `cancel` 会停止远程 FC 异步任务；只有用户明确同意取消时才能调用。
 - API 报云产品业务错误时，以 `tf-debug.log` 的 RequestId 和请求参数为准，不凭本地复现猜测。
-- 历史 task 的 `run.log`/`tf-debug.log` 可随时用 `logs --task-id <n> --download-dir <dir>` 重新下载；PR 评审/工单追问请求证据时优先复用历史日志，不必重跑测试。RequestId 链路只走内部通道（Aone 评论/钉钉私信），不进公开 PR 评论——双通道模式见 terraform-pr-review skill。
 
 ## 1. 定位 provider 目录
 
@@ -217,7 +216,177 @@ SKIP 通常来自 `testAccPreCheckWithXxx(t)` 门闩——读某 env var 不到�
 - 真根因是 id = `namespace:key` 被 `strings.Split(id, ":")` 按每个冒号拆，含冒号的 key 被拆错 → 查错 key → **确定性** 404，与时序无关。正解是 `strings.SplitN(id, ":", 2)`。修复后同一 repro **PASS 4.02s**，test1/test2 无回归（`PASS=3 FAIL=0 SKIP=0`）。
 - **教训**：既有用例 key 不含冒号，永远触不到 bug；不跑客户确切输入，就会把「最终一致性」这个误诊一路带到 PR，还把「秒失败」改成「5 分钟空转」的负优化。与「SKIP≠PASS」同族——**acc 绿有多种假绿，真信心只来自读 run.log 里真实 case 结果 + 确认触发条件真被跑到**。
 
-## 6. 没有跑到用例
+## 6. FAIL 定性:四分类(mandatory triage)
+
+`run.log` 出现 `--- FAIL: TestAccXxx` 后,不要只把日志摘要甩给用户——**必须**把这次失败归到下面四类之一,证据不足就继续挖,不要用「大概」「疑似」下结论。
+
+- **A. 后端云产品 API 问题**:API 行为/文档/合同不合理或不正确,不符合 Terraform 使用要求。
+- **B. 测试用例问题**:代码本身正确,测试 HCL 或前置条件写法不合理(如写死不存在的依赖资源、precheck 门闩缺配套等)。
+- **C. Resource / DataSource 代码 或 CloudSpec 资源定义 bug**:provider 侧代码,或其上游 cspec 定义,有真实缺陷(C1=手写代码 bug,C2=cspec 定义 bug)。
+- **D. 生成器 bug**:cspec 定义正确、API 契约正确,但生成器把「对的 cspec」翻成了「错的 Go 代码」——问题在生成器本身。仅适用于**生成器产出**的资源。
+
+**判定路径**(先做 6.1 取证,再按下图收敛):
+
+```
+FAIL
+ ├─ API 契约有问题?           → A
+ ├─ 用例 HCL / precheck 有问题? → B
+ └─ 都不是 → 看资源是手写还是生成:
+      ├─ 手写(alicloud/resource_*.go 无生成器标记)
+      │    └─ 代码与 API 不对齐?     → C1
+      └─ 生成器产出(有 `// Code generated` 类标记或对得上生成器 golden)
+           ├─ cspec 定义与 API 不一致? → C2(修 cspec)
+           └─ cspec 定义正确、生成产物错? → D(修生成器)
+```
+
+### 6.1 通用取证(判定前先做)
+
+按顺序做,每一步都要指到具体行号 / API 名 / RequestId,不留模糊描述:
+
+1. `grep -B2 -A30 "^--- FAIL:" run.log` → 记下:失败函数、失败的 Terraform 生命周期步骤(Plan/Apply/Refresh/Destroy)、错误短语。
+2. 在 `tf-debug.log` 里定位对应的 API 调用:
+
+   ```bash
+   grep -B2 -A5 "<ErrorCode 或错误短语>" tf-debug.log | head -60
+   ```
+
+   拿到:API name / 请求 body / RequestId / 返回 payload。
+3. 与 API 契约对齐:调 `amp-resource-metadata` skill 或 OpenAPI Explorer 拉该 API 的官方 spec(参数必填性、返回结构、错误码含义、幂等/重试语义)。
+4. 与 provider 代码对齐:
+
+   ```bash
+   grep -n "<关键字段名或 API 名>" alicloud/resource_alicloud_<name>.go
+   ```
+
+5. 若怀疑上游 cspec 定义:去 `amp-resource-metadata` 或 `cloudspec-model` 仓拉当前 cspec resource definition 比对。
+
+### 6.2 A - 后端云产品 API 问题
+
+**判定信号(任一命中)**:
+
+- API 文档说一种行为,实际返回另一种(如文档说 List 返回数组,实际返回单对象)
+- 必填字段在 API 侧无稳定支持,Terraform 侧无法回填
+- 返回结构缺少 Terraform Read 需要的字段,且 API 无替代读取通道
+- 错误码语义混乱(如实际不存在返回 InternalError 而非 NotFound),CRUD 无法幂等
+- 分页 / 最终一致性 / 幂等语义与 Terraform 生命周期契约不兼容
+
+**报告格式**:
+
+```
+定性:A - 后端 API 问题
+API:<Product>::<Action>  version <YYYY-MM-DD>
+RequestId:<xxx>
+契约 vs 实际差异:<一句话>
+证据:tf-debug.log line NN,请求 <params>,期望 <expected>,实际 <actual>
+建议:向 API owner 报 bug / 走 CloudSpec 加白 / 推动上游修合同(必要时按 aone-triage 建关联单)
+```
+
+### 6.3 B - 测试用例问题
+
+**判定信号**:
+
+- 用例 HCL 引用了当前 region/账号下不存在的固定 ID(如写死 `vsw-xxx` / OSS bucket / VPC / RAM role)
+- 硬编码了区域或账号敏感值(别人的 UID / ARN)
+- 前置条件(precheck)与用例真实需要的能力不匹配(照 §5 SKIP→PASS 里兄弟资源模式对照)
+- 引用了已删除 / 重命名的 provider 字段(`Unsupported argument "X"`)
+- 用例互相污染 / 未清理导致 `QuotaExceeded`(见「常见失败」表 sweep 处置)
+
+**报告格式**:
+
+```
+定性:B - 测试用例问题
+文件:alicloud/<file>_test.go
+函数:TestAccAliCloudXxx
+证据行:line NN,<HCL 片段>
+问题:<写死 vsw-xxx / 缺 precheck / 引用已删字段>
+修复:<改成 data source 动态取 / 加 testAccPreCheckWithRegions / 换替代字段>
+```
+
+### 6.4 C - Resource/DataSource 代码 或 CloudSpec 资源定义 bug
+
+若不属于 A / B,就是 C。C 再细分两小类,**报告必须具体到「行」或「定义字段」**——用户拿到就能改。
+
+#### C1. Provider 代码 bug
+
+**判定信号**:
+
+- API 契约正确、用例合理,但 provider Create/Read/Update/Delete 与 API 不对齐(参数拼装错、返回解析错、状态判定错、重试策略缺失)
+- Refresh 后有 spurious diff → Read 未把 API 返回字段完整映射回 schema
+- import/id 拆分错误(参照 §5 esa_kv `strings.Split` vs `SplitN` 实例)
+- 错误码分类错(该 NotFound 被当作 Error retry,或反之)
+
+**报告格式**:
+
+```
+定性:C1 - Resource 代码 bug
+文件:alicloud/resource_alicloud_<name>.go   (或 data_source_alicloud_<name>.go)
+函数:<resourceAlicloudXxxRead / Create / Update / Delete>
+出错行:line NN(具体到语句)
+根因:<一句话>—例如 strings.Split(id, ":") 对含冒号的 key 拆错
+修复:<改成 strings.SplitN(id, ":", 2)>
+验证:新增 repro 用例(报告者原样输入),必须先 FAIL 后 PASS(照 §5「既有用例全绿 ≠ 修复验证过」)
+```
+
+#### C2. CloudSpec 资源定义 bug
+
+**判定信号**:
+
+- `attributeMappings` 的 `responsePath` / `requestPath` 错
+- `identifyDefinition.uniqueKeyFields` 缺主键
+- `resourceTypeOperationMapping` 少 `list` / `gets` / `deletes` / `updates`
+- 属性 `readOnly` / `required` / `enum` / `pattern` 与 API 实际不一致
+- `rootMapping.responsePath` 与 API 返回结构不匹配
+
+**报告格式**:
+
+```
+定性:C2 - CloudSpec 资源定义 bug
+资源:<Namespace>::<ResourceName>
+cspec 位置:cloudspec-model 分支 <feature/xxx>,文件 resources/<Name>.cspec
+定义错误:<例如 attributeMappings 中 $.FileSystemId.responsePath 错;或 uniqueKeyFields 缺 $.FileSystemId>
+修复路径:去 cspec 分支改定义 → `aliyun cspec build` → `aliyun cspec check --name <Res>` → `amp publish pre` → 生成器重跑
+关联 skill:`cloudspec-resource-edit` / `cloudspec-operation-edit` / `cloudspec-norm-check-fix`
+关联单:若无镇元对接单,按 aone-triage 分支 E 建 2165097 池关联单推动 cspec 侧修复与发布
+```
+
+### 6.5 D - 生成器 bug
+
+当 A/B/C 三层全部核对通过——**API 契约正确、用例合理、上游 cspec 资源定义正确**——但 provider 里的 resource/datasource 代码仍然错,而这个资源又是**通过生成器**(acube 生成链路 / codegen 工具)自动产出的,那问题就在**生成器**本身。
+
+**判定信号(合取,四条都要成立)**:
+
+- 已按 6.2 排除 A(API 契约核对通过)
+- 已按 6.3 排除 B(用例合理)
+- 已按 6.4 C2 排除 cspec 定义问题(cspec 与 API 一致、mapping 正确、`aliyun cspec check` 通过)
+- provider 里的 resource/datasource 代码是**生成器产出**——判定方式:文件头部一般带 `// Code generated ...` / `// DO NOT EDIT` 类标记;或对照生成器 golden template 能对上。不确定时查 `provider-resource-dev` skill 的「生成 vs 手写判定」小节。
+
+**报告格式**:
+
+```
+定性:D - 生成器 bug
+资源:alicloud_<name>(生成器产出)
+生成器仓库/工具:<例如 acube 生成链路 / codegen 工具名>
+生成器代码位置:<generator repo>/<path>/<file>.go line NN(具体到规则/模板)
+生成缺陷:<一句话>—例如生成的 Read 把 List 型返回按单对象拆解;或复合字段展开丢了嵌套层
+证据链:
+  - cspec 定义正确(引用 attributeMappings 片段)
+  - API 契约与 cspec 一致(RequestId <xxx>)
+  - 生成产物 alicloud/resource_alicloud_<name>.go line NN 与 cspec/API 不一致
+修复路径:review 并修正生成器代码/模板 → 生成器重新构建 → **重新生成该资源**(不要只手工 patch provider 产物,否则下次生成会覆盖)→ 复跑本 ACC 用例验证
+关联 skill:`provider-resource-dev`(生成链路诊断)、`amp-resource-metadata`(cspec/API 契约核对)
+```
+
+**为什么不能只手工 patch 生成产物**:生成器下次跑会覆盖你的 patch,bug 复发;而且同一生成器产出的其他资源大概率带同类 bug——**修生成器 = 一次修一类**。
+
+### 6.6 定性纪律
+
+- **必须报主因**:一个失败可能横跨多类(如 API 不合理 + provider workaround 引入 bug),报告时**先列主因,再列并发问题**,不要「都可能」糊在一起。
+- **证据不足禁止臆测**:若无法唯一定性,先补证据(读更多 debug、比对文档、比对兄弟资源、拉 cspec 与生成器模板对照),证据仍不足则明写「证据只能到 X 或 Y 二选一,还需要 Z」;不允许在没有 API 契约核对的情况下就断言「API 问题」,也不允许在没有确认「资源是生成器产出且 cspec 正确」的情况下就断言「生成器 bug」。
+- **C2 vs D 的边界不能糊**:C2 修的是 cspec 定义,D 修的是生成器代码/模板。二者的证据要点完全不同——C2 要指出 cspec 里哪个字段错,D 要指出生成器规则/模板哪里错。混淆会让修复方向跑偏。
+- **基础设施异常不算四分类**:FC OOM / 超时 / 网络 / 配额,归 §5 状态解读 和「常见失败」表处置,不进 A/B/C/D 分诊。
+- 详细 pattern 匹配材料见 `references/error-patterns.md`,各条已标注归属分类。
+
+## 7. 没有跑到用例
 
 `run.log` 显示 0 个 case 或 `no tests to run` 时：
 
@@ -240,7 +409,7 @@ grep -n "^func TestAcc" alicloud/resource_alicloud_<name>_test.go
 
 | Symptom | Likely Cause | Action |
 |---------|-------------|--------|
-| 0 tests run | Name mismatch (see §6 没有跑到用例) | Fix test function names or pass exact `--test-case` |
+| 0 tests run | Name mismatch (see §7 没有跑到用例) | Fix test function names or pass exact `--test-case` |
 | FC 解压后找不到 `terraform-provider-alicloud` | 本地打包根目录错误(zip root 未固定为 `terraform-provider-alicloud`) | 使用本 skill 的 `acctest.py`; zip root 必须固定为 `terraform-provider-alicloud` |
 | `指定的测试用例 X 在 alicloud/ 中未找到` | `--test-case` value misspelled | grep local test file for actual names |
 | 需要跑多个具体用例 | 把 `A,B` 当作单个函数名传入 | 用逗号分隔多个用例；脚本经 `testCaseNames` 重复参数提交，服务端锚定各自精确函数名;或不传 `--test-case` 跑该资源全部用例 |
