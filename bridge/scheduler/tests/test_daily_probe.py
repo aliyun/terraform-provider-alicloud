@@ -31,7 +31,7 @@ def definition() -> ScheduledJobDefinition:
         3,
         "probe",
         DailySchedule(10, 0, "Asia/Shanghai"),
-        HandlerRunner("daily.probe"),
+        HandlerRunner("daily_probe"),
         MisfirePolicy.CURRENT_DAY,
         300,
         True,
