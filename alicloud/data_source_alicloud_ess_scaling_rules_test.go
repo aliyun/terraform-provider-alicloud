@@ -551,15 +551,16 @@ func testAccCheckAliCloudEssScalingrulesDataSourceTargetTrackingRuleWithHybridCo
 
 	config := fmt.Sprintf(`
 
+
 variable "name" {
-	default = "tf-testAccDataSourceEssScalingTargetTrackingConfig"
+  default = "tf-testAccDataSourceEssScalingTargetTrackingConfigTest"
 }
 
 data "alicloud_zones" "default" {
   available_disk_category     = "cloud_efficiency"
   available_resource_creation = "VSwitch"
 }
-data "alicloud_account" "default" {} 
+data "alicloud_account" "default" {}
 data "alicloud_instance_types" "default" {
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
   cpu_core_count    = 2
@@ -573,19 +574,19 @@ data "alicloud_images" "default" {
 }
 
 data "alicloud_vpcs" "default" {
-	
+
 }
 data "alicloud_vswitches" "default" {
-	vpc_id = data.alicloud_vpcs.default.ids.0
-	zone_id      = data.alicloud_zones.default.zones.0.id
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_zones.default.zones.0.id
 }
 
 resource "alicloud_vswitch" "vswitch" {
-  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id            = data.alicloud_vpcs.default.ids.0
-  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id           = data.alicloud_zones.default.zones.0.id
-  vswitch_name      = var.name
+  count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id       = data.alicloud_vpcs.default.ids.0
+  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  zone_id      = data.alicloud_zones.default.zones.0.id
+  vswitch_name = var.name
 }
 
 locals {
@@ -598,31 +599,31 @@ resource "alicloud_security_group" "default" {
 }
 
 resource "alicloud_security_group_rule" "default" {
-  	type = "ingress"
-  	ip_protocol = "tcp"
-  	nic_type = "intranet"
-  	policy = "accept"
-  	port_range = "22/22"
-  	priority = 1
-  	security_group_id = "${alicloud_security_group.default.id}"
-  	cidr_ip = "172.16.0.0/24"
+  type              = "ingress"
+  ip_protocol       = "tcp"
+  nic_type          = "intranet"
+  policy            = "accept"
+  port_range        = "22/22"
+  priority          = 1
+  security_group_id = "${alicloud_security_group.default.id}"
+  cidr_ip           = "172.16.0.0/24"
 }
 
 resource "alicloud_ess_scaling_group" "default" {
-	min_size = 0
-	max_size = 2
-	default_cooldown = 20
-	removal_policies = ["OldestInstance", "NewestInstance"]
-	scaling_group_name = "${var.name}"
-	vswitch_ids = ["${local.vswitch_id}"]
+  min_size           = 0
+  max_size           = 2
+  default_cooldown   = 20
+  removal_policies   = ["OldestInstance", "NewestInstance"]
+  scaling_group_name = "${var.name}"
+  vswitch_ids        = ["${local.vswitch_id}"]
 }
 
 resource "alicloud_cms_namespace" "default" {
-	  description   = "ttt"
-	  namespace     = "ttt"
-	  specification = "cms.s1.large"
-	}
-	
+  description   = "ttt"
+  namespace     = "ttt"
+  specification = "cms.s1.large"
+}
+
 resource "alicloud_cms_hybrid_monitor_fc_task" "default" {
   namespace      = alicloud_cms_namespace.default.id
   yarm_config    = <<EOF
@@ -648,27 +649,27 @@ EOF
   target_user_id = data.alicloud_account.default.id
 }
 
-resource "alicloud_ess_scaling_rule" "default"{
-	scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
-	scaling_rule_name = "${var.name}"
-	scaling_rule_type = "TargetTrackingScalingRule"
-    target_value = "20.2"
-    metric_type = "hybrid"
-    estimated_instance_warmup = 200
-	hybrid_monitor_namespace = "${alicloud_cms_namespace.default.id}"
-    hybrid_metrics {
-        id = "a"
-        metric_name = "AliyunEcs_CPUUtilization"
-        statistic = "Average"
-        dimensions {
-			dimension_key = "tag_ESS"	
-            dimension_value = "ESS"
-		}
-	}
-    hybrid_metrics {
-        id = "Expression"
-        expression = "2*a"
-	}
+resource "alicloud_ess_scaling_rule" "default" {
+  scaling_group_id          = "${alicloud_ess_scaling_group.default.id}"
+  scaling_rule_name         = "${var.name}"
+  scaling_rule_type         = "TargetTrackingScalingRule"
+  target_value              = "20.2"
+  metric_type               = "hybrid"
+  estimated_instance_warmup = 200
+  hybrid_monitor_namespace  = "${alicloud_cms_namespace.default.id}"
+  hybrid_metrics {
+    id          = "a"
+    metric_name = "AliyunEcs_CPUUtilization"
+    statistic   = "Average"
+    dimensions {
+      dimension_key   = "tag_ESS"
+      dimension_value = "ESS"
+    }
+  }
+  hybrid_metrics {
+    id         = "Expression"
+    expression = "2*a"
+  }
 }
 
 data "alicloud_ess_scaling_rules" "default" {
@@ -686,8 +687,9 @@ func testAccCheckAliCloudEssScalingrulesDataSourceTargetTrackingRuleDisableScale
 
 	config := fmt.Sprintf(`
 
+
 variable "name" {
-	default = "tf-testAccDataSourceEssScalingTargetTrackingConfig"
+  default = "tf-testAccDataSourceEssScalingTargetTrackingConfigTest1"
 }
 
 data "alicloud_zones" "default" {
@@ -708,19 +710,19 @@ data "alicloud_images" "default" {
 }
 
 data "alicloud_vpcs" "default" {
-	
+
 }
 data "alicloud_vswitches" "default" {
-	vpc_id = data.alicloud_vpcs.default.ids.0
-	zone_id      = data.alicloud_zones.default.zones.0.id
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_zones.default.zones.0.id
 }
 
 resource "alicloud_vswitch" "vswitch" {
-  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id            = data.alicloud_vpcs.default.ids.0
-  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id           = data.alicloud_zones.default.zones.0.id
-  vswitch_name      = var.name
+  count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id       = data.alicloud_vpcs.default.ids.0
+  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  zone_id      = data.alicloud_zones.default.zones.0.id
+  vswitch_name = var.name
 }
 
 locals {
@@ -733,34 +735,34 @@ resource "alicloud_security_group" "default" {
 }
 
 resource "alicloud_security_group_rule" "default" {
-  	type = "ingress"
-  	ip_protocol = "tcp"
-  	nic_type = "intranet"
-  	policy = "accept"
-  	port_range = "22/22"
-  	priority = 1
-  	security_group_id = "${alicloud_security_group.default.id}"
-  	cidr_ip = "172.16.0.0/24"
+  type              = "ingress"
+  ip_protocol       = "tcp"
+  nic_type          = "intranet"
+  policy            = "accept"
+  port_range        = "22/22"
+  priority          = 1
+  security_group_id = "${alicloud_security_group.default.id}"
+  cidr_ip           = "172.16.0.0/24"
 }
 
 resource "alicloud_ess_scaling_group" "default" {
-	min_size = 0
-	max_size = 2
-	default_cooldown = 20
-	removal_policies = ["OldestInstance", "NewestInstance"]
-	scaling_group_name = "${var.name}"
-	vswitch_ids = ["${local.vswitch_id}"]
+  min_size           = 0
+  max_size           = 2
+  default_cooldown   = 20
+  removal_policies   = ["OldestInstance", "NewestInstance"]
+  scaling_group_name = "${var.name}"
+  vswitch_ids        = ["${local.vswitch_id}"]
 }
 
-resource "alicloud_ess_scaling_rule" "default"{
-	scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
-	scaling_rule_name = "${var.name}"
-	scaling_rule_type = "TargetTrackingScalingRule"
-    target_value = "20.2"
-	metric_name = "CpuUtilization"
-    metric_type = "system"
-	estimated_instance_warmup = 200
-	disable_scale_in = true
+resource "alicloud_ess_scaling_rule" "default" {
+  scaling_group_id          = "${alicloud_ess_scaling_group.default.id}"
+  scaling_rule_name         = "${var.name}"
+  scaling_rule_type         = "TargetTrackingScalingRule"
+  target_value              = "20.2"
+  metric_name               = "CpuUtilization"
+  metric_type               = "system"
+  estimated_instance_warmup = 200
+  disable_scale_in          = true
 }
 
 data "alicloud_ess_scaling_rules" "default" {
@@ -778,8 +780,9 @@ func testAccCheckAliCloudEssScalingrulesDataSourceTargetTrackingRuleConfig(attrM
 
 	config := fmt.Sprintf(`
 
+
 variable "name" {
-	default = "tf-testAccDataSourceEssScalingTargetTrackingConfig"
+  default = "tf-testAccDataSourceEssScalingTargetTrackingConfigTest2"
 }
 
 data "alicloud_zones" "default" {
@@ -800,19 +803,19 @@ data "alicloud_images" "default" {
 }
 
 data "alicloud_vpcs" "default" {
-	
+
 }
 data "alicloud_vswitches" "default" {
-	vpc_id = data.alicloud_vpcs.default.ids.0
-	zone_id      = data.alicloud_zones.default.zones.0.id
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_zones.default.zones.0.id
 }
 
 resource "alicloud_vswitch" "vswitch" {
-  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id            = data.alicloud_vpcs.default.ids.0
-  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id           = data.alicloud_zones.default.zones.0.id
-  vswitch_name      = var.name
+  count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id       = data.alicloud_vpcs.default.ids.0
+  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  zone_id      = data.alicloud_zones.default.zones.0.id
+  vswitch_name = var.name
 }
 
 locals {
@@ -825,35 +828,35 @@ resource "alicloud_security_group" "default" {
 }
 
 resource "alicloud_security_group_rule" "default" {
-  	type = "ingress"
-  	ip_protocol = "tcp"
-  	nic_type = "intranet"
-  	policy = "accept"
-  	port_range = "22/22"
-  	priority = 1
-  	security_group_id = "${alicloud_security_group.default.id}"
-  	cidr_ip = "172.16.0.0/24"
+  type              = "ingress"
+  ip_protocol       = "tcp"
+  nic_type          = "intranet"
+  policy            = "accept"
+  port_range        = "22/22"
+  priority          = 1
+  security_group_id = "${alicloud_security_group.default.id}"
+  cidr_ip           = "172.16.0.0/24"
 }
 
 resource "alicloud_ess_scaling_group" "default" {
-	min_size = 0
-	max_size = 2
-	default_cooldown = 20
-	removal_policies = ["OldestInstance", "NewestInstance"]
-	scaling_group_name = "${var.name}"
-	vswitch_ids = ["${local.vswitch_id}"]
+  min_size           = 0
+  max_size           = 2
+  default_cooldown   = 20
+  removal_policies   = ["OldestInstance", "NewestInstance"]
+  scaling_group_name = "${var.name}"
+  vswitch_ids        = ["${local.vswitch_id}"]
 }
 
-resource "alicloud_ess_scaling_rule" "default"{
-	scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
-	scaling_rule_name = "${var.name}"
-	scaling_rule_type = "TargetTrackingScalingRule"
-    target_value = "20.2"
-	metric_name = "CpuUtilization"
-    metric_type = "system"
-	estimated_instance_warmup = 200
-	scale_in_evaluation_count = 5
-    scale_out_evaluation_count = 1
+resource "alicloud_ess_scaling_rule" "default" {
+  scaling_group_id           = "${alicloud_ess_scaling_group.default.id}"
+  scaling_rule_name          = "${var.name}"
+  scaling_rule_type          = "TargetTrackingScalingRule"
+  target_value               = "20.2"
+  metric_name                = "CpuUtilization"
+  metric_type                = "system"
+  estimated_instance_warmup  = 200
+  scale_in_evaluation_count  = 5
+  scale_out_evaluation_count = 1
 }
 
 data "alicloud_ess_scaling_rules" "default" {
@@ -871,8 +874,9 @@ func testAccCheckAliCloudEssScalingrulesDataSourceStepRuleConfig(attrMap map[str
 
 	config := fmt.Sprintf(`
 
+
 variable "name" {
-	default = "tf-testAccDataSourceEssScalingStepRulesCn"
+  default = "tf-testAccDataSourceEssScalingStepRulesCn1"
 }
 
 data "alicloud_zones" "default" {
@@ -893,19 +897,19 @@ data "alicloud_images" "default" {
 }
 
 data "alicloud_vpcs" "default" {
-	
+
 }
 data "alicloud_vswitches" "default" {
-	vpc_id = data.alicloud_vpcs.default.ids.0
-	zone_id      = data.alicloud_zones.default.zones.0.id
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_zones.default.zones.0.id
 }
 
 resource "alicloud_vswitch" "vswitch" {
-  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id            = data.alicloud_vpcs.default.ids.0
-  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id           = data.alicloud_zones.default.zones.0.id
-  vswitch_name      = var.name
+  count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id       = data.alicloud_vpcs.default.ids.0
+  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  zone_id      = data.alicloud_zones.default.zones.0.id
+  vswitch_name = var.name
 }
 
 locals {
@@ -918,40 +922,40 @@ resource "alicloud_security_group" "default" {
 }
 
 resource "alicloud_security_group_rule" "default" {
-  	type = "ingress"
-  	ip_protocol = "tcp"
-  	nic_type = "intranet"
-  	policy = "accept"
-  	port_range = "22/22"
-  	priority = 1
-  	security_group_id = "${alicloud_security_group.default.id}"
-  	cidr_ip = "172.16.0.0/24"
+  type              = "ingress"
+  ip_protocol       = "tcp"
+  nic_type          = "intranet"
+  policy            = "accept"
+  port_range        = "22/22"
+  priority          = 1
+  security_group_id = "${alicloud_security_group.default.id}"
+  cidr_ip           = "172.16.0.0/24"
 }
 
 resource "alicloud_ess_scaling_group" "default" {
-	min_size = 0
-	max_size = 2
-	default_cooldown = 20
-	removal_policies = ["OldestInstance", "NewestInstance"]
-	scaling_group_name = "${var.name}"
-	vswitch_ids = ["${local.vswitch_id}"]
+  min_size           = 0
+  max_size           = 2
+  default_cooldown   = 20
+  removal_policies   = ["OldestInstance", "NewestInstance"]
+  scaling_group_name = "${var.name}"
+  vswitch_ids        = ["${local.vswitch_id}"]
 }
 
-resource "alicloud_ess_scaling_rule" "default"{
-	scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
-	scaling_rule_name = "${var.name}"
-	scaling_rule_type = "StepScalingRule"
-    adjustment_type = "TotalCapacity"
-	estimated_instance_warmup = 200
-    step_adjustment {
-        metric_interval_lower_bound = "10.3"
-        metric_interval_upper_bound = "20.1"
-        scaling_adjustment = "1"
-	}
-    step_adjustment {
-        metric_interval_lower_bound = "20.1"
-        scaling_adjustment = "2"
-	}
+resource "alicloud_ess_scaling_rule" "default" {
+  scaling_group_id          = "${alicloud_ess_scaling_group.default.id}"
+  scaling_rule_name         = "${var.name}"
+  scaling_rule_type         = "StepScalingRule"
+  adjustment_type           = "TotalCapacity"
+  estimated_instance_warmup = 200
+  step_adjustment {
+    metric_interval_lower_bound = "10.3"
+    metric_interval_upper_bound = "20.1"
+    scaling_adjustment          = "1"
+  }
+  step_adjustment {
+    metric_interval_lower_bound = "20.1"
+    scaling_adjustment          = "2"
+  }
 }
 
 data "alicloud_ess_scaling_rules" "default" {
@@ -969,8 +973,9 @@ func testAccCheckAliCloudEssScalingrulesDataSourcePredictiveRuleConfig(attrMap m
 
 	config := fmt.Sprintf(`
 
+
 variable "name" {
-	default = "tf-testAccDataSourceEssScalingPredictiveRule"
+  default = "tf-testAccDataSourceEssScalingPredictiveRule"
 }
 
 data "alicloud_zones" "default" {
@@ -991,19 +996,19 @@ data "alicloud_images" "default" {
 }
 
 data "alicloud_vpcs" "default" {
-	
+
 }
 data "alicloud_vswitches" "default" {
-	vpc_id = data.alicloud_vpcs.default.ids.0
-	zone_id      = data.alicloud_zones.default.zones.0.id
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_zones.default.zones.0.id
 }
 
 resource "alicloud_vswitch" "vswitch" {
-  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id            = data.alicloud_vpcs.default.ids.0
-  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id           = data.alicloud_zones.default.zones.0.id
-  vswitch_name      = var.name
+  count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id       = data.alicloud_vpcs.default.ids.0
+  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  zone_id      = data.alicloud_zones.default.zones.0.id
+  vswitch_name = var.name
 }
 
 locals {
@@ -1016,36 +1021,36 @@ resource "alicloud_security_group" "default" {
 }
 
 resource "alicloud_security_group_rule" "default" {
-  	type = "ingress"
-  	ip_protocol = "tcp"
-  	nic_type = "intranet"
-  	policy = "accept"
-  	port_range = "22/22"
-  	priority = 1
-  	security_group_id = "${alicloud_security_group.default.id}"
-  	cidr_ip = "172.16.0.0/24"
+  type              = "ingress"
+  ip_protocol       = "tcp"
+  nic_type          = "intranet"
+  policy            = "accept"
+  port_range        = "22/22"
+  priority          = 1
+  security_group_id = "${alicloud_security_group.default.id}"
+  cidr_ip           = "172.16.0.0/24"
 }
 
 resource "alicloud_ess_scaling_group" "default" {
-	min_size = 0
-	max_size = 2
-	default_cooldown = 20
-	removal_policies = ["OldestInstance", "NewestInstance"]
-	scaling_group_name = "${var.name}"
-	vswitch_ids = ["${local.vswitch_id}"]
+  min_size           = 0
+  max_size           = 2
+  default_cooldown   = 20
+  removal_policies   = ["OldestInstance", "NewestInstance"]
+  scaling_group_name = "${var.name}"
+  vswitch_ids        = ["${local.vswitch_id}"]
 }
 
-resource "alicloud_ess_scaling_rule" "default"{
-	scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
-	scaling_rule_name = "${var.name}"
-	initial_max_size = 1
-	predictive_scaling_mode = "PredictAndScale"
-	predictive_value_behavior = "MaxOverridePredictiveValue"
-	predictive_value_buffer = 0
-    predictive_task_buffer_time = 0
-	scaling_rule_type = "PredictiveScalingRule"
-    metric_name = "CpuUtilization"
-	target_value = 20.1
+resource "alicloud_ess_scaling_rule" "default" {
+  scaling_group_id            = "${alicloud_ess_scaling_group.default.id}"
+  scaling_rule_name           = "${var.name}"
+  initial_max_size            = 1
+  predictive_scaling_mode     = "PredictAndScale"
+  predictive_value_behavior   = "MaxOverridePredictiveValue"
+  predictive_value_buffer     = 0
+  predictive_task_buffer_time = 0
+  scaling_rule_type           = "PredictiveScalingRule"
+  metric_name                 = "CpuUtilization"
+  target_value                = 20.1
 }
 
 data "alicloud_ess_scaling_rules" "default" {
@@ -1063,8 +1068,9 @@ func testAccCheckAliCloudEssScalingrulesDataSourceConfig(attrMap map[string]stri
 
 	config := fmt.Sprintf(`
 
+
 variable "name" {
-	default = "tf-testAccDataSourceEssScalingRules"
+  default = "tf-testAccDataSourceEssScalingRules"
 }
 
 data "alicloud_zones" "default" {
@@ -1085,19 +1091,19 @@ data "alicloud_images" "default" {
 }
 
 data "alicloud_vpcs" "default" {
-	
+
 }
 data "alicloud_vswitches" "default" {
-	vpc_id = data.alicloud_vpcs.default.ids.0
-	zone_id      = data.alicloud_zones.default.zones.0.id
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_zones.default.zones.0.id
 }
 
 resource "alicloud_vswitch" "vswitch" {
-  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id            = data.alicloud_vpcs.default.ids.0
-  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id           = data.alicloud_zones.default.zones.0.id
-  vswitch_name      = var.name
+  count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id       = data.alicloud_vpcs.default.ids.0
+  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  zone_id      = data.alicloud_zones.default.zones.0.id
+  vswitch_name = var.name
 }
 
 locals {
@@ -1110,32 +1116,32 @@ resource "alicloud_security_group" "default" {
 }
 
 resource "alicloud_security_group_rule" "default" {
-  	type = "ingress"
-  	ip_protocol = "tcp"
-  	nic_type = "intranet"
-  	policy = "accept"
-  	port_range = "22/22"
-  	priority = 1
-  	security_group_id = "${alicloud_security_group.default.id}"
-  	cidr_ip = "172.16.0.0/24"
+  type              = "ingress"
+  ip_protocol       = "tcp"
+  nic_type          = "intranet"
+  policy            = "accept"
+  port_range        = "22/22"
+  priority          = 1
+  security_group_id = "${alicloud_security_group.default.id}"
+  cidr_ip           = "172.16.0.0/24"
 }
 
 resource "alicloud_ess_scaling_group" "default" {
-	min_size = 0
-	max_size = 2
-	default_cooldown = 20
-	removal_policies = ["OldestInstance", "NewestInstance"]
-	scaling_group_name = "${var.name}"
-	vswitch_ids = ["${local.vswitch_id}"]
+  min_size           = 0
+  max_size           = 2
+  default_cooldown   = 20
+  removal_policies   = ["OldestInstance", "NewestInstance"]
+  scaling_group_name = "${var.name}"
+  vswitch_ids        = ["${local.vswitch_id}"]
 }
 
-resource "alicloud_ess_scaling_rule" "default"{
-	scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
-	scaling_rule_name = "${var.name}"
-	adjustment_type = "PercentChangeInCapacity"
-	adjustment_value = 1
-	cooldown = 30
-    min_adjustment_magnitude = 1
+resource "alicloud_ess_scaling_rule" "default" {
+  scaling_group_id         = "${alicloud_ess_scaling_group.default.id}"
+  scaling_rule_name        = "${var.name}"
+  adjustment_type          = "PercentChangeInCapacity"
+  adjustment_value         = 1
+  cooldown                 = 30
+  min_adjustment_magnitude = 1
 }
 
 data "alicloud_ess_scaling_rules" "default" {
