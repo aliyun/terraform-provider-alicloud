@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 """Standalone composition root for Scheduler-owned Jobs.
 
-This process deliberately contains no DingTalk stream, legacy scanner, PR/reply
-watcher, or Task queue worker.  It is the sole runtime behind
-``bridge/run.sh`` while the legacy bridge remains in
-``jarvis_dingtalk_bot.py``.
+This process contains no DingTalk stream or Persistent Worker. ``bridge/run.sh``
+supervises it alongside those independent entry points on the scheduler host.
 """
 
 from __future__ import annotations

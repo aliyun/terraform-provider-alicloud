@@ -5,24 +5,18 @@ from __future__ import annotations
 import json
 import os
 from datetime import datetime
-from pathlib import Path
 import subprocess
 import time
-from typing import Any, TYPE_CHECKING
+from typing import Any
 
-from bridge.jarvis_task_router import ExecutionRouter
-if TYPE_CHECKING:
-    from bridge.persistent_tasks import WakePersistence
+from bridge.jarvis_task_router import (
+    ExecutionRouter, HEADLESS_POLICY_REVISION, WakePersistence,
+    broadcast_target, broadcast_type,
+)
 
 from ..model import JobResult, JobResultStatus, ScheduledJobDefinition, is_aware
-from bridge.aone_workitems import (
-    AoneRuntime,
-    HEADLESS_POLICY_REVISION,
-    REPO_ROOT,
-    _task_result_instructions,
-    broadcast_target,
-    broadcast_type,
-)
+from bridge.aone_tasks import REPO_ROOT, _task_result_instructions
+from bridge.helpers.aone import _is_human_comment
 
 
 JOB_KEY = "aone.reply"
@@ -44,7 +38,6 @@ class ReplyRunner:
     @property
     def _wake_persistence(self) -> WakePersistence:
         if self._wake is None:
-            from bridge.persistent_tasks import WakePersistence
             router = ExecutionRouter(client=self._task_client, logger=self._logger)
             self._wake = WakePersistence(
                 execution_router=router,
@@ -98,7 +91,7 @@ class ReplyRunner:
             return None
 
     def _is_human_comment(self, creator: str, content: str) -> bool:
-        return AoneRuntime._is_human_comment(creator, content)
+        return _is_human_comment(creator, content)
 
     def _tick(self) -> None:
         now = time.time()

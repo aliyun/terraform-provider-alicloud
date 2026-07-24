@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Unit: PrWatchScheduler open-PR 全生命周期看守（post-PR 生命周期清单 #1/#2/#3）.
+"""Unit: pr_watch runner open-PR 全生命周期看守（post-PR 生命周期清单 #1/#2/#3）.
 
 Gap (workflow assess-post-pr-loop → PR lifecycle handling):
 提交 PR 后单次 headless 会话撑不住多日合并窗口——CI 转红没人修、reviewer 在 GitHub 上评论没人
-回应、轮询频率跟不上。本测试锁住 PrWatchScheduler 升级为「全生命周期看守器」后的三块逻辑：
+回应、轮询频率跟不上。本测试锁住 pr_watch runner 作为「全生命周期看守器」的三块逻辑：
   · #1 _gh_pr_ci 解析 (failing/pending) + _maybe_dispatch_ci_fix 派发/去重/上限/active 信号；
   · #2 _gh_pr_comments 解析(排除自己/bot) + _maybe_dispatch_comment_reply baseline+新评论派发；
   · #3 active 信号驱动双档轮询（_maybe_dispatch_ci_fix 返回 True/False）。
@@ -20,7 +20,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 from bridge.jarvis_task_router import EnqueueResult  # noqa: E402
-from bridge import aone_events as events  # noqa: E402
+from bridge.helpers import aone as events  # noqa: E402
 from bridge.scheduler.runners import pr_watch as bot  # noqa: E402
 
 TID = "84251052"

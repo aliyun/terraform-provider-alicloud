@@ -1,4 +1,4 @@
-"""Durable Aone and DingTalk lifecycle-event delivery."""
+"""Durable Aone lifecycle-event delivery and Aone shared primitives."""
 
 from __future__ import annotations
 
@@ -12,36 +12,71 @@ import re
 import subprocess
 import threading
 import time
-import uuid
 
-from bridge.persistent_tasks import (
-    PERSONA_PUBLIC_IDENTITY, REPO_ROOT, _a1_command_env,
-    _aone_event_sanitize_text, log,
-)
+
+log = logging.getLogger("jarvis-aone")
+REPO_ROOT = Path(__file__).resolve().parents[2]
+PERSONA_PUBLIC_IDENTITY = "terraform-rd"
+
+
+def _a1_command_env(terraform=False):
+    env = os.environ.copy()
+    for name in ("JARVIS_A1_IDENTITY", "JARVIS_A1_STRICT", "JARVIS_AONE_WRITE_POLICY"):
+        env.pop(name, None)
+    if terraform:
+        env.update(JARVIS_A1_IDENTITY=PERSONA_PUBLIC_IDENTITY, JARVIS_A1_STRICT="1")
+    return env
 
 def _is_terraform_project(project):
+    """Return whether a project belongs to the Terraform provider line."""
     target = str(project or "")
     if not target:
         return False
     try:
         cfg = json.loads((Path(REPO_ROOT) / "config" / "pools.json").read_text())
-        return any(str(pool.get("project") or "") == target and str(pool.get("line") or "") == "terraform_provider" for pool in (cfg.get("pools", {}) or {}).values())
-    except Exception:
+        return any(
+            str(pool.get("project") or "") == target
+            and str(pool.get("line") or "") == "terraform_provider"
+            for pool in (cfg.get("pools", {}) or {}).values()
+        )
+    except Exception:  # noqa: BLE001
         return False
 
 def _normalize_content(text):
     return str(text or "").replace("\\r\\n", "\\n").replace("\\r", "\\n")
-AONE_EVENT_PATH = Path(REPO_ROOT) / ".my-day/bridge/aone-event-ledger.json"
 
-DINGTALK_EVENT_PATH = Path(REPO_ROOT) / ".my-day/bridge/dingtalk-event-ledger.json"
+
+def _is_human_comment(author, content=""):
+    identity = str(author or "").strip().lower()
+    return bool(identity and "open-jarvis" not in identity
+                and "worker_" not in identity and "terraform-" not in identity
+                and identity not in {"kelude", "云知道平台公共账号"}
+                and not str(content or "").strip().lower().startswith("jarvis-claim"))
+
+
+def _contact_directory():
+    """Return contact records and agent-to-human fallbacks from one shared source."""
+    by_token, fallbacks = {}, {}
+    try:
+        data = json.loads((REPO_ROOT / "config/contacts.json").read_text())
+    except Exception as exc:  # noqa: BLE001
+        log.warning("aone: cannot load contacts.json: %s", exc)
+        return by_token, fallbacks
+    for contact in data.get("contacts") or []:
+        if not isinstance(contact, dict):
+            continue
+        record = {key: str(contact.get(key) or "").strip()
+                  for key in ("id", "name", "flower")}
+        by_token.update({value.lower(): record for value in record.values() if value})
+    for worker, human in (data.get("agent_fallbacks") or {}).items():
+        if str(worker).strip() and str(human).strip():
+            fallbacks[str(worker).strip().lower()] = str(human).strip()
+    return by_token, fallbacks
+AONE_EVENT_PATH = Path(REPO_ROOT) / ".my-day/bridge/aone-event-ledger.json"
 
 _aone_event_lock = threading.RLock()
 
 _aone_event_inflight = set()
-
-_dingtalk_event_lock = threading.RLock()
-
-_dingtalk_event_inflight = set()
 
 _AONE_EVENT_DIGEST_LEN = 24
 
@@ -123,6 +158,24 @@ _AONE_RESOURCE_ID_KEY_RE = re.compile(
     r"(?P<key>(?:instance|resource|vpc|v[_-]?switch|vswitch|subnet|security[_-]?group|"
     r"load[_-]?balancer|cluster|database|db|redis|eni|eip)[_-]?id)"
     r"(?P=quote)\s*[:=：]\s*)(?P<value>%s)" % _AONE_KV_VALUE_PATTERN)
+
+
+def _aone_event_sanitize_text(text, limit=2000):
+    """Remove internal protocol markers and sensitive values before publishing."""
+    value = str(text or "").replace("\x00", "").replace("\r\n", "\n").replace("\r", "\n")
+    value = _AONE_INTERNAL_SENTINEL_RE.sub("", value)
+    value = "\n".join(line for line in value.splitlines() if not (
+        _AONE_INTERNAL_STAGE_MARKER_RE.search(line)
+        or _AONE_INTERNAL_STAGE_RE.match(line) or _AONE_INTERNAL_FIELD_RE.match(line)))
+    for pattern in (_AONE_AUTH_ASSIGN_RE, _AONE_REQUEST_ID_RE, _AONE_SECRET_ASSIGN_RE,
+                    _AONE_USERNAME_ZH_RE, _AONE_RESOURCE_ID_KEY_RE):
+        value = pattern.sub(_aone_redact_kv, value)
+    value = _AONE_BEARER_RE.sub("Bearer [REDACTED]", value)
+    value = _AONE_BASIC_RE.sub("Basic [REDACTED]", value)
+    value = _AONE_ACCESS_KEY_RE.sub("[REDACTED]", value)
+    value = _AONE_INSTANCE_ID_RE.sub("[REDACTED]", value)
+    value = re.sub(r"\n{3,}", "\n\n", value).strip()
+    return value if limit is None or len(value) <= int(limit) else value[:max(0, int(limit) - 1)].rstrip() + "…"
 
 def _aone_event_load():
     """Load ``{pending, posted}`` event ledger. Corruption is fail-open for recovery:
@@ -587,210 +640,3 @@ def _aone_event_enqueue(ticket, project, event_key, text, allow_non_tf=False,
     with _aone_event_lock:
         ledger = _aone_event_load()
         return ledger_id in ledger["pending"] or ledger_id in ledger["posted"]
-
-def _dingtalk_event_load():
-    """Load the DingTalk channel ledger.
-
-    This ledger is deliberately independent from ``AONE_EVENT_PATH``: a successful Aone
-    comment must never suppress a failed private message (or vice versa).
-    """
-    empty = {"pending": {}, "posted": {}, "suppressed": {}}
-    try:
-        if not DINGTALK_EVENT_PATH.exists():
-            return empty
-        raw = json.loads(DINGTALK_EVENT_PATH.read_text())
-        if not isinstance(raw, dict):
-            return empty
-        return {
-            name: raw.get(name) if isinstance(raw.get(name), dict) else {}
-            for name in ("pending", "posted", "suppressed")
-        }
-    except Exception as e:  # noqa: BLE001
-        log.warning("dingtalk-event: could not load %s: %s", DINGTALK_EVENT_PATH, e)
-        return empty
-
-def _dingtalk_event_write(ledger):
-    try:
-        DINGTALK_EVENT_PATH.parent.mkdir(parents=True, exist_ok=True)
-        tmp = DINGTALK_EVENT_PATH.parent / (DINGTALK_EVENT_PATH.name + ".tmp")
-        tmp.write_text(json.dumps(ledger, ensure_ascii=False, default=str))
-        os.replace(str(tmp), str(DINGTALK_EVENT_PATH))
-        return True
-    except Exception as e:  # noqa: BLE001
-        log.warning("dingtalk-event: could not persist %s: %s", DINGTALK_EVENT_PATH, e)
-        return False
-
-def _dingtalk_event_out_track_id(event_digest, staff_id):
-    """Stable UUID-shaped receipt id closes the remote-success/local-crash retry window."""
-    seed = "%s\x00%s" % (event_digest, staff_id)
-    return str(uuid.uuid5(uuid.NAMESPACE_URL, "jarvis-dingtalk:" + seed))
-
-def _dingtalk_event_mark(ledger_id, record, bucket, state):
-    with _dingtalk_event_lock:
-        ledger = _dingtalk_event_load()
-        ledger["pending"].pop(ledger_id, None)
-        done = dict(record)
-        done["state"] = state
-        done["completed_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-        ledger[bucket][ledger_id] = done
-        return _dingtalk_event_write(ledger)
-
-def _dingtalk_result(stdout):
-    """Parse the last machine-readable result line emitted by notify-dingtalk.sh."""
-    for line in reversed(str(stdout or "").splitlines()):
-        try:
-            value = json.loads(line)
-        except Exception:  # noqa: BLE001
-            continue
-        if isinstance(value, dict) and value.get("status") in ("sent", "skipped", "failed"):
-            return value
-    return None
-
-def _dingtalk_event_publish_digest(
-        ticket, project, event_digest, staff_id, title, text, allow_non_tf=False):
-    ticket = str(ticket or "")
-    project = str(project or "")
-    staff_id = str(staff_id or "").strip()
-    event_digest = str(event_digest or "").strip()
-    title = _aone_event_sanitize_text(title, limit=120)
-    text = _aone_event_sanitize_text(text)
-    if (not ticket.isdigit() or not project or not staff_id or staff_id.startswith("WORKER_")
-            or not _AONE_EVENT_DIGEST_RE.fullmatch(event_digest) or not title or not text):
-        return False
-    if not _is_terraform_project(project) and not allow_non_tf:
-        return False
-    ledger_id = _aone_event_ledger_id_from_digest(ticket, event_digest)
-    now = time.time()
-    with _dingtalk_event_lock:
-        ledger = _dingtalk_event_load()
-        if ledger_id in ledger["posted"] or ledger_id in ledger["suppressed"]:
-            return True
-        if ledger_id in _dingtalk_event_inflight:
-            return False
-        record = ledger["pending"].get(ledger_id)
-        if not isinstance(record, dict):
-            record = {
-                "ticket": ticket,
-                "project": project,
-                "event_digest": event_digest,
-                "staff_id": staff_id,
-                "title": title,
-                "text": text,
-                "state": "pending",
-                "attempts": 0,
-                "receipt": _dingtalk_event_out_track_id(event_digest, staff_id),
-                "allow_non_tf": bool(allow_non_tf),
-                "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            }
-        else:
-            record.update({
-                "ticket": ticket,
-                "project": project,
-                "event_digest": event_digest,
-                "staff_id": staff_id,
-                "title": title,
-                "text": text,
-                "allow_non_tf": bool(record.get("allow_non_tf") or allow_non_tf),
-            })
-            record.setdefault("receipt", _dingtalk_event_out_track_id(event_digest, staff_id))
-        try:
-            not_before = float(record.get("not_before") or 0)
-        except (TypeError, ValueError):
-            not_before = 0
-        ledger["pending"][ledger_id] = record
-        if not _dingtalk_event_write(ledger):
-            return False
-        if not_before > now:
-            return False
-        _dingtalk_event_inflight.add(ledger_id)
-    try:
-        with _dingtalk_event_lock:
-            ledger = _dingtalk_event_load()
-            pending = ledger["pending"].get(ledger_id, record)
-            pending["state"] = "posting"
-            pending["last_attempt_at"] = time.strftime(
-                "%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-            ledger["pending"][ledger_id] = pending
-            if not _dingtalk_event_write(ledger):
-                return False
-            record = pending
-        try:
-            proc = subprocess.run(
-                [str(REPO_ROOT / "bootstrap" / "notify-dingtalk.sh"),
-                 "--result-json", "--out-track-id", record["receipt"],
-                 staff_id, title, text],
-                capture_output=True, text=True, cwd=str(REPO_ROOT), timeout=120)
-        except Exception as e:  # noqa: BLE001
-            proc = None
-            result = None
-            error = "notify transport exception: %s" % e
-        else:
-            result = _dingtalk_result(proc.stdout)
-            error = ((proc.stderr or "").strip()[:300]
-                     if proc.returncode != 0 or result is None else "")
-        with _dingtalk_event_lock:
-            ledger = _dingtalk_event_load()
-            pending = ledger["pending"].get(ledger_id, record)
-            pending["attempts"] = int(pending.get("attempts") or 0) + 1
-            if result and result.get("receipt"):
-                pending["receipt"] = str(result["receipt"])
-            ledger["pending"][ledger_id] = pending
-            _dingtalk_event_write(ledger)
-            record = pending
-        if result and result.get("status") == "sent":
-            return _dingtalk_event_mark(ledger_id, record, "posted", "posted")
-        if result and result.get("status") == "skipped":
-            record["reason"] = str(result.get("reason") or "suppressed")[:120]
-            return _dingtalk_event_mark(
-                ledger_id, record, "suppressed", "suppressed")
-        with _dingtalk_event_lock:
-            ledger = _dingtalk_event_load()
-            pending = ledger["pending"].get(ledger_id, record)
-            uncertain = proc is None or (proc.returncode == 0 and result is None)
-            pending["state"] = "post_uncertain" if uncertain else "failed"
-            pending["error"] = str(
-                (result or {}).get("reason") or error or "notify failed")[:300]
-            # Exponential backoff capped at one day. The daily revisit also retries, and
-            # Scan/PR-watch flushes cover shorter transient outages.
-            pending["not_before"] = time.time() + min(
-                86400, 300 * (2 ** min(int(pending.get("attempts") or 1) - 1, 8)))
-            ledger["pending"][ledger_id] = pending
-            _dingtalk_event_write(ledger)
-        return False
-    finally:
-        with _dingtalk_event_lock:
-            _dingtalk_event_inflight.discard(ledger_id)
-
-def _dingtalk_event_publish(
-        ticket, project, event_key, staff_id, title, text, allow_non_tf=False):
-    return _dingtalk_event_publish_digest(
-        ticket, project, _aone_event_digest(event_key), staff_id, title, text,
-        allow_non_tf=allow_non_tf)
-
-def _dingtalk_event_enqueue(
-        ticket, project, event_key, staff_id, title, text, allow_non_tf=False):
-    if _dingtalk_event_publish(
-            ticket, project, event_key, staff_id, title, text,
-            allow_non_tf=allow_non_tf):
-        return True
-    ledger_id = _aone_event_ledger_id(ticket, event_key)
-    with _dingtalk_event_lock:
-        ledger = _dingtalk_event_load()
-        return any(ledger_id in ledger[name] for name in ("pending", "posted", "suppressed"))
-
-def _dingtalk_event_flush(limit=20):
-    with _dingtalk_event_lock:
-        pending = list(_dingtalk_event_load()["pending"].values())[:max(0, int(limit))]
-    flushed = 0
-    for rec in pending:
-        if not isinstance(rec, dict):
-            continue
-        digest = str(rec.get("event_digest") or "")
-        if not _AONE_EVENT_DIGEST_RE.fullmatch(digest):
-            continue
-        if _dingtalk_event_publish_digest(
-                rec.get("ticket"), rec.get("project"), digest,
-                rec.get("staff_id"), rec.get("title"), rec.get("text"),
-                allow_non_tf=bool(rec.get("allow_non_tf"))):
-            flushed += 1
-    return flushed

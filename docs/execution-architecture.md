@@ -40,9 +40,8 @@ Tata/chat presentation, and subcommands already enclosed by a Task Session.
   fenced pre-exec gate.
 - `ControlPlaneClient` covers Task, Session, Worker, Event, and Operation APIs.
 - `SessionController` owns fenced Task Session transitions.
-- `ManagedWaitSensor` reconstructs current `AONE_REPLY` waits from the control
-  plane and publishes comment continuations; `WaitWatcher` remains local-only
-  for EphemeralJobs.
+- The Scheduler `reply` runner reconstructs current `AONE_REPLY` waits from the
+  control plane and persists wake Tasks when a human response arrives.
 
 Every Task is persisted by the control plane and can only be executed by a
 `PersistenceExecutor`.  A control-plane failure is fail-closed: Task work stays
@@ -107,47 +106,18 @@ states are not converted to turn-idle failures.
 
 ## Dead interactive Session recovery
 
-An interactive Worker that dies without suspending leaves its Task outside
-every queue: `hasInteractiveLineage` permanently blocks a SHADOW→MANAGED
-upgrade, so no PersistenceExecutor can lease it, and the Aone scanner skips
-the still-tagged ticket.  The reaper settles the dead Session as
-SHADOW+RESUMABLE (resume context available) or SHADOW without a current
-Session (CORRUPTED archive), or RECOVERY_REQUIRED when a required Operation
-receipt is unreconciled.
+Interrupted Task recovery is owned by the control plane. Its reaper expires
+stale leases, fences the old Session and returns replay-safe work to the
+durable Task lifecycle. The bridge does not keep a second local redispatch
+ledger or spawn replacement work from Scheduler state.
 
-The bridge `RecoveryScheduler` enumerates candidates from two channels.  The
-fast channel watches `/workers` for STALE/OFFLINE Workers, remembering each
-live Worker's assignments in `.my-day/bridge/recovery.json` because an expired
-lease immediately drops the assignment from the response.  Sampling alone can
-still miss a death entirely: when claim, crash, reaper convergence, and the
-`/workers` drop all happen before the scheduler's first tick — right after a
-bridge restart, after a lost ledger, or on a fresh machine — neither source
-has ever seen the assignment, and the Task would be parked forever.  The
-persistent channel closes that hole: `ScanScheduler` atomically persists the
-Aone `jarvis-claimed` inventory to `.my-day/bridge/claimed-snapshot.json` on
-every scan tick, and the scheduler cross-checks each snapshot entry against
-the control plane (a snapshot entry without a Task row is a legacy recovery
-candidate; per-tick corroboration is capped by
-`JARVIS_RECOVERY_SNAPSHOT_MAX`).  ClaimHealthScheduler independently checks the
-same claimed inventory at most every five minutes.  It treats advancing
-RUNNING/LEASED Session health and unexpired AONE_REPLY/MANUAL waits as healthy,
-allows 15 minutes from the last healthy Session heartbeat for lease/reaper
-convergence, and requires two observations at least five minutes apart for a
-missing Task, terminal residue, or malformed control-plane structure.  The
-180-minute legacy fallback applies only after `tasks/by-aone` successfully
-returns no Task; a failed control-plane query is silent.  The local ledger is therefore only a
-fast-channel accelerator plus debounce/round bookkeeping — never the source
-of candidate truth.  Candidates from both channels are deduplicated and
-corroborated through `tasks/by-aone` plus the Task timeline.  Recovery then
-goes through the front door: it spawns a headless
-jarvis as an EphemeralJob (only the process shell, no recovery promise of its
-own) whose `claim.sh claim` performs the fenced targeted `claimTask`.  Under
-`REPLAY_SAFE` the control plane archives the dead Session and issues a new
-fence, so the work is again enclosed by a fenced Task Session.  `RESUME_ONLY`
-and `MANUAL` Tasks and `RECOVERY_REQUIRED` are announced instead of
-re-dispatched; a SUSPENDED Task stays with its wait/affinity flow.
-`JARVIS_RECOVERY_REDISPATCH=0` keeps detection and announcements but spawns
-nothing.
+The `claim_health` runner independently reads the current
+`jarvis-claimed` inventory and corroborates each item with `tasks/by-aone` and
+the Task timeline. It treats advancing RUNNING/LEASED Sessions and unexpired
+waits as healthy, allows 15 minutes for heartbeat/lease convergence, and
+requires two observations at least five minutes apart for missing Tasks,
+terminal residue or malformed control-plane structure. It only publishes an
+idempotent alert; it never releases a claim or executes business work.
 
 ## External side effects
 

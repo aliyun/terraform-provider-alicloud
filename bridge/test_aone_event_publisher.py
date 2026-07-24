@@ -8,7 +8,7 @@ from pathlib import Path
 
 from bridge import jarvis_dingtalk_bot as bot
 from bridge import persistent_tasks
-from bridge import aone_events as publisher
+from bridge.helpers import aone as publisher
 
 TID = "90000001"
 PROJ = "528766"

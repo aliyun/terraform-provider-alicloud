@@ -6,7 +6,6 @@
 | --- | --- | --- |
 | 自动扫描发现工单并写入 Task | 不发群消息 | 控制面记录 `READY`；日志写 `persisted`。禁止再使用“已自动派发”，因为 Task 入库不代表 Worker 已 lease。 |
 | 本地临时队列满 | 不发群消息 | warning 日志；下轮自动重试。持续容量异常由监控告警承接。 |
-| `JARVIS_AUTO_DISPATCH=0` 等待人工授权 | 保留群卡片 | 这是显式的人机审批入口，必须让群内授权人看到；回复“处理 #ID/全部处理”后进入队列。 |
 | stale `jarvis-claimed` 检查 | 不发群消息 | 控制面 lease/reaper 负责恢复，扫描器只记 warning，避免每轮重复告警。 |
 | PR 自动补登记 | 不发群消息 | 登记和 CI/review 游标持久化到 `.my-day/bridge/pr-watch.json`，重启后直接恢复。 |
 | PR CI 失败并写入修复 Task | 不发群消息 | 控制面记录 Task；超过自动修复上限才进入“需人工介入”。 |

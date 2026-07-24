@@ -20,7 +20,7 @@ from bridge.jarvis_field_repair import (  # noqa: E402
 from bridge.jarvis_task_client import TaskEnvelope  # noqa: E402
 from bridge.jarvis_task_router import EnqueueResult  # noqa: E402
 from bridge import jarvis_dingtalk_bot as bot  # noqa: E402
-from bridge.aone_workitems import AoneRuntime  # noqa: E402
+from bridge.scheduler.runners.scan import ScanRunner  # noqa: E402
 
 
 def continuation(revision="modified:2026-07-23T08:00:00Z"):
@@ -420,7 +420,7 @@ class FieldRepairBridgeIntegrationTest(unittest.TestCase):
         }
 
     def test_scheduler_missing_fields_persists_only_repair_task(self):
-        scanner = AoneRuntime.__new__(AoneRuntime)
+        scanner = ScanRunner.__new__(ScanRunner)
         scanner.handler = None
         scanner.pool = None
         scanner.field_repair_worker = SimpleNamespace(
@@ -436,7 +436,7 @@ class FieldRepairBridgeIntegrationTest(unittest.TestCase):
                          ["field_repair"])
 
     def test_scheduler_complete_fields_persists_business_task_without_repair(self):
-        scanner = AoneRuntime.__new__(AoneRuntime)
+        scanner = ScanRunner.__new__(ScanRunner)
         scanner.handler = None
         scanner.pool = None
         ready = dict(inspection(), status="ready", missing=[],

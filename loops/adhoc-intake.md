@@ -76,7 +76,7 @@ EOF
 
 收尾回填 Aone（评论+改状态）并落 `runs/`；dev 中途用 `wrap.sh sync <id> --summary-stdin <<'EOF' ... EOF` 或 `--summary-file <path>` 报多行进展。临时数据走 `.my-day/`，禁往仓库根甩 scratch。Aone 唯一真源——禁止只在本地推进不落 Aone。
 
-> **收尾必走 bookend，禁裸 `log.sh run_done`**：凡 claim 过的工单(新建/复用都算)，收尾用 `bootstrap/triage-one.sh <id> <pool> <project> "<summary>" <status>`(claim→done→release 一把成对)，或手跑 `wrap.sh done` + `claim.sh release` 两步。裸 run_done 只落本地审计：标签停 claimed/状态不动/release 漏。claim 开头、release 收尾闭合；bridge 的 fenced Session 与 AoneScheduler 对账负责异常恢复和状态漂移告警。
+> **收尾必走 bookend，禁裸 `log.sh run_done`**：凡 claim 过的工单(新建/复用都算)，收尾用 `bootstrap/triage-one.sh <id> <pool> <project> "<summary>" <status>`(claim→done→release 一把成对)，或手跑 `wrap.sh done` + `claim.sh release` 两步。裸 run_done 只落本地审计：标签停 claimed/状态不动/release 漏。claim 开头、release 收尾闭合；bridge 的 fenced Session 与 `claim_health`/`scan` runner 负责异常和状态漂移告警。
 
 ---
 

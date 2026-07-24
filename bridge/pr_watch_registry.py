@@ -9,7 +9,7 @@ from pathlib import Path
 import threading
 import time
 
-from bridge.aone_workitems import REPO_ROOT
+from bridge.helpers.aone import REPO_ROOT
 
 
 log = logging.getLogger("jarvis-pr-watch")

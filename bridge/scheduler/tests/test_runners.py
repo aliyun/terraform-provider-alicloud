@@ -36,7 +36,7 @@ def definition(job_id: str) -> ScheduledJobDefinition:
     )
 
 
-class SchedulerRuntimeRunnerTests(unittest.TestCase):
+class SchedulerRunnerTests(unittest.TestCase):
     def test_catalogue_uses_direct_domain_runners(self):
         runners = build_runners(
             logger=logging.getLogger(__name__),
@@ -62,21 +62,21 @@ class SchedulerRuntimeRunnerTests(unittest.TestCase):
         self.assertEqual(job.calls, 1)
 
     def test_aone_scan_runs_one_tick(self):
-        runtime = SimpleNamespace(calls=0)
-        runtime._tick = lambda: setattr(runtime, "calls", runtime.calls + 1)
-        runner = scan.ScanRunner(runtime)
+        runner = scan.ScanRunner(
+            logger=logging.getLogger(__name__),
+            task_client=object(),
+            repo_root=Path("/repo"),
+        )
+        calls = []
+        runner._tick = lambda: calls.append("tick")
 
         result = runner.run(definition("aone.scan"), datetime.now(UTC))
 
         self.assertEqual(result.status.value, "SUCCEEDED")
-        self.assertEqual(runtime.calls, 1)
+        self.assertEqual(calls, ["tick"])
 
     def test_claim_health_reconciles_then_flushes(self):
         order = []
-        runtime = SimpleNamespace(_claim_health_activity_cache={})
-        runtime._scan_claimed = lambda: order.append("scan") or {"one": {}}
-        runtime._reconcile_stale_claims = lambda snapshot: order.append(
-            "reconcile:%s" % sorted(snapshot))
         with TemporaryDirectory() as directory, \
              mock.patch.object(
                  claim_health, "_aone_event_flush",
@@ -85,7 +85,13 @@ class SchedulerRuntimeRunnerTests(unittest.TestCase):
                  claim_health, "_dingtalk_event_flush",
                  side_effect=lambda: order.append("dingtalk-flush")):
             runner = claim_health.ClaimHealthRunner(
-                runtime, Path(directory), logging.getLogger(__name__))
+                logger=logging.getLogger(__name__),
+                task_client=object(),
+                repo_root=Path(directory),
+            )
+            runner._scan_claimed = lambda: order.append("scan") or {"one": {}}
+            runner._reconcile_stale_claims = lambda snapshot: order.append(
+                "reconcile:%s" % sorted(snapshot))
             result = runner.run(
                 definition("aone.claim-health"), datetime.now(UTC))
 

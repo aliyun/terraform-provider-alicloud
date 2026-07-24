@@ -71,11 +71,10 @@ from urllib.error import URLError
 
 from bridge.jarvis_task_client import ControlPlaneClient, TaskEnvelope
 from bridge.jarvis_capacity import CapacityManager
-from bridge.jarvis_task_router import ExecutionRouter
+from bridge.jarvis_task_router import ExecutionRouter, WakePersistence
 from bridge.persistent_tasks import (
     PersistentTaskExecution,
     TaskAoneBookend as _TaskAoneBookend,
-    WakePersistence,
     dispatch_item as _dispatch_item,
     extract_suspend,
     extract_task_result,
@@ -119,29 +118,30 @@ from bridge.jarvis_field_repair import (
     build_field_repair_envelope,
 )
 from bridge.headless_runtime import HeadlessRequest, HeadlessRuntime, Lane, SessionPolicy
+from bridge.jarvis_task_router import (
+        _TaskAttentionPublisher,
+        _attention_owner_staff_id,
+        _source_ref_with_title,
+        _task_envelope,
+        broadcast_target,
+        broadcast_type,
+)
 
 
-from bridge.aone_workitems import (
-        AoneRuntime,
-        DailyNudge,
+from bridge.aone_tasks import (
         PERSONA_INTERNAL_ROLES,
         PERSONA_PUBLIC_IDENTITY,
         TERRAFORM_TITLE_KEYWORDS,
         _a1_command_env,
         _aone_preflight,
         _is_terraform_project,
-        _is_terraform_ticket,
         _persona_fence,
-        _task_envelope,
         _task_result_instructions,
         _ticket_dispatch_context,
-        _ticket_prompt,
-        broadcast_target,
-        broadcast_type,
         claude_bin,
         master_staff,
 )
-from bridge.aone_events import (
+from bridge.helpers.aone import (
         _AONE_ACCESS_KEY_RE,
         _AONE_BASIC_RE,
         _AONE_BEARER_RE,
@@ -157,14 +157,8 @@ from bridge.aone_events import (
         _aone_event_marker_from_digest,
         _aone_event_sanitize_text,
         _aone_event_source_part,
-        _dingtalk_event_enqueue,
 )
-from bridge.persistent_tasks import (
-        _TaskAttentionPublisher,
-        _attention_owner_staff_id,
-        _source_ref_with_title,
-)
-
+from bridge.helpers.dingtalk import _dingtalk_event_enqueue
 # The DingTalk SDK is only needed by the live WebSocket path in main(). Guard the
 # import so the module still loads for the hermetic test suite and --dry-run-once
 # on hosts without the SDK; JarvisHandler subclasses the base at class-def time, so
@@ -696,10 +690,6 @@ JARVIS_SENTINEL = re.compile(r"^\s*\[\[JARVIS\]\]\s*(.+)$", re.MULTILINE)
 # Tata 偶尔即便闲聊也甩哨兵, 任务文写成"无需转交"。兜底: 含否定词/过短一律不升级。
 TASK_REJECT = re.compile(r"无需|不需要|不用|纯打招呼|闲聊|没有真活|无须|不必|没真活")
 
-# Scan scheduler authorization commands: "处理 #12345" or "全部处理"/"批量处理"
-AUTH_SINGLE = re.compile(r"处理\s*#?(\d+)")
-AUTH_ALL = re.compile(r"全部处理|批量处理")
-
 # Headless suspend sentinel: [[SUSPEND:{"aone_id":"12345","wait_for":"chenyi",...}]]
 SUSPEND_RE = re.compile(r'\[\[SUSPEND:(.*?)\]\]', re.DOTALL)
 # Terraform revisit important-event sentinel. The model supplies semantic facts, not a
@@ -830,7 +820,7 @@ PERSONA_CLOSE_ESCALATION = (("辰羿", "320687"), ("过载", "484483"))
 # jarvis 编排层 worker id（与 JARVIS_SELF_IDS 保持一致）。
 
 # 「数字人」account 单一真源：编排层 jarvis + 公开 TerraformRD + 旧 PD/QA 兼容 worker。
-# AoneRuntime 的 assignedTo / workitem.tracker 过滤都引用它——一处维护，扫描面不再散落
+# ScanRunner 的 assignedTo / workitem.tracker 过滤都引用它——一处维护，扫描面不再散落
 # （原来散在 pools.json 的 assignee=WORKER_1782379562571 与 PERSONA_WORKER_IDS 两处）。
 # @jarvis(编排层)识别：@jarvis / @open-jarvis / @WORKER_1782379562571（Aone UI 括号形态亦可）。
 # **仅用于关单请求提醒**——scope 决策：jarvis 一般 @ 不触发 persona 协作，只有明确关单请求才走
@@ -1415,17 +1405,11 @@ class JarvisHandler(AsyncChatbotHandler):
         )
         # Manual authorization is an on-demand Aone read facade. Periodic scan,
         # nudge, and PR watch live only in the Scheduler process.
-        self.aone = (
-            AoneRuntime(
-                execution_router=self.execution_router,
-                field_repair_worker=self.field_repair_worker)
-            if os.environ.get("JARVIS_AUTO_DISPATCH", "1") == "0" else None)
         log.info("audience=%s master=%s root=%s tata_cwd=%s claude=%s skill=%s "
-                 "tata_resident=%s tata_dws_history=%s auto_dispatch=%s execution_capacity=%s "
+                 "tata_resident=%s tata_dws_history=%s execution_capacity=%s "
                  "task_types=%s",
                  self.audience or "*", master_staff(), jarvis_root(), tata_root(),
                  claude_bin(), skill_path(), bool(self.pool), bool(self.tata_history),
-                 os.environ.get("JARVIS_AUTO_DISPATCH", "1") != "0",
                  self.ephemeral_executor.max_workers,
                  sorted(self.execution_router.task_types))
 
@@ -2008,70 +1992,6 @@ class JarvisHandler(AsyncChatbotHandler):
             log.warning("ignore callback with incomplete conversation scope group=%s", is_group)
             return AckMessage.STATUS_OK, "invalid_scope"
         scope_key = scope.session_key
-
-        # Authorization interception (fallback mode / manual override): "处理 #ID" or
-        # "全部处理" → dispatch the pending item(s) as headless jarvis, one fresh session
-        # per ticket (每单一实例). In auto mode pending is normally empty (items go
-        # straight to the pool); this path stays as the JARVIS_AUTO_DISPATCH=0 fallback.
-        if self.aone and staff in api_tool_staff():
-            auth_m = AUTH_SINGLE.match(text)
-            if auth_m:
-                item = self.aone.authorize(auth_m.group(1))
-                if item:
-                    prompt = _ticket_prompt(item["id"], item.get("title", ""),
-                                            item.get("pool", ""), item.get("pool_project", ""))
-                    tf = _is_terraform_ticket(item.get("pool", ""), item.get("title", ""))
-                    accepted, reason = self._submit_card(
-                        item["id"], card_target, card_type,
-                        prompt, str(uuid.uuid4()), False, terraform=tf,
-                        project=item.get("pool_project"),
-                        title=item.get("title"))
-                    if accepted:
-                        self.aone.complete_authorization(item["id"])
-                        self._quick_card(
-                            card_target,
-                            "⚙️ 已接收工单 #%s，后台处理中…" % item["id"],
-                            card_type)
-                        return AckMessage.STATUS_OK, "dispatched"
-                    return AckMessage.STATUS_OK, reason
-                else:
-                    self._quick_card(card_target, "工单 #%s 不在待处理列表中。" % auth_m.group(1), card_type)
-                    return AckMessage.STATUS_OK, "not_pending"
-            if AUTH_ALL.match(text):
-                items = self.aone.authorize_all()
-                if items:
-                    ids = []
-                    failed = []
-                    for item in items:
-                        prompt = _ticket_prompt(item["id"], item.get("title", ""),
-                                                item.get("pool", ""), item.get("pool_project", ""))
-                        tf = _is_terraform_ticket(item.get("pool", ""), item.get("title", ""))
-                        accepted, reason = self._submit_card(
-                            item["id"], card_target, card_type,
-                            prompt, str(uuid.uuid4()), False, terraform=tf,
-                            project=item.get("pool_project"),
-                            title=item.get("title"))
-                        if accepted:
-                            self.aone.complete_authorization(item["id"])
-                            ids.append(str(item["id"]))
-                        else:
-                            failed.append((str(item["id"]), reason))
-                    if ids:
-                        self._quick_card(
-                            card_target,
-                            "⚙️ 已提交 %d 条工单后台处理: %s" % (
-                                len(ids), ", ".join("#" + i for i in ids)),
-                            card_type)
-                    if failed:
-                        log.warning(
-                            "supervised dispatch rejected and retained: %s",
-                            ", ".join("#%s=%s" % row for row in failed))
-                        return (AckMessage.STATUS_OK,
-                                "dispatched_partial" if ids else failed[0][1])
-                    return AckMessage.STATUS_OK, "dispatched_all"
-                else:
-                    self._quick_card(card_target, "当前没有待处理的工单。", card_type)
-                    return AckMessage.STATUS_OK, "nothing_pending"
 
         # Board command: anyone in audience can view the control-plane board link.
         if re.match(r'^(看板|工作板|board)$', text, re.IGNORECASE):

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 import logging
 import os
@@ -11,10 +10,16 @@ import signal
 import subprocess
 import threading
 import time
-from pathlib import Path
-from typing import Any, Callable, Collection, Iterable
+from typing import Any, Callable, Collection
 
-from bridge.jarvis_task_client import TaskEnvelope
+from bridge.helpers.aone import (
+    PERSONA_PUBLIC_IDENTITY, REPO_ROOT, _a1_command_env, _aone_event_sanitize_text,
+    _is_human_comment,
+)
+from bridge.jarvis_task_router import (
+    _TaskAttentionPublisher, _attention_owner_staff_id, _source_ref_with_title,
+    _task_envelope, broadcast_target, broadcast_type,
+)
 from bridge.headless_runtime import (
     HeadlessRequest,
     HeadlessRuntime,
@@ -30,200 +35,17 @@ from bridge.jarvis_execution_runtime import (
 
 LOG = logging.getLogger(__name__)
 log = LOG
-REPO_ROOT = Path(__file__).resolve().parents[1]
-PERSONA_PUBLIC_IDENTITY = "terraform-rd"
-HEADLESS_POLICY_REVISION = "terraform-rd-single-writer-v4"
 POST_PR_HEADLESS_KINDS = frozenset(("pr_ci_fix", "pr_comment_reply"))
 TASK_BOOKEND_KINDS = frozenset(("ticket", "persona", "wake"))
 WAIT_EXPIRE_SEC = 14 * 24 * 3600
 _SUSPEND_RE = re.compile(r"\[\[SUSPEND:(.*?)\]\]", re.DOTALL)
 _SEMANTIC_ID_RE = re.compile(r"[a-z0-9][a-z0-9._:-]{0,95}")
-_AONE_INTERNAL_SENTINEL_RE = re.compile(
-    r"\[\[(?:PERSONA-HANDOFF|HANDOFF|SUSPEND|AONE-EVENT|JARVIS-EVENT):.*?\]\]",
-    re.IGNORECASE | re.DOTALL)
-_AONE_INTERNAL_STAGE_MARKER_RE = re.compile(
-    r"(?:\[\s*|【\s*)(?:terraform[-_ ]?)?(?:pd|rd|qa)"
-    r"\s*(?:分诊|开发|验收|阶段|结果|结论|handoff|交接)?\s*(?:\]|】)", re.IGNORECASE)
-_AONE_INTERNAL_STAGE_RE = re.compile(
-    r"^\s*(?:#{1,6}\s*)?(?:terraform[-_ ]?)?(?:pd|rd|qa)"
-    r"(?=\s|[:：/|_-]|分诊|开发|验收|阶段|结果|结论|handoff|交接|$)"
-    r"(?:\s*(?:分诊|开发|验收|阶段|结果|结论|handoff|交接))?\s*[:：/|_-]?", re.IGNORECASE)
-_AONE_INTERNAL_FIELD_RE = re.compile(
-    r"^\s*(?:#{1,6}\s*)?(?:internal_role|requested_external_actions|reply_fragment|handoff)\s*[:：=]",
-    re.IGNORECASE)
-_AONE_VALUE = r"\"(?:\\.|[^\"\\])*\"|'(?:\\.|[^'\\])*'|[^\s,\n，;；}\]]+"
-_AONE_AUTH_VALUE = r"\"(?:\\.|[^\"\\])*\"|'(?:\\.|[^'\\])*'|[^,\n，;；}\]]+"
-_AONE_ASSIGN = lambda key, value=_AONE_VALUE: re.compile(
-    r"(?i)(?P<prefix>(?<![A-Za-z0-9_])(?P<quote>[\"']?)(?P<key>%s)(?P=quote)\s*[:=：]\s*)(?P<value>%s)" % (key, value))
-_AONE_REQUEST_ID_RE = _AONE_ASSIGN(r"request(?:[_\s-]*id)")
-_AONE_AUTH_ASSIGN_RE = _AONE_ASSIGN("authorization", _AONE_AUTH_VALUE)
-_AONE_SECRET_ASSIGN_RE = _AONE_ASSIGN(
-    r"dingtalk[_-]?app[_-]?secret|access[_-]?key(?:[_-]?(?:id|secret))?|accesskey(?:id|secret)?|api[_-]?key|secret(?:[_-]?key)?|token|password|passwd|credential|username|user[_-]?name|ram[\s_-]*user(?:name)?|user")
-_AONE_USERNAME_ZH_RE = re.compile(r"(?P<prefix>(?P<key>用户名|RAM\s*用户(?:名)?)\s*[:=：]\s*)(?P<value>%s)" % _AONE_VALUE, re.IGNORECASE)
-_AONE_RESOURCE_ID_KEY_RE = _AONE_ASSIGN(r"(?:instance|resource|vpc|v[_-]?switch|vswitch|subnet|security[_-]?group|load[_-]?balancer|cluster|database|db|redis|eni|eip)[_-]?id")
-_AONE_BEARER_RE = re.compile(r"(?i)\bbearer\s+[a-z0-9._~+/=-]{8,}")
-_AONE_BASIC_RE = re.compile(r"(?i)\bbasic\s+[a-z0-9+/=._~-]{8,}")
-_AONE_ACCESS_KEY_RE = re.compile(r"\b(?:LTAI|AKID)[A-Za-z0-9]{12,}\b")
-_RESOURCE_ID_RE = re.compile(r"\b(?:i|r|s|d|m|g|e|lb|slb|alb|nlb|vpc|vsw|sg|eni|eip|db|rm|rds|redis|cluster|instance|cen|cbwp|cbn|nat|vpn|vco|vgw|acl|cr|pc|pgm|dds|mongodb|es|cs|ack|k8s)-[A-Za-z0-9][A-Za-z0-9._:-]{4,}\b", re.IGNORECASE)
-
-
-def _a1_command_env(terraform=False):
-    """Return the strict, explicit identity environment for Aone subprocesses."""
-    env = os.environ.copy()
-    for name in ("JARVIS_A1_IDENTITY", "JARVIS_A1_STRICT", "JARVIS_AONE_WRITE_POLICY"):
-        env.pop(name, None)
-    if terraform:
-        env.update(JARVIS_A1_IDENTITY=PERSONA_PUBLIC_IDENTITY, JARVIS_A1_STRICT="1")
-    return env
-
-
-def _aone_event_sanitize_text(text, limit=2000):
-    """Sanitize model text before it becomes a Task error, notice, or Aone comment."""
-    value = str(text or "").replace("\x00", "").replace("\r\n", "\n").replace("\r", "\n")
-    value = _AONE_INTERNAL_SENTINEL_RE.sub("", value)
-    value = "\n".join(line for line in value.splitlines() if not (
-        _AONE_INTERNAL_STAGE_MARKER_RE.search(line)
-        or _AONE_INTERNAL_STAGE_RE.match(line) or _AONE_INTERNAL_FIELD_RE.match(line)))
-    def redact(match):
-        prefix, raw = match.group("prefix"), match.group("value") or ""
-        return "%s%s[REDACTED]%s" % (prefix, raw[0], raw[0]) if len(raw) >= 2 and raw[0] in "\"'" and raw[-1] == raw[0] else "%s[REDACTED]" % prefix
-    for pattern in (_AONE_AUTH_ASSIGN_RE, _AONE_REQUEST_ID_RE, _AONE_SECRET_ASSIGN_RE,
-                    _AONE_USERNAME_ZH_RE, _AONE_RESOURCE_ID_KEY_RE):
-        value = pattern.sub(redact, value)
-    value = _AONE_BEARER_RE.sub("Bearer [REDACTED]", value)
-    value = _AONE_BASIC_RE.sub("Basic [REDACTED]", value)
-    value = _AONE_ACCESS_KEY_RE.sub("[REDACTED]", value)
-    value = _RESOURCE_ID_RE.sub("[REDACTED]", value)
-    value = re.sub(r"\n{3,}", "\n\n", value).strip()
-    return value if limit is None or len(value) <= int(limit) else value[:max(0, int(limit) - 1)].rstrip() + "…"
-
-
-def broadcast_target():
-    return (os.environ.get("JARVIS_BROADCAST_TARGET")
-            or os.environ.get("JARVIS_NOTIFY_GROUP")
-            or "cidy1mv+qvMEybkqTXcsXTOeQ==")
-
-
-def broadcast_type():
-    return os.environ.get("JARVIS_BROADCAST_TYPE", "group")
-
-
-def _source_ref_with_title(source_ref, title):
-    result = dict(source_ref)
-    if str(title or "").strip():
-        result["title"] = str(title).strip()
-    return result
-
-
-def _task_envelope(*, item_id, project, task_type, source_type, source_ref,
-                   desired_revision, trigger, prompt, recovery_policy="RESUME_ONLY",
-                   persona=None, priority=None, comment_cursor=None,
-                   required_capabilities=None, max_retries=None,
-                   source_status=None, **payload):
-    body = {"itemId": str(item_id), "project": str(project or ""),
-            "kind": str(task_type), "prompt": prompt,
-            "policyRevision": HEADLESS_POLICY_REVISION}
-    body.update(payload)
-    return TaskEnvelope(
-        task_key=(str(item_id) if str(task_type).lower() == "probe"
-                  else _aone_task_key(project, item_id)),
-        source_type=source_type, source_ref=source_ref, task_type=task_type,
-        desired_revision=desired_revision, trigger_mask=[trigger], payload=body,
-        recovery_policy=recovery_policy, persona=persona, priority=priority,
-        comment_cursor=comment_cursor, required_capabilities=required_capabilities,
-        max_retries=max_retries, source_status=source_status)
-
-
-def _is_human_comment(author, content=""):
-    identity = str(author or "").strip().lower()
-    return bool(identity and "open-jarvis" not in identity
-                and "worker_" not in identity and "terraform-" not in identity
-                and identity not in {"kelude", "云知道平台公共账号"}
-                and not str(content or "").strip().lower().startswith("jarvis-claim"))
-
-
 def _aone_event_enqueue(ticket, project, event_key, text, allow_non_tf=False,
                         identity=None):
     """Hand Task-owned events to the single durable Aone event ledger."""
-    from bridge.aone_events import _aone_event_enqueue as enqueue
+    from bridge.helpers.aone import _aone_event_enqueue as enqueue
     return enqueue(ticket, project, event_key, text,
                    allow_non_tf=allow_non_tf, identity=identity)
-
-
-def _attention_owner_staff_id(value):
-    raw = str(value or "").strip()
-    if raw and not raw.upper().startswith("WORKER_"):
-        if re.fullmatch(r"(?:\d+|WB\d+)", raw, re.IGNORECASE):
-            return raw
-        try:
-            contacts = json.loads((REPO_ROOT / "config/contacts.json").read_text())
-            for contact in contacts.get("contacts", []):
-                if isinstance(contact, dict) and raw.lower() in {
-                        str(contact.get(key) or "").lower()
-                        for key in ("id", "name", "flower")}:
-                    staff_id = str(contact.get("id") or "").strip()
-                    if staff_id and not staff_id.upper().startswith("WORKER_"):
-                        return staff_id
-        except Exception:  # noqa: BLE001
-            pass
-    return os.environ.get("JARVIS_MASTER_STAFF", "320687").strip()
-
-
-def _notify_task_attention(owner_staff_id, payload):
-    lines = ["Jarvis 检测到一个需要你关注的工单。", "",
-             "原因：%s" % str(payload.get("reason") or "需要人工关注"),
-             "建议操作：%s" % str(payload.get("action") or "请打开看板查看并处理")]
-    for label, key in (("Aone", "aoneUrl"), ("PR", "prUrl")):
-        if payload.get(key):
-            lines.append("%s：%s" % (label, payload[key]))
-    try:
-        subprocess.run(
-            [str(REPO_ROOT / "bootstrap/notify-dingtalk.sh"), str(owner_staff_id),
-             "Jarvis 工单关注提醒", "--body-stdin"], input="\n".join(lines),
-            capture_output=True, text=True, timeout=30, check=False)
-    except Exception as exc:  # noqa: BLE001
-        log.warning("Task attention notification failed: %s", exc)
-
-
-class _TaskAttentionPublisher:
-    """Control-plane first attention projection shared by task and PR domains."""
-
-    def __init__(self, client, notifier=None, source="task", required=False):
-        self.client, self.notifier = client, notifier or _notify_task_attention
-        self.source, self.required = str(source or "task"), bool(required)
-
-    def upsert(self, task_id, owner_staff_id, event_key, payload):
-        method = getattr(self.client, "upsert_task_attention", None)
-        if not callable(method):
-            return not self.required
-        owner = _attention_owner_staff_id(owner_staff_id)
-        try:
-            response = method(str(task_id), owner, str(event_key), dict(payload))
-        except Exception as exc:  # noqa: BLE001
-            return not self.required if getattr(exc, "status", None) == 404 else False
-        if not isinstance(response, dict):
-            return False
-        if response.get("notify") is True:
-            try:
-                self.notifier(owner, dict(payload))
-            except Exception as exc:  # noqa: BLE001
-                log.warning("attention[%s] notifier failed: %s", self.source, exc)
-        return True
-
-    def clear(self, task_id, event_key_prefix=None):
-        method = getattr(self.client, "clear_task_attention", None)
-        if not callable(method):
-            return not self.required
-        try:
-            method(str(task_id), event_key_prefix=event_key_prefix)
-            return True
-        except Exception as exc:  # noqa: BLE001
-            return not self.required if getattr(exc, "status", None) == 404 else False
-
-
-def _aone_task_key(project: object, item_id: object) -> str:
-    value = str(project or "unknown").strip() or "unknown"
-    return "aone:%s:%s" % (value, str(item_id))
 
 
 def terraform_rd_ready() -> bool:
@@ -636,92 +458,6 @@ def dispatch_item(
                 str(exc), "orchestrator_exception", True)))
 
 
-class WakePersistence:
-    """Persist the wake generation created by an observed Aone reply."""
-
-    def __init__(
-        self,
-        *,
-        execution_router: Any,
-        result_instructions: Callable[[str, bool], str],
-        policy_revision: str,
-        title_for: Callable[[str], str] | None = None,
-        project_for: Callable[[str], str] | None = None,
-        line_for: Callable[[str], object] | None = None,
-        routine_notice: Callable[[str], None] | None = None,
-    ) -> None:
-        self._router = execution_router
-        self._result_instructions = result_instructions
-        self._policy_revision = policy_revision
-        self._title_for = title_for or (lambda _aone_id: "")
-        self._project_for = project_for or (lambda _aone_id: "")
-        self._line_for = line_for or (lambda aone_id: "#%s" % aone_id)
-        self._routine_notice = routine_notice
-
-    def enqueue(
-        self,
-        aone_id: object,
-        task: dict[str, Any],
-        new_comments: Iterable[dict[str, Any]],
-    ) -> bool:
-        aone_id = str(aone_id)
-        comments = list(new_comments)
-        reply_text = "\n".join(
-            "@%s: %s" % (comment.get("creator", "?"), comment.get("content", ""))
-            for comment in comments)
-        terraform = bool(task.get("terraform"))
-        project = str(task.get("project") or self._project_for(aone_id) or "")
-        prompt = (
-            "工单 #%s 收到新回复:\n%s\n\n请继续处理。\n\n%s"
-            % (aone_id, reply_text, self._result_instructions(aone_id, terraform)))
-        comment_ids = []
-        for comment in comments:
-            try:
-                comment_ids.append(int(comment.get("id")))
-            except (AttributeError, TypeError, ValueError):
-                pass
-        cursor = max(comment_ids) if comment_ids else None
-        revision = (
-            "comment:%s" % cursor
-            if cursor is not None
-            else "comments:%s" % hashlib.sha256(
-                reply_text.encode("utf-8")).hexdigest()[:20]
-        )
-        title = str(task.get("title") or "").strip() or self._title_for(aone_id)
-        source_ref: dict[str, Any] = {"aoneId": aone_id, "projectId": project}
-        if str(title or "").strip():
-            source_ref["title"] = str(title).strip()
-        result = self._router.enqueue(TaskEnvelope(
-            task_key=_aone_task_key(project, aone_id),
-            source_type="AONE",
-            source_ref=source_ref,
-            task_type="wake",
-            desired_revision=revision,
-            trigger_mask=["WAKE"],
-            payload={
-                "itemId": aone_id,
-                "project": project,
-                "kind": "wake",
-                "prompt": prompt,
-                "policyRevision": self._policy_revision,
-                "priorRuntimeSessionId": task.get("session_id"),
-                "terraform": terraform,
-                "target": task["target"],
-                "targetType": task["target_type"],
-            },
-            recovery_policy="RESUME_ONLY",
-            comment_cursor=cursor,
-            source_status=task.get("sourceStatus"),
-        ))
-        if not result.accepted:
-            return False
-        if self._routine_notice is not None:
-            line = self._line_for(aone_id)
-            self._routine_notice(
-                "工单收到回复，Task 已进入唤醒队列: %s"
-                % (line[0] if isinstance(line, tuple) else line))
-        return True
-
 
 class TaskAoneBookend:
     """Executor-owned Aone bookend for a control-plane Task run (ticket/persona/wake).
@@ -1040,7 +776,7 @@ class TaskAoneBookend:
     def release_idle(self):
         """Post-PR terminal (writes_reply=False): drop the claim to jarvis-idle on clean
         completion, no reply comment. Idempotent — a REPLAY_SAFE re-lease re-claims on
-        bind and re-releases here. The PR itself stays watched by PrWatchScheduler until
+        bind and re-releases here. The PR itself stays watched by the pr_watch runner until
         merge/close, which drives the eventual finish."""
         with self._lock:
             if self._released or not self._claimed:
@@ -1208,4 +944,4 @@ def stop_task_process(
     return True
 
 
-__all__ = ["PersistentTaskExecution", "WakePersistence", "stop_task_process"]
+__all__ = ["PersistentTaskExecution", "stop_task_process"]

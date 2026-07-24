@@ -373,18 +373,11 @@ systemctl --user restart jarvis-worker
 ## Cross-host interrupted-session detection
 
 Worker/Task/Session state in the control plane is the only coordination truth;
-there is no local PID-based coord fallback. Cross-host recovery goes through
-two channels already implemented in the control plane (`docs/execution-architecture.md`):
-
-1. **Fast channel**: `aone.claim-health` tick watches `/workers` for
-   STALE/OFFLINE Workers and remembers their assignments.
-2. **Persistent channel**: `aone.claim-health` atomically snapshots the
-   `jarvis-claimed` Aone inventory to `.my-day/bridge/claimed-snapshot.json`
-   every tick and corroborates each entry with the control plane's Task
-   timeline. Snapshot lives only on scheduler host — this is why exactly one
-   scheduler runs.
-
-Workers themselves don't do orphan detection; they just heartbeat and lease.
+there is no local PID or snapshot-based recovery fallback. The service reaper
+expires stale leases and fences interrupted Sessions. The scheduler host's
+`claim_health` runner only corroborates Aone `jarvis-claimed` items against
+the Task timeline and publishes confirmed anomalies; it does not re-dispatch
+or release work. Workers only heartbeat and lease.
 
 ## Troubleshooting
 

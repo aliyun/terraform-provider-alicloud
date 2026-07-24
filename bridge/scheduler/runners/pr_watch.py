@@ -16,19 +16,19 @@ import subprocess
 import time
 import uuid
 
-from bridge.jarvis_task_router import ExecutionRouter
-from bridge.persistent_tasks import (
-    _TaskAttentionPublisher, _attention_owner_staff_id, _source_ref_with_title,
+from bridge.jarvis_task_router import (
+    ExecutionRouter, _TaskAttentionPublisher, _source_ref_with_title,
+    _task_envelope, broadcast_target, broadcast_type,
 )
 
-from ..model import JobResult, JobResultStatus, ScheduledJobDefinition, is_aware
-from bridge.aone_workitems import (
-    REPO_ROOT, _a1_command_env, _contact_directory,
+from ..model import JobResult, JobResultStatus, is_aware
+from bridge.aone_tasks import (
+    REPO_ROOT, _a1_command_env,
     _is_terraform_project, _load_done_statuses, _pool_pr_merged_status,
-    _routine_notifier, _task_envelope, broadcast_target, broadcast_type, log,
-    master_staff,
+    _routine_notifier, log, master_staff,
 )
-from bridge.aone_events import _aone_event_enqueue, _aone_event_flush, _dingtalk_event_flush
+from bridge.helpers.aone import _aone_event_enqueue, _aone_event_flush
+from bridge.helpers.dingtalk import _dingtalk_event_flush
 from bridge import pr_watch_registry as _registry
 
 # Keep this re-export patchable for the runner's focused tests while the actual
@@ -255,7 +255,7 @@ class PrWatchRuntime:
         self._autoreg_warned = set()  # 已提示过「无法解析工单号」的 PR url，避免刷屏
     def _tick(self):
         """Returns True if any watched PR is active（CI 失败/pending）→ 下一轮走快档。"""
-        # 运行时暂停闸：与 AoneRuntime 复用同一个 pause 标记。
+        # 运行时暂停闸：与 ScanRunner 复用同一个 pause 标记。
         if (Path(REPO_ROOT) / ".my-day" / "bridge" / "pause").exists():
             return False
         try:
