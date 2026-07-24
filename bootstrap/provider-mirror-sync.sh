@@ -75,29 +75,49 @@ git -C "$CACHE" update-ref "$HEARTBEAT_REF" "$hb_commit"
 # repo — deleting refs other teams created there is not ours to do; branches
 # deleted upstream simply linger.
 #
-# Push ONLY refs that differ remotely, in chunks of 40: the server degrades
-# >100-ref pushes into an all-or-nothing atomic transaction (the 418-ref
-# first sync was rejected wholesale, every ref "update-ref failed"), and
-# >50 branches per push bypasses its push rules. A no-change cron run thus
-# pushes exactly one ref — the heartbeat. Plain arrays + comm because the
-# scheduler host runs bash 3.2 (no associative arrays).
+# Push ONLY refs that differ remotely (a no-change cron run pushes exactly
+# one ref — the heartbeat). The server's multi-ref tolerance is erratic:
+# 418 refs hit the documented ">100 atomic" wholesale reject, but even a
+# 40-ref batch came back all-"update-ref failed", while single-ref pushes
+# always succeed (probe-verified). So push ADAPTIVELY: try a slice; on
+# rejection split it in half and retry, degrading to singles worst-case —
+# whatever the server's real limit is, this converges without knowing it.
+# Per-attempt stderr goes to a file (retry spew would flood the cron log);
+# only a genuine single-ref failure aborts, loudly. Plain arrays + comm
+# because the scheduler host runs bash 3.2.
 git -C "$CACHE" for-each-ref --format='%(objectname) %(refname)' refs/heads refs/tags \
   | sort > "$TMPD/local"
 git ls-remote "$MIRROR" 'refs/heads/*' 'refs/tags/*' \
   | awk '$2 !~ /\^\{\}$/ {print $1" "$2}' | sort > "$TMPD/remote"
 changed=$(comm -23 "$TMPD/local" "$TMPD/remote" | awk '{print $2}')
 
-total=0; batches=0; batch=()
-flush() {
-  [ "${#batch[@]}" -eq 0 ] && return 0
-  git -C "$CACHE" push -q "$MIRROR" "${batch[@]}"
-  batches=$((batches+1)); batch=()
+pushes=0
+push_refs() {
+  [ "$#" -eq 0 ] && return 0
+  if git -C "$CACHE" push -q "$MIRROR" "$@" 2>>"$TMPD/push.err"; then
+    pushes=$((pushes+1))
+    return 0
+  fi
+  if [ "$#" -le 1 ]; then
+    echo "[mirror-sync] ERROR: single-ref push rejected: $*" >&2
+    tail -5 "$TMPD/push.err" >&2
+    return 1
+  fi
+  local mid=$(( $# / 2 ))
+  push_refs "${@:1:$mid}"
+  push_refs "${@:$((mid+1))}"
 }
+
+specs=()
 while IFS= read -r ref; do
   [ -z "$ref" ] && continue
-  batch+=("+$ref:$ref"); total=$((total+1))
-  [ "${#batch[@]}" -ge 40 ] && flush
+  specs+=("+$ref:$ref")
 done <<< "$changed"
-flush
+total=${#specs[@]}
+i=0
+while [ "$i" -lt "$total" ]; do
+  push_refs "${specs[@]:$i:40}"
+  i=$((i+40))
+done
 
-echo "[mirror-sync] $(date '+%F %T') master=$(git -C "$CACHE" rev-parse --short refs/heads/master) pushed $total ref(s) in $batches push(es), incl. heartbeat"
+echo "[mirror-sync] $(date '+%F %T') master=$(git -C "$CACHE" rev-parse --short refs/heads/master) pushed $total ref(s) in $pushes push(es), incl. heartbeat"
