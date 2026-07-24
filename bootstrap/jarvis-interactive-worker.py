@@ -2114,7 +2114,26 @@ def _build_incarnation_state(
     second, subtly different recovery transition.
     """
     host = socket.gethostname()
-    boot_id = _default_boot_id(host)
+    same_host_process = bool(
+        verify_command
+        and old_state.get("verifyHostCommand")
+        and str(old_state.get("client") or "") == client_name
+        and str(old_state.get("clientSessionId") or "") == session_id
+        and str(old_state.get("host") or "") == host
+        and str(old_state.get("hostPid") or "") == str(host_pid)
+        and host_process_started_at
+        and str(old_state.get("hostProcessStartedAt") or "") ==
+        host_process_started_at)
+    # A model switch can replay SessionStart without replacing the Codex host
+    # process.  Keep the already-proven boot identity for that exact process so
+    # a transient boot probe failure cannot mint another worker incarnation.
+    # An explicit override change remains authoritative.
+    boot_id = (
+        str(old_state["bootId"])
+        if same_host_process
+        and old_state.get("bootId")
+        and not os.environ.get("JARVIS_BOOT_ID", "").strip()
+        else _default_boot_id(host))
     process_uuid = hashlib.sha256(
         ("%s|%s|%s|%s|%s" %
          (client_name, session_id, boot_id, host_pid,
@@ -3017,6 +3036,7 @@ def daemon(state_path: Path, expected_worker_key: str) -> int:
 def _claim_cycle(state: Dict[str, Any], aone_id: str, project_id: str) -> Tuple[int, str]:
     pending = state.get("pendingClaim")
     current = state.get("current")
+    recovery = state.get("recoveryPending")
     if (isinstance(pending, Mapping)
             and str(pending.get("aoneId")) == aone_id
             and str(pending.get("projectId")) == project_id):
@@ -3025,6 +3045,12 @@ def _claim_cycle(state: Dict[str, Any], aone_id: str, project_id: str) -> Tuple[
             and str(current.get("aoneId")) == aone_id
             and str(current.get("projectId")) == project_id):
         return int(current["cycle"]), str(current["runtimeSessionId"])
+    if (isinstance(recovery, Mapping)
+            and str(recovery.get("aoneId")) == aone_id
+            and str(recovery.get("projectId")) == project_id
+            and recovery.get("cycle") is not None
+            and recovery.get("runtimeSessionId")):
+        return int(recovery["cycle"]), str(recovery["runtimeSessionId"])
     cycle = int(state.get("claimCounter") or 0) + 1
     session_hash = hashlib.sha256(
         str(state["clientSessionId"]).encode("utf-8")).hexdigest()[:16]
@@ -3100,6 +3126,9 @@ def _record_deterministic_claim_block(
         blocks.append(block)
         latest["claimBlocks"] = blocks[-20:]
         latest["lastClaimBlocked"] = block
+        # A deterministic 409 must not hot-loop on every prompt.  Clear the
+        # active slot; recoveryPending retains the exact cycle/runtime lineage
+        # so a later explicit claim can resume it after predecessor lease expiry.
         latest["pendingClaim"] = None
         store.save_unlocked(latest)
 
