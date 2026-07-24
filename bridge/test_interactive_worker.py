@@ -2097,7 +2097,7 @@ class InteractiveWorkerTest(unittest.TestCase):
         first_claim = [c for c in fake.calls if c[0] == "claim_task"][-1]
         first_envelope = first_claim[1][1]
         self.assertEqual(first["runtimeSessionId"], first_runtime)
-        self.assertEqual(first_envelope.recovery_policy, "RESUME_ONLY")
+        self.assertEqual(first_envelope.recovery_policy, "REPLAY_SAFE")
         self.assertNotIn("clientSessionId", first_envelope.payload)
         begin_body = [c for c in fake.calls if c[0] == "begin_operation"][-1][1][0]
         self.assertNotIn("requestDigest", begin_body)

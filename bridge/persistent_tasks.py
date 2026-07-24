@@ -910,12 +910,6 @@ class PersistentTaskExecution:
                 raise ValueError("Task payload must be JSON object") from exc
         if not isinstance(payload, dict):
             raise ValueError("Task payload must be an object")
-        if str(payload.get("trigger") or "").strip().upper() == "INTERACTIVE":
-            # Interactive tasks are card/session-bound.  They intentionally do
-            # not carry a headless prompt and must only be resumed by their
-            # owning Interactive Worker under its current fence.
-            raise ValueError(
-                "Interactive Task must be resumed by its owning Interactive Worker")
         kind = str(payload.get("kind") or task.get("taskType") or "").strip().lower()
         enabled = self._enabled_kinds()
         if "*" not in enabled and kind not in enabled:
