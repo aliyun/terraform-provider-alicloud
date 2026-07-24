@@ -446,6 +446,40 @@ class ClientContractTest(unittest.TestCase):
         self.assertEqual(headers(req)["idempotency-key"], "discard-42-7")
         self.assertEqual(result["status"], "READY")
 
+    def test_legacy_kind_cleanup_preview_and_delete_use_admin_contract(self):
+        snapshot = {
+            "tasks": 1, "sessions": 1, "events": 3, "operations": 0,
+            "pendingRequiredOperations": 0, "taskIdsDigest": "abc",
+        }
+        opener = RecordingOpener(responses=[
+            FakeResponse({"snapshot": snapshot, "activeTasks": 0,
+                          "activeSessions": 0, "executable": True,
+                          "taskTypes": ["field_repair"]}),
+            FakeResponse({"before": snapshot,
+                          "after": dict(snapshot, tasks=0, sessions=0, events=0)}),
+        ])
+        c = self.make(opener)
+
+        preview = c.preview_legacy_kind_cleanup()
+        req, _timeout = opener.calls[0]
+        self.assertEqual(req.get_method(), "GET")
+        self.assertTrue(req.full_url.endswith(
+            "/api/jarvis/v1/admin/tasks/legacy-kind/cleanup"))
+        self.assertEqual(preview["taskTypes"], ["field_repair"])
+
+        result = c.cleanup_legacy_kind_tasks(
+            preview["snapshot"], "DELETE_LEGACY_KIND_TASKS", request_id="legacy-abc")
+        req2, _t2 = opener.calls[1]
+        self.assertEqual(req2.get_method(), "POST")
+        self.assertTrue(req2.full_url.endswith(
+            "/api/jarvis/v1/admin/tasks/legacy-kind/cleanup"))
+        self.assertEqual(body(req2), {
+            "confirmation": "DELETE_LEGACY_KIND_TASKS",
+            "expectedSnapshot": snapshot,
+        })
+        self.assertEqual(headers(req2)["idempotency-key"], "legacy-abc")
+        self.assertEqual(result["after"]["tasks"], 0)
+
     def test_direct_claim_is_targeted_task_and_allows_zero_free_slots(self):
         opener = RecordingOpener()
         c = self.make(opener)

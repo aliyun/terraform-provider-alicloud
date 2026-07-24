@@ -655,11 +655,9 @@ class TaskAoneAssociationTest(unittest.TestCase):
         handler.execution_router = Router()
         handler.ephemeral_executor = object()
         handler._quick_card = mock.Mock()
-        with mock.patch.object(bot, "_aone_preflight",
-                               return_value=(True, {"status": "ok"})):
-            handler._submit_card(
-                "84345050", "group", "group", "go", "runtime", False,
-                project="2100304", title="Aone card title")
+        handler._submit_card(
+            "84345050", "group", "group", "go", "runtime", False,
+            project="2100304", title="Aone card title")
         envelope = captured["envelope"]
         self.assertEqual(envelope.source_ref, {
             "aoneId": "84345050", "projectId": "2100304",
@@ -692,123 +690,11 @@ class TaskAoneAssociationTest(unittest.TestCase):
             enqueue=mock.Mock(return_value=EnqueueResult(True, "task_persisted")))
         handler.ephemeral_executor = object()
         handler._quick_card = mock.Mock()
-        with mock.patch.object(bot, "_aone_preflight") as preflight:
-            result = handler._submit_card(
-                "84608993", "group", "group", "go", "runtime", False,
-                project="1086837", task_type="wake")
+        result = handler._submit_card(
+            "84608993", "group", "group", "go", "runtime", False,
+            project="1086837", task_type="wake")
         self.assertTrue(result[0])
-        preflight.assert_not_called()
-
-
-class AonePreflightHelperTest(unittest.TestCase):
-    @staticmethod
-    def _valid_result(**changes):
-        result = {
-            "status": "ok",
-            "errorType": None,
-            "workitemId": "84608993",
-            "project": "1086837",
-            "workitemType": "36",
-            "assignments": [],
-            "unresolved": [],
-            "readback": [],
-            "filled": False,
-        }
-        result.update(changes)
-        return result
-
-    def test_per_item_lock_serializes_concurrent_preflight_and_one_update(self):
-        state = {"active": 0, "max_active": 0, "updated": False, "updates": 0}
-        state_lock = threading.Lock()
-
-        def fake_run(*_args, **_kwargs):
-            with state_lock:
-                state["active"] += 1
-                state["max_active"] = max(state["max_active"], state["active"])
-                filled = not state["updated"]
-                if filled:
-                    state["updated"] = True
-                    state["updates"] += 1
-            time.sleep(0.05)
-            with state_lock:
-                state["active"] -= 1
-            return SimpleNamespace(
-                returncode=0,
-                stdout=json.dumps({
-                    "status": "ok",
-                    "errorType": None,
-                    "workitemId": "84608993",
-                    "project": "1086837",
-                    "workitemType": "36",
-                    "assignments": ([{"id": "140282", "value": "defined"}]
-                                    if filled else []),
-                    "unresolved": [],
-                    "readback": [],
-                    "filled": filled,
-                }),
-                stderr="")
-
-        results = []
-        with mock.patch.object(bot.subprocess, "run", side_effect=fake_run):
-            threads = [
-                threading.Thread(
-                    target=lambda: results.append(
-                        bot._aone_preflight("84608993", "1086837")))
-                for _ in range(2)
-            ]
-            for thread in threads:
-                thread.start()
-            for thread in threads:
-                thread.join()
-        self.assertEqual(state["max_active"], 1)
-        self.assertEqual(state["updates"], 1)
-        self.assertEqual(len(results), 2)
-        self.assertTrue(all(ok for ok, _result in results))
-
-    def test_timeout_is_structured_fail_closed_result(self):
-        with mock.patch.object(
-                bot.subprocess, "run",
-                side_effect=subprocess.TimeoutExpired("preflight", 1)):
-            ok, result = bot._aone_preflight("84608994", "1086837")
-        self.assertFalse(ok)
-        self.assertEqual(result["errorType"], "preflight_validation_failed")
-        self.assertEqual(result["failureReason"], "timeout")
-
-    def test_terraform_preflight_uses_strict_rd_identity_environment(self):
-        response = SimpleNamespace(
-            returncode=0, stdout=json.dumps(self._valid_result()), stderr="")
-        with mock.patch.object(bot.subprocess, "run", return_value=response) as run:
-            ok, _result = bot._aone_preflight(
-                "84608993", "1086837", terraform=True)
-        self.assertTrue(ok)
-        env = run.call_args.kwargs["env"]
-        self.assertEqual(env["JARVIS_A1_IDENTITY"], "terraform-rd")
-        self.assertEqual(env["JARVIS_A1_STRICT"], "1")
-
-    def test_incomplete_or_inconsistent_success_contract_fails_closed(self):
-        invalid_results = (
-            {"status": "ok"},
-            self._valid_result(workitemId="other"),
-            self._valid_result(project="528766"),
-            self._valid_result(unresolved=[{"id": "140097"}]),
-            self._valid_result(readback=[{"id": "140097"}]),
-            self._valid_result(errorType="unexpected"),
-            self._valid_result(assignments={}),
-            self._valid_result(filled=1),
-            self._valid_result(workitemType=""),
-        )
-        for index, payload in enumerate(invalid_results):
-            with self.subTest(index=index, payload=payload):
-                response = SimpleNamespace(
-                    returncode=0, stdout=json.dumps(payload), stderr="")
-                with mock.patch.object(
-                        bot.subprocess, "run", return_value=response):
-                    ok, result = bot._aone_preflight(
-                        "84608993", "1086837", terraform=True)
-                self.assertFalse(ok)
-                self.assertEqual(result["errorType"],
-                                 "preflight_validation_failed")
-                self.assertEqual(result["failureReason"], "invalid_result")
+        handler.execution_router.enqueue.assert_called_once()
 
 
 class WakeRoutingTest(unittest.TestCase):
@@ -2006,8 +1892,10 @@ class SchedulerRunnerTest(unittest.TestCase):
         self.assertTrue(accepted)
         self.assertEqual(reason, "task_persisted")
         s.execution_router.enqueue.assert_called_once()
+        envelope = s.execution_router.enqueue.call_args.args[0]
+        self.assertEqual(envelope.task_type, "ticket")
 
-    def test_assignee_tracker_and_idle_sources_share_dispatch_preflight_gate(self):
+    def test_assignee_tracker_and_idle_sources_all_dispatch_business_tasks(self):
         s = self._scanner()
         idle_filter = "tag=" + "jarvis-" + "idle"
         pool_key = "tf_" + "customer"
@@ -2033,13 +1921,10 @@ class SchedulerRunnerTest(unittest.TestCase):
             outcomes = [s._dispatch(row) for row in rows]
         self.assertEqual(len(rows), 3)
         self.assertTrue(all(accepted for accepted, _reason in outcomes))
-        self.assertEqual(
-            sorted(call.args for call in preflight.call_args_list),
-            [("1", "1086837"), ("2", "1086837"), ("3", "1086837")])
-        self.assertTrue(all(
-            call.kwargs == {"terraform": True}
-            for call in preflight.call_args_list))
         self.assertEqual(s.execution_router.enqueue.call_count, 3)
+        self.assertTrue(all(
+            call.args[0].task_type == "ticket"
+            for call in s.execution_router.enqueue.call_args_list))
 
     def test_ordinary_ticket_keeps_modified_revision_without_comment_cursor(self):
         item = {"id": "1", "title": "普通变更", "pool": "other",
@@ -2200,6 +2085,7 @@ class ModelProviderFailureRoutingTest(unittest.TestCase):
         self.assertEqual(event_enqueue.call_args.args[2],
                          "dispatch:ticket:provider-session:error")
         dingtalk.assert_not_called()
+        self.assertIn("error", notices[0])
 
     def test_customer_api_gateway_timeout_is_not_model_provider_failure(self):
         event_enqueue, dingtalk, _release, _notices = self._dispatch_failed(
@@ -2331,6 +2217,41 @@ class TaskBookendDispatchTest(unittest.TestCase):
         self.assertIn("reply", calls)
         self.assertNotIn("finish", calls)
         self.assertNotIn("release", calls)
+
+    def test_reply_key_is_comment_cursor_scoped_within_generation(self):
+        # Regression for #84649642: within one task generation, a suspend that
+        # answers comment A and a later resume that answers comment B must post
+        # two distinct replies. The reply idempotency key was generation-scoped
+        # only ("task-reply:<task>:<gen>"), so B collided with A's already-posted
+        # key and was silently deduped — the ticket looked unanswered forever.
+        _, a = self._run(
+            '[[AONE_RESULT:{"outcome":"suspend","reply_body":"回复A",'
+            '"suspend_wait_for":"320687","handled_comment_id":"124900001"}]]',
+            expected_comment_cursor="124900001")
+        _, b = self._run(
+            '[[AONE_RESULT:{"outcome":"suspend","reply_body":"回复B",'
+            '"suspend_wait_for":"320687","handled_comment_id":"124900002"}]]',
+            expected_comment_cursor="124900002")
+        key_a = a["reply"][0][2]
+        key_b = b["reply"][0][2]
+        self.assertIn("124900001", key_a)
+        self.assertIn("124900002", key_b)
+        self.assertNotEqual(
+            key_a, key_b,
+            "distinct trigger comments must get distinct reply keys so both post")
+        # A same-comment crash/retry within the generation still dedups (same key).
+        _, a_retry = self._run(
+            '[[AONE_RESULT:{"outcome":"suspend","reply_body":"回复A重试",'
+            '"suspend_wait_for":"320687","handled_comment_id":"124900001"}]]',
+            expected_comment_cursor="124900001")
+        self.assertEqual(key_a, a_retry["reply"][0][2])
+
+    def test_reply_key_without_comment_cursor_stays_generation_scoped(self):
+        # Non-comment revisions (no expected cursor) keep the historical key so a
+        # crash/retry of the same generation still dedups to one comment.
+        _, calls = self._run(
+            '[[AONE_RESULT:{"outcome":"idle","reply_body":"阶段完成"}]]')
+        self.assertEqual(calls["reply"][0][2], "task-reply:603:1")
 
     def test_missing_result_fails_closed_without_commit(self):
         out, calls = self._run("干完了但忘了输出结构化结果")

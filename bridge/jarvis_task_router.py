@@ -31,7 +31,6 @@ from bridge.helpers.aone import REPO_ROOT
 TASK = "TASK"
 EPHEMERAL_JOB = "EPHEMERAL_JOB"
 DEFAULT_TASK_TYPES = (
-    "field_repair",
     "ticket",
     "revisit",
     "persona",

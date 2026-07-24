@@ -13,8 +13,8 @@
 - 后台调度：统一 Scheduler 从 `bridge/scheduler/jobs.yaml` 的七项配置注册 Job（`daily.probe` 当前默认关闭）；每个 job 由同名语义的独立 runner 执行：scan、claim_health、daily_nudge、reply、pr_watch、recovery、daily_probe
 
 ## 2. 单工单 Triage (headless)
-- `claim.sh claim` 认领（竞争锁，输了 SKIP）
-- `aone-triage` skill 查证（OpenAPI + Cloudspec 映射 + provider 源码）
+- bridge executor 在模型进程外持有 lease 并托管 `claim`
+- `aone-triage` skill 查证（OpenAPI + Cloudspec 映射 + provider 源码）；Terraform PD 同步生成三层本地截图 manifest，最终 RD 无 `--comment` 上传报告并在唯一聚合回复中贴链接
 - autonomy 判定：auto 列表内自动执行到预发/CR；低置信/红线 → Task `SUSPENDED` + needs-attention 事件
 - 遇必须人类决策 → Aone 评论 @人 + `[[SUSPEND:...]]` 挂起，`reply` runner 收到回复后持久化 wake Task
 - 收尾 bookend：`wrap.sh done`（评论+状态）→ `claim.sh release`（打 `jarvis-idle`）

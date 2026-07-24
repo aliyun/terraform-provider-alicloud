@@ -228,6 +228,44 @@ def cmd_discard_resume(client, task_id, session_id, reason, yes):
     return 0
 
 
+def cmd_legacy_cleanup(client, yes):
+    preview = client.preview_legacy_kind_cleanup()
+    if not isinstance(preview, dict):
+        sys.stderr.write("error: unexpected legacy-cleanup preview response\n")
+        return 3
+    snapshot = preview.get("snapshot") if isinstance(preview.get("snapshot"), dict) else {}
+    task_types = preview.get("taskTypes") or []
+    executable = bool(preview.get("executable"))
+    print("legacy-kind residual tasks (task_type in %s):" % (task_types or "-"))
+    print("  tasks=%s sessions=%s events=%s operations=%s pendingRequiredOps=%s" % (
+        snapshot.get("tasks", 0), snapshot.get("sessions", 0), snapshot.get("events", 0),
+        snapshot.get("operations", 0), snapshot.get("pendingRequiredOperations", 0)))
+    print("  activeTasks=%s activeSessions=%s executable=%s digest=%s" % (
+        preview.get("activeTasks", 0), preview.get("activeSessions", 0),
+        executable, snapshot.get("taskIdsDigest", "-")))
+    if int(snapshot.get("tasks", 0) or 0) == 0:
+        print("nothing to clean up.")
+        return 0
+    if not yes:
+        sys.stderr.write(
+            "error: legacy-cleanup deletes the exact previewed residual tasks and their "
+            "session/event/operation rows; review the preview above and pass --yes\n")
+        return 2
+    if not executable:
+        sys.stderr.write(
+            "error: legacy-cleanup is blocked by active tasks or active sessions; "
+            "retry after they settle\n")
+        return 3
+    result = client.cleanup_legacy_kind_tasks(
+        snapshot, "DELETE_LEGACY_KIND_TASKS",
+        request_id="legacy-kind-cleanup:%s" % snapshot.get("taskIdsDigest", ""))
+    before = result.get("before") if isinstance(result.get("before"), dict) else {}
+    after = result.get("after") if isinstance(result.get("after"), dict) else {}
+    print("deleted legacy-kind tasks: before=%s after=%s" % (
+        before.get("tasks", "?"), after.get("tasks", "?")))
+    return 0
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(
         prog="control-plane-status",
@@ -248,6 +286,11 @@ def main(argv=None):
     p_discard.add_argument("session_id", type=int, help="expected current Session id")
     p_discard.add_argument("--reason", required=True, help="auditable recovery reason")
     p_discard.add_argument("--yes", action="store_true", help="confirm context discard")
+    p_legacy = sub.add_parser(
+        "legacy-cleanup",
+        help="preview (default) / delete residual tasks of deprecated kinds (e.g. field_repair)")
+    p_legacy.add_argument("--yes", action="store_true",
+                          help="confirm deletion of the exact previewed residual tasks")
     args = parser.parse_args(argv)
     client = _client()
     try:
@@ -259,6 +302,8 @@ def main(argv=None):
             return cmd_task(client, args.aone_id)
         if args.cmd == "operation":
             return cmd_operation(client, args.operation_id)
+        if args.cmd == "legacy-cleanup":
+            return cmd_legacy_cleanup(client, args.yes)
         return cmd_discard_resume(
             client, args.task_id, args.session_id, args.reason, args.yes)
     except ControlPlaneError as e:

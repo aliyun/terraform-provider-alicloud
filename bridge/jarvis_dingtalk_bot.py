@@ -356,25 +356,6 @@ def _aone_revisit_summary(text):
 
 
 
-def _dispatch_event_summary(kind, subtype, attempts, release_state):
-    """Fixed public summary; raw Claude tail is deliberately excluded."""
-    try:
-        attempt_count = max(1, int(attempts))
-    except (TypeError, ValueError):
-        attempt_count = 1
-    return _aone_event_sanitize_text(
-        "Terraform 自动处理未能完成，已停止本轮自动推进。\n\n"
-        "- 任务类型：%s\n"
-        "- 失败类别：%s\n"
-        "- 尝试次数：%d\n"
-        "- 认领释放：%s\n"
-        "- 下一步：请人工检查运行环境与任务前置条件，确认后重新派发。"
-        % (_aone_event_source_part(kind),
-           _aone_event_source_part(subtype),
-           attempt_count,
-           release_state))
-
-
 _MODEL_PROVIDER_ERROR_RE = re.compile(
     r"(?:"
     r"模型(?:提供方|供应商|网关).{0,24}(?:错误|失败|异常|不可用)"
@@ -958,7 +939,7 @@ def _persona_prompt(item_id, role, action, note, round_n, snippet, project=None,
         "按 loops/persona-collab.md：\n"
         "1) %s\n"
         "2) 每个内部 Task 只返回结构化结果："
-        "internal_role/status/summary/evidence/requested_external_actions/next/reply_fragment。"
+        "%s。"
         "PD 的路由动作、QA 的缺陷与验收结论都只是给 RD 的提案；PD/QA 禁止外写，中间 RD "
         "禁止工单进展回复。MR/CR 已开则收集链接。\n"
         "3) 最后 Task 起 terraform-rd finalizer，汇总所有返回并审查允许的外部动作，起草完整回复正文"
@@ -966,6 +947,7 @@ def _persona_prompt(item_id, role, action, note, round_n, snippet, project=None,
         "%s\n"
         "%s\n%s"
         % (item_id, action, round_n, identity_context, scenario,
+           TERRAFORM_INTERNAL_RESULT_FIELDS,
            result_instructions, fenced_note, fenced_snippet)
     )
 
@@ -1697,39 +1679,27 @@ class JarvisHandler(AsyncChatbotHandler):
 
     @staticmethod
     def _post_death_cause(item_id, cause, terraform=False):
-        """Best-effort failure ledger.
+        """Best-effort local failure ledger — bot.log only, NEVER Aone.
 
-        Non-Terraform numeric tickets retain the legacy Aone ``wrap.sh sync`` death-cause
-        comment. Terraform raw failure detail is local-only (bot.log audit; NOT broadcast,
-        to avoid leaking raw failure detail) — the separate important-event publisher
-        receives a fixed sanitized RD summary. Pseudo ids have neither workitem nor ticket
-        ledger entry here. NEVER raises.
+        Execution failures (retries exhausted / terminal error) must not pollute the
+        Aone work item's comment thread; the death cause is recorded locally for audit
+        only, for both Terraform and non-Terraform tickets. Pseudo ids are skipped.
+        NEVER raises.
         """
         if not str(item_id).isdigit():
             return
-        try:
-            if terraform:
-                # Local-only audit: bot.log, no separate anomaly file or DingTalk broadcast.
-                log.warning("terraform Task #%s death cause: %s",
-                            item_id, str(cause).replace("\n", " | ")[:500])
-            else:
-                subprocess.run(
-                    [str(REPO_ROOT / "bootstrap" / "wrap.sh"), "sync",
-                     str(item_id), "--summary-stdin"],
-                    input=cause, cwd=str(REPO_ROOT), text=True, timeout=90,
-                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                    env=_a1_command_env(terraform=False))
-        except Exception as e:  # noqa: BLE001
-            log.warning("_post_death_cause #%s failed: %s", item_id, e)
+        prefix = "terraform " if terraform else ""
+        log.warning("%sTask #%s death cause: %s",
+                    prefix, item_id, str(cause).replace("\n", " | ")[:500])
 
     def _dispatch_failed(self, item_id, res, notify, project, terraform=False,
                          kind="ticket", sid="unknown-session", attempts=None):
-        """Retries exhausted / terminal error: record the death cause, release the claim
-        (ticket kind only — probe/revisit/wake pass project=None), and report the failure
-        through the caller-selected notice sink. Terraform keeps a local audit log. Model
-        provider/gateway outages notify the master by idempotent DingTalk only; all other
-        Terraform terminal failures retain the RD-only Aone important event. Non-Terraform
-        retains the legacy Aone death-cause comment. Every step is best-effort and never
+        """Retries exhausted / terminal error: record the death cause locally, release the
+        claim (ticket kind only — probe/revisit/wake pass project=None), and report the
+        failure through the caller-selected notice sink. Execution failures NEVER write the
+        Aone work item (neither Terraform nor non-Terraform) — the death cause stays in
+        bot.log and the DingTalk notice sink. Terraform model provider/gateway outages still
+        notify the master by idempotent DingTalk. Every step is best-effort and never
         raises."""
         retries = int(os.environ.get("JARVIS_DISPATCH_RETRY_MAX", "2"))
         tail = (res.text or "").strip()
@@ -1755,35 +1725,27 @@ class JarvisHandler(AsyncChatbotHandler):
             except Exception as e:  # noqa: BLE001
                 release_state = "释放失败"
                 log.warning("_dispatch_failed #%s release failed: %s", item_id, e)
-        if terraform and project and str(item_id).isdigit():
+        if (terraform and model_provider_failure
+                and project and str(item_id).isdigit()):
+            # Model provider/gateway outages still notify the master by idempotent
+            # DingTalk (not Aone). All other terminal failures write neither channel's
+            # Aone comment — they stay in bot.log + the notice sink below.
             try:
                 normalized_kind = _aone_event_source_part(kind)
                 normalized_sid = _aone_event_source_part(sid or "unknown-session")
-                if model_provider_failure:
-                    # Same Task session + outage class is one semantic event. The
-                    # DingTalk ledger keeps failed transports pending for flush/retry.
-                    semantic_source = "dispatch-model-provider:%s:%s" % (
-                        normalized_kind, normalized_sid)
-                    if not _dingtalk_event_enqueue(
-                            item_id, project, semantic_source, master_staff(),
-                            "Jarvis 模型提供方故障",
-                            _dispatch_model_provider_summary(
-                                item_id, project, kind,
-                                attempts or (retries + 1), release_state)):
-                        log.error(
-                            "_dispatch_failed #%s DingTalk event could not be queued",
-                            item_id)
-                else:
-                    semantic_source = "dispatch:%s:%s:%s" % (
-                        normalized_kind, normalized_sid,
-                        _aone_event_source_part(failure_subtype or "error"))
-                    if not _aone_event_enqueue(
-                            item_id, project, semantic_source,
-                            _dispatch_event_summary(
-                                kind, failure_subtype,
-                                attempts or (retries + 1), release_state)):
-                        log.error(
-                            "_dispatch_failed #%s Aone event could not be queued", item_id)
+                # Same Task session + outage class is one semantic event. The DingTalk
+                # ledger keeps failed transports pending for flush/retry.
+                semantic_source = "dispatch-model-provider:%s:%s" % (
+                    normalized_kind, normalized_sid)
+                if not _dingtalk_event_enqueue(
+                        item_id, project, semantic_source, master_staff(),
+                        "Jarvis 模型提供方故障",
+                        _dispatch_model_provider_summary(
+                            item_id, project, kind,
+                            attempts or (retries + 1), release_state)):
+                    log.error(
+                        "_dispatch_failed #%s DingTalk event could not be queued",
+                        item_id)
             except Exception as e:  # noqa: BLE001
                 log.warning("_dispatch_failed #%s terminal event failed: %s", item_id, e)
         try:
@@ -1823,41 +1785,9 @@ class JarvisHandler(AsyncChatbotHandler):
             target=target,
             targetType=target_type,
         )
-        if source_type == "AONE" and task_type == "ticket":
-            field_worker = getattr(self, "field_repair_worker", None)
-            if field_worker is None:
-                # Compatibility for narrow __new__ test adapters. Live handlers
-                # always have FieldRepairWorker.
-                preflight_ok, _preflight_result = _aone_preflight(
-                    item_id, project, terraform=terraform)
-                if not preflight_ok:
-                    reason = "preflight_validation_failed"
-                    self._quick_card(
-                        target, "🟠 工单 #%s 未派发（%s）。" % (
-                            item_id, reason),
-                        target_type)
-                    return False, reason
-            else:
-                try:
-                    inspection = field_worker.inspect(
-                        item_id, project, terraform=terraform)
-                except FieldRepairTransient:
-                    reason = "field_inspection_failed"
-                    self._quick_card(
-                        target, "🟠 工单 #%s 未派发（%s）。" % (
-                            item_id, reason),
-                        target_type)
-                    return False, reason
-                if inspection["status"] == "repair_required":
-                    repair = build_field_repair_envelope(
-                        inspection, envelope, source_revision=revision)
-                    ok, reason = self.execution_router.enqueue(repair)
-                    if not ok:
-                        self._quick_card(
-                            target, "🟠 工单 #%s 未派发（%s）。" % (
-                                item_id, reason),
-                            target_type)
-                    return ok, reason
+        # A recovered/card-submitted ticket Task with missing required Aone fields is
+        # repaired in place by the executor's FieldRepairWorker.repair_only, inside the
+        # Task's own lease/fence before its bookend/Agent — no separate field_repair Task.
 
         def local_submit():
             work = lambda: self._dispatch_bg(

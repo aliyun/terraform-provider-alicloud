@@ -228,6 +228,45 @@ class InteractiveWorkerTest(unittest.TestCase):
         self.assertEqual(daemon.call_count, 2)
         self.assertEqual(fake.calls[-1][1][1]["status"], "OFFLINE")
 
+    def test_model_switch_reuses_worker_for_same_verified_host_process(self):
+        fake = FakeClient()
+        event = {
+            "hook_event_name": "SessionStart",
+            "session_id": "native-thread-1",
+            "cwd": self.temp.name,
+            "source": "resume",
+        }
+        with mock.patch.object(worker, "_client", return_value=fake), \
+                mock.patch.object(
+                    worker, "_find_host_pid",
+                    return_value=(os.getpid(), True)), \
+                mock.patch.object(
+                    worker, "_process_start_identity",
+                    return_value="Fri Jul 24 09:30:22 2026"), \
+                mock.patch.object(
+                    worker, "_default_boot_id",
+                    side_effect=[
+                        "boot-before-switch",
+                        RuntimeError("transient boot probe failure"),
+                    ]) as boot_probe, \
+                mock.patch.object(worker, "_ensure_daemon"), \
+                contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(worker.hook("codex", event), 0)
+            before = self._store().load()
+            self.assertEqual(worker.hook("codex", event), 0)
+            after = self._store().load()
+
+        self.assertEqual(after["bootId"], "boot-before-switch")
+        self.assertEqual(after["processUuid"], before["processUuid"])
+        self.assertEqual(after["workerKey"], before["workerKey"])
+        self.assertEqual(boot_probe.call_count, 1)
+        registrations = [
+            call for call in fake.calls if call[0] == "register_worker"]
+        self.assertEqual(len(registrations), 2)
+        self.assertEqual(
+            registrations[0][1][0]["workerKey"],
+            registrations[1][1][0]["workerKey"])
+
     def test_failed_first_session_registration_persists_fail_closed_tombstone(self):
         fake = FakeClient()
         fake.register_worker = mock.Mock(
@@ -2726,9 +2765,51 @@ class InteractiveWorkerTest(unittest.TestCase):
         blocked = self._store().load()
         self.assertIsNone(blocked["current"])
         self.assertIsNone(blocked["pendingClaim"])
+        self.assertEqual(
+            blocked["recoveryPending"]["cycle"], 7)
+        self.assertEqual(
+            blocked["recoveryPending"]["runtimeSessionId"],
+            "interactive:cycle:7")
         self.assertEqual(blocked["lastClaimBlocked"]["phase"], "CLAIM_BLOCKED")
         self.assertEqual(blocked["lastClaimBlocked"]["aoneId"], "84345050")
         self.assertIn("不得继续该单", output.getvalue())
+
+        claim_count = len([
+            call for call in fake.calls if call[0] == "claim_task"])
+        with mock.patch.object(worker, "_client", return_value=fake), \
+                mock.patch.object(worker, "_host_alive", return_value=True), \
+                mock.patch.object(worker, "_ensure_daemon"), \
+                contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(worker.hook("codex", {
+                "hook_event_name": "UserPromptSubmit",
+                "session_id": "native-thread-1",
+                "turn_id": "turn-before-old-lease-expiry",
+                "prompt": "继续",
+            }), 0)
+        self.assertEqual(len([
+            call for call in fake.calls if call[0] == "claim_task"]),
+            claim_count)
+
+        # Once the predecessor lease is no longer active, retry the exact
+        # lineage and let the control plane return the original Session with a
+        # fresh fence.  No new cycle/runtime may be minted after the first 409.
+        fake.claim_error = None
+        fake.claim_results.append({
+            "task": {"id": "task-1", "generation": 4},
+            "session": {
+                "id": "session-old", "generation": 4,
+                "fenceToken": 10, "attemptNo": 2,
+            },
+        })
+        with mock.patch.object(worker, "_client", return_value=fake):
+            resumed = worker.prepare_claim("84345050", "2100304")
+            worker.acknowledge_claim(
+                "84345050", "aone:2100304:84345050:tag")
+        self.assertEqual(resumed["sessionId"], "session-old")
+        self.assertEqual(resumed["fenceToken"], 10)
+        self.assertEqual(
+            resumed["runtimeSessionId"], "interactive:cycle:7")
+        self.assertEqual(self._store().load()["claimCounter"], 7)
 
     # --- mid-task external-write operation receipts (operation-begin/abort/reconcile) ---
 

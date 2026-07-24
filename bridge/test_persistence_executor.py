@@ -2,10 +2,13 @@
 """Hermetic tests for bridge/jarvis_persistence_executor.py."""
 
 import logging
+import os
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
+from unittest import mock
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
@@ -156,6 +159,71 @@ class FakeProcess:
 
 
 class WorkerKeyAndLeaseTest(unittest.TestCase):
+    def test_explicit_boot_id_has_highest_priority(self):
+        with mock.patch.dict(
+                os.environ, {"JARVIS_BOOT_ID": "configured-boot"},
+                clear=False):
+            self.assertEqual(
+                _default_boot_id("mac-mini"), "configured-boot")
+
+    def test_linux_boot_id_precedes_platform_fallback(self):
+        with mock.patch.dict(os.environ, {}, clear=True), \
+                mock.patch.object(
+                    persistence.Path, "read_text", return_value="linux-boot\n"), \
+                mock.patch.object(persistence.sys, "platform", "darwin"), \
+                mock.patch.object(persistence.subprocess, "run") as run:
+            self.assertEqual(_default_boot_id("host"), "linux-boot")
+        run.assert_not_called()
+
+    def test_macos_boot_id_is_stable_for_one_boot_epoch(self):
+        result = SimpleNamespace(
+            returncode=0,
+            stdout="{ sec = 1784799248, usec = 99687 } Thu Jul 23")
+        with mock.patch.dict(os.environ, {}, clear=True), \
+                mock.patch.object(
+                    persistence.Path, "read_text", side_effect=OSError), \
+                mock.patch.object(persistence.sys, "platform", "darwin"), \
+                mock.patch.object(
+                    persistence.subprocess, "run", return_value=result):
+            first = _default_boot_id("mac-mini")
+            second = _default_boot_id("mac-mini")
+        self.assertEqual(first, second)
+
+    def test_macos_boot_id_changes_after_real_boot_epoch_changes(self):
+        results = [
+            SimpleNamespace(
+                returncode=0,
+                stdout="{ sec = 1784799248, usec = 99687 }"),
+            SimpleNamespace(
+                returncode=0,
+                stdout="{ sec = 1784885648, usec = 12345 }"),
+        ]
+        with mock.patch.dict(os.environ, {}, clear=True), \
+                mock.patch.object(
+                    persistence.Path, "read_text", side_effect=OSError), \
+                mock.patch.object(persistence.sys, "platform", "darwin"), \
+                mock.patch.object(
+                    persistence.subprocess, "run", side_effect=results):
+            first = _default_boot_id("mac-mini")
+            second = _default_boot_id("mac-mini")
+        self.assertNotEqual(first, second)
+
+    def test_restricted_macos_fails_closed_without_explicit_boot_id(self):
+        result = SimpleNamespace(returncode=1, stdout="")
+        with mock.patch.dict(os.environ, {}, clear=True), \
+                mock.patch.object(
+                    persistence.Path, "read_text", side_effect=OSError), \
+                mock.patch.object(persistence.sys, "platform", "darwin"), \
+                mock.patch.object(
+                    persistence.subprocess, "run", return_value=result), \
+                mock.patch.object(
+                    persistence.time, "time", side_effect=AssertionError), \
+                mock.patch.object(
+                    persistence.time, "monotonic", side_effect=AssertionError):
+            with self.assertRaisesRegex(
+                    RuntimeError, "set JARVIS_BOOT_ID explicitly"):
+                _default_boot_id("mac-mini")
+
     def test_worker_key_is_stable_and_injectable(self):
         first = make_worker_key("mac-mini", "boot-1", "process-1")
         second = make_worker_key("mac-mini", "boot-1", "process-1")

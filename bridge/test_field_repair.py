@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""Hermetic tests for the fenced Aone required-field repair Task."""
+"""Hermetic tests for in-place Aone required-field repair (repair_only).
+
+Field repair no longer creates a separate control-plane Task; the executor runs
+``FieldRepairWorker.repair_only`` inside the business Task's own lease/fence. These
+tests drive ``repair_only`` directly and assert the scheduler/executor never spawn a
+second repair Task.
+"""
 
 import json
 import sys
@@ -23,23 +29,15 @@ from bridge import jarvis_dingtalk_bot as bot  # noqa: E402
 from bridge.scheduler.runners.scan import ScanRunner  # noqa: E402
 
 
-def continuation(revision="modified:2026-07-23T08:00:00Z"):
-    return TaskEnvelope(
-        task_key="aone:1086837:84629920",
-        source_type="AONE",
-        source_ref={"aoneId": "84629920", "projectId": "1086837"},
-        task_type="ticket",
-        desired_revision=revision,
-        trigger_mask=["SCAN"],
-        payload={
-            "itemId": "84629920",
-            "project": "1086837",
-            "kind": "ticket",
-            "prompt": "handle ticket",
-            "terraform": True,
-        },
-        recovery_policy="RESUME_ONLY",
-    )
+def ticket_payload():
+    """The business ticket payload a lease carries (no repair continuation)."""
+    return {
+        "itemId": "84629920",
+        "project": "1086837",
+        "kind": "ticket",
+        "prompt": "handle ticket",
+        "terraform": True,
+    }
 
 
 def inspection(*, unresolved=None, deterministic=None):
@@ -68,6 +66,8 @@ def inspection(*, unresolved=None, deterministic=None):
 
 
 class FakeClient:
+    """Repair no longer upserts a continuation; calls must stay empty."""
+
     def __init__(self):
         self.calls = []
 
@@ -94,24 +94,6 @@ class Controller:
         self.bound.append(process)
 
 
-class FieldRepairEnvelopeTest(unittest.TestCase):
-    def test_stable_task_key_and_revision_include_source_and_candidate_digest(self):
-        first = build_field_repair_envelope(
-            inspection(), continuation(), source_revision="modified:one")
-        second = build_field_repair_envelope(
-            inspection(), continuation(), source_revision="modified:one")
-        changed = build_field_repair_envelope(
-            inspection(), continuation(), source_revision="modified:two")
-
-        self.assertEqual(first.task_key,
-                         "field-repair:aone:1086837:84629920")
-        self.assertEqual(first.desired_revision, second.desired_revision)
-        self.assertNotEqual(first.desired_revision, changed.desired_revision)
-        self.assertEqual(first.task_type, "field_repair")
-        self.assertEqual(first.payload["continuation"]["taskKey"],
-                         "aone:1086837:84629920")
-
-
 class FieldRepairWorkerTest(unittest.TestCase):
     def _worker(self, results):
         runtime = ScriptedRuntime(results)
@@ -131,21 +113,21 @@ class FieldRepairWorkerTest(unittest.TestCase):
             stdout=json.dumps(value), stderr="", returncode=returncode,
             timed_out=timed_out)
 
-    def test_no_missing_fields_skips_model_and_restores_continuation(self):
+    def _repair(self, worker):
+        return worker.repair_only(
+            "84629920", "1086837", terraform=True, controller=Controller())
+
+    def test_no_missing_fields_skips_model_and_needs_no_repair(self):
         ready = dict(inspection(), status="ready", missing=[],
                      assignments=[], unresolved=[])
         worker, runtime, client = self._worker([
             self._json_result(ready),
         ])
-        result = worker.execute(
-            build_field_repair_envelope(
-                inspection(), continuation(), source_revision="modified:one"
-            ).payload,
-            Controller(),
-        )
+        result = self._repair(worker)
+        self.assertEqual(result["status"], "completed")
         self.assertEqual(result["outcome"], "field_repair_not_needed")
         self.assertEqual(len(runtime.calls), 1)
-        self.assertEqual(len(client.calls), 1)
+        self.assertEqual(client.calls, [])
 
     def test_deterministic_assignment_skips_model_and_applies_once(self):
         missing = [{
@@ -165,18 +147,13 @@ class FieldRepairWorkerTest(unittest.TestCase):
             self._json_result(inspect),
             self._json_result(applied),
         ])
-        result = worker.execute(
-            build_field_repair_envelope(
-                inspect, continuation(), source_revision="modified:one"
-            ).payload,
-            Controller(),
-        )
+        result = self._repair(worker)
         self.assertEqual(result["outcome"], "field_repaired")
         self.assertEqual(len(runtime.calls), 2)
         self.assertFalse(any("--model" in argv for argv, _cwd, _kw in runtime.calls))
-        self.assertEqual(len(client.calls), 1)
+        self.assertEqual(client.calls, [])
 
-    def test_model_is_explicit_haiku_strict_json_and_host_applies_valid_choice(self):
+    def test_model_uses_settings_default_model_strict_json_and_tools_off(self):
         model = {
             "structured_output": {
                 "assignments": [{
@@ -194,23 +171,20 @@ class FieldRepairWorkerTest(unittest.TestCase):
             self._json_result(model),
             self._json_result(applied),
         ])
-        result = worker.execute(
-            build_field_repair_envelope(
-                inspection(), continuation(), source_revision="modified:one"
-            ).payload,
-            Controller(),
-        )
+        result = self._repair(worker)
         self.assertEqual(result["outcome"], "field_repaired")
         model_argv = runtime.calls[1][0]
-        self.assertIn("--model", model_argv)
-        self.assertEqual(model_argv[model_argv.index("--model") + 1], "haiku")
+        # No explicit --model: routes to the idea_settings.json default model.
+        self.assertNotIn("--model", model_argv)
         self.assertEqual(
             model_argv[model_argv.index("--settings") + 1],
             "/tmp/idea_settings.json")
+        # Tools stay disabled — the injection guard is retained.
         self.assertIn("--tools", model_argv)
+        self.assertEqual(model_argv[model_argv.index("--tools") + 1], "")
         self.assertIn("--json-schema", model_argv)
         self.assertIn("--no-session-persistence", model_argv)
-        self.assertEqual(len(client.calls), 1)
+        self.assertEqual(client.calls, [])
 
     def test_illegal_low_confidence_timeout_and_non_json_fail_closed(self):
         cases = (
@@ -222,7 +196,7 @@ class FieldRepairWorkerTest(unittest.TestCase):
             }), "illegal_candidate"),
             ("low", self._json_result({
                 "result": json.dumps({"assignments": [{
-                    "fieldId": "140097", "value": "ecs", "confidence": 0.86,
+                    "fieldId": "140097", "value": "ecs", "confidence": 0.4,
                     "reason": "Not certain",
                 }], "unresolved": []})
             }), "low_confidence"),
@@ -250,13 +224,7 @@ class FieldRepairWorkerTest(unittest.TestCase):
                     self._json_result(inspection()),
                     model_result,
                 ])
-                result = worker.execute(
-                    build_field_repair_envelope(
-                        inspection(), continuation(),
-                        source_revision="modified:one",
-                    ).payload,
-                    Controller(),
-                )
+                result = self._repair(worker)
                 self.assertEqual(result["outcome"],
                                  "required_fields_blocked")
                 self.assertEqual(result["status"], "suspended")
@@ -266,20 +234,6 @@ class FieldRepairWorkerTest(unittest.TestCase):
                                  "required_fields_blocked")
                 self.assertEqual(result["failureReason"], expected_reason)
                 self.assertEqual(client.calls, [])
-
-    def test_same_repair_envelope_is_idempotent_across_concurrent_producers(self):
-        with mock.patch(
-                "jarvis_field_repair.hashlib.sha256",
-                wraps=__import__("hashlib").sha256) as digest:
-            envelopes = [
-                build_field_repair_envelope(
-                    inspection(), continuation(), source_revision="modified:one")
-                for _ in range(4)
-            ]
-        self.assertGreaterEqual(digest.call_count, 4)
-        self.assertEqual({item.task_key for item in envelopes},
-                         {"field-repair:aone:1086837:84629920"})
-        self.assertEqual(len({item.desired_revision for item in envelopes}), 1)
 
     def test_model_explicit_unresolved_blocks_entire_batch(self):
         model = {
@@ -295,15 +249,15 @@ class FieldRepairWorkerTest(unittest.TestCase):
             self._json_result(inspection()),
             self._json_result(model),
         ])
-        result = worker.execute(
-            build_field_repair_envelope(
-                inspection(), continuation(), source_revision="modified:one"
-            ).payload,
-            Controller(),
-        )
+        result = self._repair(worker)
         self.assertEqual(result["status"], "suspended")
         self.assertEqual(result["failureReason"], "model_unresolved")
         self.assertEqual(client.calls, [])
+        # Blocked result carries the missing field names + candidate digest so the
+        # executor can tell the submitter exactly which fields to supply.
+        self.assertEqual(result["missingFields"],
+                         [{"id": "140097", "name": "涉及云产品"}])
+        self.assertTrue(result["candidateDigest"])
 
     def test_display_alias_is_not_a_legal_candidate_value(self):
         model = {
@@ -319,12 +273,7 @@ class FieldRepairWorkerTest(unittest.TestCase):
             self._json_result(inspection()),
             self._json_result(model),
         ])
-        result = worker.execute(
-            build_field_repair_envelope(
-                inspection(), continuation(), source_revision="modified:one"
-            ).payload,
-            Controller(),
-        )
+        result = self._repair(worker)
         self.assertEqual(result["status"], "suspended")
         self.assertEqual(result["failureReason"], "illegal_candidate")
         self.assertEqual(client.calls, [])
@@ -360,19 +309,11 @@ class FieldRepairWorkerTest(unittest.TestCase):
             "filled": True,
             "readback": [{"id": "140097", "value": "vpc"}],
         }
-        ready_retry = dict(
-            inspect, status="ready", missing=[], assignments=[], unresolved=[])
         worker, runtime, client = self._worker([
             self._json_result(inspect),
             self._json_result(mismatch, returncode=3),
-            self._json_result(ready_retry),
         ])
-        result = worker.execute(
-            build_field_repair_envelope(
-                inspect, continuation(), source_revision="modified:one"
-            ).payload,
-            Controller(),
-        )
+        result = self._repair(worker)
         self.assertEqual(result["status"], "suspended")
         self.assertEqual(result["outcome"], "required_fields_blocked")
         self.assertEqual(result["failureReason"], "apply_readback_mismatch")
@@ -396,12 +337,7 @@ class FieldRepairWorkerTest(unittest.TestCase):
             self._json_result(inspect),
             self._json_result(mismatch),
         ])
-        result = worker.execute(
-            build_field_repair_envelope(
-                inspect, continuation(), source_revision="modified:one"
-            ).payload,
-            Controller(),
-        )
+        result = self._repair(worker)
         self.assertEqual(result["status"], "suspended")
         self.assertEqual(result["failureReason"], "apply_readback_mismatch")
         self.assertEqual(len(runtime.calls), 2)
@@ -423,6 +359,8 @@ class FieldRepairBridgeIntegrationTest(unittest.TestCase):
         scanner = ScanRunner.__new__(ScanRunner)
         scanner.handler = None
         scanner.pool = None
+        # The scheduler no longer pre-inspects fields; if it ever did, this mock
+        # would flag it. Repair is the executor's in-place concern.
         scanner.field_repair_worker = SimpleNamespace(
             inspect=mock.Mock(return_value=inspection()))
         captured = []
@@ -451,13 +389,15 @@ class FieldRepairBridgeIntegrationTest(unittest.TestCase):
         accepted, reason = scanner._dispatch(self._item())
         self.assertEqual((accepted, reason), (True, "task_persisted"))
         self.assertEqual([item.task_type for item in captured], ["ticket"])
+        scanner.field_repair_worker.inspect.assert_not_called()
 
-    def test_card_missing_fields_persists_only_repair_with_business_continuation(self):
+    def test_card_persists_business_ticket_task_without_repair_or_continuation(self):
         handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
         handler.ephemeral_executor = object()
         handler._quick_card = mock.Mock()
         handler.field_repair_worker = SimpleNamespace(
-            inspect=mock.Mock(return_value=inspection()))
+            inspect=mock.Mock(side_effect=AssertionError(
+                "card submit must not inspect fields")))
         captured = []
         handler.execution_router = SimpleNamespace(
             enqueue=lambda envelope, local_submit=None: (
@@ -468,10 +408,8 @@ class FieldRepairBridgeIntegrationTest(unittest.TestCase):
             terraform=True, project="1086837", task_type="ticket",
             title="support ECS")
         self.assertEqual((accepted, reason), (True, "task_persisted"))
-        self.assertEqual([item.task_type for item in captured],
-                         ["field_repair"])
-        self.assertEqual(
-            captured[0].payload["continuation"]["taskType"], "ticket")
+        self.assertEqual([item.task_type for item in captured], ["ticket"])
+        self.assertNotIn("continuation", captured[0].payload)
 
     def test_model_prompt_marks_workitem_text_untrusted_and_keeps_context(self):
         prompt = FieldRepairWorker._model_prompt(inspection())
@@ -485,7 +423,7 @@ class FieldRepairBridgeIntegrationTest(unittest.TestCase):
             with self.subTest(kind=kind):
                 handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
                 handler.execution_router = SimpleNamespace(
-                    task_types={kind, "field_repair"})
+                    task_types={kind})
                 handler.dispatch_item = mock.Mock(return_value="done")
                 handler.field_repair_worker = SimpleNamespace(
                     repair_only=mock.Mock(return_value={
@@ -498,8 +436,7 @@ class FieldRepairBridgeIntegrationTest(unittest.TestCase):
                 controller = SimpleNamespace(
                     runtime_session_id="runtime-1", resumed=True,
                     bind_process=mock.Mock())
-                payload = dict(
-                    continuation().payload, kind=kind, prompt="resume")
+                payload = dict(ticket_payload(), kind=kind, prompt="resume")
                 lease = {
                     "task": {
                         "taskKey": "aone:1086837:84629920",
@@ -533,7 +470,7 @@ class FieldRepairBridgeIntegrationTest(unittest.TestCase):
     def test_historical_blocked_suspends_without_bookend_agent_or_repair_enqueue(self):
         handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
         handler.execution_router = SimpleNamespace(
-            task_types={"ticket", "field_repair"})
+            task_types={"ticket"})
         handler.dispatch_item = mock.Mock()
         handler.field_repair_worker = SimpleNamespace(
             repair_only=mock.Mock(return_value={
@@ -543,6 +480,8 @@ class FieldRepairBridgeIntegrationTest(unittest.TestCase):
                 "waitKey": "field-repair:aone:1086837:84629920:required_fields_blocked",
                 "errorType": "required_fields_blocked",
                 "failureReason": "low_confidence",
+                "candidateDigest": "deadbeef",
+                "missingFields": [{"id": "140097", "name": "涉及云产品"}],
             }))
         handler.task_client = SimpleNamespace(
             upsert_desired_task=mock.Mock())
@@ -552,15 +491,66 @@ class FieldRepairBridgeIntegrationTest(unittest.TestCase):
         lease = {
             "task": {"taskKey": "aone:1086837:84629920",
                      "taskType": "ticket", "desiredRevision": "modified:old"},
-            "session": {"inputPayload": continuation().payload},
+            "session": {"inputPayload": dict(ticket_payload())},
         }
         with mock.patch.object(
                 bot, "_TaskAoneBookend",
-                side_effect=AssertionError("bookend must not start")):
+                side_effect=AssertionError("bookend must not start")), \
+                mock.patch.object(bot, "_field_repair_notify_submitter") as notify:
             result = handler._execute_task_lease(lease, controller)
         self.assertEqual(result["status"], "suspended")
         handler.task_client.upsert_desired_task.assert_not_called()
         handler.dispatch_item.assert_not_called()
+        # Field-repair block DMs the submitter (with the blocked result payload).
+        notify.assert_called_once()
+        self.assertEqual(notify.call_args.args[0], "84629920")
+        self.assertEqual(notify.call_args.args[2]["missingFields"],
+                         [{"id": "140097", "name": "涉及云产品"}])
+
+
+class FieldRepairSubmitterNotifyTest(unittest.TestCase):
+    BLOCKED = {
+        "status": "suspended", "outcome": "required_fields_blocked",
+        "candidateDigest": "abc123",
+        "missingFields": [{"id": "107239", "name": "归属产品"},
+                          {"id": "102312", "name": "客户问题分类1级"}],
+    }
+
+    def test_notify_dm_submitter_with_field_names_and_digest_key(self):
+        with mock.patch.object(bot, "_resolve_submitter", return_value=("270513", "秋雯")), \
+                mock.patch.object(bot, "_dingtalk_event_enqueue", return_value=True) as dm:
+            bot._field_repair_notify_submitter("84432183", "1091779", self.BLOCKED)
+        dm.assert_called_once()
+        args = dm.call_args.args
+        self.assertEqual(args[0], "84432183")           # ticket
+        self.assertEqual(args[1], "1091779")            # project
+        self.assertEqual(args[2],                       # event_key carries the digest
+                         "field-repair-blocked:1091779:84432183:abc123")
+        self.assertEqual(args[3], "270513")             # submitter staff id
+        self.assertIn("归属产品", args[5])
+        self.assertIn("客户问题分类1级", args[5])
+        self.assertIn("84432183", args[5])
+
+    def test_notify_never_raises_when_dingtalk_fails(self):
+        with mock.patch.object(bot, "_resolve_submitter", return_value=("270513", "秋雯")), \
+                mock.patch.object(bot, "_dingtalk_event_enqueue",
+                                  side_effect=RuntimeError("boom")):
+            bot._field_repair_notify_submitter("84432183", "1091779", self.BLOCKED)
+
+    def test_resolve_submitter_uses_creator_empid_and_falls_back_to_master(self):
+        def run_with(creator):
+            payload = json.dumps({"creator": creator})
+            with mock.patch.object(
+                    bot.subprocess, "run",
+                    return_value=SimpleNamespace(returncode=0, stdout=payload)):
+                return bot._resolve_submitter("84432183")
+        self.assertEqual(run_with({"empId": "270513", "nickName": "秋雯"}),
+                         ("270513", "秋雯"))
+        # digital worker / non-numeric creator → master fallback
+        staff, _name = run_with({"empId": "WORKER_1782379562571"})
+        self.assertEqual(staff, bot.master_staff())
+        staff2, _n2 = run_with({})
+        self.assertEqual(staff2, bot.master_staff())
 
 
 if __name__ == "__main__":
