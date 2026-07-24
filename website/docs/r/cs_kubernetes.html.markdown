@@ -39,8 +39,6 @@ Please refer to the `Authorization management` and `Cluster management` sections
 
 -> **NOTE:** From version 1.75.0, Some parameters have been removed from resource,You can check them below and re-import the cluster if necessary.
 
--> **NOTE:** From version 1.101.0+, We supported the `professional managed clusters(ack-pro)`, You can create a pro cluster by setting the the value of `cluster_spec`.
-
 -> **NOTE:** From version 1.177.0+, `exclude_autoscaler_nodes`,`worker_number`,`worker_vswitch_ids`,`worker_instance_types`,`worker_instance_charge_type`,`worker_period`,`worker_period_unit`,`worker_auto_renew`,`worker_auto_renew_period`,`worker_disk_category`,`worker_disk_size`,`worker_data_disks`,`node_port_range`,`cpu_policy`,`user_data`,`taints`,`worker_disk_performance_level`,`worker_disk_snapshot_policy_id` are deprecated.
 We Suggest you using resource **`alicloud_cs_kubernetes_node_pool`** to manage your cluster worker nodes.
 
