@@ -35,8 +35,20 @@ provider "alicloud" {
 }
 
 resource "alicloud_esa_routine" "default" {
-  description = var.name
-  name        = var.name
+  description      = var.name
+  name             = var.name
+  code             = "addEventListener('fetch', e => e.respondWith(new Response('hello world')))"
+  code_description = "initial version"
+  deploy_env       = "staging"
+}
+```
+
+Manage the routine code from a local file:
+
+```terraform
+resource "alicloud_esa_routine" "from_file" {
+  name = "terraform-example-file"
+  code = file("${path.module}/index.js")
 }
 ```
 
@@ -45,19 +57,24 @@ resource "alicloud_esa_routine" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `description` - (Optional, ForceNew) The routine name, which must be unique in the same account.
-* `name` - (Required, ForceNew) Routine Name
+* `name` - (Required, ForceNew) Routine Name, which must be unique in the same account.
+* `description` - (Optional, ForceNew) The description of the routine.
+* `code` - (Optional) The JavaScript source code of the routine. When set or changed, the code is uploaded as a new staging version and then committed into a formal code version. To manage the code from a local file, use the Terraform built-in `file()` function, e.g. `code = file("index.js")`.
+* `code_description` - (Optional) The description attached to the committed code version.
+* `deploy_env` - (Optional) The environment whose environment variables are bundled when committing the code version. Valid values: `staging`, `production`. If not set, no environment variables are bundled.
 
 ## Attributes Reference
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `create_time` - The time when the routine was created.
+* `latest_code_version` - The most recent committed code version of the routine.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Routine.
+* `update` - (Defaults to 5 mins) Used when update the Routine.
 * `delete` - (Defaults to 5 mins) Used when delete the Routine.
 
 ## Import
