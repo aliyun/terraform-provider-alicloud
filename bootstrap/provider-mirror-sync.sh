@@ -101,7 +101,12 @@ git -C "$CACHE" update-ref "$HEARTBEAT_REF" "$hb_commit"
 # CREATES and FAST-FORWARDS, never force; divergent refs are skipped and
 # stay frozen at the repo's historical state. Consumers track master
 # (clean fast-forward) and new upstream branches/tags arrive as creates.
-git -C "$CACHE" for-each-ref --format='%(objectname) %(refname)' refs/heads refs/tags \
+# Sync scope: master + heartbeat + tags ONLY. Upstream's other branches have
+# no consumer in the fleet, and several same-name branches in the shared repo
+# (dev, cdn, ...) are rejected by per-branch server rules even for clean
+# fast-forwards — pushing them buys nothing and wedges the run.
+git -C "$CACHE" for-each-ref --format='%(objectname) %(refname)' \
+    refs/heads/master "$HEARTBEAT_REF" refs/tags \
   | sort > "$TMPD/local"
 changed=$(comm -23 "$TMPD/local" "$TMPD/remote" | awk '{print $2}')
 
@@ -126,7 +131,10 @@ done <<< "$changed"
 # Adaptive batch: try a slice; on rejection split in half and retry down to
 # singles (the server's multi-ref tolerance is erratic — 418 refs and even
 # 40-ref batches were rejected wholesale). Retry spew goes to a file so the
-# cron log stays readable; a single-ref rejection aborts loudly.
+# cron log stays readable. A ref rejected even singly is server-blocked
+# (per-branch/tag rules) — recorded and SKIPPED, because one stubborn ref
+# must not wedge the rest of the catch-up (v1: it aborted at refs/heads/dev
+# and the 91 gap tags behind it never got attempted).
 pushes=0
 push_refs() {
   [ "$#" -eq 0 ] && return 0
@@ -135,9 +143,8 @@ push_refs() {
     return 0
   fi
   if [ "$#" -le 1 ]; then
-    echo "[mirror-sync] ERROR: single-ref push rejected: $*" >&2
-    tail -5 "$TMPD/push.err" >&2
-    return 1
+    printf '%s\n' "$1" >> "$TMPD/blocked"
+    return 0
   fi
   local mid=$(( $# / 2 ))
   push_refs "${@:1:$mid}"
@@ -153,8 +160,15 @@ done
 
 if [ "$skipped" -gt 0 ]; then
   echo "[mirror-sync] skipped $skipped divergent ref(s) (server denies non-ff; shared-repo history left untouched): $(tr '\n' ' ' < "$TMPD/skipped" | cut -c1-400)"
-  if grep -q "jarvis-sync-heartbeat" "$TMPD/skipped" 2>/dev/null; then
-    echo "[mirror-sync] WARNING: heartbeat diverged (cache rebuilt?) — delete the remote jarvis-sync-heartbeat branch once so the next run recreates it" >&2
-  fi
 fi
-echo "[mirror-sync] $(date '+%F %T') master=$(git -C "$CACHE" rev-parse --short refs/heads/master) pushed $total ref(s) in $pushes push(es), skipped $skipped"
+blocked=0
+if [ -f "$TMPD/blocked" ]; then
+  blocked=$(wc -l < "$TMPD/blocked" | tr -d ' ')
+  echo "[mirror-sync] WARNING: $blocked ref(s) rejected singly by the server (per-branch/tag rules): $(tr '\n' ' ' < "$TMPD/blocked" | cut -c1-300)" >&2
+  [ -f "$TMPD/push.err" ] && tail -3 "$TMPD/push.err" >&2
+fi
+if { [ -f "$TMPD/skipped" ] && grep -q "jarvis-sync-heartbeat" "$TMPD/skipped"; } \
+   || { [ -f "$TMPD/blocked" ] && grep -q "jarvis-sync-heartbeat" "$TMPD/blocked"; }; then
+  echo "[mirror-sync] WARNING: heartbeat did not advance (diverged or blocked) — workers will see a stale freshness signal; if the cache was rebuilt, delete the remote jarvis-sync-heartbeat branch once so the next run recreates it" >&2
+fi
+echo "[mirror-sync] $(date '+%F %T') master=$(git -C "$CACHE" rev-parse --short refs/heads/master) pushed $((total-blocked))/$total ref(s) in $pushes push(es), skipped $skipped divergent, blocked $blocked"
