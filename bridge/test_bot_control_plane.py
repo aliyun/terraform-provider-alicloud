@@ -2402,6 +2402,41 @@ class TaskBookendDispatchTest(unittest.TestCase):
         self.assertNotIn("finish", calls)
         self.assertNotIn("release", calls)
 
+    def test_reply_key_is_comment_cursor_scoped_within_generation(self):
+        # Regression for #84649642: within one task generation, a suspend that
+        # answers comment A and a later resume that answers comment B must post
+        # two distinct replies. The reply idempotency key was generation-scoped
+        # only ("task-reply:<task>:<gen>"), so B collided with A's already-posted
+        # key and was silently deduped — the ticket looked unanswered forever.
+        _, a = self._run(
+            '[[AONE_RESULT:{"outcome":"suspend","reply_body":"回复A",'
+            '"suspend_wait_for":"320687","handled_comment_id":"124900001"}]]',
+            expected_comment_cursor="124900001")
+        _, b = self._run(
+            '[[AONE_RESULT:{"outcome":"suspend","reply_body":"回复B",'
+            '"suspend_wait_for":"320687","handled_comment_id":"124900002"}]]',
+            expected_comment_cursor="124900002")
+        key_a = a["reply"][0][2]
+        key_b = b["reply"][0][2]
+        self.assertIn("124900001", key_a)
+        self.assertIn("124900002", key_b)
+        self.assertNotEqual(
+            key_a, key_b,
+            "distinct trigger comments must get distinct reply keys so both post")
+        # A same-comment crash/retry within the generation still dedups (same key).
+        _, a_retry = self._run(
+            '[[AONE_RESULT:{"outcome":"suspend","reply_body":"回复A重试",'
+            '"suspend_wait_for":"320687","handled_comment_id":"124900001"}]]',
+            expected_comment_cursor="124900001")
+        self.assertEqual(key_a, a_retry["reply"][0][2])
+
+    def test_reply_key_without_comment_cursor_stays_generation_scoped(self):
+        # Non-comment revisions (no expected cursor) keep the historical key so a
+        # crash/retry of the same generation still dedups to one comment.
+        _, calls = self._run(
+            '[[AONE_RESULT:{"outcome":"idle","reply_body":"阶段完成"}]]')
+        self.assertEqual(calls["reply"][0][2], "task-reply:603:1")
+
     def test_missing_result_fails_closed_without_commit(self):
         out, calls = self._run("干完了但忘了输出结构化结果")
         self.assertEqual(out["status"], "error")

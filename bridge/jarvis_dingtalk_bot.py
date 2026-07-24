@@ -2314,6 +2314,23 @@ class _TaskAoneBookend:
     def _reply_identity(self):
         return PERSONA_PUBLIC_IDENTITY if self.terraform else "jarvis"
 
+    def _scope_event_key(self, prefix):
+        """Idempotency scope for one reply / waiting-human epoch.
+
+        Keyed by (task, generation, triggering comment). A generation is
+        RESUME_ONLY: successive human comments resume the same generation, so a
+        purely generation-scoped key made every resume after the first collide
+        with the already-posted key and get silently deduped — replies answering
+        newer comments never reached Aone (#84649642). Including the triggering
+        comment cursor keeps a same-comment crash/retry deduped (same cursor →
+        same key) while letting distinct comments each post. Non-comment
+        revisions carry no cursor and stay generation-scoped as before.
+        """
+        key = "%s:%s:%s" % (prefix, self.task_id, self.generation)
+        if self.expected_comment_cursor:
+            key = "%s:%s" % (key, self.expected_comment_cursor)
+        return key
+
     def bind_process(self, process):
         """Bind the PID (via the controller) then claim the Aone tag before work starts."""
         self.capture_comment_baseline()
@@ -2457,7 +2474,7 @@ class _TaskAoneBookend:
             return False
         payload = self._attention_payload(result=result, legacy_info=legacy_info)
         owner = _attention_owner_staff_id(payload.get("waitFor"))
-        event_key = "task-waiting-human:%s:%s" % (self.task_id, self.generation)
+        event_key = self._scope_event_key("task-waiting-human")
         return self._attention.upsert(
             self.attention_task_id, owner, event_key, payload)
 
@@ -2491,7 +2508,7 @@ class _TaskAoneBookend:
         reply = str(result.get("reply_body") or "").strip()
         links = result.get("mr_cr_links") or []
         body = "%s\n\n关联：%s" % (reply, " ".join(links)) if links else reply
-        event_key = "task-reply:%s:%s" % (self.task_id, self.generation)
+        event_key = self._scope_event_key("task-reply")
         if not _aone_event_enqueue(
                 self.item_id, self.project, event_key, body,
                 allow_non_tf=not self.terraform, identity=self._reply_identity()):
