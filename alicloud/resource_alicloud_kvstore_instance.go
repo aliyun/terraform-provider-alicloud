@@ -274,6 +274,7 @@ func resourceAliCloudKvstoreInstance() *schema.Resource {
 			"secondary_zone_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"security_group_id": {
 				Type:             schema.TypeString,
@@ -419,6 +420,16 @@ func resourceAliCloudKvstoreInstance() *schema.Resource {
 			"slave_read_only_count": {
 				Type:     schema.TypeInt,
 				Optional: true,
+			},
+			"replica_count": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
+			"slave_replica_count": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
 			},
 			"is_auto_upgrade_open": {
 				Type:     schema.TypeString,
@@ -568,6 +579,14 @@ func resourceAliCloudKvstoreInstanceCreate(d *schema.ResourceData, meta interfac
 		request["SlaveReadOnlyCount"] = v
 	}
 
+	if v, ok := d.GetOk("replica_count"); ok {
+		request["ReplicaCount"] = v
+	}
+
+	if v, ok := d.GetOk("slave_replica_count"); ok {
+		request["SlaveReplicaCount"] = v
+	}
+
 	vswitchId := Trim(d.Get("vswitch_id").(string))
 	if vswitchId != "" {
 		vpcService := VpcService{client}
@@ -691,6 +710,8 @@ func resourceAliCloudKvstoreInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("shard_count", object["ShardCount"])
 	d.Set("read_only_count", object["ReadOnlyCount"])
 	d.Set("slave_read_only_count", object["SlaveReadOnlyCount"])
+	d.Set("replica_count", object["ReplicaCount"])
+	d.Set("slave_replica_count", object["SlaveReplicaCount"])
 	d.Set("status", object["InstanceStatus"])
 	if v, ok := object["Tags"].(map[string]interface{}); ok {
 		d.Set("tags", tagsToMap(v["Tag"]))
@@ -1035,7 +1056,19 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		update = true
 	}
 	if v, ok := d.GetOk("secondary_zone_id"); ok {
-		migrateToOtherZoneReq["SecondaryZoneId"] = v
+		// secondary_zone_id is Computed, so removing it from the configuration keeps the last
+		// known value in state instead of clearing it. During a primary-zone migration that
+		// retained value can equal the target primary zone, and MigrateToOtherZone rejects a
+		// request whose secondary zone equals the primary zone. Only send SecondaryZoneId when
+		// it actually differs from the target primary zone.
+		secondaryZone, _ := v.(string)
+		primaryZone, _ := d.Get("zone_id").(string)
+		if primaryZone == "" {
+			primaryZone, _ = d.Get("availability_zone").(string)
+		}
+		if secondaryZone != primaryZone {
+			migrateToOtherZoneReq["SecondaryZoneId"] = v
+		}
 	}
 
 	if v, ok := d.GetOkExists("read_only_count"); ok {
@@ -1044,6 +1077,14 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 
 	if v, ok := d.GetOkExists("slave_read_only_count"); ok {
 		migrateToOtherZoneReq["SlaveReadOnlyCount"] = v
+	}
+
+	if v, ok := d.GetOk("replica_count"); ok {
+		migrateToOtherZoneReq["ReplicaCount"] = v
+	}
+
+	if v, ok := d.GetOk("slave_replica_count"); ok {
+		migrateToOtherZoneReq["SlaveReplicaCount"] = v
 	}
 
 	if !d.IsNewResource() && d.HasChange("availability_zone") {
@@ -1268,6 +1309,22 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 
 		if v, ok := d.GetOkExists("read_only_count"); ok {
 			modifyInstanceSpecReq["ReadOnlyCount"] = v
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("replica_count") {
+		update = true
+
+		if v, ok := d.GetOk("replica_count"); ok {
+			modifyInstanceSpecReq["ReplicaCount"] = v
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("slave_replica_count") {
+		update = true
+
+		if v, ok := d.GetOk("slave_replica_count"); ok {
+			modifyInstanceSpecReq["SlaveReplicaCount"] = v
 		}
 	}
 
