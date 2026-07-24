@@ -21,7 +21,7 @@ For information about RAM Role Policy Attachment and how to use it, see [What is
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_ram_role_policy_attachment&exampleId=d1fa1b9b-e7df-bcf0-7fdb-5ab39b581203ff08373e&activeTab=example&spm=docs.r.ram_role_policy_attachment.0.d1fa1b9be7&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_ram_role_policy_attachment&exampleId=fab0c0f1-91cc-ec3f-3c9b-7d961a45fa07308dc101&activeTab=example&spm=docs.r.ram_role_policy_attachment.0.fab0c0f191&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
