@@ -780,6 +780,10 @@ The following arguments are supported:
   - All: All the archived backup files are retained.
 
 -> **NOTE:** This parameter is supported only when the instance runs the MySQL database engine.
+* `force_delete` - (Optional, Available since v1.287.0) A behavior mark used to delete a `Prepaid` (Subscription) instance forcibly. Defaults to `false`. When set to `true`, deleting the resource will first convert the `Prepaid` instance to `Postpaid` (Pay-As-You-Go) and then release it.
+
+-> **NOTE:** Setting `force_delete` to `true` on a `Prepaid` instance triggers a subscription-to-pay-as-you-go conversion followed by a real release on destroy. This has financial consequences (refund/settlement of the subscription) and permanently removes the instance and its data. Use with caution.
+
 * `storage_auto_scale` - (Optional, Available since v1.129.0)Automatic storage space expansion switch. Valid values:
   - Enable
   - Disable
