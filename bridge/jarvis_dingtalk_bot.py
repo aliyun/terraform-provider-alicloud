@@ -140,12 +140,7 @@ from jarvis_execution_runtime import (
     DEFAULT_EXECUTION_RUNTIME,
     DEFAULT_PROCESS_GUARDIAN,
 )
-from jarvis_field_repair import (
-    FIELD_REPAIR_KIND,
-    FieldRepairTransient,
-    FieldRepairWorker,
-    build_field_repair_envelope,
-)
+from jarvis_field_repair import FieldRepairWorker
 
 # The DingTalk SDK is only needed by the live WebSocket path in main(). Guard the
 # import so the module still loads for the hermetic test suite and --dry-run-once
@@ -182,9 +177,6 @@ POST_PR_HEADLESS_KINDS = frozenset(("pr_ci_fix", "pr_comment_reply"))
 # explicit result instead of silently succeeding while leaving ``jarvis-claimed``.
 TASK_BOOKEND_KINDS = frozenset(("ticket", "persona", "wake"))
 
-_AONE_PREFLIGHT_LOCKS = {}
-_AONE_PREFLIGHT_LOCKS_GUARD = threading.Lock()
-
 TATA_PROMPT = (
     "你是 Tata，钉钉里的轻量助手。日常陪聊、答疑、查资料，语气简洁友好。"
     "你不能直接动仓库、发布或调 IaC，也不能查 Aone/工单/需求。只要用户要干真活（查证/开发/运维/查或碰工单/查 Aone）"
@@ -193,104 +185,6 @@ TATA_PROMPT = (
 )
 
 
-def _aone_preflight(workitem_id, expected_project=None, terraform=False):
-    """Validate/fill required Aone fields under a per-item process lock.
-
-    The shell helper owns the stable result contract and the update/readback
-    transaction.  This wrapper only serializes same-process dispatch paths,
-    bounds execution time, and turns every malformed/failed response into the
-    same fail-closed bridge decision.
-    """
-    workitem_id = str(workitem_id)
-    expected_project = str(expected_project or "")
-    with _AONE_PREFLIGHT_LOCKS_GUARD:
-        item_lock = _AONE_PREFLIGHT_LOCKS.setdefault(
-            workitem_id, threading.Lock())
-    try:
-        timeout = max(1, min(
-            300, int(os.environ.get("JARVIS_AONE_PREFLIGHT_TIMEOUT", "30"))))
-    except ValueError:
-        timeout = 30
-    command = [
-        "bash", str(REPO_ROOT / "bootstrap" / "aone-fields.sh"),
-        "preflight", workitem_id,
-    ]
-    if expected_project:
-        command.append(expected_project)
-    with item_lock:
-        try:
-            proc = subprocess.run(
-                command, capture_output=True, text=True, timeout=timeout,
-                env=_a1_command_env(terraform=terraform))
-        except subprocess.TimeoutExpired:
-            result = {
-                "status": "failed",
-                "errorType": "preflight_validation_failed",
-                "workitemId": workitem_id,
-                "project": expected_project,
-                "failureReason": "timeout",
-            }
-            log.error("aone_preflight %s", json.dumps(
-                result, ensure_ascii=False, sort_keys=True))
-            return False, result
-        except Exception as exc:  # noqa: BLE001
-            result = {
-                "status": "failed",
-                "errorType": "preflight_validation_failed",
-                "workitemId": workitem_id,
-                "project": expected_project,
-                "failureReason": "spawn_error",
-                "detail": type(exc).__name__,
-            }
-            log.error("aone_preflight %s", json.dumps(
-                result, ensure_ascii=False, sort_keys=True))
-            return False, result
-
-        parsed = True
-        try:
-            result = json.loads(proc.stdout)
-            if not isinstance(result, dict):
-                raise ValueError("result is not an object")
-        except (TypeError, ValueError, json.JSONDecodeError):
-            parsed = False
-            result = {
-                "status": "failed",
-                "errorType": "preflight_validation_failed",
-                "workitemId": workitem_id,
-                "project": expected_project,
-                "failureReason": "invalid_result",
-            }
-        success_contract = (
-            parsed
-            and result.get("status") == "ok"
-            and result.get("errorType") is None
-            and str(result.get("workitemId") or "") == workitem_id
-            and (not expected_project
-                 or str(result.get("project") or "") == expected_project)
-            and bool(str(result.get("workitemType") or "").strip())
-            and isinstance(result.get("assignments"), list)
-            and result.get("unresolved") == []
-            and result.get("readback") == []
-            and isinstance(result.get("filled"), bool)
-        )
-        ok = proc.returncode == 0 and success_contract
-        if proc.returncode == 0 and not success_contract:
-            result = {
-                "status": "failed",
-                "errorType": "preflight_validation_failed",
-                "workitemId": workitem_id,
-                "project": expected_project,
-                "failureReason": "invalid_result",
-            }
-        if not ok:
-            result["status"] = "failed"
-            result["errorType"] = "preflight_validation_failed"
-        log_method = log.info if ok else log.error
-        log_method("aone_preflight rc=%s result=%s stderr=%s",
-                   proc.returncode,
-                   json.dumps(result, ensure_ascii=False, sort_keys=True),
-                   (proc.stderr or "").strip()[-500:])
-        return ok, result
 # idealab 网关吃掉 --append-system-prompt, 改在常驻进程对话首轮注入身份做 priming。
 TATA_PRIMING = TATA_PROMPT + "\n\n(从现在起按以上身份回应, 只回一个'好'确认)"
 TATA_DWS_ONBOARDING_MESSAGE = (
@@ -885,25 +779,6 @@ def _aone_event_source_part(value, fallback="unknown", limit=64):
     part = str(value or "").strip().lower()
     part = re.sub(r"[^a-z0-9._:-]+", "-", part).strip("-.:_")
     return (part or fallback)[:max(1, int(limit))]
-
-
-def _dispatch_event_summary(kind, subtype, attempts, release_state):
-    """Fixed public summary; raw Claude tail is deliberately excluded."""
-    try:
-        attempt_count = max(1, int(attempts))
-    except (TypeError, ValueError):
-        attempt_count = 1
-    return _aone_event_sanitize_text(
-        "Terraform 自动处理未能完成，已停止本轮自动推进。\n\n"
-        "- 任务类型：%s\n"
-        "- 失败类别：%s\n"
-        "- 尝试次数：%d\n"
-        "- 认领释放：%s\n"
-        "- 下一步：请人工检查运行环境与任务前置条件，确认后重新派发。"
-        % (_aone_event_source_part(kind),
-           _aone_event_source_part(subtype),
-           attempt_count,
-           release_state))
 
 
 _MODEL_PROVIDER_ERROR_RE = re.compile(
@@ -4899,24 +4774,10 @@ class AoneScheduler:
         tgt, ttype = broadcast_target(), broadcast_type()
         notify = _routine_notifier(self.handler)
         envelope = self._envelope(item, context)
-        field_worker = getattr(self, "field_repair_worker", None)
-        if field_worker is None:
-            # Compatibility seam for narrow __new__-constructed test adapters.
-            # Live schedulers always receive FieldRepairWorker in __init__.
-            preflight_ok, _preflight_result = _aone_preflight(
-                iid, pool_project, terraform=terraform)
-            if not preflight_ok:
-                return False, "preflight_validation_failed"
-        else:
-            try:
-                inspection = field_worker.inspect(
-                    iid, pool_project, terraform=terraform)
-            except FieldRepairTransient:
-                return False, "field_inspection_failed"
-            if inspection["status"] == "repair_required":
-                repair = build_field_repair_envelope(
-                    inspection, envelope, source_revision=context["revision"])
-                return self.execution_router.enqueue(repair)
+        # Missing required Aone fields are repaired in place by the executor's
+        # FieldRepairWorker.repair_only, inside this ticket Task's own lease/fence
+        # (before its bookend/Agent). The scheduler no longer pre-inspects here nor
+        # spawns a separate field_repair Task, so one Aone id maps to one Task.
 
         def local_submit():
             if self.pool is None or self.handler is None:
@@ -8395,15 +8256,6 @@ class JarvisHandler(AsyncChatbotHandler):
         project = str(payload.get("project") or "")
         terraform = bool(payload.get("terraform"))
         expected_comment_cursor = payload.get("expectedCommentCursor")
-        if kind == FIELD_REPAIR_KIND:
-            # This branch intentionally precedes _TaskAoneBookend.  The repair
-            # Session owns only field inspection/selection/apply and continuation
-            # upsert; it never claims, comments, tags, changes owner/status, or
-            # launches the normal business Agent.
-            worker = getattr(self, "field_repair_worker", None)
-            if worker is None:
-                raise RuntimeError("field repair worker is unavailable")
-            return worker.execute(payload, controller)
         field_worker = getattr(self, "field_repair_worker", None)
         if kind in TASK_BOOKEND_KINDS and field_worker is not None:
             # Historical/restored business Tasks already own a lease/fence. Repair
@@ -8996,39 +8848,27 @@ class JarvisHandler(AsyncChatbotHandler):
 
     @staticmethod
     def _post_death_cause(item_id, cause, terraform=False):
-        """Best-effort failure ledger.
+        """Best-effort local failure ledger — bot.log only, NEVER Aone.
 
-        Non-Terraform numeric tickets retain the legacy Aone ``wrap.sh sync`` death-cause
-        comment. Terraform raw failure detail is local-only (bot.log audit; NOT broadcast,
-        to avoid leaking raw failure detail) — the separate important-event publisher
-        receives a fixed sanitized RD summary. Pseudo ids have neither workitem nor ticket
-        ledger entry here. NEVER raises.
+        Execution failures (retries exhausted / terminal error) must not pollute the
+        Aone work item's comment thread; the death cause is recorded locally for audit
+        only, for both Terraform and non-Terraform tickets. Pseudo ids are skipped.
+        NEVER raises.
         """
         if not str(item_id).isdigit():
             return
-        try:
-            if terraform:
-                # Local-only audit: bot.log, no separate anomaly file or DingTalk broadcast.
-                log.warning("terraform Task #%s death cause: %s",
-                            item_id, str(cause).replace("\n", " | ")[:500])
-            else:
-                subprocess.run(
-                    [str(REPO_ROOT / "bootstrap" / "wrap.sh"), "sync",
-                     str(item_id), "--summary-stdin"],
-                    input=cause, cwd=str(REPO_ROOT), text=True, timeout=90,
-                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                    env=_a1_command_env(terraform=False))
-        except Exception as e:  # noqa: BLE001
-            log.warning("_post_death_cause #%s failed: %s", item_id, e)
+        prefix = "terraform " if terraform else ""
+        log.warning("%sTask #%s death cause: %s",
+                    prefix, item_id, str(cause).replace("\n", " | ")[:500])
 
     def _dispatch_failed(self, item_id, res, notify, project, terraform=False,
                          kind="ticket", sid="unknown-session", attempts=None):
-        """Retries exhausted / terminal error: record the death cause, release the claim
-        (ticket kind only — probe/revisit/wake pass project=None), and report the failure
-        through the caller-selected notice sink. Terraform keeps a local audit log. Model
-        provider/gateway outages notify the master by idempotent DingTalk only; all other
-        Terraform terminal failures retain the RD-only Aone important event. Non-Terraform
-        retains the legacy Aone death-cause comment. Every step is best-effort and never
+        """Retries exhausted / terminal error: record the death cause locally, release the
+        claim (ticket kind only — probe/revisit/wake pass project=None), and report the
+        failure through the caller-selected notice sink. Execution failures NEVER write the
+        Aone work item (neither Terraform nor non-Terraform) — the death cause stays in
+        bot.log and the DingTalk notice sink. Terraform model provider/gateway outages still
+        notify the master by idempotent DingTalk. Every step is best-effort and never
         raises."""
         retries = int(os.environ.get("JARVIS_DISPATCH_RETRY_MAX", "2"))
         tail = (res.text or "").strip()
@@ -9054,35 +8894,27 @@ class JarvisHandler(AsyncChatbotHandler):
             except Exception as e:  # noqa: BLE001
                 release_state = "释放失败"
                 log.warning("_dispatch_failed #%s release failed: %s", item_id, e)
-        if terraform and project and str(item_id).isdigit():
+        if (terraform and model_provider_failure
+                and project and str(item_id).isdigit()):
+            # Model provider/gateway outages still notify the master by idempotent
+            # DingTalk (not Aone). All other terminal failures write neither channel's
+            # Aone comment — they stay in bot.log + the notice sink below.
             try:
                 normalized_kind = _aone_event_source_part(kind)
                 normalized_sid = _aone_event_source_part(sid or "unknown-session")
-                if model_provider_failure:
-                    # Same Task session + outage class is one semantic event. The
-                    # DingTalk ledger keeps failed transports pending for flush/retry.
-                    semantic_source = "dispatch-model-provider:%s:%s" % (
-                        normalized_kind, normalized_sid)
-                    if not _dingtalk_event_enqueue(
-                            item_id, project, semantic_source, master_staff(),
-                            "Jarvis 模型提供方故障",
-                            _dispatch_model_provider_summary(
-                                item_id, project, kind,
-                                attempts or (retries + 1), release_state)):
-                        log.error(
-                            "_dispatch_failed #%s DingTalk event could not be queued",
-                            item_id)
-                else:
-                    semantic_source = "dispatch:%s:%s:%s" % (
-                        normalized_kind, normalized_sid,
-                        _aone_event_source_part(failure_subtype or "error"))
-                    if not _aone_event_enqueue(
-                            item_id, project, semantic_source,
-                            _dispatch_event_summary(
-                                kind, failure_subtype,
-                                attempts or (retries + 1), release_state)):
-                        log.error(
-                            "_dispatch_failed #%s Aone event could not be queued", item_id)
+                # Same Task session + outage class is one semantic event. The DingTalk
+                # ledger keeps failed transports pending for flush/retry.
+                semantic_source = "dispatch-model-provider:%s:%s" % (
+                    normalized_kind, normalized_sid)
+                if not _dingtalk_event_enqueue(
+                        item_id, project, semantic_source, master_staff(),
+                        "Jarvis 模型提供方故障",
+                        _dispatch_model_provider_summary(
+                            item_id, project, kind,
+                            attempts or (retries + 1), release_state)):
+                    log.error(
+                        "_dispatch_failed #%s DingTalk event could not be queued",
+                        item_id)
             except Exception as e:  # noqa: BLE001
                 log.warning("_dispatch_failed #%s terminal event failed: %s", item_id, e)
         try:
@@ -9122,41 +8954,9 @@ class JarvisHandler(AsyncChatbotHandler):
             target=target,
             targetType=target_type,
         )
-        if source_type == "AONE" and task_type == "ticket":
-            field_worker = getattr(self, "field_repair_worker", None)
-            if field_worker is None:
-                # Compatibility for narrow __new__ test adapters. Live handlers
-                # always have FieldRepairWorker.
-                preflight_ok, _preflight_result = _aone_preflight(
-                    item_id, project, terraform=terraform)
-                if not preflight_ok:
-                    reason = "preflight_validation_failed"
-                    self._quick_card(
-                        target, "🟠 工单 #%s 未派发（%s）。" % (
-                            item_id, reason),
-                        target_type)
-                    return False, reason
-            else:
-                try:
-                    inspection = field_worker.inspect(
-                        item_id, project, terraform=terraform)
-                except FieldRepairTransient:
-                    reason = "field_inspection_failed"
-                    self._quick_card(
-                        target, "🟠 工单 #%s 未派发（%s）。" % (
-                            item_id, reason),
-                        target_type)
-                    return False, reason
-                if inspection["status"] == "repair_required":
-                    repair = build_field_repair_envelope(
-                        inspection, envelope, source_revision=revision)
-                    ok, reason = self.execution_router.enqueue(repair)
-                    if not ok:
-                        self._quick_card(
-                            target, "🟠 工单 #%s 未派发（%s）。" % (
-                                item_id, reason),
-                            target_type)
-                    return ok, reason
+        # A recovered/card-submitted ticket Task with missing required Aone fields is
+        # repaired in place by the executor's FieldRepairWorker.repair_only, inside the
+        # Task's own lease/fence before its bookend/Agent — no separate field_repair Task.
 
         def local_submit():
             work = lambda: self._dispatch_bg(

@@ -17,11 +17,8 @@ from pathlib import Path
 from typing import Any, Dict, Mapping, Optional, Sequence
 
 from jarvis_execution_runtime import DEFAULT_EXECUTION_RUNTIME, ExecutionResult
-from jarvis_task_client import TaskEnvelope
 
 
-FIELD_REPAIR_KIND = "field_repair"
-FIELD_REPAIR_TRIGGER = "FIELD_REPAIR"
 DEFAULT_CONFIDENCE = 0.90
 MODEL_OUTPUT_SCHEMA = {
     "type": "object",
@@ -91,82 +88,10 @@ def inspection_digest(inspection: Mapping[str, Any]) -> str:
     })
 
 
-def _envelope_dict(envelope: TaskEnvelope) -> Dict[str, Any]:
-    return envelope.to_dict()
-
-
-def envelope_from_dict(value: Mapping[str, Any]) -> TaskEnvelope:
-    """Rebuild the frozen continuation accepted by the control-plane client."""
-    if not isinstance(value, Mapping):
-        raise ValueError("continuation must be an object")
-    return TaskEnvelope(
-        task_key=str(value.get("taskKey") or ""),
-        source_type=str(value.get("sourceType") or ""),
-        source_ref=value.get("sourceRef") or {},
-        task_type=str(value.get("taskType") or ""),
-        desired_revision=str(value.get("desiredRevision") or ""),
-        trigger_mask=value.get("triggerMask") or [],
-        payload=value.get("payload") or {},
-        recovery_policy=str(value.get("recoveryPolicy") or "RESUME_ONLY"),
-        persona=value.get("persona"),
-        priority=value.get("priority"),
-        aone_id=value.get("aoneId"),
-        comment_cursor=value.get("commentCursor"),
-        required_capabilities=value.get("requiredCapabilities"),
-        max_retries=value.get("maxRetries"),
-        source_status=value.get("sourceStatus"),
-    )
-
-
-def build_field_repair_envelope(
-        inspection: Mapping[str, Any],
-        continuation: TaskEnvelope,
-        *,
-        source_revision: str,
-) -> TaskEnvelope:
-    """Build the stable repair Task shared by Scheduler and Executor gates."""
-    item_id = str(inspection.get("workitemId") or "").strip()
-    project = str(inspection.get("project") or "").strip()
-    if not item_id or not project:
-        raise ValueError("field inspection requires workitemId and project")
-    candidate_digest = inspection_digest(inspection)
-    revision_material = {
-        "workitemRevision": str(
-            inspection.get("revision") or source_revision or "unknown"),
-        "sourceRevision": str(source_revision or "unknown"),
-        "candidateDigest": candidate_digest,
-    }
-    desired_revision = "field-repair:%s:%s" % (
-        str(inspection.get("revision") or source_revision or "unknown"),
-        _canonical_digest(revision_material),
-    )
-    return TaskEnvelope(
-        task_key="field-repair:aone:%s:%s" % (project, item_id),
-        source_type="AONE",
-        source_ref={"aoneId": item_id, "projectId": project},
-        task_type=FIELD_REPAIR_KIND,
-        desired_revision=desired_revision,
-        trigger_mask=[FIELD_REPAIR_TRIGGER],
-        payload={
-            "itemId": item_id,
-            "project": project,
-            "kind": FIELD_REPAIR_KIND,
-            "prompt": "Repair missing required Aone fields before business work.",
-            "terraform": bool(
-                continuation.payload.get("terraform")
-                if isinstance(continuation.payload, Mapping) else False),
-            "candidateDigest": candidate_digest,
-            "workitemRevision": revision_material["workitemRevision"],
-            "continuation": _envelope_dict(continuation),
-        },
-        recovery_policy="REPLAY_SAFE",
-        aone_id=item_id,
-        max_retries=int(os.environ.get("JARVIS_FIELD_REPAIR_MAX_RETRIES", "2")),
-    )
-
-
 class FieldRepairWorker:
-    """Inspect, optionally ask Haiku to select candidates, apply, and continue."""
+    """Inspect required Aone fields and, when missing, optionally ask Haiku to
+    select candidates and apply them in place — via ``repair_only``, inside the
+    caller's own business Task lease/fence. No separate repair Task is created."""
 
     def __init__(
             self, *,
@@ -464,19 +389,6 @@ class FieldRepairWorker:
             raise RequiredFieldsBlocked("apply_readback_mismatch")
         return value
 
-    def _restore_continuation(self, payload: Mapping[str, Any]) -> TaskEnvelope:
-        continuation = envelope_from_dict(payload.get("continuation") or {})
-        try:
-            response = self.client.upsert_desired_task(
-                continuation,
-                request_id=continuation.request_id("field-repair-continuation"),
-            )
-        except Exception as exc:
-            raise FieldRepairTransient("continuation_upsert_failed") from exc
-        if isinstance(response, Mapping) and response.get("accepted") is False:
-            raise FieldRepairTransient("continuation_rejected")
-        return continuation
-
     @staticmethod
     def _blocked(
             item_id: str, project: str, digest: str, reason: str,
@@ -540,26 +452,3 @@ class FieldRepairWorker:
                 "retryAfterSeconds": int(os.environ.get(
                     "JARVIS_FIELD_REPAIR_RETRY_SEC", "30")),
             }
-
-    def execute(self, payload: Mapping[str, Any], controller: Any) -> Dict[str, Any]:
-        item_id = str(payload.get("itemId") or "")
-        project = str(payload.get("project") or "")
-        result = self.repair_only(
-            item_id, project, terraform=bool(payload.get("terraform")),
-            controller=controller)
-        if result.get("status") != "completed":
-            return result
-        try:
-            continuation = self._restore_continuation(payload)
-        except FieldRepairTransient as exc:
-            return {
-                "status": "failed",
-                "error": {
-                    "errorType": "field_repair_transient",
-                    "failureReason": str(exc),
-                },
-                "retryAfterSeconds": int(os.environ.get(
-                    "JARVIS_FIELD_REPAIR_RETRY_SEC", "30")),
-            }
-        result["continuationTaskKey"] = continuation.task_key
-        return result
