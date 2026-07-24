@@ -34,7 +34,7 @@ bridge/run.sh start
 
 ## triage loop
 
-批量扫派由 bridge 负责：`bridge/run.sh start` 监督 Bot、Scheduler 与 Persistent Worker 三个独立入口。Scheduler 从 `bridge/scheduler/jobs.yaml` 加载七个 Job，其中 `scan` runner 对新单/外部更新单统一创建或唤醒控制面 Task，再由 Persistent Worker lease 并发处理。全链按 `loops/aone-triage.md` 跑到预发/CR；`bootstrap/scan.sh` 只保留作手动审计与兜底。**正式发布永停**，须人工介入。
+批量扫派由 bridge 负责：`bridge/run.sh start` 只管理 `bridge.main`，由后者独立监督 Bot、Scheduler 与 Persistent Worker 三个入口。Scheduler 从 `bridge/scheduler/jobs.yaml` 加载七个 Job，其中 `scan` runner 对新单/外部更新单统一创建或唤醒控制面 Task，再由 Persistent Worker lease 并发处理；`JARVIS_AUTO_DISPATCH=0` 可切到钉钉「处理 #ID / 全部处理」授权前置模式。全链按 `loops/aone-triage.md` 跑到预发/CR；`bootstrap/scan.sh` 只保留作手动审计与兜底。**正式发布永停**，须人工介入。
 
 ## 任务看板
 

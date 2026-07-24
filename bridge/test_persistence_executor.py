@@ -13,7 +13,9 @@ from unittest import mock
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
+from bridge import jarvis_persistence_executor as persistence  # noqa: E402
 from bridge.jarvis_persistence_executor import (  # noqa: E402
+    _default_boot_id,
     LeaseProtocolError,
     SessionController,
     PersistenceExecutor,

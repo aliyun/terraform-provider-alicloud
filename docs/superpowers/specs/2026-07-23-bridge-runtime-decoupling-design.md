@@ -3,8 +3,9 @@
 ## 1. 结论
 
 Bridge 现有三个独立进程边界：DingTalk inbound Bot、Persistent Worker 与
-SchedulerService。唯一生命周期入口是 `bridge/run.sh`：scheduler 角色启动三者，worker
-角色只启动 Persistent Worker。重启 Scheduler 或 Bot 不会停止已 lease 的 Persistent Worker 进程。
+SchedulerService。`bridge/run.sh` 只机械管理 `bridge.main`；Python supervisor 在 scheduler
+角色独立监督三者，在 worker 角色只监督 Persistent Worker。重启 Scheduler 或 Bot 不会停止
+已 lease 的 Persistent Worker 进程。
 
 周期任务只由 `bridge/scheduler/jobs.yaml` 的显式条目注册，`jobs.py` 只负责校验和加载；`SchedulerEngine` 拥有
 cadence、misfire、retry、overlap 与 drain。Bot 不构造周期 Scheduler，也不持有周期 Job 的
@@ -32,14 +33,15 @@ Scheduler 和 Persistent Worker 均不导入对方的运行时；Scheduler 不�
 
 ```text
 bridge/
-├── run.sh                        # 唯一进程监督入口
-├── main.py                       # SchedulerService composition root
+├── run.sh                        # 唯一机械生命周期入口
+├── main.py                       # 三入口进程 supervisor
 ├── persistent_worker.py          # Persistent Worker composition root
 ├── jarvis_dingtalk_bot.py        # DingTalk inbound adapter
 ├── headless_runtime.py           # Headless 执行窄接口
 ├── persistent_tasks.py           # Persistent Task / wake / bookend 执行边界
 └── scheduler/
     ├── jobs.yaml                 # 七个显式 Job definition
+    ├── scheduler.py              # SchedulerService 纯进程入口
     ├── jobs.py                   # YAML 校验与加载
     ├── model.py                  # schedule、definition、runner、result
     ├── engine.py                 # 计划、准入、执行与终态提交
@@ -64,13 +66,14 @@ Runner 只保留可重建的业务 cursor；slot 当前态、重试与运行中�
 
 `JARVIS_BRIDGE_ROLE=scheduler bridge/run.sh start` 启动：
 
-1. `jarvis_dingtalk_bot.py` 的 DingTalk stream；
+1. `scheduler/scheduler.py` 的 `SchedulerService`（先 validation/READY）；
 2. `persistent_worker.py` 的 `PersistenceExecutor`；
-3. `main.py` 的 `SchedulerService`。
+3. `jarvis_dingtalk_bot.py` 的 DingTalk stream。
 
-`run.sh` 为三个进程维护独立 pidfile/log。计划内 Scheduler 停止先关闭 admission、登记
-`DRAINING` 并等待已准入 slot；超时不以 SIGKILL 替换仍在 drain 的 Scheduler。Persistent Worker
-独立持有 Task lease，因此 Scheduler/Bot 重启不会中断其 Session。
+`main.py` 为三个进程维护独立 pidfile，并把日志汇入 supervisor 日志。计划内 Scheduler
+停止先关闭 admission、登记 `DRAINING` 并等待已准入 slot；超时不以 SIGKILL 替换仍在
+drain 的 Scheduler。Persistent Worker 独立持有 Task lease，因此 Scheduler/Bot 异常只会
+单独重启对应入口，不会中断其 Session。
 
 ### Worker host
 

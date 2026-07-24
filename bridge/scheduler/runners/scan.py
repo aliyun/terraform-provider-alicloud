@@ -14,23 +14,20 @@ import uuid
 from bridge.aone_tasks import (
     AoneQueryMixin, DIGITAL_WORKER_IDS, JARVIS_SELF_IDS, PERSONA_INTERNAL_ROLES,
     PERSONA_LEGACY_WORKER_IDS, PERSONA_WORKER_IDS, REPO_ROOT, TERMINAL_STATUSES,
-    _aone_preflight, _bounded_aone_comment, _has_pr_merged_status,
+    _bounded_aone_comment, _has_pr_merged_status,
     _is_terraform_project, _is_terraform_ticket, _load_legit_done_statuses,
     _normalize_pr_merged_status,
     _pr_merged_status_map, _routine_notifier, _tagset, _ticket_dispatch_context,
-    claude_bin, log, master_staff,
+    log, master_staff,
 )
 from bridge.helpers.aone import (
     PERSONA_PUBLIC_IDENTITY, _aone_event_enqueue, _is_human_comment,
 )
 from bridge.helpers.dingtalk import _dingtalk_event_enqueue
-from bridge.jarvis_execution_runtime import DEFAULT_EXECUTION_RUNTIME
-from bridge.jarvis_field_repair import (
-    FieldRepairTransient, FieldRepairWorker, build_field_repair_envelope,
-)
 from bridge.jarvis_task_router import (
     ExecutionRouter, _task_envelope, broadcast_target, broadcast_type,
 )
+from bridge.pending_dispatch import PendingDispatchRegistry
 from ..model import JobResult, JobResultStatus, ScheduledJobDefinition, is_aware
 
 
@@ -48,10 +45,10 @@ class ScanRunner(AoneQueryMixin):
     def __init__(self, *, logger, task_client, repo_root) -> None:
         self.handler = None
         self.pool = None
+        self.auto = os.environ.get("JARVIS_AUTO_DISPATCH", "1").strip() != "0"
+        self.pending_registry = PendingDispatchRegistry()
+        self._pending_auto_cleared = False
         self.execution_router = ExecutionRouter(client=task_client, logger=logger)
-        self.field_repair_worker = FieldRepairWorker(
-            repo_root=repo_root, client=task_client,
-            runtime=DEFAULT_EXECUTION_RUNTIME, claude_bin=claude_bin())
         self._prev_snapshot = {}
         self._source_status_after_task_id = 0
         self._human_cache = {}
@@ -673,24 +670,9 @@ class ScanRunner(AoneQueryMixin):
         tgt, ttype = broadcast_target(), broadcast_type()
         notify = _routine_notifier(self.handler)
         envelope = self._envelope(item, context)
-        field_worker = getattr(self, "field_repair_worker", None)
-        if field_worker is None:
-            # Compatibility seam for narrow __new__-constructed test adapters.
-            # Live schedulers always receive FieldRepairWorker in __init__.
-            preflight_ok, _preflight_result = _aone_preflight(
-                iid, pool_project, terraform=terraform)
-            if not preflight_ok:
-                return False, "preflight_validation_failed"
-        else:
-            try:
-                inspection = field_worker.inspect(
-                    iid, pool_project, terraform=terraform)
-            except FieldRepairTransient:
-                return False, "field_inspection_failed"
-            if inspection["status"] == "repair_required":
-                repair = build_field_repair_envelope(
-                    inspection, envelope, source_revision=context["revision"])
-                return self.execution_router.enqueue(repair)
+        # Required fields are repaired in place by Persistent Worker after it
+        # owns this business Task's lease/fence. Scheduler never creates a
+        # second field_repair Task or performs a pre-dispatch Aone mutation.
 
         def local_submit():
             if self.pool is None or self.handler is None:
@@ -722,6 +704,17 @@ class ScanRunner(AoneQueryMixin):
         if (REPO_ROOT / ".my-day" / "bridge" / "pause").exists():
             log.info("ScanRunner: pause flag present (.my-day/bridge/pause), skip this tick")
             return
+        auto = getattr(self, "auto", True)
+        if auto and not getattr(self, "_pending_auto_cleared", False):
+            registry = getattr(self, "pending_registry", None)
+            if registry is not None:
+                try:
+                    registry.clear()
+                except Exception:  # noqa: BLE001 — retry cleanup on the next real tick
+                    log.exception(
+                        "scan auto: stale supervised registry cleanup failed")
+                else:
+                    self._pending_auto_cleared = True
         self._human_cache = {}   # per-tick cache reset for _human_touched
         self._human_comment_cache = {}
         self._activity_cache = {}
@@ -779,8 +772,11 @@ class ScanRunner(AoneQueryMixin):
         if drift_candidates:
             self._reconcile_done_status_drifts_safely(
                 [item for iid, item in drift_candidates.items() if iid])
-        if new_items or updated_items or retry_done_items:
-            self._tick_auto(new_items, updated_items, retry_done_items)
+        if new_items or updated_items or (auto and retry_done_items):
+            if auto:
+                self._tick_auto(new_items, updated_items, retry_done_items)
+            else:
+                self._tick_supervised(new_items, updated_items)
 
         # Lifecycle observation follows discovery/dispatch and uses a small bounded page,
         # so terminal-status point reads cannot delay newly actionable work.
@@ -849,6 +845,82 @@ class ScanRunner(AoneQueryMixin):
             if qf:
                 log.warning("scan auto: queue full; %d Task(s) retry next tick: %s",
                             len(qf), ",".join("#" + i for i in qf))
+
+    def _notify_supervised(self, item, dispatch_context, *, authorization):
+        iid = str(item.get("id") or "")
+        project = str(item.get("pool_project") or "")
+        if not iid.isdigit() or not project:
+            log.warning(
+                "scan supervised: cannot notify item with incomplete identity #%s",
+                iid or "?")
+            return False
+        title = str(item.get("title") or "(无标题)")
+        url = (
+            "https://project.aone.alibaba-inc.com/v2/project/%s/req/%s"
+            % (project, iid))
+        if authorization:
+            event_key = "dispatch-authorization:%s" % dispatch_context["revision"]
+            heading = "Jarvis 工单待授权"
+            action = (
+                "回复 Jarvis「处理 #%s」授权单条，或「全部处理」批量授权。" % iid)
+        else:
+            event_key = "dispatch-supervised-update:%s" % dispatch_context["revision"]
+            heading = "Jarvis 工单有更新"
+            action = "此更新不会在授权前自动创建 Task。"
+        text = (
+            "%s\n\n- 工单：[#%s](%s) %s\n- 操作：%s"
+            % (heading, iid, url, title, action))
+        return _dingtalk_event_enqueue(
+            iid,
+            project,
+            event_key,
+            master_staff(),
+            heading,
+            text,
+            allow_non_tf=True,
+        )
+
+    def _tick_supervised(self, new_items, updated_items=None):
+        """Persist new candidates for Bot authorization without creating Tasks."""
+
+        registry = getattr(self, "pending_registry", None)
+        if registry is None:
+            registry = self.pending_registry = PendingDispatchRegistry()
+        for decision in self._decide(list(new_items)):
+            if decision["action"] != "dispatch":
+                log.info(
+                    "scan supervised: skip #%s (%s)",
+                    decision["id"],
+                    decision["reason"],
+                )
+                continue
+            try:
+                staged = registry.stage(
+                    decision["item"],
+                    decision["dispatch_context"],
+                    force=decision.get("force", False),
+                )
+            except Exception:  # noqa: BLE001 — never create a Task on registry failure
+                log.exception(
+                    "scan supervised: failed to persist approval candidate #%s",
+                    decision["id"],
+                )
+                continue
+            if not staged:
+                continue
+            self._notify_supervised(
+                decision["item"],
+                decision["dispatch_context"],
+                authorization=True,
+            )
+            log.info(
+                "scan supervised: staged #%s pending authorization",
+                decision["id"],
+            )
+
+        for item in (updated_items or {}).values():
+            context = _ticket_dispatch_context(item)
+            self._notify_supervised(item, context, authorization=False)
 
     def run(self, definition: ScheduledJobDefinition,
             scheduled_for: datetime) -> JobResult:

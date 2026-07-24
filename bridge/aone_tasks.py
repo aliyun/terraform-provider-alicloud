@@ -19,11 +19,8 @@ from datetime import datetime
 
 # Aone Task producers share this transport contract without importing the Bot.
 from bridge.helpers.aone import (
-    PERSONA_PUBLIC_IDENTITY, _a1_command_env, _is_terraform_project,
+    PERSONA_PUBLIC_IDENTITY, REPO_ROOT, _a1_command_env, _is_terraform_project,
 )
-
-
-REPO_ROOT = Path(__file__).resolve().parents[3]
 
 _AONE_PREFLIGHT_LOCKS = {}
 
@@ -402,6 +399,35 @@ def _tagset(item):
         return {s.strip() for s in t.split(",") if s.strip()}
     return set()
 
+TERRAFORM_INTERNAL_RESULT_FIELDS = (
+    "internal_role/status/summary/evidence/visual_evidence_manifest/"
+    "requested_external_actions/next/reply_fragment"
+)
+
+
+def _terraform_visual_evidence_instructions(item_id):
+    """Return the mandatory three-layer screenshot handoff for Terraform runs."""
+    return (
+        "📷 Terraform 三层可视化证据契约（ticket / persona / wake 入口均强制）：\n"
+        "- 无论从 PD、RD 还是 finalizer 恢复，finalizer 前都必须确认 terraform-pd 已调用 "
+        "aone-triage + screenshot-evidence 生成或刷新有效 manifest；缺失或无效时先补起 "
+        "terraform-pd，不得直接收口。\n"
+        "- PD 只在本地生成 `.my-day/screenshots/%s/evidence-manifest.md`，固定包含 OpenAPI、"
+        "CloudSpec/ACube、Provider 三层。pass/fail 行必须有真实存在的截图绝对路径；n-a 行"
+        "必须写明原因。PD 不上传 OSS/pre-agent，不写 Aone。\n"
+        "- finalizer 先运行 "
+        "`python3 .claude/skills/screenshot-evidence/scripts/validate-manifest.py "
+        ".my-day/screenshots/%s/evidence-manifest.md`，再统一上传一次报告："
+        "`bash bootstrap/html-report-preview.sh upload %s <report.html>`，严禁传 `--comment`。"
+        "把返回的 markdown 预览链接写入 AONE_RESULT.reply_body，由 executor 随唯一回复落账；"
+        "run 内仍禁止 claim/wrap/release/直接评论。\n"
+        "- 缺层、截图不存在、manifest 无效或上传失败时，内部结果标为 "
+        "blocked/missing_capability，并在 reply_body 说明缺口；禁止静默省略报告。\n"
+        "- Terraform 内部 Task 严格返回字段：%s。"
+        % (item_id, item_id, item_id, TERRAFORM_INTERNAL_RESULT_FIELDS)
+    )
+
+
 def _task_result_instructions(item_id, terraform, expected_comment_cursor=None):
     """B-proper 收尾契约（executor 托管）——三个控制面 Task prompt 共用的尾块。
 
@@ -418,7 +444,7 @@ def _task_result_instructions(item_id, terraform, expected_comment_cursor=None):
         "handled_comment_id=\"%s\"。缺失或不匹配会失败重试，禁止用旧的工单级 seen "
         "记录跳过本轮评论。" % (expected_comment_cursor, expected_comment_cursor)
         if expected_comment_cursor is not None else "")
-    return (
+    instructions = (
         "⚠️ 收尾契约（executor 托管，务必遵守）：本工单 #%s 的**认领 / 对外回复 / 状态 / 标签 / 收尾**"
         "由 bridge executor 用【%s】身份一次性写出——你【绝不】对本工单跑 bootstrap/claim.sh、"
         "bootstrap/wrap.sh、release、finish，也不直接发工单评论、改状态或打标签。其余内部动作"
@@ -432,6 +458,9 @@ def _task_result_instructions(item_id, terraform, expected_comment_cursor=None):
         "缺失或非法的 AONE_RESULT 会被判本轮未完成、失败重试。%s"
         % (item_id, identity, handled_comment_field, handled_comment_rule)
     )
+    if terraform:
+        instructions += "\n\n" + _terraform_visual_evidence_instructions(item_id)
+    return instructions
 
 def _ticket_prompt(item_id, title, pool_key, pool_project, trigger_comment=None):
     """Prompt for a headless auto-dispatched Aone ticket (B-proper: executor owns the
@@ -498,7 +527,7 @@ PD/QA 全程只读或执行内部验证，不得写 Aone、钉钉、MR/CR，不�
 {intake}
 2) Task 起 terraform-pd 做 triage；先调 aone-triage 完成查证与路由判断，路由写动作只提出给
    最终 RD，不自行执行。严格结构返回：
-   internal_role/status/summary/evidence/requested_external_actions/next/reply_fragment。
+   {TERRAFORM_INTERNAL_RESULT_FIELDS}。
 3) 把 PD 返回完整交给 Task terraform-rd 做开发或 no-op 评估。需要开发时走 worktree；
    GitHub 动作先过 github-identity.sh check；PR CI 用 gh pr checks 确认全绿才交 QA，红或 pending
    由 RD 内部修复后复检。RD 同样按上述结构返回，不在此阶段回复 Aone。

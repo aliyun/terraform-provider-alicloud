@@ -17,7 +17,6 @@ from pathlib import Path
 from typing import Any, Dict, Mapping, Optional, Sequence
 
 from bridge.jarvis_execution_runtime import DEFAULT_EXECUTION_RUNTIME, ExecutionResult
-from bridge.jarvis_task_client import TaskEnvelope
 
 
 DEFAULT_CONFIDENCE = 0.5
@@ -90,7 +89,7 @@ def inspection_digest(inspection: Mapping[str, Any]) -> str:
 
 
 class FieldRepairWorker:
-    """Inspect required Aone fields and, when missing, optionally ask Haiku to
+    """Inspect required Aone fields and, when missing, optionally ask the configured model to
     select candidates and apply them in place — via ``repair_only``, inside the
     caller's own business Task lease/fence. No separate repair Task is created."""
 

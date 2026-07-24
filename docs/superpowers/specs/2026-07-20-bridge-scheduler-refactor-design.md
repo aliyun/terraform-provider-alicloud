@@ -145,7 +145,8 @@ worker 主机只能执行第一条。真实 Probe 仍需要单独授权。
 
 ```text
 bridge/
-  main.py                         # SchedulerService composition root + role fence
+  main.py                         # Bot / Scheduler / Persistent Worker process supervisor
+  scheduler/scheduler.py          # SchedulerService composition root + role fence
   persistent_worker.py            # 独立 Persistent Worker composition root
   headless_runtime.py             # Headless 执行窄接口
   persistent_tasks.py             # 持久 Task / wake / bookend 执行边界

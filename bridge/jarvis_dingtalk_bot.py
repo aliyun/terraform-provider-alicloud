@@ -42,6 +42,8 @@ Env:
                                            冒号分隔可给多档摊额度/token；按 session_id 粘档(同单 resume 稳定)。
   CLAUDE_TIMEOUT                           per-round seconds (default 300).
   JARVIS_DISPATCH_TIMEOUT                  headless dispatch timeout (default 43200 = 12h).
+  JARVIS_AUTO_DISPATCH                     0=accept "处理 #id / 全部处理" commands for
+                                           Scheduler-staged pending tickets; default 1.
 
   --- AutomationAgent Task control plane ---
   JARVIS_CONTROL_PLANE_BASE_URL            AutomationAgent base URL. Falls back to
@@ -111,12 +113,7 @@ from bridge.jarvis_execution_runtime import (
     session_file_exists as _session_file_exists,
     session_progress_excerpt,
 )
-from bridge.jarvis_field_repair import (
-    FIELD_REPAIR_KIND,
-    FieldRepairTransient,
-    FieldRepairWorker,
-    build_field_repair_envelope,
-)
+from bridge.jarvis_field_repair import FieldRepairWorker
 from bridge.headless_runtime import HeadlessRequest, HeadlessRuntime, Lane, SessionPolicy
 from bridge.jarvis_task_router import (
         _TaskAttentionPublisher,
@@ -129,17 +126,20 @@ from bridge.jarvis_task_router import (
 
 
 from bridge.aone_tasks import (
-        PERSONA_INTERNAL_ROLES,
-        PERSONA_PUBLIC_IDENTITY,
-        TERRAFORM_TITLE_KEYWORDS,
-        _a1_command_env,
-        _aone_preflight,
-        _is_terraform_project,
-        _persona_fence,
-        _task_result_instructions,
-        _ticket_dispatch_context,
-        claude_bin,
-        master_staff,
+    PERSONA_INTERNAL_ROLES,
+    PERSONA_PUBLIC_IDENTITY,
+    TERRAFORM_INTERNAL_RESULT_FIELDS,
+    TERRAFORM_TITLE_KEYWORDS,
+    _a1_command_env,
+    _aone_preflight,
+    _is_terraform_project,
+    _is_terraform_ticket,
+    _persona_fence,
+    _task_result_instructions,
+    _ticket_dispatch_context,
+    _ticket_prompt,
+    claude_bin,
+    master_staff,
 )
 from bridge.helpers.aone import (
         _AONE_ACCESS_KEY_RE,
@@ -159,6 +159,7 @@ from bridge.helpers.aone import (
         _aone_event_source_part,
 )
 from bridge.helpers.dingtalk import _dingtalk_event_enqueue
+from bridge.pending_dispatch import PendingDispatchRegistry
 # The DingTalk SDK is only needed by the live WebSocket path in main(). Guard the
 # import so the module still loads for the hermetic test suite and --dry-run-once
 # on hosts without the SDK; JarvisHandler subclasses the base at class-def time, so
@@ -670,6 +671,10 @@ AT_BOT_PREFIX = re.compile(r"^\s*@\S+\s*")
 JARVIS_SENTINEL = re.compile(r"^\s*\[\[JARVIS\]\]\s*(.+)$", re.MULTILINE)
 # Tata 偶尔即便闲聊也甩哨兵, 任务文写成"无需转交"。兜底: 含否定词/过短一律不升级。
 TASK_REJECT = re.compile(r"无需|不需要|不用|纯打招呼|闲聊|没有真活|无须|不必|没真活")
+
+# Supervised scan authorization commands.
+AUTH_SINGLE = re.compile(r"处理\s*#?(\d+)")
+AUTH_ALL = re.compile(r"全部处理|批量处理")
 
 # Headless suspend sentinel: [[SUSPEND:{"aone_id":"12345","wait_for":"chenyi",...}]]
 SUSPEND_RE = re.compile(r'\[\[SUSPEND:(.*?)\]\]', re.DOTALL)
@@ -1356,6 +1361,9 @@ class JarvisHandler(AsyncChatbotHandler):
         # control plane; only EphemeralJob work may enter the local executor.
         self.task_client = _task_client_from_env()
         self.execution_router = ExecutionRouter(client=self.task_client, logger=log)
+        self.auto_dispatch = (
+            os.environ.get("JARVIS_AUTO_DISPATCH", "1").strip() != "0")
+        self.pending_dispatch_registry = PendingDispatchRegistry()
 
         max_slots = int(os.environ.get("JARVIS_DISPATCH_MAX", "3"))
         self.execution_runtime = DEFAULT_EXECUTION_RUNTIME
@@ -1379,14 +1387,13 @@ class JarvisHandler(AsyncChatbotHandler):
             routine_notice=self._routine_notice,
             quick_card=self._quick_card,
             field_repair_worker=self.field_repair_worker,
-            field_repair_kind=FIELD_REPAIR_KIND,
             task_bookend_kinds=TASK_BOOKEND_KINDS,
             post_pr_headless_kinds=POST_PR_HEADLESS_KINDS,
             broadcast_target=broadcast_target,
             broadcast_type=broadcast_type,
         )
-        # Manual authorization is an on-demand Aone read facade. Periodic scan,
-        # nudge, and PR watch live only in the Scheduler process.
+        # Periodic discovery stays in Scheduler. The only shared boundary for
+        # supervised mode is the durable pending-dispatch registry.
         log.info("audience=%s master=%s root=%s tata_cwd=%s claude=%s skill=%s "
                  "tata_resident=%s tata_dws_history=%s execution_capacity=%s "
                  "task_types=%s",
@@ -1412,7 +1419,6 @@ class JarvisHandler(AsyncChatbotHandler):
                 routine_notice=self._routine_notice,
                 quick_card=self._quick_card,
                 field_repair_worker=getattr(self, "field_repair_worker", None),
-                field_repair_kind=FIELD_REPAIR_KIND,
                 task_bookend_kinds=TASK_BOOKEND_KINDS,
                 post_pr_headless_kinds=POST_PR_HEADLESS_KINDS,
                 broadcast_target=broadcast_target,
@@ -1897,6 +1903,111 @@ class JarvisHandler(AsyncChatbotHandler):
             pass
         return 0
 
+    def _dispatch_pending_record(self, record, card_target, card_type):
+        item = record.get("item") if isinstance(record, dict) else None
+        context = record.get("dispatchContext") if isinstance(record, dict) else None
+        if not isinstance(item, dict) or not isinstance(context, dict):
+            return False, "invalid_pending_record"
+        item_id = str(item.get("id") or "")
+        prompt = str(context.get("prompt") or "")
+        revision = str(context.get("revision") or "")
+        if not item_id.isdigit() or not prompt or not revision:
+            return False, "invalid_pending_record"
+        terraform = _is_terraform_ticket(
+            item.get("pool", ""), item.get("title", ""))
+        accepted, reason = self._submit_card(
+            item_id,
+            card_target,
+            card_type,
+            prompt,
+            str(uuid.uuid4()),
+            False,
+            force=bool(record.get("force")),
+            terraform=terraform,
+            project=item.get("pool_project"),
+            title=item.get("title"),
+        )
+        if accepted:
+            try:
+                self.pending_dispatch_registry.remove(
+                    item_id, expected_revision=revision)
+            except Exception:  # noqa: BLE001 — accepted Task is already durable
+                log.exception(
+                    "supervised dispatch #%s accepted but registry cleanup failed",
+                    item_id,
+                )
+        return accepted, reason
+
+    def _handle_authorization(self, text, staff, card_target, card_type):
+        """Handle a supervised dispatch command, or return ``None``."""
+
+        if getattr(self, "auto_dispatch", True):
+            return None
+        if staff not in api_tool_staff():
+            return None
+        single = AUTH_SINGLE.match(text)
+        is_all = bool(AUTH_ALL.match(text))
+        if not single and not is_all:
+            return None
+        try:
+            records = (
+                [self.pending_dispatch_registry.get(single.group(1))]
+                if single else self.pending_dispatch_registry.list())
+        except Exception:  # noqa: BLE001
+            log.exception("supervised dispatch registry read failed")
+            self._quick_card(
+                card_target, "⚠️ 待处理列表读取失败，请稍后重试。", card_type)
+            return AckMessage.STATUS_OK, "pending_registry_error"
+        records = [record for record in records if record is not None]
+        if not records:
+            if single:
+                self._quick_card(
+                    card_target,
+                    "工单 #%s 不在待处理列表中。" % single.group(1),
+                    card_type,
+                )
+                return AckMessage.STATUS_OK, "not_pending"
+            self._quick_card(
+                card_target, "当前没有待处理的工单。", card_type)
+            return AckMessage.STATUS_OK, "nothing_pending"
+
+        accepted_ids, failed = [], []
+        for record in records:
+            item = record.get("item") if isinstance(record, dict) else None
+            item_id = str(item.get("id") or "?") if isinstance(item, dict) else "?"
+            try:
+                accepted, reason = self._dispatch_pending_record(
+                    record, card_target, card_type)
+            except Exception as exc:  # noqa: BLE001 — keep pending for retry
+                log.exception("supervised dispatch #%s failed", item_id)
+                accepted, reason = False, "dispatch_error:%s" % type(exc).__name__
+            if accepted:
+                accepted_ids.append(item_id)
+            else:
+                failed.append((item_id, reason))
+
+        if accepted_ids:
+            self._quick_card(
+                card_target,
+                "⚙️ 已提交 %d 条工单后台处理: %s"
+                % (len(accepted_ids),
+                   ", ".join("#" + item_id for item_id in accepted_ids)),
+                card_type,
+            )
+        if failed:
+            log.warning(
+                "supervised dispatch rejected and retained: %s",
+                ", ".join("#%s=%s" % row for row in failed),
+            )
+            return (
+                AckMessage.STATUS_OK,
+                "dispatched_partial" if accepted_ids else failed[0][1],
+            )
+        return (
+            AckMessage.STATUS_OK,
+            "dispatched" if single else "dispatched_all",
+        )
+
     def process(self, callback):
         msg = ChatbotMessage.from_dict(callback.data)
         staff = msg.sender_staff_id or ""
@@ -1922,6 +2033,11 @@ class JarvisHandler(AsyncChatbotHandler):
             log.warning("ignore callback with incomplete conversation scope group=%s", is_group)
             return AckMessage.STATUS_OK, "invalid_scope"
         scope_key = scope.session_key
+
+        authorization = self._handle_authorization(
+            text, staff, card_target, card_type)
+        if authorization is not None:
+            return authorization
 
         # Board command: anyone in audience can view the control-plane board link.
         if re.match(r'^(看板|工作板|board)$', text, re.IGNORECASE):
@@ -2051,37 +2167,23 @@ def _release_claim(iid, project, terraform=False):
         log.warning("_release_claim #%s failed: %s", iid, e)
 
 
-def _stop_before_final_teardown(handler, *, context, timeout):
-    """Task execution is owned by the independent persistent_worker process."""
-    del handler, context, timeout
-    return True
-
-
 def _run_no_dingtalk():
     """无钉钉降级模式启动(JARVIS_NO_DINGTALK=1 点火路径): 不建 DingTalk client/stream,
     不初始化 TataPool; durable Task execution is handled by the separate
-    ``persistent_worker.py`` process. 所有周期 Job 由独立的 ``bridge/run.sh`` 管理。
+    ``persistent_worker.py`` process. 所有周期 Job 由独立 Scheduler 进程执行。
     卡片/播报统一降级为 [BROADCAST] 日志行(→ bot.log); 入站 Tata 门面停用(无 stream)。
     阻塞至进程收到中断信号。"""
     log.warning("[NO-DINGTALK] 降级模式启动: 无 DingTalk client/stream/TataPool; "
-                "仅启动 Task executor，周期 Job 交由 run.sh；"
+                "不执行持久 Task 或周期 Job；"
                 "卡片/播报 → [BROADCAST] 日志行; 入站 Tata 门面停用。")
     handler = JarvisHandler(no_dingtalk=True)
-    log.info("[NO-DINGTALK] bridge ready — Task executor is persistent_worker.py; "
-             "周期 Job 请通过 bridge/run.sh 管理; 卡片/播报以 [BROADCAST] 日志行落 bot.log。")
+    log.info("[NO-DINGTALK] bot ready — Persistent Worker 与 Scheduler 由 supervisor "
+             "独立管理; 卡片/播报以 [BROADCAST] 日志行落 bot.log。")
 
     # The durable worker has its own signal lifecycle.  This process only owns
     # the no-DingTalk bridge dependencies and its ephemeral subprocesses.
     def _graceful_stop(signum, _frame):
         log.info("[NO-DINGTALK] signal %s received — graceful stop: kill workers + release claims", signum)
-        try:
-            stopped = True
-        except Exception as e:  # noqa: BLE001
-            log.exception("[NO-DINGTALK] PersistenceExecutor stop failed: %s", e)
-            stopped = False
-        if not stopped:
-            log.error("[NO-DINGTALK] PersistenceExecutor stop failed; skip final teardown")
-            return
         try:
             ids = handler.ephemeral_executor.terminate_all(release_fn=_release_claim)
             log.info("[NO-DINGTALK] graceful stop: cleaned up %d worker(s): %s", len(ids), ids)
@@ -2092,7 +2194,7 @@ def _run_no_dingtalk():
     signal.signal(signal.SIGTERM, _graceful_stop)
     signal.signal(signal.SIGINT, _graceful_stop)
     log.info(
-        "Bridge READY pid=%s periodicJobs=scheduler-engine",
+        "Bridge READY pid=%s role=bot mode=no-dingtalk",
         os.getpid())
     stop = threading.Event()
     try:
@@ -2100,10 +2202,6 @@ def _run_no_dingtalk():
     except KeyboardInterrupt:  # fallback if signal registration was pre-empted
         pass
     finally:
-        _stop_before_final_teardown(
-            handler,
-            context="[NO-DINGTALK]",
-            timeout=float(os.environ.get("JARVIS_WORKER_DRAIN_TIMEOUT", "30")))
         handler.ephemeral_executor.shutdown(wait=False, cancel_futures=True)
     return 0
 
@@ -2145,14 +2243,6 @@ def main():
     def _graceful_stop(signum, _frame):
         log.info("signal %s received — graceful stop: kill workers + release claims", signum)
         try:
-            stopped = True
-        except Exception as e:  # noqa: BLE001
-            log.exception("PersistenceExecutor stop failed: %s", e)
-            stopped = False
-        if not stopped:
-            log.error("PersistenceExecutor stop failed; skip final teardown")
-            return
-        try:
             ids = handler.ephemeral_executor.terminate_all(release_fn=_release_claim)
             log.info("graceful stop: cleaned up %d worker(s): %s", len(ids), ids)
         except Exception as e:  # noqa: BLE001
@@ -2173,10 +2263,6 @@ def main():
     try:
         client.start_forever()
     finally:
-        _stop_before_final_teardown(
-            handler,
-            context="DingTalk",
-            timeout=float(os.environ.get("JARVIS_WORKER_DRAIN_TIMEOUT", "30")))
         handler.ephemeral_executor.shutdown(wait=False, cancel_futures=True)
         if handler.pool is not None:
             handler.pool.shutdown()  # 收尾全 kill 常驻 Tata 进程

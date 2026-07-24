@@ -5,7 +5,7 @@
 - `bootstrap/preflight.sh` 24h 闸门（install + verify），全绿才干活
 
 ## 1. 扫描与派发 (bridge)
-- `bridge/run.sh start` 是唯一进程入口：scheduler 角色监督 Bot、SchedulerService 与 Persistent Worker；worker 角色只启动 Persistent Worker
+- `bridge/run.sh start` 是唯一机械生命周期入口；它只管理 `bridge.main`。Python supervisor 在 scheduler 角色独立监督 Bot、SchedulerService 与 Persistent Worker，在 worker 角色只监督 Persistent Worker
 - `ExecutionRouter` 只按可恢复性分类：业务工单/重访/唤醒/PR 跟进 → `Task`；probe/本地检查/一次性命令 → `EphemeralJob`
 - `PersistenceExecutor` 从控制面 lease Task；`EphemeralExecutor` 执行本地一次性作业；两者共享 `CapacityManager` 与 `ExecutionRuntime`
 - Task 必须先进入控制面；控制面不可用时 fail-closed，不允许回退到本地无状态执行

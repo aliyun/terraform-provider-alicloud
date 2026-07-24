@@ -12,10 +12,12 @@ import threading
 import time
 from typing import Any, Callable, Collection
 
+from bridge.aone_tasks import master_staff
 from bridge.helpers.aone import (
     PERSONA_PUBLIC_IDENTITY, REPO_ROOT, _a1_command_env, _aone_event_sanitize_text,
     _is_human_comment,
 )
+from bridge.helpers.dingtalk import _dingtalk_event_enqueue
 from bridge.jarvis_task_router import (
     _TaskAttentionPublisher, _attention_owner_staff_id, _source_ref_with_title,
     _task_envelope, broadcast_target, broadcast_type,
@@ -155,6 +157,70 @@ def _latest_human_comment(item_id, terraform=False):
 
 _latest_human_comment_point_read = _latest_human_comment
 _release_post_pr_claim = release_claim
+
+
+def resolve_submitter(item_id):
+    """Resolve an Aone creator to a DingTalk staff id, falling back to master."""
+
+    env = os.environ.copy()
+    env["JARVIS_CACHE_TTL"] = "0"
+    creator = {}
+    try:
+        result = subprocess.run(
+            [str(REPO_ROOT / "bootstrap" / "aone-get.sh"), str(item_id)],
+            capture_output=True,
+            text=True,
+            env=env,
+            timeout=90,
+        )
+        if result.returncode == 0:
+            payload = json.loads(result.stdout)
+            if isinstance(payload, dict) and isinstance(
+                    payload.get("creator"), dict):
+                creator = payload["creator"]
+    except Exception as exc:  # noqa: BLE001
+        LOG.warning("resolve_submitter #%s read failed: %s", item_id, exc)
+    staff_id = str(
+        creator.get("empId") or creator.get("staffId") or "").strip()
+    name = str(
+        creator.get("nickName") or creator.get("displayName")
+        or creator.get("realName") or "").strip()
+    if not staff_id.isdigit():
+        return master_staff(), name
+    return staff_id, (name or staff_id)
+
+
+def notify_field_repair_blocked(item_id, project, repair_result):
+    """Best-effort, idempotent submitter DM for an undecidable required field."""
+
+    try:
+        digest = str(repair_result.get("candidateDigest") or "unknown")
+        names = [
+            str(field.get("name") or field.get("id") or "").strip()
+            for field in (repair_result.get("missingFields") or [])
+            if isinstance(field, dict)
+        ]
+        names = [name for name in names if name] or ["（未知必填字段）"]
+        staff_id, _name = resolve_submitter(item_id)
+        url = (
+            "https://project.aone.alibaba-inc.com/v2/project/%s/req/%s"
+            % (project, item_id)
+            if project else "")
+        _dingtalk_event_enqueue(
+            item_id,
+            project,
+            "field-repair-blocked:%s:%s:%s"
+            % (project, item_id, digest),
+            staff_id,
+            "工单 #%s 需补充必填字段" % item_id,
+            "工单 #%s 有必填字段无法自动判断填写，需要您补充：%s。\n"
+            "补充后任务会自动重试继续。\n%s"
+            % (item_id, "、".join(names), url),
+            allow_non_tf=True,
+        )
+    except Exception as exc:  # noqa: BLE001
+        LOG.warning(
+            "field-repair submitter notify #%s failed: %s", item_id, exc)
 
 
 def _extract_last_json(text: str, prefix: str):
@@ -559,6 +625,14 @@ class TaskAoneBookend:
     def _reply_identity(self):
         return PERSONA_PUBLIC_IDENTITY if self.terraform else "jarvis"
 
+    def _scope_event_key(self, prefix):
+        """Scope reply/attention idempotency to the triggering comment epoch."""
+
+        key = "%s:%s:%s" % (prefix, self.task_id, self.generation)
+        if self.expected_comment_cursor:
+            key = "%s:%s" % (key, self.expected_comment_cursor)
+        return key
+
     def bind_process(self, process):
         """Bind the PID (via the controller) then claim the Aone tag before work starts."""
         self.capture_comment_baseline()
@@ -687,7 +761,7 @@ class TaskAoneBookend:
             "action": "请打开 Aone 工单补充信息或确认下一步；回复后任务会自动恢复。",
             "aoneId": self.item_id,
             "aoneUrl": (
-                "https://project.aone.alibaba-inc.com/v2/project/%s/workitem/%s"
+                "https://project.aone.alibaba-inc.com/v2/project/%s/req/%s"
                 % (self.project, self.item_id)) if self.project else "",
             "title": self.title,
             "taskGeneration": self.generation,
@@ -704,7 +778,7 @@ class TaskAoneBookend:
             return False
         payload = self._attention_payload(result=result, legacy_info=legacy_info)
         owner = _attention_owner_staff_id(payload.get("waitFor"))
-        event_key = "task-waiting-human:%s:%s" % (self.task_id, self.generation)
+        event_key = self._scope_event_key("task-waiting-human")
         return self._attention.upsert(
             self.attention_task_id, owner, event_key, payload)
 
@@ -738,7 +812,7 @@ class TaskAoneBookend:
         reply = str(result.get("reply_body") or "").strip()
         links = result.get("mr_cr_links") or []
         body = "%s\n\n关联：%s" % (reply, " ".join(links)) if links else reply
-        event_key = "task-reply:%s:%s" % (self.task_id, self.generation)
+        event_key = self._scope_event_key("task-reply")
         if not _aone_event_enqueue(
                 self.item_id, self.project, event_key, body,
                 allow_non_tf=not self.terraform, identity=self._reply_identity()):
@@ -800,7 +874,6 @@ class PersistentTaskExecution:
         routine_notice: Callable[[str], None],
         quick_card: Callable[[str, str, str], None],
         field_repair_worker: Any = None,
-        field_repair_kind: str,
         task_bookend_kinds: Collection[str],
         post_pr_headless_kinds: Collection[str],
         broadcast_target: Callable[[], str],
@@ -813,7 +886,6 @@ class PersistentTaskExecution:
         self._routine_notice = routine_notice
         self._quick_card = quick_card
         self._field_repair_worker = field_repair_worker
-        self._field_repair_kind = field_repair_kind
         self._task_bookend_kinds = frozenset(task_bookend_kinds)
         self._post_pr_headless_kinds = frozenset(post_pr_headless_kinds)
         self._broadcast_target = broadcast_target
@@ -853,14 +925,13 @@ class PersistentTaskExecution:
         project = str(payload.get("project") or "")
         terraform = bool(payload.get("terraform"))
         expected_comment_cursor = payload.get("expectedCommentCursor")
-        if kind == self._field_repair_kind:
-            if self._field_repair_worker is None:
-                raise RuntimeError("field repair worker is unavailable")
-            return self._field_repair_worker.execute(payload, controller)
         if kind in self._task_bookend_kinds and self._field_repair_worker is not None:
             repair_result = self._field_repair_worker.repair_only(
                 item_id, project, terraform=terraform, controller=controller)
             if repair_result.get("status") != "completed":
+                if repair_result.get("outcome") == "required_fields_blocked":
+                    notify_field_repair_blocked(
+                        item_id, project, repair_result)
                 return repair_result
         task_bookend = None
         if kind in self._post_pr_headless_kinds:

@@ -19,13 +19,10 @@ sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent))
 
 from bridge.jarvis_execution_runtime import ExecutionResult  # noqa: E402
-from bridge.jarvis_field_repair import (  # noqa: E402
-    FieldRepairWorker,
-    build_field_repair_envelope,
-)
-from bridge.jarvis_task_client import TaskEnvelope  # noqa: E402
+from bridge.jarvis_field_repair import FieldRepairWorker  # noqa: E402
 from bridge.jarvis_task_router import EnqueueResult  # noqa: E402
 from bridge import jarvis_dingtalk_bot as bot  # noqa: E402
+from bridge import persistent_tasks  # noqa: E402
 from bridge.scheduler.runners.scan import ScanRunner  # noqa: E402
 
 
@@ -355,32 +352,13 @@ class FieldRepairBridgeIntegrationTest(unittest.TestCase):
             "modified": "2026-07-23T08:00:00Z",
         }
 
-    def test_scheduler_missing_fields_persists_only_repair_task(self):
+    def test_scheduler_persists_business_task_without_field_preinspection(self):
         scanner = ScanRunner.__new__(ScanRunner)
         scanner.handler = None
         scanner.pool = None
-        # The scheduler no longer pre-inspects fields; if it ever did, this mock
-        # would flag it. Repair is the executor's in-place concern.
         scanner.field_repair_worker = SimpleNamespace(
-            inspect=mock.Mock(return_value=inspection()))
-        captured = []
-        scanner.execution_router = SimpleNamespace(
-            enqueue=lambda envelope, local_submit=None: (
-                captured.append(envelope)
-                or EnqueueResult(True, "task_persisted")))
-        accepted, reason = scanner._dispatch(self._item())
-        self.assertEqual((accepted, reason), (True, "task_persisted"))
-        self.assertEqual([item.task_type for item in captured],
-                         ["field_repair"])
-
-    def test_scheduler_complete_fields_persists_business_task_without_repair(self):
-        scanner = ScanRunner.__new__(ScanRunner)
-        scanner.handler = None
-        scanner.pool = None
-        ready = dict(inspection(), status="ready", missing=[],
-                     assignments=[], unresolved=[])
-        scanner.field_repair_worker = SimpleNamespace(
-            inspect=mock.Mock(return_value=ready))
+            inspect=mock.Mock(side_effect=AssertionError(
+                "Scheduler must not inspect Aone fields")))
         captured = []
         scanner.execution_router = SimpleNamespace(
             enqueue=lambda envelope, local_submit=None: (
@@ -496,7 +474,8 @@ class FieldRepairBridgeIntegrationTest(unittest.TestCase):
         with mock.patch.object(
                 bot, "_TaskAoneBookend",
                 side_effect=AssertionError("bookend must not start")), \
-                mock.patch.object(bot, "_field_repair_notify_submitter") as notify:
+                mock.patch.object(
+                    persistent_tasks, "notify_field_repair_blocked") as notify:
             result = handler._execute_task_lease(lease, controller)
         self.assertEqual(result["status"], "suspended")
         handler.task_client.upsert_desired_task.assert_not_called()
@@ -517,9 +496,14 @@ class FieldRepairSubmitterNotifyTest(unittest.TestCase):
     }
 
     def test_notify_dm_submitter_with_field_names_and_digest_key(self):
-        with mock.patch.object(bot, "_resolve_submitter", return_value=("270513", "秋雯")), \
-                mock.patch.object(bot, "_dingtalk_event_enqueue", return_value=True) as dm:
-            bot._field_repair_notify_submitter("84432183", "1091779", self.BLOCKED)
+        with mock.patch.object(
+                persistent_tasks, "resolve_submitter",
+                return_value=("270513", "秋雯")), \
+                mock.patch.object(
+                    persistent_tasks, "_dingtalk_event_enqueue",
+                    return_value=True) as dm:
+            persistent_tasks.notify_field_repair_blocked(
+                "84432183", "1091779", self.BLOCKED)
         dm.assert_called_once()
         args = dm.call_args.args
         self.assertEqual(args[0], "84432183")           # ticket
@@ -532,25 +516,29 @@ class FieldRepairSubmitterNotifyTest(unittest.TestCase):
         self.assertIn("84432183", args[5])
 
     def test_notify_never_raises_when_dingtalk_fails(self):
-        with mock.patch.object(bot, "_resolve_submitter", return_value=("270513", "秋雯")), \
-                mock.patch.object(bot, "_dingtalk_event_enqueue",
-                                  side_effect=RuntimeError("boom")):
-            bot._field_repair_notify_submitter("84432183", "1091779", self.BLOCKED)
+        with mock.patch.object(
+                persistent_tasks, "resolve_submitter",
+                return_value=("270513", "秋雯")), \
+                mock.patch.object(
+                    persistent_tasks, "_dingtalk_event_enqueue",
+                    side_effect=RuntimeError("boom")):
+            persistent_tasks.notify_field_repair_blocked(
+                "84432183", "1091779", self.BLOCKED)
 
     def test_resolve_submitter_uses_creator_empid_and_falls_back_to_master(self):
         def run_with(creator):
             payload = json.dumps({"creator": creator})
             with mock.patch.object(
-                    bot.subprocess, "run",
+                    persistent_tasks.subprocess, "run",
                     return_value=SimpleNamespace(returncode=0, stdout=payload)):
-                return bot._resolve_submitter("84432183")
+                return persistent_tasks.resolve_submitter("84432183")
         self.assertEqual(run_with({"empId": "270513", "nickName": "秋雯"}),
                          ("270513", "秋雯"))
         # digital worker / non-numeric creator → master fallback
         staff, _name = run_with({"empId": "WORKER_1782379562571"})
-        self.assertEqual(staff, bot.master_staff())
+        self.assertEqual(staff, persistent_tasks.master_staff())
         staff2, _n2 = run_with({})
-        self.assertEqual(staff2, bot.master_staff())
+        self.assertEqual(staff2, persistent_tasks.master_staff())
 
 
 if __name__ == "__main__":

@@ -23,7 +23,6 @@ from bridge.persistent_tasks import (
     TASK_BOOKEND_KINDS,
     PersistentTaskExecution,
     TaskAoneBookend,
-    _a1_command_env,
     _aone_event_sanitize_text,
     dispatch_item,
     extract_suspend,
@@ -32,6 +31,8 @@ from bridge.persistent_tasks import (
     stop_task_process,
     terraform_rd_ready,
 )
+from bridge.aone_tasks import master_staff
+from bridge.helpers.dingtalk import _dingtalk_event_enqueue
 from bridge.jarvis_capacity import CapacityManager
 from bridge.jarvis_execution_runtime import (
     DEFAULT_EXECUTION_RUNTIME,
@@ -40,7 +41,7 @@ from bridge.jarvis_execution_runtime import (
     jarvis_root,
     session_progress_excerpt,
 )
-from bridge.jarvis_field_repair import FIELD_REPAIR_KIND, FieldRepairWorker
+from bridge.jarvis_field_repair import FieldRepairWorker
 from bridge.jarvis_persistence_executor import PersistenceExecutor
 from bridge.jarvis_task_client import ControlPlaneClient
 from bridge.jarvis_task_router import ExecutionRouter
@@ -126,7 +127,6 @@ class PersistentTaskRuntime:
             routine_notice=_routine_notice,
             quick_card=_quick_card,
             field_repair_worker=self.field_repair_worker,
-            field_repair_kind=FIELD_REPAIR_KIND,
             task_bookend_kinds=TASK_BOOKEND_KINDS,
             post_pr_headless_kinds=POST_PR_HEADLESS_KINDS,
             broadcast_target=lambda: os.environ.get(
@@ -215,22 +215,16 @@ class PersistentTaskRuntime:
 
     @staticmethod
     def _post_death_cause(item_id, cause, terraform=False):
-        if not str(item_id).isdigit() or terraform:
-            LOG.warning("Task #%s death cause: %s", item_id,
-                        str(cause).replace("\n", " | ")[:500])
+        """Record execution failure locally only; never write the Aone ticket."""
+        if not str(item_id).isdigit():
             return
-        try:
-            subprocess.run(
-                [str(REPO_ROOT / "bootstrap" / "wrap.sh"), "sync",
-                 str(item_id), "--summary-stdin"],
-                input=cause, cwd=str(REPO_ROOT), text=True, timeout=90,
-                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                env=_a1_command_env(terraform=False))
-        except Exception as exc:  # noqa: BLE001
-            LOG.warning("Task #%s death-cause write failed: %s", item_id, exc)
+        prefix = "terraform " if terraform else ""
+        LOG.warning("%sTask #%s death cause: %s", prefix, item_id,
+                    str(cause).replace("\n", " | ")[:500])
 
     def _dispatch_failed(self, item_id, result, notify, project,
-                         terraform=False, kind="ticket", **_kwargs):
+                         terraform=False, kind="ticket",
+                         sid="unknown-session", attempts=None, **_kwargs):
         tail = (result.text or "").strip()
         subtype = normalized_failure_subtype(
             tail, getattr(result, "subtype", ""),
@@ -238,12 +232,38 @@ class PersistentTaskRuntime:
         cause = "headless 派发失败\nsubtype: %s\n---\n%s" % (
             subtype, tail[-800:] or "(无输出)")
         self._post_death_cause(item_id, cause, terraform=terraform)
+        release_state = "无需释放"
         if (project and str(item_id).isdigit()
                 and kind not in POST_PR_HEADLESS_KINDS):
+            release_state = "已释放"
             try:
                 release_claim(item_id, project, terraform=terraform)
             except Exception as exc:  # noqa: BLE001
+                release_state = "释放失败"
                 LOG.warning("Task #%s claim release failed: %s", item_id, exc)
+        if (terraform and subtype == "model_provider_error"
+                and project and str(item_id).isdigit()):
+            event_key = "dispatch-model-provider:%s:%s" % (
+                str(kind or "ticket")[:64],
+                str(sid or "unknown-session")[:96],
+            )
+            count = max(1, int(attempts or 1))
+            text = (
+                "Jarvis Terraform 自动处理因模型提供方故障停止。\n\n"
+                "- 工单：#%s\n"
+                "- 任务类型：%s\n"
+                "- 失败原因：model_provider_error（模型提供方或网关请求失败）\n"
+                "- 尝试次数：%s\n"
+                "- 认领释放：%s\n"
+                "- 下一步：请检查模型服务恢复情况，恢复后重新派发。"
+                % (item_id, kind, count, release_state)
+            )
+            if not _dingtalk_event_enqueue(
+                    item_id, project, event_key, master_staff(),
+                    "Jarvis 模型提供方故障", text):
+                LOG.error(
+                    "Task #%s model-provider event could not be queued",
+                    item_id)
         notify("⚠️ #%s 后台处理失败（%s）" % (item_id, subtype))
 
 

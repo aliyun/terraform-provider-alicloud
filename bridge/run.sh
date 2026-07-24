@@ -35,7 +35,6 @@ else
   PYTHON="python3"
 fi
 BOT="${JARVIS_BRIDGE_BOT:-$SCRIPT_DIR/jarvis_dingtalk_bot.py}"
-PERSISTENT_WORKER="${JARVIS_PERSISTENT_WORKER:-$SCRIPT_DIR/persistent_worker.py}"
 STATE_DIR="${JARVIS_BRIDGE_STATE_DIR:-$REPO_ROOT/.my-day/bridge}"
 # PIDFILE/LOG default to scheduler role; _resolve_paths_by_role() re-derives after
 # _source_env so JARVIS_BRIDGE_ROLE from env files applies. Worker role uses
@@ -46,12 +45,8 @@ LOG="$STATE_DIR/bot.log"
 BOOTSTRAP_ENV="${JARVIS_BRIDGE_BOOTSTRAP_ENV:-$REPO_ROOT/bootstrap/.env}"
 BRIDGE_ENV="${JARVIS_BRIDGE_ENV:-$SCRIPT_DIR/jarvis.env}"
 START_WAIT="${JARVIS_BRIDGE_START_WAIT:-2}"
-SCHEDULER_PIDFILE="$STATE_DIR/scheduler.pid"
-SCHEDULER_LOG="$STATE_DIR/scheduler.log"
 SCHEDULER_READY_WAIT="${JARVIS_SCHEDULER_READY_WAIT:-30}"
 SCHEDULER_DRAIN_WAIT="${JARVIS_SCHEDULER_DRAIN_TIMEOUT_SECONDS:-600}"
-PERSISTENT_WORKER_PIDFILE="$STATE_DIR/persistent-worker.pid"
-PERSISTENT_WORKER_LOG="$STATE_DIR/persistent-worker.log"
 PRESERVE_PERSISTENT_WORKER_ONCE="$STATE_DIR/preserve-persistent-worker-once"
 say()  { printf '%s\n' "$*"; }
 err()  { printf '%s\n' "$*" >&2; }
@@ -132,11 +127,7 @@ _rollback_started_process() { # $1 = pid, $2 = pidfile, $3 = label
 _bridge_ready_in_log() { # $1 = launchd-owned pid
   local pid="$1"
   [ -f "$LOG" ] || return 1
-  if [ "${JARVIS_BRIDGE_ROLE:-scheduler}" = "worker" ]; then
-    grep -F "Persistent worker READY pid=$pid " "$LOG" >/dev/null 2>&1
-  else
-    grep -F "Bridge READY pid=$pid role=supervisor" "$LOG" >/dev/null 2>&1
-  fi
+  grep -F "Bridge READY pid=$pid role=supervisor" "$LOG" >/dev/null 2>&1
 }
 
 # -- role-aware paths (call AFTER _source_env; env files may set JARVIS_BRIDGE_ROLE) --
@@ -146,7 +137,7 @@ _resolve_paths_by_role() {
     scheduler)
       PIDFILE="$STATE_DIR/bot.pid";        LOG="$STATE_DIR/bot.log" ;;
     worker)
-      PIDFILE="$PERSISTENT_WORKER_PIDFILE"; LOG="$PERSISTENT_WORKER_LOG" ;;
+      PIDFILE="$STATE_DIR/bot-worker.pid"; LOG="$STATE_DIR/bot-worker.log" ;;
     *)
       err "unsupported JARVIS_BRIDGE_ROLE=$role (accept: scheduler|worker)"
       return 2 ;;
@@ -156,59 +147,42 @@ _resolve_paths_by_role() {
 
 _scheduler_enabled() { [ "${JARVIS_BRIDGE_ROLE:-scheduler}" = "scheduler" ]; }
 
-_scheduler_validate() {
-  PYTHONPATH="$REPO_ROOT${PYTHONPATH:+:$PYTHONPATH}" "$PYTHON" -c '
-from bridge.scheduler.jobs import JOBS
-if not JOBS:
-    raise SystemExit("scheduler registry is empty")
-' || return $?
-  if [ -z "${JARVIS_CONTROL_PLANE_TOKEN:-}" ] && [ -z "${JARVIS_HTML_REPORT_TOKEN:-}" ]; then
-    err "scheduler control-plane token is required"
-    return 2
+_prepare_bridge_runtime() {
+  # Explicit runtimes are operator-owned and are validated as-is. For the
+  # managed runtime, provision the pinned requirements before any restart can
+  # stop the old supervisor.
+  if [ -n "${JARVIS_BRIDGE_PYTHON:-}" ]; then
+    PYTHON="$JARVIS_BRIDGE_PYTHON"
+    return 0
   fi
+  if [ ! -x "$REPO_ROOT/.venv/bridge/bin/python" ] \
+      || ! "$REPO_ROOT/.venv/bridge/bin/python" -c 'import yaml' \
+          >/dev/null 2>&1; then
+    JARVIS_BRIDGE_VENV="$REPO_ROOT/.venv/bridge" \
+      bash "$REPO_ROOT/bootstrap/bridge-python.sh" || return $?
+  fi
+  PYTHON="$REPO_ROOT/.venv/bridge/bin/python"
 }
 
-_persistent_worker_validate() {
-  if [ -z "${JARVIS_CONTROL_PLANE_TOKEN:-}" ] && [ -z "${JARVIS_HTML_REPORT_TOKEN:-}" ]; then
-    err "persistent worker control-plane token is required"
-    return 2
-  fi
+_bridge_validate() {
+  _prepare_bridge_runtime || return $?
+  PYTHONPATH="$REPO_ROOT${PYTHONPATH:+:$PYTHONPATH}" \
+    "$PYTHON" -m bridge.main --validate
 }
 
-# The shell owns lifecycle only. Component-specific facts live in this table;
-# start/stop/status/logs and daemon all use the same generic operations.
+# The shell owns only the Python supervisor's mechanical lifecycle.
 _component_config() {
   COMPONENT_NAME="$1"
   case "$COMPONENT_NAME" in
-    bot)
-      COMPONENT_LABEL="bridge"
-      COMPONENT_PIDFILE="$STATE_DIR/bot.pid"
-      COMPONENT_LOG="$STATE_DIR/bot.log"
-      COMPONENT_READY=""
-      COMPONENT_READY_WAIT="$START_WAIT"
-      COMPONENT_STOP_WAIT="$(_bridge_stop_wait)"
-      COMPONENT_TIMEOUT_POLICY="kill"
-      COMPONENT_VALIDATE=":"
-      ;;
-    persistent-worker)
-      COMPONENT_LABEL="persistent worker"
-      COMPONENT_PIDFILE="$PERSISTENT_WORKER_PIDFILE"
-      COMPONENT_LOG="$PERSISTENT_WORKER_LOG"
-      COMPONENT_READY="Persistent worker READY"
-      COMPONENT_READY_WAIT="$SCHEDULER_READY_WAIT"
-      COMPONENT_STOP_WAIT="$(_bridge_stop_wait)"
-      COMPONENT_TIMEOUT_POLICY="preserve"
-      COMPONENT_VALIDATE="_persistent_worker_validate"
-      ;;
-    scheduler)
-      COMPONENT_LABEL="scheduler"
-      COMPONENT_PIDFILE="$SCHEDULER_PIDFILE"
-      COMPONENT_LOG="$SCHEDULER_LOG"
-      COMPONENT_READY="Scheduler READY"
+    supervisor)
+      COMPONENT_LABEL="bridge supervisor"
+      COMPONENT_PIDFILE="$PIDFILE"
+      COMPONENT_LOG="$LOG"
+      COMPONENT_READY="Bridge READY"
       COMPONENT_READY_WAIT="$SCHEDULER_READY_WAIT"
       COMPONENT_STOP_WAIT="$SCHEDULER_DRAIN_WAIT"
       COMPONENT_TIMEOUT_POLICY="preserve"
-      COMPONENT_VALIDATE="_scheduler_validate"
+      COMPONENT_VALIDATE="_bridge_validate"
       ;;
     *)
       err "unknown bridge component: $COMPONENT_NAME"
@@ -218,34 +192,12 @@ _component_config() {
 }
 
 _role_components() {
-  if _scheduler_enabled && [ "${1:-start}" = "stop" ]; then
-    printf '%s\n' scheduler persistent-worker bot
-  elif _scheduler_enabled; then
-    printf '%s\n' bot persistent-worker scheduler
-  else
-    printf '%s\n' persistent-worker
-  fi
+  printf '%s\n' supervisor
 }
 
 _spawn_component() {
   case "$1" in
-    bot)
-      if [ -n "${JARVIS_BRIDGE_BOT:-}" ]; then
-        nohup "$PYTHON" "$BOT" >>"$COMPONENT_LOG" 2>&1 &
-      else
-        PYTHONPATH="$REPO_ROOT${PYTHONPATH:+:$PYTHONPATH}" \
-          nohup "$PYTHON" -m bridge.jarvis_dingtalk_bot >>"$COMPONENT_LOG" 2>&1 &
-      fi
-      ;;
-    persistent-worker)
-      if [ -n "${JARVIS_PERSISTENT_WORKER:-}" ]; then
-        nohup "$PYTHON" "$PERSISTENT_WORKER" >>"$COMPONENT_LOG" 2>&1 &
-      else
-        PYTHONPATH="$REPO_ROOT${PYTHONPATH:+:$PYTHONPATH}" \
-          nohup "$PYTHON" -m bridge.persistent_worker >>"$COMPONENT_LOG" 2>&1 &
-      fi
-      ;;
-    scheduler)
+    supervisor)
       PYTHONPATH="$REPO_ROOT${PYTHONPATH:+:$PYTHONPATH}" \
         nohup "$PYTHON" -m bridge.main >>"$COMPONENT_LOG" 2>&1 &
       ;;
@@ -272,25 +224,16 @@ _component_start() {
   COMPONENT_STARTED_PID="$pid"
   printf '%s\n' "$pid" >"$COMPONENT_PIDFILE"
 
-  if [ "$name" = "bot" ]; then
-    sleep "$COMPONENT_READY_WAIT"
-    first_new="$(tail -c "+$((pre_size + 1))" "$COMPONENT_LOG" 2>/dev/null | head -n1)"
-    if _alive "$pid" && [[ "$first_new" != *ERROR* ]]; then
+  deadline=$(( COMPONENT_READY_WAIT * 10 ))
+  while [ "$i" -lt "$deadline" ]; do
+    _alive "$pid" || break
+    if grep -F "$COMPONENT_READY pid=$pid " "$COMPONENT_LOG" >/dev/null 2>&1; then
       say "$COMPONENT_LABEL 已启动 (pid $pid, log=$COMPONENT_LOG)"
       return 0
     fi
-  else
-    deadline=$(( COMPONENT_READY_WAIT * 10 ))
-    while [ "$i" -lt "$deadline" ]; do
-      _alive "$pid" || break
-      if grep -F "$COMPONENT_READY pid=$pid " "$COMPONENT_LOG" >/dev/null 2>&1; then
-        say "$COMPONENT_LABEL 已启动 (pid $pid, log=$COMPONENT_LOG)"
-        return 0
-      fi
       sleep 0.1
       i=$((i + 1))
-    done
-  fi
+  done
 
   err "$COMPONENT_LABEL 启动失败或未在 ${COMPONENT_READY_WAIT}s 内 READY"
   tail -n 20 "$COMPONENT_LOG" >&2
@@ -467,17 +410,10 @@ cmd_launchd_start() {
     }
   fi
   "$LAUNCHCTL_BIN" enable "$LAUNCHD_SERVICE" >/dev/null 2>&1 || true
-  if [ "${JARVIS_BRIDGE_ROLE:-scheduler}" = "scheduler" ]; then
-    "$LAUNCHCTL_BIN" kickstart "$LAUNCHD_SERVICE" || {
-      err "launchd kickstart 失败: $LAUNCHD_SERVICE"
-      return 1
-    }
-  else
-    "$LAUNCHCTL_BIN" kickstart -k "$LAUNCHD_SERVICE" || {
-      err "launchd kickstart 失败: $LAUNCHD_SERVICE"
-      return 1
-    }
-  fi
+  "$LAUNCHCTL_BIN" kickstart "$LAUNCHD_SERVICE" || {
+    err "launchd kickstart 失败: $LAUNCHD_SERVICE"
+    return 1
+  }
   say "bridge 已交由 launchd 启动 ($LAUNCHD_SERVICE)。"
 }
 
@@ -496,6 +432,11 @@ cmd_launchd_stop() {
 
 cmd_launchd_restart() {
   _launchd_require || return 1
+  # Match the local restart and installer safety boundary: provision/validate
+  # the replacement before disabling KeepAlive or signaling the current
+  # Scheduler. A dependency or registry failure must leave the loaded service
+  # and its leased Persistent Worker untouched.
+  _bridge_validate || return $?
   if ! _launchd_loaded; then
     cmd_launchd_start
     return
@@ -508,7 +449,7 @@ cmd_launchd_restart() {
   detail="$("$LAUNCHCTL_BIN" print "$LAUNCHD_SERVICE" 2>/dev/null || true)"
   old_pid="$(printf '%s\n' "$detail" \
     | sed -n 's/^[[:space:]]*pid = //p' | head -n1)"
-  stop_wait="$(_bridge_stop_wait)"
+  stop_wait="$SCHEDULER_DRAIN_WAIT"
   if [ "${JARVIS_BRIDGE_ROLE:-scheduler}" = "scheduler" ] && [ -n "$old_pid" ]; then
     # The foreground daemon owns bot+scheduler+worker. A planned restart must
     # replace only bot+scheduler so leased Task Sessions retain their worker
@@ -526,6 +467,7 @@ cmd_launchd_restart() {
   if [ -n "$old_pid" ]; then
     "$LAUNCHCTL_BIN" kill SIGTERM "$LAUNCHD_SERVICE" || {
       [ "$preserve_worker" -eq 1 ] && rm -f "$PRESERVE_PERSISTENT_WORKER_ONCE"
+      "$LAUNCHCTL_BIN" enable "$LAUNCHD_SERVICE" >/dev/null 2>&1 || true
       err "launchd restart 失败: 无法请求旧 bridge 优雅停止"
       return 1
     }
@@ -640,10 +582,6 @@ cmd_watchdog() {
   cmd_start
 }
 
-_stop_bridge_only() {
-  _component_stop bot
-}
-
 cmd_stop() {
   local component
   mkdir -p "$STATE_DIR" 2>/dev/null || true
@@ -654,21 +592,29 @@ cmd_stop() {
 }
 
 cmd_restart() {
-  local component
-  # Scheduler restarts intentionally leave the independent Persistent Worker alive;
-  # this keeps its leased Sessions fenced to the same worker process.
-  for component in $(_role_components stop); do
-    if _scheduler_enabled && [ "$component" = "persistent-worker" ]; then
-      continue
-    fi
-    _component_stop "$component" || return $?
-  done
+  local pid="" preserve_worker=0
+  _component_config supervisor || return $?
+  # Validate/provision the replacement before quiescing the current Scheduler
+  # and Bot. A missing PyYAML or invalid registry must leave the old service
+  # untouched.
+  _bridge_validate || return $?
+  pid="$(_running_pidfile "$COMPONENT_PIDFILE" 2>/dev/null || true)"
+  if _scheduler_enabled && [ -n "$pid" ]; then
+    mkdir -p "$STATE_DIR"
+    printf '%s\n' "$pid" >"$PRESERVE_PERSISTENT_WORKER_ONCE"
+    preserve_worker=1
+  fi
+  if ! _component_stop supervisor; then
+    [ "$preserve_worker" -eq 1 ] && rm -f "$PRESERVE_PERSISTENT_WORKER_ONCE"
+    return 1
+  fi
+  [ "$preserve_worker" -eq 1 ] && rm -f "$PRESERVE_PERSISTENT_WORKER_ONCE"
   cmd_start
 }
 
 cmd_status() {
   local component pid primary
-  if _scheduler_enabled; then primary="bot"; else primary="persistent-worker"; fi
+  primary="supervisor"
   _component_config "$primary" || return $?
   if pid="$(_running_pidfile "$COMPONENT_PIDFILE")"; then
     local uptime mode
@@ -718,79 +664,12 @@ cmd_dryrun() {
 cmd_daemon() {
   _source_env
   mkdir -p "$STATE_DIR"
-  local mode bot_pid="" shutdown_started=0 preserve_persistent_worker=0 rc=0
-  _daemon_shutdown() {
-    local shutdown_rc=0 step_rc=0 preserve_pid=""
-    # A supervisor may stop us while the standalone components are still
-    # starting. Install this handler before spawning anything and make it
-    # idempotent so both the signal and normal-exit paths can share it.
-    if [ "$shutdown_started" -eq 1 ]; then
-      return 0
-    fi
-    shutdown_started=1
-    if [ -f "$PRESERVE_PERSISTENT_WORKER_ONCE" ]; then
-      preserve_pid="$(cat "$PRESERVE_PERSISTENT_WORKER_ONCE" 2>/dev/null || true)"
-      rm -f "$PRESERVE_PERSISTENT_WORKER_ONCE"
-      if [ "$preserve_pid" = "$$" ]; then
-        preserve_persistent_worker=1
-      fi
-    fi
-    _component_stop scheduler
-    step_rc=$?
-    [ "$step_rc" -eq 0 ] || shutdown_rc="$step_rc"
-    if [ -n "$bot_pid" ]; then
-      kill -TERM "$bot_pid" 2>/dev/null || true
-      wait "$bot_pid" 2>/dev/null || true
-    fi
-    if [ "$preserve_persistent_worker" -eq 0 ]; then
-      _component_stop persistent-worker
-      step_rc=$?
-      if [ "$shutdown_rc" -eq 0 ] && [ "$step_rc" -ne 0 ]; then
-        shutdown_rc="$step_rc"
-      fi
-    else
-      say "受控 restart：保留 persistent worker 及其已租约 Session。"
-    fi
-    return "$shutdown_rc"
-  }
-  trap '_daemon_shutdown; shutdown_rc=$?; trap - TERM INT; exit "$shutdown_rc"' TERM INT
+  _bridge_validate || return $?
+  local mode
   if _decide_mode; then mode="full"; else mode="degraded"; fi
-  say "bridge foreground daemon 启动 (mode=$mode, role=${JARVIS_BRIDGE_ROLE:-scheduler}, pid=$$): $PYTHON ${JARVIS_BRIDGE_BOT:-bridge.jarvis_dingtalk_bot}"
-  if ! _scheduler_enabled; then
-    trap - TERM INT
-    if [ -n "${JARVIS_PERSISTENT_WORKER:-}" ]; then
-      exec "$PYTHON" "$PERSISTENT_WORKER"
-    fi
-    PYTHONPATH="$REPO_ROOT${PYTHONPATH:+:$PYTHONPATH}" \
-      exec "$PYTHON" -m bridge.persistent_worker
-  fi
-  local worker_started_pid=""
-  _component_start persistent-worker || return $?
-  worker_started_pid="${COMPONENT_STARTED_PID:-}"
-  if ! _component_start scheduler; then
-    if [ -n "$worker_started_pid" ]; then
-      _rollback_started_process "$worker_started_pid" "$PERSISTENT_WORKER_PIDFILE" "persistent worker" || true
-    fi
-    return 1
-  fi
-  _component_config bot || return $?
-  _spawn_component bot
-  bot_pid="$COMPONENT_SPAWNED_PID"
-  sleep "$START_WAIT"
-  if ! _alive "$bot_pid"; then
-    wait "$bot_pid" 2>/dev/null
-    rc=$?
-    _daemon_shutdown
-    return "$rc"
-  fi
-  say "Bridge READY pid=$$ role=supervisor"
-  wait "$bot_pid"
-  rc=$?
-  trap - TERM INT
-  _daemon_shutdown
-  local shutdown_rc=$?
-  [ "$shutdown_rc" -eq 0 ] || return "$shutdown_rc"
-  return "$rc"
+  say "bridge foreground daemon 启动 (mode=$mode, role=${JARVIS_BRIDGE_ROLE:-scheduler}, pid=$$): $PYTHON -m bridge.main"
+  PYTHONPATH="$REPO_ROOT${PYTHONPATH:+:$PYTHONPATH}" \
+    exec "$PYTHON" -m bridge.main
 }
 
 usage() {

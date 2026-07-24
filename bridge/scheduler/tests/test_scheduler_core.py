@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from zoneinfo import ZoneInfo
 
-from bridge.main import require_scheduler_role
+from bridge.scheduler.scheduler import require_scheduler_role
 from bridge.scheduler.engine import TriggerPlanner
 from bridge.scheduler.model import (
     AdaptiveSchedule, DailySchedule, HandlerRunner, IntervalSchedule, JobResult,

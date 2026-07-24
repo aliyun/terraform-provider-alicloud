@@ -101,8 +101,8 @@ class PersistentWorkerTest(unittest.TestCase):
         self.assertEqual(
             runtime.execution_router.task_types,
             {
-                "field_repair", "ticket", "revisit", "persona", "wake",
-                "pr_ci_fix", "pr_comment_reply",
+                "ticket", "revisit", "persona", "wake", "pr_ci_fix",
+                "pr_comment_reply",
             },
         )
         self.assertEqual(runtime.capacity_manager.capacity, 3)

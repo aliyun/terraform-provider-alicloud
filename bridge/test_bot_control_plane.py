@@ -666,25 +666,7 @@ class TaskAoneAssociationTest(unittest.TestCase):
         self.assertNotIn("title", envelope.payload)
         self.assertNotIn("Aone card title", envelope.desired_revision)
 
-    def test_ticket_preflight_failure_never_enqueues(self):
-        handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
-        handler.execution_router = SimpleNamespace(enqueue=mock.Mock())
-        handler.ephemeral_executor = object()
-        handler._quick_card = mock.Mock()
-        with mock.patch.object(bot, "_aone_preflight",
-                               return_value=(False, {
-                                   "status": "failed",
-                                   "errorType": "preflight_validation_failed",
-                               })) as preflight:
-            result = handler._submit_card(
-                "84608993", "group", "group", "go", "runtime", False,
-                project="1086837", task_type="ticket", terraform=True)
-        self.assertEqual(result, (False, "preflight_validation_failed"))
-        preflight.assert_called_once_with("84608993", "1086837", terraform=True)
-        handler.execution_router.enqueue.assert_not_called()
-        handler._quick_card.assert_called_once()
-
-    def test_non_ticket_aone_card_does_not_run_required_field_preflight(self):
+    def test_non_ticket_aone_card_persists_business_task(self):
         handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
         handler.execution_router = SimpleNamespace(
             enqueue=mock.Mock(return_value=EnqueueResult(True, "task_persisted")))
@@ -1850,34 +1832,12 @@ class SchedulerRunnerTest(unittest.TestCase):
                 "modified": "m"}
         context = aone._ticket_dispatch_context(item, {
             "id": 9, "creator": "x", "createdAt": "t", "content": "new"})
-        with mock.patch.object(scan, "_aone_preflight",
-                               return_value=(True, {"status": "ok"})):
-            accepted, reason = s._dispatch(item, dispatch_context=context)
+        accepted, reason = s._dispatch(item, dispatch_context=context)
         self.assertFalse(accepted)
         self.assertEqual(reason, "comment_requires_control_plane")
         s.handler.dispatch_item.assert_not_called()
 
-    def test_dispatch_preflight_failure_never_enqueues(self):
-        s = self._scanner()
-        s.handler = None
-        s.pool = None
-        s.execution_router = SimpleNamespace(enqueue=mock.Mock())
-        pool_key = "tf_" + "customer"
-        item = {"id": "84608993", "title": "generic Provider issue",
-                "pool": pool_key, "pool_project": "1086837", "modified": "m"}
-        with mock.patch.object(scan, "_aone_preflight",
-                               return_value=(False, {
-                                   "status": "failed",
-                                   "errorType": "preflight_validation_failed",
-                               })) as preflight:
-            accepted, reason = s._dispatch(item)
-        self.assertEqual((accepted, reason),
-                         (False, "preflight_validation_failed"))
-        preflight.assert_called_once_with(
-            "84608993", "1086837", terraform=True)
-        s.execution_router.enqueue.assert_not_called()
-
-    def test_dispatch_preflight_success_enqueues(self):
+    def test_dispatch_enqueues_business_ticket_task(self):
         s = self._scanner()
         s.handler = None
         s.pool = None
@@ -1886,9 +1846,7 @@ class SchedulerRunnerTest(unittest.TestCase):
         pool_key = "tf_" + "customer"
         item = {"id": "84608993", "title": "generic Provider issue",
                 "pool": pool_key, "pool_project": "1086837", "modified": "m"}
-        with mock.patch.object(scan, "_aone_preflight",
-                               return_value=(True, {"status": "ok"})):
-            accepted, reason = s._dispatch(item)
+        accepted, reason = s._dispatch(item)
         self.assertTrue(accepted)
         self.assertEqual(reason, "task_persisted")
         s.execution_router.enqueue.assert_called_once()
@@ -1915,10 +1873,7 @@ class SchedulerRunnerTest(unittest.TestCase):
         s.pool = None
         s.execution_router = SimpleNamespace(
             enqueue=mock.Mock(return_value=EnqueueResult(True, "task_persisted")))
-        with mock.patch.object(
-                scan, "_aone_preflight",
-                return_value=(True, {"status": "ok"})) as preflight:
-            outcomes = [s._dispatch(row) for row in rows]
+        outcomes = [s._dispatch(row) for row in rows]
         self.assertEqual(len(rows), 3)
         self.assertTrue(all(accepted for accepted, _reason in outcomes))
         self.assertEqual(s.execution_router.enqueue.call_count, 3)
@@ -2078,30 +2033,24 @@ class ModelProviderFailureRoutingTest(unittest.TestCase):
         self.assertEqual(record["state"], "failed")
         self.assertEqual(record["attempts"], 1)
 
-    def test_other_terraform_failure_keeps_aone_important_event(self):
-        event_enqueue, dingtalk, _release, _notices = self._dispatch_failed(
+    def test_other_terraform_failure_writes_neither_aone_nor_dingtalk(self):
+        event_enqueue, dingtalk, _release, notices = self._dispatch_failed(
             "ordinary execution failure", subtype="error")
-        event_enqueue.assert_called_once()
-        self.assertEqual(event_enqueue.call_args.args[2],
-                         "dispatch:ticket:provider-session:error")
+        event_enqueue.assert_not_called()
         dingtalk.assert_not_called()
+        self.assertIn("error", notices[0])
         self.assertIn("error", notices[0])
 
     def test_customer_api_gateway_timeout_is_not_model_provider_failure(self):
         event_enqueue, dingtalk, _release, _notices = self._dispatch_failed(
             "customer API gateway timeout while calling Aone", subtype="error")
-        event_enqueue.assert_called_once()
-        self.assertEqual(event_enqueue.call_args.args[2],
-                         "dispatch:ticket:provider-session:error")
+        event_enqueue.assert_not_called()
         dingtalk.assert_not_called()
 
     def test_authentication_subtype_without_model_context_is_not_provider_failure(self):
         event_enqueue, dingtalk, _release, _notices = self._dispatch_failed(
             "permission denied", subtype="authentication_error")
-        event_enqueue.assert_called_once()
-        self.assertEqual(
-            event_enqueue.call_args.args[2],
-            "dispatch:ticket:provider-session:authentication_error")
+        event_enqueue.assert_not_called()
         dingtalk.assert_not_called()
 
     def test_same_session_uses_stable_dingtalk_event_key(self):
@@ -2536,7 +2485,7 @@ class TaskWaitingHumanAttentionTest(unittest.TestCase):
         self.assertEqual(payload["taskGeneration"], "7")
         self.assertEqual(
             payload["aoneUrl"],
-            "https://project.aone.alibaba-inc.com/v2/project/1086837/workitem/84407231")
+            "https://project.aone.alibaba-inc.com/v2/project/1086837/req/84407231")
         self.assertEqual(len(notices), 1)
 
     def test_unknown_owner_defaults_to_master(self):

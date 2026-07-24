@@ -50,7 +50,7 @@ for role in ("terraform-pd", "terraform-rd", "terraform-qa"):
 wake_tail = bridge._task_result_instructions("12345678", True)
 require(wake_tail, *common_terms)
 wake_source = inspect.getsource(bridge.JarvisHandler._wake)
-require(wake_source, "_task_result_instructions(aone_id, tf)")
+require(wake_source, "result_instructions=_task_result_instructions")
 
 print("aone_screenshot_bridge_prompt_test: PASS")
 PY

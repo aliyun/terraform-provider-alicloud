@@ -29,7 +29,6 @@ class PersistentTaskExecutionTest(unittest.TestCase):
             "terraform_rd_ready": lambda: True,
             "routine_notice": lambda _text: None,
             "quick_card": lambda _target, _text, _target_type: None,
-            "field_repair_kind": "field_repair",
             "task_bookend_kinds": {"ticket"},
             "post_pr_headless_kinds": set(),
             "broadcast_target": lambda: "broadcast",
