@@ -17,6 +17,8 @@ import logging
 import os
 import re
 import socket
+import subprocess
+import sys
 import threading
 import time
 import uuid
@@ -64,10 +66,20 @@ def _default_boot_id(host: str) -> str:
             return value
     except OSError:
         pass
-    # Portable fallback for macOS: wall time minus monotonic time approximates
-    # the boot epoch.  The process UUID remains the uniqueness boundary.
-    boot_epoch = int(time.time() - time.monotonic())
-    return uuid.uuid5(uuid.NAMESPACE_DNS, "%s:%s" % (host, boot_epoch)).hex
+    if sys.platform == "darwin":
+        try:
+            result = subprocess.run(
+                ["/usr/sbin/sysctl", "-n", "kern.boottime"],
+                capture_output=True, text=True, timeout=2, check=False)
+            match = re.search(r"\bsec\s*=\s*(\d+)", result.stdout)
+            if result.returncode == 0 and match and int(match.group(1)) > 0:
+                return uuid.uuid5(
+                    uuid.NAMESPACE_DNS,
+                    "%s:%s" % (host, match.group(1))).hex
+        except (OSError, subprocess.SubprocessError):
+            pass
+    raise RuntimeError(
+        "stable system boot id is unavailable; set JARVIS_BOOT_ID explicitly")
 
 
 def make_worker_key(host: Optional[str] = None, boot_id: Optional[str] = None,
