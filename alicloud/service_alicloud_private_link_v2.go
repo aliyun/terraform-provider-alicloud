@@ -51,6 +51,66 @@ func (s *PrivateLinkServiceV2) DescribePrivateLinkVpcEndpointService(id string) 
 
 	return response, nil
 }
+
+// ListPrivateLinkVpcEndpointServiceResources lists all service resources attached to a VpcEndpointService, following pagination.
+func (s *PrivateLinkServiceV2) ListPrivateLinkVpcEndpointServiceResources(serviceId string) (resources []interface{}, err error) {
+	client := s.client
+	action := "ListVpcEndpointServiceResources"
+	resources = make([]interface{}, 0)
+	nextToken := ""
+	for {
+		request := map[string]interface{}{
+			"ServiceId":  serviceId,
+			"RegionId":   client.RegionId,
+			"MaxResults": PageSizeLarge,
+		}
+		if nextToken != "" {
+			request["NextToken"] = nextToken
+		}
+		var response map[string]interface{}
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+			response, err = client.RpcPost("Privatelink", "2020-04-15", action, nil, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			if IsExpectedErrors(err, []string{"EndpointServiceNotFound"}) {
+				return resources, WrapErrorf(NotFoundErr("VpcEndpointService", serviceId), NotFoundMsg, response)
+			}
+			return resources, WrapErrorf(err, DefaultErrorMsg, serviceId, action, AlibabaCloudSdkGoERROR)
+		}
+
+		// Surface a genuine jsonpath/SDK failure instead of silently returning an
+		// empty list (which would make Terraform think attached resources were
+		// removed and trigger detach/attach churn). A missing or null Resources
+		// key means the service has no attachments and is not an error.
+		if raw, ok := response["Resources"]; ok && raw != nil {
+			v, err := jsonpath.Get("$.Resources[*]", response)
+			if err != nil {
+				return resources, WrapErrorf(err, FailedGetAttributeMsg, serviceId, "$.Resources[*]", response)
+			}
+			if v != nil {
+				resources = append(resources, v.([]interface{})...)
+			}
+		}
+
+		if response["NextToken"] == nil || fmt.Sprint(response["NextToken"]) == "" {
+			break
+		}
+		nextToken = fmt.Sprint(response["NextToken"])
+	}
+
+	return resources, nil
+}
+
 func (s *PrivateLinkServiceV2) DescribeVpcEndpointServiceListTagResources(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}

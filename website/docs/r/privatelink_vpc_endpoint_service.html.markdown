@@ -54,6 +54,7 @@ The following arguments are supported:
 * `payer` - (Optional, ForceNew, Computed) The payer of the endpoint service. Valid values:
   - `Endpoint`: the service consumer.
   - `EndpointService`: the service provider.
+* `resource` - (Optional, Computed, Set, Available since v1.286.0) The service resources to associate with the endpoint service when it is created. A maximum of 10 service resources can be specified at creation. See [`resource`](#resource) below. This argument manages the full lifecycle of the associated service resources; do not use it together with the standalone `alicloud_privatelink_vpc_endpoint_service_resource` resource for the same endpoint service, as the two would conflict.
 * `resource_group_id` - (Optional, Computed) The resource group ID.
 * `service_description` - (Optional) The description of the endpoint service.
 * `service_resource_type` - (Optional, ForceNew, Computed) The service resource type. Value:
@@ -69,6 +70,17 @@ The following arguments are supported:
 * `zone_affinity_enabled` - (Optional, Computed) Specifies whether to first resolve the domain name of the nearest endpoint that is associated with the endpoint service. Valid values:
   - `true`
   - **false (default)**
+
+### `resource`
+
+The `resource` block supports the following:
+* `resource_id` - (Optional) The ID of the service resource.
+* `resource_type` - (Optional) The type of the service resource. Valid values:
+  - `slb`: Classic Load Balancer (CLB).
+  - `alb`: Application Load Balancer (ALB).
+  - `nlb`: Network Load Balancer (NLB).
+  - `gwlb`: Gateway Load Balancer (GWLB).
+* `zone_id` - (Optional) The zone ID of the service resource.
 
 ## Attributes Reference
 
