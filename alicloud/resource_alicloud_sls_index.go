@@ -1,8 +1,10 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
+	"reflect"
 	"strings"
 	"time"
 
@@ -11,6 +13,167 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
+
+// slsIndexApiDefaults defines the known default values that SLS API
+// automatically adds to each key's config when they are not specified by the user.
+var slsIndexApiDefaults = map[string]interface{}{
+	"alias":         "",
+	"caseSensitive": false,
+	"chn":           false,
+}
+
+// isApiDefaultValue checks if the given field value is a known API-added default.
+func isApiDefaultValue(fieldName string, value interface{}) bool {
+	defaultValue, exists := slsIndexApiDefaults[fieldName]
+	if !exists {
+		return false
+	}
+	return areFieldValuesEquivalent(value, defaultValue)
+}
+
+// areKeysJsonEquivalent compares two keys JSON strings semantically,
+// ignoring API-added default values. Returns true if user config matches state.
+func areKeysJsonEquivalent(old, new string) (bool, error) {
+	// Handle empty string edge cases
+	if old == "" && new == "" {
+		return true, nil
+	}
+	if old == "" || new == "" {
+		return false, nil
+	}
+
+	oldKeys := make(map[string]interface{})
+	if err := json.Unmarshal([]byte(old), &oldKeys); err != nil {
+		// Fallback to original comparison on parse error
+		return compareJsonTemplateAreEquivalent(old, new)
+	}
+
+	newKeys := make(map[string]interface{})
+	if err := json.Unmarshal([]byte(new), &newKeys); err != nil {
+		return compareJsonTemplateAreEquivalent(old, new)
+	}
+
+	// Check if user added a new key
+	for keyName, newValue := range newKeys {
+		oldValue, exists := oldKeys[keyName]
+		if !exists {
+			return false, nil
+		}
+
+		newConfig, ok1 := newValue.(map[string]interface{})
+		oldConfig, ok2 := oldValue.(map[string]interface{})
+		if !ok1 || !ok2 {
+			// Fallback to original comparison if type mismatch
+			return compareJsonTemplateAreEquivalent(old, new)
+		}
+
+		// Check if user modified any field in the new config
+		for fieldName, fieldValue := range newConfig {
+			oldFieldValue, hasInOld := oldConfig[fieldName]
+			if !hasInOld {
+				return false, nil
+			}
+			if !areFieldValuesEquivalent(oldFieldValue, fieldValue) {
+				return false, nil
+			}
+		}
+
+		// Check old-only fields: suppress diff ONLY if they are known API defaults.
+		// If a field exists in state but not in user config and is NOT a known API
+		// default, it means the user deleted it or there is external drift — surface the diff.
+		for oldFieldName, oldFieldValue := range oldConfig {
+			if _, hasInNew := newConfig[oldFieldName]; !hasInNew {
+				if !isApiDefaultValue(oldFieldName, oldFieldValue) {
+					return false, nil
+				}
+			}
+		}
+	}
+
+	// Check if user deleted a key
+	for keyName := range oldKeys {
+		if _, exists := newKeys[keyName]; !exists {
+			return false, nil
+		}
+	}
+
+	return true, nil
+}
+
+// areFieldValuesEquivalent compares two field values for equivalence.
+// Numeric types (int/int64/float64) are compared loosely to handle JSON parsing.
+func areFieldValuesEquivalent(old, new interface{}) bool {
+	// Handle numeric types loosely - JSON unmarshals all numbers to float64
+	switch old.(type) {
+	case int, int64, float64:
+		switch new.(type) {
+		case int, int64, float64:
+			return toFloat64(old) == toFloat64(new)
+		}
+	}
+
+	// Strict type matching for other types
+	if reflect.TypeOf(old) != reflect.TypeOf(new) {
+		return false
+	}
+
+	switch oldVal := old.(type) {
+	case string:
+		return oldVal == new.(string)
+	case bool:
+		return oldVal == new.(bool)
+	case []interface{}:
+		newArr := new.([]interface{})
+		if len(oldVal) != len(newArr) {
+			return false
+		}
+		// Order-insensitive array comparison using element counting
+		oldCount := make(map[string]int)
+		for _, v := range oldVal {
+			oldCount[fmt.Sprintf("%v", v)]++
+		}
+		newCount := make(map[string]int)
+		for _, v := range newArr {
+			newCount[fmt.Sprintf("%v", v)]++
+		}
+		if len(oldCount) != len(newCount) {
+			return false
+		}
+		for k, count := range oldCount {
+			if newCount[k] != count {
+				return false
+			}
+		}
+		return true
+	case map[string]interface{}:
+		newMap := new.(map[string]interface{})
+		if len(oldVal) != len(newMap) {
+			return false
+		}
+		for k, v := range oldVal {
+			if !areFieldValuesEquivalent(v, newMap[k]) {
+				return false
+			}
+		}
+		return true
+	default:
+		return old == new
+	}
+}
+
+// toFloat64 converts numeric types to float64 for unified comparison
+func toFloat64(v interface{}) float64 {
+	switch val := v.(type) {
+	case int:
+		return float64(val)
+	case int64:
+		return float64(val)
+	case float64:
+		return val
+	default:
+		return 0
+	}
+}
 
 func resourceAliCloudSlsIndex() *schema.Resource {
 	return &schema.Resource{
@@ -31,7 +194,7 @@ func resourceAliCloudSlsIndex() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					equal, _ := compareJsonTemplateAreEquivalent(old, new)
+					equal, _ := areKeysJsonEquivalent(old, new)
 					return equal
 				},
 			},
