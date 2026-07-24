@@ -64,6 +64,21 @@ class PersistentTaskExecutionTest(unittest.TestCase):
             execution.execute({"task": {"taskType": "ticket"}, "session": {}}, controller)
         self.assertEqual(captured, {})
 
+    def test_rejects_interactive_task_without_headless_replay(self):
+        execution, captured = self._execution()
+        controller = SimpleNamespace(runtime_session_id="run-1", resumed=True,
+                                     bind_process=lambda _process: None)
+
+        with self.assertRaisesRegex(
+                ValueError, "must be resumed by its owning Interactive Worker"):
+            execution.execute({
+                "task": {"taskType": "ticket", "recoveryPolicy": "REPLAY_SAFE"},
+                "session": {"inputPayload": {
+                    "itemId": "84352841", "kind": "ticket",
+                    "trigger": "INTERACTIVE"}},
+            }, controller)
+        self.assertEqual(captured, {})
+
     def test_adhoc_notification_uses_injected_card_adapter(self):
         notices = []
         execution, captured = self._execution(

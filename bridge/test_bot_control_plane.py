@@ -1375,6 +1375,34 @@ class SchedulerRunnerTest(unittest.TestCase):
         self.assertEqual(dm.call_args.args[3], aone.master_staff())
         self.assertEqual(dm.call_args.kwargs, {"allow_non_tf": True})
 
+    def test_claim_health_recognizes_control_plane_terminal_and_recovery_states(self):
+        now = 1_800_000_000
+        for status in ("FAILED_FINAL", "CANCELED"):
+            client = mock.Mock()
+            client.get_task_by_aone.return_value = [{
+                "id": 700, "generation": 8, "status": status,
+                "currentSessionId": 901,
+            }]
+            client.get_task_timeline.return_value = {
+                "sessions": [{"id": 901, "status": "CLOSED", "fenceToken": 12}],
+                "events": [],
+            }
+            with self.subTest(status=status):
+                anomaly = self._health_scanner(client)._inspect_claim_health(
+                    self._claimed_item(), now)
+                self.assertEqual(anomaly["category"], "terminal-claim-residue")
+
+        for status in ("READY", "RETRY_WAIT"):
+            client = mock.Mock()
+            client.get_task_by_aone.return_value = [{
+                "id": 700, "generation": 8, "status": status,
+                "currentSessionId": None,
+            }]
+            client.get_task_timeline.return_value = {"sessions": [], "events": []}
+            with self.subTest(status=status):
+                self.assertIsNone(self._health_scanner(client)._inspect_claim_health(
+                    self._claimed_item(), now))
+
     def test_claim_health_running_or_leased_corrupted_session_is_confirmed_structure(self):
         now = 1_800_000_000
         for task_status, session_status in (
