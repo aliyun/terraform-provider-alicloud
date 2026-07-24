@@ -152,7 +152,9 @@ class _TaskAttentionPublisher:
             method(str(task_id), event_key_prefix=event_key_prefix)
             return True
         except Exception as exc:  # noqa: BLE001
-            return not self.required if getattr(exc, "status", None) == 404 else False
+            if getattr(exc, "status", None) == 404:
+                return True  # nothing to clear = idempotent success, not a failure
+            return False
 
 
 class WakePersistence:
