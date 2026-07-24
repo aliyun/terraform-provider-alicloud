@@ -32,8 +32,9 @@ func resourceAliCloudVpcVpc() *schema.Resource {
 				Computed: true,
 			},
 			"classic_link_enabled": {
-				Type:     schema.TypeBool,
-				Optional: true,
+				Type:       schema.TypeBool,
+				Optional:   true,
+				Deprecated: "Field 'classic_link_enabled' has been deprecated from provider version 1.286.0. The underlying ClassicLink feature has been deprecated by Alibaba Cloud and this field will be removed in a future version.",
 			},
 			"create_time": {
 				Type:     schema.TypeString,
