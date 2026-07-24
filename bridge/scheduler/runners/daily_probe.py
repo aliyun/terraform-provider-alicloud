@@ -21,7 +21,6 @@ from bridge.headless_runtime import (
 
 from ..model import (
     DailySchedule,
-    HandlerRunner,
     JobResult,
     JobResultStatus,
     ScheduledJobDefinition,
@@ -189,11 +188,6 @@ def _definition_error(definition: ScheduledJobDefinition) -> str | None:
         return "daily probe runner received mismatched definition"
     if not isinstance(definition.schedule, DailySchedule):
         return "daily probe requires a daily schedule"
-    runner = definition.runner
-    if not isinstance(runner, HandlerRunner):
-        return "daily probe requires a handler runner"
-    if runner.handler_key != JOB_KEY:
-        return "daily probe handler is not registered"
     return None
 
 
