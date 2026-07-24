@@ -512,3 +512,119 @@ func AliCloudDTSSynchronizationJobBasicDependence1(name string) string {
 	}
 `, name, defaultRegionToTest)
 }
+
+func TestAccAliCloudDTSSynchronizationJob_tagsResourceGroup(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_dts_synchronization_job.default"
+	ra := resourceAttrInit(resourceId, AliCloudDTSSynchronizationJobMapTagsRG)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &DtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDtsSynchronizationJob")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sdtssyncjobtrg%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDTSSynchronizationJobBasicDependenceTagsRG)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"dts_instance_id":                    "${alicloud_dts_synchronization_instance.default.id}",
+					"dts_job_name":                       "tf-testAccTagsRG",
+					"source_endpoint_instance_type":      "RDS",
+					"source_endpoint_instance_id":        "${alicloud_db_instance.source.id}",
+					"source_endpoint_engine_name":        "MySQL",
+					"source_endpoint_region":             "${var.region_id}",
+					"source_endpoint_database_name":      "test_database",
+					"source_endpoint_user_name":          "${alicloud_rds_account.source_account.account_name}",
+					"source_endpoint_password":           "${alicloud_rds_account.source_account.account_password}",
+					"destination_endpoint_instance_type": "RDS",
+					"destination_endpoint_instance_id":   "${alicloud_db_instance.target.id}",
+					"destination_endpoint_engine_name":   "MySQL",
+					"destination_endpoint_region":        "${var.region_id}",
+					"destination_endpoint_database_name": "test_database",
+					"destination_endpoint_user_name":     "${alicloud_rds_account.target_account.account_name}",
+					"destination_endpoint_password":      "${alicloud_rds_account.target_account.account_password}",
+					"db_list":                            "{\\\"test_database\\\":{\\\"name\\\":\\\"test_database\\\",\\\"all\\\":true,\\\"state\\\":\\\"normal\\\"}}",
+					"structure_initialization":           "true",
+					"data_initialization":                "true",
+					"data_synchronization":               "true",
+					"resource_group_id":                  "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"tags": map[string]interface{}{
+						"Created": "TF",
+						"For":     "acceptance test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"dts_job_name":      "tf-testAccTagsRG",
+						"resource_group_id": CHECKSET,
+						"tags.%":            "2",
+						"tags.Created":      "TF",
+						"tags.For":          "acceptance test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]interface{}{
+						"Created": "TF",
+						"Env":     "acc",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.Env":     "acc",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]interface{}{},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%": "0",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"delay_notice", "error_phone", "delay_rule_time", "error_notice", "delay_phone", "reserve", "destination_endpoint_password", "source_endpoint_password"},
+			},
+		},
+	})
+}
+
+var AliCloudDTSSynchronizationJobMapTagsRG = map[string]string{}
+
+func AliCloudDTSSynchronizationJobBasicDependenceTagsRG(name string) string {
+	return fmt.Sprintf(`
+data "alicloud_resource_manager_resource_groups" "default" {
+  status = "OK"
+}
+
+%s
+`, AliCloudDTSSynchronizationJobBasicDependence0(name))
+}

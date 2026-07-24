@@ -195,6 +195,8 @@ The following arguments supported:
 * `destination_endpoint_owner_id` - (Optional, ForceNew) The ID of the Alibaba Cloud account to which the target RDS MySQL instance belongs. can be configured only when the target instance is RDS MySQL. This parameter is used to migrate or synchronize data across Alibaba Cloud accounts. You also need to enter the **destinationendpointrle** parameter.
 * `destination_endpoint_role` - (Optional, ForceNew) The role name of the Alibaba Cloud account to which the target instance belongs. This parameter must be entered when data migration or synchronization across Alibaba Cloud accounts is performed. For the permissions and authorization methods required by this role.
 * `dts_bis_label` - (Optional, ForceNew) The environment label of the DTS instance. The value is: **normal**, **online**.
+* `resource_group_id` - (Optional, Computed) The ID of the resource group. DTS manages the resource group at the instance level, so changing this value migrates the parent DTS instance to the target resource group.
+* `tags` - (Optional) The tags of the DTS instance. DTS manages tags at the instance level, so the tags are attached to the parent DTS instance of this synchronization job.
 
 -> **NOTE:** From the status of `NotStarted` to `Synchronizing`, the resource goes through the `Prechecking` and `Initializing` phases. Because of the `Initializing` phase takes too long, and once the resource passes to the status of `Prechecking`, it can be considered that the task can be executed normally. Therefore, we treat the status of `Initializing` as an equivalent to `Synchronizing`.
 
