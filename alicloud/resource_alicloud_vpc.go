@@ -789,7 +789,7 @@ func resourceAliCloudVpcVpcDelete(d *schema.ResourceData, meta interface{}) erro
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"DependencyViolation.VSwitch", "DependencyViolation.SecurityGroup", "IncorrectVpcStatus"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"DependencyViolation.VSwitch", "DependencyViolation.SecurityGroup", "DependencyViolation.RouterInterface", "DependencyViolation", "Forbidden.VpcInUse", "IncorrectVpcStatus"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
