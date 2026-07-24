@@ -3340,6 +3340,91 @@ func (s *EsaServiceV2) EsaRoutineStateRefreshFunc(id string, field string, failS
 	}
 }
 
+// DescribeEsaRoutineLatestCodeVersion returns the most recent committed code
+// version of a routine, or an empty string if the routine has no code version yet.
+func (s *EsaServiceV2) DescribeEsaRoutineLatestCodeVersion(name string) (string, error) {
+	client := s.client
+	action := "ListRoutineCodeVersions"
+	request := map[string]interface{}{
+		"Name":       name,
+		"PageNumber": 1,
+		"PageSize":   1,
+	}
+	var response map[string]interface{}
+	var err error
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("ESA", "2024-09-10", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return "", WrapErrorf(err, DefaultErrorMsg, name, action, AlibabaCloudSdkGoERROR)
+	}
+
+	versions, err := jsonpath.Get("$.CodeVersions", response)
+	if err != nil {
+		return "", nil
+	}
+	result, ok := versions.([]interface{})
+	if !ok || len(result) == 0 {
+		return "", nil
+	}
+	item, ok := result[0].(map[string]interface{})
+	if !ok {
+		return "", nil
+	}
+	if v, ok := item["CodeVersion"]; ok {
+		return fmt.Sprint(v), nil
+	}
+	return "", nil
+}
+
+// DescribeEsaRoutineCodeDeployment returns the current code deployment of a
+// routine for the given environment, extracted from the GetRoutine Envs list.
+// It returns a NotFoundError when the routine has no deployment for that env.
+func (s *EsaServiceV2) DescribeEsaRoutineCodeDeployment(name, env string) (object map[string]interface{}, err error) {
+	response, err := s.DescribeEsaRoutine(name)
+	if err != nil {
+		return object, err
+	}
+
+	envsRaw, err := jsonpath.Get("$.Envs", response)
+	if err != nil {
+		return object, WrapErrorf(NotFoundErr("Routine:CodeDeployment", name+":"+env), NotFoundMsg, response)
+	}
+	envs, ok := envsRaw.([]interface{})
+	if !ok {
+		return object, WrapErrorf(NotFoundErr("Routine:CodeDeployment", name+":"+env), NotFoundMsg, response)
+	}
+	for _, e := range envs {
+		item, ok := e.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		if fmt.Sprint(item["Env"]) != env {
+			continue
+		}
+		deploy, ok := item["CodeDeploy"].(map[string]interface{})
+		if !ok || deploy == nil {
+			return object, WrapErrorf(NotFoundErr("Routine:CodeDeployment", name+":"+env), NotFoundMsg, response)
+		}
+		if _, hasVersions := deploy["CodeVersions"]; !hasVersions {
+			return object, WrapErrorf(NotFoundErr("Routine:CodeDeployment", name+":"+env), NotFoundMsg, response)
+		}
+		return deploy, nil
+	}
+
+	return object, WrapErrorf(NotFoundErr("Routine:CodeDeployment", name+":"+env), NotFoundMsg, response)
+}
+
 // DescribeEsaRoutine >>> Encapsulated.
 
 // DescribeEsaRoutineRoute <<< Encapsulated get interface for Esa RoutineRoute.
