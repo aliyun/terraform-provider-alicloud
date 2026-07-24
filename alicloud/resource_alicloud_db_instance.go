@@ -75,6 +75,13 @@ func resourceAliCloudDBInstance() *schema.Resource {
 				Optional:         true,
 				DiffSuppressFunc: PostPaidDiffSuppressFunc,
 			},
+			"force_delete": {
+				Type:             schema.TypeBool,
+				Optional:         true,
+				Default:          false,
+				Description:      "Used to forcibly delete a 'PrePaid' RDS instance. When set to true, the instance is converted to 'PostPaid' before deletion, which settles the remaining subscription period. Set this explicitly when you need to destroy a Subscription DB instance.",
+				DiffSuppressFunc: PostPaidDiffSuppressFunc,
+			},
 			"monitoring_period": {
 				Type:         schema.TypeInt,
 				ValidateFunc: IntInSlice([]int{5, 10, 60, 300}),
@@ -2522,6 +2529,45 @@ func resourceAliCloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	return nil
 }
 
+// transformDBInstancePayTypeForDelete converts a Prepaid RDS instance to Postpaid before force deletion.
+// It mirrors the TransformDBInstancePayType orchestration used by Update, but forces PayType to Postpaid
+// so the subsequent DeleteDBInstance can proceed. The remaining subscription period is settled by the cloud.
+func transformDBInstancePayTypeForDelete(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	rdsService := RdsService{client}
+	action := "TransformDBInstancePayType"
+	request := map[string]interface{}{
+		"RegionId":     client.RegionId,
+		"DBInstanceId": d.Id(),
+		"PayType":      Postpaid,
+		"SourceIp":     client.SourceIp,
+	}
+	response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+	addDebug(action, response, request)
+	// Wait for instance status to recover to Running after the transform.
+	stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+	// Verify PayType has converged to Postpaid before deletion.
+	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		instance, err := rdsService.DescribeDBInstance(d.Id())
+		if err != nil {
+			return resource.NonRetryableError(err)
+		}
+		if PayType(instance["PayType"].(string)) == Postpaid {
+			return nil
+		}
+		return resource.RetryableError(Error("Waiting for RDS instance %s PayType to become Postpaid.", d.Id()))
+	}); err != nil {
+		return WrapError(err)
+	}
+	return nil
+}
+
 func resourceAliCloudDBInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	rdsService := RdsService{client}
@@ -2534,8 +2580,14 @@ func resourceAliCloudDBInstanceDelete(d *schema.ResourceData, meta interface{}) 
 		return WrapError(err)
 	}
 	if PayType(instance["PayType"].(string)) == Prepaid {
-		log.Printf("[WARN] Cannot destroy Subscription resource: alicloud_db_instance. Terraform will remove this resource from the state file, however resources may remain.")
-		return nil
+		force := d.Get("force_delete").(bool)
+		if !force {
+			log.Printf("[WARN] Cannot destroy Subscription resource: alicloud_db_instance. Terraform will remove this resource from the state file, however resources may remain. Set 'force_delete' to true to convert the instance to PostPaid before deletion.")
+			return nil
+		}
+		if err := transformDBInstancePayTypeForDelete(d, meta); err != nil {
+			return WrapError(err)
+		}
 	}
 	action := "DeleteDBInstance"
 	request := map[string]interface{}{
