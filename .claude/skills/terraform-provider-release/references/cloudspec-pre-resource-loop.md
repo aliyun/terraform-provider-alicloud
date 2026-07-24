@@ -17,6 +17,7 @@ bash bootstrap/cloudspec-core.sh doctor
 3. `cloudspec-resource-edit`，必要时配合 `cloudspec-operation-edit` / `cloudspec-flag-mode-edit`。
 4. `cloudspec-build-fix`：只在 build 失败时修编译问题。
 5. `cloudspec-norm-check-fix`：修复本次资源增量的规范问题。
+6. `cloudspec-resource-infer`：**仅当** cspec 里已有 CRUDL operations 但 resources/ 缺定义时使用（见 [新资源推断](cloudspec-new-resource-infer.md)）。
 
 插件来源和纳入范围锁在 `config/cloudspec-core.lock.json`。Marketplace hooks、MCP 和 telemetry 没有 vendoring；禁止为使用这些技能临时切到个人身份。
 
@@ -42,11 +43,54 @@ python3 .claude/skills/amp-resource-metadata/scripts/get_resource_type.py \
 
 | 结论 | 后续动作 |
 |---|---|
-| `PRE_CLOUDSPEC_ALIGNED` | 回填对齐证据，继续 provider release SOP |
-| `PRE_CLOUDSPEC_GAP` | 需求清楚且能从工单唯一确定目标定义，进入第 3 节修复闭环 |
+| `PRE_CLOUDSPEC_ALIGNED` | 先跑 [HCL 保留字硬门](#hcl-保留字硬门)。通过 → 回填对齐证据，继续 provider release SOP。命中 → 转入第 3 节改名 |
+| `PRE_CLOUDSPEC_GAP`（已有资源需扩展/订正） | 需求清楚且能从工单唯一确定目标定义，进入第 3 节修复闭环 |
+| `PRE_CLOUDSPEC_MISSING`（全新资源） | pre 完全没这资源。查 cspec `operations/`：<br>• CRUDL 5 件套齐 → 走 [新资源从存量 OpenAPI 推断](cloudspec-new-resource-infer.md)<br>• 缺 API → API 侧尚未建，走第 2 节人工会审 |
 | `PRE_REQUIREMENT_AMBIGUOUS` | 停止生成/编码，执行第 2 节人工会审通知 |
 
-不能因为 online 定义“看起来正确”就跳过 pre；禁止回退 online、缓存 Meta 或历史生成物。
+不能因为 online 定义”看起来正确”就跳过 pre；禁止回退 online、缓存 Meta 或历史生成物。
+
+### HCL 保留字硬门
+
+Terraform HCL 保留字**绝不能**作为顶层 schema 字段名——generator 直译，用户写 `provider = “openai”` 会被解析成 meta-argument，Terraform 找不到那个 provider 插件就在 Step 0 挂。
+
+保留字清单（Terraform SDK v1/v2 通用）：
+
+```
+provider  data  resource  variable  output  module  locals  terraform
+count     for_each  depends_on  lifecycle  connection  dynamic  self
+```
+
+pre 对齐时检查每个属性名（PascalCase 转 snake_case 后比对）：
+
+```bash
+python3 .claude/skills/amp-resource-metadata/scripts/get_resource_type.py \
+  --service-code <product_code> --resource-code <resource_code> --env pre \
+  | python3 -c 'import json,sys,re; d=json.load(sys.stdin);
+props=d.get(“Data”,{}).get(“Properties”,{})
+BAD={“provider”,”data”,”resource”,”variable”,”output”,”module”,”locals”,”terraform”,
+     “count”,”for_each”,”depends_on”,”lifecycle”,”connection”,”dynamic”,”self”}
+for k in props:
+    snake=re.sub(r”([A-Z])”,r”_\1”,k).lower().lstrip(“_”)
+    if snake in BAD: print(f”CLASH: {k} -> {snake}”)
+'
+```
+
+命中即 `PRE_CLOUDSPEC_GAP`，进入第 3 节，在 cspec 里改名（保持 `@backendName` 不动，API 契约不变）：
+
+```cspec
+# 冲突前
+@backendName(“provider”)
+Provider: string
+
+# 改为
+@backendName(“provider”)
+ModelProvider: string
+```
+
+同步改所有引用：
+- `resources/<R>.cspec` 里 `@operationMapping` 块的 `resourceProperty: “$.Provider”` → `$.ModelProvider`
+- `tests/*_test.cspec` 里所有 `Provider:` 字面量引用
 
 ## 2. 需求不明确时的人工会审
 
