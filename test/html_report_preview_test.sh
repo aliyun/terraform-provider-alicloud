@@ -116,10 +116,13 @@ PY
 
 echo "=== Test 1: upload local HTML and print absolute preview URL ==="
 make_fake_curl
+make_fake_a1id
 html="$tmpdir/report.html"
 printf '<html>ok</html>' > "$html"
 : > "$curl_log"
-output=$(CURL_LOG="$curl_log" JARVIS_CURL_BIN="$tmpbin/curl" JARVIS_HTML_REPORT_TOKEN="test-token" \
+: > "$a1_log"
+output=$(CURL_LOG="$curl_log" A1_LOG="$a1_log" JARVIS_CURL_BIN="$tmpbin/curl" \
+    JARVIS_A1_BIN="$tmpbin/a1id" JARVIS_HTML_REPORT_TOKEN="test-token" \
     bash "$proj_root/bootstrap/html-report-preview.sh" upload FAKE_AONE_ID "$html" --base-url https://pre.example 2>&1)
 exit_code=$?
 echo "$output"
@@ -127,6 +130,11 @@ if [ "$exit_code" -eq 0 ]; then assert_pass "upload exits 0"; else assert_fail "
 assert_contains "$output" "https://pre.example/reports/aone/FAKE_AONE_ID/rid-123/view" "upload prints absolute view URL"
 assert_file_contains "$curl_log" "file=@$html;type=text/html" "upload sends multipart file field"
 assert_file_contains "$curl_log" "https://pre.example/api/reports/aone/FAKE_AONE_ID" "upload posts to AutomationAgent server-token endpoint"
+if [ ! -s "$a1_log" ]; then
+    assert_pass "upload without --comment performs no Aone call"
+else
+    assert_fail "upload without --comment must not call Aone (log: $(cat "$a1_log"))"
+fi
 
 echo "=== Test 2: default base URL is pre-agent and JSONL records success state ==="
 : > "$curl_log"

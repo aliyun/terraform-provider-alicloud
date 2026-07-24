@@ -39,6 +39,11 @@ PD、RD、QA 在同一 headless run 内通过 Task 结构化返回协作，不�
 - QA 返回 pass/fail/blocked 与证据；fail 时内部退回 RD 修复并重新验证。
 - 最后必须再次 Task 起 terraform-rd 进入 finalizer 模式，汇总所有返回、审查
   `requested_external_actions`，只生成一条完整回复。
+- finalizer 读取 PD 的 `visual_evidence_manifest`，校验 OpenAPI、CloudSpec/ACube、Provider
+  三层证据后调用 `screenshot-evidence` 的 manifest 校验器，再上传一次报告。
+  `html-report-preview.sh upload` 不得传 `--comment`。executor 托管的 headless run 把报告链接
+  返回给编排层写入 `AONE_RESULT.reply_body`，不得自行调用 `wrap.sh`；独立 finalizer 才按
+  bookend 在唯一一次 `wrap.sh done` 中写出。
 - 旧公开接力格式仅由 bridge 读入兼容；新流程不得生成。
 
 内部统一返回字段：
@@ -48,6 +53,7 @@ internal_role: terraform-rd
 status: done | build_fail | test_fail | blocked | missing_capability
 summary: 本阶段结论
 evidence: [代码、构建、CI、PR/CR 证据]
+visual_evidence_manifest: PD 原样交接的三层截图 manifest 路径
 requested_external_actions: []
 next:
   role: terraform-qa | terraform-pd | terraform-rd-finalizer
@@ -55,9 +61,10 @@ next:
 reply_fragment: 可纳入最终回复的研发结论
 ```
 
-finalizer 的主处理回复必须覆盖：总论、PD 查证、RD 改动与链接、QA 证据、执行过的路由动作、
-未决项和下一步。MR/CR 链接只在这次最终聚合中同步，禁止中途回填。这不限制后续 PR merged/
-closed、CI 修复达上限或终态失败等重要事件由 RD-only publisher 幂等更新。
+finalizer 的主处理回复必须覆盖：总论、PD 查证、三层可视化查证报告、RD 改动与链接、QA 证据、
+执行过的路由动作、未决项和下一步。manifest 缺层或上传失败时返回 blocked/missing_capability，
+写明缺口，不得把无报告伪装成完整查证。MR/CR 链接只在这次最终聚合中同步，禁止中途回填。
+这不限制后续 PR merged/closed、CI 修复达上限或终态失败等重要事件由 RD-only publisher 幂等更新。
 
 ---
 

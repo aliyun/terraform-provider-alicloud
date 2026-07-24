@@ -20,13 +20,21 @@ bash bootstrap/html-report-preview.sh from-aone <aone-id>
 
 Useful options:
 
-- `--comment`: post the generated preview links back to the Aone work item.
+- `--comment`: post the generated preview links back to a non-Terraform Aone work item.
 - `--format jsonl`: emit machine-readable one-line JSON records.
 - `--attachment-id <id>`: upload one specific Aone attachment.
 - `--all`: upload all HTML/ZIP attachments from the Aone work item.
 - `--base-url <url>`: override `JARVIS_HTML_REPORT_BASE_URL`.
 
 Default target is preprod: `https://pre-agent.aliyun-inc.com`.
+
+### Terraform single-writer boundary
+
+For a Terraform main-processing run, PD/QA never upload. The RD finalizer uploads exactly once
+without `--comment`, captures the returned preview URL, and returns it in the only aggregate reply.
+When bridge executor owns the bookend, that link must go into `AONE_RESULT.reply_body`; the model run
+must not call `wrap.sh` or post any Aone comment. `--comment` is allowed only for non-Terraform
+workflows or an explicitly non-executor-managed context.
 
 ## Token Handling
 
@@ -76,7 +84,7 @@ record `viewer_copy=platform_blocked`; do not emulate the feature inside uploade
 
 ## Workflows
 
-For a local report:
+For a non-Terraform local report:
 
 ```bash
 bash bootstrap/html-report-preview.sh upload 83873535 /path/to/report.html --comment
@@ -91,6 +99,12 @@ bash bootstrap/html-report-preview.sh from-aone 83873535 --comment
 ```
 
 Without `--attachment-id` or `--all`, `from-aone` selects the newest `.html`, `.htm`, or `.zip` attachment. Aone operations must keep using `bin/a1id` through the helper's default `JARVIS_A1_BIN`.
+
+For a Terraform finalizer, omit `--comment` and hand the returned URL to the orchestrator:
+
+```bash
+bash bootstrap/html-report-preview.sh upload <aone-id> <report.html>
+```
 
 ## Link Rules
 

@@ -12,8 +12,9 @@ terraform-rd；你不是公开数字人，也不直接改变外部系统。
 1. 读取工单描述、附件和编排层提供的上下文，抽取 API、资源、字段与验收目标。
 2. 工单场景第一步调用 `aone-triage`，加载完整决策树、维护名单和关联单纪律。
 3. 依次查证 OpenAPI、CloudSpec 映射、Provider 源码与文档。
-4. 给出 high_conf / low_conf、路由建议、需由 RD 执行的外部动作提案。
-5. 生成可直接纳入最终回复的 `reply_fragment`，但不自行发出。
+4. 调用 `screenshot-evidence`，为三层查证生成本地截图与 `evidence-manifest.md`。
+5. 给出 high_conf / low_conf、路由建议、需由 RD 执行的外部动作提案。
+6. 生成可直接纳入最终回复的 `reply_fragment`，但不自行发出。
 
 ## 硬边界
 
@@ -23,6 +24,9 @@ terraform-rd；你不是公开数字人，也不直接改变外部系统。
 - 不跑 AccTest、不下验收结论；需要验证时在 `next` 指向 terraform-qa。
 - 路由动作全部写入 `requested_external_actions`，它们只是提案，必须由最终 RD 审查后执行。
 - 不输出公开接力标记；内部流转只依赖本次 Task 的结构化返回。
+- 截图只落 `.my-day/screenshots/<aone-id>/`；不得上传 OSS/pre-agent，不得使用会自动发
+  Aone 评论的上传模式。缺少浏览器能力时在 manifest 对应层写
+  `n-a + missing_capability`，不得静默省略。
 
 ## 查证流程
 
@@ -51,6 +55,13 @@ grep -n "<field_name>" <resource_file>.go
 核对 schema、Importer、Create/Read/Update/Delete、ID 组装和文档。`*_instances` 多半是数据源，
 不要误判为资源。
 
+### 4. 三层本地截图
+
+调用 `screenshot-evidence` 的 Terraform PD 阶段，对 OpenAPI、CloudSpec/ACube、Provider 三层
+分别截图，并生成 `.my-day/screenshots/<aone-id>/evidence-manifest.md`。每层必须有截图路径，
+或有明确的 N/A / missing_capability 原因；manifest 的绝对路径通过
+`visual_evidence_manifest` 交给编排层和最终 RD。
+
 ## 置信度
 
 | 结论 | 条件 |
@@ -70,6 +81,7 @@ evidence:
   - OpenAPI: 字段、类型、接口证据
   - CloudSpec: 映射与资源类型证据
   - Provider: 文件和行号证据
+visual_evidence_manifest: /absolute/path/.my-day/screenshots/<aone-id>/evidence-manifest.md
 requested_external_actions:
   - type: assign | status | create_related | relation | tag | final_reply
     proposal: 由最终 RD 执行的具体动作

@@ -81,6 +81,11 @@ Terraform 线由编排层在同一 run 内依次 Task 起 PD→RD→QA：PD 返�
 QA 独立验收；QA fail 内部退回 RD 修复后重跑。最后再 Task 起 RD finalizer，执行允许的路由动作
 并一次性回复。非 Terraform 线仍按技能原流程读取、查证、回复、打标、建需求或建 CR。
 
+Terraform PD 的三层查证还必须调用 `screenshot-evidence` 生成本地截图和
+`evidence-manifest.md`，但不得上传或回贴；RD finalizer 校验 manifest 后统一上传一次报告，
+上传命令不传 `--comment`，报告链接只进入本轮唯一聚合回复。三层缺失且无明确 N/A 原因时不得
+静默收尾。
+
 若单条工单进入 Terraform Provider 资源开发且不走自动化生成链路，按 `tf_provider` 池创建或复用
 **terraform-alicloud** 内部研发单（项目 `528766`），指派按 aone-triage skill
 `references/tf-customer-request-routing.md` 分工表路由到具体人，并与客户主单双向关联。路由动作由
@@ -158,8 +163,8 @@ Jarvis 不会自动触发 release_prod。预发验收通过后，由工程师手
 | `bootstrap/plan.sh` | 出执行计划；supervised 退码 2 等待授权（bridge/serve 流程用） |
 | `bootstrap/log.sh seen` | 去重检查 |
 | `bootstrap/log.sh run_done` | 记录完成 |
-| `bootstrap/wrap.sh sync/done` | Aone 回填与收尾；Terraform 主处理 run 禁用 sync、只由 RD finalizer done 一次；后续重要事件走 bridge RD-only event publisher |
-| `bootstrap/html-report-preview.sh upload/from-aone` | 仅非 Terraform 流程可上传 HTML/zip/Aone 附件报告；`--comment` 也仅限非 Terraform。Terraform QA 只返回本地路径或已有链接，不上传、不回贴 |
+| `bootstrap/wrap.sh sync/done` | Aone 回填与收尾；控制面 Terraform 主处理 run 内禁用（RD finalizer 返回 `AONE_RESULT.reply_body`，由 executor 单次落账）；独立非 executor finalizer 才 done 一次，后续重要事件走 bridge RD-only event publisher |
+| `bootstrap/html-report-preview.sh upload/from-aone` | 非 Terraform 可端到端上传并按需使用 `--comment`；Terraform PD/QA 只返回本地路径，不上传、不回贴，RD finalizer 可统一上传一次但不得传 `--comment`，预览链接只进入唯一聚合回复 |
 | `bootstrap/claim.sh claim <id> <project>` | 认领工作项；退码 1 = 输了跳过，退码 3 = 缺必填字段，需经 `aone-fields.sh` 挑合法值回填后重试；其它 update 失败直接上抛，不误报 lost race。认领成功还会把 Aone status 从起始态推进到该池进行中状态，best-effort 非阻断 |
 | `bootstrap/aone-fields.sh missing <id>` | 列出当前为空的必填自定义字段；field-list options 为空时补查 field options API，输出合法候选，不自动选值 |
 | `bootstrap/aone-fields.sh fill <id> <fieldId>=<value> …` | 回填 agent 已明确选择的字段值（重复 `--cfs`）；拒绝空值/非法参数 |

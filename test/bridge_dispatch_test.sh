@@ -468,6 +468,30 @@ class TicketPromptTest(unittest.TestCase):
         self.assertIn("claim", prompt)
         self.assertIn("SUSPEND", prompt)
 
+    def test_terraform_prompt_requires_three_layer_visual_evidence(self):
+        prompt = b._ticket_prompt("83902495", "F2 dispatcher", "tf_provider", "528766")
+        for term in (
+                "visual_evidence_manifest", "OpenAPI", "CloudSpec/ACube", "Provider",
+                "screenshot-evidence", "validate-manifest.py",
+                "AONE_RESULT.reply_body", "严禁传 `--comment`",
+                "禁止 claim/wrap/release/直接评论"):
+            self.assertIn(term, prompt)
+
+    def test_non_terraform_prompt_does_not_inject_visual_evidence_contract(self):
+        prompt = b._ticket_prompt("83902495", "ordinary", "api_toolkit", "2100304")
+        self.assertNotIn("visual_evidence_manifest", prompt)
+        self.assertNotIn("Terraform 三层可视化证据契约", prompt)
+
+    def test_persona_resume_from_any_role_requires_pd_manifest_before_finalizer(self):
+        for role in ("terraform-pd", "terraform-rd", "terraform-qa"):
+            with self.subTest(role=role):
+                prompt = b._persona_prompt(
+                    "83902495", role, "continue", "note", 2, "snippet")
+                self.assertIn("visual_evidence_manifest", prompt)
+                self.assertIn("缺失或无效时先补起 terraform-pd", prompt)
+                self.assertIn("AONE_RESULT.reply_body", prompt)
+                self.assertIn("严禁传 `--comment`", prompt)
+
 
 class ProbePromptTest(unittest.TestCase):
     """_probe_prompt: 硬编码「mode=draft 人审后建单」已删除, 处置权交回 SKILL Step C/D +
@@ -1114,6 +1138,12 @@ class NoDingtalkDegradedTest(unittest.TestCase):
                         "Terraform wake 必须保留 Terraform 身份车道")
         self.assertIn("[[AONE_RESULT:", envelope.payload["prompt"],
                       "wake prompt 必须重申 executor bookend 结果契约")
+        self.assertIn("visual_evidence_manifest", envelope.payload["prompt"],
+                      "Terraform wake 必须恢复三层截图 manifest 契约")
+        self.assertIn("AONE_RESULT.reply_body", envelope.payload["prompt"],
+                      "Terraform wake 的报告链接必须交 executor 单次落账")
+        self.assertIn("严禁传 `--comment`", envelope.payload["prompt"],
+                      "Terraform wake 上传报告不得产生第二条工单评论")
         self.assertNotIn("[BROADCAST]", "\n".join(cm.output))
         self.assertIn("进入唤醒队列", "\n".join(cm.output))
 
