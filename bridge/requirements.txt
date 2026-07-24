@@ -1,0 +1,2 @@
+# Runtime dependencies for bridge/run.sh.
+PyYAML==6.0.2

@@ -20,7 +20,7 @@ from bridge.jarvis_field_repair import (  # noqa: E402
 from bridge.jarvis_task_client import TaskEnvelope  # noqa: E402
 from bridge.jarvis_task_router import EnqueueResult  # noqa: E402
 from bridge import jarvis_dingtalk_bot as bot  # noqa: E402
-from bridge.scheduler.runners.aone import AoneRuntime  # noqa: E402
+from bridge.aone_workitems import AoneRuntime  # noqa: E402
 
 
 def continuation(revision="modified:2026-07-23T08:00:00Z"):

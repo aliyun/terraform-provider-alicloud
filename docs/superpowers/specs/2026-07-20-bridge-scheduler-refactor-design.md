@@ -22,7 +22,7 @@ definition 注册、计划、slot 准入、执行、终态、心跳和有界停�
 
 ```mermaid
 flowchart LR
-  Y["jobs.py / JOBS\n唯一 Job 定义"] --> R["definition / capability validation"]
+  Y["jobs.yaml\n唯一 Job 定义"] --> R["jobs.py 校验 / definition 加载"]
   R --> S["SchedulerService\nworker=bridge-scheduler"]
   S --> E["SchedulerEngine\nplan + admission + terminal"]
   E --> X["runner\n单次业务 tick / Headless"]
@@ -39,7 +39,7 @@ flowchart LR
 
 ## 3. Job 定义与 runner 契约
 
-唯一 Job 定义：`bridge/scheduler/jobs.py` 的 `JOBS` 元组。计划频率只在 Python 定义中声明；旧的
+唯一 Job 定义：`bridge/scheduler/jobs.yaml`。`jobs.py` 只负责严格校验、加载为运行时 definition；计划频率只在 YAML 中声明；旧的
 `JARVIS_SCAN_INTERVAL`、`JARVIS_MANAGED_WAIT_SENSOR_SEC`、`JARVIS_CLAIM_HEALTH_INTERVAL_SEC`、
 `JARVIS_PRWATCH_INTERVAL`、`JARVIS_EXTERNAL_RECOVERY_INTERVAL` 不再控制新 Scheduler cadence。
 对应的 enable 开关仍是业务 kill switch，但不会改变控制面 definition。
@@ -85,11 +85,11 @@ fail-closed。`JobResult` 仅允许 `SUCCEEDED`、`RETRYABLE_FAILURE`、`PERMANE
 | --- | --- | --- | --- |
 | 领域职责 | 新 Job | runner | 保留的业务状态 |
 | --- | --- | --- | --- |
-| Aone 扫描 | `aone.scan` | `runners/aone.py` | 快照、Task 去重、事件 ledger |
-| Claim 健康检查 | `aone.claim-health` | `runners/aone.py` | claim 观察与控制面 cursor |
-| 每日催办 | `daily.nudge` | `runners/aone.py` | idle 选择与催办 event ledger |
+| Aone 扫描 | `aone.scan` | `runners/scan.py` | 快照、Task 去重、事件 ledger |
+| Claim 健康检查 | `aone.claim-health` | `runners/claim_health.py` | claim 观察与控制面 cursor |
+| 每日催办 | `daily.nudge` | `runners/daily_nudge.py` | idle 选择与催办 event ledger |
 | Aone 回复唤醒 | `aone.reply` | `runners/reply.py` | 仅本地 read throttle；控制面 wait cursor 为真源 |
-| PR 生命周期 | `pr.watch` | `runners/pr.py` | PR 注册表与 per-head 去重 |
+| PR 生命周期 | `pr.watch` | `runners/pr_watch.py` | PR 注册表与 per-head 去重 |
 | 外部回执收敛 | `external.recovery` | `runners/recovery.py` | recovery token、分页 cursor |
 
 runner 不创建常驻线程或自行 sleep；daily slot 的幂等与补跑由控制面负责。
@@ -148,16 +148,19 @@ bridge/
   main.py                         # SchedulerService composition root + role fence
   task_worker.py                  # 独立 Persistent Task Worker composition root
   headless_runtime.py             # Headless 执行窄接口
-  task_runtime.py                 # 持久 Task / wake / bookend 执行边界
+  persistent_tasks.py             # 持久 Task / wake / bookend 执行边界
   scheduler/
     model.py                      # Job / schedule / runner / result
-    jobs.py                       # 七个显式 Job 定义
+    jobs.yaml                     # 七个显式 Job 定义
+    jobs.py                       # YAML 校验与加载
     engine.py                     # 计划、准入、执行与终态提交
     control_plane_client.py        # AutomationAgent HTTP 边界
     service.py                     # 固定 Worker、心跳、READY 与 drain
     runners/
-      aone.py                     # scan / claim-health / nudge
-      pr.py                        # PR watch
+      scan.py                     # aone.scan
+      claim_health.py             # aone.claim-health
+      daily_nudge.py              # daily.nudge
+      pr_watch.py                 # PR watch
       reply.py                     # Aone reply wake
       recovery.py                  # 外部回执收敛
       daily_probe.py               # 显式禁用的 daily probe

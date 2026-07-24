@@ -29,6 +29,7 @@ from ..model import (
 
 
 JOB_KEY = "daily.probe"
+RUNNER_KEY = "daily_probe"
 PROTOCOL = "probe-result-v1"
 _SHANGHAI = ZoneInfo("Asia/Shanghai")
 _RESULT_RE = re.compile(r"\[\[PROBE_RESULT:(.*?)\]\]", re.DOTALL)

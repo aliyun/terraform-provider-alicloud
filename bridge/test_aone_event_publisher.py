@@ -7,8 +7,8 @@ import unittest
 from pathlib import Path
 
 from bridge import jarvis_dingtalk_bot as bot
-from bridge import task_runtime
-from bridge.scheduler.runners import aone as publisher
+from bridge import persistent_tasks
+from bridge import aone_events as publisher
 
 TID = "90000001"
 PROJ = "528766"
@@ -366,9 +366,9 @@ class RevisitDispatchTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.orig_runner = bot.run_claude_buffered
-        self.orig_publish = task_runtime._aone_event_enqueue
+        self.orig_publish = persistent_tasks._aone_event_enqueue
         self.events = []
-        task_runtime._aone_event_enqueue = lambda *args, **kwargs: (
+        persistent_tasks._aone_event_enqueue = lambda *args, **kwargs: (
             self.events.append(args) or True)
 
         class FakeSelf:
@@ -390,7 +390,7 @@ class RevisitDispatchTest(unittest.TestCase):
 
     def tearDown(self):
         bot.run_claude_buffered = self.orig_runner
-        task_runtime._aone_event_enqueue = self.orig_publish
+        persistent_tasks._aone_event_enqueue = self.orig_publish
         self.tmp.cleanup()
 
     def run_revisit(self, final):

@@ -13,7 +13,8 @@ from bridge.scheduler.model import (
     HandlerRunner, IntervalSchedule, MisfirePolicy, ScheduledJobDefinition,
 )
 from bridge.scheduler.runners import build_runners
-from bridge.scheduler.runners import aone, pr
+from bridge.scheduler.runners import claim_health, daily_nudge, scan
+from bridge.scheduler.runners import pr_watch as pr
 
 
 UTC = timezone.utc
@@ -44,16 +45,16 @@ class SchedulerRuntimeRunnerTests(unittest.TestCase):
             repo_root=Path("/repo"),
         )
 
-        self.assertIsInstance(runners["aone.scan"], aone.AoneScanRunner)
+        self.assertIsInstance(runners["scan"], scan.ScanRunner)
         self.assertIsInstance(
-            runners["aone.claim-health"], aone.AoneClaimHealthRunner)
-        self.assertIsInstance(runners["daily.nudge"], aone.DailyNudgeRunner)
-        self.assertIsInstance(runners["pr.watch"], pr.PrWatchRunner)
+            runners["claim_health"], claim_health.ClaimHealthRunner)
+        self.assertIsInstance(runners["daily_nudge"], daily_nudge.DailyNudgeRunner)
+        self.assertIsInstance(runners["pr_watch"], pr.PrWatchRunner)
 
     def test_nudge_runner_invokes_one_job(self):
         job = SimpleNamespace(enabled=True, calls=0)
         job.run = lambda: setattr(job, "calls", job.calls + 1)
-        runner = aone.DailyNudgeRunner(job)
+        runner = daily_nudge.DailyNudgeRunner(job, logging.getLogger(__name__))
 
         result = runner.run(definition("daily.nudge"), datetime.now(UTC))
 
@@ -63,7 +64,7 @@ class SchedulerRuntimeRunnerTests(unittest.TestCase):
     def test_aone_scan_runs_one_tick(self):
         runtime = SimpleNamespace(calls=0)
         runtime._tick = lambda: setattr(runtime, "calls", runtime.calls + 1)
-        runner = aone.AoneScanRunner("aone.scan", runtime)
+        runner = scan.ScanRunner(runtime)
 
         result = runner.run(definition("aone.scan"), datetime.now(UTC))
 
@@ -76,15 +77,15 @@ class SchedulerRuntimeRunnerTests(unittest.TestCase):
         runtime._scan_claimed = lambda: order.append("scan") or {"one": {}}
         runtime._reconcile_stale_claims = lambda snapshot: order.append(
             "reconcile:%s" % sorted(snapshot))
-        runner = aone.AoneClaimHealthRunner("aone.claim-health", runtime)
         with TemporaryDirectory() as directory, \
-             mock.patch.object(aone, "REPO_ROOT", Path(directory)), \
              mock.patch.object(
-                 aone, "_aone_event_flush",
+                 claim_health, "_aone_event_flush",
                  side_effect=lambda: order.append("aone-flush")), \
              mock.patch.object(
-                 aone, "_dingtalk_event_flush",
+                 claim_health, "_dingtalk_event_flush",
                  side_effect=lambda: order.append("dingtalk-flush")):
+            runner = claim_health.ClaimHealthRunner(
+                runtime, Path(directory), logging.getLogger(__name__))
             result = runner.run(
                 definition("aone.claim-health"), datetime.now(UTC))
 

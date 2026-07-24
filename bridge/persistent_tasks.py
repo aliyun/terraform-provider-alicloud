@@ -1,4 +1,4 @@
-"""Durable Task creation, execution translation, and process fencing."""
+"""Persistent Task creation, execution translation, and process fencing."""
 
 from __future__ import annotations
 
@@ -65,8 +65,6 @@ _AONE_BEARER_RE = re.compile(r"(?i)\bbearer\s+[a-z0-9._~+/=-]{8,}")
 _AONE_BASIC_RE = re.compile(r"(?i)\bbasic\s+[a-z0-9+/=._~-]{8,}")
 _AONE_ACCESS_KEY_RE = re.compile(r"\b(?:LTAI|AKID)[A-Za-z0-9]{12,}\b")
 _RESOURCE_ID_RE = re.compile(r"\b(?:i|r|s|d|m|g|e|lb|slb|alb|nlb|vpc|vsw|sg|eni|eip|db|rm|rds|redis|cluster|instance|cen|cbwp|cbn|nat|vpn|vco|vgw|acl|cr|pc|pgm|dds|mongodb|es|cs|ack|k8s)-[A-Za-z0-9][A-Za-z0-9._:-]{4,}\b", re.IGNORECASE)
-_AONE_EVENT_DIGEST_RE = re.compile(r"^[0-9a-f]{24}$")
-_AONE_EVENT_LOCK = threading.RLock()
 
 
 def _a1_command_env(terraform=False):
@@ -144,54 +142,12 @@ def _is_human_comment(author, content=""):
                 and not str(content or "").strip().lower().startswith("jarvis-claim"))
 
 
-def _event_path():
-    return REPO_ROOT / ".my-day/bridge/aone-event-ledger.json"
-
-
-def _event_load():
-    try:
-        value = json.loads(_event_path().read_text())
-        return {key: value.get(key, {}) if isinstance(value, dict) else {}
-                for key in ("pending", "posted")}
-    except Exception:  # noqa: BLE001
-        return {"pending": {}, "posted": {}}
-
-
-def _event_write(value):
-    try:
-        path = _event_path()
-        path.parent.mkdir(parents=True, exist_ok=True)
-        temporary = path.with_name(path.name + ".tmp")
-        temporary.write_text(json.dumps(value, ensure_ascii=False, default=str))
-        os.replace(temporary, path)
-        return True
-    except Exception as exc:  # noqa: BLE001
-        log.warning("aone event ledger write failed: %s", exc)
-        return False
-
-
 def _aone_event_enqueue(ticket, project, event_key, text, allow_non_tf=False,
                         identity=None):
-    """Persist-before-send Aone comment delivery for Task-owned lifecycle events."""
-    ticket, project = str(ticket or ""), str(project or "")
-    body = _aone_event_sanitize_text(text)
-    digest = hashlib.sha256(str(event_key or "").encode()).hexdigest()[:24]
-    if not ticket.isdigit() or not project or not body or not _AONE_EVENT_DIGEST_RE.fullmatch(digest):
-        return False
-    ledger_id = "v1:" + hashlib.sha256((ticket + "\0" + digest).encode()).hexdigest()[:32]
-    marker = "[[JARVIS-EVENT:v1:%s]]" % digest
-    record = {"ticket": ticket, "project": project, "event_digest": digest,
-              "text": body, "marker": marker, "allow_non_tf": bool(allow_non_tf),
-              "identity": str(identity or PERSONA_PUBLIC_IDENTITY), "state": "pending"}
-    with _AONE_EVENT_LOCK:
-        ledger = _event_load()
-        if ledger_id in ledger["posted"]:
-            return True
-        ledger["pending"].setdefault(ledger_id, record)
-        # The scheduler's single event publisher performs remote marker checks and the
-        # create transition.  The worker only writes the durable handoff, preventing a
-        # scheduler restart or dual worker from opening a second remote-write path.
-        return _event_write(ledger)
+    """Hand Task-owned events to the single durable Aone event ledger."""
+    from bridge.aone_events import _aone_event_enqueue as enqueue
+    return enqueue(ticket, project, event_key, text,
+                   allow_non_tf=allow_non_tf, identity=identity)
 
 
 def _attention_owner_staff_id(value):

@@ -12,10 +12,10 @@ from typing import Any, TYPE_CHECKING
 
 from bridge.jarvis_task_router import ExecutionRouter
 if TYPE_CHECKING:
-    from bridge.task_runtime import WakePersistence
+    from bridge.persistent_tasks import WakePersistence
 
 from ..model import JobResult, JobResultStatus, ScheduledJobDefinition, is_aware
-from .aone import (
+from bridge.aone_workitems import (
     AoneRuntime,
     HEADLESS_POLICY_REVISION,
     REPO_ROOT,
@@ -25,7 +25,8 @@ from .aone import (
 )
 
 
-RUNNER_KEY = "aone.reply"
+JOB_KEY = "aone.reply"
+RUNNER_KEY = "reply"
 WAIT_TIERS = ((30 * 60, 120), (2 * 3600, 600), (float("inf"), 1800))
 
 
@@ -43,7 +44,7 @@ class ReplyRunner:
     @property
     def _wake_persistence(self) -> WakePersistence:
         if self._wake is None:
-            from bridge.task_runtime import WakePersistence
+            from bridge.persistent_tasks import WakePersistence
             router = ExecutionRouter(client=self._task_client, logger=self._logger)
             self._wake = WakePersistence(
                 execution_router=router,
@@ -163,7 +164,7 @@ class ReplyRunner:
 
     def run(self, definition: ScheduledJobDefinition,
             scheduled_for: datetime) -> JobResult:
-        if definition.id != RUNNER_KEY:
+        if definition.id != JOB_KEY:
             return JobResult(JobResultStatus.PERMANENT_FAILURE,
                              error="aone.reply runner received mismatched definition")
         if not is_aware(scheduled_for):

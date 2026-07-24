@@ -19,9 +19,10 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from bridge import jarvis_dingtalk_bot as bot
-from bridge import task_runtime as task_runtime_module
-from bridge.scheduler.runners import aone
-from bridge.scheduler.runners import pr
+from bridge import persistent_tasks as persistent_tasks_module
+from bridge import aone_workitems as aone
+from bridge import aone_events as events
+from bridge.scheduler.runners import pr_watch as pr
 from bridge.jarvis_persistence_executor import SessionController
 from bridge.jarvis_task_router import EnqueueResult
 
@@ -2188,16 +2189,16 @@ class ModelProviderFailureRoutingTest(unittest.TestCase):
             stderr="gateway down")
         with tempfile.TemporaryDirectory() as tmp, \
              mock.patch.object(
-                 aone, "DINGTALK_EVENT_PATH", Path(tmp) / "dingtalk.json"), \
-             mock.patch.object(aone, "_is_terraform_project", return_value=True), \
-             mock.patch.object(aone.subprocess, "run", return_value=failed) as run:
-            first = aone._dingtalk_event_enqueue(
+                 events, "DINGTALK_EVENT_PATH", Path(tmp) / "dingtalk.json"), \
+             mock.patch.object(events, "_is_terraform_project", return_value=True), \
+             mock.patch.object(events.subprocess, "run", return_value=failed) as run:
+            first = events._dingtalk_event_enqueue(
                 "82952290", "1086837", "dispatch-model-provider:ticket:stable",
                 "320687", "Jarvis 模型提供方故障", "safe operator recovery")
-            second = aone._dingtalk_event_enqueue(
+            second = events._dingtalk_event_enqueue(
                 "82952290", "1086837", "dispatch-model-provider:ticket:stable",
                 "320687", "Jarvis 模型提供方故障", "safe operator recovery")
-            ledger = aone._dingtalk_event_load()
+            ledger = events._dingtalk_event_load()
         self.assertTrue(first)
         self.assertTrue(second)
         self.assertEqual(run.call_count, 1, "backoff suppresses immediate duplicate transport")
@@ -2278,13 +2279,13 @@ class TaskBookendDispatchTest(unittest.TestCase):
         h._dispatch_failed = lambda *a, **k: calls.setdefault("failed", a)
         with mock.patch.object(bot, "run_claude_buffered",
                                return_value=bot.ClaudeResult(final, False, "success")), \
-             mock.patch.object(task_runtime_module, "_claim_workitem",
+             mock.patch.object(persistent_tasks_module, "_claim_workitem",
                                side_effect=lambda *a, **k: calls.setdefault("claim", a)), \
-             mock.patch.object(task_runtime_module, "_aone_event_enqueue",
+             mock.patch.object(persistent_tasks_module, "_aone_event_enqueue",
                                side_effect=lambda *a, **k: calls.setdefault("reply", (a, k)) or True), \
-             mock.patch.object(task_runtime_module, "_finish_workitem",
+             mock.patch.object(persistent_tasks_module, "_finish_workitem",
                                side_effect=lambda *a, **k: calls.setdefault("finish", a)), \
-             mock.patch.object(task_runtime_module, "_release_post_pr_claim",
+             mock.patch.object(persistent_tasks_module, "_release_post_pr_claim",
                                side_effect=lambda *a, **k: calls.setdefault("release", a)):
             out = h.dispatch_item(
                 "84407231", "prompt", "sid", False, lambda _t: None,
@@ -2317,8 +2318,8 @@ class TaskBookendDispatchTest(unittest.TestCase):
             "https://code.example/cr/123",
             "https://code.example/mr/456",
         ]
-        with mock.patch.object(task_runtime_module, "_aone_event_enqueue", return_value=True) as enqueue, \
-             mock.patch.object(task_runtime_module, "_release_post_pr_claim"):
+        with mock.patch.object(persistent_tasks_module, "_aone_event_enqueue", return_value=True) as enqueue, \
+             mock.patch.object(persistent_tasks_module, "_release_post_pr_claim"):
             bookend.commit({
                 "outcome": "idle",
                 "reply_body": "修复已完成",
@@ -2328,7 +2329,7 @@ class TaskBookendDispatchTest(unittest.TestCase):
         self.assertEqual(
             queued,
             "修复已完成\n\n关联：%s" % " ".join(links))
-        public = aone._aone_event_prepare_text(queued)
+        public = events._aone_event_prepare_text(queued)
         for link in links:
             self.assertIn("[%s](%s)" % (link, link), public)
         self.assertNotIn("关联：https://", public)
@@ -2380,14 +2381,14 @@ class TaskBookendDispatchTest(unittest.TestCase):
         ctrl = self._controller()
         ctrl.bind_process = mock.Mock()
         process = object()
-        with mock.patch.object(task_runtime_module, "_claim_workitem") as claim:
+        with mock.patch.object(persistent_tasks_module, "_claim_workitem") as claim:
             comment = bot._TaskAoneBookend(
                 ctrl, "84407231", "1086837", True, "ticket",
                 expected_comment_cursor="124900001")
             comment.bind_process(process)
             claim.assert_called_once_with(
                 "84407231", "1086837", terraform=True, reopen_done=True)
-        with mock.patch.object(task_runtime_module, "_claim_workitem") as claim:
+        with mock.patch.object(persistent_tasks_module, "_claim_workitem") as claim:
             ordinary = bot._TaskAoneBookend(
                 ctrl, "84407231", "1086837", True, "ticket")
             ordinary.bind_process(process)
@@ -2457,9 +2458,9 @@ class TaskBookendDispatchTest(unittest.TestCase):
             ctrl, "84407231", "1086837", True, "ticket",
             comment_reader=lambda: next(comments), handoff_writer=write_handoff)
         bookend.capture_comment_baseline()
-        with mock.patch.object(task_runtime_module, "_aone_event_enqueue",
+        with mock.patch.object(persistent_tasks_module, "_aone_event_enqueue",
                                side_effect=lambda *a, **k: order.append("reply") or True), \
-             mock.patch.object(task_runtime_module, "_release_post_pr_claim",
+             mock.patch.object(persistent_tasks_module, "_release_post_pr_claim",
                                side_effect=lambda *a, **k: order.append("release")):
             self.assertTrue(bookend.commit(
                 {"outcome": "idle", "reply_body": "current generation done"}))
@@ -2477,8 +2478,8 @@ class TaskBookendDispatchTest(unittest.TestCase):
             self._controller(), "84407231", "1086837", True, "ticket",
             comment_reader=lambda: comment, handoff_writer=handed_off.append)
         bookend.capture_comment_baseline()
-        with mock.patch.object(task_runtime_module, "_aone_event_enqueue", return_value=True), \
-             mock.patch.object(task_runtime_module, "_release_post_pr_claim") as release:
+        with mock.patch.object(persistent_tasks_module, "_aone_event_enqueue", return_value=True), \
+             mock.patch.object(persistent_tasks_module, "_release_post_pr_claim") as release:
             self.assertFalse(bookend.commit(
                 {"outcome": "idle", "reply_body": "no new comment"}))
         self.assertEqual(handed_off, [])
@@ -2496,8 +2497,8 @@ class TaskBookendDispatchTest(unittest.TestCase):
             self._controller(), "84407231", "1086837", True, "ticket",
             comment_reader=lambda: next(comments), handoff_writer=fail_handoff)
         bookend.capture_comment_baseline()
-        with mock.patch.object(task_runtime_module, "_aone_event_enqueue") as reply, \
-             mock.patch.object(task_runtime_module, "_release_post_pr_claim") as release:
+        with mock.patch.object(persistent_tasks_module, "_aone_event_enqueue") as reply, \
+             mock.patch.object(persistent_tasks_module, "_release_post_pr_claim") as release:
             with self.assertRaisesRegex(RuntimeError, "paused"):
                 bookend.commit({"outcome": "idle", "reply_body": "must not land"})
         reply.assert_not_called()
@@ -2541,9 +2542,9 @@ class TaskBookendDispatchTest(unittest.TestCase):
                                return_value=bot.ClaudeResult(
                                    '[[AONE_RESULT:{"outcome":"idle","reply_body":"x"}]]',
                                    False, "success")), \
-             mock.patch.object(task_runtime_module, "_aone_event_enqueue",
+             mock.patch.object(persistent_tasks_module, "_aone_event_enqueue",
                                side_effect=lambda *a, **k: calls.setdefault("reply", k) or True), \
-             mock.patch.object(task_runtime_module, "_release_post_pr_claim", lambda *a, **k: None):
+             mock.patch.object(persistent_tasks_module, "_release_post_pr_claim", lambda *a, **k: None):
             out = h.dispatch_item(
                 "999", "p", "sid", False, lambda _t: None, "tgt", "group",
                 project="2100304", kind="ticket", terraform=False,
@@ -2613,7 +2614,7 @@ class TaskWaitingHumanAttentionTest(unittest.TestCase):
             "unresolved": "需要确认发布范围",
             "suspend_wait_for": "新山",
         }
-        with mock.patch.object(task_runtime_module, "_aone_event_enqueue", return_value=True):
+        with mock.patch.object(persistent_tasks_module, "_aone_event_enqueue", return_value=True):
             self.assertFalse(bookend.commit(result))
             self.assertFalse(bookend.commit(result))
 
@@ -2661,14 +2662,14 @@ class TaskWaitingHumanAttentionTest(unittest.TestCase):
     def test_bind_clears_wait_attention_but_post_pr_bind_does_not(self):
         bookend, client, _notices = self._bookend()
         client.current["603"] = ("320687", "task-waiting-human:603:6")
-        with mock.patch.object(task_runtime_module, "_claim_workitem"):
+        with mock.patch.object(persistent_tasks_module, "_claim_workitem"):
             bookend.bind_process(object())
         self.assertEqual(client.clears, [("603", "task-waiting-human:")])
         self.assertNotIn("603", client.current)
 
         post_pr, post_client, _ = self._bookend(writes_reply=False)
         post_client.current["603"] = ("320687", "pr-review")
-        with mock.patch.object(task_runtime_module, "_claim_workitem"):
+        with mock.patch.object(persistent_tasks_module, "_claim_workitem"):
             post_pr.bind_process(object())
         self.assertEqual(post_client.clears, [])
         self.assertIn("603", post_client.current)
@@ -2677,12 +2678,12 @@ class TaskWaitingHumanAttentionTest(unittest.TestCase):
         for outcome in ("done", "idle"):
             with self.subTest(outcome=outcome):
                 bookend, client, _notices = self._bookend()
-                with mock.patch.object(task_runtime_module, "_claim_workitem"):
+                with mock.patch.object(persistent_tasks_module, "_claim_workitem"):
                     bookend.bind_process(object())
                 client.current["603"] = ("320687", "pr-review-after-bind")
-                with mock.patch.object(task_runtime_module, "_aone_event_enqueue", return_value=True), \
-                     mock.patch.object(task_runtime_module, "_finish_workitem"), \
-                     mock.patch.object(task_runtime_module, "_release_post_pr_claim"):
+                with mock.patch.object(persistent_tasks_module, "_aone_event_enqueue", return_value=True), \
+                     mock.patch.object(persistent_tasks_module, "_finish_workitem"), \
+                     mock.patch.object(persistent_tasks_module, "_release_post_pr_claim"):
                     bookend.commit({"outcome": outcome, "reply_body": "完成"})
                 self.assertEqual(
                     client.clears, [("603", "task-waiting-human:")])
@@ -2692,7 +2693,7 @@ class TaskWaitingHumanAttentionTest(unittest.TestCase):
     def test_bind_clear_failure_fails_closed_before_aone_claim(self):
         bookend, client, _notices = self._bookend()
         client.fail_clear = True
-        with mock.patch.object(task_runtime_module, "_claim_workitem") as claim:
+        with mock.patch.object(persistent_tasks_module, "_claim_workitem") as claim:
             with self.assertRaisesRegex(RuntimeError, "cleanup failed"):
                 bookend.bind_process(object())
         claim.assert_not_called()
@@ -2718,7 +2719,7 @@ class TaskWaitingHumanAttentionTest(unittest.TestCase):
     def test_persist_failure_fails_suspend_closed(self):
         bookend, client, _notices = self._bookend()
         client.fail_upsert = True
-        with mock.patch.object(task_runtime_module, "_aone_event_enqueue", return_value=True):
+        with mock.patch.object(persistent_tasks_module, "_aone_event_enqueue", return_value=True):
             with self.assertRaisesRegex(RuntimeError, "projection was not persisted"):
                 bookend.commit({
                     "outcome": "suspend", "reply_body": "等待",
@@ -2728,7 +2729,7 @@ class TaskWaitingHumanAttentionTest(unittest.TestCase):
     def test_notification_failure_does_not_fail_persisted_suspend(self):
         bookend, client, _notices = self._bookend()
         bookend._attention.notifier = mock.Mock(side_effect=RuntimeError("dingtalk down"))
-        with mock.patch.object(task_runtime_module, "_aone_event_enqueue", return_value=True):
+        with mock.patch.object(persistent_tasks_module, "_aone_event_enqueue", return_value=True):
             self.assertFalse(bookend.commit({
                 "outcome": "suspend", "reply_body": "等待",
                 "suspend_wait_for": "320687",
@@ -2773,13 +2774,13 @@ class PostPrRerouteDispatchTest(unittest.TestCase):
                                           "JARVIS_DISPATCH_RETRY_BACKOFF": "0"}), \
              mock.patch.object(bot, "run_claude_buffered",
                                return_value=bot.ClaudeResult(final, is_error, "success")), \
-             mock.patch.object(task_runtime_module, "_claim_workitem",
+             mock.patch.object(persistent_tasks_module, "_claim_workitem",
                                side_effect=lambda *a, **k: calls.__setitem__("claim", calls["claim"] + 1)), \
-             mock.patch.object(task_runtime_module, "_release_post_pr_claim",
+             mock.patch.object(persistent_tasks_module, "_release_post_pr_claim",
                                side_effect=lambda *a, **k: calls.__setitem__("release", calls["release"] + 1)), \
-             mock.patch.object(task_runtime_module, "_finish_workitem",
+             mock.patch.object(persistent_tasks_module, "_finish_workitem",
                                side_effect=lambda *a, **k: calls.__setitem__("finish", calls["finish"] + 1)), \
-             mock.patch.object(task_runtime_module, "_aone_event_enqueue",
+             mock.patch.object(persistent_tasks_module, "_aone_event_enqueue",
                                side_effect=lambda *a, **k: calls.__setitem__("reply", calls["reply"] + 1) or True):
             # bind (claim) then dispatch, mirroring _execute_task_lease on_spawn=bind_process
             bookend.bind_process(SimpleNamespace(pid=1))
@@ -2834,7 +2835,7 @@ class PostPrRerouteDispatchTest(unittest.TestCase):
         # Simulate the completion twice (a re-lease re-runs release_idle): still one write.
         _out, _calls, bk = self._run("pr_ci_fix", "ok")
         released_before = None
-        with mock.patch.object(task_runtime_module, "_release_post_pr_claim") as rel:
+        with mock.patch.object(persistent_tasks_module, "_release_post_pr_claim") as rel:
             bk.release_idle()        # second call after the dispatch already released
             bk.release_idle()
             released_before = rel.call_count

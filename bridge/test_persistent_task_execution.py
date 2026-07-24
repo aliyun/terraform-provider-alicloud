@@ -8,7 +8,7 @@ from types import SimpleNamespace
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from bridge.task_runtime import PersistentTaskExecution
+from bridge.persistent_tasks import PersistentTaskExecution
 
 
 class PersistentTaskExecutionTest(unittest.TestCase):

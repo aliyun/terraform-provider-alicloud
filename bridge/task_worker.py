@@ -18,7 +18,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from bridge.task_runtime import (
+from bridge.persistent_tasks import (
     POST_PR_HEADLESS_KINDS,
     TASK_BOOKEND_KINDS,
     PersistentTaskExecution,
@@ -82,7 +82,7 @@ def _quick_card(_target: str, text: str, _target_type: str = "user") -> None:
     LOG.info("[BROADCAST] %s", (text or "").replace("\n", " | ")[:1000])
 
 
-class TaskExecutionRuntime:
+class PersistentTaskRuntime:
     """Minimal dependency container for leased Task execution.
 
     The headless dispatch state machine is still shared with the legacy bridge
@@ -309,7 +309,7 @@ class TaskWorker:
 
 def build_task_worker(*, executor_factory: Any = PersistenceExecutor) -> TaskWorker:
     """Build the durable worker without constructing a Bot or Scheduler."""
-    return TaskWorker(TaskExecutionRuntime(), executor_factory=executor_factory)
+    return TaskWorker(PersistentTaskRuntime(), executor_factory=executor_factory)
 
 
 def main() -> int:

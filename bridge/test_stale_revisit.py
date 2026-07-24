@@ -11,7 +11,8 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
-from bridge.scheduler.runners import aone as bot  # noqa: E402
+from bridge import aone_workitems as bot  # noqa: E402
+from bridge import aone_events as events  # noqa: E402
 
 PROJECT = "528766"
 TICKET = "90000001"
@@ -430,15 +431,15 @@ class Proc:
 class DualChannelLedgerTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
-        self.orig_aone_path = bot.AONE_EVENT_PATH
-        self.orig_dm_path = bot.DINGTALK_EVENT_PATH
-        self.orig_tf = bot._is_terraform_project
-        self.orig_run = bot.subprocess.run
-        bot.AONE_EVENT_PATH = Path(self.tmp.name) / "aone.json"
-        bot.DINGTALK_EVENT_PATH = Path(self.tmp.name) / "dm.json"
-        bot._is_terraform_project = lambda project: str(project) == PROJECT
-        bot._aone_event_inflight.clear()
-        bot._dingtalk_event_inflight.clear()
+        self.orig_aone_path = events.AONE_EVENT_PATH
+        self.orig_dm_path = events.DINGTALK_EVENT_PATH
+        self.orig_tf = events._is_terraform_project
+        self.orig_run = events.subprocess.run
+        events.AONE_EVENT_PATH = Path(self.tmp.name) / "aone.json"
+        events.DINGTALK_EVENT_PATH = Path(self.tmp.name) / "dm.json"
+        events._is_terraform_project = lambda project: str(project) == PROJECT
+        events._aone_event_inflight.clear()
+        events._dingtalk_event_inflight.clear()
         self.aone_fail = False
         self.aone_uncertain = False
         self.dm_fail = False
@@ -475,15 +476,15 @@ class DualChannelLedgerTest(unittest.TestCase):
                 return Proc(0, "{}")
             return Proc(1, "", "unexpected")
 
-        bot.subprocess.run = fake_run
+        events.subprocess.run = fake_run
 
     def tearDown(self):
-        bot.AONE_EVENT_PATH = self.orig_aone_path
-        bot.DINGTALK_EVENT_PATH = self.orig_dm_path
-        bot._is_terraform_project = self.orig_tf
-        bot.subprocess.run = self.orig_run
-        bot._aone_event_inflight.clear()
-        bot._dingtalk_event_inflight.clear()
+        events.AONE_EVENT_PATH = self.orig_aone_path
+        events.DINGTALK_EVENT_PATH = self.orig_dm_path
+        events._is_terraform_project = self.orig_tf
+        events.subprocess.run = self.orig_run
+        events._aone_event_inflight.clear()
+        events._dingtalk_event_inflight.clear()
         self.tmp.cleanup()
 
     def event(self):
@@ -491,60 +492,60 @@ class DualChannelLedgerTest(unittest.TestCase):
 
     def test_aone_success_dm_failure_only_retries_dm(self):
         self.dm_fail = True
-        self.assertTrue(bot._aone_event_enqueue(TICKET, PROJECT, self.event(), "aone"))
-        self.assertTrue(bot._dingtalk_event_enqueue(
+        self.assertTrue(events._aone_event_enqueue(TICKET, PROJECT, self.event(), "aone"))
+        self.assertTrue(events._dingtalk_event_enqueue(
             TICKET, PROJECT, self.event(), "484483", "title", "dm"))
         self.assertEqual((self.aone_create, self.dm_send), (1, 1))
-        ledger = bot._dingtalk_event_load()
-        lid = bot._aone_event_ledger_id(TICKET, self.event())
+        ledger = events._dingtalk_event_load()
+        lid = events._aone_event_ledger_id(TICKET, self.event())
         ledger["pending"][lid]["not_before"] = 0
-        bot._dingtalk_event_write(ledger)
+        events._dingtalk_event_write(ledger)
         self.dm_fail = False
-        bot._aone_event_enqueue(TICKET, PROJECT, self.event(), "aone")
-        bot._dingtalk_event_flush()
+        events._aone_event_enqueue(TICKET, PROJECT, self.event(), "aone")
+        events._dingtalk_event_flush()
         self.assertEqual((self.aone_create, self.dm_send), (1, 2))
 
     def test_dm_success_aone_failure_only_retries_aone(self):
         self.aone_fail = True
-        self.assertTrue(bot._aone_event_enqueue(TICKET, PROJECT, self.event(), "aone"))
-        self.assertTrue(bot._dingtalk_event_enqueue(
+        self.assertTrue(events._aone_event_enqueue(TICKET, PROJECT, self.event(), "aone"))
+        self.assertTrue(events._dingtalk_event_enqueue(
             TICKET, PROJECT, self.event(), "484483", "title", "dm"))
         self.assertEqual((self.aone_create, self.dm_send), (1, 1))
         self.aone_fail = False
-        bot._aone_event_flush()
-        bot._dingtalk_event_enqueue(
+        events._aone_event_flush()
+        events._dingtalk_event_enqueue(
             TICKET, PROJECT, self.event(), "484483", "title", "dm")
         self.assertEqual((self.aone_create, self.dm_send), (2, 1))
 
     def test_aone_uncertain_never_reposts_and_dm_does_not_repeat(self):
         self.aone_uncertain = True
-        self.assertTrue(bot._aone_event_enqueue(TICKET, PROJECT, self.event(), "aone"))
-        self.assertTrue(bot._dingtalk_event_enqueue(
+        self.assertTrue(events._aone_event_enqueue(TICKET, PROJECT, self.event(), "aone"))
+        self.assertTrue(events._dingtalk_event_enqueue(
             TICKET, PROJECT, self.event(), "484483", "title", "dm"))
-        lid = bot._aone_event_ledger_id(TICKET, self.event())
-        ledger = bot._aone_event_load()
+        lid = events._aone_event_ledger_id(TICKET, self.event())
+        ledger = events._aone_event_load()
         ledger["pending"][lid]["not_before"] = 0
-        bot._aone_event_write(ledger)
-        bot._aone_event_flush()
-        bot._dingtalk_event_enqueue(
+        events._aone_event_write(ledger)
+        events._aone_event_flush()
+        events._dingtalk_event_enqueue(
             TICKET, PROJECT, self.event(), "484483", "title", "dm")
         self.assertEqual((self.aone_create, self.dm_send), (1, 1))
-        self.assertEqual(bot._aone_event_load()["pending"][lid]["state"], "post_uncertain")
+        self.assertEqual(events._aone_event_load()["pending"][lid]["state"], "post_uncertain")
 
     def test_dm_transport_uncertain_keeps_stable_receipt_for_retry(self):
         self.dm_raise = True
-        self.assertTrue(bot._dingtalk_event_enqueue(
+        self.assertTrue(events._dingtalk_event_enqueue(
             TICKET, PROJECT, self.event(), "484483", "title", "dm"))
-        lid = bot._aone_event_ledger_id(TICKET, self.event())
-        ledger = bot._dingtalk_event_load()
+        lid = events._aone_event_ledger_id(TICKET, self.event())
+        ledger = events._dingtalk_event_load()
         pending = ledger["pending"][lid]
         receipt = pending["receipt"]
         self.assertEqual(pending["state"], "post_uncertain")
         pending["not_before"] = 0
-        bot._dingtalk_event_write(ledger)
+        events._dingtalk_event_write(ledger)
         self.dm_raise = False
-        bot._dingtalk_event_flush()
-        self.assertEqual(bot._dingtalk_event_load()["posted"][lid]["receipt"], receipt)
+        events._dingtalk_event_flush()
+        self.assertEqual(events._dingtalk_event_load()["posted"][lid]["receipt"], receipt)
         self.assertEqual(self.dm_send, 2)
 
 

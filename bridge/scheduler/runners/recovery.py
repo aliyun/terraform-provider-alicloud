@@ -20,7 +20,8 @@ except ModuleNotFoundError:  # pragma: no cover - exercised by bridge/main.py.
 from ..model import JobResult, JobResultStatus, ScheduledJobDefinition, is_aware
 
 
-RUNNER_KEY = "external.recovery"
+JOB_KEY = "external.recovery"
+RUNNER_KEY = "recovery"
 
 
 class ExternalRecoveryRunner:
@@ -61,7 +62,7 @@ class ExternalRecoveryRunner:
     def _definition_error(
         definition: ScheduledJobDefinition, scheduled_for: datetime,
     ) -> JobResult | None:
-        if definition.id != RUNNER_KEY:
+        if definition.id != JOB_KEY:
             return JobResult(
                 JobResultStatus.PERMANENT_FAILURE,
                 error="external.recovery runner received mismatched definition",

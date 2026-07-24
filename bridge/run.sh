@@ -57,18 +57,21 @@ say()  { printf '%s\n' "$*"; }
 err()  { printf '%s\n' "$*" >&2; }
 
 # -- pid helpers -----------------------------------------------------------
-_read_pid() {
-  [ -f "$PIDFILE" ] || return 1
-  local p; p="$(cat "$PIDFILE" 2>/dev/null || true)"
+_read_pidfile() {
+  local pidfile="$1" p
+  [ -f "$pidfile" ] || return 1
+  p="$(cat "$pidfile" 2>/dev/null || true)"
   [ -n "$p" ] || return 1
   printf '%s' "$p"
 }
+_read_pid() { _read_pidfile "$PIDFILE"; }
 _alive() { [ -n "${1:-}" ] && kill -0 "$1" 2>/dev/null; }
-_running_pid() {  # echo pid iff pidfile points at a live process
-  local p; p="$(_read_pid)" || return 1
+_running_pidfile() {
+  local p; p="$(_read_pidfile "$1")" || return 1
   _alive "$p" && { printf '%s' "$p"; return 0; }
   return 1
 }
+_running_pid() { _running_pidfile "$PIDFILE"; }
 
 _unmanaged_bot_pids() {
   # A manually launched bridge has no pidfile, so blindly starting another
@@ -153,22 +156,7 @@ _resolve_paths_by_role() {
 
 _scheduler_enabled() { [ "${JARVIS_BRIDGE_ROLE:-scheduler}" = "scheduler" ]; }
 
-_component_read_pid() {
-  local pidfile="$1" p
-  [ -f "$pidfile" ] || return 1
-  p="$(cat "$pidfile" 2>/dev/null || true)"
-  [ -n "$p" ] || return 1
-  printf '%s' "$p"
-}
-
-_component_running_pid() {
-  local p; p="$(_component_read_pid "$1")" || return 1
-  _alive "$p" && { printf '%s' "$p"; return 0; }
-  return 1
-}
-
 _scheduler_validate() {
-  _scheduler_enabled || return 0
   PYTHONPATH="$REPO_ROOT${PYTHONPATH:+:$PYTHONPATH}" "$PYTHON" -c '
 from bridge.scheduler.jobs import JOBS
 if not JOBS:
@@ -187,117 +175,170 @@ _task_worker_validate() {
   fi
 }
 
+# The shell owns lifecycle only. Component-specific facts live in this table;
+# start/stop/status/logs and daemon all use the same generic operations.
+_component_config() {
+  COMPONENT_NAME="$1"
+  case "$COMPONENT_NAME" in
+    bot)
+      COMPONENT_LABEL="bridge"
+      COMPONENT_PIDFILE="$STATE_DIR/bot.pid"
+      COMPONENT_LOG="$STATE_DIR/bot.log"
+      COMPONENT_READY=""
+      COMPONENT_READY_WAIT="$START_WAIT"
+      COMPONENT_STOP_WAIT="$(_bridge_stop_wait)"
+      COMPONENT_TIMEOUT_POLICY="kill"
+      COMPONENT_VALIDATE=":"
+      ;;
+    task-worker)
+      COMPONENT_LABEL="task worker"
+      COMPONENT_PIDFILE="$TASK_WORKER_PIDFILE"
+      COMPONENT_LOG="$TASK_WORKER_LOG"
+      COMPONENT_READY="Task worker READY"
+      COMPONENT_READY_WAIT="$SCHEDULER_READY_WAIT"
+      COMPONENT_STOP_WAIT="$(_bridge_stop_wait)"
+      COMPONENT_TIMEOUT_POLICY="preserve"
+      COMPONENT_VALIDATE="_task_worker_validate"
+      ;;
+    scheduler)
+      COMPONENT_LABEL="scheduler"
+      COMPONENT_PIDFILE="$SCHEDULER_PIDFILE"
+      COMPONENT_LOG="$SCHEDULER_LOG"
+      COMPONENT_READY="Scheduler READY"
+      COMPONENT_READY_WAIT="$SCHEDULER_READY_WAIT"
+      COMPONENT_STOP_WAIT="$SCHEDULER_DRAIN_WAIT"
+      COMPONENT_TIMEOUT_POLICY="preserve"
+      COMPONENT_VALIDATE="_scheduler_validate"
+      ;;
+    *)
+      err "unknown bridge component: $COMPONENT_NAME"
+      return 2
+      ;;
+  esac
+}
+
+_role_components() {
+  if _scheduler_enabled && [ "${1:-start}" = "stop" ]; then
+    printf '%s\n' scheduler task-worker bot
+  elif _scheduler_enabled; then
+    printf '%s\n' bot task-worker scheduler
+  else
+    printf '%s\n' task-worker
+  fi
+}
+
+_spawn_component() {
+  case "$1" in
+    bot)
+      if [ -n "${JARVIS_BRIDGE_BOT:-}" ]; then
+        nohup "$PYTHON" "$BOT" >>"$COMPONENT_LOG" 2>&1 &
+      else
+        PYTHONPATH="$REPO_ROOT${PYTHONPATH:+:$PYTHONPATH}" \
+          nohup "$PYTHON" -m bridge.jarvis_dingtalk_bot >>"$COMPONENT_LOG" 2>&1 &
+      fi
+      ;;
+    task-worker)
+      if [ -n "${JARVIS_TASK_WORKER:-}" ]; then
+        nohup "$PYTHON" "$TASK_WORKER" >>"$COMPONENT_LOG" 2>&1 &
+      else
+        PYTHONPATH="$REPO_ROOT${PYTHONPATH:+:$PYTHONPATH}" \
+          nohup "$PYTHON" -m bridge.task_worker >>"$COMPONENT_LOG" 2>&1 &
+      fi
+      ;;
+    scheduler)
+      PYTHONPATH="$REPO_ROOT${PYTHONPATH:+:$PYTHONPATH}" \
+        nohup "$PYTHON" -m bridge.main >>"$COMPONENT_LOG" 2>&1 &
+      ;;
+  esac
+  COMPONENT_SPAWNED_PID=$!
+}
+
 _component_start() {
-  local label="$1" pidfile="$2" logfile="$3" ready="$4" ready_wait="$5" validate="$6"
-  shift 6
-  local pid i=0 deadline=$(( ready_wait * 10 ))
+  local name="$1" pid pre_size=0 first_new i=0 deadline
+  _component_config "$name" || return $?
   COMPONENT_STARTED_PID=""
-  if pid="$(_component_running_pid "$pidfile")"; then
-    say "$label 已在运行 (pid $pid)"
+  if pid="$(_running_pidfile "$COMPONENT_PIDFILE")"; then
+    say "$COMPONENT_LABEL 已在运行 (pid $pid)"
     return 0
   fi
-  rm -f "$pidfile"
-  "$validate" || return $?
+  rm -f "$COMPONENT_PIDFILE"
+  "$COMPONENT_VALIDATE" || return $?
   mkdir -p "$STATE_DIR"
-  nohup "$@" >>"$logfile" 2>&1 &
-  pid=$!
+  [ -f "$COMPONENT_LOG" ] \
+    && pre_size="$(wc -c <"$COMPONENT_LOG" 2>/dev/null | tr -d ' ')"
+  [ -n "$pre_size" ] || pre_size=0
+  _spawn_component "$name"
+  pid="$COMPONENT_SPAWNED_PID"
   COMPONENT_STARTED_PID="$pid"
-  printf '%s\n' "$pid" >"$pidfile"
-  while [ "$i" -lt "$deadline" ]; do
-    if ! _alive "$pid"; then
-      err "$label 启动失败"
-      tail -n 20 "$logfile" >&2
-      _rollback_started_process "$pid" "$pidfile" "$label" || true
-      return 1
-    fi
-    if grep -F "$ready pid=$pid " "$logfile" >/dev/null 2>&1; then
-      say "$label 已启动 (pid $pid, log=$logfile)"
+  printf '%s\n' "$pid" >"$COMPONENT_PIDFILE"
+
+  if [ "$name" = "bot" ]; then
+    sleep "$COMPONENT_READY_WAIT"
+    first_new="$(tail -c "+$((pre_size + 1))" "$COMPONENT_LOG" 2>/dev/null | head -n1)"
+    if _alive "$pid" && [[ "$first_new" != *ERROR* ]]; then
+      say "$COMPONENT_LABEL 已启动 (pid $pid, log=$COMPONENT_LOG)"
       return 0
     fi
-    sleep 0.1; i=$((i + 1))
-  done
-  err "$label 未在 ${ready_wait}s 内 READY"
-  _rollback_started_process "$pid" "$pidfile" "$label" || true
+  else
+    deadline=$(( COMPONENT_READY_WAIT * 10 ))
+    while [ "$i" -lt "$deadline" ]; do
+      _alive "$pid" || break
+      if grep -F "$COMPONENT_READY pid=$pid " "$COMPONENT_LOG" >/dev/null 2>&1; then
+        say "$COMPONENT_LABEL 已启动 (pid $pid, log=$COMPONENT_LOG)"
+        return 0
+      fi
+      sleep 0.1
+      i=$((i + 1))
+    done
+  fi
+
+  err "$COMPONENT_LABEL 启动失败或未在 ${COMPONENT_READY_WAIT}s 内 READY"
+  tail -n 20 "$COMPONENT_LOG" >&2
+  _rollback_started_process "$pid" "$COMPONENT_PIDFILE" "$COMPONENT_LABEL" || true
   return 1
 }
 
-_scheduler_start() {
-  _scheduler_enabled || return 0
-  _component_start \
-    "scheduler" "$SCHEDULER_PIDFILE" "$SCHEDULER_LOG" "Scheduler READY" \
-    "$SCHEDULER_READY_WAIT" _scheduler_validate \
-    env "PYTHONPATH=$REPO_ROOT${PYTHONPATH:+:$PYTHONPATH}" \
-    "$PYTHON" -m bridge.main
-}
-
-_scheduler_stop() {
-  _scheduler_enabled || return 0
-  local pid i=0 deadline=$(( SCHEDULER_DRAIN_WAIT * 10 ))
-  pid="$(_component_read_pid "$SCHEDULER_PIDFILE")" || { say "scheduler 未运行"; return 0; }
-  _alive "$pid" || { rm -f "$SCHEDULER_PIDFILE"; say "scheduler 已停止"; return 0; }
-  kill -TERM "$pid"
-  say "scheduler 正在 drain (pid $pid, 宽限 ${SCHEDULER_DRAIN_WAIT}s)"
-  while [ "$i" -lt "$deadline" ] && _alive "$pid"; do sleep 0.1; i=$((i + 1)); done
+_component_stop() {
+  local name="$1" pid i=0 deadline
+  _component_config "$name" || return $?
+  pid="$(_read_pidfile "$COMPONENT_PIDFILE")" \
+    || { say "$COMPONENT_LABEL 未在运行"; return 0; }
+  if ! _alive "$pid"; then
+    rm -f "$COMPONENT_PIDFILE"
+    say "$COMPONENT_LABEL 已停止"
+    return 0
+  fi
+  deadline=$(( COMPONENT_STOP_WAIT * 10 ))
+  say "停止 $COMPONENT_LABEL (pid $pid): 发 SIGTERM，宽限 ${COMPONENT_STOP_WAIT}s…"
+  kill -TERM "$pid" 2>/dev/null || true
+  while [ "$i" -lt "$deadline" ] && _alive "$pid"; do
+    sleep 0.1
+    i=$((i + 1))
+  done
   if _alive "$pid"; then
-    err "scheduler 仍有已准入 Job 未完成；保持当前进程，不停止 bridge。"
-    return 1
+    if [ "$COMPONENT_TIMEOUT_POLICY" = "preserve" ]; then
+      err "$COMPONENT_LABEL 在 ${COMPONENT_STOP_WAIT}s 内未停止；保持进程以保护在途工作。"
+      return 1
+    fi
+    say "TERM ${COMPONENT_STOP_WAIT}s 未退 → SIGKILL 兜底(清理由 reconcile 收敛)。"
+    kill -KILL "$pid" 2>/dev/null || true
+    sleep 0.2
+    rm -f "$COMPONENT_PIDFILE"
+    say "$COMPONENT_LABEL 已停止 (forced)。"
+    return 0
   fi
-  rm -f "$SCHEDULER_PIDFILE"
-  say "scheduler 已停止 (graceful)"
-}
-
-_task_worker_start() {
-  TASK_WORKER_STARTED_PID=""
-  if [ -n "${JARVIS_TASK_WORKER:-}" ]; then
-    _component_start \
-      "task worker" "$TASK_WORKER_PIDFILE" "$TASK_WORKER_LOG" "Task worker READY" \
-      "$SCHEDULER_READY_WAIT" _task_worker_validate \
-      "$PYTHON" "$TASK_WORKER"
-  else
-    _component_start \
-      "task worker" "$TASK_WORKER_PIDFILE" "$TASK_WORKER_LOG" "Task worker READY" \
-      "$SCHEDULER_READY_WAIT" _task_worker_validate \
-      env "PYTHONPATH=$REPO_ROOT${PYTHONPATH:+:$PYTHONPATH}" \
-      "$PYTHON" -m bridge.task_worker
-  fi
-  local rc=$?
-  TASK_WORKER_STARTED_PID="${COMPONENT_STARTED_PID:-}"
-  return "$rc"
-}
-
-_task_worker_stop() {
-  local pid i=0 stop_wait deadline
-  pid="$(_component_read_pid "$TASK_WORKER_PIDFILE")" || { say "task worker 未运行"; return 0; }
-  _alive "$pid" || { rm -f "$TASK_WORKER_PIDFILE"; say "task worker 已停止"; return 0; }
-  stop_wait="$(_bridge_stop_wait)"
-  deadline=$(( stop_wait * 10 ))
-  say "停止 task worker (pid $pid): 发 SIGTERM，宽限 ${stop_wait}s…"
-  kill -TERM "$pid"
-  while [ "$i" -lt "$deadline" ] && _alive "$pid"; do sleep 0.1; i=$((i + 1)); done
-  if _alive "$pid"; then
-    err "task worker 在 ${stop_wait}s 内未停止；保持进程以避免中断 Session。"
-    return 1
-  fi
-  rm -f "$TASK_WORKER_PIDFILE"
-  say "task worker 已停止 (graceful)"
+  rm -f "$COMPONENT_PIDFILE"
+  say "$COMPONENT_LABEL 已停止 (graceful)。"
 }
 
 _component_status() {
-  local label="$1" pidfile="$2" logfile="$3" pid
-  if pid="$(_component_running_pid "$pidfile")"; then
-    say "$label: RUNNING (pid $pid, log=$logfile)"
+  local pid
+  _component_config "$1" || return $?
+  if pid="$(_running_pidfile "$COMPONENT_PIDFILE")"; then
+    say "$COMPONENT_LABEL: RUNNING (pid $pid, log=$COMPONENT_LOG)"
   else
-    say "$label: STOPPED"
+    say "$COMPONENT_LABEL: STOPPED"
   fi
-}
-
-_task_worker_status() {
-  _component_status "task worker" "$TASK_WORKER_PIDFILE" "$TASK_WORKER_LOG"
-}
-
-_scheduler_status() {
-  _scheduler_enabled || return 0
-  _component_status "scheduler" "$SCHEDULER_PIDFILE" "$SCHEDULER_LOG"
 }
 
 # -- env sourcing (variables auto-exported for the bot) --------------------
@@ -546,112 +587,46 @@ _supervised_command() { # $1 = start|stop|restart|status
 
 # -- commands --------------------------------------------------------------
 cmd_start() {
-  local pid unmanaged worker_started_pid=""
+  local component pid unmanaged mode started="" started_entry started_name started_pid
   # Human start = intent to run; clear the manual-stop sentinel so the cron
   # watchdog resumes its keep-alive duty.
   rm -f "$PIDFILE.manual-stop" 2>/dev/null || true
-  # A worker host runs only the independently supervised Task worker.  It must
-  # never create a DingTalk listener or a SchedulerEngine process.
-  if [ "${JARVIS_BRIDGE_ROLE:-scheduler}" = "worker" ]; then
-    _task_worker_start
-    return $?
-  fi
-  if pid="$(_running_pid)"; then
-    say "bridge 已在运行 (pid $pid) — 无需重复 start。"
-    # The listener and durable worker have independent lifecycles.  A watchdog
-    # start must repair a missing worker without replacing the healthy bot.
-    _task_worker_start || return $?
-    worker_started_pid="${TASK_WORKER_STARTED_PID:-}"
-    if ! _scheduler_start; then
-      # Preserve only a worker that existed before this start invocation.  A
-      # freshly-created companion must not survive a partially failed start.
-      if [ -n "$worker_started_pid" ]; then
-        _rollback_started_process "$worker_started_pid" "$TASK_WORKER_PIDFILE" "task worker" || true
+  if _scheduler_enabled; then
+    if ! pid="$(_running_pidfile "$STATE_DIR/bot.pid")"; then
+      unmanaged="$(_unmanaged_bot_pids)"
+      if [ -n "$unmanaged" ]; then
+        err "检测到未被当前 pidfile 管理的 bridge 进程: $(printf '%s' "$unmanaged" | tr '\n' ' ')"
+        err "为避免双 Scanner/双 Task 生产者，拒绝启动。请先确认并停止这些进程。"
+        return 1
       fi
+    fi
+    if _decide_mode; then
+      mode="full"
+      say "钉钉凭证就绪 → 全功能模式启动。"
+    else
+      mode="degraded"
+      say "无钉钉凭证 → 降级模式启动；周期任务与 Task worker 照常运行。"
+    fi
+    say "启动 bridge (mode=$mode, role=scheduler)"
+  fi
+
+  for component in $(_role_components); do
+    if ! _component_start "$component"; then
+      for started_entry in $started; do
+        started_name="${started_entry%%:*}"
+        started_pid="${started_entry#*:}"
+        _component_config "$started_name" || continue
+        _rollback_started_process \
+          "$started_pid" "$COMPONENT_PIDFILE" "$COMPONENT_LABEL" || true
+      done
       return 1
     fi
-    return 0
-  fi
-  unmanaged="$(_unmanaged_bot_pids)"
-  if [ -n "$unmanaged" ]; then
-    err "检测到未被当前 pidfile 管理的 bridge 进程: $(printf '%s' "$unmanaged" | tr '\n' ' ')"
-    err "为避免双 Scanner/双 Task 生产者，拒绝启动。请先确认并停止这些进程。"
-    return 1
-  fi
-  [ -f "$PIDFILE" ] && rm -f "$PIDFILE"   # stale pidfile
-
-  mkdir -p "$STATE_DIR"
-
-  local mode
-  if _decide_mode; then
-    mode="full"
-    say "钉钉凭证就绪 → 全功能模式启动。"
-  else
-    mode="degraded"
-    say "=================================================================="
-    if [ "${JARVIS_BRIDGE_ROLE:-scheduler}" = "worker" ]; then
-      say "  role=worker → 强制降级模式 (worker 不跑钉钉 stream, 发声统一归 scheduler)。"
-      say "  被动接单执行照常; 本机播报落 bot.log ([BROADCAST]) 作审计轨迹。"
-    else
-      say "  无钉钉凭证 (DINGTALK_APP_KEY/SECRET 未设) → 以降级模式点火。"
-      say "  自动派发 + 各调度器照常运行; 卡片/播报落 bot.log ([BROADCAST])。"
-      say "  配好凭证后运行  bridge/run.sh restart  即回全功能模式。"
+    if [ -n "${COMPONENT_STARTED_PID:-}" ]; then
+      # Store component and pid together so rollback never reads a reused
+      # global from a later start.
+      started="$component:$COMPONENT_STARTED_PID $started"
     fi
-    say "=================================================================="
-  fi
-
-  local pre_sz=0
-  [ -f "$LOG" ] && pre_sz="$(wc -c <"$LOG" 2>/dev/null | tr -d ' ')"
-  [ -n "$pre_sz" ] || pre_sz=0
-
-  say "启动 bridge: $PYTHON ${JARVIS_BRIDGE_BOT:-bridge.jarvis_dingtalk_bot}  (mode=$mode, role=${JARVIS_BRIDGE_ROLE:-scheduler}, log=$LOG)"
-  if [ -n "${JARVIS_BRIDGE_BOT:-}" ]; then
-    nohup "$PYTHON" "$BOT" >>"$LOG" 2>&1 &
-  else
-    PYTHONPATH="$REPO_ROOT${PYTHONPATH:+:$PYTHONPATH}" \
-      nohup "$PYTHON" -m bridge.jarvis_dingtalk_bot >>"$LOG" 2>&1 &
-  fi
-  local newpid=$!
-  printf '%s\n' "$newpid" >"$PIDFILE"
-  sleep "$START_WAIT"
-
-  if ! _alive "$newpid"; then
-    err "bridge 启动失败: 进程 $newpid 已退出。日志尾 ↓"
-    _tail_log 20 >&2
-    if [ "$mode" = "degraded" ]; then
-      err "提示: 降级点火依赖 bot 支持 JARVIS_NO_DINGTALK(F 线 MR-4, 分支 worktree-f3-nodingtalk)。"
-      err "      若该能力尚未合并, 旧 bot 会因缺凭证退 2 —— 请先合 MR-4, 或配置钉钉凭证后重试。"
-    fi
-    rm -f "$PIDFILE"
-    return 1
-  fi
-
-  local first_new
-  first_new="$(tail -c "+$((pre_sz + 1))" "$LOG" 2>/dev/null | head -n1)"
-  case "$first_new" in
-    *ERROR*)
-      err "bridge 启动异常: 日志首行为 ERROR。日志尾 ↓"
-      _tail_log 20 >&2
-      cmd_stop >/dev/null 2>&1 || true
-      return 1 ;;
-  esac
-
-  say "bridge 已启动 (pid $newpid, mode=$mode)。日志: $LOG"
-  if ! _task_worker_start; then
-    err "task worker 启动失败；回滚刚启动的 bridge。"
-    _stop_bridge_only >/dev/null 2>&1 || true
-    return 1
-  fi
-  worker_started_pid="${TASK_WORKER_STARTED_PID:-}"
-  if ! _scheduler_start; then
-    err "scheduler 启动失败；回滚本轮新启动的组件。"
-    if [ -n "$worker_started_pid" ]; then
-      _rollback_started_process "$worker_started_pid" "$TASK_WORKER_PIDFILE" "task worker" || true
-    fi
-    _stop_bridge_only >/dev/null 2>&1 || true
-    return 1
-  fi
-  return 0
+  done
 }
 
 cmd_watchdog() {
@@ -666,61 +641,36 @@ cmd_watchdog() {
 }
 
 _stop_bridge_only() {
-  local pid stop_wait
-  stop_wait="$(_bridge_stop_wait)"
-  # Operator-intent sentinel: `run.sh stop` means STAY stopped. The cron
-  # watchdog (run.sh watchdog) refuses to start while this file exists; only
-  # a human `run.sh start` clears it. Dropped even when nothing is running —
-  # stop expresses intent, not just process teardown. (Without this, the
-  # */10 watchdog resurrected a deliberately stopped worker within 10min.)
-  mkdir -p "$STATE_DIR" 2>/dev/null || true
-  touch "$PIDFILE.manual-stop" 2>/dev/null || true
-  pid="$(_read_pid)" || { say "bridge 未在运行 (无 pidfile)。已落 manual-stop 哨兵，watchdog 不会拉起。"; return 0; }
-  if ! _alive "$pid"; then
-    say "bridge 未在运行 (pid $pid 已退) — 清理 pidfile。"
-    rm -f "$PIDFILE"
-    return 0
-  fi
-  # 发 SIGTERM → bot 的 _graceful_stop handler；超时后保留 SIGKILL 兜底。
-  say "停止 bridge (pid $pid): 发 SIGTERM (bot 自杀 worker + release claim), 宽限 ${stop_wait}s…"
-  kill -TERM "$pid" 2>/dev/null || true
-  local i=0 deadline=$(( stop_wait * 10 ))
-  while [ "$i" -lt "$deadline" ] && _alive "$pid"; do sleep 0.1; i=$((i + 1)); done
-  if _alive "$pid"; then
-    say "TERM ${stop_wait}s 未退 → SIGKILL 兜底(清理可能不全, reconcile 收敛)。"
-    kill -KILL "$pid" 2>/dev/null || true
-    sleep 0.2
-    rm -f "$PIDFILE"
-    say "bridge 已停止 (forced)。"
-    return 0
-  fi
-  rm -f "$PIDFILE"
-  say "bridge 已停止 (graceful)。"
-  return 0
+  _component_stop bot
 }
 
 cmd_stop() {
-  _scheduler_stop || return $?
-  _task_worker_stop || return $?
-  _stop_bridge_only
+  local component
+  mkdir -p "$STATE_DIR" 2>/dev/null || true
+  touch "$PIDFILE.manual-stop" 2>/dev/null || true
+  for component in $(_role_components stop); do
+    _component_stop "$component" || return $?
+  done
 }
 
 cmd_restart() {
-  if [ "${JARVIS_BRIDGE_ROLE:-scheduler}" = "worker" ]; then
-    _task_worker_stop || return $?
-    _task_worker_start
-    return $?
-  fi
+  local component
   # Scheduler restarts intentionally leave the independent Task worker alive;
   # this keeps its leased Sessions fenced to the same worker process.
-  _scheduler_stop || return $?
-  _stop_bridge_only || return $?
+  for component in $(_role_components stop); do
+    if _scheduler_enabled && [ "$component" = "task-worker" ]; then
+      continue
+    fi
+    _component_stop "$component" || return $?
+  done
   cmd_start
 }
 
 cmd_status() {
-  local pid
-  if pid="$(_running_pid)"; then
+  local component pid primary
+  if _scheduler_enabled; then primary="bot"; else primary="task-worker"; fi
+  _component_config "$primary" || return $?
+  if pid="$(_running_pidfile "$COMPONENT_PIDFILE")"; then
     local uptime mode
     uptime="$(ps -o etime= -p "$pid" 2>/dev/null | tr -d ' ')"
     mode="$(_mode_from_log)"
@@ -729,32 +679,26 @@ cmd_status() {
     say "  log:     $LOG"
     say "  --- 最近 5 行日志 ---"
     _tail_log 5
-    _scheduler_status
-    _task_worker_status
-    return 0
-  fi
-  if [ -f "$PIDFILE" ]; then
+  elif [ -f "$COMPONENT_PIDFILE" ]; then
     say "bridge: STOPPED  (pidfile 存在但进程已退, 建议 run.sh start)"
   else
     say "bridge: STOPPED  (无 pidfile)"
   fi
-  _scheduler_status
-  _task_worker_status
+  for component in $(_role_components); do
+    [ "$component" = "$primary" ] || _component_status "$component"
+  done
   return 0
 }
 
 cmd_logs() {
+  local component
   _source_env
-  say "bridge 日志: $LOG"
-  say "实时跟随:  tail -f \"$LOG\""
-  say "--- 最近 20 行 ---"
-  _tail_log 20
-  if _scheduler_enabled; then
-    say "--- scheduler 最近 20 行 ($SCHEDULER_LOG) ---"
-    tail -n 20 "$SCHEDULER_LOG" 2>/dev/null || true
-  fi
-  say "--- task worker 最近 20 行 ($TASK_WORKER_LOG) ---"
-  tail -n 20 "$TASK_WORKER_LOG" 2>/dev/null || true
+  for component in $(_role_components); do
+    _component_config "$component" || return $?
+    say "$COMPONENT_LABEL 日志: $COMPONENT_LOG"
+    say "--- 最近 20 行 ---"
+    tail -n 20 "$COMPONENT_LOG" 2>/dev/null || true
+  done
   return 0
 }
 
@@ -791,7 +735,7 @@ cmd_daemon() {
         preserve_task_worker=1
       fi
     fi
-    _scheduler_stop
+    _component_stop scheduler
     step_rc=$?
     [ "$step_rc" -eq 0 ] || shutdown_rc="$step_rc"
     if [ -n "$bot_pid" ]; then
@@ -799,7 +743,7 @@ cmd_daemon() {
       wait "$bot_pid" 2>/dev/null || true
     fi
     if [ "$preserve_task_worker" -eq 0 ]; then
-      _task_worker_stop
+      _component_stop task-worker
       step_rc=$?
       if [ "$shutdown_rc" -eq 0 ] && [ "$step_rc" -ne 0 ]; then
         shutdown_rc="$step_rc"
@@ -821,21 +765,17 @@ cmd_daemon() {
       exec "$PYTHON" -m bridge.task_worker
   fi
   local worker_started_pid=""
-  _task_worker_start || return $?
-  worker_started_pid="${TASK_WORKER_STARTED_PID:-}"
-  if ! _scheduler_start; then
+  _component_start task-worker || return $?
+  worker_started_pid="${COMPONENT_STARTED_PID:-}"
+  if ! _component_start scheduler; then
     if [ -n "$worker_started_pid" ]; then
       _rollback_started_process "$worker_started_pid" "$TASK_WORKER_PIDFILE" "task worker" || true
     fi
     return 1
   fi
-  if [ -n "${JARVIS_BRIDGE_BOT:-}" ]; then
-    "$PYTHON" "$BOT" &
-  else
-    PYTHONPATH="$REPO_ROOT${PYTHONPATH:+:$PYTHONPATH}" \
-      "$PYTHON" -m bridge.jarvis_dingtalk_bot &
-  fi
-  bot_pid=$!
+  _component_config bot || return $?
+  _spawn_component bot
+  bot_pid="$COMPONENT_SPAWNED_PID"
   sleep "$START_WAIT"
   if ! _alive "$bot_pid"; then
     wait "$bot_pid" 2>/dev/null

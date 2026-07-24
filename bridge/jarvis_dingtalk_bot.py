@@ -72,7 +72,7 @@ from urllib.error import URLError
 from bridge.jarvis_task_client import ControlPlaneClient, TaskEnvelope
 from bridge.jarvis_capacity import CapacityManager
 from bridge.jarvis_task_router import ExecutionRouter
-from bridge.task_runtime import (
+from bridge.persistent_tasks import (
     PersistentTaskExecution,
     TaskAoneBookend as _TaskAoneBookend,
     WakePersistence,
@@ -82,6 +82,7 @@ from bridge.task_runtime import (
     task_failure_result as _task_failure_result,
     stop_task_process,
 )
+from bridge.pr_watch_registry import _prwatch_load, _prwatch_lock
 from bridge.tata_dws_history import (
     DWS_USER_NOT_IN_GROUP,
     DwsGroupHistory,
@@ -120,30 +121,14 @@ from bridge.jarvis_field_repair import (
 from bridge.headless_runtime import HeadlessRequest, HeadlessRuntime, Lane, SessionPolicy
 
 
-from bridge.scheduler.runners.aone import (
+from bridge.aone_workitems import (
         AoneRuntime,
         DailyNudge,
         PERSONA_INTERNAL_ROLES,
         PERSONA_PUBLIC_IDENTITY,
         TERRAFORM_TITLE_KEYWORDS,
-        _AONE_ACCESS_KEY_RE,
-        _AONE_BASIC_RE,
-        _AONE_BEARER_RE,
-        _AONE_EVENT_TEXT_MAX,
-        _AONE_INSTANCE_ID_RE,
-        _AONE_INTERNAL_FIELD_RE,
-        _AONE_INTERNAL_SENTINEL_RE,
-        _AONE_INTERNAL_STAGE_MARKER_RE,
-        _AONE_INTERNAL_STAGE_RE,
-        _AONE_RESOURCE_ID_KEY_RE,
         _a1_command_env,
-        _aone_event_digest,
-        _aone_event_enqueue,
-        _aone_event_marker_from_digest,
-        _aone_event_sanitize_text,
-        _aone_event_source_part,
         _aone_preflight,
-        _dingtalk_event_enqueue,
         _is_terraform_project,
         _is_terraform_ticket,
         _persona_fence,
@@ -156,11 +141,27 @@ from bridge.scheduler.runners.aone import (
         claude_bin,
         master_staff,
 )
-from bridge.scheduler.runners.pr import (
+from bridge.aone_events import (
+        _AONE_ACCESS_KEY_RE,
+        _AONE_BASIC_RE,
+        _AONE_BEARER_RE,
+        _AONE_EVENT_TEXT_MAX,
+        _AONE_INSTANCE_ID_RE,
+        _AONE_INTERNAL_FIELD_RE,
+        _AONE_INTERNAL_SENTINEL_RE,
+        _AONE_INTERNAL_STAGE_MARKER_RE,
+        _AONE_INTERNAL_STAGE_RE,
+        _AONE_RESOURCE_ID_KEY_RE,
+        _aone_event_digest,
+        _aone_event_enqueue,
+        _aone_event_marker_from_digest,
+        _aone_event_sanitize_text,
+        _aone_event_source_part,
+        _dingtalk_event_enqueue,
+)
+from bridge.persistent_tasks import (
         _TaskAttentionPublisher,
         _attention_owner_staff_id,
-        _prwatch_load,
-        _prwatch_lock,
         _source_ref_with_title,
 )
 

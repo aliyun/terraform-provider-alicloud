@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
+import tempfile
 import unittest
 from zoneinfo import ZoneInfo
 
@@ -10,6 +12,7 @@ from bridge.scheduler.model import (
     AdaptiveSchedule, DailySchedule, HandlerRunner, IntervalSchedule, JobResult,
     JobResultStatus, MisfirePolicy, ScheduledJobDefinition, definition_snapshot,
 )
+from bridge.scheduler.runners import RUNNER_KEYS as IMPLEMENTED_RUNNER_KEYS
 import bridge.scheduler.jobs as jobs
 
 
@@ -35,7 +38,12 @@ class SchedulerCoreTests(unittest.TestCase):
                          ("daily.probe", "aone.scan", "aone.claim-health",
                           "daily.nudge", "aone.reply", "pr.watch",
                           "external.recovery"))
-        self.assertEqual(jobs.JOB_KEYS, jobs.RUNNER_KEYS)
+        self.assertEqual(jobs.RUNNER_KEYS, IMPLEMENTED_RUNNER_KEYS)
+        self.assertEqual(
+            ("daily_probe", "scan", "claim_health", "daily_nudge",
+             "reply", "pr_watch", "recovery"),
+            tuple(item.runner.handler_key for item in jobs.JOBS),
+        )
         self.assertTrue(all(isinstance(item.runner, HandlerRunner)
                             for item in jobs.JOBS))
         self.assertFalse(jobs.JOBS[0].enabled)
@@ -44,6 +52,103 @@ class SchedulerCoreTests(unittest.TestCase):
             "id", "revision", "description", "schedule", "runner", "misfire",
             "retry_delay_seconds", "enabled",
         })
+
+    def test_registry_is_loaded_from_yaml(self):
+        content = """\
+version: 1
+jobs:
+  - key: test.interval
+    runner: test_interval
+    revision: 3
+    description: loaded from yaml
+    schedule: {kind: interval, interval_seconds: 17, run_immediately: false}
+    misfire: COALESCE
+    retry_delay_seconds: 4
+    enabled: true
+"""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "jobs.yaml"
+            path.write_text(content, encoding="utf-8")
+            loaded = jobs.load_jobs(path)
+        self.assertEqual(len(loaded), 1)
+        self.assertEqual(loaded[0].id, "test.interval")
+        self.assertEqual(loaded[0].runner.handler_key, "test_interval")
+        self.assertEqual(loaded[0].schedule, IntervalSchedule(17, False))
+
+    def test_registry_rejects_unknown_and_missing_fields(self):
+        cases = {
+            "unknown": """\
+version: 1
+jobs: []
+extra: true
+""",
+            "missing": """\
+version: 1
+jobs:
+  - key: test.interval
+    runner: test_interval
+    revision: 1
+    description: missing enabled
+    schedule: {kind: interval, interval_seconds: 17, run_immediately: false}
+    misfire: COALESCE
+    retry_delay_seconds: 4
+""",
+            "schedule": """\
+version: 1
+jobs:
+  - key: test.interval
+    runner: test_interval
+    revision: 1
+    description: unknown schedule field
+    schedule: {kind: interval, interval_seconds: 17, run_immediately: false, jitter: 1}
+    misfire: COALESCE
+    retry_delay_seconds: 4
+    enabled: true
+""",
+        }
+        with tempfile.TemporaryDirectory() as temp_dir:
+            for name, content in cases.items():
+                with self.subTest(name=name):
+                    path = Path(temp_dir) / ("%s.yaml" % name)
+                    path.write_text(content, encoding="utf-8")
+                    with self.assertRaises(jobs.SchedulerJobsError):
+                        jobs.load_jobs(path)
+
+    def test_registry_rejects_duplicate_yaml_and_job_keys(self):
+        cases = {
+            "mapping": """\
+version: 1
+version: 1
+jobs: []
+""",
+            "job": """\
+version: 1
+jobs:
+  - key: test.interval
+    runner: test_interval
+    revision: 1
+    description: first
+    schedule: {kind: interval, interval_seconds: 17, run_immediately: false}
+    misfire: COALESCE
+    retry_delay_seconds: 4
+    enabled: true
+  - key: test.interval
+    runner: second_interval
+    revision: 2
+    description: second
+    schedule: {kind: interval, interval_seconds: 19, run_immediately: true}
+    misfire: COALESCE
+    retry_delay_seconds: 5
+    enabled: true
+""",
+        }
+        with tempfile.TemporaryDirectory() as temp_dir:
+            for name, content in cases.items():
+                with self.subTest(name=name):
+                    path = Path(temp_dir) / ("%s.yaml" % name)
+                    path.write_text(content, encoding="utf-8")
+                    with self.assertRaises(jobs.SchedulerJobsError):
+                        jobs.load_jobs(path)
 
     def test_only_scheduler_role_can_start_periodic_jobs(self):
         require_scheduler_role({"JARVIS_BRIDGE_ROLE": "scheduler"})

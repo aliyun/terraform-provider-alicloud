@@ -20,8 +20,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 from bridge.jarvis_task_router import EnqueueResult  # noqa: E402
-from bridge.scheduler.runners import aone as events  # noqa: E402
-from bridge.scheduler.runners import pr as bot  # noqa: E402
+from bridge import aone_events as events  # noqa: E402
+from bridge.scheduler.runners import pr_watch as bot  # noqa: E402
 
 TID = "84251052"
 PR = "https://github.com/aliyun/terraform-provider-alicloud/pull/9972"

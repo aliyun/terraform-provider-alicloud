@@ -50,15 +50,15 @@ status, and heartbeat ensure that only one Scheduler process owns admission at
 a time. It is not a Task executor: Bridge advertises
 `capabilities.dispatch.pull=false` and does not pull the public Task queue.
 
-Use `bridge/scheduler/jobs.py` as the complete new-engine registration
-module. Its explicit `JOBS` tuple contains `aone.scan`, `aone.claim-health`,
+Use `bridge/scheduler/jobs.yaml` as the complete new-engine registration
+source. Its explicit entries contain `aone.scan`, `aone.claim-health`,
 `daily.nudge`, `aone.reply`, `pr.watch`, `external.recovery` and disabled
 `daily.probe`.
 No periodic job is allowed to have a second legacy loop.
 
-The explicit definitions use only the Bridge runtime; no extra registry parser
-bootstrap step is required. `bridge/run.sh` automatically prefers `.venv/bridge`
-when it is present.
+The definitions use only the Scheduler runtime. `jobs.py` validates and loads
+the checked-in YAML; `bridge/run.sh` automatically prefers `.venv/bridge` when
+it is present.
 
 Before this starts the Engine, Bridge verifies the scheduler role, registers and checks
 the ACTIVE Worker identity, registers the full job registry, recovers

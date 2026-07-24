@@ -85,7 +85,7 @@ class TaskWorkerTest(unittest.TestCase):
         field_factory = mock.Mock(return_value=field_worker)
         with mock.patch.object(
                 task_worker, "claude_bin", return_value="/bin/claude"):
-            runtime = task_worker.TaskExecutionRuntime(
+            runtime = task_worker.PersistentTaskRuntime(
                 task_client=client,
                 field_repair_worker_factory=field_factory,
                 ephemeral_executor_factory=pool_factory,

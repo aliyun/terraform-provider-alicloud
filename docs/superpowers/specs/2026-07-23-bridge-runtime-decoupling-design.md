@@ -6,7 +6,7 @@ Bridge 现有三个独立进程边界：DingTalk inbound Bot、Persistent Task W
 SchedulerService。唯一生命周期入口是 `bridge/run.sh`：scheduler 角色启动三者，worker
 角色只启动 Task Worker。重启 Scheduler 或 Bot 不会停止已 lease 的 Task Worker 进程。
 
-周期任务只由 `bridge/scheduler/jobs.py` 的显式 `JOBS` 元组注册；`SchedulerEngine` 拥有
+周期任务只由 `bridge/scheduler/jobs.yaml` 的显式条目注册，`jobs.py` 只负责校验和加载；`SchedulerEngine` 拥有
 cadence、misfire、retry、overlap 与 drain。Bot 不构造周期 Scheduler，也不持有周期 Job 的
 线程或 cadence。
 
@@ -19,9 +19,9 @@ cadence、misfire、retry、overlap 与 drain。Bot 不构造周期 Scheduler，
                                v
                       control-plane Task submit
 
- jobs.py -> SchedulerService -> SchedulerEngine -> runners -> Aone / GitHub
+ jobs.yaml -> jobs.py -> SchedulerService -> SchedulerEngine -> runners -> Aone / GitHub
 
- task_worker.py -> PersistenceExecutor -> task_runtime.py -> leased Task process
+ task_worker.py -> PersistenceExecutor -> persistent_tasks.py -> leased Task process
 ```
 
 Scheduler 和 Task Worker 均不导入对方的运行时；Scheduler 不构造 DingTalk stream、
@@ -37,22 +37,25 @@ bridge/
 ├── task_worker.py                # Persistent Task Worker composition root
 ├── jarvis_dingtalk_bot.py        # DingTalk inbound adapter
 ├── headless_runtime.py           # Headless 执行窄接口
-├── task_runtime.py               # Task / wake / bookend 执行边界
+├── persistent_tasks.py           # Persistent Task / wake / bookend 执行边界
 └── scheduler/
-    ├── jobs.py                   # 七个显式 Job definition
+    ├── jobs.yaml                 # 七个显式 Job definition
+    ├── jobs.py                   # YAML 校验与加载
     ├── model.py                  # schedule、definition、runner、result
     ├── engine.py                 # 计划、准入、执行与终态提交
     ├── control_plane_client.py   # scheduled-job 控制面边界
     ├── service.py                # Worker 生命周期、心跳、READY 与 drain
     └── runners/
-        ├── aone.py               # aone.scan / aone.claim-health / daily.nudge
-        ├── pr.py                 # pr.watch
+        ├── scan.py               # aone.scan
+        ├── claim_health.py       # aone.claim-health
+        ├── daily_nudge.py        # daily.nudge
+        ├── pr_watch.py           # pr.watch
         ├── reply.py              # aone.reply
         ├── recovery.py           # external.recovery
         └── daily_probe.py        # daily.probe
 ```
 
-`headless_runtime.py` 和 `task_runtime.py` 是扁平共享模块，不再以目录层级制造额外适配边界。
+`headless_runtime.py` 和 `persistent_tasks.py` 是扁平共享模块，不再以目录层级制造额外适配边界。
 Runner 只保留可重建的业务 cursor；slot 当前态、重试与运行中状态由 scheduled-job 控制面拥有。
 
 ## 3. 进程生命周期
@@ -81,12 +84,12 @@ Task、启动 headless 子进程并回写结果；不启动 DingTalk listener �
 
 | Job | runner | 职责 |
 | --- | --- | --- |
-| `aone.scan` | `runners/aone.py` | Aone 并集扫描、Task 写入与状态观察 |
-| `aone.claim-health` | `runners/aone.py` | claimed 健康核验与事件 ledger 补偿 |
-| `daily.nudge` | `runners/aone.py` | Terraform idle 停滞双通道催办 |
+| `aone.scan` | `runners/scan.py` | Aone 并集扫描、Task 写入与状态观察 |
+| `aone.claim-health` | `runners/claim_health.py` | claimed 健康核验与事件 ledger 补偿 |
+| `daily.nudge` | `runners/daily_nudge.py` | Terraform idle 停滞双通道催办 |
 | `aone.reply` | `runners/reply.py` | 回复后持久化 wake，供 worker lease 执行 |
 | `daily.probe` | `runners/daily_probe.py` | 独立 Terraform Headless 探测；默认停用 |
-| `pr.watch` | `runners/pr.py` | PR、CI、评审与合并生命周期；按活跃度调整 next due |
+| `pr.watch` | `runners/pr_watch.py` | PR、CI、评审与合并生命周期；按活跃度调整 next due |
 | `external.recovery` | `runners/recovery.py` | 以 recovery token 只读核验外部回执 |
 
 `daily.probe` 是唯一刻意停用的 Job；启用真实 Terraform 操作前必须获得单独授权。

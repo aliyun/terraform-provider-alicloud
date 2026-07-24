@@ -13,26 +13,57 @@ import os
 from pathlib import Path
 import re
 import subprocess
-import threading
 import time
 import uuid
 
 from bridge.jarvis_task_router import ExecutionRouter
-from bridge.task_runtime import (
+from bridge.persistent_tasks import (
     _TaskAttentionPublisher, _attention_owner_staff_id, _source_ref_with_title,
 )
 
 from ..model import JobResult, JobResultStatus, ScheduledJobDefinition, is_aware
-from .aone import (
-    REPO_ROOT, _a1_command_env, _aone_event_enqueue, _contact_directory,
+from bridge.aone_workitems import (
+    REPO_ROOT, _a1_command_env, _contact_directory,
     _is_terraform_project, _load_done_statuses, _pool_pr_merged_status,
     _routine_notifier, _task_envelope, broadcast_target, broadcast_type, log,
     master_staff,
 )
+from bridge.aone_events import _aone_event_enqueue, _aone_event_flush, _dingtalk_event_flush
+from bridge import pr_watch_registry as _registry
 
-PRWATCH_PATH = Path(REPO_ROOT) / ".my-day/bridge/pr-watch.json"
+# Keep this re-export patchable for the runner's focused tests while the actual
+# registry implementation lives above the Scheduler package for inbound reads.
+PRWATCH_PATH = _registry.PRWATCH_PATH
+_prwatch_lock = _registry._prwatch_lock
 
-_prwatch_lock = threading.Lock()
+
+def _registry_call(method, *args, **kwargs):
+    _registry.PRWATCH_PATH = PRWATCH_PATH
+    return getattr(_registry, method)(*args, **kwargs)
+
+
+def _prwatch_add(*args, **kwargs):
+    return _registry_call("_prwatch_add", *args, **kwargs)
+
+
+def _prwatch_has(*args, **kwargs):
+    return _registry_call("_prwatch_has", *args, **kwargs)
+
+
+def _prwatch_list(*args, **kwargs):
+    return _registry_call("_prwatch_list", *args, **kwargs)
+
+
+def _prwatch_load(*args, **kwargs):
+    return _registry_call("_prwatch_load", *args, **kwargs)
+
+
+def _prwatch_remove(*args, **kwargs):
+    return _registry_call("_prwatch_remove", *args, **kwargs)
+
+
+def _prwatch_update(*args, **kwargs):
+    return _registry_call("_prwatch_update", *args, **kwargs)
 
 _CI_FAIL_CONCLUSIONS = {"FAILURE", "TIMED_OUT", "STARTUP_FAILURE", "CANCELLED"}
 
@@ -62,116 +93,6 @@ def _load_self_github_logins():
                     Path(REPO_ROOT) / "config" / "contacts.json", e)
     return base
 
-def _prwatch_load():
-    """Load the shared PR registry. Missing/corrupt files are an empty best-effort view."""
-    try:
-        raw = json.loads(PRWATCH_PATH.read_text())
-        return ({str(k): dict(v) for k, v in raw.items() if isinstance(v, dict)}
-                if isinstance(raw, dict) else {})
-    except FileNotFoundError:
-        return {}
-    except Exception as e:  # noqa: BLE001
-        log.warning("prwatch: could not load %s: %s", PRWATCH_PATH, e)
-        return {}
-
-
-def _prwatch_has(ticket):
-    with _prwatch_lock:
-        return str(ticket) in _prwatch_load()
-
-def _prwatch_write(records):
-    """Atomically replace the registry after an in-process locked read/modify/write."""
-    try:
-        PRWATCH_PATH.parent.mkdir(parents=True, exist_ok=True)
-        tmp = PRWATCH_PATH.with_name(PRWATCH_PATH.name + ".tmp")
-        tmp.write_text(json.dumps(records, ensure_ascii=False, sort_keys=True))
-        os.replace(str(tmp), str(PRWATCH_PATH))
-        return True
-    except Exception as e:  # noqa: BLE001
-        log.warning("prwatch: could not persist %s: %s", PRWATCH_PATH, e)
-        return False
-
-def _prwatch_acquire_file_lock():
-    """Share bootstrap/pr-watch.sh's mkdir lock for cross-process mutations."""
-    lock_path = PRWATCH_PATH.parent / ".pr-watch.lock"
-    deadline = time.time() + 5
-    while time.time() < deadline:
-        try:
-            PRWATCH_PATH.parent.mkdir(parents=True, exist_ok=True)
-            lock_path.mkdir()
-            return lock_path
-        except FileExistsError:
-            try:
-                if time.time() - lock_path.stat().st_mtime > 10:
-                    lock_path.rmdir()
-                    continue
-            except (FileNotFoundError, OSError):
-                pass
-            time.sleep(0.1)
-        except OSError:
-            break
-    log.warning("prwatch: file lock busy; continuing with atomic best-effort write")
-    return None
-
-def _prwatch_release_file_lock(lock_path):
-    if lock_path is None:
-        return
-    try:
-        lock_path.rmdir()
-    except OSError:
-        pass
-
-def _prwatch_add(ticket, pr_url, project, title=""):
-    """Persist one watch entry while preserving its durable dedup/title fields."""
-    with _prwatch_lock:
-        file_lock = _prwatch_acquire_file_lock()
-        try:
-            records = _prwatch_load()
-            existing = records.get(str(ticket))
-            existing_title = (str(existing.get("title") or "").strip()
-                              if isinstance(existing, dict) else "")
-            frozen_title = existing_title or str(title or "").strip()
-            entry = dict(existing) if isinstance(existing, dict) else {}
-            entry.update({
-                "pr_url": pr_url, "project": project, "title": frozen_title,
-                "submitted_at": entry.get("submitted_at")
-                or time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
-            records[str(ticket)] = entry
-            _prwatch_write(records)
-        finally:
-            _prwatch_release_file_lock(file_lock)
-
-def _prwatch_remove(ticket):
-    """Drop a ticket's durable watch record on 收尾/关闭/终态."""
-    with _prwatch_lock:
-        file_lock = _prwatch_acquire_file_lock()
-        try:
-            records = _prwatch_load()
-            records.pop(str(ticket), None)
-            _prwatch_write(records)
-        finally:
-            _prwatch_release_file_lock(file_lock)
-
-def _prwatch_update(ticket, **fields):
-    """Merge bookkeeping fields into an existing watch entry (no-op if absent). Used by
-    PrWatchRuntime to record CI-fix dedup state (ci_fix_sha / ci_fix_attempts /
-    ci_fix_escalated / ci_fix_escalated_head / last_ci_fix_at) without disturbing
-    pr_url/project/submitted_at."""
-    with _prwatch_lock:
-        file_lock = _prwatch_acquire_file_lock()
-        try:
-            records = _prwatch_load()
-            ent = records.get(str(ticket))
-            if not isinstance(ent, dict):
-                return False
-            ent.update(fields)
-            return _prwatch_write(records)
-        finally:
-            _prwatch_release_file_lock(file_lock)
-
-def _prwatch_list():
-    with _prwatch_lock:
-        return _prwatch_load()
 
 def _post_pr_workitem_snapshot(iid, terraform=True):
     """Point-read authoritative project, numeric type, status id/name, and tags.
@@ -1364,6 +1285,7 @@ class PrWatchRuntime:
             log.warning("PrWatchRuntime: escalate broadcast #%s failed: %s", tid, e)
 
 PR_WATCH_RUNNER_KEY = "pr.watch"
+RUNNER_KEY = "pr_watch"
 
 
 class PrWatchRunner:
@@ -1380,7 +1302,6 @@ class PrWatchRunner:
         if not self.runtime.enabled:
             log.info("pr.watch disabled by JARVIS_PRWATCH_ENABLE")
             return JobResult(JobResultStatus.SUCCEEDED)
-        from .aone import _aone_event_flush, _dingtalk_event_flush
         _aone_event_flush(); _dingtalk_event_flush()
         active = self.runtime._tick()
         delay = self.runtime._active_interval if active else self.runtime.interval

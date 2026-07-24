@@ -11,7 +11,7 @@
 - Task 必须先进入控制面；控制面不可用时 fail-closed，不允许回退到本地无状态执行
 - `_decide` 逐单判定：终态 / `jarvis-done` / `jarvis-claimed` / `jarvis-npe` → skip；`jarvis-idle` 过人工介入门
 - **[人工点·可选]** 回退模式 `JARVIS_AUTO_DISPATCH=0`：新单入 pending，钉钉授权后才派（`plan.sh` 出计划）
-- 后台调度：统一 Scheduler 从 `bridge/scheduler/jobs.py` 的七个显式定义注册 Job（`daily.probe` 当前默认关闭）；`runners/aone.py` 负责 `aone.scan`、`aone.claim-health`、`daily.nudge`，`pr.py` 负责 `pr.watch`，reply/recovery/daily_probe 各以独立一次性 runner tick 执行
+- 后台调度：统一 Scheduler 从 `bridge/scheduler/jobs.yaml` 的七项配置注册 Job（`daily.probe` 当前默认关闭）；每个 job 由同名语义的独立 runner 执行：scan、claim_health、daily_nudge、reply、pr_watch、recovery、daily_probe
 
 ## 2. 单工单 Triage (headless)
 - `claim.sh claim` 认领（竞争锁，输了 SKIP）
