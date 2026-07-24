@@ -399,6 +399,88 @@ func TestAccAliCloudMongoDBInstance_basic0(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudMongoDBInstance_securityIpGroups(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_mongodb_instance.default"
+	serverFunc := func() interface{} {
+		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	ra := resourceAttrInit(resourceId, AliCloudMongoDBInstanceMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serverFunc, "DescribeMongoDBInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAccMongoDBInstanceSecurityIpGroups%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMongoDBInstanceBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine_version":      "4.2",
+					"db_instance_class":   "mongo.x8.medium",
+					"db_instance_storage": "20",
+					"vswitch_id":          "${data.alicloud_vswitches.default.ids.0}",
+					"security_ip_groups": []map[string]interface{}{
+						{
+							"security_ip_group_attribute": "test",
+							"security_ip_group_name":      "test",
+							"security_ips":                "192.168.0.1",
+						},
+						{
+							"security_ip_group_attribute": "test1",
+							"security_ip_group_name":      "test1",
+							"security_ips":                "192.168.0.2",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_ip_groups.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_ip_groups": []map[string]interface{}{
+						{
+							"security_ip_group_attribute": "test3",
+							"security_ip_group_name":      "test3",
+							"security_ips":                "192.168.0.3",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_ip_groups.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_ip_groups": []map[string]interface{}{},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_ip_groups.#": "0",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context", "ssl_action", "effective_time", "order_type", "parameters"},
+			},
+		},
+	})
+}
+
 func TestAccAliCloudMongoDBInstance_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_mongodb_instance.default"

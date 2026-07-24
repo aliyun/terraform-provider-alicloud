@@ -118,6 +118,26 @@ func resourceAliCloudMongoDBShardingInstance() *schema.Resource {
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
+			"security_ip_groups": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"security_ip_group_attribute": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"security_ip_group_name": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"security_ips": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
 			"account_password": {
 				Type:      schema.TypeString,
 				Optional:  true,
@@ -710,12 +730,44 @@ func resourceAliCloudMongoDBShardingInstanceRead(d *schema.ResourceData, meta in
 		d.Set("auto_renew_duration", autoRenewalAttribute["Duration"])
 	}
 
-	securityIpList, err := ddsService.DescribeMongoDBShardingSecurityIps(d.Id())
+	securityIpGroupsObject, err := ddsService.DescribeSecurityIps(d.Id())
 	if err != nil {
 		return WrapError(err)
 	}
-
+	securityIpList := make([]string, 0)
+	securityIpGroupMaps := make([]map[string]interface{}, 0)
+	if securityIpGroupsMap, ok := securityIpGroupsObject["SecurityIpGroups"].(map[string]interface{}); ok && securityIpGroupsMap != nil {
+		if securityIpGroup, ok := securityIpGroupsMap["SecurityIpGroup"]; ok && securityIpGroup != nil {
+			for _, item := range securityIpGroup.([]interface{}) {
+				v, ok := item.(map[string]interface{})
+				if !ok {
+					continue
+				}
+				if v["SecurityIpGroupAttribute"] == "hidden" {
+					continue
+				}
+				groupName, _ := v["SecurityIpGroupName"].(string)
+				if groupName == "default" {
+					if ipList, ok := v["SecurityIpList"].(string); ok && ipList != "" {
+						for _, ip := range strings.Split(ipList, COMMA_SEPARATED) {
+							if ip != "" {
+								securityIpList = append(securityIpList, ip)
+							}
+						}
+					}
+					continue
+				}
+				groupMap := map[string]interface{}{
+					"security_ip_group_attribute": v["SecurityIpGroupAttribute"],
+					"security_ip_group_name":      groupName,
+					"security_ips":                v["SecurityIpList"],
+				}
+				securityIpGroupMaps = append(securityIpGroupMaps, groupMap)
+			}
+		}
+	}
 	d.Set("security_ip_list", securityIpList)
+	d.Set("security_ip_groups", securityIpGroupMaps)
 
 	backupPolicy, err := ddsService.DescribeMongoDBShardingBackupPolicy(d.Id())
 	if err != nil {
@@ -1192,6 +1244,37 @@ func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 		}
 
 		d.SetPartial("security_ip_list")
+	}
+
+	if d.HasChange("security_ip_groups") {
+		oraw, nraw := d.GetChange("security_ip_groups")
+		remove := oraw.(*schema.Set).Difference(nraw.(*schema.Set)).List()
+		create := nraw.(*schema.Set).Difference(oraw.(*schema.Set)).List()
+		if len(remove) > 0 {
+			for _, whiteList := range remove {
+				whiteListArg := whiteList.(map[string]interface{})
+				if err := ddsService.ModifyMongoDBSecurityIpsGroup(d,
+					whiteListArg["security_ip_group_name"].(string),
+					whiteListArg["security_ip_group_attribute"].(string),
+					whiteListArg["security_ips"].(string),
+					"Delete"); err != nil {
+					return WrapError(err)
+				}
+			}
+		}
+		if len(create) > 0 {
+			for _, whiteList := range create {
+				whiteListArg := whiteList.(map[string]interface{})
+				if err := ddsService.ModifyMongoDBSecurityIpsGroup(d,
+					whiteListArg["security_ip_group_name"].(string),
+					whiteListArg["security_ip_group_attribute"].(string),
+					whiteListArg["security_ips"].(string),
+					"Append"); err != nil {
+					return WrapError(err)
+				}
+			}
+		}
+		d.SetPartial("security_ip_groups")
 	}
 
 	if !d.IsNewResource() && (d.HasChange("account_password") || d.HasChange("kms_encrypted_password")) {

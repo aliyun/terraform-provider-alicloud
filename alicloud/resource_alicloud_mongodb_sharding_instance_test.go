@@ -397,6 +397,105 @@ func TestAccAliCloudMongoDBShardingInstance_basic0(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudMongoDBShardingInstance_securityIpGroups(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_mongodb_sharding_instance.default"
+	serverFunc := func() interface{} {
+		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	ra := resourceAttrInit(resourceId, AliCloudMongoDBShardingInstanceMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serverFunc, "DescribeMongoDBShardingInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAccMongoDBShardingInstanceSecurityIpGroups%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMongoDBShardingInstanceBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine_version": "4.2",
+					"vswitch_id":     "${data.alicloud_vswitches.default.ids.0}",
+					"mongo_list": []map[string]interface{}{
+						{
+							"node_class": "dds.mongos.mid",
+						},
+						{
+							"node_class": "dds.mongos.mid",
+						},
+					},
+					"shard_list": []map[string]interface{}{
+						{
+							"node_class":   "dds.shard.mid",
+							"node_storage": "10",
+						},
+						{
+							"node_class":        "dds.shard.standard",
+							"node_storage":      "20",
+							"readonly_replicas": "1",
+						},
+					},
+					"security_ip_groups": []map[string]interface{}{
+						{
+							"security_ip_group_attribute": "test",
+							"security_ip_group_name":      "test",
+							"security_ips":                "192.168.0.1",
+						},
+						{
+							"security_ip_group_attribute": "test1",
+							"security_ip_group_name":      "test1",
+							"security_ips":                "192.168.0.2",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_ip_groups.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_ip_groups": []map[string]interface{}{
+						{
+							"security_ip_group_attribute": "test3",
+							"security_ip_group_name":      "test3",
+							"security_ips":                "192.168.0.3",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_ip_groups.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_ip_groups": []map[string]interface{}{},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_ip_groups.#": "0",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context", "ssl_action", "order_type", "parameters"},
+			},
+		},
+	})
+}
+
 func TestAccAliCloudMongoDBShardingInstance_basic0_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_mongodb_sharding_instance.default"
