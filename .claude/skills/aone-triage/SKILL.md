@@ -102,7 +102,7 @@ bash bootstrap/aone-image-extract.sh <id>          # 附件截图→本地,skill
 
 **Terraform-specific 领域**详细 branch(专属维护名单 / 类比 API 原生 vs Provider 适配 / 镇元覆盖度 / 生成器 vs 手写)全在 `references/tf-customer-request-routing.md`。tf_customer 域必读,其它域按需借鉴。
 
-5. **可视化截图取证**(查证完成后追加):非 Terraform 流程可调 `.claude/skills/screenshot-evidence` skill,用 Playwright 截取 OpenAPI 文档页、Provider 文档对比、GitHub PR diff 等关键页面,上传 OSS 生成签名 URL,组装 HTML 可视化报告并上传 pre-agent 预览。在回复草稿和工单详情中附上在线报告链接。**Terraform PD/RD/QA 内部阶段只返回本地证据路径或已有链接，不新上传、不回贴**；最终 RD 可把已有链接纳入唯一聚合回复。**评论内 URL/图片渲染规则见下方 §4「Aone 评论渲染 quirk」**;签名图片受 img src query 剥离影响所以只能在 pre-agent 在线报告里展示,评论区没法内嵌。
+5. **可视化截图取证**(查证完成后追加):调用 `.claude/skills/screenshot-evidence` skill，把关键页面组装成 HTML 可视化报告并上传 pre-agent 预览。**Terraform 工单的 OpenAPI、CloudSpec/ACube 映射、Provider 源码三层查证必须各有截图证据；确实不适用或页面不可达时，在 manifest 中逐层写明 N/A 原因，禁止静默省略。**为保持单写者约束，PD 只在 `.my-day/screenshots/<aone-id>/` 生成本地截图和 `evidence-manifest.md`，不上传 OSS、不写 Aone；最终 RD finalizer 运行 `screenshot-evidence` 的 manifest 校验器后统一上传一次，调用 `html-report-preview.sh upload` 时不得传 `--comment`，并把报告链接写入本轮唯一聚合回复。executor 托管时链接进入 `AONE_RESULT.reply_body`，run 内不得调用 `wrap.sh`；非 Terraform 流程仍可由当前处理者端到端生成、上传和回贴。**评论内 URL/图片渲染规则见下方 §4「Aone 评论渲染 quirk」**；签名图片受 img src query 剥离影响，只能在 pre-agent 在线报告里展示，评论区不直接内嵌。
 
 ### 4. 回复草稿(结构固定,先给用户过目)
 
@@ -200,6 +200,7 @@ options 为空，脚本会继续查询 field options API，并返回合法候选
 
 **Terraform 单写者附加门**:
 - PD 的路由动作和 QA 的缺陷/验收结论都只是 `requested_external_actions` 提案，由最终 RD 审查。
+- PD 必须把三层截图和 `evidence-manifest.md` 路径放入 `visual_evidence_manifest`；finalizer 用 `screenshot-evidence/scripts/validate-manifest.py` 校验三层齐全后统一上传报告，链接只进入本轮唯一聚合回复（executor 托管时为 `AONE_RESULT.reply_body`）。缺层、缺 manifest 或上传失败必须明确标为 blocked/missing_capability，禁止无说明跳过。
 - QA fail 在内部退回 RD 修复并重跑，不对外同步失败过程。
 - normal / close / escalate 的每个主处理 headless run 都最多一条 RD 聚合回复。
 - MR/CR 链接只写入最终聚合；开 MR/CR 后不立即 sync。

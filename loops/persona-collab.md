@@ -8,7 +8,7 @@
 
 | internal_role | 内部职责 | 是否可对外回复 |
 |---|---|---|
-| `terraform-pd` | 分诊、三层查证、路由提案、需求分析 | 否 |
+| `terraform-pd` | 分诊、三层查证、本地截图 manifest、路由提案、需求分析 | 否 |
 | `terraform-rd` | 开发、PR/CR、CI 修复；最终聚合；重要事件更新 | finalizer / event publisher |
 | `terraform-qa` | 远程 AccTest、回归、验收、缺陷证据 | 否 |
 
@@ -40,6 +40,7 @@ status: done | pass | fail | blocked | low_conf | missing_capability
 summary: 一句话结论
 evidence:
   - 可复核证据
+visual_evidence_manifest: <Terraform PD 生成的本地三层截图 manifest；其它角色可为空>
 requested_external_actions:
   - 由最终 RD 审查和执行的动作提案
 next:
@@ -55,13 +56,16 @@ reply_fragment: 可直接纳入最终回复的片段
 
 一个 Terraform 工单只启动一个 headless run：
 
-1. 编排层去重、探测 TerraformRD 登录并 claim。
-2. Task 起 PD：调用 `aone-triage`，完成查证和路由提案。
+1. 编排层去重、探测 TerraformRD 登录；控制面 executor 在模型进程外持有 lease 并托管 claim。
+2. Task 起 PD：调用 `aone-triage` 与 `screenshot-evidence`，完成三层查证、本地截图 manifest
+   和路由提案；不上传、不回贴。
 3. Task 起 RD：根据 PD 结果开发或 no-op；worktree 隔离，必要时创建 PR/CR，PR CI 必须全绿。
 4. Task 起 QA：远程 AccTest 和回归。
 5. QA fail → 把缺陷草稿与证据内部退回 RD 修复 → 重跑 QA。
 6. QA pass、blocked、low_conf 或达到循环上限 → Task 起 RD finalizer。
-7. finalizer 汇总全部返回，执行允许的外部动作，回复一次并 release/finish。
+7. finalizer 用 `screenshot-evidence/scripts/validate-manifest.py` 校验 PD manifest，统一上传一次
+   可视化报告（不传 `--comment`），汇总全部返回和报告链接，执行允许的外部动作，把完整正文
+   交编排层写入 `AONE_RESULT.reply_body`；executor 随后回复一次并 release/finish。
 
 无开发需求时，RD 可返回 no-op，QA 对支持性结论或复现证据做独立校验后进入 finalizer。不得为了
 形式跳过 PD/QA，也不得让 PD/QA 代替 RD 发声。
@@ -72,21 +76,23 @@ finalizer 回复正文至少包含：
 
 1. 总结论；
 2. PD 查证与路由结论；
-3. RD 改动、PR/CR 与 CI；
-4. QA pass/fail/blocked 及证据；
-5. 已执行的外部动作；
-6. 未决项和下一步。
+3. 三层可视化查证报告链接；
+4. RD 改动、PR/CR 与 CI；
+5. QA pass/fail/blocked 及证据；
+6. 已执行的外部动作；
+7. 未决项和下一步。
 
 MR/CR 链接只在这条最终聚合回复中同步。Terraform 例外：开 MR/CR 后不立即做中途 Aone 回填。
 
-```bash
-bin/a1id ready terraform-rd || exit 1
-JARVIS_A1_IDENTITY=terraform-rd bootstrap/wrap.sh done <id> \
-  --summary-file <final-aggregate.md> <status|--no-status>
+控制面 Task 的模型 run 不执行 `claim.sh`、`wrap.sh`、`release` 或直接评论；必须在末尾返回：
+
+```text
+[[AONE_RESULT:{"outcome":"done|idle|suspend","reply_body":"<含报告链接的唯一完整回复>",...}]]
 ```
 
-每个主处理 headless run 上述最终回复命令最多且必须执行一次。禁止阶段回复、直接发 Aone 评论、
-中途 `wrap.sh sync`、钉钉进展通知或新公开接力标记。此约束不等于“工单全生命周期只能一条评论”。
+executor 使用 terraform-rd 身份单次落账。仅非 executor 托管的独立 finalizer 才按 bookend
+执行一次 `JARVIS_A1_IDENTITY=terraform-rd bootstrap/wrap.sh done`。禁止阶段回复、中途
+`wrap.sh sync`、钉钉进展通知或新公开接力标记。此约束不等于“工单全生命周期只能一条评论”。
 
 回复后：
 

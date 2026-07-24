@@ -30,6 +30,10 @@ for skill in \
     "/reports/aone" \
     "from-aone" \
     "--comment" \
+    "Terraform single-writer boundary" \
+    "AONE_RESULT.reply_body" \
+    "without \`--comment\`" \
+    "must not call \`wrap.sh\`" \
     "buc_required" \
     "Never make report screenshots public-read" \
     "--acl private" \

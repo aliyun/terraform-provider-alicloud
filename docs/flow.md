@@ -14,11 +14,11 @@
 - 后台调度：ProbeScheduler（每日探测轮）/ RevisitScheduler（每日 idle 重访）/ AoneScheduler（扫描、stale/done 状态对账）/ PersonaScheduler（评论区数字人接力，默认关）
 
 ## 2. 单工单 Triage (headless)
-- `claim.sh claim` 认领（竞争锁，输了 SKIP）
-- `aone-triage` skill 查证（OpenAPI + Cloudspec 映射 + provider 源码）
+- bridge executor 在模型进程外持有 lease 并托管 `claim`
+- `aone-triage` skill 查证（OpenAPI + Cloudspec 映射 + provider 源码）；Terraform PD 同步生成三层本地截图 manifest，最终 RD 无 `--comment` 上传报告并在唯一聚合回复中贴链接
 - autonomy 判定：auto 列表内自动执行到预发/CR；低置信/红线 → Task `SUSPENDED` + needs-attention 事件
 - 遇必须人类决策 → Aone 评论 @人 + `[[SUSPEND:...]]` 挂起，WaitWatcher 收到回复后 `--resume` 唤醒
-- 收尾 bookend：`wrap.sh done`（评论+状态）→ `claim.sh release`（打 `jarvis-idle`）
+- 模型末尾返回 `AONE_RESULT.reply_body`；executor 单次评论/改状态并 release/finish
 
 ## 3. 硬门 (Hard Gate)
 - **[人工点]** `release_prod` 永停，正式发布必须人工审批
