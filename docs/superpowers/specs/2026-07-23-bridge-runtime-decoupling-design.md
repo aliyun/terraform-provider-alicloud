@@ -2,9 +2,9 @@
 
 ## 1. 结论
 
-Bridge 现有三个独立进程边界：DingTalk inbound Bot、Persistent Task Worker 与
+Bridge 现有三个独立进程边界：DingTalk inbound Bot、Persistent Worker 与
 SchedulerService。唯一生命周期入口是 `bridge/run.sh`：scheduler 角色启动三者，worker
-角色只启动 Task Worker。重启 Scheduler 或 Bot 不会停止已 lease 的 Task Worker 进程。
+角色只启动 Persistent Worker。重启 Scheduler 或 Bot 不会停止已 lease 的 Persistent Worker 进程。
 
 周期任务只由 `bridge/scheduler/jobs.yaml` 的显式条目注册，`jobs.py` 只负责校验和加载；`SchedulerEngine` 拥有
 cadence、misfire、retry、overlap 与 drain。Bot 不构造周期 Scheduler，也不持有周期 Job 的
@@ -21,11 +21,11 @@ cadence、misfire、retry、overlap 与 drain。Bot 不构造周期 Scheduler，
 
  jobs.yaml -> jobs.py -> SchedulerService -> SchedulerEngine -> runners -> Aone / GitHub
 
- task_worker.py -> PersistenceExecutor -> persistent_tasks.py -> leased Task process
+ persistent_worker.py -> PersistenceExecutor -> persistent_tasks.py -> leased Task process
 ```
 
-Scheduler 和 Task Worker 均不导入对方的运行时；Scheduler 不构造 DingTalk stream、
-`PersistenceExecutor` 或 `EphemeralExecutor`。Task Worker 不导入 Scheduler engine 或 runner。
+Scheduler 和 Persistent Worker 均不导入对方的运行时；Scheduler 不构造 DingTalk stream、
+`PersistenceExecutor` 或 `EphemeralExecutor`。Persistent Worker 不导入 Scheduler engine 或 runner。
 这份设计只记录本地实现边界，不代表已部署、预发验证或完成真实 restart 验收。
 
 ## 2. 当前目录与依赖边界
@@ -34,7 +34,7 @@ Scheduler 和 Task Worker 均不导入对方的运行时；Scheduler 不构造 D
 bridge/
 ├── run.sh                        # 唯一进程监督入口
 ├── main.py                       # SchedulerService composition root
-├── task_worker.py                # Persistent Task Worker composition root
+├── persistent_worker.py          # Persistent Worker composition root
 ├── jarvis_dingtalk_bot.py        # DingTalk inbound adapter
 ├── headless_runtime.py           # Headless 执行窄接口
 ├── persistent_tasks.py           # Persistent Task / wake / bookend 执行边界
@@ -65,16 +65,16 @@ Runner 只保留可重建的业务 cursor；slot 当前态、重试与运行中�
 `JARVIS_BRIDGE_ROLE=scheduler bridge/run.sh start` 启动：
 
 1. `jarvis_dingtalk_bot.py` 的 DingTalk stream；
-2. `task_worker.py` 的 `PersistenceExecutor`；
+2. `persistent_worker.py` 的 `PersistenceExecutor`；
 3. `main.py` 的 `SchedulerService`。
 
 `run.sh` 为三个进程维护独立 pidfile/log。计划内 Scheduler 停止先关闭 admission、登记
-`DRAINING` 并等待已准入 slot；超时不以 SIGKILL 替换仍在 drain 的 Scheduler。Task Worker
+`DRAINING` 并等待已准入 slot；超时不以 SIGKILL 替换仍在 drain 的 Scheduler。Persistent Worker
 独立持有 Task lease，因此 Scheduler/Bot 重启不会中断其 Session。
 
 ### Worker host
 
-`JARVIS_BRIDGE_ROLE=worker bridge/run.sh start` 只启动 `task_worker.py`。它从控制面 lease
+`JARVIS_BRIDGE_ROLE=worker bridge/run.sh start` 只启动 `persistent_worker.py`。它从控制面 lease
 Task、启动 headless 子进程并回写结果；不启动 DingTalk listener 或 SchedulerService。
 
 ## 4. 周期 Job 职责

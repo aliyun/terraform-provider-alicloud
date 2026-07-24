@@ -63,20 +63,20 @@ if [ "${1:-}" = "-m" ] && [ "${2:-}" = "bridge.main" ]; then
       exec sleep 300 ;;
   esac
 fi
-if [ "${1:-}" = "-m" ] && [ "${2:-}" = "bridge.task_worker" ]; then
-  [ -n "${FAKE_PROCESS_STATE:-}" ] && printf '%s\n' "$$" >"$FAKE_PROCESS_STATE/task-worker-started"
-  case "${FAKE_TASK_WORKER_MODE:-ready}" in
+if [ "${1:-}" = "-m" ] && [ "${2:-}" = "bridge.persistent_worker" ]; then
+  [ -n "${FAKE_PROCESS_STATE:-}" ] && printf '%s\n' "$$" >"$FAKE_PROCESS_STATE/persistent-worker-started"
+  case "${FAKE_PERSISTENT_WORKER_MODE:-ready}" in
     exit)
-      echo "$ts ERROR [MainThread] fake task worker immediate exit"
+      echo "$ts ERROR [MainThread] fake persistent worker immediate exit"
       exit 2 ;;
     no-ready)
-      echo "$ts INFO [MainThread] fake task worker deliberately not READY"
+      echo "$ts INFO [MainThread] fake persistent worker deliberately not READY"
       exec sleep 300 ;;
     once)
       echo "$ts INFO [MainThread] foreground once JARVIS_NO_DINGTALK=${JARVIS_NO_DINGTALK:-0}"
       exit 0 ;;
     *)
-      echo "$ts INFO [MainThread] Task worker READY pid=$$ worker=fake"
+      echo "$ts INFO [MainThread] Persistent worker READY pid=$$ worker=fake"
       exec sleep 300 ;;
   esac
 fi
@@ -160,7 +160,7 @@ case "${1:-}" in
     if [ -n "${FAKE_LAUNCHCTL_LOG:-}" ]; then
       mkdir -p "$(dirname "$FAKE_LAUNCHCTL_LOG")"
       if [ "${JARVIS_BRIDGE_ROLE:-scheduler}" = "worker" ]; then
-        printf '%s INFO [MainThread] Task worker READY pid=%s worker=fake\n' \
+        printf '%s INFO [MainThread] Persistent worker READY pid=%s worker=fake\n' \
           "$(date '+%Y-%m-%d %H:%M:%S')" "$pid" >>"$FAKE_LAUNCHCTL_LOG"
       else
         printf '%s INFO [MainThread] Bridge READY pid=%s role=supervisor\n' \
@@ -202,7 +202,7 @@ run() {
       JARVIS_NO_DINGTALK="" \
       FAKE_BOT_MODE="${TEST_BOT_MODE:-stay}" \
       FAKE_SCHEDULER_MODE="${TEST_SCHEDULER_MODE:-ready}" \
-      FAKE_TASK_WORKER_MODE="${TEST_TASK_WORKER_MODE:-ready}" \
+      FAKE_PERSISTENT_WORKER_MODE="${TEST_PERSISTENT_WORKER_MODE:-ready}" \
       FAKE_PROCESS_STATE="$STATE" \
       bash "$RUNSH" "$@"
 }
@@ -213,7 +213,7 @@ kill_test_processes() {
   local name p
   # Only pidfiles prove current ownership.  Diagnostic "*-started" markers may
   # outlive a clean stop and their numeric pid can later be reused by this test.
-  for name in bot.pid scheduler.pid task-worker.pid; do
+  for name in bot.pid scheduler.pid persistent-worker.pid; do
     p="$(state_pid "$name")"
     [ -n "$p" ] && kill -9 "$p" 2>/dev/null || true
   done
@@ -267,7 +267,7 @@ st="$(TEST_ROLE=scheduler run status 2>&1)"
 has "scheduler: RUNNING" "$st" "status(scheduler): reports Scheduler through run.sh"
 TEST_ROLE=scheduler run stop >/dev/null 2>&1
 [ ! -f "$STATE/scheduler.pid" ] && ok "stop(scheduler): scheduler pidfile removed" || no "stop(scheduler): scheduler pidfile removed"
-[ ! -f "$STATE/task-worker.pid" ] && ok "stop(scheduler): task worker pidfile removed" || no "stop(scheduler): task worker pidfile removed"
+[ ! -f "$STATE/persistent-worker.pid" ] && ok "stop(scheduler): persistent worker pidfile removed" || no "stop(scheduler): persistent worker pidfile removed"
 
 # --- T3: full mode via sourcing bridge/jarvis.env (creds NOT in env) --------
 fresh
@@ -325,25 +325,25 @@ has "JARVIS_ROOT=$repo_root" "$out" \
 
 # --- T8b: standalone runtime READY failures are fully rolled back -----------
 fresh
-out="$(TEST_TASK_WORKER_MODE=no-ready TEST_READY_WAIT=1 run start 2>&1)"; rc=$?
-worker_started="$(state_pid task-worker-started)"
-[ "$rc" != 0 ] && ok "start(task worker READY timeout): non-zero exit" || no "start(task worker READY timeout): non-zero exit"
-[ ! -f "$STATE/task-worker.pid" ] && ok "start(task worker READY timeout): pidfile removed" || no "start(task worker READY timeout): pidfile removed"
+out="$(TEST_PERSISTENT_WORKER_MODE=no-ready TEST_READY_WAIT=1 run start 2>&1)"; rc=$?
+worker_started="$(state_pid persistent-worker-started)"
+[ "$rc" != 0 ] && ok "start(persistent worker READY timeout): non-zero exit" || no "start(persistent worker READY timeout): non-zero exit"
+[ ! -f "$STATE/persistent-worker.pid" ] && ok "start(persistent worker READY timeout): pidfile removed" || no "start(persistent worker READY timeout): pidfile removed"
 [ -n "$worker_started" ] && ! kill -0 "$worker_started" 2>/dev/null \
-  && ok "start(task worker READY timeout): child terminated" \
-  || no "start(task worker READY timeout): child terminated"
-[ ! -f "$STATE/bot.pid" ] && ok "start(task worker READY timeout): bot rolled back" || no "start(task worker READY timeout): bot rolled back"
+  && ok "start(persistent worker READY timeout): child terminated" \
+  || no "start(persistent worker READY timeout): child terminated"
+[ ! -f "$STATE/bot.pid" ] && ok "start(persistent worker READY timeout): bot rolled back" || no "start(persistent worker READY timeout): bot rolled back"
 
 fresh
 out="$(TEST_SCHEDULER_MODE=no-ready TEST_READY_WAIT=1 run start 2>&1)"; rc=$?
 scheduler_started="$(state_pid scheduler-started)"
-worker_started="$(state_pid task-worker-started)"
+worker_started="$(state_pid persistent-worker-started)"
 [ "$rc" != 0 ] && ok "start(scheduler READY timeout): non-zero exit" || no "start(scheduler READY timeout): non-zero exit"
 [ ! -f "$STATE/scheduler.pid" ] && ok "start(scheduler READY timeout): scheduler pidfile removed" || no "start(scheduler READY timeout): scheduler pidfile removed"
 [ -n "$scheduler_started" ] && ! kill -0 "$scheduler_started" 2>/dev/null \
   && ok "start(scheduler READY timeout): scheduler child terminated" \
   || no "start(scheduler READY timeout): scheduler child terminated"
-[ ! -f "$STATE/task-worker.pid" ] && ok "start(scheduler READY timeout): new worker pidfile removed" || no "start(scheduler READY timeout): new worker pidfile removed"
+[ ! -f "$STATE/persistent-worker.pid" ] && ok "start(scheduler READY timeout): new worker pidfile removed" || no "start(scheduler READY timeout): new worker pidfile removed"
 [ -n "$worker_started" ] && ! kill -0 "$worker_started" 2>/dev/null \
   && ok "start(scheduler READY timeout): new worker terminated" \
   || no "start(scheduler READY timeout): new worker terminated"
@@ -353,9 +353,9 @@ worker_started="$(state_pid task-worker-started)"
 # retained when the newly-created scheduler fails.
 fresh
 TEST_ROLE=worker run start >/dev/null 2>&1
-worker_before="$(state_pid task-worker.pid)"
+worker_before="$(state_pid persistent-worker.pid)"
 out="$(TEST_ROLE=scheduler TEST_SCHEDULER_MODE=no-ready TEST_READY_WAIT=1 run start 2>&1)"; rc=$?
-worker_after="$(state_pid task-worker.pid)"
+worker_after="$(state_pid persistent-worker.pid)"
 [ "$rc" != 0 ] && ok "start(scheduler timeout/pre-existing worker): non-zero exit" || no "start(scheduler timeout/pre-existing worker): non-zero exit"
 [ -n "$worker_before" ] && [ "$worker_before" = "$worker_after" ] && kill -0 "$worker_after" 2>/dev/null \
   && ok "start(scheduler timeout/pre-existing worker): existing worker preserved" \
@@ -379,16 +379,16 @@ run stop >/dev/null 2>&1
 fresh
 run start >/dev/null 2>&1
 p1="$(pidval)"
-worker_before="$(state_pid task-worker.pid)"
+worker_before="$(state_pid persistent-worker.pid)"
 out="$(run restart 2>&1)"; rc=$?
 [ "$rc" = 0 ] && ok "restart: exit 0" || no "restart: exit 0 (got $rc)"
 p2="$(pidval)"
 [ -n "$p2" ] && [ "$p1" != "$p2" ] && ok "restart: new pid" || no "restart: new pid ($p1 -> $p2)"
 kill -0 "$p1" 2>/dev/null && no "restart: old process gone" || ok "restart: old process gone"
-worker_after="$(state_pid task-worker.pid)"
+worker_after="$(state_pid persistent-worker.pid)"
 [ -n "$worker_before" ] && [ "$worker_before" = "$worker_after" ] && kill -0 "$worker_after" 2>/dev/null \
-  && ok "restart(scheduler): existing task worker remains alive" \
-  || no "restart(scheduler): existing task worker remains alive"
+  && ok "restart(scheduler): existing persistent worker remains alive" \
+  || no "restart(scheduler): existing persistent worker remains alive"
 run stop >/dev/null 2>&1
 
 # --- T12: graceful stop semantics (吸收 master f7f1f72 优雅停止) --------------
@@ -408,7 +408,7 @@ kill -0 "$p1" 2>/dev/null && no "stop(deaf): process gone after SIGKILL" || ok "
 
 # --- T13: daemon is a true foreground entrypoint ---------------------------
 fresh
-out="$(TEST_ROLE=worker TEST_TASK_WORKER_MODE=once TEST_KEY=k TEST_SECRET=s run daemon 2>&1)"; rc=$?
+out="$(TEST_ROLE=worker TEST_PERSISTENT_WORKER_MODE=once TEST_KEY=k TEST_SECRET=s run daemon 2>&1)"; rc=$?
 [ "$rc" = 0 ] && ok "daemon: foreground child exit is propagated" || no "daemon: foreground child exit is propagated (got $rc)"
 has "foreground daemon" "$out" "daemon: reports foreground mode"
 has "JARVIS_NO_DINGTALK=1" "$out" "daemon(worker): forces degraded mode"
@@ -433,28 +433,28 @@ fresh
   export PATH="$FAKE_BREW/bin:$FAKE_BREW/sbin:/usr/bin:/bin:/usr/sbin:/sbin"
   export FAKE_BOT_MODE="stay"
   export FAKE_SCHEDULER_MODE="ready"
-  export FAKE_TASK_WORKER_MODE="ready"
+  export FAKE_PERSISTENT_WORKER_MODE="ready"
   export FAKE_PROCESS_STATE="$STATE"
   exec bash "$RUNSH" daemon
 ) >"$STATE/daemon.log" 2>&1 &
 daemon_pid=$!
 i=0
-while [ "$i" -lt 30 ] && { [ ! -f "$STATE/task-worker.pid" ] || [ ! -f "$STATE/scheduler.pid" ]; }; do
+while [ "$i" -lt 30 ] && { [ ! -f "$STATE/persistent-worker.pid" ] || [ ! -f "$STATE/scheduler.pid" ]; }; do
   sleep 0.1
   i=$((i + 1))
 done
-daemon_worker="$(state_pid task-worker.pid)"
+daemon_worker="$(state_pid persistent-worker.pid)"
 daemon_scheduler="$(state_pid scheduler.pid)"
 kill -TERM "$daemon_pid" 2>/dev/null || true
 wait "$daemon_pid" 2>/dev/null; daemon_rc=$?
 [ "$daemon_rc" = 0 ] && ok "daemon(scheduler): TERM exits cleanly" || no "daemon(scheduler): TERM exits cleanly (got $daemon_rc)"
 [ -n "$daemon_worker" ] && ! kill -0 "$daemon_worker" 2>/dev/null \
-  && ok "daemon(scheduler): TERM stops task worker" \
-  || no "daemon(scheduler): TERM stops task worker"
+  && ok "daemon(scheduler): TERM stops persistent worker" \
+  || no "daemon(scheduler): TERM stops persistent worker"
 [ -n "$daemon_scheduler" ] && ! kill -0 "$daemon_scheduler" 2>/dev/null \
   && ok "daemon(scheduler): TERM stops scheduler" \
   || no "daemon(scheduler): TERM stops scheduler"
-[ ! -f "$STATE/task-worker.pid" ] && ok "daemon(scheduler): worker pidfile removed" || no "daemon(scheduler): worker pidfile removed"
+[ ! -f "$STATE/persistent-worker.pid" ] && ok "daemon(scheduler): worker pidfile removed" || no "daemon(scheduler): worker pidfile removed"
 
 # A launchd-controlled restart uses a PID-bound one-shot marker.  The same
 # daemon TERM must then replace bot+scheduler without fencing leased Task work.
@@ -474,29 +474,29 @@ fresh
   export PATH="$FAKE_BREW/bin:$FAKE_BREW/sbin:/usr/bin:/bin:/usr/sbin:/sbin"
   export FAKE_BOT_MODE="stay"
   export FAKE_SCHEDULER_MODE="ready"
-  export FAKE_TASK_WORKER_MODE="ready"
+  export FAKE_PERSISTENT_WORKER_MODE="ready"
   export FAKE_PROCESS_STATE="$STATE"
   exec bash "$RUNSH" daemon
 ) >"$STATE/daemon-restart.log" 2>&1 &
 daemon_pid=$!
 i=0
-while [ "$i" -lt 30 ] && { [ ! -f "$STATE/task-worker.pid" ] || [ ! -f "$STATE/scheduler.pid" ]; }; do
+while [ "$i" -lt 30 ] && { [ ! -f "$STATE/persistent-worker.pid" ] || [ ! -f "$STATE/scheduler.pid" ]; }; do
   sleep 0.1
   i=$((i + 1))
 done
-daemon_worker="$(state_pid task-worker.pid)"
+daemon_worker="$(state_pid persistent-worker.pid)"
 daemon_scheduler="$(state_pid scheduler.pid)"
-printf '%s\n' "$daemon_pid" >"$STATE/preserve-task-worker-once"
+printf '%s\n' "$daemon_pid" >"$STATE/preserve-persistent-worker-once"
 kill -TERM "$daemon_pid" 2>/dev/null || true
 wait "$daemon_pid" 2>/dev/null; daemon_rc=$?
 [ "$daemon_rc" = 0 ] && ok "daemon(restart): TERM exits cleanly" || no "daemon(restart): TERM exits cleanly (got $daemon_rc)"
 [ -n "$daemon_worker" ] && kill -0 "$daemon_worker" 2>/dev/null \
-  && ok "daemon(restart): preserves task worker" \
-  || no "daemon(restart): preserves task worker"
+  && ok "daemon(restart): preserves persistent worker" \
+  || no "daemon(restart): preserves persistent worker"
 [ -n "$daemon_scheduler" ] && ! kill -0 "$daemon_scheduler" 2>/dev/null \
   && ok "daemon(restart): stops scheduler" \
   || no "daemon(restart): stops scheduler"
-[ ! -f "$STATE/preserve-task-worker-once" ] \
+[ ! -f "$STATE/preserve-persistent-worker-once" ] \
   && ok "daemon(restart): consumes one-shot marker" \
   || no "daemon(restart): consumes one-shot marker"
 TEST_ROLE=worker run stop >/dev/null 2>&1

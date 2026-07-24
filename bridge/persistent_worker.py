@@ -46,7 +46,7 @@ from bridge.jarvis_task_client import ControlPlaneClient
 from bridge.jarvis_task_router import ExecutionRouter
 
 
-LOG = logging.getLogger("jarvis-task-worker")
+LOG = logging.getLogger("jarvis-persistent-worker")
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -63,7 +63,7 @@ def _task_client_from_env() -> ControlPlaneClient:
     )
     if not token:
         raise RuntimeError(
-            "Task worker requires JARVIS_CONTROL_PLANE_TOKEN or "
+            "Persistent worker requires JARVIS_CONTROL_PLANE_TOKEN or "
             "JARVIS_HTML_REPORT_TOKEN")
     return ControlPlaneClient(
         base_url,
@@ -247,7 +247,7 @@ class PersistentTaskRuntime:
         notify("⚠️ #%s 后台处理失败（%s）" % (item_id, subtype))
 
 
-class TaskWorker:
+class PersistentWorker:
     """Compose the durable executor around the bridge's task implementation."""
 
     def __init__(
@@ -290,7 +290,7 @@ class TaskWorker:
         )
         self._release_claim = release_claim
 
-    def start(self) -> "TaskWorker":
+    def start(self) -> "PersistentWorker":
         self.executor.start()
         return self
 
@@ -307,9 +307,11 @@ class TaskWorker:
         return True
 
 
-def build_task_worker(*, executor_factory: Any = PersistenceExecutor) -> TaskWorker:
+def build_persistent_worker(
+        *, executor_factory: Any = PersistenceExecutor) -> PersistentWorker:
     """Build the durable worker without constructing a Bot or Scheduler."""
-    return TaskWorker(PersistentTaskRuntime(), executor_factory=executor_factory)
+    return PersistentWorker(
+        PersistentTaskRuntime(), executor_factory=executor_factory)
 
 
 def main() -> int:
@@ -318,16 +320,16 @@ def main() -> int:
         format="%(asctime)s %(levelname)s [%(threadName)s] %(message)s",
         stream=sys.stderr,
     )
-    worker = build_task_worker().start()
+    worker = build_persistent_worker().start()
     stop = threading.Event()
 
     def request_stop(signum: int, _frame: Any) -> None:
-        LOG.info("Task worker signal %s received; stopping leased sessions", signum)
+        LOG.info("Persistent worker signal %s received; stopping leased sessions", signum)
         stop.set()
 
     signal.signal(signal.SIGTERM, request_stop)
     signal.signal(signal.SIGINT, request_stop)
-    LOG.info("Task worker READY pid=%s role=%s", os.getpid(),
+    LOG.info("Persistent worker READY pid=%s role=%s", os.getpid(),
              os.environ.get("JARVIS_BRIDGE_ROLE", "scheduler"))
     stop.wait()
     worker.stop(

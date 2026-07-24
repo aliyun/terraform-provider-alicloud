@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Focused tests for the independent durable Task worker composition."""
+"""Focused tests for the independent durable Persistent Worker composition."""
 
 import os
 import sys
@@ -10,7 +10,7 @@ from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from bridge import task_worker
+from bridge import persistent_worker
 
 
 class _Executor:
@@ -29,7 +29,7 @@ class _Executor:
         return True
 
 
-class TaskWorkerTest(unittest.TestCase):
+class PersistentWorkerTest(unittest.TestCase):
     def setUp(self):
         self.old_role = os.environ.get("JARVIS_BRIDGE_ROLE")
         os.environ["JARVIS_BRIDGE_ROLE"] = "worker"
@@ -53,7 +53,8 @@ class TaskWorkerTest(unittest.TestCase):
 
     def test_composes_executor_outside_jarvis_handler(self):
         runtime = self._runtime()
-        worker = task_worker.TaskWorker(runtime, executor_factory=_Executor)
+        worker = persistent_worker.PersistentWorker(
+            runtime, executor_factory=_Executor)
 
         self.assertIs(worker.executor.args[0], runtime.task_client)
         self.assertIs(worker.executor.args[1], runtime.capacity_manager)
@@ -68,7 +69,7 @@ class TaskWorkerTest(unittest.TestCase):
     def test_stop_owns_executor_and_runtime_subprocess_cleanup(self):
         runtime = self._runtime()
         release = mock.Mock()
-        worker = task_worker.TaskWorker(
+        worker = persistent_worker.PersistentWorker(
             runtime, executor_factory=_Executor, release_claim=release)
         self.assertTrue(worker.stop(drain=True, timeout=7))
 
@@ -84,8 +85,8 @@ class TaskWorkerTest(unittest.TestCase):
         field_worker = mock.Mock()
         field_factory = mock.Mock(return_value=field_worker)
         with mock.patch.object(
-                task_worker, "claude_bin", return_value="/bin/claude"):
-            runtime = task_worker.PersistentTaskRuntime(
+                persistent_worker, "claude_bin", return_value="/bin/claude"):
+            runtime = persistent_worker.PersistentTaskRuntime(
                 task_client=client,
                 field_repair_worker_factory=field_factory,
                 ephemeral_executor_factory=pool_factory,

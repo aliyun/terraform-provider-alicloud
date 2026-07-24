@@ -2122,7 +2122,7 @@ def _release_claim(iid, project, terraform=False):
 
 
 def _stop_before_final_teardown(handler, *, context, timeout):
-    """Task execution is owned by the independent task_worker process."""
+    """Task execution is owned by the independent persistent_worker process."""
     del handler, context, timeout
     return True
 
@@ -2130,14 +2130,14 @@ def _stop_before_final_teardown(handler, *, context, timeout):
 def _run_no_dingtalk():
     """无钉钉降级模式启动(JARVIS_NO_DINGTALK=1 点火路径): 不建 DingTalk client/stream,
     不初始化 TataPool; durable Task execution is handled by the separate
-    ``task_worker.py`` process. 所有周期 Job 由独立的 ``bridge/run.sh`` 管理。
+    ``persistent_worker.py`` process. 所有周期 Job 由独立的 ``bridge/run.sh`` 管理。
     卡片/播报统一降级为 [BROADCAST] 日志行(→ bot.log); 入站 Tata 门面停用(无 stream)。
     阻塞至进程收到中断信号。"""
     log.warning("[NO-DINGTALK] 降级模式启动: 无 DingTalk client/stream/TataPool; "
                 "仅启动 Task executor，周期 Job 交由 run.sh；"
                 "卡片/播报 → [BROADCAST] 日志行; 入站 Tata 门面停用。")
     handler = JarvisHandler(no_dingtalk=True)
-    log.info("[NO-DINGTALK] bridge ready — Task executor is task_worker.py; "
+    log.info("[NO-DINGTALK] bridge ready — Task executor is persistent_worker.py; "
              "周期 Job 请通过 bridge/run.sh 管理; 卡片/播报以 [BROADCAST] 日志行落 bot.log。")
 
     # The durable worker has its own signal lifecycle.  This process only owns

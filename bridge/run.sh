@@ -35,7 +35,7 @@ else
   PYTHON="python3"
 fi
 BOT="${JARVIS_BRIDGE_BOT:-$SCRIPT_DIR/jarvis_dingtalk_bot.py}"
-TASK_WORKER="${JARVIS_TASK_WORKER:-$SCRIPT_DIR/task_worker.py}"
+PERSISTENT_WORKER="${JARVIS_PERSISTENT_WORKER:-$SCRIPT_DIR/persistent_worker.py}"
 STATE_DIR="${JARVIS_BRIDGE_STATE_DIR:-$REPO_ROOT/.my-day/bridge}"
 # PIDFILE/LOG default to scheduler role; _resolve_paths_by_role() re-derives after
 # _source_env so JARVIS_BRIDGE_ROLE from env files applies. Worker role uses
@@ -50,9 +50,9 @@ SCHEDULER_PIDFILE="$STATE_DIR/scheduler.pid"
 SCHEDULER_LOG="$STATE_DIR/scheduler.log"
 SCHEDULER_READY_WAIT="${JARVIS_SCHEDULER_READY_WAIT:-30}"
 SCHEDULER_DRAIN_WAIT="${JARVIS_SCHEDULER_DRAIN_TIMEOUT_SECONDS:-600}"
-TASK_WORKER_PIDFILE="$STATE_DIR/task-worker.pid"
-TASK_WORKER_LOG="$STATE_DIR/task-worker.log"
-PRESERVE_TASK_WORKER_ONCE="$STATE_DIR/preserve-task-worker-once"
+PERSISTENT_WORKER_PIDFILE="$STATE_DIR/persistent-worker.pid"
+PERSISTENT_WORKER_LOG="$STATE_DIR/persistent-worker.log"
+PRESERVE_PERSISTENT_WORKER_ONCE="$STATE_DIR/preserve-persistent-worker-once"
 say()  { printf '%s\n' "$*"; }
 err()  { printf '%s\n' "$*" >&2; }
 
@@ -133,7 +133,7 @@ _bridge_ready_in_log() { # $1 = launchd-owned pid
   local pid="$1"
   [ -f "$LOG" ] || return 1
   if [ "${JARVIS_BRIDGE_ROLE:-scheduler}" = "worker" ]; then
-    grep -F "Task worker READY pid=$pid " "$LOG" >/dev/null 2>&1
+    grep -F "Persistent worker READY pid=$pid " "$LOG" >/dev/null 2>&1
   else
     grep -F "Bridge READY pid=$pid role=supervisor" "$LOG" >/dev/null 2>&1
   fi
@@ -146,7 +146,7 @@ _resolve_paths_by_role() {
     scheduler)
       PIDFILE="$STATE_DIR/bot.pid";        LOG="$STATE_DIR/bot.log" ;;
     worker)
-      PIDFILE="$TASK_WORKER_PIDFILE"; LOG="$TASK_WORKER_LOG" ;;
+      PIDFILE="$PERSISTENT_WORKER_PIDFILE"; LOG="$PERSISTENT_WORKER_LOG" ;;
     *)
       err "unsupported JARVIS_BRIDGE_ROLE=$role (accept: scheduler|worker)"
       return 2 ;;
@@ -168,9 +168,9 @@ if not JOBS:
   fi
 }
 
-_task_worker_validate() {
+_persistent_worker_validate() {
   if [ -z "${JARVIS_CONTROL_PLANE_TOKEN:-}" ] && [ -z "${JARVIS_HTML_REPORT_TOKEN:-}" ]; then
-    err "task worker control-plane token is required"
+    err "persistent worker control-plane token is required"
     return 2
   fi
 }
@@ -190,15 +190,15 @@ _component_config() {
       COMPONENT_TIMEOUT_POLICY="kill"
       COMPONENT_VALIDATE=":"
       ;;
-    task-worker)
-      COMPONENT_LABEL="task worker"
-      COMPONENT_PIDFILE="$TASK_WORKER_PIDFILE"
-      COMPONENT_LOG="$TASK_WORKER_LOG"
-      COMPONENT_READY="Task worker READY"
+    persistent-worker)
+      COMPONENT_LABEL="persistent worker"
+      COMPONENT_PIDFILE="$PERSISTENT_WORKER_PIDFILE"
+      COMPONENT_LOG="$PERSISTENT_WORKER_LOG"
+      COMPONENT_READY="Persistent worker READY"
       COMPONENT_READY_WAIT="$SCHEDULER_READY_WAIT"
       COMPONENT_STOP_WAIT="$(_bridge_stop_wait)"
       COMPONENT_TIMEOUT_POLICY="preserve"
-      COMPONENT_VALIDATE="_task_worker_validate"
+      COMPONENT_VALIDATE="_persistent_worker_validate"
       ;;
     scheduler)
       COMPONENT_LABEL="scheduler"
@@ -219,11 +219,11 @@ _component_config() {
 
 _role_components() {
   if _scheduler_enabled && [ "${1:-start}" = "stop" ]; then
-    printf '%s\n' scheduler task-worker bot
+    printf '%s\n' scheduler persistent-worker bot
   elif _scheduler_enabled; then
-    printf '%s\n' bot task-worker scheduler
+    printf '%s\n' bot persistent-worker scheduler
   else
-    printf '%s\n' task-worker
+    printf '%s\n' persistent-worker
   fi
 }
 
@@ -237,12 +237,12 @@ _spawn_component() {
           nohup "$PYTHON" -m bridge.jarvis_dingtalk_bot >>"$COMPONENT_LOG" 2>&1 &
       fi
       ;;
-    task-worker)
-      if [ -n "${JARVIS_TASK_WORKER:-}" ]; then
-        nohup "$PYTHON" "$TASK_WORKER" >>"$COMPONENT_LOG" 2>&1 &
+    persistent-worker)
+      if [ -n "${JARVIS_PERSISTENT_WORKER:-}" ]; then
+        nohup "$PYTHON" "$PERSISTENT_WORKER" >>"$COMPONENT_LOG" 2>&1 &
       else
         PYTHONPATH="$REPO_ROOT${PYTHONPATH:+:$PYTHONPATH}" \
-          nohup "$PYTHON" -m bridge.task_worker >>"$COMPONENT_LOG" 2>&1 &
+          nohup "$PYTHON" -m bridge.persistent_worker >>"$COMPONENT_LOG" 2>&1 &
       fi
       ;;
     scheduler)
@@ -502,7 +502,7 @@ cmd_launchd_restart() {
   fi
 
   # The launchd daemon owns the Bot and standalone Scheduler. Replace those
-  # together while the PID-bound marker keeps the independent Task worker
+  # together while the PID-bound marker keeps the independent Persistent Worker
   # alive across the planned restart.
   local detail old_pid="" i=0 stop_wait preserve_worker=0
   detail="$("$LAUNCHCTL_BIN" print "$LAUNCHD_SERVICE" 2>/dev/null || true)"
@@ -515,17 +515,17 @@ cmd_launchd_restart() {
     # process/fence. Bind the one-shot marker to the exact daemon PID so a
     # stale file can never weaken a later full stop.
     mkdir -p "$STATE_DIR"
-    printf '%s\n' "$old_pid" >"$PRESERVE_TASK_WORKER_ONCE"
+    printf '%s\n' "$old_pid" >"$PRESERVE_PERSISTENT_WORKER_ONCE"
     preserve_worker=1
   fi
   "$LAUNCHCTL_BIN" disable "$LAUNCHD_SERVICE" >/dev/null 2>&1 || {
-    [ "$preserve_worker" -eq 1 ] && rm -f "$PRESERVE_TASK_WORKER_ONCE"
+    [ "$preserve_worker" -eq 1 ] && rm -f "$PRESERVE_PERSISTENT_WORKER_ONCE"
     err "launchd restart 失败: 无法禁用 KeepAlive ($LAUNCHD_SERVICE)"
     return 1
   }
   if [ -n "$old_pid" ]; then
     "$LAUNCHCTL_BIN" kill SIGTERM "$LAUNCHD_SERVICE" || {
-      [ "$preserve_worker" -eq 1 ] && rm -f "$PRESERVE_TASK_WORKER_ONCE"
+      [ "$preserve_worker" -eq 1 ] && rm -f "$PRESERVE_PERSISTENT_WORKER_ONCE"
       err "launchd restart 失败: 无法请求旧 bridge 优雅停止"
       return 1
     }
@@ -535,7 +535,7 @@ cmd_launchd_restart() {
       i=$((i + 1))
     done
     if _alive "$old_pid"; then
-      [ "$preserve_worker" -eq 1 ] && rm -f "$PRESERVE_TASK_WORKER_ONCE"
+      [ "$preserve_worker" -eq 1 ] && rm -f "$PRESERVE_PERSISTENT_WORKER_ONCE"
       "$LAUNCHCTL_BIN" enable "$LAUNCHD_SERVICE" >/dev/null 2>&1 || true
       err "bridge 在 ${stop_wait}s 内未停止；本次 restart 已取消。"
       return 1
@@ -543,7 +543,7 @@ cmd_launchd_restart() {
   fi
   # The old daemon normally consumes the marker in its TERM handler. If it
   # exited before doing so, remove the stale PID-bound marker now.
-  [ "$preserve_worker" -eq 1 ] && rm -f "$PRESERVE_TASK_WORKER_ONCE"
+  [ "$preserve_worker" -eq 1 ] && rm -f "$PRESERVE_PERSISTENT_WORKER_ONCE"
   "$LAUNCHCTL_BIN" enable "$LAUNCHD_SERVICE" >/dev/null 2>&1 || {
     err "launchd restart 失败: 无法重新启用 $LAUNCHD_SERVICE"
     return 1
@@ -605,7 +605,7 @@ cmd_start() {
       say "钉钉凭证就绪 → 全功能模式启动。"
     else
       mode="degraded"
-      say "无钉钉凭证 → 降级模式启动；周期任务与 Task worker 照常运行。"
+      say "无钉钉凭证 → 降级模式启动；周期任务与 Persistent Worker 照常运行。"
     fi
     say "启动 bridge (mode=$mode, role=scheduler)"
   fi
@@ -655,10 +655,10 @@ cmd_stop() {
 
 cmd_restart() {
   local component
-  # Scheduler restarts intentionally leave the independent Task worker alive;
+  # Scheduler restarts intentionally leave the independent Persistent Worker alive;
   # this keeps its leased Sessions fenced to the same worker process.
   for component in $(_role_components stop); do
-    if _scheduler_enabled && [ "$component" = "task-worker" ]; then
+    if _scheduler_enabled && [ "$component" = "persistent-worker" ]; then
       continue
     fi
     _component_stop "$component" || return $?
@@ -668,7 +668,7 @@ cmd_restart() {
 
 cmd_status() {
   local component pid primary
-  if _scheduler_enabled; then primary="bot"; else primary="task-worker"; fi
+  if _scheduler_enabled; then primary="bot"; else primary="persistent-worker"; fi
   _component_config "$primary" || return $?
   if pid="$(_running_pidfile "$COMPONENT_PIDFILE")"; then
     local uptime mode
@@ -718,7 +718,7 @@ cmd_dryrun() {
 cmd_daemon() {
   _source_env
   mkdir -p "$STATE_DIR"
-  local mode bot_pid="" shutdown_started=0 preserve_task_worker=0 rc=0
+  local mode bot_pid="" shutdown_started=0 preserve_persistent_worker=0 rc=0
   _daemon_shutdown() {
     local shutdown_rc=0 step_rc=0 preserve_pid=""
     # A supervisor may stop us while the standalone components are still
@@ -728,11 +728,11 @@ cmd_daemon() {
       return 0
     fi
     shutdown_started=1
-    if [ -f "$PRESERVE_TASK_WORKER_ONCE" ]; then
-      preserve_pid="$(cat "$PRESERVE_TASK_WORKER_ONCE" 2>/dev/null || true)"
-      rm -f "$PRESERVE_TASK_WORKER_ONCE"
+    if [ -f "$PRESERVE_PERSISTENT_WORKER_ONCE" ]; then
+      preserve_pid="$(cat "$PRESERVE_PERSISTENT_WORKER_ONCE" 2>/dev/null || true)"
+      rm -f "$PRESERVE_PERSISTENT_WORKER_ONCE"
       if [ "$preserve_pid" = "$$" ]; then
-        preserve_task_worker=1
+        preserve_persistent_worker=1
       fi
     fi
     _component_stop scheduler
@@ -742,14 +742,14 @@ cmd_daemon() {
       kill -TERM "$bot_pid" 2>/dev/null || true
       wait "$bot_pid" 2>/dev/null || true
     fi
-    if [ "$preserve_task_worker" -eq 0 ]; then
-      _component_stop task-worker
+    if [ "$preserve_persistent_worker" -eq 0 ]; then
+      _component_stop persistent-worker
       step_rc=$?
       if [ "$shutdown_rc" -eq 0 ] && [ "$step_rc" -ne 0 ]; then
         shutdown_rc="$step_rc"
       fi
     else
-      say "受控 restart：保留 task worker 及其已租约 Session。"
+      say "受控 restart：保留 persistent worker 及其已租约 Session。"
     fi
     return "$shutdown_rc"
   }
@@ -758,18 +758,18 @@ cmd_daemon() {
   say "bridge foreground daemon 启动 (mode=$mode, role=${JARVIS_BRIDGE_ROLE:-scheduler}, pid=$$): $PYTHON ${JARVIS_BRIDGE_BOT:-bridge.jarvis_dingtalk_bot}"
   if ! _scheduler_enabled; then
     trap - TERM INT
-    if [ -n "${JARVIS_TASK_WORKER:-}" ]; then
-      exec "$PYTHON" "$TASK_WORKER"
+    if [ -n "${JARVIS_PERSISTENT_WORKER:-}" ]; then
+      exec "$PYTHON" "$PERSISTENT_WORKER"
     fi
     PYTHONPATH="$REPO_ROOT${PYTHONPATH:+:$PYTHONPATH}" \
-      exec "$PYTHON" -m bridge.task_worker
+      exec "$PYTHON" -m bridge.persistent_worker
   fi
   local worker_started_pid=""
-  _component_start task-worker || return $?
+  _component_start persistent-worker || return $?
   worker_started_pid="${COMPONENT_STARTED_PID:-}"
   if ! _component_start scheduler; then
     if [ -n "$worker_started_pid" ]; then
-      _rollback_started_process "$worker_started_pid" "$TASK_WORKER_PIDFILE" "task worker" || true
+      _rollback_started_process "$worker_started_pid" "$PERSISTENT_WORKER_PIDFILE" "persistent worker" || true
     fi
     return 1
   fi
