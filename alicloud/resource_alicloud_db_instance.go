@@ -538,6 +538,13 @@ func resourceAliCloudDBInstance() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: StringInSlice([]string{"None", "Lastest", "All"}, false),
 			},
+			"force_delete": {
+				Type:             schema.TypeBool,
+				Optional:         true,
+				Default:          false,
+				Description:      "A behavior mark used to delete 'Prepaid' RDS instance forcibly.",
+				DiffSuppressFunc: PostPaidDiffSuppressFunc,
+			},
 			"fresh_white_list_readins": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -2534,8 +2541,40 @@ func resourceAliCloudDBInstanceDelete(d *schema.ResourceData, meta interface{}) 
 		return WrapError(err)
 	}
 	if PayType(instance["PayType"].(string)) == Prepaid {
-		log.Printf("[WARN] Cannot destroy Subscription resource: alicloud_db_instance. Terraform will remove this resource from the state file, however resources may remain.")
-		return nil
+		if !d.Get("force_delete").(bool) {
+			log.Printf("[WARN] Cannot destroy Subscription resource: alicloud_db_instance. Terraform will remove this resource from the state file, however resources may remain.")
+			return nil
+		}
+		// force_delete: transform the 'Prepaid' instance to 'Postpaid' before releasing it,
+		// consistent with the force_delete behavior of alicloud_instance.
+		transformAction := "TransformDBInstancePayType"
+		transformRequest := map[string]interface{}{
+			"RegionId":     client.RegionId,
+			"DBInstanceId": d.Id(),
+			"PayType":      Postpaid,
+			"SourceIp":     client.SourceIp,
+		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+			response, err := client.RpcPost("Rds", "2014-08-15", transformAction, nil, transformRequest, false)
+			if err != nil {
+				if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationDenied.DBInstanceStatus", "OperationDenied.ReadDBInstanceStatus", "IncorrectDBInstanceState"}) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(transformAction, response, transformRequest)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), transformAction, AlibabaCloudSdkGoERROR)
+		}
+		// wait until the charge type has converged to 'Postpaid' and the instance is running again
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutDelete), 5*time.Second, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
 	}
 	action := "DeleteDBInstance"
 	request := map[string]interface{}{
