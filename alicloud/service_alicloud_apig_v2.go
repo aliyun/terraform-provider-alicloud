@@ -419,6 +419,7 @@ func (s *ApigServiceV2) ApigEnvironmentStateRefreshFunc(id string, field string,
 }
 
 // DescribeApigEnvironment >>> Encapsulated.
+
 // DescribeApigService <<< Encapsulated get interface for Apig Service.
 
 func (s *ApigServiceV2) DescribeApigService(id string) (object map[string]interface{}, err error) {
@@ -427,10 +428,10 @@ func (s *ApigServiceV2) DescribeApigService(id string) (object map[string]interf
 	var response map[string]interface{}
 	var query map[string]*string
 	serviceId := id
-	action := fmt.Sprintf("/v1/services/%s", serviceId)
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
-	request["serviceId"] = id
+
+	action := fmt.Sprintf("/v1/services/%s", serviceId)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
@@ -446,11 +447,18 @@ func (s *ApigServiceV2) DescribeApigService(id string) (object map[string]interf
 		return nil
 	})
 	addDebug(action, response, request)
+	if response == nil {
+		return object, WrapErrorf(NotFoundErr("Service", id), NotFoundMsg, response)
+	}
 	if err != nil {
 		if IsExpectedErrors(err, []string{"NotFound.ServiceNotFound"}) {
-			return object, WrapErrorf(NotFoundErr("Service", id), NotFoundMsg, err)
+			return object, WrapErrorf(NotFoundErr("Service", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	code, _ := jsonpath.Get("$.code", response)
+	if InArray(fmt.Sprint(code), []string{"NotFound.ServiceNotFound"}) {
+		return object, WrapErrorf(NotFoundErr("Service", id), NotFoundMsg, response)
 	}
 
 	v, err := jsonpath.Get("$.data", response)
@@ -462,15 +470,18 @@ func (s *ApigServiceV2) DescribeApigService(id string) (object map[string]interf
 }
 
 func (s *ApigServiceV2) ApigServiceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.ApigServiceStateRefreshFuncWithApi(id, field, failStates, s.DescribeApigService)
+}
+
+func (s *ApigServiceV2) ApigServiceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeApigService(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
