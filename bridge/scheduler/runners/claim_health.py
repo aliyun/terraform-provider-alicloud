@@ -28,9 +28,9 @@ class ClaimHealthRunner(AoneQueryMixin):
     """Reconcile Aone claim tags against control-plane Task ownership."""
 
     CLAIM_HEALTH_MAX_INTERVAL_SECONDS = 300
-    _CLAIM_ACTIVE_TASK_STATES = {"PENDING", "LEASED", "RUNNING", "FINALIZING"}
-    _CLAIM_TERMINAL_TASK_STATES = {"SUCCEEDED", "FAILED", "CANCELLED"}
-    _CLAIM_RECOVERING_TASK_STATES = {"RECOVERY_PENDING", "RECOVERING"}
+    _CLAIM_ACTIVE_TASK_STATES = {"LEASED", "RUNNING", "FINALIZING"}
+    _CLAIM_TERMINAL_TASK_STATES = {"SUCCEEDED", "FAILED_FINAL", "CANCELED"}
+    _CLAIM_RECOVERING_TASK_STATES = {"READY", "RETRY_WAIT"}
     _CLAIM_WAIT_TYPES = {"AONE_REPLY", "MANUAL", "RETRY_BACKOFF", "TIMER"}
 
     def __init__(self, *, logger, task_client, repo_root) -> None:

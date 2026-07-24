@@ -3260,7 +3260,10 @@ def prepare_claim(aone_id: str, project_id: str, title: str = "",
             "project": project_id,
             "trigger": "INTERACTIVE",
         },
-        recovery_policy="REPLAY_SAFE",
+        # This is a directed, card-bound interaction rather than an unattended
+        # task.  Its payload deliberately has no headless prompt, so only this
+        # Interactive Worker may continue it through its fenced Session.
+        recovery_policy="RESUME_ONLY",
         aone_id=aone_id,
         source_status=stable_source_status,
         required_capabilities={"workerKey": state["workerKey"]},
