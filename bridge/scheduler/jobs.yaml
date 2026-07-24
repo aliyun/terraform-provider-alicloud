@@ -3,12 +3,12 @@ version: 1
 jobs:
   - key: daily.probe
     runner: daily_probe
-    revision: 2
+    revision: 3
     description: 每日启动独立 Terraform Headless 会话执行合成客户探测并归档摘要
     schedule: {kind: daily, hour: 10, minute: 0, timezone: Asia/Shanghai}
     misfire: CURRENT_DAY
     retry_delay_seconds: 300
-    enabled: false
+    enabled: true
 
   - key: aone.scan
     runner: scan
