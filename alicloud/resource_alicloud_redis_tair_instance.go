@@ -50,6 +50,13 @@ func resourceAliCloudRedisTairInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"config": {
+				Type:         schema.TypeMap,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validateRedisConfig,
+				Elem:         &schema.Schema{Type: schema.TypeString},
+			},
 			"connection_domain": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -568,6 +575,26 @@ func resourceAliCloudRedisTairInstanceRead(d *schema.ResourceData, meta interfac
 		d.Set("param_sentinel_compat_enable", objectRaw["ParamSentinelCompatEnable"])
 	}
 
+	gotConfigs := make(map[string]interface{})
+	if v, ok := d.GetOk("config"); ok && v != nil {
+		gotConfigs = v.(map[string]interface{})
+	}
+	if objectRaw["Config"] != nil && fmt.Sprint(objectRaw["Config"]) != "" {
+		configMap := make(map[string]string)
+		config, err := convertJsonStringToMap(fmt.Sprint(objectRaw["Config"]))
+		if err != nil {
+			return WrapError(err)
+		}
+		for k, v := range config {
+			// OpenAPI returns all configs even if the user did not specify them. Filter via gotConfigs.
+			if _, ok := gotConfigs[k]; !ok && len(gotConfigs) > 0 {
+				continue
+			}
+			configMap[k] = fmt.Sprint(v)
+		}
+		d.Set("config", configMap)
+	}
+
 	var securityIpGroupName string
 	if v, ok := d.GetOk("security_ip_group_name"); ok {
 		securityIpGroupName = v.(string)
@@ -1065,6 +1092,15 @@ func resourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 	if d.HasChange("param_no_loose_sentinel_password_free_commands") {
 		update = true
 		request["ParamNoLooseSentinelPasswordFreeCommands"] = d.Get("param_no_loose_sentinel_password_free_commands")
+	}
+
+	if d.HasChange("config") {
+		update = true
+		respJson, err := convertMaptoJsonString(d.Get("config").(map[string]interface{}))
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_redis_tair_instance", action, AlibabaCloudSdkGoERROR)
+		}
+		request["Config"] = respJson
 	}
 
 	if update {
