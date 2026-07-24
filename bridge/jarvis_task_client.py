@@ -209,6 +209,7 @@ class ControlPlaneClient:
     SOURCE_STATUS_CANDIDATES_PATH = "tasks/source-status-candidates"
     SOURCE_STATUS_PATH = "tasks/{task_id}/source-status"
     TASK_ATTENTION_PATH = "tasks/{task_id}/attention"
+    LEGACY_KIND_CLEANUP_PATH = "admin/tasks/legacy-kind/cleanup"
     PENDING_AONE_WAITS_PATH = "sessions/waits/aone-reply"
     EXTERNAL_OPERATION_RECOVERY_CANDIDATES_PATH = (
         "operations/external-recovery-candidates")
@@ -711,6 +712,29 @@ class ControlPlaneClient:
         return self._post(path, {
             "expectedSessionId": int(expected_session_id),
             "reason": reason,
+        }, request_id=request_id)
+
+    def preview_legacy_kind_cleanup(self) -> Any:
+        """Preview residual tasks whose task_type is a deprecated execution kind.
+
+        Read-only. Returns the snapshot (counts + SHA-256 task-id digest), active
+        blockers, an ``executable`` flag, and the deprecated ``taskTypes`` allowlist.
+        """
+        return self._get(self.LEGACY_KIND_CLEANUP_PATH)
+
+    def cleanup_legacy_kind_tasks(self, expected_snapshot: Mapping[str, Any],
+                                  confirmation: str, *,
+                                  request_id: Optional[str] = None) -> Dict[str, Any]:
+        """Delete the exact previewed set of deprecated-kind residual tasks.
+
+        The control plane re-validates ``expectedSnapshot`` against a fresh scan and
+        rejects with 409 if anything changed, or if active tasks/sessions block it.
+        """
+        if not isinstance(expected_snapshot, Mapping):
+            raise TypeError("expected_snapshot must be a mapping")
+        return self._post(self.LEGACY_KIND_CLEANUP_PATH, {
+            "confirmation": _nonblank(confirmation, "confirmation"),
+            "expectedSnapshot": dict(expected_snapshot),
         }, request_id=request_id)
 
     def list_source_status_candidates(self, *, after_task_id: int = 0,
