@@ -1,2 +1,3 @@
 # Runtime dependencies for bridge/run.sh.
 PyYAML==6.0.2
+dingtalk-stream==0.24.3
