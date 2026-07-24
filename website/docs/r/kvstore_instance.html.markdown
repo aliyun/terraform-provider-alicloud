@@ -258,7 +258,7 @@ The following arguments are supported:
 * `backup_period`- (Optional, List, Available since v1.104.0) Backup period.
 * `backup_time`- (Optional, Available since v1.104.0) Backup time, the format is HH:mmZ-HH:mmZ (UTC time).
 * `enable_backup_log`- (Optional, Int, Available since v1.104.0) Turn on or off incremental backup. Valid values: `1`, `0`. Default value: `0`
-* `private_connection_prefix`- (Optional, Available since v1.105.0) Private network connection prefix, used to modify the private network connection address. Only supports updating private network connections for existing instance.
+* `private_connection_prefix`- (Optional, Available since v1.105.0) Private network connection prefix, used to modify the private network connection address. Only supports updating private network connections for existing instance. The prefix must be 8 to 40 characters in length, and can contain lowercase letters and digits. It must start with a lowercase letter. The private network connection address is in the format of `<prefix>.redis.rds.aliyuncs.com`.
 * `private_connection_port`- (Optional, Available since v1.124.0) Private network connection port, used to modify the private network connection port.
 * `dry_run` - (Optional, Bool, Available since v1.128.0) Specifies whether to precheck the request. Valid values:
   - `true`: prechecks the request without creating an instance. The system prechecks the required parameters, request format, service limits, and available resources. If the request fails the precheck, the corresponding error message is returned. If the request passes the precheck, the DryRunOperation error code is returned.

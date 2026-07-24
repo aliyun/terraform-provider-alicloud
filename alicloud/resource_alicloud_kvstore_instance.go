@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -14,6 +15,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func resourceAliCloudKvstoreInstance() *schema.Resource {
@@ -237,8 +239,9 @@ func resourceAliCloudKvstoreInstance() *schema.Resource {
 				Optional: true,
 			},
 			"private_connection_prefix": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[a-z][a-z0-9]{7,39}$`), "The prefix must be 8 to 40 characters in length, can contain lowercase letters and digits, and must start with a lowercase letter."),
 			},
 			"private_connection_port": {
 				Type:     schema.TypeString,
