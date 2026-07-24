@@ -13,8 +13,8 @@ from unittest import mock
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-import jarvis_persistence_executor as persistence  # noqa: E402
-from jarvis_persistence_executor import (  # noqa: E402
+from bridge import jarvis_persistence_executor as persistence  # noqa: E402
+from bridge.jarvis_persistence_executor import (  # noqa: E402
     _default_boot_id,
     LeaseProtocolError,
     SessionController,
@@ -23,8 +23,8 @@ from jarvis_persistence_executor import (  # noqa: E402
     make_worker_key,
     parse_lease_response,
 )
-from jarvis_capacity import CapacityManager  # noqa: E402
-from jarvis_task_client import (  # noqa: E402
+from bridge.jarvis_capacity import CapacityManager  # noqa: E402
+from bridge.jarvis_task_client import (  # noqa: E402
     ControlPlaneConflict,
     ControlPlaneRejected,
     ControlPlaneUnavailable,

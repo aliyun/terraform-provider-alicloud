@@ -48,6 +48,51 @@ hasnot() { case "$2" in *"$1"*) no "$3 [unexpected '$1']";; *) ok "$3";; esac; }
 cat >"$FAKEPY" <<'FAKE'
 #!/usr/bin/env bash
 ts="$(date '+%Y-%m-%d %H:%M:%S')"
+if [ "${1:-}" = "-c" ]; then exit 0; fi
+if [ "${1:-}" = "-m" ] && [ "${2:-}" = "bridge.main" ]; then
+  if [ "${3:-}" = "--validate" ]; then
+    [ "${FAKE_VALIDATE_MODE:-ok}" = "ok" ] && exit 0
+    echo "$ts ERROR [MainThread] fake bridge validation failed"
+    exit 2
+  fi
+  [ -n "${FAKE_PROCESS_STATE:-}" ] && printf '%s\n' "$$" >"$FAKE_PROCESS_STATE/scheduler-started"
+  case "${FAKE_SCHEDULER_MODE:-ready}" in
+    exit)
+      echo "$ts ERROR [MainThread] fake scheduler immediate exit"
+      exit 2 ;;
+    no-ready)
+      echo "$ts INFO [MainThread] fake bridge supervisor deliberately not READY"
+      exec sleep 300 ;;
+    once)
+      echo "$ts INFO [MainThread] Bridge READY pid=$$ role=supervisor components=fake JARVIS_NO_DINGTALK=${JARVIS_NO_DINGTALK:-0}"
+      exit 0 ;;
+    *)
+      if [ "${JARVIS_NO_DINGTALK:-}" = "1" ]; then
+        echo "$ts WARNING [MainThread] [NO-DINGTALK] fake supervised bot"
+      else
+        echo "$ts INFO [MainThread] starting DingTalk stream listener… (fake supervised bot)"
+      fi
+      echo "$ts INFO [MainThread] Bridge READY pid=$$ role=supervisor components=fake"
+      exec sleep 300 ;;
+  esac
+fi
+if [ "${1:-}" = "-m" ] && [ "${2:-}" = "bridge.persistent_worker" ]; then
+  [ -n "${FAKE_PROCESS_STATE:-}" ] && printf '%s\n' "$$" >"$FAKE_PROCESS_STATE/persistent-worker-started"
+  case "${FAKE_PERSISTENT_WORKER_MODE:-ready}" in
+    exit)
+      echo "$ts ERROR [MainThread] fake persistent worker immediate exit"
+      exit 2 ;;
+    no-ready)
+      echo "$ts INFO [MainThread] fake persistent worker deliberately not READY"
+      exec sleep 300 ;;
+    once)
+      echo "$ts INFO [MainThread] foreground once JARVIS_NO_DINGTALK=${JARVIS_NO_DINGTALK:-0}"
+      exit 0 ;;
+    *)
+      echo "$ts INFO [MainThread] Persistent worker READY pid=$$ worker=fake"
+      exec sleep 300 ;;
+  esac
+fi
 for a in "$@"; do
   if [ "$a" = "--dry-run-once" ]; then
     echo "$ts INFO [MainThread] dry-run ok (fake bot) PATH=$PATH JARVIS_ROOT=${JARVIS_ROOT:-}"
@@ -71,6 +116,7 @@ case "${FAKE_BOT_MODE:-stay}" in
     echo "$ts INFO [MainThread] foreground once JARVIS_NO_DINGTALK=${JARVIS_NO_DINGTALK:-0}"
     exit 0 ;;
   *)
+    [ -n "${FAKE_PROCESS_STATE:-}" ] && printf '%s\n' "$$" >"$FAKE_PROCESS_STATE/bot-started"
     # Mirror the real bot's dual-line startup: the degraded bot prefixes EVERY line with
     # [NO-DINGTALK]; both modes log "scan scheduler started" (an ambiguous non-discriminator).
     if [ "${JARVIS_NO_DINGTALK:-}" = "1" ]; then
@@ -96,15 +142,39 @@ printf '%s\n' "$*" >>"$state/calls"
 case "${1:-}" in
   print)
     [ -f "$state/loaded" ] || exit 113
-    printf '%s\n' '{' '    state = running' '    pid = 4242' '}' ;;
+    pid="$(cat "$state/pid" 2>/dev/null || true)"
+    if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+      printf '%s\n' '{' '    state = running' "    pid = $pid" '}'
+    else
+      printf '%s\n' '{' '    state = waiting' '}'
+    fi ;;
   bootstrap)
     touch "$state/loaded" ;;
   bootout)
-    rm -f "$state/loaded" ;;
-  enable)
+    pid="$(cat "$state/pid" 2>/dev/null || true)"
+    [ -n "$pid" ] && kill -TERM "$pid" 2>/dev/null || true
+    rm -f "$state/loaded" "$state/pid" ;;
+  enable|disable)
     : ;;
+  kill)
+    pid="$(cat "$state/pid" 2>/dev/null || true)"
+    [ -n "$pid" ] && kill -TERM "$pid" 2>/dev/null || true
+    rm -f "$state/pid" ;;
   kickstart)
-    [ -f "$state/loaded" ] || exit 1 ;;
+    [ -f "$state/loaded" ] || exit 1
+    pid="$(cat "$state/pid" 2>/dev/null || true)"
+    if [ "${2:-}" = "-k" ] && [ -n "$pid" ]; then
+      kill -TERM "$pid" 2>/dev/null || true
+      rm -f "$state/pid"
+    fi
+    sleep 300 </dev/null >/dev/null 2>&1 &
+    pid=$!
+    printf '%s\n' "$pid" >"$state/pid"
+    if [ -n "${FAKE_LAUNCHCTL_LOG:-}" ]; then
+      mkdir -p "$(dirname "$FAKE_LAUNCHCTL_LOG")"
+      printf '%s INFO [MainThread] Bridge READY pid=%s role=supervisor\n' \
+        "$(date '+%Y-%m-%d %H:%M:%S')" "$pid" >>"$FAKE_LAUNCHCTL_LOG"
+    fi ;;
   *)
     echo "unexpected fake launchctl command: $*" >&2
     exit 2 ;;
@@ -120,7 +190,11 @@ run() {
       JARVIS_BRIDGE_BOOTSTRAP_ENV="$BSENV" \
       JARVIS_BRIDGE_ENV="$JENV" \
       JARVIS_BRIDGE_START_WAIT="1.0" \
+      JARVIS_BRIDGE_ROLE="${TEST_ROLE:-scheduler}" \
+      JARVIS_CONTROL_PLANE_TOKEN="test-token" \
       JARVIS_BRIDGE_STOP_WAIT="1" \
+      JARVIS_BRIDGE_START_ROLLBACK_WAIT="1" \
+      JARVIS_SCHEDULER_READY_WAIT="${TEST_READY_WAIT:-1}" \
       JARVIS_BRIDGE_TOOL_DIRS="$FAKE_BREW/sbin $FAKE_BREW/bin $FAKE_HOME/.local/bin" \
       JARVIS_BRIDGE_SUPERVISOR="${TEST_SUPERVISOR-}" \
       JARVIS_BRIDGE_LAUNCHCTL="$FAKECTL" \
@@ -128,22 +202,40 @@ run() {
       JARVIS_BRIDGE_LAUNCHD_DOMAIN="gui/4242" \
       JARVIS_BRIDGE_LAUNCHD_PLIST="$LPLIST" \
       FAKE_LAUNCHCTL_STATE="$FAKECTL_STATE" \
+      FAKE_LAUNCHCTL_LOG="$STATE/bot.log" \
       HOME="$FAKE_HOME" \
       PATH="$FAKE_BREW/bin:$FAKE_BREW/sbin:/usr/bin:/bin:/usr/sbin:/sbin" \
       DINGTALK_APP_KEY="${TEST_KEY-}" \
       DINGTALK_APP_SECRET="${TEST_SECRET-}" \
       JARVIS_NO_DINGTALK="" \
       FAKE_BOT_MODE="${TEST_BOT_MODE:-stay}" \
+      FAKE_VALIDATE_MODE="${TEST_VALIDATE_MODE:-ok}" \
+      FAKE_SCHEDULER_MODE="${TEST_SCHEDULER_MODE:-ready}" \
+      FAKE_PERSISTENT_WORKER_MODE="${TEST_PERSISTENT_WORKER_MODE:-ready}" \
+      FAKE_PROCESS_STATE="$STATE" \
       bash "$RUNSH" "$@"
 }
 
 pidval() { cat "$STATE/bot.pid" 2>/dev/null || echo ""; }
+state_pid() { cat "$STATE/$1" 2>/dev/null || echo ""; }
+kill_test_processes() {
+  local name p
+  # Only pidfiles prove current ownership.  Diagnostic "*-started" markers may
+  # outlive a clean stop and their numeric pid can later be reused by this test.
+  for name in bot.pid scheduler.pid persistent-worker.pid; do
+    p="$(state_pid "$name")"
+    [ -n "$p" ] && kill -9 "$p" 2>/dev/null || true
+  done
+}
 fresh() {
-  local p; p="$(pidval)"; [ -n "$p" ] && kill -9 "$p" 2>/dev/null
+  kill_test_processes
   rm -rf "$STATE"; mkdir -p "$STATE"
 }
 cleanup() {
-  local p; p="$(pidval)"; [ -n "$p" ] && kill -9 "$p" 2>/dev/null
+  local launchd_pid
+  kill_test_processes
+  launchd_pid="$(cat "$FAKECTL_STATE/pid" 2>/dev/null || true)"
+  [ -n "$launchd_pid" ] && kill -9 "$launchd_pid" 2>/dev/null || true
   rm -rf "$TMP"
 }
 trap cleanup EXIT
@@ -173,6 +265,17 @@ hasnot "降级" "$out" "start(full/env): no degraded hint when creds present"
 st="$(run status 2>&1)"
 has "全功能" "$st" "status(full): mode = full"
 run stop >/dev/null 2>&1
+
+# --- T2b: scheduler role owns both processes through the same run.sh -------
+fresh
+out="$(TEST_ROLE=scheduler run start 2>&1)"; rc=$?
+[ "$rc" = 0 ] && ok "start(scheduler): exit 0" || no "start(scheduler): exit 0 (got $rc)"
+[ -f "$STATE/bot.pid" ] && ok "start(scheduler): supervisor pidfile written" || no "start(scheduler): supervisor pidfile"
+[ ! -f "$STATE/scheduler.pid" ] && ok "run.sh leaves component pidfiles to main" || no "run.sh unexpectedly supervises scheduler child"
+st="$(TEST_ROLE=scheduler run status 2>&1)"
+has "bridge: RUNNING" "$st" "status(scheduler): reports one supervisor"
+TEST_ROLE=scheduler run stop >/dev/null 2>&1
+[ ! -f "$STATE/bot.pid" ] && ok "stop(scheduler): supervisor pidfile removed" || no "stop(scheduler): supervisor pidfile removed"
 
 # --- T3: full mode via sourcing bridge/jarvis.env (creds NOT in env) --------
 fresh
@@ -205,18 +308,14 @@ out2="$(run stop 2>&1)"; rc2=$?
 [ "$rc2" = 0 ] && ok "stop(no pid): clean exit 0" || no "stop(no pid): exit 0 (got $rc2)"
 has "未在运行" "$out2" "stop(no pid): reports not running"
 
-# --- T6: startup failure — bot exits immediately ---------------------------
+# --- T6: supervised dispatch mode starts and waits for authorization --------
 fresh
-out="$(TEST_BOT_MODE=exit run start 2>&1)"; rc=$?
-[ "$rc" != 0 ] && ok "start(fail/exit): non-zero exit" || no "start(fail/exit): non-zero exit (got $rc)"
-has "失败" "$out" "start(fail/exit): reports failure + log tail"
-[ ! -f "$STATE/bot.pid" ] && ok "start(fail/exit): stale pidfile cleaned" || no "start(fail/exit): stale pidfile cleaned"
-
-# --- T7: startup failure — first log line is ERROR though process stays ----
-fresh
-out="$(TEST_BOT_MODE=errfirst run start 2>&1)"; rc=$?
-[ "$rc" != 0 ] && ok "start(fail/errfirst): non-zero exit" || no "start(fail/errfirst): non-zero exit (got $rc)"
-[ ! -f "$STATE/bot.pid" ] && ok "start(fail/errfirst): pidfile cleaned (proc stopped)" || no "start(fail/errfirst): pidfile cleaned"
+out="$(JARVIS_AUTO_DISPATCH=0 run start 2>&1)"; rc=$?
+[ "$rc" = 0 ] && ok "start(auto-dispatch=0): supervised mode starts" || no "start(auto-dispatch=0): exit 0 (got $rc)"
+[ -f "$STATE/bot.pid" ] && ok "start(auto-dispatch=0): supervisor pidfile written" || no "start(auto-dispatch=0): supervisor pidfile"
+st="$(JARVIS_AUTO_DISPATCH=0 run status 2>&1)"
+has "bridge: RUNNING" "$st" "start(auto-dispatch=0): waits for authorization while running"
+JARVIS_AUTO_DISPATCH=0 run stop >/dev/null 2>&1
 
 # --- T8: dry-run passes --dry-run-once through -----------------------------
 fresh
@@ -227,6 +326,16 @@ has "PATH=$FAKE_HOME/.local/bin:$FAKE_BREW/bin:$FAKE_BREW/sbin:/usr/bin:/bin:/us
   "dry-run: non-interactive PATH includes user-local and Homebrew tool directories"
 has "JARVIS_ROOT=$repo_root" "$out" \
   "dry-run: review worktree stays on its own wrappers and configuration"
+
+# --- T8b: supervisor READY failure is rolled back before service ownership --
+fresh
+out="$(TEST_SCHEDULER_MODE=no-ready TEST_READY_WAIT=1 run start 2>&1)"; rc=$?
+scheduler_started="$(state_pid scheduler-started)"
+[ "$rc" != 0 ] && ok "start(scheduler READY timeout): non-zero exit" || no "start(scheduler READY timeout): non-zero exit"
+[ ! -f "$STATE/bot.pid" ] && ok "start(supervisor READY timeout): pidfile removed" || no "start(supervisor READY timeout): pidfile remains"
+[ -n "$scheduler_started" ] && ! kill -0 "$scheduler_started" 2>/dev/null \
+  && ok "start(supervisor READY timeout): child terminated" \
+  || no "start(supervisor READY timeout): child terminated"
 
 # --- T9: status when stopped -----------------------------------------------
 fresh
@@ -252,51 +361,75 @@ p2="$(pidval)"
 kill -0 "$p1" 2>/dev/null && no "restart: old process gone" || ok "restart: old process gone"
 run stop >/dev/null 2>&1
 
-# --- T12: graceful stop semantics (吸收 master f7f1f72 优雅停止) --------------
-# 正常 bot 收 SIGTERM 即退 → graceful; deaf bot 忽略 TERM → 宽限超时后 SIGKILL forced 兜底。
+# --- T11b: replacement validation is a pre-downtime gate -------------------
+fresh
+run start >/dev/null 2>&1
+p1="$(pidval)"
+out="$(TEST_VALIDATE_MODE=fail run restart 2>&1)"; rc=$?
+p2="$(pidval)"
+[ "$rc" != 0 ] && ok "restart(validation failure): non-zero exit" || no "restart(validation failure): exit 0"
+[ -n "$p1" ] && [ "$p1" = "$p2" ] \
+  && ok "restart(validation failure): keeps current supervisor pid" \
+  || no "restart(validation failure): supervisor changed ($p1 -> $p2)"
+kill -0 "$p1" 2>/dev/null \
+  && ok "restart(validation failure): current supervisor stays alive" \
+  || no "restart(validation failure): current supervisor stopped"
+run stop >/dev/null 2>&1
+
+# --- T12: graceful stop delegates child shutdown to Python supervisor -------
 fresh
 run start >/dev/null 2>&1
 gout="$(run stop 2>&1)"
 has "graceful" "$gout" "stop(normal): bot 收 SIGTERM 即退 → graceful"
-fresh
-TEST_BOT_MODE=deaf run start >/dev/null 2>&1
-p1="$(pidval)"
-fout="$(run stop 2>&1)"; rc=$?
-[ "$rc" = 0 ] && ok "stop(deaf): exit 0" || no "stop(deaf): exit 0 (got $rc)"
-has "forced" "$fout" "stop(deaf): 忽略 TERM → 宽限后 SIGKILL forced 兜底"
-kill -0 "$p1" 2>/dev/null && no "stop(deaf): process gone after SIGKILL" || ok "stop(deaf): process gone after SIGKILL"
-[ ! -f "$STATE/bot.pid" ] && ok "stop(deaf): pidfile removed" || no "stop(deaf): pidfile removed"
 
 # --- T13: daemon is a true foreground entrypoint ---------------------------
 fresh
-out="$(TEST_BOT_MODE=once TEST_KEY=k TEST_SECRET=s run daemon 2>&1)"; rc=$?
+out="$(TEST_ROLE=worker TEST_SCHEDULER_MODE=once TEST_KEY=k TEST_SECRET=s run daemon 2>&1)"; rc=$?
 [ "$rc" = 0 ] && ok "daemon: foreground child exit is propagated" || no "daemon: foreground child exit is propagated (got $rc)"
 has "foreground daemon" "$out" "daemon: reports foreground mode"
-has "JARVIS_NO_DINGTALK=0" "$out" "daemon: sources env and keeps full mode"
+has "JARVIS_NO_DINGTALK=1" "$out" "daemon(worker): forces degraded mode"
 [ ! -f "$STATE/bot.pid" ] && ok "daemon: does not write local pidfile" || no "daemon: does not write local pidfile"
 
 # --- T14: launchd-supervised lifecycle uses only fake launchctl ------------
 fresh
 rm -rf "$FAKECTL_STATE"; mkdir -p "$FAKECTL_STATE"
-out="$(TEST_SUPERVISOR=launchd run start 2>&1)"; rc=$?
+out="$(TEST_ROLE=worker TEST_SUPERVISOR=launchd run start 2>&1)"; rc=$?
 [ "$rc" = 0 ] && ok "launchd start: exit 0" || no "launchd start: exit 0 (got $rc)"
 calls="$(cat "$FAKECTL_STATE/calls" 2>/dev/null)"
 has "bootstrap gui/4242 $LPLIST" "$calls" "launchd start: bootstraps configured plist"
-has "kickstart -k gui/4242/com.jarvis.test" "$calls" "launchd start: kickstarts service"
+has "kickstart gui/4242/com.jarvis.test" "$calls" "launchd start: kickstarts service"
 [ ! -f "$STATE/bot.pid" ] && ok "launchd start: no local bot process/pidfile" || no "launchd start: no local pidfile"
-st="$(TEST_SUPERVISOR=launchd run status 2>&1)"
+st="$(TEST_ROLE=worker TEST_SUPERVISOR=launchd run status 2>&1)"
 has "RUNNING" "$st" "launchd status: parses fake launchctl state"
-has "pid 4242" "$st" "launchd status: reports launchd pid"
+launchd_pid="$(cat "$FAKECTL_STATE/pid")"
+has "pid $launchd_pid" "$st" "launchd status: reports launchd pid"
 : >"$FAKECTL_STATE/calls"
-out="$(TEST_SUPERVISOR=launchd run restart 2>&1)"; rc=$?
+out="$(TEST_ROLE=worker TEST_SUPERVISOR=launchd run restart 2>&1)"; rc=$?
 [ "$rc" = 0 ] && ok "launchd restart: exit 0" || no "launchd restart: exit 0 (got $rc)"
 calls="$(cat "$FAKECTL_STATE/calls")"
 has "enable gui/4242/com.jarvis.test" "$calls" "launchd restart: keeps service enabled"
-has "kickstart -k gui/4242/com.jarvis.test" "$calls" "launchd restart: replaces running process"
+has "disable gui/4242/com.jarvis.test" "$calls" "launchd restart: disables KeepAlive during drain"
+has "kill SIGTERM gui/4242/com.jarvis.test" "$calls" "launchd restart: requests graceful drain"
+has "kickstart gui/4242/com.jarvis.test" "$calls" "launchd restart: starts replacement without overlap"
+hasnot "kickstart -k gui/4242/com.jarvis.test" "$calls" "launchd restart: avoids overlapping replacement"
 hasnot "bootout gui/4242/com.jarvis.test" "$calls" "launchd restart: keeps service registered"
-out="$(TEST_SUPERVISOR=launchd run stop 2>&1)"; rc=$?
+
+# A broken replacement runtime is rejected before launchd is disabled or the
+# current process is signalled.
+launchd_pid="$(cat "$FAKECTL_STATE/pid")"
+: >"$FAKECTL_STATE/calls"
+out="$(TEST_ROLE=worker TEST_SUPERVISOR=launchd TEST_VALIDATE_MODE=fail run restart 2>&1)"; rc=$?
+[ "$rc" != 0 ] && ok "launchd restart(validation failure): non-zero exit" || no "launchd restart(validation failure): exit 0"
+calls="$(cat "$FAKECTL_STATE/calls")"
+hasnot "disable gui/4242/com.jarvis.test" "$calls" "launchd restart(validation failure): leaves KeepAlive enabled"
+hasnot "kill SIGTERM gui/4242/com.jarvis.test" "$calls" "launchd restart(validation failure): leaves current process running"
+[ "$(cat "$FAKECTL_STATE/pid")" = "$launchd_pid" ] && kill -0 "$launchd_pid" 2>/dev/null \
+  && ok "launchd restart(validation failure): preserves current pid" \
+  || no "launchd restart(validation failure): current pid changed"
+
+out="$(TEST_ROLE=worker TEST_SUPERVISOR=launchd run stop 2>&1)"; rc=$?
 [ "$rc" = 0 ] && ok "launchd stop: exit 0" || no "launchd stop: exit 0 (got $rc)"
-st="$(TEST_SUPERVISOR=launchd run status 2>&1)"
+st="$(TEST_ROLE=worker TEST_SUPERVISOR=launchd run status 2>&1)"
 has "STOPPED" "$st" "launchd status: reports stopped after bootout"
 
 # --- T15: installer renders absolute plist and converges idempotently -------
@@ -310,8 +443,17 @@ install_fake() {
       JARVIS_BRIDGE_LAUNCHD_DOMAIN="gui/4242" \
       JARVIS_BRIDGE_LAUNCHD_PLIST="$INSTALLED_PLIST" \
       JARVIS_BRIDGE_STATE_DIR="$TMP/install-state" \
+      JARVIS_BRIDGE_BOOTSTRAP_ENV="$BSENV" \
       JARVIS_BRIDGE_ENV="$JENV" \
+      JARVIS_BRIDGE_PYTHON="$repo_root/.venv/bridge/bin/python" \
+      JARVIS_BRIDGE_ROLE="${INSTALL_ROLE:-worker}" \
+      JARVIS_BOOT_ID="test-boot" \
+      JARVIS_CONTROL_PLANE_TOKEN="test-token" \
+      JARVIS_AUTO_DISPATCH="${INSTALL_AUTO_DISPATCH:-1}" \
+      JARVIS_SCHEDULER_READY_WAIT="${INSTALL_READY_WAIT:-1}" \
+      JARVIS_SCHEDULER_DRAIN_TIMEOUT_SECONDS="1" \
       FAKE_LAUNCHCTL_STATE="$FAKECTL_STATE" \
+      FAKE_LAUNCHCTL_LOG="$TMP/install-state/bot.log" \
       bash "$INSTALLER"
 }
 iout="$(install_fake 2>&1)"; rc=$?
@@ -333,10 +475,24 @@ PY
 [ "$state_mode" = "0o700" ] && ok "install-launchd: state directory is 0700" || no "install-launchd: state directory is 0700 (got $state_mode)"
 calls="$(cat "$FAKECTL_STATE/calls")"
 has "bootstrap gui/4242 $INSTALLED_PLIST" "$calls" "install-launchd: bootstraps rendered plist"
-has "kickstart -k gui/4242/com.jarvis.test" "$calls" "install-launchd: kickstarts rendered service"
+has "kickstart gui/4242/com.jarvis.test" "$calls" "install-launchd: kickstarts rendered service without overlap"
 iout2="$(install_fake 2>&1)"; rc=$?
 [ "$rc" = 0 ] && ok "install-launchd: repeat install exits 0" || no "install-launchd: repeat install exits 0 (got $rc)"
 has "unchanged" "$iout2" "install-launchd: repeat render is idempotent"
+calls="$(cat "$FAKECTL_STATE/calls")"
+has "disable gui/4242/com.jarvis.test" "$calls" "install-launchd: loaded upgrade uses safe drain"
+has "kill SIGTERM gui/4242/com.jarvis.test" "$calls" "install-launchd: loaded upgrade signals current main"
+hasnot "bootout gui/4242/com.jarvis.test" "$calls" "install-launchd: loaded upgrade never bootouts adopted worker"
+
+: >"$FAKECTL_STATE/calls"
+if INSTALL_ROLE=scheduler INSTALL_AUTO_DISPATCH=0 install_fake >/dev/null 2>&1; then
+  ok "install-launchd: supervised scheduler config is supported"
+else
+  no "install-launchd: supervised scheduler config is supported"
+fi
+calls="$(cat "$FAKECTL_STATE/calls" 2>/dev/null)"
+has "disable gui/4242/com.jarvis.test" "$calls" "install-launchd: supervised upgrade uses safe drain"
+has "kill SIGTERM gui/4242/com.jarvis.test" "$calls" "install-launchd: supervised upgrade signals current main"
 
 echo ""
 echo "bridge_run_test: $pass passed, $fail failed"

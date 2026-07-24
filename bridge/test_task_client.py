@@ -12,7 +12,7 @@ from urllib.error import HTTPError, URLError
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from jarvis_task_client import (  # noqa: E402
+from bridge.jarvis_task_client import (  # noqa: E402
     ControlPlaneClient,
     ControlPlaneConflict,
     ControlPlaneUnavailable,

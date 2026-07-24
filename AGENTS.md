@@ -10,7 +10,7 @@
 
 1) 跑 `bootstrap/preflight.sh`（24h 闸门，`--force` 强制重跑），全绿才干活；
 2) 等任务：有单 → [loops/aone-triage.md](loops/aone-triage.md)，无单 → [loops/adhoc-intake.md](loops/adhoc-intake.md)，低置信/验收不过 → 将 Task 置为 `SUSPENDED` 并通过幂等事件发布器请求人工决策；
-3) bridge 定时扫池，把可恢复业务统一写入控制面 Task，由 PersistenceExecutor lease 并发处理；probe 等一次性作业走 EphemeralExecutor（授权前置可配 `JARVIS_AUTO_DISPATCH=0`；停滞催办走每日 `DailyScheduler`(nudge job)；见 `bridge/jarvis_dingtalk_bot.py` **`AoneScheduler`**），扫描/派发由 bridge 全权负责，Jarvis 只被动接单；入口统一 `bridge/run.sh start`（自动 source env + 判定钉钉/降级模式，不需额外点火）。**派发探测真源 = `AoneScheduler` 的 python 直查并集**（每池 `assignedTo∪workitem.tracker∪tag=jarvis-idle` × `DIGITAL_WORKER_IDS`：指派/抄送数字人的新单或更新单、及 idle 人工门），非 `bootstrap/scan.sh`——后者已降级为人工审计/兜底工具与 backlog-drain 的 any-assignee 扫描。**多机部署**：`JARVIS_BRIDGE_ROLE=scheduler`（macmini 一台，全部调度器 + executor）+ `JARVIS_BRIDGE_ROLE=worker`（Linux 机器 N 台，只 executor），聚合并发 = 各机 `JARVIS_DISPATCH_MAX` 之和；详见 [docs/multi-worker-deployment.md](docs/multi-worker-deployment.md)。
+3) bridge 分为三个独立入口：Bot 只处理钉钉入站，Persistent Worker 只 lease 并执行控制面 Task，SchedulerService 只加载 `bridge/scheduler/jobs.yaml` 并运行七个周期 Job。每个 Job 对应 `bridge/scheduler/runners/` 下一个同名 runner：scan、claim_health、daily_nudge、reply、pr_watch、recovery、daily_probe；共享的 Aone/DingTalk 调用位于 `bridge/helpers/`。扫描/派发由 Scheduler 全权负责，Jarvis 只被动接单；唯一进程入口为 `bridge/run.sh start`。**派发探测真源 = scan runner 的 Python 直查并集**（每池 `assignedTo∪workitem.tracker∪tag=jarvis-idle` × `DIGITAL_WORKER_IDS`），非 `bootstrap/scan.sh`。**多机部署**：`JARVIS_BRIDGE_ROLE=scheduler`（macmini 一台，Bot + Scheduler + Persistent Worker）+ `JARVIS_BRIDGE_ROLE=worker`（Linux 机器 N 台，只运行 Persistent Worker），聚合并发 = 各机 `JARVIS_DISPATCH_MAX` 之和；详见 [docs/multi-worker-deployment.md](docs/multi-worker-deployment.md)。
 
 ## 工作纪律
 

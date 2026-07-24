@@ -19,7 +19,7 @@
 
 | 方式 | 说明 |
 |------|------|
-| bridge 定时扫池（自动派发） | bridge **`AoneScheduler`** 周期做 **python 直查并集探测**（每池 `assignedTo∪workitem.tracker∪tag=jarvis-idle` × `DIGITAL_WORKER_IDS`，池间+池内并行；取代旧 `scan.sh --force` 单一 assignee 出数据，消除「指派给人/抄送数字人」盲区），把**新单 + 外部更新单**(gmtModified 变化)统一 upsert 为控制面 Task；`bootstrap/scan.sh` 降级为人工审计/兜底 + backlog-drain any-assignee 扫描；PersistenceExecutor 按 `JARVIS_DISPATCH_MAX` 共享容量 lease 执行，控制面 Task/Session/lease/fence 是唯一真源，失败时不回退本地无状态执行。**派发判定**(`_decide`)逐单：终态 / `jarvis-done` / `jarvis-claimed` → skip；`jarvis-npe`（路由不明标记，aone-triage 分支 H jarvis 打或人工打）→ skip（**优先于 idle 门**：idle+npe 就算有人评论也不重派，直到人工澄清路由、摘掉标签，经 gmtModified 更新路径自然恢复派发）；`jarvis-idle` 过**人工介入门**（activity 作者判据 `_human_touched`——人工在 jarvis 上轮动作**之后**介入过才唤醒，否则 skip 等每日 Revisit）；其余（含新单/外部更新）→ 创建或更新 Task。**范围安全阀**（`JARVIS_DISPATCH_POOLS` 池白名单 + `JARVIS_DISPATCH_CREATED_BEFORE` 创建上限）+ **运行时暂停**（`touch .my-day/bridge/pause` 停止产生新 Task，`rm` 恢复，在跑 Task 不受影响）。钉钉卡片语义=播报（「已进入任务队列 #id」）。**授权前置=`JARVIS_AUTO_DISPATCH=0`** 时新单入 pending，钉钉「处理 #id / 全部处理」后才创建 Task。DailyScheduler 的 probe job 由 EphemeralExecutor 执行探测，发现问题并建 Aone 后形成 Task；nudge job 每日对停滞 idle 单双通道催办。启动入口统一 **`bridge/run.sh start`**（自动 source env、判定钉钉/降级模式、pidfile 守护）。**扫描/派发由 bridge 全权负责，Jarvis 只被动接单**（CLAUDE.md 开局动作 #3） |
+| bridge 定时扫池（自动派发） | Scheduler 的 **`scan` runner** 周期做 Python 直查并集探测（每池 `assignedTo∪workitem.tracker∪tag=jarvis-idle` × `DIGITAL_WORKER_IDS`，池间+池内并行），把新单与外部更新单统一 upsert 为控制面 Task；`bootstrap/scan.sh` 只保留人工审计/兜底。Persistent Worker 按 `JARVIS_DISPATCH_MAX` lease 执行，控制面 Task/Session/lease/fence 是唯一真源，失败时不回退本地无状态执行。`_decide` 对终态、`jarvis-done`、`jarvis-claimed`、`jarvis-npe` 跳过；`jarvis-idle` 仅在检测到上轮之后的人工介入时唤醒。范围安全阀为 `JARVIS_DISPATCH_POOLS`、`JARVIS_DISPATCH_CREATED_BEFORE` 与 `.my-day/bridge/pause`。daily_probe、claim_health、daily_nudge、reply、pr_watch、recovery 分别由独立 runner 执行。唯一进程入口是 **`bridge/run.sh start`**。 |
 | bridge dispatch | Tata 委派单工单，headless 执行（autonomy.md headless 模式：auto 列表免授权、遇阻 `[[SUSPEND:...]]` 挂起） |
 | 用户指令 | 会话里给 Aone URL / 工单 id → 直接进「二、逐项执行」单条流程 |
 | 手动兜底 | `/aone-triage` 或手动跑 `bootstrap/scan.sh`（排查/对账用；`plan.sh` 供 bridge/serve 流程出计划） |
@@ -121,8 +121,8 @@ bootstrap/claim.sh release <id> <pool-project>                                # 
 bridge scheduler 统一承担收敛，不再运行本地 reconcile 脚本：
 
 - 服务端 reaper 按 Worker/Session heartbeat、lease 和 fence 收敛死亡执行，并把可恢复 Task 放回恢复链路。
-- ClaimHealthScheduler 最多每 5 分钟对账 `jarvis-claimed` 与控制面 Task/Session/timeline：健康 RUNNING/LEASED 不按总时长告警，未过期 AONE_REPLY/MANUAL wait 静默，心跳失联留 15 分钟给 lease/reaper 收敛；无 Task/终态残留/结构异常需间隔至少 5 分钟的两次确认。仅控制面明确无 Task 时才用 180 分钟 legacy fallback；单次查询失败静默重试。告警仍走 Aone/钉钉双通道幂等 ledger，不自动 release。
-- AoneScheduler 对账 `jarvis-done` 标签与合法完成态集合（`.claim.done_statuses` ∪ 各池 `.done_status`，含 tf_provider `待发布`），漂移时发布一次状态告警。
+- `claim_health` runner 最多每 5 分钟对账 `jarvis-claimed` 与控制面 Task/Session/timeline：健康 RUNNING/LEASED 不按总时长告警，未过期 wait 静默，心跳失联留 15 分钟给 lease/reaper 收敛；无 Task/终态残留/结构异常需间隔至少 5 分钟的两次确认。单次查询失败静默重试，告警不自动 release。
+- `scan` runner 对账 `jarvis-done` 标签与合法完成态集合（`.claim.done_statuses` ∪ 各池 `.done_status`，含 tf_provider `待发布`），漂移时发布一次状态告警。
 - `claim.sh finish` 若 done_status 未能落地，立即降级 `jarvis-done`→`jarvis-idle` 并返回失败，由当前 Task 进入 needs-attention，避免制造跳过黑洞。
 
 ---
@@ -157,7 +157,7 @@ Jarvis 不会自动触发 release_prod。预发验收通过后，由工程师手
 | 工具 | 作用 |
 |------|------|
 | `bootstrap/preflight.sh` | 开局自检日级闸门：install+verify 24h 跑一次,`--force` 强制重跑 |
-| `bootstrap/scan.sh` | 入箱扫描 → JSON 工作项列表（bridge ScanScheduler 定时调；手动兜底） |
+| `bootstrap/scan.sh` | 人工入箱扫描与审计兜底；Scheduler 不调用它 |
 | `bootstrap/aone-get.sh <id>` | 取工单详情(3h 缓存,写后失效);`JARVIS_CACHE_TTL=0` 强制重取 |
 | `bootstrap/cache.sh` | 通用 TTL 缓存(get/bust/fresh),落 `.my-day/cache/` |
 | `bootstrap/plan.sh` | 出执行计划；supervised 退码 2 等待授权（bridge/serve 流程用） |

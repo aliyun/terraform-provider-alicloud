@@ -13,7 +13,7 @@ from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-import jarvis_dingtalk_bot as bot
+from bridge import jarvis_dingtalk_bot as bot
 
 
 BRIDGE_DIR = Path(__file__).resolve().parent
@@ -26,6 +26,24 @@ def _pid_alive(pid):
         return True
     except ProcessLookupError:
         return False
+
+
+def _pid_running(pid):
+    if not _pid_alive(pid):
+        return False
+    # A killed grandchild may remain as a short-lived zombie until the platform
+    # reaper collects it.  It cannot perform external work and therefore
+    # satisfies the process-guard boundary even though kill(pid, 0) still sees
+    # the process-table entry.
+    try:
+        state = subprocess.check_output(
+            ["ps", "-o", "stat=", "-p", str(pid)],
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+    except (OSError, subprocess.CalledProcessError):
+        return False
+    return bool(state) and not state.startswith("Z")
 
 
 class TaskProcessGuardTest(unittest.TestCase):
@@ -112,9 +130,9 @@ class TaskProcessGuardTest(unittest.TestCase):
             self.assertTrue(grandchild_pid_file.exists())
             grandchild_pid = int(grandchild_pid_file.read_text())
             deadline = time.monotonic() + 3
-            while _pid_alive(grandchild_pid) and time.monotonic() < deadline:
+            while _pid_running(grandchild_pid) and time.monotonic() < deadline:
                 time.sleep(0.05)
-            self.assertFalse(_pid_alive(grandchild_pid))
+            self.assertFalse(_pid_running(grandchild_pid))
 
     def test_sigkill_of_bridge_parent_kills_term_deaf_child_group(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -154,11 +172,11 @@ class TaskProcessGuardTest(unittest.TestCase):
                 os.kill(owner.pid, signal.SIGKILL)
                 owner.wait(timeout=5)
                 deadline = time.monotonic() + 5
-                while ((_pid_alive(guard_pid) or _pid_alive(child_pid))
+                while ((_pid_running(guard_pid) or _pid_running(child_pid))
                        and time.monotonic() < deadline):
                     time.sleep(0.05)
-                self.assertFalse(_pid_alive(guard_pid))
-                self.assertFalse(_pid_alive(child_pid))
+                self.assertFalse(_pid_running(guard_pid))
+                self.assertFalse(_pid_running(child_pid))
             finally:
                 for pid in (child_pid, guard_pid):
                     if pid and _pid_alive(pid):

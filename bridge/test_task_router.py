@@ -11,12 +11,12 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from jarvis_task_client import (  # noqa: E402
+from bridge.jarvis_task_client import (  # noqa: E402
     ControlPlaneConflict,
     ControlPlaneUnavailable,
     TaskEnvelope,
 )
-from jarvis_task_router import (  # noqa: E402
+from bridge.jarvis_task_router import (  # noqa: E402
     EPHEMERAL_JOB,
     TASK,
     ExecutionRoute,
