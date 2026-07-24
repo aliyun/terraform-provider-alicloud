@@ -147,7 +147,7 @@ class FieldRepairWorkerTest(unittest.TestCase):
         self.assertFalse(any("--model" in argv for argv, _cwd, _kw in runtime.calls))
         self.assertEqual(client.calls, [])
 
-    def test_model_is_explicit_haiku_strict_json_and_host_applies_valid_choice(self):
+    def test_model_uses_settings_default_model_strict_json_and_tools_off(self):
         model = {
             "structured_output": {
                 "assignments": [{
@@ -168,12 +168,14 @@ class FieldRepairWorkerTest(unittest.TestCase):
         result = self._repair(worker)
         self.assertEqual(result["outcome"], "field_repaired")
         model_argv = runtime.calls[1][0]
-        self.assertIn("--model", model_argv)
-        self.assertEqual(model_argv[model_argv.index("--model") + 1], "haiku")
+        # No explicit --model: routes to the idea_settings.json default model.
+        self.assertNotIn("--model", model_argv)
         self.assertEqual(
             model_argv[model_argv.index("--settings") + 1],
             "/tmp/idea_settings.json")
+        # Tools stay disabled — the injection guard is retained.
         self.assertIn("--tools", model_argv)
+        self.assertEqual(model_argv[model_argv.index("--tools") + 1], "")
         self.assertIn("--json-schema", model_argv)
         self.assertIn("--no-session-persistence", model_argv)
         self.assertEqual(client.calls, [])
@@ -188,7 +190,7 @@ class FieldRepairWorkerTest(unittest.TestCase):
             }), "illegal_candidate"),
             ("low", self._json_result({
                 "result": json.dumps({"assignments": [{
-                    "fieldId": "140097", "value": "ecs", "confidence": 0.86,
+                    "fieldId": "140097", "value": "ecs", "confidence": 0.4,
                     "reason": "Not certain",
                 }], "unresolved": []})
             }), "low_confidence"),
