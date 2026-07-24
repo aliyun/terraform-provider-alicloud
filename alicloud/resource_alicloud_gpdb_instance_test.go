@@ -18,6 +18,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -401,7 +402,7 @@ func TestAccAliCloudGPDBDBInstance_basic0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"period", "used_time", "db_instance_class", "security_ip_list", "instance_group_count", "create_sample_data"},
+				ImportStateVerifyIgnore: []string{"period", "used_time", "db_instance_class", "security_ip_list", "instance_group_count", "create_sample_data", "parameters"},
 			},
 		},
 	})
@@ -410,6 +411,9 @@ func TestAccAliCloudGPDBDBInstance_basic0(t *testing.T) {
 func TestAccAliCloudGPDBDBInstancePrepaid(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_gpdb_instance.default"
+	// Pin to cn-beijing, which has StorageElastic subscription inventory; the
+	// data.alicloud_gpdb_zones data source then auto-selects an available zone.
+	testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Region("cn-beijing")})
 	ra := resourceAttrInit(resourceId, AliCloudGPDBDBInstanceMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &GpdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -499,16 +503,39 @@ func TestAccAliCloudGPDBDBInstancePrepaid(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"period", "used_time", "db_instance_class", "security_ip_list", "instance_group_count", "create_sample_data"},
+				ImportStateVerifyIgnore: []string{"period", "used_time", "db_instance_class", "security_ip_list", "instance_group_count", "create_sample_data", "parameters"},
 			},
 		},
 	})
 }
 
+// gpdbServerlessTestRegion returns the region for the GPDB serverless acceptance
+// tests. It defaults to cn-beijing, which has serverless inventory, and can be
+// overridden via the GPDB_SERVERLESS_REGION environment variable so the remote
+// ACC run can target another region if the default ever reports
+// OperationDenied.InsufficientResourceCapacity.
+func gpdbServerlessTestRegion() string {
+	if v := os.Getenv("GPDB_SERVERLESS_REGION"); v != "" {
+		return v
+	}
+	return "cn-beijing"
+}
+
+// gpdbServerlessTestZone returns the zone for the GPDB serverless acceptance
+// tests, paired with gpdbServerlessTestRegion. Defaults to cn-beijing-h and can
+// be overridden via the GPDB_SERVERLESS_ZONE environment variable so the instance
+// and its vswitch stay in the same zone.
+func gpdbServerlessTestZone() string {
+	if v := os.Getenv("GPDB_SERVERLESS_ZONE"); v != "" {
+		return v
+	}
+	return "cn-beijing-h"
+}
+
 func TestAccAliCloudGPDBDBInstanceServerless(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_gpdb_instance.default"
-	testAccPreCheckWithRegions(t, true, []connectivity.Region{"ap-southeast-1"})
+	testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Region(gpdbServerlessTestRegion())})
 	ra := resourceAttrInit(resourceId, AliCloudGPDBDBInstanceMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &GpdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -532,7 +559,7 @@ func TestAccAliCloudGPDBDBInstanceServerless(t *testing.T) {
 					"description":           name,
 					"engine":                "gpdb",
 					"engine_version":        "6.0",
-					"zone_id":               "ap-southeast-1c",
+					"zone_id":               gpdbServerlessTestZone(),
 					"instance_network_type": "VPC",
 					"instance_spec":         "4C16G",
 					"payment_type":          "PayAsYouGo",
@@ -611,7 +638,7 @@ func TestAccAliCloudGPDBDBInstanceServerless(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"period", "used_time", "db_instance_class", "security_ip_list", "instance_group_count", "create_sample_data"},
+				ImportStateVerifyIgnore: []string{"period", "used_time", "db_instance_class", "security_ip_list", "instance_group_count", "create_sample_data", "parameters"},
 			},
 		},
 	})
@@ -620,7 +647,7 @@ func TestAccAliCloudGPDBDBInstanceServerless(t *testing.T) {
 func TestAccAliCloudGPDBDBInstanceServerless_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_gpdb_instance.default"
-	testAccPreCheckWithRegions(t, true, []connectivity.Region{"ap-southeast-1"})
+	testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Region(gpdbServerlessTestRegion())})
 	ra := resourceAttrInit(resourceId, AliCloudGPDBDBInstanceMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &GpdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -644,7 +671,7 @@ func TestAccAliCloudGPDBDBInstanceServerless_twin(t *testing.T) {
 					"description":           name,
 					"engine":                "gpdb",
 					"engine_version":        "6.0",
-					"zone_id":               "ap-southeast-1c",
+					"zone_id":               gpdbServerlessTestZone(),
 					"instance_network_type": "VPC",
 					"instance_spec":         "4C16G",
 					"payment_type":          "PayAsYouGo",
@@ -705,7 +732,7 @@ func TestAccAliCloudGPDBDBInstanceServerless_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"period", "used_time", "db_instance_class", "security_ip_list", "instance_group_count", "create_sample_data"},
+				ImportStateVerifyIgnore: []string{"period", "used_time", "db_instance_class", "security_ip_list", "instance_group_count", "create_sample_data", "parameters"},
 			},
 		},
 	})
@@ -789,7 +816,7 @@ func TestAccAliCloudGPDBDBInstance_basic1(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"period", "used_time", "db_instance_class", "security_ip_list", "instance_group_count", "create_sample_data"},
+				ImportStateVerifyIgnore: []string{"period", "used_time", "db_instance_class", "security_ip_list", "instance_group_count", "create_sample_data", "parameters"},
 			},
 		},
 	})
@@ -841,6 +868,7 @@ func AliCloudGPDBDBInstanceBasicDependence0(name string) string {
 }
 
 func AliCloudGPDBDBInstanceBasicDependence1(name string) string {
+	zone := gpdbServerlessTestZone()
 	return fmt.Sprintf(` 
 	variable "name" {
   		default = "%s"
@@ -855,14 +883,14 @@ func AliCloudGPDBDBInstanceBasicDependence1(name string) string {
 
 	data "alicloud_vswitches" "default" {
   		vpc_id  = data.alicloud_vpcs.default.ids.0
-  		zone_id = "ap-southeast-1c"
+  		zone_id = "%s"
 	}
 
 	resource "alicloud_vswitch" "vswitch" {
   		count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
   		vpc_id       = data.alicloud_vpcs.default.ids.0
   		cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  		zone_id      = "ap-southeast-1c"
+  		zone_id      = "%s"
   		vswitch_name = var.name
 	}
 
@@ -875,7 +903,7 @@ func AliCloudGPDBDBInstanceBasicDependence1(name string) string {
 	locals {
   		vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
 	}
-`, name)
+`, name, zone, zone)
 }
 
 func AliCloudGPDBDBInstanceBasicDependence2(name string) string {
@@ -1447,4 +1475,309 @@ func TestUnitAliCloudGPDBDBInstance(t *testing.T) {
 		}
 	}
 
+}
+
+// TestAccAliCloudGPDBDBInstance_backupId covers the CreateDBInstance.BackupId create path:
+// a new instance is created from a data backup set. The test builds its own prerequisites
+// end-to-end instead of relying on any pre-existing shared instance or an environment
+// variable:
+//   - step 0 provisions a real source GPDB instance (Terraform-managed, so it is cleaned up
+//     automatically on destroy);
+//   - step 1 triggers a manual backup on that source instance via the SDK (there is no
+//     Terraform resource for CreateBackup) in PreConfig, waits until it is a completed manual
+//     data backup, then creates the target instance whose backup_id is resolved from the
+//     alicloud_gpdb_data_backups data source pointed at the source instance.
+//
+// Both instances live in the same region (testAccPreCheck default) so no region/fixture
+// mismatch is possible.
+func TestAccAliCloudGPDBDBInstance_backupId(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_gpdb_instance.default"
+	ra := resourceAttrInit(resourceId, AliCloudGPDBDBInstanceMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &GpdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeGpdbDbInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sgpdbbackup%d", defaultRegionToTest, rand)
+	// Unique description used to locate the source instance from PreConfig via the SDK.
+	sourceDesc := fmt.Sprintf("%s-src", name)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				// Build the real source instance we control end-to-end.
+				Config: testAccGpdbBackupSourceConfig(name, sourceDesc),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("alicloud_gpdb_instance.source", "id"),
+					testAccGpdbEnsureSourceBackupCheck(t, sourceDesc),
+				),
+			},
+			{
+				// Create the target instance from the backup set id resolved via the data source.
+				Config: testAccGpdbBackupTargetConfig(name, sourceDesc),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backup_id":            CHECKSET,
+						"src_db_instance_name": CHECKSET,
+					}),
+				),
+			},
+		},
+	})
+}
+
+// testAccGpdbBackupSourceConfig builds the Terraform-managed source GPDB instance used as the
+// backup origin. Its description is set to a known unique value so PreConfig can locate it.
+func testAccGpdbBackupSourceConfig(name, sourceDesc string) string {
+	return AliCloudGPDBDBInstanceBasicDependence0(name) + fmt.Sprintf(`
+	resource "alicloud_gpdb_instance" "source" {
+	  db_instance_category  = "HighAvailability"
+	  db_instance_class     = "gpdb.group.segsdx1"
+	  db_instance_mode      = "StorageElastic"
+	  description           = "%s"
+	  engine                = "gpdb"
+	  engine_version        = "6.0"
+	  zone_id               = data.alicloud_gpdb_zones.default.ids.0
+	  instance_network_type = "VPC"
+	  instance_spec         = "2C16G"
+	  instance_group_count  = "2"
+	  payment_type          = "PayAsYouGo"
+	  seg_storage_type      = "cloud_essd"
+	  seg_node_num          = "4"
+	  storage_size          = "50"
+	  vpc_id                = data.alicloud_vpcs.default.ids.0
+	  vswitch_id            = local.vswitch_id
+	  create_sample_data    = "false"
+	}
+`, sourceDesc)
+}
+
+// testAccGpdbBackupTargetConfig keeps the source instance and adds a data source that resolves
+// the source instance's completed manual backup set id, then creates the target instance from
+// that backup set id.
+func testAccGpdbBackupTargetConfig(name, sourceDesc string) string {
+	return testAccGpdbBackupSourceConfig(name, sourceDesc) + `
+	data "alicloud_gpdb_data_backups" "source" {
+	  db_instance_id = alicloud_gpdb_instance.source.id
+	  backup_mode    = "Manual"
+	  status         = "Success"
+	  data_type      = "DATA"
+	}
+
+	resource "alicloud_gpdb_instance" "default" {
+	  db_instance_category  = "HighAvailability"
+	  db_instance_class     = "gpdb.group.segsdx1"
+	  db_instance_mode      = "StorageElastic"
+	  engine                = "gpdb"
+	  engine_version        = "6.0"
+	  zone_id               = data.alicloud_gpdb_zones.default.ids.0
+	  instance_network_type = "VPC"
+	  instance_spec         = "2C16G"
+	  instance_group_count  = "2"
+	  payment_type          = "PayAsYouGo"
+	  seg_storage_type      = "cloud_essd"
+	  seg_node_num          = "4"
+	  storage_size          = "50"
+	  vpc_id                = data.alicloud_vpcs.default.ids.0
+	  vswitch_id            = local.vswitch_id
+	  create_sample_data    = "false"
+	  backup_id             = data.alicloud_gpdb_data_backups.source.backups.0.backup_set_id
+	  src_db_instance_name  = alicloud_gpdb_instance.source.id
+	}
+`
+}
+
+// testAccGpdbEnsureSourceBackupCheck wraps the backup-creation side effect as a TestCheckFunc
+// so it runs inside a step Check (after the source instance is applied) via a plain function
+// call instead of a func literal in the TestStep, which the testing-coverage parser cannot
+// marshal.
+func testAccGpdbEnsureSourceBackupCheck(t *testing.T, sourceDesc string) resource.TestCheckFunc {
+	return func(*terraform.State) error {
+		testAccGpdbEnsureSourceBackup(t, sourceDesc)
+		return nil
+	}
+}
+
+// testAccGpdbEnsureSourceBackup ensures the source instance (located by its description) has a
+// completed manual data backup visible to DescribeDataBackups, so the data source in the
+// target config resolves a backup set id. It is idempotent across step retries.
+func testAccGpdbEnsureSourceBackup(t *testing.T, sourceDesc string) {
+	region := os.Getenv("ALICLOUD_REGION")
+	if region == "" {
+		region = "cn-beijing"
+	}
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		t.Fatalf("error getting AliCloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	sourceId := gpdbFindInstanceIdByDescription(t, client, sourceDesc)
+	if sourceId == "" {
+		t.Fatalf("source GPDB instance with description %q not found", sourceDesc)
+	}
+
+	// Idempotent: a completed manual backup may already exist from a prior step attempt.
+	if gpdbLatestManualDataBackupId(client, sourceId) != "" {
+		return
+	}
+
+	backupJobId := gpdbTriggerBackup(t, client, sourceId)
+	gpdbWaitBackupJobFinished(t, client, sourceId, backupJobId)
+
+	// Ensure the finished backup is now listed by DescribeDataBackups (what the data source
+	// queries) before the target config is planned.
+	for i := 0; i < 30; i++ {
+		if gpdbLatestManualDataBackupId(client, sourceId) != "" {
+			return
+		}
+		time.Sleep(20 * time.Second)
+	}
+	t.Fatalf("manual data backup for source instance %s did not become visible in DescribeDataBackups", sourceId)
+}
+
+// gpdbFindInstanceIdByDescription locates a GPDB instance id by its DBInstanceDescription.
+func gpdbFindInstanceIdByDescription(t *testing.T, client *connectivity.AliyunClient, description string) string {
+	action := "DescribeDBInstances"
+	request := map[string]interface{}{
+		"RegionId":   client.RegionId,
+		"PageSize":   PageSizeLarge,
+		"PageNumber": 1,
+	}
+	for {
+		var response map[string]interface{}
+		var err error
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = client.RpcPost("gpdb", "2016-05-03", action, nil, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		if err != nil {
+			t.Fatalf("DescribeDBInstances failed: %s", err)
+		}
+		resp, _ := jsonpath.Get("$.Items.DBInstance", response)
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			if fmt.Sprint(item["DBInstanceDescription"]) == description {
+				return fmt.Sprint(item["DBInstanceId"])
+			}
+		}
+		if len(result) < PageSizeLarge {
+			break
+		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+	return ""
+}
+
+// gpdbLatestManualDataBackupId returns the backup set id of a completed manual data backup on
+// the given instance, or an empty string when none exists yet.
+func gpdbLatestManualDataBackupId(client *connectivity.AliyunClient, instanceId string) string {
+	action := "DescribeDataBackups"
+	request := map[string]interface{}{
+		"DBInstanceId": instanceId,
+		"BackupMode":   "Manual",
+		"BackupStatus": "Success",
+		"DataType":     "DATA",
+		"PageSize":     PageSizeLarge,
+		"PageNumber":   1,
+	}
+	response, err := client.RpcPost("gpdb", "2016-05-03", action, nil, request, true)
+	if err != nil {
+		return ""
+	}
+	resp, _ := jsonpath.Get("$.Items[*]", response)
+	result, _ := resp.([]interface{})
+	if len(result) == 0 {
+		return ""
+	}
+	item := result[0].(map[string]interface{})
+	return fmt.Sprint(item["BackupSetId"])
+}
+
+// gpdbTriggerBackup starts a manual backup on the instance and returns the backup job id as a
+// plain integer string (the API returns it as a JSON number).
+func gpdbTriggerBackup(t *testing.T, client *connectivity.AliyunClient, instanceId string) string {
+	action := "CreateBackup"
+	request := map[string]interface{}{
+		"DBInstanceId": instanceId,
+	}
+	var response map[string]interface{}
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+		resp, err := client.RpcPost("gpdb", "2016-05-03", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		response = resp
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("CreateBackup on instance %s failed: %s", instanceId, err)
+	}
+	jobId, err := jsonpath.Get("$.BackupJobId", response)
+	if err != nil || jobId == nil {
+		t.Fatalf("CreateBackup on instance %s returned no BackupJobId: %v", instanceId, response)
+	}
+	// The API returns BackupJobId as a JSON number; format it as a plain integer string to
+	// avoid float scientific notation when it is passed back as a query parameter.
+	if f, ok := jobId.(float64); ok {
+		return fmt.Sprintf("%.0f", f)
+	}
+	return fmt.Sprint(jobId)
+}
+
+// gpdbWaitBackupJobFinished polls DescribeBackupJob until the job reaches the finish state and
+// returns the resulting backup set id.
+func gpdbWaitBackupJobFinished(t *testing.T, client *connectivity.AliyunClient, instanceId string, backupJobId string) string {
+	action := "DescribeBackupJob"
+	request := map[string]interface{}{
+		"DBInstanceId": instanceId,
+		"BackupJobId":  backupJobId,
+	}
+	var backupId string
+	err := resource.Retry(30*time.Minute, func() *resource.RetryError {
+		response, err := client.RpcPost("gpdb", "2016-05-03", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		status, _ := jsonpath.Get("$.BackupStatus", response)
+		if fmt.Sprint(status) != "finish" {
+			return resource.RetryableError(fmt.Errorf("backup job %v on instance %s not finished, current status: %v", backupJobId, instanceId, status))
+		}
+		if id, e := jsonpath.Get("$.BackupId", response); e == nil && id != nil {
+			backupId = fmt.Sprint(id)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("waiting for backup job %v on instance %s to finish failed: %s", backupJobId, instanceId, err)
+	}
+	if backupId == "" {
+		// DescribeBackupJob does not always echo the backup set id; fall back to the latest
+		// completed manual data backup on the source instance (DescribeDataBackups).
+		backupId = gpdbLatestManualDataBackupId(client, instanceId)
+	}
+	return backupId
 }

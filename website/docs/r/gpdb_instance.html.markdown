@@ -134,6 +134,8 @@ The following arguments are supported:
 
 * `used_time` - (Optional) The used time. When the parameter `period` is `Year`, the `used_time` value is `1` to `3`. When the parameter `period` is `Month`, the `used_time` value is `1` to `9`.
 * `description` - (Optional) The description of the instance.
+* `backup_id` - (Optional, ForceNew) The ID of the backup set. If specified, the instance is created from the existing backup set. See [CreateDBInstance](https://www.alibabacloud.com/help/en/analyticdb-for-postgresql/latest/api-gpdb-2016-05-03-createdbinstance).
+* `src_db_instance_name` - (Optional, ForceNew) The source instance ID for creating an instance from a backup set. Must be set together with `backup_id`; the GPDB CreateDBInstance API requires `SrcDbInstanceName` and `BackupId` to be null or not null at the same time. See [CreateDBInstance](https://www.alibabacloud.com/help/en/analyticdb-for-postgresql/latest/api-gpdb-2016-05-03-createdbinstance).
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 * `ip_whitelist` - (Optional, Set, Available since v1.187.0) The ip whitelist. See [`ip_whitelist`](#ip_whitelist) below.
   Default to creating a whitelist group with the group name "default" and security_ip_list "127.0.0.1".
