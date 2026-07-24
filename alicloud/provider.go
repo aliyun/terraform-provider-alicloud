@@ -24,6 +24,29 @@ import (
 	"github.com/mitchellh/go-homedir"
 )
 
+// skipRegionValidationDefaultFunc resolves the default value of
+// skip_region_validation from environment variables when the attribute is not
+// set explicitly in the configuration. ALIBABA_CLOUD_SKIP_REGION_VALIDATION
+// takes precedence over ALICLOUD_SKIP_REGION_VALIDATION, and an unset (or empty)
+// environment defaults to false. An invalid boolean value is reported as an
+// error rather than silently falling back to the default.
+func skipRegionValidationDefaultFunc() schema.SchemaDefaultFunc {
+	return func() (interface{}, error) {
+		for _, key := range []string{"ALIBABA_CLOUD_SKIP_REGION_VALIDATION", "ALICLOUD_SKIP_REGION_VALIDATION"} {
+			v := os.Getenv(key)
+			if v == "" {
+				continue
+			}
+			parsed, err := strconv.ParseBool(v)
+			if err != nil {
+				return nil, fmt.Errorf("invalid boolean value %q for environment variable %s: %w", v, key, err)
+			}
+			return parsed, nil
+		}
+		return false, nil
+	}
+}
+
 // Provider returns a schema.Provider for alicloud
 func Provider() terraform.ResourceProvider {
 	provider := &schema.Provider{
@@ -109,7 +132,7 @@ func Provider() terraform.ResourceProvider {
 			"skip_region_validation": {
 				Type:        schema.TypeBool,
 				Optional:    true,
-				Default:     false,
+				DefaultFunc: skipRegionValidationDefaultFunc(),
 				Description: descriptions["skip_region_validation"],
 			},
 			"configuration_source": {
@@ -2541,7 +2564,7 @@ func init() {
 
 		"assume_role_session_expiration": "The time after which the established session for assuming role expires. Valid value range: [900-3600] seconds. Default to 0 (in this case Alicloud use own default value).",
 
-		"skip_region_validation": "Skip static validation of region ID. Used by users of alternative AlibabaCloud-like APIs or users w/ access to regions that are not public (yet).",
+		"skip_region_validation": "Skip static validation of region ID. Used by users of alternative AlibabaCloud-like APIs or users w/ access to regions that are not public (yet). It can also be sourced from the `ALIBABA_CLOUD_SKIP_REGION_VALIDATION` (preferred) or `ALICLOUD_SKIP_REGION_VALIDATION` environment variable; an explicit value in the configuration takes precedence over the environment.",
 
 		"configuration_source": "Use this to mark a terraform configuration file source.",
 
