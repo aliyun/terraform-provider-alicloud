@@ -2595,6 +2595,67 @@ func TestAccAliCloudRdsDBInstance_Mysql_8_0_PrePaid(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudRdsDBInstance_Mysql_8_0_PrePaidForceDelete(t *testing.T) {
+	var instance map[string]interface{}
+	resourceId := "alicloud_db_instance.default"
+	ra := resourceAttrInit(resourceId, instanceBasicMap3)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
+		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDBInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := "tf-testAccDBInstanceConfigForceDelete"
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBInstanceHighAvailabilityConfigDependence1)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine":                   "MySQL",
+					"engine_version":           "8.0",
+					"instance_type":            "rds.mysql.s1.small",
+					"instance_storage":         "${data.alicloud_db_instance_classes.default.instance_classes.1.storage_range.min}",
+					"instance_charge_type":     "Prepaid",
+					"period":                   "1",
+					"force_delete":             "true",
+					"instance_name":            "${var.name}",
+					"db_instance_storage_type": "local_ssd",
+					"zone_id":                  "${local.zone_id}",
+					"vswitch_id":               "${local.vswitch_id}",
+					"monitoring_period":        "60",
+					"security_group_ids":       "${alicloud_security_group.default.*.id}",
+					"security_ips":             []string{"10.168.1.12", "100.69.7.112"},
+					"db_time_zone":             "America/New_York",
+					"resource_group_id":        "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine":               "MySQL",
+						"engine_version":       "8.0",
+						"instance_charge_type": "Prepaid",
+						"force_delete":         "true",
+						"instance_name":        "tf-testAccDBInstanceConfigForceDelete",
+						"instance_storage":     CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_restart", "period", "force_delete", "encryption_key", "db_is_ignore_case"},
+			},
+		},
+	})
+}
+
 func TestAccAliCloudRdsDBInstance_Mysql_8_0_Cluster(t *testing.T) {
 	var instance map[string]interface{}
 	resourceId := "alicloud_db_instance.default"
