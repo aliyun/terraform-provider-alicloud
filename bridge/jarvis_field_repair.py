@@ -391,6 +391,7 @@ class FieldRepairWorker:
     @staticmethod
     def _blocked(
             item_id: str, project: str, digest: str, reason: str,
+            missing_fields: Optional[Sequence[Mapping[str, Any]]] = None,
     ) -> Dict[str, Any]:
         return {
             "status": "suspended",
@@ -401,6 +402,14 @@ class FieldRepairWorker:
                 % (project, item_id, digest or "unknown")),
             "errorType": "required_fields_blocked",
             "failureReason": reason,
+            "candidateDigest": digest or "unknown",
+            # The required fields that could not be auto-filled, so the caller can
+            # tell a human exactly what to supply. Names only — no candidate values.
+            "missingFields": [
+                {"id": str(f.get("id") or ""), "name": str(f.get("name") or "")}
+                for f in (missing_fields or [])
+                if isinstance(f, Mapping)
+            ],
         }
 
     def repair_only(
@@ -408,10 +417,15 @@ class FieldRepairWorker:
             terraform: bool, controller: Any,
     ) -> Dict[str, Any]:
         current_digest = "unknown"
+        missing_fields: list = []
         try:
             current = self.inspect(
                 item_id, project, terraform=terraform, controller=controller)
             current_digest = inspection_digest(current)
+            missing_fields = [
+                {"id": str(f.get("id") or ""), "name": str(f.get("name") or "")}
+                for f in current.get("missing") or []
+            ]
             if current["status"] == "ready":
                 return {
                     "status": "completed",
@@ -440,7 +454,7 @@ class FieldRepairWorker:
             }
         except RequiredFieldsBlocked as exc:
             return self._blocked(
-                item_id, project, current_digest, exc.reason)
+                item_id, project, current_digest, exc.reason, missing_fields)
         except FieldRepairTransient as exc:
             return {
                 "status": "failed",

@@ -247,6 +247,11 @@ class FieldRepairWorkerTest(unittest.TestCase):
         self.assertEqual(result["status"], "suspended")
         self.assertEqual(result["failureReason"], "model_unresolved")
         self.assertEqual(client.calls, [])
+        # Blocked result carries the missing field names + candidate digest so the
+        # executor can tell the submitter exactly which fields to supply.
+        self.assertEqual(result["missingFields"],
+                         [{"id": "140097", "name": "涉及云产品"}])
+        self.assertTrue(result["candidateDigest"])
 
     def test_display_alias_is_not_a_legal_candidate_value(self):
         model = {
@@ -452,6 +457,8 @@ class FieldRepairBridgeIntegrationTest(unittest.TestCase):
                 "waitKey": "field-repair:aone:1086837:84629920:required_fields_blocked",
                 "errorType": "required_fields_blocked",
                 "failureReason": "low_confidence",
+                "candidateDigest": "deadbeef",
+                "missingFields": [{"id": "140097", "name": "涉及云产品"}],
             }))
         handler.task_client = SimpleNamespace(
             upsert_desired_task=mock.Mock())
@@ -465,11 +472,62 @@ class FieldRepairBridgeIntegrationTest(unittest.TestCase):
         }
         with mock.patch.object(
                 bot, "_TaskAoneBookend",
-                side_effect=AssertionError("bookend must not start")):
+                side_effect=AssertionError("bookend must not start")), \
+                mock.patch.object(bot, "_field_repair_notify_submitter") as notify:
             result = handler._execute_task_lease(lease, controller)
         self.assertEqual(result["status"], "suspended")
         handler.task_client.upsert_desired_task.assert_not_called()
         handler.dispatch_item.assert_not_called()
+        # Field-repair block DMs the submitter (with the blocked result payload).
+        notify.assert_called_once()
+        self.assertEqual(notify.call_args.args[0], "84629920")
+        self.assertEqual(notify.call_args.args[2]["missingFields"],
+                         [{"id": "140097", "name": "涉及云产品"}])
+
+
+class FieldRepairSubmitterNotifyTest(unittest.TestCase):
+    BLOCKED = {
+        "status": "suspended", "outcome": "required_fields_blocked",
+        "candidateDigest": "abc123",
+        "missingFields": [{"id": "107239", "name": "归属产品"},
+                          {"id": "102312", "name": "客户问题分类1级"}],
+    }
+
+    def test_notify_dm_submitter_with_field_names_and_digest_key(self):
+        with mock.patch.object(bot, "_resolve_submitter", return_value=("270513", "秋雯")), \
+                mock.patch.object(bot, "_dingtalk_event_enqueue", return_value=True) as dm:
+            bot._field_repair_notify_submitter("84432183", "1091779", self.BLOCKED)
+        dm.assert_called_once()
+        args = dm.call_args.args
+        self.assertEqual(args[0], "84432183")           # ticket
+        self.assertEqual(args[1], "1091779")            # project
+        self.assertEqual(args[2],                       # event_key carries the digest
+                         "field-repair-blocked:1091779:84432183:abc123")
+        self.assertEqual(args[3], "270513")             # submitter staff id
+        self.assertIn("归属产品", args[5])
+        self.assertIn("客户问题分类1级", args[5])
+        self.assertIn("84432183", args[5])
+
+    def test_notify_never_raises_when_dingtalk_fails(self):
+        with mock.patch.object(bot, "_resolve_submitter", return_value=("270513", "秋雯")), \
+                mock.patch.object(bot, "_dingtalk_event_enqueue",
+                                  side_effect=RuntimeError("boom")):
+            bot._field_repair_notify_submitter("84432183", "1091779", self.BLOCKED)
+
+    def test_resolve_submitter_uses_creator_empid_and_falls_back_to_master(self):
+        def run_with(creator):
+            payload = json.dumps({"creator": creator})
+            with mock.patch.object(
+                    bot.subprocess, "run",
+                    return_value=SimpleNamespace(returncode=0, stdout=payload)):
+                return bot._resolve_submitter("84432183")
+        self.assertEqual(run_with({"empId": "270513", "nickName": "秋雯"}),
+                         ("270513", "秋雯"))
+        # digital worker / non-numeric creator → master fallback
+        staff, _name = run_with({"empId": "WORKER_1782379562571"})
+        self.assertEqual(staff, bot.master_staff())
+        staff2, _n2 = run_with({})
+        self.assertEqual(staff2, bot.master_staff())
 
 
 if __name__ == "__main__":

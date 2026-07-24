@@ -1586,6 +1586,56 @@ def master_staff():
     return (os.environ.get("JARVIS_MASTER_STAFF") or "320687").strip()
 
 
+def _resolve_submitter(item_id):
+    """Resolve one Aone work item's submitter (creator) to (staff_id, name) for a
+    DingTalk DM. A digital-worker / missing / non-numeric creator falls back to the
+    bridge master so a "please fill this field" notice is never lost."""
+    env = os.environ.copy()
+    env["JARVIS_CACHE_TTL"] = "0"
+    creator = {}
+    try:
+        proc = subprocess.run(
+            [str(Path(REPO_ROOT) / "bootstrap" / "aone-get.sh"), str(item_id)],
+            capture_output=True, text=True, env=env, timeout=90)
+        if proc.returncode == 0:
+            data = json.loads(proc.stdout)
+            if isinstance(data, dict) and isinstance(data.get("creator"), dict):
+                creator = data["creator"]
+    except Exception as exc:  # noqa: BLE001
+        log.warning("_resolve_submitter #%s read failed: %s", item_id, exc)
+    emp = str(creator.get("empId") or creator.get("staffId") or "").strip()
+    name = str(creator.get("nickName") or creator.get("displayName")
+               or creator.get("realName") or "").strip()
+    if not emp.isdigit():  # digital worker (WORKER_...) / empty / non-staff → master
+        return master_staff(), name
+    return emp, (name or emp)
+
+
+def _field_repair_notify_submitter(item_id, project, repair_result):
+    """Best-effort DingTalk DM to the submitter when field repair cannot decide a
+    required field. Idempotent per unresolved candidate digest (the DingTalk ledger
+    dedups by event_key), DingTalk-only (never writes Aone). Never raises."""
+    try:
+        digest = str(repair_result.get("candidateDigest") or "unknown")
+        names = [
+            str(f.get("name") or f.get("id") or "").strip()
+            for f in (repair_result.get("missingFields") or [])
+            if isinstance(f, dict)
+        ]
+        names = [n for n in names if n] or ["（未知必填字段）"]
+        staff_id, _who = _resolve_submitter(item_id)
+        url = ("https://project.aone.alibaba-inc.com/v2/project/%s/workitem/%s"
+               % (project, item_id)) if project else ""
+        title = "工单 #%s 需补充必填字段" % item_id
+        text = ("工单 #%s 有必填字段无法自动判断填写，需要您补充：%s。\n"
+                "补充后任务会自动重试继续。\n%s" % (item_id, "、".join(names), url))
+        event_key = "field-repair-blocked:%s:%s:%s" % (project, item_id, digest)
+        _dingtalk_event_enqueue(item_id, project, event_key, staff_id, title, text,
+                                allow_non_tf=True)
+    except Exception as exc:  # noqa: BLE001 — notification must never break suspend
+        log.warning("field-repair submitter notify #%s failed: %s", item_id, exc)
+
+
 def _attention_owner_staff_id(value):
     """Resolve a human attention owner, falling back to the bridge master.
 
@@ -8283,6 +8333,11 @@ class JarvisHandler(AsyncChatbotHandler):
                 item_id, project, terraform=terraform,
                 controller=controller)
             if repair_result.get("status") != "completed":
+                # When the model genuinely can't decide a required field, DM the
+                # ticket submitter (idempotent per candidate digest) so a human can
+                # supply it; the Task then suspends on FIELD_REPAIR as before.
+                if repair_result.get("outcome") == "required_fields_blocked":
+                    _field_repair_notify_submitter(item_id, project, repair_result)
                 return repair_result
         # Executor owns the Aone bookend (B-proper: the run writes nothing to Aone; the
         # executor commits from this thread). A terraform reply/claim must be written as
