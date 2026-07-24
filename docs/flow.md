@@ -10,7 +10,7 @@
 - `PersistenceExecutor` 从控制面 lease Task；`EphemeralExecutor` 执行本地一次性作业；两者共享 `CapacityManager` 与 `ExecutionRuntime`
 - Task 必须先进入控制面；控制面不可用时 fail-closed，不允许回退到本地无状态执行
 - `_decide` 逐单判定：终态 / `jarvis-done` / `jarvis-claimed` / `jarvis-npe` → skip；`jarvis-idle` 过人工介入门
-- 后台调度：统一 Scheduler 从 `bridge/scheduler/jobs.yaml` 的七项配置注册 Job（`daily.probe` 当前默认关闭）；每个 job 由同名语义的独立 runner 执行：scan、claim_health、daily_nudge、reply、pr_watch、recovery、daily_probe
+- 后台调度：统一 Scheduler 从 `bridge/scheduler/jobs.yaml` 的七项配置注册 Job（`daily.probe` 每日 10:00，Asia/Shanghai）；每个 job 由同名语义的独立 runner 执行：scan、claim_health、daily_nudge、reply、pr_watch、recovery、daily_probe
 
 ## 2. 单工单 Triage (headless)
 - bridge executor 在模型进程外持有 lease 并托管 `claim`

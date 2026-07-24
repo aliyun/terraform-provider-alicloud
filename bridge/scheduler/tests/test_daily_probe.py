@@ -28,13 +28,13 @@ SHANGHAI = ZoneInfo("Asia/Shanghai")
 def definition() -> ScheduledJobDefinition:
     return ScheduledJobDefinition(
         "daily.probe",
-        2,
+        3,
         "probe",
         DailySchedule(10, 0, "Asia/Shanghai"),
         HandlerRunner("daily.probe"),
         MisfirePolicy.CURRENT_DAY,
         300,
-        False,
+        True,
     )
 
 

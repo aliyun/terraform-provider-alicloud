@@ -46,8 +46,8 @@ class SchedulerCoreTests(unittest.TestCase):
         )
         self.assertTrue(all(isinstance(item.runner, HandlerRunner)
                             for item in jobs.JOBS))
-        self.assertFalse(jobs.JOBS[0].enabled)
-        self.assertEqual(jobs.JOBS[0].revision, 2)
+        self.assertTrue(jobs.JOBS[0].enabled)
+        self.assertEqual(jobs.JOBS[0].revision, 3)
         self.assertEqual(set(definition_snapshot(jobs.JOBS[0])), {
             "id", "revision", "description", "schedule", "runner", "misfire",
             "retry_delay_seconds", "enabled",

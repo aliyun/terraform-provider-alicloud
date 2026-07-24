@@ -51,9 +51,9 @@ a time. It is not a Task executor: Bridge advertises
 `capabilities.dispatch.pull=false` and does not pull the public Task queue.
 
 Use `bridge/scheduler/jobs.yaml` as the complete new-engine registration
-source. Its explicit entries contain `aone.scan`, `aone.claim-health`,
-`daily.nudge`, `aone.reply`, `pr.watch`, `external.recovery` and disabled
-`daily.probe`.
+source. Its explicit entries contain `daily.probe`, `aone.scan`,
+`aone.claim-health`, `daily.nudge`, `aone.reply`, `pr.watch` and
+`external.recovery`.
 No periodic job is allowed to have a second legacy loop.
 
 The definitions use only the Scheduler runtime. `jobs.py` validates and loads
@@ -62,13 +62,11 @@ it is present.
 
 Before this starts the Engine, Bridge verifies the scheduler role, registers and checks
 the ACTIVE Worker identity, registers the full job registry, recovers
-interrupted slots, and then begins polling. `daily.probe` revision 2 is
-registered through the generic headless adapter but intentionally remains
-`enabled: false` for the first control-plane/board-only rollout. Real Probe
-execution requires a separate authorization and revision 3. A configured job
-without a handler or builder/protocol mapping fails closed at startup. Each
-definition's `enabled` boolean controls whether it is runnable; `enabled:
-false` registers a routed Job as `DISABLED`.
+interrupted slots, and then begins polling. `daily.probe` revision 3 is
+enabled through the generic headless adapter. A configured job without a
+handler or builder/protocol mapping fails closed at startup. Each definition's
+`enabled` boolean controls whether it is runnable; `enabled: false` registers
+a routed Job as `DISABLED`.
 
 A planned Scheduler restart closes admission, registers the Worker as
 `DRAINING`, and waits for the admitted job to finish before starting a new
