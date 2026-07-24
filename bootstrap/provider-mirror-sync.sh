@@ -47,7 +47,8 @@ if ! mkdir "$LOCK" 2>/dev/null; then
   echo "[mirror-sync] $(date '+%F %T') another run holds $LOCK — skipping"
   exit 0
 fi
-trap 'rmdir "$LOCK" 2>/dev/null || true' EXIT
+TMPD=$(mktemp -d)
+trap 'rmdir "$LOCK" 2>/dev/null; rm -rf "$TMPD"' EXIT
 
 # Proxy scoped to github.com only: the push to code.alibaba-inc.com must NOT
 # go through the proxy (internal host, proxy would refuse/leak).
@@ -73,7 +74,30 @@ git -C "$CACHE" update-ref "$HEARTBEAT_REF" "$hb_commit"
 # branch rewinds (rare) must also win. NO --prune: the target is a shared
 # repo — deleting refs other teams created there is not ours to do; branches
 # deleted upstream simply linger.
-git -C "$CACHE" push -q "$MIRROR" \
-  '+refs/heads/*:refs/heads/*' '+refs/tags/*:refs/tags/*'
+#
+# Push ONLY refs that differ remotely, in chunks of 40: the server degrades
+# >100-ref pushes into an all-or-nothing atomic transaction (the 418-ref
+# first sync was rejected wholesale, every ref "update-ref failed"), and
+# >50 branches per push bypasses its push rules. A no-change cron run thus
+# pushes exactly one ref — the heartbeat. Plain arrays + comm because the
+# scheduler host runs bash 3.2 (no associative arrays).
+git -C "$CACHE" for-each-ref --format='%(objectname) %(refname)' refs/heads refs/tags \
+  | sort > "$TMPD/local"
+git ls-remote "$MIRROR" 'refs/heads/*' 'refs/tags/*' \
+  | awk '$2 !~ /\^\{\}$/ {print $1" "$2}' | sort > "$TMPD/remote"
+changed=$(comm -23 "$TMPD/local" "$TMPD/remote" | awk '{print $2}')
 
-echo "[mirror-sync] $(date '+%F %T') master=$(git -C "$CACHE" rev-parse --short refs/heads/master) heartbeat pushed"
+total=0; batches=0; batch=()
+flush() {
+  [ "${#batch[@]}" -eq 0 ] && return 0
+  git -C "$CACHE" push -q "$MIRROR" "${batch[@]}"
+  batches=$((batches+1)); batch=()
+}
+while IFS= read -r ref; do
+  [ -z "$ref" ] && continue
+  batch+=("+$ref:$ref"); total=$((total+1))
+  [ "${#batch[@]}" -ge 40 ] && flush
+done <<< "$changed"
+flush
+
+echo "[mirror-sync] $(date '+%F %T') master=$(git -C "$CACHE" rev-parse --short refs/heads/master) pushed $total ref(s) in $batches push(es), incl. heartbeat"
