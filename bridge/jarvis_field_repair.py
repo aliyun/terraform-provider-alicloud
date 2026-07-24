@@ -19,7 +19,7 @@ from typing import Any, Dict, Mapping, Optional, Sequence
 from jarvis_execution_runtime import DEFAULT_EXECUTION_RUNTIME, ExecutionResult
 
 
-DEFAULT_CONFIDENCE = 0.90
+DEFAULT_CONFIDENCE = 0.5
 MODEL_OUTPUT_SCHEMA = {
     "type": "object",
     "additionalProperties": False,
@@ -232,7 +232,6 @@ class FieldRepairWorker:
             [
                 self.claude_bin,
                 "--settings", self.settings_path,
-                "--model", "haiku",
                 "--permission-mode", "bypassPermissions",
                 "--tools", "",
                 "--no-session-persistence",
@@ -304,7 +303,7 @@ class FieldRepairWorker:
             assignments.append({
                 "id": field_id,
                 "value": value,
-                "source": "model_haiku",
+                "source": "model_inference",
             })
         unresolved_seen = set()
         for row in unresolved_rows:
