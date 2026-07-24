@@ -25,7 +25,6 @@ from jarvis_task_client import (
 TASK = "TASK"
 EPHEMERAL_JOB = "EPHEMERAL_JOB"
 DEFAULT_TASK_TYPES = (
-    "field_repair",
     "ticket",
     "revisit",
     "persona",
