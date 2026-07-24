@@ -231,25 +231,34 @@ func dataSourceAliCloudEssScalingRulesRead(d *schema.ResourceData, meta interfac
 		addDebug("DescribeScalingRules", response, request, request)
 		w, errInfo := jsonpath.Get("$.TotalCount", response)
 		if errInfo != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, "$.TotalCount", response)
+			return WrapErrorf(errInfo, FailedGetAttributeMsg, "$.TotalCount", response)
 		}
-		i, errConvert := w.(json.Number).Int64()
+		totalCountNum, ok := w.(json.Number)
+		if !ok {
+			return WrapErrorf(nil, "Convert resource %s attribute failed: expected json.Number, got %T. Response: %v", "TotalCount", w, response)
+		}
+
+		i, errConvert := totalCountNum.Int64()
 		if errConvert != nil {
-			return WrapErrorf(err, "Convert resource %s attribute failed!!! Response: %v.", "TotalCount", response)
+			return WrapErrorf(errConvert, "Convert resource %s attribute to int64 failed. Response: %v", "TotalCount", response)
 		}
 		if int(i) < 1 {
 			break
 		}
-		v, err := jsonpath.Get("$.ScalingRules.ScalingRule", response)
-		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, "$.ScalingRules.ScalingRule", response)
+		v, errPath := jsonpath.Get("$.ScalingRules.ScalingRule", response)
+		if errPath != nil {
+			return WrapErrorf(errPath, FailedGetAttributeMsg, "$.ScalingRules.ScalingRule", response)
 		}
-		if len(v.([]interface{})) < 1 {
+		rules, ok := v.([]interface{})
+		if !ok {
+			return WrapErrorf(nil, "Convert resource %s attribute failed: expected []interface{}, got %T. Response: %v", "ScalingRules.ScalingRule", v, response)
+		}
+		if len(rules) < 1 {
 			break
 		}
 		allScalingRules = append(allScalingRules, v.([]interface{})...)
 
-		if len(v.([]interface{})) < PageSizeLarge {
+		if len(rules) < PageSizeLarge {
 			break
 		}
 
