@@ -181,7 +181,9 @@ func resourceAliCloudPolarDbAccountRead(d *schema.ResourceData, meta interface{}
 	d.Set("account_description", objectRaw["AccountDescription"])
 	d.Set("account_lock_state", objectRaw["AccountLockState"])
 	d.Set("account_password_valid_time", objectRaw["AccountPasswordValidTime"])
-	d.Set("account_type", objectRaw["AccountType"])
+	if v, ok := objectRaw["AccountType"]; ok && v != nil && v.(string) != "" {
+		d.Set("account_type", v)
+	}
 	d.Set("status", objectRaw["AccountStatus"])
 	d.Set("account_name", objectRaw["AccountName"])
 	if v, ok := objectRaw["DynamoDBAuthPassword"]; ok && v != nil {
