@@ -2051,13 +2051,27 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 			request.Duration = requests.NewInteger(d.Get("auto_renew_period").(int))
 		}
 
-		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.ModifyInstanceAutoRenewAttribute(request)
+		// The instance charge type may not have fully taken effect on the billing/renewal
+		// subsystem right after ModifyInstanceChargeType returns, so the auto renew call
+		// can transiently fail; retry until the change is accepted.
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+				return ecsClient.ModifyInstanceAutoRenewAttribute(request)
+			})
+			if err != nil {
+				if NeedRetry(err) || IsExpectedErrors(err, []string{"ChargeTypeViolation", "IncorrectInstanceStatus"}) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			return nil
 		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		d.SetPartial("renewal_status")
 		d.SetPartial("auto_renew_period")
 	}
