@@ -831,6 +831,7 @@ func (s *ApigServiceV2) ApigApiAttachmentStateRefreshFunc(id string, field strin
 }
 
 // DescribeApigApiAttachment >>> Encapsulated.
+
 // DescribeApigRoute <<< Encapsulated get interface for Apig Route.
 
 func (s *ApigServiceV2) DescribeApigRoute(id string) (object map[string]interface{}, err error) {
@@ -841,12 +842,14 @@ func (s *ApigServiceV2) DescribeApigRoute(id string) (object map[string]interfac
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
 	}
 	httpApiId := parts[0]
 	routeId := parts[1]
-	action := fmt.Sprintf("/v1/http-apis/%s/routes/%s", httpApiId, routeId)
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
+
+	action := fmt.Sprintf("/v1/http-apis/%s/routes/%s", httpApiId, routeId)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
@@ -862,12 +865,16 @@ func (s *ApigServiceV2) DescribeApigRoute(id string) (object map[string]interfac
 		return nil
 	})
 	addDebug(action, response, request)
+	if response == nil {
+		return object, WrapErrorf(NotFoundErr("Route", id), NotFoundMsg, response)
+	}
 	if err != nil {
 		if IsExpectedErrors(err, []string{"NotFound.RouteNotFound"}) {
-			return object, WrapErrorf(NotFoundErr("Route", id), NotFoundMsg, err)
+			return object, WrapErrorf(NotFoundErr("Route", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+
 	v, err := jsonpath.Get("$.data", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.data", response)
@@ -877,15 +884,18 @@ func (s *ApigServiceV2) DescribeApigRoute(id string) (object map[string]interfac
 }
 
 func (s *ApigServiceV2) ApigRouteStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.ApigRouteStateRefreshFuncWithApi(id, field, failStates, s.DescribeApigRoute)
+}
+
+func (s *ApigServiceV2) ApigRouteStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeApigRoute(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
