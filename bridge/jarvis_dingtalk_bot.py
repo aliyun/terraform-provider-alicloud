@@ -153,13 +153,13 @@ from bridge.helpers.aone import (
         _AONE_ACCESS_KEY_RE,
         _AONE_BASIC_RE,
         _AONE_BEARER_RE,
-        _AONE_EVENT_TEXT_MAX,
         _AONE_INSTANCE_ID_RE,
         _AONE_INTERNAL_FIELD_RE,
         _AONE_INTERNAL_SENTINEL_RE,
         _AONE_INTERNAL_STAGE_MARKER_RE,
         _AONE_INTERNAL_STAGE_RE,
         _AONE_RESOURCE_ID_KEY_RE,
+        _AONE_SANITIZE_TEXT_DEFAULT_MAX,
         _aone_event_digest,
         _aone_event_enqueue,
         _aone_event_marker_from_digest,
@@ -423,7 +423,7 @@ def _dispatch_model_provider_summary(ticket, project, kind, attempts, release_st
         "`bootstrap/control-plane-status.sh discard-resume <task_id> <session_id> "
         "--reason 'model provider recovery' --yes`，然后重新派发。"
         % (url, _aone_event_source_part(kind), attempt_count,
-           release_state, str(ticket)), limit=_AONE_EVENT_TEXT_MAX)
+           release_state, str(ticket)), limit=_AONE_SANITIZE_TEXT_DEFAULT_MAX)
 
 
 def _release_claim_checked(iid, project, terraform=False):

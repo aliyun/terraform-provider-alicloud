@@ -19,7 +19,9 @@ from datetime import datetime
 
 # Aone Task producers share this transport contract without importing the Bot.
 from bridge.helpers.aone import (
-    PERSONA_PUBLIC_IDENTITY, REPO_ROOT, _a1_command_env, _is_terraform_project,
+    PERSONA_PUBLIC_IDENTITY, REPO_ROOT, _AONE_EVENT_MARKER_LEN,
+    _AONE_EVENT_TEXT_MAX, _AONE_EVENT_WIRE_MAX, _a1_command_env,
+    _is_terraform_project,
 )
 
 _AONE_PREFLIGHT_LOCKS = {}
@@ -455,8 +457,16 @@ def _task_result_instructions(item_id, terraform, expected_comment_cursor=None):
         "\"unresolved\":\"<可选:未决项>\",\"suspend_wait_for\":\"<outcome=suspend 时要 @ 等待的 staffId>\"%s}]]\n"
         "- 真闭环→done；本轮阶段完成、待人或下一轮→idle；需人类确认/决策→suspend（把 @对应人与待"
         "确认问题写进 reply_body）。reply_body 是发给工单的唯一对外回复，executor 只发这一条。"
-        "缺失或非法的 AONE_RESULT 会被判本轮未完成、失败重试。%s"
-        % (item_id, identity, handled_comment_field, handled_comment_rule)
+        "缺失或非法的 AONE_RESULT 会被判本轮未完成、失败重试。\n"
+        "- reply_body 必须主动精简，不得依赖 executor 截断。Jarvis 为可读性设置的最终 Aone 评论"
+        "产品总预算为 %d 字符（不是 Aone 平台硬上限），"
+        "其中包含 reply_body、mr_cr_links、正文与事件 marker 间的两个换行以及完整 %d 字符事件 "
+        "marker；当前公开正文总预算为 %d 字符，mr_cr_links 同样计入。\n"
+        "- 内容优先级：结论/状态、需人工判断项、验收结果、关键 MR/CR/报告链接、下一步与责任人。"
+        "详细日志放进报告并只保留报告链接；不要在回复里堆叠原始日志。%s"
+        % (item_id, identity, handled_comment_field,
+           _AONE_EVENT_WIRE_MAX, _AONE_EVENT_MARKER_LEN,
+           _AONE_EVENT_TEXT_MAX, handled_comment_rule)
     )
     if terraform:
         instructions += "\n\n" + _terraform_visual_evidence_instructions(item_id)

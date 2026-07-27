@@ -276,7 +276,10 @@ def extract_task_result(text: str):
     links = payload.get("mr_cr_links")
     return clean, {
         "outcome": outcome,
-        "reply_body": _aone_event_sanitize_text(reply),
+        # Preserve the complete structured reply while parsing. mr_cr_links are
+        # appended later and the final publisher owns the authoritative wire
+        # budget for the complete Aone comment.
+        "reply_body": _aone_event_sanitize_text(reply, limit=None),
         "target_status": str(payload.get("target_status") or "").strip(),
         "mr_cr_links": (
             [str(value).strip() for value in links if str(value).strip()]
