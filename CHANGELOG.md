@@ -1,4 +1,5 @@
 ## 1.287.0 (Unreleased)
+## 2.0.0-beta1 (July 27, 2026)
 ## 1.286.0 (July 24, 2026)
 
 - **New Resource:** `alicloud_apig_domain` ([#9910](https://github.com/aliyun/terraform-provider-alicloud/issues/9910))
