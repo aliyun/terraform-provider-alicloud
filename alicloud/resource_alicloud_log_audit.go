@@ -147,6 +147,9 @@ func resourceAlicloudLogAuditRead(d *schema.ResourceData, meta interface{}) erro
 	if err != nil {
 		return WrapError(err)
 	}
+	if displayName == "" {
+		displayName = d.Id()
+	}
 	d.Set("display_name", displayName)
 	d.Set("aliuid", initMap["aliuid"].(string))
 	if multiAccount, ok := initMap["multi_account"]; ok {

@@ -60,6 +60,12 @@ CPFS Usage
 
 A CPFS file system is created inside a VPC, so `vpc_id` and `vswitch_id` are required. `capacity` and `zone_id` are also required for CPFS.
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_nas_file_system&exampleId=88a4c7e1-1b7d-80e1-393c-0807b82608b0552656ad&activeTab=example&spm=docs.r.nas_file_system.1.88a4c7e11b&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 resource "alicloud_nas_file_system" "cpfs" {
   protocol_type    = "cpfs"

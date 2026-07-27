@@ -22,6 +22,12 @@ For information about RAM Access Key Policy and how to use it, see [What is Acce
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_ram_access_key_policy&exampleId=daf9a21d-3656-cddb-02be-0fac3744bd8e1c8730a4&activeTab=example&spm=docs.r.ram_access_key_policy.0.daf9a21d36&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -50,6 +56,10 @@ resource "alicloud_ram_access_key_policy" "default" {
   })
 }
 ```
+
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ram_access_key_policy&spm=docs.r.ram_access_key_policy.example&intl_lang=EN_US)
+
 
 ## Argument Reference
 

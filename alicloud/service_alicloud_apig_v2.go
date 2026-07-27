@@ -419,6 +419,7 @@ func (s *ApigServiceV2) ApigEnvironmentStateRefreshFunc(id string, field string,
 }
 
 // DescribeApigEnvironment >>> Encapsulated.
+
 // DescribeApigService <<< Encapsulated get interface for Apig Service.
 
 func (s *ApigServiceV2) DescribeApigService(id string) (object map[string]interface{}, err error) {
@@ -427,10 +428,10 @@ func (s *ApigServiceV2) DescribeApigService(id string) (object map[string]interf
 	var response map[string]interface{}
 	var query map[string]*string
 	serviceId := id
-	action := fmt.Sprintf("/v1/services/%s", serviceId)
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
-	request["serviceId"] = id
+
+	action := fmt.Sprintf("/v1/services/%s", serviceId)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
@@ -446,11 +447,18 @@ func (s *ApigServiceV2) DescribeApigService(id string) (object map[string]interf
 		return nil
 	})
 	addDebug(action, response, request)
+	if response == nil {
+		return object, WrapErrorf(NotFoundErr("Service", id), NotFoundMsg, response)
+	}
 	if err != nil {
 		if IsExpectedErrors(err, []string{"NotFound.ServiceNotFound"}) {
-			return object, WrapErrorf(NotFoundErr("Service", id), NotFoundMsg, err)
+			return object, WrapErrorf(NotFoundErr("Service", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	code, _ := jsonpath.Get("$.code", response)
+	if InArray(fmt.Sprint(code), []string{"NotFound.ServiceNotFound"}) {
+		return object, WrapErrorf(NotFoundErr("Service", id), NotFoundMsg, response)
 	}
 
 	v, err := jsonpath.Get("$.data", response)
@@ -462,15 +470,18 @@ func (s *ApigServiceV2) DescribeApigService(id string) (object map[string]interf
 }
 
 func (s *ApigServiceV2) ApigServiceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.ApigServiceStateRefreshFuncWithApi(id, field, failStates, s.DescribeApigService)
+}
+
+func (s *ApigServiceV2) ApigServiceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeApigService(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
@@ -820,6 +831,7 @@ func (s *ApigServiceV2) ApigApiAttachmentStateRefreshFunc(id string, field strin
 }
 
 // DescribeApigApiAttachment >>> Encapsulated.
+
 // DescribeApigRoute <<< Encapsulated get interface for Apig Route.
 
 func (s *ApigServiceV2) DescribeApigRoute(id string) (object map[string]interface{}, err error) {
@@ -830,12 +842,14 @@ func (s *ApigServiceV2) DescribeApigRoute(id string) (object map[string]interfac
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
 	}
 	httpApiId := parts[0]
 	routeId := parts[1]
-	action := fmt.Sprintf("/v1/http-apis/%s/routes/%s", httpApiId, routeId)
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
+
+	action := fmt.Sprintf("/v1/http-apis/%s/routes/%s", httpApiId, routeId)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
@@ -851,12 +865,16 @@ func (s *ApigServiceV2) DescribeApigRoute(id string) (object map[string]interfac
 		return nil
 	})
 	addDebug(action, response, request)
+	if response == nil {
+		return object, WrapErrorf(NotFoundErr("Route", id), NotFoundMsg, response)
+	}
 	if err != nil {
 		if IsExpectedErrors(err, []string{"NotFound.RouteNotFound"}) {
-			return object, WrapErrorf(NotFoundErr("Route", id), NotFoundMsg, err)
+			return object, WrapErrorf(NotFoundErr("Route", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+
 	v, err := jsonpath.Get("$.data", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.data", response)
@@ -866,15 +884,18 @@ func (s *ApigServiceV2) DescribeApigRoute(id string) (object map[string]interfac
 }
 
 func (s *ApigServiceV2) ApigRouteStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.ApigRouteStateRefreshFuncWithApi(id, field, failStates, s.DescribeApigRoute)
+}
+
+func (s *ApigServiceV2) ApigRouteStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeApigRoute(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
@@ -895,3 +916,79 @@ func (s *ApigServiceV2) ApigRouteStateRefreshFunc(id string, field string, failS
 }
 
 // DescribeApigRoute >>> Encapsulated.
+
+// DescribeApigAiModelProvider <<< Encapsulated get interface for Apig AiModelProvider.
+
+func (s *ApigServiceV2) DescribeApigAiModelProvider(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]*string
+	modelProviderId := id
+	request = make(map[string]interface{})
+	query = make(map[string]*string)
+
+	action := fmt.Sprintf("/v1/ai-model-providers/%s", modelProviderId)
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RoaGet("APIG", "2024-03-27", action, query, nil, nil)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if response == nil {
+		return object, WrapErrorf(NotFoundErr("AiModelProvider", id), NotFoundMsg, response)
+	}
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.data", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.data", response)
+	}
+
+	return v.(map[string]interface{}), nil
+}
+
+func (s *ApigServiceV2) ApigAiModelProviderStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.ApigAiModelProviderStateRefreshFuncWithApi(id, field, failStates, s.DescribeApigAiModelProvider)
+}
+
+func (s *ApigServiceV2) ApigAiModelProviderStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeApigAiModelProvider >>> Encapsulated.

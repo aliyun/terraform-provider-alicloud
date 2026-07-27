@@ -169,7 +169,7 @@ func resourceAliyunEssAttachmentUpdate(d *schema.ResourceData, meta interface{})
 				if err != nil {
 					return resource.NonRetryableError(WrapError(err))
 				}
-				if len(instances) < 0 {
+				if len(instances) < 1 {
 					return resource.RetryableError(WrapError(Error("There are no ECS instances have been attached.")))
 				}
 

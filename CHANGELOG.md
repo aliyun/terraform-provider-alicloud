@@ -1,4 +1,49 @@
-## 1.286.0 (Unreleased)
+## 1.287.0 (Unreleased)
+## 1.286.0 (July 24, 2026)
+
+- **New Resource:** `alicloud_apig_domain` ([#9910](https://github.com/aliyun/terraform-provider-alicloud/issues/9910))
+- **New Resource:** `alicloud_apig_plugin` ([#9965](https://github.com/aliyun/terraform-provider-alicloud/issues/9965))
+- **New Resource:** `alicloud_gpdb_api_key` ([#9972](https://github.com/aliyun/terraform-provider-alicloud/issues/9972))
+- **New Resource:** `alicloud_ram_access_key_policy` ([#9978](https://github.com/aliyun/terraform-provider-alicloud/issues/9978))
+- **New Resource:** `alicloud_ssl_certificates_service_company` ([#9991](https://github.com/aliyun/terraform-provider-alicloud/issues/9991))
+- **New Resource:** `alicloud_nas_log_analysis` ([#10004](https://github.com/aliyun/terraform-provider-alicloud/issues/10004))
+- **New Data Source:** `alicloud_apig_gateways` ([#9905](https://github.com/aliyun/terraform-provider-alicloud/issues/9905))
+- **New Data Source:** `alicloud_apig_domains` ([#9910](https://github.com/aliyun/terraform-provider-alicloud/issues/9910))
+- **New Data Source:** `alicloud_apig_plugins` ([#9965](https://github.com/aliyun/terraform-provider-alicloud/issues/9965))
+- **New Data Source:** `alicloud_gpdb_api_keys` ([#9972](https://github.com/aliyun/terraform-provider-alicloud/issues/9972))
+- **New Data Source:** `alicloud_ram_access_key_policy` ([#9978](https://github.com/aliyun/terraform-provider-alicloud/issues/9978))
+- **New Data Source:** `alicloud_ssl_certificates_service_companies` ([#9991](https://github.com/aliyun/terraform-provider-alicloud/issues/9991))
+- **New Data Source:** `alicloud_nas_log_analyses` ([#10004](https://github.com/aliyun/terraform-provider-alicloud/issues/10004))
+
+ENHANCEMENTS:
+
+- resource/alicloud_apig_http_api: support ai_protocols, deploy_configs, enable_auth, model_category. ([#9895](https://github.com/aliyun/terraform-provider-alicloud/issues/9895))
+- resource/alicloud_apig_gateway: regenerate. ([#9905](https://github.com/aliyun/terraform-provider-alicloud/issues/9905))
+- resource/alicloud_nat_gateway: support availability_mode (CrossAZ/SingleAZ). ([#9924](https://github.com/aliyun/terraform-provider-alicloud/issues/9924))
+- docs: use non-deprecated role_name/assume_role_policy_document in ram_role_policy_attachment example. ([#9947](https://github.com/aliyun/terraform-provider-alicloud/issues/9947))
+- resource/alicloud_db_instance: fix upgrade for rds sqlserver. ([#9956](https://github.com/aliyun/terraform-provider-alicloud/issues/9956))
+- resource/alicloud_ecs_launch_template: validate http_put_response_hop_limit range 1-64. ([#9960](https://github.com/aliyun/terraform-provider-alicloud/issues/9960))
+- docs: fix S4 documentation gaps across ram_role, vpc, vswitch, security_group resources. ([#9963](https://github.com/aliyun/terraform-provider-alicloud/issues/9963))
+- resource/alicloud_redis_tair_instance: add maintain_start_time and maintain_end_time. ([#9964](https://github.com/aliyun/terraform-provider-alicloud/issues/9964))
+- resource/alicloud_api_gateway_api: ignore content_type_value when content_type_category = CLIENT. ([#9966](https://github.com/aliyun/terraform-provider-alicloud/issues/9966))
+- resource/alicloud_cloud_firewall_address_book: Supported group_type set to asset, assetIpv6; Added the field asset_member_uids, asset_region_resource_types, address_list_count, reference_count; data-source/alicloud_cloud_firewall_address_books: Added the field asset_member_uids, asset_region_resource_types, address_list_count, reference_count. ([#9967](https://github.com/aliyun/terraform-provider-alicloud/issues/9967))
+- resource/alicloud_arms_prometheus: support duration, archive_duration and payment_type. ([#9975](https://github.com/aliyun/terraform-provider-alicloud/issues/9975))
+- resource/alicloud_bastionhost_user: add RemoteDNChanged status. ([#9987](https://github.com/aliyun/terraform-provider-alicloud/issues/9987))
+- resource/alicloud_event_bridge_rule: add ApacheKafkaSelf target type. ([#9989](https://github.com/aliyun/terraform-provider-alicloud/issues/9989))
+- testcase: resolve default profile path cross-platform via homedir.Dir. ([#9990](https://github.com/aliyun/terraform-provider-alicloud/issues/9990))
+- docs: update Version 2 upgrade guide for runtime output references and CR resource deprecations. ([#9994](https://github.com/aliyun/terraform-provider-alicloud/issues/9994))
+- docs: add length and prefix constraints for vswitch_name. ([#9997](https://github.com/aliyun/terraform-provider-alicloud/issues/9997))
+- docs: fix type annotation typo Intl to Int for escalations.warn.times. ([#9999](https://github.com/aliyun/terraform-provider-alicloud/issues/9999))
+- resource/alicloud_cs_serverless_kubernetes: support secret encryption. ([#10022](https://github.com/aliyun/terraform-provider-alicloud/issues/10022))
+- docs: alicloud_nas_file_system clarify vpc_id/vswitch_id network configuration rules. ([#10024](https://github.com/aliyun/terraform-provider-alicloud/issues/10024))
+
+BUG FIXES:
+
+- resource/alicloud_esa_kv: fix id parsing for keys containing colons. ([#9950](https://github.com/aliyun/terraform-provider-alicloud/issues/9950))
+- resource/alicloud_db_instance: fix panic when DescribeParameters has no ParamGroupInfo. ([#9970](https://github.com/aliyun/terraform-provider-alicloud/issues/9970))
+- resource/alicloud_redis_tair_instance: fix TDE read for instances that do not support TDE. ([#9977](https://github.com/aliyun/terraform-provider-alicloud/issues/9977))
+- resource/alicloud_rocketmq_instance: fix BSS region lookup and stabilize acc tests. ([#9992](https://github.com/aliyun/terraform-provider-alicloud/issues/9992))
+
 ## 1.285.0 (July 10, 2026)
 
 - **New Resource:** `alicloud_cloud_monitor_service_metric_alarm_rule` ([#9876](https://github.com/aliyun/terraform-provider-alicloud/issues/9876))

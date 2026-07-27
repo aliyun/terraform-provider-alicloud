@@ -20,6 +20,12 @@ For information about File Storage (NAS) Log Analysis and how to use it, see [Wh
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_nas_log_analysis&exampleId=acb22f59-bcb9-4c32-1926-5108f65761cd895e686d&activeTab=example&spm=docs.r.nas_log_analysis.0.acb22f59bc&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 resource "alicloud_nas_file_system" "default" {
   protocol_type = "NFS"
@@ -30,6 +36,10 @@ resource "alicloud_nas_log_analysis" "default" {
   file_system_id = alicloud_nas_file_system.default.id
 }
 ```
+
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_nas_log_analysis&spm=docs.r.nas_log_analysis.example&intl_lang=EN_US)
+
 
 ## Argument Reference
 
