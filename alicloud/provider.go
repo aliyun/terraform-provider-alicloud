@@ -109,7 +109,7 @@ func Provider() terraform.ResourceProvider {
 			"skip_region_validation": {
 				Type:        schema.TypeBool,
 				Optional:    true,
-				Default:     false,
+				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_SKIP_REGION_VALIDATION", false),
 				Description: descriptions["skip_region_validation"],
 			},
 			"configuration_source": {
@@ -2543,7 +2543,7 @@ func init() {
 
 		"assume_role_session_expiration": "The time after which the established session for assuming role expires. Valid value range: [900-3600] seconds. Default to 0 (in this case Alicloud use own default value).",
 
-		"skip_region_validation": "Skip static validation of region ID. Used by users of alternative AlibabaCloud-like APIs or users w/ access to regions that are not public (yet).",
+		"skip_region_validation": "Skip static validation of region ID. Used by users of alternative AlibabaCloud-like APIs or users w/ access to regions that are not public (yet). It can also be sourced from the `ALICLOUD_SKIP_REGION_VALIDATION` environment variable.",
 
 		"configuration_source": "Use this to mark a terraform configuration file source.",
 

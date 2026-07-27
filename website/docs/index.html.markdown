@@ -350,6 +350,7 @@ In addition to [generic `provider` arguments](https://www.terraform.io/docs/conf
 * `sign_version` - (Optional, Available since v1.215.0) A [`sign_version`](#sign_version) block to specify the signature version used for the API requests of certain cloud products (currently `oss` and `sls`). Only one `sign_version` block may be in the configuration.
 
 * `skip_region_validation` - (Optional, Available since v1.52.0) Skip static validation of region ID. Used by users of alternative AlibabaCloud-like APIs or users w/ access to regions that are not public (yet).
+  Can also be set with the `ALICLOUD_SKIP_REGION_VALIDATION` environment variable since v1.287.0.
 
 * `configuration_source` - (Optional, Available since v1.56.0) Use a string to mark a configuration file source, like `terraform-alicloud-modules/terraform-alicloud-ecs-instance` or `terraform-provider-alicloud/examples/vpc`.
 The length should not more than 1024(Before 1.283.0, it should not more than 128. Before 1.207.2, it should not more than 64). Since the version 1.145.0, it supports to be set by environment variable `TF_APPEND_USER_AGENT`. See `Custom User-Agent Information`.
