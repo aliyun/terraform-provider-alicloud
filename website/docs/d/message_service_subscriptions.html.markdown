@@ -4,14 +4,14 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_message_service_subscriptions"
 sidebar_current: "docs-alicloud-datasource-message-service-subscriptions"
 description: |-
-  Provides a list of Message Notification Service Subscriptions to the user.
+  Provides a list of Message Service Subscription owned by an Alibaba Cloud account.
 ---
 
-# alicloud\_message\_service\_subscriptions
+# alicloud_message_service_subscriptions
 
-This data source provides the Message Notification Service Subscriptions of the current Alibaba Cloud user.
+This data source provides the Message Service Subscriptions of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.188.0+.
+-> **NOTE:** Available since v1.188.0.
 
 ## Example Usage
 
@@ -37,20 +37,21 @@ output "subscription_id_2" {
 ## Argument Reference
 
 The following arguments are supported:
-
-* `ids` - (Optional, ForceNew, Computed) A list of Subscription IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Subscription name.
-* `topic_name` - (Required, ForceNew) The name of the topic.
-* `subscription_name` - (Optional, ForceNew) The name of the subscription.
+* `ids` - (Optional, Computed) A list of Subscription IDs. The value is formulated as `<topic_name>:<subscription_name>`.
+* `name_regex` - (Optional) A regex string to filter results by Subscription name.
+* `topic_name` - (Required) The name of the topic.
+* `subscription_name` - (Optional) The name of the subscription.
+* `page_number` - (Optional, Int) The number of the page to return.
+* `page_size` - (Optional, Int) The number of entries to return on each page.
+* `enable_details` - (Optional, Available since v1.284.0) Default to `false`. Set it to `true` can output more details about resource attributes.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
-
 * `names` - A list of Subscription names.
 * `subscriptions` - A list of Subscriptions. Each element contains the following attributes:
-  * `id` - The id of the Subscription.
+  * `id` - The id of the Subscription. The value is formulated as `<topic_name>:<subscription_name>`.
   * `topic_name` - The name of the topic.
   * `subscription_name` - The name of the subscription.
   * `endpoint` - The endpoint to which the messages are pushed.
@@ -61,3 +62,9 @@ The following attributes are exported in addition to the arguments listed above:
   * `subscription_url` - The url of the subscription.
   * `last_modify_time` - The time when the subscription was last modified. This value is a UNIX timestamp representing the number of milliseconds that have elapsed since the epoch time January 1, 1970, 00:00:00 UTC.
   * `create_time` - The time when the subscription was created. This value is a UNIX timestamp representing the number of milliseconds that have elapsed since the epoch time January 1, 1970, 00:00:00 UTC.
+  * `dlq_policy` - (Available since v1.284.0) The dead-letter queue policy. **NOTE:** This field is only available when `enable_details` is `true`.
+    * `dead_letter_target_queue` - The queue to which dead-letter messages are delivered.
+    * `enabled` - Indicates whether the dead-letter message delivery is enabled.
+  * `tenant_rate_limit_policy` - (Available since v1.284.0) The rate limit policy. **NOTE:** This field is only available when `enable_details` is `true`.
+    * `enabled` - Indicates whether the rate limit policy is enabled.
+    * `max_receives_per_second` - The maximum number of messages that can be pushed or consumed per second.
