@@ -195,6 +195,13 @@ _role_components() {
   printf '%s\n' supervisor
 }
 
+_clean_stale_a1_locks() {
+  if ! A1ID_ROOT="${A1ID_ROOT:-${HOME:-}/.config/a1}" \
+      bash "$REPO_ROOT/bootstrap/a1-locks-clean.sh"; then
+    err "a1 stale-lock cleanup could not complete safely; continuing without deletion"
+  fi
+}
+
 _spawn_component() {
   case "$1" in
     supervisor)
@@ -533,6 +540,7 @@ cmd_start() {
   # Human start = intent to run; clear the manual-stop sentinel so the cron
   # watchdog resumes its keep-alive duty.
   rm -f "$PIDFILE.manual-stop" 2>/dev/null || true
+  _clean_stale_a1_locks
   if _scheduler_enabled; then
     if ! pid="$(_running_pidfile "$STATE_DIR/bot.pid")"; then
       unmanaged="$(_unmanaged_bot_pids)"
@@ -579,7 +587,227 @@ cmd_watchdog() {
   if [ -f "$PIDFILE.manual-stop" ]; then
     return 0
   fi
+  local pid worker_pid reason
+  if pid="$(_running_pid)"; then
+    worker_pid="$(_read_pidfile "$STATE_DIR/persistent-worker.pid" 2>/dev/null || true)"
+    if [ -n "$worker_pid" ]; then
+      reason="$(_executor_beacon_failure "$worker_pid" 2>/dev/null || true)"
+    else
+      reason="persistent-worker pidfile missing"
+      if [ "$(_process_etime_seconds "$pid" 2>/dev/null || echo 0)" \
+          -lt "${JARVIS_WATCHDOG_STARTUP_GRACE_SEC:-300}" ]; then
+        reason=""
+      fi
+    fi
+    if [ -z "$reason" ]; then
+      return 0
+    fi
+    err "bridge $pid unhealthy: $reason — restarting complete process tree"
+    _watchdog_restart_tree "$pid" || return $?
+  fi
   cmd_start
+}
+
+_executor_beacon_failure() {
+  # Print the first unhealthy loop. Missing/invalid beacons are tolerated only
+  # while the Persistent Worker is inside its startup grace.
+  local pid="$1"
+  local startup_grace="${JARVIS_WATCHDOG_STARTUP_GRACE_SEC:-300}"
+  local stale_after="${JARVIS_WATCHDOG_BEACON_STALE_SEC:-300}"
+  local base="${JARVIS_EXECUTOR_BEACON_PREFIX:-$STATE_DIR/heartbeat.persistent-worker}"
+  local age kind beacon last now
+  age="$(_process_etime_seconds "$pid")" || {
+    printf '%s\n' "persistent-worker process age unavailable"
+    return 0
+  }
+  now="$(date -u +%s)"
+  for kind in worker lease session; do
+    beacon="$base.$kind.epoch"
+    last="$(cat "$beacon" 2>/dev/null || true)"
+    case "$last" in
+      ''|*[!0-9]*)
+        [ "$age" -lt "$startup_grace" ] && continue
+        printf '%s\n' "$kind beacon missing/invalid after ${age}s"
+        return 0
+        ;;
+    esac
+    if [ "$last" -gt $((now + 30)) ]; then
+      [ "$age" -lt "$startup_grace" ] && continue
+      printf '%s\n' "$kind beacon timestamp is in the future"
+      return 0
+    fi
+    if [ $((now - last)) -gt "$stale_after" ]; then
+      printf '%s\n' "$kind beacon stale for $((now - last))s"
+      return 0
+    fi
+  done
+  return 1
+}
+
+_signal_child_group() {
+  local signal_name="$1" pid="$2"
+  [ -n "$pid" ] || return 0
+  kill "-$signal_name" -- "-$pid" 2>/dev/null \
+    || kill "-$signal_name" "$pid" 2>/dev/null \
+    || true
+}
+
+_process_identity_record() {
+  local identity_python="/usr/bin/python3"
+  [ -x "$identity_python" ] \
+    || identity_python="$(command -v python3 2>/dev/null || true)"
+  [ -n "$identity_python" ] || return 1
+  "$identity_python" -I "$REPO_ROOT/bridge/process_identity.py" "$1" 2>/dev/null
+}
+
+_component_group_snapshot() {
+  # stdout: pid:start-identity.  A persisted identity companion is mandatory;
+  # a live leader must still have the same birth token and private PGID.
+  local pidfile="$1" pid identity_file record owner_pid owner_pgid owner_start
+  local current current_pid current_start current_pgid
+  pid="$(_read_pidfile "$pidfile" 2>/dev/null)" || return 1
+  case "$pid" in
+    ''|*[!0-9]*) return 2 ;;
+  esac
+  identity_file="$pidfile.identity"
+  [ -f "$identity_file" ] || return 2
+  record="$(cat "$identity_file" 2>/dev/null)" || return 2
+  IFS='|' read -r owner_pid owner_pgid owner_start <<EOF
+$record
+EOF
+  [ "$owner_pid" = "$pid" ] \
+    && [ "$owner_pgid" = "$pid" ] \
+    && [ -n "$owner_start" ] \
+    || return 2
+
+  if _alive "$pid"; then
+    current="$(_process_identity_record "$pid")" || return 2
+    IFS='|' read -r current_pid current_pgid current_start <<EOF
+$current
+EOF
+    [ "$current_pid" = "$pid" ] \
+      && [ "$current_pgid" = "$pid" ] \
+      && [ "$current_start" = "$owner_start" ] \
+      || return 2
+  fi
+  printf '%s:%s\n' "$pid" "$owner_start"
+}
+
+_signal_snapshot_group() {
+  local signal_name="$1" snapshot="$2" pid owner_start
+  local current current_pid current_start current_pgid
+  pid="${snapshot%%:*}"
+  owner_start="${snapshot#*:}"
+  if _alive "$pid"; then
+    current="$(_process_identity_record "$pid")" || {
+      err "watchdog refuses uninspectable component pgid $pid"
+      return 1
+    }
+    IFS='|' read -r current_pid current_pgid current_start <<EOF
+$current
+EOF
+    if [ "$current_pid" != "$pid" ] \
+        || [ "$current_pgid" != "$pid" ] \
+        || [ "$current_start" != "$owner_start" ]; then
+      err "watchdog refuses reused/unverified component pgid $pid"
+      return 1
+    fi
+  fi
+  _signal_child_group "$signal_name" "$pid"
+}
+
+_watchdog_restart_tree() {
+  local supervisor_pid="$1"
+  local term_wait="${JARVIS_WATCHDOG_TREE_TERM_SEC:-10}"
+  local child_grace="${JARVIS_WATCHDOG_CHILD_TERM_SEC:-2}"
+  local i=0 deadline child pidfile beacon_prefix snapshot snapshot_children=""
+  local child_pidfiles="scheduler.pid persistent-worker.pid dingtalk-bot.pid"
+
+  # Snapshot component spawn PID==PGID before asking the Python supervisor to
+  # drain.  A normal supervisor stop removes child pidfiles; retaining these
+  # values is therefore required to kill a TERM-ignoring descendant whose
+  # leader already exited.
+  for pidfile in $child_pidfiles; do
+    [ -f "$STATE_DIR/$pidfile" ] || continue
+    snapshot="$(_component_group_snapshot "$STATE_DIR/$pidfile")" || {
+      err "watchdog refuses unverified component pidfile $STATE_DIR/$pidfile"
+      return 1
+    }
+    snapshot_children="$snapshot_children $snapshot"
+  done
+
+  kill -TERM "$supervisor_pid" 2>/dev/null || true
+  deadline=$((term_wait * 10))
+  while [ "$i" -lt "$deadline" ] && _alive "$supervisor_pid"; do
+    sleep 0.1
+    i=$((i + 1))
+  done
+
+  # Components are launched in private sessions by bridge.main.  Use their
+  # spawn-time PID==PGID even if a component leader has already exited.
+  for snapshot in $snapshot_children; do
+    _signal_snapshot_group TERM "$snapshot" || return 1
+  done
+  for pidfile in $child_pidfiles; do
+    [ -f "$STATE_DIR/$pidfile" ] || continue
+    snapshot="$(_component_group_snapshot "$STATE_DIR/$pidfile")" || {
+      err "watchdog refuses changed component pidfile $STATE_DIR/$pidfile"
+      return 1
+    }
+    _signal_snapshot_group TERM "$snapshot" || return 1
+  done
+  sleep "$child_grace"
+  for snapshot in $snapshot_children; do
+    _signal_snapshot_group KILL "$snapshot" || return 1
+  done
+  for pidfile in $child_pidfiles; do
+    if [ -f "$STATE_DIR/$pidfile" ]; then
+      snapshot="$(_component_group_snapshot "$STATE_DIR/$pidfile")" || {
+        err "watchdog refuses changed component pidfile $STATE_DIR/$pidfile"
+        return 1
+      }
+      _signal_snapshot_group KILL "$snapshot" || return 1
+    fi
+    # Do not gate on leader liveness: the spawn-time PID remains the PGID after
+    # the leader exits, and an ignoring grandchild may still own a1 locks.
+    rm -f "$STATE_DIR/$pidfile"
+    rm -f "$STATE_DIR/$pidfile.identity"
+  done
+  if _alive "$supervisor_pid"; then
+    kill -KILL "$supervisor_pid" 2>/dev/null || true
+    sleep 0.2
+  fi
+  if _alive "$supervisor_pid"; then
+    err "watchdog could not terminate supervisor pid $supervisor_pid"
+    return 1
+  fi
+  rm -f "$PIDFILE"
+  beacon_prefix="${JARVIS_EXECUTOR_BEACON_PREFIX:-$STATE_DIR/heartbeat.persistent-worker}"
+  rm -f \
+    "$beacon_prefix.worker.epoch" \
+    "$beacon_prefix.lease.epoch" \
+    "$beacon_prefix.session.epoch"
+  _clean_stale_a1_locks
+  return 0
+}
+
+# Convert `ps -o etime=` (e.g. "01:23:45" or "1-02:03:04") to whole seconds on
+# stdout. Returns non-zero when parsing fails so callers can fail-closed.
+_process_etime_seconds() {
+  local raw
+  raw="$(ps -o etime= -p "$1" 2>/dev/null | tr -d ' ')"
+  [ -n "$raw" ] || return 1
+  awk -v s="$raw" 'BEGIN{
+    d=0; n=split(s, a, "-");
+    if (n==2) { d=a[1]; s=a[2] } else { s=a[1] }
+    m=split(s, b, ":");
+    h=0; mm=0; ss=0;
+    if (m==3) { h=b[1]; mm=b[2]; ss=b[3] }
+    else if (m==2) { mm=b[1]; ss=b[2] }
+    else if (m==1) { ss=b[1] }
+    else { exit 1 }
+    print (d*86400) + (h*3600) + (mm*60) + ss
+  }' 2>/dev/null || return 1
 }
 
 cmd_stop() {

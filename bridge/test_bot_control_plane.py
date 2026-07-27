@@ -884,7 +884,8 @@ class SchedulerRunnerTest(unittest.TestCase):
         completed = SimpleNamespace(returncode=0, stdout=json.dumps({
             "fields": [{"identifier": "status", "displayValue": "已发布"}],
         }), stderr="")
-        with mock.patch.object(aone.subprocess, "run", return_value=completed) as run:
+        with mock.patch.object(
+                scan, "run_process_group", return_value=completed) as run:
             task, status = scan.ScanRunner._point_read_source_status({
                 "taskId": 411, "aoneId": "84386065",
             })
@@ -1655,7 +1656,8 @@ class SchedulerRunnerTest(unittest.TestCase):
             "gmtModified": "2026-07-20 19:19:01",
         }]
         completed = SimpleNamespace(returncode=0, stdout=json.dumps(payload), stderr="")
-        with mock.patch.object(aone.subprocess, "run", return_value=completed):
+        with mock.patch.object(
+                aone, "run_process_group", return_value=completed):
             rows = scan.ScanRunner._a1_list("1086837", "assignedTo=worker")
         self.assertEqual(rows[0]["type"], "需求问题")
         rows[0].update(pool="tf_customer", pool_project="1086837")
@@ -1969,7 +1971,8 @@ class SchedulerRunnerTest(unittest.TestCase):
              "content": "机器人评论"},
         ]
         response = SimpleNamespace(returncode=0, stdout=json.dumps(comments), stderr="")
-        with mock.patch.object(aone.subprocess, "run", return_value=response):
+        with mock.patch.object(
+                scan, "run_process_group", return_value=response):
             latest = s._human_comment("84103828")
         self.assertEqual(str(latest["id"]), "12")
         self.assertEqual(latest["content"], "最新评论")
@@ -2045,7 +2048,8 @@ class ModelProviderFailureRoutingTest(unittest.TestCase):
         handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
         handler._post_death_cause = mock.Mock()
         failed_release = SimpleNamespace(returncode=2)
-        with mock.patch.object(bot.subprocess, "run", return_value=failed_release), \
+        with mock.patch.object(
+                bot, "run_process_group", return_value=failed_release), \
              mock.patch.object(bot, "_aone_event_enqueue") as event_enqueue, \
              mock.patch.object(
                  bot, "_dingtalk_event_enqueue", return_value=True) as dingtalk:

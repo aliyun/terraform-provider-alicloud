@@ -19,6 +19,13 @@ import threading
 import time
 from typing import Any, Callable, Mapping, Optional, Sequence
 
+from bridge.process_group_runner import terminate_process_group
+from bridge.process_identity import (
+    pid_exists as _pid_exists,
+    process_command as _process_command,
+    process_start_identity as _process_start_identity,
+)
+
 
 LOG = logging.getLogger("jarvis-bridge-supervisor")
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -99,7 +106,10 @@ class SubprocessComponent:
         self.spec = spec
         self.environ = dict(environ)
         self.pidfile = state_dir / spec.pidfile
+        self.identity_file = state_dir / ("%s.identity" % spec.pidfile)
         self.process: Optional[subprocess.Popen[str]] = None
+        self.process_group_id: Optional[int] = None
+        self.process_start_identity: Optional[str] = None
         self.external_pid: Optional[int] = None
         self.ready = threading.Event()
         self._pump: Optional[threading.Thread] = None
@@ -110,15 +120,38 @@ class SubprocessComponent:
             return self.process.pid
         return self.external_pid
 
+    def _abort_unverified_spawn(self, message: str) -> None:
+        process = self.process
+        pgid = self.process_group_id
+        if process is not None and pgid is not None:
+            terminate_process_group(
+                process,
+                pgid=pgid,
+                term_grace=0.0,
+                kill_grace=1.0,
+            )
+            if process.stdout is not None:
+                process.stdout.close()
+        self.process = None
+        self.process_group_id = None
+        self.process_start_identity = None
+        raise RuntimeError(message)
+
     def start(self, *, adopt: bool = False) -> None:
         if adopt:
             pid = self._read_live_pid()
             if pid is not None:
                 self.external_pid = pid
+                # Components created by this supervisor always start a private
+                # session, so their persisted spawn PID is also the stable
+                # PGID.  Preserve that identity across controlled adoption.
+                self.process_group_id = pid
+                self.process_start_identity = self._read_identity(pid)
                 self.ready.set()
                 LOG.info("adopted %s pid=%s", self.spec.name, pid)
                 return
         self.pidfile.unlink(missing_ok=True)
+        self.identity_file.unlink(missing_ok=True)
         env = dict(self.environ)
         env["PYTHONUNBUFFERED"] = "1"
         pythonpath = env.get("PYTHONPATH", "")
@@ -133,8 +166,35 @@ class SubprocessComponent:
             text=True,
             bufsize=1,
             errors="replace",
+            start_new_session=True,
         )
+        # start_new_session performs setsid before exec, so the child PID is the
+        # stable PGID even if the component leader exits before a watchdog sweep.
+        self.process_group_id = self.process.pid
+        self.process_start_identity = _process_start_identity(self.process.pid)
+        if self.process_start_identity is None:
+            self._abort_unverified_spawn(
+                "cannot capture %s process start identity"
+                % self.spec.name
+            )
+        try:
+            current_pgid = os.getpgid(self.process.pid)
+        except OSError:
+            self._abort_unverified_spawn(
+                "cannot verify %s private process group"
+                % self.spec.name
+            )
+        if current_pgid != self.process.pid:
+            self._abort_unverified_spawn(
+                "%s did not start as a private process group"
+                % self.spec.name
+            )
         self.pidfile.parent.mkdir(parents=True, exist_ok=True)
+        self._write_identity(
+            self.process.pid,
+            self.process.pid,
+            self.process_start_identity,
+        )
         self.pidfile.write_text("%s\n" % self.process.pid, encoding="utf-8")
         self._pump = threading.Thread(
             target=self._pump_output,
@@ -147,9 +207,104 @@ class SubprocessComponent:
         try:
             pid = int(self.pidfile.read_text(encoding="utf-8").strip())
             os.kill(pid, 0)
-            return pid
         except (OSError, ValueError):
             return None
+        start_identity = _process_start_identity(pid)
+        try:
+            process_group_id = os.getpgid(pid)
+        except OSError as exc:
+            raise RuntimeError(
+                "cannot verify adopted %s pid=%s" % (self.spec.name, pid)
+            ) from exc
+        if start_identity is None or process_group_id != pid:
+            raise RuntimeError(
+                "refusing unverified adopted %s pid=%s pgid=%s"
+                % (self.spec.name, pid, process_group_id)
+            )
+
+        persisted = self._read_identity(pid)
+        if persisted is not None:
+            if persisted != start_identity:
+                raise RuntimeError(
+                    "refusing reused adopted %s pid=%s"
+                    % (self.spec.name, pid)
+                )
+            return pid
+
+        # One-release compatibility for components started before identity
+        # companions existed.  A private group plus the expected command proves
+        # enough ownership to adopt it and persist its observed birth identity.
+        command = _process_command(pid)
+        expected = self.environ.get(self.spec.override, "").strip()
+        owner_token = expected or self.spec.module
+        if not command or owner_token not in command:
+            raise RuntimeError(
+                "refusing legacy adopted %s pid=%s without ownership proof"
+                % (self.spec.name, pid)
+            )
+        self._write_identity(pid, pid, start_identity)
+        return pid
+
+    def _write_identity(self, pid: int, pgid: int, start_identity: str) -> None:
+        value = "%s|%s|%s\n" % (int(pid), int(pgid), start_identity)
+        temporary = self.identity_file.with_name(
+            "%s.tmp.%s" % (self.identity_file.name, os.getpid())
+        )
+        temporary.write_text(value, encoding="utf-8")
+        os.replace(temporary, self.identity_file)
+
+    def _read_identity(self, expected_pid: int) -> Optional[str]:
+        try:
+            fields = self.identity_file.read_text(
+                encoding="utf-8").strip().split("|", 2)
+            pid, pgid = int(fields[0]), int(fields[1])
+            start_identity = fields[2]
+        except FileNotFoundError:
+            return None
+        except (OSError, ValueError, IndexError) as exc:
+            raise RuntimeError(
+                "invalid %s process identity companion"
+                % self.spec.name
+            ) from exc
+        if (
+            pid != int(expected_pid)
+            or pgid != int(expected_pid)
+            or not start_identity
+        ):
+            raise RuntimeError(
+                "invalid %s process identity companion"
+                % self.spec.name
+            )
+        return start_identity
+
+    def _verify_group_owner_before_signal(self, pgid: int) -> None:
+        # If the original group leader remains visible, both its birth identity
+        # and its private PGID must still match.  A different birth token proves
+        # numeric PID/PGID reuse.  When the leader is gone, the original group
+        # may legitimately persist through descendants.
+        if not _pid_exists(pgid):
+            return
+        current = _process_start_identity(pgid)
+        if (
+            current is None
+            or self.process_start_identity is None
+            or current != self.process_start_identity
+        ):
+            raise RuntimeError(
+                "refusing reused/uninspectable %s pgid=%s"
+                % (self.spec.name, pgid)
+            )
+        try:
+            current_pgid = os.getpgid(pgid)
+        except OSError as exc:
+            raise RuntimeError(
+                "cannot verify %s pgid=%s" % (self.spec.name, pgid)
+            ) from exc
+        if current_pgid != pgid:
+            raise RuntimeError(
+                "refusing non-private %s pid=%s pgid=%s"
+                % (self.spec.name, pgid, current_pgid)
+            )
 
     def _pump_output(self) -> None:
         assert self.process is not None
@@ -180,22 +335,84 @@ class SubprocessComponent:
         except OSError:
             return False
 
+    def _term_grace_seconds(self) -> float:
+        common = self.environ.get("JARVIS_BRIDGE_COMPONENT_TERM_GRACE")
+        if common is not None:
+            return max(0.0, float(common))
+        if self.spec is SCHEDULER:
+            value = self.environ.get(
+                "JARVIS_SCHEDULER_DRAIN_TIMEOUT_SECONDS",
+                self.environ.get(
+                    "JARVIS_BRIDGE_STOP_WAIT",
+                    self.environ.get(
+                        "JARVIS_STOP_GRACE",
+                        self.environ.get("JARVIS_SCHEDULER_DRAIN_TIMEOUT", "600"),
+                    ),
+                ),
+            )
+        elif self.spec is PERSISTENT_WORKER:
+            value = self.environ.get("JARVIS_WORKER_DRAIN_TIMEOUT", "30")
+        else:
+            value = self.environ.get(
+                "JARVIS_BRIDGE_STOP_WAIT",
+                self.environ.get("JARVIS_STOP_GRACE", "30"),
+            )
+        return max(0.0, float(value))
+
     def stop(self) -> None:
         pid = self.pid
-        if pid is None:
+        pgid = self.process_group_id
+        if pid is None and pgid is None:
             self.pidfile.unlink(missing_ok=True)
+            self.identity_file.unlink(missing_ok=True)
             return
-        try:
-            os.kill(pid, signal.SIGTERM)
-        except ProcessLookupError:
-            pass
-        # Scheduler owns its drain retry loop.  Never replace a still-draining
-        # process or escalate to SIGKILL.
-        while self.is_alive():
-            time.sleep(0.1)
-        if self.process is not None:
-            self.process.wait()
+
+        if pgid is not None:
+            self._verify_group_owner_before_signal(pgid)
+            kill_grace = max(
+                0.0,
+                float(self.environ.get(
+                    "JARVIS_BRIDGE_COMPONENT_KILL_GRACE", "2")),
+            )
+            drained = terminate_process_group(
+                self.process,
+                pgid=pgid,
+                term_grace=self._term_grace_seconds(),
+                kill_grace=kill_grace,
+            )
+            if not drained:
+                # Keep the captured PGID and pidfile so the outer watchdog can
+                # retry.  Starting a replacement here would overlap a live
+                # descendant and could preserve an a1 file-gate owner forever.
+                raise RuntimeError(
+                    "%s process group %s did not drain"
+                    % (self.spec.name, pgid)
+                )
+        elif pid is not None:
+            # Compatibility for a component created before private sessions
+            # were mandatory.  New and adopted components always take the
+            # process-group branch above.
+            try:
+                os.kill(pid, signal.SIGTERM)
+            except ProcessLookupError:
+                pass
+            while self.is_alive():
+                time.sleep(0.1)
+            if self.process is not None:
+                self.process.wait()
+
+        if self._pump is not None:
+            self._pump.join(timeout=max(1.0, kill_grace if pgid is not None else 1.0))
+        if self.process is not None and self.process.stdout is not None:
+            self.process.stdout.close()
         self.pidfile.unlink(missing_ok=True)
+        self.identity_file.unlink(missing_ok=True)
+        self.process = None
+        self.process_group_id = None
+        self.process_start_identity = None
+        self.external_pid = None
+        self._pump = None
+        self.ready.clear()
 
 
 class BridgeSupervisor:
@@ -262,8 +479,9 @@ class BridgeSupervisor:
                 spec.name,
                 self.restart_delay,
             )
-            if component.is_alive():
-                component.stop()
+            # A dead leader may still have live descendants in its private
+            # group.  Always drain the captured PGID before retrying.
+            component.stop()
             if self.stop_event.wait(self.restart_delay):
                 break
         return False
@@ -300,7 +518,9 @@ class BridgeSupervisor:
                 if component is not None and component.is_alive():
                     continue
                 LOG.error("%s exited; healthy components stay running", spec.name)
-                self.components.pop(spec.name, None)
+                component = self.components.pop(spec.name, None)
+                if component is not None:
+                    component.stop()
                 self._start_until_ready(spec)
                 if self.stop_event.is_set():
                     break

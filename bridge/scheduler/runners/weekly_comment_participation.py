@@ -33,6 +33,7 @@ from typing import Any, Optional
 
 from bridge.aone_tasks import AoneQueryMixin, REPO_ROOT
 from bridge.helpers.aone import _SHANGHAI_TZ, _contact_directory, _is_human_comment
+from bridge.process_group_runner import run_process_group
 from ..model import DailySchedule, JobResult, JobResultStatus, ScheduledJobDefinition, is_aware
 
 
@@ -204,7 +205,7 @@ class WeeklyCommentParticipationRunner:
         page = 1
         while page <= LIST_MAX_PAGES:
             try:
-                result = subprocess.run(
+                result = run_process_group(
                     [str(REPO_ROOT / "bin" / "a1id"), "--",
                      "project", "workitem", "list",
                      "--project", str(project), "--type", req_type,
@@ -255,7 +256,7 @@ class WeeklyCommentParticipationRunner:
     def _list_comments(self, workitem_id: str) -> Optional[list[dict]]:
         """List comments for one work item. None on failure; [] when none/empty."""
         try:
-            result = subprocess.run(
+            result = run_process_group(
                 [str(REPO_ROOT / "bin" / "a1id"), "--",
                  "project", "workitem", "comment", "list", str(workitem_id),
                  "-f", "json"],

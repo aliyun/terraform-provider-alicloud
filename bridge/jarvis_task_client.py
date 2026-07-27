@@ -683,14 +683,21 @@ class ControlPlaneClient:
         """Return every registered worker and its persisted heartbeat state."""
         return self._get(self.WORKERS_PATH)
 
-    def list_ready_task_diagnostics(self, *, limit: int = 100) -> Any:
+    def list_ready_task_diagnostics(self, *, after_task_id: int = 0,
+                                    limit: int = 100) -> Any:
         """Return READY tasks with the reason each one can or cannot be leased."""
+        after = int(after_task_id)
         page_size = int(limit)
+        if after < 0:
+            raise ValueError("after_task_id must not be negative")
         if page_size <= 0 or page_size > 500:
             raise ValueError("limit must be between 1 and 500")
+        query = {"limit": page_size}
+        if after:
+            query["afterTaskId"] = after
         return self._get("%s?%s" % (
             self.READY_TASK_DIAGNOSTICS_PATH,
-            urlencode({"limit": page_size})))
+            urlencode(query)))
 
     def get_worker_state(self, worker_key: str) -> Any:
         """Return one worker plus its current task/session assignments."""

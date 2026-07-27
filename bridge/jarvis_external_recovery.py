@@ -14,6 +14,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Mapping, Optional, Tuple
 
+from bridge.process_group_runner import run_process_group
+
 
 class RecoveryInconclusive(RuntimeError):
     """Authoritative Aone readback was unavailable or malformed."""
@@ -235,7 +237,7 @@ class ExternalOperationRecoveryScheduler:
     def _a1_json(self, args: list[str]) -> Any:
         command = [str(self.repo_root / "bin" / "a1id"), "--"] + args + ["-f", "json"]
         try:
-            result = subprocess.run(
+            result = run_process_group(
                 command, cwd=str(self.repo_root), capture_output=True, text=True,
                 timeout=float(os.environ.get("JARVIS_EXTERNAL_RECOVERY_AONE_TIMEOUT", "30")))
         except (OSError, subprocess.TimeoutExpired) as exc:

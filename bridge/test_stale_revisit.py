@@ -337,7 +337,8 @@ class CandidateFairnessTest(unittest.TestCase):
 
     def test_customer_idle_query_excludes_pr_merged_status(self):
         completed = type("Proc", (), {"returncode": 0, "stdout": "[]", "stderr": ""})()
-        with mock.patch.object(bot.subprocess, "run", return_value=completed) as run:
+        with mock.patch.object(
+                daily_nudge, "run_process_group", return_value=completed) as run:
             self.scheduler._query_pool("tf_customer", "1086837")
         cmd = run.call_args.args[0]
         self.assertEqual(cmd[cmd.index("--filter") + 1],
@@ -352,7 +353,8 @@ class CandidateFairnessTest(unittest.TestCase):
         }]
         completed = type("Proc", (), {
             "returncode": 0, "stdout": json.dumps(payload), "stderr": ""})()
-        with mock.patch.object(bot.subprocess, "run", return_value=completed):
+        with mock.patch.object(
+                daily_nudge, "run_process_group", return_value=completed):
             rows = self.scheduler._query_pool("tf_customer", "1086837")
         self.assertEqual(rows[0]["type"], "需求问题")
         self.scheduler._pool_projects = lambda: [("tf_customer", "1086837")]
@@ -397,7 +399,7 @@ class CandidateFairnessTest(unittest.TestCase):
 
     def test_query_pool_uses_page_size_1000_and_paginates(self):
         calls = []
-        orig = bot.subprocess.run
+        orig = daily_nudge.run_process_group
 
         class Proc:
             returncode = 0
@@ -415,11 +417,11 @@ class CandidateFairnessTest(unittest.TestCase):
                  "tag": ["jarvis-idle"], "status": "Open"}
                 for i in range(count)])
 
-        bot.subprocess.run = fake_run
+        daily_nudge.run_process_group = fake_run
         try:
             rows = self.scheduler._query_pool("tf_provider", PROJECT)
         finally:
-            bot.subprocess.run = orig
+            daily_nudge.run_process_group = orig
         self.assertEqual(len(rows), 1030)
         self.assertEqual(calls, [1, 2])
 
@@ -437,7 +439,8 @@ class DualChannelLedgerTest(unittest.TestCase):
         self.orig_aone_path = events.AONE_EVENT_PATH
         self.orig_dm_path = dingtalk.DINGTALK_EVENT_PATH
         self.orig_tf = events._is_terraform_project
-        self.orig_run = events.subprocess.run
+        self.orig_run = events.run_process_group
+        self.orig_dingtalk_run = dingtalk.subprocess.run
         events.AONE_EVENT_PATH = Path(self.tmp.name) / "aone.json"
         dingtalk.DINGTALK_EVENT_PATH = Path(self.tmp.name) / "dm.json"
         events._is_terraform_project = lambda project: str(project) == PROJECT
@@ -479,13 +482,15 @@ class DualChannelLedgerTest(unittest.TestCase):
                 return Proc(0, "{}")
             return Proc(1, "", "unexpected")
 
-        events.subprocess.run = fake_run
+        events.run_process_group = fake_run
+        dingtalk.subprocess.run = fake_run
 
     def tearDown(self):
         events.AONE_EVENT_PATH = self.orig_aone_path
         dingtalk.DINGTALK_EVENT_PATH = self.orig_dm_path
         events._is_terraform_project = self.orig_tf
-        events.subprocess.run = self.orig_run
+        events.run_process_group = self.orig_run
+        dingtalk.subprocess.run = self.orig_dingtalk_run
         events._aone_event_inflight.clear()
         dingtalk._event_inflight.clear()
         self.tmp.cleanup()

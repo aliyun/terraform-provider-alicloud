@@ -52,6 +52,7 @@ set -euo pipefail
 A1="${A1_BIN:-a1}"
 SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 A1_COMMAND_GUARD="$SCRIPT_DIR/../bootstrap/a1_command_guard.py"
+A1_FILE_GATE="$SCRIPT_DIR/../bootstrap/a1-file-gate.py"
 # v2:根目录改由 A1ID_ROOT 控制(测试隔离用),不再复用 a1 自己的 A1_CONFIG_DIR。
 A1ID_ROOT="${A1ID_ROOT:-$HOME/.config/a1}"
 STORE="$A1ID_ROOT/identities"
@@ -83,6 +84,18 @@ case "${1:-}" in
     fi
     ;;
 esac
+
+# Hold a kernel-backed shared gate for the complete a1id → guard → a1 exec
+# lifetime.  The descriptor survives every exec and the kernel releases it for
+# normal exit, TERM, or KILL.  The cleaner takes the matching exclusive gate,
+# eliminating the final stat→unlink owner-replacement race.
+if [ "${JARVIS_A1_GATE_MODE:-}" != "shared" ] \
+    || [ "${JARVIS_A1_GATE_ROOT:-}" != "$A1ID_ROOT" ]; then
+  [ -n "$A1_GUARD_PYTHON" ] || die "a1 file gate 需要 python3；已 fail-closed"
+  [ -f "$A1_FILE_GATE" ] || die "a1 file gate 缺失:$A1_FILE_GATE"
+  exec "$A1_GUARD_PYTHON" -I "$A1_FILE_GATE" \
+    --root "$A1ID_ROOT" shared -- "$0" "$@"
+fi
 mkdir -p "$STORE"
 
 source "$SCRIPT_DIR/../bootstrap/post-pr-context.sh"

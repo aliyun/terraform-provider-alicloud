@@ -5,6 +5,7 @@ import logging
 import os
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
@@ -928,6 +929,40 @@ class PersistenceExecutorTest(unittest.TestCase):
         self.assertTrue(gated.run_once())
         self.assertEqual(no_capacity.named("lease_task"), [])
         ephemeral.release()
+
+    def test_start_runs_three_independent_watchdog_beacons(self):
+        client = FakeClient(lease_task=[{}, {}, {}, {}])
+        with tempfile.TemporaryDirectory() as tmp:
+            paths = {
+                name: Path(tmp) / ("%s.epoch" % name)
+                for name in ("worker", "lease", "session")
+            }
+            worker = self.make(
+                client, lambda *_args: None, lambda *_args: None,
+                lease_interval=0.01,
+                worker_heartbeat_interval=0.01,
+                session_heartbeat_interval=0.01,
+                retry_interval=0.01,
+                heartbeat_beacon_paths=paths,
+            )
+            worker.start()
+            deadline = time.monotonic() + 2
+            while (time.monotonic() < deadline
+                   and not all(path.exists() for path in paths.values())):
+                time.sleep(0.01)
+            self.assertTrue(
+                all(path.exists() for path in paths.values()),
+                "worker, lease, and session loops need distinct beacons",
+            )
+            self.assertEqual(
+                {thread.name for thread in worker._threads},
+                {
+                    "jarvis-worker-heartbeat-loop",
+                    "jarvis-lease-loop",
+                    "jarvis-session-loop",
+                },
+            )
+            worker.stop()
 
     def test_task_and_ephemeral_execution_share_one_capacity_manager(self):
         manager = CapacityManager(3)

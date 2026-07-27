@@ -36,11 +36,12 @@ class SchedulerCoreTests(unittest.TestCase):
     def test_registry_contains_all_migrated_jobs(self):
         self.assertEqual(tuple(item.id for item in jobs.JOBS),
                          ("daily.probe", "aone.scan", "aone.claim-health",
-                          "daily.nudge", "aone.weekly-comment-participation",
+                          "task.owner-health", "daily.nudge",
+                          "aone.weekly-comment-participation",
                           "aone.reply", "pr.watch", "external.recovery"))
         self.assertEqual(jobs.RUNNER_KEYS, IMPLEMENTED_RUNNER_KEYS)
         self.assertEqual(
-            ("daily_probe", "scan", "claim_health", "daily_nudge",
+            ("daily_probe", "scan", "claim_health", "owner_health", "daily_nudge",
              "weekly_comment_participation", "reply", "pr_watch", "recovery"),
             tuple(item.runner.handler_key for item in jobs.JOBS),
         )

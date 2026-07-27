@@ -529,7 +529,7 @@ class FieldRepairSubmitterNotifyTest(unittest.TestCase):
         def run_with(creator):
             payload = json.dumps({"creator": creator})
             with mock.patch.object(
-                    persistent_tasks.subprocess, "run",
+                    persistent_tasks, "run_process_group",
                     return_value=SimpleNamespace(returncode=0, stdout=payload)):
                 return persistent_tasks.resolve_submitter("84432183")
         self.assertEqual(run_with({"empId": "270513", "nickName": "秋雯"}),

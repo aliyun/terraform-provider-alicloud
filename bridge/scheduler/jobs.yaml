@@ -28,6 +28,15 @@ jobs:
     retry_delay_seconds: 30
     enabled: true
 
+  - key: task.owner-health
+    runner: owner_health
+    revision: 1
+    description: 分页核验 RESUME_ONLY owner 不可用与 RECOVERY_REQUIRED 迁移结果并记录滞留时长
+    schedule: {kind: interval, interval_seconds: 300, run_immediately: true}
+    misfire: COALESCE
+    retry_delay_seconds: 30
+    enabled: true
+
   - key: daily.nudge
     runner: daily_nudge
     revision: 1

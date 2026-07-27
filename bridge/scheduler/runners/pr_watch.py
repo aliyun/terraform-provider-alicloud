@@ -29,6 +29,7 @@ from bridge.aone_tasks import (
 )
 from bridge.helpers.aone import _aone_event_enqueue, _aone_event_flush
 from bridge.helpers.dingtalk import _dingtalk_event_flush
+from bridge.process_group_runner import run_process_group
 from bridge import pr_watch_registry as _registry
 
 # Keep this re-export patchable for the runner's focused tests while the actual
@@ -100,7 +101,7 @@ def _post_pr_workitem_snapshot(iid, terraform=True):
     The PR-merged status transition is scoped to one project and one workitem type, so
     missing or malformed identity fields are ambiguous and must fail closed.
     """
-    proc = subprocess.run(
+    proc = run_process_group(
         [str(REPO_ROOT / "bin" / "a1id"), "--", "project", "workitem",
          "get", str(iid), "-f", "json"],
         cwd=str(REPO_ROOT), timeout=60, capture_output=True, text=True,
@@ -1066,7 +1067,7 @@ class PrWatchRuntime:
         env = os.environ.copy()
         env["JARVIS_CACHE_TTL"] = "0"
         try:
-            proc = subprocess.run(
+            proc = run_process_group(
                 [str(Path(REPO_ROOT) / "bootstrap" / "aone-get.sh"), str(tid)],
                 capture_output=True, text=True, env=env, timeout=90)
         except Exception:  # noqa: BLE001
@@ -1171,7 +1172,7 @@ class PrWatchRuntime:
         env = os.environ.copy()
         env["JARVIS_CACHE_TTL"] = "0"
         try:
-            proc = subprocess.run(
+            proc = run_process_group(
                 [str(Path(REPO_ROOT) / "bootstrap" / "aone-get.sh"), str(tid)],
                 capture_output=True, text=True, env=env, timeout=90)
         except Exception as e:  # noqa: BLE001
@@ -1215,7 +1216,7 @@ class PrWatchRuntime:
     def _update_merged_status(tid, merged_status):
         """Move a scoped customer requirement to its release-prep stop-scan status."""
         try:
-            proc = subprocess.run(
+            proc = run_process_group(
                 [str(REPO_ROOT / "bin" / "a1id"), "--", "project", "workitem",
                  "update", str(tid), "--status", merged_status["name"]],
                 cwd=str(REPO_ROOT), timeout=60, capture_output=True, text=True,
@@ -1235,7 +1236,7 @@ class PrWatchRuntime:
         """claim.sh finish <tid> <project> <status>. Returns proc.returncode；任何非零都由
         caller 保留重试。日志记 stdout/stderr。subprocess 抛异常不吞——交 _tick 的 per-entry
         try/except 兜底（条目保留），绝不在 finish 失败时误判成功收尾。"""
-        proc = subprocess.run(
+        proc = run_process_group(
             [str(Path(REPO_ROOT) / "bootstrap" / "claim.sh"), "finish", str(tid), str(project), status],
             capture_output=True, text=True,
             env=_a1_command_env(terraform=_is_terraform_project(project)), timeout=120)
@@ -1253,7 +1254,7 @@ class PrWatchRuntime:
             log.info("PrWatchRuntime: suppress Terraform Aone comment #%s", tid)
             return 0
         try:
-            proc = subprocess.run(
+            proc = run_process_group(
                 [str(Path(REPO_ROOT) / "bootstrap" / "wrap.sh"), "sync", str(tid), "--summary-stdin"],
                 input=text, capture_output=True, text=True,
                 env=_a1_command_env(terraform=_is_terraform_project(project)), timeout=90)

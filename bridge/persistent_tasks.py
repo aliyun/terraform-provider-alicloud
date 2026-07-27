@@ -33,6 +33,7 @@ from bridge.jarvis_execution_runtime import (
     run_claude_buffered,
     session_file_exists,
 )
+from bridge.process_group_runner import run_process_group
 
 
 LOG = logging.getLogger(__name__)
@@ -52,7 +53,7 @@ def _aone_event_enqueue(ticket, project, event_key, text, allow_non_tf=False,
 
 def terraform_rd_ready() -> bool:
     try:
-        return subprocess.run(
+        return run_process_group(
             [str(REPO_ROOT / "bin" / "a1id"), "ready",
              PERSONA_PUBLIC_IDENTITY],
             cwd=str(REPO_ROOT), timeout=30, capture_output=True,
@@ -66,7 +67,7 @@ def _claim_workitem(item_id, project, terraform=False, reopen_done=False):
     env.update(JARVIS_CLAIM_SETTLE="0", JARVIS_CLAIM_PROGRESS="0")
     if reopen_done:
         env["JARVIS_CLAIM_REOPEN_DONE"] = "1"
-    result = subprocess.run(
+    result = run_process_group(
         [str(REPO_ROOT / "bootstrap" / "claim.sh"), "claim",
          str(item_id), str(project)],
         cwd=str(REPO_ROOT), timeout=60, capture_output=True, text=True, env=env)
@@ -79,7 +80,7 @@ def _claim_workitem(item_id, project, terraform=False, reopen_done=False):
 
 
 def release_claim(item_id, project, terraform=False):
-    result = subprocess.run(
+    result = run_process_group(
         [str(REPO_ROOT / "bootstrap" / "claim.sh"), "release",
          str(item_id), str(project)],
         cwd=str(REPO_ROOT), timeout=60, capture_output=True, text=True,
@@ -94,7 +95,7 @@ def release_claim(item_id, project, terraform=False):
 
 
 def _finish_workitem(item_id, project, terraform=False):
-    result = subprocess.run(
+    result = run_process_group(
         [str(REPO_ROOT / "bootstrap" / "claim.sh"), "finish",
          str(item_id), str(project)],
         cwd=str(REPO_ROOT), timeout=60, capture_output=True, text=True,
@@ -132,7 +133,7 @@ def _latest_human_comment(item_id, terraform=False):
         "--", "project", "workitem", "comment", "list", str(item_id),
         "-f", "json",
     ])
-    result = subprocess.run(
+    result = run_process_group(
         command, capture_output=True, text=True, cwd=str(REPO_ROOT),
         timeout=90, env=_a1_command_env(terraform=terraform))
     if result.returncode:
@@ -166,7 +167,7 @@ def resolve_submitter(item_id):
     env["JARVIS_CACHE_TTL"] = "0"
     creator = {}
     try:
-        result = subprocess.run(
+        result = run_process_group(
             [str(REPO_ROOT / "bootstrap" / "aone-get.sh"), str(item_id)],
             capture_output=True,
             text=True,

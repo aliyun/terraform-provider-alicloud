@@ -18,6 +18,7 @@ from bridge.aone_tasks import (
 from bridge.helpers.aone import _aone_event_flush, _aone_event_source_part
 from bridge.helpers.dingtalk import _dingtalk_event_enqueue, _dingtalk_event_flush
 from bridge.jarvis_task_router import ExecutionRouter
+from bridge.process_group_runner import run_process_group
 from ..model import JobResult, JobResultStatus, ScheduledJobDefinition, is_aware
 
 
@@ -119,7 +120,7 @@ class ClaimHealthRunner(AoneQueryMixin):
             return cached or []
         data = None
         try:
-            result = subprocess.run(
+            result = run_process_group(
                 [str(REPO_ROOT / "bin" / "a1id"), "--", "project", "workitem",
                  "activity", iid, "-f", "json"],
                 capture_output=True, text=True, timeout=60, cwd=str(REPO_ROOT))

@@ -25,7 +25,7 @@ class PublisherTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.orig_path = publisher.AONE_EVENT_PATH
-        self.orig_run = publisher.subprocess.run
+        self.orig_run = publisher.run_process_group
         self.orig_tf_project = publisher._is_terraform_project
         publisher.AONE_EVENT_PATH = Path(self.tmp.name) / "events.json"
         publisher._is_terraform_project = lambda project: str(project) == PROJ
@@ -67,11 +67,11 @@ class PublisherTest(unittest.TestCase):
                 return Proc(0, json.dumps(response))
             return Proc(1, "", "unexpected")
 
-        publisher.subprocess.run = fake_run
+        publisher.run_process_group = fake_run
 
     def tearDown(self):
         publisher.AONE_EVENT_PATH = self.orig_path
-        publisher.subprocess.run = self.orig_run
+        publisher.run_process_group = self.orig_run
         publisher._is_terraform_project = self.orig_tf_project
         publisher._aone_event_inflight.clear()
         self.tmp.cleanup()

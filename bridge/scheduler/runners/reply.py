@@ -17,6 +17,7 @@ from bridge.jarvis_task_router import (
 from ..model import JobResult, JobResultStatus, ScheduledJobDefinition, is_aware
 from bridge.aone_tasks import REPO_ROOT, _task_result_instructions
 from bridge.helpers.aone import _is_human_comment
+from bridge.process_group_runner import run_process_group
 
 
 JOB_KEY = "aone.reply"
@@ -56,7 +57,7 @@ class ReplyRunner:
 
     def _fetch_comments(self, aone_id: str) -> list[dict[str, Any]] | None:
         try:
-            result = subprocess.run(
+            result = run_process_group(
                 [str(REPO_ROOT / "bin" / "a1id"), "--",
                  "project", "workitem", "comment", "list", str(aone_id), "-f", "json"],
                 capture_output=True, text=True, timeout=30,

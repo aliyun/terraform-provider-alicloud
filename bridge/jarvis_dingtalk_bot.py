@@ -168,6 +168,7 @@ from bridge.helpers.aone import (
 )
 from bridge.helpers.dingtalk import _dingtalk_event_enqueue
 from bridge.pending_dispatch import PendingDispatchRegistry
+from bridge.process_group_runner import run_process_group
 # The DingTalk SDK is only needed by the live WebSocket path in main(). Guard the
 # import so the module still loads for the hermetic test suite and --dry-run-once
 # on hosts without the SDK; JarvisHandler subclasses the base at class-def time, so
@@ -429,7 +430,7 @@ def _dispatch_model_provider_summary(ticket, project, kind, attempts, release_st
 def _release_claim_checked(iid, project, terraform=False):
     """Release a failed dispatch claim and expose the command's true outcome."""
     try:
-        proc = subprocess.run(
+        proc = run_process_group(
             [str(REPO_ROOT / "bootstrap" / "claim.sh"), "release",
              str(iid), str(project)],
             cwd=str(REPO_ROOT), timeout=60,
@@ -590,7 +591,7 @@ def _terraform_rd_ready():
     Aone write. Never falls back to jarvis for a terraform reply (identity discipline).
     """
     try:
-        proc = subprocess.run(
+        proc = run_process_group(
             [str(REPO_ROOT / "bin" / "a1id"), "ready", PERSONA_PUBLIC_IDENTITY],
             cwd=str(REPO_ROOT), timeout=30, capture_output=True, text=True)
         return proc.returncode == 0
@@ -600,7 +601,7 @@ def _terraform_rd_ready():
 
 def _post_pr_tag_snapshot(iid, terraform=True):
     """Point-read exact tag names/ids; malformed or failed reads stay ambiguous."""
-    proc = subprocess.run(
+    proc = run_process_group(
         [str(REPO_ROOT / "bin" / "a1id"), "--", "project", "workitem",
          "get", str(iid), "-f", "json"],
         cwd=str(REPO_ROOT), timeout=60, capture_output=True, text=True,
@@ -1580,7 +1581,7 @@ class JarvisHandler(AsyncChatbotHandler):
         if not sid.isdigit():
             return ""
         try:
-            result = subprocess.run(
+            result = run_process_group(
                 [str(REPO_ROOT / "bin" / "a1id"), "--", "project", "workitem",
                  "get", sid, "-f", "json"],
                 capture_output=True, text=True, timeout=30, cwd=str(REPO_ROOT))
@@ -1606,7 +1607,7 @@ class JarvisHandler(AsyncChatbotHandler):
         if not sid.isdigit():
             return ""
         try:
-            result = subprocess.run(
+            result = run_process_group(
                 [str(REPO_ROOT / "bin" / "a1id"), "--", "project", "workitem",
                  "get", sid, "-f", "json"],
                 capture_output=True, text=True, timeout=30, cwd=str(REPO_ROOT))
@@ -1628,7 +1629,7 @@ class JarvisHandler(AsyncChatbotHandler):
         if not sid.isdigit():
             return "#%s" % sid
         try:
-            r = subprocess.run(
+            r = run_process_group(
                 [str(REPO_ROOT / "bin" / "a1id"), "--",
                  "project", "workitem", "get", sid, "-f", "json"],
                 capture_output=True, text=True, timeout=30, cwd=str(REPO_ROOT))
@@ -1852,8 +1853,9 @@ class JarvisHandler(AsyncChatbotHandler):
             if product_cfs:
                 args += ["--cfs", product_cfs]
             args += ["--quiet"]
-            r = subprocess.run(args, capture_output=True, text=True,
-                               timeout=60, cwd=str(REPO_ROOT))
+            r = run_process_group(
+                args, capture_output=True, text=True,
+                timeout=60, cwd=str(REPO_ROOT))
             new_id = ""
             if r.returncode == 0 and r.stdout.strip():
                 # --quiet 输出空格分隔: "<id> <title> <status> <assignee>"，取第一列
@@ -1904,7 +1906,7 @@ class JarvisHandler(AsyncChatbotHandler):
     def _last_comment_id(aone_id):
         """Get the highest comment ID for an Aone workitem (for suspend baseline)."""
         try:
-            r = subprocess.run(
+            r = run_process_group(
                 [str(REPO_ROOT / "bin" / "a1id"), "--",
                  "project", "workitem", "comment", "list", str(aone_id), "-f", "json"],
                 capture_output=True, text=True, timeout=30, cwd=str(REPO_ROOT))
@@ -2170,7 +2172,7 @@ def load_env_file():
 def _release_claim(iid, project, terraform=False):
     """Best-effort release of a jarvis-claimed workitem during graceful stop."""
     try:
-        subprocess.run(
+        run_process_group(
             [str(REPO_ROOT / "bootstrap" / "claim.sh"), "release", str(iid), str(project)],
             cwd=str(REPO_ROOT), timeout=60,
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,

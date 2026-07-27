@@ -852,6 +852,8 @@ class PersistenceExecutor:
                  clock: Callable[[], float] = time.monotonic,
                  executor: Optional[Any] = None,
                  progress: Optional[Progress] = None,
+                 heartbeat_beacon_path: Optional[Any] = None,
+                 heartbeat_beacon_paths: Optional[Mapping[str, Any]] = None,
                  logger: Optional[logging.Logger] = None):
         if not callable(execute):
             raise TypeError("execute must be callable")
@@ -921,6 +923,14 @@ class PersistenceExecutor:
         self._stopped = False
         self._stop_event = threading.Event()
         self._threads = []
+        self._heartbeat_beacon_paths: Dict[str, Path] = {}
+        if heartbeat_beacon_path:
+            self._heartbeat_beacon_paths["worker"] = Path(heartbeat_beacon_path)
+        for name, path in dict(heartbeat_beacon_paths or {}).items():
+            if name not in {"worker", "lease", "session"}:
+                raise ValueError("unknown heartbeat beacon: %s" % name)
+            if path:
+                self._heartbeat_beacon_paths[name] = Path(path)
 
     @property
     def network_healthy(self) -> bool:
@@ -1028,6 +1038,21 @@ class PersistenceExecutor:
         self._mark_network_healthy()
         return True
 
+    def _write_heartbeat_beacon(self, name: str) -> None:
+        """Atomically record completion of one independent worker loop."""
+        path = self._heartbeat_beacon_paths.get(name)
+        if path is None:
+            return
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            tmp = path.with_name(
+                "%s.tmp.%s.%s" % (
+                    path.name, os.getpid(), threading.get_ident()))
+            tmp.write_text("%d\n" % int(time.time()))
+            tmp.replace(path)
+        except Exception:  # noqa: BLE001 — beacon is best-effort
+            pass
+
     def _process_force_handoff_requests(self, requests: Any) -> None:
         if not isinstance(requests, list):
             raise LeaseProtocolError("force handoff requests must be a list")
@@ -1056,8 +1081,8 @@ class PersistenceExecutor:
                 request_id="jarvis-force-handoff-ack-%s-%s" % (
                     session_id, old_fence))
 
-    def run_once(self) -> bool:
-        """Register/heartbeat and perform at most one lease poll."""
+    def _maintain_worker_registration(self) -> bool:
+        """Register/heartbeat independently from lease and Session polling."""
         with self._lock:
             if self._stopped:
                 return False
@@ -1066,6 +1091,13 @@ class PersistenceExecutor:
             return False
         if not self._heartbeat_worker_if_due(force=not self.network_healthy):
             return False
+        return True
+
+    def _lease_once(self) -> bool:
+        """Perform at most one lease poll without owning Worker heartbeats."""
+        with self._lock:
+            if self._stopped or not self._registered:
+                return False
         if self.draining:
             return True
         with self._lock:
@@ -1119,6 +1151,12 @@ class PersistenceExecutor:
             self.log.exception("leased task setup failed worker=%s error=%s",
                                self.worker_key, type(exc).__name__)
             return False
+
+    def run_once(self) -> bool:
+        """Compatibility step: heartbeat the Worker, then poll one lease."""
+        if not self._maintain_worker_registration():
+            return False
+        return self._lease_once()
 
     def _accept_lease(self, lease: Mapping[str, Any], *,
                       capacity_permit: Optional[CapacityPermit] = None) -> bool:
@@ -1295,13 +1333,35 @@ class PersistenceExecutor:
 
     def _lease_loop(self) -> None:
         while not self._stop_event.is_set():
-            self.run_once()
-            interval = self.lease_interval if self.network_healthy else self.retry_interval
+            try:
+                self._lease_once()
+            finally:
+                self._write_heartbeat_beacon("lease")
+            interval = (
+                self.lease_interval if self.network_healthy
+                else self.retry_interval)
+            self._stop_event.wait(interval)
+
+    def _worker_loop(self) -> None:
+        while not self._stop_event.is_set():
+            try:
+                self._maintain_worker_registration()
+            finally:
+                # Liveness, not network success: a control-plane outage should
+                # not create a restart storm, while a blocked heartbeat RPC
+                # must make this beacon stale.
+                self._write_heartbeat_beacon("worker")
+            interval = (
+                self.worker_heartbeat_interval if self.network_healthy
+                else self.retry_interval)
             self._stop_event.wait(interval)
 
     def _session_loop(self) -> None:
         while not self._stop_event.wait(self.session_heartbeat_interval):
-            self.heartbeat_sessions_once()
+            try:
+                self.heartbeat_sessions_once()
+            finally:
+                self._write_heartbeat_beacon("session")
 
     def start(self) -> "PersistenceExecutor":
         with self._lock:
@@ -1310,6 +1370,10 @@ class PersistenceExecutor:
             if self._threads:
                 return self
             self._threads = [
+                threading.Thread(
+                    target=self._worker_loop,
+                    name="jarvis-worker-heartbeat-loop",
+                    daemon=True),
                 threading.Thread(target=self._lease_loop, name="jarvis-lease-loop", daemon=True),
                 threading.Thread(target=self._session_loop, name="jarvis-session-loop", daemon=True),
             ]

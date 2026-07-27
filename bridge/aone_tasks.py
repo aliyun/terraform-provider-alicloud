@@ -21,6 +21,7 @@ from datetime import datetime
 from bridge.helpers.aone import (
     PERSONA_PUBLIC_IDENTITY, REPO_ROOT, _a1_command_env, _is_terraform_project,
 )
+from bridge.process_group_runner import run_process_group
 
 _AONE_PREFLIGHT_LOCKS = {}
 
@@ -52,7 +53,7 @@ def _aone_preflight(workitem_id, expected_project=None, terraform=False):
         command.append(expected_project)
     with item_lock:
         try:
-            proc = subprocess.run(
+            proc = run_process_group(
                 command, capture_output=True, text=True, timeout=timeout,
                 env=_a1_command_env(terraform=terraform))
         except subprocess.TimeoutExpired:
@@ -615,7 +616,7 @@ class AoneQueryMixin:
     def _a1_list(cls, project, filter_expr):
         """按 --filter 查一个池（富列），回规范化 item 列表。best-effort，失败回 []。"""
         try:
-            r = subprocess.run(
+            r = run_process_group(
                 [str(REPO_ROOT / "bin" / "a1id"), "--", "project", "workitem", "list",
                  "--project", str(project), "--filter", filter_expr,
                  "--columns", cls._UNION_COLUMNS, "-f", "json"],

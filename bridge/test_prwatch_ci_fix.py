@@ -702,10 +702,10 @@ class MaybeDispatchCommentReplyTest(_DispatchBase):
 class PrWatchWriteIdentityAndOutcomeTest(_DispatchBase):
     def setUp(self):
         super().setUp()
-        self._orig_run = bot.subprocess.run
+        self._orig_run = bot.run_process_group
 
     def tearDown(self):
-        bot.subprocess.run = self._orig_run
+        bot.run_process_group = self._orig_run
         super().tearDown()
 
     def test_finish_uses_rd_but_terraform_comment_is_suppressed(self):
@@ -715,7 +715,7 @@ class PrWatchWriteIdentityAndOutcomeTest(_DispatchBase):
             calls.append((list(cmd), dict(kw.get("env") or {})))
             return _fake_proc(0, "")
 
-        bot.subprocess.run = fake
+        bot.run_process_group = fake
         self.sched._comment = bot.PrWatchRuntime._comment.__get__(
             self.sched, bot.PrWatchRuntime)
         self.sched._finish(TID, PROJ, "已完成")
@@ -765,7 +765,7 @@ class PrWatchWriteIdentityAndOutcomeTest(_DispatchBase):
             calls.append((list(cmd), dict(kw.get("env") or {})))
             return _fake_proc(0, "")
 
-        bot.subprocess.run = fake
+        bot.run_process_group = fake
         self.sched._check_one(TID, self._entry())
 
         update, env = next(call for call in calls if "update" in call[0])
@@ -794,7 +794,7 @@ class PrWatchWriteIdentityAndOutcomeTest(_DispatchBase):
             calls.append((list(cmd), dict(kw.get("env") or {})))
             return _fake_proc(0, json.dumps(payload))
 
-        bot.subprocess.run = fake
+        bot.run_process_group = fake
         snapshot = bot.PrWatchRuntime._workitem_snapshot(self.sched, TID)
         self.assertEqual(snapshot["project"], "1086837")
         self.assertEqual(snapshot["workitem_type"], "3")
@@ -811,7 +811,7 @@ class PrWatchWriteIdentityAndOutcomeTest(_DispatchBase):
         self.sched._workitem_snapshot = lambda _tid: self._status_snapshot(
             status="已合入主线", status_id="626904")
         self.sched._finish = lambda *_a: self.fail("customer type 3 must not finish")
-        bot.subprocess.run = lambda *_a, **_k: self.fail(
+        bot.run_process_group = lambda *_a, **_k: self.fail(
             "already-confirmed merged status must not update")
         self.sched._check_one(TID, self._entry())
         self.assertFalse(bot._prwatch_has(TID))
@@ -832,7 +832,7 @@ class PrWatchWriteIdentityAndOutcomeTest(_DispatchBase):
         self.sched._gh_pr_state = lambda _url: ("MERGED", "2026-07-01T00:00:00Z")
         self.sched._workitem_snapshot = lambda _tid: self._status_snapshot()
         self.sched._finish = lambda *_a: self.fail("update failure must not finish")
-        bot.subprocess.run = lambda *_a, **_k: _fake_proc(1, "update failed")
+        bot.run_process_group = lambda *_a, **_k: _fake_proc(1, "update failed")
         self.sched._check_one(TID, self._entry())
         self.assertTrue(bot._prwatch_has(TID))
         self.assertEqual(self.events, [])
@@ -850,7 +850,7 @@ class PrWatchWriteIdentityAndOutcomeTest(_DispatchBase):
 
         self.sched._workitem_snapshot = snapshot
         self.sched._finish = lambda *_a: self.fail("readback failure must not finish")
-        bot.subprocess.run = lambda *_a, **_k: _fake_proc(0, "")
+        bot.run_process_group = lambda *_a, **_k: _fake_proc(0, "")
         self.sched._check_one(TID, self._entry())
         self.assertTrue(bot._prwatch_has(TID))
         self.assertEqual(self.events, [])
@@ -875,7 +875,7 @@ class PrWatchWriteIdentityAndOutcomeTest(_DispatchBase):
                 self.sched._workitem_snapshot = lambda _tid, it=snapshots: next(it)
                 self.sched._finish = lambda *_a: self.fail(
                     "invalid readback must not finish")
-                bot.subprocess.run = lambda *_a, **_k: _fake_proc(0, "")
+                bot.run_process_group = lambda *_a, **_k: _fake_proc(0, "")
                 self.sched._check_one(TID, self._entry())
                 self.assertTrue(bot._prwatch_has(TID), index)
                 self.assertEqual(self.events, [])
@@ -936,7 +936,7 @@ class PrWatchWriteIdentityAndOutcomeTest(_DispatchBase):
         self.sched._workitem_snapshot = lambda _tid: self._status_snapshot(
             status="已发布", status_id="terminal")
         self.sched._finish = lambda *_a: self.fail("terminal customer must not finish")
-        bot.subprocess.run = lambda *_a, **_k: self.fail(
+        bot.run_process_group = lambda *_a, **_k: self.fail(
             "terminal customer must not update status")
         self.sched._check_one(TID, self._entry())
         self.assertFalse(bot._prwatch_has(TID))
@@ -948,7 +948,7 @@ class PrWatchWriteIdentityAndOutcomeTest(_DispatchBase):
         self.sched._workitem_snapshot = lambda _tid: self._status_snapshot(
             tags=("jarvis-npe",))
         self.sched._finish = lambda *_a: self.fail("npe customer must not finish")
-        bot.subprocess.run = lambda *_a, **_k: self.fail(
+        bot.run_process_group = lambda *_a, **_k: self.fail(
             "npe customer must not update status")
         escalated = []
         self.sched._escalate = lambda *_a: escalated.append(_a)

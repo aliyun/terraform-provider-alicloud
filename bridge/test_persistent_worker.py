@@ -65,6 +65,11 @@ class PersistentWorkerTest(unittest.TestCase):
             "workerMode": "PERSISTENT",
             "client": "bridge",
         })
+        beacon_paths = worker.executor.kwargs["heartbeat_beacon_paths"]
+        self.assertEqual(set(beacon_paths), {"worker", "lease", "session"})
+        self.assertTrue(all(
+            str(path).endswith(".%s.epoch" % name)
+            for name, path in beacon_paths.items()))
 
     def test_stop_owns_executor_and_runtime_subprocess_cleanup(self):
         runtime = self._runtime()

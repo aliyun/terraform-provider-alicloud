@@ -17,6 +17,8 @@ test_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "$test_dir/.." && pwd)"
 RUNSH="$repo_root/bridge/run.sh"
 INSTALLER="$repo_root/bridge/install-launchd.sh"
+PY_YAML_SITE="$(python3 -c \
+  'from pathlib import Path; import yaml; print(Path(yaml.__file__).resolve().parents[1])')"
 
 if [ ! -f "$RUNSH" ]; then
   echo "SKIP bridge_run_test: $RUNSH not found"
@@ -37,6 +39,20 @@ LPLIST="$TMP/com.jarvis.test.plist"
 : >"$BOTFILE"; : >"$BSENV"; : >"$JENV"
 mkdir -p "$FAKE_HOME/.local/bin" "$FAKE_BREW/bin" "$FAKE_BREW/sbin"
 printf '%s\n' '<?xml version="1.0"?><plist version="1.0"><dict><key>Label</key><string>com.jarvis.test</string></dict></plist>' >"$LPLIST"
+cat >"$FAKE_BREW/bin/pgrep" <<'FAKE'
+#!/usr/bin/env bash
+# Lock-cleanup tests must not depend on unrelated host a1 processes.
+exit 1
+FAKE
+cat >"$FAKE_BREW/bin/ps" <<'FAKE'
+#!/usr/bin/env bash
+# Watchdog process age is deterministic; liveness is still checked with kill -0.
+case " $* " in
+  *" etime="*) printf '00:01\n' ;;
+  *) /bin/ps "$@" ;;
+esac
+FAKE
+chmod +x "$FAKE_BREW/bin/pgrep" "$FAKE_BREW/bin/ps"
 
 pass=0; fail=0
 ok() { echo "PASS $1"; pass=$((pass+1)); }
@@ -66,6 +82,10 @@ if [ "${1:-}" = "-m" ] && [ "${2:-}" = "bridge.main" ]; then
     once)
       echo "$ts INFO [MainThread] Bridge READY pid=$$ role=supervisor components=fake JARVIS_NO_DINGTALK=${JARVIS_NO_DINGTALK:-0}"
       exit 0 ;;
+    cleanup-child-pidfile)
+      echo "$ts INFO [MainThread] Bridge READY pid=$$ role=supervisor components=fake"
+      trap 'rm -f "$FAKE_PROCESS_STATE/persistent-worker.pid" "$FAKE_PROCESS_STATE/persistent-worker.pid.identity"; exit 0' TERM INT
+      while true; do sleep 1; done ;;
     *)
       if [ "${JARVIS_NO_DINGTALK:-}" = "1" ]; then
         echo "$ts WARNING [MainThread] [NO-DINGTALK] fake supervised bot"
@@ -195,6 +215,12 @@ run() {
       JARVIS_BRIDGE_STOP_WAIT="1" \
       JARVIS_BRIDGE_START_ROLLBACK_WAIT="1" \
       JARVIS_SCHEDULER_READY_WAIT="${TEST_READY_WAIT:-1}" \
+      JARVIS_WATCHDOG_STARTUP_GRACE_SEC="${TEST_WATCHDOG_STARTUP_GRACE:-300}" \
+      JARVIS_WATCHDOG_BEACON_STALE_SEC="${TEST_WATCHDOG_STALE:-300}" \
+      JARVIS_WATCHDOG_TREE_TERM_SEC="${TEST_WATCHDOG_TERM:-1}" \
+      JARVIS_WATCHDOG_CHILD_TERM_SEC="${TEST_WATCHDOG_CHILD_TERM:-0}" \
+      JARVIS_A1_LOCK_STALE_SEC="${TEST_LOCK_STALE:-0}" \
+      JARVIS_EXECUTOR_BEACON_PREFIX="$STATE/heartbeat.persistent-worker" \
       JARVIS_BRIDGE_TOOL_DIRS="$FAKE_BREW/sbin $FAKE_BREW/bin $FAKE_HOME/.local/bin" \
       JARVIS_BRIDGE_SUPERVISOR="${TEST_SUPERVISOR-}" \
       JARVIS_BRIDGE_LAUNCHCTL="$FAKECTL" \
@@ -222,7 +248,7 @@ kill_test_processes() {
   local name p
   # Only pidfiles prove current ownership.  Diagnostic "*-started" markers may
   # outlive a clean stop and their numeric pid can later be reused by this test.
-  for name in bot.pid scheduler.pid persistent-worker.pid; do
+  for name in bot.pid scheduler.pid persistent-worker.pid dingtalk-bot.pid; do
     p="$(state_pid "$name")"
     [ -n "$p" ] && kill -9 "$p" 2>/dev/null || true
   done
@@ -361,6 +387,126 @@ p2="$(pidval)"
 kill -0 "$p1" 2>/dev/null && no "restart: old process gone" || ok "restart: old process gone"
 run stop >/dev/null 2>&1
 
+# --- T11c: watchdog uses three independent loop beacons --------------------
+fresh
+run start >/dev/null 2>&1
+p1="$(pidval)"
+printf '%s\n' "$p1" >"$STATE/persistent-worker.pid"
+now="$(date -u +%s)"
+for kind in worker lease session; do
+  printf '%s\n' "$now" >"$STATE/heartbeat.persistent-worker.$kind.epoch"
+done
+out="$(TEST_WATCHDOG_STARTUP_GRACE=0 run watchdog 2>&1)"; rc=$?
+p2="$(pidval)"
+[ "$rc" = 0 ] && [ "$p1" = "$p2" ] \
+  && ok "watchdog: fresh worker/lease/session beacons keep supervisor" \
+  || no "watchdog: fresh beacons unexpectedly restarted supervisor ($p1 -> $p2, rc=$rc, out=$out)"
+
+# Missing/invalid beacons are healthy only during startup grace.
+rm -f "$STATE/heartbeat.persistent-worker.lease.epoch"
+out="$(TEST_WATCHDOG_STARTUP_GRACE=3600 run watchdog 2>&1)"; rc=$?
+[ "$rc" = 0 ] && [ "$(pidval)" = "$p1" ] \
+  && ok "watchdog: missing beacon tolerated during startup grace" \
+  || no "watchdog: missing startup beacon was not tolerated"
+printf '%s\n' "invalid" >"$STATE/heartbeat.persistent-worker.lease.epoch"
+out="$(TEST_WATCHDOG_STARTUP_GRACE=3600 run watchdog 2>&1)"; rc=$?
+[ "$rc" = 0 ] && [ "$(pidval)" = "$p1" ] \
+  && ok "watchdog: invalid beacon tolerated during startup grace" \
+  || no "watchdog: invalid startup beacon was not tolerated"
+run stop >/dev/null 2>&1
+
+# Outside grace, one unhealthy loop forces the supervisor and every private
+# component process group down before starting the replacement.
+fresh
+TEST_SCHEDULER_MODE=cleanup-child-pidfile run start >/dev/null 2>&1
+p1="$(pidval)"
+grandchild_pidfile="$STATE/stuck-grandchild.pid"
+/usr/bin/python3 -c '
+import os
+import signal
+import sys
+import time
+
+os.setsid()
+child = os.fork()
+if child:
+    raise SystemExit(0)
+signal.signal(signal.SIGTERM, signal.SIG_IGN)
+with open(sys.argv[1], "w", encoding="utf-8") as stream:
+    stream.write(str(os.getpid()))
+time.sleep(300)
+' "$grandchild_pidfile" &
+stuck_group=$!
+wait "$stuck_group"
+for _attempt in 1 2 3 4 5 6 7 8 9 10; do
+  [ -s "$grandchild_pidfile" ] && break
+  sleep 0.1
+done
+stuck_child="$(cat "$grandchild_pidfile")"
+printf '%s\n' "$stuck_group" >"$STATE/persistent-worker.pid"
+printf '%s|%s|dead-original-leader\n' \
+  "$stuck_group" "$stuck_group" >"$STATE/persistent-worker.pid.identity"
+now="$(date -u +%s)"
+printf '%s\n' "$now" >"$STATE/heartbeat.persistent-worker.worker.epoch"
+printf '%s\n' "$now" >"$STATE/heartbeat.persistent-worker.lease.epoch"
+printf '%s\n' "invalid" >"$STATE/heartbeat.persistent-worker.session.epoch"
+lock_root="$FAKE_HOME/.config/a1/identities/jarvis"
+mkdir -p "$lock_root"
+touch "$lock_root/auth.yaml.lock"
+out="$(TEST_WATCHDOG_STARTUP_GRACE=0 run watchdog 2>&1)"; rc=$?
+p2="$(pidval)"
+[ "$rc" = 0 ] && [ -n "$p2" ] && [ "$p1" != "$p2" ] \
+  && ok "watchdog: overdue session loop restarts supervisor" \
+  || no "watchdog: overdue session loop failed to restart ($p1 -> $p2, rc=$rc)"
+kill -0 "$stuck_child" 2>/dev/null \
+  && no "watchdog: grandchild survives after its group leader exited" \
+  || ok "watchdog: pre-TERM child PGID snapshot survives supervisor pidfile cleanup"
+[ ! -e "$lock_root/auth.yaml.lock" ] \
+  && ok "watchdog: restart clears stale a1 lock" \
+  || no "watchdog: restart left stale a1 lock"
+has "session beacon missing/invalid" "$out" \
+  "watchdog: unhealthy loop reason identifies session beacon"
+run stop >/dev/null 2>&1
+
+# A stale pidfile whose numeric PID has been reused must fail closed before the
+# supervisor or the unrelated private group is signalled.
+fresh
+run start >/dev/null 2>&1
+p1="$(pidval)"
+unrelated_pidfile="$STATE/unrelated.pid"
+/usr/bin/python3 -c '
+import os
+import pathlib
+import signal
+import sys
+import time
+
+os.setsid()
+signal.signal(signal.SIGTERM, signal.SIG_IGN)
+pathlib.Path(sys.argv[1]).write_text(str(os.getpid()))
+time.sleep(300)
+' "$unrelated_pidfile" &
+for _attempt in 1 2 3 4 5 6 7 8 9 10; do
+  [ -s "$unrelated_pidfile" ] && break
+  sleep 0.1
+done
+unrelated_pid="$(cat "$unrelated_pidfile")"
+printf '%s\n' "$unrelated_pid" >"$STATE/scheduler.pid"
+printf '%s|%s|definitely-not-current-birth\n' \
+  "$unrelated_pid" "$unrelated_pid" >"$STATE/scheduler.pid.identity"
+out="$(TEST_WATCHDOG_STARTUP_GRACE=0 run watchdog 2>&1)"; rc=$?
+[ "$rc" != 0 ] && [ "$(pidval)" = "$p1" ] \
+  && ok "watchdog: reused child PGID fails closed before supervisor restart" \
+  || no "watchdog: reused child PGID did not fail closed (rc=$rc, out=$out)"
+kill -0 "$unrelated_pid" 2>/dev/null \
+  && ok "watchdog: reused child PGID is not signalled" \
+  || no "watchdog: reused child PGID was killed"
+has "refuses unverified component pidfile" "$out" \
+  "watchdog: reused child PGID reports ownership failure"
+rm -f "$STATE/scheduler.pid" "$STATE/scheduler.pid.identity"
+kill -KILL -- "-$unrelated_pid" 2>/dev/null || true
+run stop >/dev/null 2>&1
+
 # --- T11b: replacement validation is a pre-downtime gate -------------------
 fresh
 run start >/dev/null 2>&1
@@ -445,13 +591,14 @@ install_fake() {
       JARVIS_BRIDGE_STATE_DIR="$TMP/install-state" \
       JARVIS_BRIDGE_BOOTSTRAP_ENV="$BSENV" \
       JARVIS_BRIDGE_ENV="$JENV" \
-      JARVIS_BRIDGE_PYTHON="$repo_root/.venv/bridge/bin/python" \
+      JARVIS_BRIDGE_PYTHON="/usr/bin/python3" \
       JARVIS_BRIDGE_ROLE="${INSTALL_ROLE:-worker}" \
       JARVIS_BOOT_ID="test-boot" \
       JARVIS_CONTROL_PLANE_TOKEN="test-token" \
       JARVIS_AUTO_DISPATCH="${INSTALL_AUTO_DISPATCH:-1}" \
       JARVIS_SCHEDULER_READY_WAIT="${INSTALL_READY_WAIT:-1}" \
       JARVIS_SCHEDULER_DRAIN_TIMEOUT_SECONDS="1" \
+      PYTHONPATH="$repo_root:$PY_YAML_SITE" \
       FAKE_LAUNCHCTL_STATE="$FAKECTL_STATE" \
       FAKE_LAUNCHCTL_LOG="$TMP/install-state/bot.log" \
       bash "$INSTALLER"
@@ -485,10 +632,14 @@ has "kill SIGTERM gui/4242/com.jarvis.test" "$calls" "install-launchd: loaded up
 hasnot "bootout gui/4242/com.jarvis.test" "$calls" "install-launchd: loaded upgrade never bootouts adopted worker"
 
 : >"$FAKECTL_STATE/calls"
-if INSTALL_ROLE=scheduler INSTALL_AUTO_DISPATCH=0 install_fake >/dev/null 2>&1; then
+schedule_install_out="$(
+  INSTALL_ROLE=scheduler INSTALL_AUTO_DISPATCH=0 install_fake 2>&1
+)"
+schedule_install_rc=$?
+if [ "$schedule_install_rc" -eq 0 ]; then
   ok "install-launchd: supervised scheduler config is supported"
 else
-  no "install-launchd: supervised scheduler config is supported"
+  no "install-launchd: supervised scheduler config is supported [$schedule_install_out]"
 fi
 calls="$(cat "$FAKECTL_STATE/calls" 2>/dev/null)"
 has "disable gui/4242/com.jarvis.test" "$calls" "install-launchd: supervised upgrade uses safe drain"

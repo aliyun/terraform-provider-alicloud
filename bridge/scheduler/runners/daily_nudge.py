@@ -26,6 +26,7 @@ from bridge.helpers.aone import (
     _aone_event_source_part, _contact_directory,
 )
 from bridge.helpers.dingtalk import _dingtalk_event_enqueue
+from bridge.process_group_runner import run_process_group
 from ..model import JobResult, JobResultStatus, ScheduledJobDefinition, is_aware
 
 
@@ -539,7 +540,7 @@ class DailyNudge:
         try:
             page = 1
             while page <= 100:
-                r = subprocess.run(
+                r = run_process_group(
                     [str(REPO_ROOT / "bin" / "a1id"), "--",
                      "project", "workitem", "list",
                      "--project", project, "--filter",
@@ -671,7 +672,7 @@ class DailyNudge:
         result = {}
         for name, command in commands:
             try:
-                proc = subprocess.run(
+                proc = run_process_group(
                     command, capture_output=True, text=True, cwd=str(REPO_ROOT),
                     timeout=90, env=env)
             except Exception as e:  # noqa: BLE001

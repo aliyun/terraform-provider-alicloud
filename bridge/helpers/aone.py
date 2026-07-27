@@ -13,6 +13,8 @@ import subprocess
 import threading
 import time
 
+from bridge.process_group_runner import run_process_group
+
 
 log = logging.getLogger("jarvis-aone")
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -378,7 +380,7 @@ def _aone_event_remote_has(ticket, marker):
     new post, because posting without checking the marker would reopen the crash window.
     """
     try:
-        proc = subprocess.run(
+        proc = run_process_group(
             [str(REPO_ROOT / "bin" / "a1id"), "as", PERSONA_PUBLIC_IDENTITY, "--",
              "project", "workitem", "comment", "list", str(ticket), "-f", "json"],
             capture_output=True, text=True, cwd=str(REPO_ROOT), timeout=90,
@@ -541,7 +543,7 @@ def _aone_event_publish_digest(ticket, project, event_digest, text,
         write_identity = str(record.get("identity") or PERSONA_PUBLIC_IDENTITY)
         is_tf_identity = write_identity == PERSONA_PUBLIC_IDENTITY
         try:
-            proc = subprocess.run(
+            proc = run_process_group(
                 [str(REPO_ROOT / "bin" / "a1id"), "as", write_identity, "--",
                  "project", "workitem", "comment", "create", ticket, "-m", body],
                 capture_output=True, text=True, cwd=str(REPO_ROOT), timeout=90,

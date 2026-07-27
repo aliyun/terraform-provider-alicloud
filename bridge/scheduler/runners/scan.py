@@ -28,6 +28,7 @@ from bridge.jarvis_task_router import (
     ExecutionRouter, _task_envelope, broadcast_target, broadcast_type,
 )
 from bridge.pending_dispatch import PendingDispatchRegistry
+from bridge.process_group_runner import run_process_group
 from ..model import JobResult, JobResultStatus, ScheduledJobDefinition, is_aware
 
 
@@ -152,7 +153,7 @@ class ScanRunner(AoneQueryMixin):
         if not aone_id.isdigit():
             return task, None
         try:
-            result = subprocess.run(
+            result = run_process_group(
                 [str(REPO_ROOT / "bin" / "a1id"), "--", "project", "workitem",
                  "get", aone_id, "-f", "json"],
                 capture_output=True, text=True,
@@ -273,7 +274,7 @@ class ScanRunner(AoneQueryMixin):
             return cached or []
         data = None
         try:
-            r = subprocess.run(
+            r = run_process_group(
                 [str(REPO_ROOT / "bin" / "a1id"), "--", "project", "workitem",
                  "activity", iid, "-f", "json"],
                 capture_output=True, text=True, timeout=60, cwd=str(REPO_ROOT))
@@ -332,7 +333,7 @@ class ScanRunner(AoneQueryMixin):
         result = None
         failed = False
         try:
-            r = subprocess.run(
+            r = run_process_group(
                 [str(REPO_ROOT / "bin" / "a1id"), "--", "project", "workitem",
                  "comment", "list", iid, "-f", "json"],
                 capture_output=True, text=True, timeout=60, cwd=str(REPO_ROOT))

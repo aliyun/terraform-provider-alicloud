@@ -45,6 +45,7 @@ from bridge.jarvis_field_repair import FieldRepairWorker
 from bridge.jarvis_persistence_executor import PersistenceExecutor
 from bridge.jarvis_task_client import ControlPlaneClient
 from bridge.jarvis_task_router import ExecutionRouter
+from bridge.process_group_runner import run_process_group
 
 
 LOG = logging.getLogger("jarvis-persistent-worker")
@@ -141,7 +142,7 @@ class PersistentTaskRuntime:
     @staticmethod
     def _last_comment_id(item_id):
         try:
-            result = subprocess.run(
+            result = run_process_group(
                 [str(REPO_ROOT / "bin" / "a1id"), "--", "project",
                  "workitem", "comment", "list", str(item_id), "-f", "json"],
                 capture_output=True, text=True, timeout=30,
@@ -169,7 +170,7 @@ class PersistentTaskRuntime:
         if not item_id.isdigit():
             return "#%s" % item_id
         try:
-            result = subprocess.run(
+            result = run_process_group(
                 [str(REPO_ROOT / "bin" / "a1id"), "--", "project",
                  "workitem", "get", item_id, "-f", "json"],
                 capture_output=True, text=True, timeout=30,
@@ -280,6 +281,12 @@ class PersistentWorker:
         progress: Any = session_progress_excerpt,
     ):
         self.runtime = runtime
+        beacon_prefix = Path(os.environ.get(
+            "JARVIS_EXECUTOR_BEACON_PREFIX",
+            os.path.join(
+                jarvis_root(), ".my-day", "bridge",
+                "heartbeat.persistent-worker"),
+        ))
         self.executor = executor_factory(
             runtime.task_client,
             runtime.capacity_manager,
@@ -306,6 +313,10 @@ class PersistentWorker:
             progress=lambda _lease, controller: progress(
                 controller.runtime_session_id,
                 sanitizer=_aone_event_sanitize_text),
+            heartbeat_beacon_paths={
+                name: Path("%s.%s.epoch" % (beacon_prefix, name))
+                for name in ("worker", "lease", "session")
+            },
             logger=LOG,
         )
         self._release_claim = release_claim
