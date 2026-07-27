@@ -2815,6 +2815,31 @@ class ExtractTaskResultTest(unittest.TestCase):
         self.assertEqual(res["target_status"], "已发布")
         self.assertEqual(res["mr_cr_links"], ["http://mr/1"])
 
+    def test_5406_character_reply_is_not_clamped_before_final_publisher(self):
+        reply = "结论：" + "中" * 5403
+        self.assertEqual(len(reply), 5406)
+        text = '[[AONE_RESULT:%s]]' % json.dumps({
+            "outcome": "idle",
+            "reply_body": reply,
+            "mr_cr_links": ["https://code.example/mr/1"],
+        }, ensure_ascii=False)
+        _clean, res = bot.extract_task_result(text)
+        self.assertEqual(res["reply_body"], reply)
+        self.assertEqual(len(res["reply_body"]), 5406)
+
+    def test_task_prompt_exposes_complete_aone_comment_budget_and_priority(self):
+        prompt = bot._task_result_instructions("90000001", False)
+        self.assertIn("产品总预算为 8000 字符", prompt)
+        self.assertIn("不是 Aone 平台硬上限", prompt)
+        self.assertIn("当前公开正文总预算为 7954 字符", prompt)
+        self.assertIn("mr_cr_links 同样计入", prompt)
+        self.assertIn("不得依赖 executor 截断", prompt)
+        for priority in (
+                "结论/状态", "需人工判断项", "验收结果",
+                "关键 MR/CR/报告链接", "下一步与责任人"):
+            self.assertIn(priority, prompt)
+        self.assertIn("详细日志放进报告", prompt)
+
     def test_no_sentinel_returns_none(self):
         clean, res = bot.extract_task_result("just some run output, no sentinel")
         self.assertIsNone(res)

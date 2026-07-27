@@ -16,6 +16,7 @@ if [ -z "$python_bin" ]; then
 fi
 
 PYTHONPATH="$repo_root" "$python_bin" -m unittest \
+  bridge.test_aone_event_publisher \
   bridge.test_bot_control_plane \
   bridge.test_capacity \
   bridge.test_ephemeral_executor \

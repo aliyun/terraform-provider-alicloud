@@ -95,7 +95,29 @@ _aone_event_inflight = set()
 
 _AONE_EVENT_DIGEST_LEN = 24
 
-_AONE_EVENT_TEXT_MAX = 2000
+# Jarvis product/readability budget, not an Aone platform hard limit. A live
+# 2026-07-27 round-trip probe verified at least 524288 ASCII characters and
+# 8192 Chinese characters without truncation; final Task comments stay much
+# shorter so humans can scan them reliably.
+_AONE_EVENT_WIRE_MAX = 8000
+
+_AONE_EVENT_SEPARATOR = "\n\n"
+
+_AONE_EVENT_MARKER_TEMPLATE = (
+    "[[JARVIS-EVENT:v1:%s]]" % ("0" * _AONE_EVENT_DIGEST_LEN))
+
+_AONE_EVENT_MARKER_LEN = len(_AONE_EVENT_MARKER_TEMPLATE)
+
+# Compatibility name for callers that need the maximum public-body length.
+# The wire budget also includes two separator newlines and the complete marker.
+_AONE_EVENT_TEXT_MAX = (
+    _AONE_EVENT_WIRE_MAX
+    - len(_AONE_EVENT_SEPARATOR)
+    - _AONE_EVENT_MARKER_LEN)
+
+# Sanitizing is also reused by DingTalk delivery. Preserve its historical
+# default independently from the larger Aone final-comment budget.
+_AONE_SANITIZE_TEXT_DEFAULT_MAX = 2000
 
 _AONE_EVENT_DIGEST_RE = re.compile(r"^[0-9a-f]{%d}$" % _AONE_EVENT_DIGEST_LEN)
 
@@ -175,7 +197,7 @@ _AONE_RESOURCE_ID_KEY_RE = re.compile(
     r"(?P=quote)\s*[:=：]\s*)(?P<value>%s)" % _AONE_KV_VALUE_PATTERN)
 
 
-def _aone_event_sanitize_text(text, limit=2000):
+def _aone_event_sanitize_text(text, limit=_AONE_SANITIZE_TEXT_DEFAULT_MAX):
     """Remove internal protocol markers and sensitive values before publishing."""
     value = str(text or "").replace("\x00", "").replace("\r\n", "\n").replace("\r", "\n")
     value = _AONE_INTERNAL_SENTINEL_RE.sub("", value)
@@ -321,9 +343,41 @@ def _aone_markdown_autolink(text, limit=None):
     return "".join(output).rstrip()
 
 def _aone_event_prepare_text(text, limit=_AONE_EVENT_TEXT_MAX):
-    """Sanitize, autolink, then clamp without splitting Markdown tokens."""
+    """Sanitize, autolink, then clamp without splitting Markdown tokens.
+
+    A trailing ``关联：`` block comes from ``AONE_RESULT.mr_cr_links``. Reserve
+    its space before clamping the reply so delivery links survive an unexpectedly
+    verbose model response.
+    """
     clean = _aone_event_sanitize_text(text, limit=None)
-    return _aone_markdown_autolink(clean, limit=limit)
+    max_len = max(1, int(limit))
+    association = ""
+    association_marker = _AONE_EVENT_SEPARATOR + "关联："
+    association_start = clean.rfind(association_marker)
+    if association_start >= 0:
+        association = clean[association_start + len(_AONE_EVENT_SEPARATOR):]
+        clean = clean[:association_start]
+        association = _aone_markdown_autolink(association)
+
+    unbounded = _aone_markdown_autolink(
+        ("%s%s%s" % (clean, _AONE_EVENT_SEPARATOR, association))
+        if association else clean)
+    if (association
+            and len(association) + len(_AONE_EVENT_SEPARATOR) < max_len):
+        reply_limit = max_len - len(_AONE_EVENT_SEPARATOR) - len(association)
+        public = (
+            _aone_markdown_autolink(clean, limit=max(1, reply_limit)).rstrip()
+            + _AONE_EVENT_SEPARATOR + association)
+    elif association:
+        public = _aone_markdown_autolink(association, limit=max_len)
+    else:
+        public = _aone_markdown_autolink(clean, limit=max_len)
+    if len(unbounded) > max_len:
+        log.warning(
+            "aone-event: public reply truncated input_length=%d output_length=%d "
+            "limit=%d truncated=true",
+            len(unbounded), len(public), max_len)
+    return public
 
 def _aone_event_source_part(value, fallback="unknown", limit=64):
     """Normalize internal semantic-source components before hashing."""
@@ -355,6 +409,12 @@ def _aone_event_marker_from_digest(event_digest):
     if not _AONE_EVENT_DIGEST_RE.fullmatch(digest):
         return ""
     return "[[JARVIS-EVENT:v1:%s]]" % digest
+
+def _aone_event_public_text_limit(marker):
+    """Return the public-body budget for one complete outbound event payload."""
+    return max(
+        0,
+        _AONE_EVENT_WIRE_MAX - len(_AONE_EVENT_SEPARATOR) - len(str(marker or "")))
 
 def _aone_comment_texts(value):
     """Yield comment bodies from the few a1 JSON envelopes seen in production/tests."""
@@ -452,14 +512,16 @@ def _aone_event_publish_digest(ticket, project, event_digest, text,
     project = str(project or "")
     event_digest = str(event_digest or "").strip()
     identity = str(identity or PERSONA_PUBLIC_IDENTITY).strip() or PERSONA_PUBLIC_IDENTITY
-    text = _aone_event_prepare_text(text)
+    marker = _aone_event_marker_from_digest(event_digest)
+    text_limit = _aone_event_public_text_limit(marker)
+    text = _aone_event_prepare_text(text, limit=text_limit)
     if (not ticket.isdigit() or not project
-            or not _AONE_EVENT_DIGEST_RE.fullmatch(event_digest) or not text):
+            or not _AONE_EVENT_DIGEST_RE.fullmatch(event_digest)
+            or not marker or not text):
         return False
     if not _is_terraform_project(project) and not allow_non_tf:
         return False
     ledger_id = _aone_event_ledger_id_from_digest(ticket, event_digest)
-    marker = _aone_event_marker_from_digest(event_digest)
     now = time.time()
     with _aone_event_lock:
         ledger = _aone_event_load()
@@ -482,7 +544,8 @@ def _aone_event_publish_digest(ticket, project, event_digest, text,
             record["ticket"] = ticket
             record["project"] = project
             record["event_digest"] = event_digest
-            record["text"] = _aone_event_prepare_text(record.get("text") or text)
+            record["text"] = _aone_event_prepare_text(
+                record.get("text") or text, limit=text_limit)
             record["marker"] = marker
             record["allow_non_tf"] = bool(
                 record.get("allow_non_tf") or allow_non_tf)
@@ -523,6 +586,14 @@ def _aone_event_publish_digest(ticket, project, event_digest, text,
                 ledger["pending"][ledger_id] = pending
                 _aone_event_write(ledger)
             return False
+        body = "%s%s%s" % (
+            record["text"].rstrip(), _AONE_EVENT_SEPARATOR, marker)
+        if len(body) > _AONE_EVENT_WIRE_MAX:
+            log.error(
+                "aone-event: outbound budget invariant failed length=%d limit=%d "
+                "truncated=false",
+                len(body), _AONE_EVENT_WIRE_MAX)
+            return False
         # Persist the at-most-once guard *before* invoking the remote create. If the bridge
         # crashes after Aone accepts the comment but before processing the response, the
         # next process only polls for the marker instead of recreating. A definite nonzero
@@ -539,7 +610,6 @@ def _aone_event_publish_digest(ticket, project, event_digest, text,
             if not _aone_event_write(ledger):
                 return False
             record = pending
-        body = "%s\n\n%s" % (record["text"].rstrip(), marker)
         write_identity = str(record.get("identity") or PERSONA_PUBLIC_IDENTITY)
         is_tf_identity = write_identity == PERSONA_PUBLIC_IDENTITY
         try:

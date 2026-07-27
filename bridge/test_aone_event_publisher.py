@@ -179,7 +179,7 @@ class PublisherTest(unittest.TestCase):
             "token=tok_super_secret_value",
             "password=p@ssw0rd",
             "username=ram-admin",
-            "尾部" + "x" * 3000,
+            "尾部" + "x" * 9000,
         ])
         self.assertTrue(publisher._aone_event_publish(TID, PROJ, key, unsafe))
         body = self.remote[-1]
@@ -224,12 +224,87 @@ class PublisherTest(unittest.TestCase):
         self.assertEqual(public.count("("), public.count(")"))
 
         fits_then_truncates = publisher._aone_event_prepare_text(
-            "关联：https://code.example/cr/123\n" + "y" * 3000)
+            "关联：https://code.example/cr/123\n" + "y" * 9000)
         self.assertEqual(len(fits_then_truncates), publisher._AONE_EVENT_TEXT_MAX)
         self.assertIn(
             "[https://code.example/cr/123](https://code.example/cr/123)",
             fits_then_truncates)
         self.assertTrue(fits_then_truncates.endswith("…"))
+
+    def test_public_budget_boundaries_and_unicode_are_character_based(self):
+        limit = publisher._AONE_EVENT_TEXT_MAX
+        for size in (limit - 1, limit):
+            public = publisher._aone_event_prepare_text("中" * size)
+            self.assertEqual(len(public), size)
+            self.assertNotIn("…", public)
+        with self.assertLogs("jarvis-aone", level="WARNING") as captured:
+            public = publisher._aone_event_prepare_text("🚀" * (limit + 1))
+        self.assertEqual(len(public), limit)
+        self.assertTrue(public.endswith("…"))
+        self.assertTrue(any(
+            "input_length=%d" % (limit + 1) in line
+            and "output_length=%d" % limit in line
+            and "truncated=true" in line
+            for line in captured.output))
+
+    def test_n_minus_one_n_n_plus_one_complete_wire_budget(self):
+        limit = publisher._AONE_EVENT_TEXT_MAX
+        for size, expected_wire in (
+                (limit - 1, publisher._AONE_EVENT_WIRE_MAX - 1),
+                (limit, publisher._AONE_EVENT_WIRE_MAX),
+                (limit + 1, publisher._AONE_EVENT_WIRE_MAX)):
+            self.assertTrue(publisher._aone_event_publish(
+                TID, PROJ, "task-reply:wire-budget:%d" % size, "x" * size))
+            body = self.remote[-1]
+            public, marker = body.rsplit(publisher._AONE_EVENT_SEPARATOR, 1)
+            self.assertEqual(len(marker), publisher._AONE_EVENT_MARKER_LEN)
+            self.assertEqual(
+                publisher._aone_event_public_text_limit(marker), limit)
+            self.assertEqual(len(public), min(size, limit))
+            self.assertEqual(len(body), expected_wire)
+            self.assertRegex(
+                marker, r"^\[\[JARVIS-EVENT:v1:[0-9a-f]{24}\]\]$")
+
+    def test_markdown_code_fence_is_omitted_not_cut_mid_token(self):
+        prefix = "x" * (publisher._AONE_EVENT_TEXT_MAX - 8)
+        public = publisher._aone_event_prepare_text(
+            prefix + "\n```text\nimportant\n```\n")
+        self.assertLessEqual(len(public), publisher._AONE_EVENT_TEXT_MAX)
+        self.assertNotIn("```", public)
+        self.assertTrue(public.endswith("…"))
+
+    def test_generic_sanitizer_keeps_dingtalk_legacy_default_budget(self):
+        clean = publisher._aone_event_sanitize_text("中" * 3000)
+        self.assertEqual(
+            len(clean), publisher._AONE_SANITIZE_TEXT_DEFAULT_MAX)
+        self.assertTrue(clean.endswith("…"))
+
+    def test_long_reply_keeps_complete_mr_cr_links_inside_wire_budget(self):
+        links = [
+            "https://code.example/cr/123",
+            "https://code.example/mr/456",
+        ]
+        body = (
+            "结论：" + "很长" * 5000
+            + "\n\n关联：" + " ".join(links))
+        self.assertTrue(publisher._aone_event_publish(
+            TID, PROJ, "task-reply:links-survive", body))
+        wire = self.remote[-1]
+        self.assertLessEqual(len(wire), publisher._AONE_EVENT_WIRE_MAX)
+        public = wire.rsplit(publisher._AONE_EVENT_SEPARATOR, 1)[0]
+        for link in links:
+            self.assertIn("[%s](%s)" % (link, link), public)
+        self.assertEqual(public.count("["), public.count("]"))
+        self.assertEqual(public.count("("), public.count(")"))
+
+    def test_last_association_block_preserves_executor_appended_link(self):
+        real_link = "https://code.example/mr/real"
+        body = (
+            "结论\n\n关联：" + "旧信息" * 3000
+            + "\n\n关联：" + real_link)
+        public = publisher._aone_event_prepare_text(body)
+        self.assertIn("[%s](%s)" % (real_link, real_link), public)
+        self.assertLessEqual(len(public), publisher._AONE_EVENT_TEXT_MAX)
 
     def test_bracketed_internal_stages_and_persona_handoff_are_removed(self):
         unsafe = "\n".join([
