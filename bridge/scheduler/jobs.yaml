@@ -37,6 +37,15 @@ jobs:
     retry_delay_seconds: 300
     enabled: true
 
+  - key: aone.weekly-comment-participation
+    runner: weekly_comment_participation
+    revision: 1
+    description: 每日聚合 Terraform 需求近 7 天评论参与度并推送至控制面看板统计
+    schedule: {kind: daily, hour: 6, minute: 42, timezone: Asia/Shanghai}
+    misfire: CURRENT_DAY
+    retry_delay_seconds: 300
+    enabled: true
+
   - key: aone.reply
     runner: reply
     revision: 1
