@@ -420,8 +420,8 @@ class JarvisHandlerHistoryIntegrationTest(unittest.TestCase):
         self.assertEqual(caught.exception.code, DWS_USER_NOT_IN_GROUP)
         self.assertEqual(
             TATA_DWS_ONBOARDING_MESSAGE,
-            "Tata 当前无权限读取群历史消息，为了Tata提供更好的服务，"
-            "请群主/管理员添加辰羿后重新 @ Tata",
+            "Jarvis 当前无权限读取群历史消息，为了 Jarvis 提供更好的服务，"
+            "请群主/管理员添加辰羿后重新 @ Jarvis",
         )
 
     def test_process_sends_onboarding_without_starting_tata_session(self):

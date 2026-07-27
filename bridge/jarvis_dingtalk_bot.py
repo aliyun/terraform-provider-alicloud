@@ -12,6 +12,14 @@ continuity keeps the same sender isolated across groups and private chat.
 Direction: INBOUND (user -> bot -> claude -> bot -> user). The card sender
 helpers are imported from the dingtalk-ai-card skill's streaming.py.
 
+Persona: 群里 @ 机器人就是 Jarvis 本尊。入站对话跑在一个「对话前台」——历史上
+叫 Tata 门面，现已并入 Jarvis 人格（内部类名/函数名/env 变量仍带 tata_/TATA_/
+JARVIS_TATA_ 前缀，只是历史命名，不再是独立人设）。前台在无工具 cwd(tata_root(),
+不吃 jarvis bootstrap)里起 claude 流式回卡片，这是防群消息注入直接操作仓库的安全
+边界。轻量问题(答疑/查资料/闲聊)前台直接答；用户要干真活时前台在末行输出
+``[[JARVIS]] <任务>`` 哨兵(上屏前剥掉)，经委派闸(api_tool_staff 白名单)以 jarvis
+身份建 Aone 工单，交既有 scan→dispatch→claim→bookend 闭环处理、进度回填工单。
+
 Env:
   DINGTALK_APP_KEY / DINGTALK_APP_SECRET   Stream credentials (required unless JARVIS_NO_DINGTALK=1).
   JARVIS_NO_DINGTALK                        1=无钉钉降级模式(点火): 缺凭证也照起自动派发 +
@@ -196,10 +204,14 @@ POST_PR_HEADLESS_KINDS = frozenset(("pr_ci_fix", "pr_comment_reply"))
 TASK_BOOKEND_KINDS = frozenset(("ticket", "persona", "wake"))
 
 
+# 对话前台人设（原 Tata 门面，已并入 Jarvis 人格）：@ 机器人就是 Jarvis 本尊。
 TATA_PROMPT = (
-    "你是 Tata，钉钉里的轻量助手。日常陪聊、答疑、查资料，语气简洁友好。"
-    "你不能直接动仓库、发布或调 IaC，也不能查 Aone/工单/需求。只要用户要干真活（查证/开发/运维/查或碰工单/查 Aone）"
-    "就在回复最后单起一行 [[JARVIS]] <一句话任务>，由系统转交 Jarvis 处理，别自己拒绝或说没权限。"
+    "你是 Jarvis，阿里云 IaC/Terraform 方向的数字人，也是钉钉里的对话前台。"
+    "轻量问题（答疑、查资料、闲聊）你直接答，语气简洁友好。"
+    "只要用户要干真活（查证/开发/运维/查或动工单/查 Aone/发布/评审/测试），"
+    "就在回复最后单起一行 [[JARVIS]] <一句话任务摘要>，"
+    "并在正文里自然地告诉对方「我会建个工单跟进，进展我在工单里同步」——"
+    "别说“我没权限/我不能做”，你就是 Jarvis，建单跟进就是你的干活方式。"
     "纯闲聊问候（如“在吗”“你好”“你是谁”）才不写这行——绝不要用它来说明“无需/不需要转交”。"
 )
 
@@ -207,8 +219,8 @@ TATA_PROMPT = (
 # idealab 网关吃掉 --append-system-prompt, 改在常驻进程对话首轮注入身份做 priming。
 TATA_PRIMING = TATA_PROMPT + "\n\n(从现在起按以上身份回应, 只回一个'好'确认)"
 TATA_DWS_ONBOARDING_MESSAGE = (
-    "Tata 当前无权限读取群历史消息，为了Tata提供更好的服务，"
-    "请群主/管理员添加辰羿后重新 @ Tata"
+    "Jarvis 当前无权限读取群历史消息，为了 Jarvis 提供更好的服务，"
+    "请群主/管理员添加辰羿后重新 @ Jarvis"
 )
 
 
@@ -1086,7 +1098,7 @@ def run_claude_buffered(text, session_id, resume, timeout=None, on_spawn=None,
 def run_tata_stream(text, session_id, resume):
     """轻量 Tata 一轮：cwd=tata_root()（空目录，不吃 jarvis CLAUDE.md）。yield 累积文本。
 
-    首轮对话注入 Tata 人设——idealab 网关忽略 --append-system-prompt, 故走对话首轮
+    首轮对话注入对话前台人设——idealab 网关忽略 --append-system-prompt, 故走对话首轮
     priming（对齐常驻 TataPool._spawn_primed）, 随 --session-id 持久化, resume 轮不重注。
     必须带 tata_cmd() 的 --settings(idea 网关+隔离 token)——否则裸 claude 拿不到
     ANTHROPIC_AUTH_TOKEN, 回退订阅(OAuth)鉴权, 组织禁用时报
@@ -1102,7 +1114,7 @@ def run_tata_stream(text, session_id, resume):
     saw_any = False
     try:
         if not resume:
-            # 首轮 priming 注入 Tata 人设(随 --session-id 持久化, resume 轮不重注)
+            # 首轮 priming 注入对话前台人设(随 --session-id 持久化, resume 轮不重注)
             p.stdin.write(_tata_settings_round(TATA_PRIMING) + "\n")
             p.stdin.flush()
             for _ in parse_stream_lines(_one_round(p.stdout)):
@@ -1182,7 +1194,7 @@ class TataPool:
                                 stderr=subprocess.DEVNULL)
 
     def _spawn_primed(self, staff):
-        """起一条常驻进程并以 stream-json 首轮注入 Tata 人设(idealab 不吃 append, 故对话注入)。
+        """起一条常驻进程并以 stream-json 首轮注入对话前台人设(idealab 不吃 append, 故对话注入)。
         喂 priming 读到 result 即"已注入"; 预热进程正好用空转时间 priming 好。"""
         proc = self._spawn(staff)
         if proc is None:
@@ -1211,7 +1223,7 @@ class TataPool:
             need = min(self.prewarm_n - len(self._warm), budget)
             for _ in range(max(0, need)):
                 try:
-                    p = self._spawn_primed(None)   # 空转时间顺带 priming 注入 Tata 人设
+                    p = self._spawn_primed(None)   # 空转时间顺带 priming 注入对话前台人设
                 except Exception:  # noqa: BLE001 — 预热失败回退懒起, 不崩
                     break
                 if p is not None:
@@ -1236,7 +1248,7 @@ class TataPool:
                 proc = cand
         if proc is None:
             try:
-                proc = self._spawn_primed(staff)   # 懒起也先 priming 注入 Tata 人设
+                proc = self._spawn_primed(staff)   # 懒起也先 priming 注入对话前台人设
             except Exception as e:  # noqa: BLE001
                 raise TataSpawnError(str(e))
         if proc is None:
@@ -1811,16 +1823,16 @@ class JarvisHandler(AsyncChatbotHandler):
         return ok, reason
 
     def _handoff_to_ticket(self, task, staff, card_target, card_type):
-        """Tata 委派 → 以 jarvis 身份建 Aone 工单承载任务 + 回执委派人，即结束。
+        """委派命中 → 以 jarvis 身份建 Aone 工单承载任务 + 回执委派人，即结束。
         新工单进入既有 scan→dispatch→claim→bookend 闭环，进度全程回填 Aone。
         建单失败 → 明确回执失败并记日志，不静默、不回退直接执行。"""
         pool_key, proj, product_cfs = handoff_pool()
         # 标题 = 任务摘要单行（剥换行、截断）；正文 = 委派上下文 + 来源人。
         summary = " ".join(task.split())
-        title = "[Tata委派] " + (summary[:48] + "…" if len(summary) > 48 else summary)
+        title = "[Jarvis委派] " + (summary[:48] + "…" if len(summary) > 48 else summary)
         body = (
             "## 背景\n"
-            "本工单由 Tata 委派流程自动创建：委派人通过 Tata 发起即时任务，"
+            "本工单由 Jarvis 对话前台委派流程自动创建：委派人通过 @ Jarvis 发起即时任务，"
             "Jarvis 以自身身份建单承载，交由既有 scan→dispatch 闭环处理，全程进度回填本单。\n\n"
             "## 委派任务\n%s\n\n"
             "## 来源\n- 委派人 staffId: %s\n- 承接身份: jarvis 数字员工 (WORKER_1782379562571)\n"
@@ -2020,7 +2032,7 @@ class JarvisHandler(AsyncChatbotHandler):
         else:
             card_target = staff
             card_type = "user"
-        # 受众闸：名单空=全员放行；非空=仅名单内可与 Tata 聊。
+        # 受众闸：名单空=全员放行；非空=仅名单内可与 Jarvis 对话前台聊。
         if self.audience and staff not in self.audience:
             log.warning("ignore off-audience staff=%s nick=%s group=%s", staff, msg.sender_nick, is_group)
             return AckMessage.STATUS_OK, "ignored"
@@ -2055,7 +2067,7 @@ class JarvisHandler(AsyncChatbotHandler):
             log.info("staff=%s group=%s scope=%s msg_len=%d",
                      staff, is_group, scope.audit_id, len(text))
             t0 = time.time()
-            # 第一层：Tata 门面，全文先建卡流推；哨兵剥行不上屏。
+            # 对话前台（原 Tata 门面，已并入 Jarvis 人格）：全文先建卡流推；哨兵剥行不上屏。
             try:
                 tata_text = self._tata_input(scope, text)
             except DwsHistoryError as exc:
@@ -2073,7 +2085,7 @@ class JarvisHandler(AsyncChatbotHandler):
                 tail_on_handoff="\n\n交给 Jarvis 处理…",
                 target_type=card_type)
             _, task = extract_jarvis_task(full)
-            # 委派闸：staffId 在 API 工具团队联系人表内且 Tata 发了哨兵任务，才升级第二层重型 Jarvis。
+            # 委派闸：staffId 在 API 工具团队联系人表内且对话前台发了哨兵任务，才升级到 headless 重型 Jarvis 干活。
             if task and staff in api_tool_staff():
                 if handoff_mode() == "exec":
                     # 回退模式(JARVIS_HANDOFF_MODE=exec): 直接起 headless 重型 Jarvis 异步执行(旧行为)。
