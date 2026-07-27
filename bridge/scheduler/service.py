@@ -422,7 +422,7 @@ def _stop_timeout(value: Optional[float], environ: Mapping[str, str]) -> float:
                 "JARVIS_BRIDGE_STOP_WAIT",
                 environ.get(
                     "JARVIS_STOP_GRACE",
-                    environ.get("JARVIS_SCHEDULER_DRAIN_TIMEOUT", "600"),
+                    environ.get("JARVIS_SCHEDULER_DRAIN_TIMEOUT", "30"),
                 ),
             ),
         )

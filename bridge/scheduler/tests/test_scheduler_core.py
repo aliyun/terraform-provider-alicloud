@@ -14,6 +14,7 @@ from bridge.scheduler.model import (
 )
 from bridge.scheduler.runners import RUNNER_KEYS as IMPLEMENTED_RUNNER_KEYS
 import bridge.scheduler.jobs as jobs
+import bridge.scheduler.service as service
 
 
 UTC = timezone.utc
@@ -33,6 +34,9 @@ def definition(*, revision: int = 1, schedule=None) -> ScheduledJobDefinition:
 
 
 class SchedulerCoreTests(unittest.TestCase):
+    def test_default_scheduler_drain_timeout_is_30_seconds(self):
+        self.assertEqual(service._stop_timeout(None, {}), 30.0)
+
     def test_registry_contains_all_migrated_jobs(self):
         self.assertEqual(tuple(item.id for item in jobs.JOBS),
                          ("daily.probe", "aone.scan", "aone.claim-health",

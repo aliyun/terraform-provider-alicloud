@@ -21,7 +21,7 @@
 #   JARVIS_BRIDGE_STATE_DIR(默认 <repo>/.my-day/bridge) JARVIS_BRIDGE_BOOTSTRAP_ENV
 #   JARVIS_BRIDGE_ENV JARVIS_BRIDGE_START_WAIT(默认 2s)
 #   JARVIS_BRIDGE_STOP_WAIT / JARVIS_STOP_GRACE (普通 stop，默认 30s)，
-#   JARVIS_SCHEDULER_DRAIN_TIMEOUT_SECONDS (受控 restart/替换，默认 600s)。
+#   JARVIS_SCHEDULER_DRAIN_TIMEOUT_SECONDS (受控 restart/替换，默认 30s)。
 #   JARVIS_BRIDGE_SUPERVISOR=launchd 时 start/stop/restart/status 委托给 launchctl；可覆盖
 #   JARVIS_BRIDGE_LAUNCHCTL、JARVIS_BRIDGE_LAUNCHD_LABEL/DOMAIN/PLIST（测试/定制安装）。
 set -uo pipefail
@@ -48,7 +48,7 @@ BOOTSTRAP_ENV="${JARVIS_BRIDGE_BOOTSTRAP_ENV:-$REPO_ROOT/bootstrap/.env}"
 BRIDGE_ENV="${JARVIS_BRIDGE_ENV:-$SCRIPT_DIR/jarvis.env}"
 START_WAIT="${JARVIS_BRIDGE_START_WAIT:-2}"
 SCHEDULER_READY_WAIT="${JARVIS_SCHEDULER_READY_WAIT:-30}"
-SCHEDULER_DRAIN_WAIT="${JARVIS_SCHEDULER_DRAIN_TIMEOUT_SECONDS:-600}"
+SCHEDULER_DRAIN_WAIT="${JARVIS_SCHEDULER_DRAIN_TIMEOUT_SECONDS:-30}"
 PRESERVE_PERSISTENT_WORKER_ONCE="$STATE_DIR/preserve-persistent-worker-once"
 say()  { printf '%s\n' "$*"; }
 err()  { printf '%s\n' "$*" >&2; }
@@ -310,7 +310,7 @@ _source_env() {
   jarvis_load_runtime_config || return $?
   START_WAIT="${JARVIS_BRIDGE_START_WAIT:-2}"
   SCHEDULER_READY_WAIT="${JARVIS_SCHEDULER_READY_WAIT:-30}"
-  SCHEDULER_DRAIN_WAIT="${JARVIS_SCHEDULER_DRAIN_TIMEOUT_SECONDS:-600}"
+  SCHEDULER_DRAIN_WAIT="${JARVIS_SCHEDULER_DRAIN_TIMEOUT_SECONDS:-30}"
   # Non-interactive SSH/launch shells on macOS commonly omit both the user-local
   # installer directory (a1) and Homebrew (claude). Normalize the standard tool
   # locations before spawning the daemon so registration implies an executable
