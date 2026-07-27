@@ -706,20 +706,29 @@ class MaybeDispatchCommentReplyTest(_DispatchBase):
 class PrWatchWriteIdentityAndOutcomeTest(_DispatchBase):
     def setUp(self):
         super().setUp()
-        self._orig_run = bot.subprocess.run
+        self._orig_popen = bot.subprocess.Popen
 
     def tearDown(self):
-        bot.subprocess.run = self._orig_run
+        bot.subprocess.Popen = self._orig_popen
         super().tearDown()
 
     def test_finish_uses_rd_but_terraform_comment_is_suppressed(self):
+        # _finish / _comment now shell out via _run_a1_shell (process-group
+        # isolation for a1 grandchild reaping), which uses subprocess.Popen —
+        # so intercept Popen and read cmd + env from its kwargs.
         calls = []
 
-        def fake(cmd, *a, **kw):
-            calls.append((list(cmd), dict(kw.get("env") or {})))
-            return _fake_proc(0, "")
+        class _P:
+            returncode = 0
 
-        bot.subprocess.run = fake
+            def communicate(self, input=None, timeout=None):
+                return ("", "")
+
+        def fake_popen(cmd, *a, **kw):
+            calls.append((list(cmd), dict(kw.get("env") or {})))
+            return _P()
+
+        bot.subprocess.Popen = fake_popen
         self.sched._comment = bot.PrWatchScheduler._comment.__get__(
             self.sched, bot.PrWatchScheduler)
         self.sched._finish(TID, PROJ, "已完成")

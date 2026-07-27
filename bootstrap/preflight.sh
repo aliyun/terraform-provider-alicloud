@@ -102,6 +102,10 @@ fi
 ttl="${JARVIS_PREFLIGHT_TTL:-86400}"   # 24h
 [ "${1:-}" = "--force" ] && ttl=0
 
+# 84550781: 每次 preflight 都清一次 a1 孤儿锁（best-effort，无 a1 存活才动手）。
+# 必须在 TTL 闸门之前——否则 24h 内 skip 时永远不清；脚本自带前置检查不会误伤活 a1。
+bash "$script_dir/a1-locks-clean.sh" || true
+
 if bash "$script_dir/cache.sh" fresh "preflight.ok" "$ttl"; then
     echo "preflight: skip (verified < $((ttl/3600))h ago)"
     exit 0

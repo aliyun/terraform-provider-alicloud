@@ -852,6 +852,7 @@ class PersistenceExecutor:
                  clock: Callable[[], float] = time.monotonic,
                  executor: Optional[Any] = None,
                  progress: Optional[Progress] = None,
+                 heartbeat_beacon_path: Optional[Any] = None,
                  logger: Optional[logging.Logger] = None):
         if not callable(execute):
             raise TypeError("execute must be callable")
@@ -921,6 +922,8 @@ class PersistenceExecutor:
         self._stopped = False
         self._stop_event = threading.Event()
         self._threads = []
+        self._heartbeat_beacon_path: Optional[Any] = (
+            Path(heartbeat_beacon_path) if heartbeat_beacon_path else None)
 
     @property
     def network_healthy(self) -> bool:
@@ -1026,7 +1029,28 @@ class PersistenceExecutor:
         with self._lock:
             self._last_worker_heartbeat = now
         self._mark_network_healthy()
+        self._write_heartbeat_beacon()
         return True
+
+    def _write_heartbeat_beacon(self) -> None:
+        """Atomically write wall-clock timestamp of the last successful heartbeat.
+
+        The 84550781 activezombie incident showed a pidfile-only watchdog cannot
+        distinguish a live executor from one whose lease/heartbeat threads have
+        hung. run.sh's watchdog reads this file to gate its health check on
+        control-plane heartbeat freshness — no beacon means the executor never
+        completed a heartbeat since restart, so watchdog waits its grace window.
+        """
+        path = self._heartbeat_beacon_path
+        if path is None:
+            return
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            tmp = path.with_suffix(path.suffix + ".tmp")
+            tmp.write_text("%d\n" % int(time.time()))
+            tmp.replace(path)
+        except Exception:  # noqa: BLE001 — beacon is best-effort
+            pass
 
     def _process_force_handoff_requests(self, requests: Any) -> None:
         if not isinstance(requests, list):

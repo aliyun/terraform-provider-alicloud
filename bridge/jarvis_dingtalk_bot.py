@@ -841,12 +841,10 @@ def _dispatch_model_provider_summary(ticket, project, kind, attempts, release_st
 def _release_claim_checked(iid, project, terraform=False):
     """Release a failed dispatch claim and expose the command's true outcome."""
     try:
-        proc = subprocess.run(
+        proc = _run_a1_shell(
             [str(REPO_ROOT / "bootstrap" / "claim.sh"), "release",
              str(iid), str(project)],
-            cwd=str(REPO_ROOT), timeout=60,
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-            env=_a1_command_env(terraform=terraform))
+            timeout=60, terraform=terraform)
         if proc.returncode == 0:
             return True
         log.warning(
@@ -1920,6 +1918,75 @@ def _a1_command_env(terraform=False):
     return env
 
 
+def _kill_process_group(proc, *, term_wait=1.0):
+    """SIGTERM then SIGKILL a subprocess' whole session; best-effort, silent on races."""
+    try:
+        pgid = os.getpgid(proc.pid)
+    except (ProcessLookupError, OSError):
+        return
+    try:
+        os.killpg(pgid, signal.SIGTERM)
+    except (ProcessLookupError, OSError):
+        return
+    try:
+        proc.wait(timeout=term_wait)
+        return
+    except subprocess.TimeoutExpired:
+        pass
+    try:
+        os.killpg(pgid, signal.SIGKILL)
+    except (ProcessLookupError, OSError):
+        pass
+    try:
+        proc.wait(timeout=1.0)
+    except subprocess.TimeoutExpired:
+        pass
+
+
+def _run_a1_shell(cmd, *, timeout, terraform=False, capture_output=False,
+                  cwd=None, extra_env=None, stdin_data=None):
+    """Run a claim.sh / wrap.sh / a1id subprocess with process-group isolation.
+
+    Starts the child in a new session so timeouts can SIGKILL the whole group,
+    preventing `a1` grandchildren from surviving as zombies that hold stale
+    `~/.config/a1/*.lock` files (the 84550781 incident root cause). On
+    ``subprocess.TimeoutExpired`` the process group is reaped before re-raising.
+
+    ``stdin_data`` writes to the child's stdin (text if it is a str, else bytes).
+
+    Returns ``subprocess.CompletedProcess``.
+    """
+    env = _a1_command_env(terraform=terraform)
+    if extra_env:
+        env.update(extra_env)
+    text_mode = capture_output or isinstance(stdin_data, str)
+    if capture_output:
+        stdout, stderr = subprocess.PIPE, subprocess.PIPE
+    else:
+        stdout, stderr = subprocess.DEVNULL, subprocess.DEVNULL
+    stdin = subprocess.PIPE if stdin_data is not None else None
+    proc = subprocess.Popen(
+        cmd,
+        cwd=str(cwd or REPO_ROOT),
+        env=env,
+        stdin=stdin,
+        stdout=stdout,
+        stderr=stderr,
+        start_new_session=True,
+        text=text_mode,
+    )
+    try:
+        out, err = proc.communicate(input=stdin_data, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        _kill_process_group(proc)
+        try:
+            proc.communicate(timeout=2)
+        except subprocess.TimeoutExpired:
+            pass
+        raise
+    return subprocess.CompletedProcess(cmd, proc.returncode, out, err)
+
+
 def _terraform_rd_ready():
     """True iff the terraform-rd write identity is logged in (a1id ready rc==0).
 
@@ -1942,15 +2009,13 @@ def _claim_workitem(iid, project, terraform=False, reopen_done=False):
     Comment generations enable strict terminal reopen. claim.sh only applies that
     transition when jarvis-done is visible; idle comments retain normal claiming.
     """
-    env = _a1_command_env(terraform=terraform)
-    env["JARVIS_CLAIM_SETTLE"] = "0"
-    env["JARVIS_CLAIM_PROGRESS"] = "0"
+    extra = {"JARVIS_CLAIM_SETTLE": "0", "JARVIS_CLAIM_PROGRESS": "0"}
     if reopen_done:
-        env["JARVIS_CLAIM_REOPEN_DONE"] = "1"
-    proc = subprocess.run(
+        extra["JARVIS_CLAIM_REOPEN_DONE"] = "1"
+    proc = _run_a1_shell(
         [str(REPO_ROOT / "bootstrap" / "claim.sh"),
          "claim", str(iid), str(project)],
-        cwd=str(REPO_ROOT), timeout=60, capture_output=True, text=True, env=env)
+        timeout=60, terraform=terraform, capture_output=True, extra_env=extra)
     if proc.returncode != 0:
         detail = ((proc.stderr or proc.stdout or "").strip())[-1000:]
         raise RuntimeError(
@@ -1960,11 +2025,10 @@ def _claim_workitem(iid, project, terraform=False, reopen_done=False):
 
 def _release_post_pr_claim(iid, project, terraform=False):
     """Release a bridge-owned post-PR claim; callers retain failed receipts."""
-    proc = subprocess.run(
+    proc = _run_a1_shell(
         [str(REPO_ROOT / "bootstrap" / "claim.sh"),
          "release", str(iid), str(project)],
-        cwd=str(REPO_ROOT), timeout=60, capture_output=True, text=True,
-        env=_a1_command_env(terraform=terraform))
+        timeout=60, terraform=terraform, capture_output=True)
     if proc.returncode != 0:
         detail = ((proc.stderr or proc.stdout or "").strip())[-300:]
         raise RuntimeError(
@@ -1981,11 +2045,10 @@ def _finish_workitem(iid, project, terraform=False):
     when the done_status cannot land, so a rejected finish never strands a
     'label done, source open' hole.
     """
-    proc = subprocess.run(
+    proc = _run_a1_shell(
         [str(REPO_ROOT / "bootstrap" / "claim.sh"),
          "finish", str(iid), str(project)],
-        cwd=str(REPO_ROOT), timeout=60, capture_output=True, text=True,
-        env=_a1_command_env(terraform=terraform))
+        timeout=60, terraform=terraform, capture_output=True)
     if proc.returncode != 0:
         detail = ((proc.stderr or proc.stdout or "").strip())[-300:]
         raise RuntimeError(
@@ -6747,10 +6810,9 @@ class PrWatchScheduler:
         """claim.sh finish <tid> <project> <status>. Returns proc.returncode；任何非零都由
         caller 保留重试。日志记 stdout/stderr。subprocess 抛异常不吞——交 _tick 的 per-entry
         try/except 兜底（条目保留），绝不在 finish 失败时误判成功收尾。"""
-        proc = subprocess.run(
+        proc = _run_a1_shell(
             [str(Path(REPO_ROOT) / "bootstrap" / "claim.sh"), "finish", str(tid), str(project), status],
-            capture_output=True, text=True,
-            env=_a1_command_env(terraform=_is_terraform_project(project)), timeout=120)
+            timeout=120, terraform=_is_terraform_project(project), capture_output=True)
         log.info("PrWatchScheduler: claim.sh finish #%s rc=%d out=%s err=%s", tid,
                  proc.returncode, (proc.stdout or "").strip()[:300], (proc.stderr or "").strip()[:300])
         return proc.returncode
@@ -6765,10 +6827,10 @@ class PrWatchScheduler:
             log.info("PrWatchScheduler: suppress Terraform Aone comment #%s", tid)
             return 0
         try:
-            proc = subprocess.run(
+            proc = _run_a1_shell(
                 [str(Path(REPO_ROOT) / "bootstrap" / "wrap.sh"), "sync", str(tid), "--summary-stdin"],
-                input=text, capture_output=True, text=True,
-                env=_a1_command_env(terraform=_is_terraform_project(project)), timeout=90)
+                timeout=90, terraform=_is_terraform_project(project),
+                capture_output=True, stdin_data=text)
             if proc.returncode != 0:
                 log.warning("PrWatchScheduler: wrap.sh sync #%s rc=%d: %s",
                             tid, proc.returncode, (proc.stderr or "").strip()[:200])
@@ -6804,6 +6866,134 @@ WAIT_TIERS = [
     (float('inf'),  1800),   # 2 h+:         every 30 min
 ]
 WAIT_EXPIRE_SEC = 14 * 24 * 3600  # 14 days
+
+
+_RESUME_OWNER_BLOCKING_REASONS = frozenset({
+    "RESUME_OWNER_UNAVAILABLE",
+    "RESUME_OWNER_NOT_REGISTERED",
+})
+
+
+class ResumeOwnerHealthScheduler:
+    """Alert on READY Tasks whose RESUME_ONLY owner Worker is permanently gone.
+
+    Fixes gap #2 from 84550781: the reaper marks Workers OFFLINE on heartbeat
+    expiry, but a RESUME_ONLY Task whose owner just went OFFLINE stays READY
+    forever — invisible in `run.sh watchdog`, invisible in `bootstrap/scan.sh`,
+    invisible to `bootstrap/control-plane-status.sh workers`. This scheduler
+    polls ``list_ready_task_diagnostics`` and DMs the fleet owner when the
+    control plane exposes such pseudo-READY tasks so someone can invoke
+    ``bootstrap/control-plane-status.sh discard-resume`` (or the server-side
+    owner-dead sweep, once shipped) before the task sits for days.
+
+    Notify DingTalk only — the Aone workitem isn't the right place: fixing the
+    task means re-dispatching it, not re-working the underlying request. Dedup
+    per (aone-id, reasonCode, hour-bucket) so a persistent stuck task fires at
+    most once per hour.
+    """
+
+    def __init__(self, handler, *, interval=None, limit=100, logger=None):
+        self.handler = handler
+        self.client = handler.task_client
+        self.interval = float(interval if interval is not None else os.environ.get(
+            "JARVIS_RESUME_OWNER_HEALTH_INTERVAL", "3600"))
+        self.limit = max(1, min(int(limit), 500))
+        self.log = logger or logging.getLogger(__name__)
+        self._stop = threading.Event()
+        self._thread = None
+
+    def start(self) -> None:
+        if str(os.environ.get("JARVIS_RESUME_OWNER_HEALTH_ENABLE", "1")) != "1":
+            self.log.info("ResumeOwnerHealthScheduler disabled")
+            return
+        if self._thread and self._thread.is_alive():
+            return
+        self._thread = threading.Thread(
+            target=self._loop, name="resume-owner-health", daemon=True)
+        self._thread.start()
+
+    def stop(self) -> None:
+        self._stop.set()
+        thread = self._thread
+        if thread and thread.is_alive() and thread is not threading.current_thread():
+            thread.join(timeout=min(max(self.interval, 1.0), 10.0))
+
+    def _loop(self) -> None:
+        while not self._stop.is_set():
+            try:
+                self._tick()
+            except Exception:  # noqa: BLE001 — daemon must survive transient control-plane faults
+                self.log.exception("resume-owner health tick failed")
+            self._stop.wait(max(60.0, self.interval))
+
+    def _tick(self) -> None:
+        try:
+            diagnostics = self.client.list_ready_task_diagnostics(limit=self.limit)
+        except Exception as exc:  # noqa: BLE001
+            self.log.warning("resume-owner health: control plane read failed: %s",
+                             type(exc).__name__)
+            return
+        if not isinstance(diagnostics, list):
+            return
+        stuck = []
+        for entry in diagnostics:
+            if not isinstance(entry, dict):
+                continue
+            reason = str(entry.get("reasonCode") or "").strip()
+            if reason not in _RESUME_OWNER_BLOCKING_REASONS:
+                continue
+            task = entry.get("task") if isinstance(entry.get("task"), dict) else {}
+            aone_id = str(task.get("aoneId") or "").strip()
+            task_id = str(task.get("id") or "").strip()
+            if not (aone_id or task_id):
+                continue
+            stuck.append({
+                "aone_id": aone_id,
+                "task_id": task_id,
+                "reason": reason,
+                "required_worker": str(entry.get("requiredWorkerKey") or "-"),
+                "required_worker_status": str(entry.get("requiredWorkerActivityStatus") or "-"),
+            })
+        if not stuck:
+            return
+        self._alert(stuck)
+
+    def _alert(self, stuck):
+        hour_bucket = int(time.time()) // 3600
+        # One DM per stuck task per hour: a new task appearing after a partial
+        # recovery must fire even if others were already announced this hour.
+        for item in stuck:
+            anchor = item["aone_id"] or ("task-%s" % item["task_id"])
+            event_key = "resume-owner-health:%s:%s:%s" % (
+                anchor, item["reason"], hour_bucket)
+            aone_url = ""
+            if item["aone_id"]:
+                aone_url = ("https://project.aone.alibaba-inc.com/v2/project/-/"
+                            "workitem/%s" % item["aone_id"])
+            lines = [
+                "Jarvis 控制面检测到 RESUME_ONLY Task 卡在 READY，原 owner Worker 已离线。",
+                "",
+                "Task: #%s" % (item["task_id"] or "?"),
+                "Aone: %s" % (aone_url or item["aone_id"] or "-"),
+                "原因: %s" % item["reason"],
+                "原 owner: %s (%s)" % (item["required_worker"],
+                                      item["required_worker_status"]),
+                "",
+                ("处置：确认无未决外部写入后，运行 "
+                 "`bootstrap/control-plane-status.sh discard-resume <task_id> "
+                 "<session_id> --reason '<why>' --yes`；或等待服务端 owner-dead "
+                 "sweep 转 RECOVERY_REQUIRED 后走恢复入口。"),
+            ]
+            body = "\n".join(lines)
+            title = "Jarvis 控制面：%s #%s" % (item["reason"], anchor)
+            try:
+                _dingtalk_event_enqueue(
+                    ticket=anchor, project="jarvis-fleet",
+                    event_key=event_key, staff_id=master_staff(),
+                    title=title, text=body, allow_non_tf=True)
+            except Exception as exc:  # noqa: BLE001
+                self.log.warning("resume-owner health: DM enqueue failed key=%s err=%s",
+                                 event_key, type(exc).__name__)
 
 
 class AoneReplyScheduler:
@@ -8188,6 +8378,11 @@ class JarvisHandler(AsyncChatbotHandler):
             retry_interval=float(os.environ.get("JARVIS_CONTROL_PLANE_RETRY_SEC", "5")),
             progress=lambda _lease, controller: _session_progress_excerpt(
                 controller.runtime_session_id),
+            heartbeat_beacon_path=os.environ.get(
+                "JARVIS_EXECUTOR_HEARTBEAT_BEACON",
+                os.path.join(jarvis_root(), ".my-day", "bridge",
+                             "heartbeat.%s.epoch" %
+                             os.environ.get("JARVIS_BRIDGE_ROLE", "scheduler"))),
             logger=log,
         )
         self.external_operation_recovery = ExternalOperationRecoveryScheduler(
@@ -8201,6 +8396,9 @@ class JarvisHandler(AsyncChatbotHandler):
         self.scanner = AoneScheduler(self, self.ephemeral_executor)
         self.daily = DailyScheduler(self, self.ephemeral_executor)
         self.aone_reply_scheduler = AoneReplyScheduler(self)
+        # 84550781 gap #2: alert on RESUME_OWNER_UNAVAILABLE pseudo-READY tasks so
+        # stuck orphans do not sit invisibly for days.  DM-only, hourly.
+        self.resume_owner_health = ResumeOwnerHealthScheduler(self, logger=log)
         # PR 观察登记表轮询（方案A）：PR 合并后自动 finish 收尾，与 DailyScheduler 的 nudge 互为兜底。
         # 注：原 PersonaScheduler（评论区 tracker/@ 补位）已并入 AoneScheduler 统一探测（assignee∪
         # tracker∪idle 并集），不再单列调度器。
@@ -8240,6 +8438,9 @@ class JarvisHandler(AsyncChatbotHandler):
         self.daily.start()
         self.aone_reply_scheduler.start()
         self.prwatch.start()
+        health = getattr(self, "resume_owner_health", None)
+        if health is not None:
+            health.start()
         recovery = getattr(self, "external_operation_recovery", None)
         if recovery is not None:
             recovery.start()
@@ -9480,11 +9681,9 @@ def run_dry_once():
 def _release_claim(iid, project, terraform=False):
     """Best-effort release of a jarvis-claimed workitem during graceful stop."""
     try:
-        subprocess.run(
+        _run_a1_shell(
             [str(REPO_ROOT / "bootstrap" / "claim.sh"), "release", str(iid), str(project)],
-            cwd=str(REPO_ROOT), timeout=60,
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-            env=_a1_command_env(terraform=terraform))
+            timeout=60, terraform=terraform)
     except Exception as e:  # noqa: BLE001
         log.warning("_release_claim #%s failed: %s", iid, e)
 

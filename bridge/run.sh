@@ -352,7 +352,72 @@ cmd_watchdog() {
   if [ -f "$PIDFILE.manual-stop" ]; then
     return 0
   fi
+  # 84550781 healthy-executor guard: when the pidfile shows the bot alive but
+  # the executor's control-plane heartbeat beacon has gone stale, the lease/
+  # heartbeat threads have hung (the "activezombie" pattern). Force a restart
+  # so the process group is re-spawned; skipping this makes watchdog blind to
+  # activezombies, which was the 78-min silent hang on 2026-07-21.
+  local pid
+  if pid="$(_running_pid)"; then
+    if _executor_beacon_stale "$pid"; then
+      err "bridge $pid: executor heartbeat stale — restarting (activezombie guard)"
+      # Kill directly instead of `cmd_stop` — that touches the manual-stop
+      # sentinel, which then blocks the very cmd_start we are about to call.
+      kill -TERM "$pid" 2>/dev/null || true
+      local i=0
+      while [ "$i" -lt "$(( STOP_WAIT * 10 ))" ] && _alive "$pid"; do sleep 0.1; i=$((i + 1)); done
+      _alive "$pid" && { kill -KILL "$pid" 2>/dev/null || true; sleep 0.3; }
+      rm -f "$PIDFILE"
+    else
+      return 0
+    fi
+  fi
   cmd_start
+}
+
+# _executor_beacon_stale <pid>: 0=stale (needs restart), 1=fresh or unknown.
+# Reads $STATE_DIR/heartbeat.<role>.epoch (written by PersistenceExecutor after
+# every successful control-plane heartbeat). Fail-closed to fresh: if the file
+# is missing or unreadable, do not restart — a new bot install hasn't produced
+# a beacon yet, and we must not thrash it. Also grants a grace window equal to
+# JARVIS_WATCHDOG_HEARTBEAT_GRACE_SEC (default 300s = 5x heartbeat interval).
+_executor_beacon_stale() {
+  local pid="$1"
+  local role="${JARVIS_BRIDGE_ROLE:-scheduler}"
+  local beacon="${JARVIS_EXECUTOR_HEARTBEAT_BEACON:-$STATE_DIR/heartbeat.$role.epoch}"
+  local grace="${JARVIS_WATCHDOG_HEARTBEAT_GRACE_SEC:-300}"
+  [ -f "$beacon" ] || return 1
+  local last now
+  last="$(cat "$beacon" 2>/dev/null || true)"
+  case "$last" in
+    ''|*[!0-9]*) return 1 ;;
+  esac
+  now="$(date -u +%s)"
+  # Also require the bot has been alive long enough to have completed a heartbeat.
+  # Otherwise a fresh start racing against the first heartbeat trips the guard.
+  local etime_sec
+  etime_sec="$(_process_etime_seconds "$pid")" || return 1
+  [ "$etime_sec" -ge "$grace" ] || return 1
+  [ $(( now - last )) -gt "$grace" ]
+}
+
+# Convert `ps -o etime=` (e.g. "01:23:45" or "1-02:03:04") to whole seconds on
+# stdout. Returns non-zero when parsing fails so callers can fail-closed.
+_process_etime_seconds() {
+  local raw
+  raw="$(ps -o etime= -p "$1" 2>/dev/null | tr -d ' ')"
+  [ -n "$raw" ] || return 1
+  awk -v s="$raw" 'BEGIN{
+    d=0; n=split(s, a, "-");
+    if (n==2) { d=a[1]; s=a[2] } else { s=a[1] }
+    m=split(s, b, ":");
+    h=0; mm=0; ss=0;
+    if (m==3) { h=b[1]; mm=b[2]; ss=b[3] }
+    else if (m==2) { mm=b[1]; ss=b[2] }
+    else if (m==1) { ss=b[1] }
+    else { exit 1 }
+    print (d*86400) + (h*3600) + (mm*60) + ss
+  }' 2>/dev/null || return 1
 }
 
 cmd_stop() {
