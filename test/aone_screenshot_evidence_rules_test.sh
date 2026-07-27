@@ -60,7 +60,7 @@ for term in \
   "visual_evidence_manifest" \
   "AONE_RESULT.reply_body" \
   '严禁传 `--comment`'; do
-  grep -Fq "$term" "$repo_root/bridge/jarvis_dingtalk_bot.py" || {
+  grep -Fq "$term" "$repo_root/bridge/aone_tasks.py" || {
     echo "aone_screenshot_evidence_rules_test: bridge prompt missing '$term'" >&2
     exit 1
   }

@@ -19,25 +19,63 @@ multiple hosts by splitting the bridge into two roles.
               │  (macmini)   │  │(linux)│  │(linux)│  │(linux)│
               │              │  │       │  │       │  │       │
               │ • PersistExec│  │•Persist│  │•Persist│  │•Persist│
-              │ • AoneSched  │  │ Exec  │  │ Exec  │  │ Exec  │
-              │ • DailySched │  │       │  │       │  │       │
-              │ • PrWatch    │  │       │  │       │  │       │
-              │ • AoneReply  │  │       │  │       │  │       │
+              │ • Scheduler  │  │ Exec  │  │ Exec  │  │ Exec  │
+              │   Engine     │  │       │  │       │  │       │
               └──────────────┘  └───────┘  └───────┘  └───────┘
                  5 slots         3 slots    3 slots    3 slots
                                      total = 5 + N×3 slots
 ```
 
-**Scheduler role** — the Task producer + all periodic sensor loops. Local state
-(`.my-day/bridge/pr-watch.json`, `daily-scheduler.json`, event ledgers,
-`claimed-snapshot.json`) is per-host and cannot be shared. **Exactly one host
-in the fleet runs scheduler.** Currently: the macmini in Dallas.
+**Scheduler role** — runs `bridge/run.sh start`, which starts both the Task executor
+and the one `bridge-scheduler` Worker owning every periodic Job. Local business state (`.my-day/bridge/pr-watch.json`, event
+ledgers and claimed observations) is per-host and cannot be shared. **Exactly
+one host in the fleet runs scheduler.** The scheduler launcher rejects any
+role other than `JARVIS_BRIDGE_ROLE=scheduler` before it can register a Worker.
 
 **Worker role** — executor-only. `PersistenceExecutor.start()` then blocks on
 `run_forever()`. Leases Tasks from control plane by its own `workerKey`,
 spawns headless claude, reports back. Every added worker grows total lease
 capacity by its local `JARVIS_DISPATCH_MAX`. No coordination needed between
 workers — fenced `claimTask` on the control plane is the only interlock.
+
+## SchedulerEngine ownership
+
+All periodic jobs are owned by the new `SchedulerEngine`; the legacy Bridge
+process no longer starts scanner, daily, reply, PR-watch or recovery threads.
+Their business logic is invoked as one bounded runner tick by SchedulerEngine.
+The engine is a fenced control-plane path with `workerKey=bridge-scheduler`, a fresh
+`processUuid`, and the same control-plane token used by the Task API. `hostId`
+is recorded for observability only. The fixed Worker key, current process UUID,
+status, and heartbeat ensure that only one Scheduler process owns admission at
+a time. It is not a Task executor: Bridge advertises
+`capabilities.dispatch.pull=false` and does not pull the public Task queue.
+
+Use `bridge/scheduler/jobs.yaml` as the complete new-engine registration
+source. Its explicit entries contain `daily.probe`, `aone.scan`,
+`aone.claim-health`, `daily.nudge`, `aone.reply`, `pr.watch` and
+`external.recovery`.
+No periodic job is allowed to have a second legacy loop.
+
+The definitions use only the Scheduler runtime. `jobs.py` validates and loads
+the checked-in YAML; `bridge/run.sh` automatically prefers `.venv/bridge` when
+it is present.
+
+Before this starts the Engine, Bridge verifies the scheduler role, registers and checks
+the ACTIVE Worker identity, registers the full job registry, recovers
+interrupted slots, and then begins polling. `daily.probe` revision 3 is
+enabled through the generic headless adapter. A configured job without a
+handler or builder/protocol mapping fails closed at startup. Each definition's
+`enabled` boolean controls whether it is runnable; `enabled: false` registers
+a routed Job as `DISABLED`.
+
+A planned Scheduler restart closes admission, registers the Worker as
+`DRAINING`, and waits for the admitted job to finish before starting a new
+process. The Scheduler path never falls back to `SIGKILL`, and launchd restart
+disables KeepAlive and avoids `kickstart -k`; a drain timeout leaves the old
+process in place and refuses successor startup. Distinct job keys use a
+bounded worker pool while the same key never overlaps. Planned stop closes
+admission and waits for active headless futures without killing them. An
+unexpected process crash recovers the scheduled slot from the control plane.
 
 ## Push-only credential distribution
 
@@ -333,18 +371,11 @@ systemctl --user restart jarvis-worker
 ## Cross-host interrupted-session detection
 
 Worker/Task/Session state in the control plane is the only coordination truth;
-there is no local PID-based coord fallback. Cross-host recovery goes through
-two channels already implemented in the control plane (`docs/execution-architecture.md`):
-
-1. **Fast channel**: bridge scheduler's tick watches `/workers` for
-   STALE/OFFLINE Workers and remembers their assignments.
-2. **Persistent channel**: `AoneScheduler` atomically snapshots the
-   `jarvis-claimed` Aone inventory to `.my-day/bridge/claimed-snapshot.json`
-   every tick and corroborates each entry with the control plane's Task
-   timeline. Snapshot lives only on scheduler host — this is why exactly one
-   scheduler runs.
-
-Workers themselves don't do orphan detection; they just heartbeat and lease.
+there is no local PID or snapshot-based recovery fallback. The service reaper
+expires stale leases and fences interrupted Sessions. The scheduler host's
+`claim_health` runner only corroborates Aone `jarvis-claimed` items against
+the Task timeline and publishes confirmed anomalies; it does not re-dispatch
+or release work. Workers only heartbeat and lease.
 
 ## Troubleshooting
 

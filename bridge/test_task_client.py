@@ -12,7 +12,7 @@ from urllib.error import HTTPError, URLError
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from jarvis_task_client import (  # noqa: E402
+from bridge.jarvis_task_client import (  # noqa: E402
     ControlPlaneClient,
     ControlPlaneConflict,
     ControlPlaneUnavailable,
@@ -425,9 +425,23 @@ class ClientContractTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             c.list_pending_aone_reply_waits(limit=501)
         with self.assertRaises(ValueError):
+            c.list_ready_task_diagnostics(after_task_id=-1)
+        with self.assertRaises(ValueError):
             c.list_ready_task_diagnostics(limit=0)
         with self.assertRaises(ValueError):
             c.list_ready_task_diagnostics(limit=501)
+
+    def test_ready_diagnostics_supports_task_keyset_cursor(self):
+        opener = RecordingOpener(responses=[FakeResponse(raw=b"[]")])
+        c = self.make(opener)
+
+        self.assertEqual(
+            c.list_ready_task_diagnostics(after_task_id=42, limit=100), [])
+
+        req, _timeout = opener.calls[0]
+        self.assertTrue(req.full_url.endswith(
+            "/api/jarvis/v1/tasks/ready-diagnostics"
+            "?limit=100&afterTaskId=42"))
 
     def test_discard_resume_context_posts_exact_session_and_reason(self):
         opener = RecordingOpener(responses=[FakeResponse({"id": 42, "status": "READY"})])

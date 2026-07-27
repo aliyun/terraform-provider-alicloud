@@ -15,7 +15,7 @@ from unittest.mock import patch
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from tata_dws_history import (  # noqa: E402
+from bridge.tata_dws_history import (  # noqa: E402
     DWS_USER_NOT_IN_GROUP,
     DwsGroupHistory,
     DwsHistoryError,
@@ -23,8 +23,8 @@ from tata_dws_history import (  # noqa: E402
     _minimal_dws_env,
     render_group_history,
 )
-import jarvis_dingtalk_bot as bot_module  # noqa: E402
-from jarvis_dingtalk_bot import (  # noqa: E402
+from bridge import jarvis_dingtalk_bot as bot_module  # noqa: E402
+from bridge.jarvis_dingtalk_bot import (  # noqa: E402
     TATA_DWS_ONBOARDING_MESSAGE,
     JarvisHandler,
 )
@@ -420,14 +420,15 @@ class JarvisHandlerHistoryIntegrationTest(unittest.TestCase):
         self.assertEqual(caught.exception.code, DWS_USER_NOT_IN_GROUP)
         self.assertEqual(
             TATA_DWS_ONBOARDING_MESSAGE,
-            "Tata 当前无权限读取群历史消息，为了Tata提供更好的服务，"
-            "请群主/管理员添加辰羿后重新 @ Tata",
+            "Jarvis 当前无权限读取群历史消息，为了 Jarvis 提供更好的服务，"
+            "请群主/管理员添加辰羿后重新 @ Jarvis",
         )
 
     def test_process_sends_onboarding_without_starting_tata_session(self):
         handler = self.handler(FakeHistory(
             error=DwsHistoryError(DWS_USER_NOT_IN_GROUP)))
         handler.audience = set()
+        handler.aone = None
         handler.scanner = None
         handler.board = None
         handler.locks = defaultdict(threading.Lock)

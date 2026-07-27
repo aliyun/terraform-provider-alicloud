@@ -2,7 +2,7 @@
 # bootstrap/pr-watch.sh — PR 观察登记表（跨会话看守 PR 全生命周期）。
 #
 # skill/persona 提交 PR 后按自治边界 release 成 jarvis-idle，单次 headless 会话撑不住 PR 从
-# 提交到合并的几小时/几天。本登记表 + 后台 PrWatchScheduler(bridge/jarvis_dingtalk_bot.py)
+# 提交到合并的几小时/几天。本登记表 + Scheduler 的 pr.watch runner
 # 跨会话补这个缺口：open 窗口内 CI 失败自动派 headless 修复（走 fork_push 预授权 SOP）；PR 合并后
 # 自动 claim.sh finish 收尾；PR 未合并即关闭则评论 + escalate 交人工。
 #
@@ -13,8 +13,8 @@
 #
 # 登记表落 .my-day/bridge/pr-watch.json，**对象键**结构（非数组）：
 #   {"<ticket>": {"pr_url": "...", "project": "...", "title": "...", "submitted_at": "..."}}
-# 桥侧 PrWatchScheduler 会往 entry 里补 CI-fix 去重字段（ci_fix_sha / ci_fix_attempts /
-# ci_fix_escalated / last_ci_fix_at，见 _prwatch_update）——本脚本的 add/remove/list 对多余
+# 桥侧 pr.watch runner 会往 entry 里补 CI-fix 去重字段（ci_fix_sha / ci_fix_attempts /
+# ci_fix_escalated / last_ci_fix_at）——本脚本的 add/remove/list 对多余
 # 字段无感（jq 只增/删/读基础字段），无需同步维护。
 # add/remove 是 read-modify-write：套 mkdir-lock（macOS 无 flock，克隆 claim.sh 的锁范式）；
 # 写用同目录 mktemp 兄弟文件 + mv 原子替换；文件不存在时先 jq -n '{}' 播种（对象，不是 []）。
@@ -51,7 +51,7 @@ case "$cmd" in
         [ -n "$ticket" ] && [ -n "$pr_url" ] && [ -n "$project" ] \
             || { echo "Usage: pr-watch.sh add <ticket> <pr_url> <project>" >&2; exit 1; }
         # 校验 pr_url 形如完整 GitHub PR URL——防止 bare number 被 gh 解析到错仓
-        # (jarvis worktree 的默认仓)，那会导致 PrWatchScheduler 观察到无关 PR。
+        # (jarvis worktree 的默认仓)，那会导致 pr.watch runner 观察到无关 PR。
         if ! printf '%s' "$pr_url" | grep -Eq '^https://github\.com/.+/pull/[0-9]+$'; then
             echo "pr-watch.sh: invalid pr_url '$pr_url' — expect a full GitHub PR URL like https://github.com/<owner>/<repo>/pull/<n>" >&2
             exit 1

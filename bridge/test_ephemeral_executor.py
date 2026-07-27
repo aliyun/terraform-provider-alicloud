@@ -11,8 +11,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from jarvis_capacity import CapacityManager  # noqa: E402
-from jarvis_dingtalk_bot import EphemeralExecutor  # noqa: E402
+from bridge.jarvis_capacity import CapacityManager  # noqa: E402
+from bridge.jarvis_execution_runtime import EphemeralExecutor  # noqa: E402
 
 
 class EphemeralExecutorTest(unittest.TestCase):

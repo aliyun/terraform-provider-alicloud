@@ -1,10 +1,10 @@
 ---
 name: terraform-provider-release
-description: Release a Terraform Provider resource together with its data source for Alibaba Cloud. Covers new-resource publishing (including CloudSpec resource inference from existing CRUDL OpenAPIs), updates to existing resources, and mid-flight CloudSpec repair (property rename, HCL-keyword clash fix). Runs a CloudSpec pre-environment requirement-alignment gate, a post-generation hand-fix checklist for known generator-v4 defects, and a test-time CloudSpec IDL repair/publish/regenerate loop. Anchored on an Aone work item, runs in an isolated worktree, forbids local compilation, verifies orchestration APIs and remote ACC tests, and governs the PR through merge. NOT for generator implementation defects or resourceTypeCode mapping corruption — use provider-resource-dev. NOT for reviewing an existing PR — use terraform-pr-review.
+description: Release a Terraform Provider resource together with its data source for Alibaba Cloud. The full journey starts from requirement understanding — discover which OpenAPIs satisfy the user need, locate the product space with CloudSpec tooling, create the branch, define/repair the resource, publish to pre, then generate resource/datasource/tests from pre. Also reviews user-provided resource designs against their backing APIs (design-correctness verdict + fix list), and enforces resource-doc ↔ API-doc alignment (unclear descriptions get supplemented from OpenAPI docs). Covers new-resource publishing (including CloudSpec resource inference from existing CRUDL OpenAPIs), updates to existing resources, and mid-flight CloudSpec repair (property rename, HCL-keyword clash fix). Runs a CloudSpec pre-environment requirement-alignment gate, a post-generation hand-fix checklist for known generator-v4 defects, and a test-time CloudSpec IDL repair/publish/regenerate loop. Anchored on an Aone work item, runs in an isolated worktree, forbids local compilation, verifies orchestration APIs and remote ACC tests, and governs the PR through merge. NOT for generator implementation defects or resourceTypeCode mapping corruption — use provider-resource-dev. NOT for reviewing an existing PR — use terraform-pr-review.
 metadata:
-  version: "0.8.0"
+  version: "0.9.0"
   domain: terraform-provider
-  triggers: 资源发布, provider 发布, terraform 发布, resource release, terraform provider release, publish resource, new resource, update resource, datasource release, data source release, 需求澄清, requirement clarification, cloudspec 资源定义, cloudspec 新资源, cloudspec 资源修改, cloudspec 资源推断
+  triggers: 资源发布, provider 发布, terraform 发布, resource release, terraform provider release, publish resource, new resource, update resource, datasource release, data source release, 需求澄清, requirement clarification, cloudspec 资源定义, cloudspec 新资源, cloudspec 资源修改, cloudspec 资源推断, OpenAPI 圈定, 需求找 API, API 透出 terraform, 资源设计 review, 资源文档补齐
 ---
 
 # Terraform Provider Resource Release
@@ -38,6 +38,8 @@ jarvis 语境下，本 skill 所有"ask the user"节点按以下规则改走三�
 **Applicable scenarios**
 - **New resource release**: produce a new resource + data source + documentation via the generator
 - **Existing resource update**: split into auto-generated and hand-written paths
+- **Requirement-first onboarding**: user gives only a capability requirement (no resource named) — discover the backing OpenAPIs from the requirement, define the resource in CloudSpec, publish pre, then generate (Step 1.6)
+- **User-provided resource review**: user supplies a resource design (schema / cspec / docs) — review it against its backing APIs with CloudSpec tooling and produce a correctness verdict + fix list before any generation (Step 1.7)
 
 **Key constraints**
 - A single **Aone work item** MUST be linked; this skill is responsible for keeping the work item up to date
@@ -82,10 +84,35 @@ Every provider resource release MUST be linked to an Aone work item.
 - **明确不一致且需求清楚**（含 HCL 保留字命中）：记录 `PRE_CLOUDSPEC_GAP`，先走 [CloudSpec pre 资源闭环 §3](references/cloudspec-pre-resource-loop.md)，待 pre 收敛后再继续 provider 流程。
 - **pre 完全没这资源**（`PRE_CLOUDSPEC_MISSING`）：
   - CRUDL 存量 OpenAPI 已在 cspec `operations/` 里 → 走 [新资源从存量 OpenAPI 推断](references/cloudspec-new-resource-infer.md)，用 `cloudspec fix resource` 反推出定义再 publish pre；
-  - API 也缺 → API 侧还没建，走人工会审。
+  - cspec operations 也缺 → 先走 **Step 1.6 需求 → OpenAPI 圈定**，确认公网 OpenAPI 是否存在：存在则从 API 起建 operation + resource 定义并发布 pre；公网 API 确实没有 → API 侧还没建，走人工会审。
 - **需求缺失、相互矛盾或无法判定**：同时通知 @辰羿(320687)、@临钧(429768)、@过载(484483)、@原根(265607)，释放并挂起工单；禁止生成、编码或根据经验猜需求。
 
 完整取数、判定、HCL 保留字硬门、人工通知和留痕格式见 [CloudSpec pre 资源闭环](references/cloudspec-pre-resource-loop.md)。
+
+### Step 1.6: 需求 → OpenAPI 圈定 → CloudSpec 定义（Requirement-First Path）
+
+> **When to run**: 工单/用户只给了能力需求（没有点名现成资源），或 Step 1.5 判定 `PRE_CLOUDSPEC_MISSING` 且 cspec `operations/` 也缺。
+
+一个完整的 Terraform 需求从**找到正确的 OpenAPI** 开始——把 OpenAPI 能力透出到 Terraform：
+
+1. **需求理解**：从描述中抽取产品线索/能力动词/对象名词，写一句话需求重述回填 Aone；
+2. **OpenAPI 检索**：OpenAPI Explorer 站内搜 + `amp-resource-metadata` 脚本 + aliyun CLI meta 三通道，圈定满足需求的 API 集合并按 CRUDL 归位；
+3. **完备性判定**（硬门）：无 Create/Delete → 不得硬做，人工会审；无 Update → 全 ForceNew 并明示；仅 List 型 Read → 预判规范门与加白理由；
+4. **CloudSpec 落定义**：`amp init` 定位产品空间 → `amp branch create` 建 feature 分支 → clone 元数据仓 → 建 operation（如缺）+ resource 定义 → `cspec build` + `check` → `amp publish pre`；
+5. **回 Step 1.5 重新对齐**（应得 `PRE_CLOUDSPEC_ALIGNED`），继续 Step 2 → Step 6——生成器**必须消费 pre** 产出 resource、datasource 与测试用例。
+
+逐步命令、检索通道、完备性表与留痕格式见 [需求 → OpenAPI 圈定 → CloudSpec 定义闭环](references/requirement-to-openapi-discovery.md) A 路。
+
+### Step 1.7: 用户已提供资源时的设计 Review
+
+> **When to run**: 用户提供了现成的资源物料（Terraform schema 草案 / cspec 片段 / 资源文档）。**不得直接采信**，review 后才进主流程。
+
+1. **反查 API**：资源的每个属性都要能回答「来自哪个 API 的哪个字段」，回答不了标 `UNMAPPED`；
+2. **CloudSpec 工具对照设计**：主键定义、CRUDL operationMapping、属性类型/required/readOnly/enum、命名规范（含 HCL 保留字）、生命周期语义逐项核对；
+3. **输出 review 结论**：固定格式回填 Aone——正确项 / 需修复项（逐条带 API 依据与修法）/ UNMAPPED 清单；设计正确也要留痕；
+4. 需修复项走 Step 1.6 第 4 步的 CloudSpec 闭环 → publish pre → 回主流程生成。
+
+判定表与结论格式见 [需求 → OpenAPI 圈定 → CloudSpec 定义闭环](references/requirement-to-openapi-discovery.md) B 路。
 
 ### Step 2: Prepare the Provider Repo Worktree
 
@@ -220,6 +247,8 @@ The generator produces:
 
 生成产物有若干已知 generator-v4 缺陷（`ForceNew` 遗漏、Read 不反向映射、datasource nested schema 缺字段、docs 占位文本等），SOP **必须**按 [generator 产物后处理清单](references/generator-post-gen-checklist.md) 逐项过一遍——**每条都属生成产物级修复**，不用回 CloudSpec 侧改 IDL。清单里每条给出了 grep 检查方法 + 修法 diff 模板。
 
+**文档对齐 API（必做）**：resource/datasource 文档的每个 attribute 描述必须与来源 API 的官方文档对应——描述不清（「The name of the resource」类空话）→ 从 OpenAPI 文档的参数 description 补充取值范围/格式/默认值/约束；枚举值、单位与 API 文档一致写全；API 文档本身缺失不编造，标记待补。规则与取数工具见 [需求 → OpenAPI 圈定闭环](references/requirement-to-openapi-discovery.md) C 规。
+
 修完运行 Step 8 静态检查（`gofmt -l alicloud/` + docs 三方一致性），全绿才进 Step 9。
 
 ### Step 7: Hand-written Update Path
@@ -258,6 +287,15 @@ go vet ./alicloud         # ops.vet —— 单包静态分析;禁 go vet ./...(�
   - 复杂前置（AI Gateway、跨账号资源）、datasource `depends_on` 陷阱、`ImportStateVerifyIgnore` 用法等模式，见 [ACC 测试写作 patterns](references/acc-test-writing-patterns.md)
 
 > **Do not skip data source tests**: if a data source was generated or written, the corresponding data source test cases MUST also be added.
+
+**测试用例修改红线（Step 9 / Step 10 通用）**:
+
+- 发现测试用例本身有问题(写死不存在的依赖资源、precheck 与能力不匹配、引用已删字段等) → **可以手动修改用例**,把它修到能真实跑通;
+- 但**严禁**为了骗过静态检查/CI 而做下列任何一种:
+  - 把用例改成 SKIP(加 `t.Skip` / 改 precheck 让它永远跳过)
+  - 写"无效测试"——断言恒真、Step 里不真正 Apply、删掉出错的断言让用例空转
+  - 缩小 Config 覆盖面以绕开失败字段(该字段的问题要么修好,要么按 Step 10 定性上报)
+- **宗旨:测试存在的意义是验证资源定义的正确性**。用例绿必须等于「资源真实可用」;一条被改成假绿的用例比没有用例更糟——它掩盖缺陷并阻断后续发现(参见 invoke-terraform-acc-test-remote 的「SKIP ≠ PASS」与「假绿」教训)。
 
 ### Step 10: Remote ACC Acceptance Tests
 
@@ -427,6 +465,9 @@ Once the PR is merged:
 
 - [ ] Aone work item is linked and updated to the merged/completed state
 - [ ] CloudSpec pre resource definition was compared with the work item requirement and the alignment result was logged
+- [ ] Requirement-first path (Step 1.6): requirement restatement + discovered CRUDL API set + completeness verdict logged to Aone before any CloudSpec definition work
+- [ ] User-provided resource (Step 1.7): design review verdict (correct items / fix list with API evidence / UNMAPPED attributes) logged before generation — even when the design passed unchanged
+- [ ] Resource & data source docs align with the backing API docs; unclear descriptions supplemented from OpenAPI parameter descriptions (Step 6.1 文档对齐)
 - [ ] Any ambiguous requirement stopped before generation and notified 辰羿(320687)、临钧(429768)、过载(484483)、原根(265607)
 - [ ] Worktree is created and based on the latest upstream master（`origin/master`，登记布局 origin=上游 aliyun）
 - [ ] For generator-based paths: requirement-gap analysis (Step 5.3) and OpenAPI check (Step 5.4) executed; both findings logged to Aone as separate comments

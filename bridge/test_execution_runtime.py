@@ -12,7 +12,7 @@ sys.path.insert(0, str(HERE))
 
 import os  # noqa: E402
 
-from jarvis_execution_runtime import ExecutionRuntime, ProcessGuardian  # noqa: E402
+from bridge.jarvis_execution_runtime import ExecutionRuntime, ProcessGuardian  # noqa: E402
 
 
 class ProcessGuardianTest(unittest.TestCase):
@@ -25,9 +25,9 @@ class ProcessGuardianTest(unittest.TestCase):
         process = mock.Mock()
         process.pid = 321
         bound = []
-        with mock.patch("jarvis_execution_runtime.subprocess.Popen",
+        with mock.patch("bridge.jarvis_execution_runtime.subprocess.Popen",
                         return_value=process), \
-                mock.patch("jarvis_execution_runtime.os.write",
+                mock.patch("bridge.jarvis_execution_runtime.os.write",
                            side_effect=BrokenPipeError(32, "Broken pipe")), \
                 mock.patch.object(ProcessGuardian, "terminate") as terminate:
             proc, sentinel_write = ProcessGuardian().spawn(
@@ -47,7 +47,7 @@ class ExecutionRuntimeTest(unittest.TestCase):
         process.communicate.return_value = ("out", "err")
         spawned = []
 
-        with mock.patch("jarvis_execution_runtime.subprocess.Popen",
+        with mock.patch("bridge.jarvis_execution_runtime.subprocess.Popen",
                         return_value=process) as popen:
             result = ExecutionRuntime().run_buffered(
                 ["tool", "arg"], HERE, timeout=10,
@@ -71,10 +71,10 @@ class ExecutionRuntimeTest(unittest.TestCase):
             ("partial", "timeout"),
         ]
 
-        with mock.patch("jarvis_execution_runtime.subprocess.Popen",
+        with mock.patch("bridge.jarvis_execution_runtime.subprocess.Popen",
                         return_value=process), \
-                mock.patch("jarvis_execution_runtime.os.getpgid", return_value=99), \
-                mock.patch("jarvis_execution_runtime.os.killpg") as killpg:
+                mock.patch("bridge.jarvis_execution_runtime.os.getpgid", return_value=99), \
+                mock.patch("bridge.jarvis_execution_runtime.os.killpg") as killpg:
             result = ExecutionRuntime().run_buffered(
                 ["tool"], HERE, timeout=1)
 

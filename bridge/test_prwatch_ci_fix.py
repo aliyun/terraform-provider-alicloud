@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
-"""Unit: PrWatchScheduler open-PR 全生命周期看守（post-PR 生命周期清单 #1/#2/#3）.
+"""Unit: pr_watch runner open-PR 全生命周期看守（post-PR 生命周期清单 #1/#2/#3）.
 
 Gap (workflow assess-post-pr-loop → PR lifecycle handling):
 提交 PR 后单次 headless 会话撑不住多日合并窗口——CI 转红没人修、reviewer 在 GitHub 上评论没人
-回应、轮询频率跟不上。本测试锁住 PrWatchScheduler 升级为「全生命周期看守器」后的三块逻辑：
+回应、轮询频率跟不上。本测试锁住 pr_watch runner 作为「全生命周期看守器」的三块逻辑：
   · #1 _gh_pr_ci 解析 (failing/pending) + _maybe_dispatch_ci_fix 派发/去重/上限/active 信号；
   · #2 _gh_pr_comments 解析(排除自己/bot) + _maybe_dispatch_comment_reply baseline+新评论派发；
   · #3 active 信号驱动双档轮询（_maybe_dispatch_ci_fix 返回 True/False）。
 
 Standalone: `python3 bridge/test_prwatch_ci_fix.py`. 无 gh/a1/网络（monkeypatch + fake control plane）。
 """
-import importlib.util
 import json
 import os
 import sys
@@ -19,13 +18,10 @@ import unittest
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE))
-spec = importlib.util.spec_from_file_location(
-    "jarvis_dingtalk_bot", HERE / "jarvis_dingtalk_bot.py")
-bot = importlib.util.module_from_spec(spec)
-sys.modules["jarvis_dingtalk_bot"] = bot
-spec.loader.exec_module(bot)
-from jarvis_task_router import EnqueueResult
+sys.path.insert(0, str(HERE.parent))
+from bridge.jarvis_task_router import EnqueueResult  # noqa: E402
+from bridge.helpers import aone as events  # noqa: E402
+from bridge.scheduler.runners import pr_watch as bot  # noqa: E402
 
 TID = "84251052"
 PR = "https://github.com/aliyun/terraform-provider-alicloud/pull/9972"
@@ -84,7 +80,7 @@ def _fake_proc(rc, out):
 
 class GhPrCiParseTest(unittest.TestCase):
     def setUp(self):
-        self.sched = bot.PrWatchScheduler(FakeHandler(), FakePool())
+        self.sched = bot.PrWatchRuntime(FakeHandler(), FakePool())
         self._orig_run = bot.subprocess.run
 
     def tearDown(self):
@@ -153,7 +149,7 @@ class GhPrCiParseTest(unittest.TestCase):
 
 class GhPrCommentsParseTest(unittest.TestCase):
     def setUp(self):
-        self.sched = bot.PrWatchScheduler(FakeHandler(), FakePool())
+        self.sched = bot.PrWatchRuntime(FakeHandler(), FakePool())
         self._orig_run = bot.subprocess.run
         self._orig_root = bot.REPO_ROOT
         self._tmp = tempfile.TemporaryDirectory()
@@ -241,28 +237,28 @@ class _DispatchBase(unittest.TestCase):
         self._orig_prwatch_path = bot.PRWATCH_PATH
         bot.PRWATCH_PATH = Path(self.tmp + ".prwatch")
         bot._prwatch_add(TID, PR, PROJ, TITLE)
-        self._orig_event_path = bot.AONE_EVENT_PATH
+        self._orig_event_path = events.AONE_EVENT_PATH
         self._orig_bt = bot.broadcast_target
         self._orig_by = bot.broadcast_type
-        self._orig_publish = bot._aone_event_publish
-        bot.AONE_EVENT_PATH = Path(self.tmp + ".events")
+        self._orig_publish = events._aone_event_publish
+        events.AONE_EVENT_PATH = Path(self.tmp + ".events")
         bot.broadcast_target = lambda: "t"
         bot.broadcast_type = lambda: "ty"
         self.events = []
-        bot._aone_event_publish = lambda *a, **k: self.events.append(a) or True
+        events._aone_event_publish = lambda *a, **k: self.events.append(a) or True
         self.handler = FakeHandler()
         self.pool = FakePool()
         self.handler.execution_router = FakeRouter(self.pool)
-        self.sched = bot.PrWatchScheduler(self.handler, self.pool)
+        self.sched = bot.PrWatchRuntime(self.handler, self.pool)
         self.sched._comment = lambda *a, **k: 0
         self.sched._escalate = lambda *a, **k: None
 
     def tearDown(self):
         bot.PRWATCH_PATH = self._orig_prwatch_path
-        bot.AONE_EVENT_PATH = self._orig_event_path
+        events.AONE_EVENT_PATH = self._orig_event_path
         bot.broadcast_target = self._orig_bt
         bot.broadcast_type = self._orig_by
-        bot._aone_event_publish = self._orig_publish
+        events._aone_event_publish = self._orig_publish
         try:
             os.unlink(self.tmp + ".events")
         except FileNotFoundError:
@@ -320,7 +316,7 @@ class AttentionProjectionTest(_DispatchBase):
         super().setUp()
         self.client = FakeAttentionClient()
         self.handler.task_client = self.client
-        self.sched = bot.PrWatchScheduler(self.handler, self.pool)
+        self.sched = bot.PrWatchRuntime(self.handler, self.pool)
         self.sched._gh_pr_state = lambda _url: ("OPEN", None)
         self.sched._gh_pr_comments = lambda _url: (None, None, None)
         self.notices = []
@@ -456,7 +452,7 @@ class AttentionProjectionTest(_DispatchBase):
         # Recreate the scheduler to prove the JSON registry state is sufficient to
         # restore dedup after a process restart. Control plane returns notify=False for
         # the same semantic event key on the second projection.
-        restarted = bot.PrWatchScheduler(self.handler, self.pool)
+        restarted = bot.PrWatchRuntime(self.handler, self.pool)
         restarted._gh_pr_state = lambda _url: ("OPEN", None)
         restarted._gh_pr_ci = lambda _url: ("s4", ["Compile"], False)
         restarted._gh_pr_comments = lambda _url: (None, None, None)
@@ -632,7 +628,7 @@ class EscalateMessageTest(_DispatchBase):
     def setUp(self):
         super().setUp()
         # _DispatchBase.setUp 把 _escalate mock 成 noop；恢复真实实现以校验消息格式。
-        self.sched._escalate = bot.PrWatchScheduler._escalate.__get__(self.sched)
+        self.sched._escalate = bot.PrWatchRuntime._escalate.__get__(self.sched)
 
     def test_pr_url_renders_clickable_link_to_pr(self):
         self.sched._escalate(TID, "PR CI 反复失败超过自动修复上限(3)，请人工介入", PR)
@@ -706,31 +702,22 @@ class MaybeDispatchCommentReplyTest(_DispatchBase):
 class PrWatchWriteIdentityAndOutcomeTest(_DispatchBase):
     def setUp(self):
         super().setUp()
-        self._orig_popen = bot.subprocess.Popen
+        self._orig_run = bot.run_process_group
 
     def tearDown(self):
-        bot.subprocess.Popen = self._orig_popen
+        bot.run_process_group = self._orig_run
         super().tearDown()
 
     def test_finish_uses_rd_but_terraform_comment_is_suppressed(self):
-        # _finish / _comment now shell out via _run_a1_shell (process-group
-        # isolation for a1 grandchild reaping), which uses subprocess.Popen —
-        # so intercept Popen and read cmd + env from its kwargs.
         calls = []
 
-        class _P:
-            returncode = 0
-
-            def communicate(self, input=None, timeout=None):
-                return ("", "")
-
-        def fake_popen(cmd, *a, **kw):
+        def fake(cmd, *a, **kw):
             calls.append((list(cmd), dict(kw.get("env") or {})))
-            return _P()
+            return _fake_proc(0, "")
 
-        bot.subprocess.Popen = fake_popen
-        self.sched._comment = bot.PrWatchScheduler._comment.__get__(
-            self.sched, bot.PrWatchScheduler)
+        bot.run_process_group = fake
+        self.sched._comment = bot.PrWatchRuntime._comment.__get__(
+            self.sched, bot.PrWatchRuntime)
         self.sched._finish(TID, PROJ, "已完成")
         self.sched._comment(TID, PROJ, "done")
         self.sched._comment(TID, "2124589", "non tf")
@@ -778,7 +765,7 @@ class PrWatchWriteIdentityAndOutcomeTest(_DispatchBase):
             calls.append((list(cmd), dict(kw.get("env") or {})))
             return _fake_proc(0, "")
 
-        bot.subprocess.run = fake
+        bot.run_process_group = fake
         self.sched._check_one(TID, self._entry())
 
         update, env = next(call for call in calls if "update" in call[0])
@@ -807,8 +794,8 @@ class PrWatchWriteIdentityAndOutcomeTest(_DispatchBase):
             calls.append((list(cmd), dict(kw.get("env") or {})))
             return _fake_proc(0, json.dumps(payload))
 
-        bot.subprocess.run = fake
-        snapshot = bot.PrWatchScheduler._workitem_snapshot(self.sched, TID)
+        bot.run_process_group = fake
+        snapshot = bot.PrWatchRuntime._workitem_snapshot(self.sched, TID)
         self.assertEqual(snapshot["project"], "1086837")
         self.assertEqual(snapshot["workitem_type"], "3")
         self.assertEqual(snapshot["workitem_type_name"], "需求问题")
@@ -824,7 +811,7 @@ class PrWatchWriteIdentityAndOutcomeTest(_DispatchBase):
         self.sched._workitem_snapshot = lambda _tid: self._status_snapshot(
             status="已合入主线", status_id="626904")
         self.sched._finish = lambda *_a: self.fail("customer type 3 must not finish")
-        bot.subprocess.run = lambda *_a, **_k: self.fail(
+        bot.run_process_group = lambda *_a, **_k: self.fail(
             "already-confirmed merged status must not update")
         self.sched._check_one(TID, self._entry())
         self.assertFalse(bot._prwatch_has(TID))
@@ -845,7 +832,7 @@ class PrWatchWriteIdentityAndOutcomeTest(_DispatchBase):
         self.sched._gh_pr_state = lambda _url: ("MERGED", "2026-07-01T00:00:00Z")
         self.sched._workitem_snapshot = lambda _tid: self._status_snapshot()
         self.sched._finish = lambda *_a: self.fail("update failure must not finish")
-        bot.subprocess.run = lambda *_a, **_k: _fake_proc(1, "update failed")
+        bot.run_process_group = lambda *_a, **_k: _fake_proc(1, "update failed")
         self.sched._check_one(TID, self._entry())
         self.assertTrue(bot._prwatch_has(TID))
         self.assertEqual(self.events, [])
@@ -863,7 +850,7 @@ class PrWatchWriteIdentityAndOutcomeTest(_DispatchBase):
 
         self.sched._workitem_snapshot = snapshot
         self.sched._finish = lambda *_a: self.fail("readback failure must not finish")
-        bot.subprocess.run = lambda *_a, **_k: _fake_proc(0, "")
+        bot.run_process_group = lambda *_a, **_k: _fake_proc(0, "")
         self.sched._check_one(TID, self._entry())
         self.assertTrue(bot._prwatch_has(TID))
         self.assertEqual(self.events, [])
@@ -888,14 +875,14 @@ class PrWatchWriteIdentityAndOutcomeTest(_DispatchBase):
                 self.sched._workitem_snapshot = lambda _tid, it=snapshots: next(it)
                 self.sched._finish = lambda *_a: self.fail(
                     "invalid readback must not finish")
-                bot.subprocess.run = lambda *_a, **_k: _fake_proc(0, "")
+                bot.run_process_group = lambda *_a, **_k: _fake_proc(0, "")
                 self.sched._check_one(TID, self._entry())
                 self.assertTrue(bot._prwatch_has(TID), index)
                 self.assertEqual(self.events, [])
 
     def test_customer_merged_event_failure_keeps_watch_after_status(self):
         bot._prwatch_update(TID, project="1086837")
-        bot._aone_event_publish = lambda *_a, **_k: False
+        events._aone_event_publish = lambda *_a, **_k: False
         self.sched._gh_pr_state = lambda _url: ("MERGED", "2026-07-01T00:00:00Z")
         self.sched._workitem_snapshot = lambda _tid: self._status_snapshot(
             status="已合入主线", status_id="626904")
@@ -949,7 +936,7 @@ class PrWatchWriteIdentityAndOutcomeTest(_DispatchBase):
         self.sched._workitem_snapshot = lambda _tid: self._status_snapshot(
             status="已发布", status_id="terminal")
         self.sched._finish = lambda *_a: self.fail("terminal customer must not finish")
-        bot.subprocess.run = lambda *_a, **_k: self.fail(
+        bot.run_process_group = lambda *_a, **_k: self.fail(
             "terminal customer must not update status")
         self.sched._check_one(TID, self._entry())
         self.assertFalse(bot._prwatch_has(TID))
@@ -961,7 +948,7 @@ class PrWatchWriteIdentityAndOutcomeTest(_DispatchBase):
         self.sched._workitem_snapshot = lambda _tid: self._status_snapshot(
             tags=("jarvis-npe",))
         self.sched._finish = lambda *_a: self.fail("npe customer must not finish")
-        bot.subprocess.run = lambda *_a, **_k: self.fail(
+        bot.run_process_group = lambda *_a, **_k: self.fail(
             "npe customer must not update status")
         escalated = []
         self.sched._escalate = lambda *_a: escalated.append(_a)
@@ -987,7 +974,7 @@ class PrWatchWriteIdentityAndOutcomeTest(_DispatchBase):
                          "merged event 已持久化到 Aone，不再群播 routine 状态")
 
     def test_terraform_finish_keeps_watch_if_event_not_durable(self):
-        bot._aone_event_publish = lambda *_a, **_k: False
+        events._aone_event_publish = lambda *_a, **_k: False
         self.sched._gh_pr_state = lambda _url: ("MERGED", "2026-07-01T00:00:00Z")
         self.sched._ticket_guard = lambda _tid: "ok"
         self.sched._finish = lambda *_a: 0

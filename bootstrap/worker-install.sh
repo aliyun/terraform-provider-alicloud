@@ -371,6 +371,12 @@ if [ -d "$JARVIS_ROOT/.git" ]; then
 fi
 
 # ---------------------------------------------------------------------------
+step "5c. Bridge Python runtime dependencies"
+bash "$JARVIS_ROOT/bootstrap/bridge-python.sh" \
+  || die "failed to install Bridge Python dependencies"
+ok "Bridge Python dependencies installed"
+
+# ---------------------------------------------------------------------------
 step "6. a1 login portability probe (bundled tokens must survive rehost)"
 cd "$JARVIS_ROOT"
 if bin/a1id ready jarvis; then

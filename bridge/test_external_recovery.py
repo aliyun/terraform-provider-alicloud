@@ -10,7 +10,7 @@ from unittest import mock
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from jarvis_external_recovery import (  # noqa: E402
+from bridge.jarvis_external_recovery import (  # noqa: E402
     ExternalOperationRecoveryScheduler,
     RecoveryInconclusive,
 )
@@ -222,8 +222,9 @@ class ExternalOperationRecoverySchedulerTest(unittest.TestCase):
             with self.assertRaises(RecoveryInconclusive):
                 scheduler._observe_aone(candidate())
 
-        with mock.patch("jarvis_external_recovery.subprocess.run", return_value=SimpleNamespace(
-                returncode=0, stdout="not-json")):
+        with mock.patch(
+                "bridge.jarvis_external_recovery.run_process_group",
+                return_value=SimpleNamespace(returncode=0, stdout="not-json")):
             with self.assertRaises(RecoveryInconclusive):
                 scheduler._a1_json(["project", "workitem", "get", "84345050"])
 

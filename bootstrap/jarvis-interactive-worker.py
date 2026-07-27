@@ -38,6 +38,10 @@ from typing import Any, Callable, Dict, Iterator, Mapping, Optional, Tuple, Type
 HERE = Path(__file__).resolve().parent
 REPO_ROOT = HERE.parent
 BRIDGE_DIR = REPO_ROOT / "bridge"
+# Package-style imports used by the shared executor need the worktree root.
+# ``python -I`` intentionally ignores cwd/PYTHONPATH, so make this explicit
+# before importing the legacy top-level module names below.
+sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(BRIDGE_DIR))
 

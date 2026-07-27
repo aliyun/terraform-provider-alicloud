@@ -1,0 +1,83 @@
+# Bridge Scheduler 周期任务的唯一配置源。每个 runner 只对应一个 job。
+version: 1
+jobs:
+  - key: daily.probe
+    runner: daily_probe
+    revision: 3
+    description: 每日启动独立 Terraform Headless 会话执行合成客户探测并归档摘要
+    schedule: {kind: daily, hour: 10, minute: 0, timezone: Asia/Shanghai}
+    misfire: CURRENT_DAY
+    retry_delay_seconds: 300
+    enabled: true
+
+  - key: aone.scan
+    runner: scan
+    revision: 1
+    description: 扫描 Aone 指派、跟踪与待处理任务并写入控制面任务队列
+    schedule: {kind: interval, interval_seconds: 1800, run_immediately: true}
+    misfire: COALESCE
+    retry_delay_seconds: 60
+    enabled: true
+
+  - key: aone.claim-health
+    runner: claim_health
+    revision: 1
+    description: 核验已认领工单与控制面会话状态，并补偿生命周期事件
+    schedule: {kind: interval, interval_seconds: 300, run_immediately: true}
+    misfire: COALESCE
+    retry_delay_seconds: 30
+    enabled: true
+
+  - key: task.owner-health
+    runner: owner_health
+    revision: 1
+    description: 分页核验 RESUME_ONLY owner 不可用与 RECOVERY_REQUIRED 迁移结果并记录滞留时长
+    schedule: {kind: interval, interval_seconds: 300, run_immediately: true}
+    misfire: COALESCE
+    retry_delay_seconds: 30
+    enabled: true
+
+  - key: daily.nudge
+    runner: daily_nudge
+    revision: 1
+    description: 每日检查 Terraform 待处理任务并对停滞事项发送双通道催办
+    schedule: {kind: daily, hour: 9, minute: 0, timezone: Asia/Shanghai}
+    misfire: CURRENT_DAY
+    retry_delay_seconds: 300
+    enabled: true
+
+  - key: aone.weekly-comment-participation
+    runner: weekly_comment_participation
+    revision: 1
+    description: 每日聚合 Terraform 需求近 7 天评论参与度并推送至控制面看板统计
+    schedule: {kind: daily, hour: 6, minute: 42, timezone: Asia/Shanghai}
+    misfire: CURRENT_DAY
+    retry_delay_seconds: 300
+    enabled: true
+
+  - key: aone.reply
+    runner: reply
+    revision: 1
+    description: 轮询控制面中等待 Aone 人工回复的会话，并在收到回复后唤醒
+    schedule: {kind: interval, interval_seconds: 30, run_immediately: true}
+    misfire: COALESCE
+    retry_delay_seconds: 10
+    enabled: true
+
+  - key: pr.watch
+    runner: pr_watch
+    revision: 1
+    description: 看守已登记 PR 的评审、CI 与合并生命周期，并按活跃度动态调整检查间隔
+    schedule: {kind: adaptive, min_delay_seconds: 5, default_delay_seconds: 3600, max_delay_seconds: 604800, run_immediately: false}
+    misfire: WAIT_FOR_COMPLETION
+    retry_delay_seconds: 60
+    enabled: true
+
+  - key: external.recovery
+    runner: recovery
+    revision: 1
+    description: 核验控制面中未知的 Aone 外部操作回执，确认后安全收敛
+    schedule: {kind: interval, interval_seconds: 300, run_immediately: true}
+    misfire: COALESCE
+    retry_delay_seconds: 30
+    enabled: true

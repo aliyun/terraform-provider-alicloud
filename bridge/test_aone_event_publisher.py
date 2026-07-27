@@ -1,20 +1,14 @@
 #!/usr/bin/env python3
 """Hermetic tests for Terraform RD-only idempotent Aone event publishing."""
-import importlib.util
 import json
-import os
 import re
-import sys
 import tempfile
 import unittest
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent
-spec = importlib.util.spec_from_file_location(
-    "jarvis_dingtalk_bot", HERE / "jarvis_dingtalk_bot.py")
-bot = importlib.util.module_from_spec(spec)
-sys.modules["jarvis_dingtalk_bot"] = bot
-spec.loader.exec_module(bot)
+from bridge import jarvis_dingtalk_bot as bot
+from bridge import persistent_tasks
+from bridge.helpers import aone as publisher
 
 TID = "90000001"
 PROJ = "528766"
@@ -30,12 +24,12 @@ class Proc:
 class PublisherTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
-        self.orig_path = bot.AONE_EVENT_PATH
-        self.orig_run = bot.subprocess.run
-        self.orig_tf_project = bot._is_terraform_project
-        bot.AONE_EVENT_PATH = Path(self.tmp.name) / "events.json"
-        bot._is_terraform_project = lambda project: str(project) == PROJ
-        bot._aone_event_inflight.clear()
+        self.orig_path = publisher.AONE_EVENT_PATH
+        self.orig_run = publisher.run_process_group
+        self.orig_tf_project = publisher._is_terraform_project
+        publisher.AONE_EVENT_PATH = Path(self.tmp.name) / "events.json"
+        publisher._is_terraform_project = lambda project: str(project) == PROJ
+        publisher._aone_event_inflight.clear()
         self.remote = []
         self.create_calls = []
         self.fail_create = False
@@ -73,37 +67,37 @@ class PublisherTest(unittest.TestCase):
                 return Proc(0, json.dumps(response))
             return Proc(1, "", "unexpected")
 
-        bot.subprocess.run = fake_run
+        publisher.run_process_group = fake_run
 
     def tearDown(self):
-        bot.AONE_EVENT_PATH = self.orig_path
-        bot.subprocess.run = self.orig_run
-        bot._is_terraform_project = self.orig_tf_project
-        bot._aone_event_inflight.clear()
+        publisher.AONE_EVENT_PATH = self.orig_path
+        publisher.run_process_group = self.orig_run
+        publisher._is_terraform_project = self.orig_tf_project
+        publisher._aone_event_inflight.clear()
         self.tmp.cleanup()
 
     def ledger(self):
-        return bot._aone_event_load()
+        return publisher._aone_event_load()
 
     def test_first_event_posts_once_same_key_posts_zero(self):
         key = "pr:https://github.com/a/b/pull/1:merged:2026-07-16T00:00:00Z"
-        self.assertTrue(bot._aone_event_publish(TID, PROJ, key, "PR 已合并"))
+        self.assertTrue(publisher._aone_event_publish(TID, PROJ, key, "PR 已合并"))
         self.assertEqual(len(self.create_calls), 1)
-        self.assertTrue(bot._aone_event_publish(TID, PROJ, key, "不同措辞也不应重发"))
+        self.assertTrue(publisher._aone_event_publish(TID, PROJ, key, "不同措辞也不应重发"))
         self.assertEqual(len(self.create_calls), 1)
-        lid = bot._aone_event_ledger_id(TID, key)
+        lid = publisher._aone_event_ledger_id(TID, key)
         self.assertIn(lid, self.ledger()["posted"])
         self.assertNotIn(lid, self.ledger()["pending"])
         record = self.ledger()["posted"][lid]
         self.assertNotIn("event_key", record)
-        self.assertEqual(record["event_digest"], bot._aone_event_digest(key))
+        self.assertEqual(record["event_digest"], publisher._aone_event_digest(key))
         encoded = json.dumps(self.ledger(), ensure_ascii=False)
         self.assertNotIn(key, encoded)
         self.assertNotIn(TID + "|", encoded)
 
     def test_marker_is_fixed_digest_only_without_ticket_or_source(self):
         key = "revisit:dependency:unlocked:cloudspec-pre-v42"
-        marker = bot._aone_event_marker(TID, key)
+        marker = publisher._aone_event_marker_from_digest(publisher._aone_event_digest(key))
         self.assertRegex(marker, r"^\[\[JARVIS-EVENT:v1:[0-9a-f]{24}\]\]$")
         self.assertNotIn(TID, marker)
         self.assertNotIn("cloudspec", marker)
@@ -111,36 +105,36 @@ class PublisherTest(unittest.TestCase):
     def test_write_failure_stays_pending_and_flush_retries(self):
         key = "dispatch:ticket:sid-1:timeout"
         self.fail_create = True
-        self.assertFalse(bot._aone_event_publish(TID, PROJ, key, "派发超时"))
-        lid = bot._aone_event_ledger_id(TID, key)
+        self.assertFalse(publisher._aone_event_publish(TID, PROJ, key, "派发超时"))
+        lid = publisher._aone_event_ledger_id(TID, key)
         self.assertIn(lid, self.ledger()["pending"])
         self.assertNotIn(lid, self.ledger()["posted"])
         self.fail_create = False
-        self.assertEqual(bot._aone_event_flush(), 1)
+        self.assertEqual(publisher._aone_event_flush(), 1)
         self.assertEqual(len(self.create_calls), 2)
         self.assertIn(lid, self.ledger()["posted"])
 
     def test_enqueue_accepts_durable_pending_event(self):
         key = "dispatch:ticket:sid-2:error-max-turns"
         self.fail_create = True
-        self.assertTrue(bot._aone_event_enqueue(TID, PROJ, key, "达到最大轮次"))
-        lid = bot._aone_event_ledger_id(TID, key)
+        self.assertTrue(publisher._aone_event_enqueue(TID, PROJ, key, "达到最大轮次"))
+        lid = publisher._aone_event_ledger_id(TID, key)
         self.assertIn(lid, self.ledger()["pending"])
         self.assertNotIn(lid, self.ledger()["posted"])
 
     def test_remote_marker_recovers_crash_window_without_repost(self):
         key = "pr:https://github.com/a/b/pull/2:closed"
-        marker = bot._aone_event_marker(TID, key)
+        marker = publisher._aone_event_marker_from_digest(publisher._aone_event_digest(key))
         self.remote.append("PR 已关闭\n\n" + marker)
-        self.assertTrue(bot._aone_event_publish(TID, PROJ, key, "PR 已关闭"))
+        self.assertTrue(publisher._aone_event_publish(TID, PROJ, key, "PR 已关闭"))
         self.assertEqual(self.create_calls, [])
-        self.assertIn(bot._aone_event_ledger_id(TID, key), self.ledger()["posted"])
+        self.assertIn(publisher._aone_event_ledger_id(TID, key), self.ledger()["posted"])
 
     def test_create_response_id_is_durable_success_even_if_index_lags(self):
         key = "pr:https://github.com/a/b/pull/3:merged:x"
         self.fail_list_after_create = True
-        self.assertTrue(bot._aone_event_publish(TID, PROJ, key, "PR 已合并"))
-        lid = bot._aone_event_ledger_id(TID, key)
+        self.assertTrue(publisher._aone_event_publish(TID, PROJ, key, "PR 已合并"))
+        lid = publisher._aone_event_ledger_id(TID, key)
         self.assertNotIn(lid, self.ledger()["pending"])
         self.assertIn(lid, self.ledger()["posted"])
         self.assertEqual(len(self.create_calls), 1)
@@ -150,8 +144,8 @@ class PublisherTest(unittest.TestCase):
         key = "pr:https://github.com/a/b/pull/4:merged:x"
         self.create_response_id = False
         self.delay_remote_marker = True
-        self.assertFalse(bot._aone_event_publish(TID, PROJ, key, "PR 已合并"))
-        lid = bot._aone_event_ledger_id(TID, key)
+        self.assertFalse(publisher._aone_event_publish(TID, PROJ, key, "PR 已合并"))
+        lid = publisher._aone_event_ledger_id(TID, key)
         self.assertIn(lid, self.ledger()["pending"])
         self.assertTrue(self.ledger()["pending"][lid]["post_uncertain"])
         self.assertEqual(len(self.create_calls), 1)
@@ -159,16 +153,16 @@ class PublisherTest(unittest.TestCase):
         # checks comments. It must never issue a second create.
         ledger = self.ledger()
         ledger["pending"][lid]["not_before"] = 0
-        bot._aone_event_write(ledger)
-        self.assertEqual(bot._aone_event_flush(), 0)
+        publisher._aone_event_write(ledger)
+        self.assertEqual(publisher._aone_event_flush(), 0)
         self.assertEqual(len(self.create_calls), 1)
         self.assertIn(lid, self.ledger()["pending"])
         # Marker eventually appears: the next check converges to posted without recreate.
         self.remote.extend(self.delayed_remote)
         ledger = self.ledger()
         ledger["pending"][lid]["not_before"] = 0
-        bot._aone_event_write(ledger)
-        self.assertEqual(bot._aone_event_flush(), 1)
+        publisher._aone_event_write(ledger)
+        self.assertEqual(publisher._aone_event_flush(), 1)
         self.assertEqual(len(self.create_calls), 1)
         self.assertIn(lid, self.ledger()["posted"])
 
@@ -187,10 +181,10 @@ class PublisherTest(unittest.TestCase):
             "username=ram-admin",
             "尾部" + "x" * 3000,
         ])
-        self.assertTrue(bot._aone_event_publish(TID, PROJ, key, unsafe))
+        self.assertTrue(publisher._aone_event_publish(TID, PROJ, key, unsafe))
         body = self.remote[-1]
         public, marker = body.rsplit("\n\n", 1)
-        self.assertLessEqual(len(public), bot._AONE_EVENT_TEXT_MAX)
+        self.assertLessEqual(len(public), publisher._AONE_EVENT_TEXT_MAX)
         self.assertTrue(public.endswith("…"))
         for leaked in (
                 "PD阶段", "QA:", "HANDOFF", "req-123456789", "i-abcde12345",
@@ -209,7 +203,7 @@ class PublisherTest(unittest.TestCase):
             "https://fence.example/log",
             "```",
         ])
-        self.assertTrue(bot._aone_event_publish(
+        self.assertTrue(publisher._aone_event_publish(
             TID, PROJ, "task-reply:url-markdown", text))
         public = self.remote[-1].rsplit("\n\n", 1)[0]
         self.assertIn(
@@ -220,18 +214,18 @@ class PublisherTest(unittest.TestCase):
         self.assertIn("```text\nhttps://fence.example/log\n```", public)
 
     def test_autolink_respects_limit_without_partial_markdown(self):
-        prefix = "x" * (bot._AONE_EVENT_TEXT_MAX - 10)
-        public = bot._aone_event_prepare_text(
+        prefix = "x" * (publisher._AONE_EVENT_TEXT_MAX - 10)
+        public = publisher._aone_event_prepare_text(
             prefix + " https://code.example/cr/too-long")
-        self.assertLessEqual(len(public), bot._AONE_EVENT_TEXT_MAX)
+        self.assertLessEqual(len(public), publisher._AONE_EVENT_TEXT_MAX)
         self.assertTrue(public.endswith("…"))
         self.assertNotIn("https://", public)
         self.assertEqual(public.count("["), public.count("]"))
         self.assertEqual(public.count("("), public.count(")"))
 
-        fits_then_truncates = bot._aone_event_prepare_text(
+        fits_then_truncates = publisher._aone_event_prepare_text(
             "关联：https://code.example/cr/123\n" + "y" * 3000)
-        self.assertEqual(len(fits_then_truncates), bot._AONE_EVENT_TEXT_MAX)
+        self.assertEqual(len(fits_then_truncates), publisher._AONE_EVENT_TEXT_MAX)
         self.assertIn(
             "[https://code.example/cr/123](https://code.example/cr/123)",
             fits_then_truncates)
@@ -246,7 +240,7 @@ class PublisherTest(unittest.TestCase):
             '[[PERSONA-HANDOFF:{"from":"terraform-pd","to":"terraform-rd"}]]',
             "公开状态已更新。",
         ])
-        self.assertTrue(bot._aone_event_publish(
+        self.assertTrue(publisher._aone_event_publish(
             TID, PROJ, "revisit:human:blocked:stage-markers", unsafe))
         public = self.remote[-1].rsplit("\n\n", 1)[0]
         self.assertEqual(public, "公开状态已更新。")
@@ -262,7 +256,7 @@ class PublisherTest(unittest.TestCase):
             "Authorization：CustomScheme arbitrary-opaque-value",
             "standalone Basic c3RhbmRhbG9uZS1zZWNyZXQ=",
         ])
-        self.assertTrue(bot._aone_event_publish(
+        self.assertTrue(publisher._aone_event_publish(
             TID, PROJ, "security:structured-kv", probes))
         clean = self.remote[-1].rsplit("\n\n", 1)[0]
         for leaked in (
@@ -288,7 +282,7 @@ class PublisherTest(unittest.TestCase):
             '"vpcId":"vpc-json12345"',
             "实例为 alb-direct12345，集群为 ack-direct12345",
         ])
-        self.assertTrue(bot._aone_event_publish(
+        self.assertTrue(publisher._aone_event_publish(
             TID, PROJ, "security:request-resource-ids", probes))
         clean = self.remote[-1].rsplit("\n\n", 1)[0]
         for leaked in (
@@ -299,7 +293,7 @@ class PublisherTest(unittest.TestCase):
         self.assertGreaterEqual(clean.count("[REDACTED]"), 7)
 
     def test_non_terraform_is_rejected(self):
-        self.assertFalse(bot._aone_event_publish(
+        self.assertFalse(publisher._aone_event_publish(
             TID, "2124589", "dispatch:ticket:sid:error", "x"))
         self.assertEqual(self.create_calls, [])
 
@@ -372,9 +366,9 @@ class RevisitDispatchTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.orig_runner = bot.run_claude_buffered
-        self.orig_publish = bot._aone_event_publish
+        self.orig_publish = persistent_tasks._aone_event_enqueue
         self.events = []
-        bot._aone_event_publish = lambda *args, **kwargs: (
+        persistent_tasks._aone_event_enqueue = lambda *args, **kwargs: (
             self.events.append(args) or True)
 
         class FakeSelf:
@@ -396,7 +390,7 @@ class RevisitDispatchTest(unittest.TestCase):
 
     def tearDown(self):
         bot.run_claude_buffered = self.orig_runner
-        bot._aone_event_publish = self.orig_publish
+        persistent_tasks._aone_event_enqueue = self.orig_publish
         self.tmp.cleanup()
 
     def run_revisit(self, final):

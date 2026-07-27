@@ -764,6 +764,21 @@ if [ "$cap" = "问题解决中" ]; then assert_pass "object pool 需求: status 
 unset A1_STATUS A1_WTYPE
 
 # ---------------------------------------------------------------------------
+# Test 21b: object pool, UNMAPPED workitemType → NO status write (strict, no
+# first-value fallback). Regression for the blackhole where an unmapped 任务/线上问题
+# silently advanced to 需求's 问题解决中 → invalid transition → task stuck.
+# ---------------------------------------------------------------------------
+echo "=== Test 21b: object pool unmapped workitemType does NOT mis-advance to first value ==="
+unset A1_GET_FAIL A1_UPDATE_NOOP A1_REJECT_STATUS JARVIS_CLAIM_PROGRESS
+export A1_STATUS=待处理 A1_WTYPE=任务   # 任务 not in cat_override.progress_status
+run_claim_prog 2100305          # cat_override, progress_status={需求:...,功能缺陷:...} — no 任务
+cap=$(cat "$tmpstatuscap" 2>/dev/null)
+echo "rc=$rc(unmapped) status_set='$cap'"
+if [ "$rc" = "0" ]; then assert_pass "unmapped wtype: claim exits 0"; else assert_fail "unmapped wtype: claim exit $rc"; fi
+if [ -z "$cap" ]; then assert_pass "unmapped wtype: no status write (not first-value 问题解决中)"; else assert_fail "unmapped wtype should skip status write, got '$cap'"; fi
+unset A1_STATUS A1_WTYPE
+
+# ---------------------------------------------------------------------------
 # Test 22: NO advance when current status is NOT a start state (no backward move)
 # ---------------------------------------------------------------------------
 echo "=== Test 22: claim does NOT advance status when not in start_statuses ==="

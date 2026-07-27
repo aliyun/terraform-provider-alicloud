@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """Hermetic tests for Terraform >=8-day stale reminder and dual-channel delivery."""
-import importlib.util
 import json
 import os
 import sys
@@ -11,18 +10,19 @@ from datetime import datetime
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-spec = importlib.util.spec_from_file_location(
-    "jarvis_dingtalk_bot", HERE / "jarvis_dingtalk_bot.py")
-bot = importlib.util.module_from_spec(spec)
-sys.modules["jarvis_dingtalk_bot"] = bot
-spec.loader.exec_module(bot)
+sys.path.insert(0, str(HERE.parent))
+from bridge import aone_tasks as bot  # noqa: E402
+from bridge.helpers import aone as events
+from bridge.helpers import dingtalk  # noqa: E402
+from bridge.scheduler.runners import daily_nudge
+from bridge.scheduler.runners.daily_nudge import DailyNudge
 
 PROJECT = "528766"
 TICKET = "90000001"
 
 
 def epoch(text):
-    return datetime.fromisoformat(text).replace(tzinfo=bot._SHANGHAI_TZ).timestamp()
+    return datetime.fromisoformat(text).replace(tzinfo=events._SHANGHAI_TZ).timestamp()
 
 
 def comment(cid, when, author, content, **extra):
@@ -99,7 +99,7 @@ class ClassifierTest(unittest.TestCase):
                     "方案是新增字段 foo"),
         ]
         for probe in probes:
-            self.assertFalse(bot._is_substantial_progress(probe), probe)
+            self.assertFalse(daily_nudge._is_substantial_progress(probe), probe)
 
     def test_questions_and_requests_are_not_progress(self):
         probes = [
@@ -111,7 +111,7 @@ class ClassifierTest(unittest.TestCase):
         ]
         for i, text in enumerate(probes):
             self.assertFalse(
-                bot._is_substantial_progress(
+                daily_nudge._is_substantial_progress(
                     comment(i + 20, "2026-07-08 09:00:00", "过载", text)),
                 text)
 
@@ -123,7 +123,7 @@ class ClassifierTest(unittest.TestCase):
         ]
         for i, author in enumerate(authors):
             self.assertFalse(
-                bot._is_substantial_progress(
+                daily_nudge._is_substantial_progress(
                     comment(i + 40, "2026-07-08 09:00:00", author,
                             "根因已确认：provider schema 缺少字段，PR #123 已提交")),
                 author)
@@ -136,7 +136,7 @@ class ClassifierTest(unittest.TestCase):
         ]
         for i, text in enumerate(probes):
             self.assertTrue(
-                bot._is_substantial_progress(
+                daily_nudge._is_substantial_progress(
                     comment(i + 60, "2026-07-08 09:00:00", "过载", text)),
                 text)
 
@@ -181,12 +181,12 @@ class ClassifierTest(unittest.TestCase):
         ]
         for i, text in enumerate(probes):
             self.assertTrue(
-                bot._is_substantial_progress(
+                daily_nudge._is_substantial_progress(
                     comment(i + 1, "2026-07-08 09:00:00", "过载", text)),
                 text)
 
     def test_owner_change_after_comment_starts_new_epoch(self):
-        anchor = bot._stale_anchor(
+        anchor = daily_nudge._stale_anchor(
             item(),
             [comment(9, "2026-07-05 09:00:00", "过载", "验证结果：测试通过")],
             [{"id": 10, "property": "指派给", "eventTime": "2026-07-07 09:00:00",
@@ -197,13 +197,13 @@ class ClassifierTest(unittest.TestCase):
 
 class OwnerResolutionTest(unittest.TestCase):
     def test_worker_owner_uses_human_fallback(self):
-        owner = bot._resolve_stale_owner(item(assignee="WORKER_1782379562571"))
+        owner = daily_nudge._resolve_stale_owner(item(assignee="WORKER_1782379562571"))
         self.assertEqual(owner["staff_id"], "484483")
         self.assertEqual(owner["mention"], "@过载(484483)")
         self.assertEqual(owner["source_agent"], "WORKER_1782379562571")
 
     def test_human_owner_resolves_flower_and_id(self):
-        owner = bot._resolve_stale_owner(item(assignee={"id": "521957", "name": "张旭"}))
+        owner = daily_nudge._resolve_stale_owner(item(assignee={"id": "521957", "name": "张旭"}))
         self.assertEqual(owner["staff_id"], "521957")
         self.assertEqual(owner["mention"], "@新山(521957)")
 
@@ -211,23 +211,22 @@ class OwnerResolutionTest(unittest.TestCase):
 class SchedulerBoundaryTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
-        self.scheduler = bot._NudgeJob(
-            handler=None, pool=None, stale_days=8, max_n=5)
+        self.scheduler = DailyNudge(stale_days=8, max_n=5)
         self.scheduler._ticket_timeline = lambda _item: ([], [])
-        self.orig_aone = bot._aone_event_enqueue
-        self.orig_dm = bot._dingtalk_event_enqueue
+        self.orig_aone = daily_nudge._aone_event_enqueue
+        self.orig_dm = daily_nudge._dingtalk_event_enqueue
         self.aone_keys = []
         self.dm_keys = []
-        bot._aone_event_enqueue = (
+        daily_nudge._aone_event_enqueue = (
             lambda _t, _p, key, _text, **_kw:
             self.aone_keys.append(key) or True)
-        bot._dingtalk_event_enqueue = (
+        daily_nudge._dingtalk_event_enqueue = (
             lambda _t, _p, key, _staff, _title, _text, **_kw:
             self.dm_keys.append(key) or True)
 
     def tearDown(self):
-        bot._aone_event_enqueue = self.orig_aone
-        bot._dingtalk_event_enqueue = self.orig_dm
+        daily_nudge._aone_event_enqueue = self.orig_aone
+        daily_nudge._dingtalk_event_enqueue = self.orig_dm
         self.tmp.cleanup()
 
     def test_7d23h59_is_noop_exact_8d_dual_channel(self):
@@ -272,10 +271,10 @@ class SchedulerBoundaryTest(unittest.TestCase):
             [comment(1, "2026-07-01 09:00:00", "过载",
                      "根因已确认：SECRET-ORIGINAL-CONTENT")], [])
         captured = {}
-        bot._aone_event_enqueue = (
+        daily_nudge._aone_event_enqueue = (
             lambda _t, _p, _key, text, **_kw:
             captured.setdefault("aone", text) or True)
-        bot._dingtalk_event_enqueue = (
+        daily_nudge._dingtalk_event_enqueue = (
             lambda _t, _p, _key, _staff, _title, text, **_kw:
             captured.setdefault("dm", text) or True)
         self.scheduler._remind_if_stale(
@@ -289,7 +288,7 @@ class SchedulerBoundaryTest(unittest.TestCase):
 class CandidateFairnessTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
-        self.scheduler = bot._NudgeJob(handler=None, pool=None, max_n=5)
+        self.scheduler = DailyNudge(max_n=5)
 
     def tearDown(self):
         self.tmp.cleanup()
@@ -338,7 +337,8 @@ class CandidateFairnessTest(unittest.TestCase):
 
     def test_customer_idle_query_excludes_pr_merged_status(self):
         completed = type("Proc", (), {"returncode": 0, "stdout": "[]", "stderr": ""})()
-        with mock.patch.object(bot.subprocess, "run", return_value=completed) as run:
+        with mock.patch.object(
+                daily_nudge, "run_process_group", return_value=completed) as run:
             self.scheduler._query_pool("tf_customer", "1086837")
         cmd = run.call_args.args[0]
         self.assertEqual(cmd[cmd.index("--filter") + 1],
@@ -353,7 +353,8 @@ class CandidateFairnessTest(unittest.TestCase):
         }]
         completed = type("Proc", (), {
             "returncode": 0, "stdout": json.dumps(payload), "stderr": ""})()
-        with mock.patch.object(bot.subprocess, "run", return_value=completed):
+        with mock.patch.object(
+                daily_nudge, "run_process_group", return_value=completed):
             rows = self.scheduler._query_pool("tf_customer", "1086837")
         self.assertEqual(rows[0]["type"], "需求问题")
         self.scheduler._pool_projects = lambda: [("tf_customer", "1086837")]
@@ -398,7 +399,7 @@ class CandidateFairnessTest(unittest.TestCase):
 
     def test_query_pool_uses_page_size_1000_and_paginates(self):
         calls = []
-        orig = bot.subprocess.run
+        orig = daily_nudge.run_process_group
 
         class Proc:
             returncode = 0
@@ -416,11 +417,11 @@ class CandidateFairnessTest(unittest.TestCase):
                  "tag": ["jarvis-idle"], "status": "Open"}
                 for i in range(count)])
 
-        bot.subprocess.run = fake_run
+        daily_nudge.run_process_group = fake_run
         try:
             rows = self.scheduler._query_pool("tf_provider", PROJECT)
         finally:
-            bot.subprocess.run = orig
+            daily_nudge.run_process_group = orig
         self.assertEqual(len(rows), 1030)
         self.assertEqual(calls, [1, 2])
 
@@ -435,15 +436,16 @@ class Proc:
 class DualChannelLedgerTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
-        self.orig_aone_path = bot.AONE_EVENT_PATH
-        self.orig_dm_path = bot.DINGTALK_EVENT_PATH
-        self.orig_tf = bot._is_terraform_project
-        self.orig_run = bot.subprocess.run
-        bot.AONE_EVENT_PATH = Path(self.tmp.name) / "aone.json"
-        bot.DINGTALK_EVENT_PATH = Path(self.tmp.name) / "dm.json"
-        bot._is_terraform_project = lambda project: str(project) == PROJECT
-        bot._aone_event_inflight.clear()
-        bot._dingtalk_event_inflight.clear()
+        self.orig_aone_path = events.AONE_EVENT_PATH
+        self.orig_dm_path = dingtalk.DINGTALK_EVENT_PATH
+        self.orig_tf = events._is_terraform_project
+        self.orig_run = events.run_process_group
+        self.orig_dingtalk_run = dingtalk.subprocess.run
+        events.AONE_EVENT_PATH = Path(self.tmp.name) / "aone.json"
+        dingtalk.DINGTALK_EVENT_PATH = Path(self.tmp.name) / "dm.json"
+        events._is_terraform_project = lambda project: str(project) == PROJECT
+        events._aone_event_inflight.clear()
+        dingtalk._event_inflight.clear()
         self.aone_fail = False
         self.aone_uncertain = False
         self.dm_fail = False
@@ -480,15 +482,17 @@ class DualChannelLedgerTest(unittest.TestCase):
                 return Proc(0, "{}")
             return Proc(1, "", "unexpected")
 
-        bot.subprocess.run = fake_run
+        events.run_process_group = fake_run
+        dingtalk.subprocess.run = fake_run
 
     def tearDown(self):
-        bot.AONE_EVENT_PATH = self.orig_aone_path
-        bot.DINGTALK_EVENT_PATH = self.orig_dm_path
-        bot._is_terraform_project = self.orig_tf
-        bot.subprocess.run = self.orig_run
-        bot._aone_event_inflight.clear()
-        bot._dingtalk_event_inflight.clear()
+        events.AONE_EVENT_PATH = self.orig_aone_path
+        dingtalk.DINGTALK_EVENT_PATH = self.orig_dm_path
+        events._is_terraform_project = self.orig_tf
+        events.run_process_group = self.orig_run
+        dingtalk.subprocess.run = self.orig_dingtalk_run
+        events._aone_event_inflight.clear()
+        dingtalk._event_inflight.clear()
         self.tmp.cleanup()
 
     def event(self):
@@ -496,60 +500,60 @@ class DualChannelLedgerTest(unittest.TestCase):
 
     def test_aone_success_dm_failure_only_retries_dm(self):
         self.dm_fail = True
-        self.assertTrue(bot._aone_event_enqueue(TICKET, PROJECT, self.event(), "aone"))
-        self.assertTrue(bot._dingtalk_event_enqueue(
+        self.assertTrue(events._aone_event_enqueue(TICKET, PROJECT, self.event(), "aone"))
+        self.assertTrue(dingtalk._dingtalk_event_enqueue(
             TICKET, PROJECT, self.event(), "484483", "title", "dm"))
         self.assertEqual((self.aone_create, self.dm_send), (1, 1))
-        ledger = bot._dingtalk_event_load()
-        lid = bot._aone_event_ledger_id(TICKET, self.event())
+        ledger = dingtalk._dingtalk_event_load()
+        lid = events._aone_event_ledger_id(TICKET, self.event())
         ledger["pending"][lid]["not_before"] = 0
-        bot._dingtalk_event_write(ledger)
+        dingtalk._dingtalk_event_write(ledger)
         self.dm_fail = False
-        bot._aone_event_enqueue(TICKET, PROJECT, self.event(), "aone")
-        bot._dingtalk_event_flush()
+        events._aone_event_enqueue(TICKET, PROJECT, self.event(), "aone")
+        dingtalk._dingtalk_event_flush()
         self.assertEqual((self.aone_create, self.dm_send), (1, 2))
 
     def test_dm_success_aone_failure_only_retries_aone(self):
         self.aone_fail = True
-        self.assertTrue(bot._aone_event_enqueue(TICKET, PROJECT, self.event(), "aone"))
-        self.assertTrue(bot._dingtalk_event_enqueue(
+        self.assertTrue(events._aone_event_enqueue(TICKET, PROJECT, self.event(), "aone"))
+        self.assertTrue(dingtalk._dingtalk_event_enqueue(
             TICKET, PROJECT, self.event(), "484483", "title", "dm"))
         self.assertEqual((self.aone_create, self.dm_send), (1, 1))
         self.aone_fail = False
-        bot._aone_event_flush()
-        bot._dingtalk_event_enqueue(
+        events._aone_event_flush()
+        dingtalk._dingtalk_event_enqueue(
             TICKET, PROJECT, self.event(), "484483", "title", "dm")
         self.assertEqual((self.aone_create, self.dm_send), (2, 1))
 
     def test_aone_uncertain_never_reposts_and_dm_does_not_repeat(self):
         self.aone_uncertain = True
-        self.assertTrue(bot._aone_event_enqueue(TICKET, PROJECT, self.event(), "aone"))
-        self.assertTrue(bot._dingtalk_event_enqueue(
+        self.assertTrue(events._aone_event_enqueue(TICKET, PROJECT, self.event(), "aone"))
+        self.assertTrue(dingtalk._dingtalk_event_enqueue(
             TICKET, PROJECT, self.event(), "484483", "title", "dm"))
-        lid = bot._aone_event_ledger_id(TICKET, self.event())
-        ledger = bot._aone_event_load()
+        lid = events._aone_event_ledger_id(TICKET, self.event())
+        ledger = events._aone_event_load()
         ledger["pending"][lid]["not_before"] = 0
-        bot._aone_event_write(ledger)
-        bot._aone_event_flush()
-        bot._dingtalk_event_enqueue(
+        events._aone_event_write(ledger)
+        events._aone_event_flush()
+        dingtalk._dingtalk_event_enqueue(
             TICKET, PROJECT, self.event(), "484483", "title", "dm")
         self.assertEqual((self.aone_create, self.dm_send), (1, 1))
-        self.assertEqual(bot._aone_event_load()["pending"][lid]["state"], "post_uncertain")
+        self.assertEqual(events._aone_event_load()["pending"][lid]["state"], "post_uncertain")
 
     def test_dm_transport_uncertain_keeps_stable_receipt_for_retry(self):
         self.dm_raise = True
-        self.assertTrue(bot._dingtalk_event_enqueue(
+        self.assertTrue(dingtalk._dingtalk_event_enqueue(
             TICKET, PROJECT, self.event(), "484483", "title", "dm"))
-        lid = bot._aone_event_ledger_id(TICKET, self.event())
-        ledger = bot._dingtalk_event_load()
+        lid = events._aone_event_ledger_id(TICKET, self.event())
+        ledger = dingtalk._dingtalk_event_load()
         pending = ledger["pending"][lid]
         receipt = pending["receipt"]
         self.assertEqual(pending["state"], "post_uncertain")
         pending["not_before"] = 0
-        bot._dingtalk_event_write(ledger)
+        dingtalk._dingtalk_event_write(ledger)
         self.dm_raise = False
-        bot._dingtalk_event_flush()
-        self.assertEqual(bot._dingtalk_event_load()["posted"][lid]["receipt"], receipt)
+        dingtalk._dingtalk_event_flush()
+        self.assertEqual(dingtalk._dingtalk_event_load()["posted"][lid]["receipt"], receipt)
         self.assertEqual(self.dm_send, 2)
 
 

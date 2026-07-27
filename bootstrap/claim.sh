@@ -87,22 +87,26 @@ _pool_done_status() {
 
 # Resolve the in-progress status for a project — an exact clone of _pool_done_status but
 # resolving .progress_status per-pool and falling back to the global .claim.progress_status.
-# Same string/object-by-workitemType/first-value-fallback semantics: different Aone projects
-# name their "in progress" state differently (处理中 / 开发中 / 问题解决中 / Open / In Progress),
-# and within a single project the enum differs by workitem category (需求 vs 功能缺陷), so a
-# per-pool .progress_status may be EITHER a string OR an object keyed by workitem type
-# displayValue. Object → select by <wtype> (2nd arg), unknown/empty wtype falls back to the
-# object's first value. Non-empty string → verbatim. No per-pool value → global
-# .claim.progress_status. Echoes "" if neither set.
+# Same string/object-by-workitemType semantics: different Aone projects name their "in
+# progress" state differently (处理中 / 开发中 / 问题解决中 / Open / In Progress), and within a
+# single project the enum differs by workitem category (需求 vs 功能缺陷 vs 任务), so a per-pool
+# .progress_status may be EITHER a string OR an object keyed by workitem type displayValue.
+# Object → select by <wtype> (2nd arg); an unknown/empty wtype yields "" (skip the advance),
+# NOT the object's first value — mis-picking another category's status (e.g. advancing a 任务
+# to 需求问题's 问题解决中) is an invalid transition the server rejects and blackholes the Task.
+# This matches _pool_reopen_progress_status's strict lookup. Add the workitemType to
+# pools.json rather than relying on a fallback. Non-empty string → verbatim. No per-pool
+# value → global .claim.progress_status. Echoes "" if neither set.
 _pool_progress_status() {
-    local project="$1" wtype="${2:-}" ps
-    ps="$(jq -r --arg p "$project" --arg w "$wtype" \
-        '(.pools[]? | select((.project|tostring) == $p) | .progress_status)
-         | if . == null then empty
-           elif type == "object" then (.[$w] // (to_entries[0].value // empty))
-           else . end' \
-        "$pools_cfg" 2>/dev/null)"
-    if [ -n "$ps" ]; then echo "$ps"; else jq -r '.claim.progress_status // empty' "$pools_cfg" 2>/dev/null; fi
+    local project="$1" wtype="${2:-}"
+    jq -r --arg p "$project" --arg w "$wtype" '
+        ([.pools[]? | select((.project|tostring) == $p) | .progress_status] | first)
+        as $pool
+        | if $pool == null then (.claim.progress_status // empty)
+          elif ($pool | type) == "object" then ($pool[$w] // empty)
+          elif ($pool | type) == "string" then $pool
+          else empty end
+    ' "$pools_cfg" 2>/dev/null
 }
 
 # Strict progress resolver for terminal-comment reopen. Unlike the ordinary claim
