@@ -79,6 +79,10 @@ if [ "${1:-}" = "-m" ] && [ "${2:-}" = "bridge.main" ]; then
     no-ready)
       echo "$ts INFO [MainThread] fake bridge supervisor deliberately not READY"
       exec sleep 300 ;;
+    deaf)
+      trap '' TERM
+      echo "$ts INFO [MainThread] Bridge READY pid=$$ role=supervisor components=fake"
+      while true; do sleep 1; done ;;
     once)
       echo "$ts INFO [MainThread] Bridge READY pid=$$ role=supervisor components=fake JARVIS_NO_DINGTALK=${JARVIS_NO_DINGTALK:-0}"
       exit 0 ;;
@@ -212,7 +216,7 @@ run() {
       JARVIS_BRIDGE_START_WAIT="1.0" \
       JARVIS_BRIDGE_ROLE="${TEST_ROLE:-scheduler}" \
       JARVIS_CONTROL_PLANE_TOKEN="test-token" \
-      JARVIS_BRIDGE_STOP_WAIT="1" \
+      JARVIS_BRIDGE_STOP_WAIT="${TEST_STOP_WAIT:-1}" \
       JARVIS_BRIDGE_START_ROLLBACK_WAIT="1" \
       JARVIS_SCHEDULER_READY_WAIT="${TEST_READY_WAIT:-1}" \
       JARVIS_WATCHDOG_STARTUP_GRACE_SEC="${TEST_WATCHDOG_STARTUP_GRACE:-300}" \
@@ -221,6 +225,7 @@ run() {
       JARVIS_WATCHDOG_CHILD_TERM_SEC="${TEST_WATCHDOG_CHILD_TERM:-0}" \
       JARVIS_A1_LOCK_STALE_SEC="${TEST_LOCK_STALE:-0}" \
       JARVIS_EXECUTOR_BEACON_PREFIX="$STATE/heartbeat.persistent-worker" \
+      JARVIS_SCHEDULER_DRAIN_TIMEOUT_SECONDS="${TEST_DRAIN_WAIT:-1}" \
       JARVIS_BRIDGE_TOOL_DIRS="$FAKE_BREW/sbin $FAKE_BREW/bin $FAKE_HOME/.local/bin" \
       JARVIS_BRIDGE_SUPERVISOR="${TEST_SUPERVISOR-}" \
       JARVIS_BRIDGE_LAUNCHCTL="$FAKECTL" \
@@ -527,6 +532,26 @@ fresh
 run start >/dev/null 2>&1
 gout="$(run stop 2>&1)"
 has "graceful" "$gout" "stop(normal): bot 收 SIGTERM 即退 → graceful"
+
+# --- T12b: ordinary stop has a short grace, then preserves an active drain --
+fresh
+TEST_SCHEDULER_MODE=deaf run start >/dev/null 2>&1
+p1="$(pidval)"
+out="$(TEST_SCHEDULER_MODE=deaf TEST_STOP_WAIT=0 run stop 2>&1)"; rc=$?
+[ "$rc" != 0 ] && ok "stop(timeout): non-zero exit" || no "stop(timeout): exit 0"
+has "尚未停止、仍在 drain" "$out" "stop(timeout): reports active drain"
+[ "$(pidval)" = "$p1" ] && ok "stop(timeout): keeps pidfile" || no "stop(timeout): pidfile removed"
+kill -0 "$p1" 2>/dev/null && ok "stop(timeout): preserves active process" || no "stop(timeout): process terminated"
+
+# --- T12c: restart uses its separate drain deadline and never starts overlap -
+fresh
+TEST_SCHEDULER_MODE=deaf run start >/dev/null 2>&1
+p1="$(pidval)"
+out="$(TEST_SCHEDULER_MODE=deaf TEST_STOP_WAIT=0 TEST_DRAIN_WAIT=0 run restart 2>&1)"; rc=$?
+[ "$rc" != 0 ] && ok "restart(drain timeout): non-zero exit" || no "restart(drain timeout): exit 0"
+has "本次 restart 已取消" "$out" "restart(drain timeout): reports replacement cancelled"
+[ "$(pidval)" = "$p1" ] && ok "restart(drain timeout): keeps pidfile" || no "restart(drain timeout): pidfile changed"
+kill -0 "$p1" 2>/dev/null && ok "restart(drain timeout): preserves active process" || no "restart(drain timeout): process terminated"
 
 # --- T13: daemon is a true foreground entrypoint ---------------------------
 fresh

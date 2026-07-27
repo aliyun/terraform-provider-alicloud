@@ -9,9 +9,10 @@
 #   · 模式判定: 有 DINGTALK_APP_KEY/SECRET → 全功能; 缺 → 自动 JARVIS_NO_DINGTALK=1 降级点火
 #     (自动派发+各调度器照常, 卡片/播报落 bot.log; 配好凭证后 run.sh restart 即回全功能)。
 #   · nohup 守护 + 写 pidfile, 启动后自检(进程仍活 + 日志首行非 ERROR), 失败退非零并打印日志尾。
-# stop 优雅停止: 发 SIGTERM → bot 自身 SIGTERM handler 收尾在跑 worker 并 release
-#   其已认领工单；scheduler 角色会先 drain 已准入 Job，再停止执行器；drain 超时
-#   则拒绝替换，避免打断已准入的周期任务。
+# stop 优雅停止: 发 SIGTERM → supervisor 停止接收新工作，并给在途 drain 一个短暂
+#   的普通停机宽限。宽限超时只报告仍在 drain 并保留进程，绝不强杀在途任务。
+# restart/发布替换则使用较长的 Scheduler drain deadline；旧实例安全退出前不会
+#   启动替代实例。
 #
 # 依赖 F 线 JARVIS_NO_DINGTALK(bridge 降级模式, 分支 worktree-f3-nodingtalk / MR-4)。若该能力
 # 尚未合并, 缺凭证时旧 bot 会忽略 flag、因缺凭证退 2 —— 本脚本的启动自检会如实报错并提示先合 MR-4。
@@ -19,7 +20,8 @@
 # 可覆盖(测试/部署): JARVIS_BRIDGE_PYTHON(默认 python3) JARVIS_BRIDGE_BOT(默认本目录 bot)
 #   JARVIS_BRIDGE_STATE_DIR(默认 <repo>/.my-day/bridge) JARVIS_BRIDGE_BOOTSTRAP_ENV
 #   JARVIS_BRIDGE_ENV JARVIS_BRIDGE_START_WAIT(默认 2s)
-#   JARVIS_BRIDGE_STOP_WAIT / JARVIS_STOP_GRACE (默认 30s)。
+#   JARVIS_BRIDGE_STOP_WAIT / JARVIS_STOP_GRACE (普通 stop，默认 30s)，
+#   JARVIS_SCHEDULER_DRAIN_TIMEOUT_SECONDS (受控 restart/替换，默认 600s)。
 #   JARVIS_BRIDGE_SUPERVISOR=launchd 时 start/stop/restart/status 委托给 launchctl；可覆盖
 #   JARVIS_BRIDGE_LAUNCHCTL、JARVIS_BRIDGE_LAUNCHD_LABEL/DOMAIN/PLIST（测试/定制安装）。
 set -uo pipefail
@@ -249,8 +251,9 @@ _component_start() {
 }
 
 _component_stop() {
-  local name="$1" pid i=0 deadline
+  local name="$1" requested_wait="${2:-}" operation="${3:-stop}" pid i=0 deadline stop_wait
   _component_config "$name" || return $?
+  stop_wait="${requested_wait:-$COMPONENT_STOP_WAIT}"
   pid="$(_read_pidfile "$COMPONENT_PIDFILE")" \
     || { say "$COMPONENT_LABEL 未在运行"; return 0; }
   if ! _alive "$pid"; then
@@ -258,8 +261,8 @@ _component_stop() {
     say "$COMPONENT_LABEL 已停止"
     return 0
   fi
-  deadline=$(( COMPONENT_STOP_WAIT * 10 ))
-  say "停止 $COMPONENT_LABEL (pid $pid): 发 SIGTERM，宽限 ${COMPONENT_STOP_WAIT}s…"
+  deadline=$(( stop_wait * 10 ))
+  say "停止 $COMPONENT_LABEL (pid $pid): 发 SIGTERM，宽限 ${stop_wait}s…"
   kill -TERM "$pid" 2>/dev/null || true
   while [ "$i" -lt "$deadline" ] && _alive "$pid"; do
     sleep 0.1
@@ -267,7 +270,11 @@ _component_stop() {
   done
   if _alive "$pid"; then
     if [ "$COMPONENT_TIMEOUT_POLICY" = "preserve" ]; then
-      err "$COMPONENT_LABEL 在 ${COMPONENT_STOP_WAIT}s 内未停止；保持进程以保护在途工作。"
+      if [ "$operation" = "stop" ]; then
+        err "$COMPONENT_LABEL 在 ${stop_wait}s 内尚未停止、仍在 drain；保持进程以保护在途工作。"
+      else
+        err "$COMPONENT_LABEL 在 ${stop_wait}s 内未停止；本次 restart 已取消以保护在途工作。"
+      fi
       return 1
     fi
     say "TERM ${COMPONENT_STOP_WAIT}s 未退 → SIGKILL 兜底(清理由 reconcile 收敛)。"
@@ -425,10 +432,34 @@ cmd_launchd_start() {
 }
 
 cmd_launchd_stop() {
+  local detail old_pid="" i=0 stop_wait deadline
   _launchd_require || return 1
   if ! _launchd_loaded; then
     say "bridge 未由 launchd 加载 ($LAUNCHD_SERVICE)。"
     return 0
+  fi
+  detail="$("$LAUNCHCTL_BIN" print "$LAUNCHD_SERVICE" 2>/dev/null || true)"
+  old_pid="$(printf '%s\n' "$detail" \
+    | sed -n 's/^[[:space:]]*pid = //p' | head -n1)"
+  stop_wait="$(_bridge_stop_wait)"
+  "$LAUNCHCTL_BIN" disable "$LAUNCHD_SERVICE" >/dev/null 2>&1 || {
+    err "launchd stop 失败: 无法禁用 KeepAlive ($LAUNCHD_SERVICE)"
+    return 1
+  }
+  if [ -n "$old_pid" ]; then
+    "$LAUNCHCTL_BIN" kill SIGTERM "$LAUNCHD_SERVICE" || {
+      err "launchd stop 失败: 无法请求 bridge 优雅停止"
+      return 1
+    }
+    deadline=$(( stop_wait * 10 ))
+    while [ "$i" -lt "$deadline" ] && _alive "$old_pid"; do
+      sleep 0.1
+      i=$((i + 1))
+    done
+    if _alive "$old_pid"; then
+      err "bridge 在 ${stop_wait}s 内尚未停止、仍在 drain；保持进程以保护在途工作。"
+      return 1
+    fi
   fi
   "$LAUNCHCTL_BIN" bootout "$LAUNCHD_SERVICE" || {
     err "launchd bootout 失败: $LAUNCHD_SERVICE"
@@ -815,7 +846,7 @@ cmd_stop() {
   mkdir -p "$STATE_DIR" 2>/dev/null || true
   touch "$PIDFILE.manual-stop" 2>/dev/null || true
   for component in $(_role_components stop); do
-    _component_stop "$component" || return $?
+    _component_stop "$component" "$(_bridge_stop_wait)" stop || return $?
   done
 }
 
@@ -832,7 +863,7 @@ cmd_restart() {
     printf '%s\n' "$pid" >"$PRESERVE_PERSISTENT_WORKER_ONCE"
     preserve_worker=1
   fi
-  if ! _component_stop supervisor; then
+  if ! _component_stop supervisor "$SCHEDULER_DRAIN_WAIT" restart; then
     [ "$preserve_worker" -eq 1 ] && rm -f "$PRESERVE_PERSISTENT_WORKER_ONCE"
     return 1
   fi
