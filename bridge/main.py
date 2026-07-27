@@ -527,37 +527,26 @@ class BridgeSupervisor:
         self._shutdown()
         return 0
 
-    def _preserve_worker_requested(self) -> bool:
+    def _remove_legacy_restart_marker(self) -> None:
         marker = self.state_dir / "preserve-persistent-worker-once"
-        try:
-            owner = marker.read_text(encoding="utf-8").strip()
-        except OSError:
-            return False
-        # Consume stale/mismatched markers too. A later PID reuse must never
-        # turn an abandoned one-shot handshake into permission to preserve a
-        # Worker during an explicit full stop.
+        # Older bridge versions used this marker to keep the Persistent Worker
+        # alive across an explicit restart. Restarts now stop every component;
+        # remove any leftover marker so a downgrade cannot revive that
+        # ambiguous behavior.
         marker.unlink(missing_ok=True)
-        if owner != str(os.getpid()):
-            return False
-        return True
 
     def _shutdown(self) -> None:
-        preserve_worker = self._preserve_worker_requested()
+        self._remove_legacy_restart_marker()
         # Quiesce scheduled admissions before stopping either inbound work or
         # the lease executor.  The Worker is always last so already-admitted
-        # Scheduler work and inbound persistence can settle first.
+        # Scheduler work and inbound persistence can settle first. Stopping the
+        # Worker then relinquishes its active Sessions for same-host resume by
+        # the replacement process.
         shutdown_order = (
             (SCHEDULER, DINGTALK_BOT, PERSISTENT_WORKER)
             if self.role == "scheduler" else (PERSISTENT_WORKER,)
         )
         for spec in shutdown_order:
-            if preserve_worker and spec is PERSISTENT_WORKER:
-                LOG.info(
-                    "controlled restart: preserving Persistent Worker pid=%s",
-                    self.components.get(spec.name).pid
-                    if self.components.get(spec.name) is not None else "?",
-                )
-                continue
             component = self.components.pop(spec.name, None)
             if component is not None:
                 component.stop()

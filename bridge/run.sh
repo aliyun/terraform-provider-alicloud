@@ -11,8 +11,9 @@
 #   · nohup 守护 + 写 pidfile, 启动后自检(进程仍活 + 日志首行非 ERROR), 失败退非零并打印日志尾。
 # stop 优雅停止: 发 SIGTERM → supervisor 停止接收新工作，并给在途 drain 一个短暂
 #   的普通停机宽限。宽限超时只报告仍在 drain 并保留进程，绝不强杀在途任务。
-# restart/发布替换则使用较长的 Scheduler drain deadline；旧实例安全退出前不会
-#   启动替代实例。
+# restart/发布替换同样使用有界的 30 秒停止等待；它会依次停止
+#   Scheduler、Bot、Persistent Worker，待 Worker relinquish 在途 Session 且旧实例
+#   退出后才启动替代实例。
 #
 # 依赖 F 线 JARVIS_NO_DINGTALK(bridge 降级模式, 分支 worktree-f3-nodingtalk / MR-4)。若该能力
 # 尚未合并, 缺凭证时旧 bot 会忽略 flag、因缺凭证退 2 —— 本脚本的启动自检会如实报错并提示先合 MR-4。
@@ -49,7 +50,6 @@ BRIDGE_ENV="${JARVIS_BRIDGE_ENV:-$SCRIPT_DIR/jarvis.env}"
 START_WAIT="${JARVIS_BRIDGE_START_WAIT:-2}"
 SCHEDULER_READY_WAIT="${JARVIS_SCHEDULER_READY_WAIT:-30}"
 SCHEDULER_DRAIN_WAIT="${JARVIS_SCHEDULER_DRAIN_TIMEOUT_SECONDS:-30}"
-PRESERVE_PERSISTENT_WORKER_ONCE="$STATE_DIR/preserve-persistent-worker-once"
 say()  { printf '%s\n' "$*"; }
 err()  { printf '%s\n' "$*" >&2; }
 
@@ -472,39 +472,28 @@ cmd_launchd_restart() {
   _launchd_require || return 1
   # Match the local restart and installer safety boundary: provision/validate
   # the replacement before disabling KeepAlive or signaling the current
-  # Scheduler. A dependency or registry failure must leave the loaded service
-  # and its leased Persistent Worker untouched.
+  # bridge. A dependency or registry failure must leave the loaded service
+  # untouched.
   _bridge_validate || return $?
   if ! _launchd_loaded; then
     cmd_launchd_start
     return
   fi
 
-  # The launchd daemon owns the Bot and standalone Scheduler. Replace those
-  # together while the PID-bound marker keeps the independent Persistent Worker
-  # alive across the planned restart.
-  local detail old_pid="" i=0 stop_wait preserve_worker=0
+  # The launchd daemon owns Scheduler, Bot, and Persistent Worker. Stop the
+  # complete daemon and wait for Session relinquish before starting its
+  # replacement.
+  local detail old_pid="" i=0 stop_wait
   detail="$("$LAUNCHCTL_BIN" print "$LAUNCHD_SERVICE" 2>/dev/null || true)"
   old_pid="$(printf '%s\n' "$detail" \
     | sed -n 's/^[[:space:]]*pid = //p' | head -n1)"
   stop_wait="$SCHEDULER_DRAIN_WAIT"
-  if [ "${JARVIS_BRIDGE_ROLE:-scheduler}" = "scheduler" ] && [ -n "$old_pid" ]; then
-    # The foreground daemon owns bot+scheduler+worker. A planned restart must
-    # replace only bot+scheduler so leased Task Sessions retain their worker
-    # process/fence. Bind the one-shot marker to the exact daemon PID so a
-    # stale file can never weaken a later full stop.
-    mkdir -p "$STATE_DIR"
-    printf '%s\n' "$old_pid" >"$PRESERVE_PERSISTENT_WORKER_ONCE"
-    preserve_worker=1
-  fi
   "$LAUNCHCTL_BIN" disable "$LAUNCHD_SERVICE" >/dev/null 2>&1 || {
-    [ "$preserve_worker" -eq 1 ] && rm -f "$PRESERVE_PERSISTENT_WORKER_ONCE"
     err "launchd restart 失败: 无法禁用 KeepAlive ($LAUNCHD_SERVICE)"
     return 1
   }
   if [ -n "$old_pid" ]; then
     "$LAUNCHCTL_BIN" kill SIGTERM "$LAUNCHD_SERVICE" || {
-      [ "$preserve_worker" -eq 1 ] && rm -f "$PRESERVE_PERSISTENT_WORKER_ONCE"
       "$LAUNCHCTL_BIN" enable "$LAUNCHD_SERVICE" >/dev/null 2>&1 || true
       err "launchd restart 失败: 无法请求旧 bridge 优雅停止"
       return 1
@@ -515,15 +504,11 @@ cmd_launchd_restart() {
       i=$((i + 1))
     done
     if _alive "$old_pid"; then
-      [ "$preserve_worker" -eq 1 ] && rm -f "$PRESERVE_PERSISTENT_WORKER_ONCE"
       "$LAUNCHCTL_BIN" enable "$LAUNCHD_SERVICE" >/dev/null 2>&1 || true
       err "bridge 在 ${stop_wait}s 内未停止；本次 restart 已取消。"
       return 1
     fi
   fi
-  # The old daemon normally consumes the marker in its TERM handler. If it
-  # exited before doing so, remove the stale PID-bound marker now.
-  [ "$preserve_worker" -eq 1 ] && rm -f "$PRESERVE_PERSISTENT_WORKER_ONCE"
   "$LAUNCHCTL_BIN" enable "$LAUNCHD_SERVICE" >/dev/null 2>&1 || {
     err "launchd restart 失败: 无法重新启用 $LAUNCHD_SERVICE"
     return 1
@@ -851,23 +836,14 @@ cmd_stop() {
 }
 
 cmd_restart() {
-  local pid="" preserve_worker=0
   _component_config supervisor || return $?
   # Validate/provision the replacement before quiescing the current Scheduler
-  # and Bot. A missing PyYAML or invalid registry must leave the old service
-  # untouched.
+  # Bot, and Worker. A missing PyYAML or invalid registry must leave the old
+  # service untouched.
   _bridge_validate || return $?
-  pid="$(_running_pidfile "$COMPONENT_PIDFILE" 2>/dev/null || true)"
-  if _scheduler_enabled && [ -n "$pid" ]; then
-    mkdir -p "$STATE_DIR"
-    printf '%s\n' "$pid" >"$PRESERVE_PERSISTENT_WORKER_ONCE"
-    preserve_worker=1
-  fi
   if ! _component_stop supervisor "$SCHEDULER_DRAIN_WAIT" restart; then
-    [ "$preserve_worker" -eq 1 ] && rm -f "$PRESERVE_PERSISTENT_WORKER_ONCE"
     return 1
   fi
-  [ "$preserve_worker" -eq 1 ] && rm -f "$PRESERVE_PERSISTENT_WORKER_ONCE"
   cmd_start
 }
 

@@ -325,7 +325,7 @@ class BridgeSupervisorTest(unittest.TestCase):
         self.assertEqual(
             stops, ["scheduler", "dingtalk-bot", "persistent-worker"])
 
-    def test_controlled_restart_preserves_worker_and_consumes_marker(self):
+    def test_legacy_restart_marker_does_not_preserve_worker(self):
         events = []
 
         def factory(spec, **_kwargs):
@@ -342,29 +342,6 @@ class BridgeSupervisorTest(unittest.TestCase):
                 supervisor.components[spec.name] = factory(spec)
             marker = state_dir / "preserve-persistent-worker-once"
             marker.write_text("%s\n" % os.getpid(), encoding="utf-8")
-            supervisor._shutdown()
-            self.assertFalse(marker.exists())
-
-        stops = [event[1] for event in events if event[0] == "stop"]
-        self.assertEqual(stops, ["scheduler", "dingtalk-bot"])
-
-    def test_stale_restart_marker_is_consumed_without_preserving_worker(self):
-        events = []
-
-        def factory(spec, **_kwargs):
-            return _FakeComponent(spec, events=events, generation=1)
-
-        with tempfile.TemporaryDirectory() as temp_dir, mock.patch(
-                "bridge.scheduler.scheduler.validate"):
-            state_dir = Path(temp_dir)
-            supervisor = main.BridgeSupervisor(
-                environ=self._env(state_dir),
-                component_factory=factory,
-            )
-            for spec in supervisor.specs:
-                supervisor.components[spec.name] = factory(spec)
-            marker = state_dir / "preserve-persistent-worker-once"
-            marker.write_text("not-this-supervisor\n", encoding="utf-8")
             supervisor._shutdown()
             self.assertFalse(marker.exists())
 

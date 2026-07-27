@@ -6,7 +6,7 @@
 #   - refuses symlink targets and a target owned by a different Label;
 #   - renders to a temporary file, validates XML, then atomically replaces;
 #   - reinstall validates first, then safely restarts an already-loaded service
-#     without bootout so an adopted Persistent Worker keeps its active leases;
+#     without bootout, waiting for the Worker to relinquish active Sessions;
 #   - never uses kickstart -k to overlap an old Scheduler with its replacement.
 set -euo pipefail
 
@@ -42,7 +42,6 @@ LAUNCHD_PATH="${JARVIS_BRIDGE_LAUNCHD_PATH:-/opt/homebrew/bin:/usr/local/bin:/us
 RUN_SH="$SCRIPT_DIR/run.sh"
 READY_WAIT="${JARVIS_SCHEDULER_READY_WAIT:-30}"
 DRAIN_WAIT="${JARVIS_SCHEDULER_DRAIN_TIMEOUT_SECONDS:-30}"
-PRESERVE_WORKER_ONCE="$STATE_DIR/preserve-persistent-worker-once"
 TMP_PLIST=""
 
 die() { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
@@ -162,20 +161,11 @@ if detail="$("$LAUNCHCTL_BIN" print "$SERVICE" 2>/dev/null)"; then
   service_was_loaded=1
   old_pid="$(printf '%s\n' "$detail" \
     | sed -n 's/^[[:space:]]*pid = //p' | head -n1)"
-  preserve_worker=0
-  if [ "${JARVIS_BRIDGE_ROLE:-scheduler}" = "scheduler" ] && [ -n "$old_pid" ]; then
-    printf '%s\n' "$old_pid" >"$PRESERVE_WORKER_ONCE"
-    preserve_worker=1
-  fi
   "$LAUNCHCTL_BIN" disable "$SERVICE" >/dev/null 2>&1 \
-    || {
-      [ "$preserve_worker" -eq 1 ] && rm -f "$PRESERVE_WORKER_ONCE"
-      die "cannot disable loaded launchd service before drain: $SERVICE"
-    }
+    || die "cannot disable loaded launchd service before drain: $SERVICE"
   if [ -n "$old_pid" ]; then
     "$LAUNCHCTL_BIN" kill SIGTERM "$SERVICE" \
       || {
-        [ "$preserve_worker" -eq 1 ] && rm -f "$PRESERVE_WORKER_ONCE"
         "$LAUNCHCTL_BIN" enable "$SERVICE" >/dev/null 2>&1 || true
         die "cannot request graceful drain from loaded launchd service: $SERVICE"
       }
@@ -186,12 +176,10 @@ if detail="$("$LAUNCHCTL_BIN" print "$SERVICE" 2>/dev/null)"; then
       i=$((i + 1))
     done
     if kill -0 "$old_pid" 2>/dev/null; then
-      [ "$preserve_worker" -eq 1 ] && rm -f "$PRESERVE_WORKER_ONCE"
       "$LAUNCHCTL_BIN" enable "$SERVICE" >/dev/null 2>&1 || true
       die "loaded bridge did not drain in ${DRAIN_WAIT}s; upgrade cancelled without starting a replacement"
     fi
   fi
-  [ "$preserve_worker" -eq 1 ] && rm -f "$PRESERVE_WORKER_ONCE"
   "$LAUNCHCTL_BIN" enable "$SERVICE" >/dev/null 2>&1 \
     || die "cannot re-enable launchd service after drain: $SERVICE"
   "$LAUNCHCTL_BIN" kickstart "$SERVICE" \
@@ -231,13 +219,6 @@ if [ "$ready" -ne 1 ]; then
   failed_pid="$(printf '%s\n' "$detail" \
     | sed -n 's/^[[:space:]]*pid = //p' | head -n1)"
   worker_pid="$(cat "$STATE_DIR/persistent-worker.pid" 2>/dev/null || true)"
-  preserve_failed_worker=0
-  if [ "${JARVIS_BRIDGE_ROLE:-scheduler}" = "scheduler" ] \
-      && [ -n "$failed_pid" ] && [ -n "$worker_pid" ] \
-      && kill -0 "$worker_pid" 2>/dev/null; then
-    printf '%s\n' "$failed_pid" >"$PRESERVE_WORKER_ONCE"
-    preserve_failed_worker=1
-  fi
   "$LAUNCHCTL_BIN" disable "$SERVICE" >/dev/null 2>&1 || true
   if [ -n "$failed_pid" ]; then
     "$LAUNCHCTL_BIN" kill SIGTERM "$SERVICE" >/dev/null 2>&1 || true
@@ -248,9 +229,8 @@ if [ "$ready" -ne 1 ]; then
       i=$((i + 1))
     done
   fi
-  [ "$preserve_failed_worker" -eq 1 ] && rm -f "$PRESERVE_WORKER_ONCE"
-  # Never boot out a loaded job or a failed first start that already opened a
-  # durable Worker. bootout may recursively terminate the adopted lease owner.
+  # Never boot out a loaded job or a failed first start whose Worker did not
+  # finish its bounded shutdown. bootout may bypass Session relinquish.
   if [ "$service_was_loaded" -eq 0 ] \
       && { [ -z "$worker_pid" ] || ! kill -0 "$worker_pid" 2>/dev/null; }; then
     "$LAUNCHCTL_BIN" bootout "$SERVICE" >/dev/null 2>&1 || true

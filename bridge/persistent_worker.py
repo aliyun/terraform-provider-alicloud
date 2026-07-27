@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Independent composition root for durable Task execution.
 
-The worker deliberately runs outside the DingTalk/Scheduler process.  A
-scheduler restart can therefore replace its stream listener and periodic-job
-runtime without fencing or terminating an already leased Task Session.
+The worker deliberately runs outside the DingTalk/Scheduler process. An
+independent Scheduler failure can therefore recover without terminating an
+already leased Task Session. An explicit bridge restart stops this Worker too:
+active Sessions are relinquished and then resumed by the replacement Worker.
 """
 
 from __future__ import annotations
