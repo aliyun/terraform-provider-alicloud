@@ -15,6 +15,7 @@ from bridge.scheduler.model import (
 from bridge.scheduler.runners import build_runners
 from bridge.scheduler.runners import claim_health, daily_nudge, scan
 from bridge.scheduler.runners import pr_watch as pr
+from bridge.scheduler.runners import weekly_comment_participation
 
 
 UTC = timezone.utc
@@ -50,6 +51,9 @@ class SchedulerRunnerTests(unittest.TestCase):
             runners["claim_health"], claim_health.ClaimHealthRunner)
         self.assertIsInstance(runners["daily_nudge"], daily_nudge.DailyNudgeRunner)
         self.assertIsInstance(runners["pr_watch"], pr.PrWatchRunner)
+        self.assertIsInstance(
+            runners["weekly_comment_participation"],
+            weekly_comment_participation.WeeklyCommentParticipationRunner)
 
     def test_nudge_runner_invokes_one_job(self):
         job = SimpleNamespace(enabled=True, calls=0)
