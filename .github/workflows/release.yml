@@ -9,7 +9,6 @@ on:
 jobs:
   goreleaser:
     runs-on: terraform-releaser
-    environment: v2-release
     permissions:
       contents: write
     steps:
