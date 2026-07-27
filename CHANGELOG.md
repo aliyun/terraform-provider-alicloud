@@ -1,4 +1,9 @@
 ## 1.287.0 (Unreleased)
+
+ENHANCEMENTS:
+
+- resource/alicloud_gpdb_instance: support backup_id. ([#9988](https://github.com/aliyun/terraform-provider-alicloud/issues/9988))
+
 ## 1.286.0 (July 24, 2026)
 
 - **New Resource:** `alicloud_apig_domain` ([#9910](https://github.com/aliyun/terraform-provider-alicloud/issues/9910))

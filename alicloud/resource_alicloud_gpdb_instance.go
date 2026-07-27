@@ -29,6 +29,14 @@ func resourceAliCloudGpdbInstance() *schema.Resource {
 			Update: schema.DefaultTimeout(60 * time.Minute),
 			Delete: schema.DefaultTimeout(10 * time.Minute),
 		},
+		CustomizeDiff: func(diff *schema.ResourceDiff, v interface{}) error {
+			backupId := diff.Get("backup_id").(string)
+			srcDbInstanceName := diff.Get("src_db_instance_name").(string)
+			if (backupId == "") != (srcDbInstanceName == "") {
+				return fmt.Errorf("`backup_id` and `src_db_instance_name` must be set together (both set or both empty); the GPDB CreateDBInstance API requires BackupId and SrcDbInstanceName to be null or not null at the same time")
+			}
+			return nil
+		},
 		Schema: map[string]*schema.Schema{
 			"engine": {
 				Type:     schema.TypeString,
@@ -310,7 +318,7 @@ func resourceAliCloudGpdbInstance() *schema.Resource {
 			"master_node_num": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				Default:      1,
+				Computed:     true,
 				ValidateFunc: IntInSlice([]int{1, 2}),
 				Deprecated:   "Field `master_node_num` has been deprecated from provider version 1.213.0.",
 			},
@@ -326,6 +334,16 @@ func resourceAliCloudGpdbInstance() *schema.Resource {
 			"port": {
 				Type:     schema.TypeString,
 				Computed: true,
+			},
+			"backup_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"src_db_instance_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -425,6 +443,14 @@ func resourceAliCloudGpdbDbInstanceCreate(d *schema.ResourceData, meta interface
 
 	if v, ok := d.GetOk("encryption_key"); ok {
 		request["EncryptionKey"] = v
+	}
+
+	if v, ok := d.GetOk("backup_id"); ok {
+		request["BackupId"] = v
+	}
+
+	if v, ok := d.GetOk("src_db_instance_name"); ok {
+		request["SrcDbInstanceName"] = v
 	}
 
 	if v, ok := d.GetOk("vector_configuration_status"); ok {
@@ -615,26 +641,41 @@ func resourceAliCloudGpdbDbInstanceRead(d *schema.ResourceData, meta interface{}
 		d.Set("data_share_status", dataShareStatus)
 	}
 
-	parameterObject, err := gpdbService.DescribeParameters(d.Id())
-	if err != nil {
-		return WrapError(err)
-	}
-	if parameterList, ok := parameterObject["Parameters"].([]interface{}); ok && parameterList != nil {
-		parameterListMaps := make([]map[string]interface{}, 0)
-		for _, parameterListItem := range parameterList {
-			if parameterListValueItemMap, ok := parameterListItem.(map[string]interface{}); ok {
-				parameterListMap := map[string]interface{}{}
-				parameterListMap["name"] = parameterListValueItemMap["ParameterName"]
-				parameterListMap["value"] = parameterListValueItemMap["CurrentValue"]
-				parameterListMap["default_value"] = parameterListValueItemMap["ParameterValue"]
-				parameterListMap["is_changeable_config"] = parameterListValueItemMap["IsChangeableConfig"]
-				parameterListMap["force_restart_instance"] = parameterListValueItemMap["ForceRestartInstance"]
-				parameterListMap["optional_range"] = parameterListValueItemMap["OptionalRange"]
-				parameterListMap["parameter_description"] = parameterListValueItemMap["ParameterDescription"]
-				parameterListMaps = append(parameterListMaps, parameterListMap)
-			}
+	// DescribeParameters returns the full server-side parameter set, while the
+	// user typically declares only a subset of parameters in the configuration.
+	// Writing the full set back into state makes a config that declares a subset
+	// produce a permanent non-empty plan. Only refresh the parameters the user
+	// has actually declared, so state stays aligned with the configuration.
+	if documented, ok := d.GetOk("parameters"); ok {
+		parameterObject, err := gpdbService.DescribeParameters(d.Id())
+		if err != nil {
+			return WrapError(err)
 		}
-		d.Set("parameters", parameterListMaps)
+		if parameterList, ok := parameterObject["Parameters"].([]interface{}); ok && parameterList != nil {
+			apiParameters := make(map[string]map[string]interface{})
+			for _, parameterListItem := range parameterList {
+				if parameterListValueItemMap, ok := parameterListItem.(map[string]interface{}); ok {
+					name := fmt.Sprint(parameterListValueItemMap["ParameterName"])
+					apiParameters[name] = map[string]interface{}{
+						"name":                   parameterListValueItemMap["ParameterName"],
+						"value":                  parameterListValueItemMap["CurrentValue"],
+						"default_value":          parameterListValueItemMap["ParameterValue"],
+						"is_changeable_config":   parameterListValueItemMap["IsChangeableConfig"],
+						"force_restart_instance": parameterListValueItemMap["ForceRestartInstance"],
+						"optional_range":         parameterListValueItemMap["OptionalRange"],
+						"parameter_description":  parameterListValueItemMap["ParameterDescription"],
+					}
+				}
+			}
+			parameterListMaps := make([]map[string]interface{}, 0)
+			for _, parameter := range documented.(*schema.Set).List() {
+				name := fmt.Sprint(parameter.(map[string]interface{})["name"])
+				if apiParameter, ok := apiParameters[name]; ok {
+					parameterListMaps = append(parameterListMaps, apiParameter)
+				}
+			}
+			d.Set("parameters", parameterListMaps)
+		}
 	}
 
 	return nil
@@ -899,6 +940,15 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 
+		// UpgradeDBInstance scaling is asynchronous and the instance keeps reporting Running
+		// for a short window before the resize takes effect, so also wait until the new value
+		// is actually applied to avoid Read observing the stale value.
+		segNodeNumTarget := fmt.Sprint(d.Get("seg_node_num"))
+		segNodeNumStateConf := BuildStateConf([]string{}, []string{segNodeNumTarget}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, gpdbService.GpdbDbInstanceScaleStateRefreshFunc(d.Id(), "SegNodeNum", segNodeNumTarget))
+		if _, err := segNodeNumStateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
 		d.SetPartial("seg_node_num")
 	}
 
@@ -941,6 +991,15 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 
+		// UpgradeDBInstance scaling is asynchronous and the instance keeps reporting Running
+		// for a short window before the resize takes effect, so also wait until the new value
+		// is actually applied to avoid Read observing the stale value.
+		masterNodeNumTarget := fmt.Sprint(d.Get("master_node_num"))
+		masterNodeNumStateConf := BuildStateConf([]string{}, []string{masterNodeNumTarget}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, gpdbService.GpdbDbInstanceScaleStateRefreshFunc(d.Id(), "MasterNodeNum", masterNodeNumTarget))
+		if _, err := masterNodeNumStateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
 		d.SetPartial("master_node_num")
 	}
 
@@ -976,6 +1035,14 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 		}
 		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, gpdbService.GpdbDbInstanceStateRefreshFunc(d.Id(), "DBInstanceStatus", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		// UpgradeDBInstance scaling is asynchronous and the instance keeps reporting Running
+		// for a short window before the resize takes effect, so also wait until the new value
+		// is actually applied to avoid Read observing the stale value.
+		instanceSpecTarget := fmt.Sprint(d.Get("instance_spec"))
+		instanceSpecStateConf := BuildStateConf([]string{}, []string{instanceSpecTarget}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, gpdbService.GpdbDbInstanceScaleStateRefreshFunc(d.Id(), "InstanceSpec", instanceSpecTarget))
+		if _, err := instanceSpecStateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 		d.SetPartial("instance_spec")
@@ -1015,6 +1082,15 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 
 		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, gpdbService.GpdbDbInstanceStateRefreshFunc(d.Id(), "DBInstanceStatus", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
+		// UpgradeDBInstance scaling is asynchronous and the instance keeps reporting Running
+		// for a short window before the resize takes effect, so also wait until the new value
+		// is actually applied to avoid Read observing the stale value.
+		storageSizeTarget := fmt.Sprint(d.Get("storage_size"))
+		storageSizeStateConf := BuildStateConf([]string{}, []string{storageSizeTarget}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, gpdbService.GpdbDbInstanceScaleStateRefreshFunc(d.Id(), "StorageSize", storageSizeTarget))
+		if _, err := storageSizeStateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 
