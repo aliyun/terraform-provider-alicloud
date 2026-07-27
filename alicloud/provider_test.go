@@ -101,7 +101,8 @@ func init() {
 			return testAccProvider, nil
 		},
 	}
-	setStsCredential()
+	// TODO disable setting STS from oss
+	//setStsCredential()
 }
 
 func TestProvider(t *testing.T) {
@@ -860,4 +861,3 @@ func TestAccAlicloudProviderDatahub(t *testing.T) {
 		},
 	})
 }
-
