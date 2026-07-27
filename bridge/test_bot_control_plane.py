@@ -1054,6 +1054,24 @@ class SchedulerRunnerTest(unittest.TestCase):
                 os.environ, {"JARVIS_MASTER_STAFF": " 998877 "}):
             self.assertEqual(aone.master_staff(), "998877")
 
+    def test_a1_command_env_scrubs_interactive_markers(self):
+        # Bridge/executor a1 + claim.sh must run non-interactive so the Aone bookend
+        # never issues a second control-plane claim_task against its own session.
+        with mock.patch.dict(os.environ, {
+                "CLAUDE_CODE_SESSION_ID": "sess-x",
+                "CODEX_THREAD_ID": "thr-x",
+                "JARVIS_INTERACTIVE_CLIENT": "claude",
+                "JARVIS_INTERACTIVE_SESSION_ID": "isess-x",
+                "PATH": os.environ.get("PATH", ""),
+        }):
+            env = events._a1_command_env()
+            for marker in ("CLAUDE_CODE_SESSION_ID", "CODEX_THREAD_ID",
+                           "JARVIS_INTERACTIVE_CLIENT",
+                           "JARVIS_INTERACTIVE_SESSION_ID"):
+                self.assertNotIn(marker, env)
+            # Non-interactive env is otherwise preserved.
+            self.assertIn("PATH", env)
+
     def test_claim_health_only_enqueues_dingtalk_to_master_staff(self):
         snapshot = {"84551585": self._claimed_item()}
         for configured, expected in (("", "320687"), ("998877", "998877")):
@@ -1146,6 +1164,40 @@ class SchedulerRunnerTest(unittest.TestCase):
                 anomaly = scanner._inspect_claim_health(self._claimed_item(), now)
                 self.assertIsNone(anomaly)
                 scanner._claim_age_min.assert_not_called()
+
+    @staticmethod
+    def _recovery_client(retry_count, max_retries):
+        client = mock.Mock()
+        client.get_task_by_aone.return_value = [{
+            "id": 700, "generation": 8, "status": "RECOVERY_REQUIRED",
+            "currentSessionId": 901,
+            "retryCount": retry_count, "maxRetries": max_retries,
+        }]
+        client.get_task_timeline.return_value = {
+            "sessions": [{
+                "id": 901, "status": "RESUMABLE", "fenceToken": 12,
+                "taskId": 700, "generation": 8,
+            }],
+            "events": [],
+        }
+        return client
+
+    def test_claim_health_retry_exhausted_recovery_is_distinct(self):
+        now = 1_800_000_000
+        # retry budget spent (4 > 3): the task blackholes in RECOVERY_REQUIRED bound to
+        # a dead RESUMABLE session — surfaced distinctly so an operator runs discard-resume.
+        exhausted = self._health_scanner(
+            self._recovery_client(4, 3))._inspect_claim_health(
+                self._claimed_item(), now)
+        self.assertIsInstance(exhausted, dict)
+        self.assertEqual(exhausted["category"], "recovery-exhausted")
+        self.assertIn("4/3", exhausted["detail"])
+        # Retries still available (1 of 3): ordinary recoverable Task, not the blackhole.
+        recoverable = self._health_scanner(
+            self._recovery_client(1, 3))._inspect_claim_health(
+                self._claimed_item(), now)
+        self.assertIsInstance(recoverable, dict)
+        self.assertEqual(recoverable["category"], "recovery-required")
 
     def test_claim_health_unexpired_or_open_ended_waits_are_healthy(self):
         now = 1_800_000_000

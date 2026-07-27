@@ -489,6 +489,26 @@ class ClaimHealthRunner(AoneQueryMixin):
                 "confirm": True, "detail": "SUSPENDED wait metadata is incomplete",
             }
         if status == "RECOVERY_REQUIRED":
+            # A retry-exhausted RECOVERY_REQUIRED task never self-recovers (the server
+            # keeps RESUME_ONLY tasks here rather than converging), so it blackholes
+            # bound to a dead RESUMABLE session and blocks every later claim. Surface
+            # that distinctly from an ordinary recoverable Task so an operator knows a
+            # manual discard-resume is required, not just a wait.
+            retry_count = task.get("retryCount")
+            max_retries = task.get("maxRetries")
+            try:
+                exhausted = (retry_count is not None and max_retries is not None
+                             and int(retry_count) > int(max_retries))
+            except (TypeError, ValueError):
+                exhausted = False
+            if exhausted:
+                return {
+                    "category": "recovery-exhausted", "epoch": epoch,
+                    "confirm": True,
+                    "detail": ("Task retry budget exhausted (%s/%s) in RECOVERY_REQUIRED; "
+                               "needs manual discard-resume recovery"
+                               % (retry_count, max_retries)),
+                }
             return {
                 "category": "recovery-required", "epoch": epoch,
                 "confirm": True, "detail": "Task requires manual recovery",

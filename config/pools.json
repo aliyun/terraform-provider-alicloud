@@ -25,7 +25,9 @@
       },
       "progress_status": {
         "需求问题": "问题解决中",
-        "功能缺陷": "Open"
+        "功能缺陷": "Open",
+        "线上问题": "Open",
+        "任务": "处理中"
       },
       "claim_required_field_defaults": {
         "140282": "有OpenAPI，资源未定义，开放平台维护"

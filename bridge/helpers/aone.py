@@ -23,6 +23,19 @@ def _a1_command_env(terraform=False):
     env = os.environ.copy()
     for name in ("JARVIS_A1_IDENTITY", "JARVIS_A1_STRICT", "JARVIS_AONE_WRITE_POLICY"):
         env.pop(name, None)
+    # Bridge/executor-side a1 + claim.sh invocations must run in NON-interactive
+    # context: the executor already holds the control-plane lease/session, so a
+    # second interactive claim_task (which claim.sh:_is_interactive_context selects
+    # whenever CLAUDE_CODE_SESSION_ID / CODEX_THREAD_ID is present) 409s against the
+    # executor's own session and blackholes the Task in RECOVERY_REQUIRED. This is
+    # exactly the contract on TaskAoneBookend (persistent_tasks.py): the bookend does
+    # plain idempotent merge-tag / status writes, never a second claim_task. Scrub the
+    # interactive-context markers that leak in from the spawning session so every
+    # bridge-side claim.sh takes the plain-tag path. The interactive-worker daemon
+    # does not build its env here, so its legitimate prepare_claim is unaffected.
+    for name in ("CLAUDE_CODE_SESSION_ID", "CODEX_THREAD_ID",
+                 "JARVIS_INTERACTIVE_CLIENT", "JARVIS_INTERACTIVE_SESSION_ID"):
+        env.pop(name, None)
     if terraform:
         env.update(JARVIS_A1_IDENTITY=PERSONA_PUBLIC_IDENTITY, JARVIS_A1_STRICT="1")
     return env
