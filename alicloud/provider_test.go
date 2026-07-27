@@ -48,6 +48,34 @@ func TestProvider_impl(t *testing.T) {
 	var _ terraform.ResourceProvider = Provider()
 }
 
+func TestProviderSkipRegionValidation(t *testing.T) {
+	original := os.Getenv("ALICLOUD_SKIP_REGION_VALIDATION")
+	defer os.Setenv("ALICLOUD_SKIP_REGION_VALIDATION", original)
+
+	testCases := []struct {
+		name     string
+		env      string
+		raw      map[string]interface{}
+		expected bool
+	}{
+		{"unset env defaults to false", "", map[string]interface{}{}, false},
+		{"env true enables skip", "true", map[string]interface{}{}, true},
+		{"env false disables skip", "false", map[string]interface{}{}, false},
+		{"config overrides env", "true", map[string]interface{}{"skip_region_validation": false}, false},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			os.Setenv("ALICLOUD_SKIP_REGION_VALIDATION", testCase.env)
+
+			d := schema.TestResourceDataRaw(t, Provider().(*schema.Provider).Schema, testCase.raw)
+			if got := d.Get("skip_region_validation").(bool); got != testCase.expected {
+				t.Fatalf("skip_region_validation: expected %v, got %v", testCase.expected, got)
+			}
+		})
+	}
+}
+
 func testAccPreCheck(t *testing.T) {
 	if v := os.Getenv("ALICLOUD_ACCESS_KEY"); v == "" {
 		t.Fatal("ALICLOUD_ACCESS_KEY must be set for acceptance tests")
