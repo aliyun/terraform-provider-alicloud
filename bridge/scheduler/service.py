@@ -178,7 +178,7 @@ class SchedulerService:
         return True
 
     def stop(self, *, timeout: Optional[float] = None) -> bool:
-        """Quiesce admissions and mark OFFLINE, or cancel a timed-out restart."""
+        """Quiesce admissions and mark OFFLINE within one bounded attempt."""
 
         with self._lock:
             engine = self._engine
@@ -204,15 +204,13 @@ class SchedulerService:
             if thread.is_alive():
                 self._log.warning(
                     "Scheduler Engine did not drain before timeout; "
-                    "cancelling the planned restart")
-                self._cancel_drain(engine, thread, registered)
+                    "remaining DRAINING for supervisor recovery")
                 return False
         if not engine.wait_for_active(
                 timeout=max(0.0, deadline - time.monotonic())):
             self._log.warning(
                 "Scheduler admitted jobs did not drain before timeout; "
-                "cancelling the planned restart")
-            self._cancel_drain(engine, thread, registered)
+                "remaining DRAINING for supervisor recovery")
             return False
         self._heartbeat_stop.set()
         if heartbeat_thread is not None:
@@ -241,44 +239,6 @@ class SchedulerService:
             self._engine = None
             self._registered = False
         return True
-
-    def _cancel_drain(
-        self,
-        engine: SchedulerEngine,
-        thread: threading.Thread,
-        registered: bool,
-    ) -> None:
-        """Restore ACTIVE scheduling after the restart drain budget expires."""
-
-        if registered:
-            try:
-                with self._worker_rpc_lock:
-                    self._worker_status = "ACTIVE"
-                    self._register_worker(self._task_client, "ACTIVE")
-            except Exception as exc:
-                # Keep ACTIVE as the desired heartbeat state. Until the
-                # control plane acknowledges it, new starts remain fail-closed;
-                # the independent heartbeat loop will retry the transition.
-                self._log.warning(
-                    "Scheduler restart cancelled; ACTIVE restore is pending: %s",
-                    type(exc).__name__)
-        engine.resume()
-        self._stop.clear()
-        # If the old loop observed the stop event immediately before it was
-        # cleared, give it one scheduling turn to exit before deciding whether
-        # a replacement loop is needed.
-        thread.join(timeout=0.05)
-        with self._lock:
-            self._ready = True
-            if not thread.is_alive():
-                thread = threading.Thread(
-                    target=self._loop,
-                    name="bridge-scheduler-engine",
-                    daemon=True,
-                )
-                self._thread = thread
-                thread.start()
-        self._log.info("Scheduler planned restart cancelled; ACTIVE scheduling resumed")
 
     def _loop(self) -> None:
         while not self._stop.is_set():

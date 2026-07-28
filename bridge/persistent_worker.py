@@ -326,17 +326,27 @@ class PersistentWorker:
         self.executor.start()
         return self
 
+    def request_stop(self) -> None:
+        """Stop new leases immediately; terminal handoff follows in ``stop``."""
+        self.executor.begin_shutdown()
+
     def stop(self, *, drain: bool = False, timeout: Any = None) -> bool:
+        self.request_stop()
+        handoff_complete = True
         if not self.executor.stopped:
             if not self.executor.stop(drain=drain, timeout=timeout):
-                return False
+                handoff_complete = False
+                LOG.warning(
+                    "Persistent Worker stopped locally with incomplete control-plane "
+                    "handoff; lease expiry/recovery will reconcile remaining Sessions")
         # The runtime's ephemeral pool can own a subprocess created by a
-        # persistent Task callback.
+        # persistent Task callback. Always terminate it even when a control-plane
+        # relinquish failed so restart cannot leave an unmanaged local process.
         self.runtime.ephemeral_executor.terminate_all(
             release_fn=self._release_claim)
         self.runtime.ephemeral_executor.shutdown(
             wait=False, cancel_futures=True)
-        return True
+        return handoff_complete
 
 
 def build_persistent_worker(
@@ -357,6 +367,7 @@ def main() -> int:
 
     def request_stop(signum: int, _frame: Any) -> None:
         LOG.info("Persistent worker signal %s received; stopping leased sessions", signum)
+        worker.request_stop()
         stop.set()
 
     signal.signal(signal.SIGTERM, request_stop)
@@ -364,10 +375,15 @@ def main() -> int:
     LOG.info("Persistent worker READY pid=%s role=%s", os.getpid(),
              os.environ.get("JARVIS_BRIDGE_ROLE", "scheduler"))
     stop.wait()
-    worker.stop(
+    stopped_cleanly = worker.stop(
         drain=False,
         timeout=float(os.environ.get("JARVIS_WORKER_DRAIN_TIMEOUT", "30")),
     )
+    if not stopped_cleanly:
+        LOG.error(
+            "Persistent Worker exit has incomplete Session handoff; "
+            "replacement must rely on lease expiry/recovery")
+        return 1
     return 0
 
 

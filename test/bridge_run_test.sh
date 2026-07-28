@@ -17,7 +17,10 @@ test_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "$test_dir/.." && pwd)"
 RUNSH="$repo_root/bridge/run.sh"
 INSTALLER="$repo_root/bridge/install-launchd.sh"
-PY_YAML_SITE="$(python3 -c \
+git_common_dir="$(git -C "$repo_root" rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)"
+INSTALL_PYTHON="$(dirname "$git_common_dir")/.venv/bridge/bin/python"
+[ -x "$INSTALL_PYTHON" ] || INSTALL_PYTHON="$(command -v python3)"
+PY_YAML_SITE="$("$INSTALL_PYTHON" -c \
   'from pathlib import Path; import yaml; print(Path(yaml.__file__).resolve().parents[1])')"
 
 if [ ! -f "$RUNSH" ]; then
@@ -182,8 +185,17 @@ case "${1:-}" in
     : ;;
   kill)
     pid="$(cat "$state/pid" 2>/dev/null || true)"
-    [ -n "$pid" ] && kill -TERM "$pid" 2>/dev/null || true
-    rm -f "$state/pid" ;;
+    case "${2:-SIGTERM}" in
+      SIGTERM)
+        if [ "${FAKE_LAUNCHCTL_DEAF:-0}" != "1" ]; then
+          [ -n "$pid" ] && kill -TERM "$pid" 2>/dev/null || true
+        fi ;;
+      SIGKILL)
+        [ -n "$pid" ] && kill -KILL "$pid" 2>/dev/null || true ;;
+      *)
+        echo "unexpected fake launchctl signal: ${2:-}" >&2
+        exit 2 ;;
+    esac ;;
   kickstart)
     [ -f "$state/loaded" ] || exit 1
     pid="$(cat "$state/pid" 2>/dev/null || true)"
@@ -234,6 +246,7 @@ run() {
       JARVIS_BRIDGE_LAUNCHD_PLIST="$LPLIST" \
       FAKE_LAUNCHCTL_STATE="$FAKECTL_STATE" \
       FAKE_LAUNCHCTL_LOG="$STATE/bot.log" \
+      FAKE_LAUNCHCTL_DEAF="${TEST_LAUNCHD_DEAF:-0}" \
       HOME="$FAKE_HOME" \
       PATH="$FAKE_BREW/bin:$FAKE_BREW/sbin:/usr/bin:/bin:/usr/sbin:/sbin" \
       DINGTALK_APP_KEY="${TEST_KEY-}" \
@@ -533,25 +546,59 @@ run start >/dev/null 2>&1
 gout="$(run stop 2>&1)"
 has "graceful" "$gout" "stop(normal): bot 收 SIGTERM 即退 → graceful"
 
-# --- T12b: ordinary stop has a short grace, then preserves an active drain --
+# --- T12b: ordinary stop has a short grace, then force-converges -------------
 fresh
 TEST_SCHEDULER_MODE=deaf run start >/dev/null 2>&1
 p1="$(pidval)"
 out="$(TEST_SCHEDULER_MODE=deaf TEST_STOP_WAIT=0 run stop 2>&1)"; rc=$?
-[ "$rc" != 0 ] && ok "stop(timeout): non-zero exit" || no "stop(timeout): exit 0"
-has "尚未停止、仍在 drain" "$out" "stop(timeout): reports active drain"
-[ "$(pidval)" = "$p1" ] && ok "stop(timeout): keeps pidfile" || no "stop(timeout): pidfile removed"
-kill -0 "$p1" 2>/dev/null && ok "stop(timeout): preserves active process" || no "stop(timeout): process terminated"
+[ "$rc" = 0 ] && ok "stop(timeout): exit 0 after force convergence" || no "stop(timeout): exit 0 (got $rc)"
+has "SIGKILL 兜底" "$out" "stop(timeout): reports bounded force convergence"
+[ -z "$(pidval)" ] && ok "stop(timeout): removes pidfile" || no "stop(timeout): pidfile retained"
+kill -0 "$p1" 2>/dev/null && no "stop(timeout): old process gone" || ok "stop(timeout): old process gone"
 
-# --- T12c: restart uses its separate drain deadline and never starts overlap -
+# --- T12c: restart force-converges old pid and always starts replacement ------
 fresh
 TEST_SCHEDULER_MODE=deaf run start >/dev/null 2>&1
 p1="$(pidval)"
 out="$(TEST_SCHEDULER_MODE=deaf TEST_STOP_WAIT=0 TEST_DRAIN_WAIT=0 run restart 2>&1)"; rc=$?
-[ "$rc" != 0 ] && ok "restart(drain timeout): non-zero exit" || no "restart(drain timeout): exit 0"
-has "本次 restart 已取消" "$out" "restart(drain timeout): reports replacement cancelled"
-[ "$(pidval)" = "$p1" ] && ok "restart(drain timeout): keeps pidfile" || no "restart(drain timeout): pidfile changed"
-kill -0 "$p1" 2>/dev/null && ok "restart(drain timeout): preserves active process" || no "restart(drain timeout): process terminated"
+[ "$rc" = 0 ] && ok "restart(drain timeout): exit 0" || no "restart(drain timeout): exit 0 (got $rc)"
+has "SIGKILL 兜底" "$out" "restart(drain timeout): reports bounded force convergence"
+p2="$(pidval)"
+[ -n "$p2" ] && [ "$p2" != "$p1" ] \
+  && ok "restart(drain timeout): replacement pid written" \
+  || no "restart(drain timeout): replacement pid missing ($p1 -> $p2)"
+kill -0 "$p1" 2>/dev/null && no "restart(drain timeout): old process gone" || ok "restart(drain timeout): old process gone"
+kill -0 "$p2" 2>/dev/null && ok "restart(drain timeout): replacement alive" || no "restart(drain timeout): replacement not alive"
+
+# A snapshot is only permission to kill while the exact PID is still a direct
+# child of the recorded supervisor. A changed PPID must fail closed.
+sleep 300 &
+snapshot_pid=$!
+snapshot_pidfile="$TMP/snapshot-child.pid"
+printf '%s\n' "$snapshot_pid" >"$snapshot_pidfile"
+snapshot_parent="$$"
+FAKE_PS_DIR="$TMP/fake-ps"
+mkdir -p "$FAKE_PS_DIR"
+cat >"$FAKE_PS_DIR/ps" <<'FAKE'
+#!/usr/bin/env bash
+printf '%s\n' "${FAKE_PS_PARENT:?}"
+FAKE
+chmod +x "$FAKE_PS_DIR/ps"
+set -- __library_test__
+# shellcheck disable=SC1090
+source "$RUNSH" >/dev/null 2>&1 || true
+if FAKE_PS_PARENT="$((snapshot_parent + 1))" \
+    PATH="$FAKE_PS_DIR:$PATH" \
+    _force_managed_snapshot "$snapshot_pidfile:$snapshot_pid:$snapshot_parent"; then
+  no "snapshot(PPID change): helper fails closed"
+else
+  ok "snapshot(PPID change): helper fails closed"
+fi
+kill -0 "$snapshot_pid" 2>/dev/null \
+  && ok "snapshot(PPID change): refuses kill" \
+  || no "snapshot(PPID change): killed unowned process"
+kill -KILL "$snapshot_pid" 2>/dev/null || true
+wait "$snapshot_pid" 2>/dev/null || true
 
 # --- T13: daemon is a true foreground entrypoint ---------------------------
 fresh
@@ -585,6 +632,22 @@ has "kickstart gui/4242/com.jarvis.test" "$calls" "launchd restart: starts repla
 hasnot "kickstart -k gui/4242/com.jarvis.test" "$calls" "launchd restart: avoids overlapping replacement"
 hasnot "bootout gui/4242/com.jarvis.test" "$calls" "launchd restart: keeps service registered"
 
+launchd_pid="$(cat "$FAKECTL_STATE/pid")"
+: >"$FAKECTL_STATE/calls"
+out="$(TEST_ROLE=worker TEST_SUPERVISOR=launchd TEST_LAUNCHD_DEAF=1 TEST_DRAIN_WAIT=0 run restart 2>&1)"; rc=$?
+[ "$rc" = 0 ] && ok "launchd restart(timeout): exit 0" || no "launchd restart(timeout): exit 0 (got $rc)"
+calls="$(cat "$FAKECTL_STATE/calls")"
+has "kill SIGKILL gui/4242/com.jarvis.test" "$calls" "launchd restart(timeout): force-stops old service"
+has "enable gui/4242/com.jarvis.test" "$calls" "launchd restart(timeout): re-enables KeepAlive"
+has "kickstart gui/4242/com.jarvis.test" "$calls" "launchd restart(timeout): starts replacement"
+new_launchd_pid="$(cat "$FAKECTL_STATE/pid")"
+[ "$new_launchd_pid" != "$launchd_pid" ] \
+  && ok "launchd restart(timeout): replacement pid changed" \
+  || no "launchd restart(timeout): replacement pid unchanged"
+kill -0 "$launchd_pid" 2>/dev/null \
+  && no "launchd restart(timeout): old pid gone" \
+  || ok "launchd restart(timeout): old pid gone"
+
 # A broken replacement runtime is rejected before launchd is disabled or the
 # current process is signalled.
 launchd_pid="$(cat "$FAKECTL_STATE/pid")"
@@ -616,16 +679,17 @@ install_fake() {
       JARVIS_BRIDGE_STATE_DIR="$TMP/install-state" \
       JARVIS_BRIDGE_BOOTSTRAP_ENV="$BSENV" \
       JARVIS_BRIDGE_ENV="$JENV" \
-      JARVIS_BRIDGE_PYTHON="/usr/bin/python3" \
+      JARVIS_BRIDGE_PYTHON="$INSTALL_PYTHON" \
       JARVIS_BRIDGE_ROLE="${INSTALL_ROLE:-worker}" \
       JARVIS_BOOT_ID="test-boot" \
       JARVIS_CONTROL_PLANE_TOKEN="test-token" \
       JARVIS_AUTO_DISPATCH="${INSTALL_AUTO_DISPATCH:-1}" \
       JARVIS_SCHEDULER_READY_WAIT="${INSTALL_READY_WAIT:-1}" \
-      JARVIS_SCHEDULER_DRAIN_TIMEOUT_SECONDS="1" \
+      JARVIS_SCHEDULER_DRAIN_TIMEOUT_SECONDS="${INSTALL_DRAIN_WAIT:-1}" \
       PYTHONPATH="$repo_root:$PY_YAML_SITE" \
       FAKE_LAUNCHCTL_STATE="$FAKECTL_STATE" \
       FAKE_LAUNCHCTL_LOG="$TMP/install-state/bot.log" \
+      FAKE_LAUNCHCTL_DEAF="${INSTALL_LAUNCHD_DEAF:-0}" \
       bash "$INSTALLER"
 }
 iout="$(install_fake 2>&1)"; rc=$?
@@ -655,6 +719,17 @@ calls="$(cat "$FAKECTL_STATE/calls")"
 has "disable gui/4242/com.jarvis.test" "$calls" "install-launchd: loaded upgrade uses safe drain"
 has "kill SIGTERM gui/4242/com.jarvis.test" "$calls" "install-launchd: loaded upgrade signals current main"
 hasnot "bootout gui/4242/com.jarvis.test" "$calls" "install-launchd: loaded upgrade never bootouts adopted worker"
+
+: >"$FAKECTL_STATE/calls"
+if INSTALL_LAUNCHD_DEAF=1 INSTALL_DRAIN_WAIT=0 install_fake >/dev/null 2>&1; then
+  ok "install-launchd: timed-out loaded upgrade still replaces service"
+else
+  no "install-launchd: timed-out loaded upgrade still replaces service"
+fi
+calls="$(cat "$FAKECTL_STATE/calls" 2>/dev/null)"
+has "kill SIGKILL gui/4242/com.jarvis.test" "$calls" "install-launchd: timed-out upgrade force-stops old service"
+has "enable gui/4242/com.jarvis.test" "$calls" "install-launchd: timed-out upgrade re-enables KeepAlive"
+has "kickstart gui/4242/com.jarvis.test" "$calls" "install-launchd: timed-out upgrade starts replacement"
 
 : >"$FAKECTL_STATE/calls"
 schedule_install_out="$(

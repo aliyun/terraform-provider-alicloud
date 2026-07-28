@@ -124,7 +124,8 @@ def main() -> int:
     stop.wait()
     while not scheduler.stop():
         LOG.error(
-            "Scheduler drain timed out; keeping this process alive and retrying")
+            "Scheduler drain incomplete; remaining DRAINING until supervisor "
+            "force-stop or a retry completes")
         time.sleep(5)
     return 0
 

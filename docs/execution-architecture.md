@@ -58,12 +58,16 @@ The queue-pull Worker is installation-scoped, not process-scoped. Its stable
 `workerKey` is stored in `.my-day/bridge/worker-id` (override with
 `JARVIS_WORKER_ID_FILE`), while every bridge start creates a new `processUuid`.
 Ordinary mutations carry both identities. During a planned stop or explicit
-bridge restart the executor reports `DRAINING`, synchronously stops local task
-processes, relinquishes each Session as `RESUMABLE` without increasing Task
-retry count, and finally reports `OFFLINE`. The next process re-registers the
-same Worker and resumes the same runtime session on that machine. A crash
-cannot be taken over until the old heartbeat/leases are stale and no Session
-remains `LEASED` or `RUNNING`.
+bridge restart Scheduler, Bot, and Worker all quiesce before sharing one
+30-second shutdown deadline. The executor reports `DRAINING`, stops local task
+processes, relinquishes Sessions as `RESUMABLE` without increasing Task retry
+count, and reports `OFFLINE` when handoff completes. The next process
+re-registers the same Worker and resumes the same runtime session on that
+machine. If the bounded handoff cannot reach the control plane, shutdown logs a
+failed handoff and lease expiry/recovery reconciles the existing
+`runtimeSessionId` and fence; replacement never bypasses that ownership. A
+crash cannot be taken over until the old heartbeat/leases are stale and no
+Session remains `LEASED` or `RUNNING`.
 
 ## Managed wait wake-up
 
