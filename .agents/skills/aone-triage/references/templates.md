@@ -20,69 +20,83 @@
 三、解决方案:1) 短期绕过(OpenAPI/CLI 或 null_resource)2) 正解(给 provider+spec 提 PR)
 ```
 
-## Requirement skeleton (Cloudspec 关联单 · 镇元 agent 接单硬契约)
+## Canned 补料等待骨架
 
-**这是硬契约,不是可选参考**。落 **Terraform镇元对接(2165097)** 池的关联单(包括 tf_customer 分支 E 谜拟单、其它域上游 Cloudspec 缺口单)交由 **镇元 agent(`WORKER_1783326253279`)** 自动接手,agent 从 description 里解析结构化字段驱动后续处理(spec 补齐 / 映射建立 / 生成器触发)。**字段缺失 / marker 缺失 / JSON 语法错 = agent 无法接单 = 单沉底**——jarvis 自己不能替 agent 干活,漏契约就是把单丢黑洞。
+命中 canned 且正式判断所需材料不完整时，先由唯一写者回复并**等待补料**：
 
-**契约来源**:谜拟本人钉钉文档 https://alidocs.dingtalk.com/i/nodes/YQBnd5ExVEjea40qC2vjQyxPJyeZqMmz
+```markdown
+### 当前结论
+现有材料不足以判断 <API / CloudSpec / Provider> 的责任层，当前不进入正式路由或开发。
 
-### 字段清单(全部必填,无可选)
+### 请补充
+- <完整 HCL / 资源和字段>
+- <完整错误、API error code；RequestId 仅在内部证据中脱敏保存>
+- <期望行为与当前行为>
+- <必要的 Terraform debug 日志或最小复现>
 
-| 字段 | 放什么 | 示例 |
-|---|---|---|
-| `background` | 原文【背景】段落:客户诉求 + 现状(为什么现在做不到) | "OSS 已支持通过 OpenAPI 配置桶清单规则,但 Terraform Provider 中不存在 alicloud_oss_bucket_inventory 资源,客户无法通过 Terraform 管理 OSS 桶清单规则。" |
-| `requirement` | 原文【需求】段落整体:要什么资源/属性/接口,一条一条列 | "新增 alicloud_oss_bucket_inventory 资源,支持桶清单规则的完整 CRUD 操作。" |
-| `documentUrl` | 官方 API 文档链接(api.aliyun.com/document/) | "https://api.aliyun.com/document/Oss/2019-05-17/PutBucketInventory" |
-| `mappingCheckUrl` | acube getTerraformResourceSpec 映射查询接口 | "https://acube.aliyun-inc.com/api/v1/terraform/generator/getTerraformResourceSpec?terraformResourceType=alicloud_oss_bucket_inventory" |
-| `acceptance` | 验收标准:spec 补齐 / 映射建立 / 查询返回有效 / 偏差检测可见 | "Cloudspec 资源 spec 补齐,alicloud_oss_bucket_inventory ↔ Cloudspec 映射建立,getTerraformResourceSpec 查询返回有效映射。" |
-| `deadline` | 交付时间(YYYY-MM-DD;无明确 DDL 传空串,别省字段) | "2026-06-30" 或 "" |
-| `source` | 需求来源(源工单号 + 类别 或 咨询上下文) | "工单 82845574（Terraform - 客户问题）" |
+### 已完成的安全检查
+<只读安全查证事实；明确这些事实不构成正式路由结论>
 
-### description 完整正文骨架(必须严格照抄结构)
-
-````markdown
-## 背景
-<原文【背景】段落 · 与 JSON background 字段一致>
-
-## 需求
-<原文【需求】段落 · 与 JSON requirement 字段一致>
-
-## 机读信息
-```json
-{
-  "background": "<与上方【背景】段落一致>",
-  "requirement": "<与上方【需求】段落一致>",
-  "documentUrl": "https://api.aliyun.com/document/<Product>/<ver>/<Action>",
-  "mappingCheckUrl": "https://acube.aliyun-inc.com/api/v1/terraform/generator/getTerraformResourceSpec?terraformResourceType=alicloud_x",
-  "acceptance": "<spec补齐 + 映射建立 + getTerraformResourceSpec 有效 + 偏差检测可见>",
-  "deadline": "YYYY-MM-DD 或 空串",
-  "source": "工单 <ID>（Terraform - 客户问题）"
-}
+### 下一步
+收到材料后重新执行完整决策树；本轮 release/idle 等待补料。
 ```
-````
 
-### 硬性规则
+## Terraform 文档分层判定
 
-1. **`## 机读信息` marker 段名不可省不可改**——agent 靠这个 marker 定位 JSON 块;写成 "机读信息"、"机读 JSON"、`### 机读信息` 都不认。
-2. **JSON 必须在 ` ```json ` 代码块内**——纯文本 JSON 或用 ` ``` ` (无语言标记) 也可能不认。
-3. **7 字段全部必填,顺序建议同上**;`deadline` 无明确日期时传空串 `""`,别删字段。
-4. **JSON 字段与上方【背景】【需求】段落必须逐字一致**——两处不一致 agent 有可能取错。
-5. **需求导向,不罗列现有属性清单**——写"缺什么/对应哪个API",不写"现有 x/y/z 属性"。
-6. **`source` 必须能反查源客户工单**——形如 `工单 <ID>（Terraform - 客户问题）` 或 `用户咨询 <API url>`;别只写"客户需求"。
+| 证据结论 | 路由 |
+|---|---|
+| **pure datasource**：只涉及 `data.alicloud_xxx` 查询、过滤、分页、输出字段或 Read，不含 resource 变更 | **source-only**：紧急源单新山、非紧急源单过载，由 TerraformRD 在源单直接开发；历史 relation 只读，严禁任何 528766 承载动作 |
+| **CloudSpec 文档文本 metadata**：只改 resource/property/operation description、字段解释、NOTE 或枚举文案，不改变字段集合、类型、约束或 CRUD | **分支 I**，创建或复用 2169561 并指派念依（373108）；Provider 公开 docs 同时错误时独立补 528766 紧急兜底腿 |
+| **CloudSpec 文档源正确，Provider 本地文档生成/展示偏差** | **分支 D**，仅处理 Provider 本地生成、发布或展示链路 |
+| **CloudSpec 结构 metadata**：新增/删除字段，或改变类型、约束、枚举集合、CRUD/operation/映射 | **分支 E**，在原主单修到 pre Meta 收敛，再强制 E → D-临钧 |
+| 尚未取得足以判断文档源和结构边界的证据 | 使用上方 canned 骨架等待补料，不得猜测 I/D/E |
 
-### 参考样本
+## 分支 I · 文档文本 metadata 路由骨架
 
-样本工单 [83120127](https://project.aone.alibaba-inc.com/v2/project/2165097/req/83120127) 是标准姿势(谜拟本人给的示范单),需要抄骨架时对着它抄。
+I 的 text-only 文档主腿固定走 `upstream.cloudspec_docs_quality`；PD/QA 不外写，
+terraform-rd finalizer 作为 downstream `single-writer` 执行，executor 只负责原主单
+bookend，不解析或重放路由动作：
 
-### 反模式速查
+```markdown
+### CloudSpec 文档文本 metadata
 
-- ❌ description 只有【背景】【需求】两段,没有 `## 机读信息` + JSON → agent 完全不接单,单沉底
-- ❌ 只放 JSON、没有【背景】【需求】自然语言段落 → 人类看不懂,评审无从下手
-- ❌ JSON 字段名拼错(如 `docUrl` / `mappingUrl` / `dueDate`)→ agent 解析错,把 default 值当输入
-- ❌ 引用 <mcreference>...</mcreference> 之类的模型标记留在 background/requirement 里 → agent 语义污染,建议先剥掉
-- ❌ `documentUrl` 用 help.aliyun.com/document_detail/xxx.html → 应用 api.aliyun.com/document/<Product>/<ver>/<Action>(agent 后续拉 OpenAPI spec 用)
-- ❌ `mappingCheckUrl` 里 `terraformResourceType` 参数值和 requirement 里资源名不一致 → agent 查错映射
-- ❌ 主观倾向/裁决建议塞进 requirement → 只放客户诉求本身,方案由 agent 或后手研发决定
+- 边界：<resource/property/operation description、字段解释、NOTE、枚举文案>
+- 结构不变证据：<字段集合、类型、约束、CRUD 均未变化>
+- 2169561：<created/reused、念依（373108）、relation>
+- Provider 公开 docs：<正确 / 同时错误>
+- 独立 528766 紧急兜底腿：<N/A / created/reused、过载（484483）、relation>
+- 分池防重：<2169561 point-read>；<528766 point-read>
+```
+
+一个池已有 relation 不能抑制另一个池的缺失补建；528766 只能临时兜底公开 docs，不能替代
+2169561 文档源主腿。
+
+## 分支 E · CloudSpec 结构 metadata 原主单自闭环骨架
+
+E 仅处理字段集合、类型、约束、CRUD/operation/映射。open-jarvis 在当前原主单修 CloudSpec
+到 pre Meta 收敛，然后交 D-临钧；不得直接做 Provider PR/CI/ACC：
+
+```markdown
+### CloudSpec 结构 metadata 原主单自闭环
+
+- 缺口：<字段集合/类型/约束/CRUD/operation/映射 + 预期语义>
+- OpenAPI 证据：<Product::Action、字段、类型、枚举>
+- 初始 pre Meta：<资源是否存在、属性/CRUD/文档差异>
+- AMP/Git：<task 专属 feature 分支、AMP 返回的 SSH URL、cloudspec-model commit/MR>
+- 编辑链：cloudspec-amp-workflow → cloudspec-idl-guide →
+  cloudspec-resource-edit / cloudspec-operation-edit → cloudspec-build-fix →
+  cloudspec-norm-check-fix
+- 验证：`aliyun cspec build`、资源级 `aliyun cspec check`、`amp publish pre --dry-run`
+  与 `amp publish pre`、pre Meta 收敛结果
+- E → D-临钧：<已有 relation/taskId/aoneId 复用，或 createBuildTaskV2 的 taskId/aoneId>
+- Provider：<由 D-临钧生成器链路后续处理；E 不直接执行 PR/CI/ACC>
+- 当前门：<pre 未收敛，不触发 Acube / handoff 完成 / missing_capability / blocked>
+- 下一步：<handoff 回执后 release/idle；不得 finish；prod/online 与主干仍为人工硬门>
+```
+
+权限、AMP 登录、SSH 或仓库访问失败时，保留已取得的只读证据并返回
+`missing_capability` / `blocked`；不得换个人身份、改派旧 2165097 路径或另建 Aone
+规避能力缺口。pre 未收敛不得触发 Acube；不得在 E 完成后直接 release/idle。
 
 ## Requirement skeleton (Terraform 生成器问题/API 工具团队)
 默认池: `api_toolkit` / project `2100304`;产品字段优先选 Terraform;标题聚焦生成器行为,不要写成客户资源诉求。

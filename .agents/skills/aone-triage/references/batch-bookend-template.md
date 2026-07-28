@@ -57,61 +57,132 @@ for id in "${IDS[@]}"; do
 done
 ```
 
-## 骨架 C · 建关联单 + wrap 主单(转单场景)
+## 骨架 C · pure datasource source-only 源单路由
+
+本骨架只用于纯 datasource：仅涉及 `data.alicloud_xxx` 查询、过滤、分页、输出字段或 Read，
+且不含 resource 变更。resource+datasource 混合、G 全局与手写 resource D 都不得进入。
+RD route phase **只幂等同步源单 assignee + per-type progress_status**；
+**bridge executor 独占源单 claim/唯一回复/tag/release/finish**。历史 relation 只读保留；
+禁止 create/reuse-as-carrier/reassign/relation/claim/wrap/release/finish 528766。
 
 ```bash
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+SRC=78056841
+URGENT="${URGENT:?1=紧急，0=非紧急}"
+URGENT_ASSIGNEE=521957
+NONURGENT_ASSIGNEE=484483
+SOURCE_STATUS="${SOURCE_STATUS:?从 pools.json progress_status[workitemType] 解析}"
+SOURCE_ROUTE_DRIFT="${SOURCE_ROUTE_DRIFT:-0}"
+
+if [ "$URGENT" = 1 ]; then
+  PURE_DATASOURCE_ASSIGNEE="$URGENT_ASSIGNEE"
+else
+  PURE_DATASOURCE_ASSIGNEE="$NONURGENT_ASSIGNEE"
+fi
+
+# point-read 仅用于比较源单 owner/status，并可只读引用历史 relation 上已有 PR 防重复。
+# 不删除/迁移/关闭/改派历史 relation；它不是开发、完成或 blocker 门。
+if [ "$SOURCE_ROUTE_DRIFT" = 1 ]; then
+  bin/a1id as terraform-rd -- project workitem update "$SRC" \
+    --assignee "$PURE_DATASOURCE_ASSIGNEE" --status "$SOURCE_STATUS"
+fi
+
+# 后续在源单上下文完成 RD→QA；finalizer 仅返回 AONE_RESULT。
+# open PR + QA pass 时由 bridge executor release 源单，不 finish。
+```
+
+## 骨架 D · G / 紧急非-datasource D 双 owner 关联单 + 双工单 bookend
+
+本骨架**只用于 G / 紧急非-datasource D**。pure datasource 必须走上方 source-only；
+D-临钧/A/F/H/非紧急非-datasource D、I/E 继续走各自专用路径。
+控制面 executor 已持有源工单 lease；**源工单由 bridge executor bookend**，本骨架不得
+claim/wrap/release 源工单。528766 才由 RD finalizer 直接 claim/bookend。
+
+```bash
+set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"   # jarvis 仓根(勿硬编码单机路径)
 SRC=78056841                            # 客户主单 id
-POOL=1086837                            # 主单所在池
-NEW_PROJECT=528766                      # tf_provider 池
-ASSIGNEE=521957                         # 承接方工号
-CATEGORY=task                           # req/bug/task,按分支决定
+SOURCE_PROJECT=1086837                  # tf_customer
+RELATED_PROJECT=528766                  # tf_provider
+SOURCE_ASSIGNEE=521957                  # 源单保持新山
+RELATED_ASSIGNEE=484483                 # 研发单固定过载
+CATEGORY=task                           # req/bug/task,按源单 workitemType 决定
 PRIORITY="紧急"                         # 复制原单 or 缺陷覆写
+SOURCE_STATUS="${SOURCE_STATUS:?从 pools.json progress_status[workitemType] 解析}"
 
-# === 1. 建关联单 ===
-# --quiet 输出是空格分隔不是 tab; 用 awk '{print $1}' 抓第一列(不带 -F)
-NEW_ID=$(bin/a1id -- project workitem create \
-  --project "$NEW_PROJECT" \
-  --category "$CATEGORY" \
-  --title "分支 X · <具体标题>" \
-  --assignee "$ASSIGNEE" \
-  --priority "$PRIORITY" \
-  --body-file /tmp/body-${SRC}.txt \
-  --cfs "计划开始日期=$(date +%Y-%m-%d)" \
-  --cfs "计划截止日期=$(date -v+3d +%Y-%m-%d)" \
-  --cfs "实际工时=0" \
-  --quiet 2>&1 | head -1 | awk '{print $1}')
+# === 0. 同题 528766 point-read + healthy existing claim Gate ===
+# 先查源单 relation、528766 同题单、assignee、jarvis-claimed 与控制面 lease，把复用结果放入
+# RELATED_ID；没有同题单时留空。已有 healthy existing claim 不抢占：当前 run 立即 dedup skip，
+# 不改派、不重复 create/claim/bookend。三个 *_DRIFT/MISSING 值都必须来自同一次 point-read；
+# update 只修差异字段。claim 失败立即停止，禁止 relation/update/wrap。
+RELATED_ID="${RELATED_ID:-}"
+RELATION_MISSING="${RELATION_MISSING:-0}"
+RELATED_ASSIGNEE_DRIFT="${RELATED_ASSIGNEE_DRIFT:-0}"
+SOURCE_ROUTE_DRIFT="${SOURCE_ROUTE_DRIFT:-0}"
 
-# 显式 [方括号] 打印,便于肉眼验证边界(空格 / 脏字符触发问题)
-echo "NEW_ID=[$NEW_ID]"
-[ -z "$NEW_ID" ] && { echo "创建失败"; exit 1; }
-
-# === 2. 双向关联(aone 自动双向,单次即可; 第二次调 relation add 会 400) ===
-bin/a1id -- project workitem relation add "$SRC" "relate:$NEW_ID" 2>&1 | tail -1
-
-# === 3. 主单 assignee 改到承接方 + status 改「问题解决中」 + wrap 关键节点评论 ===
-bin/a1id -- project workitem update "$SRC" --assignee "$ASSIGNEE" 2>&1 | tail -1
-
-# 用 sed 预替换 PLACEHOLDER_NEW_ID(避开 heredoc 展开坑),写到 /tmp/wrap-<SRC>.txt
-sed "s/PLACEHOLDER_NEW_ID/${NEW_ID}/g" > /tmp/wrap-${SRC}.txt <<'TXT'
-### 结论
-<一句话根因 + 分支路由>。已建关联单 PLACEHOLDER_NEW_ID,指派 @<承接方>。
-
-### 关联单
-关联单 ID = PLACEHOLDER_NEW_ID
-标题 = <具体标题>
-项目 <NEW_PROJECT>;双向关联已加。
-
-@<承接方>(<工号>) 详情见关联单,进度请在两侧同步回帖。
-TXT
-
-if bash bootstrap/claim.sh claim "$SRC" "$POOL" 2>&1 | tail -1 | grep -q claimed; then
-  bash bootstrap/wrap.sh done "$SRC" --summary-file /tmp/wrap-${SRC}.txt 问题解决中 2>&1 \
-    | grep -E "工作项|Error" | head -2
-  bash bootstrap/claim.sh release "$SRC" "$POOL" 2>&1 | tail -1
+if [ -n "$RELATED_ID" ]; then
+  # 先 claim 再改派，避免 point-read 后出现竞争时偷走健康 claim。
+  claim_rc=0
+  JARVIS_A1_IDENTITY=terraform-rd bash bootstrap/claim.sh claim "$RELATED_ID" "$RELATED_PROJECT" || claim_rc=$?
+  if [ "$claim_rc" -ne 0 ]; then
+    if [ "$claim_rc" -eq 1 ]; then
+      echo "[$RELATED_ID] healthy/lost-race claim，保持原 owner 与当前 run，skip"
+      exit 0
+    fi
+    echo "[$RELATED_ID] claim 失败 rc=$claim_rc，停止本轮并上抛"
+    exit "$claim_rc"
+  fi
+  if [ "$RELATED_ASSIGNEE_DRIFT" = 1 ]; then
+    bin/a1id as terraform-rd -- project workitem update "$RELATED_ID" --assignee "$RELATED_ASSIGNEE"
+  fi
 else
-  echo "[$SRC] claim 失败,主单 wrap 未发;NEW_ID $NEW_ID 已建,记得手动同步"
+  # 确认 relation 与同题搜索均无命中后才允许 create 一次。
+  RELATED_ID=$(bin/a1id as terraform-rd -- project workitem create \
+    --project "$RELATED_PROJECT" \
+    --category "$CATEGORY" \
+    --title "G/紧急非-datasource D · <具体标题>" \
+    --assignee "$RELATED_ASSIGNEE" \
+    --priority "$PRIORITY" \
+    --body-file /tmp/body-${SRC}.txt \
+    --cfs "计划开始日期=$(date +%Y-%m-%d)" \
+    --cfs "计划截止日期=$(date -v+3d +%Y-%m-%d)" \
+    --cfs "实际工时=0" \
+    --quiet 2>&1 | head -1 | awk '{print $1}')
+  [[ "$RELATED_ID" =~ ^[0-9]+$ ]] || { echo "创建失败"; exit 1; }
+  claim_rc=0
+  JARVIS_A1_IDENTITY=terraform-rd bash bootstrap/claim.sh claim "$RELATED_ID" "$RELATED_PROJECT" || claim_rc=$?
+  if [ "$claim_rc" -ne 0 ]; then
+    if [ "$claim_rc" -eq 1 ]; then
+      echo "[$RELATED_ID] 新建后 lost-race；保留供健康 run/下轮 point-read"
+      exit 0
+    fi
+    echo "[$RELATED_ID] 新建后 claim 失败 rc=$claim_rc；停止本轮并上抛"
+    exit "$claim_rc"
+  fi
+  RELATION_MISSING=1
 fi
+
+# === 1. 物化双 owner + 单次 relation ===
+if [ "$SOURCE_ROUTE_DRIFT" = 1 ]; then
+  bin/a1id as terraform-rd -- project workitem update "$SRC" --assignee "$SOURCE_ASSIGNEE" --status "$SOURCE_STATUS"
+fi
+if [ "$RELATION_MISSING" = 1 ]; then
+  bin/a1id as terraform-rd -- project workitem relation add \
+    "$SRC" "relate:$RELATED_ID"
+fi
+
+# === 2. RD→QA 修复/验收完成后，研发单只写一次聚合 bookend ===
+RELATED_SUMMARY="/tmp/related-${RELATED_ID}-aggregate.md"
+test -s "$RELATED_SUMMARY"
+JARVIS_A1_IDENTITY=terraform-rd bash bootstrap/wrap.sh done "$RELATED_ID" \
+  --summary-file "$RELATED_SUMMARY" --no-status
+
+# PR 未合并只 release；missing_capability/retry exhausted 也 release，不得 finish。
+JARVIS_A1_IDENTITY=terraform-rd bash bootstrap/claim.sh release "$RELATED_ID" "$RELATED_PROJECT"
+
+# === 3. 源工单不在模型 run 内 bookend ===
+# finalizer 把同一聚合摘要放入 AONE_RESULT.reply_body；bridge executor 对 SRC 回复/状态/release。
 ```
 
 ## 常见坑速查

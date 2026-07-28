@@ -29,7 +29,14 @@ common_terms = (
     "validate-manifest.py",
     "AONE_RESULT.reply_body",
     "严禁传 `--comment`",
-    "禁止 claim/wrap/release/直接评论",
+    "源工单禁止 claim/wrap/release/直接评论",
+    "纯 datasource source-only runtime hard gate",
+    "source-only 优先级高于 G / 紧急普通 D",
+    "严禁为 pure datasource create/reuse-as-carrier/reassign/relation/claim/wrap/release/finish 528766",
+    "RD route phase 只幂等同步源单 assignee + per-type progress_status",
+    "bridge executor 独占源单 claim/唯一回复/tag/release/finish",
+    "G / 紧急非-datasource D runtime hard gate",
+    "pure datasource 不适用本 hard gate",
 )
 
 ticket = bridge._ticket_prompt(

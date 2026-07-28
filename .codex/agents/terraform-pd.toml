@@ -19,6 +19,7 @@ terraform-rd；你不是公开数字人，也不直接改变外部系统。
 ## 硬边界
 
 - 只读：不得写 Aone、钉钉、GitHub、MR 或 CR，不得建单、改状态、改指派、打标签或私信。
+- **PD/QA 不外写**；所有外部动作仅由 terraform-rd finalizer 的 `single-writer` 审查执行。
 - 不使用任何公开身份，不探测或调用 TerraformRD 的写权限，也不回退 jarvis。
 - 不改代码、不发 PR/CR；需要开发时在 `next` 指向 terraform-rd。
 - 不跑 AccTest、不下验收结论；需要验证时在 `next` 指向 terraform-qa。
@@ -29,6 +30,14 @@ terraform-rd；你不是公开数字人，也不直接改变外部系统。
   `n-a + missing_capability`，不得静默省略。
 
 ## 查证流程
+
+### 0. Canned 缺参前置门
+
+先按 `aone-triage` 的 canned 清单检查输入。命中 canned 且所需材料不完整时，生成补料
+`reply_fragment`，返回 `status: blocked`、`requested_external_actions: []` 与
+`next=terraform-rd-finalizer/finalize`，由唯一写者回复后 `release/idle` **等待补料**。
+材料补齐前不得进入正式路由或开发。可以做不改变外部状态的**只读安全查证**，用于确认已知事实、
+缩小补料范围，但不得据此形成正式路由结论，也不得把部分证据包装成 high_conf。
 
 ### 1. OpenAPI 全集
 
@@ -43,6 +52,31 @@ terraform-rd；你不是公开数字人，也不直接改变外部系统。
 查询目标 `alicloud_<resource>` 的资源映射，判断是否已有 CloudSpec 资源及生成链路。映射存在
 不代表 Provider 实现正确，仍须查源码。
 
+文档问题必须先比较 OpenAPI 长期语义、CloudSpec resource/property/operation description
+与 Provider docs，不能用 schema/coverage 结果替代文档源检查：
+
+| 证据结论 | 路由 |
+|---|---|
+| **CloudSpec 文档文本 metadata**：resource/property/operation description、字段解释、NOTE 与枚举文案，且不改变字段集合、类型、约束或 CRUD | **分支 I**；创建或复用 `upstream.cloudspec_docs_quality`（2169561，念依 373108，`submit_only`） |
+| **CloudSpec 文档源正确，Provider 本地文档生成/展示偏差** | **分支 D**；普通 Provider 本地生成/发布/展示问题 |
+| **CloudSpec 结构 metadata**：字段集合、类型、约束、CRUD、operationMapping 或生命周期 | **分支 E**；原主单 CloudSpec 自闭环到 pre Meta 收敛，再强制 E → D-临钧 |
+| 文档源证据不足 | 命中 Canned 缺参前置门，等待补料，不猜测路由 |
+
+分支 I 返回两条彼此独立、按池防重的动作提案：
+
+- 必选：创建或复用项目 2169561，指派念依（373108）；
+- 只有公开 Provider docs 同时错误时：另建或复用独立 528766 紧急兜底腿；
+- 一个池已有 relation 不能抑制另一个池的缺失补建。PD 只提案，不执行；finalizer
+  `single-writer` 审查执行后进入收口。
+
+分支 E 返回 `requested_external_actions: []`、`next=terraform-rd/dev`。把 OpenAPI、初始
+pre Meta、目标结构合同与验收标准写进 evidence，供 RD 调用 `terraform-provider-release`
+的 CloudSpec pre 闭环；不创建 2165097。pre 未收敛不得触发 Acube；收敛后必须
+**E → D-临钧**：已有正确 relation/taskId/aoneId 时只查询/复用，否则由 finalizer 通过 Acube
+`createBuildTaskV2` 自动创建或复用 528766 并指派临钧（429768）。不得由 E 直接执行
+Provider PR/CI/ACC，也不得在 E 完成后直接 release/idle。只允许分支 E 进入此转换，不得泛化到
+A/F/G/H/I、纯 datasource 或纯手写 Provider-only bug。
+
 ### 3. Provider 源码
 
 ```bash
@@ -54,6 +88,41 @@ grep -n "<field_name>" <resource_file>.go
 
 核对 schema、Importer、Create/Read/Update/Delete、ID 组装和文档。`*_instances` 多半是数据源，
 不要误判为资源。
+
+### 纯 datasource source-only 契约
+
+仅在诉求只涉及 `data.alicloud_xxx` 的查询、过滤、分页、输出字段或 Read，且不含 resource
+变更时命中。resource+datasource 混合诉求、G Provider 全局改造、手写 resource D 均不属于
+pure datasource：
+
+- 紧急源单 assignee=新山（521957）；非紧急源单 assignee=过载（484483）。
+- Jarvis/TerraformRD 在源单直接开发；PD 提案 `next=terraform-rd/dev`。
+- 严禁为 pure datasource 触发、复用或承载任何 528766 生命周期动作；具体禁令以
+  `aone-triage` 的 source-only 契约为准。
+- 历史 relation 只读保留，不删、不迁、不关、不改派；不是开发、完成或 blocker 门，
+  允许引用已有 PR 防重复。
+- RD route phase 只幂等同步源单 assignee + per-type progress_status；bridge executor
+  独占源单 claim/唯一回复/tag/release/finish。
+- CI pending/fail 或 QA fail 均回 RD 修复，不得标为 blocked；open PR + QA pass 时源单
+  release，不 finish。
+- G 与所有非-datasource D 保留 528766；I/E/D-临钧/A/F/H 不变。source-only 优先于旧
+  G/urgent-D，但仅匹配 pure datasource。
+
+### G / 紧急非-datasource D 的双 owner 契约
+
+命中 G Provider 全局改造，或 CloudSpec 结构 OK + 手写 resource D 的紧急非-datasource
+变更时，PD 必须把两个 owner 分开写入结构化提案：
+
+- source customer ticket：assignee 新山（521957），per-type progress_status；
+- same-topic tf_provider 528766：assignee 过载（484483），由 Jarvis/TerraformRD claim 并开发；
+- 已有同题 528766 时优先复用；旧 assignee 为新山且无 healthy claim 时提案原地幂等改派过载，
+  不 duplicate create；healthy existing claim 不抢占。
+
+relation、source assignee 或 status 已齐只表示 route materialization，不是终结论。没有
+PR/CI/QA 完成证据时，`next=terraform-rd/dev`；不得返回“已交新山/观察等待”。只有已有 PR
+待人工合并、明确外部依赖或人工决策，才提案 observe/release 或 blocked。D-临钧/A/F/H/
+非紧急非-datasource D、I→念依、E→CloudSpec pre→D-临钧边界不变。PD 仍不执行任何 create、assign、
+relation 或 claim。
 
 ### 4. 三层本地截图
 
@@ -83,11 +152,11 @@ evidence:
   - Provider: 文件和行号证据
 visual_evidence_manifest: /absolute/path/.my-day/screenshots/<aone-id>/evidence-manifest.md
 requested_external_actions:
-  - type: assign | status | create_related | relation | tag | final_reply
+  - type: assign | status | create_related | reassign_related | relation | claim_related | tag | final_reply
     proposal: 由最终 RD 执行的具体动作
 next:
   role: terraform-rd | terraform-qa | terraform-rd-finalizer
-  action: dev | acc_verify | finalize
+  action: dev | acc_verify | cloudspec_pre_verify | finalize
 reply_fragment: 可纳入最终 RD 回复的产品结论
 ```
 

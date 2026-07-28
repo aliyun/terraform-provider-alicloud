@@ -112,25 +112,82 @@ print("  Property/Operation/PrimaryOperation:",
 '
 ```
 
-**镇元 OK 三条件**(全满足才算 OK,任一不满足即 NOT OK):
+#### 分支 I — CloudSpec 文档文本 metadata
+
+文档问题先比较 OpenAPI 长期语义、CloudSpec `resource/property/operation description` 与
+Provider docs。变更只涉及 description、字段解释、NOTE 与枚举文案，且
+**不改变字段集合、类型、约束或 CRUD** 时，才是 text-only I：
+
+- 从 `config/pools.json` 的 `upstream.cloudspec_docs_quality` **创建或复用** 2169561，
+  指派念依（373108），入口保持 `submit_only`；
+- Provider 公开 docs 同时错误时，补一条**独立 528766 紧急兜底腿**，指派过载（484483）；
+- 两池执行**分池防重**，一个池已有 relation 不能抑制另一个池的缺失补建；
+- PD/QA 不外写，terraform-rd finalizer 作为 downstream `single-writer` 执行动作；
+  executor 只负责原主单 bookend。
+
+CloudSpec 文档源正确、仅 Provider 本地生成/展示偏差时走 D；文档改动同时涉及字段集合、类型、
+约束、枚举集合、CRUD/operation 或映射时不再是 I，走结构分支 E。
+
+**CloudSpec 结构 OK 三条件**(全满足才算 OK,任一不满足即结构 NOT OK):
 
 1. **API 在镇元有对应资源**:`get` 返回 data 且 `released` list 命中(资源已定义并发布)
 2. **当前资源属性满足客户诉求**:比对 Step 1 抽取的真实诉求字段,镇元资源 schema 的 properties **全覆盖** —— 缺字段即视为 NOT OK(即便覆盖度分再高也不算 OK,因为覆盖度只测已建 schema 的属性,客户想要新字段时属性不覆盖=缺口在镇元)
 3. **测试覆盖度 100%**:`CoverageDetail.CoverageScore == 1.0`(V2 仅以覆盖度综合分判定,无 PASS/FAIL 用例计数)
-
 **判定**(按「与镇元相关性」口径):
-- 三条件全满足 → **镇元 OK** = 镇元侧无问题、缺口在 provider 侧 = **与镇元不相关**,走分支 D 分流
-- 任一不满足(资源未定义 / 属性缺客户要的字段 / 覆盖度 < 1.0) → **镇元 NOT OK** = **与镇元相关**,走分支 E
+- 三条件全满足 → **CloudSpec 结构 OK** = 结构侧无问题、缺口在 provider 侧，走分支 D
+- 任一不满足(资源未定义 / 属性缺客户要的字段 / 覆盖度 < 1.0) →
+  **结构 NOT OK**，走分支 E 的 CloudSpec 结构 metadata 原主单自闭环
 
-**前置短路 · 纯 datasource 问题不查镇元**:诉求只涉 `data.alicloud_xxx`(查询/过滤/输出字段)、不涉资源 schema/生命周期的,直接判**与镇元不相关**、进分支 D 分流(非临钧子分支)——datasource 是 provider 侧对 List/Describe 查询 API 的只读封装,镇元只管资源 schema,本节的 get/覆盖度查证全部跳过。resource+datasource 混合诉求不算"纯",仍按资源主线走本节查证。
+**前置短路 · 纯 datasource 问题不查镇元**:仅涉及 `data.alicloud_xxx` 的查询、过滤、分页、输出字段或 Read
+且不涉资源 schema/生命周期时，直接判**与镇元不相关**并走 source-only。
+datasource 是 provider 侧对 List/Describe 查询 API 的只读封装，镇元只管资源 schema，本节
+get/覆盖度查证全部跳过。resource+datasource 混合诉求、G Provider 全局改造、手写 resource D 均不属于 pure datasource。
 
 **环境说明**:V2 走 acube 正式(`acube.aliyun-inc.com`),默认线上;需要预发数据把域名换成 `pre-acube.aliyun-inc.com` 即可(路径 / 参数 / 返回结构一致)。服务端实现见邻仓 `a-cube-aliyun-com` 里 `acube-auto-generator/.../ProductMetaUtil.java#getResourceQualityDetailCoverageScoreV2ByCommon`。
 
 **sanity check(必跑)**:拿同产品已发布的其他资源(如查 ① released list 里另一项)以相同接口复查,能拿到 `CoverageDetail` 说明内网/接口正常;否则先排查内网访问(`pre-acube.aliyun-inc.com` 需办公网/VPN;`/api/v1/**` 免鉴权,但走内网 DNS)。
 
-### 分支 D:与镇元不相关(镇元 OK 但 provider 侧问题 / 纯 datasource),分流
+### 纯 datasource source-only 契约
 
-资源类先判 provider 代码类型:
+- 紧急源单 assignee=新山（521957）；非紧急源单 assignee=过载（484483）；两者均由
+  Jarvis/TerraformRD 在源单直接开发。
+- 严禁为 pure datasource create/reuse-as-carrier/reassign/relation/claim/wrap/release/finish 528766。
+- 历史 relation 只读保留，不删、不迁、不关、不改派；不是开发、完成或 blocker 门，
+  允许引用已有 PR 防重复。
+- RD route phase 只幂等同步源单 assignee + per-type progress_status；
+  bridge executor 独占源单 claim/唯一回复/tag/release/finish。
+- CI pending/fail 或 QA fail 均回 RD 修复，不得标为 blocked；只有 `missing_capability`、
+  `retry exhausted`、明确外部依赖或人工决策才可 blocked/SUSPENDED。
+- open PR + QA pass 时源单 release，不 finish。
+- G 与所有非-datasource D 保留 528766；I/E/D-临钧/A/F/H 不变。source-only 优先于旧
+  G/urgent-D，但只匹配 pure datasource。
+
+### G / 紧急非-datasource D 的双 owner 契约
+
+本契约覆盖 Provider 全局改造 G，以及 CloudSpec 结构 OK + Provider 手写 resource D 的紧急
+非-datasource 变更；pure datasource 不进入本契约：
+
+- **源客户主单 assignee 保持新山（521957）**，但
+  **528766 研发关联单 assignee 固定过载（484483）**，由
+  **Jarvis/TerraformRD claim 并尝试修复**。新山是客户主单映射 owner，不是等待接手研发的人。
+- 写前 point-read relation、同题单与 lease；**healthy existing claim 不抢占**。没有健康
+  claim 时，**同题 528766 已指派新山时原地复用**。同一 terraform-rd Task 先进入
+  route-finalizer phase 并 fail-closed claim，成功后才幂等改派过载、补 relation 并切 dev；
+  claim 失败立即停止，禁止 relation/update/wrap。不存在同题单才 create 一次并 claim。
+- relation/assignee/status 只证明路由物化，**无 PR/CI/QA 完成信号必须继续 RD**。只有已有
+  PR 等待人工合并，或明确外部依赖/人工决策，才允许 observe/release 或 blocked。
+- **build/test/CI 失败**与 QA fail 留在 RD ↔ QA 修复闭环，**不得转交新山**。能力缺失或重试
+  耗尽进入 **blocked / SUSPENDED**，保持源单新山、研发单过载并 release，绝不 finish。
+- TerraformRD control plane 幂等执行物化、必要改派、relation 与 claim；PD/QA 不外写。
+  源单由 executor、实际 claim 的 528766 由最终 finalizer 分别执行一次聚合 bookend；
+  PR 未合并只 release。
+- **D-临钧/A/F/H/非紧急非-datasource D 边界不变**；非紧急非-datasource D 与 I 的 Provider docs 紧急兜底腿保持
+  既有内部 claim/bookend，I→念依、E→CloudSpec pre→D-临钧保持既有路径。
+
+### 分支 D:与镇元不相关（pure datasource source-only / 镇元 OK 的 Provider 本地问题）
+
+pure datasource 已由上方 source-only 短路：只同步源单 owner/status 后直接开发，禁止任何
+528766 承载动作。其余资源类再判 provider 代码类型:
 
 ```bash
 provider_repo="$(bash bootstrap/workspace.sh dir terraform_provider)"
@@ -138,46 +195,47 @@ head -3 "$provider_repo/alicloud/resource_alicloud_<product>_<resource>.go" 2>/d
 ```
 
 - 首行有类似 `// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!` → **生成器产出** → 走 acube V2 接口触发临钧工作流(见 Step 3 · 分支 D-临钧;生成器产出修复=重跑生成器,管道不变)
-- 无该注释(手写)**或纯 datasource 问题**(datasource 不走临钧管道)→ 按紧急度分流(紧急判定脚本同分支 E):
-  - 紧急(优先级=紧急 OR 距 DDL<14 天 OR 缺陷类型覆写)→ 指派 新山(521957)(Step 3 · 分支 D-新山)
-  - 不紧急 → 指派 过载(484483)(Step 3 · 分支 D-过载)
+- 无该注释（手写 resource）→ 按紧急度走**非-datasource D**:
+  - 紧急(优先级=紧急 OR 距 DDL<14 天 OR 缺陷类型覆写)→ 源单保持新山(521957)，创建或复用
+    528766 并固定指派过载(484483)，由内部 TerraformRD claim 后按 Provider 开发流程修复
+  - 不紧急 → 保持既有非-datasource D-过载边界，源单与 528766 均指派过载(484483)
+
+文档问题只有在证据证明 **CloudSpec 文档源正确，Provider 本地文档生成/展示偏差** 时才允许
+进入本分支。CloudSpec text-only 文档源错误必须回到 I；文档与结构同时变化时进入 E。
 
 若资源文件不存在:说明 provider 代码尚未合入(镇元 OK 但 provider 未生成/合入)——按"生成器产出待跑"处理,同样走 Step 3 · 分支 D-临钧 的 acube V2 接口(接口内部会跑生成器 + PR),不必 jarvis 手动 comment 提醒生成。
 
-### 分支 E:与镇元相关且镇元 NOT OK → 镇元 agent 关联单(紧急加建新山双单)
+### 分支 E:CloudSpec 结构 NOT OK → CloudSpec 结构 metadata 原主单自闭环
 
-```bash
-priority=$(bash bootstrap/aone-get.sh <id> | python3 -c '
-import json,sys
-d=json.load(sys.stdin)
-for f in d.get("fields",[]):
-  if f.get("identifier")=="priority": print(f.get("displayValue"))')
-ddl=$(bash bootstrap/aone-get.sh <id> | python3 -c '
-import json,sys
-d=json.load(sys.stdin)
-for f in d.get("fields",[]):
-  if f.get("identifier")=="80": print(f.get("value"))')
-echo "priority=$priority ddl=$ddl"
+本分支只承接字段集合、类型、约束、CRUD/operation 与映射缺口；text-only 文档 metadata
+固定走 I：
 
-# 距今天算 gap
-days_left=$(python3 -c "
-from datetime import date
-d='$ddl'.strip()
-if d:
-  print((date.fromisoformat(d) - date.today()).days)
-else:
-  print('N/A')")
-echo "days_left=$days_left"
-```
+1. PD 返回 `requested_external_actions: []` 与 `next=terraform-rd/dev`。不得提出 create_related、
+   relation、assign、另建文档兜底单或切个人身份。
+2. RD 加载 `terraform-provider-release/references/cloudspec-pre-resource-loop.md`，先运行
+   `bash bootstrap/cloudspec-core.sh doctor`。
+3. 调用 `cloudspec-amp-workflow` 创建/切换 task 专属 feature 分支，并使用 **AMP 返回的 SSH URL**
+   clone 对应 cloudspec-model；禁止在 master/main 编辑。
+4. 在已有 `main.cspec` 的模型目录调用 `cloudspec-idl-guide`，再按改动类型使用
+   `cloudspec-resource-edit`、必要时 `cloudspec-operation-edit`；build 失败才调用
+   `cloudspec-build-fix`，并用 `cloudspec-norm-check-fix` 收敛本次增量。
+5. `aliyun cspec build` 与资源级 `aliyun cspec check` 全绿后，提交/推送 feature 分支，
+   执行 `amp publish pre --dry-run`，通过后 `amp publish pre`，轮询 pre Meta 收敛。
+6. **pre 未收敛不得触发 Acube**。pre Meta 收敛后必须 **E → D-临钧**：
+   已有正确 relation/taskId/aoneId 时只查询/复用，否则由 single-writer 调用一次
+   `createBuildTaskV2`，让 Acube 自动创建/复用 528766 并指派临钧（429768）。
+7. **不得由 E 直接执行 Provider PR/CI/ACC**，不得在 E 完成后直接 release/idle；只有
+   D-临钧 handoff 回执确认后才由 finalizer 聚合。Acube 不确定时保留 taskId 并 blocked，
+   不得手工补建。
 
-- 关联单指派 **镇元 agent (`WORKER_1783326253279`)** 自动接单——镇元侧根因主责,**无论紧急与否都建**(谜拟不解单,由 agent 从关联单 body 里的机读 JSON 驱动)
-- **body 硬契约**:关联单 body 必须严格按 `.Codex/skills/aone-triage/references/templates.md` 「Cloudspec 关联单 · 镇元 agent 接单硬契约」骨架写(`## 背景` / `## 需求` / `## 机读信息` + ```json 代码块 + 7 字段全),缺 marker/字段/JSON 语法错 = agent 无法接单 = 单沉底
-- `priority == '紧急'` 或 `days_left < 14`(或缺陷类型覆写为紧急)→ **同时再建一张**关联单指派 新山(521957),双单并行(agent 修镇元侧根因,新山紧急兜底 provider 侧);原单指派谜拟(479782,人类兜底 owner),评论 @谜拟+@新山(agent 不接 IM 不 @;详见 `.Codex/skills/aone-triage/references/tf-customer-request-routing.md` Step 3 · 分支 E 紧急双关联单)
-- 否则 → 仅镇元 agent 一张
+权限、AMP 登录、SSH、模型仓或 pre 能力失败时返回 `missing_capability` / `blocked` 并记录原主单，
+不得回退其它承接人或身份。`amp publish prod` / prod/online、master/main merge/push 与正式发布
+始终是人工硬门，不得 finish 或宣称正式发布。
+
+**只允许分支 E 进入此转换**；不得泛化到 A/F/G/H/I、纯 datasource 或纯手写 Provider-only bug。
 
 ### 分支 F:上游 API 缺口
 
 - 不建关联单(镇元/我们团队无事可做)
 - 提取 `creator.displayName` 作为提单人,评论正文 @提单人 + 请其协助转对应云产品 API 团队评估
 - status 改 `待上游排期`(若 CLI 报 "unsupported target status" 却能实际写入,重试;或落 `待排期` 作二级降级)
-

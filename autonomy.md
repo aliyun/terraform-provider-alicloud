@@ -32,6 +32,7 @@
 | `create_cr` | 建变更 / CR |
 | `worktree` | worktree 开发（本地分支） |
 | `prestage` | 预发部署 |
+| `cloudspec_self_close` | 仅分支 E 的 CloudSpec 结构 metadata 原主单自闭环：AMP task feature 分支、IDL build/check、pre dry-run/发布、Meta 收敛；随后必须经 Acube `createBuildTaskV2` 交 D-临钧，不由 E 做 Provider PR/CI/ACC。text-only 文档 metadata 属 I，走 2169561 |
 | `adhoc_aone` | ad-hoc 建/补单（loops/adhoc-intake.md，PR 默认落 tf_provider） |
 | `pr_review` | 只读 PR 评审（不写不合并） |
 | `wrap_sync` | 非 Terraform 中途回填 Aone 进展；Terraform 主处理 run 禁用，后续重要事件只走 RD-only 幂等发布器 |
@@ -50,7 +51,7 @@
 
 | 操作 | 说明 |
 |------|------|
-| `release_prod` | **正式发布**——无论任何模式，必须人工确认后才能执行。含：① PR merge 入上游 `aliyun/terraform-provider-alicloud`；② 对**上游 master** 或 **jarvis 仓 master** 的任何 push / force-push。（对比：推自有 fork PR-head 分支是预授权的 `fork_push`，不受此限） |
+| `release_prod` | **正式发布**——无论任何模式，必须人工确认后才能执行。含：① `amp publish prod` / prod/online；② PR merge 入上游 `aliyun/terraform-provider-alicloud`；③ 对任何 master/main（含上游与 jarvis 仓）的 push / force-push。（对比：CloudSpec pre 与推自有 fork PR-head 分支是预授权动作，不受此限） |
 
 ---
 
@@ -76,10 +77,16 @@
 
 Escalate 行为：暂停执行，输出摘要，通知用户决策。
 
+分支 E 的 CloudSpec 原主单自闭环遇到 AMP 登录、SSH、模型仓权限或 pre 能力缺失时必须命中
+`missing_capability` / `blocked`，把 blocker 交 finalizer 写原主单；不得通过切个人身份、
+改派外部承接人或另建 Aone 绕过。pre 未收敛不得触发 Acube；收敛后必须
+E → D-临钧，不得由 E 直接执行 Provider PR/CI/ACC 或直接 release/idle。分支 I 的 text-only
+文档 metadata 走 2169561，公开 Provider docs 同错时保留独立 528766 腿。
+
 ---
 
 ## 机读策略块
 
 ```json
-{"mode":"supervised","modes":{"supervised":"逐项授权","unattended":"高置信自动","headless":"bridge委派,高自主+挂起唤醒"},"auto":["reply","create_req","tag","create_cr","worktree","prestage","adhoc_aone","pr_review","wrap_sync","wrap_done","fork_push","pr_ci_fix","pr_comment_reply"],"stop":["release_prod"],"escalate_if":["low_conf","verify_fail","redline","missing_capability","unexternalized"],"fork_push":{"scope":"api-tool-agent/terraform-provider-alicloud PR-head branches only","force":true,"via":"bootstrap/github-identity.sh push","preconditions":["target is own fork PR-head, never upstream aliyun/* or jarvis master","ACC remote tests PASS","only human gate is maintainer merge = release_prod"],"do_not":"SUSPEND/escalate/wait-for-ticket-approval when preconditions hold"},"headless":{"dispatch_timeout":43200,"suspend_expire":1209600,"suspend_signal":"[[SUSPEND:{...}]]"}}
+{"mode":"supervised","modes":{"supervised":"逐项授权","unattended":"高置信自动","headless":"bridge委派,高自主+挂起唤醒"},"auto":["reply","create_req","tag","create_cr","worktree","prestage","cloudspec_self_close","adhoc_aone","pr_review","wrap_sync","wrap_done","fork_push","pr_ci_fix","pr_comment_reply"],"stop":["release_prod"],"escalate_if":["low_conf","verify_fail","redline","missing_capability","unexternalized"],"fork_push":{"scope":"api-tool-agent/terraform-provider-alicloud PR-head branches only","force":true,"via":"bootstrap/github-identity.sh push","preconditions":["target is own fork PR-head, never upstream aliyun/* or jarvis master","ACC remote tests PASS","only human gate is maintainer merge = release_prod"],"do_not":"SUSPEND/escalate/wait-for-ticket-approval when preconditions hold"},"headless":{"dispatch_timeout":43200,"suspend_expire":1209600,"suspend_signal":"[[SUSPEND:{...}]]"}}
 ```

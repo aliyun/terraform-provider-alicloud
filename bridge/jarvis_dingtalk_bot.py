@@ -807,6 +807,7 @@ def robot_code():
 
 # handoff action 白名单（S6）：非法一律降级为 respond，不让评论方随便注入指令语义。
 PERSONA_ACTION_WHITELIST = {"triage", "dev", "review", "acc_verify",
+                            "cloudspec_pre_verify", "pre_handoff",
                             "acceptance", "respond", "report"}
 
 # 关单请求识别：评论里明确要求关闭/关单/销单。命中 → persona 收尾不再静默 release，改走

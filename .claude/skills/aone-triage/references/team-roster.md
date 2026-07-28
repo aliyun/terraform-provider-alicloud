@@ -22,32 +22,70 @@
 
 ### 通用路由角色(其他云产品走此表)
 
-| 场景 | 花名/名称 | 工号 |
+此表的第二列描述完整承接链，第三列只列对应工号/项目，避免把 I/E/H 的单一承接人误读成
+“源 owner / 下游 owner”两列：
+
+| 场景 | 路由/承接关系 | 工号/项目 |
 |---|---|---|
-| **Provider 侧全局改造**(非单一产品/资源:region 白名单/框架 utility/公共 endpoint/provider.go 基础/SDK bump) | 新山 | 521957 |
-| **镇元资源文档修改**(仅描述/字段解释/枚举值文案层,不涉资源本身新增字段/结构)——**分支 I 关联单落 CloudSpec 文档质量问题(2169561) 池**指派念依修镇元源头。TF provider docs 从镇元自动生成,provider PR 只是紧急兜底,不修镇元源头下次发版会覆盖回旧值。**文档改造分支通常与 528766 过载单双建**(过载紧急合 provider PR,念依修镇元源头) | 念依(陈旖旎) | 373108 |
-| **与镇元相关且镇元 NOT OK · 关联单**(资源未定义 / 属性不满足诉求 / 覆盖度<100%)——镇元侧根因主责,**无论紧急与否都建单**;关联单落 2165097 池指派**镇元 agent 自动接单**(谜拟不自己解单,做主单人类兜底 owner)。**body 必须严格按 [templates.md 硬契约](./templates.md) 骨架**(`## 背景` / `## 需求` / `## 机读信息` + ```json 代码块 + 7 字段全),缺 marker/字段/JSON 语法错 = agent 无法接单 = 单沉底。**注意 agent 只接"资源本身需变更"**——纯文档描述修改(枚举值文案/字段说明)走念依 · 2169561 池,不投 agent | 镇元 agent(无花名,agent 身份) | WORKER_1783326253279 |
-| 同上 · 源客户主单 assignee(客户可见,agent 断电/复杂决策时人类兜底 owner) | 谜拟 | 479782 |
-| 同上且**紧急**(优先级=紧急 或 距 DDL<14 天 或 缺陷类型覆写):在镇元 agent 单之外**再建一张关联单并行**(紧急兜底 provider 侧,agent+新山两张都建) | 新山 | 521957 |
+| **Provider 侧全局改造**(非单一产品/资源:region 白名单/框架 utility/公共 endpoint/provider.go 基础/SDK bump) | 源单新山；528766 过载并由 TerraformRD 内部开发 | 521957 / 484483 |
+| **pure datasource source-only（紧急）**：仅 data source 查询/过滤/分页/输出/Read | 源单新山；Jarvis/TerraformRD 在源单直接开发，不建 528766 | 521957 |
+| **pure datasource source-only（非紧急）**：仅 data source 查询/过滤/分页/输出/Read | 源单过载；Jarvis/TerraformRD 在源单直接开发，不建 528766 | 484483 |
+| **CloudSpec 文档文本 metadata（I）**：resource/property/operation description、字段解释、NOTE、枚举文案，且不改变字段集合/类型/约束/CRUD | 念依（2169561 submit_only） | 373108 |
+| **CloudSpec 结构 metadata（E）**：资源未定义、字段集合/类型/约束/CRUD/映射不满足诉求；原主单修到 pre Meta 收敛后强制 **E → D-临钧** | open-jarvis → 临钧 | 原主单内部执行 → 429768 |
 | 与镇元不相关 + 资源代码由生成器产出(修复=acube 重跑生成器,管道不变) | 临钧 | 429768 |
-| **与镇元不相关**(纯 datasource / 镇元 OK 但 provider 侧问题,手写代码)且**紧急** | 新山 | 521957 |
-| 与镇元不相关(同上)且**不紧急**(默认兜底) | 过载 | 484483 |
+| **与镇元不相关**(CloudSpec 结构 OK 但 provider 侧手写 resource 问题；文档场景仅限 CloudSpec 源正确、Provider 本地生成/展示偏差)且**紧急** | 源单新山；528766 过载并由 TerraformRD 内部开发 | 521957 / 484483 |
+| 与镇元不相关(同上)且**不紧急**(默认兜底) | 过载；528766 沿用内部开发 | 484483 |
 | **NPE 兜底**(以上所有分支均未匹配 / 跨多产品无单一负责人 / 分诊模糊超出团队职责)+ 打标签 `jarvis-npe` | 夏节 | 401498 |
 
-**镇元 agent 特点**:
-- 工号 `WORKER_1783326253279`,是 agent/机器人身份(非自然人),**无钉钉 IM 通道**(notify-dingtalk.sh 传 `WORKER_` 前缀会 400/静默);私信必须发谜拟(479782)/新山(521957) 等真人
-- Bridge 视角仍算"人工介入"(见 config/contacts.json 说明),不会触发 jarvis-idle 自我重派
-- **只识机读 JSON**,不看自然语言 body 补充说明——契约见 `references/templates.md` "Requirement skeleton (Cloudspec 关联单 · 镇元 agent 接单硬契约)"
-- 只接分支 E 场景(与镇元相关且镇元 NOT OK);其它场景不能强指派
+### 纯 datasource source-only 契约
 
-**与镇元不相关的问题**(镇元 agent 不接这两类):
-1. **纯 datasource 问题**:诉求只涉 `data.alicloud_xxx`(查询/过滤/输出字段),不涉资源 schema/生命周期——datasource 是 provider 侧对查询 API 的只读封装,镇元只管资源 schema,**跳过镇元查证**;resource+datasource 混合不算"纯"
-2. **镇元侧无问题、provider 侧存在问题**:镇元 OK 三条件全满足,缺口在 provider 实现(bug/适配缺失/文档行为不符)
+- 仅涉及 `data.alicloud_xxx` 的查询、过滤、分页、输出字段或 Read 才命中。
+- resource+datasource 混合诉求、G Provider 全局改造、手写 resource D 均不属于 pure datasource。
+- 紧急源单 assignee=新山（521957）；非紧急源单 assignee=过载（484483）；两者均由
+  Jarvis/TerraformRD 在源单直接开发。
+- 严禁为 pure datasource create/reuse-as-carrier/reassign/relation/claim/wrap/release/finish 528766。
+- 历史 relation 只读保留，不删、不迁、不关、不改派；不是开发、完成或 blocker 门，
+  允许引用已有 PR 防重复。
+- RD route phase 只幂等同步源单 assignee + per-type progress_status；
+  bridge executor 独占源单 claim/唯一回复/tag/release/finish。
+- CI pending/fail 或 QA fail 均回 RD 修复，不得标为 blocked；
+  open PR + QA pass 时源单 release，不 finish。
+- G 与所有非-datasource D 保留 528766；I/E/D-临钧/A/F/H 不变。
 
-**镇元 OK 三条件**(全满足才算 OK,任一不满足即视为 NOT OK=与镇元相关):
+### G / 紧急非-datasource D 的双 owner 契约
+
+- **源客户主单 assignee 保持新山（521957）**；**528766 研发关联单 assignee 固定过载（484483）**。
+  Jarvis/TerraformRD 对无 healthy claim 的研发单执行 claim 并尝试修复，不把研发工作交给新山等待。
+- 同题单优先复用：**同题 528766 已指派新山时原地复用**；无 healthy claim 时先
+  fail-closed claim，成功后才幂等改派过载并补 relation，禁止重复 create。
+  **healthy existing claim 不抢占**，不在另一健康 run 上并发改派或重复 claim。
+- relation/assignee/status 只是路由物化；无 PR/CI/QA 完成信号仍继续 RD。build/test/CI 或 QA
+  失败留在 RD ↔ QA 修复闭环；能力缺失/重试耗尽才 blocked/SUSPENDED，保持双 owner 且不得 finish。
+- **D-临钧/A/F/H/非紧急非-datasource D 边界不变**；I 仍到念依，E 仍完成 pre 后 E → D-临钧。
+
+**I/E 路由契约**:
+- I 创建或复用 2169561 并指派念依；Provider 公开 docs 同时错误时独立补 528766 紧急兜底腿。
+  两池分池防重，一个池已有 relation 不能压掉另一个池的缺失补建。
+- E 的 PD 返回 `requested_external_actions: []`、`next=terraform-rd/dev`；RD 使用
+  `cloudspec-amp-workflow` 与 IDL/resource/operation/build/norm skills修到 pre Meta 收敛。
+- E pre 未收敛不得触发 Acube；收敛后必须 E → D-临钧，经 `createBuildTaskV2` 创建或复用
+  528766 并指派临钧（429768）。E 不直接做 Provider PR/CI/ACC，也不直接 release/idle。
+- PD/QA 不外写；terraform-rd finalizer 是 downstream single-writer，负责 I/E 路由动作与
+  下游副作用；executor 只负责原主单 bookend。AMP 登录、SSH 或仓库
+  权限失败返回 `missing_capability` / `blocked`；不得回退 2165097。
+- prod/online、master/main merge/push 与正式发布仍是人工硬门。
+
+**与镇元不相关的问题**(不进入 CloudSpec 原主单自闭环的两类):
+1. **纯 datasource 问题**:诉求只涉 `data.alicloud_xxx`(查询/过滤/分页/输出字段/Read),不涉资源 schema/生命周期——datasource 是 provider 侧对查询 API 的只读封装,镇元只管资源 schema,**跳过镇元查证并走 source-only**;resource+datasource 混合不算"纯"
+2. **镇元侧无问题、provider 侧存在问题**:CloudSpec 结构 OK 三条件全满足,缺口在 provider 实现；
+   文档场景仅包含 CloudSpec 文档源正确、Provider 本地文档生成/展示偏差
+
+**CloudSpec 结构 OK 三条件**(全满足才算 OK,任一不满足即视为结构 NOT OK):
 1. **API 在镇元有对应资源**:资源已在镇元定义并发布(get 返回 data 且 released list 命中)
 2. **当前资源属性满足客户诉求**:比对客户抽取的真实诉求字段,镇元资源 schema 的 properties **全覆盖**(缺字段=NOT OK,即便覆盖度分再高也不算 OK)
 3. **测试覆盖度 100%**:acube V2 `CoverageDetail.CoverageScore == 1.0`
+
+text-only 文档 metadata 先按 I 判定，不混入结构 OK；文档与结构同时变化时按 E 处理。
 
 详见 Step 2 分支 D 前的判定说明。
 

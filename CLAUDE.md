@@ -18,7 +18,7 @@
 
 2. **专职工作交数字人子代理，主会话（jarvis）只分发编排**：优先 `.claude/agents/` 三个内部角色（terraform-pd 分诊查证 / terraform-rd 编码与 PR·CR 评审 / terraform-qa 验收测试）。Terraform 工单必须在同一 headless run 内让 PD→RD→QA 以结构化结果协作；PD/QA 纯内部、禁止外写，本次主处理 run 最后由 terraform-rd finalizer 汇总回复一次。后续重要生命周期事件仍可由 TerraformRD 幂等更新 Aone；开放 Terraform `jarvis-idle` 工单距上次实质进展或 assignee 变化满 8 天时，bridge 由 RD 固定模板执行 Aone 评论区 @ + 钉钉私信双通道催办，同一进展 epoch 只催一次。无变化检查、单次重试、普通内部交接和重复事件静默。也可自由委派 general-purpose / Explore / Plan / claude-code-guide 等，按任务挑最合适的。单工单执行由 `bootstrap/triage-one.sh` bookend，主会话调度即可。
 
-3. **Aone 唯一真源 + 凡动工单必 bookend**：任何 jarvis 工作必须有 Aone 工作项（无则按 [loops/adhoc-intake.md](loops/adhoc-intake.md) 建/补单），拿到 id 就 `claim.sh claim` 开局，收尾走 bookend（`triage-one.sh` 或 `wrap.sh done` + `claim.sh release`）；非 Terraform 线开 MR/CR 立刻 `wrap.sh sync` 贴链。**Terraform 例外**：主处理 run 内不发阶段评论、不 `wrap.sh sync`，MR/CR 链接放入最终 RD 聚合回复，且该 run 只执行一次 `JARVIS_A1_IDENTITY=terraform-rd wrap.sh done`。重访 gate 新结论、PR merged/closed/merged+npe、CI 自动修复达上限、派发重试耗尽/timeout/max-turns/stale orphan，以及满 8 天无实质进展的双通道进度跟进属重要事件，由 bridge 的 RD-only 幂等事件发布器更新一次；Aone 与钉钉各自独立落账和补偿，任一通道成功不抑制另一通道失败重试。发布器只落 semantic source 的 SHA-256 短摘要，正文统一 sanitize，Aone create 成功但无 comment id 时进入 `post_uncertain` 只查 marker、不重发。轮询无变化、CI pending/单次重试/new head、普通 reviewer comment、内部交接和同 key 重复事件不评论。**漏 claim → 标签/状态/对账全失灵**；流程细节见 [loops/aone-triage.md](loops/aone-triage.md) §二（认领与 bookend）与 §六（工具链速查）。纯只读不动任何工单可免。
+3. **Aone 唯一真源 + 凡动工单必 bookend**：任何 jarvis 工作必须有 Aone 工作项（无则按 [loops/adhoc-intake.md](loops/adhoc-intake.md) 建/补单），拿到 id 就 `claim.sh claim` 开局，收尾走 bookend（`triage-one.sh` 或 `wrap.sh done` + `claim.sh release`）；非 Terraform 线开 MR/CR 立刻 `wrap.sh sync` 贴链。**Terraform 例外**：主处理 run 内不发阶段评论、不 `wrap.sh sync`，MR/CR 链接放入最终 RD 聚合回复；源工单由 bridge executor 执行一次聚合 bookend。源工单禁令不约束按既有契约由内部链承接的 528766：G/紧急非-datasource D、非紧急非-datasource D 与 I 的 Provider docs 紧急兜底腿实际被本 run claim 时，研发单由 RD finalizer 另执行一次 `JARVIS_A1_IDENTITY=terraform-rd wrap.sh done`；源单与研发单各自最多一次，禁止互相代写，PR 未合并只 release。**pure datasource 的 528766 禁令优先**：不得 create/reuse-as-carrier/reassign/relation/claim/wrap/release/finish 528766，历史 relation 只读保留，源单 bookend 仍全部由 bridge executor 独占。G/紧急非-datasource D hard gate 只新增双 owner、先 claim 后 dev 与不可观察语义。重访 gate 新结论、PR merged/closed/merged+npe、CI 自动修复达上限、派发重试耗尽/timeout/max-turns/stale orphan，以及满 8 天无实质进展的双通道进度跟进属重要事件，由 bridge 的 RD-only 幂等事件发布器更新一次；Aone 与钉钉各自独立落账和补偿，任一通道成功不抑制另一通道失败重试。发布器只落 semantic source 的 SHA-256 短摘要，正文统一 sanitize，Aone create 成功但无 comment id 时进入 `post_uncertain` 只查 marker、不重发。轮询无变化、CI pending/单次重试/new head、普通 reviewer comment、内部交接和同 key 重复事件不评论。**漏 claim → 标签/状态/对账全失灵**；流程细节见 [loops/aone-triage.md](loops/aone-triage.md) §二（认领与 bookend）与 §六（工具链速查）。纯只读不动任何工单可免。
 
 4. **工作区按登记走**：repo/池/构建命令以 `config/workspaces.json` 为准，本地路径用 `bootstrap/workspace.sh dir <key>` 拿（base 不存绝对路径，本机覆盖走 gitignored `workspaces.local.json`，多数机只需设 `JARVIS_WORKSPACE_ROOT`）；缺登记 → escalate（`missing_capability`），勿臆造。
 
@@ -36,6 +36,43 @@
 7. **auto-memory 只存 personal/machine，技术知识入 skill**：save memory 前扫本仓 skills 全集，已覆盖则不写；技术/团队/项目类且 skill 未覆盖 → 补入相关 skill/reference，不落 memory；仅个人偏好/机器状态/临时上下文才走 auto-memory。**why**：auto-memory per-machine 不跨设备，skill 走 git 天然跨设备并在 trigger 时自然加载。
 
 8. **Aone 工单必先调 aone-triage skill**：用户给 Aone URL / 工单 id / 提及工单时，**第一步必须 `Skill aone-triage`** 加载完整诊断+路由规则（决策树、Step 1.5 canned 前置分诊、团队分工、关联单建单纪律）。严禁跳过 skill 直接手动 `aone-get.sh` + 查源码——会漏路由判定（专属名单/镇元查证/生成器 vs 手写/分支 A–G）导致转单到错的人。
+
+9. **CloudSpec I/E 分流**：分支 I 只含 resource/property/operation description、字段解释、
+   NOTE、枚举文案等 text-only metadata，且不改变字段集合、类型、约束或 CRUD；finalizer
+   创建或复用 `upstream.cloudspec_docs_quality`（2169561，念依 373108，`submit_only`）。
+   公开 Provider docs 也错误时另保留独立 528766 紧急兜底腿，两池分别防重。分支 E 只含
+   字段集合、类型、约束、CRUD 等结构 metadata；PD 返回
+   `requested_external_actions: []` + `next=terraform-rd/dev`，RD 用 CloudSpec skills + AMP
+   在原主单修到 pre Meta 收敛，不创建 2165097。随后必须 E → D-临钧：已有正确
+   relation/taskId/aoneId 时只查询/复用，否则 finalizer 通过 Acube `createBuildTaskV2`
+   自动创建或复用 528766 并指派临钧（429768）。pre 未收敛不得触发 Acube，不得由 E 直接
+   执行 Provider PR/CI/ACC，也不得直接 release/idle。PD/QA 不外写，RD finalizer
+   single-writer；E 转换不得泛化到 A/F/G/H/I、纯 datasource 或纯手写 Provider-only bug。
+   prod/online、master/main merge/push 与正式 release 仍是人工硬门。
+
+10. **纯 datasource source-only 契约**：只在诉求仅涉及 `data.alicloud_xxx` 的查询、过滤、
+    分页、输出字段或 Read，且不含 resource 变更时命中；resource+datasource 混合诉求、
+    G Provider 全局改造、手写 resource D 均不属于 pure datasource。紧急源单
+    assignee=新山（521957），非紧急源单 assignee=过载（484483），均由
+    Jarvis/TerraformRD 在源单直接开发。严禁为 pure datasource
+    create/reuse-as-carrier/reassign/relation/claim/wrap/release/finish 528766。历史 relation
+    只读保留，不删、不迁、不关、不改派；不是开发、完成或 blocker 门，允许引用已有 PR 防重复。
+    RD route phase 只幂等同步源单 assignee + per-type progress_status；bridge executor 独占源单
+    claim/唯一回复/tag/release/finish。CI pending/fail 或 QA fail 均回 RD 修复，不得标为
+    blocked；open PR + QA pass 时源单 release，不 finish。G 与所有非-datasource D 保留
+    528766；I/E/D-临钧/A/F/H 不变。该 source-only 契约优先于旧 G/urgent-D 规则，但只匹配
+    pure datasource。
+
+11. **G / 紧急非-datasource D 的双 owner 契约**：Provider 全局 G，以及 CloudSpec 结构 OK +
+    手写 resource D 的紧急非-datasource 变更，源客户主单 assignee 保持新山（521957），但
+    528766 研发关联单 assignee 固定过载（484483），由 Jarvis/TerraformRD claim 并尝试修复。
+    同题旧单原地复用，先 fail-closed claim，成功后才幂等改派过载并补 relation，禁止重复
+    create；healthy existing claim 不抢占。relation/assignee/status 只表示路由物化，无
+    PR/CI/QA 完成信号就继续 RD。build/test/CI
+    与 QA fail 留在 RD↔QA 修复闭环，不转交新山；`missing_capability / retry exhausted`
+    才 blocked/SUSPENDED，保持双 owner 且不 finish。源单由 executor、实际 claim 的 528766
+    由 RD finalizer 分别执行最多一次聚合 bookend；PR 未合并只 release。D-临钧/A/F/H/
+    非紧急非-datasource D 与 I/E 边界不变；pure datasource 必须优先走上方 source-only。
 
 ## 自我迭代
 

@@ -29,6 +29,82 @@ from bridge.jarvis_persistence_executor import SessionController
 from bridge.jarvis_task_router import EnqueueResult
 
 
+class TerraformPureDatasourceSourceOnlyPromptTest(unittest.TestCase):
+    def test_runtime_prompt_prioritizes_pure_datasource_source_only_route(self):
+        prompt = aone._ticket_prompt(
+            "84793131", "Terraform provider global endpoint fix",
+            "tf_customer", "1086837")
+        required = (
+            "纯 datasource source-only runtime hard gate",
+            "source-only 优先级高于 G / 紧急普通 D",
+            "仅涉及 `data.alicloud_xxx` 的查询、过滤、分页、输出字段或 Read",
+            "G Provider 全局改造",
+            "resource+datasource 混合诉求",
+            "手写 resource D",
+            "均不属于 pure datasource",
+            "紧急源单 assignee=新山（521957）",
+            "非紧急源单 assignee=过载（484483）",
+            "Jarvis/TerraformRD 在源单直接开发",
+            "严禁为 pure datasource "
+            "create/reuse-as-carrier/reassign/relation/claim/wrap/release/finish 528766",
+            "历史 relation 只读保留",
+            "不删、不迁、不关、不改派",
+            "不是开发、完成或 blocker 门",
+            "允许引用已有 PR 防重复",
+            "RD route phase 只幂等同步源单 assignee + per-type progress_status",
+            "bridge executor 独占源单 claim/唯一回复/tag/release/finish",
+            "CI pending/fail 或 QA fail 均回 RD 修复",
+            "不得标为 blocked",
+            "open PR + QA pass 时源单 release，不 finish",
+            "G 与所有非-datasource D 保留 528766",
+            "I/E/D-临钧/A/F/H 不变",
+        )
+        for phrase in required:
+            self.assertIn(phrase, prompt)
+
+    def test_runtime_prompt_keeps_528766_for_g_and_non_datasource_d_only(self):
+        prompt = aone._ticket_prompt(
+            "84793131", "Terraform provider global endpoint fix",
+            "tf_customer", "1086837")
+        required = (
+            "G / 紧急非-datasource D runtime hard gate",
+            "G Provider 全局改造",
+            "CloudSpec 结构 OK + 手写 resource D",
+            "pure datasource 不适用本 hard gate",
+            "源客户主单 assignee 保持新山（521957）",
+            "528766 研发关联单 assignee 固定过载（484483）",
+            "同题 528766 已指派新山时原地复用并幂等改派过载",
+            "healthy existing claim 不抢占",
+            "relation/assignee/status 只表示路由物化",
+            "无 PR/CI/QA 完成信号必须继续 RD",
+            "build/test/CI 或 QA fail 只走 RD ↔ QA",
+            "不得 external_handoff 给新山",
+            "不得进入观察等待",
+            "只有已有 PR 待人工合并、明确外部依赖或人工决策",
+            "missing_capability / retry exhausted",
+            "blocked/SUSPENDED",
+            "源工单由 bridge executor bookend",
+            "528766 由 RD finalizer claim/bookend",
+            "源工单禁令不约束按既有契约由内部链承接的 528766",
+            "非紧急非-datasource D 与 I 的 Provider docs 紧急兜底腿",
+            "同一 terraform-rd Task 先以 route-finalizer phase",
+            "claim 成功后才切 dev",
+            "JARVIS_A1_IDENTITY=terraform-rd bash bootstrap/claim.sh claim <related_id> 528766",
+            "JARVIS_A1_IDENTITY=terraform-rd bash bootstrap/wrap.sh done <related_id> "
+            "--summary-file <related-aggregate.md> --no-status",
+            "JARVIS_A1_IDENTITY=terraform-rd bash bootstrap/claim.sh release <related_id> 528766",
+            "源单与实际 claim 的 528766 各自最多一次聚合 bookend",
+            "PR 未合并只 release，禁止 finish",
+        )
+        for phrase in required:
+            self.assertIn(phrase, prompt)
+        self.assertNotIn("紧急普通 D（纯 datasource；或", prompt)
+        self.assertNotIn(
+            "run 内仍禁止 claim/wrap/release/直接评论", prompt)
+        self.assertNotIn(
+            "G/紧急普通 D 的 528766 是唯一例外", prompt)
+
+
 class ProviderRouteAffinityTest(unittest.TestCase):
     @staticmethod
     def _settings(path, model):

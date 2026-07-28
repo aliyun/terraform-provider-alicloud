@@ -1,6 +1,6 @@
 ---
 name: provider-resource-dev
-description: Use when DEVELOPING, DIAGNOSING, or FIXING an alicloud Terraform provider resource — either (a) NEW resource end-to-end (Terraform 资源名解析 → 镇元/Cloudspec resourceTypeCode 查证 → acube 映射/生成 → 生成代码 vs 手写代码 diff → 手改 → acc 验收 → PR), OR (b) **修/改一个非自动化生成（hand-written 或历史遗留 generated-but-mutated）的既有资源** — 补属性、修 bug、补重试、修 schema drift、加 import 支持等。触发场景：客户/Aone 需求要 接入/支持 一个资源(e.g. alicloud_oss_bucket_inventory)；生成资源空/缺；cloudspec terraform 无资源；要拿 镇元 spec 落 provider 代码；**或既有资源出现 bug（错误码未重试 / attribute 缺失 / CRUD 不对齐 API / import 断链 等）**。NOT for 现有 PR 评审(用 terraform-pr-review)或简单 是否支持 查询(用 aone-triage 查证)。 NOT for structured release SOP with mandatory Aone gap-analysis and PR-merge governance — use terraform-provider-release.
+description: Use when DEVELOPING, DIAGNOSING, or FIXING an alicloud Terraform provider resource or pure data source — either (a) NEW resource end-to-end (Terraform 资源名解析 → 镇元/Cloudspec resourceTypeCode 查证 → acube 映射/生成 → 生成代码 vs 手写代码 diff → 手改 → acc 验收 → PR), (b) **修/改一个非自动化生成（hand-written 或历史遗留 generated-but-mutated）的既有资源** — 补属性、修 bug、补重试、修 schema drift、加 import 支持等, or (c) pure `data.alicloud_xxx` query/filter/pagination/output/Read fixes using the source-only Aone route. 触发场景：客户/Aone 需求要 接入/支持 一个资源(e.g. alicloud_oss_bucket_inventory)；生成资源空/缺；cloudspec terraform 无资源；要拿 镇元 spec 落 provider 代码；datasource 查询、过滤、分页、输出或 Read 有缺陷；**或既有资源出现 bug（错误码未重试 / attribute 缺失 / CRUD 不对齐 API / import 断链 等）**。NOT for 现有 PR 评审(用 terraform-pr-review)或简单 是否支持 查询(用 aone-triage 查证)。 NOT for structured release SOP with mandatory Aone gap-analysis and PR-merge governance — use terraform-provider-release.
 ---
 
 # Provider 资源开发全流程
@@ -23,12 +23,78 @@ description: Use when DEVELOPING, DIAGNOSING, or FIXING an alicloud Terraform pr
 - **PR 提交后**按 `.Codex/skills/tf-customer-probe/references/knowledge-distillation.md` 契约把本次开发学到的产品级事实(API 行为差异、schema 陷阱、必须的重试码等)蒸馏进 `<playground>/<product>/KNOWLEDGE.md`(触发点③provider-resource-dev 完成开发后),来源锚点写 upstream PR URL + provider 源码行号。
 
 ## Aone 分单与同步
-非自动化生成链路、需要 Jarvis 内部研发处理的 Terraform Provider 资源,必须创建或复用 **terraform-alicloud** 内部研发单:
-- 项目: `tf_provider` / `528766`;**指派按 aone-triage skill `references/tf-customer-request-routing.md` 分工表路由到具体人**(即便由 jarvis 代为开发,单据也挂具体人名下,方便其注意到;不自派 `WORKER_1782379562571`)。
-- 与 Terraform-客户需求池的客户主单双向关联。**指派给过载(484483)的关联单,jarvis 直接 claim 跟进解决,bookend 同时处理客户主单与关联单**(研发细节 wrap 关联单,客户主单只 wrap 关键节点,收尾两边各自 done+release);指派其他人的关联单不 claim,建单 + @对方等接手;无客户主单的 adhoc 场景按 loops/adhoc-intake.md 走。
+非自动化生成链路、需要 Jarvis 内部研发处理的 Terraform Provider **非-datasource 资源**,
+必须创建或复用 **terraform-alicloud** 内部研发单；pure datasource 按下方 source-only 例外处理:
+- 项目: `tf_provider` / `528766`;指派按 aone-triage skill
+  `references/tf-customer-request-routing.md` 的分支契约执行，不把源客户主单 owner 和研发单
+  owner 混为一人，也不把 assignee 写成数字 worker `WORKER_1782379562571`。
+- 与 Terraform-客户需求池的客户主单双向关联；无客户主单的 adhoc 场景按
+  `loops/adhoc-intake.md` 走。
 - 主要研发进展、生成/手改差异、验证细节、PR/CI/验收信息优先同步到内部研发单。
 - 客户主单只同步关键节点摘要:已转内部单、发现镇元/Cloudspec/API 卡点、资源模型问题、需要客户感知的决策或阻塞。
-- 如客户主单还关联 `cloudspec_gap` 或云产品上游 Aone,依赖方协作的详细问题同步到对应依赖单,不要混写在客户主单里。
+
+### 纯 datasource source-only 契约
+
+仅涉及 `data.alicloud_xxx` 的查询、过滤、分页、输出字段或 Read，且不含 resource 变更时
+才命中。resource+datasource 混合诉求、G Provider 全局改造、手写 resource D 均不属于 pure datasource。
+
+- 紧急源单 assignee=新山（521957）；非紧急源单 assignee=过载（484483）；两者均由
+  Jarvis/TerraformRD 在源单直接开发。
+- 严禁为 pure datasource create/reuse-as-carrier/reassign/relation/claim/wrap/release/finish 528766。
+- 历史 relation 只读保留，不删、不迁、不关、不改派；不是开发、完成或 blocker 门，
+  允许引用已有 PR 防重复。
+- RD route phase 只幂等同步源单 assignee + per-type progress_status；
+  bridge executor 独占源单 claim/唯一回复/tag/release/finish。
+- CI pending/fail 或 QA fail 均回 RD 修复，不得标为 blocked；只有真实能力缺失、重试耗尽、
+  明确外部依赖或人工决策才可 blocked/SUSPENDED。open PR + QA pass 时源单 release，不 finish。
+- G 与所有非-datasource D 保留 528766；I/E/D-临钧/A/F/H 不变。source-only 优先于旧
+  G/urgent-D 规则，但只匹配 pure datasource。
+
+### G / 紧急非-datasource D 的双 owner 契约
+
+本契约覆盖 G Provider 全局改造，以及 CloudSpec 结构 OK + 手写 resource D 的紧急
+非-datasource 变更；pure datasource 必须先走上方 source-only：
+
+- **源客户主单 assignee 保持新山（521957）**；**528766 研发关联单 assignee 固定过载（484483）**，
+  由 **Jarvis/TerraformRD claim 并尝试修复**，不等待新山接手研发。
+- 写前 point-read relation、同题 528766、assignee 与 lease。**healthy existing claim 不抢占**；
+  无健康 claim 时对**同题单原地复用并幂等改派过载**，但严格顺序是同一 terraform-rd Task
+  先进入 route-finalizer phase 并 fail-closed claim，成功后才改派、补缺失 relation 并切 dev；
+  claim 失败立即停止，禁止 relation/update/wrap。不存在同题单才 create 一次并 claim，禁止
+  重复建单。
+- **relation/assignee/status 不是完成信号**；**无 PR/CI/QA 完成信号必须继续开发**，按本
+  skill 完成 TDD、Provider 修改、CI 与 QA。
+- **build/test/CI 失败只走 RD ↔ QA 修复闭环**，QA fail 也回 RD 修复重验，**不得转交新山**。
+- `missing_capability / retry exhausted` 进入 **blocked / SUSPENDED**，源单仍是新山、研发单
+  仍是过载，保留失败证据并 release，**不得 finish**。
+- route materialization、必要改派、relation 与 claim 只由 TerraformRD 控制面幂等执行；
+  PD/QA 不外写。源单由 executor、实际 claim 的 528766 由最终 RD finalizer 分别完成，
+  **源单与实际 claim 的 528766 各自最多一次聚合 bookend**，开发阶段不发阶段评论。
+  **PR 未合并只 release**，不 finish。
+- 源工单禁令不约束按既有契约由内部链承接的 528766，但 pure datasource 的 528766 禁令优先；
+  非紧急非-datasource D 与 I 的 Provider docs 紧急兜底腿保持既有内部 claim/bookend。
+  G/紧急非-datasource D hard gate 只新增双 owner、先 claim
+  后 dev 与不可观察语义；D-临钧/A/F/H 和 E 路径边界不变。
+
+- **分支 I — CloudSpec 文档文本 metadata**：resource/property/operation description、字段解释、
+  NOTE 与枚举文案，且不改变字段集合、类型、约束或 CRUD。I 不进入本 skill 的 CloudSpec
+  开发路径；finalizer 创建或复用 `upstream.cloudspec_docs_quality`（2169561，念依 373108，
+  `submit_only`）。若公开 Provider docs 也错误，保留独立 528766 紧急兜底腿并分池防重；
+  一个池已有 relation 不能抑制另一个池的缺失补建。
+- **分支 E — CloudSpec 结构 metadata 原主单自闭环**：只处理字段集合、类型、约束、CRUD、
+  operationMapping 与生命周期等结构合同。PD 返回 `requested_external_actions: []`、
+  `next=terraform-rd/dev`；RD 按
+  `terraform-provider-release/references/cloudspec-pre-resource-loop.md` 使用 CloudSpec skills + AMP
+  修到 build/check/pre Meta 收敛，不创建 2165097。pre 未收敛不得触发 Acube。
+- E 收敛后必须 **E → D-临钧**：已有正确 relation/taskId/aoneId 时只查询/复用，否则由
+  finalizer 的 `single-writer` 通过 Acube `createBuildTaskV2` 自动创建或复用 528766，指派
+  临钧（429768）。PD/QA 不外写；不得由 E 直接执行 Provider PR/CI/ACC，不得在 E 完成后直接
+  release/idle。
+- 只允许分支 E 进入此转换；不得泛化到 A/F/G/H/I、纯 datasource 或纯手写 Provider-only bug。
+  普通分支 D 仍按本 skill 的 Provider 开发、PR CI 和远程 ACC 流程执行。CloudSpec
+  prod/online、master/main merge/push 与正式发布始终是人工硬门，不得 finish。
+- AMP 登录、SSH、模型仓权限、pre 发布或 Acube 能力缺失时返回
+  `missing_capability` / `blocked`，不得回退外部承接人或个人身份。
 
 ## 步骤
 1. **查证 Terraform ↔ Cloudspec 身份** — OpenAPI + provider 源码确认缺;`getTerraformResourceSpec` 只看映射,不代表实现,且找不到可能返无关资源,别信。
