@@ -263,8 +263,8 @@ func resourceAliCloudRamSecurityPreferenceUpdate(d *schema.ResourceData, meta in
 
 	if d.HasChange("login_session_duration") {
 		update = true
-		request["LoginSessionDuration"] = d.Get("login_session_duration")
 	}
+	request["LoginSessionDuration"] = d.Get("login_session_duration")
 
 	if d.HasChange("max_idle_days_for_access_keys") {
 		update = true
@@ -306,8 +306,8 @@ func resourceAliCloudRamSecurityPreferenceUpdate(d *schema.ResourceData, meta in
 
 	if d.HasChange("login_network_masks") {
 		update = true
-		request["LoginNetworkMasks"] = d.Get("login_network_masks")
 	}
+	request["LoginNetworkMasks"] = d.Get("login_network_masks")
 
 	if d.HasChange("allow_user_to_login_with_passkey") {
 		update = true

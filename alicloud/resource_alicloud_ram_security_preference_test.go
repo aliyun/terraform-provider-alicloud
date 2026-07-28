@@ -879,10 +879,7 @@ func AlicloudRamSecurityPreferenceBasicDependence10751(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
-}
-
-
-`, name)
+}`, name)
 }
 
 // Test Ram SecurityPreference. <<< Resource test cases, automatically generated.
