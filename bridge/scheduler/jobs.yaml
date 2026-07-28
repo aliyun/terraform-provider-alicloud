@@ -55,6 +55,15 @@ jobs:
     retry_delay_seconds: 300
     enabled: true
 
+  - key: aone.workitem-ownership
+    runner: aone_workitem_ownership
+    revision: 1
+    description: 同步控制面候选任务的 Aone 参与人、指派人和最新评论作者快照
+    schedule: {kind: interval, interval_seconds: 300, run_immediately: true}
+    misfire: COALESCE
+    retry_delay_seconds: 60
+    enabled: true
+
   - key: aone.reply
     runner: reply
     revision: 1

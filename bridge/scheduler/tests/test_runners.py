@@ -13,7 +13,9 @@ from bridge.scheduler.model import (
     HandlerRunner, IntervalSchedule, MisfirePolicy, ScheduledJobDefinition,
 )
 from bridge.scheduler.runners import build_runners
-from bridge.scheduler.runners import claim_health, daily_nudge, scan
+from bridge.scheduler.runners import (
+    aone_workitem_ownership, claim_health, daily_nudge, scan,
+)
 from bridge.scheduler.runners import pr_watch as pr
 from bridge.scheduler.runners import weekly_comment_participation
 
@@ -54,6 +56,9 @@ class SchedulerRunnerTests(unittest.TestCase):
         self.assertIsInstance(
             runners["weekly_comment_participation"],
             weekly_comment_participation.WeeklyCommentParticipationRunner)
+        self.assertIsInstance(
+            runners["aone_workitem_ownership"],
+            aone_workitem_ownership.AoneWorkitemOwnershipRunner)
 
     def test_nudge_runner_invokes_one_job(self):
         job = SimpleNamespace(enabled=True, calls=0)

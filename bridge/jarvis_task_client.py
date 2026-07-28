@@ -208,6 +208,8 @@ class ControlPlaneClient:
     READY_TASK_DIAGNOSTICS_PATH = "tasks/ready-diagnostics"
     SOURCE_STATUS_CANDIDATES_PATH = "tasks/source-status-candidates"
     SOURCE_STATUS_PATH = "tasks/{task_id}/source-status"
+    AONE_OWNERSHIP_SNAPSHOT_PATH = "tasks/aone-ownership-snapshot"
+    BOARD_STAT_PATH = "board/stats/{stat_key}"
     TASK_ATTENTION_PATH = "tasks/{task_id}/attention"
     LEGACY_KIND_CLEANUP_PATH = "admin/tasks/legacy-kind/cleanup"
     PENDING_AONE_WAITS_PATH = "sessions/waits/aone-reply"
@@ -768,3 +770,50 @@ class ControlPlaneClient:
             "aoneId": aone_id,
             "sourceStatus": source_status,
         }, request_id=request_id)
+
+    def put_aone_ownership_snapshot(
+        self, payload: Mapping[str, Any], *,
+        request_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Replace the complete ownership projection stored with Jarvis Tasks."""
+        if not isinstance(payload, Mapping):
+            raise TypeError("payload must be a mapping")
+        rid = request_id
+        if rid is None:
+            material = json.dumps(
+                _camelize(dict(payload)),
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+                default=str,
+            ).encode("utf-8")
+            rid = (
+                "aone-ownership-snapshot-"
+                + hashlib.sha256(material).hexdigest()[:32])
+        return self._mutation(
+            "PUT", self.AONE_OWNERSHIP_SNAPSHOT_PATH,
+            payload=payload, request_id=rid)
+
+    def put_board_stat(self, stat_key: str, payload: Mapping[str, Any], *,
+                       request_id: Optional[str] = None) -> Dict[str, Any]:
+        """Replace one machine-authenticated board statistic snapshot.
+
+        The endpoint is a KV replacement rather than a merge.  When the caller
+        does not provide an idempotency key, derive one from the canonical
+        stat-key/payload pair so a transport retry cannot create a second
+        logical mutation.
+        """
+        if not isinstance(payload, Mapping):
+            raise TypeError("payload must be a mapping")
+        key = _nonblank(stat_key, "stat_key")
+        path = self.BOARD_STAT_PATH.format(
+            stat_key=self._path_segment(key, "stat_key"))
+        rid = request_id
+        if rid is None:
+            material = json.dumps({
+                "statKey": key,
+                "payload": _camelize(dict(payload)),
+            }, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+                default=str).encode("utf-8")
+            rid = "board-stat-%s" % hashlib.sha256(material).hexdigest()[:32]
+        return self._mutation("PUT", path, payload=payload, request_id=rid)
