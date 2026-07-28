@@ -95,10 +95,29 @@ grep -n "<field_name>" <resource_file>.go
 核对 schema、Importer、Create/Read/Update/Delete、ID 组装和文档。`*_instances` 多半是数据源，
 不要误判为资源。
 
-### G / 紧急普通 D 的双 owner 契约
+### 纯 datasource source-only 契约
 
-命中 G Provider 全局改造，或紧急普通 D（纯 datasource；或 CloudSpec 结构 OK + 手写
-Provider）时，PD 必须把两个 owner 分开写入结构化提案：
+仅在诉求只涉及 `data.alicloud_xxx` 的查询、过滤、分页、输出字段或 Read，且不含 resource
+变更时命中。resource+datasource 混合诉求、G Provider 全局改造、手写 resource D 均不属于
+pure datasource：
+
+- 紧急源单 assignee=新山（521957）；非紧急源单 assignee=过载（484483）。
+- Jarvis/TerraformRD 在源单直接开发；PD 提案 `next=terraform-rd/dev`。
+- 严禁为 pure datasource 触发、复用或承载任何 528766 生命周期动作；具体禁令以
+  `aone-triage` 的 source-only 契约为准。
+- 历史 relation 只读保留，不删、不迁、不关、不改派；不是开发、完成或 blocker 门，
+  允许引用已有 PR 防重复。
+- RD route phase 只幂等同步源单 assignee + per-type progress_status；bridge executor
+  独占源单 claim/唯一回复/tag/release/finish。
+- CI pending/fail 或 QA fail 均回 RD 修复，不得标为 blocked；open PR + QA pass 时源单
+  release，不 finish。
+- G 与所有非-datasource D 保留 528766；I/E/D-临钧/A/F/H 不变。source-only 优先于旧
+  G/urgent-D，但仅匹配 pure datasource。
+
+### G / 紧急非-datasource D 的双 owner 契约
+
+命中 G Provider 全局改造，或 CloudSpec 结构 OK + 手写 resource D 的紧急非-datasource
+变更时，PD 必须把两个 owner 分开写入结构化提案：
 
 - source customer ticket：assignee 新山（521957），per-type progress_status；
 - same-topic tf_provider 528766：assignee 过载（484483），由 Jarvis/TerraformRD claim 并开发；
@@ -108,7 +127,7 @@ Provider）时，PD 必须把两个 owner 分开写入结构化提案：
 relation、source assignee 或 status 已齐只表示 route materialization，不是终结论。没有
 PR/CI/QA 完成证据时，`next=terraform-rd/dev`；不得返回“已交新山/观察等待”。只有已有 PR
 待人工合并、明确外部依赖或人工决策，才提案 observe/release 或 blocked。D-临钧/A/F/H/
-非紧急 D、I→念依、E→CloudSpec pre→D-临钧边界不变。PD 仍不执行任何 create、assign、
+非紧急非-datasource D、I→念依、E→CloudSpec pre→D-临钧边界不变。PD 仍不执行任何 create、assign、
 relation 或 claim。
 
 ### 4. 三层本地截图

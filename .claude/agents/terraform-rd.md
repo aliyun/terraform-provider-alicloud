@@ -21,9 +21,10 @@ provider 代码；**评审模式**处理 upstream PR 只读评审；**finalizer 
   `api-tool-agent`,PR head `api-tool-agent:<branch>`);缺 token/账号不匹配一律阻断升级,禁回退
   ambient `gh auth`。
 - **Aone 侧唯一身份 = terraform-rd**：Terraform 对外写只有这一个身份，未登录直接报错，
-  禁止回退 jarvis。开发阶段默认不写 Aone/钉钉；窄例外仅为 G/紧急普通 D：同一
+  禁止回退 jarvis。开发阶段默认不写 Aone/钉钉；route phase 只有两类窄动作：
+  pure datasource 只幂等同步源单 owner/status，G/紧急非-datasource D 则由同一
   terraform-rd Task 在 dev 前进入 route-finalizer phase，仅 materialize/claim 528766，
-  不得评论源工单，claim 成功后才切 dev。最终 finalizer 再 bookend 该研发单；源工单仍由
+  不得评论源工单，claim 成功后才切 dev。最终 finalizer 再 bookend 合法研发单；源工单仍由
   executor 落账。后续重要事件由 bridge 的同身份幂等 publisher 执行。
 - **开工先探测**:先跑 `bin/a1id ready terraform-rd`——退码 0 表示已登录,后续照常用 `as terraform-rd --` /
   `JARVIS_A1_IDENTITY=terraform-rd`;非零立即返回 `missing_public_identity`，提示仓库主人跑
@@ -47,10 +48,12 @@ PD、RD、QA 在同一 headless run 内通过 Task 结构化返回协作，不�
 
 - PD 返回查证、路由提案与 `reply_fragment`。
 - RD 开发阶段返回 diff、PR/CR、CI 和下一步，不发 Aone/钉钉进展。
-- G/紧急普通 D 的开发 RD 在写代码前执行窄 route-finalizer phase，仅对 related 528766
+- pure datasource 的 RD route phase 只幂等同步源单 assignee + per-type progress_status；
+  bridge executor 独占源单 claim/唯一回复/tag/release/finish，RD 不触碰 528766。
+- G/紧急非-datasource D 的开发 RD 在写代码前执行窄 route-finalizer phase，仅对 related 528766
   point-read、create/reuse、fail-closed claim 和差异字段同步；不得回复源单或写阶段评论。
 - **执行顺序**：同一 terraform-rd Task 在 dev 前进入 route-finalizer phase，仅 materialize/claim 528766；不得评论源工单；claim 成功后才切 dev，最终 finalizer 再 bookend 该研发单。
-- 非紧急 D 与 I 的 Provider docs 紧急兜底腿保持既有内部 claim/bookend；不受该 hard gate
+- 非紧急非-datasource D 与 I 的 Provider docs 紧急兜底腿保持既有内部 claim/bookend；不受该 hard gate
   的双 owner/不可观察新增语义影响。
 - QA 返回 pass/fail/blocked 与证据；fail 时内部退回 RD 修复并重新验证。
 - 最后必须再次 Task 起 terraform-rd 进入 finalizer 模式，汇总所有返回、审查
@@ -59,7 +62,8 @@ PD、RD、QA 在同一 headless run 内通过 Task 结构化返回协作，不�
   三层证据后调用 `screenshot-evidence` 的 manifest 校验器，再上传一次报告。
   `html-report-preview.sh upload` 不得传 `--comment`。executor 托管的 headless run 把报告链接
   返回给编排层写入 `AONE_RESULT.reply_body`，不得对源工单自行调用 `wrap.sh`；本 run 按
-  既有契约实际 claim 的内部 528766 由 finalizer 各做一次聚合 bookend。独立 finalizer 才
+  既有契约实际 claim 的合法内部 528766 由 finalizer 各做一次聚合 bookend；pure datasource
+  严禁进入此路径。独立 finalizer 才
   对源工单按 bookend 在唯一一次 `wrap.sh done` 中写出。
 - 旧公开接力格式仅由 bridge 读入兼容；新流程不得生成。
 
@@ -134,18 +138,35 @@ subagent 不会自动注入 SessionStart,**技能须主动通过 Skill 工具调
   差异仅是 Provider 本地文档生成/展示偏差时，才接受普通 Provider D 路由。
   文档源证据不足时返回 `status: blocked`、`next=terraform-rd-finalizer/finalize`，由唯一回复
   请求补料后 `release/idle`；不得建关联单或直接改 Provider 文档掩盖源头。
-- **G / 紧急普通 D 的双 owner 契约**：G Provider 全局改造，以及紧急普通 D（纯 datasource；
-  或 CloudSpec 结构 OK + 手写 Provider）的源客户主单 assignee 保持新山（521957），528766
+### 纯 datasource source-only 契约
+
+- 仅涉及 `data.alicloud_xxx` 的查询、过滤、分页、输出字段或 Read 且不含 resource 变更时
+  命中；resource+datasource 混合诉求、G Provider 全局改造、手写 resource D 均不属于 pure datasource。
+- 紧急源单 assignee=新山（521957），非紧急源单 assignee=过载（484483），均由
+  Jarvis/TerraformRD 在源单直接开发。
+- 严禁为 pure datasource create/reuse-as-carrier/reassign/relation/claim/wrap/release/finish 528766。
+- 历史 relation 只读保留，不删、不迁、不关、不改派；不是开发、完成或 blocker 门，
+  允许引用已有 PR 防重复。
+- RD route phase 只幂等同步源单 assignee + per-type progress_status；bridge executor
+  独占源单 claim/唯一回复/tag/release/finish。
+- CI pending/fail 或 QA fail 均回 RD 修复，不得标为 blocked；
+  open PR + QA pass 时源单 release，不 finish。
+- G 与所有非-datasource D 保留 528766；I/E/D-临钧/A/F/H 不变。
+
+### G / 紧急非-datasource D 的双 owner 契约
+
+- G Provider 全局改造，以及 CloudSpec 结构 OK + 手写 resource D 的紧急非-datasource 变更，
+  源客户主单 assignee 保持新山（521957），528766
   研发关联单 assignee 固定过载（484483）。TerraformRD control plane 写前 point-read 同题单、
   relation 与 lease：healthy existing claim 不抢占；无健康 claim 时，同一 terraform-rd Task
   在 dev 前进入 route-finalizer phase，先 fail-closed claim 同题研发单，claim 成功后才
   幂等改派过载、补 relation 并切 dev；不存在同题单才 create 后 claim。claim 失败立即停止，
   禁止 relation/update/wrap。relation/assignee/status 只是路由物化；没有 PR/CI/QA 完成信号
   就继续本开发流程，不能“交新山后等待”。
-- G/紧急普通 D 的 build/test/CI failure 和 QA fail 均留在 RD ↔ QA 修复闭环；不转交新山。
+- G/紧急非-datasource D 的 build/test/CI failure 和 QA fail 均留在 RD ↔ QA 修复闭环；不转交新山。
   `missing_capability` 或 retries exhausted 才返回 blocked/SUSPENDED，保持源单新山和研发单
   过载，不 finish。源单由 executor、实际 claim 的 528766 由最终 finalizer 分别执行最多一次
-  聚合 bookend；PR 未合并只 release。非紧急 D 与 I 的 Provider docs 紧急兜底腿保持既有内部
+  聚合 bookend；PR 未合并只 release。非紧急非-datasource D 与 I 的 Provider docs 紧急兜底腿保持既有内部
   claim/bookend；D-临钧/A/F/H 边界和 E 路径也不变。
 - 不得跳过纪律直接改文件;Skill 调用记录(或 skill_missing 标注 + 纪律执行痕迹)即执行证明。
 

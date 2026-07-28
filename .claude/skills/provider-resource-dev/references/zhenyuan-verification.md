@@ -138,16 +138,34 @@ CloudSpec 文档源正确、仅 Provider 本地生成/展示偏差时走 D；文
 - 任一不满足(资源未定义 / 属性缺客户要的字段 / 覆盖度 < 1.0) →
   **结构 NOT OK**，走分支 E 的 CloudSpec 结构 metadata 原主单自闭环
 
-**前置短路 · 纯 datasource 问题不查镇元**:诉求只涉 `data.alicloud_xxx`(查询/过滤/输出字段)、不涉资源 schema/生命周期的,直接判**与镇元不相关**、进分支 D 分流(非临钧子分支)——datasource 是 provider 侧对 List/Describe 查询 API 的只读封装,镇元只管资源 schema,本节的 get/覆盖度查证全部跳过。resource+datasource 混合诉求不算"纯",仍按资源主线走本节查证。
+**前置短路 · 纯 datasource 问题不查镇元**:仅涉及 `data.alicloud_xxx` 的查询、过滤、分页、输出字段或 Read
+且不涉资源 schema/生命周期时，直接判**与镇元不相关**并走 source-only。
+datasource 是 provider 侧对 List/Describe 查询 API 的只读封装，镇元只管资源 schema，本节
+get/覆盖度查证全部跳过。resource+datasource 混合诉求、G Provider 全局改造、手写 resource D 均不属于 pure datasource。
 
 **环境说明**:V2 走 acube 正式(`acube.aliyun-inc.com`),默认线上;需要预发数据把域名换成 `pre-acube.aliyun-inc.com` 即可(路径 / 参数 / 返回结构一致)。服务端实现见邻仓 `a-cube-aliyun-com` 里 `acube-auto-generator/.../ProductMetaUtil.java#getResourceQualityDetailCoverageScoreV2ByCommon`。
 
 **sanity check(必跑)**:拿同产品已发布的其他资源(如查 ① released list 里另一项)以相同接口复查,能拿到 `CoverageDetail` 说明内网/接口正常;否则先排查内网访问(`pre-acube.aliyun-inc.com` 需办公网/VPN;`/api/v1/**` 免鉴权,但走内网 DNS)。
 
-### G / 紧急普通 D 的双 owner 契约
+### 纯 datasource source-only 契约
 
-本契约覆盖 Provider 全局改造 G，以及紧急普通 D（纯 datasource；或 CloudSpec 结构 OK +
-Provider 手写实现）：
+- 紧急源单 assignee=新山（521957）；非紧急源单 assignee=过载（484483）；两者均由
+  Jarvis/TerraformRD 在源单直接开发。
+- 严禁为 pure datasource create/reuse-as-carrier/reassign/relation/claim/wrap/release/finish 528766。
+- 历史 relation 只读保留，不删、不迁、不关、不改派；不是开发、完成或 blocker 门，
+  允许引用已有 PR 防重复。
+- RD route phase 只幂等同步源单 assignee + per-type progress_status；
+  bridge executor 独占源单 claim/唯一回复/tag/release/finish。
+- CI pending/fail 或 QA fail 均回 RD 修复，不得标为 blocked；只有 `missing_capability`、
+  `retry exhausted`、明确外部依赖或人工决策才可 blocked/SUSPENDED。
+- open PR + QA pass 时源单 release，不 finish。
+- G 与所有非-datasource D 保留 528766；I/E/D-临钧/A/F/H 不变。source-only 优先于旧
+  G/urgent-D，但只匹配 pure datasource。
+
+### G / 紧急非-datasource D 的双 owner 契约
+
+本契约覆盖 Provider 全局改造 G，以及 CloudSpec 结构 OK + Provider 手写 resource D 的紧急
+非-datasource 变更；pure datasource 不进入本契约：
 
 - **源客户主单 assignee 保持新山（521957）**，但
   **528766 研发关联单 assignee 固定过载（484483）**，由
@@ -163,12 +181,13 @@ Provider 手写实现）：
 - TerraformRD control plane 幂等执行物化、必要改派、relation 与 claim；PD/QA 不外写。
   源单由 executor、实际 claim 的 528766 由最终 finalizer 分别执行一次聚合 bookend；
   PR 未合并只 release。
-- **D-临钧/A/F/H/非紧急 D 边界不变**；非紧急 D 与 I 的 Provider docs 紧急兜底腿保持
+- **D-临钧/A/F/H/非紧急非-datasource D 边界不变**；非紧急非-datasource D 与 I 的 Provider docs 紧急兜底腿保持
   既有内部 claim/bookend，I→念依、E→CloudSpec pre→D-临钧保持既有路径。
 
-### 分支 D:与镇元不相关(镇元 OK、Provider 本地问题 / 纯 datasource),分流
+### 分支 D:与镇元不相关（pure datasource source-only / 镇元 OK 的 Provider 本地问题）
 
-资源类先判 provider 代码类型:
+pure datasource 已由上方 source-only 短路：只同步源单 owner/status 后直接开发，禁止任何
+528766 承载动作。其余资源类再判 provider 代码类型:
 
 ```bash
 provider_repo="$(bash bootstrap/workspace.sh dir terraform_provider)"
@@ -176,10 +195,10 @@ head -3 "$provider_repo/alicloud/resource_alicloud_<product>_<resource>.go" 2>/d
 ```
 
 - 首行有类似 `// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!` → **生成器产出** → 走 acube V2 接口触发临钧工作流(见 Step 3 · 分支 D-临钧;生成器产出修复=重跑生成器,管道不变)
-- 无该注释(手写)**或纯 datasource 问题**(datasource 不走临钧管道)→ 按紧急度分流:
+- 无该注释（手写 resource）→ 按紧急度走**非-datasource D**:
   - 紧急(优先级=紧急 OR 距 DDL<14 天 OR 缺陷类型覆写)→ 源单保持新山(521957)，创建或复用
     528766 并固定指派过载(484483)，由内部 TerraformRD claim 后按 Provider 开发流程修复
-  - 不紧急 → 保持既有 D-过载边界，源单与 528766 均指派过载(484483)
+  - 不紧急 → 保持既有非-datasource D-过载边界，源单与 528766 均指派过载(484483)
 
 文档问题只有在证据证明 **CloudSpec 文档源正确，Provider 本地文档生成/展示偏差** 时才允许
 进入本分支。CloudSpec text-only 文档源错误必须回到 I；文档与结构同时变化时进入 E。

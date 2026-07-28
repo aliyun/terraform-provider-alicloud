@@ -86,15 +86,27 @@ Terraform PD 的三层查证还必须调用 `screenshot-evidence` 生成本地�
 上传命令不传 `--comment`，报告链接只进入本轮唯一聚合回复。三层缺失且无明确 N/A 原因时不得
 静默收尾。
 
-若单条工单进入 Terraform Provider 资源开发且不走自动化生成链路，按 `tf_provider` 池创建或复用
+若单条工单进入 Terraform Provider **非-datasource** 资源开发且不走自动化生成链路，按 `tf_provider` 池创建或复用
 **terraform-alicloud** 内部研发单（项目 `528766`），指派按 aone-triage skill
 `references/tf-customer-request-routing.md` 分工表路由到具体人，并与客户主单双向关联。路由动作由
 最终 RD 审查执行；每个被 claim 的 Terraform 工单在本轮主处理 run 只于最终聚合时回复一次，
 不按 PD/RD/QA 阶段同步。后续 gate/PR/终态失败的重要事件可按 `loops/persona-collab.md`
 §五追加 RD-only 幂等更新。CloudSpec 必须先做 I/E 分流：
 
-**G / 紧急普通 D 的双 owner 契约**：G Provider 全局改造，以及紧急普通 D（纯 datasource；
-或 CloudSpec 结构 OK + 手写 Provider）的源客户主单 assignee 保持新山（521957），但 528766
+**纯 datasource source-only 契约**：只在诉求仅涉及 `data.alicloud_xxx` 的查询、过滤、分页、
+输出字段或 Read，且不含 resource 变更时命中；resource+datasource 混合诉求、G Provider
+全局改造、手写 resource D 均不属于 pure datasource。紧急源单 assignee=新山（521957），
+非紧急源单 assignee=过载（484483），均由 Jarvis/TerraformRD 在源单直接开发。严禁为 pure
+datasource create/reuse-as-carrier/reassign/relation/claim/wrap/release/finish 528766。
+历史 relation 只读保留，不删、不迁、不关、不改派；不是开发、完成或 blocker 门，允许引用
+已有 PR 防重复。RD route phase 只幂等同步源单 assignee + per-type progress_status；
+bridge executor 独占源单 claim/唯一回复/tag/release/finish。CI pending/fail 或 QA fail 均回
+RD 修复，不得标为 blocked；open PR + QA pass 时源单 release，不 finish。G 与所有
+非-datasource D 保留 528766；I/E/D-临钧/A/F/H 不变。source-only 优先于旧 G/urgent-D
+规则，但只匹配 pure datasource。
+
+**G / 紧急非-datasource D 的双 owner 契约**：G Provider 全局改造，以及 CloudSpec 结构 OK +
+手写 resource D 的紧急非-datasource 变更，源客户主单 assignee 保持新山（521957），但 528766
 研发关联单 assignee 固定过载（484483），由 Jarvis/TerraformRD claim 并尝试修复。TerraformRD
 control plane 在写前 point-read 同题单、relation 和 claim：healthy existing claim 不抢占；
 没有健康 claim 时，同题旧单原地复用，同一 terraform-rd Task 先 fail-closed claim，成功后
@@ -104,8 +116,9 @@ relation/assignee/status 齐全不代表完成；无 PR/CI/QA 完成信号继续
 进入 blocked/SUSPENDED，保持源单新山、研发单过载，不 finish；PR 未合并只 release。源工单
 由 bridge executor bookend；源工单禁令不约束按既有契约由内部链承接的 528766，本 run
 实际 claim 的研发单由 RD finalizer 独立 claim/bookend。两张工单各自最多一次聚合 bookend，
-禁止互相代写或重复落账。非紧急 D 与 I 的 Provider docs 紧急兜底腿继续走既有内部路径；
-G/紧急普通 D hard gate 只新增双 owner、先 claim 后 dev 与不可观察语义。D-临钧/A/F/H
+禁止互相代写或重复落账。pure datasource 的 528766 禁令优先；非紧急非-datasource D 与 I
+的 Provider docs 紧急兜底腿继续走既有内部路径；G/紧急非-datasource D hard gate 只新增
+双 owner、先 claim 后 dev 与不可观察语义。D-临钧/A/F/H
 边界不变，I→念依、E→CloudSpec pre→D-临钧保持原路径。
 
 - 分支 I 只含 resource/property/operation description、字段解释、NOTE、枚举文案等 text-only

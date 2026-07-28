@@ -71,9 +71,27 @@ reply_fragment: 可直接纳入最终回复的片段
 无开发需求时，RD 可返回 no-op，QA 对支持性结论或复现证据做独立校验后进入 finalizer。不得为了
 形式跳过 PD/QA，也不得让 PD/QA 代替 RD 发声。
 
-### G / 紧急普通 D 的双 owner 契约
+### 纯 datasource source-only 契约
 
-G Provider 全局改造，以及紧急普通 D（纯 datasource；或 CloudSpec 结构 OK + 手写 Provider）
+只在诉求仅涉及 `data.alicloud_xxx` 的查询、过滤、分页、输出字段或 Read，且不含 resource
+变更时命中。resource+datasource 混合诉求、G Provider 全局改造、手写 resource D 均不属于
+pure datasource。该契约优先于旧 G/urgent-D，但不得外溢：
+
+1. 紧急源单 assignee=新山（521957），非紧急源单 assignee=过载（484483）；两者均由
+   Jarvis/TerraformRD 在源单直接开发，不创建研发承载单。
+2. 严禁为 pure datasource
+   create/reuse-as-carrier/reassign/relation/claim/wrap/release/finish 528766。
+3. 历史 relation 只读保留，不删、不迁、不关、不改派；不是开发、完成或 blocker 门，
+   允许引用已有 PR 防重复。
+4. RD route phase 只幂等同步源单 assignee + per-type progress_status；bridge executor
+   独占源单 claim/唯一回复/tag/release/finish。PD/QA 不外写。
+5. CI pending/fail 或 QA fail 均回 RD 修复，不得标为 blocked；只有真实能力缺失、重试耗尽、
+   明确外部依赖或人工决策才可 blocked/SUSPENDED。open PR + QA pass 时源单 release，不 finish。
+6. G 与所有非-datasource D 保留 528766；I/E/D-临钧/A/F/H 不变。
+
+### G / 紧急非-datasource D 的双 owner 契约
+
+G Provider 全局改造，以及 CloudSpec 结构 OK + 手写 resource D 的紧急非-datasource 变更，
 必须由内部链自助研发：
 
 1. PD 只读提出双 owner 路由：源客户主单 assignee 保持新山（521957），528766 研发关联单
@@ -89,7 +107,8 @@ G Provider 全局改造，以及紧急普通 D（纯 datasource；或 CloudSpec 
 5. 源工单仍由 executor bookend；本 run 实际 claim 的 528766 则由 RD finalizer 独立
    claim/bookend。两张工单各自最多一次聚合 bookend；PR 未合并只 release。只有已有 PR
    待人工合并、明确外部依赖或人工决策，才允许 observe/release 或 blocked。
-6. D-临钧/A/F/H/非紧急 D 边界不变；I→念依、E→CloudSpec pre→D-临钧保持原流程。
+6. D-临钧/A/F/H/非紧急非-datasource D 边界不变；I→念依、E→CloudSpec pre→D-临钧保持
+   原流程；pure datasource 必须优先走 source-only。
 
 CloudSpec 路由分为两个互斥分支：
 
@@ -128,11 +147,13 @@ finalizer 回复正文至少包含：
 MR/CR 链接只在这条最终聚合回复中同步。Terraform 例外：开 MR/CR 后不立即做中途 Aone 回填。
 
 控制面 Task 下，**源工单禁止模型直接 claim/wrap/release/评论**，**源工单仍由 executor
-bookend**。**源工单禁令不约束按既有契约由内部链承接的 528766**：G/紧急普通 D，以及
-**非紧急 D 与 I 的 Provider docs 紧急兜底腿**仍按各自既有边界处理；实际 claim 的
-**528766 由 RD finalizer claim/bookend**，并把同一份 RD/QA 聚合写入研发单一次。G/紧急
-普通 D hard gate 只新增双 owner、先 claim 后 dev 与不可观察语义，不得对源工单重复认领或
-回复。模型必须在末尾返回：
+bookend**。pure datasource 进一步由 **bridge executor 独占源单 claim/唯一回复/tag/release/finish**，
+RD route phase 仅同步 owner/status。**源工单禁令不约束按既有契约由内部链承接的 528766**，
+但 **pure datasource 的 528766 禁令优先**：
+G/紧急非-datasource D，以及**非紧急非-datasource D 与 I 的 Provider docs 紧急兜底腿**
+仍按各自既有边界处理；实际 claim 的 **528766 由 RD finalizer claim/bookend**，并把同一份
+RD/QA 聚合写入研发单一次。G/紧急非-datasource D hard gate 只新增双 owner、先 claim 后 dev
+与不可观察语义，不得对源工单重复认领或回复。模型必须在末尾返回：
 
 ```text
 [[AONE_RESULT:{"outcome":"done|idle|suspend","reply_body":"<含报告链接的唯一完整回复>",...}]]

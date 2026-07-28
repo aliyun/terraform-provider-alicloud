@@ -57,9 +57,45 @@ for id in "${IDS[@]}"; do
 done
 ```
 
-## 骨架 C · G / 紧急普通 D 双 owner 关联单 + 双工单 bookend
+## 骨架 C · pure datasource source-only 源单路由
 
-本骨架**只用于 G / 紧急普通 D**。D-临钧/A/F/H/非紧急 D、I/E 继续走各自专用路径。
+本骨架只用于纯 datasource：仅涉及 `data.alicloud_xxx` 查询、过滤、分页、输出字段或 Read，
+且不含 resource 变更。resource+datasource 混合、G 全局与手写 resource D 都不得进入。
+RD route phase **只幂等同步源单 assignee + per-type progress_status**；
+**bridge executor 独占源单 claim/唯一回复/tag/release/finish**。历史 relation 只读保留；
+禁止 create/reuse-as-carrier/reassign/relation/claim/wrap/release/finish 528766。
+
+```bash
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+SRC=78056841
+URGENT="${URGENT:?1=紧急，0=非紧急}"
+URGENT_ASSIGNEE=521957
+NONURGENT_ASSIGNEE=484483
+SOURCE_STATUS="${SOURCE_STATUS:?从 pools.json progress_status[workitemType] 解析}"
+SOURCE_ROUTE_DRIFT="${SOURCE_ROUTE_DRIFT:-0}"
+
+if [ "$URGENT" = 1 ]; then
+  PURE_DATASOURCE_ASSIGNEE="$URGENT_ASSIGNEE"
+else
+  PURE_DATASOURCE_ASSIGNEE="$NONURGENT_ASSIGNEE"
+fi
+
+# point-read 仅用于比较源单 owner/status，并可只读引用历史 relation 上已有 PR 防重复。
+# 不删除/迁移/关闭/改派历史 relation；它不是开发、完成或 blocker 门。
+if [ "$SOURCE_ROUTE_DRIFT" = 1 ]; then
+  bin/a1id as terraform-rd -- project workitem update "$SRC" \
+    --assignee "$PURE_DATASOURCE_ASSIGNEE" --status "$SOURCE_STATUS"
+fi
+
+# 后续在源单上下文完成 RD→QA；finalizer 仅返回 AONE_RESULT。
+# open PR + QA pass 时由 bridge executor release 源单，不 finish。
+```
+
+## 骨架 D · G / 紧急非-datasource D 双 owner 关联单 + 双工单 bookend
+
+本骨架**只用于 G / 紧急非-datasource D**。pure datasource 必须走上方 source-only；
+D-临钧/A/F/H/非紧急非-datasource D、I/E 继续走各自专用路径。
 控制面 executor 已持有源工单 lease；**源工单由 bridge executor bookend**，本骨架不得
 claim/wrap/release 源工单。528766 才由 RD finalizer 直接 claim/bookend。
 
@@ -105,7 +141,7 @@ else
   RELATED_ID=$(bin/a1id as terraform-rd -- project workitem create \
     --project "$RELATED_PROJECT" \
     --category "$CATEGORY" \
-    --title "G/紧急普通 D · <具体标题>" \
+    --title "G/紧急非-datasource D · <具体标题>" \
     --assignee "$RELATED_ASSIGNEE" \
     --priority "$PRIORITY" \
     --body-file /tmp/body-${SRC}.txt \

@@ -178,6 +178,10 @@ for phrase in \
   '| **Provider 侧全局改造**' \
   '源单新山；528766 过载并由 TerraformRD 内部开发' \
   '521957 / 484483' \
+  '| **pure datasource source-only（紧急）**' \
+  '| 源单新山；Jarvis/TerraformRD 在源单直接开发，不建 528766 | 521957 |' \
+  '| **pure datasource source-only（非紧急）**' \
+  '| 源单过载；Jarvis/TerraformRD 在源单直接开发，不建 528766 | 484483 |' \
   '| **CloudSpec 文档文本 metadata（I）**' \
   '| 念依（2169561 submit_only） | 373108 |' \
   '| **CloudSpec 结构 metadata（E）**' \
@@ -328,7 +332,7 @@ for phrase in \
   grep -Fq "$phrase" "$runtime_orchestrator"
 done
 
-g_urgent_route_files=(
+provider_route_files=(
   "$repo_root/.claude/skills/aone-triage/SKILL.md"
   "$repo_root/.agents/skills/aone-triage/SKILL.md"
   "$repo_root/.claude/skills/aone-triage/references/team-roster.md"
@@ -340,9 +344,26 @@ g_urgent_route_files=(
   "$repo_root/.claude/skills/provider-resource-dev/references/zhenyuan-verification.md"
   "$repo_root/.agents/skills/provider-resource-dev/references/zhenyuan-verification.md"
 )
-for file in "${g_urgent_route_files[@]}"; do
+for file in "${provider_route_files[@]}"; do
   for phrase in \
-    'G / 紧急普通 D 的双 owner 契约' \
+    '纯 datasource source-only 契约' \
+    '仅涉及 `data.alicloud_xxx` 的查询、过滤、分页、输出字段或 Read' \
+    'resource+datasource 混合诉求、G Provider 全局改造、手写 resource D 均不属于 pure datasource' \
+    '紧急源单 assignee=新山（521957）' \
+    '非紧急源单 assignee=过载（484483）' \
+    'Jarvis/TerraformRD 在源单直接开发' \
+    '严禁为 pure datasource create/reuse-as-carrier/reassign/relation/claim/wrap/release/finish 528766' \
+    '历史 relation 只读保留' \
+    '不删、不迁、不关、不改派' \
+    '不是开发、完成或 blocker 门' \
+    '允许引用已有 PR 防重复' \
+    'RD route phase 只幂等同步源单 assignee + per-type progress_status' \
+    'bridge executor 独占源单 claim/唯一回复/tag/release/finish' \
+    'CI pending/fail 或 QA fail 均回 RD 修复' \
+    'open PR + QA pass 时源单 release，不 finish' \
+    'G 与所有非-datasource D 保留 528766' \
+    'I/E/D-临钧/A/F/H 不变' \
+    'G / 紧急非-datasource D 的双 owner 契约' \
     '源客户主单 assignee 保持新山（521957）' \
     '528766 研发关联单 assignee 固定过载（484483）' \
     'healthy existing claim 不抢占'; do
@@ -357,13 +378,15 @@ for file in \
   "$rd_agent" "$rd_agent_mirror" \
   "$qa_agent" "$qa_agent_mirror" \
   "$repo_root/CLAUDE.md" "$repo_root/AGENTS.md"; do
-  grep -Fq 'G / 紧急普通 D 的双 owner 契约' "$file"
+  grep -Fq '纯 datasource source-only 契约' "$file"
+  grep -Fq 'G / 紧急非-datasource D 的双 owner 契约' "$file"
 done
 
 for phrase in \
   '源工单禁止模型直接 claim/wrap/release/评论' \
   '源工单禁令不约束按既有契约由内部链承接的 528766' \
-  '非紧急 D 与 I 的 Provider docs 紧急兜底腿' \
+  'pure datasource 的 528766 禁令优先' \
+  '非紧急非-datasource D 与 I 的 Provider docs 紧急兜底腿' \
   '528766 由 RD finalizer claim/bookend' \
   '源工单仍由 executor bookend'; do
   grep -Fq "$phrase" "$persona_collab"
@@ -377,7 +400,8 @@ fi
 
 for file in "$main_skill" "$routing" "$repo_root/CLAUDE.md"; do
   grep -Fq '源工单禁令不约束按既有契约由内部链承接的 528766' "$file"
-  grep -Fq '非紧急 D 与 I 的 Provider docs 紧急兜底腿' "$file"
+  grep -Fq 'pure datasource 的 528766 禁令优先' "$file"
+  grep -Fq '非紧急非-datasource D 与 I 的 Provider docs 紧急兜底腿' "$file"
   if grep -Fq 'G/紧急普通 D 的 528766 是唯一例外' "$file"; then
     echo "zhenyuan_self_close_rules_test: existing internal 528766 path regressed in $file" >&2
     exit 1
@@ -389,10 +413,15 @@ for file in \
   "$main_skill" \
   "$verification" \
   "$repo_root/.claude/skills/provider-resource-dev/SKILL.md"; do
-  if grep -Fq 'D-新山' "$file"; then
-    echo "zhenyuan_self_close_rules_test: stale G/urgent-D handoff remains in $file" >&2
-    exit 1
-  fi
+  for stale in \
+    'D-新山' \
+    '紧急普通 D（纯 datasource；或' \
+    'G/紧急普通 D hard gate 只新增双 owner'; do
+    if grep -Fq "$stale" "$file"; then
+      echo "zhenyuan_self_close_rules_test: stale datasource carrier rule remains in $file: $stale" >&2
+      exit 1
+    fi
+  done
 done
 
 echo "zhenyuan_self_close_rules_test: PASS"

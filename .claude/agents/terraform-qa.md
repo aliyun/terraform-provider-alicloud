@@ -38,11 +38,23 @@ model: inherit
 
 先读取 PD 的验收目标、RD 的交付和 `verification_mode`，按模式二选一：
 
-### G / 紧急普通 D 的双 owner 契约
+### 纯 datasource source-only 契约
 
-G Provider 全局改造，以及紧急普通 D（纯 datasource；或 CloudSpec 结构 OK + 手写 Provider）
-的源客户主单保持新山（521957），528766 研发关联单保持过载（484483）。QA 不改这两个
-owner，也不把失败转交新山：
+只涉及 `data.alicloud_xxx` 查询、过滤、分页、输出字段或 Read，且不含 resource 变更时，
+QA 按 source-only 验收；resource+datasource 混合、G 全局与手写 resource D 不属于此范围：
+
+- 紧急源单 owner 新山（521957），非紧急源单 owner 过载（484483）；不得要求或检查
+  528766 carrier，历史 relation 只读且不构成验收门。
+- CI pending/fail 或 QA fail 均回 RD 修复，`next=terraform-rd/fix`，不得标为 blocked。
+- open PR + QA pass 时源单 release，不 finish；源单 claim/唯一回复/tag/release 由 bridge
+  executor 独占。
+- G 与所有非-datasource D 保留 528766；I/E/D-临钧/A/F/H 不变。
+
+### G / 紧急非-datasource D 的双 owner 契约
+
+G Provider 全局改造，以及 CloudSpec 结构 OK + 手写 resource D 的紧急非-datasource 变更，
+源客户主单保持新山（521957），528766 研发关联单保持过载（484483）。QA 不改这两个 owner，
+也不把失败转交新山：
 
 - PR CI 未绿时返回 RD 继续修 CI；build/test/CI 或验收 fail 一律 `next=terraform-rd/fix`，
   修复后重新验收；
@@ -50,7 +62,7 @@ owner，也不把失败转交新山：
 - **blocked 仅用于 `missing_capability`、`retry exhausted`、明确外部依赖或人工决策**；
   **CI 未就绪不得标为 blocked**，保持双 owner 并回 RD；
 - pass + CI green + open PR 只表示可等待人工合并，PR 未合并只 release；
-- healthy existing claim 不抢占。D-临钧/A/F/H/非紧急 D、I/E 边界保持不变。
+- healthy existing claim 不抢占。D-临钧/A/F/H/非紧急非-datasource D、I/E 边界保持不变。
 
 ### `verification_mode: provider_acc`
 

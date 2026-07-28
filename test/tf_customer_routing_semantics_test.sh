@@ -24,7 +24,25 @@ for file in "$source_route" "$mirror_route"; do
     'relation 齐全但源单映射字段漂移' \
     '只幂等修复 assignee/status' \
     '不 create、不触发 Acube、不重复阶段回复' \
-    'G / 紧急普通 D 的双 owner 契约' \
+    '纯 datasource source-only 契约' \
+    '仅涉及 `data.alicloud_xxx` 的查询、过滤、分页、输出字段或 Read' \
+    'resource+datasource 混合诉求、G Provider 全局改造、手写 resource D 均不属于 pure datasource' \
+    '紧急源单 assignee=新山（521957）' \
+    '非紧急源单 assignee=过载（484483）' \
+    'Jarvis/TerraformRD 在源单直接开发' \
+    '严禁为 pure datasource create/reuse-as-carrier/reassign/relation/claim/wrap/release/finish 528766' \
+    '历史 relation 只读保留' \
+    '不删、不迁、不关、不改派' \
+    '不是开发、完成或 blocker 门' \
+    '允许引用已有 PR 防重复' \
+    'RD route phase 只幂等同步源单 assignee + per-type progress_status' \
+    'bridge executor 独占源单 claim/唯一回复/tag/release/finish' \
+    'CI pending/fail 或 QA fail 均回 RD 修复' \
+    '不得标为 blocked' \
+    'open PR + QA pass 时源单 release，不 finish' \
+    'G 与所有非-datasource D 保留 528766' \
+    'I/E/D-临钧/A/F/H 不变' \
+    'G / 紧急非-datasource D 的双 owner 契约' \
     '源客户主单 assignee 保持新山（521957）' \
     '528766 研发关联单 assignee 固定过载（484483）' \
     'Jarvis/TerraformRD claim 并尝试修复' \
@@ -45,7 +63,7 @@ for file in "$source_route" "$mirror_route"; do
     '不得 finish' \
     '源单与实际 claim 的 528766 各自最多一次聚合 bookend' \
     'PR 未合并只 release' \
-    'D-临钧/A/F/H/非紧急 D' \
+    'D-临钧/A/F/H/非紧急非-datasource D' \
     '距上次实质进展 ≥8 天' \
     '追料/补料' \
     '终局收敛' \
@@ -134,7 +152,8 @@ for file in "$source_route" "$mirror_route"; do
   for forbidden in \
     '映射字段一致后才进入观察等待' \
     '路由正确且目标池关联齐全，距上次实质进展不足 8 天 | **观察等待**' \
-    'D-新山'; do
+    'D-新山' \
+    '紧急普通 D（纯 datasource；或'; do
     if grep -Fq "$forbidden" "$file"; then
       echo "stale G/urgent-D handoff or observation rule remains in $file: $forbidden" >&2
       exit 1
@@ -145,7 +164,17 @@ done
 for file in "$source_batch_bookend" "$mirror_batch_bookend"; do
   test -f "$file"
   for phrase in \
-    '骨架 C · G / 紧急普通 D 双 owner 关联单 + 双工单 bookend' \
+    '骨架 C · pure datasource source-only 源单路由' \
+    'PURE_DATASOURCE_ASSIGNEE' \
+    'URGENT_ASSIGNEE=521957' \
+    'NONURGENT_ASSIGNEE=484483' \
+    '从 pools.json progress_status[workitemType] 解析' \
+    'SOURCE_ROUTE_DRIFT' \
+    '只幂等同步源单 assignee + per-type progress_status' \
+    'bridge executor 独占源单 claim/唯一回复/tag/release/finish' \
+    '历史 relation 只读保留' \
+    '禁止 create/reuse-as-carrier/reassign/relation/claim/wrap/release/finish 528766' \
+    '骨架 D · G / 紧急非-datasource D 双 owner 关联单 + 双工单 bookend' \
     'SOURCE_ASSIGNEE=521957' \
     'RELATED_ASSIGNEE=484483' \
     '同题 528766 point-read' \
@@ -167,6 +196,28 @@ for file in "$source_batch_bookend" "$mirror_batch_bookend"; do
     grep -Fq -- "$phrase" "$file"
   done
 
+  source_only_section="$(awk '
+    /^## 骨架 C · pure datasource source-only 源单路由$/ { capture = 1 }
+    capture && /^## 骨架 D ·/ { exit }
+    capture { print }
+  ' "$file")"
+  test -n "$source_only_section"
+  for forbidden in \
+    'RELATED_ID=' \
+    'RELATED_PROJECT=' \
+    'claim.sh' \
+    'wrap.sh' \
+    'relation add' \
+    'workitem create' \
+    'workitem update "$RELATED_ID"' \
+    'claim "$RELATED_ID"' \
+    'release "$RELATED_ID"'; do
+    if grep -Fq -- "$forbidden" <<<"$source_only_section"; then
+      echo "pure datasource source-only skeleton contains forbidden carrier action in $file: $forbidden" >&2
+      exit 1
+    fi
+  done
+
   if [ "$(grep -Fc 'claim "$RELATED_ID" "$RELATED_PROJECT" || claim_rc=$?' "$file")" -lt 2 ] ||
      [ "$(grep -Fc 'exit "$claim_rc"' "$file")" -lt 2 ]; then
     echo "existing/new related-ticket claims are not both fail-closed in $file" >&2
@@ -175,7 +226,8 @@ for file in "$source_batch_bookend" "$mirror_batch_bookend"; do
 
   if grep -Eq '^ASSIGNEE=521957([[:space:]]|$)' "$file" ||
      grep -Fq 'update "$SRC" --assignee "$RELATED_ASSIGNEE"' "$file" ||
-     grep -Fq 'claim "$SRC" "$POOL"' "$file"; then
+     grep -Fq 'claim "$SRC" "$POOL"' "$file" ||
+     grep -Fq '骨架 C · G / 紧急普通 D' "$file"; then
     echo "stale single-owner/source-bookend skeleton remains in $file" >&2
     exit 1
   fi

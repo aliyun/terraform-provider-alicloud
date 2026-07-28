@@ -45,6 +45,7 @@
 
 | 证据结论 | 路由 |
 |---|---|
+| **pure datasource**：只涉及 `data.alicloud_xxx` 查询、过滤、分页、输出字段或 Read，不含 resource 变更 | **source-only**：紧急源单新山、非紧急源单过载，由 TerraformRD 在源单直接开发；历史 relation 只读，严禁任何 528766 承载动作 |
 | **CloudSpec 文档文本 metadata**：只改 resource/property/operation description、字段解释、NOTE 或枚举文案，不改变字段集合、类型、约束或 CRUD | **分支 I**，创建或复用 2169561 并指派念依（373108）；Provider 公开 docs 同时错误时独立补 528766 紧急兜底腿 |
 | **CloudSpec 文档源正确，Provider 本地文档生成/展示偏差** | **分支 D**，仅处理 Provider 本地生成、发布或展示链路 |
 | **CloudSpec 结构 metadata**：新增/删除字段，或改变类型、约束、枚举集合、CRUD/operation/映射 | **分支 E**，在原主单修到 pre Meta 收敛，再强制 E → D-临钧 |
