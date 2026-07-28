@@ -311,6 +311,71 @@ class ClientContractTest(unittest.TestCase):
         self.assertEqual(headers(opener.calls[1][0])["idempotency-key"],
                          "source-status-42")
 
+    def test_board_stat_put_uses_machine_auth_and_stable_idempotency(self):
+        opener = RecordingOpener(responses=[
+            FakeResponse({"stored": True}),
+            FakeResponse({"stored": True}),
+        ])
+        client = self.make(opener)
+        payload = {
+            "schemaVersion": "tf-weekly-comment-participation.v1",
+            "participants": [],
+        }
+
+        first = client.put_board_stat(
+            "tf-weekly-comment-participation", payload)
+        second = client.put_board_stat(
+            "tf-weekly-comment-participation", payload)
+
+        self.assertTrue(first["stored"])
+        self.assertTrue(second["stored"])
+        for request, _timeout in opener.calls:
+            self.assertEqual(request.get_method(), "PUT")
+            self.assertEqual(
+                request.full_url,
+                "https://pre-agent.example/api/jarvis/v1/"
+                "board/stats/tf-weekly-comment-participation")
+            self.assertEqual(
+                headers(request)["authorization"], "Bearer super-secret")
+            self.assertEqual(body(request), payload)
+        first_key = headers(opener.calls[0][0])["idempotency-key"]
+        second_key = headers(opener.calls[1][0])["idempotency-key"]
+        self.assertEqual(first_key, second_key)
+        self.assertTrue(first_key.startswith("board-stat-"))
+
+    def test_aone_ownership_snapshot_uses_task_endpoint_and_stable_idempotency(
+            self):
+        opener = RecordingOpener(responses=[
+            FakeResponse({"stored": True}),
+            FakeResponse({"stored": True}),
+        ])
+        client = self.make(opener)
+        payload = {
+            "schemaVersion": "aone-workitem-ownership.v1",
+            "complete": True,
+            "items": [],
+        }
+
+        first = client.put_aone_ownership_snapshot(payload)
+        second = client.put_aone_ownership_snapshot(payload)
+
+        self.assertTrue(first["stored"])
+        self.assertTrue(second["stored"])
+        for request, _timeout in opener.calls:
+            self.assertEqual(request.get_method(), "PUT")
+            self.assertEqual(
+                request.full_url,
+                "https://pre-agent.example/api/jarvis/v1/"
+                "tasks/aone-ownership-snapshot")
+            self.assertEqual(
+                headers(request)["authorization"], "Bearer super-secret")
+            self.assertEqual(body(request), payload)
+        first_key = headers(opener.calls[0][0])["idempotency-key"]
+        second_key = headers(opener.calls[1][0])["idempotency-key"]
+        self.assertEqual(first_key, second_key)
+        self.assertTrue(
+            first_key.startswith("aone-ownership-snapshot-"))
+
     def test_task_attention_uses_control_plane_dedup_contract(self):
         opener = RecordingOpener(responses=[
             FakeResponse({"notify": True, "task": {"id": 42}}),
