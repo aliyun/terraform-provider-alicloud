@@ -173,6 +173,24 @@ for phrase in \
   grep -Fq "$phrase" "$team_roster"
 done
 
+for phrase in \
+  '| 场景 | 路由/承接关系 | 工号/项目 |' \
+  '| **Provider 侧全局改造**' \
+  '源单新山；528766 过载并由 TerraformRD 内部开发' \
+  '521957 / 484483' \
+  '| **CloudSpec 文档文本 metadata（I）**' \
+  '| 念依（2169561 submit_only） | 373108 |' \
+  '| **CloudSpec 结构 metadata（E）**' \
+  '| open-jarvis → 临钧 | 原主单内部执行 → 429768 |' \
+  '| **NPE 兜底**' \
+  '| 夏节 | 401498 |'; do
+  grep -Fq "$phrase" "$team_roster"
+done
+if grep -Fq '| 场景 | 源客户主单 owner | 下游/研发 owner |' "$team_roster"; then
+  echo 'zhenyuan_self_close_rules_test: mixed-owner roster schema remains' >&2
+  exit 1
+fi
+
 if grep -Fq 'OK 四条件' "$routing" "$verification" "$team_roster"; then
   echo 'zhenyuan_self_close_rules_test: stale four-condition CloudSpec OK contract' >&2
   exit 1
@@ -261,8 +279,8 @@ done
 
 for file in "$rd_agent" "$rd_agent_mirror"; do
   grep -Fq '文档源证据不足时返回 `status: blocked`、`next=terraform-rd-finalizer/finalize`' "$file"
-  grep -Fq 'role: terraform-qa | terraform-rd-finalizer' "$file"
-  grep -Fq 'action: acc_verify | cloudspec_pre_verify | finalize' "$file"
+  grep -Fq 'role: terraform-rd | terraform-qa | terraform-rd-finalizer' "$file"
+  grep -Fq 'action: fix | acc_verify | cloudspec_pre_verify | finalize' "$file"
   if grep -Fq 'clarify' "$file"; then
     echo "zhenyuan_self_close_rules_test: stale RD clarify route in $file" >&2
     exit 1
@@ -308,6 +326,73 @@ for phrase in \
   '不得由 E 直接执行 Provider PR/CI/ACC' \
   '普通分支 D'; do
   grep -Fq "$phrase" "$runtime_orchestrator"
+done
+
+g_urgent_route_files=(
+  "$repo_root/.claude/skills/aone-triage/SKILL.md"
+  "$repo_root/.agents/skills/aone-triage/SKILL.md"
+  "$repo_root/.claude/skills/aone-triage/references/team-roster.md"
+  "$repo_root/.agents/skills/aone-triage/references/team-roster.md"
+  "$repo_root/.claude/skills/aone-triage/references/tf-customer-request-routing.md"
+  "$repo_root/.agents/skills/aone-triage/references/tf-customer-request-routing.md"
+  "$repo_root/.claude/skills/provider-resource-dev/SKILL.md"
+  "$repo_root/.agents/skills/provider-resource-dev/SKILL.md"
+  "$repo_root/.claude/skills/provider-resource-dev/references/zhenyuan-verification.md"
+  "$repo_root/.agents/skills/provider-resource-dev/references/zhenyuan-verification.md"
+)
+for file in "${g_urgent_route_files[@]}"; do
+  for phrase in \
+    'G / 紧急普通 D 的双 owner 契约' \
+    '源客户主单 assignee 保持新山（521957）' \
+    '528766 研发关联单 assignee 固定过载（484483）' \
+    'healthy existing claim 不抢占'; do
+    grep -Fq "$phrase" "$file"
+  done
+done
+
+for file in \
+  "$repo_root/loops/aone-triage.md" \
+  "$repo_root/loops/persona-collab.md" \
+  "$pd_agent" "$pd_agent_mirror" \
+  "$rd_agent" "$rd_agent_mirror" \
+  "$qa_agent" "$qa_agent_mirror" \
+  "$repo_root/CLAUDE.md" "$repo_root/AGENTS.md"; do
+  grep -Fq 'G / 紧急普通 D 的双 owner 契约' "$file"
+done
+
+for phrase in \
+  '源工单禁止模型直接 claim/wrap/release/评论' \
+  '源工单禁令不约束按既有契约由内部链承接的 528766' \
+  '非紧急 D 与 I 的 Provider docs 紧急兜底腿' \
+  '528766 由 RD finalizer claim/bookend' \
+  '源工单仍由 executor bookend'; do
+  grep -Fq "$phrase" "$persona_collab"
+done
+if grep -Fq '控制面 Task 的模型 run 不执行 `claim.sh`、`wrap.sh`、`release` 或直接评论' \
+     "$persona_collab" ||
+   grep -Fq 'G/紧急普通 D 的 528766 是唯一例外' "$persona_collab"; then
+  echo 'zhenyuan_self_close_rules_test: blanket model-run bookend ban remains' >&2
+  exit 1
+fi
+
+for file in "$main_skill" "$routing" "$repo_root/CLAUDE.md"; do
+  grep -Fq '源工单禁令不约束按既有契约由内部链承接的 528766' "$file"
+  grep -Fq '非紧急 D 与 I 的 Provider docs 紧急兜底腿' "$file"
+  if grep -Fq 'G/紧急普通 D 的 528766 是唯一例外' "$file"; then
+    echo "zhenyuan_self_close_rules_test: existing internal 528766 path regressed in $file" >&2
+    exit 1
+  fi
+done
+
+for file in \
+  "$routing" \
+  "$main_skill" \
+  "$verification" \
+  "$repo_root/.claude/skills/provider-resource-dev/SKILL.md"; do
+  if grep -Fq 'D-新山' "$file"; then
+    echo "zhenyuan_self_close_rules_test: stale G/urgent-D handoff remains in $file" >&2
+    exit 1
+  fi
 done
 
 echo "zhenyuan_self_close_rules_test: PASS"

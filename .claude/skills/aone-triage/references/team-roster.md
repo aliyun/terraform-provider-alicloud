@@ -22,15 +22,29 @@
 
 ### 通用路由角色(其他云产品走此表)
 
-| 场景 | 花名/名称 | 工号 |
+此表的第二列描述完整承接链，第三列只列对应工号/项目，避免把 I/E/H 的单一承接人误读成
+“源 owner / 下游 owner”两列：
+
+| 场景 | 路由/承接关系 | 工号/项目 |
 |---|---|---|
-| **Provider 侧全局改造**(非单一产品/资源:region 白名单/框架 utility/公共 endpoint/provider.go 基础/SDK bump) | 新山 | 521957 |
+| **Provider 侧全局改造**(非单一产品/资源:region 白名单/框架 utility/公共 endpoint/provider.go 基础/SDK bump) | 源单新山；528766 过载并由 TerraformRD 内部开发 | 521957 / 484483 |
 | **CloudSpec 文档文本 metadata（I）**：resource/property/operation description、字段解释、NOTE、枚举文案，且不改变字段集合/类型/约束/CRUD | 念依（2169561 submit_only） | 373108 |
 | **CloudSpec 结构 metadata（E）**：资源未定义、字段集合/类型/约束/CRUD/映射不满足诉求；原主单修到 pre Meta 收敛后强制 **E → D-临钧** | open-jarvis → 临钧 | 原主单内部执行 → 429768 |
 | 与镇元不相关 + 资源代码由生成器产出(修复=acube 重跑生成器,管道不变) | 临钧 | 429768 |
-| **与镇元不相关**(纯 datasource / 镇元 OK 但 provider 侧问题；文档场景仅限 CloudSpec 源正确、Provider 本地生成/展示偏差)且**紧急** | 新山 | 521957 |
-| 与镇元不相关(同上)且**不紧急**(默认兜底) | 过载 | 484483 |
+| **与镇元不相关**(纯 datasource / 镇元 OK 但 provider 侧手写问题；文档场景仅限 CloudSpec 源正确、Provider 本地生成/展示偏差)且**紧急** | 源单新山；528766 过载并由 TerraformRD 内部开发 | 521957 / 484483 |
+| 与镇元不相关(同上)且**不紧急**(默认兜底) | 过载；528766 沿用内部开发 | 484483 |
 | **NPE 兜底**(以上所有分支均未匹配 / 跨多产品无单一负责人 / 分诊模糊超出团队职责)+ 打标签 `jarvis-npe` | 夏节 | 401498 |
+
+### G / 紧急普通 D 的双 owner 契约
+
+- **源客户主单 assignee 保持新山（521957）**；**528766 研发关联单 assignee 固定过载（484483）**。
+  Jarvis/TerraformRD 对无 healthy claim 的研发单执行 claim 并尝试修复，不把研发工作交给新山等待。
+- 同题单优先复用：**同题 528766 已指派新山时原地复用**；无 healthy claim 时先
+  fail-closed claim，成功后才幂等改派过载并补 relation，禁止重复 create。
+  **healthy existing claim 不抢占**，不在另一健康 run 上并发改派或重复 claim。
+- relation/assignee/status 只是路由物化；无 PR/CI/QA 完成信号仍继续 RD。build/test/CI 或 QA
+  失败留在 RD ↔ QA 修复闭环；能力缺失/重试耗尽才 blocked/SUSPENDED，保持双 owner 且不得 finish。
+- **D-临钧/A/F/H/非紧急 D 边界不变**；I 仍到念依，E 仍完成 pre 后 E → D-临钧。
 
 **I/E 路由契约**:
 - I 创建或复用 2169561 并指派念依；Provider 公开 docs 同时错误时独立补 528766 紧急兜底腿。

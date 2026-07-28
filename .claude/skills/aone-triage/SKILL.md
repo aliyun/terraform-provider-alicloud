@@ -139,9 +139,10 @@ bash bootstrap/aone-image-extract.sh <id>          # 附件截图→本地,skill
 
 | 动作 | 命令 |
 |---|---|
-| 回复评论 | 非 Terraform 走 wrap.sh done；Terraform 主处理 run 只由最终 RD 聚合后 done 一次，后续重要事件只走 bridge RD-only event publisher。多行用 `--summary-stdin`/`--summary-file`，别先单独回复 |
+| 回复评论 | 非 Terraform 走 wrap.sh done；Terraform 源工单由 executor 在最终 RD 聚合后 done 一次。按既有契约实际 claim 的内部 528766（含 G/紧急普通 D、非紧急 D、I 的 Provider docs 紧急兜底腿）由 RD finalizer 另做一次聚合 bookend；后续重要事件只走 bridge RD-only event publisher。多行用 `--summary-stdin`/`--summary-file`，别先单独回复 |
 | CloudSpec 文档文本 metadata（I） | terraform-rd finalizer 单写创建或复用 2169561 并指派念依；Provider 公开 docs 同错时按分池防重独立补 528766 紧急兜底；executor 只做原主单 bookend |
 | CloudSpec 结构 metadata（E） | PD 返回 `requested_external_actions: []` 与 `next=terraform-rd/dev`；RD 修 CloudSpec 到 pre Meta 收敛，随后必须 E→D-临钧走 Acube，不由 E 直接做 Provider PR/CI/ACC 或直接 release |
+| G / 紧急普通 D | 源客户主单保持新山；创建或复用 528766、必要时原地改派过载，由 Jarvis/TerraformRD claim 后内部开发 |
 | 建关联单(自家团队接手) | tf_customer 域走 `references/tf-customer-request-routing.md` 分工表 |
 | 双向关联 | `bin/a1id -- project workitem relation add <A> relate:<B>` **单次即自动双向**(重复调第二次返回 400 已存在) |
 | 状态更新 | `bin/a1id -- project workitem update <id> --status "<value>"` |
@@ -150,9 +151,32 @@ bash bootstrap/aone-image-extract.sh <id>          # 附件截图→本地,skill
 | GitHub PR/评论/推分支(Jarvis 身份) | 必须先 `bootstrap/github-identity.sh check`;`gh` 走 `bootstrap/github-identity.sh gh ...`;推分支 `bootstrap/github-identity.sh push`;账号必须 `api-tool-agent`;PR head 必须 `api-tool-agent:<branch>` |
 | **钉钉私信**(所有实质动作补充通知) | 非 Terraform 可按路由规则调用；Terraform 主处理 run 不发阶段通知，需人工关注的内容并入最终 RD 聚合回复。例外仅为 bridge 的满 8 天无实质进展重访催办：与 Aone @ 同事件双通道幂等发送 |
 
+### G / 紧急普通 D 的双 owner 契约
+
+G Provider 全局改造，以及紧急普通 D（纯 datasource；或 CloudSpec 结构 OK + 手写 Provider）
+不是“交给新山等待”的人肉 handoff：
+
+- **源客户主单 assignee 保持新山（521957）**，**528766 研发关联单 assignee 固定过载（484483）**，
+  由 Jarvis/TerraformRD claim 并尝试修复。
+- 写前 point-read 同题单和 lease；**healthy existing claim 不抢占**。没有健康 claim 时，
+  同题 528766 已指派新山必须原地复用并幂等改派过载，但同一 terraform-rd Task 必须先进入
+  route-finalizer phase 并 fail-closed claim；claim 成功后才改派、补 relation 并切 dev。
+  claim 失败立即停止，禁止 relation/update/wrap；禁止重复 create。
+- relation/assignee/status 只是路由物化，不是完成信号；无 PR/CI/QA 完成信号继续 RD。
+  build/test/CI 或 QA fail 只在 RD ↔ QA 内部修复，不得转交新山。
+- `missing_capability / retry exhausted` 才进入 blocked/SUSPENDED：源单保持新山、研发单保持
+  过载，不得 finish。已有 PR 待人工合并时只 release；明确外部依赖/人工决策时 blocked 后 release。
+- route materialization、必要改派、relation 与 claim 均由 TerraformRD 控制面幂等执行；
+  PD/QA 不外写。源工单由 bridge executor bookend；本 run 实际 claim 的 528766 由 RD
+  finalizer 独立 claim/bookend。两张工单各自最多一次聚合 bookend，禁止互相代写。
+- D-临钧/A/F/H/非紧急 D 边界不变；I→念依、E→CloudSpec pre→D-临钧也不受影响。
+
 ### 转单/建关联单 body 内容原则
 
-给他人写关联单 body(例如 I-念依、D-新山 / G-新山 / H-夏节 等**非过载承接**)时,body 是承接方唯一的**决策依据**,jarvis 给的信息完备度决定承接方能否直接拍板还是回来反复问。E 的结构 metadata 在 pre 前不转单；I 与 E→D-临钧按各自专用契约。其它关联单规则:
+给他人写关联单 body(例如 I-念依、D-临钧 / H-夏节 等**非过载承接**)时,body 是承接方唯一的
+**决策依据**,jarvis 给的信息完备度决定承接方能否直接拍板还是回来反复问。G/紧急普通 D
+不是给新山的研发 handoff，必须按上方双 owner 契约由过载研发单承载并内部开发。E 的结构
+metadata 在 pre 前不转单；I 与 E→D-临钧按各自专用契约。其它关联单规则:
 
 - **多方案覆盖**:分析出根因后,不要只写"我倾向"的单一方案;至少列 3-4 种可行方案(**代码修复 / 只改文档 / 代码+文档双改 / 客户 workaround** 是常见 4 种),给对比表(改动量/兼容性/长期语义/优缺点),jarvis 明说自己倾向哪个 + 依赖对方哪个信息拍板(如"取决于产品长期路线图")。
 - **根因定位含完整代码引用**:引用具体文件:行号(如 `alicloud/provider.go:2273-2286`)+ 完整代码片段(不是省略号或概括)+ 一句话解释每处做什么。承接方一眼能顺着行号跳读,不用自己 grep。
@@ -164,9 +188,13 @@ bash bootstrap/aone-image-extract.sh <id>          # 附件截图→本地,skill
 
 任何"要写工单"的场景都必须走完整 bookend(CLAUDE.md 工作纪律 #3)。纯只读查证可免 claim。
 非 Terraform 使用第一组通用骨架。Terraform 工单先在同一 run 内完成 PD→RD→QA 结构化协作，
-PD/QA 不写外部系统；最后由 RD finalizer 汇总全部证据、MR/CR 链接、路由动作与下一步，按第二组
-显式 RD 身份命令收口。主处理 run 中禁止直接评论、中途同步、阶段状态回填和钉钉通知；后续
-重要事件由 bridge 统一幂等发布，不复用阶段评论通道。
+PD/QA 不写外部系统；最后由 RD finalizer 汇总全部证据、MR/CR 链接、路由动作与下一步。
+控制面 executor 托管时，源工单禁止模型直接 claim/wrap/release/评论，只返回
+`AONE_RESULT` 供 executor 收口。源工单禁令不约束按既有契约由内部链承接的 528766：G/紧急
+普通 D，以及非紧急 D 与 I 的 Provider docs 紧急兜底腿仍按各自边界处理；RD finalizer 对
+本 run 实际 claim 的研发单执行一次关联单 bookend。G/紧急普通 D hard gate 只新增双 owner、
+先 claim 后 dev 与不可观察语义。主处理 run 中禁止其它直接评论、中途同步、阶段状态回填和
+钉钉通知；后续重要事件由 bridge 统一幂等发布，不复用阶段评论通道。
 
 ```bash
 # 非 Terraform
@@ -177,13 +205,19 @@ EOF
 bash bootstrap/claim.sh release <id> <pool-project>   # 本轮释放,等对方接手 → jarvis-idle
 bash bootstrap/claim.sh finish  <id> <pool-project>   # 真闭环 → jarvis-done + status = pools.json 里该池 × workitemType 的 done_status
 
-# Terraform：仅最终 RD finalizer 执行，每个本轮处理的工单最多一条聚合回复
-JARVIS_A1_IDENTITY=terraform-rd bash bootstrap/claim.sh claim <id> <pool-project>
-JARVIS_A1_IDENTITY=terraform-rd bash bootstrap/wrap.sh done <id> --summary-stdin <status|--no-status> <<'EOF'
+# Terraform 源工单（executor 托管）：finalizer 只返回一条聚合结果，不直接执行下列命令
+# [[AONE_RESULT:{"outcome":"done|idle|suspend","reply_body":"<完整聚合回复>",...}]]
+
+# 按既有契约由内部链承接的 528766：仅 RD finalizer 执行，每条命令最多一次
+# 包含 G/紧急普通 D、非紧急 D 与 I 的 Provider docs 紧急兜底腿；各自路由边界不变。
+JARVIS_A1_IDENTITY=terraform-rd bash bootstrap/claim.sh claim <related-id> 528766
+JARVIS_A1_IDENTITY=terraform-rd bash bootstrap/wrap.sh done <related-id> --summary-stdin --no-status <<'EOF'
 <PD + RD + QA + 路由动作 + 下一步的完整聚合回复>
 EOF
-JARVIS_A1_IDENTITY=terraform-rd bash bootstrap/claim.sh release <id> <pool-project>
-JARVIS_A1_IDENTITY=terraform-rd bash bootstrap/claim.sh finish  <id> <pool-project>
+JARVIS_A1_IDENTITY=terraform-rd bash bootstrap/claim.sh release <related-id> 528766
+# PR 未合并、blocked 或待人工确认时只 release，不得 finish。
+
+# 非 executor 托管的独立 finalizer 才对源工单使用显式 claim/wrap/release|finish。
 ```
 
 **claim 退码 3 = 工单缺必填字段，不是 lost race**：Aone 对存量老单执行任意 update 时可能返回
@@ -238,7 +272,11 @@ options 为空，脚本会继续查询 field options API，并返回合法候选
 - 最终聚合说明「MR 已提交待合并验收,链接: <PR_URL>」
 - `JARVIS_A1_IDENTITY=terraform-rd bash bootstrap/claim.sh finish` 内置了硬闸门(退码 2),即使遗漏也会拦截
 
-**关联单 claim 规则**:指派给过载(484483)的普通 Terraform Provider 关联单或 I 的公开 docs 紧急兜底腿由内部链跟进。2169561 念依单与 Acube 临钧单不 claim；由最终 RD 审查动作并把结果合入主单唯一聚合回复。E 在 pre 前不建关联单，pre 收敛后只走 D-临钧。
+**关联单 claim 规则**:指派给过载(484483)的普通 Terraform Provider 关联单或 I 的公开 docs
+紧急兜底腿由内部链跟进。G/紧急普通 D 的源单虽保持新山，其 528766 必须固定过载并在无
+healthy claim 时由 TerraformRD claim；同题旧单原地改派，不重复建单。2169561 念依单与
+Acube 临钧单不 claim；由最终 RD 审查动作并把结果合入主单唯一聚合回复。E 在 pre 前不建
+关联单，pre 收敛后只走 D-临钧。
 
 ## 自己交付(改自家应用)
 

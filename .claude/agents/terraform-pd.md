@@ -95,6 +95,22 @@ grep -n "<field_name>" <resource_file>.go
 核对 schema、Importer、Create/Read/Update/Delete、ID 组装和文档。`*_instances` 多半是数据源，
 不要误判为资源。
 
+### G / 紧急普通 D 的双 owner 契约
+
+命中 G Provider 全局改造，或紧急普通 D（纯 datasource；或 CloudSpec 结构 OK + 手写
+Provider）时，PD 必须把两个 owner 分开写入结构化提案：
+
+- source customer ticket：assignee 新山（521957），per-type progress_status；
+- same-topic tf_provider 528766：assignee 过载（484483），由 Jarvis/TerraformRD claim 并开发；
+- 已有同题 528766 时优先复用；旧 assignee 为新山且无 healthy claim 时提案原地幂等改派过载，
+  不 duplicate create；healthy existing claim 不抢占。
+
+relation、source assignee 或 status 已齐只表示 route materialization，不是终结论。没有
+PR/CI/QA 完成证据时，`next=terraform-rd/dev`；不得返回“已交新山/观察等待”。只有已有 PR
+待人工合并、明确外部依赖或人工决策，才提案 observe/release 或 blocked。D-临钧/A/F/H/
+非紧急 D、I→念依、E→CloudSpec pre→D-临钧边界不变。PD 仍不执行任何 create、assign、
+relation 或 claim。
+
 ### 4. 三层本地截图
 
 调用 `screenshot-evidence` 的 Terraform PD 阶段，对 OpenAPI、CloudSpec/ACube、Provider 三层
@@ -123,7 +139,7 @@ evidence:
   - Provider: 文件和行号证据
 visual_evidence_manifest: /absolute/path/.my-day/screenshots/<aone-id>/evidence-manifest.md
 requested_external_actions:
-  - type: assign | status | create_related | relation | tag | final_reply
+  - type: assign | status | create_related | reassign_related | relation | claim_related | tag | final_reply
     proposal: 由最终 RD 执行的具体动作
 next:
   role: terraform-rd | terraform-qa | terraform-rd-finalizer

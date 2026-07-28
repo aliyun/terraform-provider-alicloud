@@ -21,8 +21,10 @@ provider 代码；**评审模式**处理 upstream PR 只读评审；**finalizer 
   `api-tool-agent`,PR head `api-tool-agent:<branch>`);缺 token/账号不匹配一律阻断升级,禁回退
   ambient `gh auth`。
 - **Aone 侧唯一身份 = terraform-rd**：Terraform 对外写只有这一个身份，未登录直接报错，
-  禁止回退 jarvis。开发阶段不写 Aone/钉钉；主处理 run 只有 finalizer 可执行最终外部动作，
-  后续重要事件由 bridge 的同身份幂等 publisher 执行。
+  禁止回退 jarvis。开发阶段默认不写 Aone/钉钉；窄例外仅为 G/紧急普通 D：同一
+  terraform-rd Task 在 dev 前进入 route-finalizer phase，仅 materialize/claim 528766，
+  不得评论源工单，claim 成功后才切 dev。最终 finalizer 再 bookend 该研发单；源工单仍由
+  executor 落账。后续重要事件由 bridge 的同身份幂等 publisher 执行。
 - **开工先探测**:先跑 `bin/a1id ready terraform-rd`——退码 0 表示已登录,后续照常用 `as terraform-rd --` /
   `JARVIS_A1_IDENTITY=terraform-rd`;非零立即返回 `missing_public_identity`，提示仓库主人跑
   `bin/a1id login terraform-rd` 补登，本轮不做 Aone/钉钉/MR/CR 外写。
@@ -45,14 +47,20 @@ PD、RD、QA 在同一 headless run 内通过 Task 结构化返回协作，不�
 
 - PD 返回查证、路由提案与 `reply_fragment`。
 - RD 开发阶段返回 diff、PR/CR、CI 和下一步，不发 Aone/钉钉进展。
+- G/紧急普通 D 的开发 RD 在写代码前执行窄 route-finalizer phase，仅对 related 528766
+  point-read、create/reuse、fail-closed claim 和差异字段同步；不得回复源单或写阶段评论。
+- **执行顺序**：同一 terraform-rd Task 在 dev 前进入 route-finalizer phase，仅 materialize/claim 528766；不得评论源工单；claim 成功后才切 dev，最终 finalizer 再 bookend 该研发单。
+- 非紧急 D 与 I 的 Provider docs 紧急兜底腿保持既有内部 claim/bookend；不受该 hard gate
+  的双 owner/不可观察新增语义影响。
 - QA 返回 pass/fail/blocked 与证据；fail 时内部退回 RD 修复并重新验证。
 - 最后必须再次 Task 起 terraform-rd 进入 finalizer 模式，汇总所有返回、审查
   `requested_external_actions`，只生成一条完整回复。
 - finalizer 读取 PD 的 `visual_evidence_manifest`，校验 OpenAPI、CloudSpec/ACube、Provider
   三层证据后调用 `screenshot-evidence` 的 manifest 校验器，再上传一次报告。
   `html-report-preview.sh upload` 不得传 `--comment`。executor 托管的 headless run 把报告链接
-  返回给编排层写入 `AONE_RESULT.reply_body`，不得自行调用 `wrap.sh`；独立 finalizer 才按
-  bookend 在唯一一次 `wrap.sh done` 中写出。
+  返回给编排层写入 `AONE_RESULT.reply_body`，不得对源工单自行调用 `wrap.sh`；本 run 按
+  既有契约实际 claim 的内部 528766 由 finalizer 各做一次聚合 bookend。独立 finalizer 才
+  对源工单按 bookend 在唯一一次 `wrap.sh done` 中写出。
 - 旧公开接力格式仅由 bridge 读入兼容；新流程不得生成。
 
 内部统一返回字段：
@@ -65,8 +73,8 @@ evidence: [代码、构建、CI、PR/CR 证据]
 visual_evidence_manifest: PD 原样交接的三层截图 manifest 路径
 requested_external_actions: []
 next:
-  role: terraform-qa | terraform-rd-finalizer
-  action: acc_verify | cloudspec_pre_verify | finalize
+  role: terraform-rd | terraform-qa | terraform-rd-finalizer
+  action: fix | acc_verify | cloudspec_pre_verify | finalize
 reply_fragment: 可纳入最终回复的研发结论
 ```
 
@@ -126,6 +134,19 @@ subagent 不会自动注入 SessionStart,**技能须主动通过 Skill 工具调
   差异仅是 Provider 本地文档生成/展示偏差时，才接受普通 Provider D 路由。
   文档源证据不足时返回 `status: blocked`、`next=terraform-rd-finalizer/finalize`，由唯一回复
   请求补料后 `release/idle`；不得建关联单或直接改 Provider 文档掩盖源头。
+- **G / 紧急普通 D 的双 owner 契约**：G Provider 全局改造，以及紧急普通 D（纯 datasource；
+  或 CloudSpec 结构 OK + 手写 Provider）的源客户主单 assignee 保持新山（521957），528766
+  研发关联单 assignee 固定过载（484483）。TerraformRD control plane 写前 point-read 同题单、
+  relation 与 lease：healthy existing claim 不抢占；无健康 claim 时，同一 terraform-rd Task
+  在 dev 前进入 route-finalizer phase，先 fail-closed claim 同题研发单，claim 成功后才
+  幂等改派过载、补 relation 并切 dev；不存在同题单才 create 后 claim。claim 失败立即停止，
+  禁止 relation/update/wrap。relation/assignee/status 只是路由物化；没有 PR/CI/QA 完成信号
+  就继续本开发流程，不能“交新山后等待”。
+- G/紧急普通 D 的 build/test/CI failure 和 QA fail 均留在 RD ↔ QA 修复闭环；不转交新山。
+  `missing_capability` 或 retries exhausted 才返回 blocked/SUSPENDED，保持源单新山和研发单
+  过载，不 finish。源单由 executor、实际 claim 的 528766 由最终 finalizer 分别执行最多一次
+  聚合 bookend；PR 未合并只 release。非紧急 D 与 I 的 Provider docs 紧急兜底腿保持既有内部
+  claim/bookend；D-临钧/A/F/H 边界和 E 路径也不变。
 - 不得跳过纪律直接改文件;Skill 调用记录(或 skill_missing 标注 + 纪律执行痕迹)即执行证明。
 
 ## 隔离原则(严格执行)
@@ -168,9 +189,9 @@ cd <workspace_path> && <ops.test>
 #    (CI 失败的 owner 是 RD,不是 QA——QA 只验不改,红 CI 交过去只会空跑 AccTest 再弹回)。
 gh pr checks <pr_url_or_number>    # 或 gh pr view <pr> --json statusCheckRollup
 #   · 全绿(SUCCESS)           → 走第 8 步交 QA
-#   · 有 FAIL/PENDING/无 PR   → 不交 QA:继续在 worktree 修 CI(systematic-debugging),
-#                               修完重跑 build/vet/test + push,再回本步复检;
-#                               本轮返回 blocked，交编排层继续派 RD，不进入 QA
+#   · 有 FAIL/PENDING/无 PR   → 不交 QA:继续在 worktree 修 CI(systematic-debugging)或等待当前
+#                               check 收敛，修完重跑 build/vet/test + push,再回本步复检;
+#                               返回 terraform-rd/fix，只有 retry exhausted 才 blocked/SUSPENDED
 
 # 8. PR CI 全绿后把结构化结果返回编排层，由编排层 Task 起 QA；不等 PR 合并
 ```
@@ -179,7 +200,7 @@ gh pr checks <pr_url_or_number>    # 或 gh pr view <pr> --json statusCheckRollu
 
 - `internal_role`: `terraform-rd`
 - `public_identity`: `terraform-rd`
-- `status`: `done` | `build_fail` | `test_fail` | `missing_capability`
+- `status`: `done` | `build_fail` | `test_fail` | `blocked` | `missing_capability`
 - `branch`: worktree 分支名
 - `diff_summary`: 改动摘要(文件列表 + 关键变化)
 - `build_result`: build/vet/test 输出摘要
@@ -189,8 +210,10 @@ gh pr checks <pr_url_or_number>    # 或 gh pr view <pr> --json statusCheckRollu
   - 分支 E 的 build/check/publish pre 与 pre Meta 收敛完成 → `terraform-qa / cloudspec_pre_verify`；
     此时不得创建 Provider PR 或运行 CI/ACC
   - `status=done` 且本地验证、PR push、远程 PR CI 全绿 → `terraform-qa / acc_verify`
-  - `status=build_fail | test_fail | missing_capability` → `terraform-rd-finalizer / finalize`
-  - PR CI 红/pending → `terraform-rd / fix`，不把红 CI 交给 QA
+  - `status=build_fail | test_fail` → `terraform-rd / fix`，修复后重跑；不得借失败改派给外部承接人
+  - PR CI 红/pending → `terraform-rd / fix`，不把红 CI 交给 QA；pending 只等待当前 check
+  - `status=missing_capability` 或 retry exhausted → `blocked` +
+    `terraform-rd-finalizer / finalize`，把 Task 置为 SUSPENDED，不得 finish
 - `reply_fragment`: 可纳入最终回复的研发摘要
 
 ## 限制(开发模式)
@@ -198,7 +221,8 @@ gh pr checks <pr_url_or_number>    # 或 gh pr view <pr> --json statusCheckRollu
 - 只修改 `config/workspaces.json` 已登记的 repo 内文件；CloudSpec 修复是唯一例外，cspec 模型目录必须
   由 `cloudspec-amp-workflow` 通过 AMP 返回的 SSH URL clone，且只能在 task 专属 feature 分支编辑
 - 不做产品分诊；开发阶段不发 Aone/钉钉回复，客户沟通只在 finalizer 的最终聚合中发生
-- build 或 test 失败时不返回 done,保持 `build_fail`/`test_fail` 状态等编排层决策
+- build 或 test 失败时不返回 done，保持 `build_fail`/`test_fail` 并由编排层继续派 RD 修复；
+  QA fail 同样回 RD，不能改派新山或其它外部承接人
 - 遇到 `missing_capability`(工作区未登记)立即返回,不臆造路径
 
 ---

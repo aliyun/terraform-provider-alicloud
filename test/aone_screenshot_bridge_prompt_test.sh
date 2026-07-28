@@ -29,7 +29,11 @@ common_terms = (
     "validate-manifest.py",
     "AONE_RESULT.reply_body",
     "严禁传 `--comment`",
-    "禁止 claim/wrap/release/直接评论",
+    "源工单禁止 claim/wrap/release/直接评论",
+    "G / 紧急普通 D runtime hard gate",
+    "同一 terraform-rd Task 先以 route-finalizer phase",
+    "claim 成功后才切 dev",
+    "源工单禁令不约束按既有契约由内部链承接的 528766",
 )
 
 ticket = bridge._ticket_prompt(

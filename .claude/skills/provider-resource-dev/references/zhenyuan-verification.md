@@ -144,6 +144,28 @@ CloudSpec 文档源正确、仅 Provider 本地生成/展示偏差时走 D；文
 
 **sanity check(必跑)**:拿同产品已发布的其他资源(如查 ① released list 里另一项)以相同接口复查,能拿到 `CoverageDetail` 说明内网/接口正常;否则先排查内网访问(`pre-acube.aliyun-inc.com` 需办公网/VPN;`/api/v1/**` 免鉴权,但走内网 DNS)。
 
+### G / 紧急普通 D 的双 owner 契约
+
+本契约覆盖 Provider 全局改造 G，以及紧急普通 D（纯 datasource；或 CloudSpec 结构 OK +
+Provider 手写实现）：
+
+- **源客户主单 assignee 保持新山（521957）**，但
+  **528766 研发关联单 assignee 固定过载（484483）**，由
+  **Jarvis/TerraformRD claim 并尝试修复**。新山是客户主单映射 owner，不是等待接手研发的人。
+- 写前 point-read relation、同题单与 lease；**healthy existing claim 不抢占**。没有健康
+  claim 时，**同题 528766 已指派新山时原地复用**。同一 terraform-rd Task 先进入
+  route-finalizer phase 并 fail-closed claim，成功后才幂等改派过载、补 relation 并切 dev；
+  claim 失败立即停止，禁止 relation/update/wrap。不存在同题单才 create 一次并 claim。
+- relation/assignee/status 只证明路由物化，**无 PR/CI/QA 完成信号必须继续 RD**。只有已有
+  PR 等待人工合并，或明确外部依赖/人工决策，才允许 observe/release 或 blocked。
+- **build/test/CI 失败**与 QA fail 留在 RD ↔ QA 修复闭环，**不得转交新山**。能力缺失或重试
+  耗尽进入 **blocked / SUSPENDED**，保持源单新山、研发单过载并 release，绝不 finish。
+- TerraformRD control plane 幂等执行物化、必要改派、relation 与 claim；PD/QA 不外写。
+  源单由 executor、实际 claim 的 528766 由最终 finalizer 分别执行一次聚合 bookend；
+  PR 未合并只 release。
+- **D-临钧/A/F/H/非紧急 D 边界不变**；非紧急 D 与 I 的 Provider docs 紧急兜底腿保持
+  既有内部 claim/bookend，I→念依、E→CloudSpec pre→D-临钧保持既有路径。
+
 ### 分支 D:与镇元不相关(镇元 OK、Provider 本地问题 / 纯 datasource),分流
 
 资源类先判 provider 代码类型:
@@ -155,8 +177,9 @@ head -3 "$provider_repo/alicloud/resource_alicloud_<product>_<resource>.go" 2>/d
 
 - 首行有类似 `// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!` → **生成器产出** → 走 acube V2 接口触发临钧工作流(见 Step 3 · 分支 D-临钧;生成器产出修复=重跑生成器,管道不变)
 - 无该注释(手写)**或纯 datasource 问题**(datasource 不走临钧管道)→ 按紧急度分流:
-  - 紧急(优先级=紧急 OR 距 DDL<14 天 OR 缺陷类型覆写)→ 指派 新山(521957)(Step 3 · 分支 D-新山)
-  - 不紧急 → 指派 过载(484483)(Step 3 · 分支 D-过载)
+  - 紧急(优先级=紧急 OR 距 DDL<14 天 OR 缺陷类型覆写)→ 源单保持新山(521957)，创建或复用
+    528766 并固定指派过载(484483)，由内部 TerraformRD claim 后按 Provider 开发流程修复
+  - 不紧急 → 保持既有 D-过载边界，源单与 528766 均指派过载(484483)
 
 文档问题只有在证据证明 **CloudSpec 文档源正确，Provider 本地文档生成/展示偏差** 时才允许
 进入本分支。CloudSpec text-only 文档源错误必须回到 I；文档与结构同时变化时进入 E。

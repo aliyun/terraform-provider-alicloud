@@ -24,10 +24,39 @@ description: Use when DEVELOPING, DIAGNOSING, or FIXING an alicloud Terraform pr
 
 ## Aone 分单与同步
 非自动化生成链路、需要 Jarvis 内部研发处理的 Terraform Provider 资源,必须创建或复用 **terraform-alicloud** 内部研发单:
-- 项目: `tf_provider` / `528766`;**指派按 aone-triage skill `references/tf-customer-request-routing.md` 分工表路由到具体人**(即便由 jarvis 代为开发,单据也挂具体人名下,方便其注意到;不自派 `WORKER_1782379562571`)。
-- 与 Terraform-客户需求池的客户主单双向关联。**指派给过载(484483)的关联单,jarvis 直接 claim 跟进解决,bookend 同时处理客户主单与关联单**(研发细节 wrap 关联单,客户主单只 wrap 关键节点,收尾两边各自 done+release);指派其他人的关联单不 claim,建单 + @对方等接手;无客户主单的 adhoc 场景按 loops/adhoc-intake.md 走。
+- 项目: `tf_provider` / `528766`;指派按 aone-triage skill
+  `references/tf-customer-request-routing.md` 的分支契约执行，不把源客户主单 owner 和研发单
+  owner 混为一人，也不把 assignee 写成数字 worker `WORKER_1782379562571`。
+- 与 Terraform-客户需求池的客户主单双向关联；无客户主单的 adhoc 场景按
+  `loops/adhoc-intake.md` 走。
 - 主要研发进展、生成/手改差异、验证细节、PR/CI/验收信息优先同步到内部研发单。
 - 客户主单只同步关键节点摘要:已转内部单、发现镇元/Cloudspec/API 卡点、资源模型问题、需要客户感知的决策或阻塞。
+
+### G / 紧急普通 D 的双 owner 契约
+
+本契约覆盖 G Provider 全局改造，以及紧急普通 D（纯 datasource；或 CloudSpec 结构 OK +
+手写 Provider）：
+
+- **源客户主单 assignee 保持新山（521957）**；**528766 研发关联单 assignee 固定过载（484483）**，
+  由 **Jarvis/TerraformRD claim 并尝试修复**，不等待新山接手研发。
+- 写前 point-read relation、同题 528766、assignee 与 lease。**healthy existing claim 不抢占**；
+  无健康 claim 时对**同题单原地复用并幂等改派过载**，但严格顺序是同一 terraform-rd Task
+  先进入 route-finalizer phase 并 fail-closed claim，成功后才改派、补缺失 relation 并切 dev；
+  claim 失败立即停止，禁止 relation/update/wrap。不存在同题单才 create 一次并 claim，禁止
+  重复建单。
+- **relation/assignee/status 不是完成信号**；**无 PR/CI/QA 完成信号必须继续开发**，按本
+  skill 完成 TDD、Provider 修改、CI 与 QA。
+- **build/test/CI 失败只走 RD ↔ QA 修复闭环**，QA fail 也回 RD 修复重验，**不得转交新山**。
+- `missing_capability / retry exhausted` 进入 **blocked / SUSPENDED**，源单仍是新山、研发单
+  仍是过载，保留失败证据并 release，**不得 finish**。
+- route materialization、必要改派、relation 与 claim 只由 TerraformRD 控制面幂等执行；
+  PD/QA 不外写。源单由 executor、实际 claim 的 528766 由最终 RD finalizer 分别完成，
+  **源单与实际 claim 的 528766 各自最多一次聚合 bookend**，开发阶段不发阶段评论。
+  **PR 未合并只 release**，不 finish。
+- 源工单禁令不约束按既有契约由内部链承接的 528766；非紧急 D 与 I 的 Provider docs
+  紧急兜底腿保持既有内部 claim/bookend。G/紧急普通 D hard gate 只新增双 owner、先 claim
+  后 dev 与不可观察语义；D-临钧/A/F/H 和 E 路径边界不变。
+
 - **分支 I — CloudSpec 文档文本 metadata**：resource/property/operation description、字段解释、
   NOTE 与枚举文案，且不改变字段集合、类型、约束或 CRUD。I 不进入本 skill 的 CloudSpec
   开发路径；finalizer 创建或复用 `upstream.cloudspec_docs_quality`（2169561，念依 373108，

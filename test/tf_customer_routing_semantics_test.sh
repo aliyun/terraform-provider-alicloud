@@ -8,6 +8,8 @@ source_route="$repo_root/.claude/skills/aone-triage/references/tf-customer-reque
 mirror_route="$repo_root/.agents/skills/aone-triage/references/tf-customer-request-routing.md"
 source_acube_workflow="$repo_root/.claude/skills/aone-triage/references/acube-createBuildTaskV2-workflow.md"
 mirror_acube_workflow="$repo_root/.agents/skills/aone-triage/references/acube-createBuildTaskV2-workflow.md"
+source_batch_bookend="$repo_root/.claude/skills/aone-triage/references/batch-bookend-template.md"
+mirror_batch_bookend="$repo_root/.agents/skills/aone-triage/references/batch-bookend-template.md"
 pools_config="$repo_root/config/pools.json"
 
 for file in "$source_route" "$mirror_route"; do
@@ -22,9 +24,28 @@ for file in "$source_route" "$mirror_route"; do
     'relation 齐全但源单映射字段漂移' \
     '只幂等修复 assignee/status' \
     '不 create、不触发 Acube、不重复阶段回复' \
-    '映射字段一致后才进入观察等待' \
-    '观察等待' \
-    '不评论、不改状态、不改派、不 create、不触发 Acube' \
+    'G / 紧急普通 D 的双 owner 契约' \
+    '源客户主单 assignee 保持新山（521957）' \
+    '528766 研发关联单 assignee 固定过载（484483）' \
+    'Jarvis/TerraformRD claim 并尝试修复' \
+    '同题 528766 已指派新山时原地复用' \
+    '幂等改派过载' \
+    '禁止重复 create' \
+    'healthy existing claim 不抢占' \
+    'relation/源单 assignee/status 齐全只表示路由物化完成' \
+    '无 PR/CI/QA 完成信号必须继续 RD' \
+    '只有已有 PR 待人工合并、明确外部依赖或人工决策' \
+    'build/test/CI 失败' \
+    'RD ↔ QA' \
+    '不得转交新山' \
+    'missing_capability / retry exhausted' \
+    'blocked / SUSPENDED' \
+    '源单保持新山' \
+    '研发单保持过载' \
+    '不得 finish' \
+    '源单与实际 claim 的 528766 各自最多一次聚合 bookend' \
+    'PR 未合并只 release' \
+    'D-临钧/A/F/H/非紧急 D' \
     '距上次实质进展 ≥8 天' \
     '追料/补料' \
     '终局收敛' \
@@ -109,6 +130,55 @@ for file in "$source_route" "$mirror_route"; do
     '禁止裸名称覆盖'; do
     grep -Fq "$phrase" "$file"
   done
+
+  for forbidden in \
+    '映射字段一致后才进入观察等待' \
+    '路由正确且目标池关联齐全，距上次实质进展不足 8 天 | **观察等待**' \
+    'D-新山'; do
+    if grep -Fq "$forbidden" "$file"; then
+      echo "stale G/urgent-D handoff or observation rule remains in $file: $forbidden" >&2
+      exit 1
+    fi
+  done
+done
+
+for file in "$source_batch_bookend" "$mirror_batch_bookend"; do
+  test -f "$file"
+  for phrase in \
+    '骨架 C · G / 紧急普通 D 双 owner 关联单 + 双工单 bookend' \
+    'SOURCE_ASSIGNEE=521957' \
+    'RELATED_ASSIGNEE=484483' \
+    '同题 528766 point-read' \
+    'healthy existing claim 不抢占' \
+    'claim 失败立即停止，禁止 relation/update/wrap' \
+    'claim_rc=0' \
+    'claim "$RELATED_ID" "$RELATED_PROJECT" || claim_rc=$?' \
+    'if [ "$claim_rc" -ne 0 ]; then' \
+    'exit "$claim_rc"' \
+    'RELATED_ASSIGNEE_DRIFT' \
+    'SOURCE_ROUTE_DRIFT' \
+    '--assignee "$RELATED_ASSIGNEE"' \
+    'update "$SRC" --assignee "$SOURCE_ASSIGNEE"' \
+    'claim "$RELATED_ID" "$RELATED_PROJECT"' \
+    'wrap.sh done "$RELATED_ID"' \
+    'release "$RELATED_ID" "$RELATED_PROJECT"' \
+    '源工单由 bridge executor bookend' \
+    'PR 未合并只 release'; do
+    grep -Fq -- "$phrase" "$file"
+  done
+
+  if [ "$(grep -Fc 'claim "$RELATED_ID" "$RELATED_PROJECT" || claim_rc=$?' "$file")" -lt 2 ] ||
+     [ "$(grep -Fc 'exit "$claim_rc"' "$file")" -lt 2 ]; then
+    echo "existing/new related-ticket claims are not both fail-closed in $file" >&2
+    exit 1
+  fi
+
+  if grep -Eq '^ASSIGNEE=521957([[:space:]]|$)' "$file" ||
+     grep -Fq 'update "$SRC" --assignee "$RELATED_ASSIGNEE"' "$file" ||
+     grep -Fq 'claim "$SRC" "$POOL"' "$file"; then
+    echo "stale single-owner/source-bookend skeleton remains in $file" >&2
+    exit 1
+  fi
 done
 
 for file in "$source_acube_workflow" "$mirror_acube_workflow"; do

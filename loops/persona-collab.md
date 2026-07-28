@@ -71,6 +71,26 @@ reply_fragment: 可直接纳入最终回复的片段
 无开发需求时，RD 可返回 no-op，QA 对支持性结论或复现证据做独立校验后进入 finalizer。不得为了
 形式跳过 PD/QA，也不得让 PD/QA 代替 RD 发声。
 
+### G / 紧急普通 D 的双 owner 契约
+
+G Provider 全局改造，以及紧急普通 D（纯 datasource；或 CloudSpec 结构 OK + 手写 Provider）
+必须由内部链自助研发：
+
+1. PD 只读提出双 owner 路由：源客户主单 assignee 保持新山（521957），528766 研发关联单
+   assignee 固定过载（484483）；不得提案“交给新山等待”。
+2. TerraformRD control plane point-read 同题单和 claim。healthy existing claim 不抢占，
+   当前重复 run 不并发写入；同题旧单优先复用，禁止重复 create。
+3. 无健康 claim 时，同一 terraform-rd Task 先进入 route-finalizer phase，fail-closed claim
+   实际研发单；claim 成功后才幂等改派过载、补缺失 relation 并切 dev。claim 失败立即停止，
+   禁止 relation/update/wrap。RD 随后执行 TDD、Provider 修改与 CI，QA 验收。
+   relation/assignee/status 只表示路由物化；没有 PR/CI/QA 完成信号就必须继续 RD。
+4. build/test/CI 或 QA fail 只走 RD ↔ QA 修复重验，绝不转交新山。`missing_capability` 或
+   retries exhausted 才进入 blocked/SUSPENDED，保持源单新山、研发单过载，不 finish。
+5. 源工单仍由 executor bookend；本 run 实际 claim 的 528766 则由 RD finalizer 独立
+   claim/bookend。两张工单各自最多一次聚合 bookend；PR 未合并只 release。只有已有 PR
+   待人工合并、明确外部依赖或人工决策，才允许 observe/release 或 blocked。
+6. D-临钧/A/F/H/非紧急 D 边界不变；I→念依、E→CloudSpec pre→D-临钧保持原流程。
+
 CloudSpec 路由分为两个互斥分支：
 
 - **分支 I — CloudSpec 文档文本 metadata**：resource/property/operation description、字段解释、
@@ -107,15 +127,23 @@ finalizer 回复正文至少包含：
 
 MR/CR 链接只在这条最终聚合回复中同步。Terraform 例外：开 MR/CR 后不立即做中途 Aone 回填。
 
-控制面 Task 的模型 run 不执行 `claim.sh`、`wrap.sh`、`release` 或直接评论；必须在末尾返回：
+控制面 Task 下，**源工单禁止模型直接 claim/wrap/release/评论**，**源工单仍由 executor
+bookend**。**源工单禁令不约束按既有契约由内部链承接的 528766**：G/紧急普通 D，以及
+**非紧急 D 与 I 的 Provider docs 紧急兜底腿**仍按各自既有边界处理；实际 claim 的
+**528766 由 RD finalizer claim/bookend**，并把同一份 RD/QA 聚合写入研发单一次。G/紧急
+普通 D hard gate 只新增双 owner、先 claim 后 dev 与不可观察语义，不得对源工单重复认领或
+回复。模型必须在末尾返回：
 
 ```text
 [[AONE_RESULT:{"outcome":"done|idle|suspend","reply_body":"<含报告链接的唯一完整回复>",...}]]
 ```
 
-executor 使用 terraform-rd 身份单次落账。仅非 executor 托管的独立 finalizer 才按 bookend
-执行一次 `JARVIS_A1_IDENTITY=terraform-rd bootstrap/wrap.sh done`。禁止阶段回复、中途
-`wrap.sh sync`、钉钉进展通知或新公开接力标记。此约束不等于“工单全生命周期只能一条评论”。
+executor 使用 terraform-rd 身份对源工单单次落账。RD finalizer 对本 run 按既有契约实际
+claim 的内部 528766 执行 `claim → wrap.sh done → release/finish`，每条命令至多一次；PR
+未合并、blocked 或待人工确认时只 release，不得 finish。非 executor 托管的独立 finalizer
+才对源工单执行相同 bookend。
+禁止阶段回复、中途 `wrap.sh sync`、钉钉进展通知或新公开接力标记。此约束不等于“工单全生命周期
+只能一条评论”。
 
 回复后：
 

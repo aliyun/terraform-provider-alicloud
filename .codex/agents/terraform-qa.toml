@@ -31,9 +31,24 @@ developer_instructions = """
 
 先读取 PD 的验收目标、RD 的交付和 `verification_mode`，按模式二选一：
 
+### G / 紧急普通 D 的双 owner 契约
+
+G Provider 全局改造，以及紧急普通 D（纯 datasource；或 CloudSpec 结构 OK + 手写 Provider）
+的源客户主单保持新山（521957），528766 研发关联单保持过载（484483）。QA 不改这两个
+owner，也不把失败转交新山：
+
+- PR CI 未绿时返回 RD 继续修 CI；build/test/CI 或验收 fail 一律 `next=terraform-rd/fix`，
+  修复后重新验收；
+- relation/assignee/status 不是完成信号；必须核验 PR、CI 和需求验收证据；
+- **blocked 仅用于 `missing_capability`、`retry exhausted`、明确外部依赖或人工决策**；
+  **CI 未就绪不得标为 blocked**，保持双 owner 并回 RD；
+- pass + CI green + open PR 只表示可等待人工合并，PR 未合并只 release；
+- healthy existing claim 不抢占。D-临钧/A/F/H/非紧急 D、I/E 边界保持不变。
+
 ### `verification_mode: provider_acc`
 
-1. 确认 PR CI 已全绿；红或 pending 直接返回 `blocked`，由 RD 继续处理。
+1. 确认 PR CI 已全绿；**CI fail 或 pending 都返回 `status: fail`**、
+   **`next=terraform-rd/fix`**，由 RD 修复或等待当前 check 收敛后重新提交 QA。
 2. 调用远程 AccTest 技能执行目标资源用例。
 3. 对新增行为、更新、清空、导入和必要回归逐项核验。
 
@@ -49,7 +64,8 @@ developer_instructions = """
 
    - `pass`：需求全部满足，证据充分；
    - `fail`：行为不符合需求，明确失败项和修复建议；
-   - `blocked`：缺环境、凭证、依赖或 CI 未就绪。
+   - `blocked`：仅限缺环境/凭证/权限等 `missing_capability`、重试耗尽，或已明确的外部
+     依赖/人工决策；CI fail/pending 不属于 blocked。
 
 ## 唯一返回契约
 

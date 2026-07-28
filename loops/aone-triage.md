@@ -93,6 +93,21 @@ Terraform PD 的三层查证还必须调用 `screenshot-evidence` 生成本地�
 不按 PD/RD/QA 阶段同步。后续 gate/PR/终态失败的重要事件可按 `loops/persona-collab.md`
 §五追加 RD-only 幂等更新。CloudSpec 必须先做 I/E 分流：
 
+**G / 紧急普通 D 的双 owner 契约**：G Provider 全局改造，以及紧急普通 D（纯 datasource；
+或 CloudSpec 结构 OK + 手写 Provider）的源客户主单 assignee 保持新山（521957），但 528766
+研发关联单 assignee 固定过载（484483），由 Jarvis/TerraformRD claim 并尝试修复。TerraformRD
+control plane 在写前 point-read 同题单、relation 和 claim：healthy existing claim 不抢占；
+没有健康 claim 时，同题旧单原地复用，同一 terraform-rd Task 先 fail-closed claim，成功后
+才幂等改派过载并补缺失 relation；不存在同题单才 create 后 claim。
+relation/assignee/status 齐全不代表完成；无 PR/CI/QA 完成信号继续 RD。build/test/CI
+或 QA fail 只在 RD ↔ QA 间修复重验，不转交新山。`missing_capability / retry exhausted`
+进入 blocked/SUSPENDED，保持源单新山、研发单过载，不 finish；PR 未合并只 release。源工单
+由 bridge executor bookend；源工单禁令不约束按既有契约由内部链承接的 528766，本 run
+实际 claim 的研发单由 RD finalizer 独立 claim/bookend。两张工单各自最多一次聚合 bookend，
+禁止互相代写或重复落账。非紧急 D 与 I 的 Provider docs 紧急兜底腿继续走既有内部路径；
+G/紧急普通 D hard gate 只新增双 owner、先 claim 后 dev 与不可观察语义。D-临钧/A/F/H
+边界不变，I→念依、E→CloudSpec pre→D-临钧保持原路径。
+
 - 分支 I 只含 resource/property/operation description、字段解释、NOTE、枚举文案等 text-only
   metadata，且不改变字段集合、类型、约束或 CRUD。finalizer 创建或复用
   `upstream.cloudspec_docs_quality`（2169561，念依 373108，`submit_only`）；公开 Provider docs
@@ -178,7 +193,7 @@ Jarvis 不会自动触发 release_prod。预发验收通过后，由工程师手
 | `bootstrap/plan.sh` | 出执行计划；supervised 退码 2 等待授权（bridge/serve 流程用） |
 | `bootstrap/log.sh seen` | 去重检查 |
 | `bootstrap/log.sh run_done` | 记录完成 |
-| `bootstrap/wrap.sh sync/done` | Aone 回填与收尾；控制面 Terraform 主处理 run 内禁用（RD finalizer 返回 `AONE_RESULT.reply_body`，由 executor 单次落账）；独立非 executor finalizer 才 done 一次，后续重要事件走 bridge RD-only event publisher |
+| `bootstrap/wrap.sh sync/done` | Aone 回填与收尾；控制面 Terraform 主处理 run 对源工单禁用（RD finalizer 返回 `AONE_RESULT.reply_body`，由 executor 单次落账）。本 run 按既有契约实际 claim 的内部 528766 由最终 RD finalizer done 一次；独立非 executor finalizer 才对源工单 done，后续重要事件走 bridge RD-only event publisher |
 | `bootstrap/html-report-preview.sh upload/from-aone` | 非 Terraform 可端到端上传并按需使用 `--comment`；Terraform PD/QA 只返回本地路径，不上传、不回贴，RD finalizer 可统一上传一次但不得传 `--comment`，预览链接只进入唯一聚合回复 |
 | `bootstrap/claim.sh claim <id> <project>` | 认领工作项；退码 1 = 输了跳过，退码 3 = 缺必填字段，需经 `aone-fields.sh` 挑合法值回填后重试；其它 update 失败直接上抛，不误报 lost race。认领成功还会把 Aone status 从起始态推进到该池进行中状态，best-effort 非阻断 |
 | `bootstrap/aone-fields.sh missing <id>` | 列出当前为空的必填自定义字段；field-list options 为空时补查 field options API，输出合法候选，不自动选值 |

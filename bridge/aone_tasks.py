@@ -423,11 +423,51 @@ def _terraform_visual_evidence_instructions(item_id):
         ".my-day/screenshots/%s/evidence-manifest.md`，再统一上传一次报告："
         "`bash bootstrap/html-report-preview.sh upload %s <report.html>`，严禁传 `--comment`。"
         "把返回的 markdown 预览链接写入 AONE_RESULT.reply_body，由 executor 随唯一回复落账；"
-        "run 内仍禁止 claim/wrap/release/直接评论。\n"
+        "**源工单禁止 claim/wrap/release/直接评论**；源工单禁令不约束按既有契约由内部链"
+        "承接的 528766，实际 claim 的研发单由 RD finalizer claim/bookend。\n"
         "- 缺层、截图不存在、manifest 无效或上传失败时，内部结果标为 "
         "blocked/missing_capability，并在 reply_body 说明缺口；禁止静默省略报告。\n"
         "- Terraform 内部 Task 严格返回字段：%s。"
         % (item_id, item_id, item_id, TERRAFORM_INTERNAL_RESULT_FIELDS)
+    )
+
+
+def _terraform_g_urgent_d_instructions(item_id):
+    """Runtime hard gate for self-developed global/urgent Provider routes."""
+    return (
+        "🔒 G / 紧急普通 D runtime hard gate（命中时覆盖 generic external_handoff/观察语义）：\n"
+        "- 范围仅为 G Provider 全局改造，以及紧急普通 D（纯 datasource；或 "
+        "CloudSpec 结构 OK + 手写 Provider）。源客户主单 assignee 保持新山（521957）；"
+        "528766 研发关联单 assignee 固定过载（484483）。不得 external_handoff 给新山，"
+        "不得进入观察等待。\n"
+        "- 写前 point-read relation、同题 528766、assignee 与 claim。healthy existing claim "
+        "不抢占：当前重复 run 只做 dedup skip，健康 RD run 继续；不得改派、重复 claim/create "
+        "或写它的 bookend。\n"
+        "- 没有 healthy claim 时，同题 528766 已指派新山时原地复用并幂等改派过载；"
+        "严格顺序为先对既有 related_id 尝试 claim，claim 成功后才改派过载并补一次 relation，"
+        "claim 输竞争立即停止，绝不偷健康 claim。确实没有同题单才 create 一次且直接指派过载。\n"
+        "- relation/assignee/status 只表示路由物化；无 PR/CI/QA 完成信号必须继续 RD。"
+        "build/test/CI 或 QA fail 只走 RD ↔ QA 修复重验。只有已有 PR 待人工合并、明确外部依赖"
+        "或人工决策，才允许 observe/release 或 blocked；missing_capability / retry exhausted "
+        "进入 blocked/SUSPENDED，保持双 owner，不 finish。\n"
+        "- 双工单写边界：源工单由 bridge executor bookend；528766 由 RD finalizer claim/bookend。"
+        "源工单禁令不约束按既有契约由内部链承接的 528766；非紧急 D 与 I 的 Provider docs "
+        "紧急兜底腿继续走原内部路径。本 hard gate 只改变 G/紧急普通 D 的双 owner、"
+        "fail-closed claim 与不可观察语义。"
+        "源单与实际 claim 的 528766 各自最多一次聚合 bookend。finalizer 在开发前 materialize "
+        "并 claim 研发单：同一 terraform-rd Task 先以 route-finalizer phase 做 point-read、"
+        "create/reuse、claim 与差异字段同步，claim 成功后才切 dev；claim 失败立即停止，禁止"
+        "relation/update/wrap。QA 后最终 RD finalizer 把同一份 RD/QA 聚合写到研发单一次；"
+        "源单仍只通过 AONE_RESULT 交 executor 落账。\n"
+        "- 研发单命令骨架（<related_id> 必须来自写前 Gate 的 existing/create 回执）："
+        "`JARVIS_A1_IDENTITY=terraform-rd bash bootstrap/claim.sh claim <related_id> 528766`；"
+        "`JARVIS_A1_IDENTITY=terraform-rd bash bootstrap/wrap.sh done <related_id> "
+        "--summary-file <related-aggregate.md> --no-status`；"
+        "`JARVIS_A1_IDENTITY=terraform-rd bash bootstrap/claim.sh release <related_id> 528766`。"
+        "每条最多执行一次，禁止 `wrap.sh sync` 或阶段评论。PR 未合并只 release，禁止 finish。\n"
+        "- 源工单 #%s 的 claim/reply/status/tag/release/finish 仍全部由 executor 托管；"
+        "finalizer 只做源单的 route materialization 字段与 528766 例外动作。"
+        % item_id
     )
 
 
@@ -478,7 +518,10 @@ def _task_result_instructions(item_id, terraform, expected_comment_cursor=None):
            _AONE_EVENT_TEXT_MAX, handled_comment_rule)
     )
     if terraform:
-        instructions += "\n\n" + _terraform_visual_evidence_instructions(item_id)
+        instructions += (
+            "\n\n" + _terraform_visual_evidence_instructions(item_id)
+            + "\n\n" + _terraform_g_urgent_d_instructions(item_id)
+        )
     return instructions
 
 def _ticket_prompt(item_id, title, pool_key, pool_project, trigger_comment=None):
@@ -554,6 +597,8 @@ PD/QA 全程只读或执行内部验证，不得写 Aone、钉钉、MR/CR，不�
    - 分支 E 只指 CloudSpec 结构 metadata。原主单用 CloudSpec skills + AMP 修到 pre Meta 收敛，
      再强制 E → D-临钧；不创建 2165097。
    - 普通分支 D 保持 Provider 开发、PR CI 和远程 ACC，不套用 E 的停点。
+   - 命中 G / 紧急普通 D 时，严格执行末尾 runtime hard gate；不得把 source assignee 新山
+     解释为研发 handoff，也不得因 relation/status 已齐而观察退出。
 3) 把 PD 返回完整交给 Task terraform-rd：
    - I：no-op，不改 CloudSpec/Provider，不执行外部路由动作；
    - E：只做到 CloudSpec build/check/publish pre 与 pre Meta 收敛，返回
@@ -561,7 +606,10 @@ PD/QA 全程只读或执行内部验证，不得写 Aone、钉钉、MR/CR，不�
      不得由 E 直接执行 Provider PR/CI/ACC；
    - 普通 D：需要开发时走 worktree；GitHub 动作先过 github-identity.sh check；PR CI 用
      gh pr checks 确认全绿才交 QA，红或 pending 由 RD 内部修复后复检。
-   RD 同样按上述结构返回，不在此阶段回复 Aone。
+   - G / 紧急普通 D：同一 terraform-rd Task 先以 route-finalizer phase 执行 runtime hard
+     gate，point-read 后复用/创建并 fail-closed claim 528766；claim 成功后才切 dev，继续
+     同一 RD 开发任务。该关联单 claim 不受源工单禁写规则约束。
+   RD 同样按上述结构返回，不在此阶段回复源工单或写阶段评论。
 4) 把 PD+RD 返回完整交给 Task terraform-qa 做独立验收：
    - E 使用 `verification_mode: cloudspec_pre`，只验 build/check/pre Meta 收敛，不运行远程
      AccTest，也不得要求 Provider PR/CI/ACC；pass 返回
@@ -575,7 +623,9 @@ PD/QA 全程只读或执行内部验证，不得写 Aone、钉钉、MR/CR，不�
    独立创建/复用 528766 兜底腿；E 仅在 QA `pre_handoff` 后执行 E → D-临钧：已有正确
    relation/taskId/aoneId 时只查询/复用，否则通过 Acube `createBuildTaskV2` 自动创建或复用
    528766 并指派临钧（429768）。不得在 E 完成后直接 release/idle，也不得把 E 转换泛化到
-   A/F/G/H/I、纯 datasource 或纯手写 Provider-only bug。MR/CR 已开则收集链接，并起草一条
+   A/F/G/H/I、纯 datasource 或纯手写 Provider-only bug。G/紧急普通 D 若实际 claim 了 528766，
+   finalizer 先按 runtime hard gate 对该研发单执行唯一聚合 bookend，再起草源单回复。MR/CR
+   已开则收集链接，并起草一条
    完整回复正文——结论、PD 查证、RD 改动及 MR/CR 链接、QA 证据、未决项/下一步。这段正文即下面
    AONE_RESULT 的 reply_body。有 PR 时无需手动登记看守：bridge 的 PR watch 会自动发现
    api-tool-agent 名下 open PR（分支编码工单号）并纳管全生命周期。bootstrap/log.sh run_done
