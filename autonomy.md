@@ -32,7 +32,7 @@
 | `create_cr` | 建变更 / CR |
 | `worktree` | worktree 开发（本地分支） |
 | `prestage` | 预发部署 |
-| `cloudspec_self_close` | CloudSpec 资源定义/metadata/文档源头缺口在原主单自闭环：AMP task feature 分支、IDL build/check、pre dry-run/发布、Meta 收敛与必要的 Provider 生成/PR/ACC；不得另建兜底 Aone |
+| `cloudspec_self_close` | 仅分支 E 的 CloudSpec 结构 metadata 原主单自闭环：AMP task feature 分支、IDL build/check、pre dry-run/发布、Meta 收敛；随后必须经 Acube `createBuildTaskV2` 交 D-临钧，不由 E 做 Provider PR/CI/ACC。text-only 文档 metadata 属 I，走 2169561 |
 | `adhoc_aone` | ad-hoc 建/补单（loops/adhoc-intake.md，PR 默认落 tf_provider） |
 | `pr_review` | 只读 PR 评审（不写不合并） |
 | `wrap_sync` | 非 Terraform 中途回填 Aone 进展；Terraform 主处理 run 禁用，后续重要事件只走 RD-only 幂等发布器 |
@@ -77,9 +77,11 @@
 
 Escalate 行为：暂停执行，输出摘要，通知用户决策。
 
-CloudSpec 原主单自闭环遇到 AMP 登录、SSH、模型仓权限或 pre 能力缺失时必须命中
+分支 E 的 CloudSpec 原主单自闭环遇到 AMP 登录、SSH、模型仓权限或 pre 能力缺失时必须命中
 `missing_capability` / `blocked`，把 blocker 交 finalizer 写原主单；不得通过切个人身份、
-改派外部承接人或另建 Aone 绕过。pre 成功只允许 `release/idle`，不得 finish。
+改派外部承接人或另建 Aone 绕过。pre 未收敛不得触发 Acube；收敛后必须
+E → D-临钧，不得由 E 直接执行 Provider PR/CI/ACC 或直接 release/idle。分支 I 的 text-only
+文档 metadata 走 2169561，公开 Provider docs 同错时保留独立 528766 腿。
 
 ---
 

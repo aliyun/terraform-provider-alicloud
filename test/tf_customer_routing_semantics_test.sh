@@ -33,6 +33,22 @@ for file in "$source_route" "$mirror_route"; do
   done
 
   for phrase in \
+    '分支 I — CloudSpec 文档文本 metadata' \
+    'text-only' \
+    '2169561' \
+    '念依（373108）' \
+    '独立 528766 紧急兜底腿' \
+    '分池防重' \
+    '分支 E — CloudSpec 结构 metadata 原主单自闭环' \
+    'E → D-临钧' \
+    'pre 未收敛不得触发 Acube' \
+    '不得由 E 直接执行 Provider PR/CI/ACC' \
+    '不得在 E 完成后直接 release/idle' \
+    '不得泛化到 A/F/G/H/I、纯 datasource 或纯手写 Provider-only bug'; do
+    grep -Fq "$phrase" "$file"
+  done
+
+  for phrase in \
     'config/pools.json' \
     'progress_status' \
     '需求问题 → `问题解决中`' \
@@ -126,5 +142,11 @@ done
 
 test "$(jq -r '.pools.tf_customer.progress_status["性能瓶颈"]' "$pools_config")" = 'Open'
 test "$(jq -r '.pools.tf_customer.done_status["性能瓶颈"]' "$pools_config")" = 'Fixed'
+jq -e '
+  (.upstream.cloudspec_gap? == null)
+  and (.upstream.cloudspec_docs_quality.project == 2169561)
+  and (.upstream.cloudspec_docs_quality.assignee == 373108)
+  and (.upstream.cloudspec_docs_quality.access == "submit_only")
+' "$pools_config" >/dev/null
 
 echo "tf_customer_routing_semantics_test: PASS"

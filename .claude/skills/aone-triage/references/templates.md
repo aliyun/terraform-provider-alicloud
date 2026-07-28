@@ -45,19 +45,40 @@
 
 | 证据结论 | 路由 |
 |---|---|
-| **CloudSpec 文档源错误**：resource/property/operation description 或枚举文案与 OpenAPI 长期语义不一致 | **分支 E**，在 CloudSpec OK 判定前进入原主单自闭环；schema/coverage 全绿不能覆盖该结论 |
+| **CloudSpec 文档文本 metadata**：只改 resource/property/operation description、字段解释、NOTE 或枚举文案，不改变字段集合、类型、约束或 CRUD | **分支 I**，创建或复用 2169561 并指派念依（373108）；Provider 公开 docs 同时错误时独立补 528766 紧急兜底腿 |
 | **CloudSpec 文档源正确，Provider 本地文档生成/展示偏差** | **分支 D**，仅处理 Provider 本地生成、发布或展示链路 |
-| 尚未取得足以判断文档源的证据 | 使用上方 canned 骨架等待补料，不得猜测 E/D |
+| **CloudSpec 结构 metadata**：新增/删除字段，或改变类型、约束、枚举集合、CRUD/operation/映射 | **分支 E**，在原主单修到 pre Meta 收敛，再强制 E → D-临钧 |
+| 尚未取得足以判断文档源和结构边界的证据 | 使用上方 canned 骨架等待补料，不得猜测 I/D/E |
 
-## CloudSpec 原主单自闭环记录骨架
+## 分支 I · 文档文本 metadata 路由骨架
 
-CloudSpec 资源定义、metadata 或资源文档源头缺口不再创建任何镇元侧/文档兜底关联单。由
-open-jarvis 在当前原主单内完成，并把下列证据交最终 RD 聚合：
+I 的 text-only 文档主腿固定走 `upstream.cloudspec_docs_quality`；PD/QA 不外写，
+terraform-rd finalizer 作为 downstream `single-writer` 执行，executor 只负责原主单
+bookend，不解析或重放路由动作：
 
 ```markdown
-### CloudSpec 原主单自闭环
+### CloudSpec 文档文本 metadata
 
-- 缺口：<资源/属性/操作/文档位置 + 预期语义>
+- 边界：<resource/property/operation description、字段解释、NOTE、枚举文案>
+- 结构不变证据：<字段集合、类型、约束、CRUD 均未变化>
+- 2169561：<created/reused、念依（373108）、relation>
+- Provider 公开 docs：<正确 / 同时错误>
+- 独立 528766 紧急兜底腿：<N/A / created/reused、过载（484483）、relation>
+- 分池防重：<2169561 point-read>；<528766 point-read>
+```
+
+一个池已有 relation 不能抑制另一个池的缺失补建；528766 只能临时兜底公开 docs，不能替代
+2169561 文档源主腿。
+
+## 分支 E · CloudSpec 结构 metadata 原主单自闭环骨架
+
+E 仅处理字段集合、类型、约束、CRUD/operation/映射。open-jarvis 在当前原主单修 CloudSpec
+到 pre Meta 收敛，然后交 D-临钧；不得直接做 Provider PR/CI/ACC：
+
+```markdown
+### CloudSpec 结构 metadata 原主单自闭环
+
+- 缺口：<字段集合/类型/约束/CRUD/operation/映射 + 预期语义>
 - OpenAPI 证据：<Product::Action、字段、类型、枚举>
 - 初始 pre Meta：<资源是否存在、属性/CRUD/文档差异>
 - AMP/Git：<task 专属 feature 分支、AMP 返回的 SSH URL、cloudspec-model commit/MR>
@@ -66,13 +87,15 @@ open-jarvis 在当前原主单内完成，并把下列证据交最终 RD 聚合�
   cloudspec-norm-check-fix
 - 验证：`aliyun cspec build`、资源级 `aliyun cspec check`、`amp publish pre --dry-run`
   与 `amp publish pre`、pre Meta 收敛结果
-- Provider：<是否需从 pre 重新生成、diff、PR、CI、远程 ACC>
-- 当前门：<pre 已完成 / missing_capability / blocked / 待 prod/online 或主干人工动作>
-- 下一步：<release/idle；不得 finish，除非正式发布与其它硬门另行完成>
+- E → D-临钧：<已有 relation/taskId/aoneId 复用，或 createBuildTaskV2 的 taskId/aoneId>
+- Provider：<由 D-临钧生成器链路后续处理；E 不直接执行 PR/CI/ACC>
+- 当前门：<pre 未收敛，不触发 Acube / handoff 完成 / missing_capability / blocked>
+- 下一步：<handoff 回执后 release/idle；不得 finish；prod/online 与主干仍为人工硬门>
 ```
 
 权限、AMP 登录、SSH 或仓库访问失败时，保留已取得的只读证据并返回
-`missing_capability` / `blocked`；不得换个人身份、改派外部承接人或另建 Aone 规避能力缺口。
+`missing_capability` / `blocked`；不得换个人身份、改派旧 2165097 路径或另建 Aone
+规避能力缺口。pre 未收敛不得触发 Acube；不得在 E 完成后直接 release/idle。
 
 ## Requirement skeleton (Terraform 生成器问题/API 工具团队)
 默认池: `api_toolkit` / project `2100304`;产品字段优先选 Terraform;标题聚焦生成器行为,不要写成客户资源诉求。

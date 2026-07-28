@@ -37,15 +37,18 @@
 
 8. **Aone 工单必先调 aone-triage skill**：用户给 Aone URL / 工单 id / 提及工单时，**第一步必须 `Skill aone-triage`** 加载完整诊断+路由规则（决策树、Step 1.5 canned 前置分诊、团队分工、关联单建单纪律）。严禁跳过 skill 直接手动 `aone-get.sh` + 查源码——会漏路由判定（专属名单/镇元查证/生成器 vs 手写/分支 A–G）导致转单到错的人。
 
-9. **CloudSpec 缺口在原主单自闭环**：新工单中的 CloudSpec 资源定义、metadata 与资源文档源头
-   问题不再转外部承接人或另建镇元侧/文档质量/Provider 文档兜底 Aone。PD 返回
-   `requested_external_actions: []` + `next=terraform-rd/dev`；RD 调用
-   `terraform-provider-release` 的 pre loop、`cloudspec-amp-workflow` 与
-   IDL/resource/operation/build/norm skills，在 AMP task 专属 feature 分支完成修改，
-   使用 AMP 返回的 SSH URL clone cloudspec-model。分支、MR/CR、build/check、pre、
-   Provider PR/CI/ACC 与 blocker 统一由 finalizer 聚合回原主单。权限、AMP 登录、SSH 或仓库
-   访问失败返回 `missing_capability` / `blocked`，不得回退个人身份或改派他人。pre 成功后
-   `release/idle`，不得 finish；prod/online、master/main merge/push 与正式发布仍是人工硬门。
+9. **CloudSpec I/E 分流**：分支 I 只含 resource/property/operation description、字段解释、
+   NOTE、枚举文案等 text-only metadata，且不改变字段集合、类型、约束或 CRUD；finalizer
+   创建或复用 `upstream.cloudspec_docs_quality`（2169561，念依 373108，`submit_only`）。
+   公开 Provider docs 也错误时另保留独立 528766 紧急兜底腿，两池分别防重。分支 E 只含
+   字段集合、类型、约束、CRUD 等结构 metadata；PD 返回
+   `requested_external_actions: []` + `next=terraform-rd/dev`，RD 用 CloudSpec skills + AMP
+   在原主单修到 pre Meta 收敛，不创建 2165097。随后必须 E → D-临钧：已有正确
+   relation/taskId/aoneId 时只查询/复用，否则 finalizer 通过 Acube `createBuildTaskV2`
+   自动创建或复用 528766 并指派临钧（429768）。pre 未收敛不得触发 Acube，不得由 E 直接
+   执行 Provider PR/CI/ACC，也不得直接 release/idle。PD/QA 不外写，RD finalizer
+   single-writer；E 转换不得泛化到 A/F/G/H/I、纯 datasource 或纯手写 Provider-only bug。
+   prod/online、master/main merge/push 与正式 release 仍是人工硬门。
 
 ## 自我迭代
 

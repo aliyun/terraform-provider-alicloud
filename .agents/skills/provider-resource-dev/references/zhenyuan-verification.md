@@ -112,23 +112,31 @@ print("  Property/Operation/PrimaryOperation:",
 '
 ```
 
-**文档源前置短路**：文档问题先比较 OpenAPI 长期语义、CloudSpec resource/property/operation
-description 与 Provider docs。发现 **CloudSpec 文档源错误**时，必须**在 CloudSpec OK 判定前短路**
-到分支 E；该结论不得被 schema、properties 或 CoverageScore 全绿覆盖。只有 CloudSpec 文档源正确，
-Provider 本地文档生成/展示偏差时，才继续按分支 D 处理 Provider 本地问题。
+#### 分支 I — CloudSpec 文档文本 metadata
 
-**镇元 OK 四条件**(全满足才算 OK,任一不满足即 NOT OK):
+文档问题先比较 OpenAPI 长期语义、CloudSpec `resource/property/operation description` 与
+Provider docs。变更只涉及 description、字段解释、NOTE 与枚举文案，且
+**不改变字段集合、类型、约束或 CRUD** 时，才是 text-only I：
+
+- 从 `config/pools.json` 的 `upstream.cloudspec_docs_quality` **创建或复用** 2169561，
+  指派念依（373108），入口保持 `submit_only`；
+- Provider 公开 docs 同时错误时，补一条**独立 528766 紧急兜底腿**，指派过载（484483）；
+- 两池执行**分池防重**，一个池已有 relation 不能抑制另一个池的缺失补建；
+- PD/QA 不外写，terraform-rd finalizer 作为 downstream `single-writer` 执行动作；
+  executor 只负责原主单 bookend。
+
+CloudSpec 文档源正确、仅 Provider 本地生成/展示偏差时走 D；文档改动同时涉及字段集合、类型、
+约束、枚举集合、CRUD/operation 或映射时不再是 I，走结构分支 E。
+
+**CloudSpec 结构 OK 三条件**(全满足才算 OK,任一不满足即结构 NOT OK):
 
 1. **API 在镇元有对应资源**:`get` 返回 data 且 `released` list 命中(资源已定义并发布)
 2. **当前资源属性满足客户诉求**:比对 Step 1 抽取的真实诉求字段,镇元资源 schema 的 properties **全覆盖** —— 缺字段即视为 NOT OK(即便覆盖度分再高也不算 OK,因为覆盖度只测已建 schema 的属性,客户想要新字段时属性不覆盖=缺口在镇元)
 3. **测试覆盖度 100%**:`CoverageDetail.CoverageScore == 1.0`(V2 仅以覆盖度综合分判定,无 PASS/FAIL 用例计数)
-4. **文档源正确性**：有文档诉求时，CloudSpec resource/property/operation description 和枚举文案
-   与 OpenAPI 长期语义一致；非文档诉求记为 N/A。
-
 **判定**(按「与镇元相关性」口径):
-- 四条件全满足 → **镇元 OK** = 镇元侧无问题、缺口在 provider 侧 = **与镇元不相关**,走分支 D 分流
-- 任一不满足(资源未定义 / 属性缺客户要的字段 / 覆盖度 < 1.0 / 文档源错误) →
-  **镇元 NOT OK** = **与镇元相关**,走分支 E 的 CloudSpec 原主单自闭环
+- 三条件全满足 → **CloudSpec 结构 OK** = 结构侧无问题、缺口在 provider 侧，走分支 D
+- 任一不满足(资源未定义 / 属性缺客户要的字段 / 覆盖度 < 1.0) →
+  **结构 NOT OK**，走分支 E 的 CloudSpec 结构 metadata 原主单自闭环
 
 **前置短路 · 纯 datasource 问题不查镇元**:诉求只涉 `data.alicloud_xxx`(查询/过滤/输出字段)、不涉资源 schema/生命周期的,直接判**与镇元不相关**、进分支 D 分流(非临钧子分支)——datasource 是 provider 侧对 List/Describe 查询 API 的只读封装,镇元只管资源 schema,本节的 get/覆盖度查证全部跳过。resource+datasource 混合诉求不算"纯",仍按资源主线走本节查证。
 
@@ -151,14 +159,14 @@ head -3 "$provider_repo/alicloud/resource_alicloud_<product>_<resource>.go" 2>/d
   - 不紧急 → 指派 过载(484483)(Step 3 · 分支 D-过载)
 
 文档问题只有在证据证明 **CloudSpec 文档源正确，Provider 本地文档生成/展示偏差** 时才允许
-进入本分支。若 CloudSpec resource/property/operation description 或枚举文案本身错误，即使
-schema、properties 与 CoverageScore 全绿，也必须回到分支 E。
+进入本分支。CloudSpec text-only 文档源错误必须回到 I；文档与结构同时变化时进入 E。
 
 若资源文件不存在:说明 provider 代码尚未合入(镇元 OK 但 provider 未生成/合入)——按"生成器产出待跑"处理,同样走 Step 3 · 分支 D-临钧 的 acube V2 接口(接口内部会跑生成器 + PR),不必 jarvis 手动 comment 提醒生成。
 
-### 分支 E:与镇元相关且镇元 NOT OK → CloudSpec 原主单自闭环
+### 分支 E:CloudSpec 结构 NOT OK → CloudSpec 结构 metadata 原主单自闭环
 
-本分支同时承接资源结构缺口与原“纯文档源头”路径；不再按资源/文档性质拆到不同外部池：
+本分支只承接字段集合、类型、约束、CRUD/operation 与映射缺口；text-only 文档 metadata
+固定走 I：
 
 1. PD 返回 `requested_external_actions: []` 与 `next=terraform-rd/dev`。不得提出 create_related、
    relation、assign、另建文档兜底单或切个人身份。
@@ -171,12 +179,18 @@ schema、properties 与 CoverageScore 全绿，也必须回到分支 E。
    `cloudspec-build-fix`，并用 `cloudspec-norm-check-fix` 收敛本次增量。
 5. `aliyun cspec build` 与资源级 `aliyun cspec check` 全绿后，提交/推送 feature 分支，
    执行 `amp publish pre --dry-run`，通过后 `amp publish pre`，轮询 pre Meta 收敛。
-6. 如需 Provider 变更，必须从已收敛的 pre 重新生成/修改，继续 CI 与远程 ACC；CloudSpec
-   分支、MR/CR、pre、Provider PR 和验证证据统一由 finalizer 写回原主单。
+6. **pre 未收敛不得触发 Acube**。pre Meta 收敛后必须 **E → D-临钧**：
+   已有正确 relation/taskId/aoneId 时只查询/复用，否则由 single-writer 调用一次
+   `createBuildTaskV2`，让 Acube 自动创建/复用 528766 并指派临钧（429768）。
+7. **不得由 E 直接执行 Provider PR/CI/ACC**，不得在 E 完成后直接 release/idle；只有
+   D-临钧 handoff 回执确认后才由 finalizer 聚合。Acube 不确定时保留 taskId 并 blocked，
+   不得手工补建。
 
 权限、AMP 登录、SSH、模型仓或 pre 能力失败时返回 `missing_capability` / `blocked` 并记录原主单，
 不得回退其它承接人或身份。`amp publish prod` / prod/online、master/main merge/push 与正式发布
-始终是人工硬门；pre 成功后只能 `release/idle`，不得 finish 或宣称正式发布。
+始终是人工硬门，不得 finish 或宣称正式发布。
+
+**只允许分支 E 进入此转换**；不得泛化到 A/F/G/H/I、纯 datasource 或纯手写 Provider-only bug。
 
 ### 分支 F:上游 API 缺口
 

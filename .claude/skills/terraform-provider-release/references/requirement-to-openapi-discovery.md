@@ -1,5 +1,10 @@
 # 需求 → OpenAPI 圈定 → CloudSpec 定义闭环
 
+> A/B 路是**普通分支 D / 常规 release** 的需求建模与设计 review，不因涉及 CloudSpec 就自动
+> 归入分支 E。triage 已确认字段集合、类型、约束、CRUD 等结构 metadata 缺陷时才进入
+> **分支 E**：修到 pre Meta 收敛后强制 **E → D-临钧**，由 finalizer 通过 Acube
+> `createBuildTaskV2` 创建或复用 528766；不得由 E 直接执行 Provider PR/CI/ACC。
+
 一个完整的 Terraform 需求,往往**从找到正确的 OpenAPI 开始**:把 OpenAPI 能力透出到 Terraform。本 reference 覆盖三件事:
 
 - **A 路**:用户只给了需求描述(没有现成资源)——从需求出发圈定 OpenAPI → CloudSpec 定义 → 发布 pre → 生成器产出 resource/datasource/测试;
@@ -95,7 +100,10 @@ List:   DescribeLogAnalysis
 - UNMAPPED 属性:<清单>(找不到支撑 API,需用户确认来源或砍掉)
 ```
 
-需修复项走 A.4 的 CloudSpec 闭环落修 → publish pre → 回主流程生成。**用户设计正确也要留痕**(「review 通过,无修改」),不留痕视为未 review。
+需修复项走 A.4 的 CloudSpec 闭环落修 → publish pre → 回主流程生成；这是普通分支 D/release
+设计路径。若输入已被 triage 判为分支 E，则只修到 pre Meta 收敛，再
+E → D-临钧 / `createBuildTaskV2`，不得回主流程由 E 继续 Provider。
+**用户设计正确也要留痕**(「review 通过,无修改」),不留痕视为未 review。
 
 ---
 

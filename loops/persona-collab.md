@@ -10,7 +10,7 @@
 |---|---|---|
 | `terraform-pd` | 分诊、三层查证、本地截图 manifest、路由提案、需求分析 | 否 |
 | `terraform-rd` | 开发、PR/CR、CI 修复；最终聚合；重要事件更新 | finalizer / event publisher |
-| `terraform-qa` | 远程 AccTest、回归、验收、缺陷证据 | 否 |
+| `terraform-qa` | 普通 Provider 远程 AccTest；分支 E 的 CloudSpec pre-only 验证；回归与缺陷证据 | 否 |
 
 唯一公共身份：
 
@@ -45,7 +45,7 @@ requested_external_actions:
   - 由最终 RD 审查和执行的动作提案
 next:
   role: terraform-rd | terraform-qa | terraform-rd-finalizer
-  action: dev | fix | acc_verify | finalize
+  action: dev | fix | acc_verify | cloudspec_pre_verify | pre_handoff | finalize
 reply_fragment: 可直接纳入最终回复的片段
 ```
 
@@ -59,8 +59,9 @@ reply_fragment: 可直接纳入最终回复的片段
 1. 编排层去重、探测 TerraformRD 登录；控制面 executor 在模型进程外持有 lease 并托管 claim。
 2. Task 起 PD：调用 `aone-triage` 与 `screenshot-evidence`，完成三层查证、本地截图 manifest
    和路由提案；不上传、不回贴。
-3. Task 起 RD：根据 PD 结果开发或 no-op；worktree 隔离，必要时创建 PR/CR，PR CI 必须全绿。
-4. Task 起 QA：远程 AccTest 和回归。
+3. Task 起 RD：根据 PD 分支开发或 no-op；普通 Provider 路径 worktree 隔离，必要时创建 PR/CR，
+   PR CI 必须全绿；分支 E 只做到 CloudSpec pre Meta 收敛。
+4. Task 起 QA：普通 Provider 路径走远程 AccTest；分支 E 走 `cloudspec_pre_verify`。
 5. QA fail → 把缺陷草稿与证据内部退回 RD 修复 → 重跑 QA。
 6. QA pass、blocked、low_conf 或达到循环上限 → Task 起 RD finalizer。
 7. finalizer 用 `screenshot-evidence/scripts/validate-manifest.py` 校验 PD manifest，统一上传一次
@@ -70,18 +71,27 @@ reply_fragment: 可直接纳入最终回复的片段
 无开发需求时，RD 可返回 no-op，QA 对支持性结论或复现证据做独立校验后进入 finalizer。不得为了
 形式跳过 PD/QA，也不得让 PD/QA 代替 RD 发声。
 
-CloudSpec 资源定义、metadata 或资源文档源头缺口是上述链的内建开发分支：
+CloudSpec 路由分为两个互斥分支：
 
-- PD 必须返回 `requested_external_actions: []`、`next=terraform-rd/dev`，不得提案新建 Aone、
-  relation、assign 或切换个人身份。
-- RD 调用 `terraform-provider-release` 的 `cloudspec-pre-resource-loop.md`，
-  `cloudspec-amp-workflow` 与 IDL/resource/operation/build/norm skills，在 AMP task 专属
-  feature 分支自闭环；AMP 返回的 SSH URL 是 cloudspec-model clone 真源。
-- CloudSpec 分支、MR/CR、build/check、pre、Provider PR/CI/ACC 和 blocker 都只由 finalizer
-  聚合到原主单。权限、AMP 登录、SSH 或仓库访问失败返回 `missing_capability` / `blocked`，
-  不得改派外部承接人或回退个人身份。
-- pre 成功只允许 `release/idle`，不得 finish；prod/online、master/main merge/push 与正式发布
-  仍是人工硬门。
+- **分支 I — CloudSpec 文档文本 metadata**：resource/property/operation description、字段解释、
+  NOTE 与枚举文案，且不改变字段集合、类型、约束或 CRUD。PD 只提出创建或复用项目 2169561、
+  指派念依（373108）的动作；公开 Provider docs 同时错误时，再提出独立 528766 紧急兜底腿。
+  两腿分池防重，一个池已有 relation 不能抑制另一个池的缺失补建。RD/QA 都 no-op 验证，
+  finalizer `single-writer` 执行动作。
+- **分支 E — CloudSpec 结构 metadata 原主单自闭环**：字段集合、类型、约束、CRUD、
+  operationMapping 或生命周期缺口。PD 返回 `requested_external_actions: []`、
+  `next=terraform-rd/dev`；RD 调用 `terraform-provider-release` 的
+  `cloudspec-pre-resource-loop.md` 与 CloudSpec skills，在 AMP task 专属 feature 分支完成
+  build/check/publish pre 与 pre Meta 收敛，不创建 2165097。
+- E 的 QA 使用 `verification_mode: cloudspec_pre`，只验 build/check/pre Meta 收敛，不运行远程
+  AccTest、不要求 Provider PR/CI/ACC；pass 后返回 `pre_handoff`。finalizer 执行
+  **E → D-临钧**：已有正确 relation/taskId/aoneId 时只查询/复用，否则通过 Acube
+  `createBuildTaskV2` 自动创建或复用 528766 并指派临钧（429768）。
+- pre 未收敛不得触发 Acube；不得由 E 直接执行 Provider PR/CI/ACC，也不得在 E 完成后直接
+  release/idle。只允许分支 E 进入此转换，不得泛化到 A/F/G/H/I、纯 datasource 或纯手写
+  Provider-only bug。普通分支 D 保持 PR CI + 远程 ACC。
+- 权限、AMP 登录、SSH、pre 或 Acube 能力失败返回 `missing_capability` / `blocked`，不得回退
+  个人身份。prod/online、master/main merge/push 与正式 release 仍是人工硬门。
 
 ## 四、主处理 run 的单次最终回复
 

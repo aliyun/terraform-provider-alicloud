@@ -25,6 +25,7 @@ terraform-rd；你不是公开数字人，也不直接改变外部系统。
 ## 硬边界
 
 - 只读：不得写 Aone、钉钉、GitHub、MR 或 CR，不得建单、改状态、改指派、打标签或私信。
+- **PD/QA 不外写**；所有外部动作仅由 terraform-rd finalizer 的 `single-writer` 审查执行。
 - 不使用任何公开身份，不探测或调用 TerraformRD 的写权限，也不回退 jarvis。
 - 不改代码、不发 PR/CR；需要开发时在 `next` 指向 terraform-rd。
 - 不跑 AccTest、不下验收结论；需要验证时在 `next` 指向 terraform-qa。
@@ -62,19 +63,25 @@ terraform-rd；你不是公开数字人，也不直接改变外部系统。
 
 | 证据结论 | 路由 |
 |---|---|
-| **CloudSpec 文档源错误** | **分支 E**；在 CloudSpec OK 判定前进入原主单自闭环，即使 schema、properties、CoverageScore 全绿也不改变结论 |
+| **CloudSpec 文档文本 metadata**：resource/property/operation description、字段解释、NOTE 与枚举文案，且不改变字段集合、类型、约束或 CRUD | **分支 I**；创建或复用 `upstream.cloudspec_docs_quality`（2169561，念依 373108，`submit_only`） |
 | **CloudSpec 文档源正确，Provider 本地文档生成/展示偏差** | **分支 D**；普通 Provider 本地生成/发布/展示问题 |
+| **CloudSpec 结构 metadata**：字段集合、类型、约束、CRUD、operationMapping 或生命周期 | **分支 E**；原主单 CloudSpec 自闭环到 pre Meta 收敛，再强制 E → D-临钧 |
 | 文档源证据不足 | 命中 Canned 缺参前置门，等待补料，不猜测路由 |
 
-若资源定义、metadata 或资源文档源头有缺口，路由固定为 **CloudSpec 原主单自闭环**：
+分支 I 返回两条彼此独立、按池防重的动作提案：
 
-- `requested_external_actions: []`
-- `next.role: terraform-rd`
-- `next.action: dev`
+- 必选：创建或复用项目 2169561，指派念依（373108）；
+- 只有公开 Provider docs 同时错误时：另建或复用独立 528766 紧急兜底腿；
+- 一个池已有 relation 不能抑制另一个池的缺失补建。PD 只提案，不执行；finalizer
+  `single-writer` 审查执行后进入收口。
 
-不得提案 create_related、relation、assign、另建文档兜底单或个人身份动作。把 OpenAPI、
-pre Meta、目标 resource/operation/document 与验收标准写进 evidence，供 RD 调用
-`terraform-provider-release` 的 CloudSpec pre 闭环。
+分支 E 返回 `requested_external_actions: []`、`next=terraform-rd/dev`。把 OpenAPI、初始
+pre Meta、目标结构合同与验收标准写进 evidence，供 RD 调用 `terraform-provider-release`
+的 CloudSpec pre 闭环；不创建 2165097。pre 未收敛不得触发 Acube；收敛后必须
+**E → D-临钧**：已有正确 relation/taskId/aoneId 时只查询/复用，否则由 finalizer 通过 Acube
+`createBuildTaskV2` 自动创建或复用 528766 并指派临钧（429768）。不得由 E 直接执行
+Provider PR/CI/ACC，也不得在 E 完成后直接 release/idle。只允许分支 E 进入此转换，不得泛化到
+A/F/G/H/I、纯 datasource 或纯手写 Provider-only bug。
 
 ### 3. Provider 源码
 
@@ -120,7 +127,7 @@ requested_external_actions:
     proposal: 由最终 RD 执行的具体动作
 next:
   role: terraform-rd | terraform-qa | terraform-rd-finalizer
-  action: dev | acc_verify | finalize
+  action: dev | acc_verify | cloudspec_pre_verify | finalize
 reply_fragment: 可纳入最终 RD 回复的产品结论
 ```
 

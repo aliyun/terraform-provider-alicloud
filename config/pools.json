@@ -277,7 +277,14 @@
       "pool": "api_toolkit"
     }
   ],
-  "upstream": {},
+  "upstream": {
+    "cloudspec_docs_quality": {
+      "project": 2169561,
+      "assignee": 373108,
+      "access": "submit_only",
+      "desc": "CloudSpec 文档文本 metadata 专用入口，仅处理 resource/property/operation description、字段解释、NOTE 与枚举文案，不处理字段集合、类型、约束或 CRUD。分支 I 创建或复用并指派念依；Provider 公开 docs 同时错误时另按 528766 分池防重补紧急兜底腿。"
+    }
+  },
   "claim": {
     "tag": "jarvis-claimed",
     "fallback": "title",

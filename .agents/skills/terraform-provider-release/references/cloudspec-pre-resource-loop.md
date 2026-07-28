@@ -1,6 +1,25 @@
 # CloudSpec pre 资源定义检查与修复闭环
 
-本 reference 只服务 `terraform-provider-release`：接单初期校验 pre 资源定义，或 Terraform 测试证明 CloudSpec IDL 定义错误时，完成“修 IDL → 发布 pre → 从 pre 重新生成 → ACC 复验”。这是 **CloudSpec 原主单自闭环**：资源定义、metadata 与资源文档源头问题均以当前原主单为唯一 Aone 真源，不创建镇元侧、文档质量或 Provider 文档兜底关联单；CloudSpec 分支、MR/CR、pre、Provider PR、ACC 与 blocker 全部交最终 RD 聚合回原主单。CloudSpec 正式发布不在本闭环内。
+本 reference 只服务 `terraform-provider-release` 的 pre 资源合同校验，并严格区分路由来源：
+
+- **分支 I — CloudSpec 文档文本 metadata**：resource/property/operation description、字段解释、
+  NOTE 与枚举文案，且不改变字段集合、类型、约束或 CRUD。I 不进入本修复闭环；由 finalizer
+  创建或复用 `upstream.cloudspec_docs_quality`（项目 2169561，念依 373108，
+  `submit_only`）。若公开 Provider docs 也错误，另保留独立 528766 紧急兜底腿，按池分别防重；
+  一个池已有 relation 不能抑制另一个池的缺失补建。
+- **分支 E — CloudSpec 结构 metadata 原主单自闭环**：只处理字段集合、类型、约束、CRUD、
+  operationMapping、生命周期等结构合同。原主单用 CloudSpec skills + AMP 完成
+  “修 IDL → build/check → publish pre → pre Meta 收敛”，不创建 2165097。
+- **普通分支 D / 常规 release**：若 CloudSpec pre 本来已对齐，仍按 Provider release SOP
+  继续生成、PR CI 与 ACC；不得把 E 的停点泛化到 A/F/G/H/I、纯 datasource 或纯手写
+  Provider-only bug。
+
+E 的硬停点是 pre Meta 收敛。收敛后必须执行 **E → D-临钧**：
+**已有正确 relation/taskId/aoneId 时只查询/复用**，否则由唯一写者通过 Acube `createBuildTaskV2`
+自动创建或复用 528766 并指派临钧（429768）。pre 未收敛不得触发 Acube；不得由 E 直接执行
+Provider PR/CI/ACC，也不得在 E 完成后直接 release/idle。CloudSpec prod/online、master/main
+合并和正式 release 始终是人工硬门。PD/QA 不外写，所有外部动作由 RD finalizer
+`single-writer` 审查执行。
 
 ## 0. 机器人能力入口
 
@@ -43,7 +62,7 @@ python3 .Codex/skills/amp-resource-metadata/scripts/get_resource_type.py \
 
 | 结论 | 后续动作 |
 |---|---|
-| `PRE_CLOUDSPEC_ALIGNED` | 先跑 [HCL 保留字硬门](#hcl-保留字硬门)。通过 → 回填对齐证据，继续 provider release SOP。命中 → 转入第 3 节改名 |
+| `PRE_CLOUDSPEC_ALIGNED` | 先跑 [HCL 保留字硬门](#hcl-保留字硬门)。普通分支 D 通过后继续 provider release SOP；分支 E 通过后视为 pre Meta 已收敛，跳到第 5 节 E → D-临钧，不能自己继续 Provider |
 | `PRE_CLOUDSPEC_GAP`（已有资源需扩展/订正） | 需求清楚且能从工单唯一确定目标定义，进入第 3 节修复闭环 |
 | `PRE_CLOUDSPEC_MISSING`（全新资源） | pre 完全没这资源。查 cspec `operations/`：<br>• CRUDL 5 件套齐 → 走 [新资源从存量 OpenAPI 推断](cloudspec-new-resource-infer.md)<br>• 缺 API → API 侧尚未建，走第 2 节人工会审 |
 | `PRE_REQUIREMENT_AMBIGUOUS` | 停止生成/编码，执行第 2 节人工会审通知 |
@@ -136,20 +155,29 @@ amp publish pre -o json --no-interactive
 `dry-run` 失败即停止。真发成功后循环读取 `--env pre` 的资源 Meta，直到变更字段和 CRUD 映射与本次 IDL 一致；记录发布结果、轮询时间和最终 Meta 摘要。超时或内容不一致时挂起并升级，不能进入生成器。
 
 `amp publish prod` / prod/online 正式发布以及 master/main merge/push 是人工硬门，本 SOP 永不执行。
-pre 成功只表示预发模型已收敛：主单必须 `release/idle`，不得 finish，也不得宣称正式发布。
+pre 成功只表示预发模型已收敛，不得 finish，也不得宣称正式发布。分支 E 必须继续第 5 节
+E → D-临钧；不得在 E 完成后直接 release/idle。
 
-## 5. 强制从 pre 重新生成
+## 5. 分支 E 的强制 E → D-临钧交接
 
-pre Meta 收敛后才允许运行 Terraform generator。先查看当前 generator 的 CLI/help 或任务参数，找到其真实的 pre 环境选择器；在 Aone 证据中写明 `GENERATOR_META_ENV=pre`，并附实际命令/任务参数与生成时间。
+只允许分支 E 进入此转换。QA 使用 `verification_mode: cloudspec_pre` 独立核验
+build/check/pre Meta 收敛，不运行远程 AccTest，也不得要求 Provider PR/CI/ACC。QA pass 后返回
+`next=terraform-rd-finalizer/pre_handoff`，由 finalizer 的 `single-writer` 执行：
 
-硬门：
+1. 先按当前原主单查询 relation，并读取关联任务的 taskId/aoneId；已有正确
+   relation/taskId/aoneId 时只查询/复用，不重复创建。
+2. 缺少正确关联时，通过 Acube `createBuildTaskV2` 创建构建任务，由 Acube 自动创建或复用
+   Provider 池 528766 工作项并指派临钧（429768）。
+3. 把 CloudSpec 分支/commit、build/check、pre publish 回执、最终 pre Meta 摘要和关联
+   taskId/aoneId 作为一次最终聚合证据写回原主单。
+4. 若 Acube 不可用或返回关系不完整，返回 `missing_capability` / `blocked`，保留原主单，
+   不得绕过 Acube 手工冒充已交接。
 
-- 生成器必须显式选择 pre，不能依赖默认环境；
-- 若当前 generator 没有可验证的 pre 选择器，返回 `missing_capability` 并停止；
-- 禁止回退 online；禁止复用发布前的生成目录、缓存 Meta 或旧代码；
-- 生成后检查 diff，确认修复字段/映射确实来自已收敛的 pre 定义。
+pre 未收敛不得触发 Acube。不得由 E 直接执行 Provider PR/CI/ACC，不得在 E 完成后直接
+release/idle，更不得把这个转换泛化到 A/F/G/H/I、纯 datasource 或纯手写 Provider-only bug。
 
-随后运行 SOP 的静态检查和全部远程 ACC。仍失败时重新分类：定义仍错则回第 3 节；Meta 已正确但产物错则转 generator 问题。每次修复最多重试 3 轮，超过上限升级人工。
+普通分支 D 或常规 release 不受此 E 专用停点影响：其 CloudSpec pre 已对齐时，按主 SOP 显式
+选择 pre 生成，继续 Provider PR CI 和远程 ACC。
 
 ## 6. 原主单证据清单
 
@@ -161,6 +189,10 @@ pre Meta 收敛后才允许运行 Terraform generator。先查看当前 generato
 - `aliyun cspec build`、资源级 check 结果；
 - `amp publish pre --dry-run` 与正式 pre 发布结果；
 - pre Meta 收敛证据；
-- `GENERATOR_META_ENV=pre` 及实际生成参数；
-- 生成 diff 摘要与全部 ACC 结果。
-- MR/CR、Provider PR/CI 与仍待人工执行的 prod/online、master/main、正式发布硬门。
+- QA `verification_mode: cloudspec_pre` 的 build/check/pre Meta 收敛结论；
+- Acube `createBuildTaskV2` 的复用/创建判定及关联 taskId/aoneId；
+- CloudSpec MR/CR 与仍待 D-临钧处理的 Provider 工作；
+- 仍待人工执行的 prod/online、master/main 与正式发布硬门。
+
+E 的证据清单不得伪造 Provider PR/CI/ACC 结果；那些属于 D-临钧后续工作。普通分支 D 的
+release 证据仍按主 SOP 记录生成参数、Provider PR/CI 与 ACC。

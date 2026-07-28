@@ -24,6 +24,8 @@ anchor/owner epoch 各自成功一次后静默。其它无变化和重复事件�
 不回退 jarvis。旧
 `pd/qa/terraform-pd/terraform-qa` 只是一版兼容别名到 RD，会告警且不读取旧 auth。个人身份
 `chenyi/guozai/linjun/shanye` 仅仓库主人当面授权本轮才可临时使用。
+**PD/QA 不外写**；terraform-rd finalizer 是 downstream single-writer，负责路由动作与下游
+副作用；executor 只负责原主单 bookend（claim、唯一回复、outcome status/tag、release/finish）。
 Terraform 线先 `bin/a1id ready terraform-rd`，其它线先 `bin/a1id -- auth whoami` 验登录；
 `command not found` 或认证错误 → **征得用户同意后**装:
 ```
@@ -65,7 +67,8 @@ bash bootstrap/aone-image-extract.sh <id>          # 附件截图→本地,skill
 | **2124589** mcp_server | 自家应用交付(Agent门户/AgentRuntime/aliyun-automation-agent/PlayGround) | `references/delivery-aliyun-automation-agent.md` |
 | **1091779** automation_platform | 自动化服务台 / IaCService 产品研发与交付(不含 Agent 链路) | `references/delivery-aliyun-automation-platform.md` |
 | cwd 在 cloudspec repo 或诉求涉 cloudspec / OpenAPI MCP Server | 自家应用交付(cloudspec) | `references/delivery-cloudspec.md` |
-| CloudSpec 资源定义或文档源头缺口(无论来自哪个池) | **CloudSpec 原主单自闭环** | 原主单继续作为唯一 Aone 真源；文档问题先区分 CloudSpec 源错误与 Provider 本地生成/展示偏差，源错误在 CloudSpec OK 判定前进入 E；加载 `references/tf-customer-request-routing.md`，由 RD 在同一主处理 run 内完成 CloudSpec pre 修复、必要的 Provider 生成/改造与验证，不创建镇元侧或文档兜底关联单 |
+| CloudSpec 文档文本 metadata | **分支 I** | 仅限 description、字段解释、NOTE、枚举文案且不改变字段集合/类型/约束/CRUD；创建或复用 2169561 指派念依，公开 Provider docs 同错时独立补 528766 紧急兜底腿 |
+| CloudSpec 资源/schema/结构 metadata | **分支 E → D-临钧** | 原主单用 CloudSpec skills + AMP 修到 pre Meta 收敛；随后通过 Acube `createBuildTaskV2` 创建或复用 528766 指派临钧，不走 2165097，也不由 E 直接做 Provider PR/CI/ACC |
 | 其它 | 无 domain reference → 走本文件通用流程 | — |
 
 **判断规则**:先看 `space` 命中 池,再看 `涉及云产品` / 标题 / cwd 辅助定位。有 domain reference 就**加载并跟随**它的决策树;无 reference 走本文件下方通用查证。
@@ -77,13 +80,13 @@ bash bootstrap/aone-image-extract.sh <id>          # 附件截图→本地,skill
 | 标题子类型 | 正确处理 |
 |---|---|
 | **[Terraform 资源发布自动审核流程]** | **调 `terraform-provider-release` skill 跑完整 SOP**——需求差距分析(AMP 元数据 vs provider 代码)+ 远程 ACC 实测 + 出 PR。平台流水线的「源码生成/打包上传容器」只是构建产物,**不等于代码已进 provider 仓、更不等于 ACC 验证过**;jarvis 仍须按 SOP 补 ACC + PR(PR merge 是人工门)。**禁止只复核告警就 release**——那是漏跑发布流程,不算处理达标。 |
-| **[Terraform 文档发布自动审核流程]** | **复核确认闸门**(不跑资源 ACC):对比 OpenAPI、pre Meta/CloudSpec 文档源与 Provider 公开文档。CloudSpec 资源文档/metadata 有误时，不受 schema/coverage 全绿影响，直接进入 **CloudSpec 原主单自闭环**，修改源头并发布 pre；只有 CloudSpec 源正确、差异仅在 Provider 本地生成或展示时才走普通 Provider 路径。如需 Provider 文档紧急补丁，也在原主单下完成 worktree + PR，不另建文档兜底 Aone。 |
+| **[Terraform 文档发布自动审核流程]** | **复核确认闸门**(不跑资源 ACC):对比 OpenAPI、CloudSpec 文档源与 Provider 公开文档。text-only CloudSpec 文档 metadata 走 I→2169561；公开 Provider docs 同错时独立补 528766 紧急兜底。CloudSpec 源正确、仅 Provider 本地生成/展示偏差才走 D；涉及结构变化则走 E→D-临钧。 |
 
 ### 2. 按类型分诊(通用)
 
 | workitemType | 通用动作 |
 |---|---|
-| **需求/咨询**(req / 需求问题) | 查证 → 回复(授权) → 若真缺口:Terraform / CloudSpec 走 [[tf-customer-request-routing]] 决策；CloudSpec 资源或文档源头缺口在原主单自闭环，只有云产品 OpenAPI 本身缺能力时才改「待上游排期」 |
+| **需求/咨询**(req / 需求问题) | 查证 → 回复(授权) → 若真缺口按 [[tf-customer-request-routing]] 区分 I 文档、E 结构、D Provider 与 F OpenAPI |
 | **缺陷**(bug) | 复现要点 + 源码定位 → 回复/指派;确认 spec 缺口才转需求 |
 | **任务**(task) | 直接执行或拆解,产出+回执,无需查证/转需求 |
 | **自己交付**(改我们自家应用) | 走 `references/delivery-<app>.md`:建需求→建 CR→worktree 开发→预发→**等用户验证反馈**→正式→关单清 worktree |
@@ -107,7 +110,7 @@ bash bootstrap/aone-image-extract.sh <id>          # 附件截图→本地,skill
 3. **provider 源码层**(仅当涉 Terraform 资源):先 `bash .claude/skills/aone-triage/scripts/sync-provider.sh` 同步,再在 `$(bash bootstrap/workspace.sh dir terraform_provider)/alicloud/` grep 资源 .go,核对 schema / `Importer` / Create 实际下发参数。单复数陷阱:`*_instances` 多半是数据源。
 4. **文档兜底**:GitHub raw markdown、`aliyun help <product>` 命令列表。
 
-**「文档 vs 代码一致性」分诊起点**(涉 endpoint/schema 键名/枚举值/属性行为类问题):**先对比"文档承诺"vs"代码实际行为"两侧**,不要只看代码或只看文档,更不要只看客户报错。一般问题的修复侧需结合兼容性、产品长期路线和客户成本判断。Terraform 资源文档是明确例外：必须增加 OpenAPI、CloudSpec 文档源、Provider 本地生成/展示三侧比较；CloudSpec 源错误在 OK/coverage 判定前进入 E 原主单自闭环，只有 CloudSpec 源正确而 Provider 本地生成物或展示偏差才允许进入 D。分诊者仍应把可行方案与证据完整提交给决策者(见下方"转单/建关联单 body 内容原则")。
+**「文档 vs 代码一致性」分诊起点**(涉 endpoint/schema 键名/枚举值/属性行为类问题):**先对比"文档承诺"vs"代码实际行为"两侧**,不要只看代码或只看文档。Terraform 资源文档必须增加 OpenAPI、CloudSpec 文档源、Provider 本地生成/展示三侧比较：严格 text-only 的 CloudSpec 文档 metadata 走 I；CloudSpec 源正确、Provider 本地偏差走 D；涉及字段集合/类型/约束/CRUD 则走 E，pre 收敛后转 D-临钧。
 
 **Terraform-specific 领域**详细 branch(专属维护名单 / 类比 API 原生 vs Provider 适配 / 镇元覆盖度 / 生成器 vs 手写)全在 `references/tf-customer-request-routing.md`。tf_customer 域必读,其它域按需借鉴。
 
@@ -137,7 +140,8 @@ bash bootstrap/aone-image-extract.sh <id>          # 附件截图→本地,skill
 | 动作 | 命令 |
 |---|---|
 | 回复评论 | 非 Terraform 走 wrap.sh done；Terraform 主处理 run 只由最终 RD 聚合后 done 一次，后续重要事件只走 bridge RD-only event publisher。多行用 `--summary-stdin`/`--summary-file`，别先单独回复 |
-| CloudSpec 原主单自闭环 | 不创建任何镇元侧或文档兜底 Aone；PD 返回 `requested_external_actions: []` 与 `next=terraform-rd/dev`，RD 调用 `terraform-provider-release` 的 `cloudspec-pre-resource-loop.md`，把 feature 分支、build/check、pre、MR/CR、Provider PR、ACC 与阻塞证据统一交 finalizer 写回原主单 |
+| CloudSpec 文档文本 metadata（I） | terraform-rd finalizer 单写创建或复用 2169561 并指派念依；Provider 公开 docs 同错时按分池防重独立补 528766 紧急兜底；executor 只做原主单 bookend |
+| CloudSpec 结构 metadata（E） | PD 返回 `requested_external_actions: []` 与 `next=terraform-rd/dev`；RD 修 CloudSpec 到 pre Meta 收敛，随后必须 E→D-临钧走 Acube，不由 E 直接做 Provider PR/CI/ACC 或直接 release |
 | 建关联单(自家团队接手) | tf_customer 域走 `references/tf-customer-request-routing.md` 分工表 |
 | 双向关联 | `bin/a1id -- project workitem relation add <A> relate:<B>` **单次即自动双向**(重复调第二次返回 400 已存在) |
 | 状态更新 | `bin/a1id -- project workitem update <id> --status "<value>"` |
@@ -148,7 +152,7 @@ bash bootstrap/aone-image-extract.sh <id>          # 附件截图→本地,skill
 
 ### 转单/建关联单 body 内容原则
 
-给他人写关联单 body(例如转出的分支 D-新山 / G-新山 / H-夏节 等**非过载承接**)时,body 是承接方唯一的**决策依据**,jarvis 给的信息完备度决定承接方能否直接拍板还是回来反复问。CloudSpec 资源定义与文档源头问题不适用本段：它们不再转单，统一走原主单自闭环。其它关联单规则:
+给他人写关联单 body(例如 I-念依、D-新山 / G-新山 / H-夏节 等**非过载承接**)时,body 是承接方唯一的**决策依据**,jarvis 给的信息完备度决定承接方能否直接拍板还是回来反复问。E 的结构 metadata 在 pre 前不转单；I 与 E→D-临钧按各自专用契约。其它关联单规则:
 
 - **多方案覆盖**:分析出根因后,不要只写"我倾向"的单一方案;至少列 3-4 种可行方案(**代码修复 / 只改文档 / 代码+文档双改 / 客户 workaround** 是常见 4 种),给对比表(改动量/兼容性/长期语义/优缺点),jarvis 明说自己倾向哪个 + 依赖对方哪个信息拍板(如"取决于产品长期路线图")。
 - **根因定位含完整代码引用**:引用具体文件:行号(如 `alicloud/provider.go:2273-2286`)+ 完整代码片段(不是省略号或概括)+ 一句话解释每处做什么。承接方一眼能顺着行号跳读,不用自己 grep。
@@ -234,7 +238,7 @@ options 为空，脚本会继续查询 field options API，并返回合法候选
 - 最终聚合说明「MR 已提交待合并验收,链接: <PR_URL>」
 - `JARVIS_A1_IDENTITY=terraform-rd bash bootstrap/claim.sh finish` 内置了硬闸门(退码 2),即使遗漏也会拦截
 
-**关联单 claim 规则**:指派给过载(484483)的普通 Terraform Provider 关联单由内部链跟进解决。若同一 run 同时处理客户主单与关联单，每个实际 claim 的工单都只由最终 RD 各执行一次聚合 `done`，不按研发细节/关键节点多次回贴；所有 claim/done/release/finish 都显式使用 `JARVIS_A1_IDENTITY=terraform-rd`。指派其他人(新山/临钧等)的普通关联单不 claim，由最终 RD 审查动作并把结果合入主单唯一聚合回复。CloudSpec 资源或文档源头缺口不得触发新关联单。
+**关联单 claim 规则**:指派给过载(484483)的普通 Terraform Provider 关联单或 I 的公开 docs 紧急兜底腿由内部链跟进。2169561 念依单与 Acube 临钧单不 claim；由最终 RD 审查动作并把结果合入主单唯一聚合回复。E 在 pre 前不建关联单，pre 收敛后只走 D-临钧。
 
 ## 自己交付(改自家应用)
 
@@ -269,12 +273,12 @@ options 为空，脚本会继续查询 field options API，并返回合法候选
 ## 反模式
 
 - ❌ 读单只看标题不读 description 末段"限制/差异/仍需" —— 常藏真实诉求
-- ❌ Terraform 相关工单不加载 `references/tf-customer-request-routing.md` —— 会漏专属维护名单与 CloudSpec 原主单自闭环，造成错误转单
+- ❌ Terraform 相关工单不加载 `references/tf-customer-request-routing.md` —— 会漏 I/E/D 精确分流
 - ❌ 命中 canned 且材料未齐仍进入正式路由/开发；只读安全查证只能补事实，不构成路由授权
-- ❌ CloudSpec schema/coverage 全绿就把文档问题路由到 Provider —— 文档源正确性必须单独验证，源错误先进入 E
-- ❌ CloudSpec 资源定义或文档源头缺口另建 Aone、改派个人或机器人 —— 新流程由 open-jarvis 在原主单内调用 CloudSpec skills + AMP CLI 自闭环；权限、AMP 登录、SSH 或仓库访问失败必须返回 `missing_capability` / `blocked`，不得回退其它身份或承接人
-- ❌ 只在 provider 侧仓库改 markdown 就当“文档已修复” —— TF provider docs 从 CloudSpec 资源文档自动生成；Provider PR 只能作为同一原主单里的紧急补丁，仍须修改 CloudSpec 源头、发布 pre 并验证 Meta 收敛
-- ❌ `amp publish pre` 成功就 `finish` 或宣称正式发布 —— pre 以下可自动，但 prod/online、master/main merge/push 与正式发布是人工硬门；完成 pre 后只能 `release/idle`，不得 finish
+- ❌ 把 text-only 文档 metadata 送进 E，或只建 528766 而漏建 I 的 2169561 念依主腿
+- ❌ 把结构 metadata 送进 I；字段集合、类型、约束或 CRUD 变化必须走 E
+- ❌ E pre 收敛后直接做 Provider PR/CI/ACC 或 release；必须先 E→D-临钧 Acube handoff
+- ❌ `amp publish pre` 成功就 `finish` 或宣称正式发布 —— prod/online、master/main 与正式发布仍是人工硬门
 - ❌ 用 next.api 网页 curl 拿 API meta —— SPA 拿不到 JSON,用 `aliyun <product> <Action> --help` 或 MCP `ListApis/GetApiDefinition`
 - ❌ 写操作跳过用户授权(supervised 模式) —— 每一步 comment/create/relation/status 都先给草稿等 yes
 - ❌ 非 Terraform 用 wrap.sh done 之前先手动 `a1 comment create`；Terraform 在 PD/RD/QA 阶段手动 comment —— 都会制造重复评论且 a1 无 delete

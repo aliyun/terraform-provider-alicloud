@@ -547,14 +547,35 @@ PD/QA 全程只读或执行内部验证，不得写 Aone、钉钉、MR/CR，不�
 2) Task 起 terraform-pd 做 triage；先调 aone-triage 完成查证与路由判断，路由写动作只提出给
    最终 RD，不自行执行。严格结构返回：
    {TERRAFORM_INTERNAL_RESULT_FIELDS}。
-3) 把 PD 返回完整交给 Task terraform-rd 做开发或 no-op 评估。需要开发时走 worktree；
-   GitHub 动作先过 github-identity.sh check；PR CI 用 gh pr checks 确认全绿才交 QA，红或 pending
-   由 RD 内部修复后复检。RD 同样按上述结构返回，不在此阶段回复 Aone。
-4) 把 PD+RD 返回完整交给 Task terraform-qa 做独立验收；远程 AccTest，只验不改，并按同一结构
-   返回。QA fail 时把缺陷草稿与证据内部退回 RD 修复，再重跑 QA；pass 才进入收口。blocked、
-   low_conf 或循环达到 JARVIS_PERSONA_MAX_ROUNDS 时进入最终 RD 升级收口，不产生阶段回复。
+   路由硬门：
+   - 分支 I 只指 CloudSpec 文档文本 metadata（description、字段解释、NOTE、枚举文案，不改变
+     字段集合/类型/约束/CRUD）。PD 提案创建或复用 2169561 指派念依；公开 Provider docs 也错时
+     另提独立 528766 紧急兜底腿，分池防重，一个池的 relation 不得抑制另一个池补建。
+   - 分支 E 只指 CloudSpec 结构 metadata。原主单用 CloudSpec skills + AMP 修到 pre Meta 收敛，
+     再强制 E → D-临钧；不创建 2165097。
+   - 普通分支 D 保持 Provider 开发、PR CI 和远程 ACC，不套用 E 的停点。
+3) 把 PD 返回完整交给 Task terraform-rd：
+   - I：no-op，不改 CloudSpec/Provider，不执行外部路由动作；
+   - E：只做到 CloudSpec build/check/publish pre 与 pre Meta 收敛，返回
+     `next=terraform-qa/cloudspec_pre_verify`；pre 未收敛不得触发 Acube；
+     不得由 E 直接执行 Provider PR/CI/ACC；
+   - 普通 D：需要开发时走 worktree；GitHub 动作先过 github-identity.sh check；PR CI 用
+     gh pr checks 确认全绿才交 QA，红或 pending 由 RD 内部修复后复检。
+   RD 同样按上述结构返回，不在此阶段回复 Aone。
+4) 把 PD+RD 返回完整交给 Task terraform-qa 做独立验收：
+   - E 使用 `verification_mode: cloudspec_pre`，只验 build/check/pre Meta 收敛，不运行远程
+     AccTest，也不得要求 Provider PR/CI/ACC；pass 返回
+     `next=terraform-rd-finalizer/pre_handoff`；
+   - I 只复核路由证据与分池防重提案，不外写；
+   - 普通 D 才运行远程 AccTest。
+   QA fail 时把缺陷草稿与证据内部退回 RD 修复，再重跑 QA。blocked、low_conf 或循环达到
+   JARVIS_PERSONA_MAX_ROUNDS 时进入最终 RD 升级收口，不产生阶段回复。
 5) 最后再 Task 起 terraform-rd 作为 finalizer：汇总全部结构化返回，审查允许的
-   requested_external_actions（关联需求/CR 等内部产物可建；MR/CR 已开则收集链接），起草一条
+   requested_external_actions。I 由 finalizer 的 single-writer 创建/复用 2169561，并在需要时
+   独立创建/复用 528766 兜底腿；E 仅在 QA `pre_handoff` 后执行 E → D-临钧：已有正确
+   relation/taskId/aoneId 时只查询/复用，否则通过 Acube `createBuildTaskV2` 自动创建或复用
+   528766 并指派临钧（429768）。不得在 E 完成后直接 release/idle，也不得把 E 转换泛化到
+   A/F/G/H/I、纯 datasource 或纯手写 Provider-only bug。MR/CR 已开则收集链接，并起草一条
    完整回复正文——结论、PD 查证、RD 改动及 MR/CR 链接、QA 证据、未决项/下一步。这段正文即下面
    AONE_RESULT 的 reply_body。有 PR 时无需手动登记看守：bridge 的 PR watch 会自动发现
    api-tool-agent 名下 open PR（分支编码工单号）并纳管全生命周期。bootstrap/log.sh run_done

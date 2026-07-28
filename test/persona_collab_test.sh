@@ -275,6 +275,7 @@ class HandoffParseTest(unittest.TestCase):
 
     def test_action_all_whitelisted_pass(self):
         for act in ("triage", "dev", "review", "acc_verify",
+                    "cloudspec_pre_verify", "pre_handoff",
                     "acceptance", "respond", "report"):
             text = ('[[PERSONA-HANDOFF:{"to":"terraform-rd","action":"%s","round":1}]]'
                     % act)
