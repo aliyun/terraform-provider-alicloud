@@ -4,29 +4,67 @@ on:
     branches:
       - master
   pull_request:
-    pull_request_target:
-      types:
-        - opened
-      paths:
-        - .github/workflows/testing-coverage-rate.yml
-        - .go-version
-        - alicloud/*.go
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+    branches:
+      - master
+    paths:
+      - .github/workflows/testing-coverage-rate.yml
+      - .go-version
+      - alicloud/*.go
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
+  route:
+    permissions:
+      checks: read
+      pull-requests: read
+    runs-on: terraform-ci-policy
+    timeout-minutes: 3
+    outputs:
+      runner: ${{ steps.select.outputs.runner }}
+    steps:
+      - name: Select runner
+        id: select
+        uses: aliyun/terraform-provider-alicloud/.github/actions/terraform-ci-select-policy@1c4bb6762031f53732611700cad5d71d1ec84dfe
+
   TestingCoverageRate:
-    runs-on: ubuntu-latest
+    needs: route
+    runs-on: ${{ fromJSON(needs.route.outputs.runner) }}
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Check out event commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          fetch-depth: 2
       - name: Setup Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: '1.25.x'
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 2
+          go-version-file: .go-version
+          cache: false
       - name: Checking testing coverage rate
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
-          git diff HEAD^ HEAD > diff.out
+          base_sha="HEAD^"
+          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+            if ! git cat-file -e "${PR_BASE_SHA}^{commit}" 2>/dev/null; then
+              git fetch --no-tags --depth=1 \
+                "https://github.com/${GITHUB_REPOSITORY}.git" "$PR_BASE_SHA"
+            fi
+            base_sha="$PR_BASE_SHA"
+          fi
+          git diff "$base_sha" HEAD > diff.out
           go run scripts/testing/testing_coverage_rate_check.go -fileNames="diff.out"
