@@ -27,13 +27,19 @@ def _pid_is_running(pid):
 
 
 class _FakeComponent:
-    def __init__(self, spec, *, events, generation, stop_event=None):
+    def __init__(
+            self, spec, *, events, generation, stop_event=None,
+            graceful=True, wait_delay=0.0, exit_status=0):
         self.spec = spec
         self.events = events
         self.generation = generation
         self.stop_event = stop_event
         self.pid = generation
         self.alive = True
+        self.graceful = graceful
+        self.wait_delay = wait_delay
+        self.exit_status = exit_status
+        self.returncode = None
 
     def start(self, *, adopt=False):
         self.events.append(("start", self.spec.name, self.generation, adopt))
@@ -52,9 +58,29 @@ class _FakeComponent:
             self.alive = False
         return self.alive
 
-    def stop(self):
-        self.events.append(("stop", self.spec.name, self.generation))
+    def request_stop(self):
+        self.events.append(("request-stop", self.spec.name, self.generation))
+        if self.graceful:
+            self.alive = False
+            self.returncode = self.exit_status
+
+    def wait(self, timeout):
+        self.events.append(("wait", self.spec.name, timeout))
+        if self.alive and self.wait_delay:
+            time.sleep(min(self.wait_delay, timeout))
+        return not self.alive
+
+    def force_stop(self):
+        self.events.append(("force-stop", self.spec.name, self.generation))
         self.alive = False
+        self.returncode = -9
+
+    def stop(self, timeout=5.0):
+        self.request_stop()
+        if self.wait(timeout):
+            return True
+        self.force_stop()
+        return self.wait(2.0)
 
 
 class BridgeSupervisorTest(unittest.TestCase):
@@ -260,7 +286,7 @@ class BridgeSupervisorTest(unittest.TestCase):
             self.assertEqual(supervisor.run(), 0)
 
         scheduler_restart = events.index(("start", "scheduler", 2, False))
-        worker_stop = events.index(("stop", "persistent-worker", 1))
+        worker_stop = events.index(("request-stop", "persistent-worker", 1))
         self.assertLess(scheduler_restart, worker_stop)
         self.assertEqual(generations["persistent-worker"], 1)
 
@@ -295,14 +321,14 @@ class BridgeSupervisorTest(unittest.TestCase):
 
         self.assertLess(
             events.index(("supervisor-ready",)),
-            events.index(("stop", "persistent-worker", 1)),
+            events.index(("request-stop", "persistent-worker", 1)),
         )
         self.assertFalse(any(
             event[0] == "start" and event[1] == "dingtalk-bot"
             for event in events
         ))
 
-    def test_full_stop_quiesces_scheduler_first_and_worker_last(self):
+    def test_full_stop_quiesces_every_component_before_waiting(self):
         events = []
         generations = {}
 
@@ -321,11 +347,101 @@ class BridgeSupervisorTest(unittest.TestCase):
                 supervisor.components[spec.name] = component
             supervisor._shutdown()
 
-        stops = [event[1] for event in events if event[0] == "stop"]
+        stops = [event[1] for event in events if event[0] == "request-stop"]
         self.assertEqual(
             stops, ["scheduler", "dingtalk-bot", "persistent-worker"])
+        first_wait = next(
+            index for index, event in enumerate(events) if event[0] == "wait")
+        self.assertTrue(all(
+            index < first_wait
+            for index, event in enumerate(events)
+            if event[0] == "request-stop"
+        ))
 
-    def test_controlled_restart_preserves_worker_and_consumes_marker(self):
+    def test_shutdown_uses_one_shared_deadline_and_force_stops_survivors(self):
+        events = []
+
+        def factory(spec, **_kwargs):
+            return _FakeComponent(
+                spec,
+                events=events,
+                generation=1,
+                graceful=False,
+                wait_delay=0.02,
+            )
+
+        with tempfile.TemporaryDirectory() as temp_dir, mock.patch(
+                "bridge.scheduler.scheduler.validate"):
+            env = self._env(Path(temp_dir))
+            env["JARVIS_BRIDGE_STOP_WAIT"] = "0.03"
+            env["JARVIS_SCHEDULER_DRAIN_TIMEOUT_SECONDS"] = "0.03"
+            supervisor = main.BridgeSupervisor(
+                environ=env,
+                component_factory=factory,
+            )
+            self.assertEqual(supervisor.shutdown_timeout, 0.03)
+            self.assertEqual(supervisor.shutdown_grace_timeout, 0.0)
+            self.assertEqual(supervisor.shutdown_force_timeout, 0.03)
+            for spec in supervisor.specs:
+                supervisor.components[spec.name] = factory(spec)
+            started = time.monotonic()
+            self.assertFalse(supervisor._shutdown())
+            elapsed = time.monotonic() - started
+
+        self.assertLess(elapsed, 0.09, "deadline must not multiply per component")
+        requests = [
+            index for index, event in enumerate(events)
+            if event[0] == "request-stop"
+        ]
+        waits = [
+            index for index, event in enumerate(events)
+            if event[0] == "wait"
+        ]
+        self.assertLess(max(requests), min(waits))
+        self.assertEqual(
+            [event[1] for event in events if event[0] == "force-stop"],
+            ["scheduler", "dingtalk-bot", "persistent-worker"],
+        )
+
+    def test_default_shutdown_budget_reserves_force_reap_inside_30_seconds(self):
+        with tempfile.TemporaryDirectory() as temp_dir, mock.patch(
+                "bridge.scheduler.scheduler.validate"):
+            supervisor = main.BridgeSupervisor(
+                environ=self._env(Path(temp_dir)),
+            )
+
+        self.assertEqual(supervisor.shutdown_timeout, 30.0)
+        self.assertEqual(supervisor.shutdown_grace_timeout, 28.0)
+        self.assertEqual(supervisor.shutdown_force_timeout, 2.0)
+
+    def test_worker_handoff_failure_is_not_silently_reported_as_clean_shutdown(self):
+        events = []
+
+        def factory(spec, **_kwargs):
+            return _FakeComponent(
+                spec,
+                events=events,
+                generation=1,
+                exit_status=1 if spec is main.PERSISTENT_WORKER else 0,
+            )
+
+        with tempfile.TemporaryDirectory() as temp_dir, mock.patch(
+                "bridge.scheduler.scheduler.validate"), self.assertLogs(
+                    "jarvis-bridge-supervisor", level="WARNING") as logs:
+            supervisor = main.BridgeSupervisor(
+                environ=self._env(Path(temp_dir)),
+                component_factory=factory,
+            )
+            for spec in supervisor.specs:
+                supervisor.components[spec.name] = factory(spec)
+            self.assertFalse(supervisor._shutdown())
+
+        self.assertIn(
+            "persistent-worker shutdown reported exit status 1",
+            "\n".join(logs.output),
+        )
+
+    def test_legacy_restart_marker_does_not_preserve_worker(self):
         events = []
 
         def factory(spec, **_kwargs):
@@ -345,30 +461,7 @@ class BridgeSupervisorTest(unittest.TestCase):
             supervisor._shutdown()
             self.assertFalse(marker.exists())
 
-        stops = [event[1] for event in events if event[0] == "stop"]
-        self.assertEqual(stops, ["scheduler", "dingtalk-bot"])
-
-    def test_stale_restart_marker_is_consumed_without_preserving_worker(self):
-        events = []
-
-        def factory(spec, **_kwargs):
-            return _FakeComponent(spec, events=events, generation=1)
-
-        with tempfile.TemporaryDirectory() as temp_dir, mock.patch(
-                "bridge.scheduler.scheduler.validate"):
-            state_dir = Path(temp_dir)
-            supervisor = main.BridgeSupervisor(
-                environ=self._env(state_dir),
-                component_factory=factory,
-            )
-            for spec in supervisor.specs:
-                supervisor.components[spec.name] = factory(spec)
-            marker = state_dir / "preserve-persistent-worker-once"
-            marker.write_text("not-this-supervisor\n", encoding="utf-8")
-            supervisor._shutdown()
-            self.assertFalse(marker.exists())
-
-        stops = [event[1] for event in events if event[0] == "stop"]
+        stops = [event[1] for event in events if event[0] == "request-stop"]
         self.assertEqual(
             stops, ["scheduler", "dingtalk-bot", "persistent-worker"])
 

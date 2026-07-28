@@ -9,9 +9,9 @@
 #   · 模式判定: 有 DINGTALK_APP_KEY/SECRET → 全功能; 缺 → 自动 JARVIS_NO_DINGTALK=1 降级点火
 #     (自动派发+各调度器照常, 卡片/播报落 bot.log; 配好凭证后 run.sh restart 即回全功能)。
 #   · nohup 守护 + 写 pidfile, 启动后自检(进程仍活 + 日志首行非 ERROR), 失败退非零并打印日志尾。
-# stop 优雅停止: 发 SIGTERM → bot 自身 SIGTERM handler 收尾在跑 worker 并 release
-#   其已认领工单；scheduler 角色会先 drain 已准入 Job，再停止执行器；drain 超时
-#   则拒绝替换，避免打断已准入的周期任务。
+# stop/restart: 发 SIGTERM 后 Scheduler、Bot、Persistent Worker 同时停止接收新工作，
+#   共享最多 30 秒完成 drain/relinquish；超时则只清理 supervisor 精确管理的 PID。
+#   restart 一旦开始停旧实例就一定完成替换，不会留下半关闭实例后声称取消。
 #
 # 依赖 F 线 JARVIS_NO_DINGTALK(bridge 降级模式, 分支 worktree-f3-nodingtalk / MR-4)。若该能力
 # 尚未合并, 缺凭证时旧 bot 会忽略 flag、因缺凭证退 2 —— 本脚本的启动自检会如实报错并提示先合 MR-4。
@@ -19,7 +19,8 @@
 # 可覆盖(测试/部署): JARVIS_BRIDGE_PYTHON(默认 python3) JARVIS_BRIDGE_BOT(默认本目录 bot)
 #   JARVIS_BRIDGE_STATE_DIR(默认 <repo>/.my-day/bridge) JARVIS_BRIDGE_BOOTSTRAP_ENV
 #   JARVIS_BRIDGE_ENV JARVIS_BRIDGE_START_WAIT(默认 2s)
-#   JARVIS_BRIDGE_STOP_WAIT / JARVIS_STOP_GRACE (默认 30s)。
+#   JARVIS_BRIDGE_STOP_WAIT / JARVIS_STOP_GRACE (普通 stop，默认 30s)，
+#   JARVIS_SCHEDULER_DRAIN_TIMEOUT_SECONDS (受控 restart/替换，默认 30s)。
 #   JARVIS_BRIDGE_SUPERVISOR=launchd 时 start/stop/restart/status 委托给 launchctl；可覆盖
 #   JARVIS_BRIDGE_LAUNCHCTL、JARVIS_BRIDGE_LAUNCHD_LABEL/DOMAIN/PLIST（测试/定制安装）。
 set -uo pipefail
@@ -46,8 +47,7 @@ BOOTSTRAP_ENV="${JARVIS_BRIDGE_BOOTSTRAP_ENV:-$REPO_ROOT/bootstrap/.env}"
 BRIDGE_ENV="${JARVIS_BRIDGE_ENV:-$SCRIPT_DIR/jarvis.env}"
 START_WAIT="${JARVIS_BRIDGE_START_WAIT:-2}"
 SCHEDULER_READY_WAIT="${JARVIS_SCHEDULER_READY_WAIT:-30}"
-SCHEDULER_DRAIN_WAIT="${JARVIS_SCHEDULER_DRAIN_TIMEOUT_SECONDS:-600}"
-PRESERVE_PERSISTENT_WORKER_ONCE="$STATE_DIR/preserve-persistent-worker-once"
+SCHEDULER_DRAIN_WAIT="${JARVIS_SCHEDULER_DRAIN_TIMEOUT_SECONDS:-30}"
 say()  { printf '%s\n' "$*"; }
 err()  { printf '%s\n' "$*" >&2; }
 
@@ -67,6 +67,79 @@ _running_pidfile() {
   return 1
 }
 _running_pid() { _running_pidfile "$PIDFILE"; }
+
+_managed_child_snapshot() { # $1 = supervisor pid
+  local parent_pid="$1" pidfile pid ppid
+  for pidfile in \
+      "$STATE_DIR/scheduler.pid" \
+      "$STATE_DIR/dingtalk-bot.pid" \
+      "$STATE_DIR/persistent-worker.pid"; do
+    pid="$(_read_pidfile "$pidfile" 2>/dev/null || true)"
+    [ -n "$pid" ] && _alive "$pid" || continue
+    ppid="$(ps -o ppid= -p "$pid" 2>/dev/null | tr -d ' ')"
+    [ "$ppid" = "$parent_pid" ] || continue
+    printf '%s:%s:%s\n' "$pidfile" "$pid" "$parent_pid"
+  done
+}
+
+_snapshot_entry_owned() { # $1 = pidfile:pid:original-parent
+  local entry="$1" rest current ppid
+  SNAPSHOT_PARENT="${entry##*:}"
+  rest="${entry%:*}"
+  SNAPSHOT_PID="${rest##*:}"
+  SNAPSHOT_PIDFILE="${rest%:*}"
+  current="$(_read_pidfile "$SNAPSHOT_PIDFILE" 2>/dev/null || true)"
+  [ "$current" = "$SNAPSHOT_PID" ] && _alive "$SNAPSHOT_PID" || return 1
+  ppid="$(ps -o ppid= -p "$SNAPSHOT_PID" 2>/dev/null | tr -d ' ')"
+  [ "$ppid" = "$SNAPSHOT_PARENT" ]
+}
+
+_force_managed_snapshot() { # $1 = newline-separated pidfile:pid:parent entries
+  local snapshot="$1" entry current i=0 any_alive unresolved
+  [ -n "$snapshot" ] || return 0
+  while IFS= read -r entry; do
+    [ -n "$entry" ] || continue
+    # Re-check both the pidfile value and original supervisor ownership. If the
+    # process was reparented or its PID was reused, it is no longer safe for
+    # this lifecycle command to kill.
+    _snapshot_entry_owned "$entry" || continue
+    kill -KILL "$SNAPSHOT_PID" 2>/dev/null || true
+  done <<EOF
+$snapshot
+EOF
+  while [ "$i" -lt 20 ]; do
+    any_alive=0
+    unresolved=0
+    while IFS= read -r entry; do
+      [ -n "$entry" ] || continue
+      SNAPSHOT_PARENT="${entry##*:}"
+      entry="${entry%:*}"
+      SNAPSHOT_PID="${entry##*:}"
+      SNAPSHOT_PIDFILE="${entry%:*}"
+      current="$(_read_pidfile "$SNAPSHOT_PIDFILE" 2>/dev/null || true)"
+      if [ "$current" != "$SNAPSHOT_PID" ]; then
+        continue
+      elif ! _alive "$SNAPSHOT_PID"; then
+        _remove_pidfile_if_matches "$SNAPSHOT_PIDFILE" "$SNAPSHOT_PID"
+      elif _snapshot_entry_owned \
+          "$SNAPSHOT_PIDFILE:$SNAPSHOT_PID:$SNAPSHOT_PARENT"; then
+        any_alive=1
+      else
+        # The PID is still live and still named by the pidfile, but is no
+        # longer owned by the original supervisor. Refuse to kill it and make
+        # the caller fail closed instead of claiming cleanup completed.
+        unresolved=1
+      fi
+    done <<EOF
+$snapshot
+EOF
+    [ "$unresolved" -eq 1 ] && return 1
+    [ "$any_alive" -eq 0 ] && return 0
+    sleep 0.1
+    i=$((i + 1))
+  done
+  return 1
+}
 
 _unmanaged_bot_pids() {
   # A manually launched bridge has no pidfile, so blindly starting another
@@ -125,9 +198,13 @@ _rollback_started_process() { # $1 = pid, $2 = pidfile, $3 = label
 }
 
 _bridge_ready_in_log() { # $1 = launchd-owned pid
-  local pid="$1"
-  [ -f "$LOG" ] || return 1
-  grep -F "Bridge READY pid=$pid role=supervisor" "$LOG" >/dev/null 2>&1
+  local pid="$1" launchd_log
+  launchd_log="${JARVIS_BRIDGE_LOG:-$STATE_DIR/bot.log}"
+  grep -F "Bridge READY pid=$pid role=supervisor" "$LOG" \
+      >/dev/null 2>&1 && return 0
+  [ "$launchd_log" != "$LOG" ] || return 1
+  grep -F "Bridge READY pid=$pid role=supervisor" "$launchd_log" \
+      >/dev/null 2>&1
 }
 
 # -- role-aware paths (call AFTER _source_env; env files may set JARVIS_BRIDGE_ROLE) --
@@ -181,7 +258,6 @@ _component_config() {
       COMPONENT_READY="Bridge READY"
       COMPONENT_READY_WAIT="$SCHEDULER_READY_WAIT"
       COMPONENT_STOP_WAIT="$SCHEDULER_DRAIN_WAIT"
-      COMPONENT_TIMEOUT_POLICY="preserve"
       COMPONENT_VALIDATE="_bridge_validate"
       ;;
     *)
@@ -249,8 +325,10 @@ _component_start() {
 }
 
 _component_stop() {
-  local name="$1" pid i=0 deadline
+  local name="$1" requested_wait="${2:-}" pid i=0 deadline stop_wait
+  local managed_children="" child_cleanup_ok=1
   _component_config "$name" || return $?
+  stop_wait="${requested_wait:-$COMPONENT_STOP_WAIT}"
   pid="$(_read_pidfile "$COMPONENT_PIDFILE")" \
     || { say "$COMPONENT_LABEL 未在运行"; return 0; }
   if ! _alive "$pid"; then
@@ -258,26 +336,47 @@ _component_stop() {
     say "$COMPONENT_LABEL 已停止"
     return 0
   fi
-  deadline=$(( COMPONENT_STOP_WAIT * 10 ))
-  say "停止 $COMPONENT_LABEL (pid $pid): 发 SIGTERM，宽限 ${COMPONENT_STOP_WAIT}s…"
+  deadline=$(( stop_wait * 10 ))
+  say "停止 $COMPONENT_LABEL (pid $pid): 发 SIGTERM，宽限 ${stop_wait}s…"
+  if [ "$name" = "supervisor" ]; then
+    managed_children="$(_managed_child_snapshot "$pid")"
+  fi
   kill -TERM "$pid" 2>/dev/null || true
   while [ "$i" -lt "$deadline" ] && _alive "$pid"; do
     sleep 0.1
     i=$((i + 1))
   done
   if _alive "$pid"; then
-    if [ "$COMPONENT_TIMEOUT_POLICY" = "preserve" ]; then
-      err "$COMPONENT_LABEL 在 ${COMPONENT_STOP_WAIT}s 内未停止；保持进程以保护在途工作。"
+    say "TERM ${stop_wait}s 未退 → SIGKILL 兜底；未完成 Session 由 lease recovery 收敛。"
+    # Best effort before stopping the parent. A killed child may remain a
+    # zombie until the supervisor is reaped, so only the post-parent check
+    # below is authoritative.
+    _force_managed_snapshot "$managed_children" || true
+    kill -KILL "$pid" 2>/dev/null || true
+    i=0
+    while [ "$i" -lt 20 ] && _alive "$pid"; do
+      sleep 0.1
+      i=$((i + 1))
+    done
+    if _alive "$pid"; then
+      err "$COMPONENT_LABEL 强制终止失败: pid $pid 仍在运行"
       return 1
     fi
-    say "TERM ${COMPONENT_STOP_WAIT}s 未退 → SIGKILL 兜底(清理由 reconcile 收敛)。"
-    kill -KILL "$pid" 2>/dev/null || true
-    sleep 0.2
-    rm -f "$COMPONENT_PIDFILE"
+    _remove_pidfile_if_matches "$COMPONENT_PIDFILE" "$pid"
+    child_cleanup_ok=1
+    _force_managed_snapshot "$managed_children" || child_cleanup_ok=0
+    if [ "$child_cleanup_ok" -ne 1 ]; then
+      err "$COMPONENT_LABEL 已退出，但仍有受管子进程未停止"
+      return 1
+    fi
     say "$COMPONENT_LABEL 已停止 (forced)。"
     return 0
   fi
-  rm -f "$COMPONENT_PIDFILE"
+  _remove_pidfile_if_matches "$COMPONENT_PIDFILE" "$pid"
+  _force_managed_snapshot "$managed_children" || {
+    err "$COMPONENT_LABEL 已退出，但仍有受管子进程未停止"
+    return 1
+  }
   say "$COMPONENT_LABEL 已停止 (graceful)。"
 }
 
@@ -303,7 +402,7 @@ _source_env() {
   jarvis_load_runtime_config || return $?
   START_WAIT="${JARVIS_BRIDGE_START_WAIT:-2}"
   SCHEDULER_READY_WAIT="${JARVIS_SCHEDULER_READY_WAIT:-30}"
-  SCHEDULER_DRAIN_WAIT="${JARVIS_SCHEDULER_DRAIN_TIMEOUT_SECONDS:-600}"
+  SCHEDULER_DRAIN_WAIT="${JARVIS_SCHEDULER_DRAIN_TIMEOUT_SECONDS:-30}"
   # Non-interactive SSH/launch shells on macOS commonly omit both the user-local
   # installer directory (a1) and Homebrew (claude). Normalize the standard tool
   # locations before spawning the daemon so registration implies an executable
@@ -425,10 +524,55 @@ cmd_launchd_start() {
 }
 
 cmd_launchd_stop() {
+  local detail old_pid="" i=0 stop_wait deadline managed_children="" child_cleanup_ok=1
   _launchd_require || return 1
   if ! _launchd_loaded; then
     say "bridge 未由 launchd 加载 ($LAUNCHD_SERVICE)。"
     return 0
+  fi
+  detail="$("$LAUNCHCTL_BIN" print "$LAUNCHD_SERVICE" 2>/dev/null || true)"
+  old_pid="$(printf '%s\n' "$detail" \
+    | sed -n 's/^[[:space:]]*pid = //p' | head -n1)"
+  [ -n "$old_pid" ] && managed_children="$(_managed_child_snapshot "$old_pid")"
+  stop_wait="$(_bridge_stop_wait)"
+  "$LAUNCHCTL_BIN" disable "$LAUNCHD_SERVICE" >/dev/null 2>&1 || {
+    err "launchd stop 失败: 无法禁用 KeepAlive ($LAUNCHD_SERVICE)"
+    return 1
+  }
+  if [ -n "$old_pid" ]; then
+    "$LAUNCHCTL_BIN" kill SIGTERM "$LAUNCHD_SERVICE" || {
+      err "launchd stop 失败: 无法请求 bridge 优雅停止"
+      return 1
+    }
+    deadline=$(( stop_wait * 10 ))
+    while [ "$i" -lt "$deadline" ] && _alive "$old_pid"; do
+      sleep 0.1
+      i=$((i + 1))
+    done
+    if _alive "$old_pid"; then
+      say "bridge 在 ${stop_wait}s 内未退 → launchd SIGKILL 兜底。"
+      # Best effort before stopping the parent. A killed child may remain a
+      # zombie until the supervisor is reaped, so only the post-parent check
+      # below is authoritative.
+      _force_managed_snapshot "$managed_children" || true
+      "$LAUNCHCTL_BIN" kill SIGKILL "$LAUNCHD_SERVICE" >/dev/null 2>&1 || \
+        kill -KILL "$old_pid" 2>/dev/null || true
+      i=0
+      while [ "$i" -lt 20 ] && _alive "$old_pid"; do
+        sleep 0.1
+        i=$((i + 1))
+      done
+      if _alive "$old_pid"; then
+        err "launchd stop 失败: 旧 bridge pid $old_pid 仍在运行"
+        return 1
+      fi
+    fi
+    child_cleanup_ok=1
+    _force_managed_snapshot "$managed_children" || child_cleanup_ok=0
+    if [ "$child_cleanup_ok" -ne 1 ]; then
+      err "launchd stop 拒绝清理 ownership 已变化的受管 PID"
+      return 1
+    fi
   fi
   "$LAUNCHCTL_BIN" bootout "$LAUNCHD_SERVICE" || {
     err "launchd bootout 失败: $LAUNCHD_SERVICE"
@@ -441,67 +585,96 @@ cmd_launchd_restart() {
   _launchd_require || return 1
   # Match the local restart and installer safety boundary: provision/validate
   # the replacement before disabling KeepAlive or signaling the current
-  # Scheduler. A dependency or registry failure must leave the loaded service
-  # and its leased Persistent Worker untouched.
+  # bridge. A dependency or registry failure must leave the loaded service
+  # untouched.
   _bridge_validate || return $?
   if ! _launchd_loaded; then
     cmd_launchd_start
     return
   fi
 
-  # The launchd daemon owns the Bot and standalone Scheduler. Replace those
-  # together while the PID-bound marker keeps the independent Persistent Worker
-  # alive across the planned restart.
-  local detail old_pid="" i=0 stop_wait preserve_worker=0
+  # The launchd daemon owns Scheduler, Bot, and Persistent Worker. Stop the
+  # complete daemon and wait for Session relinquish before starting its
+  # replacement.
+  local detail old_pid="" new_pid="" i=0 stop_wait deadline managed_children=""
+  local child_cleanup_ok=1
   detail="$("$LAUNCHCTL_BIN" print "$LAUNCHD_SERVICE" 2>/dev/null || true)"
   old_pid="$(printf '%s\n' "$detail" \
     | sed -n 's/^[[:space:]]*pid = //p' | head -n1)"
+  [ -n "$old_pid" ] && managed_children="$(_managed_child_snapshot "$old_pid")"
   stop_wait="$SCHEDULER_DRAIN_WAIT"
-  if [ "${JARVIS_BRIDGE_ROLE:-scheduler}" = "scheduler" ] && [ -n "$old_pid" ]; then
-    # The foreground daemon owns bot+scheduler+worker. A planned restart must
-    # replace only bot+scheduler so leased Task Sessions retain their worker
-    # process/fence. Bind the one-shot marker to the exact daemon PID so a
-    # stale file can never weaken a later full stop.
-    mkdir -p "$STATE_DIR"
-    printf '%s\n' "$old_pid" >"$PRESERVE_PERSISTENT_WORKER_ONCE"
-    preserve_worker=1
-  fi
   "$LAUNCHCTL_BIN" disable "$LAUNCHD_SERVICE" >/dev/null 2>&1 || {
-    [ "$preserve_worker" -eq 1 ] && rm -f "$PRESERVE_PERSISTENT_WORKER_ONCE"
     err "launchd restart 失败: 无法禁用 KeepAlive ($LAUNCHD_SERVICE)"
     return 1
   }
+  LAUNCHD_REENABLE_REQUIRED=1
+  _launchd_restart_reenable() {
+    if [ "${LAUNCHD_REENABLE_REQUIRED:-0}" -eq 1 ]; then
+      "$LAUNCHCTL_BIN" enable "$LAUNCHD_SERVICE" >/dev/null 2>&1 || true
+    fi
+  }
+  trap '_launchd_restart_reenable' EXIT
+  trap '_launchd_restart_reenable; exit 130' HUP INT TERM
   if [ -n "$old_pid" ]; then
     "$LAUNCHCTL_BIN" kill SIGTERM "$LAUNCHD_SERVICE" || {
-      [ "$preserve_worker" -eq 1 ] && rm -f "$PRESERVE_PERSISTENT_WORKER_ONCE"
-      "$LAUNCHCTL_BIN" enable "$LAUNCHD_SERVICE" >/dev/null 2>&1 || true
-      err "launchd restart 失败: 无法请求旧 bridge 优雅停止"
-      return 1
+      err "launchd restart 警告: SIGTERM 请求失败，继续强制收敛旧 pid $old_pid"
     }
-    local deadline=$(( stop_wait * 10 ))
+    deadline=$(( stop_wait * 10 ))
     while [ "$i" -lt "$deadline" ] && _alive "$old_pid"; do
       sleep 0.1
       i=$((i + 1))
     done
     if _alive "$old_pid"; then
-      [ "$preserve_worker" -eq 1 ] && rm -f "$PRESERVE_PERSISTENT_WORKER_ONCE"
-      "$LAUNCHCTL_BIN" enable "$LAUNCHD_SERVICE" >/dev/null 2>&1 || true
-      err "bridge 在 ${stop_wait}s 内未停止；本次 restart 已取消。"
+      say "bridge 在 ${stop_wait}s 内未退 → launchd SIGKILL 兜底后继续替换。"
+      # Best effort before stopping the parent. A killed child may remain a
+      # zombie until the supervisor is reaped, so only the post-parent check
+      # below is authoritative.
+      _force_managed_snapshot "$managed_children" || true
+      "$LAUNCHCTL_BIN" kill SIGKILL "$LAUNCHD_SERVICE" >/dev/null 2>&1 || \
+        kill -KILL "$old_pid" 2>/dev/null || true
+      i=0
+      while [ "$i" -lt 20 ] && _alive "$old_pid"; do
+        sleep 0.1
+        i=$((i + 1))
+      done
+      if _alive "$old_pid"; then
+        err "launchd restart 失败: 旧 bridge pid $old_pid 无法终止"
+        return 1
+      fi
+    fi
+    child_cleanup_ok=1
+    _force_managed_snapshot "$managed_children" || child_cleanup_ok=0
+    if [ "$child_cleanup_ok" -ne 1 ]; then
+      err "launchd restart 拒绝清理 ownership 已变化的受管 PID"
       return 1
     fi
   fi
-  # The old daemon normally consumes the marker in its TERM handler. If it
-  # exited before doing so, remove the stale PID-bound marker now.
-  [ "$preserve_worker" -eq 1 ] && rm -f "$PRESERVE_PERSISTENT_WORKER_ONCE"
   "$LAUNCHCTL_BIN" enable "$LAUNCHD_SERVICE" >/dev/null 2>&1 || {
     err "launchd restart 失败: 无法重新启用 $LAUNCHD_SERVICE"
     return 1
   }
+  LAUNCHD_REENABLE_REQUIRED=0
+  trap - EXIT HUP INT TERM
   "$LAUNCHCTL_BIN" kickstart "$LAUNCHD_SERVICE" || {
     err "launchd restart 失败: $LAUNCHD_SERVICE"
     return 1
   }
-  say "bridge 已重启 ($LAUNCHD_SERVICE)。"
+  deadline=$(( SCHEDULER_READY_WAIT * 10 ))
+  i=0
+  while [ "$i" -lt "$deadline" ]; do
+    detail="$("$LAUNCHCTL_BIN" print "$LAUNCHD_SERVICE" 2>/dev/null || true)"
+    new_pid="$(printf '%s\n' "$detail" \
+      | sed -n 's/^[[:space:]]*pid = //p' | head -n1)"
+    if [ -n "$new_pid" ] && [ "$new_pid" != "$old_pid" ] \
+        && _alive "$new_pid" && _bridge_ready_in_log "$new_pid"; then
+      say "bridge 已重启 ($LAUNCHD_SERVICE, pid $new_pid)。"
+      return 0
+    fi
+    sleep 0.1
+    i=$((i + 1))
+  done
+  err "launchd restart 失败: 替代 bridge 未在 ${SCHEDULER_READY_WAIT}s 内 READY"
+  return 1
 }
 
 cmd_launchd_status() {
@@ -815,28 +988,19 @@ cmd_stop() {
   mkdir -p "$STATE_DIR" 2>/dev/null || true
   touch "$PIDFILE.manual-stop" 2>/dev/null || true
   for component in $(_role_components stop); do
-    _component_stop "$component" || return $?
+    _component_stop "$component" "$(_bridge_stop_wait)" || return $?
   done
 }
 
 cmd_restart() {
-  local pid="" preserve_worker=0
   _component_config supervisor || return $?
   # Validate/provision the replacement before quiescing the current Scheduler
-  # and Bot. A missing PyYAML or invalid registry must leave the old service
-  # untouched.
+  # Bot, and Worker. A missing PyYAML or invalid registry must leave the old
+  # service untouched.
   _bridge_validate || return $?
-  pid="$(_running_pidfile "$COMPONENT_PIDFILE" 2>/dev/null || true)"
-  if _scheduler_enabled && [ -n "$pid" ]; then
-    mkdir -p "$STATE_DIR"
-    printf '%s\n' "$pid" >"$PRESERVE_PERSISTENT_WORKER_ONCE"
-    preserve_worker=1
-  fi
-  if ! _component_stop supervisor; then
-    [ "$preserve_worker" -eq 1 ] && rm -f "$PRESERVE_PERSISTENT_WORKER_ONCE"
+  if ! _component_stop supervisor "$SCHEDULER_DRAIN_WAIT"; then
     return 1
   fi
-  [ "$preserve_worker" -eq 1 ] && rm -f "$PRESERVE_PERSISTENT_WORKER_ONCE"
   cmd_start
 }
 

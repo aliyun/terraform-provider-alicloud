@@ -19,7 +19,11 @@ import threading
 import time
 from typing import Any, Callable, Mapping, Optional, Sequence
 
-from bridge.process_group_runner import terminate_process_group
+from bridge.process_group_runner import (
+    _signal_process_group,
+    _wait_group_empty,
+    terminate_process_group,
+)
 from bridge.process_identity import (
     pid_exists as _pid_exists,
     process_command as _process_command,
@@ -111,6 +115,7 @@ class SubprocessComponent:
         self.process_group_id: Optional[int] = None
         self.process_start_identity: Optional[str] = None
         self.external_pid: Optional[int] = None
+        self._returncode: Optional[int] = None
         self.ready = threading.Event()
         self._pump: Optional[threading.Thread] = None
 
@@ -138,6 +143,7 @@ class SubprocessComponent:
         raise RuntimeError(message)
 
     def start(self, *, adopt: bool = False) -> None:
+        self._returncode = None
         if adopt:
             pid = self._read_live_pid()
             if pid is not None:
@@ -346,7 +352,7 @@ class SubprocessComponent:
                     "JARVIS_BRIDGE_STOP_WAIT",
                     self.environ.get(
                         "JARVIS_STOP_GRACE",
-                        self.environ.get("JARVIS_SCHEDULER_DRAIN_TIMEOUT", "600"),
+                        self.environ.get("JARVIS_SCHEDULER_DRAIN_TIMEOUT", "30"),
                     ),
                 ),
             )
@@ -359,7 +365,33 @@ class SubprocessComponent:
             )
         return max(0.0, float(value))
 
-    def stop(self) -> None:
+    def _remove_pidfile_if_owned(self, pid: int) -> None:
+        try:
+            current = int(self.pidfile.read_text(encoding="utf-8").strip())
+        except (OSError, ValueError):
+            return
+        if current == pid:
+            self.pidfile.unlink(missing_ok=True)
+            self.identity_file.unlink(missing_ok=True)
+
+    def _finalize_stopped(self, pid: Optional[int]) -> None:
+        if self.process is not None:
+            self.process.wait()
+            self._returncode = self.process.returncode
+        if pid is not None:
+            self._remove_pidfile_if_owned(pid)
+        if self._pump is not None:
+            self._pump.join(timeout=1.0)
+        if self.process is not None and self.process.stdout is not None:
+            self.process.stdout.close()
+        self.process = None
+        self.process_group_id = None
+        self.process_start_identity = None
+        self.external_pid = None
+        self._pump = None
+        self.ready.clear()
+
+    def request_stop(self) -> None:
         pid = self.pid
         pgid = self.process_group_id
         if pid is None and pgid is None:
@@ -369,25 +401,7 @@ class SubprocessComponent:
 
         if pgid is not None:
             self._verify_group_owner_before_signal(pgid)
-            kill_grace = max(
-                0.0,
-                float(self.environ.get(
-                    "JARVIS_BRIDGE_COMPONENT_KILL_GRACE", "2")),
-            )
-            drained = terminate_process_group(
-                self.process,
-                pgid=pgid,
-                term_grace=self._term_grace_seconds(),
-                kill_grace=kill_grace,
-            )
-            if not drained:
-                # Keep the captured PGID and pidfile so the outer watchdog can
-                # retry.  Starting a replacement here would overlap a live
-                # descendant and could preserve an a1 file-gate owner forever.
-                raise RuntimeError(
-                    "%s process group %s did not drain"
-                    % (self.spec.name, pgid)
-                )
+            _signal_process_group(pgid, signal.SIGTERM)
         elif pid is not None:
             # Compatibility for a component created before private sessions
             # were mandatory.  New and adopted components always take the
@@ -396,23 +410,89 @@ class SubprocessComponent:
                 os.kill(pid, signal.SIGTERM)
             except ProcessLookupError:
                 pass
-            while self.is_alive():
-                time.sleep(0.1)
-            if self.process is not None:
-                self.process.wait()
 
-        if self._pump is not None:
-            self._pump.join(timeout=max(1.0, kill_grace if pgid is not None else 1.0))
-        if self.process is not None and self.process.stdout is not None:
-            self.process.stdout.close()
-        self.pidfile.unlink(missing_ok=True)
-        self.identity_file.unlink(missing_ok=True)
-        self.process = None
-        self.process_group_id = None
-        self.process_start_identity = None
-        self.external_pid = None
-        self._pump = None
-        self.ready.clear()
+    def wait(self, timeout: float) -> bool:
+        pid = self.pid
+        pgid = self.process_group_id
+        if pid is None and pgid is None:
+            self.pidfile.unlink(missing_ok=True)
+            self.identity_file.unlink(missing_ok=True)
+            return True
+        if pgid is not None:
+            if not _wait_group_empty(pgid, timeout):
+                return False
+        else:
+            deadline = time.monotonic() + max(0.0, timeout)
+            while self.is_alive() and time.monotonic() < deadline:
+                time.sleep(min(0.05, max(0.0, deadline - time.monotonic())))
+            if self.is_alive():
+                return False
+        self._finalize_stopped(pid)
+        return True
+
+    def force_stop(self) -> None:
+        pid = self.pid
+        pgid = self.process_group_id
+        if pid is None and pgid is None:
+            self.pidfile.unlink(missing_ok=True)
+            self.identity_file.unlink(missing_ok=True)
+            return
+        if pgid is not None:
+            self._verify_group_owner_before_signal(pgid)
+            _signal_process_group(pgid, signal.SIGKILL)
+        elif pid is not None:
+            try:
+                os.kill(pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+
+    @property
+    def returncode(self) -> Optional[int]:
+        if self.process is not None:
+            return self.process.poll()
+        return self._returncode
+
+    def stop(self, timeout: Optional[float] = None) -> bool:
+        """Compatibility helper for a single failed-start component."""
+        term_grace = (
+            self._term_grace_seconds()
+            if timeout is None else max(0.0, float(timeout))
+        )
+        pgid = self.process_group_id
+        if pgid is not None:
+            self._verify_group_owner_before_signal(pgid)
+            kill_grace = max(
+                0.0,
+                float(self.environ.get(
+                    "JARVIS_BRIDGE_COMPONENT_KILL_GRACE", "2")),
+            )
+            if not terminate_process_group(
+                    self.process,
+                    pgid=pgid,
+                    term_grace=term_grace,
+                    kill_grace=kill_grace):
+                raise RuntimeError(
+                    "%s process group %s did not drain"
+                    % (self.spec.name, pgid)
+                )
+            self._finalize_stopped(self.pid)
+            return True
+
+        self.request_stop()
+        if self.wait(term_grace):
+            return True
+        self.force_stop()
+        kill_grace = max(
+            0.0,
+            float(self.environ.get(
+                "JARVIS_BRIDGE_COMPONENT_KILL_GRACE", "2")),
+        )
+        if self.wait(kill_grace):
+            return True
+        raise RuntimeError(
+            "%s process group %s did not drain"
+            % (self.spec.name, self.process_group_id or self.pid)
+        )
 
 
 class BridgeSupervisor:
@@ -441,6 +521,23 @@ class BridgeSupervisor:
         ))
         self.restart_delay = float(self.environ.get(
             "JARVIS_BRIDGE_COMPONENT_RESTART_SEC", "5"))
+        stop_wait = float(self.environ.get(
+            "JARVIS_BRIDGE_STOP_WAIT",
+            self.environ.get("JARVIS_STOP_GRACE", "30"),
+        ))
+        restart_wait = float(self.environ.get(
+            "JARVIS_SCHEDULER_DRAIN_TIMEOUT_SECONDS", "30"))
+        # run.sh owns the mechanical outer deadline. Use no more than either
+        # compatibility timeout so stop and restart both leave enough time for
+        # the supervisor to force-reap its exact children before the shell
+        # escalates the supervisor itself.
+        self.shutdown_timeout = max(0.0, min(stop_wait, restart_wait))
+        # Reserve mechanical time inside the same total budget so the
+        # supervisor can SIGKILL and reap exact children before run.sh/launchd
+        # reaches its matching outer deadline.
+        self.shutdown_force_timeout = min(2.0, self.shutdown_timeout)
+        self.shutdown_grace_timeout = max(
+            0.0, self.shutdown_timeout - self.shutdown_force_timeout)
 
     @property
     def specs(self) -> Sequence[ComponentSpec]:
@@ -481,7 +578,7 @@ class BridgeSupervisor:
             )
             # A dead leader may still have live descendants in its private
             # group.  Always drain the captured PGID before retrying.
-            component.stop()
+            component.stop(timeout=min(self.ready_timeout, 5.0))
             if self.stop_event.wait(self.restart_delay):
                 break
         return False
@@ -524,43 +621,71 @@ class BridgeSupervisor:
                 self._start_until_ready(spec)
                 if self.stop_event.is_set():
                     break
-        self._shutdown()
-        return 0
+        return 0 if self._shutdown() else 1
 
-    def _preserve_worker_requested(self) -> bool:
+    def _remove_legacy_restart_marker(self) -> None:
         marker = self.state_dir / "preserve-persistent-worker-once"
-        try:
-            owner = marker.read_text(encoding="utf-8").strip()
-        except OSError:
-            return False
-        # Consume stale/mismatched markers too. A later PID reuse must never
-        # turn an abandoned one-shot handshake into permission to preserve a
-        # Worker during an explicit full stop.
+        # Older bridge versions used this marker to keep the Persistent Worker
+        # alive across an explicit restart. Restarts now stop every component;
+        # remove any leftover marker so a downgrade cannot revive that
+        # ambiguous behavior.
         marker.unlink(missing_ok=True)
-        if owner != str(os.getpid()):
-            return False
-        return True
 
-    def _shutdown(self) -> None:
-        preserve_worker = self._preserve_worker_requested()
-        # Quiesce scheduled admissions before stopping either inbound work or
-        # the lease executor.  The Worker is always last so already-admitted
-        # Scheduler work and inbound persistence can settle first.
+    def _shutdown(self) -> bool:
+        self._remove_legacy_restart_marker()
+        # Request every component to quiesce before waiting for any one of them:
+        # Scheduler stops admission, Bot stops inbound work, and Worker stops
+        # leasing immediately. They then share one global grace deadline.
         shutdown_order = (
             (SCHEDULER, DINGTALK_BOT, PERSISTENT_WORKER)
             if self.role == "scheduler" else (PERSISTENT_WORKER,)
         )
+        components = []
         for spec in shutdown_order:
-            if preserve_worker and spec is PERSISTENT_WORKER:
-                LOG.info(
-                    "controlled restart: preserving Persistent Worker pid=%s",
-                    self.components.get(spec.name).pid
-                    if self.components.get(spec.name) is not None else "?",
-                )
-                continue
             component = self.components.pop(spec.name, None)
             if component is not None:
-                component.stop()
+                components.append(component)
+                component.request_stop()
+
+        shutdown_started = time.monotonic()
+        deadline = shutdown_started + self.shutdown_grace_timeout
+        survivors = []
+        clean = True
+        for component in components:
+            remaining = max(0.0, deadline - time.monotonic())
+            if component.wait(remaining):
+                returncode = getattr(component, "returncode", None)
+                if returncode not in (None, 0):
+                    clean = False
+                    LOG.warning(
+                        "%s shutdown reported exit status %s",
+                        component.spec.name,
+                        returncode,
+                    )
+            else:
+                survivors.append(component)
+
+        if survivors:
+            clean = False
+            LOG.warning(
+                "Bridge shutdown grace %.1fs expired; force-stopping: %s",
+                self.shutdown_grace_timeout,
+                ",".join(component.spec.name for component in survivors),
+            )
+            # Signal every survivor before waiting for any one of them, again
+            # avoiding a per-component timeout multiplier.
+            for component in survivors:
+                component.force_stop()
+            force_deadline = shutdown_started + self.shutdown_timeout
+            for component in survivors:
+                remaining = max(0.0, force_deadline - time.monotonic())
+                if not component.wait(remaining):
+                    LOG.error(
+                        "managed component still alive after SIGKILL: %s pid=%s",
+                        component.spec.name,
+                        component.pid,
+                    )
+        return clean
 
 
 def main() -> int:

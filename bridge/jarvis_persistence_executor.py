@@ -1389,8 +1389,8 @@ class PersistenceExecutor:
 
     def drain(self, timeout: Optional[float] = None) -> bool:
         """Stop leasing and wait until all active executions leave the worker."""
+        self.begin_shutdown()
         with self._lock:
-            self._draining = True
             registered = self._registered
         if registered:
             self._heartbeat_worker_if_due(force=True)
@@ -1401,15 +1401,23 @@ class PersistenceExecutor:
             self._stop_event.wait(0.05)
         return True
 
+    def begin_shutdown(self) -> None:
+        """Synchronously close lease admission before any blocking handoff work."""
+        with self._lock:
+            self._draining = True
+
     def stop(self, *, drain: bool = False, timeout: Optional[float] = None) -> bool:
         """Stop loops, relinquish active Sessions, then mark this Worker OFFLINE."""
+        self.begin_shutdown()
+        deadline = (
+            None if timeout is None
+            else self.clock() + max(0.0, float(timeout))
+        )
         with self._lock:
             registered = self._registered
         if drain:
             drained = self.drain(timeout)
         else:
-            with self._lock:
-                self._draining = True
             if registered:
                 self._heartbeat_worker_if_due(force=True)
             drained = self.active_count() == 0
@@ -1418,6 +1426,12 @@ class PersistenceExecutor:
             with self._lock:
                 controllers = [record.controller for record in self._sessions.values()]
             for controller in controllers:
+                if deadline is not None and self.clock() >= deadline:
+                    self.log.warning(
+                        "worker shutdown handoff deadline expired; "
+                        "session remains for lease recovery session=%s",
+                        controller.session_id)
+                    continue
                 self._fail_worker_stopping(controller, "worker_stopping")
                 if controller.terminal or controller.ownership_lost:
                     self._remove_session(controller.session_id)
@@ -1446,4 +1460,14 @@ class PersistenceExecutor:
                 self._executor.shutdown(wait=drained, cancel_futures=not drained)
             except TypeError:  # pragma: no cover - Python <3.9
                 self._executor.shutdown(wait=drained)
+        if not (drained and offline):
+            with self._lock:
+                pending = sorted(self._sessions)
+            self.log.warning(
+                "worker shutdown incomplete worker=%s pendingSessions=%s "
+                "offline=%s; lease expiry/recovery will reconcile",
+                self.worker_key,
+                ",".join(pending) or "-",
+                offline,
+            )
         return drained and offline
