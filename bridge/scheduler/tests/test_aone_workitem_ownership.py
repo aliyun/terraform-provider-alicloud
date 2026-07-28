@@ -43,8 +43,8 @@ class FakeClient:
         self.cursors.append((after_task_id, limit))
         return self.pages[after_task_id]
 
-    def put_board_stat(self, stat_key, payload, *, request_id=None):
-        self.puts.append((stat_key, payload, request_id))
+    def put_aone_ownership_snapshot(self, payload, *, request_id=None):
+        self.puts.append((payload, request_id))
         return {"stored": True}
 
 
@@ -193,12 +193,12 @@ class OwnershipRunnerTest(unittest.TestCase):
             self.assertIs(result.status, JobResultStatus.SUCCEEDED)
             self.assertEqual(client.cursors, [(0, 2), (2, 2)])
             self.assertEqual(len(client.puts), 1)
-            stat_key, payload, request_id = client.puts[0]
-            self.assertEqual(stat_key, ownership.STAT_KEY)
+            payload, request_id = client.puts[0]
             self.assertEqual(payload["schemaVersion"], ownership.SCHEMA_VERSION)
             self.assertEqual(payload["generatedAt"], NOW.isoformat())
             self.assertIs(payload["complete"], True)
-            self.assertTrue(request_id.startswith("board-stat-ownership-"))
+            self.assertTrue(
+                request_id.startswith("aone-ownership-snapshot-"))
             self.assertEqual(len(payload["items"]), 3)
 
             by_key = {
@@ -266,7 +266,7 @@ class OwnershipRunnerTest(unittest.TestCase):
             self.assertIs(result.status, JobResultStatus.SUCCEEDED)
             runner._fetch_detail.assert_not_called()
             runner._fetch_comments.assert_not_called()
-            self.assertEqual(client.puts[0][1]["items"], [cached])
+            self.assertEqual(client.puts[0][0]["items"], [cached])
 
     def test_legacy_candidate_without_project_is_warned_and_skipped(self):
         from tempfile import TemporaryDirectory
@@ -310,7 +310,7 @@ class OwnershipRunnerTest(unittest.TestCase):
             self.assertEqual(len(client.puts), 1)
             self.assertEqual(
                 [(item["sourceProjectKey"], item["aoneId"])
-                 for item in client.puts[0][1]["items"]],
+                 for item in client.puts[0][0]["items"]],
                 [("2100304", "100")])
             self.assertTrue(any(
                 "skipped legacy candidate" in message
@@ -384,7 +384,7 @@ class OwnershipRunnerTest(unittest.TestCase):
             result = runner.run(definition(), NOW)
 
             self.assertIs(result.status, JobResultStatus.SUCCEEDED)
-            published = client.puts[0][1]["items"][0]
+            published = client.puts[0][0]["items"][0]
             self.assertEqual(
                 published["sourceUpdatedAt"], "2026-07-27 10:00:00")
 
@@ -412,7 +412,7 @@ class OwnershipRunnerTest(unittest.TestCase):
                 result = runner.run(definition(), NOW)
 
             self.assertIs(result.status, JobResultStatus.SUCCEEDED)
-            self.assertEqual(client.puts[0][1]["items"], [{
+            self.assertEqual(client.puts[0][0]["items"], [{
                 "sourceProjectKey": "1000001",
                 "aoneId": "7001",
                 "participantStaffIds": [],
@@ -478,7 +478,7 @@ class OwnershipRunnerTest(unittest.TestCase):
 
             self.assertIs(result.status, JobResultStatus.SUCCEEDED)
             by_id = {
-                item["aoneId"]: item for item in client.puts[0][1]["items"]
+                item["aoneId"]: item for item in client.puts[0][0]["items"]
             }
             self.assertEqual(
                 by_id["7001"]["participantStaffIds"],

@@ -3,7 +3,7 @@
 The control plane is the canonical inventory of work items Jarvis knows about.
 This runner pages that inventory, reads the corresponding Aone ownership fields
 with batched ``a1`` queries, resolves human identities to staff IDs, and replaces
-one complete board-stat snapshot.  It deliberately never publishes a partial
+one complete ownership snapshot.  It deliberately never publishes a partial
 inventory.
 
 Comment reads are the expensive part.  A durable local cache reuses a complete
@@ -40,7 +40,6 @@ from ..model import (
 
 RUNNER_KEY = "aone_workitem_ownership"
 JOB_KEY = "aone.workitem-ownership"
-STAT_KEY = "aone-workitem-ownership"
 SCHEMA_VERSION = "aone-workitem-ownership.v1"
 
 DEFAULT_PAGE_SIZE = 500
@@ -1043,9 +1042,9 @@ class AoneWorkitemOwnershipRunner:
             digest = hashlib.sha256(json.dumps(
                 payload, ensure_ascii=False, sort_keys=True,
                 separators=(",", ":")).encode("utf-8")).hexdigest()[:32]
-            self._task_client.put_board_stat(
-                STAT_KEY, payload,
-                request_id="board-stat-ownership-%s" % digest)
+            self._task_client.put_aone_ownership_snapshot(
+                payload,
+                request_id="aone-ownership-snapshot-%s" % digest)
         except Exception as exc:  # noqa: BLE001
             self._log.warning(
                 "aone-workitem-ownership: failed: %s: %s",
@@ -1072,6 +1071,5 @@ __all__ = [
     "JOB_KEY",
     "RUNNER_KEY",
     "SCHEMA_VERSION",
-    "STAT_KEY",
     "SnapshotIncomplete",
 ]
