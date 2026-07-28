@@ -971,6 +971,67 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# Test 30a: an idempotent done reopen must not ask Aone to transition Open→Open.
+# Some workflows reject same-value status writes, so strict reopen point-reads the
+# current status and performs only the merged tag update when it already matches.
+# ---------------------------------------------------------------------------
+echo "=== Test 30a: strict done reopen skips same-value status transition ==="
+printf 'keep,jarvis-idle,jarvis-done' > "$tmpstate"; printf 'Open' > "$tmpstatusstate"
+: > "$tmpstatuscap"; : > "$tmplog"; : > "$tmpcapture"; : > "$tmpgetcnt"
+out=$(PATH="$tmpbin:$PATH" JARVIS_ROOT="$tmpconfig" JARVIS_CLAIM_READBACK_SLEEP=0 \
+    JARVIS_CLAIM_REOPEN_DONE=1 JARVIS_CLAIM_PROGRESS=0 \
+    A1_STATUS_STATE="$tmpstatusstate" A1_WTYPE=功能缺陷 A1_REJECT_STATUS=Open \
+    bash "$proj_root/bootstrap/claim.sh" claim "$WORKITEM_ID" 2100305 2>&1)
+rc=$?
+state=$(cat "$tmpstate" 2>/dev/null); status=$(cat "$tmpstatusstate" 2>/dev/null)
+update=$(grep "project workitem update $WORKITEM_ID" "$tmplog" | head -n 1)
+if [ "$rc" -eq 0 ]; then
+    assert_pass "done reopen same status: claim exits 0"
+else
+    assert_fail "done reopen same status: rc=$rc out=$out"
+fi
+if [ "$state" = "keep,jarvis-claimed" ]; then
+    assert_pass "done reopen same status: preserves unrelated tag and replaces done+idle"
+else
+    assert_fail "done reopen same status: unexpected tags '$state'"
+fi
+if [ "$status" = "Open" ]; then
+    assert_pass "done reopen same status: status remains Open"
+else
+    assert_fail "done reopen same status: expected Open, got '$status'"
+fi
+if printf '%s' "$update" | grep -q -- '--tag keep,jarvis-claimed' \
+        && ! printf '%s' "$update" | grep -q -- '--status'; then
+    assert_pass "done reopen same status: tag-only update omits --status"
+else
+    assert_fail "done reopen same status: expected tag-only update, got '$update'"
+fi
+
+# ---------------------------------------------------------------------------
+# Test 30b: strict reopen cannot infer idempotence when the current status is unreadable.
+# It must fail before removing jarvis-done or attempting any update.
+# ---------------------------------------------------------------------------
+echo "=== Test 30b: strict done reopen fails closed when status is unreadable ==="
+printf 'keep,jarvis-idle,jarvis-done' > "$tmpstate"; printf 'Open' > "$tmpstatusstate"
+: > "$tmpstatuscap"; : > "$tmplog"; : > "$tmpcapture"; : > "$tmpgetcnt"
+out=$(PATH="$tmpbin:$PATH" JARVIS_ROOT="$tmpconfig" JARVIS_CLAIM_READBACK_SLEEP=0 \
+    JARVIS_CLAIM_REOPEN_DONE=1 JARVIS_CLAIM_PROGRESS=0 \
+    A1_STATUS_STATE="$tmpstatusstate" A1_WTYPE=功能缺陷 A1_GET_FAIL_AT=3 \
+    bash "$proj_root/bootstrap/claim.sh" claim "$WORKITEM_ID" 2100305 2>&1)
+rc=$?
+if [ "$rc" -eq 2 ] && printf '%s' "$out" | grep -q "current status unreadable" \
+        && ! grep -q "project workitem update $WORKITEM_ID" "$tmplog"; then
+    assert_pass "done reopen unreadable status: fails closed before update"
+else
+    assert_fail "done reopen unreadable status: rc=$rc log=$(cat "$tmplog") out=$out"
+fi
+if [ "$(cat "$tmpstate")" = "keep,jarvis-idle,jarvis-done" ]; then
+    assert_pass "done reopen unreadable status: terminal tags remain intact"
+else
+    assert_fail "done reopen unreadable status mutated tags: $(cat "$tmpstate")"
+fi
+
+# ---------------------------------------------------------------------------
 # Test 31: object-valued progress mapping must match exact workitem type. Unknown types
 # fail before any write instead of falling back to another category or global status.
 # ---------------------------------------------------------------------------
@@ -1022,14 +1083,15 @@ fi
 
 # ---------------------------------------------------------------------------
 # Test 34: strict comment claim never takes _update_tags_merged's lossy fallback.
-# The third get is the tag-pair read after done detection and workitem-type lookup.
+# The fourth get is the tag-pair read after done detection, workitem-type lookup,
+# and the strict current-status point read.
 # ---------------------------------------------------------------------------
 echo "=== Test 34: strict reopen tag read failure cannot drop unrelated tags ==="
 printf 'keep,jarvis-done' > "$tmpstate"; printf '已发布' > "$tmpstatusstate"
 : > "$tmpstatuscap"; : > "$tmplog"; : > "$tmpcapture"; : > "$tmpgetcnt"
 out=$(PATH="$tmpbin:$PATH" JARVIS_ROOT="$tmpconfig" JARVIS_CLAIM_READBACK_SLEEP=0 \
     JARVIS_CLAIM_REOPEN_DONE=1 A1_STATUS_STATE="$tmpstatusstate" \
-    A1_WTYPE=功能缺陷 A1_GET_FAIL_AT=3 \
+    A1_WTYPE=功能缺陷 A1_GET_FAIL_AT=4 \
     bash "$proj_root/bootstrap/claim.sh" claim "$WORKITEM_ID" 2100305 2>&1)
 rc=$?
 if [ "$rc" -eq 2 ] && ! grep -q "project workitem update $WORKITEM_ID" "$tmplog"; then

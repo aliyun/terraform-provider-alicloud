@@ -21,8 +21,10 @@
 #          Set JARVIS_CLAIM_PROGRESS=0 to disable the status advance entirely.
 #          Set JARVIS_CLAIM_REOPEN_DONE=1 only for a comment-triggered generation that
 #          may be reopening a jarvis-done ticket. When jarvis-done is present, claim
-#          removes both done+idle and writes the exact per-type progress status in the
-#          same Aone update; missing mappings, rejected transitions, or readback drift
+#          removes both done+idle and, when needed, writes the exact per-type progress
+#          status in the same Aone update. If the status is already at that target, the
+#          merged tag update omits --status so Aone cannot reject a same-value transition.
+#          Missing mappings, unreadable status, rejected transitions, or readback drift
 #          fail closed. Ordinary claims are unchanged.
 # release: tags the workitem jarvis-idle —— 本轮 jarvis 处理完毕、释放锁、等待人或下一个 jarvis
 #          接手；不动 Aone status。cleans up any leftover prefix. Exits 0.
@@ -511,6 +513,7 @@ case "$cmd" in
         interactive_prepare=""
         reopen_done=0
         reopen_progress=""
+        reopen_status_update=0
         claim_remove="$IDLE_TAG"
         if [ "${JARVIS_CLAIM_REOPEN_DONE:-0}" = "1" ]; then
             claim_remove="$IDLE_TAG,$DONE_TAG"
@@ -526,10 +529,18 @@ case "$cmd" in
                     echo "claim.sh: refusing done reopen for $workitem_id: no exact progress_status for workitemType '${reopen_wtype:-<unknown>}'" >&2
                     exit 2
                 fi
+                reopen_current_status="$(_get_status "$workitem_id")"
+                if [ -z "$reopen_current_status" ]; then
+                    echo "claim.sh: refusing done reopen for $workitem_id: current status unreadable" >&2
+                    exit 2
+                fi
+                if [ "$reopen_current_status" != "$reopen_progress" ]; then
+                    reopen_status_update=1
+                fi
             fi
         fi
         _claim_tag_update() {
-            if [ "$reopen_done" = "1" ]; then
+            if [ "$reopen_status_update" = "1" ]; then
                 _update_tags_merged "$workitem_id" "$CLAIM_TAG" "$claim_remove" \
                     --status "$reopen_progress"
             else
@@ -577,7 +588,8 @@ case "$cmd" in
         fi
 
         # 1. Tag as claimed, preserving any pre-existing tags. Comment-triggered reopen
-        # removes done+idle and atomically advances status; ordinary claim removes idle.
+        # removes done+idle and atomically advances status only when it differs from the
+        # target; ordinary claim removes idle.
         _claim_tag_update
         tag_rc=$?
         if [ "$tag_rc" -eq 3 ]; then
