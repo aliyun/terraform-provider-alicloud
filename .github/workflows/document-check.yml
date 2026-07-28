@@ -4,145 +4,240 @@ on:
     branches:
       - master
   pull_request:
-    pull_request_target:
-      types:
-        - opened
-      paths:
-        - .github/workflows/document-check.yml
-        - .go-version
-        - website/docs/**
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+    branches:
+      - master
+    paths:
+      - .github/workflows/document-check.yml
+      - .go-version
+      - website/docs/**
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
+  route:
+    permissions:
+      checks: read
+      pull-requests: read
+    runs-on: terraform-ci-policy
+    timeout-minutes: 3
+    outputs:
+      runner: ${{ steps.select.outputs.runner }}
+    steps:
+      - name: Select runner
+        id: select
+        uses: aliyun/terraform-provider-alicloud/.github/actions/terraform-ci-select-policy@1c4bb6762031f53732611700cad5d71d1ec84dfe
+
   markdown-link:
-    runs-on: ubuntu-latest
+    needs: route
+    runs-on: ${{ fromJSON(needs.route.outputs.runner) }}
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: gaurav-nelson/github-action-markdown-link-check@v1
+      - name: Check out event commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          use-quiet-mode: 'yes'
-          use-verbose-mode: 'yes'
-          folder-path: "website/docs"
-          file-extension: '.md'
-          config-file: '.markdown-link-check.json'
+          repository: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        with:
+          node-version: '20'
+      - name: Check Markdown links
+        run: |
+          find website/docs -type f -name '*.md' -print0 |
+            xargs -0 -r npx --yes markdown-link-check@3.14.2 \
+              --quiet --verbose --config .markdown-link-check.json
 
   markdown-lint:
-    runs-on: ubuntu-latest
+    needs: route
+    runs-on: ${{ fromJSON(needs.route.outputs.runner) }}
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: avto-dev/markdown-lint@v1.5.0
+      - name: Check out event commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          fetch-depth: 2
+      - name: Set up Node.js
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        with:
+          node-version: '20'
+      - name: Lint changed Markdown files
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          base_sha="HEAD^"
+          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+            if ! git cat-file -e "${PR_BASE_SHA}^{commit}" 2>/dev/null; then
+              git fetch --no-tags --depth=1 \
+                "https://github.com/${GITHUB_REPOSITORY}.git" "$PR_BASE_SHA"
+            fi
+            base_sha="$PR_BASE_SHA"
+          fi
+          markdown_files=()
+          while IFS= read -r -d '' changed_file; do
+            if [[ -f "$changed_file" ]] &&
+              [[ "$changed_file" == *.md || "$changed_file" == *.markdown ]]; then
+              markdown_files+=("$changed_file")
+            fi
+          done < <(
+            git diff --name-only -z --diff-filter=ACMR \
+              "$base_sha" HEAD -- website/docs
+          )
+          if (( ${#markdown_files[@]} == 0 )); then
+            echo "No Markdown files changed."
+            exit 0
+          fi
+          npx --yes markdownlint-cli@0.47.0 -- "${markdown_files[@]}"
 
   misspell:
-    runs-on: ubuntu-latest
+    needs: route
+    runs-on: ${{ fromJSON(needs.route.outputs.runner) }}
     permissions:
       contents: read
     steps:
-      - name: Check out code.
+      - name: Check out event commit
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: misspell
-        uses: reviewdog/action-misspell@v1.27.0
         with:
-          github_token: ${{secrets.github_token}}
-          fail_on_error: true
-          filter_mode: file
-          locale: ""
-          path: ./website/docs
-          ignore: 'bussiness,protocal,attemps,alltime,transfering'
+          repository: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: .go-version
+          cache: false
+      - name: misspell
+        run: |
+          go run github.com/client9/misspell/cmd/misspell@v0.3.4 \
+            -error \
+            -i 'bussiness,protocal,attemps,alltime,transfering' \
+            website/docs
 
   terrafmt:
-    runs-on: ubuntu-latest
+    needs: route
+    runs-on: ${{ fromJSON(needs.route.outputs.runner) }}
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - run: echo "GO_VERSION=$(cat .go-version)" >> $GITHUB_ENV
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - name: Check out event commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          go-version: ${{ env.GO_VERSION }}
-      - name: terrafmt
-        run: |
-          export PATH=$PATH:$(go env GOPATH)/bin
-          go install github.com/katbyte/terrafmt@latest
-          terrafmt diff ./website --check --pattern '*.markdown'
-
-  basic-check:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: '3'
+          repository: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: .go-version
+          cache: false
+      - name: terrafmt
+        run: |
+          export PATH="$PATH:$(go env GOPATH)/bin"
+          go install github.com/katbyte/terrafmt@v0.5.7
+          terrafmt diff ./website --check --pattern '*.markdown'
+
+  basic-check:
+    needs: route
+    runs-on: ${{ fromJSON(needs.route.outputs.runner) }}
+    permissions:
+      contents: read
+    steps:
+      - name: Check out event commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          fetch-depth: 3
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: .go-version
+          cache: false
       - run: bash scripts/basic-check.sh
 
   Content:
-    runs-on: ubuntu-latest
+    needs: route
+    runs-on: ${{ fromJSON(needs.route.outputs.runner) }}
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Check out event commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          fetch-depth: 2
       - name: Setup Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: '1.25.x'
-      - uses: jitterbit/get-changed-files@v1
-        id: files
-        with:
-          format: 'json'
+          go-version-file: .go-version
+          cache: false
       - name: Checking the docs content
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
-          readarray -t changed_files <<<"$(jq -r '.[]' <<<'${{ steps.files.outputs.added_modified }}')"
-          for changed_file in ${changed_files[@]}; do
-            if [[ ${changed_file} == "website/docs/"* ]]; then
-                go run scripts/document/document_check.go ${changed_file}
+          base_sha="HEAD^"
+          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+            if ! git cat-file -e "${PR_BASE_SHA}^{commit}" 2>/dev/null; then
+              git fetch --no-tags --depth=1 \
+                "https://github.com/${GITHUB_REPOSITORY}.git" "$PR_BASE_SHA"
             fi
-          done
+            base_sha="$PR_BASE_SHA"
+          fi
+          while IFS= read -r -d '' changed_file; do
+            if [[ -f "$changed_file" ]]; then
+              go run scripts/document/document_check.go "$changed_file"
+            fi
+          done < <(
+            git diff --name-only -z --diff-filter=ACMR \
+              "$base_sha" HEAD -- website/docs
+          )
 
   Consistency:
-    needs: Content
-    runs-on: ubuntu-latest
+    needs:
+      - route
+      - Content
+    runs-on: ${{ fromJSON(needs.route.outputs.runner) }}
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Check out event commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          fetch-depth: 2
       - name: Setup Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: '1.25.x'
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 2
+          go-version-file: .go-version
+          cache: false
       - name: Integration Test Check
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
-          git diff HEAD^ HEAD > diff.out
+          base_sha="HEAD^"
+          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+            if ! git cat-file -e "${PR_BASE_SHA}^{commit}" 2>/dev/null; then
+              git fetch --no-tags --depth=1 \
+                "https://github.com/${GITHUB_REPOSITORY}.git" "$PR_BASE_SHA"
+            fi
+            base_sha="$PR_BASE_SHA"
+          fi
+          git diff "$base_sha" HEAD > diff.out
           go run scripts/consistency/consistency_check.go -fileNames="diff.out"
-
-#  terraform-validate:
-#    runs-on: ubuntu-latest
-#    steps:
-#      - uses: actions/checkout@v2
-#      - name: import
-#        run: |
-#          echo "GO_VERSION=$(cat .go-version)" >> $GITHUB_ENV
-#      - uses: actions/setup-go@v2
-#        with:
-#          go-version: ${{ env.GO_VERSION }}
-#      - name: terraform-validate
-#        run: |
-#          export PATH=$PATH:$(go env GOPATH)/bin
-#          go get -t github.com/katbyte/terrafmt
-#          URL="https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls/${{ github.event.pull_request.number }}/files"
-#          FILES=$(curl -s -X GET -G $URL | jq -r '.[] | .filename')
-#          echo ${FILES}
-#          ./scripts/terraform-validate.sh "${FILES[@]}"
-#          if [[ "$?" == "1" ]]; then
-#            echo "Please Check the Terraform Grammer" && exit 1
-#          fi
-
-
