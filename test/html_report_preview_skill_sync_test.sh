@@ -44,6 +44,10 @@ for skill in \
     "1983056807138283" \
     "runtime-config.sh" \
     "GET-signed URL" \
+    "invalid_image_reference" \
+    "<img srcset>" \
+    "<picture><source srcset>" \
+    "protocol-relative URLs" \
     "rgv587_flag:sm" \
     "inline script" \
     "禁止规避" \

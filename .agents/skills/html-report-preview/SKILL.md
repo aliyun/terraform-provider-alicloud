@@ -48,6 +48,16 @@ Never commit the plaintext token to tracked files, skill files, tests, or Aone c
 
 Note: the WAF classification gate requires an `X-Request-Context` header — the helper sends it automatically on every upload (default `rctx_a3f90b7e2d41c8f6`, override via env `JARVIS_HTML_REPORT_WAF_HEADER`). It does **not** exempt base64-image payloads: even with the header, inline `data:` images are still blocked — keep images external per the workaround below.
 
+Before the first network request, `html-report-preview.sh` validates every HTML member in the
+input file, directory, or ZIP. Image references are allowed only when all of these conditions hold:
+
+- every `<img src>` and every candidate in `<img srcset>` is an absolute `https://` URL;
+- every candidate in `<picture><source srcset>` is an absolute `https://` URL;
+- relative paths, protocol-relative URLs (`//...`), `http:`, `file:`, and `data:` are rejected.
+
+The whole batch fails closed with `invalid_image_reference`; no report in that batch is uploaded.
+`<source srcset>` outside `<picture>` is not an image source and is outside this check.
+
 **Workaround — use AutomationAgent's private image upload API and signed GET URLs:**
 
 Never make report screenshots public-read. Use the repository-owned screenshot helper; it loads the
