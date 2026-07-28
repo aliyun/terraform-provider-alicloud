@@ -1,0 +1,208 @@
+name: Terraform Basic Policy
+on:
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+    branches:
+      - master
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  policy:
+    permissions:
+      checks: write
+      pull-requests: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Evaluate pull request policy
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            const policyVersion = 1;
+            const supportedActions = new Set([
+              "opened",
+              "reopened",
+              "synchronize",
+              "ready_for_review",
+            ]);
+            const actionsApp = {
+              id: 15368,
+              slug: "github-actions",
+              owner: "github",
+            };
+            const pullRequest = context.payload.pull_request;
+            const author = pullRequest?.user?.login;
+            const headRepository = pullRequest?.head?.repo?.full_name;
+            const headSha = pullRequest?.head?.sha;
+            const baseRepository = pullRequest?.base?.repo?.full_name;
+            const baseRef = pullRequest?.base?.ref;
+            const pullNumber = pullRequest?.number;
+            const changedFileCount = pullRequest?.changed_files;
+            const expectedBaseRepository = `${context.repo.owner}/${context.repo.repo}`;
+            const repositoryPattern =
+              /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})\/[A-Za-z0-9._-]{1,100}$/;
+
+            let classification = "invalid";
+            let relevant = false;
+            let failure = "";
+
+            try {
+              if (
+                context.eventName !== "pull_request_target" ||
+                !supportedActions.has(context.payload.action) ||
+                typeof author !== "string" ||
+                author.length === 0 ||
+                author.length > 100 ||
+                typeof headRepository !== "string" ||
+                !repositoryPattern.test(headRepository) ||
+                !/^[0-9a-f]{40}$/.test(headSha ?? "") ||
+                baseRepository !== expectedBaseRepository ||
+                baseRef !== "master" ||
+                !Number.isSafeInteger(pullNumber) ||
+                pullNumber <= 0 ||
+                !Number.isSafeInteger(changedFileCount) ||
+                changedFileCount < 0 ||
+                changedFileCount > 3000
+              ) {
+                throw new Error("invalid pull request metadata");
+              }
+
+              const changedFiles = [];
+              const pageCount = Math.ceil(changedFileCount / 100);
+              for (let page = 1; page <= pageCount; page += 1) {
+                const response = await github.rest.pulls.listFiles({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: pullNumber,
+                  per_page: 100,
+                  page,
+                });
+                if (!Array.isArray(response?.data)) {
+                  throw new Error("invalid changed-files response");
+                }
+                changedFiles.push(...response.data);
+              }
+
+              if (
+                changedFiles.length !== changedFileCount ||
+                changedFiles.some(
+                  (file) =>
+                    typeof file?.filename !== "string" ||
+                    file.filename.length === 0
+                )
+              ) {
+                throw new Error("incomplete changed-files response");
+              }
+
+              const protectedPathChanged = changedFiles.some(({ filename }) =>
+                filename.startsWith(".github/workflows/") ||
+                filename.startsWith(".github/actions/") ||
+                filename === ".github/CODEOWNERS" ||
+                filename === "action.yml" ||
+                filename === "action.yaml"
+              );
+              relevant =
+                protectedPathChanged ||
+                changedFiles.some(({ filename }) =>
+                  /^alicloud\/[^/]+\.go$/.test(filename)
+                );
+
+              const allowlistedAutomation =
+                author === "api-tool-agent" &&
+                headRepository === "api-tool-agent/terraform-provider-alicloud";
+
+              let trusted = allowlistedAutomation;
+              if (!trusted) {
+                try {
+                  const response =
+                    await github.rest.repos.getCollaboratorPermissionLevel({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      username: author,
+                    });
+                  trusted = ["admin", "maintain", "write"].includes(
+                    response?.data?.permission
+                  );
+                } catch {
+                  core.warning(
+                    "Permission lookup failed; treating the author as external."
+                  );
+                }
+              }
+
+              classification = trusted ? "trusted" : "external";
+              if (!trusted && protectedPathChanged) {
+                classification = "blocked";
+                failure =
+                  "External pull request modifies protected CI control paths.";
+              }
+            } catch {
+              classification = "invalid";
+              relevant = false;
+              failure = "Pull request metadata or changed-files data is invalid.";
+            }
+
+            const binding = {
+              v: policyVersion,
+              p: Number.isSafeInteger(pullNumber) ? pullNumber : 0,
+              s: typeof headSha === "string" ? headSha : "",
+              r: typeof headRepository === "string" ? headRepository : "",
+              c: classification,
+              q: relevant,
+            };
+            const externalId = JSON.stringify(binding);
+            if (externalId.length > 255) {
+              failure = "Policy binding exceeds the Check Run size limit.";
+              binding.c = "invalid";
+              binding.q = false;
+            }
+
+            if (!/^[0-9a-f]{40}$/.test(binding.s)) {
+              throw new Error(
+                "Cannot publish Basic Policy without an exact pull request head SHA."
+              );
+            }
+
+            const detailsUrl =
+              `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}` +
+              `/actions/runs/${context.runId}`;
+            const conclusion = failure ? "failure" : "success";
+            const summary = failure
+              ? failure
+              : `classification=${binding.c}; relevant=${binding.q}`;
+
+            const response = await github.rest.checks.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: "Basic Policy",
+              head_sha: binding.s,
+              status: "completed",
+              conclusion,
+              external_id: JSON.stringify(binding),
+              details_url: detailsUrl,
+              output: {
+                title: failure ? "Basic policy rejected" : "Basic policy passed",
+                summary,
+              },
+            });
+
+            if (
+              response?.data?.app?.id !== actionsApp.id ||
+              response?.data?.app?.slug !== actionsApp.slug ||
+              response?.data?.app?.owner?.login !== actionsApp.owner
+            ) {
+              throw new Error("Basic Policy Check Run source is invalid.");
+            }
+
+            if (failure) {
+              core.setFailed(failure);
+            }
