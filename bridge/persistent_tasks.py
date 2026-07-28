@@ -43,6 +43,15 @@ TASK_BOOKEND_KINDS = frozenset(("ticket", "persona", "wake"))
 WAIT_EXPIRE_SEC = 14 * 24 * 3600
 _SUSPEND_RE = re.compile(r"\[\[SUSPEND:(.*?)\]\]", re.DOTALL)
 _SEMANTIC_ID_RE = re.compile(r"[a-z0-9][a-z0-9._:-]{0,95}")
+_CLOSABLE_RESOLUTION_KINDS = frozenset((
+    "implemented_and_verified", "existing_supported_and_verified", "withdrawn",
+))
+_HANDOFF_FIELDS = ("owner", "source_comment", "tracker")
+_CLOSE_AUTHORIZATION_RE = re.compile(
+    r"(?i)(?:确认\s*(?:可以|可)?\s*(?:关闭|结单)|同意\s*(?:关闭|结单)|"
+    r"允许\s*(?:关闭|结单)|close[_ -]?authorized)")
+
+
 def _aone_event_enqueue(ticket, project, event_key, text, allow_non_tf=False,
                         identity=None):
     """Hand Task-owned events to the single durable Aone event ledger."""
@@ -264,6 +273,36 @@ def extract_suspend(text: str):
         "aone_id") else None
 
 
+def _string_list(value):
+    if not isinstance(value, list):
+        return []
+    return [str(item).strip() for item in value if str(item).strip()]
+
+
+def can_finish(result):
+    """Return whether a task result contains machine-verifiable closure evidence.
+
+    A model saying that the current repository needs no change is not evidence that the
+    Aone business request has closed.  Keep this policy independent of reply prose: the
+    latter is untrusted text and must never decide a terminal state transition.
+    """
+    result = result if isinstance(result, dict) else {}
+    resolution = result.get("resolution") or {}
+    kind = str(resolution.get("kind") or "").strip()
+    if kind not in _CLOSABLE_RESOLUTION_KINDS:
+        return False, "resolution.kind is not a verified closure kind"
+    if not result.get("evidence"):
+        return False, "verified closure evidence is missing"
+    if result.get("open_dependencies"):
+        return False, "open_dependencies is not empty"
+    if result.get("handoff"):
+        return False, "handoff is still present"
+    if (kind in {"existing_supported_and_verified", "withdrawn"}
+            and not result.get("close_authorized_comment_id")):
+        return False, "no-code closure needs an explicit human close authorization"
+    return True, ""
+
+
 def extract_task_result(text: str):
     clean, payload = _extract_last_json(text, "[[AONE_RESULT:")
     if not isinstance(payload, dict):
@@ -271,25 +310,62 @@ def extract_task_result(text: str):
     outcome = str(payload.get("outcome") or "").strip().lower()
     reply = str(payload.get("reply_body") or "").strip()
     wait_for = str(payload.get("suspend_wait_for") or "").strip()
-    if (outcome not in {"done", "idle", "suspend"} or not reply
-            or (outcome == "suspend" and not wait_for)):
+    if outcome not in {"done", "idle", "suspend"} or not reply:
         return clean, None
     links = payload.get("mr_cr_links")
-    return clean, {
+    resolution = payload.get("resolution")
+    resolution = resolution if isinstance(resolution, dict) else {}
+    handoff = payload.get("handoff")
+    handoff = handoff if isinstance(handoff, dict) else {}
+    result = {
         "outcome": outcome,
         # Preserve the complete structured reply while parsing. mr_cr_links are
         # appended later and the final publisher owns the authoritative wire
         # budget for the complete Aone comment.
         "reply_body": _aone_event_sanitize_text(reply, limit=None),
         "target_status": str(payload.get("target_status") or "").strip(),
-        "mr_cr_links": (
-            [str(value).strip() for value in links if str(value).strip()]
-            if isinstance(links, list) else []),
+        "mr_cr_links": _string_list(links),
         "unresolved": str(payload.get("unresolved") or "").strip(),
         "suspend_wait_for": wait_for,
         "handled_comment_id": str(
             payload.get("handled_comment_id") or "").strip(),
+        "close_authorized_comment_id": str(
+            payload.get("close_authorized_comment_id") or "").strip(),
+        "resolution": {"kind": str(resolution.get("kind") or "").strip()},
+        "evidence": _string_list(payload.get("evidence")),
+        "open_dependencies": _string_list(payload.get("open_dependencies")),
+        "handoff": {
+            field: str(handoff.get(field) or "").strip()
+            for field in _HANDOFF_FIELDS
+            if str(handoff.get(field) or "").strip()
+        },
     }
+    if not result["close_authorized_comment_id"].isdigit():
+        result["close_authorized_comment_id"] = ""
+    kind = result["resolution"]["kind"]
+    if kind == "external_handoff":
+        if any(not result["handoff"].get(field) for field in _HANDOFF_FIELDS):
+            return clean, None
+        # A tracked external owner is still an open dependency.  Never let a model's
+        # ``done`` token turn it into a terminal Aone state.
+        result["outcome"] = "idle"
+    elif kind == "unknown_scope":
+        owner = result["handoff"].get("owner")
+        if not owner:
+            return clean, None
+        # Unknown responsibility must await a named human decision, even when the
+        # model accidentally emitted ``done`` or ``idle``.
+        result["outcome"] = "suspend"
+        result["suspend_wait_for"] = result["suspend_wait_for"] or owner
+    elif result["outcome"] == "done":
+        allowed, reason = can_finish(result)
+        if not allowed:
+            result["outcome"] = "idle"
+            result["finish_blocked_reason"] = reason
+
+    if result["outcome"] == "suspend" and not result["suspend_wait_for"]:
+        return clean, None
+    return clean, result
 
 
 def extract_aone_event(text: str):
@@ -637,6 +713,26 @@ class TaskAoneBookend:
             key = "%s:%s" % (key, self.expected_comment_cursor)
         return key
 
+    def can_finish(self, result):
+        """Terminal defense-in-depth, including no-code human authorization."""
+        allowed, reason = can_finish(result)
+        if not allowed:
+            return allowed, reason
+        kind = str((result.get("resolution") or {}).get("kind") or "").strip()
+        if kind not in {"existing_supported_and_verified", "withdrawn"}:
+            return True, ""
+        try:
+            comment = self._comment_reader()
+        except Exception as exc:  # noqa: BLE001
+            return False, "could not verify human close authorization: %s" % exc
+        if (self._numeric_cursor(comment)
+                != int(result["close_authorized_comment_id"])):
+            return False, "human close authorization is not the current comment"
+        content = str(comment.get("content") or comment.get("body") or "")
+        if not _CLOSE_AUTHORIZATION_RE.search(content):
+            return False, "current human comment does not explicitly authorize closure"
+        return True, ""
+
     def bind_process(self, process):
         """Bind the PID (via the controller) then claim the Aone tag before work starts."""
         self.capture_comment_baseline()
@@ -802,11 +898,18 @@ class TaskAoneBookend:
         stranding the reply. ``done``→finish (jarvis-done + pool done_status),
         ``idle`` releases ownership; ``suspend`` leaves it for the reply runner.
 
-        Integrity flags (soft gate): if the result carries ``code_pushed`` or
-        ``backfill_done`` as explicit False, warn but do not block — the hard gate
-        will be enabled once the interactive path is fully migrated.
+        ``done`` has already passed :func:`can_finish` in ``extract_task_result``.
+        Any incomplete closure claim is normalized to ``idle`` before it reaches this
+        method, so this terminal writer cannot accidentally close a handoff.
         """
         handed_off = self._persist_terminal_comment_handoff()
+        if result.get("outcome") == "done":
+            allowed, reason = self.can_finish(result)
+            if not allowed:
+                # Keep the public reply truthful even for direct callers that bypass
+                # extract_task_result(), then use the normal idle/release path below.
+                result["outcome"] = "idle"
+                result["finish_blocked_reason"] = reason
         if result.get("code_pushed") is False:
             log.warning("integrity: task #%s completed without code_pushed=true "
                         "(soft gate, not blocking)", self.item_id)
@@ -814,6 +917,9 @@ class TaskAoneBookend:
             log.warning("integrity: task #%s completed without backfill_done=true "
                         "(soft gate, not blocking)", self.item_id)
         reply = str(result.get("reply_body") or "").strip()
+        blocked_reason = str(result.get("finish_blocked_reason") or "").strip()
+        if blocked_reason:
+            reply += "\n\n自动关单保护：%s；工单已保持待跟进。" % blocked_reason
         links = result.get("mr_cr_links") or []
         body = "%s\n\n关联：%s" % (reply, " ".join(links)) if links else reply
         event_key = self._scope_event_key("task-reply")
