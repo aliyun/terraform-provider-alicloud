@@ -48,28 +48,35 @@ Never commit the plaintext token to tracked files, skill files, tests, or Aone c
 
 Note: the WAF classification gate requires an `X-Request-Context` header — the helper sends it automatically on every upload (default `rctx_a3f90b7e2d41c8f6`, override via env `JARVIS_HTML_REPORT_WAF_HEADER`). It does **not** exempt base64-image payloads: even with the header, inline `data:` images are still blocked — keep images external per the workaround below.
 
-**Workaround — host images externally with private OSS objects and signed GET URLs:**
+**Workaround — use AutomationAgent's private image upload API and signed GET URLs:**
 
-Never make report screenshots public-read. Upload them to a private bucket or as private objects, then reference time-limited signed GET URLs from the HTML.
+Never make report screenshots public-read. Use the repository-owned screenshot helper; it loads the
+same server token through `bootstrap/runtime-config.sh` and uploads each PNG/JPG as multipart:
 
-1. Upload each screenshot to OSS with private ACL:
-   ```bash
-   aliyun oss cp shot.jpg oss://<bucket>/<path>/shot.jpg --acl private -e oss-<region>.aliyuncs.com -f
-   ```
-2. Generate a signed GET URL and use that URL in the report HTML. For a half-year expiry, use `15768000` seconds:
-   ```bash
-   aliyun oss sign oss://<bucket>/<path>/shot.jpg --timeout 15768000 -e oss-<region>.aliyuncs.com
-   ```
-3. In the report HTML use `<img src="<signed-url>">` (HTTPS absolute URL, no base64, no relative path).
-4. Upload the HTML — with only URLs in the body it passes the WAF, and the preview renders the images from OSS.
+```bash
+bash .Codex/skills/screenshot-evidence/scripts/upload-screenshots.sh \
+  <aone-id> <screenshot-dir> > image-urls.txt
+```
+
+The helper calls `POST /api/reports/aone/<aone-id>/images` with multipart field `file` and emits
+`name|signed_url`. In the report HTML use the returned HTTPS URL as
+`<img src="<signed-url>">` (no base64, no relative path), then upload the HTML normally.
+
+Image storage is a service-side boundary. AutomationAgent alone accesses the private
+`jarvis-upload-files` bucket. Before any storage operation it must verify through STS that the caller
+account is exactly `1983056807138283`, discover the bucket region/endpoint, write private objects,
+and return only time-limited signed GET URLs. Identity mismatch, unavailable identity/region,
+upload failure, or signing failure must fail closed.
 
 Validation before sharing the report:
 
-- Unsigned direct object URL must not be publicly readable; `curl -fsS "https://<bucket>.oss-<region>.aliyuncs.com/<path>/shot.jpg"` should fail, normally with 403.
+- Server acceptance tests must prove an unsigned object URL is not publicly readable (normally 403).
 - Signed URL must load with GET, for example `curl -fL "<signed-url>" -o /tmp/shot.jpg`. Do not use HEAD as the proof; OSS signatures are method-sensitive and a GET-signed URL can return 403 for HEAD.
 - The uploaded preview page must load the image in a browser (`naturalWidth > 0` / image `onload`). Record the signed URL expiry time in notes when the report is intended to stay reviewable for months.
 
-Credential boundary: HTML report upload only relies on `JARVIS_HTML_REPORT_TOKEN`; OSS upload/signing needs a Jarvis/team-approved private bucket and least-privilege credentials. Do not use arbitrary personal AKSK or random buckets. If no approved private OSS signing capability exists, escalate instead of claiming image evidence is fixed.
+Credential boundary: HTML and screenshot clients rely only on `JARVIS_HTML_REPORT_TOKEN`. Never
+configure, decrypt, log, or pass storage credentials to an agent or local client; do not fall back
+to personal AK/SK, browser cookies, a different bucket, or direct local storage CLI calls.
 
 Keep screenshots reasonably compressed (e.g. `sips -Z 900 -s format jpeg`). Text/tables/CSS in the HTML are fine; only base64 image blobs trip the gate.
 
