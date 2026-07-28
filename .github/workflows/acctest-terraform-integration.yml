@@ -1,35 +1,104 @@
 name: Terrafrom Integration Checks
 on:
   pull_request_review:
-    types: [edited, submitted]
-    paths:
-      - alicloud/*.go
+    types: [submitted]
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
-  IntegrationTest:
-    if: github.event.review.state == 'approved' || github.event.review.body == 'approved'
-    runs-on: ubuntu-latest
+  route:
+    if: ${{ github.event.review.state == 'approved' }}
     permissions:
+      checks: read
+    runs-on: terraform-ci-policy
+    timeout-minutes: 3
+    outputs:
+      classification: ${{ steps.select.outputs.classification }}
+      relevant: ${{ steps.select.outputs.relevant }}
+      runner: ${{ steps.select.outputs.runner }}
+    steps:
+      - name: Validate review and select runner
+        id: select
+        uses: aliyun/terraform-provider-alicloud/.github/actions/terraform-ci-select-policy@1c4bb6762031f53732611700cad5d71d1ec84dfe
+
+  IntegrationTest:
+    needs: route
+    if: ${{ needs.route.outputs.relevant == 'true' }}
+    runs-on: ${{ fromJSON(needs.route.outputs.runner) }}
+    permissions:
+      actions: read
       contents: read
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Setup Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: '1.25.x'
-      - uses: ReeganExE/github-action-job-id@v1.0
-        with:
-          expose-name: true
-      - uses: jwalton/gh-find-current-pr@v1
-        id: findPr
-        with:
-          # Can be "open", "closed", or "all".  Defaults to "open".
-          state: open
+          cache: false
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
           # Checkout as many commits as needed for the diff
           fetch-depth: 2
+      - name: Resolve current job URL
+        id: job
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        env:
+          EXPECTED_JOB_NAME: IntegrationTest
+        with:
+          script: |
+            const expectedJobName = process.env.EXPECTED_JOB_NAME;
+            const runAttempt = Number(process.env.GITHUB_RUN_ATTEMPT);
+            if (
+              expectedJobName !== "IntegrationTest" ||
+              !Number.isSafeInteger(context.runId) ||
+              context.runId <= 0 ||
+              !Number.isSafeInteger(runAttempt) ||
+              runAttempt <= 0
+            ) {
+              throw new Error("Workflow job metadata is invalid.");
+            }
+
+            const jobs = await github.paginate(
+              github.rest.actions.listJobsForWorkflowRunAttempt,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                run_id: context.runId,
+                attempt_number: runAttempt,
+                per_page: 100,
+              }
+            );
+            const matches = jobs.filter(
+              (job) => job?.name === expectedJobName
+            );
+            if (matches.length !== 1) {
+              throw new Error("Current workflow job is missing or ambiguous.");
+            }
+
+            const job = matches[0];
+            const expectedUrl =
+              `${new URL(context.serverUrl).origin}/` +
+              `${context.repo.owner}/${context.repo.repo}/actions/runs/` +
+              `${context.runId}/job/${job.id}`;
+            if (
+              !Number.isSafeInteger(job.id) ||
+              job.id <= 0 ||
+              job.run_id !== context.runId ||
+              job.head_sha !== context.payload.pull_request.head.sha ||
+              job.html_url !== expectedUrl
+            ) {
+              throw new Error("Current workflow job metadata is invalid.");
+            }
+            core.setOutput("html-url", expectedUrl);
       - name: Integration Test Check
+        env:
+          JOB_HTML_URL: ${{ steps.job.outputs.html-url }}
         run: |
           # diffFiles=$(git diff --name-only HEAD^ HEAD | grep "^alicloud/" | grep ".go$" | grep -v "_test.go$")
           diffFiles=$(git diff --name-only HEAD^ HEAD)
@@ -70,36 +139,87 @@ jobs:
               echo -e "\n\033[33m[WARNING]\033[0m the pr is no need to run integration test. \033[0m"
               exit 0
           fi
-          IN=$GH_JOB_IntegrationTest_HTML_URL
+          IN=$JOB_HTML_URL
           arrIN=(${IN//actions/ })
           ossObjectPath="github-actions"${arrIN[1]}
           go run scripts/integration/receive/integration_check.go ${ossObjectPath}
 
   DocsExampleTest:
-    if: github.event.review.state == 'approved' || github.event.review.body == 'approved'
-    runs-on: ubuntu-latest
-    needs: IntegrationTest
+    needs:
+      - route
+      - IntegrationTest
+    if: ${{ needs.route.outputs.relevant == 'true' }}
+    runs-on: ${{ fromJSON(needs.route.outputs.runner) }}
     permissions:
+      actions: read
       contents: read
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Setup Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: '1.25.x'
-      - uses: ReeganExE/github-action-job-id@v1.0
-        with:
-          expose-name: true
-      - uses: jwalton/gh-find-current-pr@v1
-        id: findPr
-        with:
-          # Can be "open", "closed", or "all".  Defaults to "open".
-          state: open
+          cache: false
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
           # Checkout as many commits as needed for the diff
           fetch-depth: 2
+      - name: Resolve current job URL
+        id: job
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        env:
+          EXPECTED_JOB_NAME: DocsExampleTest
+        with:
+          script: |
+            const expectedJobName = process.env.EXPECTED_JOB_NAME;
+            const runAttempt = Number(process.env.GITHUB_RUN_ATTEMPT);
+            if (
+              expectedJobName !== "DocsExampleTest" ||
+              !Number.isSafeInteger(context.runId) ||
+              context.runId <= 0 ||
+              !Number.isSafeInteger(runAttempt) ||
+              runAttempt <= 0
+            ) {
+              throw new Error("Workflow job metadata is invalid.");
+            }
+
+            const jobs = await github.paginate(
+              github.rest.actions.listJobsForWorkflowRunAttempt,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                run_id: context.runId,
+                attempt_number: runAttempt,
+                per_page: 100,
+              }
+            );
+            const matches = jobs.filter(
+              (job) => job?.name === expectedJobName
+            );
+            if (matches.length !== 1) {
+              throw new Error("Current workflow job is missing or ambiguous.");
+            }
+
+            const job = matches[0];
+            const expectedUrl =
+              `${new URL(context.serverUrl).origin}/` +
+              `${context.repo.owner}/${context.repo.repo}/actions/runs/` +
+              `${context.runId}/job/${job.id}`;
+            if (
+              !Number.isSafeInteger(job.id) ||
+              job.id <= 0 ||
+              job.run_id !== context.runId ||
+              job.head_sha !== context.payload.pull_request.head.sha ||
+              job.html_url !== expectedUrl
+            ) {
+              throw new Error("Current workflow job metadata is invalid.");
+            }
+            core.setOutput("html-url", expectedUrl);
       - name: Docs Example Test Check
+        env:
+          JOB_HTML_URL: ${{ steps.job.outputs.html-url }}
         run: |
           diffFiles=$(git diff --name-only HEAD^ HEAD)
           noNeedRun=true
@@ -151,7 +271,7 @@ jobs:
             echo -e "\n\033[33m[WARNING]\033[0m the pr is no need to run example.\033[0m"
             exit 0
           fi
-          IN=$GH_JOB_DocsExampleTest_HTML_URL
+          IN=$JOB_HTML_URL
           arrIN=(${IN//actions/ })
           ossObjectPath="github-actions"${arrIN[1]}
           go run scripts/example/example_check.go ${ossObjectPath}
