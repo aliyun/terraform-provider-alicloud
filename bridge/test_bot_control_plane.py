@@ -2172,7 +2172,9 @@ class TaskBookendDispatchTest(unittest.TestCase):
 
     def test_done_writes_reply_then_finishes(self):
         out, calls = self._run(
-            '[[AONE_RESULT:{"outcome":"done","reply_body":"结论 done"}]]')
+            '[[AONE_RESULT:{"outcome":"done","reply_body":"结论 done",'
+            '"resolution":{"kind":"implemented_and_verified"},'
+            '"evidence":["ACC passed"],"open_dependencies":[],"handoff":{}}]]')
         self.assertEqual(out, "done")
         self.assertIn("reply", calls)
         self.assertIn("finish", calls)
@@ -2420,7 +2422,9 @@ class TaskBookendDispatchTest(unittest.TestCase):
         handed_off = []
         out, calls = self._run(
             '[[AONE_RESULT:{"outcome":"done","reply_body":"done",'
-            '"handled_comment_id":"10"}]]',
+            '"handled_comment_id":"10",'
+            '"resolution":{"kind":"implemented_and_verified"},'
+            '"evidence":["ACC passed"],"open_dependencies":[],"handoff":{}}]]',
             expected_comment_cursor="10", kind="ticket",
             comment_reader=lambda: {
                 "id": 11, "creator": "reviewer", "content": "new"},
@@ -2429,6 +2433,61 @@ class TaskBookendDispatchTest(unittest.TestCase):
         self.assertEqual(len(handed_off), 1)
         self.assertIn("release", calls)
         self.assertNotIn("finish", calls)
+
+    def test_unverified_done_is_released_not_finished(self):
+        # A provider no-op while Terraform Core remains unverified is a pending
+        # dependency, never a terminal completion.
+        out, calls = self._run(
+            '[[AONE_RESULT:{"outcome":"done","reply_body":"provider 无改动",'
+            '"resolution":{"kind":"existing_supported_and_verified"},'
+            '"evidence":[],"open_dependencies":["Terraform Core 评估"],'
+            '"handoff":{}}]]')
+        self.assertEqual(out, "done")
+        self.assertIn("release", calls)
+        self.assertNotIn("finish", calls)
+        self.assertIn("自动关单保护", calls["reply"][0][3])
+
+    def test_no_code_done_needs_current_human_close_authorization(self):
+        result = (
+            '[[AONE_RESULT:{"outcome":"done","reply_body":"已有能力已验证",'
+            '"resolution":{"kind":"existing_supported_and_verified"},'
+            '"evidence":["验证记录"],"open_dependencies":[],"handoff":{},'
+            '"close_authorized_comment_id":"10"}]]')
+        blocked, blocked_calls = self._run(
+            result, comment_reader=lambda: {
+                "id": 11, "creator": "requester", "content": "继续跟进"})
+        self.assertEqual(blocked, "done")
+        self.assertIn("release", blocked_calls)
+        self.assertNotIn("finish", blocked_calls)
+
+        allowed, allowed_calls = self._run(
+            result, comment_reader=lambda: {
+                "id": 10, "creator": "requester", "content": "确认可关闭"})
+        self.assertEqual(allowed, "done")
+        self.assertIn("finish", allowed_calls)
+        self.assertNotIn("release", allowed_calls)
+
+    def test_external_handoff_is_released_not_finished(self):
+        out, calls = self._run(
+            '[[AONE_RESULT:{"outcome":"done","reply_body":"已交接",'
+            '"resolution":{"kind":"external_handoff"},"evidence":[], '
+            '"open_dependencies":["外部承接验证"],'
+            '"handoff":{"owner":"521957","source_comment":"125467801",'
+            '"tracker":"OSS lock"}}]]')
+        self.assertEqual(out, "done")
+        self.assertIn("release", calls)
+        self.assertNotIn("finish", calls)
+
+    def test_unknown_scope_becomes_suspend_for_named_owner(self):
+        out, calls = self._run(
+            '[[AONE_RESULT:{"outcome":"done","reply_body":"未知归属",'
+            '"resolution":{"kind":"unknown_scope"},"evidence":[], '
+            '"open_dependencies":["确认责任域"],'
+            '"handoff":{"owner":"521957","source_comment":"125467801",'
+            '"tracker":"责任域确认"}}]]')
+        self.assertEqual(out["status"], "suspended")
+        self.assertNotIn("finish", calls)
+        self.assertNotIn("release", calls)
 
     def test_suspend_with_new_comment_completes_and_releases(self):
         handed_off = []
@@ -2807,13 +2866,35 @@ class ExtractTaskResultTest(unittest.TestCase):
 
     def test_valid_done_result(self):
         text = ('前言\n[[AONE_RESULT:{"outcome":"done","reply_body":"结论 X",'
-                '"target_status":"已发布","mr_cr_links":["http://mr/1"]}]]\n尾')
+                '"target_status":"已发布","mr_cr_links":["http://mr/1"],'
+                '"resolution":{"kind":"implemented_and_verified"},'
+                '"evidence":["ACC passed"],"open_dependencies":[],"handoff":{}}]]\n尾')
         clean, res = bot.extract_task_result(text)
         self.assertNotIn("AONE_RESULT", clean)
         self.assertEqual(res["outcome"], "done")
         self.assertEqual(res["reply_body"], "结论 X")
         self.assertEqual(res["target_status"], "已发布")
         self.assertEqual(res["mr_cr_links"], ["http://mr/1"])
+
+    def test_external_handoff_normalizes_done_to_idle(self):
+        _clean, res = bot.extract_task_result(
+            '[[AONE_RESULT:{"outcome":"done","reply_body":"交接中",'
+            '"resolution":{"kind":"external_handoff"},'
+            '"handoff":{"owner":"521957","source_comment":"125467801",'
+            '"tracker":"Core"}}]]')
+        self.assertEqual(res["outcome"], "idle")
+
+    def test_unknown_scope_requires_named_human_owner(self):
+        _clean, missing = bot.extract_task_result(
+            '[[AONE_RESULT:{"outcome":"done","reply_body":"未知",'
+            '"resolution":{"kind":"unknown_scope"},"handoff":{}}]]')
+        self.assertIsNone(missing)
+        _clean, result = bot.extract_task_result(
+            '[[AONE_RESULT:{"outcome":"done","reply_body":"未知",'
+            '"resolution":{"kind":"unknown_scope"},'
+            '"handoff":{"owner":"521957"}}]]')
+        self.assertEqual(result["outcome"], "suspend")
+        self.assertEqual(result["suspend_wait_for"], "521957")
 
     def test_5406_character_reply_is_not_clamped_before_final_publisher(self):
         reply = "结论：" + "中" * 5403
