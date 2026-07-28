@@ -1,24 +1,135 @@
 name: Terrafrom Basic Checks
 on:
-  pull_request:
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+      - synchronize
     paths:
-      - .github/workflows/acctest-terraform-basic.yml
+      - .github/workflows/**
+      - .github/actions/**
+      - .github/CODEOWNERS
+      - action.yml
+      - action.yaml
       - alicloud/*.go
     branches:
       - master
 
+permissions:
+  pull-requests: read
+
 jobs:
-  BreakingChange:
+  route:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
+    outputs:
+      runner: ${{ steps.select.outputs.runner }}
+    steps:
+      - name: Select runner
+        id: select
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            const fallbackRunner = JSON.stringify("ubuntu-latest");
+            const trustedRunner = JSON.stringify("terraform-ci-trusted");
+            core.setOutput("runner", fallbackRunner);
+
+            const pullRequest = context.payload.pull_request;
+            const author = pullRequest?.user?.login;
+            const headRepository = pullRequest?.head?.repo?.full_name;
+            const headSha = pullRequest?.head?.sha;
+            const pullNumber = pullRequest?.number;
+            const changedFileCount = pullRequest?.changed_files;
+            const repositoryPattern =
+              /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})\/[A-Za-z0-9._-]{1,100}$/;
+
+            if (
+              typeof author !== "string" ||
+              author.length === 0 ||
+              typeof headRepository !== "string" ||
+              !repositoryPattern.test(headRepository) ||
+              !/^[0-9a-f]{40}$/.test(headSha ?? "") ||
+              !Number.isSafeInteger(pullNumber) ||
+              pullNumber <= 0 ||
+              !Number.isSafeInteger(changedFileCount) ||
+              changedFileCount <= 0 ||
+              changedFileCount > 3000
+            ) {
+              throw new Error("Pull request metadata is invalid.");
+            }
+
+            const changedFiles = [];
+            const pageCount = Math.ceil(changedFileCount / 100);
+            for (let page = 1; page <= pageCount; page += 1) {
+              const response = await github.rest.pulls.listFiles({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pullNumber,
+                per_page: 100,
+                page,
+              });
+              if (!Array.isArray(response?.data)) {
+                throw new Error("Changed-files API returned invalid data.");
+              }
+              changedFiles.push(...response.data);
+            }
+
+            if (
+              changedFiles.length !== changedFileCount ||
+              changedFiles.some(
+                (file) => typeof file?.filename !== "string" || file.filename.length === 0
+              )
+            ) {
+              throw new Error("Changed-files API result is incomplete or invalid.");
+            }
+
+            const protectedPathChanged = changedFiles.some(({ filename }) =>
+              filename.startsWith(".github/workflows/") ||
+              filename.startsWith(".github/actions/") ||
+              filename === ".github/CODEOWNERS" ||
+              filename === "action.yml" ||
+              filename === "action.yaml"
+            );
+
+            const allowlistedAutomation =
+              author === "api-tool-agent" &&
+              headRepository === "api-tool-agent/terraform-provider-alicloud";
+
+            let trusted = allowlistedAutomation;
+            try {
+              if (!trusted) {
+                const response = await github.rest.repos.getCollaboratorPermissionLevel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  username: author,
+                });
+                trusted = response.data.permission === "admin" || response.data.permission === "write";
+              }
+            } catch {
+              core.warning("Permission lookup failed; using GitHub-hosted runner.");
+            }
+
+            if (!trusted && protectedPathChanged) {
+              throw new Error("External pull request modifies protected CI control paths.");
+            }
+
+            if (trusted) {
+              core.setOutput("runner", trustedRunner);
+            }
+
+  BreakingChange:
+    needs: route
+    runs-on: ${{ fromJSON(needs.route.outputs.runner) }}
     steps:
       - name: Setup Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: '1.25.x'
+          cache: false
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
           # Checkout as many commits as needed for the diff
           fetch-depth: 2
       - name: Attribute Breaking Change Check
@@ -27,16 +138,19 @@ jobs:
           go run scripts/compatibility/breaking_change_check.go -fileNames="diff.out"
 
   Consistency:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
+    needs: route
+    runs-on: ${{ fromJSON(needs.route.outputs.runner) }}
     steps:
       - name: Setup Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: '1.25.x'
+          cache: false
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
           # Checkout as many commits as needed for the diff
           fetch-depth: 2
       - name: Attribute Consistency Check
@@ -45,18 +159,21 @@ jobs:
           go run scripts/consistency/consistency_check.go -fileNames="diff.out"
 
   Formatter:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
+    needs: route
+    runs-on: ${{ fromJSON(needs.route.outputs.runner) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
           # Checkout as many commits as needed for the diff
           fetch-depth: 2
       - name: Set up Go Version
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: '1.25.x'
+          cache: false
 
       - name: Get dependencies
         run: |
@@ -95,18 +212,21 @@ jobs:
 
 
   Compile:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
+    needs: route
+    runs-on: ${{ fromJSON(needs.route.outputs.runner) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
           # Checkout as many commits as needed for the diff
           fetch-depth: 2
       - name: Set up Go Version
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: '1.25.x'
+          cache: false
       - name: vet
         run: |
           make vet
