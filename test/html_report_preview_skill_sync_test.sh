@@ -36,10 +36,18 @@ for skill in \
     "must not call \`wrap.sh\`" \
     "buc_required" \
     "Never make report screenshots public-read" \
-    "--acl private" \
-    "oss sign" \
-    "--timeout 15768000" \
+    "upload-screenshots.sh" \
+    "POST /api/reports/aone/<aone-id>/images" \
+    "file" \
+    "name|signed_url" \
+    "jarvis-upload-files" \
+    "1983056807138283" \
+    "runtime-config.sh" \
     "GET-signed URL" \
+    "invalid_image_reference" \
+    "<img srcset>" \
+    "<picture><source srcset>" \
+    "protocol-relative URLs" \
     "rgv587_flag:sm" \
     "inline script" \
     "禁止规避" \

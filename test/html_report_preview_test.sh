@@ -257,6 +257,93 @@ else
     assert_pass "reflected failure does not leak the token"
 fi
 
+echo "=== Test 9: accept only absolute HTTPS report image references ==="
+safe_images="$tmpdir/safe-images.html"
+cat >"$safe_images" <<'HTML'
+<html><body>
+  <img src="https://images.example/openapi.png?Expires=1&amp;Signature=ok"
+       srcset="https://images.example/openapi.png 1x, https://images.example/openapi@2x.png 2x">
+  <picture>
+    <source srcset="https://images.example/cloudspec.webp 1x, https://images.example/cloudspec@2x.webp 2x">
+    <img src="https://images.example/provider.png">
+  </picture>
+  <source srcset="relative-non-picture-media.mp4">
+</body></html>
+HTML
+: >"$curl_log"
+output=$(CURL_LOG="$curl_log" JARVIS_CURL_BIN="$tmpbin/curl" JARVIS_HTML_REPORT_TOKEN="test-token" \
+    bash "$proj_root/bootstrap/html-report-preview.sh" upload FAKE_AONE_ID "$safe_images" \
+    --base-url https://pre.example 2>&1)
+exit_code=$?
+echo "$output"
+if [ "$exit_code" -eq 0 ]; then
+    assert_pass "absolute HTTPS img/picture references are accepted"
+else
+    assert_fail "absolute HTTPS img/picture references should upload (got $exit_code)"
+fi
+
+assert_rejected_image_reference() {
+    local name="$1"
+    local markup="$2"
+    local fixture="$tmpdir/reject-$name.html"
+    printf '%s\n' "$markup" >"$fixture"
+    : >"$curl_log"
+    output=$(CURL_LOG="$curl_log" JARVIS_CURL_BIN="$tmpbin/curl" \
+        JARVIS_HTML_REPORT_TOKEN="test-token" \
+        bash "$proj_root/bootstrap/html-report-preview.sh" upload FAKE_AONE_ID "$fixture" \
+        --base-url https://pre.example 2>&1)
+    exit_code=$?
+    if [ "$exit_code" -ne 0 ]; then
+        assert_pass "$name image reference is rejected"
+    else
+        assert_fail "$name image reference must be rejected"
+    fi
+    assert_contains "$output" "invalid_image_reference" "$name uses a fixed fail-closed diagnostic"
+    if [ ! -s "$curl_log" ]; then
+        assert_pass "$name is rejected before curl"
+    else
+        assert_fail "$name must not call curl (log: $(cat "$curl_log"))"
+    fi
+}
+
+assert_rejected_image_reference relative-src '<img src="screenshots/openapi.png">'
+assert_rejected_image_reference file-src '<img src="file:///tmp/openapi.png">'
+assert_rejected_image_reference data-src '<img src="data:image/png;base64,AAAA">'
+assert_rejected_image_reference protocol-relative-src '<img src="//images.example/openapi.png">'
+assert_rejected_image_reference http-src '<img src="http://images.example/openapi.png">'
+assert_rejected_image_reference relative-img-srcset \
+    '<img src="https://images.example/openapi.png" srcset="https://images.example/openapi.png 1x, screenshots/openapi.png 2x">'
+assert_rejected_image_reference relative-picture-srcset \
+    '<picture><source srcset="screenshots/openapi.webp 1x"><img src="https://images.example/openapi.png"></picture>'
+
+echo "=== Test 10: preflight the whole ZIP before uploading any member ==="
+unsafe_zip="$tmpdir/unsafe-reports.zip"
+python3 - "$unsafe_zip" <<'PY'
+import sys
+import zipfile
+
+with zipfile.ZipFile(sys.argv[1], "w") as archive:
+    archive.writestr("001-safe.html", '<img src="https://images.example/openapi.png">')
+    archive.writestr("002-unsafe.html", '<img src="screenshots/cloudspec.png">')
+PY
+: >"$curl_log"
+output=$(CURL_LOG="$curl_log" JARVIS_CURL_BIN="$tmpbin/curl" JARVIS_HTML_REPORT_TOKEN="test-token" \
+    bash "$proj_root/bootstrap/html-report-preview.sh" upload FAKE_AONE_ID "$unsafe_zip" \
+    --base-url https://pre.example 2>&1)
+exit_code=$?
+echo "$output"
+if [ "$exit_code" -ne 0 ]; then
+    assert_pass "unsafe ZIP is rejected"
+else
+    assert_fail "unsafe ZIP must be rejected"
+fi
+assert_contains "$output" "invalid_image_reference" "unsafe ZIP uses fixed fail-closed diagnostic"
+if [ ! -s "$curl_log" ]; then
+    assert_pass "unsafe ZIP performs no partial uploads"
+else
+    assert_fail "unsafe ZIP must be fully validated before curl (log: $(cat "$curl_log"))"
+fi
+
 echo ""
 echo "=== Summary ==="
 echo "PASS: $PASS  FAIL: $FAIL"

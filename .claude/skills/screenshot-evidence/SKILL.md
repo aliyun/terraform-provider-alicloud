@@ -20,9 +20,10 @@ description: 可视化查证截图取证——aone-triage / terraform-pr-review 
 ## 前置条件
 
 - **Playwright MCP** 已连接（`mcp__playwright__*` 工具可用）
-- **aliyun CLI** 已认证（`aliyun oss` 可用）
-- **OSS bucket**: `jarvis-report-images`（cn-hangzhou, private）
-- **JARVIS_HTML_REPORT_TOKEN** 已设置（pre-agent 上传）
+- **JARVIS_HTML_REPORT_TOKEN** 已通过运行时配置注入（截图与 HTML 都走 server-token）
+- **JARVIS_HTML_REPORT_BASE_URL** 可选；默认 `https://pre-agent.aliyun-inc.com`
+- 截图存储由 AutomationAgent 服务端负责：私有 bucket `jarvis-upload-files`，owner
+  account `1983056807138283`
 - **html-report-preview.sh** 内建 `X-Request-Context` WAF header（env `JARVIS_HTML_REPORT_WAF_HEADER` 可覆盖），无需额外处理
 
 ## 取证流程
@@ -100,27 +101,33 @@ python3 .claude/skills/screenshot-evidence/scripts/validate-manifest.py \
 校验器要求三层各一行；pass/fail 的截图必须是实际存在的绝对路径，n-a 必须使用 `N/A`
 并给出原因。校验失败即 blocked/missing_capability，不得继续生成“完整证据”报告。
 
-### Step 3: 上传 OSS + 生成签名 URL
+### Step 3: 通过服务端上传私有图片并获取签名 URL
 
-```bash
-BUCKET="oss://jarvis-report-images"
-ENDPOINT="oss-cn-hangzhou.aliyuncs.com"
-PREFIX="reports/<aone-id>"
-TIMEOUT=15768000  # 6 个月
+客户端不接触 OSS 凭据。辅助脚本先 source `bootstrap/runtime-config.sh` 并调用
+`jarvis_load_runtime_config`，再使用 `JARVIS_HTML_REPORT_TOKEN` 逐张调用：
 
-# 上传（private ACL）
-aliyun oss cp <file>.png "${BUCKET}/${PREFIX}/<file>.png" --acl private -e "$ENDPOINT" -f
-
-# 生成签名 URL
-aliyun oss sign "${BUCKET}/${PREFIX}/<file>.png" --timeout "$TIMEOUT" -e "$ENDPOINT"
+```text
+POST /api/reports/aone/<aone-id>/images
+Authorization: Bearer <server-token>
+Content-Type: multipart/form-data
+file=@<screenshot>
 ```
 
-**辅助脚本**批量处理上传 + 签名：
+AutomationAgent 服务端负责把对象写入 `jarvis-upload-files`。服务端必须在首次实际 OSS
+操作前调用 STS 校验当前账号严格等于 `1983056807138283`；账号不符、无法取得身份、
+bucket region/endpoint 无法发现、private 写入失败或签名失败时都要 fail-closed。对象保持
+private，只向客户端返回限时 signed GET URL。
+
+**辅助脚本**批量上传 PNG/JPG：
 
 ```bash
 bash .claude/skills/screenshot-evidence/scripts/upload-screenshots.sh <aone-id> <screenshot-dir>
-# 输出: name|signed_url 行打到 stdout(每文件一行,需要落盘自行重定向)
+# 输出：name|signed_url（stdout 每文件一行，需要落盘时自行重定向）
 ```
+
+脚本错误只输出固定脱敏错误码，不回显 token 或服务端响应。缺 token 返回 exit code 3；
+任一文件上传失败则不输出任何部分结果。禁止绕过该接口在本地配置、解密或调用个人
+AK/SK，也禁止把任何明文/密文凭据放进命令参数、日志、报告或工单。
 
 ### Step 4: 组装 HTML 报告
 
@@ -167,17 +174,18 @@ Terraform 主处理 run 不单独更新 description，也不调用 `--comment`�
 |------|------|------|
 | Aone 评论区不 autolink 裸 URL、不渲染 `<a href>` | 裸 URL/HTML 锚都是不可点的死文本 | 评论与详情一律用 markdown `[text](url)`（唯一可点格式，84307546 评论 124870464 实测） |
 | Aone 渲染器剥离 `<img src>` 的 query 参数 | OSS 签名 URL 失效 → 403 | 图片只在 pre-agent 在线报告中展示 |
-| 账号级 Block Public Access | OSS 对象无法 public-read | 必须用签名 URL |
+| 账号级 Block Public Access | OSS 对象无法 public-read | 服务端保持 private 并返回签名 URL |
 | pre-agent WAF 拦截 base64 data URI | HTML 中不能内嵌图片 | 图片走 OSS 签名 URL |
 
 ## OSS Bucket 规范
 
-- **Bucket**: `jarvis-report-images`（cn-hangzhou）
-- **ACL**: 对象级 private
-- **路径规则**: `reports/<aone-id>/<screenshot-name>.png`
-- **签名有效期**: 6 个月（`15768000` 秒）
-- **禁止**: public-read（账号策略阻止 + skill 规范禁止）
-- **禁止**: 使用个人 AKSK 或其他 bucket
+- **服务端唯一 Bucket**: `jarvis-upload-files`
+- **Owner account**: `1983056807138283`（STS 必须精确匹配，否则 fail-closed）
+- **Region/endpoint**: 服务端从 bucket 元数据发现，不在客户端硬编码
+- **ACL**: bucket 与对象均为 private
+- **服务端对象前缀**: `reports/aone/<aone-id>/images/<uuid>-<original-filename>`
+- **访问方式**: 服务端返回限时 signed GET URL；无签名直链不得公开可读
+- **禁止**: public-read、其他 bucket、本地 OSS 凭据、个人 AK/SK、把凭据传给 agent
 
 ## 与 aone-triage 集成
 

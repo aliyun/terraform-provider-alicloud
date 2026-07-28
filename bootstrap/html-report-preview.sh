@@ -218,6 +218,113 @@ collect_html_inputs() {
     fi
 }
 
+validate_html_image_references() {
+    local file="$1"
+
+    python3 - "$file" <<'PY'
+import re
+import sys
+from html.parser import HTMLParser
+from urllib.parse import urlsplit
+
+
+def valid_https_url(value):
+    if not value or value != value.strip():
+        return False
+    if any(char.isspace() or ord(char) < 0x20 for char in value):
+        return False
+    if "\\" in value:
+        return False
+    try:
+        parsed = urlsplit(value)
+        # Accessing port also rejects malformed values such as ":not-a-port".
+        parsed.port
+    except ValueError:
+        return False
+    return (
+        parsed.scheme == "https"
+        and bool(parsed.hostname)
+        and parsed.username is None
+        and parsed.password is None
+    )
+
+
+def srcset_urls(value):
+    if not value or value != value.strip():
+        raise ValueError("empty srcset")
+    urls = []
+    for candidate in value.split(","):
+        fields = candidate.strip().split()
+        if not fields or len(fields) > 2:
+            raise ValueError("invalid srcset candidate")
+        if len(fields) == 2 and not re.fullmatch(
+            r"(?:[1-9][0-9]*w|(?:[1-9][0-9]*(?:\.[0-9]+)?|0\.[0-9]*[1-9][0-9]*)x)",
+            fields[1],
+        ):
+            raise ValueError("invalid srcset descriptor")
+        urls.append(fields[0])
+    return urls
+
+
+class ImageReferenceValidator(HTMLParser):
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.picture_depth = 0
+        self.invalid = False
+
+    def validate_url(self, value):
+        if not valid_https_url(value or ""):
+            self.invalid = True
+
+    def validate_srcset(self, value):
+        try:
+            urls = srcset_urls(value or "")
+        except ValueError:
+            self.invalid = True
+            return
+        if not all(valid_https_url(url) for url in urls):
+            self.invalid = True
+
+    def inspect(self, tag, attrs):
+        tag = tag.lower()
+        if tag == "img":
+            for name, value in attrs:
+                name = name.lower()
+                if name == "src":
+                    self.validate_url(value)
+                elif name == "srcset":
+                    self.validate_srcset(value)
+        elif tag == "source" and self.picture_depth > 0:
+            for name, value in attrs:
+                if name.lower() == "srcset":
+                    self.validate_srcset(value)
+
+    def handle_starttag(self, tag, attrs):
+        self.inspect(tag, attrs)
+        if tag.lower() == "picture":
+            self.picture_depth += 1
+
+    def handle_startendtag(self, tag, attrs):
+        self.inspect(tag, attrs)
+
+    def handle_endtag(self, tag):
+        if tag.lower() == "picture" and self.picture_depth > 0:
+            self.picture_depth -= 1
+
+
+try:
+    with open(sys.argv[1], "r", encoding="utf-8") as handle:
+        document = handle.read()
+    validator = ImageReferenceValidator()
+    validator.feed(document)
+    validator.close()
+except (OSError, UnicodeError, ValueError):
+    raise SystemExit(1)
+
+raise SystemExit(1 if validator.invalid else 0)
+PY
+}
+
 upload_one() {
     local aone_id="$1"
     local file="$2"
@@ -272,13 +379,25 @@ upload_input() {
     local aone_id="$1"
     local input="$2"
     local tmp_dir="$3"
+    local inputs_file="$tmp_dir/html-inputs.tsv"
     local count=0
+
+    collect_html_inputs "$input" "$tmp_dir" >"$inputs_file"
+
+    # Validate the entire batch before the first upload so a ZIP/directory cannot
+    # partially publish valid entries before a later unsafe report is rejected.
+    while IFS=$'\t' read -r file label; do
+        [ -n "$file" ] || continue
+        if ! validate_html_image_references "$file"; then
+            upload_failed "invalid_image_reference"
+        fi
+    done <"$inputs_file"
 
     while IFS=$'\t' read -r file label; do
         [ -n "$file" ] || continue
         upload_one "$aone_id" "$file" "$label"
         count=$((count + 1))
-    done < <(collect_html_inputs "$input" "$tmp_dir")
+    done <"$inputs_file"
 
     [ "$count" -gt 0 ] || die "no HTML files uploaded"
 }

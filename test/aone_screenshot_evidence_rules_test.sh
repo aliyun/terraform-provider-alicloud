@@ -35,13 +35,49 @@ for skill in \
     "validate-manifest.py" \
     "AONE_RESULT.reply_body" \
     "Terraform finalizer：只取预览 URL" \
-    "禁止产生第二条 Aone 评论"; do
+    "禁止产生第二条 Aone 评论" \
+    "POST /api/reports/aone/<aone-id>/images" \
+    "jarvis-upload-files" \
+    "1983056807138283" \
+    "STS 必须精确匹配" \
+    "reports/aone/<aone-id>/images/<uuid>-<original-filename>" \
+    "runtime-config.sh" \
+    "禁止把任何明文/密文凭据"; do
     grep -Fq "$term" "$skill" || {
       echo "aone_screenshot_evidence_rules_test: missing '$term' in $skill" >&2
       exit 1
     }
   done
 done
+
+for script in \
+  "$repo_root/.claude/skills/screenshot-evidence/scripts/upload-screenshots.sh" \
+  "$repo_root/.agents/skills/screenshot-evidence/scripts/upload-screenshots.sh"; do
+  for term in \
+    "bootstrap/runtime-config.sh" \
+    "jarvis_load_runtime_config" \
+    "JARVIS_HTML_REPORT_TOKEN" \
+    "JARVIS_HTML_REPORT_BASE_URL" \
+    "JARVIS_CURL_BIN" \
+    "/api/reports/aone/" \
+    "/images" \
+    "name|signed_url"; do
+    grep -Fq "$term" "$script" || {
+      echo "aone_screenshot_evidence_rules_test: upload script missing '$term' in $script" >&2
+      exit 1
+    }
+  done
+  if grep -Eq '(^|[^[:alnum:]_])aliyun([[:space:]]|$)' "$script"; then
+    echo "aone_screenshot_evidence_rules_test: upload script depends on aliyun CLI: $script" >&2
+    exit 1
+  fi
+done
+
+legacy_bucket="jarvis-report""-images"
+if git -C "$repo_root" grep -n -F "$legacy_bucket" -- .agents .claude; then
+  echo "aone_screenshot_evidence_rules_test: stale report bucket reference remains" >&2
+  exit 1
+fi
 
 for file in \
   "$repo_root/.claude/agents/terraform-pd.md" \
@@ -102,7 +138,10 @@ fi
 bash "$repo_root/bootstrap/mirror.sh" check \
   "$repo_root/.claude/skills/aone-triage/SKILL.md" \
   "$repo_root/.claude/skills/screenshot-evidence/SKILL.md" \
+  "$repo_root/.claude/skills/screenshot-evidence/scripts/upload-screenshots.sh" \
   "$repo_root/.claude/skills/screenshot-evidence/scripts/validate-manifest.py" \
+  "$repo_root/.claude/skills/screenshot-evidence/references/report-template.html" \
+  "$repo_root/.claude/skills/html-report-preview/SKILL.md" \
   "$repo_root/.claude/agents/terraform-pd.md" \
   "$repo_root/.claude/agents/terraform-rd.md"
 
