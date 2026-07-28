@@ -6,7 +6,7 @@
 #   - refuses symlink targets and a target owned by a different Label;
 #   - renders to a temporary file, validates XML, then atomically replaces;
 #   - reinstall validates first, then safely restarts an already-loaded service
-#     without bootout so an adopted Persistent Worker keeps its active leases;
+#     without bootout, waiting for the Worker to relinquish active Sessions;
 #   - never uses kickstart -k to overlap an old Scheduler with its replacement.
 set -euo pipefail
 
@@ -41,16 +41,86 @@ LOG_PATH="${JARVIS_BRIDGE_LOG:-$STATE_DIR/bot.log}"
 LAUNCHD_PATH="${JARVIS_BRIDGE_LAUNCHD_PATH:-/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${HOME:-}/.local/bin}"
 RUN_SH="$SCRIPT_DIR/run.sh"
 READY_WAIT="${JARVIS_SCHEDULER_READY_WAIT:-30}"
-DRAIN_WAIT="${JARVIS_SCHEDULER_DRAIN_TIMEOUT_SECONDS:-600}"
-PRESERVE_WORKER_ONCE="$STATE_DIR/preserve-persistent-worker-once"
+DRAIN_WAIT="${JARVIS_SCHEDULER_DRAIN_TIMEOUT_SECONDS:-30}"
 TMP_PLIST=""
+REENABLE_SERVICE=0
 
 die() { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
 cleanup() {
+  if [ "$REENABLE_SERVICE" -eq 1 ]; then
+    "$LAUNCHCTL_BIN" enable "$SERVICE" >/dev/null 2>&1 || true
+  fi
   if [ -n "$TMP_PLIST" ]; then rm -f "$TMP_PLIST"; fi
   return 0
 }
 trap cleanup EXIT
+
+managed_child_snapshot() { # $1 = supervisor pid
+  local parent_pid="$1" pidfile pid ppid
+  for pidfile in \
+      "$STATE_DIR/scheduler.pid" \
+      "$STATE_DIR/dingtalk-bot.pid" \
+      "$STATE_DIR/persistent-worker.pid"; do
+    pid="$(cat "$pidfile" 2>/dev/null || true)"
+    [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null || continue
+    ppid="$(ps -o ppid= -p "$pid" 2>/dev/null | tr -d ' ')"
+    [ "$ppid" = "$parent_pid" ] || continue
+    printf '%s:%s:%s\n' "$pidfile" "$pid" "$parent_pid"
+  done
+}
+
+snapshot_entry_owned() { # $1 = pidfile:pid:original-parent
+  local entry="$1" rest current ppid
+  CHILD_PARENT="${entry##*:}"
+  rest="${entry%:*}"
+  CHILD_PID="${rest##*:}"
+  CHILD_PIDFILE="${rest%:*}"
+  current="$(cat "$CHILD_PIDFILE" 2>/dev/null || true)"
+  [ "$current" = "$CHILD_PID" ] && kill -0 "$CHILD_PID" 2>/dev/null || return 1
+  ppid="$(ps -o ppid= -p "$CHILD_PID" 2>/dev/null | tr -d ' ')"
+  [ "$ppid" = "$CHILD_PARENT" ]
+}
+
+force_managed_snapshot() { # $1 = newline-separated pidfile:pid:parent
+  local snapshot="$1" entry rest current i=0 any_alive unresolved
+  [ -n "$snapshot" ] || return 0
+  while IFS= read -r entry; do
+    [ -n "$entry" ] || continue
+    snapshot_entry_owned "$entry" || continue
+    kill -KILL "$CHILD_PID" 2>/dev/null || true
+  done <<EOF
+$snapshot
+EOF
+  while [ "$i" -lt 20 ]; do
+    any_alive=0
+    unresolved=0
+    while IFS= read -r entry; do
+      [ -n "$entry" ] || continue
+      CHILD_PARENT="${entry##*:}"
+      rest="${entry%:*}"
+      CHILD_PID="${rest##*:}"
+      CHILD_PIDFILE="${rest%:*}"
+      current="$(cat "$CHILD_PIDFILE" 2>/dev/null || true)"
+      if [ "$current" != "$CHILD_PID" ]; then
+        continue
+      elif ! kill -0 "$CHILD_PID" 2>/dev/null; then
+        rm -f "$CHILD_PIDFILE"
+      elif snapshot_entry_owned \
+          "$CHILD_PIDFILE:$CHILD_PID:$CHILD_PARENT"; then
+        any_alive=1
+      else
+        unresolved=1
+      fi
+    done <<EOF
+$snapshot
+EOF
+    [ "$unresolved" -eq 1 ] && return 1
+    [ "$any_alive" -eq 0 ] && return 0
+    sleep 0.1
+    i=$((i + 1))
+  done
+  return 1
+}
 
 case "$LABEL" in
   *[!A-Za-z0-9._-]*|'') die "invalid launchd label: $LABEL" ;;
@@ -162,22 +232,17 @@ if detail="$("$LAUNCHCTL_BIN" print "$SERVICE" 2>/dev/null)"; then
   service_was_loaded=1
   old_pid="$(printf '%s\n' "$detail" \
     | sed -n 's/^[[:space:]]*pid = //p' | head -n1)"
-  preserve_worker=0
-  if [ "${JARVIS_BRIDGE_ROLE:-scheduler}" = "scheduler" ] && [ -n "$old_pid" ]; then
-    printf '%s\n' "$old_pid" >"$PRESERVE_WORKER_ONCE"
-    preserve_worker=1
-  fi
+  managed_children=""
+  child_cleanup_ok=1
+  [ -n "$old_pid" ] && managed_children="$(managed_child_snapshot "$old_pid")"
   "$LAUNCHCTL_BIN" disable "$SERVICE" >/dev/null 2>&1 \
-    || {
-      [ "$preserve_worker" -eq 1 ] && rm -f "$PRESERVE_WORKER_ONCE"
-      die "cannot disable loaded launchd service before drain: $SERVICE"
-    }
+    || die "cannot disable loaded launchd service before drain: $SERVICE"
+  REENABLE_SERVICE=1
   if [ -n "$old_pid" ]; then
     "$LAUNCHCTL_BIN" kill SIGTERM "$SERVICE" \
       || {
-        [ "$preserve_worker" -eq 1 ] && rm -f "$PRESERVE_WORKER_ONCE"
-        "$LAUNCHCTL_BIN" enable "$SERVICE" >/dev/null 2>&1 || true
-        die "cannot request graceful drain from loaded launchd service: $SERVICE"
+        printf 'WARNING: graceful drain request failed; force-stopping old bridge pid %s\n' \
+          "$old_pid" >&2
       }
     i=0
     deadline=$(( DRAIN_WAIT * 10 ))
@@ -186,14 +251,30 @@ if detail="$("$LAUNCHCTL_BIN" print "$SERVICE" 2>/dev/null)"; then
       i=$((i + 1))
     done
     if kill -0 "$old_pid" 2>/dev/null; then
-      [ "$preserve_worker" -eq 1 ] && rm -f "$PRESERVE_WORKER_ONCE"
-      "$LAUNCHCTL_BIN" enable "$SERVICE" >/dev/null 2>&1 || true
-      die "loaded bridge did not drain in ${DRAIN_WAIT}s; upgrade cancelled without starting a replacement"
+      printf 'loaded bridge did not drain in %ss; force-stopping before replacement\n' \
+        "$DRAIN_WAIT"
+      # Best effort before stopping the parent. A killed child may remain a
+      # zombie until the supervisor is reaped, so only the post-parent check
+      # below is authoritative.
+      force_managed_snapshot "$managed_children" || true
+      "$LAUNCHCTL_BIN" kill SIGKILL "$SERVICE" >/dev/null 2>&1 \
+        || kill -KILL "$old_pid" 2>/dev/null || true
+      i=0
+      while [ "$i" -lt 20 ] && kill -0 "$old_pid" 2>/dev/null; do
+        sleep 0.1
+        i=$((i + 1))
+      done
+      kill -0 "$old_pid" 2>/dev/null \
+        && die "cannot stop old bridge pid $old_pid before replacement"
     fi
+    child_cleanup_ok=1
+    force_managed_snapshot "$managed_children" || child_cleanup_ok=0
+    [ "$child_cleanup_ok" -eq 1 ] \
+      || die "managed bridge child ownership changed during loaded upgrade"
   fi
-  [ "$preserve_worker" -eq 1 ] && rm -f "$PRESERVE_WORKER_ONCE"
   "$LAUNCHCTL_BIN" enable "$SERVICE" >/dev/null 2>&1 \
     || die "cannot re-enable launchd service after drain: $SERVICE"
+  REENABLE_SERVICE=0
   "$LAUNCHCTL_BIN" kickstart "$SERVICE" \
     || die "cannot start replacement bridge: $SERVICE"
   if [ "$plist_changed" -eq 1 ]; then
@@ -230,15 +311,12 @@ if [ "$ready" -ne 1 ]; then
   detail="$("$LAUNCHCTL_BIN" print "$SERVICE" 2>/dev/null || true)"
   failed_pid="$(printf '%s\n' "$detail" \
     | sed -n 's/^[[:space:]]*pid = //p' | head -n1)"
+  failed_children=""
+  [ -n "$failed_pid" ] \
+    && failed_children="$(managed_child_snapshot "$failed_pid")"
   worker_pid="$(cat "$STATE_DIR/persistent-worker.pid" 2>/dev/null || true)"
-  preserve_failed_worker=0
-  if [ "${JARVIS_BRIDGE_ROLE:-scheduler}" = "scheduler" ] \
-      && [ -n "$failed_pid" ] && [ -n "$worker_pid" ] \
-      && kill -0 "$worker_pid" 2>/dev/null; then
-    printf '%s\n' "$failed_pid" >"$PRESERVE_WORKER_ONCE"
-    preserve_failed_worker=1
-  fi
   "$LAUNCHCTL_BIN" disable "$SERVICE" >/dev/null 2>&1 || true
+  [ "$service_was_loaded" -eq 1 ] && REENABLE_SERVICE=1
   if [ -n "$failed_pid" ]; then
     "$LAUNCHCTL_BIN" kill SIGTERM "$SERVICE" >/dev/null 2>&1 || true
     i=0
@@ -247,10 +325,15 @@ if [ "$ready" -ne 1 ]; then
       sleep 0.1
       i=$((i + 1))
     done
+    if kill -0 "$failed_pid" 2>/dev/null; then
+      force_managed_snapshot "$failed_children" || true
+      "$LAUNCHCTL_BIN" kill SIGKILL "$SERVICE" >/dev/null 2>&1 \
+        || kill -KILL "$failed_pid" 2>/dev/null || true
+    fi
+    force_managed_snapshot "$failed_children" || true
   fi
-  [ "$preserve_failed_worker" -eq 1 ] && rm -f "$PRESERVE_WORKER_ONCE"
-  # Never boot out a loaded job or a failed first start that already opened a
-  # durable Worker. bootout may recursively terminate the adopted lease owner.
+  # Never boot out a loaded job or a failed first start whose Worker did not
+  # finish its bounded shutdown. bootout may bypass Session relinquish.
   if [ "$service_was_loaded" -eq 0 ] \
       && { [ -z "$worker_pid" ] || ! kill -0 "$worker_pid" 2>/dev/null; }; then
     "$LAUNCHCTL_BIN" bootout "$SERVICE" >/dev/null 2>&1 || true

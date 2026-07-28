@@ -19,14 +19,19 @@ class _Executor:
         self.kwargs = kwargs
         self.stopped = False
         self.stop_calls = []
+        self.begin_shutdown_calls = 0
+        self.stop_result = True
 
     def start(self):
         return self
 
+    def begin_shutdown(self):
+        self.begin_shutdown_calls += 1
+
     def stop(self, *, drain, timeout):
         self.stop_calls.append((drain, timeout))
         self.stopped = True
-        return True
+        return self.stop_result
 
 
 class PersistentWorkerTest(unittest.TestCase):
@@ -79,7 +84,24 @@ class PersistentWorkerTest(unittest.TestCase):
         self.assertTrue(worker.stop(drain=True, timeout=7))
 
         self.assertEqual(worker.executor.stop_calls, [(True, 7)])
+        self.assertEqual(worker.executor.begin_shutdown_calls, 1)
         runtime.ephemeral_executor.terminate_all.assert_called_once_with(release_fn=release)
+        runtime.ephemeral_executor.shutdown.assert_called_once_with(
+            wait=False, cancel_futures=True)
+
+    def test_failed_handoff_is_reported_but_local_processes_are_still_cleaned(self):
+        runtime = self._runtime()
+        release = mock.Mock()
+        worker = persistent_worker.PersistentWorker(
+            runtime, executor_factory=_Executor, release_claim=release)
+        worker.executor.stop_result = False
+
+        with self.assertLogs("jarvis-persistent-worker", level="WARNING") as logs:
+            self.assertFalse(worker.stop(timeout=3))
+
+        self.assertIn("incomplete control-plane handoff", "\n".join(logs.output))
+        runtime.ephemeral_executor.terminate_all.assert_called_once_with(
+            release_fn=release)
         runtime.ephemeral_executor.shutdown.assert_called_once_with(
             wait=False, cancel_futures=True)
 
