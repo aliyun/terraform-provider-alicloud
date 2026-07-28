@@ -70,9 +70,10 @@ func resourceAliCloudEcsDisk() *schema.Resource {
 				Optional: true,
 			},
 			"enable_auto_snapshot": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Computed: true,
+				Type:       schema.TypeBool,
+				Optional:   true,
+				Computed:   true,
+				Deprecated: "This field is deprecated. The automatic snapshot policy feature is enabled by default for a cloud disk after it is created. To use the automatic snapshot policy, apply one to the cloud disk.",
 			},
 			"encrypt_algorithm": {
 				Type:     schema.TypeString,
