@@ -218,6 +218,12 @@ class ContactDirectory:
         # automation identity must not leak its WORKER_* identifier into the stat.
         if allow_automation and _is_automation(tokens):
             return None
+        alias_directory = aliases or {}
+        if any(
+                token.lower() in alias_directory
+                and not _scalar(alias_directory[token.lower()])
+                for token in tokens):
+            return None
         explicit = _explicit_staff_ids(value)
         if len(explicit) == 1:
             return next(iter(explicit))
@@ -226,9 +232,9 @@ class ContactDirectory:
                 "%s contains multiple staff IDs: %s"
                 % (field, ",".join(sorted(explicit))))
         alias_matches = {
-            _scalar((aliases or {}).get(token.lower()))
+            _scalar(alias_directory.get(token.lower()))
             for token in tokens
-            if _scalar((aliases or {}).get(token.lower()))
+            if _scalar(alias_directory.get(token.lower()))
         }
         if len(alias_matches) == 1:
             alias = next(iter(alias_matches))
@@ -316,17 +322,19 @@ def _field_map(detail: Mapping[str, Any]) -> dict[str, Mapping[str, Any]]:
 def _merge_alias(
     aliases: dict[str, str], display: Any, identity: Optional[str], *,
     field: str,
-) -> None:
+) -> bool:
     if not identity:
-        return
+        return False
+    ambiguous = False
     for token in _identity_tokens(display):
         key = token.lower()
-        previous = aliases.get(key)
-        if previous and previous != identity:
-            raise SnapshotIncomplete(
-                "%s display alias %s maps to multiple identities"
-                % (field, token))
-        aliases[key] = identity
+        if key not in aliases:
+            aliases[key] = identity
+            continue
+        if aliases[key] != identity:
+            aliases[key] = ""
+            ambiguous = True
+    return ambiguous
 
 
 def _comment_key(comment: Mapping[str, Any]) -> tuple[float, int, str]:
@@ -677,6 +685,7 @@ class AoneWorkitemOwnershipRunner:
             displays = []
         resolved: list[str] = []
         aliases: dict[str, str] = {}
+        ambiguous_alias = False
         for index, value in enumerate(values):
             identity = _identity_reference(value)
             staff_id = self._contact_directory().resolve(
@@ -688,10 +697,15 @@ class AoneWorkitemOwnershipRunner:
                 resolved.append(staff_id)
                 identity = identity or staff_id
             if displays:
-                _merge_alias(
+                ambiguous_alias = _merge_alias(
                     aliases, displays[index], identity,
                     field="%s/%s %s[%d]" % (
-                        project, aone_id, label, index))
+                        project, aone_id, label, index)
+                ) or ambiguous_alias
+        if ambiguous_alias:
+            self._log.warning(
+                "aone-workitem-ownership: marked ambiguous %s aliases "
+                "project=%s aone=%s", label, project, aone_id)
         return sorted(set(resolved)), aliases
 
     def _parse_detail(
@@ -712,21 +726,29 @@ class AoneWorkitemOwnershipRunner:
             project=project, aone_id=aone_id,
             label="assignee", multiple=False)
 
-        def merge_aliases(source: Mapping[str, str]) -> None:
+        def merge_aliases(
+            source: Mapping[str, str], source_label: str,
+        ) -> None:
+            ambiguous_alias = False
             for alias, identity in source.items():
-                previous = aliases.get(alias)
-                if previous and previous != identity:
-                    raise SnapshotIncomplete(
-                        "%s/%s alias %s maps to multiple identities"
-                        % (project, aone_id, alias))
-                aliases[alias] = identity
+                if alias not in aliases:
+                    aliases[alias] = identity
+                    continue
+                if aliases[alias] != identity:
+                    aliases[alias] = ""
+                    ambiguous_alias = True
+            if ambiguous_alias:
+                self._log.warning(
+                    "aone-workitem-ownership: marked ambiguous %s aliases "
+                    "project=%s aone=%s",
+                    source_label, project, aone_id)
 
-        merge_aliases(assignee_aliases)
+        merge_aliases(assignee_aliases, "assignee")
         _tracker_ids, tracker_aliases = self._parse_detail_field(
             fields.get("workitem.tracker"),
             project=project, aone_id=aone_id,
             label="tracker", multiple=True)
-        merge_aliases(tracker_aliases)
+        merge_aliases(tracker_aliases, "tracker")
 
         creator = detail.get("creator")
         if isinstance(creator, Mapping):
@@ -746,7 +768,7 @@ class AoneWorkitemOwnershipRunner:
                     creator_aliases, creator.get(display_key), identity,
                     field="%s/%s creator.%s"
                     % (project, aone_id, display_key))
-            merge_aliases(creator_aliases)
+            merge_aliases(creator_aliases, "creator")
         parsed = {
             "sourceProjectKey": project,
             "aoneId": aone_id,

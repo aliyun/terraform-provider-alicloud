@@ -735,6 +735,64 @@ class OwnershipRunnerTest(unittest.TestCase):
                     }], aliases),
                 "100004")
 
+    def test_same_tracker_alias_is_ambiguous_and_never_falls_back(self):
+        from tempfile import TemporaryDirectory
+        with TemporaryDirectory() as directory:
+            runner = self._runner(self._repo(directory), FakeClient())
+            runner._log = mock.Mock()
+            parsed, aliases = runner._parse_detail({
+                "sourceProjectKey": "1000001", "aoneId": "7001",
+            }, {
+                "id": "7001",
+                "updatedAt": "2026-07-28 10:00:00",
+                "creator": {
+                    "empId": "100004",
+                    # A later source must not overwrite the ambiguous sentinel.
+                    "displayName": "甲",
+                    "realName": "创建者实名",
+                },
+                "fields": [
+                    {
+                        "identifier": "ak.issue.member",
+                        "value": "100003",
+                        "displayValue": "参与者甲",
+                    },
+                    {
+                        "identifier": "assignedTo",
+                        "value": "100002",
+                        "displayValue": "负责人甲",
+                    },
+                    {
+                        "identifier": "workitem.tracker",
+                        "value": "100010,100011",
+                        "displayValue": "甲,甲",
+                    },
+                ],
+            }, "2026-07-28 10:00:00")
+
+            self.assertEqual(parsed["participantStaffIds"], ["100003"])
+            self.assertEqual(parsed["assignedToStaffId"], "100002")
+            self.assertEqual(aliases["甲"], "")
+            # contacts.json maps 甲 to 100001, but an explicit ambiguous alias
+            # must produce unknown instead of falling back or choosing an ID.
+            self.assertIsNone(runner._parse_latest_comment_author(
+                "1000001", "7001", [{
+                    "id": "4",
+                    "createdAt": "2026-07-28 13:00:00",
+                    "author": "甲",
+                }], aliases))
+            with self.assertRaises(ownership.SnapshotIncomplete):
+                runner._parse_latest_comment_author(
+                    "1000001", "7001", [{
+                        "id": "5",
+                        "createdAt": "2026-07-28 14:00:00",
+                        "author": "真正未知作者",
+                    }], aliases)
+            self.assertTrue(any(
+                call.args and "marked ambiguous %s aliases" in call.args[0]
+                and call.args[1] == "tracker"
+                for call in runner._log.warning.call_args_list))
+
     def test_unresolved_human_is_explicitly_rejected(self):
         from tempfile import TemporaryDirectory
         with TemporaryDirectory() as directory:
