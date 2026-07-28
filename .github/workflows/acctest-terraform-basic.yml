@@ -22,7 +22,7 @@ jobs:
     permissions:
       checks: read
       pull-requests: read
-    runs-on: ubuntu-latest
+    runs-on: terraform-ci-policy
     timeout-minutes: 3
     outputs:
       classification: ${{ steps.select.outputs.classification }}
