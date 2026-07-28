@@ -37,6 +37,7 @@ jobs:
             const actionsApp = {
               id: 15368,
               slug: "github-actions",
+              name: "GitHub Actions",
               owner: "github",
             };
             const pullRequest = context.payload.pull_request;
@@ -172,36 +173,90 @@ jobs:
               );
             }
 
-            const detailsUrl =
-              `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}` +
-              `/actions/runs/${context.runId}`;
             const conclusion = failure ? "failure" : "success";
             const summary = failure
               ? failure
               : `classification=${binding.c}; relevant=${binding.q}`;
+            const checkOutput = {
+              title: failure ? "Basic policy rejected" : "Basic policy passed",
+              summary,
+            };
+            const expectedOrigin = new URL(context.serverUrl).origin;
+            const validateCheck = (check) => {
+              const checkId = check?.id;
+              const canonicalCheckUrl =
+                `${expectedOrigin}/${context.repo.owner}/${context.repo.repo}` +
+                `/runs/${checkId}`;
+              if (
+                !Number.isSafeInteger(checkId) ||
+                checkId <= 0 ||
+                check?.name !== "Basic Policy" ||
+                check?.head_sha !== binding.s ||
+                check?.external_id !== externalId ||
+                check?.status !== "completed" ||
+                check?.conclusion !== conclusion ||
+                check?.app?.id !== actionsApp.id ||
+                check?.app?.slug !== actionsApp.slug ||
+                check?.app?.name !== actionsApp.name ||
+                check?.app?.owner?.login !== actionsApp.owner ||
+                check?.details_url !== canonicalCheckUrl ||
+                check?.html_url !== canonicalCheckUrl
+              ) {
+                throw new Error("Basic Policy Check Run source is invalid.");
+              }
+            };
 
-            const response = await github.rest.checks.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              name: "Basic Policy",
-              head_sha: binding.s,
-              status: "completed",
-              conclusion,
-              external_id: JSON.stringify(binding),
-              details_url: detailsUrl,
-              output: {
-                title: failure ? "Basic policy rejected" : "Basic policy passed",
-                summary,
-              },
-            });
-
-            if (
-              response?.data?.app?.id !== actionsApp.id ||
-              response?.data?.app?.slug !== actionsApp.slug ||
-              response?.data?.app?.owner?.login !== actionsApp.owner
-            ) {
-              throw new Error("Basic Policy Check Run source is invalid.");
+            const checkRuns = await github.paginate(
+              github.rest.checks.listForRef,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: binding.s,
+                check_name: "Basic Policy",
+                filter: "all",
+                per_page: 100,
+              }
+            );
+            if (!Array.isArray(checkRuns)) {
+              throw new Error("Basic Policy Check Run lookup is invalid.");
             }
+            const reusableChecks = checkRuns.filter(
+              (check) =>
+                check?.name === "Basic Policy" &&
+                check?.head_sha === binding.s &&
+                check?.external_id === externalId
+            );
+            if (reusableChecks.length > 1) {
+              throw new Error("Basic Policy Check Run is ambiguous.");
+            }
+
+            let response;
+            if (reusableChecks.length === 0) {
+              response = await github.rest.checks.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: "Basic Policy",
+                head_sha: binding.s,
+                status: "completed",
+                conclusion,
+                external_id: externalId,
+                output: checkOutput,
+              });
+            } else {
+              const reusableCheck = reusableChecks[0];
+              validateCheck(reusableCheck);
+              response = await github.rest.checks.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                check_run_id: reusableCheck.id,
+                status: "completed",
+                conclusion,
+                external_id: externalId,
+                details_url: reusableCheck.details_url,
+                output: checkOutput,
+              });
+            }
+            validateCheck(response?.data);
 
             if (failure) {
               core.setFailed(failure);

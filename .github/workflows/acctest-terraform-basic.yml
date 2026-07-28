@@ -44,6 +44,7 @@ jobs:
             const actionsApp = {
               id: 15368,
               slug: "github-actions",
+              name: "GitHub Actions",
               owner: "github",
             };
             const pullRequest = context.payload.pull_request;
@@ -54,13 +55,6 @@ jobs:
             const pullNumber = pullRequest?.number;
             const expectedBaseRepository = `${context.repo.owner}/${context.repo.repo}`;
             const expectedOrigin = new URL(context.serverUrl).origin;
-            const expectedDetailsPath = [
-              "",
-              context.repo.owner,
-              context.repo.repo,
-              "actions",
-              "runs",
-            ];
             const repositoryPattern =
               /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})\/[A-Za-z0-9._-]{1,100}$/;
 
@@ -108,36 +102,19 @@ jobs:
             };
 
             const validateSource = (check) => {
-              let detailsUrl;
-              try {
-                detailsUrl = new URL(check?.details_url);
-              } catch {
-                throw new Error("Basic Policy Check Run source is invalid.");
-              }
-              const path = detailsUrl.pathname.split("/");
-              const runIdText = path[5];
-              const runId = Number(runIdText);
-              const canonicalDetailsUrl =
+              const checkId = check?.id;
+              const canonicalCheckUrl =
                 `${expectedOrigin}/${context.repo.owner}/${context.repo.repo}` +
-                `/actions/runs/${runIdText}`;
+                `/runs/${checkId}`;
               if (
+                !Number.isSafeInteger(checkId) ||
+                checkId <= 0 ||
                 check?.app?.id !== actionsApp.id ||
                 check?.app?.slug !== actionsApp.slug ||
+                check?.app?.name !== actionsApp.name ||
                 check?.app?.owner?.login !== actionsApp.owner ||
-                detailsUrl.origin !== expectedOrigin ||
-                detailsUrl.username !== "" ||
-                detailsUrl.password !== "" ||
-                path.length !== 6 ||
-                !expectedDetailsPath.every(
-                  (segment, index) => path[index] === segment
-                ) ||
-                !/^[1-9][0-9]*$/.test(runIdText ?? "") ||
-                !Number.isSafeInteger(runId) ||
-                runId <= 0 ||
-                String(runId) !== runIdText ||
-                detailsUrl.search !== "" ||
-                detailsUrl.hash !== "" ||
-                check.details_url !== canonicalDetailsUrl
+                check?.details_url !== canonicalCheckUrl ||
+                check?.html_url !== canonicalCheckUrl
               ) {
                 throw new Error("Basic Policy Check Run source is invalid.");
               }
@@ -327,4 +304,4 @@ jobs:
           cache: false
       - name: vet
         run: |
-          make vet
+          ./scripts/vetcheck.sh
