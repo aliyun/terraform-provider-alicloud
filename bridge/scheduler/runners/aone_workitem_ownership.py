@@ -1,0 +1,782 @@
+"""Publish the Aone ownership snapshot consumed by the AutomationAgent board.
+
+The control plane is the canonical inventory of work items Jarvis knows about.
+This runner pages that inventory, reads the corresponding Aone ownership fields
+with batched ``a1`` queries, resolves human identities to staff IDs, and replaces
+one complete board-stat snapshot.  It deliberately never publishes a partial
+inventory.
+
+Comment reads are the expensive part.  A durable local cache reuses a complete
+item while its Aone ``modified`` value is unchanged; newly observed items and
+changed items load comments concurrently with a bounded worker pool.  If an
+individual Aone read fails transiently, a previously complete cached item may be
+reused verbatim (including its old ``sourceUpdatedAt``).  An uncached failure
+fails the whole scheduled run, preserving the server's last complete snapshot.
+"""
+
+from __future__ import annotations
+
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime, timezone
+import hashlib
+import json
+import logging
+import os
+from pathlib import Path
+import re
+import subprocess
+from typing import Any, Callable, Mapping, Optional, Sequence
+
+from bridge.helpers.aone import _a1_command_env
+from bridge.process_group_runner import run_process_group
+from ..model import (
+    IntervalSchedule,
+    JobResult,
+    JobResultStatus,
+    ScheduledJobDefinition,
+    is_aware,
+)
+
+
+RUNNER_KEY = "aone_workitem_ownership"
+JOB_KEY = "aone.workitem-ownership"
+STAT_KEY = "aone-workitem-ownership"
+SCHEMA_VERSION = "aone-workitem-ownership.v1"
+
+DEFAULT_PAGE_SIZE = 500
+DEFAULT_MAX_PAGES = 1000
+DEFAULT_BATCH_SIZE = 100
+DEFAULT_COMMENT_WORKERS = 8
+DEFAULT_A1_TIMEOUT_SECONDS = 120
+
+_STAFF_ID_RE = re.compile(r"^(?:\d+|WB\d+)$", re.IGNORECASE)
+_MENTION_RE = re.compile(r"@?([^@()\s,，;；]+)\(([^()]+)\)")
+_AUTOMATION_TOKENS = {
+    "aone", "aone system", "jarvis", "kelude", "open-jarvis",
+    "system", "云知道平台公共账号",
+}
+
+log = logging.getLogger("jarvis-aone-workitem-ownership")
+
+
+class SnapshotIncomplete(RuntimeError):
+    """The candidate universe could not be represented without data loss."""
+
+
+def _positive_int(environ: Mapping[str, str], name: str, default: int,
+                  maximum: int) -> int:
+    try:
+        value = int(environ.get(name, str(default)))
+    except (TypeError, ValueError):
+        value = default
+    return max(1, min(maximum, value))
+
+
+def _rows(value: Any) -> list[dict[str, Any]]:
+    if isinstance(value, list):
+        raw = value
+    elif isinstance(value, Mapping):
+        raw = next((
+            value.get(key) for key in ("items", "data", "records", "result")
+            if isinstance(value.get(key), list)
+        ), [])
+    else:
+        raise SnapshotIncomplete("Aone response must be an array or object")
+    return [dict(row) for row in raw if isinstance(row, Mapping)]
+
+
+def _scalar(value: Any) -> str:
+    return str(value or "").strip()
+
+
+def _workitem_id(value: Mapping[str, Any]) -> str:
+    return _scalar(value.get("identifier") or value.get("id")
+                   or value.get("aoneId"))
+
+
+def _source_updated_at(value: Mapping[str, Any]) -> Optional[str]:
+    result = _scalar(
+        value.get("modified") or value.get("gmtModified")
+        or value.get("updatedAt"))
+    return result or None
+
+
+def _identity_tokens(value: Any) -> set[str]:
+    """Flatten Aone's user shapes without treating wrapper keys as identities."""
+    tokens: set[str] = set()
+    if isinstance(value, Mapping):
+        for key in (
+            "id", "staffId", "staff_id", "empId", "employeeId",
+            "userId", "user_id", "identifier", "name", "displayName",
+            "display_name", "nickName", "nickname", "flower", "value",
+            "displayValue",
+        ):
+            child = value.get(key)
+            if child is not None and not isinstance(child, (Mapping, list, tuple)):
+                token = _scalar(child)
+                if token:
+                    tokens.add(token)
+        for child in value.values():
+            if isinstance(child, (Mapping, list, tuple)):
+                tokens.update(_identity_tokens(child))
+    elif isinstance(value, (list, tuple)):
+        for child in value:
+            tokens.update(_identity_tokens(child))
+    else:
+        raw = _scalar(value)
+        if raw:
+            tokens.add(raw)
+            for name, staff_id in _MENTION_RE.findall(raw):
+                if name.strip():
+                    tokens.add(name.strip())
+                if staff_id.strip():
+                    tokens.add(staff_id.strip())
+    return tokens
+
+
+def _explicit_staff_ids(value: Any) -> set[str]:
+    candidates: set[str] = set()
+    if isinstance(value, Mapping):
+        for key in (
+            "staffId", "staff_id", "empId", "employeeId", "userId",
+            "user_id", "id", "identifier",
+        ):
+            child = value.get(key)
+            if not isinstance(child, (Mapping, list, tuple)):
+                token = _scalar(child)
+                if _STAFF_ID_RE.fullmatch(token):
+                    candidates.add(token)
+    elif not isinstance(value, (list, tuple)):
+        raw = _scalar(value)
+        if _STAFF_ID_RE.fullmatch(raw):
+            candidates.add(raw)
+        for _name, staff_id in _MENTION_RE.findall(raw):
+            if _STAFF_ID_RE.fullmatch(staff_id.strip()):
+                candidates.add(staff_id.strip())
+    return candidates
+
+
+def _is_automation(tokens: set[str]) -> bool:
+    for token in tokens:
+        low = token.strip().lower()
+        compact = re.sub(r"[\s_.-]+", "", low)
+        if (low.startswith("worker_") or low.startswith("terraform-")
+                or low in _AUTOMATION_TOKENS):
+            return True
+        if compact in {
+                "terraformpd", "terraformrd", "terraformqa", "openjarvis",
+                "digitalworker",
+        }:
+            return True
+        if any(marker in low for marker in ("机器人", "数字人")):
+            return True
+    return False
+
+
+class ContactDirectory:
+    """Resolve Aone user values to staff IDs using config/contacts.json."""
+
+    def __init__(self, contacts_path: Path) -> None:
+        try:
+            data = json.loads(contacts_path.read_text())
+        except Exception as exc:  # noqa: BLE001
+            raise SnapshotIncomplete(
+                "cannot load contacts.json: %s" % type(exc).__name__) from exc
+        contacts = data.get("contacts") if isinstance(data, Mapping) else None
+        if not isinstance(contacts, list):
+            raise SnapshotIncomplete("contacts.json contacts must be an array")
+        self._by_token: dict[str, str] = {}
+        for contact in contacts:
+            if not isinstance(contact, Mapping):
+                continue
+            staff_id = _scalar(contact.get("id"))
+            if not staff_id:
+                continue
+            for key in ("id", "name", "flower"):
+                token = _scalar(contact.get(key))
+                if token:
+                    self._by_token[token.lower()] = staff_id
+
+    def resolve(self, value: Any, *, field: str,
+                allow_automation: bool = False) -> Optional[str]:
+        tokens = _identity_tokens(value)
+        if not tokens:
+            return None
+        # contacts.json also records digital workers for other bridge features.
+        # Ownership board fields are human staff IDs, so an explicitly recognized
+        # automation identity must not leak its WORKER_* identifier into the stat.
+        if allow_automation and _is_automation(tokens):
+            return None
+        resolved = {
+            self._by_token[token.lower()]
+            for token in tokens
+            if token.lower() in self._by_token
+        }
+        resolved.update(_explicit_staff_ids(value))
+        if len(resolved) == 1:
+            return next(iter(resolved))
+        if len(resolved) > 1:
+            raise SnapshotIncomplete(
+                "%s resolved to multiple staff IDs: %s"
+                % (field, ",".join(sorted(resolved))))
+        raise SnapshotIncomplete(
+            "%s identity cannot be resolved: %s"
+            % (field, ",".join(sorted(tokens))[:200]))
+
+
+def _participant_values(value: Any) -> list[Any]:
+    if value is None or value == "":
+        return []
+    if isinstance(value, (list, tuple)):
+        return list(value)
+    if isinstance(value, Mapping):
+        for key in ("items", "values", "users", "participants"):
+            child = value.get(key)
+            if isinstance(child, list):
+                return child
+        return [value]
+    raw = _scalar(value)
+    if not raw:
+        return []
+    # Mentions commonly arrive as "name(id),name(id)"; plain display values use
+    # the same separators.  A single user remains one principal.
+    return [
+        part.strip()
+        for part in re.split(r"[,，;；、]", raw)
+        if part.strip()
+    ]
+
+
+def _comment_key(comment: Mapping[str, Any]) -> tuple[float, int, str]:
+    raw_time = _scalar(
+        comment.get("createdAt") or comment.get("created")
+        or comment.get("gmtCreate"))
+    timestamp = float("-inf")
+    if raw_time:
+        if raw_time.isdigit():
+            timestamp = float(int(raw_time))
+            if timestamp > 10_000_000_000:
+                timestamp /= 1000.0
+        else:
+            try:
+                parsed = datetime.fromisoformat(raw_time.replace("Z", "+00:00"))
+            except ValueError:
+                parsed = None
+                for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M"):
+                    try:
+                        parsed = datetime.strptime(raw_time, fmt)
+                        break
+                    except ValueError:
+                        continue
+            if parsed is not None:
+                if parsed.tzinfo is None:
+                    parsed = parsed.replace(tzinfo=timezone.utc)
+                timestamp = parsed.timestamp()
+    raw_id = _scalar(comment.get("id") or comment.get("commentId")
+                     or comment.get("identifier"))
+    numeric_id = int(raw_id) if raw_id.isdigit() else -1
+    return timestamp, numeric_id, raw_id
+
+
+def _latest_comment(comments: Sequence[Mapping[str, Any]]) -> Optional[Mapping[str, Any]]:
+    if not comments:
+        return None
+    usable = [
+        comment for comment in comments
+        if _comment_key(comment) != (float("-inf"), -1, "")
+    ]
+    if not usable:
+        raise SnapshotIncomplete("comments have neither createdAt nor id")
+    return max(usable, key=_comment_key)
+
+
+def _comment_author(comment: Mapping[str, Any]) -> Any:
+    for key in (
+            "author", "creator", "createdBy", "commentator", "operator",
+            "user", "authorId", "creatorId", "staffId"):
+        if key in comment and comment.get(key) not in (None, ""):
+            return comment.get(key)
+    raise SnapshotIncomplete("latest comment has no author")
+
+
+class AoneWorkitemOwnershipRunner:
+    def __init__(
+        self,
+        *,
+        task_client: Any,
+        repo_root: Path,
+        logger: Any,
+        environ: Optional[Mapping[str, str]] = None,
+        clock: Optional[Callable[[], datetime]] = None,
+        process_runner: Callable[..., Any] = run_process_group,
+    ) -> None:
+        self._task_client = task_client
+        self._repo_root = Path(repo_root)
+        self._log = logger
+        self._environ = os.environ if environ is None else environ
+        self._clock = clock or (lambda: datetime.now(timezone.utc))
+        self._process_runner = process_runner
+        self._page_size = _positive_int(
+            self._environ, "JARVIS_AONE_OWNERSHIP_PAGE_SIZE",
+            DEFAULT_PAGE_SIZE, 500)
+        self._max_pages = _positive_int(
+            self._environ, "JARVIS_AONE_OWNERSHIP_MAX_PAGES",
+            DEFAULT_MAX_PAGES, 10000)
+        self._batch_size = _positive_int(
+            self._environ, "JARVIS_AONE_OWNERSHIP_BATCH_SIZE",
+            DEFAULT_BATCH_SIZE, 500)
+        self._comment_workers = _positive_int(
+            self._environ, "JARVIS_AONE_OWNERSHIP_COMMENT_WORKERS",
+            DEFAULT_COMMENT_WORKERS, 32)
+        self._a1_timeout = _positive_int(
+            self._environ, "JARVIS_AONE_OWNERSHIP_A1_TIMEOUT",
+            DEFAULT_A1_TIMEOUT_SECONDS, 600)
+        self._cache_path = Path(self._environ.get(
+            "JARVIS_AONE_OWNERSHIP_CACHE",
+            str(self._repo_root / ".my-day" / "bridge"
+                / "aone-workitem-ownership-cache.json"),
+        ))
+        self._contacts_path = self._repo_root / "config" / "contacts.json"
+        self._contacts: Optional[ContactDirectory] = None
+
+    def _contact_directory(self) -> ContactDirectory:
+        if self._contacts is None:
+            self._contacts = ContactDirectory(self._contacts_path)
+        return self._contacts
+
+    @staticmethod
+    def _candidate_key(project: str, aone_id: str) -> str:
+        return "%s:%s" % (project, aone_id)
+
+    @staticmethod
+    def _candidate_task_id(candidate: Mapping[str, Any]) -> Optional[int]:
+        raw = candidate.get("taskId")
+        if raw is None:
+            raw = candidate.get("id")
+        try:
+            result = int(raw)
+        except (TypeError, ValueError):
+            return None
+        return result if result > 0 else None
+
+    def _list_candidates(self) -> list[dict[str, str]]:
+        cursor = 0
+        deduped: dict[str, dict[str, str]] = {}
+        for _page_number in range(self._max_pages):
+            response = self._task_client.list_source_status_candidates(
+                after_task_id=cursor, limit=self._page_size)
+            if not isinstance(response, Mapping):
+                raise SnapshotIncomplete(
+                    "control-plane candidate page must be an object")
+            raw_items = response.get("items")
+            if not isinstance(raw_items, list):
+                raise SnapshotIncomplete(
+                    "control-plane candidate page items must be an array")
+            task_ids: list[int] = []
+            for raw in raw_items:
+                if not isinstance(raw, Mapping):
+                    raise SnapshotIncomplete(
+                        "control-plane candidate must be an object")
+                project = _scalar(
+                    raw.get("sourceProjectKey") or raw.get("projectId"))
+                aone_id = _scalar(raw.get("aoneId"))
+                if not project or not aone_id:
+                    raise SnapshotIncomplete(
+                        "control-plane candidate is missing sourceProjectKey/aoneId")
+                key = self._candidate_key(project, aone_id)
+                deduped.setdefault(key, {
+                    "sourceProjectKey": project,
+                    "aoneId": aone_id,
+                })
+                task_id = self._candidate_task_id(raw)
+                if task_id is not None:
+                    task_ids.append(task_id)
+
+            has_more = response.get("hasMore")
+            next_raw = response.get("nextAfterTaskId")
+            if has_more is False:
+                break
+            if not raw_items and next_raw is None:
+                break
+            try:
+                next_cursor = (
+                    int(next_raw) if next_raw is not None
+                    else (max(task_ids) if task_ids else None))
+            except (TypeError, ValueError) as exc:
+                raise SnapshotIncomplete(
+                    "control-plane candidate cursor is invalid") from exc
+            if next_cursor is None:
+                if has_more is True or len(raw_items) >= self._page_size:
+                    raise SnapshotIncomplete(
+                        "control-plane candidate page has no advancing cursor")
+                break
+            if next_cursor <= cursor:
+                raise SnapshotIncomplete(
+                    "control-plane candidate cursor did not advance")
+            cursor = next_cursor
+            if (has_more is not True and next_raw is None
+                    and len(raw_items) < self._page_size):
+                break
+        else:
+            raise SnapshotIncomplete(
+                "control-plane candidate pagination exceeded max pages")
+
+        return sorted(
+            deduped.values(),
+            key=lambda item: (
+                item["sourceProjectKey"],
+                0 if item["aoneId"].isdigit() else 1,
+                int(item["aoneId"]) if item["aoneId"].isdigit()
+                else item["aoneId"],
+            ),
+        )
+
+    def _a1(self, args: Sequence[str]) -> Any:
+        command = [str(self._repo_root / "bin" / "a1id"), "--", *args]
+        try:
+            result = self._process_runner(
+                command, capture_output=True, text=True,
+                timeout=self._a1_timeout, cwd=str(self._repo_root),
+                env=_a1_command_env())
+        except (subprocess.TimeoutExpired, OSError) as exc:
+            raise SnapshotIncomplete(
+                "a1 %s failed: %s" % (args[2] if len(args) > 2 else "read",
+                                      type(exc).__name__)) from exc
+        if result.returncode != 0:
+            raise SnapshotIncomplete(
+                "a1 %s failed rc=%d: %s"
+                % (args[2] if len(args) > 2 else "read", result.returncode,
+                   _scalar(result.stderr)[:200]))
+        try:
+            return json.loads(result.stdout or "[]")
+        except (TypeError, ValueError) as exc:
+            raise SnapshotIncomplete("a1 returned invalid JSON") from exc
+
+    def _fetch_project_batch(
+        self, project: str, aone_ids: Sequence[str],
+    ) -> dict[str, dict[str, Any]]:
+        data = self._a1([
+            "project", "workitem", "list",
+            "--project", project,
+            "--id", ",".join(aone_ids),
+            "--columns", "id,participant,assignee,modified",
+            "--page-size", str(max(1, len(aone_ids))),
+            "-f", "json",
+        ])
+        indexed: dict[str, dict[str, Any]] = {}
+        requested = set(aone_ids)
+        for row in _rows(data):
+            aone_id = _workitem_id(row)
+            if aone_id in requested:
+                indexed[aone_id] = row
+        return indexed
+
+    def _fetch_comments(self, aone_id: str) -> list[dict[str, Any]]:
+        data = self._a1([
+            "project", "workitem", "comment", "list", aone_id,
+            "-f", "json",
+        ])
+        return _rows(data)
+
+    def _load_cache(self) -> dict[str, dict[str, Any]]:
+        try:
+            data = json.loads(self._cache_path.read_text())
+        except FileNotFoundError:
+            return {}
+        except Exception as exc:  # noqa: BLE001
+            self._log.warning(
+                "aone-workitem-ownership: cache unreadable path=%s error=%s",
+                self._cache_path, type(exc).__name__)
+            return {}
+        if not isinstance(data, Mapping) or data.get("version") != 1:
+            return {}
+        items = data.get("items")
+        if not isinstance(items, Mapping):
+            return {}
+        return {
+            str(key): dict(item)
+            for key, item in items.items()
+            if isinstance(item, Mapping)
+        }
+
+    @staticmethod
+    def _valid_cached_item(
+        item: Any, project: str, aone_id: str,
+    ) -> Optional[dict[str, Any]]:
+        if not isinstance(item, Mapping):
+            return None
+        participants = item.get("participantStaffIds")
+        assigned = item.get("assignedToStaffId")
+        commenter = item.get("latestCommentAuthorStaffId")
+        updated = item.get("sourceUpdatedAt")
+        if (item.get("sourceProjectKey") != project
+                or item.get("aoneId") != aone_id
+                or not isinstance(participants, list)
+                or any(not isinstance(value, str) or not value
+                       for value in participants)
+                or (assigned is not None
+                    and (not isinstance(assigned, str) or not assigned))
+                or (commenter is not None
+                    and (not isinstance(commenter, str) or not commenter))
+                or (updated is not None and not isinstance(updated, str))):
+            return None
+        return {
+            "sourceProjectKey": project,
+            "aoneId": aone_id,
+            "participantStaffIds": sorted(set(participants)),
+            "assignedToStaffId": assigned,
+            "latestCommentAuthorStaffId": commenter,
+            "sourceUpdatedAt": updated,
+        }
+
+    def _cached(
+        self, cache: Mapping[str, Any], candidate: Mapping[str, str],
+    ) -> Optional[dict[str, Any]]:
+        project = candidate["sourceProjectKey"]
+        aone_id = candidate["aoneId"]
+        return self._valid_cached_item(
+            cache.get(self._candidate_key(project, aone_id)),
+            project, aone_id)
+
+    def _parse_row(
+        self, candidate: Mapping[str, str], row: Mapping[str, Any],
+    ) -> dict[str, Any]:
+        project = candidate["sourceProjectKey"]
+        aone_id = candidate["aoneId"]
+        participant_value = (
+            row.get("participant") or row.get("participants")
+            or row.get("ak.issue.member"))
+        participant_ids: set[str] = set()
+        for index, principal in enumerate(_participant_values(participant_value)):
+            staff_id = self._contact_directory().resolve(
+                principal, field="%s/%s participant[%d]"
+                % (project, aone_id, index), allow_automation=True)
+            if staff_id:
+                participant_ids.add(staff_id)
+
+        assignee_value = row.get("assignee") or row.get("assignedTo")
+        assigned = self._contact_directory().resolve(
+            assignee_value, field="%s/%s assignee" % (project, aone_id),
+            allow_automation=True)
+        return {
+            "sourceProjectKey": project,
+            "aoneId": aone_id,
+            "participantStaffIds": sorted(participant_ids),
+            "assignedToStaffId": assigned,
+            "sourceUpdatedAt": _source_updated_at(row),
+        }
+
+    def _parse_latest_comment_author(
+        self, project: str, aone_id: str,
+        comments: Sequence[Mapping[str, Any]],
+    ) -> Optional[str]:
+        latest = _latest_comment(comments)
+        if latest is None:
+            return None
+        return self._contact_directory().resolve(
+            _comment_author(latest),
+            field="%s/%s latest comment author" % (project, aone_id),
+            allow_automation=True)
+
+    def _reuse_or_fail(
+        self,
+        *,
+        candidate: Mapping[str, str],
+        cached: Optional[dict[str, Any]],
+        error: Exception,
+        output: dict[str, dict[str, Any]],
+        failures: list[str],
+    ) -> None:
+        key = self._candidate_key(
+            candidate["sourceProjectKey"], candidate["aoneId"])
+        if cached is not None:
+            output[key] = cached
+            self._log.warning(
+                "aone-workitem-ownership: reused stale cache project=%s "
+                "aone=%s sourceUpdatedAt=%s error=%s",
+                candidate["sourceProjectKey"], candidate["aoneId"],
+                cached.get("sourceUpdatedAt"), str(error)[:200])
+            return
+        failures.append("%s (%s)" % (key, str(error)[:200]))
+
+    def _build_items(
+        self, candidates: Sequence[Mapping[str, str]],
+        cache: Mapping[str, Any],
+    ) -> list[dict[str, Any]]:
+        by_project: dict[str, list[Mapping[str, str]]] = {}
+        for candidate in candidates:
+            by_project.setdefault(
+                candidate["sourceProjectKey"], []).append(candidate)
+
+        output: dict[str, dict[str, Any]] = {}
+        failures: list[str] = []
+        changed: list[tuple[Mapping[str, str], dict[str, Any],
+                            Optional[dict[str, Any]]]] = []
+
+        for project, project_candidates in by_project.items():
+            for offset in range(0, len(project_candidates), self._batch_size):
+                batch = project_candidates[offset:offset + self._batch_size]
+                try:
+                    indexed = self._fetch_project_batch(
+                        project, [item["aoneId"] for item in batch])
+                except Exception as exc:  # noqa: BLE001
+                    for candidate in batch:
+                        self._reuse_or_fail(
+                            candidate=candidate,
+                            cached=self._cached(cache, candidate),
+                            error=exc, output=output, failures=failures)
+                    continue
+                for candidate in batch:
+                    aone_id = candidate["aoneId"]
+                    cached = self._cached(cache, candidate)
+                    row = indexed.get(aone_id)
+                    if row is None:
+                        self._reuse_or_fail(
+                            candidate=candidate, cached=cached,
+                            error=SnapshotIncomplete(
+                                "Aone batch omitted requested work item"),
+                            output=output, failures=failures)
+                        continue
+                    updated = _source_updated_at(row)
+                    if (cached is not None and updated is not None
+                            and cached.get("sourceUpdatedAt") == updated):
+                        output[self._candidate_key(project, aone_id)] = cached
+                        continue
+                    try:
+                        parsed = self._parse_row(candidate, row)
+                    except Exception as exc:  # noqa: BLE001
+                        self._reuse_or_fail(
+                            candidate=candidate, cached=cached, error=exc,
+                            output=output, failures=failures)
+                        continue
+                    changed.append((candidate, parsed, cached))
+
+        with ThreadPoolExecutor(
+                max_workers=self._comment_workers,
+                thread_name_prefix="aone-ownership-comment") as executor:
+            futures = {
+                executor.submit(
+                    self._fetch_comments, candidate["aoneId"],
+                ): (candidate, parsed, cached)
+                for candidate, parsed, cached in changed
+            }
+            for future in as_completed(futures):
+                candidate, parsed, cached = futures[future]
+                project = candidate["sourceProjectKey"]
+                aone_id = candidate["aoneId"]
+                key = self._candidate_key(project, aone_id)
+                try:
+                    comments = future.result()
+                    parsed["latestCommentAuthorStaffId"] = (
+                        self._parse_latest_comment_author(
+                            project, aone_id, comments))
+                    output[key] = parsed
+                except Exception as exc:  # noqa: BLE001
+                    self._reuse_or_fail(
+                        candidate=candidate, cached=cached, error=exc,
+                        output=output, failures=failures)
+
+        if failures:
+            raise SnapshotIncomplete(
+                "ownership snapshot incomplete: " + "; ".join(failures[:10]))
+        expected = {
+            self._candidate_key(
+                candidate["sourceProjectKey"], candidate["aoneId"])
+            for candidate in candidates
+        }
+        if set(output) != expected:
+            raise SnapshotIncomplete(
+                "ownership snapshot output does not cover all candidates")
+        return [
+            output[key]
+            for key in sorted(
+                output,
+                key=lambda value: (
+                    value.split(":", 1)[0],
+                    0 if value.split(":", 1)[1].isdigit() else 1,
+                    int(value.split(":", 1)[1])
+                    if value.split(":", 1)[1].isdigit()
+                    else value.split(":", 1)[1],
+                ),
+            )
+        ]
+
+    def _save_cache(self, items: Sequence[Mapping[str, Any]]) -> None:
+        payload = {
+            "version": 1,
+            "items": {
+                self._candidate_key(
+                    _scalar(item.get("sourceProjectKey")),
+                    _scalar(item.get("aoneId"))): dict(item)
+                for item in items
+            },
+        }
+        self._cache_path.parent.mkdir(parents=True, exist_ok=True)
+        temporary = self._cache_path.with_name(
+            self._cache_path.name + ".tmp.%s" % os.getpid())
+        temporary.write_text(
+            json.dumps(payload, ensure_ascii=False, sort_keys=True, indent=2)
+            + "\n")
+        os.replace(temporary, self._cache_path)
+
+    def _snapshot(self) -> dict[str, Any]:
+        candidates = self._list_candidates()
+        items = self._build_items(candidates, self._load_cache())
+        self._save_cache(items)
+        now = self._clock()
+        if not is_aware(now):
+            raise SnapshotIncomplete("ownership snapshot clock must be timezone-aware")
+        return {
+            "schemaVersion": SCHEMA_VERSION,
+            "generatedAt": now.astimezone(timezone.utc).isoformat(),
+            "complete": True,
+            "items": items,
+        }
+
+    def run(
+        self, definition: ScheduledJobDefinition, scheduled_for: datetime,
+    ) -> JobResult:
+        if definition.id != JOB_KEY or not is_aware(scheduled_for):
+            return JobResult(
+                JobResultStatus.PERMANENT_FAILURE,
+                error="aone-workitem-ownership runner received an invalid slot")
+        if not isinstance(definition.schedule, IntervalSchedule):
+            return JobResult(
+                JobResultStatus.PERMANENT_FAILURE,
+                error="aone-workitem-ownership requires an interval schedule")
+        try:
+            payload = self._snapshot()
+            digest = hashlib.sha256(json.dumps(
+                payload, ensure_ascii=False, sort_keys=True,
+                separators=(",", ":")).encode("utf-8")).hexdigest()[:32]
+            self._task_client.put_board_stat(
+                STAT_KEY, payload,
+                request_id="board-stat-ownership-%s" % digest)
+        except Exception as exc:  # noqa: BLE001
+            self._log.warning(
+                "aone-workitem-ownership: failed: %s: %s",
+                type(exc).__name__, str(exc)[:300])
+            return JobResult(
+                JobResultStatus.RETRYABLE_FAILURE,
+                error="Aone workitem ownership snapshot failed: %s"
+                % str(exc)[:300])
+        self._log.info(
+            "aone-workitem-ownership: published complete snapshot items=%d",
+            len(payload["items"]))
+        return JobResult(JobResultStatus.SUCCEEDED)
+
+
+def build(*, logger: Any, task_client: Any, repo_root: Path):
+    return AoneWorkitemOwnershipRunner(
+        task_client=task_client, repo_root=repo_root, logger=logger)
+
+
+__all__ = [
+    "AoneWorkitemOwnershipRunner",
+    "ContactDirectory",
+    "JOB_KEY",
+    "RUNNER_KEY",
+    "SCHEMA_VERSION",
+    "STAT_KEY",
+    "SnapshotIncomplete",
+]
