@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
@@ -59,6 +60,38 @@ func resourceAliCloudPrivateLinkVpcEndpointService() *schema.Resource {
 			"region_id": {
 				Type:     schema.TypeString,
 				Computed: true,
+			},
+			"resource": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Computed: true,
+				MaxItems: 10,
+				// Hash an element on resource_id + resource_type only, so the
+				// server-assigned zone_id (Optional + Computed) never changes an
+				// element's identity after Read. This keeps the set order- and
+				// value-independent and avoids perpetual diff / detach-attach churn.
+				Set: func(v interface{}) int {
+					m := v.(map[string]interface{})
+					return helper.Hashcode(fmt.Sprintf("%s|%s", m["resource_id"], m["resource_type"]))
+				},
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"resource_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"resource_type": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: StringInSlice([]string{"slb", "alb", "nlb", "gwlb"}, false),
+						},
+						"zone_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+					},
+				},
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
@@ -155,6 +188,20 @@ func resourceAliCloudPrivateLinkVpcEndpointServiceCreate(d *schema.ResourceData,
 	if v, ok := d.GetOk("supported_region_list"); ok {
 		request["SupportedRegionList"] = v.(*schema.Set).List()
 	}
+	if v, ok := d.GetOk("resource"); ok {
+		resourceMapsArray := make([]interface{}, 0)
+		for _, dataLoop := range v.(*schema.Set).List() {
+			dataLoopTmp := dataLoop.(map[string]interface{})
+			dataLoopMap := make(map[string]interface{})
+			dataLoopMap["ResourceId"] = dataLoopTmp["resource_id"]
+			dataLoopMap["ResourceType"] = dataLoopTmp["resource_type"]
+			if zoneId := vpcEndpointServiceResourceZoneId(dataLoopTmp["zone_id"]); zoneId != "" {
+				dataLoopMap["ZoneId"] = zoneId
+			}
+			resourceMapsArray = append(resourceMapsArray, dataLoopMap)
+		}
+		request["Resource"] = resourceMapsArray
+	}
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
@@ -221,6 +268,26 @@ func resourceAliCloudPrivateLinkVpcEndpointServiceRead(d *schema.ResourceData, m
 	d.Set("vpc_endpoint_service_name", objectRaw["ServiceName"])
 	d.Set("zone_affinity_enabled", objectRaw["ZoneAffinityEnabled"])
 
+	resourcesRaw, err := privateLinkServiceV2.ListPrivateLinkVpcEndpointServiceResources(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	resourceMaps := make([]map[string]interface{}, 0, len(resourcesRaw))
+	for _, v := range resourcesRaw {
+		item := v.(map[string]interface{})
+		// Normalize ZoneId so an absent/nil API value is stored as "" rather than
+		// nil; this keeps TypeSet element hashing stable (nil vs "" hash
+		// differently) and avoids perpetual diff / detach-attach churn.
+		zoneId := vpcEndpointServiceResourceZoneId(item["ZoneId"])
+		resourceMap := map[string]interface{}{
+			"resource_id":   item["ResourceId"],
+			"resource_type": item["ResourceType"],
+			"zone_id":       zoneId,
+		}
+		resourceMaps = append(resourceMaps, resourceMap)
+	}
+	d.Set("resource", resourceMaps)
+
 	objectRaw, err = privateLinkServiceV2.DescribeVpcEndpointServiceListTagResources(d.Id())
 	if err != nil && !NotFoundError(err) {
 		return WrapError(err)
@@ -265,6 +332,21 @@ func isEmptyVpcEndpointServiceConnectBandwidth(v interface{}) bool {
 	default:
 		return fmt.Sprint(vv) == "" || fmt.Sprint(vv) == "0"
 	}
+}
+
+// vpcEndpointServiceResourceZoneId returns a non-empty string form of a zone_id
+// set value, or "" when the value is absent, nil, empty, or the "<nil>" string
+// produced by fmt.Sprint(nil). Callers use the empty result to omit ZoneId from
+// upstream requests, so a nil zone_id can never be sent as a literal ZoneId.
+func vpcEndpointServiceResourceZoneId(zoneId interface{}) string {
+	if zoneId == nil {
+		return ""
+	}
+	s := fmt.Sprint(zoneId)
+	if s == "" || s == "<nil>" {
+		return ""
+	}
+	return s
 }
 
 func resourceAliCloudPrivateLinkVpcEndpointServiceUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -377,6 +459,85 @@ func resourceAliCloudPrivateLinkVpcEndpointServiceUpdate(d *schema.ResourceData,
 			request["RegionId"] = client.RegionId
 			request["ClientToken"] = buildClientToken(action)
 			request["DeleteSupportedRegionSet"] = removed.List()
+			if v, ok := d.GetOkExists("dry_run"); ok {
+				request["DryRun"] = v
+			}
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = client.RpcPost("Privatelink", "2020-04-15", action, query, request, true)
+				if err != nil {
+					if IsExpectedErrors(err, []string{"EndpointServiceOperationDenied", "ConcurrentCallNotSupported", "EndpointServiceLocked"}) || NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, request)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+		}
+
+		privateLinkServiceV2 := PrivateLinkServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, privateLinkServiceV2.PrivateLinkVpcEndpointServiceStateRefreshFunc(d.Id(), "ServiceStatus", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+	if !d.IsNewResource() && d.HasChange("resource") {
+		oldEntry, newEntry := d.GetChange("resource")
+		removed := oldEntry.(*schema.Set).Difference(newEntry.(*schema.Set))
+		added := newEntry.(*schema.Set).Difference(oldEntry.(*schema.Set))
+
+		for _, item := range removed.List() {
+			resourceItem := item.(map[string]interface{})
+			action = "DetachResourceFromVpcEndpointService"
+			request = make(map[string]interface{})
+			query = make(map[string]interface{})
+			request["ServiceId"] = d.Id()
+			request["RegionId"] = client.RegionId
+			request["ClientToken"] = buildClientToken(action)
+			request["ResourceId"] = resourceItem["resource_id"]
+			request["ResourceType"] = resourceItem["resource_type"]
+			if zoneId := vpcEndpointServiceResourceZoneId(resourceItem["zone_id"]); zoneId != "" {
+				request["ZoneId"] = zoneId
+			}
+			if v, ok := d.GetOkExists("dry_run"); ok {
+				request["DryRun"] = v
+			}
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = client.RpcPost("Privatelink", "2020-04-15", action, query, request, true)
+				if err != nil {
+					if IsExpectedErrors(err, []string{"EndpointServiceOperationDenied", "ConcurrentCallNotSupported", "EndpointServiceLocked"}) || NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, request)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+		}
+
+		for _, item := range added.List() {
+			resourceItem := item.(map[string]interface{})
+			action = "AttachResourceToVpcEndpointService"
+			request = make(map[string]interface{})
+			query = make(map[string]interface{})
+			request["ServiceId"] = d.Id()
+			request["RegionId"] = client.RegionId
+			request["ClientToken"] = buildClientToken(action)
+			request["ResourceId"] = resourceItem["resource_id"]
+			request["ResourceType"] = resourceItem["resource_type"]
+			if zoneId := vpcEndpointServiceResourceZoneId(resourceItem["zone_id"]); zoneId != "" {
+				request["ZoneId"] = zoneId
+			}
 			if v, ok := d.GetOkExists("dry_run"); ok {
 				request["DryRun"] = v
 			}
