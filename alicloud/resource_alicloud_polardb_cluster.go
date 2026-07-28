@@ -657,6 +657,12 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		if err := polarDBService.ModifyParameters(d); err != nil {
 			return WrapError(err)
 		}
+		// wait cluster status back to Running before continuing with other operations,
+		// since applying parameters may restart the cluster
+		stateConf := BuildStateConf([]string{"ConfigSwitching", "Maintaining"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, polarDBService.PolarDBClusterStateRefreshFunc(d.Id(), []string{""}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
 		d.SetPartial("parameters")
 	}
 
@@ -964,51 +970,50 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		d.SetPartial("collector_status")
 	}
 
-	if v, ok := d.GetOk("db_type"); ok && v.(string) == "MySQL" {
-		if d.HasChange("tde_status") {
-			if v, ok := d.GetOk("tde_status"); ok && v.(string) != "Disabled" {
-				action := "ModifyDBClusterTDE"
-				request := map[string]interface{}{
-					"DBClusterId": d.Id(),
-					"TDEStatus":   convertPolarDBTdeStatusUpdateRequest(v.(string)),
-				}
-				if s, ok := d.GetOk("encrypt_new_tables"); ok && s.(string) != "" {
-					request["EncryptNewTables"] = s.(string)
-				}
-				if v, ok := d.GetOk("encryption_key"); ok && v.(string) != "" {
-					request["EncryptionKey"] = v.(string)
-				}
-				if v, ok := d.GetOk("role_arn"); ok && v.(string) != "" {
-					request["RoleArn"] = v.(string)
-				}
-				//retry
-				wait := incrementalWait(3*time.Second, 3*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err := client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
-					if err != nil {
-						if NeedRetry(err) {
-							wait()
-							return resource.RetryableError(err)
-						}
-						return resource.NonRetryableError(err)
-					}
-					addDebug(action, response, request)
-					return nil
-				})
+	if d.HasChanges("tde_status", "encrypt_new_tables", "encryption_key", "role_arn") {
+		if v, ok := d.GetOk("tde_status"); ok && v.(string) != "Disabled" {
+			action := "ModifyDBClusterTDE"
+			request := map[string]interface{}{
+				"DBClusterId": d.Id(),
+				"TDEStatus":   convertPolarDBTdeStatusUpdateRequest(v.(string)),
+			}
+			if s, ok := d.GetOk("encrypt_new_tables"); ok && s.(string) != "" {
+				request["EncryptNewTables"] = s.(string)
+			}
+			if v, ok := d.GetOk("encryption_key"); ok && v.(string) != "" {
+				request["EncryptionKey"] = v.(string)
+			}
+			if v, ok := d.GetOk("role_arn"); ok && v.(string) != "" {
+				request["RoleArn"] = v.(string)
+			}
+			//retry
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err := client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
 				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(action, response, request)
+				return nil
+			})
+			if err != nil {
+				if !IsExpectedErrors(err, []string{"InvalidTDEStatus.AlreadyEnabled"}) {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
-				//wait tde status 'Enabled'
-
-				stateConf := BuildStateConf([]string{}, []string{"Enabled"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, polarDBService.PolarDBClusterTDEStateRefreshFunc(d.Id(), []string{}))
-				if _, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id())
-				}
-				d.SetPartial("tde_status")
-				d.SetPartial("encrypt_new_tables")
-				d.SetPartial("encryption_key")
-				d.SetPartial("role_arn")
 			}
+
+			stateConf := BuildStateConf([]string{}, []string{"Enabled"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, polarDBService.PolarDBClusterTDEStateRefreshFunc(d.Id(), []string{}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+			d.SetPartial("tde_status")
+			d.SetPartial("encrypt_new_tables")
+			d.SetPartial("encryption_key")
+			d.SetPartial("role_arn")
 		}
 	}
 
