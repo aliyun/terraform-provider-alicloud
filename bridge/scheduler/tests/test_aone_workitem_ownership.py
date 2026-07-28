@@ -427,6 +427,77 @@ class OwnershipRunnerTest(unittest.TestCase):
                 "unreadable historical placeholder" in message
                 for message in captured.output))
 
+    def test_batch_403_falls_back_to_detail_recovery_and_placeholder(self):
+        from tempfile import TemporaryDirectory
+        with TemporaryDirectory() as directory:
+            client = FakeClient({
+                0: {
+                    "items": [
+                        {"taskId": 1, "sourceProjectKey": "1000001",
+                         "aoneId": "7001"},
+                        {"taskId": 2, "sourceProjectKey": "1000001",
+                         "aoneId": "7002"},
+                    ],
+                    "hasMore": False,
+                    "nextAfterTaskId": None,
+                },
+            })
+            runner = self._runner(self._repo(directory), client)
+            runner._fetch_project_batch = lambda _project, _ids: (
+                (_ for _ in ()).throw(ownership.SnapshotIncomplete(
+                    "a1 list failed rc=1: HTTP 403")))
+
+            def detail(aone_id):
+                if aone_id == "7002":
+                    raise ownership.AoneReadForbidden(
+                        "Aone detail read forbidden: 403 no read permission")
+                return {
+                    "id": "7001",
+                    "updatedAt": "2026-07-28 10:00:00",
+                    "fields": [
+                        {
+                            "identifier": "ak.issue.member",
+                            "value": "V00_1589178148767",
+                            "displayValue": "外部参与者",
+                        },
+                        {
+                            "identifier": "assignedTo",
+                            "value": "",
+                            "displayValue": "",
+                        },
+                    ],
+                }
+
+            runner._fetch_detail = detail
+            runner._fetch_comments = lambda _iid: []
+
+            with self.assertLogs(
+                    "test-aone-workitem-ownership",
+                    level="WARNING") as captured:
+                result = runner.run(definition(), NOW)
+
+            self.assertIs(result.status, JobResultStatus.SUCCEEDED)
+            by_id = {
+                item["aoneId"]: item for item in client.puts[0][1]["items"]
+            }
+            self.assertEqual(
+                by_id["7001"]["participantStaffIds"],
+                ["V00_1589178148767"])
+            self.assertEqual(by_id["7001"]["sourceUpdatedAt"],
+                             "2026-07-28 10:00:00")
+            self.assertEqual(by_id["7002"], {
+                "sourceProjectKey": "1000001",
+                "aoneId": "7002",
+                "participantStaffIds": [],
+                "assignedToStaffId": None,
+                "latestCommentAuthorStaffId": None,
+                "sourceUpdatedAt": None,
+            })
+            self.assertTrue(any(
+                "batch list failed" in message
+                and "falling back to detail" in message
+                for message in captured.output))
+
     def test_uncached_detail_transient_is_retryable_and_never_publishes(self):
         from tempfile import TemporaryDirectory
         with TemporaryDirectory() as directory:
@@ -596,6 +667,13 @@ class OwnershipRunnerTest(unittest.TestCase):
                 contacts.resolve("不在通讯录的人", field="participant")
             self.assertIsNone(contacts.resolve(
                 "open-jarvis", field="participant", allow_automation=True))
+            self.assertEqual(
+                contacts.resolve(
+                    "V00_1589178148767", field="external participant"),
+                "V00_1589178148767")
+            with self.assertRaises(ownership.SnapshotIncomplete):
+                contacts.resolve(
+                    "ordinaryEnglishName", field="external participant")
 
 
 if __name__ == "__main__":

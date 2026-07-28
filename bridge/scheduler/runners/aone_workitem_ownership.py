@@ -49,7 +49,8 @@ DEFAULT_BATCH_SIZE = 100
 DEFAULT_COMMENT_WORKERS = 8
 DEFAULT_A1_TIMEOUT_SECONDS = 120
 
-_STAFF_ID_RE = re.compile(r"^(?:\d+|WB\d+)$", re.IGNORECASE)
+_STAFF_ID_RE = re.compile(
+    r"^(?:\d+|WB\d+|V\d+_\d+)$", re.IGNORECASE)
 _MENTION_RE = re.compile(r"@?([^@()\s,，;；]+)\(([^()]+)\)")
 _AUTOMATION_TOKENS = {
     "aone", "aone system", "jarvis", "kelude", "open-jarvis",
@@ -817,10 +818,12 @@ class AoneWorkitemOwnershipRunner:
                         project, [item["aoneId"] for item in batch])
                 except Exception as exc:  # noqa: BLE001
                     for candidate in batch:
-                        self._reuse_or_fail(
-                            candidate=candidate,
-                            cached=self._cached(cache, candidate),
-                            error=exc, output=output, failures=failures)
+                        detail_reads.append((
+                            candidate, None, self._cached(cache, candidate)))
+                    self._log.warning(
+                        "aone-workitem-ownership: batch list failed "
+                        "project=%s items=%d; falling back to detail: %s",
+                        project, len(batch), str(exc)[:200])
                     continue
                 for candidate in batch:
                     aone_id = candidate["aoneId"]
