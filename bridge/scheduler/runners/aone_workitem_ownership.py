@@ -670,9 +670,11 @@ class AoneWorkitemOwnershipRunner:
             raise SnapshotIncomplete(
                 "%s/%s %s has multiple values" % (project, aone_id, label))
         if displays and len(displays) != len(values):
-            raise SnapshotIncomplete(
-                "%s/%s %s value/displayValue length mismatch"
-                % (project, aone_id, label))
+            self._log.warning(
+                "aone-workitem-ownership: ignored %s aliases "
+                "project=%s aone=%s values=%d displays=%d",
+                label, project, aone_id, len(values), len(displays))
+            displays = []
         resolved: list[str] = []
         aliases: dict[str, str] = {}
         for index, value in enumerate(values):
@@ -709,13 +711,42 @@ class AoneWorkitemOwnershipRunner:
             fields.get("assignedTo"),
             project=project, aone_id=aone_id,
             label="assignee", multiple=False)
-        for alias, identity in assignee_aliases.items():
-            previous = aliases.get(alias)
-            if previous and previous != identity:
-                raise SnapshotIncomplete(
-                    "%s/%s alias %s maps to multiple identities"
-                    % (project, aone_id, alias))
-            aliases[alias] = identity
+
+        def merge_aliases(source: Mapping[str, str]) -> None:
+            for alias, identity in source.items():
+                previous = aliases.get(alias)
+                if previous and previous != identity:
+                    raise SnapshotIncomplete(
+                        "%s/%s alias %s maps to multiple identities"
+                        % (project, aone_id, alias))
+                aliases[alias] = identity
+
+        merge_aliases(assignee_aliases)
+        _tracker_ids, tracker_aliases = self._parse_detail_field(
+            fields.get("workitem.tracker"),
+            project=project, aone_id=aone_id,
+            label="tracker", multiple=True)
+        merge_aliases(tracker_aliases)
+
+        creator = detail.get("creator")
+        if isinstance(creator, Mapping):
+            identity = _identity_reference(creator)
+            if identity is None:
+                try:
+                    identity = self._contact_directory().resolve(
+                        creator, field="%s/%s creator" % (project, aone_id),
+                        allow_automation=True)
+                except SnapshotIncomplete:
+                    self._log.warning(
+                        "aone-workitem-ownership: ignored unresolved creator "
+                        "aliases project=%s aone=%s", project, aone_id)
+            creator_aliases: dict[str, str] = {}
+            for display_key in ("displayName", "realName"):
+                _merge_alias(
+                    creator_aliases, creator.get(display_key), identity,
+                    field="%s/%s creator.%s"
+                    % (project, aone_id, display_key))
+            merge_aliases(creator_aliases)
         parsed = {
             "sourceProjectKey": project,
             "aoneId": aone_id,

@@ -656,6 +656,85 @@ class OwnershipRunnerTest(unittest.TestCase):
             with self.assertRaises(ownership.AoneReadForbidden):
                 runner._fetch_detail("7001")
 
+    def test_participant_display_mismatch_keeps_all_raw_ids(self):
+        from tempfile import TemporaryDirectory
+        with TemporaryDirectory() as directory:
+            runner = self._runner(self._repo(directory), FakeClient())
+            runner._log = mock.Mock()
+            parsed, aliases = runner._parse_detail({
+                "sourceProjectKey": "1000001", "aoneId": "7001",
+            }, {
+                "id": "7001",
+                "updatedAt": "2026-07-28 10:00:00",
+                "fields": [{
+                    "identifier": "ak.issue.member",
+                    "value": "100001,100002,100003,100004,100005",
+                    # One display name contains a comma, so naive splitting
+                    # yields six displays for five authoritative raw IDs.
+                    "displayValue": "甲,Zhang, Bing,丙,丁,戊",
+                }],
+            }, "2026-07-28 10:00:00")
+
+            self.assertEqual(parsed["participantStaffIds"], [
+                "100001", "100002", "100003", "100004", "100005",
+            ])
+            self.assertEqual(aliases, {})
+            self.assertTrue(any(
+                call.args and "ignored %s aliases" in call.args[0]
+                and call.args[1] == "participant"
+                for call in runner._log.warning.call_args_list))
+
+    def test_tracker_and_creator_add_comment_aliases_not_participants(self):
+        from tempfile import TemporaryDirectory
+        with TemporaryDirectory() as directory:
+            runner = self._runner(self._repo(directory), FakeClient())
+            parsed, aliases = runner._parse_detail({
+                "sourceProjectKey": "1000001", "aoneId": "7001",
+            }, {
+                "id": "7001",
+                "updatedAt": "2026-07-28 10:00:00",
+                "creator": {
+                    "empId": "100004",
+                    "displayName": "创建者甲",
+                    "realName": "创建者实名",
+                },
+                "fields": [
+                    {
+                        "identifier": "ak.issue.member",
+                        "value": "100001",
+                        "displayValue": "参与者甲",
+                    },
+                    {
+                        "identifier": "workitem.tracker",
+                        "value": "WB00000001,100002",
+                        "displayValue": "跟踪者甲,跟踪者乙",
+                    },
+                ],
+            }, "2026-07-28 10:00:00")
+
+            self.assertEqual(parsed["participantStaffIds"], ["100001"])
+            self.assertNotIn("WB00000001", parsed["participantStaffIds"])
+            self.assertEqual(aliases["跟踪者甲"], "WB00000001")
+            self.assertEqual(aliases["跟踪者乙"], "100002")
+            self.assertEqual(aliases["创建者甲"], "100004")
+            self.assertEqual(aliases["创建者实名"], "100004")
+            self.assertEqual(
+                runner._parse_latest_comment_author(
+                    "1000001", "7001", [{
+                        "id": "2",
+                        "createdAt": "2026-07-28 11:00:00",
+                        "author": "跟踪者甲",
+                    }], aliases),
+                "WB00000001")
+            self.assertEqual(
+                runner._parse_latest_comment_author(
+                    "1000001", "7001", [{
+                        "id": "3",
+                        "createdAt": "2026-07-28 12:00:00",
+                        "author": "创建者实名",
+                    }], aliases),
+                "100004")
+
     def test_unresolved_human_is_explicitly_rejected(self):
         from tempfile import TemporaryDirectory
         with TemporaryDirectory() as directory:
