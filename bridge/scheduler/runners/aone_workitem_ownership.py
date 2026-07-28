@@ -377,20 +377,27 @@ class AoneWorkitemOwnershipRunner:
                 if not isinstance(raw, Mapping):
                     raise SnapshotIncomplete(
                         "control-plane candidate must be an object")
+                task_id = self._candidate_task_id(raw)
+                if task_id is not None:
+                    task_ids.append(task_id)
+                aone_id = _scalar(raw.get("aoneId"))
+                if not aone_id:
+                    raise SnapshotIncomplete(
+                        "control-plane candidate is missing aoneId")
                 project = _scalar(
                     raw.get("sourceProjectKey") or raw.get("projectId"))
-                aone_id = _scalar(raw.get("aoneId"))
-                if not project or not aone_id:
-                    raise SnapshotIncomplete(
-                        "control-plane candidate is missing sourceProjectKey/aoneId")
+                if not project:
+                    self._log.warning(
+                        "aone-workitem-ownership: skipped legacy candidate "
+                        "task=%s aone=%s: missing sourceProjectKey/projectId",
+                        task_id if task_id is not None else "<unknown>",
+                        aone_id)
+                    continue
                 key = self._candidate_key(project, aone_id)
                 deduped.setdefault(key, {
                     "sourceProjectKey": project,
                     "aoneId": aone_id,
                 })
-                task_id = self._candidate_task_id(raw)
-                if task_id is not None:
-                    task_ids.append(task_id)
 
             has_more = response.get("hasMore")
             next_raw = response.get("nextAfterTaskId")

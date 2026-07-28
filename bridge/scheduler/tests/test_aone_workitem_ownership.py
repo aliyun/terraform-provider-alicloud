@@ -221,6 +221,66 @@ class OwnershipRunnerTest(unittest.TestCase):
             runner._fetch_comments.assert_not_called()
             self.assertEqual(client.puts[0][1]["items"], [cached])
 
+    def test_legacy_candidate_without_project_is_warned_and_skipped(self):
+        from tempfile import TemporaryDirectory
+        with TemporaryDirectory() as directory:
+            client = FakeClient({
+                0: {
+                    "items": [
+                        {"taskId": 1, "aoneId": "99"},
+                        {"taskId": 2, "sourceProjectKey": "2100304",
+                         "aoneId": "100"},
+                    ],
+                    "hasMore": False,
+                    "nextAfterTaskId": None,
+                },
+            })
+            runner = self._runner(self._repo(directory), client)
+            runner._fetch_project_batch = lambda project, ids: {
+                "100": {
+                    "id": "100",
+                    "ak.issue.member": "甲",
+                    "assignedTo": "乙",
+                    "gmtModified": "2026-07-28 10:00:00",
+                },
+            }
+            runner._fetch_comments = lambda _iid: []
+
+            with self.assertLogs(
+                    "test-aone-workitem-ownership",
+                    level="WARNING") as captured:
+                result = runner.run(definition(), NOW)
+
+            self.assertIs(result.status, JobResultStatus.SUCCEEDED)
+            self.assertEqual(len(client.puts), 1)
+            self.assertEqual(
+                [(item["sourceProjectKey"], item["aoneId"])
+                 for item in client.puts[0][1]["items"]],
+                [("2100304", "100")])
+            self.assertTrue(any(
+                "skipped legacy candidate" in message
+                and "aone=99" in message
+                for message in captured.output))
+
+    def test_candidate_without_aone_id_remains_fail_closed(self):
+        from tempfile import TemporaryDirectory
+        with TemporaryDirectory() as directory:
+            client = FakeClient({
+                0: {
+                    "items": [
+                        {"taskId": 1, "sourceProjectKey": "2100304"},
+                    ],
+                    "hasMore": False,
+                    "nextAfterTaskId": None,
+                },
+            })
+            runner = self._runner(self._repo(directory), client)
+
+            result = runner.run(definition(), NOW)
+
+            self.assertIs(result.status, JobResultStatus.RETRYABLE_FAILURE)
+            self.assertEqual(client.puts, [])
+
     def test_changed_comment_failure_reuses_old_item_and_old_source_updated_at(self):
         from tempfile import TemporaryDirectory
         with TemporaryDirectory() as directory:
