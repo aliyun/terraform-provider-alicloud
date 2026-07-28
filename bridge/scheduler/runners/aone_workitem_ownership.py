@@ -63,6 +63,10 @@ class SnapshotIncomplete(RuntimeError):
     """The candidate universe could not be represented without data loss."""
 
 
+class AoneReadForbidden(SnapshotIncomplete):
+    """Aone explicitly denied detail visibility for one historical item."""
+
+
 def _positive_int(environ: Mapping[str, str], name: str, default: int,
                   maximum: int) -> int:
     try:
@@ -197,8 +201,14 @@ class ContactDirectory:
                 if token:
                     self._by_token[token.lower()] = staff_id
 
-    def resolve(self, value: Any, *, field: str,
-                allow_automation: bool = False) -> Optional[str]:
+    def resolve(
+        self,
+        value: Any,
+        *,
+        field: str,
+        allow_automation: bool = False,
+        aliases: Optional[Mapping[str, str]] = None,
+    ) -> Optional[str]:
         tokens = _identity_tokens(value)
         if not tokens:
             return None
@@ -207,12 +217,36 @@ class ContactDirectory:
         # automation identity must not leak its WORKER_* identifier into the stat.
         if allow_automation and _is_automation(tokens):
             return None
+        explicit = _explicit_staff_ids(value)
+        if len(explicit) == 1:
+            return next(iter(explicit))
+        if len(explicit) > 1:
+            raise SnapshotIncomplete(
+                "%s contains multiple staff IDs: %s"
+                % (field, ",".join(sorted(explicit))))
+        alias_matches = {
+            _scalar((aliases or {}).get(token.lower()))
+            for token in tokens
+            if _scalar((aliases or {}).get(token.lower()))
+        }
+        if len(alias_matches) == 1:
+            alias = next(iter(alias_matches))
+            if allow_automation and _is_automation({alias}):
+                return None
+            if _STAFF_ID_RE.fullmatch(alias):
+                return alias
+            raise SnapshotIncomplete(
+                "%s alias resolved to a non-staff identity: %s"
+                % (field, alias))
+        if len(alias_matches) > 1:
+            raise SnapshotIncomplete(
+                "%s aliases resolved to multiple identities: %s"
+                % (field, ",".join(sorted(alias_matches))))
         resolved = {
             self._by_token[token.lower()]
             for token in tokens
             if token.lower() in self._by_token
         }
-        resolved.update(_explicit_staff_ids(value))
         if len(resolved) == 1:
             return next(iter(resolved))
         if len(resolved) > 1:
@@ -245,6 +279,53 @@ def _participant_values(value: Any) -> list[Any]:
         for part in re.split(r"[,，;；、]", raw)
         if part.strip()
     ]
+
+
+def _identity_reference(value: Any) -> Optional[str]:
+    """Return the raw human/WORKER identity carried by a detail field value."""
+    explicit = _explicit_staff_ids(value)
+    worker_ids = {
+        token for token in _identity_tokens(value)
+        if token.lower().startswith("worker_")
+    }
+    identities = explicit | worker_ids
+    if len(identities) == 1:
+        return next(iter(identities))
+    if len(identities) > 1:
+        raise SnapshotIncomplete(
+            "detail identity contains multiple IDs: %s"
+            % ",".join(sorted(identities)))
+    return None
+
+
+def _field_map(detail: Mapping[str, Any]) -> dict[str, Mapping[str, Any]]:
+    fields = detail.get("fields")
+    if not isinstance(fields, list):
+        raise SnapshotIncomplete("Aone detail fields must be an array")
+    result: dict[str, Mapping[str, Any]] = {}
+    for field in fields:
+        if not isinstance(field, Mapping):
+            continue
+        identifier = _scalar(field.get("identifier") or field.get("key"))
+        if identifier:
+            result[identifier] = field
+    return result
+
+
+def _merge_alias(
+    aliases: dict[str, str], display: Any, identity: Optional[str], *,
+    field: str,
+) -> None:
+    if not identity:
+        return
+    for token in _identity_tokens(display):
+        key = token.lower()
+        previous = aliases.get(key)
+        if previous and previous != identity:
+            raise SnapshotIncomplete(
+                "%s display alias %s maps to multiple identities"
+                % (field, token))
+        aliases[key] = identity
 
 
 def _comment_key(comment: Mapping[str, Any]) -> tuple[float, int, str]:
@@ -450,10 +531,17 @@ class AoneWorkitemOwnershipRunner:
                 "a1 %s failed: %s" % (args[2] if len(args) > 2 else "read",
                                       type(exc).__name__)) from exc
         if result.returncode != 0:
+            stderr = _scalar(result.stderr)
+            diagnostic = "%s %s" % (stderr, _scalar(result.stdout))
+            if (args[:3] == ["project", "workitem", "get"]
+                    and (re.search(r"(?<!\d)403(?!\d)", diagnostic)
+                         or "no read permission" in diagnostic.lower())):
+                raise AoneReadForbidden(
+                    "Aone detail read forbidden: %s" % diagnostic.strip()[:200])
             raise SnapshotIncomplete(
                 "a1 %s failed rc=%d: %s"
                 % (args[2] if len(args) > 2 else "read", result.returncode,
-                   _scalar(result.stderr)[:200]))
+                   stderr[:200]))
         try:
             return json.loads(result.stdout or "[]")
         except (TypeError, ValueError) as exc:
@@ -466,7 +554,7 @@ class AoneWorkitemOwnershipRunner:
             "project", "workitem", "list",
             "--project", project,
             "--id", ",".join(aone_ids),
-            "--columns", "id,participant,assignee,modified",
+            "--columns", "id,modified",
             "--page-size", str(max(1, len(aone_ids))),
             "-f", "json",
         ])
@@ -477,6 +565,15 @@ class AoneWorkitemOwnershipRunner:
             if aone_id in requested:
                 indexed[aone_id] = row
         return indexed
+
+    def _fetch_detail(self, aone_id: str) -> dict[str, Any]:
+        data = self._a1([
+            "project", "workitem", "get", aone_id,
+            "-f", "json",
+        ])
+        if not isinstance(data, Mapping):
+            raise SnapshotIncomplete("Aone detail response must be an object")
+        return dict(data)
 
     def _fetch_comments(self, aone_id: str) -> list[dict[str, Any]]:
         data = self._a1([
@@ -516,6 +613,8 @@ class AoneWorkitemOwnershipRunner:
         assigned = item.get("assignedToStaffId")
         commenter = item.get("latestCommentAuthorStaffId")
         updated = item.get("sourceUpdatedAt")
+        source_modified = item.get("_sourceModified")
+        placeholder = item.get("_placeholder", False)
         if (item.get("sourceProjectKey") != project
                 or item.get("aoneId") != aone_id
                 or not isinstance(participants, list)
@@ -525,9 +624,12 @@ class AoneWorkitemOwnershipRunner:
                     and (not isinstance(assigned, str) or not assigned))
                 or (commenter is not None
                     and (not isinstance(commenter, str) or not commenter))
-                or (updated is not None and not isinstance(updated, str))):
+                or (updated is not None and not isinstance(updated, str))
+                or (source_modified is not None
+                    and not isinstance(source_modified, str))
+                or not isinstance(placeholder, bool)):
             return None
-        return {
+        result = {
             "sourceProjectKey": project,
             "aoneId": aone_id,
             "participantStaffIds": sorted(set(participants)),
@@ -535,6 +637,11 @@ class AoneWorkitemOwnershipRunner:
             "latestCommentAuthorStaffId": commenter,
             "sourceUpdatedAt": updated,
         }
+        if source_modified is not None:
+            result["_sourceModified"] = source_modified
+        if placeholder:
+            result["_placeholder"] = True
+        return result
 
     def _cached(
         self, cache: Mapping[str, Any], candidate: Mapping[str, str],
@@ -545,37 +652,87 @@ class AoneWorkitemOwnershipRunner:
             cache.get(self._candidate_key(project, aone_id)),
             project, aone_id)
 
-    def _parse_row(
-        self, candidate: Mapping[str, str], row: Mapping[str, Any],
-    ) -> dict[str, Any]:
+    def _parse_detail_field(
+        self,
+        field: Optional[Mapping[str, Any]],
+        *,
+        project: str,
+        aone_id: str,
+        label: str,
+        multiple: bool,
+    ) -> tuple[list[str], dict[str, str]]:
+        if field is None:
+            return [], {}
+        values = _participant_values(field.get("value"))
+        displays = _participant_values(field.get("displayValue"))
+        if not multiple and len(values) > 1:
+            raise SnapshotIncomplete(
+                "%s/%s %s has multiple values" % (project, aone_id, label))
+        if displays and len(displays) != len(values):
+            raise SnapshotIncomplete(
+                "%s/%s %s value/displayValue length mismatch"
+                % (project, aone_id, label))
+        resolved: list[str] = []
+        aliases: dict[str, str] = {}
+        for index, value in enumerate(values):
+            identity = _identity_reference(value)
+            staff_id = self._contact_directory().resolve(
+                value,
+                field="%s/%s %s[%d]" % (
+                    project, aone_id, label, index),
+                allow_automation=True)
+            if staff_id:
+                resolved.append(staff_id)
+                identity = identity or staff_id
+            if displays:
+                _merge_alias(
+                    aliases, displays[index], identity,
+                    field="%s/%s %s[%d]" % (
+                        project, aone_id, label, index))
+        return sorted(set(resolved)), aliases
+
+    def _parse_detail(
+        self,
+        candidate: Mapping[str, str],
+        detail: Mapping[str, Any],
+        source_modified: Optional[str],
+    ) -> tuple[dict[str, Any], dict[str, str]]:
         project = candidate["sourceProjectKey"]
         aone_id = candidate["aoneId"]
-        participant_value = (
-            row.get("participant") or row.get("participants")
-            or row.get("ak.issue.member"))
-        participant_ids: set[str] = set()
-        for index, principal in enumerate(_participant_values(participant_value)):
-            staff_id = self._contact_directory().resolve(
-                principal, field="%s/%s participant[%d]"
-                % (project, aone_id, index), allow_automation=True)
-            if staff_id:
-                participant_ids.add(staff_id)
-
-        assignee_value = row.get("assignee") or row.get("assignedTo")
-        assigned = self._contact_directory().resolve(
-            assignee_value, field="%s/%s assignee" % (project, aone_id),
-            allow_automation=True)
-        return {
+        fields = _field_map(detail)
+        participant_ids, aliases = self._parse_detail_field(
+            fields.get("ak.issue.member"),
+            project=project, aone_id=aone_id,
+            label="participant", multiple=True)
+        assigned_ids, assignee_aliases = self._parse_detail_field(
+            fields.get("assignedTo"),
+            project=project, aone_id=aone_id,
+            label="assignee", multiple=False)
+        for alias, identity in assignee_aliases.items():
+            previous = aliases.get(alias)
+            if previous and previous != identity:
+                raise SnapshotIncomplete(
+                    "%s/%s alias %s maps to multiple identities"
+                    % (project, aone_id, alias))
+            aliases[alias] = identity
+        parsed = {
             "sourceProjectKey": project,
             "aoneId": aone_id,
-            "participantStaffIds": sorted(participant_ids),
-            "assignedToStaffId": assigned,
-            "sourceUpdatedAt": _source_updated_at(row),
+            "participantStaffIds": participant_ids,
+            "assignedToStaffId": (
+                assigned_ids[0] if assigned_ids else None),
+            "sourceUpdatedAt": (
+                _scalar(detail.get("updatedAt")) or None),
         }
+        marker = source_modified or parsed["sourceUpdatedAt"]
+        if marker is not None:
+            parsed["_sourceModified"] = marker
+        return parsed, aliases
 
     def _parse_latest_comment_author(
         self, project: str, aone_id: str,
         comments: Sequence[Mapping[str, Any]],
+        aliases: Optional[Mapping[str, str]] = None,
     ) -> Optional[str]:
         latest = _latest_comment(comments)
         if latest is None:
@@ -583,7 +740,38 @@ class AoneWorkitemOwnershipRunner:
         return self._contact_directory().resolve(
             _comment_author(latest),
             field="%s/%s latest comment author" % (project, aone_id),
-            allow_automation=True)
+            allow_automation=True,
+            aliases=aliases)
+
+    @staticmethod
+    def _public_item(item: Mapping[str, Any]) -> dict[str, Any]:
+        return {
+            "sourceProjectKey": item["sourceProjectKey"],
+            "aoneId": item["aoneId"],
+            "participantStaffIds": list(item["participantStaffIds"]),
+            "assignedToStaffId": item.get("assignedToStaffId"),
+            "latestCommentAuthorStaffId": item.get(
+                "latestCommentAuthorStaffId"),
+            "sourceUpdatedAt": item.get("sourceUpdatedAt"),
+        }
+
+    @staticmethod
+    def _placeholder(
+        candidate: Mapping[str, str],
+        source_modified: Optional[str],
+    ) -> dict[str, Any]:
+        item = {
+            "sourceProjectKey": candidate["sourceProjectKey"],
+            "aoneId": candidate["aoneId"],
+            "participantStaffIds": [],
+            "assignedToStaffId": None,
+            "latestCommentAuthorStaffId": None,
+            "sourceUpdatedAt": None,
+            "_placeholder": True,
+        }
+        if source_modified is not None:
+            item["_sourceModified"] = source_modified
+        return item
 
     def _reuse_or_fail(
         self,
@@ -617,8 +805,9 @@ class AoneWorkitemOwnershipRunner:
 
         output: dict[str, dict[str, Any]] = {}
         failures: list[str] = []
-        changed: list[tuple[Mapping[str, str], dict[str, Any],
-                            Optional[dict[str, Any]]]] = []
+        detail_reads: list[tuple[
+            Mapping[str, str], Optional[str], Optional[dict[str, Any]],
+        ]] = []
 
         for project, project_candidates in by_project.items():
             for offset in range(0, len(project_candidates), self._batch_size):
@@ -637,26 +826,67 @@ class AoneWorkitemOwnershipRunner:
                     aone_id = candidate["aoneId"]
                     cached = self._cached(cache, candidate)
                     row = indexed.get(aone_id)
-                    if row is None:
-                        self._reuse_or_fail(
-                            candidate=candidate, cached=cached,
-                            error=SnapshotIncomplete(
-                                "Aone batch omitted requested work item"),
-                            output=output, failures=failures)
-                        continue
-                    updated = _source_updated_at(row)
-                    if (cached is not None and updated is not None
-                            and cached.get("sourceUpdatedAt") == updated):
+                    source_modified = (
+                        _source_updated_at(row) if row is not None else None)
+                    cached_marker = (
+                        cached.get("_sourceModified")
+                        if cached is not None else None)
+                    if cached is not None and cached_marker is None:
+                        cached_marker = cached.get("sourceUpdatedAt")
+                    if (row is not None and cached is not None
+                            and not cached.get("_placeholder")
+                            and source_modified is not None
+                            and cached_marker == source_modified):
                         output[self._candidate_key(project, aone_id)] = cached
                         continue
-                    try:
-                        parsed = self._parse_row(candidate, row)
-                    except Exception as exc:  # noqa: BLE001
+                    if row is None:
+                        self._log.warning(
+                            "aone-workitem-ownership: batch omitted "
+                            "project=%s aone=%s; falling back to detail",
+                            project, aone_id)
+                    detail_reads.append(
+                        (candidate, source_modified, cached))
+
+        comment_reads: list[tuple[
+            Mapping[str, str], dict[str, Any], dict[str, str],
+            Optional[dict[str, Any]],
+        ]] = []
+        with ThreadPoolExecutor(
+                max_workers=self._comment_workers,
+                thread_name_prefix="aone-ownership-detail") as executor:
+            futures = {
+                executor.submit(
+                    self._fetch_detail, candidate["aoneId"],
+                ): (candidate, source_modified, cached)
+                for candidate, source_modified, cached in detail_reads
+            }
+            for future in as_completed(futures):
+                candidate, source_modified, cached = futures[future]
+                key = self._candidate_key(
+                    candidate["sourceProjectKey"], candidate["aoneId"])
+                try:
+                    detail = future.result()
+                    parsed, aliases = self._parse_detail(
+                        candidate, detail, source_modified)
+                    comment_reads.append(
+                        (candidate, parsed, aliases, cached))
+                except AoneReadForbidden as exc:
+                    if cached is not None:
                         self._reuse_or_fail(
                             candidate=candidate, cached=cached, error=exc,
                             output=output, failures=failures)
                         continue
-                    changed.append((candidate, parsed, cached))
+                    output[key] = self._placeholder(
+                        candidate, source_modified)
+                    self._log.warning(
+                        "aone-workitem-ownership: published unreadable "
+                        "historical placeholder project=%s aone=%s: %s",
+                        candidate["sourceProjectKey"], candidate["aoneId"],
+                        str(exc)[:200])
+                except Exception as exc:  # noqa: BLE001
+                    self._reuse_or_fail(
+                        candidate=candidate, cached=cached, error=exc,
+                        output=output, failures=failures)
 
         with ThreadPoolExecutor(
                 max_workers=self._comment_workers,
@@ -664,11 +894,11 @@ class AoneWorkitemOwnershipRunner:
             futures = {
                 executor.submit(
                     self._fetch_comments, candidate["aoneId"],
-                ): (candidate, parsed, cached)
-                for candidate, parsed, cached in changed
+                ): (candidate, parsed, aliases, cached)
+                for candidate, parsed, aliases, cached in comment_reads
             }
             for future in as_completed(futures):
-                candidate, parsed, cached = futures[future]
+                candidate, parsed, aliases, cached = futures[future]
                 project = candidate["sourceProjectKey"]
                 aone_id = candidate["aoneId"]
                 key = self._candidate_key(project, aone_id)
@@ -676,7 +906,7 @@ class AoneWorkitemOwnershipRunner:
                     comments = future.result()
                     parsed["latestCommentAuthorStaffId"] = (
                         self._parse_latest_comment_author(
-                            project, aone_id, comments))
+                            project, aone_id, comments, aliases))
                     output[key] = parsed
                 except Exception as exc:  # noqa: BLE001
                     self._reuse_or_fail(
@@ -728,8 +958,9 @@ class AoneWorkitemOwnershipRunner:
 
     def _snapshot(self) -> dict[str, Any]:
         candidates = self._list_candidates()
-        items = self._build_items(candidates, self._load_cache())
-        self._save_cache(items)
+        cache_items = self._build_items(candidates, self._load_cache())
+        self._save_cache(cache_items)
+        items = [self._public_item(item) for item in cache_items]
         now = self._clock()
         if not is_aware(now):
             raise SnapshotIncomplete("ownership snapshot clock must be timezone-aware")
@@ -779,6 +1010,7 @@ def build(*, logger: Any, task_client: Any, repo_root: Path):
 
 
 __all__ = [
+    "AoneReadForbidden",
     "AoneWorkitemOwnershipRunner",
     "ContactDirectory",
     "JOB_KEY",

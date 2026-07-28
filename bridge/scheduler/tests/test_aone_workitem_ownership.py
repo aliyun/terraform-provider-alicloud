@@ -108,32 +108,77 @@ class OwnershipRunnerTest(unittest.TestCase):
             rows = {
                 ("2100304", "100"): {
                     "id": "100",
-                    "ak.issue.member": "甲、open-jarvis",
-                    "assignee": {"displayName": "乙"},
                     "modified": "2026-07-28 10:00:00",
                 },
                 ("2100304", "101"): {
                     "id": "101",
-                    "ak.issue.member": [{"staffId": "900001"}],
-                    "assignee": "open-jarvis",
                     "modified": "2026-07-28 10:01:00",
                 },
                 ("2124589", "200"): {
                     "id": "200",
-                    "participant": "测试用户甲",
-                    "assignee": "100001",
                     "modified": "2026-07-28 10:02:00",
                 },
             }
             runner._fetch_project_batch = lambda project, ids: {
                 iid: rows[(project, iid)] for iid in ids
             }
+            details = {
+                "100": {
+                    "id": "100",
+                    "updatedAt": "2026-07-28 10:00:00",
+                    "fields": [
+                        {
+                            "identifier": "ak.issue.member",
+                            "value": "100003,WORKER_1",
+                            "displayValue": "未收录花名,open-jarvis",
+                        },
+                        {
+                            "identifier": "assignedTo",
+                            "value": "100002",
+                            "displayValue": "乙",
+                        },
+                    ],
+                },
+                "101": {
+                    "id": "101",
+                    "updatedAt": "2026-07-28 10:01:00",
+                    "fields": [
+                        {
+                            "identifier": "ak.issue.member",
+                            "value": "900001",
+                            "displayValue": "外部参与者",
+                        },
+                        {
+                            "identifier": "assignedTo",
+                            "value": "WORKER_1",
+                            "displayValue": "open-jarvis",
+                        },
+                    ],
+                },
+                "200": {
+                    "id": "200",
+                    "updatedAt": "2026-07-28 10:02:00",
+                    "fields": [
+                        {
+                            "identifier": "ak.issue.member",
+                            "value": "100001",
+                            "displayValue": "测试用户甲",
+                        },
+                        {
+                            "identifier": "assignedTo",
+                            "value": "100001",
+                            "displayValue": "测试用户甲",
+                        },
+                    ],
+                },
+            }
+            runner._fetch_detail = lambda iid: details[iid]
             comments = {
                 "100": [
                     {"id": "8", "createdAt": "2026-07-28 09:00:00",
                      "author": "乙"},
                     {"id": "9", "createdAt": "2026-07-28 11:00:00",
-                     "author": {"staffId": "100001"}},
+                     "author": "未收录花名"},
                 ],
                 "101": [],
                 "200": [
@@ -162,14 +207,14 @@ class OwnershipRunnerTest(unittest.TestCase):
             }
             self.assertEqual(
                 by_key[("2100304", "100")]["participantStaffIds"],
-                ["100001"])
+                ["100003"])
             self.assertEqual(
                 by_key[("2100304", "100")]["assignedToStaffId"],
                 "100002")
             self.assertEqual(
                 by_key[("2100304", "100")]
                 ["latestCommentAuthorStaffId"],
-                "100001")
+                "100003")
             self.assertEqual(
                 by_key[("2100304", "101")]["participantStaffIds"],
                 ["900001"])
@@ -208,16 +253,18 @@ class OwnershipRunnerTest(unittest.TestCase):
             runner._fetch_project_batch = lambda project, ids: {
                 "100": {
                     "id": "100",
-                    "ak.issue.member": "value need not be parsed",
                     "modified": "2026-07-28 10:00:00",
                 },
             }
+            runner._fetch_detail = mock.Mock(
+                side_effect=AssertionError("detail must be cached"))
             runner._fetch_comments = mock.Mock(
                 side_effect=AssertionError("comments must be cached"))
 
             result = runner.run(definition(), NOW)
 
             self.assertIs(result.status, JobResultStatus.SUCCEEDED)
+            runner._fetch_detail.assert_not_called()
             runner._fetch_comments.assert_not_called()
             self.assertEqual(client.puts[0][1]["items"], [cached])
 
@@ -239,10 +286,18 @@ class OwnershipRunnerTest(unittest.TestCase):
             runner._fetch_project_batch = lambda project, ids: {
                 "100": {
                     "id": "100",
-                    "ak.issue.member": "甲",
-                    "assignedTo": "乙",
                     "gmtModified": "2026-07-28 10:00:00",
                 },
+            }
+            runner._fetch_detail = lambda _iid: {
+                "id": "100",
+                "updatedAt": "2026-07-28 10:00:00",
+                "fields": [
+                    {"identifier": "ak.issue.member",
+                     "value": "100001", "displayValue": "甲"},
+                    {"identifier": "assignedTo",
+                     "value": "100002", "displayValue": "乙"},
+                ],
             }
             runner._fetch_comments = lambda _iid: []
 
@@ -309,10 +364,19 @@ class OwnershipRunnerTest(unittest.TestCase):
             }))
             runner._fetch_project_batch = lambda project, ids: {
                 "100": {
-                    "id": "100", "participant": "甲",
-                    "assignee": "乙",
+                    "id": "100",
                     "modified": "2026-07-28 10:00:00",
                 },
+            }
+            runner._fetch_detail = lambda _iid: {
+                "id": "100",
+                "updatedAt": "2026-07-28 10:00:00",
+                "fields": [
+                    {"identifier": "ak.issue.member",
+                     "value": "100001", "displayValue": "甲"},
+                    {"identifier": "assignedTo",
+                     "value": "100002", "displayValue": "乙"},
+                ],
             }
             runner._fetch_comments = lambda _iid: (
                 (_ for _ in ()).throw(RuntimeError("temporary Aone failure")))
@@ -324,7 +388,46 @@ class OwnershipRunnerTest(unittest.TestCase):
             self.assertEqual(
                 published["sourceUpdatedAt"], "2026-07-27 10:00:00")
 
-    def test_uncached_failure_is_retryable_and_never_publishes(self):
+    def test_batch_omitted_forbidden_detail_publishes_complete_placeholder(self):
+        from tempfile import TemporaryDirectory
+        with TemporaryDirectory() as directory:
+            client = FakeClient({
+                0: {
+                    "items": [{"taskId": 1, "sourceProjectKey": "1000001",
+                               "aoneId": "7001"}],
+                    "hasMore": False,
+                    "nextAfterTaskId": None,
+                },
+            })
+            runner = self._runner(self._repo(directory), client)
+            runner._fetch_project_batch = lambda _project, _ids: {}
+            runner._fetch_detail = lambda _iid: (
+                (_ for _ in ()).throw(ownership.AoneReadForbidden(
+                    "Aone detail read forbidden: 403 no read permission")))
+            runner._fetch_comments = mock.Mock()
+
+            with self.assertLogs(
+                    "test-aone-workitem-ownership",
+                    level="WARNING") as captured:
+                result = runner.run(definition(), NOW)
+
+            self.assertIs(result.status, JobResultStatus.SUCCEEDED)
+            self.assertEqual(client.puts[0][1]["items"], [{
+                "sourceProjectKey": "1000001",
+                "aoneId": "7001",
+                "participantStaffIds": [],
+                "assignedToStaffId": None,
+                "latestCommentAuthorStaffId": None,
+                "sourceUpdatedAt": None,
+            }])
+            runner._fetch_comments.assert_not_called()
+            self.assertTrue(any(
+                "batch omitted" in message for message in captured.output))
+            self.assertTrue(any(
+                "unreadable historical placeholder" in message
+                for message in captured.output))
+
+    def test_uncached_detail_transient_is_retryable_and_never_publishes(self):
         from tempfile import TemporaryDirectory
         with TemporaryDirectory() as directory:
             client = FakeClient({
@@ -336,7 +439,13 @@ class OwnershipRunnerTest(unittest.TestCase):
                 },
             })
             runner = self._runner(self._repo(directory), client)
-            runner._fetch_project_batch = lambda _project, _ids: (
+            runner._fetch_project_batch = lambda _project, _ids: {
+                "100": {
+                    "id": "100",
+                    "modified": "2026-07-28 10:00:00",
+                },
+            }
+            runner._fetch_detail = lambda _iid: (
                 (_ for _ in ()).throw(RuntimeError("Aone unavailable")))
 
             result = runner.run(definition(), NOW)
@@ -344,21 +453,74 @@ class OwnershipRunnerTest(unittest.TestCase):
             self.assertIs(result.status, JobResultStatus.RETRYABLE_FAILURE)
             self.assertEqual(client.puts, [])
 
-    def test_batch_read_uses_project_id_filter_and_requested_columns(self):
+    def test_uncached_comment_transient_is_retryable_and_never_publishes(self):
+        from tempfile import TemporaryDirectory
+        with TemporaryDirectory() as directory:
+            client = FakeClient({
+                0: {
+                    "items": [{"taskId": 1, "sourceProjectKey": "2100304",
+                               "aoneId": "100"}],
+                    "hasMore": False,
+                    "nextAfterTaskId": None,
+                },
+            })
+            runner = self._runner(self._repo(directory), client)
+            runner._fetch_project_batch = lambda _project, _ids: {
+                "100": {
+                    "id": "100",
+                    "modified": "2026-07-28 10:00:00",
+                },
+            }
+            runner._fetch_detail = lambda _iid: {
+                "id": "100",
+                "updatedAt": "2026-07-28 10:00:00",
+                "fields": [
+                    {"identifier": "ak.issue.member",
+                     "value": "100001", "displayValue": "甲"},
+                    {"identifier": "assignedTo",
+                     "value": "100002", "displayValue": "乙"},
+                ],
+            }
+            runner._fetch_comments = lambda _iid: (
+                (_ for _ in ()).throw(RuntimeError("comments unavailable")))
+
+            result = runner.run(definition(), NOW)
+
+            self.assertIs(result.status, JobResultStatus.RETRYABLE_FAILURE)
+            self.assertEqual(client.puts, [])
+
+    def test_batch_marker_and_detail_use_real_a1_shapes(self):
         from tempfile import TemporaryDirectory
         with TemporaryDirectory() as directory:
             calls = []
 
             def process(command, **kwargs):
                 calls.append((command, kwargs))
+                if "list" in command:
+                    payload = [{
+                        "id": "100",
+                        "gmtModified": "2026-07-28 10:00:00.100",
+                    }]
+                else:
+                    payload = {
+                        "id": "100",
+                        "updatedAt": "2026-07-28 10:00:00.123",
+                        "fields": [
+                            {
+                                "identifier": "ak.issue.member",
+                                "value": "100003,WORKER_1",
+                                "displayValue": "未收录花名,open-jarvis",
+                            },
+                            {
+                                "identifier": "assignedTo",
+                                "value": "100002",
+                                "displayValue": "乙",
+                            },
+                        ],
+                    }
                 return SimpleNamespace(
                     returncode=0,
-                    stdout=json.dumps([{
-                        "id": "100",
-                        "ak.issue.member": "甲、open-jarvis",
-                        "assignedTo": "乙",
-                        "gmtModified": "2026-07-28 10:00:00.123",
-                    }]),
+                    stdout=json.dumps(payload),
                     stderr="",
                 )
 
@@ -373,21 +535,55 @@ class OwnershipRunnerTest(unittest.TestCase):
 
             indexed = runner._fetch_project_batch(
                 "2100304", ["100", "101"])
-            parsed = runner._parse_row({
+            detail = runner._fetch_detail("100")
+            parsed, aliases = runner._parse_detail({
                 "sourceProjectKey": "2100304", "aoneId": "100",
-            }, indexed["100"])
+            }, detail, ownership._source_updated_at(indexed["100"]))
+            latest_author = runner._parse_latest_comment_author(
+                "2100304", "100", [{
+                    "id": "1",
+                    "createdAt": "2026-07-28 10:01:00",
+                    "author": "未收录花名",
+                }], aliases)
 
-            command = calls[0][0]
-            self.assertIn("--project", command)
-            self.assertEqual(command[command.index("--project") + 1], "2100304")
-            self.assertEqual(command[command.index("--id") + 1], "100,101")
+            list_command = calls[0][0]
+            self.assertIn("--project", list_command)
             self.assertEqual(
-                command[command.index("--columns") + 1],
-                "id,participant,assignee,modified")
-            self.assertEqual(parsed["participantStaffIds"], ["100001"])
+                list_command[list_command.index("--project") + 1], "2100304")
+            self.assertEqual(
+                list_command[list_command.index("--id") + 1], "100,101")
+            self.assertEqual(
+                list_command[list_command.index("--columns") + 1],
+                "id,modified")
+            self.assertEqual(
+                calls[1][0][-6:],
+                ["project", "workitem", "get", "100", "-f", "json"])
+            self.assertEqual(parsed["participantStaffIds"], ["100003"])
             self.assertEqual(parsed["assignedToStaffId"], "100002")
             self.assertEqual(
                 parsed["sourceUpdatedAt"], "2026-07-28 10:00:00.123")
+            self.assertEqual(parsed["_sourceModified"],
+                             "2026-07-28 10:00:00.100")
+            self.assertEqual(latest_author, "100003")
+
+    def test_detail_403_is_classified_as_explicit_read_forbidden(self):
+        from tempfile import TemporaryDirectory
+        with TemporaryDirectory() as directory:
+            runner = ownership.AoneWorkitemOwnershipRunner(
+                task_client=FakeClient(),
+                repo_root=self._repo(directory),
+                logger=logging.getLogger("test-aone-workitem-ownership"),
+                environ={},
+                clock=lambda: NOW,
+                process_runner=lambda *_args, **_kwargs: SimpleNamespace(
+                    returncode=1,
+                    stdout="",
+                    stderr="HTTP 403: no read permission",
+                ),
+            )
+
+            with self.assertRaises(ownership.AoneReadForbidden):
+                runner._fetch_detail("7001")
 
     def test_unresolved_human_is_explicitly_rejected(self):
         from tempfile import TemporaryDirectory
