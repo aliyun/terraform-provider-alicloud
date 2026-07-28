@@ -37,6 +37,16 @@
 
 8. **Aone 工单必先调 aone-triage skill**：用户给 Aone URL / 工单 id / 提及工单时，**第一步必须 `Skill aone-triage`** 加载完整诊断+路由规则（决策树、Step 1.5 canned 前置分诊、团队分工、关联单建单纪律）。严禁跳过 skill 直接手动 `aone-get.sh` + 查源码——会漏路由判定（专属名单/镇元查证/生成器 vs 手写/分支 A–G）导致转单到错的人。
 
+9. **CloudSpec 缺口在原主单自闭环**：新工单中的 CloudSpec 资源定义、metadata 与资源文档源头
+   问题不再转外部承接人或另建镇元侧/文档质量/Provider 文档兜底 Aone。PD 返回
+   `requested_external_actions: []` + `next=terraform-rd/dev`；RD 调用
+   `terraform-provider-release` 的 pre loop、`cloudspec-amp-workflow` 与
+   IDL/resource/operation/build/norm skills，在 AMP task 专属 feature 分支完成修改，
+   使用 AMP 返回的 SSH URL clone cloudspec-model。分支、MR/CR、build/check、pre、
+   Provider PR/CI/ACC 与 blocker 统一由 finalizer 聚合回原主单。权限、AMP 登录、SSH 或仓库
+   访问失败返回 `missing_capability` / `blocked`，不得回退个人身份或改派他人。pre 成功后
+   `release/idle`，不得 finish；prod/online、master/main merge/push 与正式发布仍是人工硬门。
+
 ## 自我迭代
 
 流程/能力缺口按 [loops/self-improve.md](loops/self-improve.md) 沉淀，别只口头修；跨轮结构性重构建 Aone 跟踪，并把可复用技术知识补进相关 skill/reference。

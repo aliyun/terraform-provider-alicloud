@@ -112,15 +112,23 @@ print("  Property/Operation/PrimaryOperation:",
 '
 ```
 
-**镇元 OK 三条件**(全满足才算 OK,任一不满足即 NOT OK):
+**文档源前置短路**：文档问题先比较 OpenAPI 长期语义、CloudSpec resource/property/operation
+description 与 Provider docs。发现 **CloudSpec 文档源错误**时，必须**在 CloudSpec OK 判定前短路**
+到分支 E；该结论不得被 schema、properties 或 CoverageScore 全绿覆盖。只有 CloudSpec 文档源正确，
+Provider 本地文档生成/展示偏差时，才继续按分支 D 处理 Provider 本地问题。
+
+**镇元 OK 四条件**(全满足才算 OK,任一不满足即 NOT OK):
 
 1. **API 在镇元有对应资源**:`get` 返回 data 且 `released` list 命中(资源已定义并发布)
 2. **当前资源属性满足客户诉求**:比对 Step 1 抽取的真实诉求字段,镇元资源 schema 的 properties **全覆盖** —— 缺字段即视为 NOT OK(即便覆盖度分再高也不算 OK,因为覆盖度只测已建 schema 的属性,客户想要新字段时属性不覆盖=缺口在镇元)
 3. **测试覆盖度 100%**:`CoverageDetail.CoverageScore == 1.0`(V2 仅以覆盖度综合分判定,无 PASS/FAIL 用例计数)
+4. **文档源正确性**：有文档诉求时，CloudSpec resource/property/operation description 和枚举文案
+   与 OpenAPI 长期语义一致；非文档诉求记为 N/A。
 
 **判定**(按「与镇元相关性」口径):
-- 三条件全满足 → **镇元 OK** = 镇元侧无问题、缺口在 provider 侧 = **与镇元不相关**,走分支 D 分流
-- 任一不满足(资源未定义 / 属性缺客户要的字段 / 覆盖度 < 1.0) → **镇元 NOT OK** = **与镇元相关**,走分支 E
+- 四条件全满足 → **镇元 OK** = 镇元侧无问题、缺口在 provider 侧 = **与镇元不相关**,走分支 D 分流
+- 任一不满足(资源未定义 / 属性缺客户要的字段 / 覆盖度 < 1.0 / 文档源错误) →
+  **镇元 NOT OK** = **与镇元相关**,走分支 E 的 CloudSpec 原主单自闭环
 
 **前置短路 · 纯 datasource 问题不查镇元**:诉求只涉 `data.alicloud_xxx`(查询/过滤/输出字段)、不涉资源 schema/生命周期的,直接判**与镇元不相关**、进分支 D 分流(非临钧子分支)——datasource 是 provider 侧对 List/Describe 查询 API 的只读封装,镇元只管资源 schema,本节的 get/覆盖度查证全部跳过。resource+datasource 混合诉求不算"纯",仍按资源主线走本节查证。
 
@@ -128,7 +136,7 @@ print("  Property/Operation/PrimaryOperation:",
 
 **sanity check(必跑)**:拿同产品已发布的其他资源(如查 ① released list 里另一项)以相同接口复查,能拿到 `CoverageDetail` 说明内网/接口正常;否则先排查内网访问(`pre-acube.aliyun-inc.com` 需办公网/VPN;`/api/v1/**` 免鉴权,但走内网 DNS)。
 
-### 分支 D:与镇元不相关(镇元 OK 但 provider 侧问题 / 纯 datasource),分流
+### 分支 D:与镇元不相关(镇元 OK、Provider 本地问题 / 纯 datasource),分流
 
 资源类先判 provider 代码类型:
 
@@ -138,46 +146,40 @@ head -3 "$provider_repo/alicloud/resource_alicloud_<product>_<resource>.go" 2>/d
 ```
 
 - 首行有类似 `// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!` → **生成器产出** → 走 acube V2 接口触发临钧工作流(见 Step 3 · 分支 D-临钧;生成器产出修复=重跑生成器,管道不变)
-- 无该注释(手写)**或纯 datasource 问题**(datasource 不走临钧管道)→ 按紧急度分流(紧急判定脚本同分支 E):
+- 无该注释(手写)**或纯 datasource 问题**(datasource 不走临钧管道)→ 按紧急度分流:
   - 紧急(优先级=紧急 OR 距 DDL<14 天 OR 缺陷类型覆写)→ 指派 新山(521957)(Step 3 · 分支 D-新山)
   - 不紧急 → 指派 过载(484483)(Step 3 · 分支 D-过载)
 
+文档问题只有在证据证明 **CloudSpec 文档源正确，Provider 本地文档生成/展示偏差** 时才允许
+进入本分支。若 CloudSpec resource/property/operation description 或枚举文案本身错误，即使
+schema、properties 与 CoverageScore 全绿，也必须回到分支 E。
+
 若资源文件不存在:说明 provider 代码尚未合入(镇元 OK 但 provider 未生成/合入)——按"生成器产出待跑"处理,同样走 Step 3 · 分支 D-临钧 的 acube V2 接口(接口内部会跑生成器 + PR),不必 jarvis 手动 comment 提醒生成。
 
-### 分支 E:与镇元相关且镇元 NOT OK → 镇元 agent 关联单(紧急加建新山双单)
+### 分支 E:与镇元相关且镇元 NOT OK → CloudSpec 原主单自闭环
 
-```bash
-priority=$(bash bootstrap/aone-get.sh <id> | python3 -c '
-import json,sys
-d=json.load(sys.stdin)
-for f in d.get("fields",[]):
-  if f.get("identifier")=="priority": print(f.get("displayValue"))')
-ddl=$(bash bootstrap/aone-get.sh <id> | python3 -c '
-import json,sys
-d=json.load(sys.stdin)
-for f in d.get("fields",[]):
-  if f.get("identifier")=="80": print(f.get("value"))')
-echo "priority=$priority ddl=$ddl"
+本分支同时承接资源结构缺口与原“纯文档源头”路径；不再按资源/文档性质拆到不同外部池：
 
-# 距今天算 gap
-days_left=$(python3 -c "
-from datetime import date
-d='$ddl'.strip()
-if d:
-  print((date.fromisoformat(d) - date.today()).days)
-else:
-  print('N/A')")
-echo "days_left=$days_left"
-```
+1. PD 返回 `requested_external_actions: []` 与 `next=terraform-rd/dev`。不得提出 create_related、
+   relation、assign、另建文档兜底单或切个人身份。
+2. RD 加载 `terraform-provider-release/references/cloudspec-pre-resource-loop.md`，先运行
+   `bash bootstrap/cloudspec-core.sh doctor`。
+3. 调用 `cloudspec-amp-workflow` 创建/切换 task 专属 feature 分支，并使用 **AMP 返回的 SSH URL**
+   clone 对应 cloudspec-model；禁止在 master/main 编辑。
+4. 在已有 `main.cspec` 的模型目录调用 `cloudspec-idl-guide`，再按改动类型使用
+   `cloudspec-resource-edit`、必要时 `cloudspec-operation-edit`；build 失败才调用
+   `cloudspec-build-fix`，并用 `cloudspec-norm-check-fix` 收敛本次增量。
+5. `aliyun cspec build` 与资源级 `aliyun cspec check` 全绿后，提交/推送 feature 分支，
+   执行 `amp publish pre --dry-run`，通过后 `amp publish pre`，轮询 pre Meta 收敛。
+6. 如需 Provider 变更，必须从已收敛的 pre 重新生成/修改，继续 CI 与远程 ACC；CloudSpec
+   分支、MR/CR、pre、Provider PR 和验证证据统一由 finalizer 写回原主单。
 
-- 关联单指派 **镇元 agent (`WORKER_1783326253279`)** 自动接单——镇元侧根因主责,**无论紧急与否都建**(谜拟不解单,由 agent 从关联单 body 里的机读 JSON 驱动)
-- **body 硬契约**:关联单 body 必须严格按 `.Codex/skills/aone-triage/references/templates.md` 「Cloudspec 关联单 · 镇元 agent 接单硬契约」骨架写(`## 背景` / `## 需求` / `## 机读信息` + ```json 代码块 + 7 字段全),缺 marker/字段/JSON 语法错 = agent 无法接单 = 单沉底
-- `priority == '紧急'` 或 `days_left < 14`(或缺陷类型覆写为紧急)→ **同时再建一张**关联单指派 新山(521957),双单并行(agent 修镇元侧根因,新山紧急兜底 provider 侧);原单指派谜拟(479782,人类兜底 owner),评论 @谜拟+@新山(agent 不接 IM 不 @;详见 `.Codex/skills/aone-triage/references/tf-customer-request-routing.md` Step 3 · 分支 E 紧急双关联单)
-- 否则 → 仅镇元 agent 一张
+权限、AMP 登录、SSH、模型仓或 pre 能力失败时返回 `missing_capability` / `blocked` 并记录原主单，
+不得回退其它承接人或身份。`amp publish prod` / prod/online、master/main merge/push 与正式发布
+始终是人工硬门；pre 成功后只能 `release/idle`，不得 finish 或宣称正式发布。
 
 ### 分支 F:上游 API 缺口
 
 - 不建关联单(镇元/我们团队无事可做)
 - 提取 `creator.displayName` 作为提单人,评论正文 @提单人 + 请其协助转对应云产品 API 团队评估
 - status 改 `待上游排期`(若 CLI 报 "unsupported target status" 却能实际写入,重试;或落 `待排期` 作二级降级)
-

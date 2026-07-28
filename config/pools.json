@@ -21,12 +21,14 @@
         "需求问题": "已发布待需求方验收",
         "功能缺陷": "Fixed",
         "线上问题": "Fixed",
+        "性能瓶颈": "Fixed",
         "任务": "已完成"
       },
       "progress_status": {
         "需求问题": "问题解决中",
         "功能缺陷": "Open",
         "线上问题": "Open",
+        "性能瓶颈": "Open",
         "任务": "处理中"
       },
       "claim_required_field_defaults": {
@@ -275,21 +277,7 @@
       "pool": "api_toolkit"
     }
   ],
-  "upstream": {
-    "cloudspec_gap": {
-      "project": 2165097,
-      "assignee": "WORKER_1783326253279",
-      "human_fallback": 479782,
-      "access": "submit_only",
-      "desc": "上游依赖(镇元 agent)，无管理权，缺口只可提单升级，不纳入 pools.sh 视检。assignee=镇元agent WORKER_ 自动接单(body 必须含 ## 机读信息 JSON,见 aone-triage skill templates.md);human_fallback=谜拟 479782,agent 断电/复杂决策时兜底。"
-    },
-    "cloudspec_docs_quality": {
-      "project": 2169561,
-      "assignee": 373108,
-      "access": "submit_only",
-      "desc": "CloudSpec 文档质量问题池(念依 373108)，无管理权，只可提单，不纳入 pools.sh 视检。tf_customer 分支 I 关联单:镇元资源文档源头修复(防 provider 文档下次发版被覆盖);body 自然语言写清 PR 链接+资源 code+错误位置/正确值(非机读契约),见 aone-triage skill tf-customer-request-routing 分支 I。"
-    }
-  },
+  "upstream": {},
   "claim": {
     "tag": "jarvis-claimed",
     "fallback": "title",

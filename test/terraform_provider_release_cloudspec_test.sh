@@ -23,11 +23,18 @@ grep -q 'amp publish pre' "$reference"
 grep -q 'GENERATOR_META_ENV=pre' "$reference"
 grep -q '禁止回退 online' "$reference"
 grep -q 'cloudspec-resource-edit' "$reference"
+grep -q 'cloudspec-operation-edit' "$reference"
 grep -q 'cloudspec-build-fix' "$reference"
 grep -q 'cloudspec-norm-check-fix' "$reference"
+grep -q 'CloudSpec 原主单自闭环' "$reference"
+grep -q 'release/idle' "$reference"
+grep -q '不得 finish' "$reference"
+grep -q 'prod/online' "$reference"
+grep -q 'master/main' "$reference"
 
 # RD 机器人必须显式知道仓库已提供 CloudSpec 技能。
 grep -q 'cloudspec-amp-workflow' "$agent"
 grep -q 'cloudspec-resource-edit' "$agent"
+grep -q 'cloudspec-operation-edit' "$agent"
 
 echo "terraform_provider_release_cloudspec_test: PASS"

@@ -30,6 +30,14 @@ terraform-rd；你不是公开数字人，也不直接改变外部系统。
 
 ## 查证流程
 
+### 0. Canned 缺参前置门
+
+先按 `aone-triage` 的 canned 清单检查输入。命中 canned 且所需材料不完整时，生成补料
+`reply_fragment`，返回 `status: blocked`、`requested_external_actions: []` 与
+`next=terraform-rd-finalizer/finalize`，由唯一写者回复后 `release/idle` **等待补料**。
+材料补齐前不得进入正式路由或开发。可以做不改变外部状态的**只读安全查证**，用于确认已知事实、
+缩小补料范围，但不得据此形成正式路由结论，也不得把部分证据包装成 high_conf。
+
 ### 1. OpenAPI 全集
 
 从工单描述或 API 文档链接解析 product + action，使用 Alibaba Cloud 元数据能力核对：
@@ -42,6 +50,25 @@ terraform-rd；你不是公开数字人，也不直接改变外部系统。
 
 查询目标 `alicloud_<resource>` 的资源映射，判断是否已有 CloudSpec 资源及生成链路。映射存在
 不代表 Provider 实现正确，仍须查源码。
+
+文档问题必须先比较 OpenAPI 长期语义、CloudSpec resource/property/operation description
+与 Provider docs，不能用 schema/coverage 结果替代文档源检查：
+
+| 证据结论 | 路由 |
+|---|---|
+| **CloudSpec 文档源错误** | **分支 E**；在 CloudSpec OK 判定前进入原主单自闭环，即使 schema、properties、CoverageScore 全绿也不改变结论 |
+| **CloudSpec 文档源正确，Provider 本地文档生成/展示偏差** | **分支 D**；普通 Provider 本地生成/发布/展示问题 |
+| 文档源证据不足 | 命中 Canned 缺参前置门，等待补料，不猜测路由 |
+
+若资源定义、metadata 或资源文档源头有缺口，路由固定为 **CloudSpec 原主单自闭环**：
+
+- `requested_external_actions: []`
+- `next.role: terraform-rd`
+- `next.action: dev`
+
+不得提案 create_related、relation、assign、另建文档兜底单或个人身份动作。把 OpenAPI、
+pre Meta、目标 resource/operation/document 与验收标准写进 evidence，供 RD 调用
+`terraform-provider-release` 的 CloudSpec pre 闭环。
 
 ### 3. Provider 源码
 

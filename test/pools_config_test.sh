@@ -25,13 +25,25 @@ done
   && ok "cloudspec pool removed" || bad "cloudspec pool should be removed"
 
 # S3c: per-pool assignee 语义(config/pools.json)
-#   5 池全部仅看【转派给 open-jarvis(WORKER_1782379562571)】的单。
-#   标识符用账号/员工 ID(a1 服务端解析,ID/名字/邮箱等价;ID 最稳,不用显示名)。
+#   5 池消费统一数字人 ID 集合；open-jarvis 与 Terraform 的现行/迁移期公共身份都需保留。
 for pool in tf_customer tf_provider mcp_server api_toolkit automation_platform; do
-  [ "$(jq -r ".pools.$pool.assignee" "$POOLS_JSON")" = "WORKER_1782379562571" ] \
-    && ok "$pool.assignee = open-jarvis(WORKER_1782379562571)" \
-    || bad "$pool.assignee 应为 WORKER_1782379562571(仅看转派给 open-jarvis 的单)"
+  jq -e ".pools.$pool.assignee == [
+    \"WORKER_1782379562571\",
+    \"WORKER_1783582458263\",
+    \"WORKER_1783582374386\",
+    \"WORKER_1783582593461\"
+  ]" "$POOLS_JSON" >/dev/null \
+    && ok "$pool.assignee keeps the digital-worker set" \
+    || bad "$pool.assignee digital-worker set mismatch"
 done
+
+# S3d: CloudSpec 资源/文档源头问题已改为原主单自闭环，不再暴露 submit-only upstream 出口。
+jq -e '
+  (.upstream.cloudspec_gap? == null)
+  and (.upstream.cloudspec_docs_quality? == null)
+' "$POOLS_JSON" >/dev/null \
+  && ok "obsolete CloudSpec upstream routes removed" \
+  || bad "obsolete CloudSpec upstream routes still configured"
 
 jq -e '.pools.automation_platform.line=="automation_platform"' "$POOLS_JSON" >/dev/null \
   && ok "automation_platform uses independent line" || bad "automation_platform line mismatch"
@@ -80,6 +92,12 @@ jq -e '.pools.tf_customer.exclude_status | index("已合入主线") != null' \
   "$POOLS_JSON" >/dev/null \
   && ok "tf_customer excludes 已合入主线 from scans" \
   || bad "tf_customer.exclude_status missing 已合入主线"
+[ "$(jq -r '.pools.tf_customer.progress_status["性能瓶颈"]' "$POOLS_JSON")" = "Open" ] \
+  && ok "tf_customer.progress_status.性能瓶颈 = Open" \
+  || bad "tf_customer.progress_status.性能瓶颈 must be Open"
+[ "$(jq -r '.pools.tf_customer.done_status["性能瓶颈"]' "$POOLS_JSON")" = "Fixed" ] \
+  && ok "tf_customer.done_status.性能瓶颈 = Fixed" \
+  || bad "tf_customer.done_status.性能瓶颈 must be Fixed"
 jq -e '.claim.done_statuses | index("已合入主线") == null' "$POOLS_JSON" >/dev/null \
   && ok "已合入主线 is not a global completion status" \
   || bad "已合入主线 must not be added to claim.done_statuses"

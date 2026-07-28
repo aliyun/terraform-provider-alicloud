@@ -91,7 +91,13 @@ Terraform PD 的三层查证还必须调用 `screenshot-evidence` 生成本地�
 `references/tf-customer-request-routing.md` 分工表路由到具体人，并与客户主单双向关联。路由动作由
 最终 RD 审查执行；每个被 claim 的 Terraform 工单在本轮主处理 run 只于最终聚合时回复一次，
 不按 PD/RD/QA 阶段同步。后续 gate/PR/终态失败的重要事件可按 `loops/persona-collab.md`
-§五追加 RD-only 幂等更新。需要 cloudspec_gap 或云产品上游协助时，把详细问题放入最终聚合及对应依赖单。
+§五追加 RD-only 幂等更新。CloudSpec 资源定义、metadata 或资源文档源头缺口统一走
+**原主单自闭环**：PD 不提建单/关联/改派，RD 用 `cloudspec-amp-workflow` 与 IDL/resource/
+operation/build/norm skills 在 task 专属 feature 分支完成 pre 修复，必要时继续 Provider
+生成/PR/ACC；分支、MR/CR、pre 与阻塞统一放入最终聚合，不另建镇元侧、文档质量或 Provider
+文档兜底 Aone。AMP 登录、SSH、模型仓权限失败返回 `missing_capability` / `blocked`；不得回退
+其它身份。pre 完成后 release/idle，不得 finish；prod/online、master/main merge/push 仍是人工硬门。
+只有云产品 OpenAPI 本身缺能力时，才按分支 F 等待上游。
 
 GitHub PR/评论/推分支的身份纪律见 CLAUDE.md 工作纪律 #6（`bootstrap/github-identity.sh`，账号必须 `api-tool-agent`）。
 

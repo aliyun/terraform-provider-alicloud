@@ -346,7 +346,12 @@ cspec 位置:cloudspec-model 分支 <feature/xxx>,文件 resources/<Name>.cspec
 定义错误:<例如 attributeMappings 中 $.FileSystemId.responsePath 错;或 uniqueKeyFields 缺 $.FileSystemId>
 修复路径:去 cspec 分支改定义 → `aliyun cspec build` → `aliyun cspec check --name <Res>` → `amp publish pre` → 生成器重跑
 关联 skill:`cloudspec-resource-edit` / `cloudspec-operation-edit` / `cloudspec-norm-check-fix`
-关联单:若无镇元对接单,按 aone-triage 分支 E 建 2165097 池关联单推动 cspec 侧修复与发布
+回写与修复:返回 RD，按 aone-triage 分支 E 和
+`terraform-provider-release/references/cloudspec-pre-resource-loop.md` 在**原主单**内修复
+CloudSpec feature 分支，完成 build/check、pre dry-run/发布、从 pre 重新生成与本 AccTest 复验。
+`requested_external_actions: []`，不得为资源定义或文档源头问题另建 Aone；能力失败返回
+`missing_capability` / `blocked`。pre 成功后 `release/idle`，不得 finish；prod/online 与
+master/main merge/push 仍是人工硬门。
 ```
 
 ### 6.5 D - 生成器 bug

@@ -25,29 +25,29 @@
 | 场景 | 花名/名称 | 工号 |
 |---|---|---|
 | **Provider 侧全局改造**(非单一产品/资源:region 白名单/框架 utility/公共 endpoint/provider.go 基础/SDK bump) | 新山 | 521957 |
-| **镇元资源文档修改**(仅描述/字段解释/枚举值文案层,不涉资源本身新增字段/结构)——**分支 I 关联单落 CloudSpec 文档质量问题(2169561) 池**指派念依修镇元源头。TF provider docs 从镇元自动生成,provider PR 只是紧急兜底,不修镇元源头下次发版会覆盖回旧值。**文档改造分支通常与 528766 过载单双建**(过载紧急合 provider PR,念依修镇元源头) | 念依(陈旖旎) | 373108 |
-| **与镇元相关且镇元 NOT OK · 关联单**(资源未定义 / 属性不满足诉求 / 覆盖度<100%)——镇元侧根因主责,**无论紧急与否都建单**;关联单落 2165097 池指派**镇元 agent 自动接单**(谜拟不自己解单,做主单人类兜底 owner)。**body 必须严格按 [templates.md 硬契约](./templates.md) 骨架**(`## 背景` / `## 需求` / `## 机读信息` + ```json 代码块 + 7 字段全),缺 marker/字段/JSON 语法错 = agent 无法接单 = 单沉底。**注意 agent 只接"资源本身需变更"**——纯文档描述修改(枚举值文案/字段说明)走念依 · 2169561 池,不投 agent | 镇元 agent(无花名,agent 身份) | WORKER_1783326253279 |
-| 同上 · 源客户主单 assignee(客户可见,agent 断电/复杂决策时人类兜底 owner) | 谜拟 | 479782 |
-| 同上且**紧急**(优先级=紧急 或 距 DDL<14 天 或 缺陷类型覆写):在镇元 agent 单之外**再建一张关联单并行**(紧急兜底 provider 侧,agent+新山两张都建) | 新山 | 521957 |
+| **CloudSpec 资源定义或文档源头缺口**(资源未定义 / 属性不满足诉求 / 覆盖度<100% / CloudSpec 描述、字段解释、枚举文案错误)——文档源错误在 OK 判定前短路；不改派、不建关联单；open-jarvis 在原主单内修 CloudSpec feature 分支、发布 pre、验证 Meta，并按需继续 Provider 生成/PR/ACC | open-jarvis（内部执行） | 原主单保持当前承接关系 |
 | 与镇元不相关 + 资源代码由生成器产出(修复=acube 重跑生成器,管道不变) | 临钧 | 429768 |
-| **与镇元不相关**(纯 datasource / 镇元 OK 但 provider 侧问题,手写代码)且**紧急** | 新山 | 521957 |
+| **与镇元不相关**(纯 datasource / 镇元 OK 但 provider 侧问题；文档场景仅限 CloudSpec 源正确、Provider 本地生成/展示偏差)且**紧急** | 新山 | 521957 |
 | 与镇元不相关(同上)且**不紧急**(默认兜底) | 过载 | 484483 |
 | **NPE 兜底**(以上所有分支均未匹配 / 跨多产品无单一负责人 / 分诊模糊超出团队职责)+ 打标签 `jarvis-npe` | 夏节 | 401498 |
 
-**镇元 agent 特点**:
-- 工号 `WORKER_1783326253279`,是 agent/机器人身份(非自然人),**无钉钉 IM 通道**(notify-dingtalk.sh 传 `WORKER_` 前缀会 400/静默);私信必须发谜拟(479782)/新山(521957) 等真人
-- Bridge 视角仍算"人工介入"(见 config/contacts.json 说明),不会触发 jarvis-idle 自我重派
-- **只识机读 JSON**,不看自然语言 body 补充说明——契约见 `references/templates.md` "Requirement skeleton (Cloudspec 关联单 · 镇元 agent 接单硬契约)"
-- 只接分支 E 场景(与镇元相关且镇元 NOT OK);其它场景不能强指派
+**CloudSpec 原主单自闭环契约**:
+- PD 判定 CloudSpec 缺口后返回 `requested_external_actions: []`、`next=terraform-rd/dev`，不得提出建单、关联、改派或个人身份动作。
+- RD 使用 `cloudspec-amp-workflow` 取得 task 专属 feature 分支与模型仓 SSH URL，再调用 IDL/resource/operation/build/norm skills；build/check 与 pre 证据统一交 finalizer。
+- AMP 登录、SSH 或仓库权限失败返回 `missing_capability` / `blocked` 并写原主单阻塞；不得改派外部承接人。
+- `amp publish pre` 完成后保持 `release/idle`；prod/online、master/main merge/push 与正式发布仍是人工硬门。
 
-**与镇元不相关的问题**(镇元 agent 不接这两类):
+**与镇元不相关的问题**(不进入 CloudSpec 原主单自闭环的两类):
 1. **纯 datasource 问题**:诉求只涉 `data.alicloud_xxx`(查询/过滤/输出字段),不涉资源 schema/生命周期——datasource 是 provider 侧对查询 API 的只读封装,镇元只管资源 schema,**跳过镇元查证**;resource+datasource 混合不算"纯"
-2. **镇元侧无问题、provider 侧存在问题**:镇元 OK 三条件全满足,缺口在 provider 实现(bug/适配缺失/文档行为不符)
+2. **镇元侧无问题、provider 侧存在问题**:镇元 OK 四条件全满足,缺口在 provider 实现；
+   文档场景仅包含 CloudSpec 文档源正确、Provider 本地文档生成/展示偏差
 
-**镇元 OK 三条件**(全满足才算 OK,任一不满足即视为 NOT OK=与镇元相关):
+**镇元 OK 四条件**(全满足才算 OK,任一不满足即视为 NOT OK=与镇元相关):
 1. **API 在镇元有对应资源**:资源已在镇元定义并发布(get 返回 data 且 released list 命中)
 2. **当前资源属性满足客户诉求**:比对客户抽取的真实诉求字段,镇元资源 schema 的 properties **全覆盖**(缺字段=NOT OK,即便覆盖度分再高也不算 OK)
 3. **测试覆盖度 100%**:acube V2 `CoverageDetail.CoverageScore == 1.0`
+4. **文档源正确性**:涉及文档诉求时，CloudSpec resource/property/operation description 与枚举
+   文案必须符合 OpenAPI 长期语义；源错误不受前三项全绿影响，直接进入分支 E
 
 详见 Step 2 分支 D 前的判定说明。
 

@@ -1,6 +1,6 @@
 # CloudSpec pre 资源定义检查与修复闭环
 
-本 reference 只服务 `terraform-provider-release`：接单初期校验 pre 资源定义，或 Terraform 测试证明 CloudSpec IDL 定义错误时，完成“修 IDL → 发布 pre → 从 pre 重新生成 → ACC 复验”。CloudSpec 正式发布不在本闭环内。
+本 reference 只服务 `terraform-provider-release`：接单初期校验 pre 资源定义，或 Terraform 测试证明 CloudSpec IDL 定义错误时，完成“修 IDL → 发布 pre → 从 pre 重新生成 → ACC 复验”。这是 **CloudSpec 原主单自闭环**：资源定义、metadata 与资源文档源头问题均以当前原主单为唯一 Aone 真源，不创建镇元侧、文档质量或 Provider 文档兜底关联单；CloudSpec 分支、MR/CR、pre、Provider PR、ACC 与 blocker 全部交最终 RD 聚合回原主单。CloudSpec 正式发布不在本闭环内。
 
 ## 0. 机器人能力入口
 
@@ -103,7 +103,7 @@ ModelProvider: string
 - @过载(484483)
 - @原根(265607)
 
-评论至少包含：资源标识、工单原文摘要、pre Meta 证据、冲突/缺失点、需要人类拍板的单一问题。随后 `claim.sh release` / `jarvis-idle` 并按 `loops/persona-collab.md` 写 `[[SUSPEND]]`；不得继续 Terraform 生成、provider 编码或 CloudSpec 发布。bridge 可按 `config/contacts.json` 向四人发钉钉通知，IM 失败不改变 Aone 已挂起事实。
+阻塞内容至少包含：资源标识、工单原文摘要、pre Meta 证据、冲突/缺失点、需要人类拍板的单一问题。开发阶段不得单独评论或私信；由最终 RD 将问题与 @对象并入原主单唯一聚合回复，随后 `claim.sh release` / `jarvis-idle` 并按 `loops/persona-collab.md` 写 `[[SUSPEND]]`；不得继续 Terraform 生成、provider 编码或 CloudSpec 发布。
 
 ## 3. 测试期 CloudSpec 定义修复
 
@@ -118,9 +118,10 @@ ModelProvider: string
 2. 确认目录已有 `main.cspec`，加载 `cloudspec-idl-guide` 后用 `cloudspec-resource-edit` 修改资源；涉及操作或 flag 模式时再加载对应专项技能。
 3. 运行 `aliyun cspec build`。失败时用 `cloudspec-build-fix` 定位并修复，直至通过。
 4. 对每个变更资源运行 `aliyun cspec check --name <ResourceName>`；用 `cloudspec-norm-check-fix` 修复本次增量，直至通过。
-5. 提交并推送 CloudSpec feature 分支，把 commit、build/check 输出摘要回填 Aone。
+5. 提交并推送 CloudSpec feature 分支，把 commit、MR/CR、build/check 输出摘要交 finalizer 聚合回原主单。
 
-语义不确定时不得借 codefix 猜答案，回到第 2 节会审。
+语义不确定时不得借 codefix 猜答案，回到第 2 节会审。AMP 登录、SSH、模型仓权限或 pre
+能力失败时返回 `missing_capability` / `blocked`，不得回退个人身份、外部承接人或另建 Aone。
 
 ## 4. 发布 pre 与收敛验证
 
@@ -134,7 +135,8 @@ amp publish pre -o json --no-interactive
 
 `dry-run` 失败即停止。真发成功后循环读取 `--env pre` 的资源 Meta，直到变更字段和 CRUD 映射与本次 IDL 一致；记录发布结果、轮询时间和最终 Meta 摘要。超时或内容不一致时挂起并升级，不能进入生成器。
 
-`amp publish prod` / online 正式发布是人工硬门，本 SOP 永不执行。
+`amp publish prod` / prod/online 正式发布以及 master/main merge/push 是人工硬门，本 SOP 永不执行。
+pre 成功只表示预发模型已收敛：主单必须 `release/idle`，不得 finish，也不得宣称正式发布。
 
 ## 5. 强制从 pre 重新生成
 
@@ -149,9 +151,9 @@ pre Meta 收敛后才允许运行 Terraform generator。先查看当前 generato
 
 随后运行 SOP 的静态检查和全部远程 ACC。仍失败时重新分类：定义仍错则回第 3 节；Meta 已正确但产物错则转 generator 问题。每次修复最多重试 3 轮，超过上限升级人工。
 
-## 6. Aone 证据清单
+## 6. 原主单证据清单
 
-每个闭环至少留下：
+每个闭环至少由 finalizer 在原主单留下：
 
 - 初始结论：`PRE_CLOUDSPEC_ALIGNED` / `PRE_CLOUDSPEC_GAP` / `PRE_REQUIREMENT_AMBIGUOUS`；
 - 初始 pre Meta 的关键字段与 CRUD/List 对照；
@@ -161,3 +163,4 @@ pre Meta 收敛后才允许运行 Terraform generator。先查看当前 generato
 - pre Meta 收敛证据；
 - `GENERATOR_META_ENV=pre` 及实际生成参数；
 - 生成 diff 摘要与全部 ACC 结果。
+- MR/CR、Provider PR/CI 与仍待人工执行的 prod/online、master/main、正式发布硬门。

@@ -5,7 +5,7 @@ description: >-
   在处理期间不发阶段进展，主处理 run 最后聚合为一条 Aone 回复；后续重要事件仍由 RD
   幂等更新。
 tools: Bash, Read, Grep, Glob, Edit, Write, WebFetch, Skill
-skills: [terraform-pr-review, terraform-provider-release, cloudspec-amp-workflow, cloudspec-idl-guide, cloudspec-resource-edit, cloudspec-build-fix, cloudspec-norm-check-fix]
+skills: [terraform-pr-review, terraform-provider-release, cloudspec-amp-workflow, cloudspec-idl-guide, cloudspec-resource-edit, cloudspec-operation-edit, cloudspec-build-fix, cloudspec-norm-check-fix]
 model: inherit
 ---
 
@@ -64,8 +64,8 @@ evidence: [代码、构建、CI、PR/CR 证据]
 visual_evidence_manifest: PD 原样交接的三层截图 manifest 路径
 requested_external_actions: []
 next:
-  role: terraform-qa | terraform-pd | terraform-rd-finalizer
-  action: acc_verify | clarify | finalize
+  role: terraform-qa | terraform-rd-finalizer
+  action: acc_verify | finalize
 reply_fragment: 可纳入最终回复的研发结论
 ```
 
@@ -96,9 +96,24 @@ subagent 不会自动注入 SessionStart,**技能须主动通过 Skill 工具调
   「先复现→定位根因→再动代码」纪律执行。
 - **Terraform release / ACC 暴露 CloudSpec 定义错误**:调用 `terraform-provider-release`，并按其
   `references/cloudspec-pre-resource-loop.md` 显式加载仓库 vendored 的 `cloudspec-amp-workflow`、
-  `cloudspec-idl-guide`、`cloudspec-resource-edit`、`cloudspec-build-fix`、`cloudspec-norm-check-fix`。
+  `cloudspec-idl-guide`、`cloudspec-resource-edit`、必要时 `cloudspec-operation-edit`、
+  `cloudspec-build-fix`、`cloudspec-norm-check-fix`。
   先跑 `bash bootstrap/cloudspec-core.sh doctor`；修复只发布 pre，生成器必须从 pre 重新生成，
   CloudSpec prod/online 仍是人工硬门。
+- **CloudSpec 原主单自闭环**：PD 判定资源定义、metadata 或资源文档源头缺口时，RD 在原主单
+  对应 run 内直接开发，不新建任何镇元侧、文档质量或 Provider 文档兜底 Aone。必须由 AMP
+  创建 task 专属 feature 分支并使用 AMP 返回的 SSH URL clone cloudspec-model；CloudSpec
+  分支、MR/CR、build/check、pre、Provider PR/CI/ACC 与 blocker 统一交 finalizer 聚合。
+  AMP 登录、SSH、模型仓权限或 pre 能力失败返回 `missing_capability` / `blocked`，不得回退
+  个人身份或外部承接人。pre 成功后只能 `release/idle`，不得 finish；`amp publish prod`、
+  prod/online、master/main merge/push 与正式发布始终是人工硬门。
+- **路由接收门**：PD 命中 **Canned 缺参前置门**并返回 blocked 时不得启动开发；finalizer
+  只聚合补料问题并 `release/idle` 等待下一轮。文档问题先检查 PD 的三侧证据：CloudSpec
+  resource/property/operation description 或枚举文案错误时固定走 E 原主单自闭环，
+  schema/properties/CoverageScore 全绿不能改走 D。只有证据明确 CloudSpec 文档源正确、
+  差异仅是 Provider 本地文档生成/展示偏差时，才接受普通 Provider D 路由；
+  文档源证据不足时返回 `status: blocked`、`next=terraform-rd-finalizer/finalize`，由唯一回复
+  请求补料后 `release/idle`；不得建关联单或直接改 Provider 文档掩盖源头。
 - 不得跳过纪律直接改文件;Skill 调用记录(或 skill_missing 标注 + 纪律执行痕迹)即执行证明。
 
 ## 隔离原则(严格执行)

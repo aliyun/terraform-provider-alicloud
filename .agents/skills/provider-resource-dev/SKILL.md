@@ -28,7 +28,18 @@ description: Use when DEVELOPING, DIAGNOSING, or FIXING an alicloud Terraform pr
 - 与 Terraform-客户需求池的客户主单双向关联。**指派给过载(484483)的关联单,jarvis 直接 claim 跟进解决,bookend 同时处理客户主单与关联单**(研发细节 wrap 关联单,客户主单只 wrap 关键节点,收尾两边各自 done+release);指派其他人的关联单不 claim,建单 + @对方等接手;无客户主单的 adhoc 场景按 loops/adhoc-intake.md 走。
 - 主要研发进展、生成/手改差异、验证细节、PR/CI/验收信息优先同步到内部研发单。
 - 客户主单只同步关键节点摘要:已转内部单、发现镇元/Cloudspec/API 卡点、资源模型问题、需要客户感知的决策或阻塞。
-- 如客户主单还关联 `cloudspec_gap` 或云产品上游 Aone,依赖方协作的详细问题同步到对应依赖单,不要混写在客户主单里。
+- **CloudSpec 原主单自闭环例外**：资源定义、metadata 或文档源头缺口不创建/复用任何镇元侧、
+  文档质量或 Provider 文档兜底 Aone；原主单是唯一记录。PD 返回
+  `requested_external_actions: []`、`next=terraform-rd/dev`，RD 直接进入
+  `terraform-provider-release/references/cloudspec-pre-resource-loop.md`，把 CloudSpec 分支、
+  MR/CR、build/check、pre、Provider PR/CI/ACC 与 blocker 全部交 finalizer 聚合回原主单。
+- 文档问题在进入本 skill 的普通 Provider 路径前，必须先按
+  `references/zhenyuan-verification.md` 验证文档源正确性。CloudSpec resource/property/operation
+  description 或枚举文案错误时，即使 schema/properties/CoverageScore 全绿也走原主单自闭环；
+  只有 CloudSpec 文档源正确、差异仅在 Provider 本地文档生成/展示时才走普通 Provider 修复。
+- AMP 登录、SSH、模型仓权限或 pre 发布能力缺失时返回 `missing_capability` / `blocked`；
+  不回退外部承接人或个人身份。pre 成功后只 `release/idle`，prod/online、master/main
+  merge/push 与正式发布仍是人工硬门，不得 finish。
 
 ## 步骤
 1. **查证 Terraform ↔ Cloudspec 身份** — OpenAPI + provider 源码确认缺;`getTerraformResourceSpec` 只看映射,不代表实现,且找不到可能返无关资源,别信。

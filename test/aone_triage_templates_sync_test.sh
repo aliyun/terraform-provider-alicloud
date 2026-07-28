@@ -12,6 +12,9 @@ source "$repo_root/bootstrap/skills-mirror-lib.sh"
 for rel in \
   "SKILL.md" \
   "references/templates.md" \
+  "references/acube-createBuildTaskV2-workflow.md" \
+  "references/tf-customer-request-routing.md" \
+  "references/team-roster.md" \
   "references/delivery-aliyun-automation-agent.md" \
   "references/delivery-aliyun-automation-platform.md" \
   "references/delivery-cloudspec.md" \

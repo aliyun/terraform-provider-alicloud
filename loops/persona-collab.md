@@ -70,6 +70,19 @@ reply_fragment: 可直接纳入最终回复的片段
 无开发需求时，RD 可返回 no-op，QA 对支持性结论或复现证据做独立校验后进入 finalizer。不得为了
 形式跳过 PD/QA，也不得让 PD/QA 代替 RD 发声。
 
+CloudSpec 资源定义、metadata 或资源文档源头缺口是上述链的内建开发分支：
+
+- PD 必须返回 `requested_external_actions: []`、`next=terraform-rd/dev`，不得提案新建 Aone、
+  relation、assign 或切换个人身份。
+- RD 调用 `terraform-provider-release` 的 `cloudspec-pre-resource-loop.md`，
+  `cloudspec-amp-workflow` 与 IDL/resource/operation/build/norm skills，在 AMP task 专属
+  feature 分支自闭环；AMP 返回的 SSH URL 是 cloudspec-model clone 真源。
+- CloudSpec 分支、MR/CR、build/check、pre、Provider PR/CI/ACC 和 blocker 都只由 finalizer
+  聚合到原主单。权限、AMP 登录、SSH 或仓库访问失败返回 `missing_capability` / `blocked`，
+  不得改派外部承接人或回退个人身份。
+- pre 成功只允许 `release/idle`，不得 finish；prod/online、master/main merge/push 与正式发布
+  仍是人工硬门。
+
 ## 四、主处理 run 的单次最终回复
 
 finalizer 回复正文至少包含：

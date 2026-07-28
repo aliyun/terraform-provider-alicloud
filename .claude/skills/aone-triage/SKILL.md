@@ -65,8 +65,7 @@ bash bootstrap/aone-image-extract.sh <id>          # 附件截图→本地,skill
 | **2124589** mcp_server | 自家应用交付(Agent门户/AgentRuntime/aliyun-automation-agent/PlayGround) | `references/delivery-aliyun-automation-agent.md` |
 | **1091779** automation_platform | 自动化服务台 / IaCService 产品研发与交付(不含 Agent 链路) | `references/delivery-aliyun-automation-platform.md` |
 | cwd 在 cloudspec repo 或诉求涉 cloudspec / OpenAPI MCP Server | 自家应用交付(cloudspec) | `references/delivery-cloudspec.md` |
-| **2165097** upstream.cloudspec_gap | 镇元 agent 池:上游 Cloudspec 需求 + tf_customer 分支 E agent 关联单(谜拟做人类兜底 owner) | submit_only(建单 assignee=`WORKER_1783326253279` + body 必带 `## 机读信息` JSON,agent 自动接单,不 claim;详见 `references/templates.md` 硬契约) |
-| **2169561** cloudspec_docs_quality | CloudSpec 文档质量问题池:tf_customer 分支 I 关联单(镇元资源文档源头修复,防 provider PR 被下次发版覆盖) | submit_only(建单 assignee=`373108` 念依,body 自然语言写清 provider 侧 PR 链接 + 镇元资源文档 URL + 具体错误位置/正确值,不 claim;详见 `references/tf-customer-request-routing.md` 分支 I) |
+| CloudSpec 资源定义或文档源头缺口(无论来自哪个池) | **CloudSpec 原主单自闭环** | 原主单继续作为唯一 Aone 真源；文档问题先区分 CloudSpec 源错误与 Provider 本地生成/展示偏差，源错误在 CloudSpec OK 判定前进入 E；加载 `references/tf-customer-request-routing.md`，由 RD 在同一主处理 run 内完成 CloudSpec pre 修复、必要的 Provider 生成/改造与验证，不创建镇元侧或文档兜底关联单 |
 | 其它 | 无 domain reference → 走本文件通用流程 | — |
 
 **判断规则**:先看 `space` 命中 池,再看 `涉及云产品` / 标题 / cwd 辅助定位。有 domain reference 就**加载并跟随**它的决策树;无 reference 走本文件下方通用查证。
@@ -78,16 +77,26 @@ bash bootstrap/aone-image-extract.sh <id>          # 附件截图→本地,skill
 | 标题子类型 | 正确处理 |
 |---|---|
 | **[Terraform 资源发布自动审核流程]** | **调 `terraform-provider-release` skill 跑完整 SOP**——需求差距分析(AMP 元数据 vs provider 代码)+ 远程 ACC 实测 + 出 PR。平台流水线的「源码生成/打包上传容器」只是构建产物,**不等于代码已进 provider 仓、更不等于 ACC 验证过**;jarvis 仍须按 SOP 补 ACC + PR(PR merge 是人工门)。**禁止只复核告警就 release**——那是漏跑发布流程,不算处理达标。 |
-| **[Terraform 文档发布自动审核流程]** | **复核确认闸门**(不跑资源 SOP):用镇元 `GetResourceType` 核验文档告警落在 provider 公开 schema 还是镇元元数据侧——落 provider 侧 → 建 528766 过载(484483) 关联单走 worktree 补文档+PR;落镇元侧 → **建关联单到 CloudSpec 文档质量问题(2169561) 池指派念依(373108) 修镇元资源文档源头**(见 `references/tf-customer-request-routing.md` 分支 I),provider 侧另建过载(484483) 关联单紧急合 PR 双单并行,防 provider PR 下次发版被镇元覆盖。无资源开发,不跑 ACC。 |
+| **[Terraform 文档发布自动审核流程]** | **复核确认闸门**(不跑资源 ACC):对比 OpenAPI、pre Meta/CloudSpec 文档源与 Provider 公开文档。CloudSpec 资源文档/metadata 有误时，不受 schema/coverage 全绿影响，直接进入 **CloudSpec 原主单自闭环**，修改源头并发布 pre；只有 CloudSpec 源正确、差异仅在 Provider 本地生成或展示时才走普通 Provider 路径。如需 Provider 文档紧急补丁，也在原主单下完成 worktree + PR，不另建文档兜底 Aone。 |
 
 ### 2. 按类型分诊(通用)
 
 | workitemType | 通用动作 |
 |---|---|
-| **需求/咨询**(req / 需求问题) | 查证 → 回复(授权) → 若真缺口:tf_customer 走 [[tf-customer-request-routing]] 决策;其它域 → `upstream.cloudspec_gap`(2165097)双向关联 + 源单改「待上游排期」 |
+| **需求/咨询**(req / 需求问题) | 查证 → 回复(授权) → 若真缺口:Terraform / CloudSpec 走 [[tf-customer-request-routing]] 决策；CloudSpec 资源或文档源头缺口在原主单自闭环，只有云产品 OpenAPI 本身缺能力时才改「待上游排期」 |
 | **缺陷**(bug) | 复现要点 + 源码定位 → 回复/指派;确认 spec 缺口才转需求 |
 | **任务**(task) | 直接执行或拆解,产出+回执,无需查证/转需求 |
 | **自己交付**(改我们自家应用) | 走 `references/delivery-<app>.md`:建需求→建 CR→worktree 开发→预发→**等用户验证反馈**→正式→关单清 worktree |
+
+### 2.5 Canned 缺参前置门
+
+领域 reference 判定命中 canned 时，先起草补料/澄清内容，由当前流程的唯一写者回复后
+`release/idle` **等待补料**。所需输入未齐前不得进入正式路由、开发、建单、改派或其它写操作。
+允许继续不改变外部状态的**只读安全查证**，用于核实已有事实和缩小补料范围，但
+**不得据此形成正式路由结论**。Terraform PD 应返回 `status: blocked`、
+`requested_external_actions: []` 与
+`next=terraform-rd-finalizer/finalize`；RD 不得把缺参任务转成开发。具体 canned 清单和所需材料
+见 `references/tf-customer-request-routing.md`。
 
 ### 3. 查证(领域无关的通用套路)
 
@@ -98,7 +107,7 @@ bash bootstrap/aone-image-extract.sh <id>          # 附件截图→本地,skill
 3. **provider 源码层**(仅当涉 Terraform 资源):先 `bash .claude/skills/aone-triage/scripts/sync-provider.sh` 同步,再在 `$(bash bootstrap/workspace.sh dir terraform_provider)/alicloud/` grep 资源 .go,核对 schema / `Importer` / Create 实际下发参数。单复数陷阱:`*_instances` 多半是数据源。
 4. **文档兜底**:GitHub raw markdown、`aliyun help <product>` 命令列表。
 
-**「文档 vs 代码一致性」分诊起点**(涉 endpoint/schema 键名/枚举值/属性行为类问题):**先对比"文档承诺"vs"代码实际行为"两侧**,不要只看代码或只看文档,更不要只看客户报错。**两侧不一致时,修哪一侧不是一定的**——代码追上文档 / 文档追上代码 / 两侧都改(通常最全面)/ 引导客户 workaround 都是可行方案,取决于兼容性、云产品长期路线图、客户改动成本、历史 tf 广泛度等,分诊者的**职责是把可行方案(常见 3-4 种)完整提交给决策者**(见下方"转单/建关联单 body 内容原则"),不预设"哪一侧才是权威"的结论。
+**「文档 vs 代码一致性」分诊起点**(涉 endpoint/schema 键名/枚举值/属性行为类问题):**先对比"文档承诺"vs"代码实际行为"两侧**,不要只看代码或只看文档,更不要只看客户报错。一般问题的修复侧需结合兼容性、产品长期路线和客户成本判断。Terraform 资源文档是明确例外：必须增加 OpenAPI、CloudSpec 文档源、Provider 本地生成/展示三侧比较；CloudSpec 源错误在 OK/coverage 判定前进入 E 原主单自闭环，只有 CloudSpec 源正确而 Provider 本地生成物或展示偏差才允许进入 D。分诊者仍应把可行方案与证据完整提交给决策者(见下方"转单/建关联单 body 内容原则")。
 
 **Terraform-specific 领域**详细 branch(专属维护名单 / 类比 API 原生 vs Provider 适配 / 镇元覆盖度 / 生成器 vs 手写)全在 `references/tf-customer-request-routing.md`。tf_customer 域必读,其它域按需借鉴。
 
@@ -128,7 +137,7 @@ bash bootstrap/aone-image-extract.sh <id>          # 附件截图→本地,skill
 | 动作 | 命令 |
 |---|---|
 | 回复评论 | 非 Terraform 走 wrap.sh done；Terraform 主处理 run 只由最终 RD 聚合后 done 一次，后续重要事件只走 bridge RD-only event publisher。多行用 `--summary-stdin`/`--summary-file`，别先单独回复 |
-| 转需求(Cloudspec 缺口) | `bin/a1id -- project workitem create --project 2165097 --category req --assignee WORKER_1783326253279 --body-file <path>`;body **必须严格按** `references/templates.md` 的「Cloudspec 关联单 · 镇元 agent 接单硬契约」骨架(`## 背景` / `## 需求` / `## 机读信息` + ```json 代码块 + 7 字段全);缺 marker/字段/JSON 语法错 = agent 无法接单 = 单沉底(不指派谜拟 479782;她做人类兜底 owner 挂在源客户主单上) |
+| CloudSpec 原主单自闭环 | 不创建任何镇元侧或文档兜底 Aone；PD 返回 `requested_external_actions: []` 与 `next=terraform-rd/dev`，RD 调用 `terraform-provider-release` 的 `cloudspec-pre-resource-loop.md`，把 feature 分支、build/check、pre、MR/CR、Provider PR、ACC 与阻塞证据统一交 finalizer 写回原主单 |
 | 建关联单(自家团队接手) | tf_customer 域走 `references/tf-customer-request-routing.md` 分工表 |
 | 双向关联 | `bin/a1id -- project workitem relation add <A> relate:<B>` **单次即自动双向**(重复调第二次返回 400 已存在) |
 | 状态更新 | `bin/a1id -- project workitem update <id> --status "<value>"` |
@@ -139,7 +148,7 @@ bash bootstrap/aone-image-extract.sh <id>          # 附件截图→本地,skill
 
 ### 转单/建关联单 body 内容原则
 
-给他人写关联单 body(尤其转出的分支 D-新山 / E-镇元 agent / G-新山 / H-夏节 等**非过载承接**)时,body 是承接方唯一的**决策依据**,jarvis 给的信息完备度决定承接方能否直接拍板还是回来反复问(**分支 E 镇元 agent 走机读契约,body 完备度直接决定 agent 能否接单,详见 references/templates.md**)。规则:
+给他人写关联单 body(例如转出的分支 D-新山 / G-新山 / H-夏节 等**非过载承接**)时,body 是承接方唯一的**决策依据**,jarvis 给的信息完备度决定承接方能否直接拍板还是回来反复问。CloudSpec 资源定义与文档源头问题不适用本段：它们不再转单，统一走原主单自闭环。其它关联单规则:
 
 - **多方案覆盖**:分析出根因后,不要只写"我倾向"的单一方案;至少列 3-4 种可行方案(**代码修复 / 只改文档 / 代码+文档双改 / 客户 workaround** 是常见 4 种),给对比表(改动量/兼容性/长期语义/优缺点),jarvis 明说自己倾向哪个 + 依赖对方哪个信息拍板(如"取决于产品长期路线图")。
 - **根因定位含完整代码引用**:引用具体文件:行号(如 `alicloud/provider.go:2273-2286`)+ 完整代码片段(不是省略号或概括)+ 一句话解释每处做什么。承接方一眼能顺着行号跳读,不用自己 grep。
@@ -225,7 +234,7 @@ options 为空，脚本会继续查询 field options API，并返回合法候选
 - 最终聚合说明「MR 已提交待合并验收,链接: <PR_URL>」
 - `JARVIS_A1_IDENTITY=terraform-rd bash bootstrap/claim.sh finish` 内置了硬闸门(退码 2),即使遗漏也会拦截
 
-**关联单 claim 规则**:指派给过载(484483)的 Terraform 关联单由内部链跟进解决。若同一 run 同时处理客户主单与关联单，每个实际 claim 的工单都只由最终 RD 各执行一次聚合 `done`，不按研发细节/关键节点多次回贴；所有 claim/done/release/finish 都显式使用 `JARVIS_A1_IDENTITY=terraform-rd`。指派其他人(新山/临钧等)或 Cloudspec(2165097)池的关联单(镇元 agent 接单)不 claim，由最终 RD 审查建单、关联、指派等动作并把结果合入主单唯一聚合回复。
+**关联单 claim 规则**:指派给过载(484483)的普通 Terraform Provider 关联单由内部链跟进解决。若同一 run 同时处理客户主单与关联单，每个实际 claim 的工单都只由最终 RD 各执行一次聚合 `done`，不按研发细节/关键节点多次回贴；所有 claim/done/release/finish 都显式使用 `JARVIS_A1_IDENTITY=terraform-rd`。指派其他人(新山/临钧等)的普通关联单不 claim，由最终 RD 审查动作并把结果合入主单唯一聚合回复。CloudSpec 资源或文档源头缺口不得触发新关联单。
 
 ## 自己交付(改自家应用)
 
@@ -260,11 +269,12 @@ options 为空，脚本会继续查询 field options API，并返回合法候选
 ## 反模式
 
 - ❌ 读单只看标题不读 description 末段"限制/差异/仍需" —— 常藏真实诉求
-- ❌ Terraform 相关工单不加载 `references/tf-customer-request-routing.md` —— 会漏专属维护名单直接被路由到过载/新山/镇元 agent
-- ❌ 建 2165097 池 Cloudspec 关联单 body 缺 `## 机读信息` + JSON 段 —— 镇元 agent 靠机读契约驱动 spec/映射/覆盖度动作,marker/字段/JSON 缺任何一项都接不了单,单沉底(2165097 池又不在 jarvis 视检范围,会长期烂在里面);正确姿势严格按 `references/templates.md` 「Cloudspec 关联单 · 镇元 agent 接单硬契约」骨架
-- ❌ 分支 E 关联单 assignee 写谜拟 479782 —— 谜拟不解单(镇元 agent 自动接单),关联单硬指派 `WORKER_1783326253279`;写 479782 = 落回人手不再走 agent 自动化(谜拟保留在**源客户主单** assignee 上做人类兜底 owner)
-- ❌ 纯镇元文档修改问题(资源描述/字段解释/枚举值文案)转到镇元 agent(2165097) —— agent 只接"资源本身需变更"类,纯文档修改会被临钧/agent 判定后取消(84123415 就是取消先例);正确路径 → 分支 I:CloudSpec 文档质量问题(2169561) 池指派念依(373108) 修镇元源头(见 `references/tf-customer-request-routing.md` 分支 I)
-- ❌ 只在 provider 侧仓库改 markdown 就当"文档已修复" —— TF provider docs 从镇元资源文档自动生成,provider PR 只是紧急兜底,不修镇元源头下次发版会覆盖回旧值;文档改造分支必与 528766 过载单 + 2169561 念依单**双建**
+- ❌ Terraform 相关工单不加载 `references/tf-customer-request-routing.md` —— 会漏专属维护名单与 CloudSpec 原主单自闭环，造成错误转单
+- ❌ 命中 canned 且材料未齐仍进入正式路由/开发；只读安全查证只能补事实，不构成路由授权
+- ❌ CloudSpec schema/coverage 全绿就把文档问题路由到 Provider —— 文档源正确性必须单独验证，源错误先进入 E
+- ❌ CloudSpec 资源定义或文档源头缺口另建 Aone、改派个人或机器人 —— 新流程由 open-jarvis 在原主单内调用 CloudSpec skills + AMP CLI 自闭环；权限、AMP 登录、SSH 或仓库访问失败必须返回 `missing_capability` / `blocked`，不得回退其它身份或承接人
+- ❌ 只在 provider 侧仓库改 markdown 就当“文档已修复” —— TF provider docs 从 CloudSpec 资源文档自动生成；Provider PR 只能作为同一原主单里的紧急补丁，仍须修改 CloudSpec 源头、发布 pre 并验证 Meta 收敛
+- ❌ `amp publish pre` 成功就 `finish` 或宣称正式发布 —— pre 以下可自动，但 prod/online、master/main merge/push 与正式发布是人工硬门；完成 pre 后只能 `release/idle`，不得 finish
 - ❌ 用 next.api 网页 curl 拿 API meta —— SPA 拿不到 JSON,用 `aliyun <product> <Action> --help` 或 MCP `ListApis/GetApiDefinition`
 - ❌ 写操作跳过用户授权(supervised 模式) —— 每一步 comment/create/relation/status 都先给草稿等 yes
 - ❌ 非 Terraform 用 wrap.sh done 之前先手动 `a1 comment create`；Terraform 在 PD/RD/QA 阶段手动 comment —— 都会制造重复评论且 a1 无 delete
