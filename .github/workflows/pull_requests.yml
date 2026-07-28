@@ -5,138 +5,189 @@ on:
     branches:
       - master
 
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   title:
-    runs-on: ubuntu-latest
     name: Pull Request Title
     permissions:
-      contents: read
+      pull-requests: read
+    runs-on: terraform-ci-policy
+    timeout-minutes: 3
     steps:
-      - uses: jitterbit/get-changed-files@v1
-        id: files
-        with:
-          format: 'json'
       - name: Checking the title info
-        run: |
-          exitCode=0
-          prTitle="${{ github.event.pull_request.title }}"
-          echo -e "PR Title: \033[1m${prTitle}\033[0m"
-          if [[ ${prTitle} == *"…" ]]; then
-            echo -e "\nERROR: The PR title should not omit important infos about added or modified files. \033[1mxxx... is not recommended.\033[0m"
-            exitCode=1
-          fi
-          docsOnly=true
-          testcaseOnly=true
-          docsChanged=false
-          testcaseChanged=false
-          readarray -t added_files <<<"$(jq -r '.[]' <<<'${{ steps.files.outputs.added }}')"
-          for added_file in ${added_files[@]}; do
-            if [[ ${added_file} == *?_test.go ]]; then
-                testcaseChanged=true
-                continue
-            fi
-            if [[ ${added_file} == "website/docs"* ]]; then
-                testcaseOnly=false
-                docsChanged=true
-                continue
-            fi
-            if [[ ${added_file} == "alicloud/resource_alicloud"* ]]; then
-                docsOnly=false
-                testcaseOnly=false
-                prefix="alicloud/resource_"
-                suffix=".go"
-                resourceName=${added_file}
-                resourceName=${resourceName#"$prefix"}
-                resourceName=${resourceName%"$suffix"}
-                titleStr="New Resource: ${resourceName}"
-                if [[ ${prTitle} != *"${titleStr}"* ]]; then
-                  echo -e "\nERROR: The PR title should contains new resource info \033[1m${titleStr}\033[0m"
-                  exitCode=1
-                fi
-                continue
-            fi
-            if [[ ${added_file} == "alicloud/data_source_alicloud"* ]]; then
-                docsOnly=false
-                testcaseOnly=false
-                prefix="alicloud/data_source_"
-                suffix=".go"
-                resourceName=${added_file}
-                resourceName=${resourceName#"$prefix"}
-                resourceName=${resourceName%"$suffix"}
-                titleStr="New Data Source: ${resourceName}"
-                if [[ ${prTitle} != *"${titleStr}"* ]]; then
-                  echo -e "\nERROR: The PR title should contains new datasource info \033[1m${titleStr}\033[0m"
-                  exitCode=1
-                fi
-                continue
-            fi
-          done
-          readarray -t modified_files <<<"$(jq -r '.[]' <<<'${{ steps.files.outputs.modified }}')"
-          for modified_file in ${modified_files[@]}; do
-            if [[ ${modified_file} == *?_test.go ]]; then
-                testcaseChanged=true
-                continue
-            fi
-            if [[ ${modified_file} == "website/docs"* ]]; then
-                testcaseOnly=false
-                docsChanged=true
-                continue
-            fi
-            if [[ ${modified_file} == "alicloud/resource_alicloud"* ]]; then
-                docsOnly=false
-                testcaseOnly=false
-                prefix="alicloud/resource_"
-                suffix=".go"
-                resourceName=${modified_file}
-                resourceName=${resourceName#"$prefix"}
-                resourceName=${resourceName%"$suffix"}
-                titleStr="resource/${resourceName}: "
-                if [[ ${prTitle} != *"${titleStr}"* ]]; then
-                  echo -e "\nERROR: The PR title should contains modified info like \033[1m${titleStr}xxx\033[0m"
-                  exitCode=1
-                fi
-            fi
-            if [[ ${modified_file} == "alicloud/data_source_alicloud"* ]]; then
-                docsOnly=false
-                testcaseOnly=false
-                prefix="alicloud/data_source_"
-                suffix=".go"
-                resourceName=${modified_file}
-                resourceName=${resourceName#"$prefix"}
-                resourceName=${resourceName%"$suffix"}
-                titleStr="data-source/${resourceName}: "
-                if [[ ${prTitle} != *"${titleStr}"* ]]; then
-                  echo -e "\nERROR: The PR title should contains modified info like \033[1m${titleStr}xxx\033[0m"
-                  exitCode=1
-                fi
-            fi
-          done
-          if [[ ${docsChanged} == true && ${docsOnly} == true ]]; then
-            titleStr="docs: "
-            if [[ ${prTitle} != "${titleStr}"* ]]; then
-              echo -e "\nERROR: The PR title should contains docs modified info like \033[1m${titleStr}xxx\033[0m"
-              exitCode=1
-            fi
-          elif [[ ${testcaseChanged} == true && ${testcaseOnly} == true ]]; then
-            titleStr="testcase: "
-            if [[ ${prTitle} != *"${titleStr}"* ]]; then
-              echo -e "\nERROR: The PR title should contains testcase modified info like \033[1m${titleStr}xxx\033[0m"
-              exitCode=1
-            fi
-          fi
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            const pullRequest = context.payload.pull_request;
+            const pullNumber = pullRequest?.number;
+            const prTitle = pullRequest?.title;
+            if (
+              !Number.isSafeInteger(pullNumber) ||
+              pullNumber <= 0 ||
+              typeof prTitle !== "string"
+            ) {
+              throw new Error("Invalid pull request metadata.");
+            }
 
-          exit ${exitCode}
+            core.info(`PR Title: ${JSON.stringify(prTitle)}`);
+
+            const changedFiles = await github.paginate(
+              github.rest.pulls.listFiles,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pullNumber,
+                per_page: 100,
+              }
+            );
+            const addedFiles = changedFiles
+              .filter(({ status }) => status === "added")
+              .map(({ filename }) => filename);
+            const modifiedFiles = changedFiles
+              .filter(({ status }) => status === "modified")
+              .map(({ filename }) => filename);
+
+            let failed = false;
+            let docsOnly = true;
+            let testcaseOnly = true;
+            let docsChanged = false;
+            let testcaseChanged = false;
+
+            const reportError = (message) => {
+              core.error(message);
+              failed = true;
+            };
+            const resourceName = (filename, prefix) => {
+              const withoutPrefix = filename.slice(prefix.length);
+              return withoutPrefix.endsWith(".go")
+                ? withoutPrefix.slice(0, -3)
+                : withoutPrefix;
+            };
+
+            if (prTitle.includes("…")) {
+              reportError(
+                "The PR title should not omit important infos about added or modified files. xxx... is not recommended."
+              );
+            }
+
+            for (const addedFile of addedFiles) {
+              if (addedFile.endsWith("_test.go")) {
+                testcaseChanged = true;
+                continue;
+              }
+              if (addedFile.startsWith("website/docs")) {
+                testcaseOnly = false;
+                docsChanged = true;
+                continue;
+              }
+              if (addedFile.startsWith("alicloud/resource_alicloud")) {
+                docsOnly = false;
+                testcaseOnly = false;
+                const titleStr = `New Resource: ${resourceName(
+                  addedFile,
+                  "alicloud/resource_"
+                )}`;
+                if (!prTitle.includes(titleStr)) {
+                  reportError(
+                    `The PR title should contains new resource info ${titleStr}`
+                  );
+                }
+                continue;
+              }
+              if (addedFile.startsWith("alicloud/data_source_alicloud")) {
+                docsOnly = false;
+                testcaseOnly = false;
+                const titleStr = `New Data Source: ${resourceName(
+                  addedFile,
+                  "alicloud/data_source_"
+                )}`;
+                if (!prTitle.includes(titleStr)) {
+                  reportError(
+                    `The PR title should contains new datasource info ${titleStr}`
+                  );
+                }
+              }
+            }
+
+            for (const modifiedFile of modifiedFiles) {
+              if (modifiedFile.endsWith("_test.go")) {
+                testcaseChanged = true;
+                continue;
+              }
+              if (modifiedFile.startsWith("website/docs")) {
+                testcaseOnly = false;
+                docsChanged = true;
+                continue;
+              }
+              if (modifiedFile.startsWith("alicloud/resource_alicloud")) {
+                docsOnly = false;
+                testcaseOnly = false;
+                const titleStr = `resource/${resourceName(
+                  modifiedFile,
+                  "alicloud/resource_"
+                )}: `;
+                if (!prTitle.includes(titleStr)) {
+                  reportError(
+                    `The PR title should contains modified info like ${titleStr}xxx`
+                  );
+                }
+              }
+              if (modifiedFile.startsWith("alicloud/data_source_alicloud")) {
+                docsOnly = false;
+                testcaseOnly = false;
+                const titleStr = `data-source/${resourceName(
+                  modifiedFile,
+                  "alicloud/data_source_"
+                )}: `;
+                if (!prTitle.includes(titleStr)) {
+                  reportError(
+                    `The PR title should contains modified info like ${titleStr}xxx`
+                  );
+                }
+              }
+            }
+
+            if (docsChanged && docsOnly) {
+              const titleStr = "docs: ";
+              if (!prTitle.startsWith(titleStr)) {
+                reportError(
+                  `The PR title should contains docs modified info like ${titleStr}xxx`
+                );
+              }
+            } else if (testcaseChanged && testcaseOnly) {
+              const titleStr = "testcase: ";
+              if (!prTitle.includes(titleStr)) {
+                reportError(
+                  `The PR title should contains testcase modified info like ${titleStr}xxx`
+                );
+              }
+            }
+
+            if (failed) {
+              core.setFailed("Pull request title validation failed.");
+            }
 
   commits:
-    runs-on: ubuntu-latest
     name: Pull Request Max Commits
-    permissions:
-      contents: read
+    permissions: {}
+    runs-on: terraform-ci-policy
+    timeout-minutes: 3
     steps:
       - name: Checking the max commits number
-        run: |
-          commitNum=${{ github.event.pull_request.commits }}
-          if [[ ${commitNum} -gt 1 ]]; then
-            echo -e "\nERROR: The PR has ${commitNum} commits, and please rebase it to 1.\n"
-            exit 1
-          fi
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            const commitNum = context.payload.pull_request?.commits;
+            if (!Number.isSafeInteger(commitNum) || commitNum < 0) {
+              throw new Error("Invalid pull request commit metadata.");
+            }
+            if (commitNum > 1) {
+              core.setFailed(
+                `The PR has ${commitNum} commits, and please rebase it to 1.`
+              );
+            }
