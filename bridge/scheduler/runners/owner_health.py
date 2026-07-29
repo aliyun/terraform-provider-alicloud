@@ -205,7 +205,26 @@ class OwnerHealthRunner:
 
     def _recovery_blockers(self) -> dict[int, dict[str, Any]]:
         blockers: dict[int, dict[str, Any]] = {}
-        for task in self._paged("list_source_status_candidates"):
+        for entry in self._paged("list_source_status_candidates"):
+            # list_source_status_candidates only returns Aone source status (4 fields:
+            # taskId/sourceProjectKey/aoneId/sourceStatus), not the Task control-plane
+            # status/recoveryPolicy/currentSessionId we need for RESUME_ONLY stranded
+            # detection. Point-read the full Task to get them; best-effort skip on
+            # failure so one bad aone id does not poison the whole pass.
+            aone_id = str(entry.get("aoneId") or "").strip()
+            if not aone_id:
+                continue
+            try:
+                response = self.client.get_task_by_aone(aone_id)
+            except Exception as exc:  # noqa: BLE001
+                self.logger.warning(
+                    "owner-health task point-read aone=%s failed: %s",
+                    aone_id, type(exc).__name__)
+                continue
+            rows = ClaimHealthRunner._task_rows(response)
+            if not rows:
+                continue
+            task = ClaimHealthRunner._current_task(rows)
             if str(task.get("status") or "").strip().upper() != "RECOVERY_REQUIRED":
                 continue
             task_id = self._task_id(task)
