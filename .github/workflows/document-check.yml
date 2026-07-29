@@ -88,6 +88,7 @@ jobs:
             fi
             base_sha="$PR_BASE_SHA"
           fi
+          git diff --check "$base_sha" HEAD -- website/docs
           markdown_files=()
           while IFS= read -r -d '' changed_file; do
             if [[ -f "$changed_file" ]] &&
