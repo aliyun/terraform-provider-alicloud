@@ -12,6 +12,7 @@ on:
     branches:
       - master
     paths:
+      - .github/markdownlint/website-docs.json
       - .github/workflows/document-check.yml
       - .go-version
       - website/docs/**
@@ -101,7 +102,9 @@ jobs:
             echo "No Markdown files changed."
             exit 0
           fi
-          npx --yes markdownlint-cli@0.47.0 -- "${markdown_files[@]}"
+          npx --yes markdownlint-cli@0.47.0 \
+            --config .github/markdownlint/website-docs.json \
+            -- "${markdown_files[@]}"
 
   misspell:
     needs: route
