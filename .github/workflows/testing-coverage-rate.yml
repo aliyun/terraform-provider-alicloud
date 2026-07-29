@@ -49,7 +49,16 @@ jobs:
           repository: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name || github.repository }}
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
-          fetch-depth: 2
+          fetch-depth: 0
+      - name: Resolve change range
+        id: change-range
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          PUSH_BASE_SHA: ${{ github.event.before }}
+          CI_BASE_REPOSITORY_URL: https://github.com/${{ github.repository }}.git
+          CI_BASE_REF: ${{ github.ref_name }}
+        run: scripts/ci/resolve-change-range.sh >> "$GITHUB_OUTPUT"
       - name: Setup Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
@@ -71,15 +80,8 @@ jobs:
           key: provider-go-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.go-version') }}-${{ hashFiles('**/go.sum') }}
       - name: Checking testing coverage rate
         env:
-          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          DIFF_BASE: ${{ steps.change-range.outputs.diff_base }}
+          DIFF_HEAD: ${{ steps.change-range.outputs.diff_head }}
         run: |
-          base_sha="HEAD^"
-          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
-            if ! git cat-file -e "${PR_BASE_SHA}^{commit}" 2>/dev/null; then
-              git fetch --no-tags --depth=1 \
-                "https://github.com/${GITHUB_REPOSITORY}.git" "$PR_BASE_SHA"
-            fi
-            base_sha="$PR_BASE_SHA"
-          fi
-          git diff "$base_sha" HEAD > diff.out
+          git diff "$DIFF_BASE" "$DIFF_HEAD" > diff.out
           go run scripts/testing/testing_coverage_rate_check.go -fileNames="diff.out"

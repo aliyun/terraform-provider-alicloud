@@ -48,6 +48,15 @@ jobs:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
           fetch-depth: 0
+      - name: Resolve change range
+        id: change-range
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          PUSH_BASE_SHA: ${{ github.event.before }}
+          CI_BASE_REPOSITORY_URL: https://github.com/${{ github.repository }}.git
+          CI_BASE_REF: ${{ github.ref_name }}
+        run: scripts/ci/resolve-change-range.sh >> "$GITHUB_OUTPUT"
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
@@ -70,22 +79,10 @@ jobs:
           key: provider-go-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.go-version') }}-${{ hashFiles('**/go.sum') }}
       - name: Run consistency check
         env:
-          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          PUSH_BASE_SHA: ${{ github.event.before }}
+          DIFF_BASE: ${{ steps.change-range.outputs.diff_base }}
+          DIFF_HEAD: ${{ steps.change-range.outputs.diff_head }}
         run: |
-          base_sha="$PUSH_BASE_SHA"
-          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
-            base_sha="$PR_BASE_SHA"
-          fi
-          if [[ -z "$base_sha" ]] ||
-            [[ "$base_sha" == "0000000000000000000000000000000000000000" ]]; then
-            base_sha="HEAD^"
-          fi
-          if ! git cat-file -e "${base_sha}^{commit}" 2>/dev/null; then
-            git fetch --no-tags --depth=1 \
-              "https://github.com/${GITHUB_REPOSITORY}.git" "$base_sha"
-          fi
-          git diff "$base_sha" HEAD > diff.out
+          git diff "$DIFF_BASE" "$DIFF_HEAD" > diff.out
           go run scripts/consistency/consistency_check.go -fileNames="diff.out"
       - name: Save master Go cache
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && needs.route.outputs.classification == 'trusted' && steps.cache-restore.outputs.cache-hit != 'true' }}
