@@ -48,20 +48,35 @@ class FakeClient:
 
     def list_source_status_candidates(
             self, *, after_task_id: int = 0, limit: int = 100):
+        # Real API only returns 4 fields (Aone source status): taskId /
+        # sourceProjectKey / aoneId / sourceStatus. NOT the Task control-plane
+        # status / recoveryPolicy / currentSessionId — those require a separate
+        # get_task_by_aone point-read. This fake mirrors that shape so the test
+        # exercises the production code path.
         self.source_cursors.append(after_task_id)
         if after_task_id == 0:
             return {
                 "items": [{
                     "taskId": 3,
+                    "sourceProjectKey": "2124589",
                     "aoneId": "84550003",
-                    "status": "RECOVERY_REQUIRED",
-                    "recoveryPolicy": "RESUME_ONLY",
-                    "currentSessionId": 33,
-                    "updatedAt": self.now - 7200,
+                    "sourceStatus": "Open",
                 }],
                 "nextAfterTaskId": 3,
             }
         return {"items": []}
+
+    def get_task_by_aone(self, aone_id: str):
+        if aone_id == "84550003":
+            return [{
+                "id": 3,
+                "aoneId": "84550003",
+                "generation": 1,
+                "status": "RECOVERY_REQUIRED",
+                "recoveryPolicy": "RESUME_ONLY",
+                "currentSessionId": 33,
+            }]
+        return []
 
     def get_task_timeline(self, task_id: str):
         assert task_id == "3"
@@ -206,6 +221,69 @@ class OwnerHealthRunnerTest(unittest.TestCase):
         self.assertIn(
             "control-plane-status.sh force-release 12 112", bodies[0])
         self.assertIn("不会自动释放 ownership", bodies[0])
+
+    def test_recovery_blockers_handles_point_read_failure(self):
+        # get_task_by_aone raises on one entry — must be skipped best-effort,
+        # not propagate, and other entries (ready-diagnostics blockers 1, 2)
+        # still processed.
+        real_get = self.client.get_task_by_aone
+
+        def flaky(aone_id):
+            if aone_id == "84550003":
+                raise RuntimeError("control-plane 503")
+            return real_get(aone_id)
+
+        with mock.patch.object(
+                self.client, "get_task_by_aone", side_effect=flaky):
+            blockers = self.runner.collect_blockers()
+        self.assertNotIn(3, blockers)
+        self.assertEqual(set(blockers), {1, 2})
+
+    def test_recovery_blockers_skips_non_recovery_required(self):
+        # get_task_by_aone returns a non-RECOVERY_REQUIRED Task — the recovery
+        # pass filters it out; only ready-diagnostics blockers 1, 2 remain.
+        with mock.patch.object(
+                self.client, "get_task_by_aone",
+                return_value=[{
+                    "id": 3, "aoneId": "84550003", "generation": 1,
+                    "status": "READY", "recoveryPolicy": "RESUME_ONLY",
+                    "currentSessionId": 33,
+                }]):
+            blockers = self.runner.collect_blockers()
+        self.assertNotIn(3, blockers)
+        self.assertEqual(set(blockers), {1, 2})
+
+    def test_recovery_blockers_skips_entry_without_aone_id(self):
+        # An entry missing aoneId must be silently skipped without calling
+        # get_task_by_aone(""); the real entry still flows through.
+        original = self.client.list_source_status_candidates
+        probe_calls: list[str] = []
+
+        def with_blank(*args, **kwargs):
+            result = original(*args, **kwargs)
+            if result.get("items"):
+                result["items"].append({
+                    "taskId": 999,
+                    "sourceProjectKey": "2124589",
+                    "sourceStatus": "Open",
+                })
+            return result
+
+        real_get = self.client.get_task_by_aone
+
+        def tracking(aone_id):
+            probe_calls.append(aone_id)
+            return real_get(aone_id)
+
+        with mock.patch.object(
+                self.client, "list_source_status_candidates",
+                side_effect=with_blank), \
+                mock.patch.object(
+                    self.client, "get_task_by_aone", side_effect=tracking):
+            blockers = self.runner.collect_blockers()
+        self.assertNotIn("", probe_calls)
+        self.assertIn("84550003", probe_calls)
+        self.assertIn(3, blockers)
 
 
 if __name__ == "__main__":
