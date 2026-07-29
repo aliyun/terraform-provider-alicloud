@@ -10,7 +10,10 @@ description: |-
 
 Provides a ESA Routine resource.
 
-
+An ESA Routine is an edge function. Besides managing the routine itself, this resource can
+optionally upload the routine code from a local file: on create or when the local file
+content changes, the code is uploaded to the staging environment and committed as a new
+immutable code version.
 
 For information about ESA Routine and how to use it, see [What is Routine](https://next.api.alibabacloud.com/document/ESA/2024-09-10/CreateRoutine).
 
@@ -19,11 +22,6 @@ For information about ESA Routine and how to use it, see [What is Routine](https
 ## Example Usage
 
 Basic Usage
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_esa_routine&exampleId=dccb9f7a-016f-67d9-b149-8f737d5d73e49f363584&activeTab=example&spm=docs.r.esa_routine.0.dccb9f7a01&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 variable "name" {
@@ -40,24 +38,48 @@ resource "alicloud_esa_routine" "default" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_esa_routine&spm=docs.r.esa_routine.example&intl_lang=EN_US)
+Upload code from a local file
+
+```terraform
+variable "name" {
+  default = "terraform-example"
+}
+
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
+resource "alicloud_esa_routine" "default" {
+  name             = var.name
+  description      = var.name
+  filename         = "${path.module}/index.js"
+  code_description = "initial version"
+}
+```
 
 ## Argument Reference
 
 The following arguments are supported:
-* `description` - (Optional, ForceNew) The routine name, which must be unique in the same account.
-* `name` - (Required, ForceNew) Routine Name
+* `name` - (Required, ForceNew) Routine Name. It must be unique in the same account.
+* `description` - (Optional, ForceNew) The description of the routine.
+* `filename` - (Optional) The path to the local routine code file. When set, the file is uploaded to the staging environment and committed as a new code version on create; changing the file content triggers a new upload and commit on the next apply.
+* `code_description` - (Optional) The description recorded for the committed code version.
+
+-> **NOTE:** `name` and `description` cannot be modified in place. Changing either of them forces a new routine to be created.
 
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above.
+* `id` - The ID of the resource supplied above. It is formatted as the routine `name`.
 * `create_time` - The time when the routine was created.
+* `code_checksum` - The SHA-256 checksum (base64 encoded) of the local code file. It is used to detect code content changes.
+* `latest_code_version` - The latest code version committed from the local code file.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Routine.
+* `update` - (Defaults to 5 mins) Used when update the Routine code.
 * `delete` - (Defaults to 5 mins) Used when delete the Routine.
 
 ## Import
@@ -67,3 +89,5 @@ ESA Routine can be imported using the id, e.g.
 ```shell
 $ terraform import alicloud_esa_routine.example <id>
 ```
+
+-> **NOTE:** `filename`, `code_description`, `code_checksum` and `latest_code_version` are not restored on import because the routine code is uploaded from a local file that is not readable from the server.

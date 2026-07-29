@@ -3305,6 +3305,9 @@ func (s *EsaServiceV2) DescribeEsaRoutine(id string) (object map[string]interfac
 	})
 	addDebug(action, response, request)
 	if err != nil {
+		if IsExpectedErrors(err, []string{"RoutineNotExist"}) {
+			return object, WrapErrorf(NotFoundErr("Routine", id), NotFoundMsg, response)
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -3341,6 +3344,69 @@ func (s *EsaServiceV2) EsaRoutineStateRefreshFunc(id string, field string, failS
 }
 
 // DescribeEsaRoutine >>> Encapsulated.
+
+// DescribeEsaRoutineCodeDeployment <<< Encapsulated get interface for Esa RoutineCodeDeployment.
+
+func (s *EsaServiceV2) DescribeEsaRoutineCodeDeployment(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return object, WrapError(err)
+	}
+	routineName := parts[0]
+	env := parts[1]
+
+	request := map[string]interface{}{
+		"Name": routineName,
+	}
+	action := "GetRoutine"
+	var response map[string]interface{}
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("ESA", "2024-09-10", action, nil, request, true)
+		if err != nil {
+			if IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests"}) || NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"RoutineNotExist"}) {
+			return object, WrapErrorf(NotFoundErr("RoutineCodeDeployment", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	// ESA has no dedicated Get/Describe deployment API. A code deployment is read
+	// back from the per-environment CodeDeploy block returned by GetRoutine.
+	envsRaw, _ := jsonpath.Get("$.Envs", response)
+	envs, _ := envsRaw.([]interface{})
+	for _, e := range envs {
+		envMap, ok := e.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		if fmt.Sprint(envMap["Env"]) != env {
+			continue
+		}
+		codeDeploy, ok := envMap["CodeDeploy"].(map[string]interface{})
+		if !ok || len(codeDeploy) == 0 {
+			continue
+		}
+		if v, ok := codeDeploy["DeployId"]; !ok || fmt.Sprint(v) == "" || fmt.Sprint(v) == "<nil>" {
+			continue
+		}
+		return codeDeploy, nil
+	}
+
+	return object, WrapErrorf(NotFoundErr("RoutineCodeDeployment", id), NotFoundMsg, response)
+}
+
+// DescribeEsaRoutineCodeDeployment >>> Encapsulated.
 
 // DescribeEsaRoutineRoute <<< Encapsulated get interface for Esa RoutineRoute.
 
