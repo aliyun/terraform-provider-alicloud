@@ -71,24 +71,26 @@ jobs:
           repository: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name || github.repository }}
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
-          fetch-depth: 2
+          fetch-depth: 0
+      - name: Resolve change range
+        id: change-range
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          PUSH_BASE_SHA: ${{ github.event.before }}
+          CI_BASE_REPOSITORY_URL: https://github.com/${{ github.repository }}.git
+          CI_BASE_REF: ${{ github.ref_name }}
+        run: scripts/ci/resolve-change-range.sh >> "$GITHUB_OUTPUT"
       - name: Set up Node.js
         uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
         with:
           node-version: '20'
       - name: Lint changed Markdown files
         env:
-          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          DIFF_BASE: ${{ steps.change-range.outputs.diff_base }}
+          DIFF_HEAD: ${{ steps.change-range.outputs.diff_head }}
         run: |
-          base_sha="HEAD^"
-          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
-            if ! git cat-file -e "${PR_BASE_SHA}^{commit}" 2>/dev/null; then
-              git fetch --no-tags --depth=1 \
-                "https://github.com/${GITHUB_REPOSITORY}.git" "$PR_BASE_SHA"
-            fi
-            base_sha="$PR_BASE_SHA"
-          fi
-          git diff --check "$base_sha" HEAD -- website/docs
+          git diff --check "$DIFF_BASE" "$DIFF_HEAD" -- website/docs
           markdown_files=()
           while IFS= read -r -d '' changed_file; do
             if [[ -f "$changed_file" ]] &&
@@ -97,7 +99,7 @@ jobs:
             fi
           done < <(
             git diff --name-only -z --diff-filter=ACMR \
-              "$base_sha" HEAD -- website/docs
+              "$DIFF_BASE" "$DIFF_HEAD" -- website/docs
           )
           if (( ${#markdown_files[@]} == 0 )); then
             echo "No Markdown files changed."
@@ -165,12 +167,25 @@ jobs:
           repository: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name || github.repository }}
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
-          fetch-depth: 3
+          fetch-depth: 0
+      - name: Resolve change range
+        id: change-range
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          PUSH_BASE_SHA: ${{ github.event.before }}
+          CI_BASE_REPOSITORY_URL: https://github.com/${{ github.repository }}.git
+          CI_BASE_REF: ${{ github.ref_name }}
+        run: scripts/ci/resolve-change-range.sh >> "$GITHUB_OUTPUT"
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: .go-version
           cache: false
-      - run: bash scripts/basic-check.sh
+      - name: Run basic checks
+        env:
+          DIFF_BASE: ${{ steps.change-range.outputs.diff_base }}
+          DIFF_HEAD: ${{ steps.change-range.outputs.diff_head }}
+        run: bash scripts/basic-check.sh
 
   Content:
     needs: route
@@ -184,7 +199,16 @@ jobs:
           repository: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name || github.repository }}
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
-          fetch-depth: 2
+          fetch-depth: 0
+      - name: Resolve change range
+        id: change-range
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          PUSH_BASE_SHA: ${{ github.event.before }}
+          CI_BASE_REPOSITORY_URL: https://github.com/${{ github.repository }}.git
+          CI_BASE_REF: ${{ github.ref_name }}
+        run: scripts/ci/resolve-change-range.sh >> "$GITHUB_OUTPUT"
       - name: Setup Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
@@ -192,21 +216,14 @@ jobs:
           cache: false
       - name: Checking the docs content
         env:
-          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          DIFF_BASE: ${{ steps.change-range.outputs.diff_base }}
+          DIFF_HEAD: ${{ steps.change-range.outputs.diff_head }}
         run: |
-          base_sha="HEAD^"
-          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
-            if ! git cat-file -e "${PR_BASE_SHA}^{commit}" 2>/dev/null; then
-              git fetch --no-tags --depth=1 \
-                "https://github.com/${GITHUB_REPOSITORY}.git" "$PR_BASE_SHA"
-            fi
-            base_sha="$PR_BASE_SHA"
-          fi
           while IFS= read -r -d '' changed_file; do
             if [[ -f "$changed_file" ]]; then
               go run scripts/document/document_check.go "$changed_file"
             fi
           done < <(
             git diff --name-only -z --diff-filter=ACMR \
-              "$base_sha" HEAD -- website/docs
+              "$DIFF_BASE" "$DIFF_HEAD" -- website/docs
           )

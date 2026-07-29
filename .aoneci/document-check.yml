@@ -33,7 +33,7 @@ jobs:
       - uses: setup-env
         inputs:
           go-version: '1.24.0'
-      - run: bash scripts/basic-check.sh
+      - run: BASIC_CHECK_AUTO_RANGE=true bash scripts/basic-check.sh
 
   Content:
     steps:
