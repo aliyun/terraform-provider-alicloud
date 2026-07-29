@@ -19,7 +19,10 @@ description: 可视化查证截图取证——aone-triage / terraform-pr-review 
 
 ## 前置条件
 
-- **Playwright MCP** 已连接（`mcp__playwright__*` 工具可用）
+- **截图通道（任一即可，按优先级探测）**：
+  1. **Playwright MCP** 已连接（`mcp__playwright__*` 工具可用）——交互会话常见
+  2. **仓库内 `capture.sh`** 通道可用（Playwright Python 绑定 + 本地 chromium，或 headless Chrome/Chromium 二进制）——headless 必走这条，因为交互态 Playwright MCP **不会**注入进 bridge 拉起的 headless 会话（根因见 `references/headless-screenshot-channels.md`）
+  - 两者都不可用 → 以 `missing_capability` 收口并逐层写 `n-a` 原因，**绝不静默跳过截图**（见 Step 0）
 - **JARVIS_HTML_REPORT_TOKEN** 已通过运行时配置注入（截图与 HTML 都走 server-token）
 - **JARVIS_HTML_REPORT_BASE_URL** 可选；默认 `https://pre-agent.aliyun-inc.com`
 - 截图存储由 AutomationAgent 服务端负责：私有 bucket `jarvis-upload-files`，owner
@@ -27,6 +30,24 @@ description: 可视化查证截图取证——aone-triage / terraform-pr-review 
 - **html-report-preview.sh** 内建 `X-Request-Context` WAF header（env `JARVIS_HTML_REPORT_WAF_HEADER` 可覆盖），无需额外处理
 
 ## 取证流程
+
+### Step 0: 能力探测（执行前必做）
+
+在截图**之前**先探测通道，避免运行到中途才发现无浏览器而失败：
+
+```bash
+bash .Codex/skills/screenshot-evidence/scripts/capture.sh probe
+# stdout: <channel-name>          → exit 0，通道可用（playwright_python / chrome_binary）
+# stdout: missing_capability: ... → exit 3，无可用通道
+```
+
+- 探测命中任一通道 → 记下通道名，Step 2 用对应方式截图。
+- 探测为 `missing_capability`（exit 3）→ **不静默跳过**：在 manifest（Step 2.1）把该层写 `n-a`，
+  `note` 写 `missing_capability: <probe 给出的原因>`，可继续完成只读文字查证，但 finalizer
+  必须以 `blocked / missing_capability` 收口，不得把缺截图的强制取证任务标为 done。
+  `validate-manifest.py` 接受带原因的 `n-a` 行，仅代表结构完整，不代表验收通过。
+- 探测只读、幂等、无副作用，每个 headless run 开头调用一次后可复用结论。
+- 交互会话若 `mcp__playwright__*` 可用，可跳过本步直接走 Step 2 的 Playwright 路径；headless 必跑。
 
 ### Step 1: 确定截图目标
 
@@ -41,9 +62,9 @@ description: 可视化查证截图取证——aone-triage / terraform-pr-review 
 | GitHub PR diff | `https://github.com/aliyun/terraform-provider-alicloud/pull/{N}/files` | Files changed 标签页的 diff |
 | Provider 源码 | `https://github.com/aliyun/terraform-provider-alicloud/blob/master/alicloud/{file}.go` | 目标字段的 schema 定义 |
 
-### Step 2: Playwright 截图
+### Step 2: 截图（交互用 Playwright MCP，headless 用 capture.sh）
 
-用 `mcp__playwright__browser_run_code_unsafe` 定位元素截图（绕过滚动问题）：
+交互会话用 `mcp__playwright__browser_run_code_unsafe` 定位元素截图（绕过滚动问题）：
 
 ```javascript
 async (page) => {
@@ -69,6 +90,29 @@ async (page) => {
 - OpenAPI 页面是 SPA，需等待渲染完成
 - Terraform Registry 有右侧 sidebar 遮挡，用元素级截图（`element.screenshot()`）而非 viewport
 
+#### headless / 无 Playwright MCP：走 capture.sh
+
+headless bridge 会话**没有** `mcp__playwright__*`（根因见 `references/headless-screenshot-channels.md`）。
+当 Step 0 探测返回 `chrome_binary` 或 `playwright_python` 时，用仓库内 `capture.sh` 全页截图：
+
+```bash
+bash .Codex/skills/screenshot-evidence/scripts/capture.sh capture \
+  "<URL>" .my-day/screenshots/<aone-id>/<name>.png \
+  --wait 3000 --full-page --width 1280 --height 2000 \
+  --text "<目标字段名>"
+# stdout: <channel-name>；exit 0 成功，exit 3 missing_capability，exit 1 capture_error
+```
+
+- `capture.sh` 是仓库内可控、可降级通道（Playwright Python + 本地 chromium 优先，否则 headless Chrome/Chromium 二进制），不依赖交互态 MCP。
+- 两个通道都支持 `--text` 定位 `li/td/tr` 中包含目标文本的元素并截图；未命中目标文本返回
+  `capture_error`，不得用无关全页图冒充元素证据。不需要元素定位时去掉 `--text`。
+- `chrome_binary` 通过 Chrome DevTools Protocol 获取页面内容尺寸并执行
+  `Page.captureScreenshot(captureBeyondViewport=true)`，因此 `--full-page` 是真全页截图，不再受
+  `--height` viewport 高度限制。超长页面命中安全上限时改用 `--text`。
+- SPA 等渲染需 `--wait`（毫秒）让其稳定。
+- exit 3（missing_capability）→ 该层 manifest 写 `n-a` 并记录原因；可继续只读文字查证，
+  但 finalizer 必须 `blocked / missing_capability`，不得 done。
+
 ### Step 2.1: Terraform PD 本地交接
 
 Terraform PD 只生成本地文件，不执行 OSS、pre-agent 或 Aone 写入。在
@@ -89,7 +133,8 @@ visual_evidence_manifest: /absolute/path/.my-day/screenshots/<aone-id>/evidence-
 ```
 
 浏览器能力、登录态或页面不可达时，不要把该层悄悄删掉；保留 `n-a` 行并写清
-`missing_capability`。这样 finalizer 能区分“不适用”和“漏做”。
+`missing_capability`。这样 finalizer 能区分“不适用”和“漏做”；若该层属于强制截图证据，
+最终状态仍必须是 `blocked / missing_capability`。
 
 finalizer 上传前必须执行确定性校验：
 
@@ -151,6 +196,8 @@ bash bootstrap/html-report-preview.sh upload <aone-id> <report.html>
 ```
 
 Terraform finalizer 必须先校验 manifest 中三层都存在（或有明确 N/A 原因），再上传截图和报告。
+任何强制截图层因浏览器能力缺失而记录为 `n-a` 时，只能上传缺层说明并以
+`blocked / missing_capability` 收口，不能生成“完整证据”结论或标记 done。
 上传命令不得传 `--comment`；将返回的预览 URL 写进唯一聚合回复。executor 托管的 headless
 run 必须放入 `AONE_RESULT.reply_body`，由 executor 单次落账，run 内不得调用 `wrap.sh`；
 仅非 executor 托管的独立 finalizer 才按 bookend 调用一次 `wrap.sh done`。

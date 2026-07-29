@@ -111,6 +111,20 @@ else
     echo "     修复: 浏览器 BUC 登 open_jarvis 后 bin/a1id login jarvis，再跑 bin/a1id -- auth whoami 复验 Account=$a1_expect"
 fi
 
+# Screenshot capability (repo-controlled browser channel) — WARN, NOT FAIL. Headless
+# bridge sessions have NO injected Playwright MCP (root cause:
+# .claude/skills/screenshot-evidence/references/headless-screenshot-channels.md); the
+# repo-controlled capture.sh probe checks for a Playwright Python binding + local
+# chromium, else a headless Chrome/Chromium binary. Missing only degrades screenshot
+# evidence to missing_capability n-a rows — it must not fail preflight and thereby
+# block non-screenshot work.
+if bash "$repo_root/.claude/skills/screenshot-evidence/scripts/capture.sh" probe >/dev/null 2>&1; then
+    echo "PASS jarvis-screenshot"
+else
+    echo "WARN jarvis-screenshot — headless 截图通道缺失(无 Playwright Python + 本地 chromium，也无 headless Chrome/Chromium)；screenshot-evidence 会以 missing_capability 收口(逐层 n-a + 原因)，不阻断其它工作"
+    echo "     修复(任选其一): python3 -m pip install playwright && python3 -m playwright install chromium；或装 chromium 并/或 export JARVIS_CHROME_BIN=<path>；文档: .claude/skills/screenshot-evidence/references/headless-screenshot-channels.md"
+fi
+
 # Check vendored skills
 chk_skill aone-triage
 for skill in \
