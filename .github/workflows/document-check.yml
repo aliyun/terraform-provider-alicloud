@@ -210,38 +210,3 @@ jobs:
             git diff --name-only -z --diff-filter=ACMR \
               "$base_sha" HEAD -- website/docs
           )
-
-  Consistency:
-    needs:
-      - route
-      - Content
-    runs-on: ${{ fromJSON(needs.route.outputs.runner) }}
-    permissions:
-      contents: read
-    steps:
-      - name: Check out event commit
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          repository: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name || github.repository }}
-          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
-          persist-credentials: false
-          fetch-depth: 2
-      - name: Setup Go
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version-file: .go-version
-          cache: false
-      - name: Integration Test Check
-        env:
-          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        run: |
-          base_sha="HEAD^"
-          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
-            if ! git cat-file -e "${PR_BASE_SHA}^{commit}" 2>/dev/null; then
-              git fetch --no-tags --depth=1 \
-                "https://github.com/${GITHUB_REPOSITORY}.git" "$PR_BASE_SHA"
-            fi
-            base_sha="$PR_BASE_SHA"
-          fi
-          git diff "$base_sha" HEAD > diff.out
-          go run scripts/consistency/consistency_check.go -fileNames="diff.out"

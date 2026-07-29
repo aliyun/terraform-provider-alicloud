@@ -1,4 +1,5 @@
-name: Testing Coverage Rate Checks
+name: Terraform Consistency Check
+
 on:
   push:
     branches:
@@ -11,10 +12,6 @@ on:
       - ready_for_review
     branches:
       - master
-    paths:
-      - .github/workflows/testing-coverage-rate.yml
-      - .go-version
-      - alicloud/*.go
 
 permissions: {}
 
@@ -31,15 +28,16 @@ jobs:
     timeout-minutes: 3
     outputs:
       classification: ${{ steps.select.outputs.classification }}
-      runner: ${{ steps.select.outputs.runner }}
+      heavy_runner: ${{ steps.select.outputs.heavy_runner }}
     steps:
       - name: Select runner
         id: select
         uses: aliyun/terraform-provider-alicloud/.github/actions/terraform-ci-select-policy@eaf310539de91ddbb455d3f5bcfd5de39037b432
 
-  TestingCoverageRate:
+  consistency:
+    name: Consistency
     needs: route
-    runs-on: ${{ fromJSON(needs.route.outputs.runner) }}
+    runs-on: ${{ fromJSON(needs.route.outputs.heavy_runner) }}
     permissions:
       contents: read
     steps:
@@ -49,8 +47,8 @@ jobs:
           repository: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name || github.repository }}
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
-          fetch-depth: 2
-      - name: Setup Go
+          fetch-depth: 0
+      - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: .go-version
@@ -63,23 +61,37 @@ jobs:
           echo "build=$(go env GOCACHE)" >> "$GITHUB_OUTPUT"
       - name: Restore trusted Go cache
         if: ${{ needs.route.outputs.classification == 'trusted' }}
+        id: cache-restore
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ${{ steps.go-cache.outputs.module }}
             ${{ steps.go-cache.outputs.build }}
           key: provider-go-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.go-version') }}-${{ hashFiles('**/go.sum') }}
-      - name: Checking testing coverage rate
+      - name: Run consistency check
         env:
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PUSH_BASE_SHA: ${{ github.event.before }}
         run: |
-          base_sha="HEAD^"
+          base_sha="$PUSH_BASE_SHA"
           if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
-            if ! git cat-file -e "${PR_BASE_SHA}^{commit}" 2>/dev/null; then
-              git fetch --no-tags --depth=1 \
-                "https://github.com/${GITHUB_REPOSITORY}.git" "$PR_BASE_SHA"
-            fi
             base_sha="$PR_BASE_SHA"
           fi
+          if [[ -z "$base_sha" ]] ||
+            [[ "$base_sha" == "0000000000000000000000000000000000000000" ]]; then
+            base_sha="HEAD^"
+          fi
+          if ! git cat-file -e "${base_sha}^{commit}" 2>/dev/null; then
+            git fetch --no-tags --depth=1 \
+              "https://github.com/${GITHUB_REPOSITORY}.git" "$base_sha"
+          fi
           git diff "$base_sha" HEAD > diff.out
-          go run scripts/testing/testing_coverage_rate_check.go -fileNames="diff.out"
+          go run scripts/consistency/consistency_check.go -fileNames="diff.out"
+      - name: Save master Go cache
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && needs.route.outputs.classification == 'trusted' && steps.cache-restore.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ${{ steps.go-cache.outputs.module }}
+            ${{ steps.go-cache.outputs.build }}
+          key: provider-go-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.go-version') }}-${{ hashFiles('**/go.sum') }}
