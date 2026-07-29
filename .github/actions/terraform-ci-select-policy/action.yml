@@ -11,6 +11,9 @@ outputs:
   runner:
     description: JSON string containing the selected runner label.
     value: ${{ steps.select.outputs.runner }}
+  heavy_runner:
+    description: JSON string containing the selected heavy runner label.
+    value: ${{ steps.select.outputs.heavy_runner }}
 
 runs:
   using: composite

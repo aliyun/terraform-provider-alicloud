@@ -5,6 +5,7 @@ const POLICY_CHECK_NAME = "Basic Policy";
 const POLICY_TIMEOUT_MS = 90000;
 const POLICY_POLL_INTERVAL_MS = 3000;
 const TRUSTED_RUNNER = "terraform-ci-trusted";
+const TRUSTED_HEAVY_RUNNER = "terraform-ci-heavy";
 const EXTERNAL_RUNNER = "ubuntu-latest";
 const SHA_PATTERN = /^[0-9a-f]{40}$/;
 const REPOSITORY_PATTERN =
@@ -195,12 +196,21 @@ function setOutputs(core, classification, relevant) {
   if (!core || typeof core.setOutput !== "function") {
     throw new Error("Actions output interface is invalid.");
   }
+  if (
+    !["trusted", "external"].includes(classification) ||
+    typeof relevant !== "boolean"
+  ) {
+    throw new Error("Actions routing output is invalid.");
+  }
   const runner =
     classification === "trusted" ? TRUSTED_RUNNER : EXTERNAL_RUNNER;
+  const heavyRunner =
+    classification === "trusted" ? TRUSTED_HEAVY_RUNNER : EXTERNAL_RUNNER;
   const outputs = {
     classification,
     relevant: String(relevant),
     runner: JSON.stringify(runner),
+    heavy_runner: JSON.stringify(heavyRunner),
   };
   for (const [name, value] of Object.entries(outputs)) {
     core.setOutput(name, value);
