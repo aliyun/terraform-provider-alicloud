@@ -136,6 +136,30 @@ func TestAccAliCloudPolarDBClusterEndpointConfigUpdate(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"scc_mode":           "ON",
+					"scc_wait_timeout":   "30",
+					"scc_timeout_action": "0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"scc_mode":           "ON",
+						"scc_wait_timeout":   "30",
+						"scc_timeout_action": "0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scc_mode": "OFF",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"scc_mode": "OFF",
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,

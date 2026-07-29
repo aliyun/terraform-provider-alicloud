@@ -574,6 +574,21 @@ func (s *PolarDBService) WaitPolardbEndpointConfigEffect(id string, item map[str
 				}
 			}
 		}
+		if value, ok := item["SccMode"]; ok {
+			if endpoint.SccMode != value {
+				effected = false
+			}
+		}
+		if value, ok := item["PolarSccWaitTimeout"]; ok {
+			if endpoint.PolarSccWaitTimeout != value {
+				effected = false
+			}
+		}
+		if value, ok := item["PolarSccTimeoutAction"]; ok {
+			if endpoint.PolarSccTimeoutAction != value {
+				effected = false
+			}
+		}
 		if effected {
 			break
 		}
