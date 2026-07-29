@@ -10,7 +10,8 @@
 
 凭证由 wrapper 经共享 machine runtime loader 加载（token 回退
 JARVIS_HTML_REPORT_TOKEN）；控制面地址可显式覆盖，默认指向预发。
-本文件只读环境变量、不读 env 文件。只有 ``discard-resume`` 是写操作，且必须显式 ``--yes``。
+本文件只读环境变量、不读 env 文件。``discard-resume`` 和 ``force-release`` 是写操作，
+且必须显式 ``--yes``。
 
 退出码：0=成功；1=控制面无该工单任务；2=缺 token 配置；3=控制面请求失败。
 """
@@ -228,6 +229,113 @@ def cmd_discard_resume(client, task_id, session_id, reason, yes):
     return 0
 
 
+def _force_release_snapshot(timeline, task_id, session_id):
+    if not isinstance(timeline, dict):
+        raise ValueError("unexpected task timeline response")
+    task = timeline.get("task")
+    if not isinstance(task, dict):
+        raise ValueError("task timeline does not contain a task snapshot")
+    observed_task_id = task.get("id")
+    if observed_task_id is not None and str(observed_task_id) != str(task_id):
+        raise ValueError(
+            "task timeline returned task %s while %s was requested"
+            % (observed_task_id, task_id))
+
+    selected_session_id = (
+        session_id if session_id is not None else task.get("currentSessionId"))
+    selected_session = None
+    if selected_session_id is not None:
+        selected_session = next((
+            candidate for candidate in (timeline.get("sessions") or [])
+            if isinstance(candidate, dict)
+            and str(candidate.get("id")) == str(selected_session_id)
+        ), None)
+        if selected_session is None:
+            raise ValueError(
+                "task timeline does not contain session %s" % selected_session_id)
+
+    required = {
+        "status": task.get("status"),
+        "generation": task.get("generation"),
+        "stateVersion": task.get("stateVersion"),
+        "retryCount": task.get("retryCount"),
+    }
+    missing = [key for key, value in required.items() if value is None]
+    if missing:
+        raise ValueError(
+            "task timeline is missing force-release CAS field(s): %s"
+            % ", ".join(missing))
+
+    return {
+        "expected_task_status": required["status"],
+        "expected_session_id": selected_session_id,
+        "expected_session_status": (
+            selected_session.get("status")
+            if selected_session is not None else None),
+        "expected_generation": required["generation"],
+        "expected_state_version": required["stateVersion"],
+        "expected_fence_token": (
+            selected_session.get("fenceToken")
+            if selected_session is not None else None),
+        "expected_retry_count": required["retryCount"],
+        "expected_desired_revision": task.get("desiredRevision"),
+        "expected_processing_revision": task.get("processingRevision"),
+        "expected_worker_key": (
+            selected_session.get("historicalWorkerKey")
+            if selected_session is not None else None),
+        "expected_worker_id": (
+            selected_session.get("historicalWorkerId")
+            if selected_session is not None else None),
+        "expected_worker_process_uuid": (
+            selected_session.get("historicalWorkerProcessUuid")
+            if selected_session is not None else None),
+    }
+
+
+def cmd_force_release(client, task_id, session_id, reason, yes):
+    if not yes:
+        sys.stderr.write(
+            "error: force-release fences and detaches the exact reviewed ownership; "
+            "pass --yes to fetch a fresh CAS snapshot and continue\n")
+        return 2
+    try:
+        timeline = client.get_task_timeline(str(task_id))
+        snapshot = _force_release_snapshot(timeline, task_id, session_id)
+        result = client.force_release_task(
+            str(task_id), reason=reason, **snapshot)
+    except ControlPlaneError as exc:
+        if getattr(exc, "status", None) == 404:
+            sys.stderr.write(
+                "error: force-release endpoint is unavailable (HTTP 404); "
+                "the control-plane server version has not been deployed\n")
+            return 3
+        raise
+    except (TypeError, ValueError) as exc:
+        sys.stderr.write("error: cannot build force-release CAS: %s\n" % exc)
+        return 3
+
+    task = result.get("task") if isinstance(result.get("task"), dict) else {}
+    old_generation = result.get(
+        "previousGeneration", snapshot["expected_generation"])
+    new_generation = task.get("generation", result.get("generation", "?"))
+    old_session = result.get(
+        "releasedSessionId", snapshot["expected_session_id"])
+    final_status = task.get("status", result.get("status", "?"))
+    print(
+        "force release: action=%s oldGeneration=%s newGeneration=%s "
+        "oldSession=%s finalStatus=%s"
+        % (
+            result.get("action", "?"),
+            old_generation,
+            new_generation,
+            old_session if old_session is not None else "-",
+            final_status,
+        ))
+    if result.get("message"):
+        print("  message=%s" % result.get("message"))
+    return 0
+
+
 def cmd_legacy_cleanup(client, yes):
     preview = client.preview_legacy_kind_cleanup()
     if not isinstance(preview, dict):
@@ -286,6 +394,15 @@ def main(argv=None):
     p_discard.add_argument("session_id", type=int, help="expected current Session id")
     p_discard.add_argument("--reason", required=True, help="auditable recovery reason")
     p_discard.add_argument("--yes", action="store_true", help="confirm context discard")
+    p_release = sub.add_parser(
+        "force-release",
+        help="force-release one exact ownership snapshot after fresh timeline review")
+    p_release.add_argument("task_id", type=int, help="control-plane Task id")
+    p_release.add_argument(
+        "session_id", type=int, nargs="?",
+        help="expected Session id (default: fresh task.currentSessionId)")
+    p_release.add_argument("--reason", required=True, help="auditable release reason")
+    p_release.add_argument("--yes", action="store_true", help="confirm ownership release")
     p_legacy = sub.add_parser(
         "legacy-cleanup",
         help="preview (default) / delete residual tasks of deprecated kinds (e.g. field_repair)")
@@ -304,6 +421,9 @@ def main(argv=None):
             return cmd_operation(client, args.operation_id)
         if args.cmd == "legacy-cleanup":
             return cmd_legacy_cleanup(client, args.yes)
+        if args.cmd == "force-release":
+            return cmd_force_release(
+                client, args.task_id, args.session_id, args.reason, args.yes)
         return cmd_discard_resume(
             client, args.task_id, args.session_id, args.reason, args.yes)
     except ControlPlaneError as e:

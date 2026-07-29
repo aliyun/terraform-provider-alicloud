@@ -205,6 +205,7 @@ class ControlPlaneClient:
     TASK_BY_AONE_PATH = "tasks/by-aone/{aone_id}"
     TASK_TIMELINE_PATH = "tasks/{task_id}/timeline"
     DISCARD_RESUME_CONTEXT_PATH = "tasks/{task_id}/discard-resume-context"
+    FORCE_RELEASE_TASK_PATH = "tasks/{task_id}/force-release"
     READY_TASK_DIAGNOSTICS_PATH = "tasks/ready-diagnostics"
     SOURCE_STATUS_CANDIDATES_PATH = "tasks/source-status-candidates"
     SOURCE_STATUS_PATH = "tasks/{task_id}/source-status"
@@ -722,6 +723,68 @@ class ControlPlaneClient:
             "expectedSessionId": int(expected_session_id),
             "reason": reason,
         }, request_id=request_id)
+
+    def force_release_task(
+            self, task_id: str, *,
+            expected_task_status: str,
+            expected_session_id: Optional[int],
+            expected_session_status: Optional[str],
+            expected_generation: int,
+            expected_state_version: int,
+            expected_fence_token: Optional[int],
+            expected_retry_count: int,
+            expected_desired_revision: Optional[str],
+            expected_processing_revision: Optional[str],
+            expected_worker_key: Optional[str],
+            expected_worker_id: Optional[int],
+            expected_worker_process_uuid: Optional[str],
+            reason: str,
+            request_id: Optional[str] = None) -> Dict[str, Any]:
+        """Force-release one exact, freshly reviewed Task ownership snapshot.
+
+        Every mutable Task/Session/Worker field used by the server transition is
+        carried as compare-and-set evidence.  A deterministic idempotency key
+        identifies transport retries of the same reviewed snapshot; server-side CAS
+        remains authoritative.
+        """
+        path = self.FORCE_RELEASE_TASK_PATH.format(
+            task_id=self._path_segment(task_id, "task_id"))
+        payload = {
+            "expectedTaskStatus": _nonblank(
+                expected_task_status, "expected_task_status"),
+            "expectedSessionId": (
+                int(expected_session_id)
+                if expected_session_id is not None else None),
+            "expectedSessionStatus": (
+                _nonblank(expected_session_status, "expected_session_status")
+                if expected_session_status is not None else None),
+            "expectedGeneration": int(expected_generation),
+            "expectedStateVersion": int(expected_state_version),
+            "expectedFenceToken": (
+                int(expected_fence_token)
+                if expected_fence_token is not None else None),
+            "expectedRetryCount": int(expected_retry_count),
+            "expectedDesiredRevision": (
+                _nonblank(expected_desired_revision, "expected_desired_revision")
+                if expected_desired_revision is not None else None),
+            "expectedProcessingRevision": expected_processing_revision,
+            "expectedWorkerKey": expected_worker_key,
+            "expectedWorkerId": (
+                int(expected_worker_id)
+                if expected_worker_id is not None else None),
+            "expectedWorkerProcessUuid": expected_worker_process_uuid,
+            "confirmationToken": "FORCE_RELEASE",
+            "reason": _nonblank(reason, "reason"),
+        }
+        rid = request_id
+        if rid is None:
+            material = json.dumps(
+                {"taskId": str(task_id), "payload": payload},
+                ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+                default=str,
+            ).encode("utf-8")
+            rid = "jarvis-force-release-%s" % hashlib.sha256(material).hexdigest()[:32]
+        return self._post(path, payload, request_id=rid)
 
     def preview_legacy_kind_cleanup(self) -> Any:
         """Preview residual tasks whose task_type is a deprecated execution kind.
