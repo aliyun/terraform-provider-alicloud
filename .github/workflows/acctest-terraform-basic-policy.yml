@@ -17,6 +17,7 @@ concurrency:
 
 jobs:
   policy:
+    name: Basic Policy Gate
     permissions:
       checks: write
       pull-requests: read
