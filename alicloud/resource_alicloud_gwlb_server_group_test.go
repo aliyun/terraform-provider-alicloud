@@ -67,18 +67,20 @@ func TestAccAliCloudGwlbServerGroup_basic8419(t *testing.T) {
 							"server_type": "Ecs",
 						},
 					},
-					"server_group_name": name,
+					"server_group_name":    name,
+					"server_failover_mode": "Rebalance",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"scheduler":         "5TCH",
-						"protocol":          "GENEVE",
-						"server_group_type": "Instance",
-						"resource_group_id": CHECKSET,
-						"vpc_id":            CHECKSET,
-						"dry_run":           "false",
-						"servers.#":         "1",
-						"server_group_name": name,
+						"scheduler":            "5TCH",
+						"protocol":             "GENEVE",
+						"server_group_type":    "Instance",
+						"resource_group_id":    CHECKSET,
+						"vpc_id":               CHECKSET,
+						"dry_run":              "false",
+						"servers.#":            "1",
+						"server_group_name":    name,
+						"server_failover_mode": "Rebalance",
 					}),
 				),
 			},
@@ -113,14 +115,16 @@ func TestAccAliCloudGwlbServerGroup_basic8419(t *testing.T) {
 							"server_id":   "${alicloud_instance.defaultH6McvC.network_interface_id}",
 						},
 					},
-					"server_group_name": name + "_update",
+					"server_group_name":    name + "_update",
+					"server_failover_mode": "NoRebalance",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"scheduler":         "3TCH",
-						"resource_group_id": CHECKSET,
-						"servers.#":         "1",
-						"server_group_name": name + "_update",
+						"scheduler":            "3TCH",
+						"resource_group_id":    CHECKSET,
+						"servers.#":            "1",
+						"server_group_name":    name + "_update",
+						"server_failover_mode": "NoRebalance",
 					}),
 				),
 			},
@@ -177,8 +181,9 @@ func TestAccAliCloudGwlbServerGroup_basic8419(t *testing.T) {
 }
 
 var AlicloudGwlbServerGroupMap8419 = map[string]string{
-	"status":      CHECKSET,
-	"create_time": CHECKSET,
+	"status":               CHECKSET,
+	"create_time":          CHECKSET,
+	"server_failover_mode": CHECKSET,
 }
 
 func AlicloudGwlbServerGroupBasicDependence8419(name string) string {

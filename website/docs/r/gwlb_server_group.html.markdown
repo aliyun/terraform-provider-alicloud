@@ -139,6 +139,10 @@ The following arguments are supported:
   - `5TCH` (default): specifies consistent hashing that is based on the following factors: source IP address, destination IP address, source port, protocol, and destination port. Requests that contain the same information based on the preceding factors are forwarded to the same backend server.
   - `3TCH`: specifies consistent hashing that is based on the following factors: source IP address, destination IP address, and protocol. Requests that contain the same information based on the preceding factors are forwarded to the same backend server.
   - `2TCH`: specifies consistent hashing that is based on the following factors: source IP address and destination IP address. Requests that contain the same information based on the preceding factors are forwarded to the same backend server.
+* `server_failover_mode` - (Optional, Computed) The behavior when a server becomes abnormal. Valid values:
+
+  - `NoRebalance` (default): Do not rebalance existing flows.
+  - `Rebalance`: Rebalance existing flows.
 * `server_group_name` - (Optional) The server group name.
 
   The name must be 2 to 128 characters in length, and can contain digits, periods (.), underscores (\_), and hyphens (-). It must start with a letter.

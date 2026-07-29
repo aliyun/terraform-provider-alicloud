@@ -139,6 +139,12 @@ func resourceAliCloudGwlbServerGroup() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"2TCH", "3TCH", "5TCH"}, false),
 			},
+			"server_failover_mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"NoRebalance", "Rebalance"}, false),
+			},
 			"server_group_name": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -256,6 +262,9 @@ func resourceAliCloudGwlbServerGroupCreate(d *schema.ResourceData, meta interfac
 	}
 	if v, ok := d.GetOk("scheduler"); ok {
 		request["Scheduler"] = v
+	}
+	if v, ok := d.GetOk("server_failover_mode"); ok {
+		request["ServerFailoverMode"] = v
 	}
 	if v, ok := d.GetOk("health_check_config"); ok {
 		jsonPathResult6, err := jsonpath.Get("$[0].health_check_enabled", v)
@@ -417,6 +426,9 @@ func resourceAliCloudGwlbServerGroupRead(d *schema.ResourceData, meta interface{
 	if objectRaw["Scheduler"] != nil {
 		d.Set("scheduler", objectRaw["Scheduler"])
 	}
+	if objectRaw["ServerFailoverMode"] != nil {
+		d.Set("server_failover_mode", objectRaw["ServerFailoverMode"])
+	}
 	if objectRaw["ServerGroupName"] != nil {
 		d.Set("server_group_name", objectRaw["ServerGroupName"])
 	}
@@ -552,6 +564,11 @@ func resourceAliCloudGwlbServerGroupUpdate(d *schema.ResourceData, meta interfac
 	if !d.IsNewResource() && d.HasChange("scheduler") {
 		update = true
 		request["Scheduler"] = d.Get("scheduler")
+	}
+
+	if !d.IsNewResource() && d.HasChange("server_failover_mode") {
+		update = true
+		request["ServerFailoverMode"] = d.Get("server_failover_mode")
 	}
 
 	if !d.IsNewResource() && d.HasChange("health_check_config.0.health_check_enabled") {
