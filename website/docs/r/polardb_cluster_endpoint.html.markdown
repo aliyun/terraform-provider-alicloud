@@ -76,9 +76,13 @@ The following arguments are supported:
 * `db_endpoint_description` - (Optional) The name of the endpoint.
 * `connection_prefix` - (Optional) Prefix of the specified endpoint. The prefix must be 6 to 30 characters in length, and can contain lowercase letters, digits, and hyphens (-), must start with a letter and end with a digit or letter.
 * `port` - (Optional) Port of the specified endpoint. Valid values: 3000 to 5999.
-* `scc_mode` - (Optional) Specifies whether to enable the global consistency (high performance mode). Valid values: `ON`, `OFF`.
-* `scc_wait_timeout` - (Optional) The timeout period for global consistency. Unit: ms.
-* `scc_timeout_action` - (Optional) The degradation policy when global consistency times out. Valid values: `0` (send to the primary node), `2` (degrade to non-consistent read).
+* `scc_mode` - (Optional) Specifies whether to enable the global
+  consistency (high performance mode). Valid values: `ON`, `OFF`.
+* `scc_wait_timeout` - (Optional) The timeout period for global
+  consistency. Unit: ms.
+* `scc_timeout_action` - (Optional) The degradation policy when global
+  consistency times out. Valid values: `0` (send to the primary node),
+  `2` (degrade to non-consistent read).
 
 ## Attributes Reference
 
