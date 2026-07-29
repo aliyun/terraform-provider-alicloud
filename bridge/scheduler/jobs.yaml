@@ -12,9 +12,9 @@ jobs:
 
   - key: aone.scan
     runner: scan
-    revision: 1
+    revision: 2
     description: 扫描 Aone 指派、跟踪与待处理任务并写入控制面任务队列
-    schedule: {kind: interval, interval_seconds: 1800, run_immediately: true}
+    schedule: {kind: interval, interval_seconds: 300, run_immediately: true}
     misfire: COALESCE
     retry_delay_seconds: 60
     enabled: true

@@ -38,8 +38,10 @@ RUNNER_KEY = "scan"
 class ScanRunner(AoneQueryMixin):
     """Scan Aone pools and persist desired Tasks."""
 
-    SOURCE_STATUS_PAGE_SIZE = int(os.environ.get("JARVIS_SOURCE_STATUS_PAGE_SIZE", "32"))
-    SOURCE_STATUS_WORKERS = int(os.environ.get("JARVIS_SOURCE_STATUS_WORKERS", "8"))
+    SOURCE_STATUS_PAGE_SIZE = int(os.environ.get("JARVIS_SOURCE_STATUS_PAGE_SIZE", "500"))
+    SOURCE_STATUS_WORKERS = int(os.environ.get("JARVIS_SOURCE_STATUS_WORKERS", "32"))
+    SOURCE_STATUS_MAX_PAGES = int(
+        os.environ.get("JARVIS_SOURCE_STATUS_MAX_PAGES", "100"))
     SOURCE_STATUS_POINT_TIMEOUT_SECONDS = int(
         os.environ.get("JARVIS_SOURCE_STATUS_POINT_TIMEOUT_SECONDS", "10"))
 
@@ -51,7 +53,6 @@ class ScanRunner(AoneQueryMixin):
         self._pending_auto_cleared = False
         self.execution_router = ExecutionRouter(client=task_client, logger=logger)
         self._prev_snapshot = {}
-        self._source_status_after_task_id = 0
         self._human_cache = {}
         self._human_comment_cache = {}
         self._activity_cache = {}
@@ -183,56 +184,93 @@ class ScanRunner(AoneQueryMixin):
     def _reconcile_source_statuses(self):
         """Reconcile lifecycle metadata for already tracked control-plane Tasks.
 
-        Discovery/dispatch and lifecycle observation are deliberately separate. This page
-        may contain Tasks whose Aone status is excluded from pool scanning; reporting a
-        status uses a metadata-only endpoint and cannot change desired revision, generation,
-        execution state, or Session ownership.
+        Discovery/dispatch and lifecycle observation are deliberately separate. Candidate
+        pages may contain Tasks whose Aone status is excluded from pool scanning; reporting
+        a status uses a metadata-only endpoint and cannot change desired revision,
+        generation, execution state, or Session ownership.
+
+        Every invocation starts at cursor zero and consumes the complete candidate snapshot.
+        The cursor is intentionally local to this invocation: a malformed page or page-fetch
+        failure aborts the scheduled run, and its retry starts from zero instead of resuming
+        from a potentially inconsistent partial snapshot. Point reads and metadata updates
+        remain isolated per Task.
         """
         client = getattr(self.execution_router, "client", None)
         if client is None:
             return
-        after = int(getattr(self, "_source_status_after_task_id", 0) or 0)
         page_size = max(1, min(500, int(self.SOURCE_STATUS_PAGE_SIZE)))
-        page = client.list_source_status_candidates(
-            after_task_id=after, limit=page_size)
-        if not isinstance(page, dict) or not isinstance(page.get("items"), list):
-            raise ValueError("control plane source status candidate page is invalid")
-        tasks = [task for task in page["items"] if isinstance(task, dict)]
         workers = max(1, min(32, int(self.SOURCE_STATUS_WORKERS)))
-        with ThreadPoolExecutor(max_workers=workers,
-                                thread_name_prefix="aone-source-status") as executor:
-            observations = list(executor.map(self._point_read_source_status, tasks))
-        changed = 0
-        for task, source_status in observations:
-            if not source_status or source_status == str(task.get("sourceStatus") or "").strip():
-                continue
-            task_id = str(task.get("taskId") or "").strip()
-            aone_id = str(task.get("aoneId") or "").strip()
-            if not task_id or not aone_id:
-                continue
-            try:
-                digest = hashlib.sha256(source_status.encode("utf-8")).hexdigest()[:16]
-                client.update_source_status(
-                    task_id, aone_id, source_status,
-                    request_id="source-status:%s:%s" % (task_id, digest))
-                changed += 1
-                log.info("ScanRunner: source status reconciled task=%s aone=#%s %s→%s",
-                         task_id, aone_id, task.get("sourceStatus") or "<missing>", source_status)
-            except Exception as exc:  # noqa: BLE001 — one Task cannot block the page
-                log.warning("ScanRunner: source status report task=%s aone=#%s failed: %s",
-                            task_id, aone_id, exc)
-        if page.get("hasMore"):
-            try:
-                next_after = int(page.get("nextAfterTaskId"))
-            except (TypeError, ValueError) as exc:
-                raise ValueError("control plane source status cursor is invalid") from exc
+        max_pages = max(1, int(self.SOURCE_STATUS_MAX_PAGES))
+        after = 0
+        observed_total = 0
+        changed_total = 0
+        pages = 0
+        while True:
+            page = client.list_source_status_candidates(
+                after_task_id=after, limit=page_size)
+            if (
+                not isinstance(page, dict)
+                or not isinstance(page.get("items"), list)
+                or not isinstance(page.get("hasMore"), bool)
+            ):
+                raise ValueError(
+                    "control plane source status candidate page is invalid")
+            tasks = [task for task in page["items"] if isinstance(task, dict)]
+            with ThreadPoolExecutor(
+                    max_workers=workers,
+                    thread_name_prefix="aone-source-status") as executor:
+                observations = list(executor.map(
+                    self._point_read_source_status, tasks))
+            changed = 0
+            for task, source_status in observations:
+                if (
+                    not source_status
+                    or source_status
+                    == str(task.get("sourceStatus") or "").strip()
+                ):
+                    continue
+                task_id = str(task.get("taskId") or "").strip()
+                aone_id = str(task.get("aoneId") or "").strip()
+                if not task_id or not aone_id:
+                    continue
+                try:
+                    digest = hashlib.sha256(
+                        source_status.encode("utf-8")).hexdigest()[:16]
+                    client.update_source_status(
+                        task_id, aone_id, source_status,
+                        request_id="source-status:%s:%s" % (task_id, digest))
+                    changed += 1
+                    log.info(
+                        "ScanRunner: source status reconciled "
+                        "task=%s aone=#%s %s→%s",
+                        task_id, aone_id,
+                        task.get("sourceStatus") or "<missing>",
+                        source_status)
+                except Exception as exc:  # noqa: BLE001 — one Task cannot block the page
+                    log.warning(
+                        "ScanRunner: source status report "
+                        "task=%s aone=#%s failed: %s",
+                        task_id, aone_id, exc)
+            pages += 1
+            observed_total += len(tasks)
+            changed_total += changed
+            if not page["hasMore"]:
+                break
+            if pages >= max_pages:
+                raise RuntimeError(
+                    "control plane source status candidate snapshot exceeded "
+                    "maximum pages (%d)" % max_pages)
+            next_after = page.get("nextAfterTaskId")
+            if type(next_after) is not int:
+                raise ValueError(
+                    "control plane source status cursor is invalid")
             if next_after <= after:
-                raise ValueError("control plane source status cursor did not advance")
-            self._source_status_after_task_id = next_after
-        else:
-            self._source_status_after_task_id = 0
-        log.info("ScanRunner: source status page observed=%d changed=%d next=%d",
-                 len(tasks), changed, self._source_status_after_task_id)
+                raise ValueError(
+                    "control plane source status cursor did not advance")
+            after = next_after
+        log.info(
+            "ScanRunner: source status snapshot pages=%d observed=%d changed=%d",
+            pages, observed_total, changed_total)
 
     def _in_scope(self, it):
         """灰度安全阀：item 是否在自动派发范围内。pool 白名单 + created 上限，两者空=不限。
@@ -779,15 +817,18 @@ class ScanRunner(AoneQueryMixin):
             else:
                 self._tick_supervised(new_items, updated_items)
 
-        # Lifecycle observation follows discovery/dispatch and uses a small bounded page,
-        # so terminal-status point reads cannot delay newly actionable work.
+        # Lifecycle observation follows discovery/dispatch. Each page uses bounded
+        # concurrency, while the scheduled run consumes the complete candidate snapshot.
         self._reconcile_source_statuses_safely()
 
     def _reconcile_source_statuses_safely(self):
         try:
             self._reconcile_source_statuses()
-        except Exception:  # noqa: BLE001 — lifecycle observation must not fail the scan tick
-            log.exception("ScanRunner source status reconcile failed; will retry next tick")
+        except Exception:
+            log.exception(
+                "ScanRunner source status reconcile failed; "
+                "scheduled run will retry from cursor zero")
+            raise
 
     def _tick_auto(self, new_items, updated_items=None, done_watch_items=None):
         """Auto-dispatch candidates into the pool (broadcast, not authorize). Candidates =
