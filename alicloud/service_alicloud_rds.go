@@ -971,7 +971,10 @@ func (s *RdsService) ModifyDBBackupPolicy(d *schema.ResourceData, updateForData,
 			request["ArchiveBackupKeepPolicy"] = archiveBackupKeepPolicy
 		}
 		if (instance["Engine"] == "MySQL" || instance["Engine"] == "PostgreSQL") && instance["DBInstanceStorageType"] != "local_ssd" {
-			request["BackupInterval"] = backupInterval
+			// Basic version cannot set backup interval
+			if v, ok := instance["Category"].(string); ok && v != "Basic" {
+				request["BackupInterval"] = backupInterval
+			}
 		}
 
 		response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
