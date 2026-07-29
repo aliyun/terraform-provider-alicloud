@@ -42,43 +42,69 @@ active_rules=(
   "autonomy.md"
 )
 
+require_terms() {
+  local file="$1"
+  shift
+  local term
+  for term in "$@"; do
+    grep -Fq -- "$term" "$file" || {
+      echo "zhenyuan_self_close_rules_test: missing '$term' in $file" >&2
+      exit 1
+    }
+  done
+}
+
+forbid_terms() {
+  local file="$1"
+  shift
+  local term
+  for term in "$@"; do
+    if grep -Fq -- "$term" "$file"; then
+      echo "zhenyuan_self_close_rules_test: stale '$term' in $file" >&2
+      exit 1
+    fi
+  done
+}
+
 for rel in "${active_rules[@]}"; do
   test -f "$repo_root/$rel"
 done
 
+# Retired Zhenyuan identity and project protections from the original suite.
+active_paths=()
+for rel in "${active_rules[@]}"; do
+  active_paths+=("$repo_root/$rel")
+done
 for forbidden in \
   'WORKER_1783326253279' \
   '镇元 agent' \
   '镇元agent' \
   '谜拟'; do
-  if grep -Fn "$forbidden" "${active_rules[@]/#/$repo_root/}"; then
+  if grep -Fn "$forbidden" "${active_paths[@]}"; then
     echo "zhenyuan_self_close_rules_test: active rules still route through '$forbidden'" >&2
     exit 1
   fi
 done
 
-# The removed config key may appear only in explicit deletion/negative policy text.
 while IFS= read -r hit; do
   case "$hit" in
     *删除*|*移除*|*不存在*|*不得*|*不创建*) ;;
     *)
-      echo "zhenyuan_self_close_rules_test: active rule positively uses upstream.cloudspec_gap: $hit" >&2
+      echo "zhenyuan_self_close_rules_test: positive upstream.cloudspec_gap use: $hit" >&2
       exit 1
       ;;
   esac
-done < <(grep -Fn 'upstream.cloudspec_gap' "${active_rules[@]/#/$repo_root/}" || true)
+done < <(grep -Fn 'upstream.cloudspec_gap' "${active_paths[@]}" || true)
 
-# The retired project id may appear only in an explicit negative/legacy warning.  A
-# blanket literal ban would reject the desired policy text ("不创建 2165097").
 while IFS= read -r hit; do
   case "$hit" in
     *不*|*禁止*|*不得*|*旧*|*回退*) ;;
     *)
-      echo "zhenyuan_self_close_rules_test: active rule positively routes through 2165097: $hit" >&2
+      echo "zhenyuan_self_close_rules_test: positive 2165097 route: $hit" >&2
       exit 1
       ;;
   esac
-done < <(grep -Fn '2165097' "${active_rules[@]/#/$repo_root/}" || true)
+done < <(grep -Fn '2165097' "${active_paths[@]}" || true)
 
 jq -e '
   (.upstream.cloudspec_gap? == null)
@@ -92,32 +118,158 @@ jq -e '
   | select(.id == "WORKER_1783326253279")
   | .legacy_inbound_only == true
 ' "$repo_root/config/contacts.json" >/dev/null
-jq -e '
-  .agent_fallbacks.WORKER_1783326253279 == "479782"
-' "$repo_root/config/contacts.json" >/dev/null
+jq -e \
+  '.agent_fallbacks.WORKER_1783326253279 == "479782"' \
+  "$repo_root/config/contacts.json" >/dev/null
 grep -Fq 'legacy inbound only' "$repo_root/config/contacts.json"
 
 routing="$repo_root/.claude/skills/aone-triage/references/tf-customer-request-routing.md"
+route_mirror="$repo_root/.agents/skills/aone-triage/references/tf-customer-request-routing.md"
 main_skill="$repo_root/.claude/skills/aone-triage/SKILL.md"
+main_skill_mirror="$repo_root/.agents/skills/aone-triage/SKILL.md"
 templates="$repo_root/.claude/skills/aone-triage/references/templates.md"
+templates_mirror="$repo_root/.agents/skills/aone-triage/references/templates.md"
 verification="$repo_root/.claude/skills/provider-resource-dev/references/zhenyuan-verification.md"
 team_roster="$repo_root/.claude/skills/aone-triage/references/team-roster.md"
-pd_agent="$repo_root/.claude/agents/terraform-pd.md"
-pd_agent_mirror="$repo_root/.codex/agents/terraform-pd.toml"
+team_roster_mirror="$repo_root/.agents/skills/aone-triage/references/team-roster.md"
 release_loop="$repo_root/.claude/skills/terraform-provider-release/references/cloudspec-pre-resource-loop.md"
+pd_agent="$repo_root/.claude/agents/terraform-pd.md"
+pd_mirror="$repo_root/.codex/agents/terraform-pd.toml"
 rd_agent="$repo_root/.claude/agents/terraform-rd.md"
-rd_agent_mirror="$repo_root/.codex/agents/terraform-rd.toml"
+rd_mirror="$repo_root/.codex/agents/terraform-rd.toml"
 qa_agent="$repo_root/.claude/agents/terraform-qa.md"
-qa_agent_mirror="$repo_root/.codex/agents/terraform-qa.toml"
-runtime_orchestrator="$repo_root/bridge/aone_tasks.py"
-bot_runtime="$repo_root/bridge/jarvis_dingtalk_bot.py"
-persona_collab="$repo_root/loops/persona-collab.md"
+qa_mirror="$repo_root/.codex/agents/terraform-qa.toml"
+runtime="$repo_root/bridge/aone_tasks.py"
+persona="$repo_root/loops/persona-collab.md"
+acube="$repo_root/.claude/skills/aone-triage/references/acube-createBuildTaskV2-workflow.md"
+acube_mirror="$repo_root/.agents/skills/aone-triage/references/acube-createBuildTaskV2-workflow.md"
 
-for phrase in \
-  '分支 E — CloudSpec 结构 metadata 原主单自闭环' \
-  '字段集合、类型、约束、CRUD' \
-  'requested_external_actions: []' \
-  'next=terraform-rd/dev' \
+# Branch I remains text-only, submit-only, and independently deduplicated.
+for file in "$routing" "$route_mirror" "$team_roster" "$team_roster_mirror"; do
+  require_terms "$file" \
+    'CloudSpec 文档文本 metadata' \
+    'resource/property/operation description' \
+    '字段解释、NOTE' \
+    '枚举文案' \
+    '不改变字段集合' \
+    '类型' \
+    '约束' \
+    'CRUD' \
+    '2169561' \
+    '念依' \
+    '373108' \
+    'submit_only' \
+    '分池防重' \
+    '独立' \
+    '528766'
+done
+require_terms "$routing" \
+  '一个池已有 relation 不能抑制另一个池的缺失补建' \
+  'CloudSpec 文档源正确，Provider 本地文档生成/展示偏差' \
+  '分支 D'
+
+# I/D/E classification order and reverse prohibitions.
+for file in "$templates" "$templates_mirror" "$pd_agent" "$pd_mirror"; do
+  require_terms "$file" \
+    'CloudSpec 文档文本 metadata' \
+    '分支 I' \
+    'Provider 本地文档生成/展示偏差' \
+    '分支 D' \
+    'CloudSpec 结构 metadata' \
+    '分支 E'
+  forbid_terms "$file" \
+    'CloudSpec 文档文本 metadata → 分支 E' \
+    'Provider 本地文档生成/展示偏差 → 分支 I'
+done
+grep -Eq 'CloudSpec 文档文本 metadata.*分支 I' "$templates"
+grep -Eq 'CloudSpec 文档源正确，Provider 本地文档生成/展示偏差.*分支 D' "$templates"
+grep -Eq 'CloudSpec 结构 metadata.*分支 E' "$templates"
+
+# Team roster keeps I/H owners and rejects the old mixed-owner schema.
+require_terms "$team_roster" \
+  '| 场景 | 路由/承接关系 | 工号/项目 |' \
+  'Provider 侧全局改造 G' \
+  '源单新山；TerraformRD 源单直办，不建 528766、不发 route DM' \
+  'pure datasource source-only（紧急）' \
+  'pure datasource source-only（非紧急）' \
+  'CloudSpec 文档文本 metadata（I）' \
+  '念依（2169561 submit_only）' \
+  'CloudSpec 结构 metadata（E）' \
+  'pre QA 后源单继续 Provider dev/CI/远程 ACC/PR' \
+  'D 生成/发布腿（含 E pre 收敛后）' \
+  '源单临钧' \
+  'D 手写 resource 紧急' \
+  '源单新山' \
+  'D 手写 resource 非紧急' \
+  '源单过载' \
+  'NPE 兜底' \
+  '夏节' \
+  '401498'
+forbid_terms "$team_roster" \
+  '| 场景 | 源客户主单 owner | 下游/研发 owner |' \
+  '源单新山；528766 过载' \
+  '521957 / 484483' \
+  'E → D-临钧'
+
+if grep -Fq 'OK 四条件' "$routing" "$verification" "$team_roster"; then
+  echo 'zhenyuan_self_close_rules_test: stale four-condition CloudSpec OK contract' >&2
+  exit 1
+fi
+require_terms "$team_roster" \
+  'CloudSpec 结构 OK 三条件' \
+  '测试覆盖度 100%'
+
+# Canned missing-input gate remains fail-closed.
+for file in "$routing" "$route_mirror" "$main_skill" "$main_skill_mirror" "$pd_agent" "$pd_mirror"; do
+  require_terms "$file" \
+    'Canned 缺参前置门' \
+    '等待补料' \
+    '不得进入正式路由' \
+    '只读安全查证' \
+    '不得据此形成正式路由结论'
+done
+for file in "$templates" "$templates_mirror"; do
+  require_terms "$file" \
+    'Canned 补料等待骨架' \
+    '当前不进入正式路由或开发' \
+    '等待补料'
+done
+
+# Single writer / executor-only bookend ownership remains explicit.
+for file in \
+  "$routing" "$route_mirror" \
+  "$main_skill" "$main_skill_mirror" \
+  "$templates" "$templates_mirror" \
+  "$pd_agent" "$pd_mirror" \
+  "$rd_agent" "$rd_mirror" \
+  "$qa_agent" "$qa_mirror" \
+  "$team_roster" "$team_roster_mirror"; do
+  require_terms "$file" 'single-writer'
+done
+for file in \
+  "$routing" "$route_mirror" \
+  "$main_skill" "$main_skill_mirror" \
+  "$team_roster" "$team_roster_mirror"; do
+  require_terms "$file" 'executor 只负责原主单 bookend'
+done
+if grep -En \
+  'executor.{0,40}执行(上述)?(结构化动作|结构化副作用|状态动作)|finalizer/executor|executor 或 terraform-rd' \
+  "$routing" "$route_mirror" "$main_skill" "$main_skill_mirror"; then
+  echo 'zhenyuan_self_close_rules_test: downstream actions regressed to executor' >&2
+  exit 1
+fi
+
+# CloudSpec feature/build/check/pre chain and production hard gates.
+for file in "$routing" "$route_mirror" "$release_loop" "$rd_agent" "$rd_mirror"; do
+  require_terms "$file" \
+    'CloudSpec' \
+    'pre Meta 收敛' \
+    'Provider' \
+    'prod/online' \
+    'master/main' \
+    '人工硬门'
+done
+require_terms "$routing" \
   'cloudspec-amp-workflow' \
   'cloudspec-idl-guide' \
   'cloudspec-resource-edit' \
@@ -130,298 +282,165 @@ for phrase in \
   'aliyun cspec check' \
   'amp publish pre --dry-run' \
   'amp publish pre' \
-  'pre Meta 收敛' \
-  'E → D-临钧' \
-  'createBuildTaskV2' \
-  '临钧（429768）' \
-  'pre 未收敛不得触发 Acube' \
-  '不得由 E 直接执行 Provider PR/CI/ACC' \
-  '不得在 E 完成后直接 release/idle' \
-  '已有正确 relation/taskId/aoneId 时只查询/复用' \
-  '只允许分支 E 进入此转换' \
-  '不得泛化到 A/F/G/H/I、纯 datasource 或纯手写 Provider-only bug' \
-  'missing_capability' \
-  'blocked' \
-  '不得 finish'; do
-  grep -Fq "$phrase" "$routing"
+  'cloudspec_pre_verify' \
+  'pre QA pass 后返回 `next=terraform-rd/dev`' \
+  '同一源单上下文继续 Provider' \
+  '远程 AccTest' \
+  '不调用 Acube `createBuildTaskV2`' \
+  '不创建/复用/关联/claim/bookend'
+require_terms "$release_loop" \
+  'verification_mode: cloudspec_pre' \
+  'next=terraform-rd/dev' \
+  'Provider PR' \
+  '远程 ACC' \
+  'E 禁止调用 Acube `createBuildTaskV2`'
+
+# PD/RD/QA next schemas remain precise and clarify stays retired.
+for file in "$pd_agent" "$pd_mirror"; do
+  require_terms "$file" \
+    'action: dev | acc_verify | cloudspec_pre_verify | finalize' \
+    'requested_external_actions: []' \
+    'next=terraform-rd/dev'
+  forbid_terms "$file" 'clarify'
 done
-
-for phrase in \
-  '分支 I — CloudSpec 文档文本 metadata' \
-  'resource/property/operation description' \
-  '字段解释、NOTE 与枚举文案' \
-  '不改变字段集合、类型、约束或 CRUD' \
-  '2169561' \
-  '念依（373108）' \
-  'upstream.cloudspec_docs_quality' \
-  'submit_only' \
-  '创建或复用' \
-  '分池防重' \
-  '独立 528766 紧急兜底腿' \
-  '一个池已有 relation 不能抑制另一个池的缺失补建'; do
-  grep -Fq "$phrase" "$routing"
-  grep -Fq "$phrase" "$verification"
+for file in "$rd_agent" "$rd_mirror"; do
+  require_terms "$file" \
+    'role: terraform-rd | terraform-qa | terraform-rd-finalizer' \
+    'action: fix | acc_verify | cloudspec_pre_verify | finalize' \
+    '文档源证据不足时返回 `status: blocked`、`next=terraform-rd-finalizer/finalize`' \
+    'next=terraform-qa/cloudspec_pre_verify'
+  forbid_terms "$file" \
+    'clarify' \
+    'pre_handoff' \
+    'E → D-临钧'
 done
-
-for phrase in \
-  'CloudSpec 结构 OK 三条件' \
-  'CloudSpec 文档文本 metadata' \
-  '念依' \
-  '373108' \
-  '结构 metadata' \
-  'E → D-临钧'; do
-  grep -Fq "$phrase" "$team_roster"
-done
-
-for phrase in \
-  '| 场景 | 路由/承接关系 | 工号/项目 |' \
-  '| **Provider 侧全局改造**' \
-  '源单新山；528766 过载并由 TerraformRD 内部开发' \
-  '521957 / 484483' \
-  '| **pure datasource source-only（紧急）**' \
-  '| 源单新山；Jarvis/TerraformRD 在源单直接开发，不建 528766 | 521957 |' \
-  '| **pure datasource source-only（非紧急）**' \
-  '| 源单过载；Jarvis/TerraformRD 在源单直接开发，不建 528766 | 484483 |' \
-  '| **CloudSpec 文档文本 metadata（I）**' \
-  '| 念依（2169561 submit_only） | 373108 |' \
-  '| **CloudSpec 结构 metadata（E）**' \
-  '| open-jarvis → 临钧 | 原主单内部执行 → 429768 |' \
-  '| **NPE 兜底**' \
-  '| 夏节 | 401498 |'; do
-  grep -Fq "$phrase" "$team_roster"
-done
-if grep -Fq '| 场景 | 源客户主单 owner | 下游/研发 owner |' "$team_roster"; then
-  echo 'zhenyuan_self_close_rules_test: mixed-owner roster schema remains' >&2
-  exit 1
-fi
-
-if grep -Fq 'OK 四条件' "$routing" "$verification" "$team_roster"; then
-  echo 'zhenyuan_self_close_rules_test: stale four-condition CloudSpec OK contract' >&2
-  exit 1
-fi
-
-awk '
-  index($0, "text-only") && index($0, "分支 I") && !text_split { text_split = NR }
-  index($0, "CloudSpec 结构 OK（三条件全满足）") && !ok_check { ok_check = NR }
-  END { exit !(text_split && ok_check && text_split < ok_check) }
-' "$routing"
-
-for phrase in \
-  'CloudSpec 文档文本 metadata' \
-  '分支 I' \
-  'Provider 本地文档生成/展示偏差' \
-  '分支 D' \
-  'CloudSpec 结构 metadata' \
-  '分支 E'; do
-  grep -Fq "$phrase" "$templates"
-  grep -Fq "$phrase" "$pd_agent"
-done
-
-grep -Eq 'CloudSpec 文档文本 metadata.*分支 I' "$templates"
-grep -Eq 'CloudSpec 文档源正确，Provider 本地文档生成/展示偏差.*分支 D' "$templates"
-grep -Eq 'CloudSpec 结构 metadata.*分支 E' "$templates"
-if grep -Eq 'CloudSpec 文档文本 metadata.*分支 E|Provider 本地文档生成/展示偏差.*分支 I' "$templates"; then
-  echo 'zhenyuan_self_close_rules_test: document source/local rendering routes are reversed' >&2
-  exit 1
-fi
-
-for file in "$routing" "$main_skill" "$pd_agent" "$rd_agent" "$qa_agent"; do
-  for phrase in \
-    'PD/QA 不外写' \
-    'single-writer'; do
-    grep -Fq "$phrase" "$file"
-  done
-done
-
-ownership_files=(
-  "$repo_root/.claude/skills/aone-triage/SKILL.md"
-  "$repo_root/.agents/skills/aone-triage/SKILL.md"
-  "$repo_root/.claude/skills/aone-triage/references/team-roster.md"
-  "$repo_root/.agents/skills/aone-triage/references/team-roster.md"
-  "$repo_root/.claude/skills/aone-triage/references/tf-customer-request-routing.md"
-  "$repo_root/.agents/skills/aone-triage/references/tf-customer-request-routing.md"
-  "$repo_root/.claude/skills/aone-triage/references/acube-createBuildTaskV2-workflow.md"
-  "$repo_root/.agents/skills/aone-triage/references/acube-createBuildTaskV2-workflow.md"
-)
-for file in "${ownership_files[@]}"; do
-  grep -Fq 'terraform-rd finalizer 是 downstream single-writer' "$file"
-  grep -Fq 'executor 只负责原主单 bookend' "$file"
-done
-if grep -En \
-  'executor.{0,40}执行(上述)?(结构化动作|结构化副作用|状态动作)|finalizer/executor|executor 或 terraform-rd|仅是独立 finalizer 示例|绝不能运行这些命令|不得在 executor 托管 run 中执行' \
-  "${ownership_files[@]}"; then
-  echo 'zhenyuan_self_close_rules_test: downstream single-writer ownership regressed to executor' >&2
-  exit 1
-fi
-
-for file in "$routing" "$main_skill" "$pd_agent"; do
-  for phrase in \
-    'Canned 缺参前置门' \
-    '等待补料' \
-    '不得进入正式路由' \
-    '只读安全查证' \
-    '不得据此形成正式路由结论'; do
-    grep -Fq "$phrase" "$file"
-  done
-done
-
-for phrase in \
-  'Canned 补料等待骨架' \
-  '当前不进入正式路由或开发' \
-  '等待补料'; do
-  grep -Fq "$phrase" "$templates"
-done
-
-for phrase in \
-  'amp publish prod' \
-  'prod/online' \
-  'master/main' \
-  '人工硬门' \
-  'pre 成功'; do
-  grep -Fq "$phrase" "$release_loop" "$rd_agent"
-done
-
-for file in "$rd_agent" "$rd_agent_mirror"; do
-  grep -Fq '文档源证据不足时返回 `status: blocked`、`next=terraform-rd-finalizer/finalize`' "$file"
-  grep -Fq 'role: terraform-rd | terraform-qa | terraform-rd-finalizer' "$file"
-  grep -Fq 'action: fix | acc_verify | cloudspec_pre_verify | finalize' "$file"
-  if grep -Fq 'clarify' "$file"; then
-    echo "zhenyuan_self_close_rules_test: stale RD clarify route in $file" >&2
-    exit 1
-  fi
-done
-
-for file in "$pd_agent" "$pd_agent_mirror"; do
-  grep -Fq 'action: dev | acc_verify | cloudspec_pre_verify | finalize' "$file"
-  if grep -Fq 'clarify' "$file"; then
-    echo "zhenyuan_self_close_rules_test: stale PD clarify action in $file" >&2
-    exit 1
-  fi
-done
-
-for file in "$qa_agent" "$qa_agent_mirror"; do
-  for phrase in \
+for file in "$qa_agent" "$qa_mirror"; do
+  require_terms "$file" \
     'verification_mode: cloudspec_pre' \
     'build/check/pre Meta 收敛' \
     '不运行远程 AccTest' \
-    '不得要求 Provider PR/CI/ACC' \
+    'next=terraform-rd/dev' \
+    '同一源单上下文继续 Provider dev/CI/PR' \
+    'CI fail 或 pending 都返回 `status: fail`' \
+    'next=terraform-rd/fix' \
+    'CI 未就绪不得标为 blocked' \
+    'blocked 仅用于 `missing_capability`、`retry exhausted`、明确外部依赖或人工决策'
+  forbid_terms "$file" \
+    'pre_handoff' \
     'E → D-临钧' \
-    'action: fix | pre_handoff | finalize'; do
-    grep -Fq "$phrase" "$file"
-  done
+    'clarify'
 done
 
-for phrase in \
-  'cloudspec_pre_verify' \
-  'pre_handoff'; do
-  grep -Fq "$phrase" "$persona_collab"
-  grep -Fq "$phrase" "$runtime_orchestrator"
-  grep -Fq "$phrase" "$bot_runtime"
-done
-
-for phrase in \
-  '分支 I' \
-  '2169561' \
-  '分池防重' \
-  '分支 E' \
-  'pre Meta 收敛' \
-  'E → D-临钧' \
-  'createBuildTaskV2' \
-  '不得由 E 直接执行 Provider PR/CI/ACC' \
-  '普通分支 D'; do
-  grep -Fq "$phrase" "$runtime_orchestrator"
-done
-
-provider_route_files=(
-  "$repo_root/.claude/skills/aone-triage/SKILL.md"
-  "$repo_root/.agents/skills/aone-triage/SKILL.md"
-  "$repo_root/.claude/skills/aone-triage/references/team-roster.md"
-  "$repo_root/.agents/skills/aone-triage/references/team-roster.md"
-  "$repo_root/.claude/skills/aone-triage/references/tf-customer-request-routing.md"
-  "$repo_root/.agents/skills/aone-triage/references/tf-customer-request-routing.md"
-  "$repo_root/.claude/skills/provider-resource-dev/SKILL.md"
-  "$repo_root/.agents/skills/provider-resource-dev/SKILL.md"
-  "$repo_root/.claude/skills/provider-resource-dev/references/zhenyuan-verification.md"
-  "$repo_root/.agents/skills/provider-resource-dev/references/zhenyuan-verification.md"
+# Pure datasource contract remains stable across core routing surfaces.
+pure_files=(
+  "$routing" "$route_mirror"
+  "$main_skill" "$main_skill_mirror"
+  "$team_roster" "$team_roster_mirror"
+  "$rd_agent" "$rd_mirror"
+  "$qa_agent" "$qa_mirror"
+  "$repo_root/AGENTS.md" "$repo_root/CLAUDE.md"
 )
-for file in "${provider_route_files[@]}"; do
-  for phrase in \
+for file in "${pure_files[@]}"; do
+  require_terms "$file" \
     '纯 datasource source-only 契约' \
-    '仅涉及 `data.alicloud_xxx` 的查询、过滤、分页、输出字段或 Read' \
-    'resource+datasource 混合诉求、G Provider 全局改造、手写 resource D 均不属于 pure datasource' \
-    '紧急源单 assignee=新山（521957）' \
-    '非紧急源单 assignee=过载（484483）' \
-    'Jarvis/TerraformRD 在源单直接开发' \
-    '严禁为 pure datasource create/reuse-as-carrier/reassign/relation/claim/wrap/release/finish 528766' \
-    '历史 relation 只读保留' \
-    '不删、不迁、不关、不改派' \
-    '不是开发、完成或 blocker 门' \
-    '允许引用已有 PR 防重复' \
-    'RD route phase 只幂等同步源单 assignee + per-type progress_status' \
-    'bridge executor 独占源单 claim/唯一回复/tag/release/finish' \
-    'CI pending/fail 或 QA fail 均回 RD 修复' \
-    'open PR + QA pass 时源单 release，不 finish' \
-    'G 与所有非-datasource D 保留 528766' \
-    'I/E/D-临钧/A/F/H 不变' \
+    '528766' \
+    '历史 relation' \
+    '只读' \
+    'open PR + QA pass 时源单 release，不 finish'
+done
+for file in \
+  "$routing" "$route_mirror" \
+  "$main_skill" "$main_skill_mirror" \
+  "$team_roster" "$team_roster_mirror" \
+  "$rd_agent" "$rd_mirror" \
+  "$repo_root/AGENTS.md" "$repo_root/CLAUDE.md"; do
+  require_terms "$file" \
+    '新山（521957）' \
+    '过载（484483）' \
+    'Jarvis/TerraformRD 在源单直接开发'
+done
+for file in "$qa_agent" "$qa_mirror"; do
+  require_terms "$file" \
+    '紧急源单 owner 新山（521957）' \
+    '非紧急源单 owner 过载（484483）'
+done
+
+# D/G source-only and typed-DM replaces the old dual-owner carrier gate.
+dg_files=(
+  "$routing" "$route_mirror"
+  "$main_skill" "$main_skill_mirror"
+  "$team_roster" "$team_roster_mirror"
+  "$rd_agent" "$rd_mirror"
+  "$repo_root/AGENTS.md" "$repo_root/CLAUDE.md"
+  "$persona"
+)
+for file in "${dg_files[@]}"; do
+  require_terms "$file" \
+    'D/G source-only + D route DM 契约' \
+    'D/E/G' \
+    '528766' \
+    '历史 relation'
+  forbid_terms "$file" \
     'G / 紧急非-datasource D 的双 owner 契约' \
-    '源客户主单 assignee 保持新山（521957）' \
     '528766 研发关联单 assignee 固定过载（484483）' \
-    'healthy existing claim 不抢占'; do
-    grep -Fq "$phrase" "$file"
-  done
+    'route-finalizer phase' \
+    'E → D-临钧'
 done
-
-for file in \
-  "$repo_root/loops/aone-triage.md" \
-  "$repo_root/loops/persona-collab.md" \
-  "$pd_agent" "$pd_agent_mirror" \
-  "$rd_agent" "$rd_agent_mirror" \
-  "$qa_agent" "$qa_agent_mirror" \
-  "$repo_root/CLAUDE.md" "$repo_root/AGENTS.md"; do
-  grep -Fq '纯 datasource source-only 契约' "$file"
-  grep -Fq 'G / 紧急非-datasource D 的双 owner 契约' "$file"
+for file in "$qa_agent" "$qa_mirror"; do
+  require_terms "$file" \
+    'D/G source-only 验收契约' \
+    '新山（521957）' \
+    '过载（484483）' \
+    '临钧' \
+    'QA 不写 owner/通知' \
+    '不检查 528766 carrier' \
+    '历史 relation'
+  forbid_terms "$file" \
+    'G / 紧急非-datasource D 的双 owner 契约' \
+    'route-finalizer phase' \
+    'E → D-临钧'
 done
+require_terms "$routing" \
+  'python3 -m bridge.terraform_route_notify' \
+  'terraform-route:d:<subtype>:owner:<staffId>' \
+  'durable pending 不阻断' \
+  'G Provider 全局改造源单 assignee=新山（521957）' \
+  '不发送新增 route DM'
+require_terms "$runtime" \
+  'D/G source-only runtime hard gate' \
+  'python3 -m bridge.terraform_route_notify' \
+  'terraform-route:d:<subtype>:owner:<staffId>' \
+  '通过 cloudspec_pre_verify 后在同一源单上下文继续 Provider'
+forbid_terms "$runtime" \
+  'E → D-临钧' \
+  'route-finalizer phase'
 
-for phrase in \
-  '源工单禁止模型直接 claim/wrap/release/评论' \
-  '源工单禁令不约束按既有契约由内部链承接的 528766' \
-  'pure datasource 的 528766 禁令优先' \
-  '非紧急非-datasource D 与 I 的 Provider docs 紧急兜底腿' \
-  '528766 由 RD finalizer claim/bookend' \
-  '源工单仍由 executor bookend'; do
-  grep -Fq "$phrase" "$persona_collab"
-done
-if grep -Fq '控制面 Task 的模型 run 不执行 `claim.sh`、`wrap.sh`、`release` 或直接评论' \
-     "$persona_collab" ||
-   grep -Fq 'G/紧急普通 D 的 528766 是唯一例外' "$persona_collab"; then
-  echo 'zhenyuan_self_close_rules_test: blanket model-run bookend ban remains' >&2
-  exit 1
-fi
+# H tag merge protection remains active and independent.
+require_terms "$routing" \
+  'H 分支标签合并保护' \
+  '`.fields[].tag.value`' \
+  'merge existing tag IDs' \
+  '保留 `jarvis-idle`' \
+  '保留全部业务 tag' \
+  '禁止裸名称覆盖' \
+  'H NPE 兜底' \
+  '夏节（401498）'
 
-for file in "$main_skill" "$routing" "$repo_root/CLAUDE.md"; do
-  grep -Fq '源工单禁令不约束按既有契约由内部链承接的 528766' "$file"
-  grep -Fq 'pure datasource 的 528766 禁令优先' "$file"
-  grep -Fq '非紧急非-datasource D 与 I 的 Provider docs 紧急兜底腿' "$file"
-  if grep -Fq 'G/紧急普通 D 的 528766 是唯一例外' "$file"; then
-    echo "zhenyuan_self_close_rules_test: existing internal 528766 path regressed in $file" >&2
-    exit 1
-  fi
-done
-
-for file in \
-  "$routing" \
-  "$main_skill" \
-  "$verification" \
-  "$repo_root/.claude/skills/provider-resource-dev/SKILL.md"; do
-  for stale in \
-    'D-新山' \
-    '紧急普通 D（纯 datasource；或' \
-    'G/紧急普通 D hard gate 只新增双 owner'; do
-    if grep -Fq "$stale" "$file"; then
-      echo "zhenyuan_self_close_rules_test: stale datasource carrier rule remains in $file: $stale" >&2
-      exit 1
-    fi
-  done
+# Acube page is non-executable history only; I/H must use active skills.
+for file in "$acube" "$acube_mirror"; do
+  require_terms "$file" \
+    '历史只读' \
+    'D/E/G 禁令' \
+    '历史 relation/PR 防重取证' \
+    'I/H 边界' \
+    '不是 I/H 的执行入口'
+  forbid_terms "$file" \
+    'POST /' \
+    '```bash' \
+    'curl ' \
+    'relation add ' \
+    'workitem update ' \
+    '--assignee '
 done
 
 echo "zhenyuan_self_close_rules_test: PASS"

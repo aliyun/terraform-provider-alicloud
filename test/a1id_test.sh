@@ -802,7 +802,7 @@ JARVIS_CONTROL_PLANE_BASE_URL="http://127.0.0.1:1" \
 JARVIS_HEADLESS_REMOTE_REGISTER_TIMEOUT="0.05" \
     /usr/bin/python3 -I "$manager" register-headless \
     --session-id "a1id-lineage-$$" --pid "$$" --client claude \
-    --policy-revision terraform-rd-single-writer-v4 \
+    --policy-revision terraform-rd-single-writer-v5 \
     --aone-write-policy post-pr-read-only \
     --headless-kind pr_comment_reply --aone-id 123 --project-id 528766 \
     --claim-attempt-id a1id-lineage-attempt \
@@ -858,7 +858,7 @@ JARVIS_CONTROL_PLANE_BASE_URL="http://127.0.0.1:1" \
 JARVIS_HEADLESS_REMOTE_REGISTER_TIMEOUT="0.05" \
     /usr/bin/python3 -I "$manager" register-headless \
     --session-id "a1id-ended-$$" --pid "$ended_pid" --client claude \
-    --policy-revision terraform-rd-single-writer-v4 \
+    --policy-revision terraform-rd-single-writer-v5 \
     --aone-write-policy post-pr-read-only \
     --headless-kind pr_ci_fix --aone-id 123 --project-id 528766 \
     --claim-attempt-id a1id-ended-attempt \

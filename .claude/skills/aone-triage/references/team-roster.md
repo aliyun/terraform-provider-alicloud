@@ -27,14 +27,14 @@
 
 | 场景 | 路由/承接关系 | 工号/项目 |
 |---|---|---|
-| **Provider 侧全局改造**(非单一产品/资源:region 白名单/框架 utility/公共 endpoint/provider.go 基础/SDK bump) | 源单新山；528766 过载并由 TerraformRD 内部开发 | 521957 / 484483 |
+| **Provider 侧全局改造 G**(非单一产品/资源:region 白名单/框架 utility/公共 endpoint/provider.go 基础/SDK bump) | 源单新山；TerraformRD 源单直办，不建 528766、不发 route DM | 521957 |
 | **pure datasource source-only（紧急）**：仅 data source 查询/过滤/分页/输出/Read | 源单新山；Jarvis/TerraformRD 在源单直接开发，不建 528766 | 521957 |
 | **pure datasource source-only（非紧急）**：仅 data source 查询/过滤/分页/输出/Read | 源单过载；Jarvis/TerraformRD 在源单直接开发，不建 528766 | 484483 |
 | **CloudSpec 文档文本 metadata（I）**：resource/property/operation description、字段解释、NOTE、枚举文案，且不改变字段集合/类型/约束/CRUD | 念依（2169561 submit_only） | 373108 |
-| **CloudSpec 结构 metadata（E）**：资源未定义、字段集合/类型/约束/CRUD/映射不满足诉求；原主单修到 pre Meta 收敛后强制 **E → D-临钧** | open-jarvis → 临钧 | 原主单内部执行 → 429768 |
-| 与镇元不相关 + 资源代码由生成器产出(修复=acube 重跑生成器,管道不变) | 临钧 | 429768 |
-| **与镇元不相关**(CloudSpec 结构 OK 但 provider 侧手写 resource 问题；文档场景仅限 CloudSpec 源正确、Provider 本地生成/展示偏差)且**紧急** | 源单新山；528766 过载并由 TerraformRD 内部开发 | 521957 / 484483 |
-| 与镇元不相关(同上)且**不紧急**(默认兜底) | 过载；528766 沿用内部开发 | 484483 |
+| **CloudSpec 结构 metadata（E）**：资源未定义、字段集合/类型/约束/CRUD/映射不满足诉求 | 原主单修到 pre Meta 收敛，pre QA 后源单继续 Provider dev/CI/远程 ACC/PR | 429768（生成/发布 owner） |
+| D 生成/发布腿（含 E pre 收敛后） | 源单临钧；TerraformRD 源单直办，不建 528766；finalizer enqueue generated DM | 429768 |
+| **D 手写 resource 紧急**（含 CloudSpec 源正确的 Provider 本地文档偏差） | 源单新山；TerraformRD 源单直办，不建 528766；finalizer enqueue handwritten-urgent DM | 521957 |
+| **D 手写 resource 非紧急**（默认兜底） | 源单过载；TerraformRD 源单直办，不建 528766；finalizer enqueue handwritten-normal DM | 484483 |
 | **NPE 兜底**(以上所有分支均未匹配 / 跨多产品无单一负责人 / 分诊模糊超出团队职责)+ 打标签 `jarvis-npe` | 夏节 | 401498 |
 
 ### 纯 datasource source-only 契约
@@ -50,26 +50,26 @@
   bridge executor 独占源单 claim/唯一回复/tag/release/finish。
 - CI pending/fail 或 QA fail 均回 RD 修复，不得标为 blocked；
   open PR + QA pass 时源单 release，不 finish。
-- G 与所有非-datasource D 保留 528766；I/E/D-临钧/A/F/H 不变。
+- D/E/G 同样严禁 528766 承载；I/H/pure datasource/A/F 保持原边界。
 
-### G / 紧急非-datasource D 的双 owner 契约
+### D/G source-only + D route DM 契约
 
-- **源客户主单 assignee 保持新山（521957）**；**528766 研发关联单 assignee 固定过载（484483）**。
-  Jarvis/TerraformRD 对无 healthy claim 的研发单执行 claim 并尝试修复，不把研发工作交给新山等待。
-- 同题单优先复用：**同题 528766 已指派新山时原地复用**；无 healthy claim 时先
-  fail-closed claim，成功后才幂等改派过载并补 relation，禁止重复 create。
-  **healthy existing claim 不抢占**，不在另一健康 run 上并发改派或重复 claim。
-- relation/assignee/status 只是路由物化；无 PR/CI/QA 完成信号仍继续 RD。build/test/CI 或 QA
-  失败留在 RD ↔ QA 修复闭环；能力缺失/重试耗尽才 blocked/SUSPENDED，保持双 owner 且不得 finish。
-- **D-临钧/A/F/H/非紧急非-datasource D 边界不变**；I 仍到念依，E 仍完成 pre 后 E → D-临钧。
+- D 手写紧急/非紧急/生成发布源单 owner 分别为新山（521957）/过载（484483）/临钧（429768）；
+  G 源单 owner 新山（521957）。
+- D/E/G 都由 Jarvis/TerraformRD 源单直办，严禁对 528766 执行任何承载动作；历史 relation
+  只读，不构成开发、完成或 blocker 门。
+- D finalizer 先同步源单 owner/status，再通过 `bridge.terraform_route_notify` enqueue
+  subtype DM，最后交 AONE_RESULT；G 不发新增 route DM。不得因路由/通知/relation 观察等待。
+- open PR + QA pass 时源单 release 不 finish；正式发布仍为人工硬门。I/H/pure datasource/A/F
+  保持原边界。
 
 **I/E 路由契约**:
 - I 创建或复用 2169561 并指派念依；Provider 公开 docs 同时错误时独立补 528766 紧急兜底腿。
   两池分池防重，一个池已有 relation 不能压掉另一个池的缺失补建。
 - E 的 PD 返回 `requested_external_actions: []`、`next=terraform-rd/dev`；RD 使用
   `cloudspec-amp-workflow` 与 IDL/resource/operation/build/norm skills修到 pre Meta 收敛。
-- E pre 未收敛不得触发 Acube；收敛后必须 E → D-临钧，经 `createBuildTaskV2` 创建或复用
-  528766 并指派临钧（429768）。E 不直接做 Provider PR/CI/ACC，也不直接 release/idle。
+- E pre 未收敛不得开始 Provider 生成/开发；收敛并通过 pre QA 后回 RD，在源单上下文继续
+  Provider dev/CI/PR，再交 QA 远程 ACC。不触发 Acube/528766。
 - PD/QA 不外写；terraform-rd finalizer 是 downstream single-writer，负责 I/E 路由动作与
   下游副作用；executor 只负责原主单 bookend。AMP 登录、SSH 或仓库
   权限失败返回 `missing_capability` / `blocked`；不得回退 2165097。

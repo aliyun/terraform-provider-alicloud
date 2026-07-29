@@ -32,7 +32,7 @@ JARVIS_A1_IDENTITY=terraform-rd bash bootstrap/wrap.sh done \
 读单，抽取真实诉求、产品、资源、字段、API、优先级、DDL 与验收目标
 │
 ├─ Provider 全局改造（region 白名单、公共 endpoint、provider.go、SDK 等）
-│  └─ 分支 G：源单保持新山，528766 固定过载，由内部 RD 开发
+│  └─ 分支 G：源单给新山，Jarvis/TerraformRD 源单直办，不发 route DM
 │
 ├─ 产品命中专属维护名单
 │  └─ 分支 A：直接指派专属维护人，不查 CloudSpec，不建共享研发单
@@ -54,14 +54,14 @@ JARVIS_A1_IDENTITY=terraform-rd bash bootstrap/wrap.sh done \
       │
       ├─ CloudSpec 结构 OK（三条件全满足）
       │  └─ 缺口在 Provider
-      │     ├─ 生成器产出 → 分支 D-临钧（Acube 任务自动建研发单）
+      │     ├─ 生成器产出 → 分支 D-generated：源单给临钧 + RD 主动开发
       │     └─ 手写实现问题，或 Provider 本地文档生成/展示偏差
-      │        → 分支 D（普通 Provider 研发路由）
+      │        → 分支 D：紧急源单新山、非紧急源单过载 + RD 主动开发
       │
       └─ CloudSpec 结构 NOT OK（任一条件不满足）
          └─ 分支 E：结构 metadata 原主单自闭环
-            ├─ 字段集合/类型/约束/CRUD/映射修到 pre Meta 收敛
-            └─ 强制 E → D-临钧，由 Acube 创建或复用 528766
+            ├─ 字段集合/类型/约束/CRUD/映射修到 pre Meta 收敛并通过 pre QA
+            └─ 同一源单上下文继续 Provider dev/CI/远程 ACC/PR
 ```
 
 以上都无法定位且职责边界模糊时才走分支 H（NPE 分诊兜底），不能把“需要查证”当 NPE。
@@ -86,7 +86,7 @@ downstream `single-writer` 执行 create/relation/assign；executor 只负责原
 - **一个池已有 relation 不能抑制另一个池的缺失补建**，也不能把两个池合并成一张单；
 - 每条 relation 只写一次；已有正确关联单直接复用，不重复 create、改派或阶段回复。
 
-I 不触发 CloudSpec 原主单结构自闭环，也不触发 E → D-临钧；公开 Provider docs 没有错误时
+I 不触发 CloudSpec 原主单结构自闭环，也不触发 E 的 Provider 开发腿；公开 Provider docs 没有错误时
 不得为了“留档”创建 528766。
 
 ## CloudSpec 结构 OK 判定
@@ -131,27 +131,23 @@ PD evidence 至少包含 OpenAPI、初始 pre Meta、Provider 源码/文档、�
    `aliyun cspec check --name <ResourceName>`，用 `cloudspec-norm-check-fix` 收敛增量。
 5. 提交并推送 CloudSpec feature 分支，执行 `amp publish pre --dry-run`；通过后执行
    `amp publish pre`，轮询 pre Meta 直到字段集合、类型、约束、CRUD 与映射收敛。
-6. **pre 未收敛不得触发 Acube**。pre Meta 收敛后强制执行 **E → D-临钧**，进入
-   [acube-createBuildTaskV2-workflow.md](./acube-createBuildTaskV2-workflow.md)：
-   已有正确 relation/taskId/aoneId 时只查询/复用；否则由 single-writer 调用一次
-   `createBuildTaskV2`，让 Acube 自动创建 528766 并指派临钧（429768）。
-7. **不得由 E 直接执行 Provider PR/CI/ACC**，也不得在 E 完成后直接 release/idle。只有拿到
-   D-临钧的 created/reused 回执并完成分池 relation/源单同步后，finalizer 才能聚合本轮并
-   release；Acube 返回不确定时保留 taskId，按 D-临钧契约 blocked，绝不手工双建。
+6. pre Meta 收敛后返回 `next=terraform-qa/cloudspec_pre_verify`；QA 只验证
+   build/check/pre Meta，不运行远程 AccTest。
+7. pre QA pass 后返回 `next=terraform-rd/dev`，RD 在同一源单上下文继续 Provider
+   dev/CI/PR，再交 QA 运行远程 AccTest。**不调用 `createBuildTaskV2`，不创建/复用 528766**。
 
 AMP 登录、SSH、模型仓权限、CLI 或 pre 发布能力失败时返回 `missing_capability` / `blocked`，
 把缺口写入原主单；不得改派外部承接人、切个人身份或另建 Aone 绕过。`amp publish prod`、
 prod/online、master/main merge/push 与正式发布始终是人工硬门；不得 finish，也不得宣称
 正式发布。
 
-**只允许分支 E 进入此转换**。不得泛化到 A/F/G/H/I、纯 datasource 或纯手写 Provider-only bug；
-这些分支保持各自既有路由，不能因为“最终也可能生成代码”而误触发 Acube。
+**pre 未收敛或 pre QA 未通过不得开始 Provider 生成/开发**。prod/online、主干合并与正式
+发布始终是人工硬门。
 
 ## 团队分工速查
 
-普通 Provider 与 I/E 分工见 [team-roster.md](./team-roster.md)。E 在 pre 前保持原主单承接
-关系，由内部 PD→RD→QA→RD-finalizer 链处理；I 关联单指派念依，E 的 pre 收敛后由
-D-临钧的 Acube 关联单承接后续生成器工作。
+普通 Provider 与 I/E 分工见 [team-roster.md](./team-roster.md)。E 全程保持原主单承接关系，
+由内部 PD→RD→QA→RD→QA→RD-finalizer 链处理；I 关联单指派念依。
 
 ## Step 1 — 读单与前置分诊
 
@@ -229,60 +225,50 @@ PR 或团队成员给出命中根因的修复证据，复用现有结果，避�
   `retry exhausted`、明确外部依赖或人工决策才可 blocked/SUSPENDED。
 - **open PR + QA pass 时源单 release，不 finish**，等待人工合并；PR/CI/QA 未完成也不能因
   历史 relation 进入观察等待。
-- **G 与所有非-datasource D 保留 528766；I/E/D-临钧/A/F/H 不变**。
+- **D/E/G 同样严禁 528766 承载；I/H/pure datasource/A/F 保持原边界**。
 
-### G / 紧急非-datasource D 的双 owner 契约
+### D/G source-only + D route DM 契约
 
-本契约只覆盖 **G Provider 全局改造**，以及 CloudSpec 结构 OK 且 Provider 为手写 resource
-的**紧急非-datasource D**。这里的路由 owner 和研发 owner 必须分开；pure datasource 必须
-优先走上方 source-only：
-
-- **源客户主单 assignee 保持新山（521957）**，并按 workitemType 同步 per-type
-  progress_status；这只是客户侧责任映射。
-- **528766 研发关联单 assignee 固定过载（484483）**，由
-  **Jarvis/TerraformRD claim 并尝试修复**；不得写成“转交新山后等待”。
-- 写前先 point-read 同题 528766 与 claim lease。**healthy existing claim 不抢占**：已有
-  健康 claim 时不改派、不重复 claim、不重复 create，由当前健康 RD run 继续；这不是把
-  relation 或 assignee 当作完成，也不是另起一轮并发开发。
-- 没有 healthy claim 时，**同题 528766 已指派新山时原地复用**。同一 terraform-rd Task
-  必须先进入 route-finalizer phase：先尝试 claim 既有研发单，claim 成功后才**幂等改派过载**
-  并补齐缺失 relation；claim 失败立即停止，禁止 relation/update/wrap，**禁止重复 create**。
-  只有确实不存在同题 528766 时，才创建一次并直接指派过载；新建后的 claim 同样 fail-closed。
-  源单与研发单字段均只在 point-read 判定 drift 时更新，禁止无差异写。
-- **relation/源单 assignee/status 齐全只表示路由物化完成**；
-  **无 PR/CI/QA 完成信号必须继续 RD**。RD 运行 Provider TDD、build/test、PR CI，CI
-  全绿后交 QA；QA fail 回 RD 修复并重验。
-- **build/test/CI 失败**只走内部 **RD ↔ QA** 修复闭环，**不得转交新山**。**只有已有 PR 待人工合并、明确外部依赖或人工决策**，
-  才允许当前 run 进入 observe/release 或 blocked/SUSPENDED。
-- `missing_capability / retry exhausted` 必须进入 **blocked / SUSPENDED**：**源单保持新山**、
-  **研发单保持过载**，保留证据和下一步，**不得 finish**，也不得用改派新山冒充收敛。
-- 所有 route materialization、必要改派、relation 与 claim 都由同一 terraform-rd Task 的
-  route-finalizer phase 幂等执行；claim 成功后才切 dev，PD/QA 不外写。源工单由 bridge
-  executor bookend；实际 claim 的 528766 由 RD finalizer 独立 claim/bookend。
-  **源单与实际 claim 的 528766 各自最多一次聚合 bookend**；未被本 run claim 的健康研发单
-  不得写 bookend。**PR 未合并只 release**，不 finish。
-- **D-临钧/A/F/H/非紧急非-datasource D 边界不变**；I 仍指派念依，E 仍在原主单完成 CloudSpec pre
-  收敛后 E → D-临钧。不得把本契约泛化为对这些分支的内部抢单。
+- D 手写 resource 紧急源单 assignee=新山（521957）；手写非紧急 assignee=过载（484483）；
+  生成/发布腿（含 E pre 收敛后）assignee=临钧（429768）。
+- G Provider 全局改造源单 assignee=新山（521957），不发送新增 route DM。
+- D/E/G 均由 Jarvis/TerraformRD 在源单上下文主动开发，严禁
+  **create/reuse-as-carrier/reassign/relation/claim/wrap/release/finish 528766**。
+- 历史 relation 只读保留：不删、不迁、不关、不改派，不是开发、完成或 blocker 门。
+  不得因 owner/status、通知或历史 relation 观察等待；没有 PR/CI/QA 完成信号继续 RD。
+- D 的 downstream single-writer 是 RD finalizer。写顺序固定：先幂等同步源单 assignee +
+  per-type progress_status，再调用
+  `python3 -m bridge.terraform_route_notify --ticket <id> --subtype
+  <handwritten-urgent|handwritten-normal|generated>`，最后才交 `AONE_RESULT`。禁止模型裸调
+  `notify-dingtalk.sh`。
+- D 通知 event key 固定 `terraform-route:d:<subtype>:owner:<staffId>`；ticket 参与 ledger id。
+  同 ticket/subtype/owner 重试只一条，owner/subtype 变化产生新事件。durable pending 不阻断
+  开发；posted/suppressed 不重发，post_uncertain 保持同一 receipt；ledger 无法持久化不得
+  宣称通知完成，必须在最终聚合中如实说明。
+- build/test/CI 或 QA fail 都回 RD 修复重验。open PR + QA pass 时源单 release，不 finish；
+  prod/online、master/main merge/push 与正式发布仍是人工硬门。
+- 反向保护：I 仍创建/复用 2169561→念依，public docs 同错时保留独立 528766→过载；
+  H 仍 528766→夏节；pure datasource、A/F 保持原边界。
 
 ### Existing-related 状态机
 
-PR/源码前扫只能避免“同题代码已经存在”的重复工作，不能替代 Aone relation 状态机。完成
-写前 Gate 后，必须横向检查源单的 relation、目标池、关联单状态、最后实质进展、assignee
-activity 与已有 Acube task，再决定是否创建或触发：
+PR/源码前扫用于避免重复代码工作。完成写前 Gate 后，必须 point-read 源单 route 字段与历史
+relation，但 D/E/G 的 relation 永远只读：
 
 | 当前事实 | 动作 |
 |---|---|
 | pure datasource 新工单或源单映射字段漂移 | 只幂等同步源单 assignee + per-type progress_status；紧急新山、非紧急过载，随后在源单直接开发；不 create/reuse/relation/claim 528766 |
 | pure datasource 已有任意历史 relation | 只读保留，不删、不迁、不关、不改派；不把它当 carrier、完成或 blocker 门。可读取已有 PR 防重复，但继续 source-only |
-| 新工单，或前次路由错误（非 pure datasource） | 分支 A 只同步源单；I 按 2169561/可选 528766 分池判断；D/G/H 仅在正确目标池没有关联单时创建。错误的历史关联单不迁移、不关闭，但也不能阻止补齐正确目标池 |
+| D/G 新工单或源单 route 字段漂移 | 按 subtype 幂等同步源单 assignee + per-type progress_status；随后继续源单开发 |
+| D/G 已有任意历史 relation | 只读保留；不 create/reuse/reassign/relation/claim/bookend，不把 relation 当完成或 blocker |
+| D route owner/status 同步完成 | finalizer 调类型化入口 enqueue DM；durable pending 可继续，持久化失败只报告“通知未完成” |
+| G route owner/status 同步完成 | 不发送新增 route DM；直接继续开发 |
+| E pre QA pass | 回 RD 在同一源单上下文继续 Provider dev/CI/PR，再交 QA 远程 ACC；不触发 Acube |
+| 新工单，或前次路由错误 | 分支 A 只同步源单；I 按 2169561/可选 528766 分池判断；H 仅在 528766 缺失时创建。错误历史 relation 不迁移、不关闭 |
 | 路由为 I | 2169561 主腿和可选 528766 紧急腿分别 point-read；每池已有正确 relation 就复用，只补该池缺口 |
-| 路由正确，但 **D/G/H 目标池缺失** | 补建一次 528766 关联单；源单 assignee/status 已正确时保持不动 |
-| 路由正确、目标池 relation 齐全，但源单 assignee 或 per-type status 漏同步/漂移 | **relation 齐全但源单映射字段漂移**：只幂等修复 assignee/status；不 create、不触发 Acube、不重复阶段回复。G/紧急非-datasource D 修复映射后仍按双 owner 契约继续 RD；其它分支按自身边界处理 |
-| G/紧急非-datasource D 已有同题 528766，但研发单仍指派新山且无 healthy claim | 原地复用；先 fail-closed claim，成功后才幂等改派过载、补 relation；禁止重复 create |
-| G/紧急非-datasource D relation/assignee/status 齐全，但无 PR/CI/QA 完成信号 | 路由只完成物化；继续 RD 开发、CI 与 QA，不进入观察等待 |
-| G/紧急非-datasource D 已有 healthy claim | 不抢占、不重复派发；由该健康 RD run 继续，当前重复 run 静默退出，不改变 Aone |
+| 路由为 H 且 528766 缺失 | 补建一次并指派夏节（401498），按 H 标签合并保护同步源单 |
 | 已有 PR 待人工合并，或存在明确外部依赖/人工决策 | 前者聚合后 release，后者 blocked/SUSPENDED 后 release；均不得 finish |
-| 由人类或外部链承接的既有边界分支，目标关系齐全且距上次实质进展不足 8 天 | **观察等待**：不评论、不改状态、不改派、不 create、不触发 Acube |
+| 由人类或外部链承接的 I/H/A/F 分支，目标关系齐全且距上次实质进展不足 8 天 | **观察等待**：不评论、不改状态、不改派、不 create |
 | 由人类或外部链承接的既有边界分支，目标关系齐全且 **距上次实质进展 ≥8 天** | 由 bridge 的稳定 epoch 走固定 Aone @ + 钉钉双通道催办；不启动新的 PD/RD/QA run |
 | 承接方已有结论，但仍缺客户或云产品材料 | **追料/补料**：finalizer 唯一回复提出材料清单并 `release/idle`，不新建关联单 |
 | 关联单或承接方已有可复核终结论 | **终局收敛**：按“非 PR 终局结果表”更新源单；不新建关联单、不改到共享兜底 assignee |
@@ -293,52 +279,26 @@ activity 与已有 Acube task，再决定是否创建或触发：
   528766。
 - I 的正确主池是 2169561；只有 Provider 公开 docs 同时错误才有 528766 紧急腿。两池 relation
   分开判定，禁止因一池已存在而跳过另一池，也禁止在公开 docs 正确时补 528766。
-- pure datasource 没有“正确目标池”；任何 528766 relation 都只能只读保留，不能触发复用、
-  改派、relation 修复、claim 或 bookend，也不抑制源单开发。
-- **非-datasource D/G/H** 的正确目标池是 528766；D-临钧的 528766 单由 Acube 创建。relation 中已经有正确
-  目标池，或评论/activity 已有尚未回填 relation 的同一 Acube `taskId/aoneId` 时，禁止再次
-  create，尤其**禁止重复触发 `createBuildTaskV2`**，也禁止重复阶段回复。已有正确 relation
-  时仍须对照 roster 与 `progress_status[workitemType]` 检查源单；字段漂移只修差异字段，
-  映射字段一致时也禁止重复改派或重复回复。
-- 上一条的“已有正确 relation 不重复改派”不覆盖 G/紧急非-datasource D 的历史错 owner：若同题
-  528766 仍指派新山且无 healthy claim，必须原地复用并幂等改派过载。route 字段齐全也不等于
-  PR/CI/QA 完成，不得据此观察或收尾。
-- **缺关联单优先于 8 天催办**：先补齐一次正确目标池并产生新的 assignee/activity epoch，
-  不能一边漏建研发单一边只催进度。
+- pure datasource 与 D/E/G 都没有“正确目标池”；任何 528766 relation 都只能只读保留，不能
+  触发复用、改派、relation 修复、claim 或 bookend，也不抑制源单开发。
+- H 的正确目标池仍是 528766；I 仍按 2169561/可选 528766 分池防重。
+- D route notification 只通过持久化 ledger 类型化入口；同 key 不重发，不能由模型裸调脚本。
 - 终结论优先于追料；只有结论本身仍依赖客户材料时才进入追料。无法确认 relation 是否属于
   当前诉求时，宁可观察或 blocked，请求人工核对，不能猜测后重复建单。
 - “实质进展”只包括技术/验证结论、明确 blocker 与下一步、排期承诺，以及 PR/MR/commit/
   版本证据；claim/release、handoff、纯 @、pending/收到等 canned 不计入 8 天 anchor。
 
-### 非-datasource D/G/H 创建与源单同步契约
+### D/G 源单同步与 H 反向保护
 
-非-datasource D/G/H 需要 528766 关联单时，finalizer 必须先通过上述状态机确认目标池确实缺失，再执行一次
-create + relation。创建参数保持原客户单语义：
-
-- `--project 528766`。
-- **category 跟随源单 workitemType**：需求问题/产品类需求 → `req`，功能缺陷/线上问题/
-  性能瓶颈 → `bug`，任务 → `task`；不得为方便统一写成 task。
-- **缺陷类型强制紧急**；非缺陷复制源单 priority。
-- 研发单截止日期为 **源单 DDL - 2 天**，并且**不得早于 tomorrow**；源单
-  **无 DDL 时 today + 3 天**。源单自身 priority 与 DDL 不改。
-- 528766 的 Task/Req 必带 `计划开始日期`、`计划截止日期`、`实际工时=0`；Bug 除三项外
-  还必须带 `Terraform需求类型`，默认值和合法枚举以 Aone field options 为准。
-- create 成功后只调用一次 `relation add <源单> relate:<研发单>`；relation 自动双向，禁止
-  反向再调一次。
-
-新建、Acube 返回关联单，或 Existing-related 状态机发现历史映射字段漂移时，必须按下表分别
-处理源单 owner 与 528766 研发 owner；已有 relation 时只修差异字段，不重复 create、Acube
-或阶段回复：
-
-| 分支 | 源单 assignee | 528766 assignee | 内部动作 |
-|---|---|---|---|
-| pure datasource，紧急 | 新山（521957） | N/A（禁止承载） | TerraformRD 在源单直接开发 |
-| pure datasource，非紧急 | 过载（484483） | N/A（禁止承载） | TerraformRD 在源单直接开发 |
-| D-手写 resource，紧急 | 新山（521957） | 过载（484483） | 无 healthy claim 时 TerraformRD claim 并开发 |
-| D-手写 resource，非紧急 | 过载（484483） | 过载（484483） | 沿用既有内部开发 |
-| D-临钧生成器 | 临钧（429768） | 临钧（429768） | Acube 外部生成链，不抢 claim |
-| G Provider 全局改造 | 新山（521957） | 过载（484483） | 无 healthy claim 时 TerraformRD claim 并开发 |
-| H NPE 兜底 | 夏节（401498） | 夏节（401498） | 保持既有人工边界 |
+| 分支 | 源单 assignee | 528766 | 内部动作 | route DM |
+|---|---|---|---|---|
+| pure datasource，紧急 | 新山（521957） | 禁止承载 | TerraformRD 源单直接开发 | 无 |
+| pure datasource，非紧急 | 过载（484483） | 禁止承载 | TerraformRD 源单直接开发 | 无 |
+| D 手写 resource，紧急 | 新山（521957） | 禁止承载 | TerraformRD 源单直接开发 | subtype=`handwritten-urgent` |
+| D 手写 resource，非紧急 | 过载（484483） | 禁止承载 | TerraformRD 源单直接开发 | subtype=`handwritten-normal` |
+| D 生成/发布（含 E pre 后） | 临钧（429768） | 禁止承载 | TerraformRD 源单直接开发 | subtype=`generated` |
+| G Provider 全局改造 | 新山（521957） | 禁止承载 | TerraformRD 源单直接开发 | 不发送 |
+| H NPE 兜底 | 夏节（401498） | 创建/复用并指派夏节 | 保持既有人工边界 | 原规则 |
 
 源单进度状态不得硬编码为同一个中文值；从 `config/pools.json` 的
 `.pools.tf_customer.progress_status[workitemType]` 解析并由 finalizer 与 assignee 同步写入：
@@ -350,36 +310,28 @@ create + relation。创建参数保持原客户单语义：
 
 未映射的 workitemType 必须 blocked 并查合法枚举，不能取 progress_status 的第一个值兜底。
 PD 只在 `requested_external_actions` 提案；无论是否由 executor 托管，terraform-rd finalizer
-是 downstream single-writer，负责合法分支的 create/relation/assign/Acube 与源单路由字段
-（assignee、progress_status）同步。pure datasource 的 RD route phase 只同步源单 assignee +
-per-type progress_status，bridge executor 独占其余源单 bookend。G/紧急非-datasource D 在开发 RD Task 内先切 route-finalizer phase，claim
-研发单成功后才切 dev；最终 finalizer 对该实际 claim 的 528766 写一次聚合 bookend。executor
-只负责原主单 bookend（claim、唯一回复、outcome status/tag、release/finish），不解析或重放
-downstream 动作；finalizer 完成动作后再返回 `AONE_RESULT`。独立 finalizer 仍使用
-terraform-rd 身份执行同样动作及源单唯一回复。
+是 downstream single-writer，负责合法 I/H create/relation/assign、源单路由字段同步与 D
+类型化 DM enqueue。executor 只负责原主单 bookend（claim、唯一回复、outcome
+status/tag、release/finish），不解析或重放 downstream 动作；finalizer 完成动作后再返回
+`AONE_RESULT`。独立 finalizer 仍使用 terraform-rd 身份执行同样动作及源单唯一回复。
 
 ### 分支 A — 专属维护名单
 
 只更新源单 assignee + 按 `config/pools.json` 当前 workitemType 对应的 progress_status，
 由 finalizer 聚合 @负责人；不建 tf_provider 关联单。专属名单见 team-roster。
 
-### 分支 D/G/H — 普通 Provider 研发路由
+### 分支 D/G — 源单 Provider 研发；H 保持关联单
 
-这些**非-datasource**分支保留既有 tf_provider(528766) 纪律，且不包含 I 或 E：
+D/G 不包含 I/H，且全程源单直办：
 
 - D：CloudSpec 结构三条件全满足且 Provider 手写实现有问题，或已证明
   **CloudSpec 文档源正确，Provider 本地文档生成/展示偏差**；
 - G：Provider 全局改造；
-- H：确实无法定位的 NPE 兜底，并打 `jarvis-npe`。
+- D 的生成/发布腿包括普通生成器产出与 E pre QA 通过后的 Provider 腿。
 
-普通研发单严格使用上方 category/priority/DDL/CFS 契约。G/紧急非-datasource D 即使源单挂新山，
-528766 也固定指派过载并由内部链 claim 开发；非紧急非-datasource D 继续由过载内部开发。
-D-临钧与 H 保持原承接边界。G/紧急非-datasource D 的开发 RD Task 先以 route-finalizer phase 负责建单/复用、
-必要改派、relation 与下游 claim，claim 成功后才切 dev；最终 finalizer 对该研发单做一次聚合
-bookend。executor 只做原主单 bookend。创建后只在字段 drift 时同步源单 assignee 与 per-type
-progress_status。
-I 的 text-only 文档 metadata、E 的结构 metadata 与 pure datasource source-only
-**不适用本段**，不得借普通 D 路由规避它们的专用边界。
+D/G 只在字段 drift 时同步源单 assignee 与 per-type progress_status；D 同步后 enqueue
+route DM，G 不发。随后继续 RD 开发、CI 与 QA。H 仍创建/复用 528766→夏节并打
+`jarvis-npe`。I 的 text-only metadata、E pre 阶段与 pure datasource 保持专用边界。
 
 ### H 分支标签合并保护
 
@@ -407,32 +359,16 @@ next:
   action: dev
 ```
 
-pre Meta 未收敛时不得调用 Acube。收敛后不能直接做 Provider PR/CI/ACC，也不能直接
-`release/idle`；必须按下节 **E → D-临钧** 创建或复用 Acube 528766 承接单。能力失败时
-finalizer 报 `missing_capability` / `blocked`，不得 finish。
+pre Meta 未收敛时不得开始 Provider 生成/开发。收敛后先由 QA 执行
+`cloudspec_pre_verify`；pass 返回 RD，在同一源单上下文继续 Provider dev/CI/PR，再交 QA
+运行远程 AccTest。全链不调用 Acube `createBuildTaskV2`，不创建/复用/关联/claim/bookend
+528766。能力失败时 finalizer 报 `missing_capability` / `blocked`，不得 finish。
 
-### 分支 D-临钧 — 生成器产出
+### 分支 D-generated — 生成/发布腿
 
-当普通路由确认 CloudSpec 已对齐且 Provider 资源是生成器产出，或分支 E 已取得 pre Meta
-收敛回执时，执行入口固定为
-[acube-createBuildTaskV2-workflow.md](./acube-createBuildTaskV2-workflow.md)。接口内部创建
-528766 研发单、指派临钧并启动生成/PR；Jarvis 不同时手动建单。
-
-执行边界：
-
-1. PD 只读确认普通“生成器产出”路径或结构分支 E，不调用 Acube；QA 对 E 只验
-   build/check/pre Meta 是否收敛，不替 E 直接做 Provider ACC。
-2. RD finalizer 在写前 Gate 和 Existing-related 状态机再次确认：没有正确的 528766 relation，
-   也没有已有 `taskId/aoneId`，才允许调用一次 `createBuildTaskV2`。
-3. 调用后使用 `queryAoneByTaskId` 轮询，最多 **60 秒**；拿到 aoneId 后只做一次 relation，
-   同步源单 assignee=临钧以及 per-type progress_status，并把 taskId/aoneId 放入唯一聚合回复。
-4. 60 秒内拿不到 aoneId 时返回 blocked/suspend，保留 taskId 供下轮查询；禁止回退手动 create，
-   因为任务可能已成功而 Aone 结果尚未可见。
-5. 无论是否由 executor 托管，terraform-rd finalizer 是 downstream single-writer，执行
-   Acube、relation 与源单路由字段同步。executor 只负责原主单 bookend，不重放这些动作；
-   finalizer 完成动作后返回 `AONE_RESULT`，且托管 run 内不得自行 `wrap.sh`。独立 finalizer
-   执行相同 downstream 动作，并负责唯一 `wrap.sh done`。
-6. E 之外的 A/F/G/H/I、纯 datasource 与纯手写 Provider-only bug 不因本节存在而改变原路由。
+普通生成器产出或 E pre QA pass 后都在源单上下文执行：源单 assignee=临钧（429768），
+finalizer 同步 route 字段后用 subtype=`generated` enqueue D route DM；Jarvis/TerraformRD
+继续 Provider dev/CI/PR，QA 运行远程 AccTest。历史 relation 只读，不触发 Acube 或 528766。
 
 ### 分支 F — 上游 API 缺口
 
@@ -501,7 +437,7 @@ CloudSpec 结构三条件已对齐；如为文档问题，已证明源头正确�
 ### 证据
 - CloudSpec：资源、properties、CoverageScore
 - Provider：文件、函数、行号
-- 研发单/Acube task：<链接>
+- 源单 route owner / D route DM：<owner、subtype、ledger state；G 写 N/A>
 
 ### 下一步
 <承接与验证安排>
@@ -523,24 +459,25 @@ CloudSpec 结构三条件已对齐；如为文档问题，已证明源头正确�
 等待文档源修复；公开文档紧急腿不能替代 2169561 主腿。正式发布与主干合并仍是人工硬门。
 ```
 
-### 模板 C2 — CloudSpec 结构 metadata（E → D-临钧）
+### 模板 C2 — CloudSpec 结构 metadata（E → 源单 Provider dev）
 
 ```markdown
 ### 结论
-<字段集合/类型/约束/CRUD/映射> 已在当前主单内完成 CloudSpec pre 修复，并转入 D-临钧。
+<字段集合/类型/约束/CRUD/映射> 已在当前主单内完成 CloudSpec pre 修复与 pre QA，
+并在同一源单上下文继续 Provider 开发。
 
 ### 证据
 - AMP feature 分支与 MR/CR：<链接>
 - build/check：<结果>
 - pre dry-run/发布与 Meta 收敛：<结果>
-- Acube：<created/reused、taskId/aoneId、528766 relation、临钧>
-- Provider PR/CI/ACC：由 D-临钧后续生成器链路处理，不由 E 直接执行
+- 源单 route：<临钧 429768、generated DM ledger state>
+- Provider PR/CI/ACC：<PR、CI、远程 AccTest 结果>
 
 ### 未决硬门
 <prod/online、master/main merge/push、正式发布或 blocker>
 
 ### 下一步
-只有 D-临钧 handoff 回执已确认才 release/idle；pre 不代表正式发布，不执行 finish。
+open PR + QA pass 时 release/idle；pre 不代表正式发布，不执行 finish。
 ```
 
 ### 模板 D — 8 天无实质进展
@@ -583,16 +520,12 @@ assignee 保持最后处理人，本轮 release/idle；材料到齐后重新进�
 
 - 控制面 executor 托管时，源工单只返回 `AONE_RESULT`，模型不对源工单调用
   claim/wrap/release。
-- pure datasource 由 bridge executor 独占源单 claim/唯一回复/tag/release/finish；RD route
-  phase 只同步源单 owner/status，严禁对 528766 执行任何承载动作。
-- 源工单禁令不约束按既有契约由内部链承接的 528766，但 pure datasource 的 528766 禁令优先。
-  非紧急非-datasource D 与 I 的 Provider docs 紧急兜底腿仍按原路径 claim/bookend；
-  G/紧急非-datasource D 由同一 terraform-rd Task 的
-  route-finalizer phase 先 fail-closed claim，最终 RD finalizer 对实际 claim 的研发单显式
-  使用 `JARVIS_A1_IDENTITY=terraform-rd` 做一次 done，再 release/finish；PR 未合并不得 finish。
+- pure datasource 与 D/E/G 由 bridge executor 独占源单 claim/唯一回复/tag/release/finish；
+  RD/finalizer 只按各分支同步 route 字段，D 另 enqueue route DM，严禁对 528766 执行承载动作。
+- I 的 Provider docs 紧急兜底腿与 H 的合法 528766 仍按原路径 claim/bookend；PR 未合并不得 finish。
 - 独立 finalizer 才对源工单显式使用 `JARVIS_A1_IDENTITY=terraform-rd` 做一次 done。
 - 普通 tf_provider 研发单的状态按 `config/pools.json`。
-- E 到 pre 后必须先取得 D-临钧 Acube created/reused 回执，不能从 E 直接 release/idle；
+- E 到 pre 后必须先过 cloudspec_pre_verify，再在源单上下文完成 Provider PR/CI/远程 ACC；
   prod/online、主干合并、正式发布与必要验收未完成前不得 finish。
 - PR/MR/CR 未合并时不得 finish；登记 pr-watch 等后续事件。
 
@@ -615,21 +548,20 @@ assignee 保持最后处理人，本轮 release/idle；材料到齐后重新进�
 - ❌ 把 text-only 文档 metadata 送进 E；正确路径是 I → 2169561 念依。
 - ❌ I 只开 528766 Provider 文档兜底，漏掉 2169561 主腿，或一池 relation 抑制另一池补建。
 - ❌ 把字段集合、类型、约束或 CRUD 变更伪装成 I；这些结构 metadata 必须走 E。
-- ❌ E pre 收敛后由 Jarvis 直接做 Provider PR/CI/ACC 或直接 release，漏掉 D-临钧 Acube。
-- ❌ pre Meta 未收敛就触发 Acube，或把 E → D-临钧泛化到 A/F/G/H/I、纯 datasource/
-  纯手写 Provider-only bug。
+- ❌ E pre 未通过 cloudspec_pre_verify 就开始 Provider 生成/开发。
+- ❌ E/D/G 触发 Acube 或创建/复用 528766；这些分支必须源单直办。
 - ❌ AMP 登录、SSH、模型仓权限失败后切个人身份或退回旧承接路径。
 - ❌ 在 master/main 直接编辑、merge 或 push。
 - ❌ build/check 未绿就发 pre，或 dry-run 失败后继续真发。
 - ❌ pre Meta 未收敛就运行生成器，或复用发布前缓存/生成物。
 - ❌ 把 `amp publish pre` 写成 prod/online 正式完成。
-- ❌ pre 成功就 finish；E 还必须先完成 D-临钧 handoff，随后才可 release/idle 等待人工硬门。
+- ❌ pre 成功就 finish；E 还必须完成 Provider PR/CI/远程 ACC，随后才可 release/idle 等待人工硬门。
 
 ### 普通 Provider 路由
 
 - ❌ 上游 API 缺口仍建 Provider 研发单。
 - ❌ 专属维护产品污染共享研发池。
-- ❌ Acube 已自动建单后再手动创建重复单。
+- ❌ D route DM 裸调 `notify-dingtalk.sh`，绕过持久化 ledger 与稳定 receipt。
 - ❌ I 的 528766 紧急兜底腿代替 2169561 文档质量主腿。
 
 ### CLI 与出站
@@ -638,4 +570,4 @@ assignee 保持最后处理人，本轮 release/idle；材料到齐后重新进�
 - ❌ relation add 调两次；Aone 单次即双向。
 - ❌ 评论贴裸 URL；必须使用 markdown link。
 - ❌ 公开产物带客户、Aone、实例、RequestId、内部人员或 AI 署名。
-- ❌ 主处理阶段直接 comment/notify；必须由最终 RD 单写者聚合。
+- ❌ 主处理阶段直接 comment/notify；D route DM 只能由最终 RD 单写者通过类型化 ledger 入口 enqueue。

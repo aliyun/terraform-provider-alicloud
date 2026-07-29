@@ -41,21 +41,21 @@ QA 按 source-only 验收；resource+datasource 混合、G 全局与手写 resou
 - CI pending/fail 或 QA fail 均回 RD 修复，`next=terraform-rd/fix`，不得标为 blocked。
 - open PR + QA pass 时源单 release，不 finish；源单 claim/唯一回复/tag/release 由 bridge
   executor 独占。
-- G 与所有非-datasource D 保留 528766；I/E/D-临钧/A/F/H 不变。
+- D/E/G 同样严禁 528766 承载；I/H/pure datasource/A/F 保持原边界。
 
-### G / 紧急非-datasource D 的双 owner 契约
+### D/G source-only 验收契约
 
-G Provider 全局改造，以及 CloudSpec 结构 OK + 手写 resource D 的紧急非-datasource 变更，
-源客户主单保持新山（521957），528766 研发关联单保持过载（484483）。QA 不改这两个 owner，
-也不把失败转交新山：
+D 手写紧急/非紧急/生成发布的源单 owner 分别为新山（521957）/过载（484483）/临钧
+（429768）；G 源单 owner 为新山。QA 不写 owner/通知，也不检查 528766 carrier：
 
 - PR CI 未绿时返回 RD 继续修 CI；build/test/CI 或验收 fail 一律 `next=terraform-rd/fix`，
   修复后重新验收；
 - relation/assignee/status 不是完成信号；必须核验 PR、CI 和需求验收证据；
 - **blocked 仅用于 `missing_capability`、`retry exhausted`、明确外部依赖或人工决策**；
-  **CI 未就绪不得标为 blocked**，保持双 owner 并回 RD；
+  **CI 未就绪不得标为 blocked**，回 RD；
 - pass + CI green + open PR 只表示可等待人工合并，PR 未合并只 release；
-- healthy existing claim 不抢占。D-临钧/A/F/H/非紧急非-datasource D、I/E 边界保持不变。
+- owner/status、D route DM 或历史 relation 都不是验收完成信号；I/H/pure datasource/A/F
+  保持原边界。
 
 ### `verification_mode: provider_acc`
 
@@ -68,9 +68,9 @@ G Provider 全局改造，以及 CloudSpec 结构 OK + 手写 resource D 的紧�
 
 仅用于分支 E。核验 CloudSpec feature 分支、`aliyun cspec build`、资源级 check、
 `amp publish pre --dry-run`/正式 pre 回执及最终 pre Meta 是否与结构合同收敛。此模式
-**不运行远程 AccTest**，也**不得要求 Provider PR/CI/ACC**；发现未收敛时退回 RD 修复。
-通过后返回 `next=terraform-rd-finalizer/pre_handoff`，由 finalizer 执行
-**E → D-临钧** 的 Acube 交接。QA 不调用 `createBuildTaskV2`，不创建/关联/指派工作项。
+**不运行远程 AccTest**；发现未收敛时退回 RD 修复。通过后返回
+`next=terraform-rd/dev`，由 RD 在同一源单上下文继续 Provider dev/CI/PR，再回 QA 运行
+远程 AccTest。QA 不调用 `createBuildTaskV2`，不创建/关联/指派 528766。
 
 最后汇总证据并判断：
 
@@ -96,7 +96,7 @@ requested_external_actions:
     proposal: 由最终 RD 审查的缺陷或回复提案
 next:
   role: terraform-rd | terraform-rd-finalizer
-  action: fix | pre_handoff | finalize
+  action: fix | dev | finalize
 reply_fragment: 可纳入最终 RD 回复的验收结论
 ```
 

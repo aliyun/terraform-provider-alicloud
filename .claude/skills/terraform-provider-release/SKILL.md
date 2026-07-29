@@ -16,8 +16,8 @@ Release a Terraform Provider resource together with its corresponding data sourc
 在 jarvis 无人值守语境下，本 skill 的自治边界如下（对应 `autonomy.md` 的 `stop: ["release_prod"]`）：
 
 - **可自治**：普通分支 D / 常规 release 的开发、测试、开 PR、跑 ACC，及 CloudSpec feature
-  分支上的 pre 操作。若路由是分支 E，则自治范围在 pre Meta 收敛处停止并转 D-临钧，不能由
-  E 继续 Provider。
+  分支上的 pre 操作。若路由是分支 E，pre Meta 收敛并经 QA `cloudspec_pre` 验证后，回 RD
+  在同一源单上下文继续 Provider 生成/开发、PR CI，再由 QA 运行远程 ACC。
 - **必须 escalate**：CloudSpec `prod`/`online` 正式发布与最终 **PR merge**。两者都属于 `release_prod`，jarvis 不得自动执行。
 - 因此原文"task is only complete after the PR is merged"是**对人跑者**的验收口径；对 jarvis，"PR 就绪（CI 绿+评论清）+ escalation 提交"即本轮收尾。
 
@@ -28,12 +28,11 @@ Release a Terraform Provider resource together with its corresponding data sourc
   创建或复用 2169561 指派念依（373108），必要时另保留独立 528766 Provider docs 紧急兜底腿。
 - **分支 E — CloudSpec 结构 metadata 原主单自闭环**只处理字段集合、类型、约束、CRUD、
   operationMapping 或生命周期。用 CloudSpec skills + AMP 修到 pre Meta 收敛后，QA 以
-  `verification_mode: cloudspec_pre` 验证，再强制 **E → D-临钧**：已有正确
-  relation/taskId/aoneId 时只查询/复用，否则 finalizer 通过 Acube `createBuildTaskV2`
-  自动创建或复用 528766 并指派临钧（429768）。
-- pre 未收敛不得触发 Acube；不得由 E 直接执行 Provider PR/CI/ACC，也不得在 E 完成后直接
-  release/idle。只允许分支 E 进入此转换，不得泛化到 A/F/G/H/I、纯 datasource 或纯手写
-  Provider-only bug。
+  `verification_mode: cloudspec_pre` 验证；pass 后在同一源单上下文继续 Provider
+  生成/开发、PR CI 与远程 ACC。
+- D/E/G 禁止 create/reuse-as-carrier/reassign/relation/claim/wrap/release/finish 528766，
+  也禁止为 E 调用 Acube `createBuildTaskV2`。历史 relation 只读，不是开发、完成、阻塞或
+  observe 门。
 - **普通分支 D**及常规 requirement-first/new-resource release 保持后续生成、Provider PR CI
   与远程 ACC。正式 merge/release 仍是人工硬门。
 
@@ -44,7 +43,7 @@ jarvis 语境下，本 skill 所有"ask the user"节点按以下规则改走三�
 | 原询问点 | 无人值守行为 |
 |---|---|
 | 未提供工单号 | triage 场景工单天然存在；缺则按 `loops/adhoc-intake.md` 建单，不问人 |
-| 镇元预发版 vs 线上版歧义 | 本 SOP 的接单闸门固定以 **pre** 为真源；线上只可作为只读对照。普通 D/release 从 pre 生成；E 修到 pre 收敛后走 E → D-临钧，不自行生成。pre 不存在且需求明确 → 进入 CloudSpec 定义闭环；需求不明确 → 四人会审 |
+| 镇元预发版 vs 线上版歧义 | 本 SOP 的接单闸门固定以 **pre** 为真源；线上只可作为只读对照。普通 D/release 从 pre 生成；E 修到 pre 收敛并经 QA 验证后在源单继续 Provider。pre 不存在且需求明确 → 进入 CloudSpec 定义闭环；需求不明确 → 四人会审 |
 | 工单缺需求描述或无法判断 pre 定义是否满足需求 | 同时通知 @辰羿(320687)、@临钧(429768)、@过载(484483)、@原根(265607)，打 jarvis-idle 并挂起；禁止继续生成或 provider 开发 |
 | 修复方案需确认 | 普通 Provider 缺陷 high_conf → 自动改+重跑 ACC；结构合同缺陷重分类为 E，只修到 pre 收敛并交接；low_conf → escalation |
 | PR 评论无法自行解决 | 起草回复入 `escalation/`，不自动发出 |
@@ -65,7 +64,7 @@ jarvis 语境下，本 skill 所有"ask the user"节点按以下规则改走三�
 - **Local compilation is strictly forbidden** — compiling the alicloud provider locally crashes the workstation. Run static checks only.
 - For any generator-based path, **derive the concrete release scope by diffing AMP metadata against the local provider code** (requirement gap analysis) and **verify all orchestration APIs are OpenAPI** before generation; write both findings back to Aone
 - Before provider work starts, compare the Aone requirement with the **CloudSpec pre** resource definition; ambiguity is a hard stop requiring the four-person human review
-- When an ACC failure proves the CloudSpec definition is wrong, reclassify it as **branch E**, fix and publish the IDL to **pre**, wait for pre metadata convergence, then hand off through Acube
+- When an ACC failure proves the CloudSpec definition is wrong, reclassify it as **branch E**, fix and publish the IDL to **pre**, wait for pre metadata convergence, and pass `cloudspec_pre` QA. Then continue as source-ticket D-generated: synchronize owner 临钧（429768）, enqueue the typed durable DM with `python3 -m bridge.terraform_route_notify --subtype generated`, and let Jarvis/TerraformRD directly complete Provider development, PR CI, remote ACC, and PR in the source-ticket context. Do not create, reuse, relate, assign, claim, or bookend 528766.
 - For ordinary branch D/release, remote ACC acceptance tests must **all pass** before the PR is submitted
 - **The task is only complete after the PR is merged** (CI passing + all comments closed)
 
@@ -99,11 +98,11 @@ Every provider resource release MUST be linked to an Aone work item.
 在创建 provider worktree 或运行生成器前，必须读取 **pre 环境**的 CloudSpec 资源定义，并与工单需求逐项对齐：属性、类型、约束、CRUD/List 映射和生命周期语义；同时对每个属性做 **HCL 保留字冲突检查**（如 `Provider`/`Data`/`Resource` 等映射到 TF meta-argument 会让生成的 test 在 Step 0 就挂）。
 
 - **一致**：普通分支 D / 常规 release 继续 Step 2；若当前明确来自分支 E，则把它作为
-  pre Meta 收敛证据，直接进入 E → D-临钧，不能继续 Step 2。
+  pre Meta 收敛证据，先交 QA `cloudspec_pre`，pass 后回 RD 继续 Step 2。
 - **明确不一致且需求清楚**（含 HCL 保留字命中）：记录 `PRE_CLOUDSPEC_GAP`，先走
   [CloudSpec pre 资源闭环 §3](references/cloudspec-pre-resource-loop.md)。普通 release 的
   requirement-first/new-resource 路径可在重新对齐后继续；已按客户问题分类为分支 E 的路径，
-  收敛后必须通过 Acube `createBuildTaskV2` 交接临钧，不得由 E 直接执行 Provider PR/CI/ACC。
+  收敛后先经 QA `cloudspec_pre`，pass 后回 RD 在同一源单继续 Provider PR/CI/ACC。
 - **pre 完全没这资源**（`PRE_CLOUDSPEC_MISSING`）：
   - CRUDL 存量 OpenAPI 已在 cspec `operations/` 里 → 走 [新资源从存量 OpenAPI 推断](references/cloudspec-new-resource-infer.md)，用 `cloudspec fix resource` 反推出定义再 publish pre；
   - cspec operations 也缺 → 先走 **Step 1.6 需求 → OpenAPI 圈定**，确认公网 OpenAPI 是否存在：存在则从 API 起建 operation + resource 定义并发布 pre；公网 API 确实没有 → API 侧还没建，走人工会审。
@@ -130,8 +129,8 @@ Every provider resource release MUST be linked to an Aone work item.
 ### Step 1.7: 用户已提供资源时的设计 Review
 
 > **When to run**: 用户提供了现成的资源物料（Terraform schema 草案 / cspec 片段 / 资源文档）。**不得直接采信**，review 后才进主流程。
-> 本普通设计/release 路径不套用 E → D-临钧停点；只有 triage 明确判为结构 metadata 缺陷
-> 时才进入分支 E。
+> 只有 triage 明确判为结构 metadata 缺陷时才进入分支 E；E 的 pre QA 通过后仍回到本
+> Provider 主流程并沿用源工单。
 
 1. **反查 API**：资源的每个属性都要能回答「来自哪个 API 的哪个字段」，回答不了标 `UNMAPPED`；
 2. **CloudSpec 工具对照设计**：主键定义、CRUDL operationMapping、属性类型/required/readOnly/enum、命名规范（含 HCL 保留字）、生命周期语义逐项核对；
@@ -338,13 +337,13 @@ Locate the provider bug → fix the provider code → re-run the tests → PASS.
 First determine the failure category — is it a **CloudSpec resource definition** problem or a **generator implementation** problem? Record the conclusion and evidence in Aone.
 
 - **Resource definition problem**
-  - Reclassify as **分支 E**; this path no longer owns the Provider continuation
+  - Reclassify as **分支 E** and keep the source ticket as the only work-item context
   - Run the repository-vendored `cloudspec-core` workflow; do not depend on a personal Marketplace installation
   - Fix the CloudSpec IDL on a feature branch, run `aliyun cspec build` and the resource-scoped norm check
   - Run pre dry-run, publish to pre, and poll until pre metadata matches the repaired definition
-  - QA uses `verification_mode: cloudspec_pre`; after pre Meta convergence, force
-    **E → D-临钧** through Acube `createBuildTaskV2`
-  - pre 未收敛不得触发 Acube；不得由 E 直接执行 Provider PR/CI/ACC
+  - QA uses `verification_mode: cloudspec_pre`; after it passes, return to RD for Provider generation,
+    PR CI, and then remote ACC in the source-ticket context
+  - E must not call Acube `createBuildTaskV2` or create/reuse/operate 528766
   - Follow the exact hard gates in [CloudSpec pre 资源闭环](references/cloudspec-pre-resource-loop.md)
 
 - **Generator problem**
@@ -485,10 +484,10 @@ Once the PR is merged:
 10. **Do not touch CHANGELOG.md** — the release engineer writes it later.
 11. **Sanitize all GitHub-facing content (CRITICAL)** — the alicloud provider repo is **public on GitHub**. Never expose internal information in PR title, PR body, commit messages, or code comments. Forbidden: Aone references, Claude/AI attribution, internal personnel names, customer information. See Step 11.1 for full rules. This applies to **every** push, including iteration commits during the Step 12 comment loop.
 12. **Pre is a hard source-of-truth gate** — initial requirement alignment and repaired-resource
-    convergence use CloudSpec `pre`. 普通分支 D 从 pre 生成；分支 E 在 pre 收敛后交接 D-临钧，
-    不自行生成。禁止回退 online、缓存 Meta 或修复前的生成产物。
+    convergence use CloudSpec `pre`. 普通分支 D 从 pre 生成；分支 E 在 pre QA 通过后也从
+    pre 继续生成。禁止回退 online、缓存 Meta 或修复前的生成产物。
 13. **Robots use the vendored snapshot** — run `bootstrap/cloudspec-core.sh doctor` and load the repository skills. Do not require a human's personal Marketplace installation.
-14. **HCL keyword check is a Step 1.5 hard gate** — CloudSpec 属性名映射到 TF meta-argument（`provider` / `data` / `resource` / `variable` / `output` / `module` / `locals` / `terraform` / `count` / `for_each` / `depends_on` / `lifecycle` / `connection` / `dynamic` / `self`）→ 必须在 cspec 侧改名 + republish pre。普通 D/release 再生成；分支 E 交接 D-临钧。
+14. **HCL keyword check is a Step 1.5 hard gate** — CloudSpec 属性名映射到 TF meta-argument（`provider` / `data` / `resource` / `variable` / `output` / `module` / `locals` / `terraform` / `count` / `for_each` / `depends_on` / `lifecycle` / `connection` / `dynamic` / `self`）→ 必须在 cspec 侧改名 + republish pre。普通 D/release 再生成；分支 E 经 pre QA 后在源单继续生成。
 15. **Post-gen checklist is a Step 6.1 hard gate** — generator-v4 有已知产出缺陷（`ForceNew` 遗漏、Read 不反向映射、datasource nested schema 缺字段、docs 占位、Update trigger 漏字段等）。跑完 Step 6 SOP 必按 [清单](references/generator-post-gen-checklist.md) 逐项 grep + 修复；漏一项等到 ACC/CI 才发现，代价是重跑一轮。
 16. **`aliyun/terraform-provider-alicloud` 强制单 commit** — Step 11.1 首提前 squash、Step 12 迭代用 `--amend + --force-with-lease`，覆盖 CLAUDE.md「Prefer new commit」通则。只 force-push 自有 fork 的 PR-head，绝不上游。见 [PR 提交约定](references/pr-conventions-alicloud.md)。
 
@@ -510,8 +509,8 @@ Once the PR is merged:
 - [ ] **All** remote ACC acceptance cases PASS
 - [ ] If ordinary D/release repaired CloudSpec while onboarding: build/check/pre convergence passed and
       subsequent generator/ACC evidence is present
-- [ ] If triage classified branch E: build/check/pre convergence passed, QA `cloudspec_pre` passed, and
-      Acube `createBuildTaskV2` was reused/created; no E-owned Provider PR/CI/ACC exists
+- [ ] If triage classified branch E: build/check/pre convergence and QA `cloudspec_pre` passed, then
+      Provider PR/CI and remote ACC continued in the source-ticket context without any 528766 action
 - [ ] PR is submitted; the body contains the passing test list in the required format
 - [ ] All CI tasks on the PR pass
 - [ ] All PR comments are resolved

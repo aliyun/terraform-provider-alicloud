@@ -48,7 +48,7 @@
 | **pure datasource**：只涉及 `data.alicloud_xxx` 查询、过滤、分页、输出字段或 Read，不含 resource 变更 | **source-only**：紧急源单新山、非紧急源单过载，由 TerraformRD 在源单直接开发；历史 relation 只读，严禁任何 528766 承载动作 |
 | **CloudSpec 文档文本 metadata**：只改 resource/property/operation description、字段解释、NOTE 或枚举文案，不改变字段集合、类型、约束或 CRUD | **分支 I**，创建或复用 2169561 并指派念依（373108）；Provider 公开 docs 同时错误时独立补 528766 紧急兜底腿 |
 | **CloudSpec 文档源正确，Provider 本地文档生成/展示偏差** | **分支 D**，仅处理 Provider 本地生成、发布或展示链路 |
-| **CloudSpec 结构 metadata**：新增/删除字段，或改变类型、约束、枚举集合、CRUD/operation/映射 | **分支 E**，在原主单修到 pre Meta 收敛，再强制 E → D-临钧 |
+| **CloudSpec 结构 metadata**：新增/删除字段，或改变类型、约束、枚举集合、CRUD/operation/映射 | **分支 E**，在原主单修到 pre Meta 收敛，pre QA 后在源单上下文继续 Provider dev/CI/远程 ACC/PR |
 | 尚未取得足以判断文档源和结构边界的证据 | 使用上方 canned 骨架等待补料，不得猜测 I/D/E |
 
 ## 分支 I · 文档文本 metadata 路由骨架
@@ -74,7 +74,7 @@ bookend，不解析或重放路由动作：
 ## 分支 E · CloudSpec 结构 metadata 原主单自闭环骨架
 
 E 仅处理字段集合、类型、约束、CRUD/operation/映射。open-jarvis 在当前原主单修 CloudSpec
-到 pre Meta 收敛，然后交 D-临钧；不得直接做 Provider PR/CI/ACC：
+到 pre Meta 收敛，通过 pre QA 后在同一源单上下文继续 Provider 开发：
 
 ```markdown
 ### CloudSpec 结构 metadata 原主单自闭环
@@ -88,15 +88,16 @@ E 仅处理字段集合、类型、约束、CRUD/operation/映射。open-jarvis 
   cloudspec-norm-check-fix
 - 验证：`aliyun cspec build`、资源级 `aliyun cspec check`、`amp publish pre --dry-run`
   与 `amp publish pre`、pre Meta 收敛结果
-- E → D-临钧：<已有 relation/taskId/aoneId 复用，或 createBuildTaskV2 的 taskId/aoneId>
-- Provider：<由 D-临钧生成器链路后续处理；E 不直接执行 PR/CI/ACC>
-- 当前门：<pre 未收敛，不触发 Acube / handoff 完成 / missing_capability / blocked>
-- 下一步：<handoff 回执后 release/idle；不得 finish；prod/online 与主干仍为人工硬门>
+- pre QA：<cloudspec_pre_verify 结果>
+- 源单 route：<临钧 429768、generated DM ledger state>
+- Provider：<PR、CI、远程 AccTest>
+- 当前门：<pre 未收敛 / Provider 开发中 / missing_capability / blocked>
+- 下一步：<open PR + QA pass 后 release/idle；不得 finish；prod/online 与主干仍为人工硬门>
 ```
 
 权限、AMP 登录、SSH 或仓库访问失败时，保留已取得的只读证据并返回
 `missing_capability` / `blocked`；不得换个人身份、改派旧 2165097 路径或另建 Aone
-规避能力缺口。pre 未收敛不得触发 Acube；不得在 E 完成后直接 release/idle。
+规避能力缺口。pre 未收敛不得开始 Provider 生成/开发；D/E/G 不触发 Acube/528766。
 
 ## Requirement skeleton (Terraform 生成器问题/API 工具团队)
 默认池: `api_toolkit` / project `2100304`;产品字段优先选 Terraform;标题聚焦生成器行为,不要写成客户资源诉求。

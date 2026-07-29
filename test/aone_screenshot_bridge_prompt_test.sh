@@ -30,13 +30,15 @@ common_terms = (
     "AONE_RESULT.reply_body",
     "严禁传 `--comment`",
     "源工单禁止 claim/wrap/release/直接评论",
-    "纯 datasource source-only runtime hard gate",
-    "source-only 优先级高于 G / 紧急普通 D",
-    "严禁为 pure datasource create/reuse-as-carrier/reassign/relation/claim/wrap/release/finish 528766",
-    "RD route phase 只幂等同步源单 assignee + per-type progress_status",
-    "bridge executor 独占源单 claim/唯一回复/tag/release/finish",
-    "G / 紧急非-datasource D runtime hard gate",
-    "pure datasource 不适用本 hard gate",
+    "D/G source-only runtime hard gate",
+    "手写 resource D 紧急：源单 assignee=新山（521957）",
+    "生成/发布 D（含 E pre 收敛后）：源单 assignee=临钧（429768）",
+    "python3 -m bridge.terraform_route_notify",
+    "terraform-route:d:<subtype>:owner:<staffId>",
+    "G 源单 assignee=新山（521957）",
+    "G 不发送新增 route DM",
+    "D/G 严禁 create/reuse-as-carrier/reassign/relation/claim/wrap/release/finish 528766",
+    "open PR + QA pass 时源单 release，不 finish",
 )
 
 ticket = bridge._ticket_prompt(

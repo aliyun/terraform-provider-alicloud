@@ -92,97 +92,53 @@ fi
 # open PR + QA pass 时由 bridge executor release 源单，不 finish。
 ```
 
-## 骨架 D · G / 紧急非-datasource D 双 owner 关联单 + 双工单 bookend
+## 骨架 D · D/G source-only + D route DM
 
-本骨架**只用于 G / 紧急非-datasource D**。pure datasource 必须走上方 source-only；
-D-临钧/A/F/H/非紧急非-datasource D、I/E 继续走各自专用路径。
-控制面 executor 已持有源工单 lease；**源工单由 bridge executor bookend**，本骨架不得
-claim/wrap/release 源工单。528766 才由 RD finalizer 直接 claim/bookend。
+本骨架用于所有 D/G；pure datasource 继续走上方窄 source-only。控制面 executor 独占源工单
+bookend；RD finalizer 只同步源单 route 字段，D 再通过持久化 ledger enqueue owner DM。
+D/E/G 严禁对 528766 执行 create/reuse/reassign/relation/claim/wrap/release/finish。
 
 ```bash
 set -euo pipefail
-cd "$(git rev-parse --show-toplevel)"   # jarvis 仓根(勿硬编码单机路径)
-SRC=78056841                            # 客户主单 id
-SOURCE_PROJECT=1086837                  # tf_customer
-RELATED_PROJECT=528766                  # tf_provider
-SOURCE_ASSIGNEE=521957                  # 源单保持新山
-RELATED_ASSIGNEE=484483                 # 研发单固定过载
-CATEGORY=task                           # req/bug/task,按源单 workitemType 决定
-PRIORITY="紧急"                         # 复制原单 or 缺陷覆写
+cd "$(git rev-parse --show-toplevel)"
+SRC=78056841
+SOURCE_PROJECT=1086837
+ROUTE="${ROUTE:?d 或 g}"
+SUBTYPE="${SUBTYPE:-}"   # D: handwritten-urgent|handwritten-normal|generated；G 留空
 SOURCE_STATUS="${SOURCE_STATUS:?从 pools.json progress_status[workitemType] 解析}"
-
-# === 0. 同题 528766 point-read + healthy existing claim Gate ===
-# 先查源单 relation、528766 同题单、assignee、jarvis-claimed 与控制面 lease，把复用结果放入
-# RELATED_ID；没有同题单时留空。已有 healthy existing claim 不抢占：当前 run 立即 dedup skip，
-# 不改派、不重复 create/claim/bookend。三个 *_DRIFT/MISSING 值都必须来自同一次 point-read；
-# update 只修差异字段。claim 失败立即停止，禁止 relation/update/wrap。
-RELATED_ID="${RELATED_ID:-}"
-RELATION_MISSING="${RELATION_MISSING:-0}"
-RELATED_ASSIGNEE_DRIFT="${RELATED_ASSIGNEE_DRIFT:-0}"
 SOURCE_ROUTE_DRIFT="${SOURCE_ROUTE_DRIFT:-0}"
 
-if [ -n "$RELATED_ID" ]; then
-  # 先 claim 再改派，避免 point-read 后出现竞争时偷走健康 claim。
-  claim_rc=0
-  JARVIS_A1_IDENTITY=terraform-rd bash bootstrap/claim.sh claim "$RELATED_ID" "$RELATED_PROJECT" || claim_rc=$?
-  if [ "$claim_rc" -ne 0 ]; then
-    if [ "$claim_rc" -eq 1 ]; then
-      echo "[$RELATED_ID] healthy/lost-race claim，保持原 owner 与当前 run，skip"
-      exit 0
-    fi
-    echo "[$RELATED_ID] claim 失败 rc=$claim_rc，停止本轮并上抛"
-    exit "$claim_rc"
-  fi
-  if [ "$RELATED_ASSIGNEE_DRIFT" = 1 ]; then
-    bin/a1id as terraform-rd -- project workitem update "$RELATED_ID" --assignee "$RELATED_ASSIGNEE"
-  fi
-else
-  # 确认 relation 与同题搜索均无命中后才允许 create 一次。
-  RELATED_ID=$(bin/a1id as terraform-rd -- project workitem create \
-    --project "$RELATED_PROJECT" \
-    --category "$CATEGORY" \
-    --title "G/紧急非-datasource D · <具体标题>" \
-    --assignee "$RELATED_ASSIGNEE" \
-    --priority "$PRIORITY" \
-    --body-file /tmp/body-${SRC}.txt \
-    --cfs "计划开始日期=$(date +%Y-%m-%d)" \
-    --cfs "计划截止日期=$(date -v+3d +%Y-%m-%d)" \
-    --cfs "实际工时=0" \
-    --quiet 2>&1 | head -1 | awk '{print $1}')
-  [[ "$RELATED_ID" =~ ^[0-9]+$ ]] || { echo "创建失败"; exit 1; }
-  claim_rc=0
-  JARVIS_A1_IDENTITY=terraform-rd bash bootstrap/claim.sh claim "$RELATED_ID" "$RELATED_PROJECT" || claim_rc=$?
-  if [ "$claim_rc" -ne 0 ]; then
-    if [ "$claim_rc" -eq 1 ]; then
-      echo "[$RELATED_ID] 新建后 lost-race；保留供健康 run/下轮 point-read"
-      exit 0
-    fi
-    echo "[$RELATED_ID] 新建后 claim 失败 rc=$claim_rc；停止本轮并上抛"
-    exit "$claim_rc"
-  fi
-  RELATION_MISSING=1
-fi
+case "$ROUTE:$SUBTYPE" in
+  d:handwritten-urgent) SOURCE_ASSIGNEE=521957 ;;
+  d:handwritten-normal) SOURCE_ASSIGNEE=484483 ;;
+  d:generated) SOURCE_ASSIGNEE=429768 ;;
+  g:) SOURCE_ASSIGNEE=521957 ;;
+  *) echo "非法 D/G subtype" >&2; exit 2 ;;
+esac
 
-# === 1. 物化双 owner + 单次 relation ===
+# === 1. 先幂等同步源单 owner + per-type status ===
+# point-read 可只读历史 relation 防重复代码工作，但不得更新/claim/bookend relation。
 if [ "$SOURCE_ROUTE_DRIFT" = 1 ]; then
-  bin/a1id as terraform-rd -- project workitem update "$SRC" --assignee "$SOURCE_ASSIGNEE" --status "$SOURCE_STATUS"
-fi
-if [ "$RELATION_MISSING" = 1 ]; then
-  bin/a1id as terraform-rd -- project workitem relation add \
-    "$SRC" "relate:$RELATED_ID"
+  bin/a1id as terraform-rd -- project workitem update "$SRC" \
+    --assignee "$SOURCE_ASSIGNEE" --status "$SOURCE_STATUS"
 fi
 
-# === 2. RD→QA 修复/验收完成后，研发单只写一次聚合 bookend ===
-RELATED_SUMMARY="/tmp/related-${RELATED_ID}-aggregate.md"
-test -s "$RELATED_SUMMARY"
-JARVIS_A1_IDENTITY=terraform-rd bash bootstrap/wrap.sh done "$RELATED_ID" \
-  --summary-file "$RELATED_SUMMARY" --no-status
+# === 2. D 才 enqueue 类型化 DM；G 不发新增 route DM ===
+if [ "$ROUTE" = d ]; then
+  notify_result="$(
+    python3 -m bridge.terraform_route_notify \
+      --ticket "$SRC" --project "$SOURCE_PROJECT" --subtype "$SUBTYPE"
+  )" || notify_rc=$?
+  notify_rc="${notify_rc:-0}"
+  echo "$notify_result"
+  # rc=0 包括 posted/suppressed/durable pending；均不阻断开发。
+  # rc=1 表示 ledger 未持久化：继续开发，但 AONE_RESULT 必须写“通知未完成”，不得宣称完成。
+  [ "$notify_rc" -le 1 ] || exit "$notify_rc"
+fi
 
-# PR 未合并只 release；missing_capability/retry exhausted 也 release，不得 finish。
-JARVIS_A1_IDENTITY=terraform-rd bash bootstrap/claim.sh release "$RELATED_ID" "$RELATED_PROJECT"
-
-# === 3. 源工单不在模型 run 内 bookend ===
-# finalizer 把同一聚合摘要放入 AONE_RESULT.reply_body；bridge executor 对 SRC 回复/状态/release。
+# === 3. 继续 RD→QA；最后交 AONE_RESULT ===
+# 不因 owner/status、通知或历史 relation 观察等待。
+# open PR + QA pass 时由 bridge executor release 源单，不 finish。
 ```
 
 ## 常见坑速查
