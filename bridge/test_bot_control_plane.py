@@ -903,7 +903,6 @@ class SchedulerRunnerTest(unittest.TestCase):
         scanner = self._scanner()
         client = Client()
         scanner.execution_router = SimpleNamespace(client=client)
-        scanner._source_status_after_task_id = 0
         with mock.patch.object(scanner, "_point_read_source_status",
                                side_effect=lambda task: (task, "已发布")):
             scanner._reconcile_source_statuses()
@@ -912,26 +911,224 @@ class SchedulerRunnerTest(unittest.TestCase):
         args, kwargs = client.updates[0]
         self.assertEqual(args, ("411", "84386065", "已发布"))
         self.assertTrue(kwargs["request_id"].startswith("source-status:411:"))
-        self.assertEqual(scanner._source_status_after_task_id, 0)
 
-    def test_source_status_reconcile_pages_and_skips_unchanged_observation(self):
+    def test_source_status_reconcile_consumes_all_pages_and_skips_unchanged(self):
         class Client:
-            def list_source_status_candidates(self, **_kwargs):
-                return {"items": [{
-                    "taskId": 570, "aoneId": "83884678", "sourceStatus": "问题解决中",
-                }], "nextAfterTaskId": 570, "hasMore": True}
+            def __init__(self):
+                self.afters = []
+                self.updates = []
 
-            def update_source_status(self, *_args, **_kwargs):
-                raise AssertionError("unchanged status must not be reported")
+            def list_source_status_candidates(self, **kwargs):
+                after = kwargs["after_task_id"]
+                self.afters.append(after)
+                if after == 0:
+                    return {"items": [{
+                        "taskId": 570, "aoneId": "83884678",
+                        "sourceStatus": "问题解决中",
+                    }], "nextAfterTaskId": 570, "hasMore": True}
+                if after == 570:
+                    return {"items": [{
+                        "taskId": 571, "aoneId": "83884679",
+                        "sourceStatus": "开发中",
+                    }], "nextAfterTaskId": None, "hasMore": False}
+                raise AssertionError("unexpected cursor %s" % after)
+
+            def update_source_status(self, *args, **kwargs):
+                self.updates.append((args, kwargs))
 
         scanner = self._scanner()
-        scanner.execution_router = SimpleNamespace(client=Client())
-        scanner._source_status_after_task_id = 0
+        client = Client()
+        scanner.execution_router = SimpleNamespace(client=client)
         with mock.patch.object(scanner, "_point_read_source_status",
-                               side_effect=lambda task: (task, "问题解决中")):
+                               side_effect=lambda task: (
+                                   task,
+                                   "问题解决中" if task["taskId"] == 570 else "已完成")):
             scanner._reconcile_source_statuses()
 
-        self.assertEqual(scanner._source_status_after_task_id, 570)
+        self.assertEqual(client.afters, [0, 570])
+        self.assertEqual(len(client.updates), 1)
+        self.assertEqual(client.updates[0][0][:3], ("571", "83884679", "已完成"))
+
+    def test_source_status_reconcile_restarts_from_zero_after_second_page_failure(self):
+        class Client:
+            def __init__(self):
+                self.afters = []
+                self.fail_second_page = True
+
+            def list_source_status_candidates(self, **kwargs):
+                after = kwargs["after_task_id"]
+                self.afters.append(after)
+                if after == 0:
+                    return {
+                        "items": [],
+                        "nextAfterTaskId": 10,
+                        "hasMore": True,
+                    }
+                if self.fail_second_page:
+                    self.fail_second_page = False
+                    raise RuntimeError("second page unavailable")
+                return {
+                    "items": [],
+                    "nextAfterTaskId": None,
+                    "hasMore": False,
+                }
+
+        scanner = self._scanner()
+        client = Client()
+        scanner.execution_router = SimpleNamespace(client=client)
+
+        with self.assertRaisesRegex(RuntimeError, "second page unavailable"):
+            scanner._reconcile_source_statuses_safely()
+        scanner._reconcile_source_statuses_safely()
+
+        self.assertEqual(client.afters, [0, 10, 0, 10])
+
+    def test_source_status_reconcile_rejects_nonadvancing_cursor_and_restarts(self):
+        class Client:
+            def __init__(self):
+                self.afters = []
+                self.invalid = True
+
+            def list_source_status_candidates(self, **kwargs):
+                after = kwargs["after_task_id"]
+                self.afters.append(after)
+                if self.invalid:
+                    self.invalid = False
+                    return {
+                        "items": [],
+                        "nextAfterTaskId": 0,
+                        "hasMore": True,
+                    }
+                return {
+                    "items": [],
+                    "nextAfterTaskId": None,
+                    "hasMore": False,
+                }
+
+        scanner = self._scanner()
+        client = Client()
+        scanner.execution_router = SimpleNamespace(client=client)
+
+        with self.assertRaisesRegex(ValueError, "did not advance"):
+            scanner._reconcile_source_statuses_safely()
+        scanner._reconcile_source_statuses_safely()
+
+        self.assertEqual(client.afters, [0, 0])
+
+    def test_source_status_reconcile_fails_at_page_limit_and_restarts(self):
+        class Client:
+            def __init__(self):
+                self.afters = []
+
+            def list_source_status_candidates(self, **kwargs):
+                after = kwargs["after_task_id"]
+                self.afters.append(after)
+                return {
+                    "items": [],
+                    "nextAfterTaskId": after + 1,
+                    "hasMore": True,
+                }
+
+        scanner = self._scanner()
+        scanner.SOURCE_STATUS_MAX_PAGES = 3
+        client = Client()
+        scanner.execution_router = SimpleNamespace(client=client)
+
+        for _ in range(2):
+            with self.assertRaisesRegex(RuntimeError, "maximum pages \\(3\\)"):
+                scanner._reconcile_source_statuses_safely()
+
+        self.assertEqual(client.afters, [0, 1, 2, 0, 1, 2])
+
+    def test_source_status_reconcile_rejects_invalid_has_more_and_cursor_types(self):
+        invalid_pages = (
+            ({
+                "items": [],
+                "nextAfterTaskId": None,
+                "hasMore": 1,
+            }, "candidate page is invalid"),
+            ({
+                "items": [],
+                "nextAfterTaskId": "10",
+                "hasMore": True,
+            }, "cursor is invalid"),
+            ({
+                "items": [],
+                "nextAfterTaskId": True,
+                "hasMore": True,
+            }, "cursor is invalid"),
+        )
+        for page, expected in invalid_pages:
+            with self.subTest(page=page):
+                scanner = self._scanner()
+                client = mock.Mock()
+                client.list_source_status_candidates.return_value = page
+                scanner.execution_router = SimpleNamespace(client=client)
+                with self.assertRaisesRegex(ValueError, expected):
+                    scanner._reconcile_source_statuses()
+
+    def test_source_status_reconcile_isolates_one_update_failure(self):
+        class Client:
+            def __init__(self):
+                self.update_attempts = []
+
+            def list_source_status_candidates(self, **_kwargs):
+                return {
+                    "items": [
+                        {"taskId": 1, "aoneId": "83884671",
+                         "sourceStatus": "开发中"},
+                        {"taskId": 2, "aoneId": "83884672",
+                         "sourceStatus": "开发中"},
+                    ],
+                    "nextAfterTaskId": None,
+                    "hasMore": False,
+                }
+
+            def update_source_status(self, task_id, *_args, **_kwargs):
+                self.update_attempts.append(task_id)
+                if task_id == "1":
+                    raise RuntimeError("one update failed")
+
+        scanner = self._scanner()
+        client = Client()
+        scanner.execution_router = SimpleNamespace(client=client)
+        with mock.patch.object(
+                scanner, "_point_read_source_status",
+                side_effect=lambda task: (task, "已完成")):
+            scanner._reconcile_source_statuses()
+
+        self.assertEqual(client.update_attempts, ["1", "2"])
+
+    def test_source_status_reconcile_isolates_one_point_read_failure(self):
+        class Client:
+            def __init__(self):
+                self.update_attempts = []
+
+            def list_source_status_candidates(self, **_kwargs):
+                return {
+                    "items": [
+                        {"taskId": 1, "aoneId": "83884671",
+                         "sourceStatus": "开发中"},
+                        {"taskId": 2, "aoneId": "83884672",
+                         "sourceStatus": "开发中"},
+                    ],
+                    "nextAfterTaskId": None,
+                    "hasMore": False,
+                }
+
+            def update_source_status(self, task_id, *_args, **_kwargs):
+                self.update_attempts.append(task_id)
+
+        scanner = self._scanner()
+        client = Client()
+        scanner.execution_router = SimpleNamespace(client=client)
+        with mock.patch.object(
+                scanner, "_point_read_source_status",
+                side_effect=lambda task: (
+                    task, None if task["taskId"] == 1 else "已完成")):
+            scanner._reconcile_source_statuses()
+
+        self.assertEqual(client.update_attempts, ["2"])
 
     def test_tick_dispatches_before_bounded_lifecycle_observation(self):
         scanner = self._scanner()
@@ -953,7 +1150,9 @@ class SchedulerRunnerTest(unittest.TestCase):
         scanner._tick()
 
         self.assertEqual(calls, ["done-drift", "dispatch", "lifecycle"])
-        self.assertLessEqual(scanner.SOURCE_STATUS_PAGE_SIZE, 32)
+        self.assertEqual(scanner.SOURCE_STATUS_PAGE_SIZE, 500)
+        self.assertEqual(scanner.SOURCE_STATUS_WORKERS, 32)
+        self.assertEqual(scanner.SOURCE_STATUS_MAX_PAGES, 100)
         self.assertLessEqual(scanner.SOURCE_STATUS_POINT_TIMEOUT_SECONDS, 10)
 
     def test_source_status_point_read_uses_bounded_timeout(self):

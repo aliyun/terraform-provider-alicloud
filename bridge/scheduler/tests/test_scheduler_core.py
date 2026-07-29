@@ -59,6 +59,9 @@ class SchedulerCoreTests(unittest.TestCase):
             "id", "revision", "description", "schedule", "runner", "misfire",
             "retry_delay_seconds", "enabled",
         })
+        scan_job = next(item for item in jobs.JOBS if item.id == "aone.scan")
+        self.assertEqual(scan_job.revision, 2)
+        self.assertEqual(scan_job.schedule, IntervalSchedule(300, True))
 
     def test_registry_is_loaded_from_yaml(self):
         content = """\
