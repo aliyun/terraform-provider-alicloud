@@ -27,6 +27,13 @@
       "ops": {},
       "desc": "AutoWonder 自驱研发平台"
     },
+    "auto_wonder_client_runtime": {
+      "repo": "auto-wonder-client-runtime",
+      "git_url": "git@gitlab.alibaba-inc.com:sdlc-autopilot/auto-wonder-client-runtime.git",
+      "default_branch": "master",
+      "ops": {},
+      "desc": "AutoWonder 客户端运行时"
+    },
     "mcp_server": {
       "repo": "cloudspec",
       "git_url": "git@gitlab.alibaba-inc.com:cloudspec-mcp/cloudspec.git",

@@ -34,6 +34,23 @@ if [ "$resolved_auto_wonder" != "$tmpdir/auto-wonder" ]; then
   exit 1
 fi
 
+# AutoWonder 客户端运行时仓库事实坐标及默认分支。
+jq -e '
+  .workspaces.auto_wonder_client_runtime.repo == "auto-wonder-client-runtime" and
+  .workspaces.auto_wonder_client_runtime.git_url == "git@gitlab.alibaba-inc.com:sdlc-autopilot/auto-wonder-client-runtime.git" and
+  .workspaces.auto_wonder_client_runtime.default_branch == "master" and
+  .workspaces.auto_wonder_client_runtime.ops == {} and
+  .workspaces.auto_wonder_client_runtime.desc == "AutoWonder 客户端运行时"
+' "$repo_root/config/workspaces.json" >/dev/null
+
+mkdir -p "$tmpdir/auto-wonder-client-runtime"
+resolved_auto_wonder_client_runtime="$(JARVIS_WORKSPACES_LOCAL=none JARVIS_WORKSPACE_ROOT="$tmpdir" \
+  bash "$repo_root/bootstrap/workspace.sh" dir auto_wonder_client_runtime)"
+if [ "$resolved_auto_wonder_client_runtime" != "$tmpdir/auto-wonder-client-runtime" ]; then
+  echo "auto_wonder_client_runtime: expected $tmpdir/auto-wonder-client-runtime, got $resolved_auto_wonder_client_runtime" >&2
+  exit 1
+fi
+
 # 自动化服务台六个交付仓库：事实坐标、默认分支和池归属必须完整登记。
 jq -e '
   def platform_workspace($key; $repo; $url):
