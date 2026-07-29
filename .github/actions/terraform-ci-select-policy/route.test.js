@@ -152,6 +152,7 @@ test("pull_request selects the trusted runner from a valid binding", async () =>
     classification: "trusted",
     relevant: "true",
     runner: JSON.stringify("terraform-ci-trusted"),
+    heavy_runner: JSON.stringify("terraform-ci-heavy"),
   });
   assert.equal(result.calls.length, 1);
   assert.deepEqual(result.calls[0].args, {
@@ -174,6 +175,7 @@ test("pull_request selects the hosted runner for an external binding", async () 
     classification: "external",
     relevant: "false",
     runner: JSON.stringify("ubuntu-latest"),
+    heavy_runner: JSON.stringify("ubuntu-latest"),
   });
 });
 
@@ -232,6 +234,7 @@ test("push to the repository master branch is trusted and relevant", async () =>
     classification: "trusted",
     relevant: "true",
     runner: JSON.stringify("terraform-ci-trusted"),
+    heavy_runner: JSON.stringify("terraform-ci-heavy"),
   });
   assert.equal(result.calls.length, 0);
 });
@@ -336,6 +339,24 @@ for (const [name, externalId] of [
       ),
       /binding/i
     );
+  });
+}
+
+for (const classification of ["blocked", "invalid"]) {
+  test(`${classification} classification emits no executable routes`, async () => {
+    const candidate = checkRun({
+      external_id: JSON.stringify(binding({ c: classification })),
+    });
+    const result = harness([[candidate]]);
+
+    await assert.rejects(
+      selectPolicy({
+        context: pullRequestContext(),
+        ...result.options,
+      }),
+      /binding/i
+    );
+    assert.deepEqual(result.outputs, {});
   });
 }
 
