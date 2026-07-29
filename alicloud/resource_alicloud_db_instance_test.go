@@ -4754,3 +4754,97 @@ func TestUnitParseDBInstanceParamGroupId(t *testing.T) {
 		})
 	}
 }
+
+// TestAccAliCloudRdsDBInstance_Mysql_ForceDelete verifies that a 'Prepaid' (Subscription)
+// RDS instance created with force_delete = true is converted to 'Postpaid' and then really
+// released on destroy (CheckDestroy asserts the instance no longer exists on the cloud).
+func TestAccAliCloudRdsDBInstance_Mysql_ForceDelete(t *testing.T) {
+	var instance map[string]interface{}
+
+	resourceId := "alicloud_db_instance.default"
+	ra := resourceAttrInit(resourceId, instanceBasicMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
+		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDBInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccDBInstanceForceDelete%d", rand.Intn(1000))
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBInstanceConfigDependencePrePaid)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine":                   "MySQL",
+					"engine_version":           "8.0",
+					"instance_type":            "mysql.n1e.small.1",
+					"instance_storage":         "20",
+					"instance_charge_type":     "Prepaid",
+					"period":                   "1",
+					"force_delete":             "true",
+					"instance_name":            "${var.name}",
+					"vswitch_id":               "${local.vswitch_id}",
+					"db_instance_storage_type": "cloud_essd",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine":               "MySQL",
+						"engine_version":       "8.0",
+						"instance_charge_type": "Prepaid",
+						"force_delete":         "true",
+						"instance_name":        name,
+					}),
+				),
+			},
+		},
+	})
+}
+
+func resourceDBInstanceConfigDependencePrePaid(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "%s"
+}
+data "alicloud_db_zones" "default"{
+	engine = "MySQL"
+	engine_version = "8.0"
+	instance_charge_type = "PrePaid"
+	category = "Basic"
+	db_instance_storage_type = "cloud_essd"
+}
+
+data "alicloud_db_instance_classes" "default" {
+	zone_id = data.alicloud_db_zones.default.zones.0.id
+	engine = "MySQL"
+	engine_version = "8.0"
+	category = "Basic"
+	db_instance_storage_type = "cloud_essd"
+	instance_charge_type = "PrePaid"
+}
+
+data "alicloud_vpcs" "default" {
+	name_regex = "^default-NODELETING$"
+}
+data "alicloud_vswitches" "default" {
+	vpc_id = data.alicloud_vpcs.default.ids.0
+	zone_id = data.alicloud_db_zones.default.zones.0.id
+}
+
+resource "alicloud_vswitch" "this" {
+	count = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+	vswitch_name = var.name
+	vpc_id = data.alicloud_vpcs.default.ids.0
+	zone_id = data.alicloud_db_zones.default.ids.0
+	cidr_block = cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)
+}
+locals {
+	vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]
+}
+`, name)
+}
