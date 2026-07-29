@@ -7,6 +7,9 @@
 #   operation <id>     单 operation + Task/Session/fence/readbackSpec point-read
 #   discard-resume <task_id> <session_id> --reason TEXT --yes
 #                      人工确认后丢弃一个精确的遗留恢复上下文，使任务可由新 Worker 接管
+#   force-release <task_id> [session_id] --reason TEXT --yes
+#                      fresh-read Task timeline 后携带完整 CAS，人工强制解除精确 ownership；
+#                      绝不由 scheduler/owner-health 自动调用
 #   legacy-cleanup [--yes]
 #                      预览（默认）/删除 task_type 为已废弃 kind（如 field_repair）的
 #                      残留僵尸 Task 及其 session/event/operation 行；带 --yes 才删，

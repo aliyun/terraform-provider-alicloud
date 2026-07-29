@@ -525,6 +525,89 @@ class ClientContractTest(unittest.TestCase):
         self.assertEqual(headers(req)["idempotency-key"], "discard-42-7")
         self.assertEqual(result["status"], "READY")
 
+    def test_force_release_posts_full_cas_with_stable_idempotency(self):
+        response = {
+            "task": {"id": 42, "status": "READY", "generation": 4},
+            "action": "OWNERSHIP_RELEASED",
+            "releasedSessionId": 7,
+            "previousGeneration": 3,
+        }
+        opener = RecordingOpener(responses=[
+            FakeResponse(response), FakeResponse(response),
+        ])
+        c = self.make(opener)
+        arguments = {
+            "expected_task_status": "RECOVERY_REQUIRED",
+            "expected_session_id": 7,
+            "expected_session_status": "RESUMABLE",
+            "expected_generation": 3,
+            "expected_state_version": 9,
+            "expected_fence_token": 4,
+            "expected_retry_count": 2,
+            "expected_desired_revision": "desired:3",
+            "expected_processing_revision": None,
+            "expected_worker_key": "interactive:codex:old",
+            "expected_worker_id": 19,
+            "expected_worker_process_uuid": "process-old-19",
+            "reason": "reviewed stale owner",
+        }
+
+        first = c.force_release_task("task/42", **arguments)
+        second = c.force_release_task("task/42", **arguments)
+
+        self.assertEqual(first["action"], "OWNERSHIP_RELEASED")
+        self.assertEqual(second["task"]["generation"], 4)
+        for req, _timeout in opener.calls:
+            self.assertEqual(req.get_method(), "POST")
+            self.assertTrue(req.full_url.endswith(
+                "/api/jarvis/v1/tasks/task%2F42/force-release"))
+            self.assertEqual(body(req), {
+                "expectedTaskStatus": "RECOVERY_REQUIRED",
+                "expectedSessionId": 7,
+                "expectedSessionStatus": "RESUMABLE",
+                "expectedGeneration": 3,
+                "expectedStateVersion": 9,
+                "expectedFenceToken": 4,
+                "expectedRetryCount": 2,
+                "expectedDesiredRevision": "desired:3",
+                "expectedProcessingRevision": None,
+                "expectedWorkerKey": "interactive:codex:old",
+                "expectedWorkerId": 19,
+                "expectedWorkerProcessUuid": "process-old-19",
+                "confirmationToken": "FORCE_RELEASE",
+                "reason": "reviewed stale owner",
+            })
+        first_key = headers(opener.calls[0][0])["idempotency-key"]
+        second_key = headers(opener.calls[1][0])["idempotency-key"]
+        self.assertEqual(first_key, second_key)
+        self.assertTrue(first_key.startswith("jarvis-force-release-"))
+
+    def test_force_release_allows_null_revision_cas(self):
+        opener = RecordingOpener(responses=[FakeResponse({
+            "task": {"id": 42, "status": "READY", "generation": 3},
+            "action": "RELEASED",
+        })])
+        c = self.make(opener)
+
+        c.force_release_task(
+            "42",
+            expected_task_status="READY",
+            expected_session_id=7,
+            expected_session_status="RESUMABLE",
+            expected_generation=3,
+            expected_state_version=9,
+            expected_fence_token=4,
+            expected_retry_count=0,
+            expected_desired_revision=None,
+            expected_processing_revision=None,
+            expected_worker_key=None,
+            expected_worker_id=None,
+            expected_worker_process_uuid=None,
+            reason="release reviewed session",
+        )
+
+        self.assertIsNone(body(opener.calls[0][0])["expectedDesiredRevision"])
+
     def test_legacy_kind_cleanup_preview_and_delete_use_admin_contract(self):
         snapshot = {
             "tasks": 1, "sessions": 1, "events": 3, "operations": 0,

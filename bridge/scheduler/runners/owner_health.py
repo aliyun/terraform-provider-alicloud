@@ -21,10 +21,16 @@ RUNNER_KEY = "owner_health"
 BLOCKING_REASONS = frozenset({
     "RESUME_OWNER_UNAVAILABLE",
     "RESUME_OWNER_NOT_REGISTERED",
+    "RESUME_OWNER_NOT_QUEUE_PULLING",
+})
+ONE_SHOT_REASONS = frozenset({
+    "RESUME_OWNER_NOT_QUEUE_PULLING",
 })
 MIGRATION_TOKENS = (
+    "RESUME_OWNER_NOT_QUEUE_PULLING",
     "RESUME_OWNER_UNAVAILABLE",
     "RESUME_OWNER_NOT_REGISTERED",
+    "OWNER_NOT_QUEUE_PULLING",
     "OWNER_UNAVAILABLE",
     "OWNER_NOT_REGISTERED",
 )
@@ -339,7 +345,11 @@ class OwnerHealthRunner:
             })
             first_seen = float(episode["firstSeenAt"])
             last_alert = float(episode.get("lastAlertAt") or 0)
-            if not last_alert or now - last_alert >= self.repeat_seconds:
+            reason = str(item.get("reason") or "")
+            repeat_due = (
+                reason not in ONE_SHOT_REASONS
+                and now - last_alert >= self.repeat_seconds)
+            if not last_alert or repeat_due:
                 dwell = self._duration(now - first_seen)
                 aone_id = str(item.get("aone_id") or "").strip()
                 anchor = aone_id if aone_id.isdigit() else str(task_id)
@@ -349,6 +359,16 @@ class OwnerHealthRunner:
                 event_key = "owner-health:%s:%s:%s" % (
                     task_id, digest, alert_index)
                 aone_line = ("Aone：#%s" % aone_id) if aone_id else "Aone：-"
+                if reason == "RESUME_OWNER_NOT_QUEUE_PULLING":
+                    next_step = (
+                        "请复核 Task/Session；确认旧 owner 已不再执行后，人工运行 "
+                        "`bootstrap/control-plane-status.sh force-release %s %s "
+                        "--reason TEXT --yes`。该告警不会自动释放 ownership。"
+                        % (task_id, item.get("session_id") or "[session_id]"))
+                else:
+                    next_step = (
+                        "请复核 Task/Session；RECOVERY_REQUIRED 且旧 RESUMABLE "
+                        "上下文不可恢复时，按受保护流程执行 discard-resume。")
                 body = (
                     "Jarvis 控制面检测到 RESUME_ONLY Task 的原 owner 不可用。\n\n"
                     "- Task：#%s\n"
@@ -358,8 +378,7 @@ class OwnerHealthRunner:
                     "- 原 owner：%s（%s）\n"
                     "- 已滞留：%s\n"
                     "- 证据源：%s\n\n"
-                    "请复核 Task/Session；RECOVERY_REQUIRED 且旧 RESUMABLE "
-                    "上下文不可恢复时，按受保护流程执行 discard-resume。"
+                    "%s"
                     % (
                         task_id,
                         aone_line,
@@ -369,6 +388,7 @@ class OwnerHealthRunner:
                         item.get("required_worker_status") or "-",
                         dwell,
                         item.get("source") or "-",
+                        next_step,
                     ))
                 if _dingtalk_event_enqueue(
                         anchor, "jarvis-fleet", event_key, master_staff(),
@@ -410,6 +430,7 @@ def build(*, logger: Any, task_client: Any, repo_root: Path | str):
 __all__ = [
     "BLOCKING_REASONS",
     "JOB_KEY",
+    "ONE_SHOT_REASONS",
     "OwnerHealthRunner",
     "RUNNER_KEY",
     "build",

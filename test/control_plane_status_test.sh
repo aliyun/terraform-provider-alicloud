@@ -49,7 +49,9 @@ import os
 
 
 class ControlPlaneError(RuntimeError):
-    pass
+    def __init__(self, message, status=None):
+        super().__init__(message)
+        self.status = status
 
 
 class ControlPlaneClient:
@@ -105,8 +107,18 @@ class ControlPlaneClient:
         ]
 
     def get_task_timeline(self, task_id):
-        return {"task": {"id": 11}, "currentWorker": None,
+        if os.environ.get("STUB_MODE") == "no_read_allowed":
+            raise SystemExit("stub: timeline must not be read without --yes")
+        return {"task": {"id": 11, "status": "RECOVERY_REQUIRED",
+                         "generation": 3, "stateVersion": 9,
+                         "retryCount": 2, "desiredRevision": "rev-2",
+                         "processingRevision": "rev-2",
+                         "currentSessionId": 7},
+                "currentWorker": None,
                 "sessions": [{"id": 7, "status": "RESUMABLE", "fenceToken": 4,
+                              "historicalWorkerId": 19,
+                              "historicalWorkerKey": "interactive:codex:macmini:old",
+                              "historicalWorkerProcessUuid": "process-old-19",
                               "attemptNo": 2, "resumeCount": 1,
                               "leaseExpireAt": None,
                               "runtimeSessionId": "interactive:codex:s:aone:p:i:1"}],
@@ -122,6 +134,39 @@ class ControlPlaneClient:
                 "11", 7, "old worker retired", "discard-resume:11:7"):
             raise SystemExit("stub: unexpected discard arguments")
         return {"id": 11, "status": "READY"}
+
+    def force_release_task(self, task_id, **kwargs):
+        mode = os.environ.get("STUB_MODE")
+        if mode == "force_404":
+            raise ControlPlaneError("control plane HTTP 404: not found", status=404)
+        if mode == "force_409":
+            raise ControlPlaneError(
+                "control plane HTTP 409 Conflict.ForceReleaseCas: task changed",
+                status=409)
+        expected = {
+            "expected_task_status": "RECOVERY_REQUIRED",
+            "expected_session_id": 7,
+            "expected_session_status": "RESUMABLE",
+            "expected_generation": 3,
+            "expected_state_version": 9,
+            "expected_fence_token": 4,
+            "expected_retry_count": 2,
+            "expected_desired_revision": "rev-2",
+            "expected_processing_revision": "rev-2",
+            "expected_worker_key": "interactive:codex:macmini:old",
+            "expected_worker_id": 19,
+            "expected_worker_process_uuid": "process-old-19",
+            "reason": "operator reviewed stale owner",
+        }
+        if str(task_id) != "11" or kwargs != expected:
+            raise SystemExit("stub: unexpected force-release arguments %r" % kwargs)
+        return {
+            "task": {"id": 11, "status": "READY", "generation": 4},
+            "action": "OWNERSHIP_RELEASED",
+            "message": "ownership released",
+            "releasedSessionId": 7,
+            "previousGeneration": 3,
+        }
 PY
 
 # 统一调用姿势：env 文件覆盖到临时目录；清空四个凭证 env（空串=未配置）；PYTHONPATH 前插 stub。
@@ -206,6 +251,32 @@ has "pass --yes" "$out" "discard-resume explains confirmation gate"
 out="$(run_cli discard-resume 11 7 --reason 'old worker retired' --yes 2>&1)"; rc=$?
 [ $rc -eq 0 ] && ok "discard-resume confirmed rc=0" || no "discard confirmed rc=$rc: $out"
 has "task=11 session=7 status=READY" "$out" "discard-resume prints exact result"
+
+# ── 10) force-release 必须确认、fresh-read 完整 CAS，并清楚区分 404/409 ───────
+out="$(STUB_MODE=no_read_allowed run_cli force-release 11 \
+  --reason 'operator reviewed stale owner' 2>&1)"; rc=$?
+[ $rc -eq 2 ] && ok "force-release without --yes rc=2" || no "force-release without --yes rc=$rc"
+has "pass --yes" "$out" "force-release explains confirmation gate"
+hasnot "timeline must not be read" "$out" "force-release refuses before timeline read"
+
+out="$(run_cli force-release 11 --reason 'operator reviewed stale owner' --yes 2>&1)"; rc=$?
+[ $rc -eq 0 ] && ok "force-release confirmed rc=0" || no "force-release confirmed rc=$rc: $out"
+has "action=OWNERSHIP_RELEASED" "$out" "force-release prints action"
+has "oldGeneration=3" "$out" "force-release prints old generation"
+has "newGeneration=4" "$out" "force-release prints new generation"
+has "oldSession=7" "$out" "force-release prints old session"
+has "finalStatus=READY" "$out" "force-release prints final status"
+
+out="$(STUB_MODE=force_404 run_cli force-release 11 7 \
+  --reason 'operator reviewed stale owner' --yes 2>&1)"; rc=$?
+[ $rc -eq 3 ] && ok "force-release 404 rc=3" || no "force-release 404 rc=$rc"
+has "server version has not been deployed" "$out" "force-release 404 names undeployed server"
+
+out="$(STUB_MODE=force_409 run_cli force-release 11 7 \
+  --reason 'operator reviewed stale owner' --yes 2>&1)"; rc=$?
+[ $rc -eq 3 ] && ok "force-release 409 rc=3" || no "force-release 409 rc=$rc"
+has "control plane HTTP 409 Conflict.ForceReleaseCas: task changed" "$out" \
+  "force-release preserves 409 explanation"
 
 echo
 echo "control_plane_status_test: $pass passed, $fail failed"

@@ -181,6 +181,32 @@ class OwnerHealthRunnerTest(unittest.TestCase):
         self.assertEqual(episode["firstSeenAt"], self.now - 3700)
         self.assertEqual(episode["status"], "RECOVERY_REQUIRED")
 
+    def test_non_queue_pulling_owner_warns_once_with_manual_force_release(self):
+        self.assertIn(
+            "RESUME_OWNER_NOT_QUEUE_PULLING", owner_health.BLOCKING_REASONS)
+        blocker = {
+            "task_id": 12,
+            "aone_id": "84550012",
+            "status": "READY",
+            "reason": "RESUME_OWNER_NOT_QUEUE_PULLING",
+            "required_worker": "interactive:codex:old",
+            "required_worker_status": "ACTIVE",
+            "session_id": "112",
+            "source": "ready-diagnostics",
+        }
+        bodies = []
+        with mock.patch.object(
+                owner_health, "_dingtalk_event_enqueue",
+                side_effect=lambda *args, **_kwargs: bodies.append(args[5]) or True):
+            self.runner.reconcile({12: blocker})
+            self.now += 7200
+            self.runner.reconcile({12: blocker})
+
+        self.assertEqual(len(bodies), 1)
+        self.assertIn(
+            "control-plane-status.sh force-release 12 112", bodies[0])
+        self.assertIn("不会自动释放 ownership", bodies[0])
+
 
 if __name__ == "__main__":
     unittest.main()
