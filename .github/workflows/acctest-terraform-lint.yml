@@ -26,11 +26,13 @@ jobs:
     runs-on: terraform-ci-policy
     timeout-minutes: 3
     outputs:
+      classification: ${{ steps.select.outputs.classification }}
       runner: ${{ steps.select.outputs.runner }}
+      heavy_runner: ${{ steps.select.outputs.heavy_runner }}
     steps:
       - name: Select runner
         id: select
-        uses: aliyun/terraform-provider-alicloud/.github/actions/terraform-ci-select-policy@1c4bb6762031f53732611700cad5d71d1ec84dfe
+        uses: aliyun/terraform-provider-alicloud/.github/actions/terraform-ci-select-policy@eaf310539de91ddbb455d3f5bcfd5de39037b432
 
   errcheck:
     name: runner / errcheck
@@ -58,7 +60,7 @@ jobs:
 
   tflint:
     needs: route
-    runs-on: ${{ fromJSON(needs.route.outputs.runner) }}
+    runs-on: ${{ fromJSON(needs.route.outputs.heavy_runner) }}
     permissions:
       contents: read
     steps:
@@ -74,6 +76,20 @@ jobs:
         with:
           go-version-file: .go-version
           cache: false
+      - name: Resolve Go cache paths
+        id: go-cache
+        shell: bash
+        run: |
+          echo "module=$(go env GOMODCACHE)" >> "$GITHUB_OUTPUT"
+          echo "build=$(go env GOCACHE)" >> "$GITHUB_OUTPUT"
+      - name: Restore trusted Go cache
+        if: ${{ needs.route.outputs.classification == 'trusted' }}
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ${{ steps.go-cache.outputs.module }}
+            ${{ steps.go-cache.outputs.build }}
+          key: provider-go-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.go-version') }}-${{ hashFiles('**/go.sum') }}
       - name: Install tfproviderlint
         run: |
           go install github.com/bflad/tfproviderlint/cmd/tfproviderlint@v0.31.0
