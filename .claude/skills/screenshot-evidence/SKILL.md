@@ -19,7 +19,10 @@ description: 可视化查证截图取证——aone-triage / terraform-pr-review 
 
 ## 前置条件
 
-- **Playwright MCP** 已连接（`mcp__playwright__*` 工具可用）
+- **截图通道（任一即可，按优先级探测）**：
+  1. **Playwright MCP** 已连接（`mcp__playwright__*` 工具可用）——交互会话常见
+  2. **仓库内 `capture.sh`** 通道可用（Playwright Python 绑定 + 本地 chromium，或 headless Chrome/Chromium 二进制）——headless 必走这条，因为交互态 Playwright MCP **不会**注入进 bridge 拉起的 headless 会话（根因见 `references/headless-screenshot-channels.md`）
+  - 两者都不可用 → 以 `missing_capability` 收口并逐层写 `n-a` 原因，**绝不静默跳过截图**（见 Step 0）
 - **JARVIS_HTML_REPORT_TOKEN** 已通过运行时配置注入（截图与 HTML 都走 server-token）
 - **JARVIS_HTML_REPORT_BASE_URL** 可选；默认 `https://pre-agent.aliyun-inc.com`
 - 截图存储由 AutomationAgent 服务端负责：私有 bucket `jarvis-upload-files`，owner
@@ -27,6 +30,23 @@ description: 可视化查证截图取证——aone-triage / terraform-pr-review 
 - **html-report-preview.sh** 内建 `X-Request-Context` WAF header（env `JARVIS_HTML_REPORT_WAF_HEADER` 可覆盖），无需额外处理
 
 ## 取证流程
+
+### Step 0: 能力探测（执行前必做）
+
+在截图**之前**先探测通道，避免运行到中途才发现无浏览器而失败：
+
+```bash
+bash .claude/skills/screenshot-evidence/scripts/capture.sh probe
+# stdout: <channel-name>          → exit 0，通道可用（playwright_python / chrome_binary）
+# stdout: missing_capability: ... → exit 3，无可用通道
+```
+
+- 探测命中任一通道 → 记下通道名，Step 2 用对应方式截图。
+- 探测为 `missing_capability`（exit 3）→ **不静默跳过**：在 manifest（Step 2.1）把该层写 `n-a`，
+  `note` 写 `missing_capability: <probe 给出的原因>`，继续走文字查证 + finalizer 上传缺层说明。
+  这是可诊断收口，不是漏做；`validate-manifest.py` 接受带原因的 `n-a` 行。
+- 探测只读、幂等、无副作用，每个 headless run 开头调用一次后可复用结论。
+- 交互会话若 `mcp__playwright__*` 可用，可跳过本步直接走 Step 2 的 Playwright 路径；headless 必跑。
 
 ### Step 1: 确定截图目标
 
@@ -41,9 +61,9 @@ description: 可视化查证截图取证——aone-triage / terraform-pr-review 
 | GitHub PR diff | `https://github.com/aliyun/terraform-provider-alicloud/pull/{N}/files` | Files changed 标签页的 diff |
 | Provider 源码 | `https://github.com/aliyun/terraform-provider-alicloud/blob/master/alicloud/{file}.go` | 目标字段的 schema 定义 |
 
-### Step 2: Playwright 截图
+### Step 2: 截图（交互用 Playwright MCP，headless 用 capture.sh）
 
-用 `mcp__playwright__browser_run_code_unsafe` 定位元素截图（绕过滚动问题）：
+交互会话用 `mcp__playwright__browser_run_code_unsafe` 定位元素截图（绕过滚动问题）：
 
 ```javascript
 async (page) => {
@@ -68,6 +88,23 @@ async (page) => {
 - **不压缩**：保留原始 PNG 质量
 - OpenAPI 页面是 SPA，需等待渲染完成
 - Terraform Registry 有右侧 sidebar 遮挡，用元素级截图（`element.screenshot()`）而非 viewport
+
+#### headless / 无 Playwright MCP：走 capture.sh
+
+headless bridge 会话**没有** `mcp__playwright__*`（根因见 `references/headless-screenshot-channels.md`）。
+当 Step 0 探测返回 `chrome_binary` 或 `playwright_python` 时，用仓库内 `capture.sh` 全页截图：
+
+```bash
+bash .claude/skills/screenshot-evidence/scripts/capture.sh capture \
+  "<URL>" .my-day/screenshots/<aone-id>/<name>.png \
+  --wait 3000 --full-page --width 1280 --height 2000
+# stdout: <channel-name>；exit 0 成功，exit 3 missing_capability，exit 1 capture_error
+```
+
+- `capture.sh` 是仓库内可控、可降级通道（Playwright Python + 本地 chromium 优先，否则 headless Chrome/Chromium 二进制），不依赖交互态 MCP。
+- 全页截图（`--full-page`）适合文档/对比页；SPA 等渲染需 `--wait`（毫秒）让其稳定。
+- 元素级截图（SPA 字段行）需 Playwright Python 通道；`chrome_binary` 只能全页。缺该通道时该层写 `n-a` + 原因，不硬等。
+- exit 3（missing_capability）→ 该层 manifest 写 `n-a`，note 填 probe 给出的原因，继续文字查证与 finalizer 上传。
 
 ### Step 2.1: Terraform PD 本地交接
 
