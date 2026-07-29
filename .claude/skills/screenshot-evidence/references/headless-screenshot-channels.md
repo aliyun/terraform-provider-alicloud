@@ -40,7 +40,7 @@ Playwright MCP 的交互环境，headless 一律拿不到 `mcp__playwright__*`�
 | 优先级 | 通道 | 实现 | 适用 |
 |--------|------|------|------|
 | 1 | `playwright_python` | `playwright` Python 绑定 + 本地 chromium | 全页 + 元素级截图，SPA 等渲染稳定 |
-| 2 | `chrome_binary` | headless Chrome/Chromium（`--headless=new --screenshot`） | 全页截图；macOS app / Linux PATH / `JARVIS_CHROME_BIN` |
+| 2 | `chrome_binary` | headless Chrome/Chromium + DevTools Protocol | 真全页 + 目标文本元素截图；macOS app / Linux PATH / `JARVIS_CHROME_BIN` |
 | — | 无 | `missing_capability` 收口 | 任务以可诊断原因收口，不静默跳过 |
 
 - 探测与捕获实现在 `bridge/jarvis_screenshot.py`（单测 `bridge/test_jarvis_screenshot.py`）。
@@ -53,10 +53,11 @@ Playwright MCP 的交互环境，headless 一律拿不到 `mcp__playwright__*`�
 ## 四、与 skill 的集成
 
 - **Step 0 能力探测**：截图前先 `capture.sh probe`；命中通道记名进 Step 2，命中
-  `missing_capability` 则把该层 manifest 写 `n-a` + 原因，继续文字查证与 finalizer 上传，
-  `validate-manifest.py` 接受带原因的 `n-a` 行。**绝不静默跳过**。
+  `missing_capability` 则把该层 manifest 写 `n-a` + 原因，可继续只读文字查证，但 finalizer
+  必须 `blocked / missing_capability`，不得 done。`validate-manifest.py` 接受带原因的
+  `n-a` 行只代表结构完整。**绝不静默跳过**。
 - **Step 2 截图**：交互会话仍可走 `mcp__playwright__*` 元素截图；headless / 无 MCP 时走
-  `capture.sh capture` 全页截图。
+  `capture.sh capture`；`--full-page` 走 CDP 真全页，`--text` 截目标字段元素。
 - 不影响交互模式与本机已有 Browser/Chrome 能力：交互态 Playwright MCP 与本机 Chrome 各自独立，
   headless 只新增仓库内通道，不改交互启动链。
 
@@ -70,20 +71,21 @@ Playwright MCP 的交互环境，headless 一律拿不到 `mcp__playwright__*`�
 python3 -m pip install playwright
 python3 -m playwright install chromium
 
-# 通道 2：headless Chrome/Chromium 二进制（全页截图）
+# 通道 2：headless Chrome/Chromium 二进制（CDP 真全页 + 目标文本元素截图）
 #   Linux: yum install -y chromium  或 apt install chromium-browser
 #   macOS: /Applications/Google Chrome.app（本机已有）
 #   也可 export JARVIS_CHROME_BIN=/path/to/chrome 显式指定
 ```
 
-两通道都没装的 worker，截图诉求以 `missing_capability` 收口并被人工/上游看见，不会静默漏做。
+两通道都没装的 worker，截图诉求以 `blocked / missing_capability` 收口并被人工/上游看见，
+不会静默漏做或误标完成。
 
 ## 六、验收映射
 
 | 工单验收项 | 落地 |
 |------------|------|
-| 不预装/不注入 Playwright MCP 的 headless 仍能打开测试页并产出有效截图 | `chrome_binary` 通道实拍 `example.com` → 有效 PNG（单测 + 本机自测） |
+| 不预装/不注入 Playwright MCP 的 headless 仍能打开测试页并产出有效截图 | `chrome_binary` 通过 CDP 实拍 `example.com` → 真全页有效 PNG（单测 + 本机自测） |
 | screenshot-evidence 最小链路在 headless 完成截图 + manifest | `capture.sh capture` 产 PNG，manifest `n-a` 行带原因被 `validate-manifest.py` 接受 |
-| 能力完全不可用→可诊断 `missing_capability` 收口，不静默跳过 | `probe` exit 3 + `missing_capability:` 原因，skill 写 `n-a` 不删层 |
+| 能力完全不可用→可诊断 `missing_capability` 收口，不静默跳过 | `probe` exit 3 + `missing_capability:` 原因，skill 写 `n-a` 不删层，finalizer blocked |
 | 自动化回归用例覆盖「无 Playwright MCP」场景 | `bridge/test_jarvis_screenshot.py`：无通道→exit 3、优先级、捕获派发、有效 PNG 产出 |
 | 不影响交互模式与本机 Browser/Chrome | 不改交互启动链；通道独立探测，交互 Playwright MCP 不受影响 |

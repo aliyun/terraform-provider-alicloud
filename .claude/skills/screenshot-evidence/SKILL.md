@@ -43,8 +43,9 @@ bash .claude/skills/screenshot-evidence/scripts/capture.sh probe
 
 - 探测命中任一通道 → 记下通道名，Step 2 用对应方式截图。
 - 探测为 `missing_capability`（exit 3）→ **不静默跳过**：在 manifest（Step 2.1）把该层写 `n-a`，
-  `note` 写 `missing_capability: <probe 给出的原因>`，继续走文字查证 + finalizer 上传缺层说明。
-  这是可诊断收口，不是漏做；`validate-manifest.py` 接受带原因的 `n-a` 行。
+  `note` 写 `missing_capability: <probe 给出的原因>`，可继续完成只读文字查证，但 finalizer
+  必须以 `blocked / missing_capability` 收口，不得把缺截图的强制取证任务标为 done。
+  `validate-manifest.py` 接受带原因的 `n-a` 行，仅代表结构完整，不代表验收通过。
 - 探测只读、幂等、无副作用，每个 headless run 开头调用一次后可复用结论。
 - 交互会话若 `mcp__playwright__*` 可用，可跳过本步直接走 Step 2 的 Playwright 路径；headless 必跑。
 
@@ -97,14 +98,20 @@ headless bridge 会话**没有** `mcp__playwright__*`（根因见 `references/he
 ```bash
 bash .claude/skills/screenshot-evidence/scripts/capture.sh capture \
   "<URL>" .my-day/screenshots/<aone-id>/<name>.png \
-  --wait 3000 --full-page --width 1280 --height 2000
+  --wait 3000 --full-page --width 1280 --height 2000 \
+  --text "<目标字段名>"
 # stdout: <channel-name>；exit 0 成功，exit 3 missing_capability，exit 1 capture_error
 ```
 
 - `capture.sh` 是仓库内可控、可降级通道（Playwright Python + 本地 chromium 优先，否则 headless Chrome/Chromium 二进制），不依赖交互态 MCP。
-- 全页截图（`--full-page`）适合文档/对比页；SPA 等渲染需 `--wait`（毫秒）让其稳定。
-- 元素级截图（SPA 字段行）需 Playwright Python 通道；`chrome_binary` 只能全页。缺该通道时该层写 `n-a` + 原因，不硬等。
-- exit 3（missing_capability）→ 该层 manifest 写 `n-a`，note 填 probe 给出的原因，继续文字查证与 finalizer 上传。
+- 两个通道都支持 `--text` 定位 `li/td/tr` 中包含目标文本的元素并截图；未命中目标文本返回
+  `capture_error`，不得用无关全页图冒充元素证据。不需要元素定位时去掉 `--text`。
+- `chrome_binary` 通过 Chrome DevTools Protocol 获取页面内容尺寸并执行
+  `Page.captureScreenshot(captureBeyondViewport=true)`，因此 `--full-page` 是真全页截图，不再受
+  `--height` viewport 高度限制。超长页面命中安全上限时改用 `--text`。
+- SPA 等渲染需 `--wait`（毫秒）让其稳定。
+- exit 3（missing_capability）→ 该层 manifest 写 `n-a` 并记录原因；可继续只读文字查证，
+  但 finalizer 必须 `blocked / missing_capability`，不得 done。
 
 ### Step 2.1: Terraform PD 本地交接
 
@@ -126,7 +133,8 @@ visual_evidence_manifest: /absolute/path/.my-day/screenshots/<aone-id>/evidence-
 ```
 
 浏览器能力、登录态或页面不可达时，不要把该层悄悄删掉；保留 `n-a` 行并写清
-`missing_capability`。这样 finalizer 能区分“不适用”和“漏做”。
+`missing_capability`。这样 finalizer 能区分“不适用”和“漏做”；若该层属于强制截图证据，
+最终状态仍必须是 `blocked / missing_capability`。
 
 finalizer 上传前必须执行确定性校验：
 
@@ -188,6 +196,8 @@ bash bootstrap/html-report-preview.sh upload <aone-id> <report.html>
 ```
 
 Terraform finalizer 必须先校验 manifest 中三层都存在（或有明确 N/A 原因），再上传截图和报告。
+任何强制截图层因浏览器能力缺失而记录为 `n-a` 时，只能上传缺层说明并以
+`blocked / missing_capability` 收口，不能生成“完整证据”结论或标记 done。
 上传命令不得传 `--comment`；将返回的预览 URL 写进唯一聚合回复。executor 托管的 headless
 run 必须放入 `AONE_RESULT.reply_body`，由 executor 单次落账，run 内不得调用 `wrap.sh`；
 仅非 executor 托管的独立 finalizer 才按 bookend 调用一次 `wrap.sh done`。

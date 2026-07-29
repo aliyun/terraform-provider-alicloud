@@ -18,6 +18,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))         # repo convention
@@ -147,6 +148,54 @@ class CaptureTests(unittest.TestCase):
         js.capture("https://example.com", out, channels=[stub])
         self.assertTrue(Path(out).is_file())
 
+    def test_forwards_target_text_to_channel(self):
+        stub = StubChannel("chrome_binary", available=True)
+        out = self.path("target.png")
+        js.capture(
+            "https://example.com", out, channels=[stub],
+            target_text="TargetField")
+        self.assertEqual(
+            stub.captured[0][2]["target_text"], "TargetField")
+
+
+class ChromeBinaryChannelTests(unittest.TestCase):
+    def test_page_websocket_skips_extension_background_pages(self):
+        payload = [
+            {
+                "type": "background_page",
+                "webSocketDebuggerUrl": "ws://localhost:1/background",
+            },
+            {
+                "type": "page",
+                "webSocketDebuggerUrl": "ws://localhost:1/page",
+            },
+        ]
+        response = mock.MagicMock()
+        response.__enter__.return_value.read.return_value = (
+            __import__("json").dumps(payload).encode())
+        with mock.patch.object(
+                js.urllib.request, "urlopen", return_value=response):
+            self.assertEqual(
+                js._chrome_page_websocket(9222, timeout=0.1),
+                "ws://localhost:1/page")
+
+    def test_uses_cdp_for_true_full_page_capture(self):
+        channel = js.ChromeBinaryChannel(binary_finder=lambda: "/bin/chrome")
+        with mock.patch.object(js, "_chrome_cdp_capture") as capture:
+            channel.capture(
+                "https://example.com", "/tmp/shot.png",
+                wait_ms=25, full_page=True, width=900, height=700,
+                target_text="FieldName")
+        capture.assert_called_once_with(
+            "/bin/chrome", "https://example.com", "/tmp/shot.png",
+            wait_ms=25, full_page=True, width=900, height=700,
+            target_text="FieldName")
+
+    def test_missing_binary_still_fails_closed(self):
+        channel = js.ChromeBinaryChannel(binary_finder=lambda: None)
+        with self.assertRaises(js.CaptureError):
+            channel.capture("https://example.com", "/tmp/shot.png")
+
 
 class CliTests(unittest.TestCase):
     """probe + capture exit codes (the no-Playwright-MCP regression surface)."""
@@ -220,6 +269,16 @@ class CliTests(unittest.TestCase):
         with self.assertRaises(SystemExit):
             js.main(["capture", "https://example.com",
                      os.path.join(self._dir, "x.png"), "--bogus"])
+
+    def test_capture_target_text_is_forwarded(self):
+        out = os.path.join(self._dir, "target.png")
+        stub = StubChannel("chrome_binary", available=True)
+        rc, _, _ = self._run(
+            ["capture", "https://example.com", out,
+             "--text", "TargetField"], [stub])
+        self.assertEqual(rc, js.EXIT_OK)
+        self.assertEqual(
+            stub.captured[0][2]["target_text"], "TargetField")
 
 
 class DefaultChannelsTests(unittest.TestCase):

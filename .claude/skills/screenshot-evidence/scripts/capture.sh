@@ -15,7 +15,8 @@
 #       stdout: channel name, or "missing_capability: <reason>"
 #       exit 0 = channel available; exit 3 = missing_capability
 #   capture.sh capture <url> <out.png> \
-#       [--wait N] [--full-page|--viewport] [--width W] [--height H]
+#       [--wait N] [--full-page|--viewport] [--width W] [--height H] \
+#       [--text TARGET]
 #       stdout: channel name used
 #       exit 0 = captured; exit 3 = missing_capability; exit 1 = capture_error
 set -uo pipefail
