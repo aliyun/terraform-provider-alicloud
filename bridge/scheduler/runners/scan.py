@@ -43,7 +43,7 @@ class ScanRunner(AoneQueryMixin):
     SOURCE_STATUS_MAX_PAGES = int(
         os.environ.get("JARVIS_SOURCE_STATUS_MAX_PAGES", "100"))
     SOURCE_STATUS_POINT_TIMEOUT_SECONDS = int(
-        os.environ.get("JARVIS_SOURCE_STATUS_POINT_TIMEOUT_SECONDS", "10"))
+        os.environ.get("JARVIS_SOURCE_STATUS_POINT_TIMEOUT_SECONDS", "30"))
 
     def __init__(self, *, logger, task_client, repo_root) -> None:
         self.handler = None

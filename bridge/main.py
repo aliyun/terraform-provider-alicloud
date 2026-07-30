@@ -515,6 +515,9 @@ class BridgeSupervisor:
         self.component_factory = component_factory
         self.stop_event = stop_event or threading.Event()
         self.components: dict[str, Any] = {}
+        # Set by _shutdown when it force-kills survivors; run() then releases
+        # their control-plane fences after the bounded shutdown returns.
+        self._shutdown_forced = False
         self.ready_timeout = float(self.environ.get(
             "JARVIS_BRIDGE_COMPONENT_READY_WAIT",
             self.environ.get("JARVIS_SCHEDULER_READY_WAIT", "30"),
@@ -598,6 +601,8 @@ class BridgeSupervisor:
             if not self._start_until_ready(
                     spec, adopt=spec is PERSISTENT_WORKER):
                 self._shutdown()
+                if self._shutdown_forced:
+                    self._offline_forced_workers()
                 return 1
         LOG.info(
             "Bridge READY pid=%s role=supervisor required=%s",
@@ -621,7 +626,10 @@ class BridgeSupervisor:
                 self._start_until_ready(spec)
                 if self.stop_event.is_set():
                     break
-        return 0 if self._shutdown() else 1
+        clean = self._shutdown()
+        if self._shutdown_forced:
+            self._offline_forced_workers()
+        return 0 if clean else 1
 
     def _remove_legacy_restart_marker(self) -> None:
         marker = self.state_dir / "preserve-persistent-worker-once"
@@ -685,7 +693,33 @@ class BridgeSupervisor:
                         component.spec.name,
                         component.pid,
                     )
+        # Record whether we force-killed anyone. A SIGKILL'd worker cannot run
+        # its own OFFLINE, so the caller releases its control-plane fence after
+        # this bounded shutdown returns — off the reap-timing critical path.
+        self._shutdown_forced = bool(survivors)
         return clean
+
+    def _offline_forced_workers(self) -> None:
+        """Best-effort: release the fence of any force-killed worker.
+
+        Runs the offline helper as a short subprocess so the supervisor stays
+        free of any control-plane dependency (mirrors how it spawns its
+        components). Never raises — the reaper remains the ultimate fallback.
+        Called after the bounded shutdown, not inside it.
+        """
+        try:
+            subprocess.run(
+                [sys.executable, "-m", "bridge.worker_offline", "--all"],
+                cwd=str(REPO_ROOT),
+                env=self.environ,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=float(self.environ.get(
+                    "JARVIS_WORKER_OFFLINE_TIMEOUT", "15")),
+                check=False,
+            )
+        except Exception as exc:  # noqa: BLE001 - best-effort fence release
+            LOG.warning("worker-offline helper failed: %s", type(exc).__name__)
 
 
 def main() -> int:
