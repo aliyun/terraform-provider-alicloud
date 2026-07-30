@@ -345,20 +345,19 @@ RequestId:<xxx>
 cspec 位置:cloudspec-model 分支 <feature/xxx>,文件 resources/<Name>.cspec
 定义错误:<例如 attributeMappings 中 $.FileSystemId.responsePath 错;或 uniqueKeyFields 缺 $.FileSystemId>
 修复路径:去 cspec 分支改定义 → `aliyun cspec build` → `aliyun cspec check --name <Res>` →
-`amp publish pre` → pre Meta 收敛 → E → D-临钧
+`amp publish pre` → pre Meta 收敛 → QA cloudspec_pre → RD 在源单继续 Provider → QA 远程 ACC
 关联 skill:`cloudspec-resource-edit` / `cloudspec-operation-edit` / `cloudspec-norm-check-fix`
 回写与修复:返回 RD，按 aone-triage 分支 E 和
 `terraform-provider-release/references/cloudspec-pre-resource-loop.md` 在**原主单**内修复
 CloudSpec feature 分支，完成 build/check、pre dry-run/发布与 pre Meta 收敛。随后 QA 使用
-`verification_mode: cloudspec_pre` 做 pre-only 验证，通过后强制 **E → D-临钧**：已有正确
-relation/taskId/aoneId 时只查询/复用，否则由 finalizer 通过 Acube `createBuildTaskV2`
-自动创建或复用 528766 并指派临钧（429768）。
-`requested_external_actions: []`；pre 未收敛不得触发 Acube；
-**不得由 E 直接执行 Provider PR/CI/ACC**，也不得在 E 完成后直接 release/idle。只允许分支 E 进入此转换，不得泛化到
-A/F/G/H/I、纯 datasource 或纯手写 Provider-only bug。能力失败返回
+`verification_mode: cloudspec_pre` 做 pre-only 验证；通过后返回 RD，在同一源单上下文继续
+Provider 生成/开发与 PR CI，再由 QA 运行本 skill 的远程 ACC。
+`requested_external_actions: []`；E 禁止调用 Acube `createBuildTaskV2`，也禁止
+create/reuse/relation/claim/wrap/release/finish 528766。能力失败返回
 `missing_capability` / `blocked`；prod/online 与 master/main merge/push 仍是人工硬门。
 
-普通分支 D 不受 E 的 pre-only 停点影响，仍按原流程执行 Provider 生成、PR CI 与远程 ACC。
+普通分支 D 与 G 也在源工单执行 Provider 生成/开发、PR CI 与远程 ACC；历史 relation
+只读且不是开发、完成、阻塞或 observe 门。open PR + QA pass 时 release 源单、不 finish。
 ```
 
 ### 6.5 D - 生成器 bug

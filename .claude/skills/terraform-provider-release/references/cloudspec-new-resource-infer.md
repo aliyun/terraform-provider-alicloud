@@ -2,8 +2,8 @@
 
 > 本文是**普通分支 D / 常规 new-resource release** 的建模路径，不因修改 CloudSpec 就自动
 > 归入分支 E。只有 triage 已确认字段集合、类型、约束、CRUD 等结构 metadata 缺陷时才是
-> **分支 E**：修到 pre Meta 收敛后强制 **E → D-临钧**，由 finalizer 通过 Acube
-> `createBuildTaskV2` 创建或复用 528766；不得由 E 直接执行 Provider PR/CI/ACC。
+> **分支 E**：修到 pre Meta 收敛并经 QA `cloudspec_pre` 验证后，回 RD 在同一源单继续
+> Provider 生成、PR CI 与远程 ACC；禁止调用 Acube 或操作 528766。
 
 本 reference 只服务 `terraform-provider-release` 的 **"接单时 pre 资源不存在，但 CRUDL 存量 OpenAPI 已在 cspec 里"** 场景。用 `cloudspec-resource-infer` 让 CLI 自动推断资源属性和 CRUD 映射，人工 review 后 build+publish pre，再走 Terraform generator。
 
@@ -171,5 +171,5 @@ amp publish status --publish-id <ProcessId> --output json --yes    # 轮询到 s
 - pre-resource-loop = **修已有**：resources/ 已发布到 pre，测试证明定义错，改属性/映射/生命周期后 republish。
 - 本文的普通分支 D/new-resource release 在 `amp publish pre` 收敛后回到 SKILL.md Step 6
   从 pre 生成。
-- `cloudspec-pre-resource-loop.md` 若由分支 E 进入，则以 pre Meta 收敛为 E 的停点，转
-  E → D-临钧 / `createBuildTaskV2`，不由 E 自己继续 Provider。
+- `cloudspec-pre-resource-loop.md` 若由分支 E 进入，则 pre Meta 收敛后先经 QA 验证，
+  pass 后回 RD 在源单继续 Provider。

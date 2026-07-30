@@ -196,7 +196,7 @@ MAX_REPLY = 2000          # bytes; keep card under the 2KB cap
 CARD_KEY = "content"      # streaming variable name in the AI card template
 PUT_MIN_INTERVAL = 0.4    # seconds between card PUTs (throttle)
 PUT_MIN_GROWTH = 40       # chars of growth that also triggers a PUT
-HEADLESS_POLICY_REVISION = "terraform-rd-single-writer-v4"
+HEADLESS_POLICY_REVISION = "terraform-rd-single-writer-v5"
 POST_PR_HEADLESS_KINDS = frozenset(("pr_ci_fix", "pr_comment_reply"))
 # Control-plane Task kinds whose Aone claim/reply/finish are owned by the executor
 # (_TaskAoneBookend), not self-claimed inside the run — the self-lease-conflict fix.

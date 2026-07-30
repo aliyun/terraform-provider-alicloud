@@ -59,7 +59,7 @@ terraform-rd；你不是公开数字人，也不直接改变外部系统。
 |---|---|
 | **CloudSpec 文档文本 metadata**：resource/property/operation description、字段解释、NOTE 与枚举文案，且不改变字段集合、类型、约束或 CRUD | **分支 I**；创建或复用 `upstream.cloudspec_docs_quality`（2169561，念依 373108，`submit_only`） |
 | **CloudSpec 文档源正确，Provider 本地文档生成/展示偏差** | **分支 D**；普通 Provider 本地生成/发布/展示问题 |
-| **CloudSpec 结构 metadata**：字段集合、类型、约束、CRUD、operationMapping 或生命周期 | **分支 E**；原主单 CloudSpec 自闭环到 pre Meta 收敛，再强制 E → D-临钧 |
+| **CloudSpec 结构 metadata**：字段集合、类型、约束、CRUD、operationMapping 或生命周期 | **分支 E**；原主单 CloudSpec 自闭环到 pre Meta 收敛，pre 验收后在源单上下文继续 Provider 开发 |
 | 文档源证据不足 | 命中 Canned 缺参前置门，等待补料，不猜测路由 |
 
 分支 I 返回两条彼此独立、按池防重的动作提案：
@@ -71,11 +71,9 @@ terraform-rd；你不是公开数字人，也不直接改变外部系统。
 
 分支 E 返回 `requested_external_actions: []`、`next=terraform-rd/dev`。把 OpenAPI、初始
 pre Meta、目标结构合同与验收标准写进 evidence，供 RD 调用 `terraform-provider-release`
-的 CloudSpec pre 闭环；不创建 2165097。pre 未收敛不得触发 Acube；收敛后必须
-**E → D-临钧**：已有正确 relation/taskId/aoneId 时只查询/复用，否则由 finalizer 通过 Acube
-`createBuildTaskV2` 自动创建或复用 528766 并指派临钧（429768）。不得由 E 直接执行
-Provider PR/CI/ACC，也不得在 E 完成后直接 release/idle。只允许分支 E 进入此转换，不得泛化到
-A/F/G/H/I、纯 datasource 或纯手写 Provider-only bug。
+的 CloudSpec pre 闭环；不创建 2165097。pre 未收敛不得开始 Provider 生成/开发；收敛并通过
+`cloudspec_pre_verify` 后返回 RD，在同一源单上下文继续 Provider dev/CI/PR，再交 QA 运行
+远程 AccTest。不触发 Acube `createBuildTaskV2`，不创建或复用 528766。
 
 ### 3. Provider 源码
 
@@ -105,24 +103,19 @@ pure datasource：
   独占源单 claim/唯一回复/tag/release/finish。
 - CI pending/fail 或 QA fail 均回 RD 修复，不得标为 blocked；open PR + QA pass 时源单
   release，不 finish。
-- G 与所有非-datasource D 保留 528766；I/E/D-临钧/A/F/H 不变。source-only 优先于旧
-  G/urgent-D，但仅匹配 pure datasource。
+- D/E/G 改为同类源单直办契约；I 的 2169561/可选 Provider docs 528766、H 的 528766、
+  A/F 保持原边界。pure datasource 的窄判定和 owner 映射不变。
 
-### G / 紧急非-datasource D 的双 owner 契约
+### D/G source-only + D route DM 契约
 
-命中 G Provider 全局改造，或 CloudSpec 结构 OK + 手写 resource D 的紧急非-datasource
-变更时，PD 必须把两个 owner 分开写入结构化提案：
-
-- source customer ticket：assignee 新山（521957），per-type progress_status；
-- same-topic tf_provider 528766：assignee 过载（484483），由 Jarvis/TerraformRD claim 并开发；
-- 已有同题 528766 时优先复用；旧 assignee 为新山且无 healthy claim 时提案原地幂等改派过载，
-  不 duplicate create；healthy existing claim 不抢占。
-
-relation、source assignee 或 status 已齐只表示 route materialization，不是终结论。没有
-PR/CI/QA 完成证据时，`next=terraform-rd/dev`；不得返回“已交新山/观察等待”。只有已有 PR
-待人工合并、明确外部依赖或人工决策，才提案 observe/release 或 blocked。D-临钧/A/F/H/
-非紧急非-datasource D、I→念依、E→CloudSpec pre→D-临钧边界不变。PD 仍不执行任何 create、assign、
-relation 或 claim。
+- D 手写 resource 紧急源单 owner 新山（521957），非紧急 owner 过载（484483），生成/发布腿
+  （含 E pre 收敛后）owner 临钧（429768）；G 源单 owner 新山（521957）。
+- D/E/G 均由 Jarvis/TerraformRD 在源单上下文主动开发，严禁提案任何 528766 承载动作；
+  历史 relation 只读，不构成开发、完成或 blocker 门。
+- D 提案 finalizer 先同步源单 owner/status，再经类型化入口 enqueue owner DM，最后交
+  AONE_RESULT；G 不发新增 route DM。PD 不执行通知或任何写动作。
+- 没有 PR/CI/QA 完成证据时 `next=terraform-rd/dev`；不得因 owner/status、通知或历史
+  relation 返回观察等待。I/H/pure datasource/A/F 保持各自边界。
 
 ### 4. 三层本地截图
 

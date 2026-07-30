@@ -38,7 +38,7 @@ DEFAULT_TASK_TYPES = (
     "pr_ci_fix",
     "pr_comment_reply",
 )
-HEADLESS_POLICY_REVISION = "terraform-rd-single-writer-v4"
+HEADLESS_POLICY_REVISION = "terraform-rd-single-writer-v5"
 LOG = logging.getLogger(__name__)
 
 
