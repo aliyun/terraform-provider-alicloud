@@ -94,6 +94,7 @@ You can resume managing the subscription instance via the AlibabaCloud Console.
 ## Argument Reference
 
 The following arguments are supported:
+
 * `auth_model` - (Optional, Available since v1.285.0) The authentication mode of the instance. Default value: `ram`. Valid values:
   - `ram`: RAM authentication.
   - `openSource`: Open source authentication.
@@ -106,23 +107,30 @@ The following arguments are supported:
   - `dedicated`: Dedicated architecture, applicable to reserved + elastic (dedicated) editions.
 
 -> **NOTE:**  Modifying the Edition parameter triggers instance cluster migration. Before making this change, submit a ticket to the cloud service team. [Submit a Ticket](https://smartservice.console.aliyun.com/service/create-ticket?entrance=100&product=rabbitmq)
-    
+
+* `encrypted_instance` - (Optional, ForceNew, Computed) Whether to enable storage encryption when creating the instance. When set to `true`, `kms_key_id` must also be specified. AMQP currently supports storage encryption for the following SKU combinations:
+  - `instance_type = "vip"`.
+  - `payment_type = "PayAsYouGo"`, `serverless_charge_type = "provisioned"`, and `edition = "dedicated"`.
+
+-> **NOTE:** SKU eligibility is validated by the AMQP API when the instance is created, and unsupported combinations are rejected by the backend. Storage encryption cannot be enabled or modified after creation. Changing `encrypted_instance` replaces the instance.
+
 * `instance_name` - (Optional, Computed) The instance name.
 * `instance_type` - (Optional, Computed) Instance type. Valid values:
-  - professional: professional Edition 
-  - enterprise: enterprise Edition 
+  - professional: professional Edition
+  - enterprise: enterprise Edition
   - vip: Platinum Edition.
   - serverless: Serverless Edition.
-  -> **NOTE:** There should not set the `instance_type` parameter when creating a serverless instance. Only need to set `payment_type = "PayAsYouGo"` and `serverless_charge_type = "onDemand"`.
+  -> **NOTE:** Do not set `instance_type` when creating a serverless instance. Set `payment_type = "PayAsYouGo"` and choose `serverless_charge_type = "onDemand"` or `serverless_charge_type = "provisioned"`.
 * `listener_mode` - (Optional, ForceNew, Available since v1.274.0) The Listener mode. Valid values: `tcp_and_ssl`, `ssl_only`.
+* `kms_key_id` - (Optional, ForceNew) The ID of the KMS key used for storage encryption. The key must be in the same region as the instance, enabled, symmetric, and usable for encryption and decryption. This argument must be specified together with `encrypted_instance = true` when the instance is created. Changing `kms_key_id` replaces the instance.
 * `max_connections` - (Optional, Computed, Available since v1.129.0) The maximum number of connections, according to the value given on the purchase page of the cloud message queue RabbitMQ version console.
 * `max_eip_tps` - (Optional, Computed) Peak TPS traffic of the public network, which must be a multiple of 128, unit: times per second.
 * `max_tps` - (Optional, Computed) Configure the private network TPS traffic peak, please set the value according to the cloud message queue RabbitMQ version of the console purchase page given.
 * `modify_type` - (Optional) This parameter must be provided while you change the instance specification. Type of instance lifting and lowering:
   - Upgrade: Upgrade
   - Downgrade: Downgrading.
-* `payment_type` - (Required, ForceNew) The Payment type. Valid value: 
-  - Subscription: Pre-paid. 
+* `payment_type` - (Required, ForceNew) The Payment type. Valid value:
+  - Subscription: Pre-paid.
   - PayAsYouGo: Post-paid, and for serverless Edition.
 * `period` - (Optional) Prepayment cycle, unit: periodCycle. This parameter is valid when PaymentType is set to Subscription.
 * `period_cycle` - (Optional, Available since v1.129.0) Prepaid cycle units. Value: Month, Year.
@@ -131,7 +139,7 @@ The following arguments are supported:
 * `renewal_duration` - (Optional, Computed) The number of automatic renewal cycles.
 * `renewal_duration_unit` - (Optional, Computed) Auto-Renewal Cycle Unit Values Include: Month: Month. Year: Years.
 * `renewal_status` - (Optional, Computed) The renewal status. Value: AutoRenewal: automatic renewal. ManualRenewal: manual renewal. NotRenewal: no renewal.
-* `serverless_charge_type` - (Optional, Available since v1.129.0) The billing type of the serverless instance. Value: onDemand.
+* `serverless_charge_type` - (Optional, Available since v1.129.0) The billing type of the serverless instance. Valid values: `onDemand`, `provisioned`.
 * `serverless_switch` - (Optional, Computed, Available since v1.283.0) Whether to enable the Serverless elastic capability on the instance.
   - `true`: Enable. The instance's maximum TPS is increased to base TPS multiplied by an edition factor (1.5x for Professional Edition, 2x for Enterprise and Platinum Edition).
   - `false`: Disable. The instance's maximum TPS reverts to its original base TPS.
@@ -147,6 +155,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - OrderCreateTime.
 * `status` - The status of the resource.
@@ -154,6 +163,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Instance.
 * `delete` - (Defaults to 5 mins) Used when delete the Instance.
 * `update` - (Defaults to 5 mins) Used when update the Instance.
