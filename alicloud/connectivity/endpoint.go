@@ -400,6 +400,7 @@ var regularProductEndpoint = map[string]string{
 	"oss":                  "oss-%s.aliyuncs.com",
 	"cr":                   "cr.%s.aliyuncs.com",
 	"cms":                  "metrics.%s.aliyuncs.com",
+	"cms2":                 "cms.%s.aliyuncs.com",
 	"sls":                  "%s.log.aliyuncs.com",
 	"drds":                 "drds.%s.aliyuncs.com",
 	"polardbx":             "polardbx.%s.aliyuncs.com",

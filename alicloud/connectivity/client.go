@@ -15,6 +15,7 @@ import (
 
 	ossclient "github.com/alibabacloud-go/alibabacloud-gateway-oss/client"
 	gatewayclient "github.com/alibabacloud-go/alibabacloud-gateway-sls/client"
+	cms2 "github.com/alibabacloud-go/cms-20240330/v10/client"
 	roaCS "github.com/alibabacloud-go/cs-20151215/v7/client"
 	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
 	roa "github.com/alibabacloud-go/tea-roa/client"
@@ -113,6 +114,7 @@ type AliyunClient struct {
 	cdnconn                      *cdn.CdnClient
 	otsconn                      *ots.Client
 	cmsconn                      *cms.Client
+	cms2conn                     *cms2.Client
 	logconn                      *sls.Client
 	fcconn                       *fc.Client
 	cenconn                      *cbn.Client
@@ -1039,6 +1041,44 @@ func (client *AliyunClient) WithCmsClient(do func(*cms.Client) (interface{}, err
 	client.cmsconn = cmsconn
 
 	return do(client.cmsconn)
+}
+
+// WithCms2Client invokes the do callback with a CloudMonitor 2.0 (CMS2, API version
+// 2024-03-30) client. The endpoint is resolved from the provider "cms2" endpoint
+// override and falls back to the regional default cms.%s.aliyuncs.com, so that CMS2
+// resources route to the dedicated CMS 2.0 domain instead of the legacy CMS 1.0 one.
+func (client *AliyunClient) WithCms2Client(do func(*cms2.Client) (interface{}, error)) (interface{}, error) {
+	if client.cms2conn != nil && !client.config.needRefreshCredential() {
+		return do(client.cms2conn)
+	}
+	product := "cms2"
+	endpoint, err := client.loadApiEndpoint(product)
+	if err != nil {
+		return nil, err
+	}
+	accessKey, secretKey, stsToken := client.config.AccessKey, client.config.SecretKey, client.config.SecurityToken
+	credential, err := client.config.Credential.GetCredential()
+	if err != nil || credential == nil {
+		log.Printf("[WARN] get credential failed. Error: %#v", err)
+	} else {
+		accessKey, secretKey, stsToken = *credential.AccessKeyId, *credential.AccessKeySecret, *credential.SecurityToken
+	}
+	cms2conn, err := cms2.NewClient(&openapi.Config{
+		AccessKeyId:     tea.String(accessKey),
+		AccessKeySecret: tea.String(secretKey),
+		SecurityToken:   tea.String(stsToken),
+		RegionId:        tea.String(client.config.RegionId),
+		UserAgent:       tea.String(client.config.getUserAgent()),
+		Endpoint:        tea.String(endpoint),
+		ReadTimeout:     tea.Int(client.config.ClientReadTimeout),
+		ConnectTimeout:  tea.Int(client.config.ClientConnectTimeout),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the CMS2 client: %#v", err)
+	}
+	client.cms2conn = cms2conn
+
+	return do(client.cms2conn)
 }
 
 func (client *AliyunClient) WithLogPopClient(do func(*slsPop.Client) (interface{}, error)) (interface{}, error) {

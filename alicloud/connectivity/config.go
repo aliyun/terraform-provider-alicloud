@@ -66,6 +66,7 @@ type Config struct {
 	KmsEndpoint              string
 	OtsEndpoint              string
 	CmsEndpoint              string
+	Cms2Endpoint             string
 	PvtzEndpoint             string
 	StsEndpoint              string
 	LogEndpoint              string
