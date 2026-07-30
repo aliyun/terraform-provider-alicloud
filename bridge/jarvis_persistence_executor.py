@@ -26,6 +26,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Dict, Mapping, Optional, Tuple
 
+from bridge import worker_offline
 from bridge.jarvis_capacity import CapacityManager, CapacityPermit
 from bridge.jarvis_task_client import (
     ControlPlaneClient,
@@ -1010,6 +1011,12 @@ class PersistenceExecutor:
         with self._lock:
             self._registered = True
         self._mark_network_healthy()
+        # Persist control-plane identity so a force-kill (which cannot run
+        # stop()'s OFFLINE) can still release this fence on our behalf.
+        worker_offline.write_identity(
+            "persistent-worker", worker_key=self.worker_key,
+            process_uuid=self.process_uuid, host_id=self.host,
+            boot_id=self.boot_id)
         return True
 
     def _heartbeat_worker_if_due(self, *, force: bool = False) -> bool:
@@ -1444,6 +1451,9 @@ class PersistenceExecutor:
                     process_uuid=self.process_uuid,
                     request_id="jarvis-worker-offline-%s" % uuid.uuid4().hex)
                 offline = True
+                # Clean OFFLINE released the fence; drop the emergency identity
+                # so a force-kill helper never re-offlines a future process.
+                worker_offline.clear_identity("persistent-worker")
             except Exception as exc:
                 self._mark_network_failure(exc)
                 self.log.warning("worker offline failed worker=%s error=%s",

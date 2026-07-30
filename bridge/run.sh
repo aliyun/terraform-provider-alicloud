@@ -324,6 +324,16 @@ _component_start() {
   return 1
 }
 
+# A SIGKILL'd worker cannot run its own OFFLINE, so its stable workerKey fence
+# lingers on the control plane (~9 min) and blocks the replacement with 409
+# WORKER_ALREADY_ACTIVE. When run.sh had to force-kill the supervisor, release
+# any force-killed worker's fence on its behalf. Best-effort; the control-plane
+# reaper remains the fallback. See bridge/worker_offline.py.
+_offline_forced_workers() {
+  PYTHONPATH="$REPO_ROOT${PYTHONPATH:+:$PYTHONPATH}" \
+    "$PYTHON" -m bridge.worker_offline --all >/dev/null 2>&1 || true
+}
+
 _component_stop() {
   local name="$1" requested_wait="${2:-}" pid i=0 deadline stop_wait
   local managed_children="" child_cleanup_ok=1
@@ -369,6 +379,7 @@ _component_stop() {
       err "$COMPONENT_LABEL 已退出，但仍有受管子进程未停止"
       return 1
     fi
+    [ "$name" = "supervisor" ] && _offline_forced_workers
     say "$COMPONENT_LABEL 已停止 (forced)。"
     return 0
   fi
