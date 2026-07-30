@@ -2925,3 +2925,91 @@ func TestUnitRedisTairInstanceTDEStatusErrorExemption(t *testing.T) {
 		assert.True(t, exempted(err))
 	})
 }
+
+// Case config
+func TestAccAliCloudRedisTairInstance_config(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_redis_tair_instance.default"
+	ra := resourceAttrInit(resourceId, AlicloudRedisTairInstanceMap3314)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RedisServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRedisTairInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRedisTairInstanceBasicDependence3314)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				// Create the instance without config first. config is applied via Update (ModifyInstanceConfig),
+				// matching the behavior of alicloud_kvstore_instance.
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":       "Subscription",
+					"period":             "1",
+					"instance_type":      "tair_rdb",
+					"zone_id":            "${local.zone_id}",
+					"instance_class":     "tair.rdb.2g",
+					"shard_count":        "2",
+					"vswitch_id":         "${local.vswitch_id}",
+					"vpc_id":             "${data.alicloud_vpcs.default.ids.0}",
+					"tair_instance_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type":   "Subscription",
+						"instance_type":  "tair_rdb",
+						"instance_class": "tair.rdb.2g",
+						"shard_count":    "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"config": map[string]string{
+						"maxmemory-policy": "volatile-lru",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"config.maxmemory-policy": "volatile-lru",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"config": map[string]string{
+						"maxmemory-policy": "noeviction",
+						"appendonly":       "no",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"config.maxmemory-policy": "noeviction",
+						"config.appendonly":       "no",
+					}),
+				),
+			},
+			{
+				// Convert the Subscription instance to PayAsYouGo before destroy so
+				// CheckDestroy can PASS and the test cleans up after itself (a
+				// Subscription instance cannot be destroyed immediately). Mirrors
+				// TestAccAliCloudRedisTairInstance_basic3314.
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type": "PayAsYouGo",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type": "PayAsYouGo",
+					}),
+				),
+			},
+		},
+	})
+}

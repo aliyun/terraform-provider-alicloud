@@ -110,7 +110,7 @@ func Provider() *schema.Provider {
 			"skip_region_validation": {
 				Type:        schema.TypeBool,
 				Optional:    true,
-				Default:     false,
+				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_SKIP_REGION_VALIDATION", false),
 				Description: descriptions["skip_region_validation"],
 			},
 			"configuration_source": {
@@ -179,6 +179,7 @@ func Provider() *schema.Provider {
 			"alicloud_apig_routes":                                dataSourceAliCloudApigRoutes(),
 			"alicloud_express_connect_router_vpc_associations":    dataSourceAliCloudExpressConnectRouterVpcAssociations(),
 			"alicloud_ssl_certificates_service_companies":         dataSourceAliCloudSslCertificatesServiceCompanies(),
+			"alicloud_ssl_certificates_service_contacts":          dataSourceAliCloudSslCertificatesServiceContacts(),
 			"alicloud_express_connect_router_tr_associations":     dataSourceAliCloudExpressConnectRouterTrAssociations(),
 			"alicloud_express_connect_router_vbr_child_instances": dataSourceAliCloudExpressConnectRouterVbrChildInstances(),
 			"alicloud_cr_artifact_lifecycle_rules":                dataSourceAliCloudCrArtifactLifecycleRules(),
@@ -951,6 +952,7 @@ func Provider() *schema.Provider {
 			"alicloud_gpdb_api_key":                                         resourceAliCloudGpdbApiKey(),
 			"alicloud_apig_plugin":                                          resourceAliCloudApigPlugin(),
 			"alicloud_ssl_certificates_service_company":                     resourceAliCloudSslCertificatesServiceCompany(),
+			"alicloud_ssl_certificates_service_contact":                     resourceAliCloudSslCertificatesServiceContact(),
 			"alicloud_apig_plugin_class":                                    resourceAliCloudApigPluginClass(),
 			"alicloud_apig_domain":                                          resourceAliCloudApigDomain(),
 			"alicloud_apig_route":                                           resourceAliCloudApigRoute(),
@@ -1583,6 +1585,8 @@ func Provider() *schema.Provider {
 			"alicloud_polardb_account":                                       resourceAliCloudPolarDbAccount(),
 			"alicloud_polardb_account_privilege":                             resourceAlicloudPolarDBAccountPrivilege(),
 			"alicloud_polardb_endpoint":                                      resourceAlicloudPolarDBEndpoint(),
+			"alicloud_polardb_dynamo_table":                                  resourceAlicloudPolarDBDynamoTable(),
+			"alicloud_polardb_dynamo_item":                                   resourceAlicloudPolarDBDynamoItem(),
 			"alicloud_polardb_endpoint_address":                              resourceAlicloudPolarDBEndpointAddress(),
 			"alicloud_polardb_primary_endpoint":                              resourceAlicloudPolarDBPrimaryEndpoint(),
 			"alicloud_polardb_application":                                   resourceAlicloudPolarDBApplication(),
@@ -2587,7 +2591,7 @@ func init() {
 
 		"assume_role_session_expiration": "The time after which the established session for assuming role expires. Valid value range: [900-3600] seconds. Default to 0 (in this case Alicloud use own default value).",
 
-		"skip_region_validation": "Skip static validation of region ID. Used by users of alternative AlibabaCloud-like APIs or users w/ access to regions that are not public (yet).",
+		"skip_region_validation": "Skip static validation of region ID. Used by users of alternative AlibabaCloud-like APIs or users w/ access to regions that are not public (yet). It can also be sourced from the `ALICLOUD_SKIP_REGION_VALIDATION` environment variable.",
 
 		"configuration_source": "Use this to mark a terraform configuration file source.",
 

@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -18,6 +19,75 @@ func init() {
 	resource.AddTestSweepers("alicloud_kvstore_instance", &resource.Sweeper{
 		Name: "alicloud_kvstore_instance",
 		F:    testSweepKVStoreInstances,
+	})
+}
+
+func TestAccAliCloudKVStoreRedisInstance_coverage(t *testing.T) {
+	var v r_kvstore.DBInstanceAttribute
+	resourceId := "alicloud_kvstore_instance.default"
+	ra := resourceAttrInit(resourceId, AliCloudKVStoreMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &R_kvstoreService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeKvstoreInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccKvstoreRedisInstanceCoverage%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudKVStoreRedisInstanceVpcBasicDependence0)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_use_coupon":             "false",
+					"backup_id":                   "backup-id",
+					"business_info":               "business-info",
+					"capacity":                    "1",
+					"coupon_no":                   "coupon-no",
+					"dedicated_host_group_id":     "dhg-id",
+					"effective_time":              "Immediately",
+					"enable_backup_log":           "0",
+					"encryption_key":              "key",
+					"encryption_name":             "AES-CTR-256",
+					"engine_version":              "6.0",
+					"force_upgrade":               "true",
+					"global_instance":             "false",
+					"global_instance_id":          "global-instance-id",
+					"kms_encrypted_password":      "kms-password",
+					"kms_encryption_context":      map[string]string{"name": "value"},
+					"order_type":                  "UPGRADE",
+					"password":                    "Test12345",
+					"port":                        "6379",
+					"private_ip":                  "192.168.0.10",
+					"restore_time":                "2026-01-01T00:00:00Z",
+					"resource_group_id":           "rg-id",
+					"role_arn":                    "acs:ram::1234567890123456:role/example",
+					"security_group_id":           "sg-id",
+					"security_ip_group_attribute": "group-attribute",
+					"srcdb_instance_id":           "r-source",
+				}),
+				ExpectError: regexp.MustCompile(".+"),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"encryption_key":         "key-update",
+					"encryption_name":        "AES-CTR-256-update",
+					"engine_version":         "7.0",
+					"kms_encrypted_password": "kms-password-update",
+					"kms_encryption_context": map[string]string{"name": "value-update"},
+					"port":                   "6380",
+					"resource_group_id":      "rg-id-update",
+					"role_arn":               "acs:ram::1234567890123456:role/example-update",
+					"security_group_id":      "sg-id-update",
+				}),
+				ExpectError: regexp.MustCompile(".+"),
+			},
+		},
 	})
 }
 
@@ -205,7 +275,7 @@ func TestAccAliCloudKvstoreInstance_redis_6_0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run", "auto_use_coupon", "backup_id", "business_info", "coupon_no", "dedicated_host_group_id", "effective_time", "force_upgrade", "global_instance", "global_instance_id", "order_type", "password", "period", "restore_time", "src_db_instance_id", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
+				ImportStateVerifyIgnore: []string{"dry_run", "business_info", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -521,7 +591,7 @@ func TestAccAliCloudKvstoreInstance_redis_7_0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run", "auto_use_coupon", "backup_id", "business_info", "coupon_no", "dedicated_host_group_id", "effective_time", "force_upgrade", "global_instance", "global_instance_id", "order_type", "password", "period", "restore_time", "src_db_instance_id", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
+				ImportStateVerifyIgnore: []string{"dry_run", "business_info", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -694,11 +764,13 @@ func TestAccAliCloudKvstoreInstance_redis_7_0(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"instance_charge_type": "PostPaid",
+						"secondary_zone_id":    REMOVEKEY,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"secondary_zone_id":           REMOVEKEY,
 					"instance_class":              "redis.shard.small.ce",
 					"instance_release_protection": "false",
 					"resource_group_id":           "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
@@ -821,7 +893,7 @@ func TestAccAliCloudKvstoreInstance_redis_7_0_with_proxy_class(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run", "auto_use_coupon", "backup_id", "business_info", "coupon_no", "dedicated_host_group_id", "effective_time", "force_upgrade", "global_instance", "global_instance_id", "order_type", "password", "period", "restore_time", "src_db_instance_id", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
+				ImportStateVerifyIgnore: []string{"dry_run", "business_info", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1154,7 +1226,7 @@ func TestAccAliCloudKvstoreInstance_redis_5_0_memory_classic_standard(t *testing
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run", "auto_use_coupon", "backup_id", "business_info", "coupon_no", "dedicated_host_group_id", "effective_time", "force_upgrade", "global_instance", "global_instance_id", "order_type", "password", "period", "restore_time", "src_db_instance_id", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
+				ImportStateVerifyIgnore: []string{"dry_run", "business_info", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1464,7 +1536,7 @@ func TestAccAliCloudKvstoreInstance_redis_5_0_memory_classic_cluster(t *testing.
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run", "auto_use_coupon", "backup_id", "business_info", "coupon_no", "dedicated_host_group_id", "effective_time", "force_upgrade", "global_instance", "global_instance_id", "order_type", "password", "period", "restore_time", "src_db_instance_id", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
+				ImportStateVerifyIgnore: []string{"dry_run", "business_info", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1742,7 +1814,7 @@ func TestAccAliCloudKvstoreInstance_memcache_vpctest(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run", "auto_use_coupon", "backup_id", "business_info", "coupon_no", "dedicated_host_group_id", "effective_time", "force_upgrade", "global_instance", "global_instance_id", "order_type", "password", "period", "restore_time", "src_db_instance_id", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
+				ImportStateVerifyIgnore: []string{"dry_run", "business_info", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1897,6 +1969,11 @@ func AliCloudKVStoreRedisInstanceVpcBasicDependence0(name string) string {
 	return fmt.Sprintf(`
 	data "alicloud_resource_manager_resource_groups" "default" {
   		status = "OK"
+	}
+
+	data "alicloud_kvstore_zones" "default" {
+  		instance_charge_type = "PostPaid"
+		product_type         = "OnECS"
 	}
 
 	data "alicloud_vpcs" "default" {

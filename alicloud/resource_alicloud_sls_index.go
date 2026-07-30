@@ -1,8 +1,10 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
+	"reflect"
 	"strings"
 	"time"
 
@@ -11,6 +13,108 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
+
+// slsIndexApiDefaults defines the known default values that SLS API
+// automatically adds to each key's config when they are not specified by the user.
+var slsIndexApiDefaults = map[string]interface{}{
+	"alias":         "",
+	"caseSensitive": false,
+	"chn":           false,
+}
+
+// isApiDefaultValue checks if the given field value is a known API-added default.
+func isApiDefaultValue(fieldName string, value interface{}) bool {
+	defaultValue, exists := slsIndexApiDefaults[fieldName]
+	if !exists {
+		return false
+	}
+	return areFieldValuesEquivalent(value, defaultValue)
+}
+
+// areKeysJsonEquivalent compares two keys JSON strings semantically,
+// ignoring API-added default values. Returns true if user config matches state.
+func areKeysJsonEquivalent(old, new string) (bool, error) {
+	if old == "" && new == "" {
+		return true, nil
+	}
+	if old == "" || new == "" {
+		return false, nil
+	}
+
+	oldKeys := make(map[string]interface{})
+	if err := json.Unmarshal([]byte(old), &oldKeys); err != nil {
+		return compareJsonTemplateAreEquivalent(old, new)
+	}
+
+	newKeys := make(map[string]interface{})
+	if err := json.Unmarshal([]byte(new), &newKeys); err != nil {
+		return compareJsonTemplateAreEquivalent(old, new)
+	}
+
+	for keyName, newValue := range newKeys {
+		oldValue, exists := oldKeys[keyName]
+		if !exists {
+			return false, nil
+		}
+
+		newConfig, ok1 := newValue.(map[string]interface{})
+		oldConfig, ok2 := oldValue.(map[string]interface{})
+		if !ok1 || !ok2 {
+			return compareJsonTemplateAreEquivalent(old, new)
+		}
+
+		for fieldName, fieldValue := range newConfig {
+			oldFieldValue, hasInOld := oldConfig[fieldName]
+			if !hasInOld || !areFieldValuesEquivalent(oldFieldValue, fieldValue) {
+				return false, nil
+			}
+		}
+
+		// Suppress old-only fields only when the SLS API added a known default.
+		// Non-default values represent a user deletion or external drift.
+		for oldFieldName, oldFieldValue := range oldConfig {
+			if _, hasInNew := newConfig[oldFieldName]; !hasInNew {
+				if !isApiDefaultValue(oldFieldName, oldFieldValue) {
+					return false, nil
+				}
+			}
+		}
+	}
+
+	for keyName := range oldKeys {
+		if _, exists := newKeys[keyName]; !exists {
+			return false, nil
+		}
+	}
+
+	return true, nil
+}
+
+// areFieldValuesEquivalent compares field values, including compound JSON values.
+func areFieldValuesEquivalent(old, new interface{}) bool {
+	switch old.(type) {
+	case int, int64, float64:
+		switch new.(type) {
+		case int, int64, float64:
+			return toFloat64(old) == toFloat64(new)
+		}
+	}
+
+	return reflect.DeepEqual(old, new)
+}
+
+func toFloat64(v interface{}) float64 {
+	switch val := v.(type) {
+	case int:
+		return float64(val)
+	case int64:
+		return float64(val)
+	case float64:
+		return val
+	default:
+		return 0
+	}
+}
 
 func resourceAliCloudSlsIndex() *schema.Resource {
 	return &schema.Resource{
@@ -31,7 +135,7 @@ func resourceAliCloudSlsIndex() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					equal, _ := compareJsonTemplateAreEquivalent(old, new)
+					equal, _ := areKeysJsonEquivalent(old, new)
 					return equal
 				},
 			},

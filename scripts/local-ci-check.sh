@@ -295,7 +295,7 @@ fi
 # 1.5 Basic Check (fmt.Println, etc.)
 if echo "$CHANGED_FILES" | grep -q "\.go$\|website/docs"; then
   run_check "Basic Check (fmt.Println, doc links)" \
-    "\"$SCRIPT_DIR/basic-check.sh\"" \
+    "printf '%s\n' \"\$CHANGED_FILES\" | BASIC_CHECK_FILES_STDIN=true \"$SCRIPT_DIR/basic-check.sh\"" \
     || true
 fi
 

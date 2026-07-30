@@ -70,7 +70,7 @@ The following arguments are supported:
 * `dry_run` - (Optional, Bool) Specifies whether to check the validity of the request without actually making the request.request Default value: `false`. Valid values:
   - `true`: The validity of the request is checked, but the request is not made. Check items include the required parameters, request format, service limits, and available ECS resources. If the check fails, the corresponding error message is returned. If the check succeeds, the DryRunOperation error code is returned.
   - `false`: The validity of the request is checked. If the check succeeds, a 2xx HTTP status code is returned and the request is made.
-* `enable_auto_snapshot` - (Optional, Bool) Specifies whether to enable the automatic snapshot policy feature for the cloud disk. Valid values: `true`, `false`.
+* `enable_auto_snapshot` - (Deprecated, Optional, Bool) Specifies whether the automatic snapshot policy feature is enabled for the cloud disk. Valid values: `true` and `false`. The default value is empty, which indicates that the current value is not changed. **NOTE:** This parameter is deprecated. The automatic snapshot policy feature is enabled by default for a cloud disk after it is created. To use the automatic snapshot policy, apply one to the cloud disk.
 * `encrypted` - (Optional, ForceNew, Bool) Specifies whether to encrypt the disk. Default value: `false`. Valid values:
   - `true`: Enable.
   - `false`: Disable.

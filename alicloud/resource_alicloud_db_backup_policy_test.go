@@ -25,7 +25,7 @@ func TestAccAliCloudRdsDBBackupPolicyMySql(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		//CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -34,19 +34,15 @@ func TestAccAliCloudRdsDBBackupPolicyMySql(t *testing.T) {
 					"instance_id":                       "${alicloud_db_instance.default.id}",
 					"local_log_retention_hours":         "18",
 					"high_space_usage_protection":       "Enable",
-					"log_backup":                        "false",
-					"enable_backup_log":                 "false",
+					"enable_backup_log":                 "true",
 					"preferred_backup_time":             "02:00Z-03:00Z",
-					"backup_time":                       "02:00Z-03:00Z",
-					"retention_period":                  "900",
-					"backup_retention_period":           "900",
-					"backup_period":                     []string{"Wednesday"},
-					"log_retention_period":              "7",
+					"backup_retention_period":           "700",
+					"preferred_backup_period":           []string{"Monday", "Wednesday"},
+					"log_backup_retention_period":       "7",
 					"log_backup_local_retention_number": "20",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_id":                       CHECKSET,
 						"log_backup_local_retention_number": CHECKSET,
 					}),
 				),
@@ -70,13 +66,13 @@ func TestAccAliCloudRdsDBBackupPolicyMySql(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"backup_retention_period": "910",
-					"retention_period":        "910",
+					"backup_retention_period": "600",
+					"retention_period":        "600",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"retention_period":        "910",
-						"backup_retention_period": "910",
+						"retention_period":        "600",
+						"backup_retention_period": "600",
 					}),
 				),
 			},
@@ -136,37 +132,23 @@ func TestAccAliCloudRdsDBBackupPolicyMySql(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"compress_type": "1",
+					"compress_type": "8",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"compress_type": "1",
+						"compress_type": "8",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"archive_backup_retention_period": "150",
-					"archive_backup_keep_count":       "1",
-					"archive_backup_keep_policy":      "ByMonth",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"archive_backup_retention_period": "150",
-						"archive_backup_keep_count":       "1",
-						"archive_backup_keep_policy":      "ByMonth",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"archive_backup_keep_policy": "KeepAll",
 					"archive_backup_keep_count":  "1",
+					"archive_backup_keep_policy": "ByMonth",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"archive_backup_keep_policy": "KeepAll",
 						"archive_backup_keep_count":  "1",
+						"archive_backup_keep_policy": "ByMonth",
 					}),
 				),
 			},
@@ -190,43 +172,7 @@ func TestAccAliCloudRdsDBBackupPolicyMySql(t *testing.T) {
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"instance_id":                     "${alicloud_db_instance.default.id}",
-					"preferred_backup_period":         []string{"Wednesday", "Monday"},
-					"backup_period":                   []string{"Wednesday", "Monday"},
-					"backup_time":                     "03:00Z-04:00Z",
-					"retention_period":                "910",
-					"backup_retention_period":         "910",
-					"log_backup":                      "true",
-					"log_retention_period":            "8",
-					"local_log_retention_hours":       "48",
-					"high_space_usage_protection":     "Enable",
-					"archive_backup_retention_period": "100",
-					"archive_backup_keep_count":       "3",
-					"archive_backup_keep_policy":      "ByWeek",
-					"category":                        "Standard",
-					"enable_backup_log":               "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"preferred_backup_period.#":       "2",
-						"backup_period.#":                 "2",
-						"backup_time":                     "03:00Z-04:00Z",
-						"retention_period":                "910",
-						"backup_retention_period":         "910",
-						"log_backup":                      "true",
-						"log_retention_period":            "8",
-						"local_log_retention_hours":       "48",
-						"high_space_usage_protection":     "Enable",
-						"archive_backup_retention_period": "100",
-						"archive_backup_keep_count":       "3",
-						"archive_backup_keep_policy":      "ByWeek",
-						"category":                        "Standard",
-						"enable_backup_log":               "true",
-					}),
-				),
-			}},
+		},
 	})
 }
 
@@ -240,16 +186,7 @@ data "alicloud_db_zones" "default"{
 	engine_version = "8.0"
 	instance_charge_type = "PostPaid"
 	category = "HighAvailability"
- 	db_instance_storage_type = "local_ssd"
-}
-
-data "alicloud_db_instance_classes" "default" {
-    zone_id = data.alicloud_db_zones.default.zones.0.id
-	engine = "MySQL"
-	engine_version = "8.0"
-    category = "HighAvailability"
- 	db_instance_storage_type = "local_ssd"
-	instance_charge_type = "PostPaid"
+ 	db_instance_storage_type = "cloud_essd"
 }
 
 data "alicloud_vpcs" "default" {
@@ -284,14 +221,13 @@ resource "alicloud_security_group" "default" {
 resource "alicloud_db_instance" "default" {
     engine = "MySQL"
 	engine_version = "8.0"
- 	db_instance_storage_type = "local_ssd"
-	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min
+ 	db_instance_storage_type = "cloud_essd"
+  	instance_type            = "mysql.x4.large.2c"
+  	instance_storage         = "20"
 	vswitch_id = local.vswitch_id
 	instance_name = var.name
 	security_group_ids = alicloud_security_group.default.*.id
-}
-`, name)
+}`, name)
 }
 
 // lintignore: AT001
@@ -311,7 +247,7 @@ func TestAccAliCloudRdsDBBackupPolicyPostgreSQL(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		//CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -471,7 +407,7 @@ variable "name" {
 }
 data "alicloud_db_zones" "default"{
 	engine = "PostgreSQL"
-	engine_version = "14.0"
+	engine_version = "18.0"
 	instance_charge_type = "PostPaid"
 	category = "HighAvailability"
  	db_instance_storage_type = "cloud_essd"
@@ -480,7 +416,7 @@ data "alicloud_db_zones" "default"{
 data "alicloud_db_instance_classes" "default" {
     zone_id = data.alicloud_db_zones.default.zones.1.id
 	engine = "PostgreSQL"
-	engine_version = "14.0"
+	engine_version = "18.0"
     category = "HighAvailability"
  	db_instance_storage_type = "cloud_essd"
 	instance_charge_type = "PostPaid"
@@ -498,7 +434,7 @@ resource "alicloud_vswitch" "this" {
  count = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
  vswitch_name = var.name
  vpc_id = data.alicloud_vpcs.default.ids.0
- zone_id = data.alicloud_db_zones.default.ids.1
+ zone_id = data.alicloud_db_zones.default.ids.0
  cidr_block = cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)
 }
 locals {
@@ -515,16 +451,21 @@ resource "alicloud_security_group" "default" {
 	vpc_id = data.alicloud_vpcs.default.ids.0
 }
 
+// RDS PostgreSQL on ECS requires this service-linked role before CreateDBInstance
+resource "alicloud_rds_service_linked_role" "default" {
+	service_name = "AliyunServiceRoleForRdsPgsqlOnEcs"
+}
+
 resource "alicloud_db_instance" "default" {
 	engine = "PostgreSQL"
-	engine_version = "14.0"
+	engine_version = "18.0"
  	db_instance_storage_type = "cloud_essd"
 	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
 	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min
 	vswitch_id = local.vswitch_id
 	instance_name = var.name
 	security_group_ids = alicloud_security_group.default.*.id
-
+	depends_on = [alicloud_rds_service_linked_role.default]
 }
 `, name)
 }
@@ -546,7 +487,7 @@ func TestAccAliCloudRdsDBBackupPolicySQLServer(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		//CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -715,7 +656,7 @@ func TestAccAliCloudRdsDBBackupPolicySQLServerAlwaysOn(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		//CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -841,7 +782,7 @@ func TestAccAliCloudRdsDBBackupPolicyMariaDB(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		//CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{

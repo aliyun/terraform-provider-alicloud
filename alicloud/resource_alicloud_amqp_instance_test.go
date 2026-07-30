@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
@@ -94,11 +95,13 @@ func TestUnitAliCloudAmqpInstance(t *testing.T) {
 		"Data": map[string]interface{}{
 			"Instances": []interface{}{
 				map[string]interface{}{
-					"InstanceId":   "MockInstanceId",
-					"Status":       "SERVING",
-					"InstanceName": "instance_name",
-					"InstanceType": "PROFESSIONAL",
-					"SupportEIP":   false,
+					"InstanceId":        "MockInstanceId",
+					"Status":            "SERVING",
+					"InstanceName":      "instance_name",
+					"InstanceType":      "PROFESSIONAL",
+					"SupportEIP":        false,
+					"EncryptedInstance": true,
+					"KmsKeyId":          "MockKmsKeyId",
 				},
 			},
 			"InstanceList": []interface{}{
@@ -762,6 +765,149 @@ func TestUnitAliCloudAmqpInstance(t *testing.T) {
 	})
 }
 
+func TestUnitAliCloudAmqpInstanceEncryption(t *testing.T) {
+	resourceSchema := resourceAliCloudAmqpInstance()
+	assert.True(t, resourceSchema.Schema["encrypted_instance"].Optional)
+	assert.True(t, resourceSchema.Schema["encrypted_instance"].Computed)
+	assert.True(t, resourceSchema.Schema["encrypted_instance"].ForceNew)
+	assert.True(t, resourceSchema.Schema["kms_key_id"].Optional)
+	assert.False(t, resourceSchema.Schema["kms_key_id"].Computed)
+	assert.True(t, resourceSchema.Schema["kms_key_id"].ForceNew)
+	assert.False(t, resourceSchema.Schema["edition"].ForceNew)
+	serverlessChargeTypeValidate := resourceSchema.Schema["serverless_charge_type"].ValidateFunc
+	assert.NotNil(t, serverlessChargeTypeValidate)
+	_, validationErrors := serverlessChargeTypeValidate("onDemand", "serverless_charge_type")
+	assert.Empty(t, validationErrors)
+	_, validationErrors = serverlessChargeTypeValidate("provisioned", "serverless_charge_type")
+	assert.Empty(t, validationErrors)
+	_, validationErrors = serverlessChargeTypeValidate("invalid", "serverless_charge_type")
+	assert.NotEmpty(t, validationErrors)
+
+	newData := func(values map[string]interface{}) *schema.ResourceData {
+		return schema.TestResourceDataRaw(t, resourceSchema.Schema, values)
+	}
+
+	for name, values := range map[string]map[string]interface{}{
+		"vip": {
+			"payment_type":       "Subscription",
+			"instance_type":      "vip",
+			"encrypted_instance": true,
+			"kms_key_id":         "MockKmsKeyId",
+		},
+		"serverless provisioned dedicated": {
+			"payment_type":           "PayAsYouGo",
+			"serverless_charge_type": "provisioned",
+			"edition":                "dedicated",
+			"encrypted_instance":     true,
+			"kms_key_id":             "MockKmsKeyId",
+		},
+	} {
+		t.Run("valid "+name, func(t *testing.T) {
+			request := make(map[string]interface{})
+			assert.NoError(t, addAmqpInstanceEncryptionCreateRequest(newData(values), request))
+			assert.Equal(t, true, request["EncryptedInstance"])
+			assert.Equal(t, "MockKmsKeyId", request["KmsKeyId"])
+		})
+	}
+
+	t.Run("encryption arguments omitted", func(t *testing.T) {
+		request := make(map[string]interface{})
+		assert.NoError(t, addAmqpInstanceEncryptionCreateRequest(newData(map[string]interface{}{
+			"payment_type":  "PayAsYouGo",
+			"instance_type": "enterprise",
+			"edition":       "shared",
+		}), request))
+		assert.NotContains(t, request, "EncryptedInstance")
+		assert.NotContains(t, request, "KmsKeyId")
+	})
+
+	t.Run("encryption explicitly disabled", func(t *testing.T) {
+		request := make(map[string]interface{})
+		assert.NoError(t, addAmqpInstanceEncryptionCreateRequest(newData(map[string]interface{}{
+			"payment_type":       "PayAsYouGo",
+			"instance_type":      "enterprise",
+			"edition":            "shared",
+			"encrypted_instance": false,
+		}), request))
+		assert.Equal(t, false, request["EncryptedInstance"])
+		assert.NotContains(t, request, "KmsKeyId")
+	})
+
+	for name, testCase := range map[string]struct {
+		values map[string]interface{}
+		err    string
+	}{
+		"missing key": {
+			values: map[string]interface{}{
+				"payment_type":       "Subscription",
+				"instance_type":      "vip",
+				"encrypted_instance": true,
+			},
+			err: "kms_key_id must be configured when encrypted_instance is true",
+		},
+		"blank key": {
+			values: map[string]interface{}{
+				"payment_type":       "Subscription",
+				"instance_type":      "vip",
+				"encrypted_instance": true,
+				"kms_key_id":         "  ",
+			},
+			err: "kms_key_id must be configured when encrypted_instance is true",
+		},
+		"key without encryption": {
+			values: map[string]interface{}{
+				"payment_type":       "Subscription",
+				"instance_type":      "vip",
+				"encrypted_instance": false,
+				"kms_key_id":         "MockKmsKeyId",
+			},
+			err: "encrypted_instance must be true when kms_key_id is configured",
+		},
+	} {
+		t.Run("invalid "+name, func(t *testing.T) {
+			assert.EqualError(t, addAmqpInstanceEncryptionCreateRequest(newData(testCase.values), make(map[string]interface{})), testCase.err)
+		})
+	}
+
+	for name, values := range map[string]map[string]interface{}{
+		"subscription enterprise dedicated": {
+			"payment_type":       "Subscription",
+			"instance_type":      "enterprise",
+			"edition":            "dedicated",
+			"encrypted_instance": true,
+			"kms_key_id":         "MockKmsKeyId",
+		},
+		"pay as you go on demand dedicated": {
+			"payment_type":           "PayAsYouGo",
+			"serverless_charge_type": "onDemand",
+			"edition":                "dedicated",
+			"encrypted_instance":     true,
+			"kms_key_id":             "MockKmsKeyId",
+		},
+		"pay as you go provisioned shared": {
+			"payment_type":           "PayAsYouGo",
+			"serverless_charge_type": "provisioned",
+			"edition":                "shared",
+			"encrypted_instance":     true,
+			"kms_key_id":             "MockKmsKeyId",
+		},
+		"subscription provisioned dedicated": {
+			"payment_type":           "Subscription",
+			"serverless_charge_type": "provisioned",
+			"edition":                "dedicated",
+			"encrypted_instance":     true,
+			"kms_key_id":             "MockKmsKeyId",
+		},
+	} {
+		t.Run("passes through "+name, func(t *testing.T) {
+			request := make(map[string]interface{})
+			assert.NoError(t, addAmqpInstanceEncryptionCreateRequest(newData(values), request))
+			assert.Equal(t, true, request["EncryptedInstance"])
+			assert.Equal(t, "MockKmsKeyId", request["KmsKeyId"])
+		})
+	}
+}
+
 // Case 创建serverless实例 6128
 func TestAccAliCloudAmqpInstanceResource_basic6128(t *testing.T) {
 	var v map[string]interface{}
@@ -982,6 +1128,107 @@ func TestAccAliCloudAmqpInstanceResource_basic6128_twin(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudAmqpInstanceResource_encryptedServerlessDedicatedCreate(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_amqp_instance.default"
+	ra := resourceAttrInit(resourceId, AliCloudAmqpInstanceMap6128)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &AmqpServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAmqpInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%samqpencrypted%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAmqpInstanceEncryptedDependence6128)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+			testAccEnsureAmqpEncryptionServiceLinkedRole(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":           "PayAsYouGo",
+					"vpc_id":                 "${data.alicloud_vswitches.default.vpc_id}",
+					"vswitch_ids":            []string{"${data.alicloud_vswitches.default.ids.0}", "${data.alicloud_vswitches.default.ids.1}"},
+					"security_group_id":      "${data.alicloud_security_groups.default.ids.0}",
+					"serverless_charge_type": "provisioned",
+					"provisioned_capacity":   "20000",
+					"edition":                "dedicated",
+					"instance_name":          name,
+					"encrypted_instance":     true,
+					"kms_key_id":             "${alicloud_kms_key.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type":           "PayAsYouGo",
+						"vpc_id":                 CHECKSET,
+						"vswitch_ids.#":          "2",
+						"security_group_id":      CHECKSET,
+						"serverless_charge_type": "provisioned",
+						"provisioned_capacity":   "20000",
+						"edition":                "dedicated",
+						"instance_name":          name,
+						"encrypted_instance":     "true",
+						"kms_key_id":             CHECKSET,
+					}),
+					resource.TestCheckResourceAttrPair(resourceId, "kms_key_id", "alicloud_kms_key.default", "id"),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auth_model", "auto_renew", "modify_type", "period", "period_cycle", "serverless_charge_type", "renewal_duration", "renewal_duration_unit", "renewal_status"},
+			},
+		},
+	})
+}
+
+func testAccEnsureAmqpEncryptionServiceLinkedRole(t *testing.T) {
+	t.Helper()
+
+	const (
+		serviceName = "encrypt.amqp.aliyuncs.com"
+		roleID      = serviceName + ":AliyunServiceRoleForAmqpEncrypt"
+	)
+
+	rawClient, err := sharedClientForRegion(defaultRegionToTest)
+	if err != nil {
+		t.Fatalf("failed to get Alibaba Cloud client: %s", err)
+	}
+	aliyunClient := rawClient.(*connectivity.AliyunClient)
+	ramService := RamService{aliyunClient}
+	if _, err = ramService.DescribeRamServiceLinkedRole(roleID); err == nil {
+		return
+	} else if !NotFoundError(err) && !IsExpectedErrors(err, []string{"EntityNotExist.Role"}) {
+		t.Fatalf("failed to describe AMQP encryption service-linked role: %s", err)
+	}
+
+	request := map[string]interface{}{"ServiceName": serviceName}
+	if _, err = aliyunClient.RpcPost("ResourceManager", "2020-03-31", "CreateServiceLinkedRole", nil, request, true); err != nil &&
+		!IsExpectedErrors(err, []string{"AlreadyExists", "EntityAlreadyExists"}) {
+		t.Fatalf("failed to create AMQP encryption service-linked role: %s", err)
+	}
+
+	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+		if _, describeErr := ramService.DescribeRamServiceLinkedRole(roleID); describeErr != nil {
+			if NotFoundError(describeErr) || IsExpectedErrors(describeErr, []string{"EntityNotExist.Role"}) {
+				return resource.RetryableError(describeErr)
+			}
+			return resource.NonRetryableError(describeErr)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("AMQP encryption service-linked role did not become available: %s", err)
+	}
+}
+
 var AliCloudAmqpInstanceMap6128 = map[string]string{
 	"status":        CHECKSET,
 	"create_time":   CHECKSET,
@@ -1008,6 +1255,15 @@ func AliCloudAmqpInstanceBasicDependence6128(name string) string {
   		name_regex = "^sae"
 	}
 `, name)
+}
+
+func AliCloudAmqpInstanceEncryptedDependence6128(name string) string {
+	return AliCloudAmqpInstanceBasicDependence6128(name) + `
+	resource "alicloud_kms_key" "default" {
+		description            = "terraform-provider-alicloud AMQP acceptance test"
+		pending_window_in_days = 7
+	}
+`
 }
 
 // Test Amqp Instance. >>> Resource test cases, automatically generated.

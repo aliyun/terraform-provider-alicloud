@@ -1761,6 +1761,9 @@ func resourceAlicloudOssBucketDelete(d *schema.ResourceData, meta interface{}) e
 								VersionId: object.VersionId,
 							})
 						}
+						if len(objectsToDelete) == 0 {
+							return nil, nil
+						}
 						return bucket.DeleteObjectVersions(objectsToDelete)
 					})
 					if er != nil {

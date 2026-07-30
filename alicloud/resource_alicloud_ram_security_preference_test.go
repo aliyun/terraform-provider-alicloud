@@ -35,9 +35,9 @@ func TestAccAliCloudRamSecurityPreference_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -470,7 +470,7 @@ func TestAccAliCloudRamSecurityPreference_basic9192(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{
@@ -686,7 +686,7 @@ func TestAccAliCloudRamSecurityPreference_basic10751(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{
@@ -879,10 +879,7 @@ func AlicloudRamSecurityPreferenceBasicDependence10751(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
-}
-
-
-`, name)
+}`, name)
 }
 
 // Test Ram SecurityPreference. <<< Resource test cases, automatically generated.

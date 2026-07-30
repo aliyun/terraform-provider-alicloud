@@ -44,6 +44,12 @@ func resourceAliCloudAmqpInstance() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"encrypted_instance": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
 			"instance_name": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -61,6 +67,11 @@ func resourceAliCloudAmqpInstance() *schema.Resource {
 				ForceNew:     true,
 				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"tcp_and_ssl", "ssl_only"}, false),
+			},
+			"kms_key_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
 			},
 			"max_connections": {
 				Type:     schema.TypeInt,
@@ -159,8 +170,9 @@ func resourceAliCloudAmqpInstance() *schema.Resource {
 				ForceNew: true,
 			},
 			"serverless_charge_type": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"onDemand", "provisioned"}, false),
 			},
 			"serverless_switch": {
 				Type:     schema.TypeBool,
@@ -240,6 +252,9 @@ func resourceAliCloudAmqpInstanceCreate(d *schema.ResourceData, meta interface{}
 	}
 	if v, ok := d.GetOk("edition"); ok {
 		request["Edition"] = v
+	}
+	if err := addAmqpInstanceEncryptionCreateRequest(d, request); err != nil {
+		return err
 	}
 	if v, ok := d.GetOk("instance_type"); ok {
 		request["InstanceType"] = v
@@ -351,9 +366,11 @@ func resourceAliCloudAmqpInstanceRead(d *schema.ResourceData, meta interface{}) 
 
 	d.Set("create_time", objectRaw["OrderCreateTime"])
 	d.Set("edition", objectRaw["Edition"])
+	d.Set("encrypted_instance", objectRaw["EncryptedInstance"])
 	d.Set("instance_name", objectRaw["InstanceName"])
 	d.Set("instance_type", convertAmqpInstanceDataInstanceTypeResponse(objectRaw["InstanceType"]))
 	d.Set("listener_mode", objectRaw["ListenerMode"])
+	d.Set("kms_key_id", objectRaw["KmsKeyId"])
 	d.Set("max_connections", objectRaw["MaxConnections"])
 	d.Set("max_eip_tps", objectRaw["MaxEipTps"])
 	d.Set("max_tps", objectRaw["MaxTps"])
@@ -798,4 +815,29 @@ func convertAmqpInstanceModifyTypeRequest(source interface{}) interface{} {
 		return "UPGRADE"
 	}
 	return source
+}
+
+func addAmqpInstanceEncryptionCreateRequest(d *schema.ResourceData, request map[string]interface{}) error {
+	encryptedRaw, encryptedConfigured := d.GetOkExists("encrypted_instance")
+	kmsKeyIdRaw, kmsKeyConfigured := d.GetOk("kms_key_id")
+	encrypted, _ := encryptedRaw.(bool)
+	kmsKeyId := strings.TrimSpace(fmt.Sprint(kmsKeyIdRaw))
+
+	if kmsKeyConfigured && kmsKeyId == "" {
+		return fmt.Errorf("kms_key_id must be configured when encrypted_instance is true")
+	}
+	if kmsKeyConfigured && !encrypted {
+		return fmt.Errorf("encrypted_instance must be true when kms_key_id is configured")
+	}
+	if encrypted && !kmsKeyConfigured {
+		return fmt.Errorf("kms_key_id must be configured when encrypted_instance is true")
+	}
+
+	if encryptedConfigured {
+		request["EncryptedInstance"] = encrypted
+	}
+	if kmsKeyConfigured {
+		request["KmsKeyId"] = kmsKeyId
+	}
+	return nil
 }
