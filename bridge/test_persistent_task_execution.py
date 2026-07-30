@@ -9,6 +9,7 @@ from types import SimpleNamespace
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from bridge.persistent_tasks import PersistentTaskExecution
+from bridge.task_input_contract import TaskInputContractError
 from bridge.task_policy import (
     HEADLESS_POLICY_REVISION,
 )
@@ -110,6 +111,27 @@ class PersistentTaskExecutionTest(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "input snapshot is missing"):
             execution.execute({"task": {"taskType": "ticket"}, "session": {}}, controller)
+        self.assertEqual(captured, {})
+
+    def test_missing_prompt_is_typed_nonretryable_input_error(self):
+        execution, captured = self._execution()
+        controller = SimpleNamespace(
+            runtime_session_id="run-1", resumed=False,
+            bind_process=lambda _process: None)
+
+        with self.assertRaises(TaskInputContractError) as raised:
+            execution.execute({
+                "task": {"taskType": "ticket", "sourceType": "AONE"},
+                "session": {"inputPayload": {
+                    "itemId": "84407231",
+                    "project": "1086837",
+                    "kind": "ticket",
+                    "policyRevision": HEADLESS_POLICY_REVISION,
+                }},
+            }, controller)
+
+        self.assertEqual(raised.exception.code, "INPUT_NOT_PORTABLE")
+        self.assertFalse(raised.exception.retryable)
         self.assertEqual(captured, {})
 
     def test_adhoc_notification_uses_injected_card_adapter(self):

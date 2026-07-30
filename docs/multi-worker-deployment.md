@@ -56,6 +56,52 @@ source. Its explicit entries contain `daily.probe`, `aone.scan`,
 `external.recovery`.
 No periodic job is allowed to have a second legacy loop.
 
+## Cross-host redispatch
+
+An operator can move a reviewed, replay-safe suspended Task away from its
+current host without opening a public-queue race:
+
+```bash
+bootstrap/control-plane-status.sh force-redispatch TASK_ID [SESSION_ID] \
+  --auto-target --target-runtime PERSISTENT \
+  --reason "move suspended task off the current host" --yes
+
+bootstrap/control-plane-status.sh force-redispatch TASK_ID [SESSION_ID] \
+  --target-worker WORKER_KEY \
+  --target-runtime INTERACTIVE \
+  --reason "move suspended task to the selected online worker" --yes
+
+bootstrap/control-plane-status.sh force-redispatch TASK_ID [SESSION_ID] \
+  --target-host HOST_ID --target-runtime INTERACTIVE \
+  --reason "move suspended task to an interactive session on this machine" --yes
+```
+
+The control plane performs source CAS validation, fences the old Session, and
+selects or validates the target Worker in one transaction. The target must be
+online on another host, match `--target-runtime`, advertise `PORTABLE_V1`, and
+satisfy the Task's non-affinity capabilities. `--target-worker` selects one
+exact Worker incarnation; `--target-host` lets the server select an eligible
+online Worker on that machine. An explicit target never falls back to another
+machine. A successful `READY` response means the Task is privately queued for
+the selected Worker; execution starts only after that Worker leases it.
+
+Both runtime modes consume the same immutable `PORTABLE_V1` input. New
+interactive direct claims therefore include a replay prompt and context
+metadata from the start. When an older canonical Aone Task lacks a prompt, the
+CLI submits a digest-checked fresh-generation replacement whose minimum prompt
+requires the receiver to read the latest Aone details/comments and
+control-plane receipts before acting, preventing repeated external writes.
+Non-Aone or otherwise incomplete legacy input is blocked as
+`INPUT_NOT_REHYDRATABLE`.
+
+Interactive Workers continue to advertise `dispatch.pull=false`. They receive
+only exact-incarnation reservations through the targeted-lease endpoint and
+inject the portable prompt into the next user turn; they never pull the public
+READY queue.
+
+This is a separate operator action from `force-release`. The latter retains
+its stricter wait-state guard and does not choose a destination.
+
 The definitions use only the Scheduler runtime. `jobs.py` validates and loads
 the checked-in YAML; `bridge/run.sh` automatically prefers `.venv/bridge` when
 it is present.

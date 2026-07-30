@@ -30,6 +30,10 @@ from bridge.task_policy import (
     HEADLESS_POLICY_REVISION,
     policy_desired_revision,
 )
+from bridge.task_input_contract import (
+    RUNTIME_PERSISTENT,
+    portable_task_payload,
+)
 
 
 TASK = "TASK"
@@ -66,13 +70,15 @@ def _task_envelope(*, item_id, project, task_type, source_type, source_ref,
                    required_capabilities=None, max_retries=None,
                    source_status=None, **payload) -> TaskEnvelope:
     """Build a control-plane Task without importing a worker implementation."""
-    body = {"itemId": str(item_id), "project": str(project or ""),
-            "kind": str(task_type), "prompt": prompt}
-    body.update(payload)
-    # The caller cannot freeze a newly-created generation under an obsolete
-    # policy. Persistent workers validate this immutable snapshot before any
-    # field repair, identity check, Aone claim, or model spawn.
-    body["policyRevision"] = HEADLESS_POLICY_REVISION
+    body = portable_task_payload(
+        item_id=item_id,
+        project=(project or ("local" if str(source_type).upper() != "AONE" else "")),
+        kind=task_type,
+        prompt=prompt,
+        origin_runtime=RUNTIME_PERSISTENT,
+        trigger=trigger,
+        **payload,
+    )
     # Every envelope produced here is durable control-plane work.  The
     # executor validates the frozen policy for Aone and Terraform generations,
     # so every producer (including post-PR pr_ci_fix/pr_comment_reply) must
@@ -220,12 +226,19 @@ class WakePersistence:
         source_ref: dict[str, Any] = {"aoneId": aone_id, "projectId": project}
         if str(title or "").strip():
             source_ref["title"] = str(title).strip()
-        payload = {
-            "itemId": aone_id, "project": project, "kind": "wake", "prompt": prompt,
-            "policyRevision": self._policy_revision,
-            "priorRuntimeSessionId": task.get("session_id"), "terraform": terraform,
-            "target": task["target"], "targetType": task["target_type"],
-        }
+        payload = portable_task_payload(
+            item_id=aone_id,
+            project=project,
+            kind="wake",
+            prompt=prompt,
+            origin_runtime=RUNTIME_PERSISTENT,
+            trigger="WAKE",
+            policy_revision=self._policy_revision,
+            priorRuntimeSessionId=task.get("session_id"),
+            terraform=terraform,
+            target=task["target"],
+            targetType=task["target_type"],
+        )
         result = self._router.enqueue(TaskEnvelope(
             task_key=_aone_task_key(project, aone_id), source_type="AONE",
             source_ref=source_ref, task_type="wake",

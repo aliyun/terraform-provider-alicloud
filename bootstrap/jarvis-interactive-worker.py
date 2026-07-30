@@ -60,6 +60,14 @@ from bridge.task_policy import (  # noqa: E402
     HEADLESS_POLICY_REVISION,
     policy_desired_revision,
 )
+from bridge.task_input_contract import (  # noqa: E402
+    PORTABLE_INPUT_CONTRACT,
+    RUNTIME_INTERACTIVE,
+    TaskInputContractError,
+    fresh_replay_prompt,
+    portable_task_payload,
+    validate_portable_task_input,
+)
 
 
 CONFLICT_EXIT = 10
@@ -374,15 +382,22 @@ def _current_store() -> StateStore:
 
 def _capabilities(state: Mapping[str, Any]) -> Dict[str, Any]:
     capabilities = {
-        "dispatch": {"pull": False},
+        "dispatch": {"pull": False, "targeted": True},
         "bridgeRole": os.environ.get("JARVIS_BRIDGE_ROLE", "interactive"),
         "workerMode": "INTERACTIVE",
+        "runtime": {
+            "mode": RUNTIME_INTERACTIVE,
+            "inputContracts": [PORTABLE_INPUT_CONTRACT],
+        },
         "workerKey": state.get("workerKey"),
         "client": state.get("client"),
         "clientSessionId": state.get("clientSessionId"),
         "hostPid": state.get("hostPid"),
         "hostProcessStartedAt": state.get("hostProcessStartedAt"),
-        "kinds": ["interactive-aone"],
+        "kinds": [
+            "interactive-aone", "ticket", "wake", "persona", "revisit",
+            "pr_ci_fix", "pr_comment_reply",
+        ],
     }
     policy = state.get("headlessPolicy")
     if state.get("headlessRegistered") and isinstance(policy, Mapping):
@@ -2184,6 +2199,9 @@ def _build_incarnation_state(
         "version": os.environ.get(
             "JARVIS_INTERACTIVE_WORKER_VERSION", "interactive-v1"),
         "claimCounter": int(old_state.get("claimCounter") or 0),
+        "targetedPollCounter": (
+            int(old_state.get("targetedPollCounter") or 0)
+            if same_incarnation else 0),
         "current": old_state.get("current") if same_incarnation else None,
         "sessionPermit": (
             old_state.get("sessionPermit") if same_incarnation else None),
@@ -2474,8 +2492,18 @@ def hook(client_name: str, event: Mapping[str, Any]) -> int:
                 return 0
             else:
                 _record_codex_turn(store, event_name, event)
-            message = (_resume_codex_turn(store, event)
-                       if event_name == "UserPromptSubmit" else None)
+            message = None
+            if event_name == "UserPromptSubmit":
+                state = store.load()
+                if state and state.get("workerKey"):
+                    receive_targeted_task(
+                        store, _client(), str(state["workerKey"]))
+                message = _resume_codex_turn(store, event)
+                targeted_message = _consume_targeted_prompt(store)
+                if targeted_message:
+                    message = (
+                        "%s\n\n%s" % (message, targeted_message)
+                        if message else targeted_message)
         except Exception as exc:
             print("interactive worker turn warning: %s" % type(exc).__name__,
                   file=sys.stderr)
@@ -2483,6 +2511,22 @@ def hook(client_name: str, event: Mapping[str, Any]) -> int:
                        "不得沿用旧任务归属。")
         _hook_output(event_name, message)
         return STATE_ERROR_EXIT if event_name == "Stop" and message else 0
+
+    if event_name == "UserPromptSubmit":
+        message = None
+        try:
+            state = store.load()
+            if state and state.get("workerKey"):
+                receive_targeted_task(
+                    store, _client(), str(state["workerKey"]))
+            message = _consume_targeted_prompt(store)
+        except Exception as exc:
+            print("interactive targeted receive warning: %s" %
+                  type(exc).__name__, file=sys.stderr)
+            message = (
+                "Jarvis 定向任务领取校验失败；本轮不得绕过控制面处理 Aone。")
+        _hook_output(event_name, message)
+        return 0
 
     if event_name == "SessionEnd":
         try:
@@ -2926,6 +2970,153 @@ def _auto_suspend_idle_session(store: StateStore,
         return True
 
 
+def _targeted_poll_identity(state: Mapping[str, Any]) -> Tuple[str, str]:
+    counter = int(state.get("targetedPollCounter") or 0) + 1
+    material = "%s|%s|%s" % (
+        state.get("workerKey"), state.get("clientSessionId"), counter)
+    digest = hashlib.sha256(material.encode("utf-8")).hexdigest()[:24]
+    runtime_id = "interactive-targeted:%s:%s" % (
+        str(state.get("client") or "client"), digest)
+    return runtime_id, "jarvis-interactive-targeted-lease-%s" % digest
+
+
+def _accept_targeted_lease_locked(
+        state: Dict[str, Any], lease: Mapping[str, Any],
+        cp: ControlPlaneClient, store: StateStore) -> bool:
+    """Attach one server-selected exact-target lease to this interactive session."""
+    lease_value = lease.get("lease") if "lease" in lease else lease
+    if not isinstance(lease_value, Mapping) or not lease_value:
+        state["targetedPollCounter"] = int(
+            state.get("targetedPollCounter") or 0) + 1
+        return False
+    task = lease_value.get("task")
+    session = lease_value.get("session")
+    if not isinstance(task, Mapping) or not isinstance(session, Mapping):
+        raise TaskInputContractError(
+            "INVALID_TARGETED_LEASE", "targeted lease lacks task/session")
+    payload = session.get("inputPayload")
+    if isinstance(payload, str):
+        try:
+            payload = json.loads(payload)
+        except (TypeError, ValueError) as exc:
+            raise TaskInputContractError(
+                "INVALID_SOURCE_INPUT",
+                "targeted Session input is not valid JSON") from exc
+    portable = validate_portable_task_input(
+        payload, target_runtime=RUNTIME_INTERACTIVE)
+    item_id = str(portable["itemId"]).strip()
+    project_id = str(portable["project"]).strip()
+    prompt = str(portable["prompt"])
+    task_id = _field(task, "id", "taskId", "task_id")
+    session_id = _field(session, "id", "sessionId", "session_id")
+    generation = _field(session, "generation") or _field(task, "generation")
+    fence = _field(session, "fenceToken", "fence_token")
+    if task_id is None or session_id is None or generation is None or fence is None:
+        raise TaskInputContractError(
+            "INVALID_TARGETED_LEASE", "targeted lease identifiers are incomplete")
+    runtime_id = str(_field(
+        session, "runtimeSessionId", "runtime_session_id") or "").strip()
+    if not runtime_id:
+        raise TaskInputContractError(
+            "INVALID_TARGETED_LEASE", "targeted lease lacks runtimeSessionId")
+    source_ref = task.get("sourceRef")
+    source_ref = source_ref if isinstance(source_ref, Mapping) else {}
+    cycle = int(state.get("claimCounter") or 0) + 1
+    current = {
+        "aoneId": item_id,
+        "projectId": project_id,
+        "title": str(source_ref.get("title") or portable.get("title") or ""),
+        "taskId": task_id,
+        "sessionId": session_id,
+        "generation": generation,
+        "fenceToken": fence,
+        "attemptNo": _field(session, "attemptNo", "attempt_no") or 1,
+        "cycle": cycle,
+        "runtimeSessionId": runtime_id,
+        "leaseSeconds": _interactive_lease_seconds(),
+        "startedAt": int(time.time()),
+        "heartbeatEnabled": True,
+        "targetedPrompt": prompt,
+        "targetedPromptDelivered": False,
+        "targetedRuntimeTransfer": True,
+    }
+    start_result = cp.start_session(
+        str(session_id), state["workerKey"], fence, {
+            "runtimeSessionId": runtime_id,
+            "pid": int(state["hostPid"]),
+            "transcriptUri": state.get("transcriptPath"),
+            "workspaceRef": state.get("cwd"),
+            "branchRef": state.get("branch"),
+            "logUri": str(store.path.with_suffix(".log")),
+            "leaseSeconds": _interactive_lease_seconds(),
+        },
+        process_uuid=state["processUuid"],
+        request_id="jarvis-interactive-targeted-start-%s" %
+        hashlib.sha256(
+            (str(session_id) + "|" + str(fence)).encode()).hexdigest()[:24],
+    )
+    state["claimCounter"] = cycle
+    state["targetedPollCounter"] = int(
+        state.get("targetedPollCounter") or 0) + 1
+    state["current"] = current
+    state["pendingClaim"] = None
+    state.pop("lastAutoSuspended", None)
+    state.pop("recoveryPending", None)
+    _refresh_session_permit_locked(
+        state, current, start_result, source="targeted-lease-start")
+    return True
+
+
+def receive_targeted_task(
+        store: StateStore, cp: ControlPlaneClient,
+        expected_worker_key: str) -> bool:
+    """Receive only an exact-incarnation targeted Task; never pull public work."""
+    with store.locked():
+        state = store.load_unlocked()
+        if (state.get("workerKey") != expected_worker_key
+                or state.get("stopped")
+                or isinstance(state.get("current"), Mapping)
+                or state.get("pendingClaim")
+                or state.get("pendingOperation")
+                or state.get("pendingSuspend")):
+            return False
+        runtime_id, request_id = _targeted_poll_identity(state)
+        response = cp.lease_targeted_task(
+            state["workerKey"],
+            runtime_session_id=runtime_id,
+            lease_seconds=_interactive_lease_seconds(),
+            free_slots=1,
+            process_uuid=state["processUuid"],
+            request_id=request_id,
+        )
+        if not isinstance(response, Mapping):
+            raise TaskInputContractError(
+                "INVALID_TARGETED_LEASE", "targeted lease response must be an object")
+        accepted = _accept_targeted_lease_locked(state, response, cp, store)
+        store.save_unlocked(state)
+        return accepted
+
+
+def _consume_targeted_prompt(store: StateStore) -> Optional[str]:
+    with store.locked():
+        state = store.load_unlocked()
+        current = state.get("current")
+        if (not isinstance(current, Mapping)
+                or not current.get("targetedRuntimeTransfer")
+                or current.get("targetedPromptDelivered")):
+            return None
+        prompt = str(current.get("targetedPrompt") or "").strip()
+        if not prompt:
+            return None
+        current["targetedPromptDelivered"] = True
+        current["targetedPromptDeliveredAt"] = int(time.time())
+        store.save_unlocked(state)
+        return (
+            "Jarvis 已通过 exact Worker incarnation 接收一条跨 Runtime 定向任务。"
+            "该任务已持有数据库 fence；不得改做当前用户消息中的其它 Aone。\n\n"
+            + prompt)
+
+
 def daemon(state_path: Path, expected_worker_key: str) -> int:
     store = StateStore(state_path)
     interval = _interactive_heartbeat_seconds()
@@ -2982,6 +3173,22 @@ def daemon(state_path: Path, expected_worker_key: str) -> int:
                           file=sys.stderr)
                     return 0
                 current = latest.get("current")
+                if (not isinstance(current, Mapping)
+                        and str(latest.get("client") or "") == "codex"
+                        and not _codex_turn_live(latest)):
+                    runtime_id, request_id = _targeted_poll_identity(latest)
+                    targeted = cp.lease_targeted_task(
+                        latest["workerKey"],
+                        runtime_session_id=runtime_id,
+                        lease_seconds=_interactive_lease_seconds(),
+                        free_slots=1,
+                        process_uuid=latest["processUuid"],
+                        request_id=request_id,
+                    )
+                    if isinstance(targeted, Mapping):
+                        _accept_targeted_lease_locked(
+                            latest, targeted, cp, store)
+                    current = latest.get("current")
                 if (isinstance(current, Mapping)
                         and current.get("heartbeatEnabled", True)):
                     heartbeat_current = dict(current)
@@ -3034,6 +3241,8 @@ def daemon(state_path: Path, expected_worker_key: str) -> int:
                 "session ownership lost")
         except ControlPlaneConflict as exc:
             print("interactive suspend conflict: %s" % type(exc).__name__, file=sys.stderr)
+        except TaskInputContractError as exc:
+            print("interactive targeted input blocked: %s" % exc, file=sys.stderr)
         except ControlPlaneError as exc:
             # Fail closed for mutations; heartbeat transport failures simply retry.
             print("interactive heartbeat warning: %s" % type(exc).__name__, file=sys.stderr)
@@ -3209,11 +3418,23 @@ def prepare_claim(aone_id: str, project_id: str, title: str = "",
             and str(existing_claim.get("runtimeSessionId")) == runtime_id
             and existing_claim.get("phase") == "CLAIMING"
             and existing_claim.get("claimRequestId"))
+        same_claim_context = (
+            isinstance(existing_claim, Mapping)
+            and str(existing_claim.get("aoneId")) == aone_id
+            and str(existing_claim.get("projectId")) == project_id
+            and str(existing_claim.get("runtimeSessionId")) == runtime_id)
+        same_current_context = (
+            isinstance(current_before_claim, Mapping)
+            and str(current_before_claim.get("aoneId")) == aone_id
+            and str(current_before_claim.get("projectId")) == project_id
+            and str(current_before_claim.get("runtimeSessionId")) == runtime_id)
         # Freeze the first observed value (including an unavailable/blank read) for
         # this request identifier. Retrying a lost response must send the same body.
         stable_title = (
             str(existing_claim.get("title") or "")
-            if same_inflight and "title" in existing_claim else title)
+            if same_claim_context and "title" in existing_claim else
+            str(current_before_claim.get("title") or "")
+            if same_current_context and "title" in current_before_claim else title)
         # source_status follows the same freeze contract: claim.sh reads the Aone
         # workitem status BEFORE advancing it, so the first non-blank observation is
         # the pre-claim state. A lost-response retry must resend the identical body
@@ -3222,7 +3443,10 @@ def prepare_claim(aone_id: str, project_id: str, title: str = "",
         # may have moved (e.g. status advanced to 处理中 after the first claim).
         stable_source_status = (
             str(existing_claim.get("sourceStatus") or "")
-            if same_inflight and "sourceStatus" in existing_claim else source_status)
+            if same_claim_context and "sourceStatus" in existing_claim else
+            str(current_before_claim.get("sourceStatus") or "")
+            if same_current_context and "sourceStatus" in current_before_claim
+            else source_status)
         claim_request_id = (
             str(existing_claim["claimRequestId"]) if same_inflight else
             "jarvis-interactive-claim-%s" % hashlib.sha256(
@@ -3250,13 +3474,14 @@ def prepare_claim(aone_id: str, project_id: str, title: str = "",
     source_ref = {"aoneId": aone_id, "projectId": project_id}
     if stable_title:
         source_ref["title"] = stable_title
-    payload = {
-        "kind": "ticket",
-        "itemId": aone_id,
-        "project": project_id,
-        "trigger": "INTERACTIVE",
-        "policyRevision": HEADLESS_POLICY_REVISION,
-    }
+    payload = portable_task_payload(
+        item_id=aone_id,
+        project=project_id,
+        kind="ticket",
+        prompt=fresh_replay_prompt(aone_id, project_id, stable_title),
+        origin_runtime=RUNTIME_INTERACTIVE,
+        trigger="INTERACTIVE",
+    )
     envelope = TaskEnvelope(
         task_key="aone:%s:%s" % (project_id, aone_id),
         source_type="AONE",
@@ -3322,6 +3547,7 @@ def prepare_claim(aone_id: str, project_id: str, title: str = "",
         "aoneId": aone_id,
         "projectId": project_id,
         "title": stable_title,
+        "sourceStatus": stable_source_status,
         "taskId": task_id,
         "sessionId": session_id,
         "generation": generation,

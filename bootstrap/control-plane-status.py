@@ -10,10 +10,11 @@
 
 凭证由 wrapper 经共享 machine runtime loader 加载（token 回退
 JARVIS_HTML_REPORT_TOKEN）；控制面地址可显式覆盖，默认指向预发。
-本文件只读环境变量、不读 env 文件。``discard-resume`` 和 ``force-release`` 是写操作，
-且必须显式 ``--yes``。
+本文件只读环境变量、不读 env 文件。``discard-resume``、``force-release`` 和
+``force-redispatch`` 是写操作，且必须显式 ``--yes``。
 
-退出码：0=成功；1=控制面无该工单任务；2=缺 token 配置；3=控制面请求失败。
+退出码：0=成功；1=控制面无该工单任务；2=参数/凭证问题；3=控制面请求失败；
+4=Task 输入不满足跨 Runtime 契约。
 """
 
 import argparse
@@ -26,6 +27,10 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent / "bridge"))
 
 from jarvis_task_client import ControlPlaneClient, ControlPlaneError  # noqa: E402
+from task_input_contract import (  # noqa: E402
+    TaskInputContractError,
+    portable_replacement_for_redispatch,
+)
 
 EVENT_TAIL = 5  # task 视图只列最近 N 条 event（全量看服务端 timeline）
 DEFAULT_CONTROL_PLANE_BASE_URL = "https://pre-agent.aliyun-inc.com"
@@ -336,6 +341,94 @@ def cmd_force_release(client, task_id, session_id, reason, yes):
     return 0
 
 
+def cmd_force_redispatch(
+        client, task_id, session_id, reason, yes, target_worker_key,
+        target_host_id, target_runtime):
+    if not yes:
+        sys.stderr.write(
+            "error: force-redispatch fences the reviewed ownership and targets "
+            "another online queue worker; pass --yes to fetch a fresh CAS "
+            "snapshot and continue\n")
+        return 2
+    try:
+        timeline = client.get_task_timeline(str(task_id))
+        snapshot = _force_release_snapshot(timeline, task_id, session_id)
+        replacement = portable_replacement_for_redispatch(
+            timeline,
+            target_runtime=target_runtime,
+            selected_session_id=snapshot["expected_session_id"],
+        )
+        result = client.force_redispatch_task(
+            str(task_id),
+            target_worker_key=target_worker_key,
+            target_host_id=target_host_id,
+            target_runtime=target_runtime,
+            portable_input_replacement=replacement,
+            reason=reason,
+            **snapshot)
+    except ControlPlaneError as exc:
+        if getattr(exc, "status", None) == 404:
+            sys.stderr.write(
+                "error: force-redispatch endpoint is unavailable (HTTP 404); "
+                "the control-plane server version has not been deployed\n")
+            return 3
+        raise
+    except TaskInputContractError as exc:
+        sys.stderr.write(
+            "error: force-redispatch blocked by Task input contract: "
+            "%s\n" % exc)
+        return 4
+    except (TypeError, ValueError) as exc:
+        sys.stderr.write(
+            "error: cannot build force-redispatch CAS: %s\n" % exc)
+        return 3
+
+    task = result.get("task") if isinstance(result.get("task"), dict) else {}
+    target = (
+        result.get("targetWorker")
+        if isinstance(result.get("targetWorker"), dict) else {})
+    old_generation = result.get(
+        "previousGeneration", snapshot["expected_generation"])
+    new_generation = task.get("generation", result.get("generation", "?"))
+    old_session = result.get(
+        "releasedSessionId", snapshot["expected_session_id"])
+    final_status = task.get("status", result.get("status", "?"))
+    print(
+        "cross-machine redispatch: action=%s targetRuntime=%s oldGeneration=%s "
+        "newGeneration=%s oldSession=%s finalStatus=%s"
+        % (
+            result.get("action", "?"),
+            target_runtime,
+            old_generation,
+            new_generation,
+            old_session if old_session is not None else "-",
+            final_status,
+        ))
+    print(
+        "  targetWorkerId=%s targetWorkerKey=%s hostId=%s processUuid=%s "
+        "activity=%s"
+        % (
+            target.get("id", "-"),
+            target.get("workerKey", "-"),
+            target.get("hostId", "-"),
+            target.get("processUuid", "-"),
+            target.get("activityStatus", target.get("status", "-")),
+        ))
+    print(
+        "  dispatch=targeted/queued; READY does not mean the target worker "
+        "has started a new session")
+    if replacement is not None:
+        print(
+            "  input=rehydrated PORTABLE_V1 sourceDigest=%s replacementDigest=%s"
+            % (
+                replacement["expectedSourceInputDigest"][:16],
+                replacement["replacementDigest"][:16],
+            ))
+    if result.get("message"):
+        print("  message=%s" % result.get("message"))
+    return 0
+
+
 def cmd_legacy_cleanup(client, yes):
     preview = client.preview_legacy_kind_cleanup()
     if not isinstance(preview, dict):
@@ -403,6 +496,31 @@ def main(argv=None):
         help="expected Session id (default: fresh task.currentSessionId)")
     p_release.add_argument("--reason", required=True, help="auditable release reason")
     p_release.add_argument("--yes", action="store_true", help="confirm ownership release")
+    p_redispatch = sub.add_parser(
+        "force-redispatch",
+        help="release one ownership snapshot and target an online worker on another host")
+    p_redispatch.add_argument("task_id", type=int, help="control-plane Task id")
+    p_redispatch.add_argument(
+        "session_id", type=int, nargs="?",
+        help="expected Session id (default: fresh task.currentSessionId)")
+    target = p_redispatch.add_mutually_exclusive_group(required=True)
+    target.add_argument(
+        "--auto-target", action="store_true",
+        help="let the server select an eligible online worker on another host")
+    target.add_argument(
+        "--target-worker", metavar="WORKER_KEY",
+        help="require this exact online Worker key")
+    target.add_argument(
+        "--target-host", metavar="HOST_ID",
+        help="select an eligible online Worker on this exact machine")
+    p_redispatch.add_argument(
+        "--target-runtime", required=True,
+        choices=("INTERACTIVE", "PERSISTENT"),
+        help="runtime mode that must receive the portable Task")
+    p_redispatch.add_argument(
+        "--reason", required=True, help="auditable redispatch reason")
+    p_redispatch.add_argument(
+        "--yes", action="store_true", help="confirm cross-machine redispatch")
     p_legacy = sub.add_parser(
         "legacy-cleanup",
         help="preview (default) / delete residual tasks of deprecated kinds (e.g. field_repair)")
@@ -424,6 +542,10 @@ def main(argv=None):
         if args.cmd == "force-release":
             return cmd_force_release(
                 client, args.task_id, args.session_id, args.reason, args.yes)
+        if args.cmd == "force-redispatch":
+            return cmd_force_redispatch(
+                client, args.task_id, args.session_id, args.reason, args.yes,
+                args.target_worker, args.target_host, args.target_runtime)
         return cmd_discard_resume(
             client, args.task_id, args.session_id, args.reason, args.yes)
     except ControlPlaneError as e:

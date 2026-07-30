@@ -29,6 +29,7 @@ class FakeClient:
         self.heartbeat_error = None
         self.suspend_error = None
         self.claim_results = []
+        self.targeted_results = []
         self.begin_results = [{
             "proceed": True,
             "operation": {"id": "op-1", "status": "SENDING"},
@@ -73,6 +74,12 @@ class FakeClient:
             "session": {"id": "session-1", "generation": 4,
                         "fenceToken": 9, "attemptNo": 2},
         }
+
+    def lease_targeted_task(self, *args, **kwargs):
+        self._record("lease_targeted_task", *args, **kwargs)
+        if self.targeted_results:
+            return self.targeted_results.pop(0)
+        return {}
 
     def start_session(self, *args, **kwargs):
         self._record("start_session", *args, **kwargs)
@@ -222,6 +229,11 @@ class InteractiveWorkerTest(unittest.TestCase):
         self.assertEqual(len(registrations), 2)
         payload = registrations[0][1][0]
         self.assertFalse(payload["capabilities"]["dispatch"]["pull"])
+        self.assertTrue(payload["capabilities"]["dispatch"]["targeted"])
+        self.assertEqual(payload["capabilities"]["runtime"], {
+            "mode": "INTERACTIVE",
+            "inputContracts": ["PORTABLE_V1"],
+        })
         self.assertEqual(payload["capabilities"]["bridgeRole"], "interactive")
         self.assertEqual(payload["maxSlots"], 1)
         self.assertNotIn("lease_task", [c[0] for c in fake.calls])
@@ -2126,6 +2138,14 @@ class InteractiveWorkerTest(unittest.TestCase):
         self.assertEqual(first["runtimeSessionId"], first_runtime)
         self.assertEqual(first_envelope.recovery_policy, "REPLAY_SAFE")
         self.assertNotIn("clientSessionId", first_envelope.payload)
+        self.assertEqual(
+            first_envelope.payload["inputContract"], "PORTABLE_V1")
+        self.assertEqual(
+            first_envelope.payload["inputContext"]["originRuntime"],
+            "INTERACTIVE")
+        self.assertIn(
+            "读取当前 Aone 详情和最新评论",
+            first_envelope.payload["prompt"])
         begin_body = [c for c in fake.calls if c[0] == "begin_operation"][-1][1][0]
         self.assertNotIn("requestDigest", begin_body)
 
@@ -2235,6 +2255,63 @@ class InteractiveWorkerTest(unittest.TestCase):
             envelope.desired_revision,
             worker.policy_desired_revision(expected, envelope.payload))
         self.assertEqual(self._store().load()["current"]["title"], "")
+
+    def test_exact_targeted_lease_attaches_without_public_queue_pull(self):
+        state = self._seed()
+        fake = FakeClient()
+        fake.targeted_results.append({
+            "task": {
+                "id": "task-targeted",
+                "generation": 8,
+                "sourceRef": {
+                    "aoneId": "84407231",
+                    "projectId": "1086837",
+                    "title": "runtime transfer",
+                },
+            },
+            "session": {
+                "id": "session-targeted",
+                "generation": 8,
+                "fenceToken": 21,
+                "attemptNo": 1,
+                "runtimeSessionId": "interactive-targeted:codex:one",
+                "inputPayload": {
+                    "itemId": "84407231",
+                    "project": "1086837",
+                    "kind": "ticket",
+                    "prompt": "read current state and continue",
+                    "trigger": "REDISPATCH",
+                    "policyRevision": worker.HEADLESS_POLICY_REVISION,
+                    "inputContract": "PORTABLE_V1",
+                    "inputContext": {
+                        "originRuntime": "PERSISTENT",
+                        "rehydrated": False,
+                    },
+                },
+            },
+        })
+
+        self.assertTrue(worker.receive_targeted_task(
+            self._store(), fake, state["workerKey"]))
+
+        calls = [call[0] for call in fake.calls]
+        self.assertIn("lease_targeted_task", calls)
+        self.assertIn("start_session", calls)
+        self.assertNotIn("claim_task", calls)
+        lease_call = next(
+            call for call in fake.calls if call[0] == "lease_targeted_task")
+        self.assertEqual(lease_call[1][0], state["workerKey"])
+        self.assertEqual(lease_call[2]["process_uuid"], "process")
+        current = self._store().load()["current"]
+        self.assertEqual(current["aoneId"], "84407231")
+        self.assertEqual(current["sessionId"], "session-targeted")
+        self.assertTrue(current["targetedRuntimeTransfer"])
+        self.assertTrue(current["heartbeatEnabled"])
+
+        message = worker._consume_targeted_prompt(self._store())
+        self.assertIn("exact Worker incarnation", message)
+        self.assertIn("read current state and continue", message)
+        self.assertIsNone(worker._consume_targeted_prompt(self._store()))
 
     def test_claim_reports_source_status_and_freezes_across_retry(self):
         self._seed()
