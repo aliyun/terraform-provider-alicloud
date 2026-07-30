@@ -15,6 +15,9 @@
 #      (only the api-tool-agent fork may be pushed, via github-identity.sh).
 #   3. Catastrophic rm: `rm -rf` (any flag order) aimed at /, ~, $HOME, or a
 #      top-level system dir. Repo-scoped rm -rf keeps working.
+#   4. Any actual curl/wget invocation of Acube createBuildTaskV2. Terraform
+#      work continues on the source Aone Task; this API must never create a
+#      downstream 528766 workitem again.
 #
 # Contract (same as worktree-guard):
 #   stdin  = tool call JSON {tool_name, tool_input:{command,...}}
@@ -22,11 +25,6 @@
 # Parse failures allow — the intended failure mode is a specific block, never
 # "all Bash is broken".
 set -uo pipefail
-
-# Per-turn escape hatch, same semantics as worktree-guard: repo owner only.
-if [ "${JARVIS_MASTER_OK:-}" = "1" ]; then
-    exit 0
-fi
 
 input="$(cat)"
 cmd=$(printf '%s' "$input" | jq -r '.tool_input.command // empty' 2>/dev/null || true)
@@ -36,6 +34,38 @@ deny() {
     echo "redline-guard: $1" >&2
     exit 2
 }
+
+# --- Acube downstream workitem red line ------------------------------------
+# Delegate shell tokenization to the same parser used by the Codex/interactive
+# Worker fence. It distinguishes executed curl/wget (including bash -lc and
+# same-command variable wrappers) from rg/grep/printf text inspection.
+guard_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+guard_py="$guard_dir/a1_command_guard.py"
+python_bin="/usr/bin/python3"
+[ -x "$python_bin" ] || python_bin="$(command -v python3 2>/dev/null || true)"
+if [ -n "$python_bin" ] && [ -f "$guard_py" ]; then
+    "$python_bin" -I "$guard_py" --check-pretool-command "$cmd" \
+        >/dev/null 2>"${TMPDIR:-/tmp}/jarvis-redline-guard.$$"
+    guard_rc=$?
+    if [ "$guard_rc" -eq 2 ]; then
+        detail="$(cat "${TMPDIR:-/tmp}/jarvis-redline-guard.$$" 2>/dev/null || true)"
+        rm -f "${TMPDIR:-/tmp}/jarvis-redline-guard.$$"
+        deny "${detail#a1 safety: }"
+    fi
+    rm -f "${TMPDIR:-/tmp}/jarvis-redline-guard.$$"
+else
+    # The specific red line must fail closed if its parser is unavailable.
+    if printf '%s' "$cmd" | grep -Fq 'createBuildTaskV2' \
+        && printf '%s' "$cmd" | grep -qE '(^|[;&|[:space:]])(curl|wget)([[:space:]]|$)'; then
+        deny "Acube createBuildTaskV2 is permanently disabled for Jarvis"
+    fi
+fi
+
+# Per-turn escape hatch applies to repository/master maintenance red lines,
+# never to the permanent Acube downstream-task prohibition above.
+if [ "${JARVIS_MASTER_OK:-}" = "1" ]; then
+    exit 0
+fi
 
 # Master-push exemption for contract-approved data repos (fail-closed):
 # resolve the pushed repo's dir from the command text, read the pushed remote's

@@ -19,9 +19,15 @@ Jarvis headless 派发按工单类型选不同模型后端，兼顾质量与成�
 `jarvis_cmd` 按 `md5(session_id) % pool` 在**选中车道内**粘网关。若 resume 走错车道会落到另一网关/token。因此车道随会话外化：
 
 - **Task Session** 的不可变 `inputPayload.terraform` 是可恢复任务的唯一车道真源；换机、重启或重新 lease 后仍使用同一车道。
+- 同一不可变快照还必须携带当前 `inputPayload.policyRevision`。`desiredRevision`
+  同时包含 policy revision 与 canonical input hash；策略或 prompt 任一变化都会产生新的
+  desired generation。Persistent Worker 在 field repair、身份检查、Aone claim/bookend 与
+  model spawn 之前拒绝缺失或过期 revision，旧 Session 不会跨策略自动 resume。
 - **in-flight 记录**（`.my-day/bridge/inflight.json`）只服务本地 EphemeralJob 的进程诊断，不参与 Task 恢复。
 - **suspend 记录**（`.my-day/suspended/*.json`）带 `terraform` 字段 → 挂起唤醒 `_wake` 复原车道。
 - Task Session 缺少不可变 `inputPayload` 时执行器 fail-closed，不读取当前 Task payload 猜测恢复输入。
+- Terraform 528766 source Task 的模型进程对 Aone 只读；源单 claim/reply/release/finish
+  仍由 bridge executor bookend 在模型进程外执行，模型不得创建或关联下游研发单。
 
 派发点判定车道（均在 `bridge/jarvis_dingtalk_bot.py`）：`_dispatch` / 手动授权 `处理 #id` / `全部处理` / revisit / persona → 按 `_is_terraform_ticket`；probe（tf-probe）→ 恒 `terraform=True`；Tata 委派 handoff-exec → 默认车道。
 

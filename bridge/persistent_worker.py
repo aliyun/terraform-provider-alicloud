@@ -32,6 +32,7 @@ from bridge.persistent_tasks import (
     stop_task_process,
     terraform_rd_ready,
 )
+from bridge.task_policy import HEADLESS_POLICY_REVISION
 from bridge.aone_tasks import master_staff
 from bridge.helpers.dingtalk import _dingtalk_event_enqueue
 from bridge.jarvis_capacity import CapacityManager
@@ -135,6 +136,7 @@ class PersistentTaskRuntime:
                 "JARVIS_BROADCAST_TARGET", ""),
             broadcast_type=lambda: os.environ.get(
                 "JARVIS_BROADCAST_TYPE", "group"),
+            policy_revision=HEADLESS_POLICY_REVISION,
         )
 
     def dispatch_item(self, *args, **kwargs):

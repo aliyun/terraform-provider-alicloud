@@ -45,7 +45,10 @@ sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(BRIDGE_DIR))
 
-from a1_command_guard import pretool_a1_block_reason  # noqa: E402
+from a1_command_guard import (  # noqa: E402
+    pretool_a1_block_reason,
+    pretool_aone_write_block_reason,
+)
 from jarvis_persistence_executor import _default_boot_id, make_worker_key  # noqa: E402
 from jarvis_task_client import (  # noqa: E402
     ControlPlaneClient,
@@ -56,6 +59,10 @@ from jarvis_task_client import (  # noqa: E402
     StaleFence,
     TaskEnvelope,
 )
+from bridge.task_policy import (  # noqa: E402
+    HEADLESS_POLICY_REVISION,
+    policy_desired_revision,
+)
 
 
 CONFLICT_EXIT = 10
@@ -63,7 +70,6 @@ UNAVAILABLE_EXIT = 11
 STATE_ERROR_EXIT = 12
 TRANSITION_EXIT = 13
 HOOK_BLOCK_EXIT = 2
-HEADLESS_POLICY_REVISION = "terraform-rd-single-writer-v5"
 POST_PR_AONE_WRITE_POLICY = "post-pr-read-only"
 POST_PR_HEADLESS_KINDS = frozenset(("pr_ci_fix", "pr_comment_reply"))
 T = TypeVar("T")
@@ -1427,6 +1433,11 @@ def _guard_pre_tool_use(store: StateStore, client_name: str,
     if local_reason:
         return local_reason
     current = state.get("current")
+    if (isinstance(current, Mapping)
+            and str(current.get("projectId") or "") == "528766"):
+        aone_write_reason = pretool_aone_write_block_reason(event)
+        if aone_write_reason:
+            return aone_write_reason
     if not isinstance(current, Mapping):
         with authority_store.locked():
             latest = authority_store.load_unlocked()
@@ -3247,19 +3258,21 @@ def prepare_claim(aone_id: str, project_id: str, title: str = "",
     source_ref = {"aoneId": aone_id, "projectId": project_id}
     if stable_title:
         source_ref["title"] = stable_title
+    payload = {
+        "kind": "ticket",
+        "itemId": aone_id,
+        "project": project_id,
+        "trigger": "INTERACTIVE",
+        "policyRevision": HEADLESS_POLICY_REVISION,
+    }
     envelope = TaskEnvelope(
         task_key="aone:%s:%s" % (project_id, aone_id),
         source_type="AONE",
         source_ref=source_ref,
         task_type="ticket",
-        desired_revision=revision,
+        desired_revision=policy_desired_revision(revision, payload),
         trigger_mask=["INTERACTIVE"],
-        payload={
-            "kind": "ticket",
-            "itemId": aone_id,
-            "project": project_id,
-            "trigger": "INTERACTIVE",
-        },
+        payload=payload,
         recovery_policy="REPLAY_SAFE",
         aone_id=aone_id,
         source_status=stable_source_status,

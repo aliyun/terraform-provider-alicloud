@@ -26,6 +26,10 @@ from bridge.jarvis_task_client import (
     TaskEnvelope,
 )
 from bridge.helpers.aone import REPO_ROOT
+from bridge.task_policy import (
+    HEADLESS_POLICY_REVISION,
+    policy_desired_revision,
+)
 
 
 TASK = "TASK"
@@ -38,7 +42,6 @@ DEFAULT_TASK_TYPES = (
     "pr_ci_fix",
     "pr_comment_reply",
 )
-HEADLESS_POLICY_REVISION = "terraform-rd-single-writer-v5"
 LOG = logging.getLogger(__name__)
 
 
@@ -64,14 +67,23 @@ def _task_envelope(*, item_id, project, task_type, source_type, source_ref,
                    source_status=None, **payload) -> TaskEnvelope:
     """Build a control-plane Task without importing a worker implementation."""
     body = {"itemId": str(item_id), "project": str(project or ""),
-            "kind": str(task_type), "prompt": prompt,
-            "policyRevision": HEADLESS_POLICY_REVISION}
+            "kind": str(task_type), "prompt": prompt}
     body.update(payload)
+    # The caller cannot freeze a newly-created generation under an obsolete
+    # policy. Persistent workers validate this immutable snapshot before any
+    # field repair, identity check, Aone claim, or model spawn.
+    body["policyRevision"] = HEADLESS_POLICY_REVISION
+    # Every envelope produced here is durable control-plane work.  The
+    # executor validates the frozen policy for Aone and Terraform generations,
+    # so every producer (including post-PR pr_ci_fix/pr_comment_reply) must
+    # converge on a policy/input-salted desiredRevision.  Otherwise an old
+    # READY generation can retain a v5 input snapshot after a v6 upsert.
+    revision = policy_desired_revision(desired_revision, body)
     return TaskEnvelope(
         task_key=(str(item_id) if str(task_type).lower() == "probe"
                   else _aone_task_key(project, item_id)),
         source_type=source_type, source_ref=source_ref, task_type=task_type,
-        desired_revision=desired_revision, trigger_mask=[trigger], payload=body,
+        desired_revision=revision, trigger_mask=[trigger], payload=body,
         recovery_policy=recovery_policy, persona=persona, priority=priority,
         comment_cursor=comment_cursor, required_capabilities=required_capabilities,
         max_retries=max_retries, source_status=source_status)
@@ -208,15 +220,19 @@ class WakePersistence:
         source_ref: dict[str, Any] = {"aoneId": aone_id, "projectId": project}
         if str(title or "").strip():
             source_ref["title"] = str(title).strip()
+        payload = {
+            "itemId": aone_id, "project": project, "kind": "wake", "prompt": prompt,
+            "policyRevision": self._policy_revision,
+            "priorRuntimeSessionId": task.get("session_id"), "terraform": terraform,
+            "target": task["target"], "targetType": task["target_type"],
+        }
         result = self._router.enqueue(TaskEnvelope(
             task_key=_aone_task_key(project, aone_id), source_type="AONE",
-            source_ref=source_ref, task_type="wake", desired_revision=revision,
-            trigger_mask=["WAKE"], payload={
-                "itemId": aone_id, "project": project, "kind": "wake", "prompt": prompt,
-                "policyRevision": self._policy_revision,
-                "priorRuntimeSessionId": task.get("session_id"), "terraform": terraform,
-                "target": task["target"], "targetType": task["target_type"],
-            }, recovery_policy="RESUME_ONLY", comment_cursor=cursor,
+            source_ref=source_ref, task_type="wake",
+            desired_revision=policy_desired_revision(
+                revision, payload, policy_revision=self._policy_revision),
+            trigger_mask=["WAKE"], payload=payload,
+            recovery_policy="RESUME_ONLY", comment_cursor=cursor,
             source_status=task.get("sourceStatus"),
         ))
         if not result.accepted:

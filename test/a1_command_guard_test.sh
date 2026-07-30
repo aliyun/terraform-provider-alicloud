@@ -44,6 +44,22 @@ blocked = {
     "! a1 app pipeline quit --pipeline-id 66": "app pipeline quit",
     "time -p a1 app cr quit 123 --pipeline-id 66": "app cr quit",
     "nohup a1 app pipeline quit --pipeline-id 66": "app pipeline quit",
+    "curl -fsS 'https://acube.example/api/createBuildTaskV2' -d '{}'":
+        "createBuildTaskV2",
+    "url='https://acube.example/api/createBuildTaskV2'; wget -qO- \"$url\"":
+        "createBuildTaskV2",
+    "/bin/bash -lc 'endpoint=https://acube/api/createBuildTaskV2; curl \"$endpoint\"'":
+        "createBuildTaskV2",
+    "op=createBuildTask;suffix=V2;curl https://acube/api/$op$suffix":
+        "createBuildTaskV2",
+    "python -c 'import requests; requests.post(\"https://acube/api/createBuildTaskV2\")'":
+        "createBuildTaskV2",
+    "python3 -c 'import urllib.request; urllib.request.urlopen(\"https://acube/api/createBuildTaskV2\")'":
+        "createBuildTaskV2",
+    "node -e 'fetch(\"https://acube/api/createBuildTaskV2\", {method:\"POST\"})'":
+        "createBuildTaskV2",
+    "python3 -c 'import subprocess; subprocess.run([\"curl\",\"https://acube/api/createBuildTaskV2\"])'":
+        "createBuildTaskV2",
 }
 for command, marker in blocked.items():
     for tool_name in ("Bash", "exec_command", "mcp__shell__exec_command"):
@@ -60,12 +76,35 @@ allowed = (
     "echo a1 app pipeline exit-cr",
     "printf '%s' 'a1 app cr quit'",
     "command -v a1",
+    "rg -n createBuildTaskV2 .",
+    "grep -R createBuildTaskV2 docs",
+    "printf '%s' 'curl https://acube/api/createBuildTaskV2'",
+    "curl https://example.com; printf createBuildTaskV2",
+    "python3 -c 'print(\"createBuildTaskV2\")'",
 )
 for command in allowed:
     event = {"tool_name": "exec_command", "tool_input": {"cmd": command}}
     reason = g.pretool_a1_block_reason(event)
     if reason:
         raise SystemExit("unexpected block for %r: %s" % (command, reason))
+
+for command in (
+    "a1 project workitem create --project 528766 --title downstream",
+    "bin/a1id -- project workitem relation add 84846271 relate:84881882",
+    "/bin/bash -lc 'a1 project workitem update 84846271 --status done'",
+):
+    event = {"tool_name": "exec_command", "tool_input": {"cmd": command}}
+    reason = g.pretool_aone_write_block_reason(event)
+    if not reason or "read-only" not in reason:
+        raise SystemExit("expected source Aone write block for %r" % command)
+for command in (
+    "a1 project workitem get 84846271",
+    "bin/a1id -- project workitem relation list 84846271",
+    "rg -n 'project workitem create' .",
+):
+    event = {"tool_name": "exec_command", "tool_input": {"cmd": command}}
+    if g.pretool_aone_write_block_reason(event):
+        raise SystemExit("unexpected source Aone write block for %r" % command)
 
 calls = []
 class ExecCalled(Exception):
@@ -151,6 +190,30 @@ if [ "$rc" -eq 0 ] && grep -Fq 'ARGS=app cr get 123 --format json' "$capture"; t
     ok "ordinary a1id commands still pass through"
 else
     no "ordinary a1 command regression rc=$rc err=$(cat "$tmp/ordinary.err")"
+fi
+
+: > "$capture"
+JARVIS_AONE_WRITE_POLICY=terraform-source-no-downstream \
+    run_a1id -- project workitem create --project 528766 --title downstream \
+    >/dev/null 2>"$tmp/source-write.err"
+rc=$?
+if [ "$rc" -ne 0 ] && [ ! -s "$capture" ] \
+    && grep -Fq '模型对 Aone 只读' "$tmp/source-write.err"; then
+    ok "528766 source model cannot create downstream Aone workitems"
+else
+    no "528766 source-model write policy failed rc=$rc log=$(cat "$capture")"
+fi
+
+: > "$capture"
+JARVIS_AONE_WRITE_POLICY=terraform-source-no-downstream \
+    run_a1id -- project workitem relation list 84846271 \
+    >/dev/null 2>"$tmp/source-read.err"
+rc=$?
+if [ "$rc" -eq 0 ] \
+    && grep -Fq 'ARGS=project workitem relation list 84846271' "$capture"; then
+    ok "528766 source model retains explicit Aone reads"
+else
+    no "528766 source-model read regression rc=$rc err=$(cat "$tmp/source-read.err")"
 fi
 
 /usr/bin/python3 -I "$manager" --help >/dev/null 2>&1

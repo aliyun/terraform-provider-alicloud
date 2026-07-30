@@ -79,7 +79,7 @@ if [ "$v4_exec_count" -lt 2 ]; then
   echo "terraform_provider_release_cloudspec_test: v4 exec lineage compatibility missing" >&2
   exit 1
 fi
-grep -Fq -- '--policy-revision terraform-rd-single-writer-v5' \
+grep -Fq -- '--policy-revision terraform-rd-single-writer-v6' \
   <<<"$exec_lineage_source"
 
 echo "terraform_provider_release_cloudspec_test: PASS"

@@ -27,6 +27,29 @@ from bridge.helpers import dingtalk as dingtalk_events
 from bridge.scheduler.runners import pr_watch as pr
 from bridge.jarvis_persistence_executor import SessionController
 from bridge.jarvis_task_router import EnqueueResult
+from bridge.task_policy import (
+    HEADLESS_POLICY_REVISION,
+    policy_desired_revision,
+)
+
+
+class BufferedRunnerCompatibilityTest(unittest.TestCase):
+    def test_bot_wrapper_accepts_and_forwards_aone_write_policy(self):
+        expected = bot.ClaudeResult("ok", False, "success")
+        with mock.patch.object(
+                bot, "_run_claude_buffered", return_value=expected) as runner:
+            actual = bot.run_claude_buffered(
+                "prompt", "session", False, timeout=17, terraform=True,
+                guarded=True, aone_write_policy="terraform-source-no-downstream",
+                execution_runtime="runtime")
+
+        self.assertIs(actual, expected)
+        runner.assert_called_once_with(
+            "prompt", "session", False, timeout=17, on_spawn=None,
+            terraform=True, guarded=True,
+            aone_write_policy="terraform-source-no-downstream",
+            execution_runtime="runtime", command_builder=bot.jarvis_cmd,
+            headless_wrapper=bot._headless_exec_command)
 
 
 class TerraformPureDatasourceSourceOnlyPromptTest(unittest.TestCase):
@@ -540,6 +563,8 @@ class TaskExecutionTest(unittest.TestCase):
             "session": {"inputPayload": {
                 "itemId": "84345050", "kind": "ticket", "prompt": "go",
                 "terraform": True, "target": "group-1", "targetType": "group",
+                "project": "528766",
+                "policyRevision": HEADLESS_POLICY_REVISION,
                 "expectedCommentCursor": "124900001",
             }},
         }
@@ -717,6 +742,17 @@ class TaskAoneAssociationTest(unittest.TestCase):
         self.assertTrue(all(
             envelope.to_dict().get("aoneId") == "84345050"
             for envelope in envelopes))
+        self.assertTrue(all(
+            "|policy:v6|input:" in envelope.desired_revision
+            for envelope in envelopes))
+        self.assertEqual(
+            envelopes[1].desired_revision,
+            policy_desired_revision("sequence:1", envelopes[1].payload))
+        self.assertEqual(
+            envelopes[2].desired_revision,
+            policy_desired_revision("sequence:2", envelopes[2].payload))
+        self.assertNotEqual(envelopes[1].desired_revision, "sequence:1")
+        self.assertNotEqual(envelopes[2].desired_revision, "sequence:2")
 
     def test_card_submit_reports_aone_title_only_in_source_ref(self):
         handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
@@ -789,7 +825,9 @@ class WakeRoutingTest(unittest.TestCase):
         envelope = captured["envelope"]
         self.assertEqual(envelope.task_key, "aone:2100304:843")
         self.assertEqual(envelope.aone_id, "843")
-        self.assertEqual(envelope.desired_revision, "comment:9")
+        self.assertEqual(
+            envelope.desired_revision,
+            policy_desired_revision("comment:9", envelope.payload))
         self.assertEqual(envelope.source_ref["title"], "Point-read title")
         handler._quick_card.assert_not_called()
 
@@ -1890,7 +1928,10 @@ class SchedulerRunnerTest(unittest.TestCase):
         self.assertEqual(first["dispatch_context"]["revision"], "comment:124900001")
         self.assertEqual(second["dispatch_context"]["revision"], "comment:124900001")
         envelope = s._envelope(item, first["dispatch_context"])
-        self.assertEqual(envelope.desired_revision, "comment:124900001")
+        self.assertEqual(
+            envelope.desired_revision,
+            policy_desired_revision(
+                "comment:124900001", envelope.payload))
         self.assertEqual(envelope.comment_cursor, "124900001")
         self.assertEqual(envelope.payload["expectedCommentCursor"], "124900001")
         self.assertEqual(len(envelope.payload["triggerComment"]["content"]), 2000)
@@ -2214,8 +2255,10 @@ class SchedulerRunnerTest(unittest.TestCase):
         item = {"id": "1", "title": "普通变更", "pool": "other",
                 "pool_project": "2", "modified": "2026-07-20 20:00:00"}
         envelope = self._scanner()._envelope(item)
-        self.assertEqual(envelope.desired_revision,
-                         "modified:2026-07-20 20:00:00")
+        self.assertEqual(
+            envelope.desired_revision,
+            policy_desired_revision(
+                "modified:2026-07-20 20:00:00", envelope.payload))
         self.assertIsNone(envelope.comment_cursor)
         self.assertNotIn("expectedCommentCursor", envelope.payload)
 
@@ -2655,7 +2698,9 @@ class TaskBookendDispatchTest(unittest.TestCase):
                 {"outcome": "idle", "reply_body": "current generation done"}))
         self.assertEqual(len(handed_off), 1)
         envelope = handed_off[0]
-        self.assertEqual(envelope.desired_revision, "comment:11")
+        self.assertEqual(
+            envelope.desired_revision,
+            policy_desired_revision("comment:11", envelope.payload))
         self.assertEqual(envelope.task_key, "aone:1086837:84407231")
         self.assertEqual(envelope.payload["expectedCommentCursor"], "11")
         self.assertEqual(order, ["reply", "release", "handoff"])

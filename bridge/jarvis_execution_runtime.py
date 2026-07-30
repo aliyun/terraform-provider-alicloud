@@ -216,7 +216,10 @@ def jarvis_root() -> str:
     return os.environ.get("JARVIS_ROOT") or str(REPO_ROOT)
 
 
-def a1_command_env(terraform: bool = False) -> dict[str, str]:
+def a1_command_env(
+    terraform: bool = False,
+    aone_write_policy: Optional[str] = None,
+) -> dict[str, str]:
     env = os.environ.copy()
     for key in ("JARVIS_A1_IDENTITY", "JARVIS_A1_STRICT",
                 "JARVIS_AONE_WRITE_POLICY"):
@@ -224,6 +227,8 @@ def a1_command_env(terraform: bool = False) -> dict[str, str]:
     if terraform:
         env["JARVIS_A1_IDENTITY"] = "terraform-rd"
         env["JARVIS_A1_STRICT"] = "1"
+    if aone_write_policy:
+        env["JARVIS_AONE_WRITE_POLICY"] = str(aone_write_policy)
     return env
 
 
@@ -562,6 +567,7 @@ def run_claude_buffered(
     on_spawn: Optional[SpawnCallback] = None,
     terraform: bool = False,
     guarded: bool = False,
+    aone_write_policy: Optional[str] = None,
     execution_runtime: Optional[ExecutionRuntime] = None,
     command_builder: Callable[..., list[str]] = jarvis_cmd,
     headless_wrapper: Callable[[str, Sequence[str]], list[str]] = (
@@ -578,7 +584,8 @@ def run_claude_buffered(
         headless_wrapper(session_id, argv),
         Path(jarvis_root()), timeout=timeout, on_spawn=on_spawn,
         guarded=guarded,
-        env=a1_command_env(terraform=terraform))
+        env=a1_command_env(
+            terraform=terraform, aone_write_policy=aone_write_policy))
     if execution.timed_out:
         return ClaudeResult(execution.stdout or "", True, "timeout")
     return classify_result(

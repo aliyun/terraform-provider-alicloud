@@ -18,6 +18,7 @@ _jarvis_post_pr_marker_valid() {
         *) return 1 ;;
     esac
     case "$content" in
+        *'"policy_revision":"terraform-rd-single-writer-v6"'*|\
         *'"policy_revision":"terraform-rd-single-writer-v5"'*|\
         *'"policy_revision":"terraform-rd-single-writer-v4"'*|\
         *'"policy_revision":"terraform-rd-single-writer-v3"'*) ;;
@@ -46,6 +47,12 @@ jarvis_post_pr_exec_lineage_active() {
         esac
         command="$(/bin/ps -ww -o command= -p "$pid" 2>/dev/null)" || command=""
         case "$command" in
+*"/bootstrap/jarvis-interactive-worker.py exec-headless"*\
+*"--policy-revision terraform-rd-single-writer-v6"*\
+*"--aone-write-policy post-pr-read-only"*\
+*"--headless-kind pr_ci_fix"*\
+*"--aone-id "*\
+*"--project-id "*|\
             *"/bootstrap/jarvis-interactive-worker.py exec-headless"*\
 *"--policy-revision terraform-rd-single-writer-v5"*\
 *"--aone-write-policy post-pr-read-only"*\
@@ -58,6 +65,12 @@ jarvis_post_pr_exec_lineage_active() {
 *"--headless-kind pr_ci_fix"*\
 *"--aone-id "*\
 *"--project-id "*) return 0 ;;
+*"/bootstrap/jarvis-interactive-worker.py exec-headless"*\
+*"--policy-revision terraform-rd-single-writer-v6"*\
+*"--aone-write-policy post-pr-read-only"*\
+*"--headless-kind pr_comment_reply"*\
+*"--aone-id "*\
+*"--project-id "*|\
             *"/bootstrap/jarvis-interactive-worker.py exec-headless"*\
 *"--policy-revision terraform-rd-single-writer-v5"*\
 *"--aone-write-policy post-pr-read-only"*\
