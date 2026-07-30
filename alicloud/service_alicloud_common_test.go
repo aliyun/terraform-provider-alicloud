@@ -446,7 +446,11 @@ func (b *resourceConfig) configUpdate(changeMap map[string]interface{}) {
 	if changeMap != nil && len(changeMap) > 0 {
 		for rk, rv := range changeMap {
 			_, ok := b.attributeMap[rk]
-			if strValue, isCost := rv.(string); ok && isCost && (strValue == REMOVEKEY || strValue == CLEARMAP || strValue == CLEARLIST) {
+			// Sentinels (REMOVEKEY/CLEARMAP/CLEARLIST) must be handled regardless of
+			// whether the key already exists in attributeMap. Previously the `ok &&`
+			// guard skipped the sentinel branch for absent keys, leaking the literal
+			// sentinel string into TypeInt fields and producing invalid configs.
+			if strValue, isCost := rv.(string); isCost && (strValue == REMOVEKEY || strValue == CLEARMAP || strValue == CLEARLIST) {
 				delete(b.attributeMap, rk)
 				if strValue == CLEARMAP {
 					b.attributeMap[rk] = make(map[string]interface{})

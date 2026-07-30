@@ -61,8 +61,9 @@ If you want to delete it, you can change it to `PayAsYouGo` and setting `delete_
 ## Argument Reference
 
 The following arguments are supported:
-* `bursting_enabled` - (Optional, Bool, Available since v1.237.0) Specifies whether to enable the performance burst feature. Valid values: `true`, `false`. **NOTE:** `bursting_enabled` is only valid when `category` is `cloud_auto`.
-* `category` - (Optional) The category of the data disk. Default value: `cloud_efficiency`. Valid Values: `cloud`, `cloud_efficiency`, `cloud_ssd`, `cloud_essd`, `cloud_auto`, `cloud_essd_entry`, `elastic_ephemeral_disk_standard`, `elastic_ephemeral_disk_premium`.
+* `advanced_features` - (Optional) The advanced features configured for the disk.
+* `bursting_enabled` - (Optional, Bool, Available since v1.237.0) Specifies whether to enable the performance burst feature. Valid values: `true`, `false`. **NOTE:** `bursting_enabled` is only valid when `category` is `cloud_auto`; specifying it for other categories is rejected by the API. When `category` is changed to `cloud_auto` in the same apply (for example from `cloud_essd`), the provider defers the `BurstingEnabled` update until the disk category has been confirmed as `cloud_auto` by `ModifyDiskSpec` and `WaitForState`, because the API rejects `BurstingEnabled` on a non-`cloud_auto` disk.
+* `category` - (Optional) The category of the data disk. Default value: `cloud_efficiency`. Valid Values: `cloud`, `cloud_efficiency`, `cloud_ssd`, `cloud_essd`, `cloud_auto`, `cloud_essd_entry`, `elastic_ephemeral_disk_standard`, `elastic_ephemeral_disk_premium`. **NOTE:** When `category` is `cloud_auto`, the `bursting_enabled` and `provisioned_iops` parameters become applicable; they are rejected by the API for other categories.
 * `delete_auto_snapshot` - (Optional, Bool) Specifies whether to delete the automatic snapshots of the disk when the disk is released. Default value: `false`.
 * `delete_with_instance` - (Optional, Bool) Specifies whether to release the disk along with its associated instance. Default value: `false`.
 * `description` - (Optional) The description of the disk. The description must be 2 to 256 characters in length and cannot start with http:// or https://.
@@ -71,6 +72,7 @@ The following arguments are supported:
   - `true`: The validity of the request is checked, but the request is not made. Check items include the required parameters, request format, service limits, and available ECS resources. If the check fails, the corresponding error message is returned. If the check succeeds, the DryRunOperation error code is returned.
   - `false`: The validity of the request is checked. If the check succeeds, a 2xx HTTP status code is returned and the request is made.
 * `enable_auto_snapshot` - (Deprecated, Optional, Bool) Specifies whether the automatic snapshot policy feature is enabled for the cloud disk. Valid values: `true` and `false`. The default value is empty, which indicates that the current value is not changed. **NOTE:** This parameter is deprecated. The automatic snapshot policy feature is enabled by default for a cloud disk after it is created. To use the automatic snapshot policy, apply one to the cloud disk.
+* `encrypt_algorithm` - (Optional) The encryption algorithm used to encrypt the disk. **NOTE:** `encrypt_algorithm` is only valid when `encrypted` is `true`.
 * `encrypted` - (Optional, ForceNew, Bool) Specifies whether to encrypt the disk. Default value: `false`. Valid values:
   - `true`: Enable.
   - `false`: Disable.
