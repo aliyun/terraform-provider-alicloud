@@ -129,7 +129,7 @@ class ReplyRunner:
                 if self._comment_id(comment) is not None
                 and self._comment_id(comment) > baseline
                 and self._is_human_comment(
-                    str(comment.get("creator") or "").strip(),
+                    str(comment.get("author") or comment.get("creator") or "").strip(),
                     str(comment.get("content") or "").strip())
             ]
             if not new_comments:
