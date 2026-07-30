@@ -1,24 +1,16 @@
 #!/usr/bin/env python3
 """Focused tests for the Bot-free persistent Task execution adapter."""
 
-import os
 import sys
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
-from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from bridge.persistent_tasks import (
-    ClaudeResult,
-    PersistentTaskExecution,
-    dispatch_item,
-)
-from bridge.jarvis_execution_runtime import a1_command_env
+from bridge.persistent_tasks import PersistentTaskExecution
 from bridge.task_policy import (
     HEADLESS_POLICY_REVISION,
-    TERRAFORM_SOURCE_AONE_WRITE_POLICY,
 )
 
 
@@ -138,71 +130,6 @@ class PersistentTaskExecutionTest(unittest.TestCase):
         captured["args"][4]("finished")
 
         self.assertEqual(notices, [("conversation-1", "finished", "group")])
-
-    def test_528766_source_model_gets_read_only_aone_policy(self):
-        captured = []
-        owner = SimpleNamespace(
-            execution_runtime=None,
-            ephemeral_executor=SimpleNamespace(_closed=False),
-            _dispatch_failed=lambda *_args, **_kwargs: None,
-            _completion_broadcast=lambda _item_id: "done",
-            _maybe_suspend=lambda *_args, **_kwargs: None,
-        )
-
-        def run(_prompt, _session_id, _resume, **kwargs):
-            captured.append(kwargs)
-            return ClaudeResult("ok", False, "success")
-
-        result = dispatch_item(
-            owner, "84846271", "prompt", "sid", False,
-            lambda _text: None, "target", "group",
-            project="528766", kind="ticket", terraform=True,
-            buffered_runner=run)
-
-        self.assertEqual(result, "done")
-        self.assertEqual(
-            captured[0]["aone_write_policy"],
-            TERRAFORM_SOURCE_AONE_WRITE_POLICY)
-
-    def test_tf_customer_model_does_not_get_528766_source_policy(self):
-        captured = []
-        owner = SimpleNamespace(
-            execution_runtime=None,
-            ephemeral_executor=SimpleNamespace(_closed=False),
-            _dispatch_failed=lambda *_args, **_kwargs: None,
-            _completion_broadcast=lambda _item_id: "done",
-            _maybe_suspend=lambda *_args, **_kwargs: None,
-        )
-
-        def run(_prompt, _session_id, _resume, **kwargs):
-            captured.append(kwargs)
-            return ClaudeResult("ok", False, "success")
-
-        self.assertEqual(dispatch_item(
-            owner, "84800000", "prompt", "sid", False,
-            lambda _text: None, "target", "group",
-            project="1086837", kind="ticket", terraform=True,
-            buffered_runner=run), "done")
-        self.assertNotIn("aone_write_policy", captured[0])
-
-    def test_a1_env_scrubs_parent_policy_and_only_injects_explicit_source_policy(self):
-        with mock.patch.dict(os.environ, {
-                "JARVIS_AONE_WRITE_POLICY": "inherited-unsafe-policy",
-                "JARVIS_A1_IDENTITY": "inherited-identity",
-                "JARVIS_A1_STRICT": "0",
-        }):
-            ordinary = a1_command_env(terraform=True)
-            source = a1_command_env(
-                terraform=True,
-                aone_write_policy=TERRAFORM_SOURCE_AONE_WRITE_POLICY)
-
-        self.assertNotIn("JARVIS_AONE_WRITE_POLICY", ordinary)
-        self.assertEqual(ordinary["JARVIS_A1_IDENTITY"], "terraform-rd")
-        self.assertEqual(ordinary["JARVIS_A1_STRICT"], "1")
-        self.assertEqual(
-            source["JARVIS_AONE_WRITE_POLICY"],
-            TERRAFORM_SOURCE_AONE_WRITE_POLICY)
-
 
 if __name__ == "__main__":
     unittest.main()

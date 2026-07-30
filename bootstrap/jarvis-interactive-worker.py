@@ -45,10 +45,7 @@ sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(BRIDGE_DIR))
 
-from a1_command_guard import (  # noqa: E402
-    pretool_a1_block_reason,
-    pretool_aone_write_block_reason,
-)
+from a1_command_guard import pretool_a1_block_reason  # noqa: E402
 from jarvis_persistence_executor import _default_boot_id, make_worker_key  # noqa: E402
 from jarvis_task_client import (  # noqa: E402
     ControlPlaneClient,
@@ -1433,11 +1430,6 @@ def _guard_pre_tool_use(store: StateStore, client_name: str,
     if local_reason:
         return local_reason
     current = state.get("current")
-    if (isinstance(current, Mapping)
-            and str(current.get("projectId") or "") == "528766"):
-        aone_write_reason = pretool_aone_write_block_reason(event)
-        if aone_write_reason:
-            return aone_write_reason
     if not isinstance(current, Mapping):
         with authority_store.locked():
             latest = authority_store.load_unlocked()

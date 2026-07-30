@@ -50,13 +50,39 @@ blocked = {
         "createBuildTaskV2",
     "/bin/bash -lc 'endpoint=https://acube/api/createBuildTaskV2; curl \"$endpoint\"'":
         "createBuildTaskV2",
+    "op=createBuildTask;suffix=V2; bash -lc \"curl https://acube/api/$op$suffix\"":
+        "createBuildTaskV2",
+    "op=createBuildTask;suffix=V2; sh -c \"wget -qO- https://acube/api/$op$suffix\"":
+        "createBuildTaskV2",
+    "op=createBuildTask;suffix=V2; bash -lc \"python3 -c 'import requests; requests.post(\\\"https://acube/api/$op$suffix\\\")'\"":
+        "createBuildTaskV2",
+    "export op=createBuildTask suffix=V2; bash -lc 'curl https://acube/api/$op$suffix'":
+        "createBuildTaskV2",
+    "export op=createBuildTask suffix=V2; bash -lc 'python3 -c \"import requests; requests.post(\\\"https://acube/api/$op$suffix\\\")\"'":
+        "createBuildTaskV2",
+    "env op=createBuildTask suffix=V2 sh -c 'wget -qO- https://acube/api/$op$suffix'":
+        "createBuildTaskV2",
+    "env op=createBuildTask suffix=V2 sh -c 'node -e \"fetch(\\\"https://acube/api/$op$suffix\\\")\"'":
+        "createBuildTaskV2",
+    "env op=createBuildTask suffix=V2 python3 -c 'import requests; requests.post(\"https://acube/api/$op$suffix\")'":
+        "createBuildTaskV2",
+    "env op=createBuildTask suffix=V2 node -e 'fetch(\"https://acube/api/$op$suffix\")'":
+        "createBuildTaskV2",
     "op=createBuildTask;suffix=V2;curl https://acube/api/$op$suffix":
         "createBuildTaskV2",
+    "client=curl;op=createBuildTask;ver=V2;$client https://acube/api/${op}${ver}":
+        "createBuildTaskV2",
+    "client=wget;prefix=createBuild;middle=Task;suffix=V2;$client -qO- https://acube/api/$prefix$middle$suffix":
+        "createBuildTaskV2",
     "python -c 'import requests; requests.post(\"https://acube/api/createBuildTaskV2\")'":
+        "createBuildTaskV2",
+    "op=createBuildTask;ver=V2;python -c \"import requests; requests.post('https://acube/api/$op$ver')\"":
         "createBuildTaskV2",
     "python3 -c 'import urllib.request; urllib.request.urlopen(\"https://acube/api/createBuildTaskV2\")'":
         "createBuildTaskV2",
     "node -e 'fetch(\"https://acube/api/createBuildTaskV2\", {method:\"POST\"})'":
+        "createBuildTaskV2",
+    "op=createBuildTask;ver=V2;node -e \"fetch('https://acube/api/$op$ver')\"":
         "createBuildTaskV2",
     "python3 -c 'import subprocess; subprocess.run([\"curl\",\"https://acube/api/createBuildTaskV2\"])'":
         "createBuildTaskV2",
@@ -81,30 +107,16 @@ allowed = (
     "printf '%s' 'curl https://acube/api/createBuildTaskV2'",
     "curl https://example.com; printf createBuildTaskV2",
     "python3 -c 'print(\"createBuildTaskV2\")'",
+    "export op=createBuildTask suffix=V2; rg -n \"$op$suffix\" .",
+    "env op=createBuildTask suffix=V2 grep -R \"$op$suffix\" docs",
+    "a1 project workitem create --project 528766 --title ordinary",
+    "a1 project workitem relation create --project 528766 --workitem 1 --target 2",
 )
 for command in allowed:
     event = {"tool_name": "exec_command", "tool_input": {"cmd": command}}
     reason = g.pretool_a1_block_reason(event)
     if reason:
         raise SystemExit("unexpected block for %r: %s" % (command, reason))
-
-for command in (
-    "a1 project workitem create --project 528766 --title downstream",
-    "bin/a1id -- project workitem relation add 84846271 relate:84881882",
-    "/bin/bash -lc 'a1 project workitem update 84846271 --status done'",
-):
-    event = {"tool_name": "exec_command", "tool_input": {"cmd": command}}
-    reason = g.pretool_aone_write_block_reason(event)
-    if not reason or "read-only" not in reason:
-        raise SystemExit("expected source Aone write block for %r" % command)
-for command in (
-    "a1 project workitem get 84846271",
-    "bin/a1id -- project workitem relation list 84846271",
-    "rg -n 'project workitem create' .",
-):
-    event = {"tool_name": "exec_command", "tool_input": {"cmd": command}}
-    if g.pretool_aone_write_block_reason(event):
-        raise SystemExit("unexpected source Aone write block for %r" % command)
 
 calls = []
 class ExecCalled(Exception):
@@ -193,27 +205,25 @@ else
 fi
 
 : > "$capture"
-JARVIS_AONE_WRITE_POLICY=terraform-source-no-downstream \
-    run_a1id -- project workitem create --project 528766 --title downstream \
-    >/dev/null 2>"$tmp/source-write.err"
+run_a1id -- project workitem create --project 528766 --title ordinary \
+    >/dev/null 2>"$tmp/aone-create.err"
 rc=$?
-if [ "$rc" -ne 0 ] && [ ! -s "$capture" ] \
-    && grep -Fq '模型对 Aone 只读' "$tmp/source-write.err"; then
-    ok "528766 source model cannot create downstream Aone workitems"
+if [ "$rc" -eq 0 ] \
+    && grep -Fq 'ARGS=project workitem create --project 528766 --title ordinary' "$capture"; then
+    ok "ordinary non-post-PR Aone create remains allowed"
 else
-    no "528766 source-model write policy failed rc=$rc log=$(cat "$capture")"
+    no "ordinary Aone create regression rc=$rc err=$(cat "$tmp/aone-create.err")"
 fi
 
 : > "$capture"
-JARVIS_AONE_WRITE_POLICY=terraform-source-no-downstream \
-    run_a1id -- project workitem relation list 84846271 \
-    >/dev/null 2>"$tmp/source-read.err"
+run_a1id -- project workitem relation add 84846271 relate:84881882 \
+    >/dev/null 2>"$tmp/aone-relation.err"
 rc=$?
 if [ "$rc" -eq 0 ] \
-    && grep -Fq 'ARGS=project workitem relation list 84846271' "$capture"; then
-    ok "528766 source model retains explicit Aone reads"
+    && grep -Fq 'ARGS=project workitem relation add 84846271 relate:84881882' "$capture"; then
+    ok "ordinary non-post-PR Aone relation remains allowed"
 else
-    no "528766 source-model read regression rc=$rc err=$(cat "$tmp/source-read.err")"
+    no "ordinary Aone relation regression rc=$rc err=$(cat "$tmp/aone-relation.err")"
 fi
 
 /usr/bin/python3 -I "$manager" --help >/dev/null 2>&1

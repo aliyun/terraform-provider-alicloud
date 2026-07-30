@@ -37,7 +37,6 @@ from bridge.process_group_runner import run_process_group
 from bridge.task_policy import (
     HEADLESS_POLICY_REVISION,
     StaleTaskPolicyError,
-    TERRAFORM_SOURCE_AONE_WRITE_POLICY,
 )
 
 
@@ -511,10 +510,6 @@ def dispatch_item(
             }
             if execution_runtime is not None:
                 kwargs["execution_runtime"] = execution_runtime
-            if (terraform and str(project) == "528766"
-                    and kind in TASK_BOOKEND_KINDS):
-                kwargs["aone_write_policy"] = (
-                    TERRAFORM_SOURCE_AONE_WRITE_POLICY)
             return buffered_runner(
                 attempt.prompt, attempt.request.session_id, attempt.resume,
                 **kwargs)

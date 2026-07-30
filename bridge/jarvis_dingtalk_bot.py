@@ -1088,13 +1088,11 @@ def _spawn_guarded_task_process(argv, cwd, on_spawn, env=None):
 
 def run_claude_buffered(text, session_id, resume, timeout=None, on_spawn=None,
                         terraform=False, guarded=False,
-                        aone_write_policy=None,
                         execution_runtime=None):
     """Run one buffered headless round through the shared execution runtime."""
     return _run_claude_buffered(
         text, session_id, resume, timeout=timeout, on_spawn=on_spawn,
         terraform=terraform, guarded=guarded,
-        aone_write_policy=aone_write_policy,
         execution_runtime=execution_runtime, command_builder=jarvis_cmd,
         headless_wrapper=_headless_exec_command)
 

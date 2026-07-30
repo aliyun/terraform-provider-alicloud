@@ -26,8 +26,6 @@ Jarvis headless 派发按工单类型选不同模型后端，兼顾质量与成�
 - **in-flight 记录**（`.my-day/bridge/inflight.json`）只服务本地 EphemeralJob 的进程诊断，不参与 Task 恢复。
 - **suspend 记录**（`.my-day/suspended/*.json`）带 `terraform` 字段 → 挂起唤醒 `_wake` 复原车道。
 - Task Session 缺少不可变 `inputPayload` 时执行器 fail-closed，不读取当前 Task payload 猜测恢复输入。
-- Terraform 528766 source Task 的模型进程对 Aone 只读；源单 claim/reply/release/finish
-  仍由 bridge executor bookend 在模型进程外执行，模型不得创建或关联下游研发单。
 
 派发点判定车道（均在 `bridge/jarvis_dingtalk_bot.py`）：`_dispatch` / 手动授权 `处理 #id` / `全部处理` / revisit / persona → 按 `_is_terraform_ticket`；probe（tf-probe）→ 恒 `terraform=True`；Tata 委派 handoff-exec → 默认车道。
 

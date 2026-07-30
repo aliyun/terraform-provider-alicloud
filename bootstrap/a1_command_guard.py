@@ -34,11 +34,6 @@ ACUBE_BUILD_TASK_MESSAGE = (
     "Acube createBuildTaskV2 is permanently disabled for Jarvis; "
     "Terraform work must continue on the source Aone Task"
 )
-TERRAFORM_SOURCE_AONE_WRITE_MESSAGE = (
-    "Terraform 528766 source Task model is Aone read-only; "
-    "the bridge executor owns source-ticket bookend and downstream workitems "
-    "must not be created or related"
-)
 
 _GLOBAL_NO_VALUE = {
     "--debug", "--no-update-check", "-q", "--quiet", "--verbose",
@@ -161,7 +156,12 @@ def _aone_workitem_write(argv: Sequence[str]) -> bool:
 
 
 def _shell_tokens(command: str) -> list[str]:
-    lexer = shlex.shlex(command, posix=True, punctuation_chars=";&|<>(){}")
+    # Braces are deliberately not punctuation: splitting them would turn a
+    # simple ``${name}`` reference into separate command slices and let a
+    # variable-built createBuildTaskV2 URL evade the red line. Standalone shell
+    # group braces remain whitespace-delimited tokens and are still recognized
+    # by ``_SHELL_OPERATORS``.
+    lexer = shlex.shlex(command, posix=True, punctuation_chars=";&|<>()")
     lexer.whitespace_split = True
     lexer.commenters = ""
     return list(lexer)
@@ -285,18 +285,67 @@ def _remember_simple_assignments(
     invocation: Sequence[str],
     variables: dict[str, str],
 ) -> None:
-    """Remember literal assignment prefixes/standalone assignment commands."""
-    for token in invocation:
+    """Remember bounded literal assignments that reach this invocation.
+
+    Besides ordinary shell assignment prefixes, cover the two forms that pass
+    variables to a child process:
+
+    * ``export name=value ...``
+    * ``env name=value ... command``
+
+    Parsing is intentionally structural and side-effect free.  It never invokes
+    a shell, reads the ambient environment, or evaluates substitutions.
+    """
+
+    def remember(token: str) -> bool:
         match = _SIMPLE_ASSIGNMENT.fullmatch(str(token))
         if match is None:
-            break
+            return False
         value = match.group(2)
         # Complex shell evaluation is deliberately not approximated.  Leaving
         # it unresolved is safer than inventing a value that can cross-match an
         # unrelated later command.
         if "$(" in value or "`" in value:
-            continue
+            return True
         variables[match.group(1)] = _expand_simple_vars(value, variables)
+        return True
+
+    index = 0
+    while index < len(invocation) and invocation[index] in {
+            "if", "then", "elif", "else", "while", "until", "do", "!",
+    }:
+        index += 1
+    while index < len(invocation) and remember(str(invocation[index])):
+        index += 1
+
+    if index < len(invocation) and _basename(str(invocation[index])) == "export":
+        index += 1
+        if index < len(invocation) and invocation[index] == "--":
+            index += 1
+        while index < len(invocation) and remember(str(invocation[index])):
+            index += 1
+        return
+
+    if index >= len(invocation) or _basename(str(invocation[index])) != "env":
+        return
+    index += 1
+    while index < len(invocation):
+        token = str(invocation[index])
+        if remember(token):
+            index += 1
+            continue
+        if token in {"-i", "--ignore-environment", "-0", "--null"}:
+            index += 1
+            continue
+        if token in {"-u", "--unset", "-C", "--chdir", "-S", "--split-string"}:
+            # These options consume the next token.  Do not inspect that value
+            # as an assignment because it is option data, not child env state.
+            index += 2
+            continue
+        if token.startswith("--unset=") or token.startswith("--chdir="):
+            index += 1
+            continue
+        break
 
 
 def _is_acube_build_invocation(
@@ -328,7 +377,11 @@ def _is_acube_build_invocation(
     )
 
 
-def _pretool_reason_from_command(command: str, depth: int = 0) -> Optional[str]:
+def _pretool_reason_from_command(
+    command: str,
+    depth: int = 0,
+    inherited_variables: Optional[Mapping[str, str]] = None,
+) -> Optional[str]:
     if depth > 2:
         return None
     try:
@@ -341,7 +394,11 @@ def _pretool_reason_from_command(command: str, depth: int = 0) -> Optional[str]:
     # Track only literal assignments across this compound command.  The target
     # marker must resolve inside the same actual client invocation; a later
     # ``printf createBuildTaskV2`` cannot taint an unrelated earlier curl.
-    variables: dict[str, str] = {}
+    # A quoted ``bash -c`` program is expanded by its parent shell before the
+    # nested shell starts.  Preserve the bounded literal assignments already
+    # observed in the outer compound command so split API names cannot evade
+    # the guard merely by crossing a shell-wrapper boundary.
+    variables: dict[str, str] = dict(inherited_variables or {})
     for invocation in invocations:
         _remember_simple_assignments(invocation, variables)
         if _is_acube_build_invocation(invocation, variables):
@@ -380,7 +437,7 @@ def _pretool_reason_from_command(command: str, depth: int = 0) -> Optional[str]:
             for index in range(exec_index + 1, len(invocation) - 1):
                 if invocation[index] in {"-c", "-lc", "-fc"}:
                     nested = _pretool_reason_from_command(
-                        str(invocation[index + 1]), depth + 1)
+                        str(invocation[index + 1]), depth + 1, variables)
                     if nested:
                         return nested
     return None
@@ -403,64 +460,6 @@ def pretool_a1_block_reason(event: Mapping[str, Any]) -> Optional[str]:
     if not isinstance(command, str) or not command.strip():
         return None
     return _pretool_reason_from_command(command)
-
-
-def _pretool_aone_write_from_command(command: str, depth: int = 0) -> bool:
-    if depth > 2:
-        return False
-    try:
-        tokens = _shell_tokens(command)
-    except ValueError:
-        return False
-    for invocation in _command_slices(tokens):
-        exec_index = _execution_index(invocation)
-        if exec_index is None:
-            continue
-        executable = _basename(invocation[exec_index])
-        args = invocation[exec_index + 1:]
-        if executable == "a1" and _aone_workitem_write(args):
-            return True
-        if executable == "a1id" and _aone_workitem_write(_a1id_payload(args)):
-            return True
-        if executable in {"bash", "sh", "zsh"}:
-            script_index = exec_index + 1
-            while (script_index < len(invocation)
-                   and invocation[script_index].startswith("-")
-                   and invocation[script_index] not in {"-c", "-lc", "-fc"}):
-                script_index += 1
-            if (script_index < len(invocation)
-                    and _basename(invocation[script_index]) == "a1id"
-                    and _aone_workitem_write(
-                        _a1id_payload(invocation[script_index + 1:]))):
-                return True
-            for index in range(exec_index + 1, len(invocation) - 1):
-                if (invocation[index] in {"-c", "-lc", "-fc"}
-                        and _pretool_aone_write_from_command(
-                            str(invocation[index + 1]), depth + 1)):
-                    return True
-    return False
-
-
-def pretool_aone_write_block_reason(
-    event: Mapping[str, Any],
-) -> Optional[str]:
-    """Return a block reason for direct a1/a1id workitem mutations."""
-    tool_name = str(event.get("tool_name") or "").strip().lower()
-    if not (tool_name == "bash" or tool_name == "exec_command"
-            or tool_name.endswith("__exec_command")
-            or tool_name.endswith(".exec_command")
-            or tool_name.endswith(":exec_command")):
-        return None
-    tool_input = event.get("tool_input")
-    if not isinstance(tool_input, Mapping):
-        return None
-    command = tool_input.get("command")
-    if command is None:
-        command = tool_input.get("cmd")
-    if (isinstance(command, str)
-            and _pretool_aone_write_from_command(command)):
-        return TERRAFORM_SOURCE_AONE_WRITE_MESSAGE
-    return None
 
 
 def run_guarded(a1_bin: str, argv: Sequence[str]) -> None:

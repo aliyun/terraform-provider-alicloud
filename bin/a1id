@@ -33,8 +33,6 @@
 #                          post-pr-read-only: post-PR 子代理仅可执行明确的 Aone
 #                          读操作；认领/释放由 bridge 在模型进程外完成，重要事件由
 #                          bridge 的 RD-only publisher 统一发布。
-#                          terraform-source-no-downstream: 528766 source Task
-#                          模型进程同样只读；源单 bookend 由 bridge 在进程外执行。
 #
 # 用法:
 #   a1id login <id>              交互 BUC SSO 登录,落盘 identities/<id>/auth.yaml
@@ -103,10 +101,7 @@ mkdir -p "$STORE"
 source "$SCRIPT_DIR/../bootstrap/post-pr-context.sh"
 
 guard_aone_write(){
-  case "${JARVIS_AONE_WRITE_POLICY:-}" in
-    terraform-source-no-downstream) ;;
-    *) jarvis_post_pr_context_active || return 0 ;;
-  esac
+  jarvis_post_pr_context_active || return 0
 
   # Reuse the Python classifier that understands Cobra inherited global flags
   # before/between command words.  The runtime gate is authoritative even when
@@ -122,7 +117,7 @@ guard_aone_write(){
   fi
   [ "$rc" -eq 0 ] && return 0
   if [ "$rc" -eq 2 ]; then
-    die "当前 headless 模型对 Aone 只读；仅允许明确查询，源单 bookend 由 bridge 在模型进程外执行，禁止创建或关联下游研发单"
+    die "post-PR 子代理对 Aone 只读；仅允许明确查询，认领/释放及其它写操作由 bridge 在模型进程外执行"
   fi
   die "Aone write guard 判定失败(rc=$rc)；已 fail-closed"
 }

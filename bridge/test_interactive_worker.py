@@ -1103,7 +1103,7 @@ class InteractiveWorkerTest(unittest.TestCase):
         self.assertEqual(after["current"]["fenceToken"], 9)
         self.assertNotIn("lostOwnership", after)
 
-    def test_528766_source_lineage_blocks_model_aone_writes_only(self):
+    def test_528766_lineage_does_not_blanket_block_aone_writes(self):
         state = self._seed()
         state["current"] = {
             "aoneId": "84846271", "projectId": "528766", "taskId": "task-1",
@@ -1113,34 +1113,22 @@ class InteractiveWorkerTest(unittest.TestCase):
         }
         self._add_permit(state)
         self._store().save(state)
-        base = {
-            "hook_event_name": "PreToolUse",
-            "session_id": "native-thread-1",
-            "turn_id": "turn-tool",
-            "tool_name": "Bash",
-        }
         with mock.patch.object(
                 worker, "_calling_process_matches", return_value=True):
-            blocked = worker._guard_pre_tool_use(
+            reason = worker._guard_pre_tool_use(
                 self._store(), "codex", {
-                    **base, "tool_use_id": "source-write",
+                    "hook_event_name": "PreToolUse",
+                    "session_id": "native-thread-1",
+                    "turn_id": "turn-tool",
+                    "tool_use_id": "ordinary-aone-write",
+                    "tool_name": "Bash",
                     "tool_input": {
                         "command": (
                             "bin/a1id -- project workitem relation add "
                             "84846271 relate:84881882")
                     },
                 })
-            allowed = worker._guard_pre_tool_use(
-                self._store(), "codex", {
-                    **base, "tool_use_id": "source-read",
-                    "tool_input": {
-                        "command": (
-                            "bin/a1id -- project workitem relation list "
-                            "84846271")
-                    },
-                })
-        self.assertIn("Aone read-only", blocked)
-        self.assertIsNone(allowed)
+        self.assertIsNone(reason)
 
     def test_local_permit_fails_closed_on_margin_status_and_sidecar_health(self):
         state = self._seed()

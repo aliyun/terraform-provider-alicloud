@@ -10,7 +10,6 @@ from typing import Any, Mapping
 
 HEADLESS_POLICY_REVISION = "terraform-rd-single-writer-v6"
 STALE_TASK_POLICY_ERROR = "stale_task_policy_revision"
-TERRAFORM_SOURCE_AONE_WRITE_POLICY = "terraform-source-no-downstream"
 
 
 def _policy_label(policy_revision: str) -> str:

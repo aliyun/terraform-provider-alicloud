@@ -33,25 +33,6 @@ from bridge.task_policy import (
 )
 
 
-class BufferedRunnerCompatibilityTest(unittest.TestCase):
-    def test_bot_wrapper_accepts_and_forwards_aone_write_policy(self):
-        expected = bot.ClaudeResult("ok", False, "success")
-        with mock.patch.object(
-                bot, "_run_claude_buffered", return_value=expected) as runner:
-            actual = bot.run_claude_buffered(
-                "prompt", "session", False, timeout=17, terraform=True,
-                guarded=True, aone_write_policy="terraform-source-no-downstream",
-                execution_runtime="runtime")
-
-        self.assertIs(actual, expected)
-        runner.assert_called_once_with(
-            "prompt", "session", False, timeout=17, on_spawn=None,
-            terraform=True, guarded=True,
-            aone_write_policy="terraform-source-no-downstream",
-            execution_runtime="runtime", command_builder=bot.jarvis_cmd,
-            headless_wrapper=bot._headless_exec_command)
-
-
 class TerraformPureDatasourceSourceOnlyPromptTest(unittest.TestCase):
     def test_runtime_prompt_prioritizes_pure_datasource_source_only_route(self):
         prompt = aone._ticket_prompt(
