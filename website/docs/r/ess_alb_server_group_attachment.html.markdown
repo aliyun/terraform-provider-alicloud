@@ -142,6 +142,12 @@ The following attributes are exported:
 * `id` - (Required, ForceNew) The ESS alb server group attachment resource ID，in the follwing format: scaling_group_id:
   alb_server_group_id:port.
 
+## Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+* `create` - (Defaults to 20 mins) Used when create the Attachment.
+* `delete` - (Defaults to 20 mins) Used when delete the Attachment.
+
 ## Import
 
 ESS alb server groups can be imported using the id, e.g.
