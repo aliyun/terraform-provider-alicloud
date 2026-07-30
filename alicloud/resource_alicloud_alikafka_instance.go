@@ -398,7 +398,10 @@ func resourceAliCloudAlikafkaInstanceCreate(d *schema.ResourceData, meta interfa
 	if v, ok := d.GetOk("serverless_config"); ok {
 		serverlessConfigMap := map[string]interface{}{}
 		for _, serverlessConfigList := range v.([]interface{}) {
-			serverlessConfigArg := serverlessConfigList.(map[string]interface{})
+			serverlessConfigArg, ok := serverlessConfigList.(map[string]interface{})
+			if !ok {
+				continue
+			}
 
 			if reservedPublishCapacity, ok := serverlessConfigArg["reserved_publish_capacity"]; ok {
 				serverlessConfigMap["ReservedPublishCapacity"] = reservedPublishCapacity
@@ -420,7 +423,10 @@ func resourceAliCloudAlikafkaInstanceCreate(d *schema.ResourceData, meta interfa
 	if v, ok := d.GetOk("confluent_config"); ok {
 		confluentConfigMap := map[string]interface{}{}
 		for _, confluentConfigList := range v.([]interface{}) {
-			confluentConfigArg := confluentConfigList.(map[string]interface{})
+			confluentConfigArg, ok := confluentConfigList.(map[string]interface{})
+			if !ok {
+				continue
+			}
 
 			if kafkaCU, ok := confluentConfigArg["kafka_cu"]; ok {
 				confluentConfigMap["KafkaCU"] = kafkaCU
@@ -995,7 +1001,10 @@ func resourceAliCloudAlikafkaInstanceUpdate(d *schema.ResourceData, meta interfa
 	if v, ok := d.GetOk("serverless_config"); ok && convertAliKafkaInstanceTypeResponse(fmt.Sprint(object["PaidType"])) == "alikafka_serverless" {
 		serverlessConfigMap := map[string]interface{}{}
 		for _, serverlessConfigList := range v.([]interface{}) {
-			serverlessConfigArg := serverlessConfigList.(map[string]interface{})
+			serverlessConfigArg, ok := serverlessConfigList.(map[string]interface{})
+			if !ok {
+				continue
+			}
 
 			if reservedPublishCapacity, ok := serverlessConfigArg["reserved_publish_capacity"]; ok {
 				serverlessConfigMap["ReservedPublishCapacity"] = reservedPublishCapacity
@@ -1020,7 +1029,10 @@ func resourceAliCloudAlikafkaInstanceUpdate(d *schema.ResourceData, meta interfa
 	if v, ok := d.GetOk("confluent_config"); ok && convertAliKafkaInstanceTypeResponse(fmt.Sprint(object["PaidType"])) == "alikafka_confluent" {
 		confluentConfigMap := map[string]interface{}{}
 		for _, confluentConfigList := range v.([]interface{}) {
-			confluentConfigArg := confluentConfigList.(map[string]interface{})
+			confluentConfigArg, ok := confluentConfigList.(map[string]interface{})
+			if !ok {
+				continue
+			}
 
 			if kafkaCU, ok := confluentConfigArg["kafka_cu"]; ok {
 				confluentConfigMap["KafkaCU"] = kafkaCU
@@ -1350,6 +1362,11 @@ func resourceAliCloudAlikafkaInstanceUpdate(d *schema.ResourceData, meta interfa
 
 			if fmt.Sprint(response["Success"]) == "false" {
 				return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+			}
+
+			stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("enable_auto_group"))}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, alikafkaService.AliKafkaInstanceStateRefreshFunc(d.Id(), "AutoCreateGroupEnable", []string{}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
 			}
 
 			d.SetPartial("enable_auto_group")
