@@ -246,6 +246,11 @@ class ControlPlaneClient:
         return quote(_nonblank(value, name), safe="")
 
     @staticmethod
+    def _worker_key_path_segment(worker_key: Any) -> str:
+        """Encode a worker-key path segment while preserving its ``:`` separators."""
+        return quote(_nonblank(worker_key, "worker_key"), safe=":")
+
+    @staticmethod
     def _response_detail(raw: bytes) -> Dict[str, Any]:
         if not raw:
             return {}
@@ -376,13 +381,13 @@ class ControlPlaneClient:
         if process_uuid is not None:
             payload["processUuid"] = _nonblank(process_uuid, "process_uuid")
         path = self.WORKER_HEARTBEAT_PATH.format(
-            worker_key=self._path_segment(worker_key, "worker_key"))
+            worker_key=self._worker_key_path_segment(worker_key))
         return self._post(path, payload, request_id=request_id)
 
     def list_force_handoff_requests(
             self, worker_key: str, *, process_uuid: str) -> Any:
         path = self.WORKER_HANDOFF_REQUESTS_PATH.format(
-            worker_key=self._path_segment(worker_key, "worker_key"))
+            worker_key=self._worker_key_path_segment(worker_key))
         query = urlencode({"processUuid": _nonblank(process_uuid, "process_uuid")})
         try:
             result = self._get(path + "?" + query)
@@ -705,7 +710,7 @@ class ControlPlaneClient:
     def get_worker_state(self, worker_key: str) -> Any:
         """Return one worker plus its current task/session assignments."""
         path = self.WORKER_STATE_PATH.format(
-            worker_key=self._path_segment(worker_key, "worker_key"))
+            worker_key=self._worker_key_path_segment(worker_key))
         return self._get(path)
 
     def get_task_timeline(self, task_id: str) -> Any:
