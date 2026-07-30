@@ -72,6 +72,62 @@ expect "rm -rf / still blocked" 2 \
 expect "repo-scoped rm -rf passes" 0 \
     "rm -rf $tmp/playground/scratch"
 
+# --- Acube downstream task red line -----------------------------------------
+expect "direct createBuildTaskV2 curl blocked" 2 \
+    "curl -fsS https://acube.example/api/createBuildTaskV2 -d '{}'"
+expect "variable-wrapped createBuildTaskV2 wget blocked" 2 \
+    "endpoint=https://acube.example/api/createBuildTaskV2; wget -qO- \"\$endpoint\""
+expect "bash -lc createBuildTaskV2 curl blocked" 2 \
+    "/bin/bash -lc 'endpoint=https://acube.example/api/createBuildTaskV2; curl \"\$endpoint\"'"
+expect "outer split variables survive bash -lc curl" 2 \
+    "op=createBuildTask;suffix=V2; bash -lc \"curl https://acube.example/api/\$op\$suffix\""
+expect "outer split variables survive sh -c wget" 2 \
+    "op=createBuildTask;suffix=V2; sh -c \"wget -qO- https://acube.example/api/\$op\$suffix\""
+expect "outer split variables survive bash -lc python" 2 \
+    "op=createBuildTask;suffix=V2; bash -lc \"python3 -c 'import requests; requests.post(\\\"https://acube.example/api/\$op\$suffix\\\")'\""
+expect "exported split variables survive bash -lc curl" 2 \
+    "export op=createBuildTask suffix=V2; bash -lc 'curl https://acube.example/api/\$op\$suffix'"
+expect "exported split variables survive bash -lc python" 2 \
+    "export op=createBuildTask suffix=V2; bash -lc 'python3 -c \"import requests; requests.post(\\\"https://acube.example/api/\$op\$suffix\\\")\"'"
+expect "env split variables survive sh -c wget" 2 \
+    "env op=createBuildTask suffix=V2 sh -c 'wget -qO- https://acube.example/api/\$op\$suffix'"
+expect "env split variables survive sh -c node" 2 \
+    "env op=createBuildTask suffix=V2 sh -c 'node -e \"fetch(\\\"https://acube.example/api/\$op\$suffix\\\")\"'"
+expect "env split variables reach direct python" 2 \
+    "env op=createBuildTask suffix=V2 python3 -c 'import requests; requests.post(\"https://acube.example/api/\$op\$suffix\")'"
+expect "env split variables reach direct node" 2 \
+    "env op=createBuildTask suffix=V2 node -e 'fetch(\"https://acube.example/api/\$op\$suffix\")'"
+expect "split variable createBuildTaskV2 curl blocked" 2 \
+    "op=createBuildTask;suffix=V2;curl https://acube.example/api/\$op\$suffix"
+expect "variable client and split API name blocked" 2 \
+    "client=curl;op=createBuildTask;suffix=V2;\$client https://acube.example/api/\${op}\${suffix}"
+expect "split API name in python request blocked" 2 \
+    "op=createBuildTask;suffix=V2;python3 -c \"import requests; requests.post('https://acube.example/api/\$op\$suffix')\""
+expect "split API name in node fetch blocked" 2 \
+    "op=createBuildTask;suffix=V2;node -e \"fetch('https://acube.example/api/\$op\$suffix')\""
+expect "python requests createBuildTaskV2 blocked" 2 \
+    "python3 -c 'import requests; requests.post(\"https://acube.example/api/createBuildTaskV2\")'"
+expect "node fetch createBuildTaskV2 blocked" 2 \
+    "node -e 'fetch(\"https://acube.example/api/createBuildTaskV2\", {method:\"POST\"})'"
+expect "JARVIS_MASTER_OK cannot bypass createBuildTaskV2" 2 \
+    "curl -fsS https://acube.example/api/createBuildTaskV2" JARVIS_MASTER_OK=1
+expect "rg createBuildTaskV2 audit allowed" 0 \
+    "rg -n createBuildTaskV2 ."
+expect "grep createBuildTaskV2 audit allowed" 0 \
+    "grep -R createBuildTaskV2 docs"
+expect "unrelated curl then marker printf allowed" 0 \
+    "curl https://example.com; printf createBuildTaskV2"
+expect "python marker print audit allowed" 0 \
+    "python3 -c 'print(\"createBuildTaskV2\")'"
+expect "exported split marker rg audit allowed" 0 \
+    "export op=createBuildTask suffix=V2; rg -n \"\$op\$suffix\" ."
+expect "env split marker grep audit allowed" 0 \
+    "env op=createBuildTask suffix=V2 grep -R \"\$op\$suffix\" docs"
+expect "ordinary Aone create remains allowed" 0 \
+    "a1 project workitem create --project 528766 --title ordinary"
+expect "ordinary Aone relation remains allowed" 0 \
+    "a1 project workitem relation create --project 528766 --workitem 1 --target 2"
+
 echo
 echo "pass=$pass fail=$fail"
 [ "$fail" -eq 0 ]

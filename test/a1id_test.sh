@@ -777,6 +777,10 @@ assert_post_pr_blocked "relation add" project workitem relation add 123 relate:4
 assert_post_pr_blocked "relation remove" project workitem relation remove 123 relate:456
 assert_post_pr_blocked "attachment upload" project workitem attachment upload 123 file.txt
 assert_post_pr_blocked "attachment delete" project workitem attachment delete 123 9
+assert_post_pr_blocked "global format prefix create" \
+    --format json project workitem create --project 528766 --title x
+assert_post_pr_blocked "interleaved global format relation" \
+    project --format json workitem relation add 123 relate:456
 assert_post_pr_as_blocked "显式 terraform-rd update" \
     project workitem update 123 --status Closed
 
@@ -788,6 +792,32 @@ assert_post_pr_allowed "relation list" project workitem relation list 123
 assert_post_pr_allowed "attachment list" project workitem attachment list 123
 assert_post_pr_allowed "attachment download" project workitem attachment download 123 9
 assert_post_pr_allowed "field list" project workitem field list --project 528766
+assert_post_pr_allowed "global format prefix get" \
+    --format json project workitem get 123
+
+# A shell-level PreToolUse parser cannot prove arbitrary Python subprocess
+# behavior.  The a1id runtime fence remains authoritative after that wrapper.
+: > "$CAP"; : > "$ERR"
+JARVIS_A1_IDENTITY=terraform-rd JARVIS_A1_STRICT=1 \
+    JARVIS_AONE_WRITE_POLICY=post-pr-read-only \
+    A1ID_ROOT="$ROOT" A1_BIN="$BIN/a1" STUB_CAPTURE="$CAP" \
+    python3 - "$A1ID" > /dev/null 2>"$ERR" <<'PY'
+import os
+import subprocess
+import sys
+
+result = subprocess.run([
+    "bash", sys.argv[1], "--", "--format", "json",
+    "project", "workitem", "create", "--project", "528766", "--title", "x",
+], env=os.environ.copy(), check=False)
+raise SystemExit(result.returncode)
+PY
+rc=$?
+if [ "$rc" != "0" ] && [ ! -s "$CAP" ]; then
+    pass "python subprocess 包装仍被 a1id runtime fence 阻断"
+else
+    fail "python subprocess 绕过 runtime fence: rc=$rc capture=$(cat "$CAP")"
+fi
 assert_post_pr_allowed "field options" project workitem field options status --project 528766
 
 context_dir="/tmp/jarvis-headless-context-$(id -u)"
@@ -802,7 +832,7 @@ JARVIS_CONTROL_PLANE_BASE_URL="http://127.0.0.1:1" \
 JARVIS_HEADLESS_REMOTE_REGISTER_TIMEOUT="0.05" \
     /usr/bin/python3 -I "$manager" register-headless \
     --session-id "a1id-lineage-$$" --pid "$$" --client claude \
-    --policy-revision terraform-rd-single-writer-v5 \
+    --policy-revision terraform-rd-single-writer-v6 \
     --aone-write-policy post-pr-read-only \
     --headless-kind pr_comment_reply --aone-id 123 --project-id 528766 \
     --claim-attempt-id a1id-lineage-attempt \
@@ -858,7 +888,7 @@ JARVIS_CONTROL_PLANE_BASE_URL="http://127.0.0.1:1" \
 JARVIS_HEADLESS_REMOTE_REGISTER_TIMEOUT="0.05" \
     /usr/bin/python3 -I "$manager" register-headless \
     --session-id "a1id-ended-$$" --pid "$ended_pid" --client claude \
-    --policy-revision terraform-rd-single-writer-v5 \
+    --policy-revision terraform-rd-single-writer-v6 \
     --aone-write-policy post-pr-read-only \
     --headless-kind pr_ci_fix --aone-id 123 --project-id 528766 \
     --claim-attempt-id a1id-ended-attempt \

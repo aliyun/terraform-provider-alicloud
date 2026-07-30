@@ -196,7 +196,7 @@ MAX_REPLY = 2000          # bytes; keep card under the 2KB cap
 CARD_KEY = "content"      # streaming variable name in the AI card template
 PUT_MIN_INTERVAL = 0.4    # seconds between card PUTs (throttle)
 PUT_MIN_GROWTH = 40       # chars of growth that also triggers a PUT
-HEADLESS_POLICY_REVISION = "terraform-rd-single-writer-v5"
+from bridge.task_policy import HEADLESS_POLICY_REVISION
 POST_PR_HEADLESS_KINDS = frozenset(("pr_ci_fix", "pr_comment_reply"))
 # Control-plane Task kinds whose Aone claim/reply/finish are owned by the executor
 # (_TaskAoneBookend), not self-claimed inside the run — the self-lease-conflict fix.
@@ -1405,6 +1405,7 @@ class JarvisHandler(AsyncChatbotHandler):
             post_pr_headless_kinds=POST_PR_HEADLESS_KINDS,
             broadcast_target=broadcast_target,
             broadcast_type=broadcast_type,
+            policy_revision=HEADLESS_POLICY_REVISION,
         )
         # Periodic discovery stays in Scheduler. The only shared boundary for
         # supervised mode is the durable pending-dispatch registry.
@@ -1437,6 +1438,7 @@ class JarvisHandler(AsyncChatbotHandler):
                 post_pr_headless_kinds=POST_PR_HEADLESS_KINDS,
                 broadcast_target=broadcast_target,
                 broadcast_type=broadcast_type,
+                policy_revision=HEADLESS_POLICY_REVISION,
             )
         return execution.execute(lease, controller)
 

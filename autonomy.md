@@ -32,7 +32,7 @@
 | `create_cr` | 建变更 / CR |
 | `worktree` | worktree 开发（本地分支） |
 | `prestage` | 预发部署 |
-| `cloudspec_self_close` | 仅分支 E 的 CloudSpec 结构 metadata 原主单自闭环：AMP task feature 分支、IDL build/check、pre dry-run/发布、Meta 收敛；随后必须经 Acube `createBuildTaskV2` 交 D-临钧，不由 E 做 Provider PR/CI/ACC。text-only 文档 metadata 属 I，走 2169561 |
+| `cloudspec_self_close` | 仅分支 E 的 CloudSpec 结构 metadata 源单自闭环：AMP task feature 分支、IDL build/check、pre dry-run/发布、Meta 收敛；随后仍在同一源单上下文继续 Provider PR/CI/remote ACC。永久禁止调用 Acube `createBuildTaskV2`。text-only 文档 metadata 属 I，走 2169561 |
 | `adhoc_aone` | ad-hoc 建/补单（loops/adhoc-intake.md，PR 默认落 tf_provider） |
 | `pr_review` | 只读 PR 评审（不写不合并） |
 | `wrap_sync` | 非 Terraform 中途回填 Aone 进展；Terraform 主处理 run 禁用，后续重要事件只走 RD-only 幂等发布器 |

@@ -34,6 +34,10 @@ from bridge.jarvis_execution_runtime import (
     session_file_exists,
 )
 from bridge.process_group_runner import run_process_group
+from bridge.task_policy import (
+    HEADLESS_POLICY_REVISION,
+    StaleTaskPolicyError,
+)
 
 
 LOG = logging.getLogger(__name__)
@@ -988,6 +992,7 @@ class PersistentTaskExecution:
         post_pr_headless_kinds: Collection[str],
         broadcast_target: Callable[[], str],
         broadcast_type: Callable[[], str],
+        policy_revision: str = HEADLESS_POLICY_REVISION,
     ) -> None:
         self._enabled_kinds = enabled_kinds
         self._dispatch_item = dispatch_item
@@ -1000,6 +1005,9 @@ class PersistentTaskExecution:
         self._post_pr_headless_kinds = frozenset(post_pr_headless_kinds)
         self._broadcast_target = broadcast_target
         self._broadcast_type = broadcast_type
+        self._policy_revision = str(policy_revision or "").strip()
+        if not self._policy_revision:
+            raise ValueError("policy_revision must be nonblank")
 
     def execute(self, lease: object, controller: object) -> Any:
         task = lease.get("task") if isinstance(lease, dict) else None
@@ -1021,6 +1029,20 @@ class PersistentTaskExecution:
         if not isinstance(payload, dict):
             raise ValueError("Task payload must be an object")
         kind = str(payload.get("kind") or task.get("taskType") or "").strip().lower()
+        source_type = str(
+            task.get("sourceType") or task.get("source_type") or "").upper()
+        project = str(payload.get("project") or "").strip()
+        item_id_hint = str(payload.get("itemId") or "").strip()
+        requires_current_policy = (
+            source_type == "AONE"
+            or bool(payload.get("terraform"))
+            or (kind in self._task_bookend_kinds
+                and bool(project) and item_id_hint.isdigit()))
+        if (requires_current_policy
+                and str(payload.get("policyRevision") or "").strip()
+                != self._policy_revision):
+            raise StaleTaskPolicyError(
+                payload.get("policyRevision"), self._policy_revision)
         enabled = self._enabled_kinds()
         if "*" not in enabled and kind not in enabled:
             raise ValueError("TASK kind is not enabled: %s" % (kind or "<empty>"))

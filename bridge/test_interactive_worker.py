@@ -1103,6 +1103,33 @@ class InteractiveWorkerTest(unittest.TestCase):
         self.assertEqual(after["current"]["fenceToken"], 9)
         self.assertNotIn("lostOwnership", after)
 
+    def test_528766_lineage_does_not_blanket_block_aone_writes(self):
+        state = self._seed()
+        state["current"] = {
+            "aoneId": "84846271", "projectId": "528766", "taskId": "task-1",
+            "sessionId": "session-1", "fenceToken": 9, "generation": 4,
+            "cycle": 1, "runtimeSessionId": "interactive:cycle:1",
+            "leaseSeconds": 120, "heartbeatEnabled": True,
+        }
+        self._add_permit(state)
+        self._store().save(state)
+        with mock.patch.object(
+                worker, "_calling_process_matches", return_value=True):
+            reason = worker._guard_pre_tool_use(
+                self._store(), "codex", {
+                    "hook_event_name": "PreToolUse",
+                    "session_id": "native-thread-1",
+                    "turn_id": "turn-tool",
+                    "tool_use_id": "ordinary-aone-write",
+                    "tool_name": "Bash",
+                    "tool_input": {
+                        "command": (
+                            "bin/a1id -- project workitem relation add "
+                            "84846271 relate:84881882")
+                    },
+                })
+        self.assertIsNone(reason)
+
     def test_local_permit_fails_closed_on_margin_status_and_sidecar_health(self):
         state = self._seed()
         state["current"] = {
@@ -2204,7 +2231,9 @@ class InteractiveWorkerTest(unittest.TestCase):
                          {"aoneId": "84345050", "projectId": "2100304"})
         expected = "interactive:%s" % worker.hashlib.sha256(
             claim["runtimeSessionId"].encode()).hexdigest()[:32]
-        self.assertEqual(envelope.desired_revision, expected)
+        self.assertEqual(
+            envelope.desired_revision,
+            worker.policy_desired_revision(expected, envelope.payload))
         self.assertEqual(self._store().load()["current"]["title"], "")
 
     def test_claim_reports_source_status_and_freezes_across_retry(self):
@@ -2268,7 +2297,9 @@ class InteractiveWorkerTest(unittest.TestCase):
         # source_status does not feed the desired_revision hash.
         expected = "interactive:%s" % worker.hashlib.sha256(
             claim["runtimeSessionId"].encode()).hexdigest()[:32]
-        self.assertEqual(envelope.desired_revision, expected)
+        self.assertEqual(
+            envelope.desired_revision,
+            worker.policy_desired_revision(expected, envelope.payload))
 
     def test_different_target_cannot_overwrite_inflight_local_claim(self):
         state = self._seed()

@@ -56,6 +56,10 @@ from jarvis_task_client import (  # noqa: E402
     StaleFence,
     TaskEnvelope,
 )
+from bridge.task_policy import (  # noqa: E402
+    HEADLESS_POLICY_REVISION,
+    policy_desired_revision,
+)
 
 
 CONFLICT_EXIT = 10
@@ -63,7 +67,6 @@ UNAVAILABLE_EXIT = 11
 STATE_ERROR_EXIT = 12
 TRANSITION_EXIT = 13
 HOOK_BLOCK_EXIT = 2
-HEADLESS_POLICY_REVISION = "terraform-rd-single-writer-v5"
 POST_PR_AONE_WRITE_POLICY = "post-pr-read-only"
 POST_PR_HEADLESS_KINDS = frozenset(("pr_ci_fix", "pr_comment_reply"))
 T = TypeVar("T")
@@ -3247,19 +3250,21 @@ def prepare_claim(aone_id: str, project_id: str, title: str = "",
     source_ref = {"aoneId": aone_id, "projectId": project_id}
     if stable_title:
         source_ref["title"] = stable_title
+    payload = {
+        "kind": "ticket",
+        "itemId": aone_id,
+        "project": project_id,
+        "trigger": "INTERACTIVE",
+        "policyRevision": HEADLESS_POLICY_REVISION,
+    }
     envelope = TaskEnvelope(
         task_key="aone:%s:%s" % (project_id, aone_id),
         source_type="AONE",
         source_ref=source_ref,
         task_type="ticket",
-        desired_revision=revision,
+        desired_revision=policy_desired_revision(revision, payload),
         trigger_mask=["INTERACTIVE"],
-        payload={
-            "kind": "ticket",
-            "itemId": aone_id,
-            "project": project_id,
-            "trigger": "INTERACTIVE",
-        },
+        payload=payload,
         recovery_policy="REPLAY_SAFE",
         aone_id=aone_id,
         source_status=stable_source_status,

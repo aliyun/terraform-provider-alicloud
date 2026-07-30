@@ -22,6 +22,7 @@ sys.path.insert(0, str(HERE.parent))
 from bridge.jarvis_task_router import EnqueueResult  # noqa: E402
 from bridge.helpers import aone as events  # noqa: E402
 from bridge.scheduler.runners import pr_watch as bot  # noqa: E402
+from bridge.task_policy import policy_desired_revision  # noqa: E402
 
 TID = "84251052"
 PR = "https://github.com/aliyun/terraform-provider-alicloud/pull/9972"
@@ -526,7 +527,11 @@ class MaybeDispatchCiFixTest(_DispatchBase):
             "GITHUB PR CI trigger must retain the canonical Aone association")
         self.assertEqual(
             self.pool.submitted[0]["envelope"].source_ref["title"], TITLE)
-        self.assertNotIn(TITLE, self.pool.submitted[0]["envelope"].desired_revision)
+        envelope = self.pool.submitted[0]["envelope"]
+        self.assertEqual(
+            envelope.desired_revision,
+            policy_desired_revision("pr-ci:sha1", envelope.payload))
+        self.assertNotIn(TITLE, envelope.desired_revision)
         e = self._entry()
         self.assertEqual((e["ci_fix_sha"], e["ci_fix_attempts"]), ("sha1", 1))
         self.assertEqual(self.events, [], "单次 CI 修复派发不更新 Aone")
@@ -672,6 +677,10 @@ class MaybeDispatchCommentReplyTest(_DispatchBase):
             "GITHUB PR comment trigger must retain the canonical Aone association")
         self.assertEqual(
             self.pool.submitted[0]["envelope"].source_ref["title"], TITLE)
+        envelope = self.pool.submitted[0]["envelope"]
+        self.assertEqual(
+            envelope.desired_revision,
+            policy_desired_revision("pr-comment:pr-2", envelope.payload))
         self.assertEqual(self._entry().get("last_seen_comment"), "pr-2")
         self.assertEqual(self.events, [], "普通 reviewer comment 仅在 GitHub 内处理")
 
