@@ -645,6 +645,107 @@ class ClientContractTest(unittest.TestCase):
 
         self.assertIsNone(body(opener.calls[0][0])["expectedDesiredRevision"])
 
+    def test_force_redispatch_posts_full_cas_and_explicit_target(self):
+        response = {
+            "task": {"id": 42, "status": "READY", "generation": 4},
+            "action": "CROSS_MACHINE_REDISPATCHED",
+            "releasedSessionId": 7,
+            "previousGeneration": 3,
+            "targetWorker": {
+                "id": 25,
+                "workerKey": "persistent:bridge:linux-2",
+                "hostId": "linux-2",
+            },
+        }
+        opener = RecordingOpener(responses=[
+            FakeResponse(response), FakeResponse(response),
+        ])
+        c = self.make(opener)
+        arguments = {
+            "expected_task_status": "SUSPENDED",
+            "expected_session_id": 7,
+            "expected_session_status": "SUSPENDED",
+            "expected_generation": 3,
+            "expected_state_version": 9,
+            "expected_fence_token": 4,
+            "expected_retry_count": 2,
+            "expected_desired_revision": "desired:3",
+            "expected_processing_revision": None,
+            "expected_worker_key": "persistent:bridge:mac-1",
+            "expected_worker_id": 19,
+            "expected_worker_process_uuid": "process-old-19",
+            "target_worker_key": "persistent:bridge:linux-2",
+            "reason": "move suspended task to another host",
+        }
+
+        first = c.force_redispatch_task("task/42", **arguments)
+        second = c.force_redispatch_task("task/42", **arguments)
+
+        self.assertEqual(first["action"], "CROSS_MACHINE_REDISPATCHED")
+        self.assertEqual(
+            second["targetWorker"]["workerKey"],
+            "persistent:bridge:linux-2")
+        for req, _timeout in opener.calls:
+            self.assertEqual(req.get_method(), "POST")
+            self.assertTrue(req.full_url.endswith(
+                "/api/jarvis/v1/tasks/task%2F42/force-redispatch"))
+            self.assertEqual(body(req), {
+                "expectedTaskStatus": "SUSPENDED",
+                "expectedSessionId": 7,
+                "expectedSessionStatus": "SUSPENDED",
+                "expectedGeneration": 3,
+                "expectedStateVersion": 9,
+                "expectedFenceToken": 4,
+                "expectedRetryCount": 2,
+                "expectedDesiredRevision": "desired:3",
+                "expectedProcessingRevision": None,
+                "expectedWorkerKey": "persistent:bridge:mac-1",
+                "expectedWorkerId": 19,
+                "expectedWorkerProcessUuid": "process-old-19",
+                "targetWorkerKey": "persistent:bridge:linux-2",
+                "confirmationToken": "FORCE_REDISPATCH",
+                "reason": "move suspended task to another host",
+            })
+        first_key = headers(opener.calls[0][0])["idempotency-key"]
+        second_key = headers(opener.calls[1][0])["idempotency-key"]
+        self.assertEqual(first_key, second_key)
+        self.assertTrue(first_key.startswith("jarvis-force-redispatch-"))
+
+    def test_force_redispatch_auto_target_has_distinct_stable_key(self):
+        response = {
+            "task": {"id": 42, "status": "READY", "generation": 3},
+            "action": "CROSS_MACHINE_REDISPATCHED",
+            "targetWorker": {"id": 25, "workerKey": "persistent:bridge:linux-2"},
+        }
+        opener = RecordingOpener(responses=[
+            FakeResponse(response), FakeResponse(response),
+        ])
+        c = self.make(opener)
+        arguments = {
+            "expected_task_status": "SUSPENDED",
+            "expected_session_id": 7,
+            "expected_session_status": "SUSPENDED",
+            "expected_generation": 3,
+            "expected_state_version": 9,
+            "expected_fence_token": 4,
+            "expected_retry_count": 0,
+            "expected_desired_revision": None,
+            "expected_processing_revision": None,
+            "expected_worker_key": "persistent:bridge:mac-1",
+            "expected_worker_id": 19,
+            "expected_worker_process_uuid": "process-old-19",
+            "target_worker_key": None,
+            "reason": "select another host",
+        }
+
+        c.force_redispatch_task("42", **arguments)
+        c.force_redispatch_task("42", **arguments)
+
+        self.assertIsNone(body(opener.calls[0][0])["targetWorkerKey"])
+        self.assertEqual(
+            headers(opener.calls[0][0])["idempotency-key"],
+            headers(opener.calls[1][0])["idempotency-key"])
+
     def test_legacy_kind_cleanup_preview_and_delete_use_admin_contract(self):
         snapshot = {
             "tasks": 1, "sessions": 1, "events": 3, "operations": 0,

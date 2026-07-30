@@ -336,6 +336,72 @@ def cmd_force_release(client, task_id, session_id, reason, yes):
     return 0
 
 
+def cmd_force_redispatch(
+        client, task_id, session_id, reason, yes, target_worker_key):
+    if not yes:
+        sys.stderr.write(
+            "error: force-redispatch fences the reviewed ownership and targets "
+            "another online queue worker; pass --yes to fetch a fresh CAS "
+            "snapshot and continue\n")
+        return 2
+    try:
+        timeline = client.get_task_timeline(str(task_id))
+        snapshot = _force_release_snapshot(timeline, task_id, session_id)
+        result = client.force_redispatch_task(
+            str(task_id),
+            target_worker_key=target_worker_key,
+            reason=reason,
+            **snapshot)
+    except ControlPlaneError as exc:
+        if getattr(exc, "status", None) == 404:
+            sys.stderr.write(
+                "error: force-redispatch endpoint is unavailable (HTTP 404); "
+                "the control-plane server version has not been deployed\n")
+            return 3
+        raise
+    except (TypeError, ValueError) as exc:
+        sys.stderr.write(
+            "error: cannot build force-redispatch CAS: %s\n" % exc)
+        return 3
+
+    task = result.get("task") if isinstance(result.get("task"), dict) else {}
+    target = (
+        result.get("targetWorker")
+        if isinstance(result.get("targetWorker"), dict) else {})
+    old_generation = result.get(
+        "previousGeneration", snapshot["expected_generation"])
+    new_generation = task.get("generation", result.get("generation", "?"))
+    old_session = result.get(
+        "releasedSessionId", snapshot["expected_session_id"])
+    final_status = task.get("status", result.get("status", "?"))
+    print(
+        "cross-machine redispatch: action=%s oldGeneration=%s "
+        "newGeneration=%s oldSession=%s finalStatus=%s"
+        % (
+            result.get("action", "?"),
+            old_generation,
+            new_generation,
+            old_session if old_session is not None else "-",
+            final_status,
+        ))
+    print(
+        "  targetWorkerId=%s targetWorkerKey=%s hostId=%s processUuid=%s "
+        "activity=%s"
+        % (
+            target.get("id", "-"),
+            target.get("workerKey", "-"),
+            target.get("hostId", "-"),
+            target.get("processUuid", "-"),
+            target.get("activityStatus", target.get("status", "-")),
+        ))
+    print(
+        "  dispatch=targeted/queued; READY does not mean the target worker "
+        "has started a new session")
+    if result.get("message"):
+        print("  message=%s" % result.get("message"))
+    return 0
+
+
 def cmd_legacy_cleanup(client, yes):
     preview = client.preview_legacy_kind_cleanup()
     if not isinstance(preview, dict):
@@ -403,6 +469,24 @@ def main(argv=None):
         help="expected Session id (default: fresh task.currentSessionId)")
     p_release.add_argument("--reason", required=True, help="auditable release reason")
     p_release.add_argument("--yes", action="store_true", help="confirm ownership release")
+    p_redispatch = sub.add_parser(
+        "force-redispatch",
+        help="release one ownership snapshot and target an online worker on another host")
+    p_redispatch.add_argument("task_id", type=int, help="control-plane Task id")
+    p_redispatch.add_argument(
+        "session_id", type=int, nargs="?",
+        help="expected Session id (default: fresh task.currentSessionId)")
+    target = p_redispatch.add_mutually_exclusive_group(required=True)
+    target.add_argument(
+        "--auto-target", action="store_true",
+        help="let the server select an eligible online worker on another host")
+    target.add_argument(
+        "--target-worker", metavar="WORKER_KEY",
+        help="require this exact online queue-pull worker key")
+    p_redispatch.add_argument(
+        "--reason", required=True, help="auditable redispatch reason")
+    p_redispatch.add_argument(
+        "--yes", action="store_true", help="confirm cross-machine redispatch")
     p_legacy = sub.add_parser(
         "legacy-cleanup",
         help="preview (default) / delete residual tasks of deprecated kinds (e.g. field_repair)")
@@ -424,6 +508,10 @@ def main(argv=None):
         if args.cmd == "force-release":
             return cmd_force_release(
                 client, args.task_id, args.session_id, args.reason, args.yes)
+        if args.cmd == "force-redispatch":
+            return cmd_force_redispatch(
+                client, args.task_id, args.session_id, args.reason, args.yes,
+                args.target_worker)
         return cmd_discard_resume(
             client, args.task_id, args.session_id, args.reason, args.yes)
     except ControlPlaneError as e:

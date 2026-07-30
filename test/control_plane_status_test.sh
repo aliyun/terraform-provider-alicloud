@@ -167,6 +167,48 @@ class ControlPlaneClient:
             "releasedSessionId": 7,
             "previousGeneration": 3,
         }
+
+    def force_redispatch_task(self, task_id, **kwargs):
+        mode = os.environ.get("STUB_MODE")
+        if mode == "redispatch_404":
+            raise ControlPlaneError("control plane HTTP 404: not found", status=404)
+        if mode == "redispatch_409":
+            raise ControlPlaneError(
+                "control plane HTTP 409 Conflict.RedispatchTarget: target stale",
+                status=409)
+        target = os.environ.get("STUB_EXPECT_TARGET")
+        expected = {
+            "expected_task_status": "RECOVERY_REQUIRED",
+            "expected_session_id": 7,
+            "expected_session_status": "RESUMABLE",
+            "expected_generation": 3,
+            "expected_state_version": 9,
+            "expected_fence_token": 4,
+            "expected_retry_count": 2,
+            "expected_desired_revision": "rev-2",
+            "expected_processing_revision": "rev-2",
+            "expected_worker_key": "interactive:codex:macmini:old",
+            "expected_worker_id": 19,
+            "expected_worker_process_uuid": "process-old-19",
+            "target_worker_key": target or None,
+            "reason": "move reviewed task to another host",
+        }
+        if str(task_id) != "11" or kwargs != expected:
+            raise SystemExit("stub: unexpected force-redispatch arguments %r" % kwargs)
+        return {
+            "task": {"id": 11, "status": "READY", "generation": 4},
+            "action": "CROSS_MACHINE_REDISPATCHED",
+            "message": "target reservation established",
+            "releasedSessionId": 7,
+            "previousGeneration": 3,
+            "targetWorker": {
+                "id": 25,
+                "workerKey": target or "persistent:bridge:linux-auto",
+                "hostId": "linux-2",
+                "processUuid": "process-linux-2",
+                "activityStatus": "IDLE",
+            },
+        }
 PY
 
 # 统一调用姿势：env 文件覆盖到临时目录；清空四个凭证 env（空串=未配置）；PYTHONPATH 前插 stub。
@@ -277,6 +319,63 @@ out="$(STUB_MODE=force_409 run_cli force-release 11 7 \
 [ $rc -eq 3 ] && ok "force-release 409 rc=3" || no "force-release 409 rc=$rc"
 has "control plane HTTP 409 Conflict.ForceReleaseCas: task changed" "$out" \
   "force-release preserves 409 explanation"
+
+# ── 11) force-redispatch 必须选择自动/指定目标，并在服务端原子选机 ───────────
+out="$(STUB_MODE=no_read_allowed run_cli force-redispatch 11 \
+  --auto-target --reason 'move reviewed task to another host' 2>&1)"; rc=$?
+[ $rc -eq 2 ] && ok "force-redispatch without --yes rc=2" || \
+  no "force-redispatch without --yes rc=$rc"
+has "pass --yes" "$out" "force-redispatch explains confirmation gate"
+hasnot "timeline must not be read" "$out" "force-redispatch refuses before timeline read"
+
+out="$(run_cli force-redispatch 11 --auto-target \
+  --reason 'move reviewed task to another host' --yes 2>&1)"; rc=$?
+[ $rc -eq 0 ] && ok "force-redispatch auto rc=0" || \
+  no "force-redispatch auto rc=$rc: $out"
+has "action=CROSS_MACHINE_REDISPATCHED" "$out" "redispatch prints action"
+has "oldGeneration=3" "$out" "redispatch prints old generation"
+has "newGeneration=4" "$out" "redispatch prints new generation"
+has "targetWorkerKey=persistent:bridge:linux-auto" "$out" \
+  "redispatch prints server-selected target"
+has "hostId=linux-2" "$out" "redispatch prints target host"
+has "targeted/queued" "$out" "redispatch does not claim READY is running"
+
+out="$(STUB_EXPECT_TARGET=persistent:bridge:linux-9 \
+  run_cli force-redispatch 11 --target-worker persistent:bridge:linux-9 \
+  --reason 'move reviewed task to another host' --yes 2>&1)"; rc=$?
+[ $rc -eq 0 ] && ok "force-redispatch explicit target rc=0" || \
+  no "force-redispatch explicit target rc=$rc: $out"
+has "targetWorkerKey=persistent:bridge:linux-9" "$out" \
+  "redispatch forwards explicit worker key"
+
+out="$(STUB_MODE=redispatch_404 run_cli force-redispatch 11 \
+  --auto-target --reason 'move reviewed task to another host' --yes 2>&1)"; rc=$?
+[ $rc -eq 3 ] && ok "force-redispatch 404 rc=3" || \
+  no "force-redispatch 404 rc=$rc"
+has "server version has not been deployed" "$out" \
+  "force-redispatch 404 names undeployed server"
+
+out="$(STUB_MODE=redispatch_409 run_cli force-redispatch 11 \
+  --auto-target --reason 'move reviewed task to another host' --yes 2>&1)"; rc=$?
+[ $rc -eq 3 ] && ok "force-redispatch 409 rc=3" || \
+  no "force-redispatch 409 rc=$rc"
+has "control plane HTTP 409 Conflict.RedispatchTarget: target stale" "$out" \
+  "force-redispatch preserves target 409 explanation"
+
+out="$(run_cli force-redispatch 11 \
+  --reason 'move reviewed task to another host' --yes 2>&1)"; rc=$?
+[ $rc -eq 2 ] && ok "force-redispatch requires target mode" || \
+  no "force-redispatch missing target mode rc=$rc"
+has "one of the arguments --auto-target --target-worker is required" "$out" \
+  "force-redispatch explains target choice"
+
+out="$(run_cli force-redispatch 11 --auto-target \
+  --target-worker persistent:bridge:linux-9 \
+  --reason 'move reviewed task to another host' --yes 2>&1)"; rc=$?
+[ $rc -eq 2 ] && ok "force-redispatch rejects two target modes" || \
+  no "force-redispatch duplicate target mode rc=$rc"
+has "not allowed with argument" "$out" \
+  "force-redispatch explains mutually exclusive target choice"
 
 echo
 echo "control_plane_status_test: $pass passed, $fail failed"

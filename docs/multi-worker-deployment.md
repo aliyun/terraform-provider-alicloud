@@ -56,6 +56,30 @@ source. Its explicit entries contain `daily.probe`, `aone.scan`,
 `external.recovery`.
 No periodic job is allowed to have a second legacy loop.
 
+## Cross-host redispatch
+
+An operator can move a reviewed, replay-safe suspended Task away from its
+current host without opening a public-queue race:
+
+```bash
+bootstrap/control-plane-status.sh force-redispatch TASK_ID [SESSION_ID] \
+  --auto-target --reason "move suspended task off the current host" --yes
+
+bootstrap/control-plane-status.sh force-redispatch TASK_ID [SESSION_ID] \
+  --target-worker WORKER_KEY \
+  --reason "move suspended task to the selected online worker" --yes
+```
+
+The control plane performs source CAS validation, fences the old Session, and
+selects or validates the target Worker in one transaction. The target must be
+an online queue-pull Worker on another host and must satisfy the Task's
+non-affinity capabilities. An explicit target never falls back to another
+Worker. A successful `READY` response means the Task is privately queued for
+the selected Worker; execution starts only after that Worker leases it.
+
+This is a separate operator action from `force-release`. The latter retains
+its stricter wait-state guard and does not choose a destination.
+
 The definitions use only the Scheduler runtime. `jobs.py` validates and loads
 the checked-in YAML; `bridge/run.sh` automatically prefers `.venv/bridge` when
 it is present.

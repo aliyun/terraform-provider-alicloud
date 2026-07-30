@@ -206,6 +206,7 @@ class ControlPlaneClient:
     TASK_TIMELINE_PATH = "tasks/{task_id}/timeline"
     DISCARD_RESUME_CONTEXT_PATH = "tasks/{task_id}/discard-resume-context"
     FORCE_RELEASE_TASK_PATH = "tasks/{task_id}/force-release"
+    FORCE_REDISPATCH_TASK_PATH = "tasks/{task_id}/force-redispatch"
     READY_TASK_DIAGNOSTICS_PATH = "tasks/ready-diagnostics"
     SOURCE_STATUS_CANDIDATES_PATH = "tasks/source-status-candidates"
     SOURCE_STATUS_PATH = "tasks/{task_id}/source-status"
@@ -789,6 +790,72 @@ class ControlPlaneClient:
                 default=str,
             ).encode("utf-8")
             rid = "jarvis-force-release-%s" % hashlib.sha256(material).hexdigest()[:32]
+        return self._post(path, payload, request_id=rid)
+
+    def force_redispatch_task(
+            self, task_id: str, *,
+            expected_task_status: str,
+            expected_session_id: Optional[int],
+            expected_session_status: Optional[str],
+            expected_generation: int,
+            expected_state_version: int,
+            expected_fence_token: Optional[int],
+            expected_retry_count: int,
+            expected_desired_revision: Optional[str],
+            expected_processing_revision: Optional[str],
+            expected_worker_key: Optional[str],
+            expected_worker_id: Optional[int],
+            expected_worker_process_uuid: Optional[str],
+            target_worker_key: Optional[str],
+            reason: str,
+            request_id: Optional[str] = None) -> Dict[str, Any]:
+        """Atomically release one ownership snapshot and target another host.
+
+        A null ``target_worker_key`` asks the server to select an eligible online
+        queue-pull worker.  A non-null value is an exact worker key; the server
+        still performs fresh heartbeat, host, capability, and capacity checks.
+        """
+        path = self.FORCE_REDISPATCH_TASK_PATH.format(
+            task_id=self._path_segment(task_id, "task_id"))
+        payload = {
+            "expectedTaskStatus": _nonblank(
+                expected_task_status, "expected_task_status"),
+            "expectedSessionId": (
+                int(expected_session_id)
+                if expected_session_id is not None else None),
+            "expectedSessionStatus": (
+                _nonblank(expected_session_status, "expected_session_status")
+                if expected_session_status is not None else None),
+            "expectedGeneration": int(expected_generation),
+            "expectedStateVersion": int(expected_state_version),
+            "expectedFenceToken": (
+                int(expected_fence_token)
+                if expected_fence_token is not None else None),
+            "expectedRetryCount": int(expected_retry_count),
+            "expectedDesiredRevision": (
+                _nonblank(expected_desired_revision, "expected_desired_revision")
+                if expected_desired_revision is not None else None),
+            "expectedProcessingRevision": expected_processing_revision,
+            "expectedWorkerKey": expected_worker_key,
+            "expectedWorkerId": (
+                int(expected_worker_id)
+                if expected_worker_id is not None else None),
+            "expectedWorkerProcessUuid": expected_worker_process_uuid,
+            "targetWorkerKey": (
+                _nonblank(target_worker_key, "target_worker_key")
+                if target_worker_key is not None else None),
+            "confirmationToken": "FORCE_REDISPATCH",
+            "reason": _nonblank(reason, "reason"),
+        }
+        rid = request_id
+        if rid is None:
+            material = json.dumps(
+                {"taskId": str(task_id), "payload": payload},
+                ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+                default=str,
+            ).encode("utf-8")
+            rid = "jarvis-force-redispatch-%s" % (
+                hashlib.sha256(material).hexdigest()[:32])
         return self._post(path, payload, request_id=rid)
 
     def preview_legacy_kind_cleanup(self) -> Any:

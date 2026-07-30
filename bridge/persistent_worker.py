@@ -303,6 +303,7 @@ class PersistentWorker:
                 "bridgeRole": os.environ.get("JARVIS_BRIDGE_ROLE", "scheduler"),
                 "workerMode": "PERSISTENT",
                 "client": "bridge",
+                "dispatch": {"pull": True},
             },
             lease_seconds=int(os.environ.get("JARVIS_LEASE_SECONDS", "660")),
             lease_safety_margin=float(

@@ -69,6 +69,7 @@ class PersistentWorkerTest(unittest.TestCase):
             "bridgeRole": "worker",
             "workerMode": "PERSISTENT",
             "client": "bridge",
+            "dispatch": {"pull": True},
         })
         beacon_paths = worker.executor.kwargs["heartbeat_beacon_paths"]
         self.assertEqual(set(beacon_paths), {"worker", "lease", "session"})
