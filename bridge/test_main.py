@@ -403,6 +403,63 @@ class BridgeSupervisorTest(unittest.TestCase):
             ["scheduler", "dingtalk-bot", "persistent-worker"],
         )
 
+    def test_forced_shutdown_flags_survivors_for_offline(self):
+        def factory(spec, **_kwargs):
+            return _FakeComponent(
+                spec, events=[], generation=1, graceful=False, wait_delay=0.0)
+
+        with tempfile.TemporaryDirectory() as temp_dir, mock.patch(
+                "bridge.scheduler.scheduler.validate"):
+            env = self._env(Path(temp_dir))
+            env["JARVIS_BRIDGE_STOP_WAIT"] = "0.03"
+            env["JARVIS_SCHEDULER_DRAIN_TIMEOUT_SECONDS"] = "0.03"
+            supervisor = main.BridgeSupervisor(
+                environ=env, component_factory=factory)
+            for spec in supervisor.specs:
+                supervisor.components[spec.name] = factory(spec)
+            supervisor._shutdown()
+
+        # Force-kill happened → run() must release the fences afterwards.
+        self.assertTrue(supervisor._shutdown_forced)
+
+    def test_clean_shutdown_does_not_flag_offline(self):
+        def factory(spec, **_kwargs):
+            return _FakeComponent(spec, events=[], generation=1)
+
+        with tempfile.TemporaryDirectory() as temp_dir, mock.patch(
+                "bridge.scheduler.scheduler.validate"):
+            supervisor = main.BridgeSupervisor(
+                environ=self._env(Path(temp_dir)), component_factory=factory)
+            for spec in supervisor.specs:
+                supervisor.components[spec.name] = factory(spec)
+            supervisor._shutdown()
+
+        self.assertFalse(supervisor._shutdown_forced)
+
+    def test_offline_helper_invokes_worker_offline_module(self):
+        with tempfile.TemporaryDirectory() as temp_dir, mock.patch(
+                "bridge.scheduler.scheduler.validate"), mock.patch(
+                "bridge.main.subprocess.run") as run:
+            supervisor = main.BridgeSupervisor(
+                environ=self._env(Path(temp_dir)))
+            supervisor._offline_forced_workers()
+
+        run.assert_called_once()
+        argv = run.call_args.args[0]
+        self.assertIn("-m", argv)
+        self.assertIn("bridge.worker_offline", argv)
+        self.assertIn("--all", argv)
+
+    def test_offline_helper_never_raises_when_subprocess_fails(self):
+        with tempfile.TemporaryDirectory() as temp_dir, mock.patch(
+                "bridge.scheduler.scheduler.validate"), mock.patch(
+                "bridge.main.subprocess.run",
+                side_effect=OSError("boom")):
+            supervisor = main.BridgeSupervisor(
+                environ=self._env(Path(temp_dir)))
+            # Must swallow the error — a failed fence release cannot break stop.
+            supervisor._offline_forced_workers()
+
     def test_default_shutdown_budget_reserves_force_reap_inside_30_seconds(self):
         with tempfile.TemporaryDirectory() as temp_dir, mock.patch(
                 "bridge.scheduler.scheduler.validate"):

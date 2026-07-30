@@ -19,6 +19,7 @@ from typing import Any, Mapping, Optional, Sequence
 
 from bridge.jarvis_persistence_executor import _default_boot_id
 from bridge.jarvis_task_client import ControlPlaneClient, StaleFence
+from bridge import worker_offline
 
 from .control_plane_client import HttpScheduledJobControlPlane
 from .engine import (
@@ -225,6 +226,9 @@ class SchedulerService:
                 with self._worker_rpc_lock:
                     self._worker_status = "OFFLINE"
                     self._register_worker(self._task_client, "OFFLINE")
+                # Clean OFFLINE released the fence; drop the emergency identity
+                # so a force-kill helper never re-offlines a future process.
+                worker_offline.clear_identity("scheduler", environ=self._environ)
             except Exception as exc:
                 self._log.warning("Scheduler Worker OFFLINE update failed: %s", type(exc).__name__)
                 offline = False
@@ -312,6 +316,12 @@ class SchedulerService:
             _require_active_worker(
                 response, self.worker_key, self.host_id, self.boot_id, self.process_uuid)
             self._registered = True
+            # Persist control-plane identity so a force-kill (which cannot run
+            # stop()'s OFFLINE) can still release this fence on our behalf.
+            worker_offline.write_identity(
+                "scheduler", worker_key=self.worker_key,
+                process_uuid=self.process_uuid, host_id=self.host_id,
+                boot_id=self.boot_id, environ=self._environ)
 
 
 def _scheduler_boot_id(environ: Mapping[str, str], host_id: str) -> str:
