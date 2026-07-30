@@ -409,25 +409,27 @@ TERRAFORM_INTERNAL_RESULT_FIELDS = (
 
 
 def _terraform_visual_evidence_instructions(item_id):
-    """Return the mandatory three-layer screenshot handoff for Terraform runs."""
+    """Return the best-effort three-layer screenshot handoff for Terraform runs."""
     return (
         "📷 Terraform 三层可视化证据契约（ticket / persona / wake 入口均强制）：\n"
         "- 无论从 PD、RD 还是 finalizer 恢复，finalizer 前都必须确认 terraform-pd 已调用 "
-        "aone-triage + screenshot-evidence 生成或刷新有效 manifest；缺失或无效时先补起 "
-        "terraform-pd，不得直接收口。\n"
+        "aone-triage + screenshot-evidence 尝试三层截图并生成或刷新 manifest。截图是证据增强项；"
+        "失败必须降级记录，但不得阻断最终评论或触发 SUSPEND。\n"
         "- PD 只在本地生成 `.my-day/screenshots/%s/evidence-manifest.md`，固定包含 OpenAPI、"
         "CloudSpec/ACube、Provider 三层。pass/fail 行必须有真实存在的截图绝对路径；n-a 行"
         "必须写明原因。PD 不上传 OSS/pre-agent，不写 Aone。\n"
-        "- finalizer 先运行 "
+        "- finalizer 尽力运行 "
         "`python3 .claude/skills/screenshot-evidence/scripts/validate-manifest.py "
         ".my-day/screenshots/%s/evidence-manifest.md`，再统一上传一次报告："
         "`bash bootstrap/html-report-preview.sh upload %s <report.html>`，严禁传 `--comment`。"
-        "把返回的 markdown 预览链接写入 AONE_RESULT.reply_body，由 executor 随唯一回复落账；"
+        "成功时把返回的 markdown 预览链接写入 AONE_RESULT.reply_body；失败时把截图降级分类"
+        "和原因写入 reply_body。两种情况都由 executor 随唯一回复落账；"
         "**源工单禁止 claim/wrap/release/直接评论**。D/E/G 严禁创建、复用或 bookend "
         "528766；I 的 Provider public docs 紧急兜底腿与 H 仍按各自边界保留合法 528766，"
         "仅这些实际 claim 的研发单由 RD finalizer bookend。\n"
-        "- 缺层、截图不存在、manifest 无效或上传失败时，内部结果标为 "
-        "blocked/missing_capability，并在 reply_body 说明缺口；禁止静默省略报告。\n"
+        "- 缺层、截图不存在、manifest 无效或上传失败时，在 reply_body 说明 "
+        "`screenshot degraded: <capture_error|missing_capability|manifest_error|upload_error>`；"
+        "禁止静默省略报告，但不得仅因此把内部结果标为 blocked/missing_capability。\n"
         "- Terraform 内部 Task 严格返回字段：%s。"
         % (item_id, item_id, item_id, TERRAFORM_INTERNAL_RESULT_FIELDS)
     )

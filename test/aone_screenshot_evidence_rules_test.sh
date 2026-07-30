@@ -10,7 +10,7 @@ for skill in \
   "$repo_root/.claude/skills/aone-triage/SKILL.md" \
   "$repo_root/.agents/skills/aone-triage/SKILL.md"; do
   for term in \
-    "OpenAPI、CloudSpec/ACube 映射、Provider 源码三层查证必须各有截图证据" \
+    "OpenAPI、CloudSpec/ACube 映射、Provider 源码三层都必须尝试截图" \
     "visual_evidence_manifest" \
     "不得传 \`--comment\`" \
     "禁止静默省略"; do
@@ -45,6 +45,15 @@ for skill in \
     "禁止把任何明文/密文凭据"; do
     grep -Fq "$term" "$skill" || {
       echo "aone_screenshot_evidence_rules_test: missing '$term' in $skill" >&2
+      exit 1
+    }
+  done
+  for term in \
+    "截图属于证据增强项" \
+    "不得仅因缺少截图" \
+    "不得把 exit 1 改写为“无浏览器通道”"; do
+    grep -Fq "$term" "$skill" || {
+      echo "aone_screenshot_evidence_rules_test: missing degrade rule '$term' in $skill" >&2
       exit 1
     }
   done
@@ -95,6 +104,7 @@ for term in \
   "Terraform 三层可视化证据契约" \
   "visual_evidence_manifest" \
   "AONE_RESULT.reply_body" \
+  "screenshot degraded:" \
   '严禁传 `--comment`'; do
   grep -Fq "$term" "$repo_root/bridge/aone_tasks.py" || {
     echo "aone_screenshot_evidence_rules_test: bridge prompt missing '$term'" >&2

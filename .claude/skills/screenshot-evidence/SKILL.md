@@ -22,7 +22,7 @@ description: 可视化查证截图取证——aone-triage / terraform-pr-review 
 - **截图通道（任一即可，按优先级探测）**：
   1. **Playwright MCP** 已连接（`mcp__playwright__*` 工具可用）——交互会话常见
   2. **仓库内 `capture.sh`** 通道可用（Playwright Python 绑定 + 本地 chromium，或 headless Chrome/Chromium 二进制）——headless 必走这条，因为交互态 Playwright MCP **不会**注入进 bridge 拉起的 headless 会话（根因见 `references/headless-screenshot-channels.md`）
-  - 两者都不可用 → 以 `missing_capability` 收口并逐层写 `n-a` 原因，**绝不静默跳过截图**（见 Step 0）
+  - 两者都不可用 → 逐层写 `n-a + missing_capability`，继续文字查证和最终评论，**绝不静默跳过截图或因此挂起任务**（见 Step 0）
 - **JARVIS_HTML_REPORT_TOKEN** 已通过运行时配置注入（截图与 HTML 都走 server-token）
 - **JARVIS_HTML_REPORT_BASE_URL** 可选；默认 `https://pre-agent.aliyun-inc.com`
 - 截图存储由 AutomationAgent 服务端负责：私有 bucket `jarvis-upload-files`，owner
@@ -43,9 +43,9 @@ bash .claude/skills/screenshot-evidence/scripts/capture.sh probe
 
 - 探测命中任一通道 → 记下通道名，Step 2 用对应方式截图。
 - 探测为 `missing_capability`（exit 3）→ **不静默跳过**：在 manifest（Step 2.1）把该层写 `n-a`，
-  `note` 写 `missing_capability: <probe 给出的原因>`，可继续完成只读文字查证，但 finalizer
-  必须以 `blocked / missing_capability` 收口，不得把缺截图的强制取证任务标为 done。
-  `validate-manifest.py` 接受带原因的 `n-a` 行，仅代表结构完整，不代表验收通过。
+  `note` 写 `missing_capability: <probe 给出的原因>`，继续完成文字查证。截图属于证据增强项，
+  不得仅因缺少截图把 finalizer 标为 blocked/missing_capability，也不得输出 SUSPEND。
+  `validate-manifest.py` 接受带原因的 `n-a` 行，finalizer 在最终聚合评论中说明截图已降级。
 - 探测只读、幂等、无副作用，每个 headless run 开头调用一次后可复用结论。
 - 交互会话若 `mcp__playwright__*` 可用，可跳过本步直接走 Step 2 的 Playwright 路径；headless 必跑。
 
@@ -110,8 +110,10 @@ bash .claude/skills/screenshot-evidence/scripts/capture.sh capture \
   `Page.captureScreenshot(captureBeyondViewport=true)`，因此 `--full-page` 是真全页截图，不再受
   `--height` viewport 高度限制。超长页面命中安全上限时改用 `--text`。
 - SPA 等渲染需 `--wait`（毫秒）让其稳定。
-- exit 3（missing_capability）→ 该层 manifest 写 `n-a` 并记录原因；可继续只读文字查证，
-  但 finalizer 必须 `blocked / missing_capability`，不得 done。
+- `chrome_binary` 对启动、CDP 就绪和页面捕获类瞬时错误自动使用全新 profile 最多尝试 3 次；
+  可用 `JARVIS_SCREENSHOT_CHROME_ATTEMPTS`（1–5）调整。
+- exit 1（capture_error）或 exit 3（missing_capability）→ 该层 manifest 写 `n-a` 并记录
+  原始分类与脱敏原因，然后继续文字查证和最终评论；不得把 exit 1 改写为“无浏览器通道”。
 
 ### Step 2.1: Terraform PD 本地交接
 
@@ -133,8 +135,8 @@ visual_evidence_manifest: /absolute/path/.my-day/screenshots/<aone-id>/evidence-
 ```
 
 浏览器能力、登录态或页面不可达时，不要把该层悄悄删掉；保留 `n-a` 行并写清
-`missing_capability`。这样 finalizer 能区分“不适用”和“漏做”；若该层属于强制截图证据，
-最终状态仍必须是 `blocked / missing_capability`。
+`missing_capability` 或 `capture_error`。这样 finalizer 能区分“不适用”“截图降级”和“漏做”；
+只要文字查证与业务验收已完成，截图降级不改变业务 outcome。
 
 finalizer 上传前必须执行确定性校验：
 
@@ -144,7 +146,8 @@ python3 .claude/skills/screenshot-evidence/scripts/validate-manifest.py \
 ```
 
 校验器要求三层各一行；pass/fail 的截图必须是实际存在的绝对路径，n-a 必须使用 `N/A`
-并给出原因。校验失败即 blocked/missing_capability，不得继续生成“完整证据”报告。
+并给出原因。校验失败时不上传报告，在最终聚合评论中写明“截图报告降级：manifest 无效”，
+继续输出文字查证结果；不得因此阻断评论或挂起任务。
 
 ### Step 3: 通过服务端上传私有图片并获取签名 URL
 
@@ -196,8 +199,8 @@ bash bootstrap/html-report-preview.sh upload <aone-id> <report.html>
 ```
 
 Terraform finalizer 必须先校验 manifest 中三层都存在（或有明确 N/A 原因），再上传截图和报告。
-任何强制截图层因浏览器能力缺失而记录为 `n-a` 时，只能上传缺层说明并以
-`blocked / missing_capability` 收口，不能生成“完整证据”结论或标记 done。
+存在 `n-a` 时可以上传包含降级说明的部分报告；若截图、manifest 或上传链路失败，则跳过报告，
+把失败分类和原因写入唯一聚合评论，继续按文字证据收口业务结论。
 上传命令不得传 `--comment`；将返回的预览 URL 写进唯一聚合回复。executor 托管的 headless
 run 必须放入 `AONE_RESULT.reply_body`，由 executor 单次落账，run 内不得调用 `wrap.sh`；
 仅非 executor 托管的独立 finalizer 才按 bookend 调用一次 `wrap.sh done`。
@@ -240,7 +243,7 @@ Terraform 主处理 run 不单独更新 description，也不调用 `--comment`�
 
 ```
 非 Terraform：查证（文字）→ 截图取证 → 组装报告 → 上传预览并回贴 → 可选更新详情
-Terraform：PD 三层查证 → 本地截图 + manifest → RD finalizer 校验并上传（无 --comment）→ 唯一聚合回复
+Terraform：PD 三层查证 → 尽力截图 + 完整 manifest → RD finalizer 校验并尽力上传（无 --comment）→ 唯一聚合回复；截图失败只降级报告，不阻断评论
 ```
 
 aone-triage 的 wrap.sh done 草稿中增加一行（评论区仅 markdown `[text](url)` 可点，裸 URL 不 autolink，见 aone-triage SKILL §4 渲染 quirk）：
