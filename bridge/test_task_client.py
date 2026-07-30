@@ -288,6 +288,43 @@ class ClientContractTest(unittest.TestCase):
             self.assertIsNone(req.data)
             self.assertNotIn("idempotency-key", headers(req))
 
+    def test_worker_key_paths_preserve_colons_but_encode_other_delimiters(self):
+        opener = RecordingOpener(responses=[
+            FakeResponse({}),
+            FakeResponse(raw=b"[]"),
+            FakeResponse({
+                "worker": {
+                    "workerKey": "host:boot/process?query#fragment%value",
+                },
+            }),
+        ])
+        client = self.make(opener)
+        worker_key = "host:boot/process?query#fragment%value"
+
+        client.heartbeat_worker(
+            worker_key, process_uuid="process:uuid", request_id="heartbeat")
+        self.assertEqual(
+            client.list_force_handoff_requests(
+                worker_key, process_uuid="process:uuid"),
+            [])
+        client.get_worker_state(worker_key)
+
+        paths = [call[0].full_url.rsplit("/api/jarvis/v1/", 1)[1]
+                 for call in opener.calls]
+        self.assertEqual(paths, [
+            "workers/host:boot%2Fprocess%3Fquery%23fragment%25value/heartbeat",
+            "workers/host:boot%2Fprocess%3Fquery%23fragment%25value/"
+            "handoff-requests"
+            "?processUuid=process%3Auuid",
+            "workers/host:boot%2Fprocess%3Fquery%23fragment%25value/state",
+        ])
+        self.assertEqual(
+            ControlPlaneClient._worker_key_path_segment(worker_key),
+            "host:boot%2Fprocess%3Fquery%23fragment%25value")
+        self.assertEqual(
+            ControlPlaneClient._path_segment(worker_key, "value"),
+            "host%3Aboot%2Fprocess%3Fquery%23fragment%25value")
+
     def test_source_status_observation_uses_metadata_only_endpoints(self):
         opener = RecordingOpener(responses=[
             FakeResponse({"items": [], "nextAfterTaskId": None, "hasMore": False}),
