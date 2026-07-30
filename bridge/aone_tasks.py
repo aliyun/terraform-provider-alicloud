@@ -729,39 +729,53 @@ class AoneQueryMixin:
 
     @classmethod
     def _a1_list(cls, project, filter_expr):
-        """按 --filter 查一个池（富列），回规范化 item 列表。best-effort，失败回 []。"""
-        try:
-            r = run_process_group(
-                [str(REPO_ROOT / "bin" / "a1id"), "--", "project", "workitem", "list",
-                 "--project", str(project), "--filter", filter_expr,
-                 "--columns", cls._UNION_COLUMNS, "-f", "json"],
-                capture_output=True, text=True, timeout=90, cwd=str(REPO_ROOT))
-            if r.returncode != 0:
-                log.warning("Aone query: [%s] list failed pool_project=%s rc=%d: %s",
-                            filter_expr, project, r.returncode, (r.stderr or "").strip()[:200])
-                return []
-            data = json.loads(r.stdout)
-            if not isinstance(data, list):
-                return []
-        except Exception as e:  # noqa: BLE001
-            log.warning("Aone query: [%s] list error pool_project=%s: %s",
-                        filter_expr, project, e)
-            return []
+        """按 --filter 查一个池（富列），回规范化 item 列表。best-effort，失败回 []。
+
+        分页拉取直到某页返回不足 page_size（含 0）；a1 默认 page_size=25 会把超过 25 条的
+        过滤源静默截断（tf_provider 的 tag=jarvis-idle 实测 94 条只回前 25），老工单因此
+        永远不被 scan 看到而不派发。"""
+        page_size = 100
+        max_pages = 50  # 50 * 100 = 5000 条硬上限，防失控
         out = []
-        for it in data:
-            gmt_create = it.get("gmtCreate") or it.get("created") or ""
-            out.append({
-                "id": it.get("identifier") or it.get("id"),
-                "title": it.get("subject") or it.get("title") or "",
-                "status": it.get("status") or it.get("statusName") or "",
-                "priority": it.get("priority") or "",
-                "tag": it.get("tag"),
-                "type": it.get("type") or it.get("workitemType") or "",
-                "category": it.get("category") or "",
-                "modified": it.get("modified") or it.get("gmtModified") or "",
-                "created": gmt_create,  # _in_scope / backlog 排序用 created
-                "assignedTo": it.get("assignedTo") or "",
-            })
+        for page in range(1, max_pages + 1):
+            try:
+                r = run_process_group(
+                    [str(REPO_ROOT / "bin" / "a1id"), "--", "project", "workitem", "list",
+                     "--project", str(project), "--filter", filter_expr,
+                     "--columns", cls._UNION_COLUMNS,
+                     "--page", str(page), "--page-size", str(page_size),
+                     "-f", "json"],
+                    capture_output=True, text=True, timeout=90, cwd=str(REPO_ROOT))
+                if r.returncode != 0:
+                    log.warning("Aone query: [%s] list failed pool_project=%s page=%d rc=%d: %s",
+                                filter_expr, project, page, r.returncode,
+                                (r.stderr or "").strip()[:200])
+                    return out
+                data = json.loads(r.stdout)
+                if not isinstance(data, list):
+                    return out
+            except Exception as e:  # noqa: BLE001
+                log.warning("Aone query: [%s] list error pool_project=%s page=%d: %s",
+                            filter_expr, project, page, e)
+                return out
+            if not data:
+                break
+            for it in data:
+                gmt_create = it.get("gmtCreate") or it.get("created") or ""
+                out.append({
+                    "id": it.get("identifier") or it.get("id"),
+                    "title": it.get("subject") or it.get("title") or "",
+                    "status": it.get("status") or it.get("statusName") or "",
+                    "priority": it.get("priority") or "",
+                    "tag": it.get("tag"),
+                    "type": it.get("type") or it.get("workitemType") or "",
+                    "category": it.get("category") or "",
+                    "modified": it.get("modified") or it.get("gmtModified") or "",
+                    "created": gmt_create,  # _in_scope / backlog 排序用 created
+                    "assignedTo": it.get("assignedTo") or "",
+                })
+            if len(data) < page_size:
+                break  # 末页（不足一页）
         return out
 
     def _tag_added_epoch(self, activities, tag):

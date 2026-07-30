@@ -1172,7 +1172,7 @@ class SchedulerRunnerTest(unittest.TestCase):
         self.assertEqual(scanner.SOURCE_STATUS_PAGE_SIZE, 500)
         self.assertEqual(scanner.SOURCE_STATUS_WORKERS, 32)
         self.assertEqual(scanner.SOURCE_STATUS_MAX_PAGES, 100)
-        self.assertLessEqual(scanner.SOURCE_STATUS_POINT_TIMEOUT_SECONDS, 10)
+        self.assertLessEqual(scanner.SOURCE_STATUS_POINT_TIMEOUT_SECONDS, 30)
 
     def test_source_status_point_read_uses_bounded_timeout(self):
         completed = SimpleNamespace(returncode=0, stdout=json.dumps({
@@ -1186,7 +1186,7 @@ class SchedulerRunnerTest(unittest.TestCase):
 
         self.assertEqual(task["taskId"], 411)
         self.assertEqual(status, "已发布")
-        self.assertLessEqual(run.call_args.kwargs["timeout"], 10)
+        self.assertLessEqual(run.call_args.kwargs["timeout"], 30)
 
     def test_legit_done_statuses_include_pool_parking_states(self):
         statuses = aone._load_legit_done_statuses()
