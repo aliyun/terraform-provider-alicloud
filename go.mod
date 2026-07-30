@@ -43,6 +43,9 @@ require (
 	github.com/alibabacloud-go/sts-20150401/v2 v2.0.2
 	github.com/alibabacloud-go/tea-utils/v2 v2.0.7
 	github.com/aliyun/alibabacloud-oss-go-sdk-v2 v1.5.0
+	github.com/aws/aws-sdk-go-v2 v1.43.0
+	github.com/aws/aws-sdk-go-v2/credentials v1.19.30
+	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.61.0
 	github.com/blues/jsonata-go v1.5.4
 	github.com/hashicorp/errwrap v1.1.0
 	github.com/hashicorp/go-cleanhttp v0.5.2
@@ -51,6 +54,14 @@ require (
 	github.com/tidwall/sjson v1.2.5
 	golang.org/x/tools v0.44.0
 	gopkg.in/yaml.v3 v3.0.1
+)
+
+require (
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.31 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.31 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.13 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.12.8 // indirect
+	github.com/aws/smithy-go v1.27.3 // indirect
 )
 
 require (
