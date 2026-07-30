@@ -1100,6 +1100,7 @@ func TestAccAliCloudKVStoreRedisInstance_7_0(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"instance_charge_type": "PostPaid",
+						"secondary_zone_id":    REMOVEKEY,
 					}),
 				),
 			},
