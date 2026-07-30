@@ -179,6 +179,21 @@ class ChromeBinaryChannelTests(unittest.TestCase):
                 js._chrome_page_websocket(9222, timeout=0.1),
                 "ws://localhost:1/page")
 
+    def test_page_websocket_creates_page_when_list_is_empty(self):
+        list_response = mock.MagicMock()
+        list_response.__enter__.return_value.read.return_value = b"[]"
+        new_response = mock.MagicMock()
+        new_response.__enter__.return_value.read.return_value = (
+            b'{"type":"page","webSocketDebuggerUrl":"ws://localhost:1/new"}')
+        with mock.patch.object(
+                js.urllib.request, "urlopen",
+                side_effect=[list_response, new_response]) as urlopen:
+            self.assertEqual(
+                js._chrome_page_websocket(9222, timeout=0.1),
+                "ws://localhost:1/new")
+        self.assertEqual(urlopen.call_count, 2)
+        self.assertEqual(urlopen.call_args_list[1].args[0].method, "PUT")
+
     def test_uses_cdp_for_true_full_page_capture(self):
         channel = js.ChromeBinaryChannel(binary_finder=lambda: "/bin/chrome")
         with mock.patch.object(js, "_chrome_cdp_capture") as capture:
@@ -195,6 +210,36 @@ class ChromeBinaryChannelTests(unittest.TestCase):
         channel = js.ChromeBinaryChannel(binary_finder=lambda: None)
         with self.assertRaises(js.CaptureError):
             channel.capture("https://example.com", "/tmp/shot.png")
+
+    def test_retries_transient_capture_with_fresh_profile(self):
+        channel = js.ChromeBinaryChannel(binary_finder=lambda: "/bin/chrome")
+        with mock.patch.dict(
+                os.environ, {"JARVIS_SCREENSHOT_CHROME_ATTEMPTS": "3"}), \
+                mock.patch.object(
+                    js, "_chrome_cdp_capture",
+                    side_effect=[
+                        js.CaptureError(
+                            "chrome devtools page endpoint unavailable"),
+                        None,
+                    ]) as capture, \
+                mock.patch.object(js.time, "sleep"):
+            channel.capture("https://example.com", "/tmp/shot.png")
+        self.assertEqual(capture.call_count, 2)
+
+    def test_does_not_retry_target_text_miss(self):
+        channel = js.ChromeBinaryChannel(binary_finder=lambda: "/bin/chrome")
+        with mock.patch.dict(
+                os.environ, {"JARVIS_SCREENSHOT_CHROME_ATTEMPTS": "3"}), \
+                mock.patch.object(
+                    js, "_chrome_cdp_capture",
+                    side_effect=js.CaptureError(
+                        "target text not found in rendered page: Field")
+                ) as capture:
+            with self.assertRaises(js.CaptureError):
+                channel.capture(
+                    "https://example.com", "/tmp/shot.png",
+                    target_text="Field")
+        capture.assert_called_once()
 
 
 class CliTests(unittest.TestCase):

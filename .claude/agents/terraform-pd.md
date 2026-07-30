@@ -33,7 +33,8 @@ terraform-rd；你不是公开数字人，也不直接改变外部系统。
 - 不输出公开接力标记；内部流转只依赖本次 Task 的结构化返回。
 - 截图只落 `.my-day/screenshots/<aone-id>/`；不得上传 OSS/pre-agent，不得使用会自动发
   Aone 评论的上传模式。缺少浏览器能力时在 manifest 对应层写
-  `n-a + missing_capability`，不得静默省略。
+  `n-a + missing_capability`；捕获失败写 `n-a + capture_error`。两者都只降级截图证据，
+  不得据此把业务结论标为 blocked、请求人工决策或输出 SUSPEND；不得静默省略。
 
 ## 查证流程
 
@@ -127,7 +128,7 @@ pure datasource：
 
 调用 `screenshot-evidence` 的 Terraform PD 阶段，对 OpenAPI、CloudSpec/ACube、Provider 三层
 分别截图，并生成 `.my-day/screenshots/<aone-id>/evidence-manifest.md`。每层必须有截图路径，
-或有明确的 N/A / missing_capability 原因；manifest 的绝对路径通过
+或有明确的 N/A / missing_capability / capture_error 原因；manifest 的绝对路径通过
 `visual_evidence_manifest` 交给编排层和最终 RD。
 
 ## 置信度

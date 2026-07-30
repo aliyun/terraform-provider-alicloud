@@ -59,9 +59,10 @@ PD、RD、QA 在同一 headless run 内通过 Task 结构化返回协作，不�
 - 最后必须再次 Task 起 terraform-rd 进入 finalizer 模式，汇总所有返回、审查
   `requested_external_actions`，只生成一条完整回复。
 - finalizer 读取 PD 的 `visual_evidence_manifest`，校验 OpenAPI、CloudSpec/ACube、Provider
-  三层证据后调用 `screenshot-evidence` 的 manifest 校验器，再上传一次报告。
-  `html-report-preview.sh upload` 不得传 `--comment`。executor 托管的 headless run 把报告链接
-  返回给编排层写入 `AONE_RESULT.reply_body`，不得对源工单自行调用 `wrap.sh`；本 run 按
+  三层截图尝试结果后调用 `screenshot-evidence` 的 manifest 校验器，并尽力上传一次报告。
+  `html-report-preview.sh upload` 不得传 `--comment`。成功时把报告链接写入
+  `AONE_RESULT.reply_body`；失败时改写截图降级分类与原因，继续最终聚合，不得挂起。
+  executor 托管的 headless run 不得对源工单自行调用 `wrap.sh`；本 run 按
   实际 claim 的 I/H 合法内部 528766 由 finalizer 各做一次聚合 bookend；D/E/G/pure datasource
   严禁进入此路径。独立 finalizer 才
   对源工单按 bookend 在唯一一次 `wrap.sh done` 中写出。
@@ -83,8 +84,10 @@ reply_fragment: 可纳入最终回复的研发结论
 ```
 
 finalizer 的主处理回复必须覆盖：总论、PD 查证、三层可视化查证报告、RD 改动与链接、QA 证据、
-执行过的路由动作、未决项和下一步。manifest 缺层或上传失败时返回 blocked/missing_capability，
-写明缺口，不得把无报告伪装成完整查证。MR/CR 链接只在这次最终聚合中同步，禁止中途回填。
+执行过的路由动作、未决项和下一步。manifest 缺层、截图失败或上传失败时，在唯一聚合回复写明
+截图降级分类与原因，继续按文字证据和业务验收返回真实 outcome；不得仅因此返回
+blocked/missing_capability 或 SUSPEND，也不得把无报告伪装成完整查证。MR/CR 链接只在这次
+最终聚合中同步，禁止中途回填。
 这不限制后续 PR merged/closed、CI 修复达上限或终态失败等重要事件由 RD-only publisher 幂等更新。
 
 ---

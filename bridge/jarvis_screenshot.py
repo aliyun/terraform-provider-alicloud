@@ -56,6 +56,8 @@ EXIT_MISSING_CAPABILITY = 3
 
 # Prefix that downstream code (skill n-a rows, autonomy escalate triggers) keys on.
 MISSING_CAPABILITY_PREFIX = "missing_capability: "
+DEFAULT_CHROME_STARTUP_TIMEOUT = 30.0
+DEFAULT_CHROME_CAPTURE_ATTEMPTS = 3
 
 
 class MissingCapability(Exception):
@@ -377,9 +379,10 @@ class _ChromeDevTools:
             return message.get("result") or {}
 
 
-def _chrome_page_websocket(port: int, timeout: float = 10.0) -> str:
+def _chrome_page_websocket(port: int, timeout: float = 30.0) -> str:
     deadline = time.monotonic() + timeout
     endpoint = "http://127.0.0.1:%s/json/list" % port
+    target_create_attempted = False
     while time.monotonic() < deadline:
         try:
             with urllib.request.urlopen(endpoint, timeout=1) as response:
@@ -393,6 +396,25 @@ def _chrome_page_websocket(port: int, timeout: float = 10.0) -> str:
                 websocket_url = page.get("webSocketDebuggerUrl")
                 if websocket_url:
                     return websocket_url
+            # Chrome normally creates the command-line about:blank tab, but a
+            # busy worker can expose DevToolsActivePort before that page is
+            # visible in /json/list. Ask the browser for one target instead of
+            # treating this short readiness race as a missing browser channel.
+            if not target_create_attempted:
+                target_create_attempted = True
+                create = urllib.request.Request(
+                    "http://127.0.0.1:%s/json/new?about%%3Ablank" % port,
+                    method="PUT",
+                )
+                try:
+                    with urllib.request.urlopen(
+                            create, timeout=1) as response:
+                        page = json.loads(response.read().decode("utf-8"))
+                    websocket_url = page.get("webSocketDebuggerUrl")
+                    if page.get("type") == "page" and websocket_url:
+                        return websocket_url
+                except (OSError, ValueError, json.JSONDecodeError):
+                    pass
         except (OSError, ValueError, json.JSONDecodeError):
             pass
         time.sleep(0.05)
@@ -400,7 +422,7 @@ def _chrome_page_websocket(port: int, timeout: float = 10.0) -> str:
 
 
 def _chrome_active_port(profile: Path, process: subprocess.Popen,
-                        timeout: float = 10.0) -> int:
+                        timeout: float = 30.0) -> int:
     active_port = profile / "DevToolsActivePort"
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
@@ -469,8 +491,11 @@ def _chrome_cdp_capture(binary: str, url: str, out: str, *,
             command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         client = None
         try:
-            port = _chrome_active_port(profile, process)
-            client = _ChromeDevTools(_chrome_page_websocket(port))
+            startup_timeout = _chrome_startup_timeout()
+            port = _chrome_active_port(
+                profile, process, timeout=startup_timeout)
+            client = _ChromeDevTools(_chrome_page_websocket(
+                port, timeout=startup_timeout))
             client.call("Page.enable")
             client.call("Runtime.enable")
             client.call("Emulation.setDeviceMetricsOverride", {
@@ -547,6 +572,37 @@ def _chrome_cdp_capture(binary: str, url: str, out: str, *,
                 process.communicate()
 
 
+def _chrome_startup_timeout() -> float:
+    raw = os.environ.get(
+        "JARVIS_SCREENSHOT_CHROME_STARTUP_TIMEOUT",
+        str(DEFAULT_CHROME_STARTUP_TIMEOUT),
+    )
+    try:
+        return max(1.0, float(raw))
+    except ValueError:
+        return DEFAULT_CHROME_STARTUP_TIMEOUT
+
+
+def _chrome_capture_attempts() -> int:
+    raw = os.environ.get(
+        "JARVIS_SCREENSHOT_CHROME_ATTEMPTS",
+        str(DEFAULT_CHROME_CAPTURE_ATTEMPTS),
+    )
+    try:
+        return min(5, max(1, int(raw)))
+    except ValueError:
+        return DEFAULT_CHROME_CAPTURE_ATTEMPTS
+
+
+def _retryable_chrome_capture_error(exc: CaptureError) -> bool:
+    """Return whether a fresh Chrome profile may recover the failure."""
+    message = str(exc)
+    return not (
+        message.startswith("target text not found in rendered page:")
+        or message.startswith("rendered page height ")
+    )
+
+
 @dataclass
 class ChromeBinaryChannel(ScreenshotChannel):
     """Headless Chrome/Chromium captured through the DevTools protocol.
@@ -574,15 +630,24 @@ class ChromeBinaryChannel(ScreenshotChannel):
         if not binary:
             raise CaptureError(
                 "chrome binary vanished between probe and capture")
-        try:
-            _chrome_cdp_capture(
-                binary, url, out, wait_ms=wait_ms, full_page=full_page,
-                width=width, height=height, target_text=target_text)
-        except CaptureError:
-            raise
-        except Exception as exc:  # noqa: BLE001
-            raise CaptureError(
-                "chrome devtools capture failed: %s" % exc) from exc
+        attempts = _chrome_capture_attempts()
+        for attempt in range(1, attempts + 1):
+            try:
+                _chrome_cdp_capture(
+                    binary, url, out, wait_ms=wait_ms, full_page=full_page,
+                    width=width, height=height, target_text=target_text)
+                return
+            except CaptureError as exc:
+                if (not _retryable_chrome_capture_error(exc)
+                        or attempt == attempts):
+                    if attempt > 1:
+                        raise CaptureError(
+                            "%s after %s attempts" % (exc, attempt)) from exc
+                    raise
+                time.sleep(min(0.25 * (2 ** (attempt - 1)), 1.0))
+            except Exception as exc:  # noqa: BLE001
+                raise CaptureError(
+                    "chrome devtools capture failed: %s" % exc) from exc
 
 
 # ---------------------------------------------------------------------------
