@@ -14,6 +14,8 @@ func TestAccAAlikafkaConsumerGroupsDataSource(t *testing.T) {
 		existConfig: testAccCheckAAlikafkaConsumerGroupsDataSourceName(rand, map[string]string{
 			"instance_id": `"${alicloud_alikafka_instance.default.id}"`,
 			"ids":         `["${alicloud_alikafka_consumer_group.default.id}"]`,
+			"page_number": "1",
+			"page_size":   "10",
 		}),
 		fakeConfig: testAccCheckAAlikafkaConsumerGroupsDataSourceName(rand, map[string]string{
 			"instance_id": `"${alicloud_alikafka_instance.default.id}"`,
