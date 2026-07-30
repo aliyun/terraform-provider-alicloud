@@ -33,6 +33,7 @@ from bridge.jarvis_task_client import (  # noqa: E402
     InvalidResponse,
     StaleFence,
 )
+from bridge.task_input_contract import TaskInputContractError  # noqa: E402
 
 
 LOG = logging.getLogger("local-worker-test")
@@ -713,6 +714,24 @@ class PersistenceExecutorTest(unittest.TestCase):
                         "error": {"type": "TRANSIENT"},
                         "retryAfterSeconds": 20,
                     })
+
+    def test_input_contract_failure_is_marked_nonretryable(self):
+        client = FakeClient(lease_task=[lease_response()])
+
+        def execute(*_args):
+            raise TaskInputContractError(
+                "INPUT_NOT_PORTABLE", "missing prompt")
+
+        worker = self.make(client, execute, lambda *_args: None)
+        self.assertTrue(worker.run_once())
+        self.assertEqual(client.named("fail_session")[0]["args"][3], {
+            "error": {
+                "errorType": "TaskInputContractError",
+                "code": "INPUT_NOT_PORTABLE",
+                "message": "INPUT_NOT_PORTABLE: missing prompt",
+                "retryable": False,
+            },
+        })
 
     def test_actionable_task_failure_is_forwarded_without_collapsing_detail(self):
         client = FakeClient(lease_task=[lease_response()])

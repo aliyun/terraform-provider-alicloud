@@ -38,6 +38,11 @@ from bridge.task_policy import (
     HEADLESS_POLICY_REVISION,
     StaleTaskPolicyError,
 )
+from bridge.task_input_contract import (
+    RUNTIME_PERSISTENT,
+    TaskInputContractError,
+    validate_portable_task_input,
+)
 
 
 LOG = logging.getLogger(__name__)
@@ -1051,7 +1056,16 @@ class PersistentTaskExecution:
             or task.get("taskKey") or "").strip()
         prompt = str(payload.get("prompt") or "")
         if not item_id or not prompt:
-            raise ValueError("Task requires itemId and prompt")
+            raise TaskInputContractError(
+                "INPUT_NOT_PORTABLE",
+                "Task requires nonblank itemId and prompt")
+        if payload.get("inputContract") is not None:
+            validate_portable_task_input(
+                payload, target_runtime=RUNTIME_PERSISTENT)
+        elif source_type == "AONE" and not project:
+            raise TaskInputContractError(
+                "INPUT_NOT_PORTABLE",
+                "legacy AONE Task requires nonblank project")
         target = str(payload.get("target") or self._broadcast_target())
         target_type = str(payload.get("targetType") or self._broadcast_type())
         project = str(payload.get("project") or "")

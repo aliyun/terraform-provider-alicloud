@@ -207,6 +207,7 @@ class ControlPlaneClient:
     DISCARD_RESUME_CONTEXT_PATH = "tasks/{task_id}/discard-resume-context"
     FORCE_RELEASE_TASK_PATH = "tasks/{task_id}/force-release"
     FORCE_REDISPATCH_TASK_PATH = "tasks/{task_id}/force-redispatch"
+    TARGETED_LEASE_PATH = "workers/{worker_key}/targeted-lease"
     READY_TASK_DIAGNOSTICS_PATH = "tasks/ready-diagnostics"
     SOURCE_STATUS_CANDIDATES_PATH = "tasks/source-status-candidates"
     SOURCE_STATUS_PATH = "tasks/{task_id}/source-status"
@@ -451,6 +452,33 @@ class ControlPlaneClient:
             payload["processUuid"] = _nonblank(process_uuid, "process_uuid")
         rid = request_id or envelope.request_id("direct-claim")
         return self._post(self.PATHS["task_claim"], payload, request_id=rid)
+
+    def lease_targeted_task(
+            self, worker_key: str, *, runtime_session_id: str,
+            lease_seconds: int = 300, free_slots: int = 1,
+            process_uuid: str, request_id: Optional[str] = None) -> Dict[str, Any]:
+        """Lease only a Task privately addressed to this exact Worker incarnation.
+
+        This endpoint is safe for interactive workers whose ``dispatch.pull`` is
+        false. It never falls back to the public READY queue and does not upsert
+        Task input.
+        """
+        ttl = int(lease_seconds)
+        slots = int(free_slots)
+        if ttl <= 0:
+            raise ValueError("lease_seconds must be positive")
+        if slots < 0:
+            raise ValueError("free_slots must not be negative")
+        worker = _nonblank(worker_key, "worker_key")
+        path = self.TARGETED_LEASE_PATH.format(
+            worker_key=self._worker_key_path_segment(worker))
+        return self._post(path, {
+            "runtimeSessionId": _nonblank(
+                runtime_session_id, "runtime_session_id"),
+            "leaseSeconds": ttl,
+            "freeSlots": slots,
+            "processUuid": _nonblank(process_uuid, "process_uuid"),
+        }, request_id=request_id)
 
     @staticmethod
     def _session_payload(worker_key: str, fence_token: Any,
@@ -807,6 +835,9 @@ class ControlPlaneClient:
             expected_worker_id: Optional[int],
             expected_worker_process_uuid: Optional[str],
             target_worker_key: Optional[str],
+            target_host_id: Optional[str],
+            target_runtime: str,
+            portable_input_replacement: Optional[Mapping[str, Any]],
             reason: str,
             request_id: Optional[str] = None) -> Dict[str, Any]:
         """Atomically release one ownership snapshot and target another host.
@@ -844,9 +875,23 @@ class ControlPlaneClient:
             "targetWorkerKey": (
                 _nonblank(target_worker_key, "target_worker_key")
                 if target_worker_key is not None else None),
+            "targetHostId": (
+                _nonblank(target_host_id, "target_host_id")
+                if target_host_id is not None else None),
+            "targetRuntime": _nonblank(
+                target_runtime, "target_runtime").upper(),
+            "portableInputReplacement": (
+                dict(portable_input_replacement)
+                if portable_input_replacement is not None else None),
             "confirmationToken": "FORCE_REDISPATCH",
             "reason": _nonblank(reason, "reason"),
         }
+        if payload["targetRuntime"] not in {"INTERACTIVE", "PERSISTENT"}:
+            raise ValueError(
+                "target_runtime must be INTERACTIVE or PERSISTENT")
+        if target_worker_key is not None and target_host_id is not None:
+            raise ValueError(
+                "target_worker_key and target_host_id are mutually exclusive")
         rid = request_id
         if rid is None:
             material = json.dumps(

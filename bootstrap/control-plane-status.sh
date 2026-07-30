@@ -11,8 +11,9 @@
 #                      fresh-read Task timeline 后携带完整 CAS，人工强制解除精确 ownership；
 #                      绝不由 scheduler/owner-health 自动调用
 #   force-redispatch <task_id> [session_id]
-#                      (--auto-target | --target-worker WORKER_KEY) --reason TEXT --yes
-#                      原子隔离旧 Session，并定向到另一台在线 queue-pull Worker；
+#                      (--auto-target | --target-worker KEY | --target-host HOST)
+#                      --target-runtime INTERACTIVE|PERSISTENT --reason TEXT --yes
+#                      原子隔离旧 Session，并定向到另一台在线兼容 Worker；
 #                      READY 只表示已定向排队，不表示目标 Worker 已开始执行
 #   legacy-cleanup [--yes]
 #                      预览（默认）/删除 task_type 为已废弃 kind（如 field_repair）的

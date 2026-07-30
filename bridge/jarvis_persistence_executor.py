@@ -36,6 +36,7 @@ from bridge.jarvis_task_client import (
     HandoffRequested,
     StaleFence,
 )
+from bridge.task_input_contract import TaskInputContractError
 
 
 class LeaseProtocolError(ValueError):
@@ -1280,6 +1281,15 @@ class PersistenceExecutor:
                 controller.fail(error, retry_after_seconds=retry_after)
             else:
                 controller.complete(detail)
+        except TaskInputContractError as exc:
+            if not (controller.terminal or controller.pending_terminal or
+                    controller.ownership_lost or controller.stop_requested):
+                controller.fail({
+                    "errorType": type(exc).__name__,
+                    "code": exc.code,
+                    "message": str(exc)[:500],
+                    "retryable": False,
+                })
         except Exception as exc:
             if not (controller.terminal or controller.pending_terminal or
                     controller.ownership_lost or controller.stop_requested):

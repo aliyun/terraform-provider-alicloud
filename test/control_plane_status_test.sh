@@ -45,6 +45,8 @@ hasnot() { case "$2" in *"$1"*) no "$3 [unexpected '$1']";; *) ok "$3";; esac; }
 # Stub client：形参契约与真 ControlPlaneClient 对齐；fixture 结构对齐服务端
 # WorkerStateResponse / TaskView 数组 / TaskTimelineResponse。
 cat >"$STUB/jarvis_task_client.py" <<'PY'
+import hashlib
+import json
 import os
 
 
@@ -109,11 +111,32 @@ class ControlPlaneClient:
     def get_task_timeline(self, task_id):
         if os.environ.get("STUB_MODE") == "no_read_allowed":
             raise SystemExit("stub: timeline must not be read without --yes")
+        source_input = {
+            "itemId": "84386065",
+            "project": "2100304",
+            "kind": "ticket",
+            "trigger": "INTERACTIVE",
+            "policyRevision": "terraform-rd-single-writer-v6",
+        }
+        source_digest = hashlib.sha256(json.dumps(
+            source_input, ensure_ascii=False, sort_keys=True,
+            separators=(",", ":")).encode()).hexdigest()
         return {"task": {"id": 11, "status": "RECOVERY_REQUIRED",
                          "generation": 3, "stateVersion": 9,
                          "retryCount": 2, "desiredRevision": "rev-2",
                          "processingRevision": "rev-2",
-                         "currentSessionId": 7},
+                         "currentSessionId": 7,
+                         "taskKey": "aone:2100304:84386065",
+                         "aoneId": "84386065",
+                         "sourceType": "AONE",
+                         "taskType": "ticket",
+                         "sourceRef": {
+                             "aoneId": "84386065",
+                             "projectId": "2100304",
+                             "title": "legacy interactive input",
+                         }},
+                "effectiveInputPayload": source_input,
+                "effectiveInputDigest": source_digest,
                 "currentWorker": None,
                 "sessions": [{"id": 7, "status": "RESUMABLE", "fenceToken": 4,
                               "historicalWorkerId": 19,
@@ -177,6 +200,8 @@ class ControlPlaneClient:
                 "control plane HTTP 409 Conflict.RedispatchTarget: target stale",
                 status=409)
         target = os.environ.get("STUB_EXPECT_TARGET")
+        target_host = os.environ.get("STUB_EXPECT_HOST")
+        target_runtime = os.environ.get("STUB_EXPECT_RUNTIME", "PERSISTENT")
         expected = {
             "expected_task_status": "RECOVERY_REQUIRED",
             "expected_session_id": 7,
@@ -191,10 +216,21 @@ class ControlPlaneClient:
             "expected_worker_id": 19,
             "expected_worker_process_uuid": "process-old-19",
             "target_worker_key": target or None,
+            "target_host_id": target_host or None,
+            "target_runtime": target_runtime,
             "reason": "move reviewed task to another host",
         }
+        replacement = kwargs.pop("portable_input_replacement", None)
         if str(task_id) != "11" or kwargs != expected:
             raise SystemExit("stub: unexpected force-redispatch arguments %r" % kwargs)
+        if not isinstance(replacement, dict):
+            raise SystemExit("stub: legacy AONE input was not rehydrated")
+        payload = replacement.get("payload") or {}
+        if (payload.get("inputContract") != "PORTABLE_V1"
+                or not payload.get("prompt")
+                or payload.get("itemId") != "84386065"
+                or payload.get("project") != "2100304"):
+            raise SystemExit("stub: invalid portable replacement %r" % replacement)
         return {
             "task": {"id": 11, "status": "READY", "generation": 4},
             "action": "CROSS_MACHINE_REDISPATCHED",
@@ -203,8 +239,10 @@ class ControlPlaneClient:
             "previousGeneration": 3,
             "targetWorker": {
                 "id": 25,
-                "workerKey": target or "persistent:bridge:linux-auto",
-                "hostId": "linux-2",
+                "workerKey": target or (
+                    "interactive:codex:mac-2" if target_runtime == "INTERACTIVE"
+                    else "persistent:bridge:linux-auto"),
+                "hostId": target_host or "linux-2",
                 "processUuid": "process-linux-2",
                 "activityStatus": "IDLE",
             },
@@ -322,55 +360,76 @@ has "control plane HTTP 409 Conflict.ForceReleaseCas: task changed" "$out" \
 
 # ── 11) force-redispatch 必须选择自动/指定目标，并在服务端原子选机 ───────────
 out="$(STUB_MODE=no_read_allowed run_cli force-redispatch 11 \
-  --auto-target --reason 'move reviewed task to another host' 2>&1)"; rc=$?
+  --auto-target --target-runtime PERSISTENT \
+  --reason 'move reviewed task to another host' 2>&1)"; rc=$?
 [ $rc -eq 2 ] && ok "force-redispatch without --yes rc=2" || \
   no "force-redispatch without --yes rc=$rc"
 has "pass --yes" "$out" "force-redispatch explains confirmation gate"
 hasnot "timeline must not be read" "$out" "force-redispatch refuses before timeline read"
 
 out="$(run_cli force-redispatch 11 --auto-target \
+  --target-runtime PERSISTENT \
   --reason 'move reviewed task to another host' --yes 2>&1)"; rc=$?
 [ $rc -eq 0 ] && ok "force-redispatch auto rc=0" || \
   no "force-redispatch auto rc=$rc: $out"
 has "action=CROSS_MACHINE_REDISPATCHED" "$out" "redispatch prints action"
+has "targetRuntime=PERSISTENT" "$out" "redispatch prints target runtime"
 has "oldGeneration=3" "$out" "redispatch prints old generation"
 has "newGeneration=4" "$out" "redispatch prints new generation"
 has "targetWorkerKey=persistent:bridge:linux-auto" "$out" \
   "redispatch prints server-selected target"
 has "hostId=linux-2" "$out" "redispatch prints target host"
 has "targeted/queued" "$out" "redispatch does not claim READY is running"
+has "input=rehydrated PORTABLE_V1" "$out" \
+  "redispatch reports legacy input reconstruction"
 
 out="$(STUB_EXPECT_TARGET=persistent:bridge:linux-9 \
   run_cli force-redispatch 11 --target-worker persistent:bridge:linux-9 \
+  --target-runtime PERSISTENT \
   --reason 'move reviewed task to another host' --yes 2>&1)"; rc=$?
 [ $rc -eq 0 ] && ok "force-redispatch explicit target rc=0" || \
   no "force-redispatch explicit target rc=$rc: $out"
 has "targetWorkerKey=persistent:bridge:linux-9" "$out" \
   "redispatch forwards explicit worker key"
 
+out="$(STUB_EXPECT_HOST=Mac.guozai STUB_EXPECT_RUNTIME=INTERACTIVE \
+  run_cli force-redispatch 11 --target-host Mac.guozai \
+  --target-runtime INTERACTIVE \
+  --reason 'move reviewed task to another host' --yes 2>&1)"; rc=$?
+[ $rc -eq 0 ] && ok "force-redispatch target host/runtime rc=0" || \
+  no "force-redispatch target host/runtime rc=$rc: $out"
+has "targetRuntime=INTERACTIVE" "$out" \
+  "redispatch forwards interactive runtime"
+has "hostId=Mac.guozai" "$out" \
+  "redispatch forwards exact online host"
+
 out="$(STUB_MODE=redispatch_404 run_cli force-redispatch 11 \
-  --auto-target --reason 'move reviewed task to another host' --yes 2>&1)"; rc=$?
+  --auto-target --target-runtime PERSISTENT \
+  --reason 'move reviewed task to another host' --yes 2>&1)"; rc=$?
 [ $rc -eq 3 ] && ok "force-redispatch 404 rc=3" || \
   no "force-redispatch 404 rc=$rc"
 has "server version has not been deployed" "$out" \
   "force-redispatch 404 names undeployed server"
 
 out="$(STUB_MODE=redispatch_409 run_cli force-redispatch 11 \
-  --auto-target --reason 'move reviewed task to another host' --yes 2>&1)"; rc=$?
+  --auto-target --target-runtime PERSISTENT \
+  --reason 'move reviewed task to another host' --yes 2>&1)"; rc=$?
 [ $rc -eq 3 ] && ok "force-redispatch 409 rc=3" || \
   no "force-redispatch 409 rc=$rc"
 has "control plane HTTP 409 Conflict.RedispatchTarget: target stale" "$out" \
   "force-redispatch preserves target 409 explanation"
 
 out="$(run_cli force-redispatch 11 \
+  --target-runtime PERSISTENT \
   --reason 'move reviewed task to another host' --yes 2>&1)"; rc=$?
 [ $rc -eq 2 ] && ok "force-redispatch requires target mode" || \
   no "force-redispatch missing target mode rc=$rc"
-has "one of the arguments --auto-target --target-worker is required" "$out" \
+has "one of the arguments --auto-target --target-worker --target-host is required" "$out" \
   "force-redispatch explains target choice"
 
 out="$(run_cli force-redispatch 11 --auto-target \
   --target-worker persistent:bridge:linux-9 \
+  --target-runtime PERSISTENT \
   --reason 'move reviewed task to another host' --yes 2>&1)"; rc=$?
 [ $rc -eq 2 ] && ok "force-redispatch rejects two target modes" || \
   no "force-redispatch duplicate target mode rc=$rc"

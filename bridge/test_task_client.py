@@ -675,6 +675,17 @@ class ClientContractTest(unittest.TestCase):
             "expected_worker_id": 19,
             "expected_worker_process_uuid": "process-old-19",
             "target_worker_key": "persistent:bridge:linux-2",
+            "target_host_id": None,
+            "target_runtime": "PERSISTENT",
+            "portable_input_replacement": {
+                "payload": {
+                    "itemId": "84407231", "project": "1086837",
+                    "prompt": "continue", "inputContract": "PORTABLE_V1",
+                },
+                "expectedSourceInputDigest": "source-digest",
+                "replacementDigest": "replacement-digest",
+                "desiredRevision": "redispatch:portable-v1",
+            },
             "reason": "move suspended task to another host",
         }
 
@@ -703,6 +714,17 @@ class ClientContractTest(unittest.TestCase):
                 "expectedWorkerId": 19,
                 "expectedWorkerProcessUuid": "process-old-19",
                 "targetWorkerKey": "persistent:bridge:linux-2",
+                "targetHostId": None,
+                "targetRuntime": "PERSISTENT",
+                "portableInputReplacement": {
+                    "payload": {
+                        "itemId": "84407231", "project": "1086837",
+                        "prompt": "continue", "inputContract": "PORTABLE_V1",
+                    },
+                    "expectedSourceInputDigest": "source-digest",
+                    "replacementDigest": "replacement-digest",
+                    "desiredRevision": "redispatch:portable-v1",
+                },
                 "confirmationToken": "FORCE_REDISPATCH",
                 "reason": "move suspended task to another host",
             })
@@ -735,6 +757,9 @@ class ClientContractTest(unittest.TestCase):
             "expected_worker_id": 19,
             "expected_worker_process_uuid": "process-old-19",
             "target_worker_key": None,
+            "target_host_id": None,
+            "target_runtime": "INTERACTIVE",
+            "portable_input_replacement": None,
             "reason": "select another host",
         }
 
@@ -743,8 +768,36 @@ class ClientContractTest(unittest.TestCase):
 
         self.assertIsNone(body(opener.calls[0][0])["targetWorkerKey"])
         self.assertEqual(
+            body(opener.calls[0][0])["targetRuntime"], "INTERACTIVE")
+        self.assertEqual(
             headers(opener.calls[0][0])["idempotency-key"],
             headers(opener.calls[1][0])["idempotency-key"])
+
+    def test_interactive_targeted_lease_is_exact_worker_incarnation(self):
+        opener = RecordingOpener(responses=[FakeResponse({})])
+        c = self.make(opener)
+
+        self.assertEqual(c.lease_targeted_task(
+            "interactive:codex:mac/1",
+            runtime_session_id="interactive-targeted:codex:cycle-1",
+            lease_seconds=660,
+            free_slots=1,
+            process_uuid="process-1",
+            request_id="targeted-poll-1",
+        ), {})
+
+        request = opener.calls[0][0]
+        self.assertEqual(request.get_method(), "POST")
+        self.assertTrue(request.full_url.endswith(
+            "/api/jarvis/v1/workers/"
+            "interactive:codex:mac%2F1/targeted-lease"))
+        self.assertEqual(body(request), {
+            "runtimeSessionId": "interactive-targeted:codex:cycle-1",
+            "leaseSeconds": 660,
+            "freeSlots": 1,
+            "processUuid": "process-1",
+        })
+        self.assertEqual(headers(request)["idempotency-key"], "targeted-poll-1")
 
     def test_legacy_kind_cleanup_preview_and_delete_use_admin_contract(self):
         snapshot = {
