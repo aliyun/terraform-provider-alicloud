@@ -1149,6 +1149,136 @@ class SchedulerRunnerTest(unittest.TestCase):
 
         self.assertEqual(client.update_attempts, ["2"])
 
+    def test_source_status_reconcile_reuses_union_status_for_in_pool_task(self):
+        # An in-pool Task's status is already in the union snapshot fetched this
+        # tick; reconcile must reuse it and touch neither the batch list nor the
+        # per-id `workitem get` point-read.
+        class Client:
+            def __init__(self):
+                self.updates = []
+
+            def list_source_status_candidates(self, **_kwargs):
+                return {"items": [{
+                    "taskId": 500, "aoneId": "84621304",
+                    "sourceStatus": "开发中",
+                }], "nextAfterTaskId": None, "hasMore": False}
+
+            def update_source_status(self, *args, **kwargs):
+                self.updates.append((args, kwargs))
+                return {}
+
+        scanner = self._scanner()
+        client = Client()
+        scanner.execution_router = SimpleNamespace(client=client)
+        with mock.patch.object(
+                scanner, "_batch_list_status",
+                side_effect=AssertionError("batch must not run for in-pool task")), \
+             mock.patch.object(
+                scanner, "_point_read_source_status",
+                side_effect=AssertionError("point-read must not run for in-pool task")):
+            scanner._reconcile_source_statuses({"84621304": "评估中"})
+        self.assertEqual(len(client.updates), 1)
+        args, _ = client.updates[0]
+        self.assertEqual(args[:3], ("500", "84621304", "评估中"))
+
+    def test_source_status_reconcile_batch_list_resolves_out_of_union_task(self):
+        # An out-of-union Task that still carries a project key is resolved by
+        # the lightweight batch `workitem list` call; the point-read is skipped.
+        class Client:
+            def __init__(self):
+                self.updates = []
+
+            def list_source_status_candidates(self, **_kwargs):
+                return {"items": [{
+                    "taskId": 501, "aoneId": "84900001",
+                    "sourceStatus": "开发中", "sourceProjectKey": "1086837",
+                }], "nextAfterTaskId": None, "hasMore": False}
+
+            def update_source_status(self, *args, **kwargs):
+                self.updates.append((args, kwargs))
+                return {}
+
+        scanner = self._scanner()
+        client = Client()
+        scanner.execution_router = SimpleNamespace(client=client)
+        with mock.patch.object(
+                scanner, "_batch_list_status",
+                return_value={"84900001": "已发布"}), \
+             mock.patch.object(
+                scanner, "_point_read_source_status",
+                side_effect=AssertionError("point-read must not run on batch hit")):
+            scanner._reconcile_source_statuses()
+        self.assertEqual(len(client.updates), 1)
+        args, _ = client.updates[0]
+        self.assertEqual(args[:3], ("501", "84900001", "已发布"))
+
+    def test_source_status_reconcile_falls_back_to_point_read_on_batch_miss(self):
+        # A batch list that does not surface an id (moved projects / list lag)
+        # must fall back to the per-id `workitem get` point-read so a Task that
+        # drifted to a terminal/excluded status is still observable.
+        class Client:
+            def __init__(self):
+                self.updates = []
+
+            def list_source_status_candidates(self, **_kwargs):
+                return {"items": [{
+                    "taskId": 502, "aoneId": "84900002",
+                    "sourceStatus": "开发中", "sourceProjectKey": "1086837",
+                }], "nextAfterTaskId": None, "hasMore": False}
+
+            def update_source_status(self, *args, **kwargs):
+                self.updates.append((args, kwargs))
+                return {}
+
+        scanner = self._scanner()
+        client = Client()
+        scanner.execution_router = SimpleNamespace(client=client)
+        with mock.patch.object(scanner, "_batch_list_status", return_value={}), \
+             mock.patch.object(
+                scanner, "_point_read_source_status",
+                side_effect=lambda task: (task, "已拒绝")):
+            scanner._reconcile_source_statuses()
+        self.assertEqual(len(client.updates), 1)
+        args, _ = client.updates[0]
+        self.assertEqual(args[:3], ("502", "84900002", "已拒绝"))
+
+    def test_batch_list_status_parses_identifier_and_status(self):
+        scanner = self._scanner()
+        payload = [
+            {"identifier": "84621304", "status": "评估中"},
+            {"identifier": "84900001", "status": ""},   # empty status skipped
+            {"id": "84900003", "status": "已完成"},       # `id` key also accepted
+        ]
+        completed = SimpleNamespace(
+            returncode=0, stdout=json.dumps(payload), stderr="")
+        with mock.patch.object(scan, "run_process_group", return_value=completed):
+            out = scanner._batch_list_status(
+                "1086837", ["84621304", "84900001", "84900003", ""])
+        self.assertEqual(out, {"84621304": "评估中", "84900003": "已完成"})
+
+    def test_batch_list_status_returns_empty_on_a1_failure(self):
+        scanner = self._scanner()
+        failed = SimpleNamespace(returncode=1, stdout="", stderr="boom")
+        with mock.patch.object(scan, "run_process_group", return_value=failed):
+            out = scanner._batch_list_status("1086837", ["84621304"])
+        self.assertEqual(out, {})
+
+    def test_source_status_batch_chunk_clamps_above_empirical_limit(self):
+        # An env override above the empirical cap must clamp down rather than
+        # silently degrade every chunk to per-id `workitem get` fallbacks.
+        import importlib
+        prev = os.environ.get("JARVIS_SOURCE_STATUS_BATCH_CHUNK")
+        os.environ["JARVIS_SOURCE_STATUS_BATCH_CHUNK"] = "5000"
+        try:
+            importlib.reload(scan)
+            self.assertEqual(scan.ScanRunner.SOURCE_STATUS_BATCH_CHUNK, 500)
+        finally:
+            if prev is None:
+                os.environ.pop("JARVIS_SOURCE_STATUS_BATCH_CHUNK", None)
+            else:
+                os.environ["JARVIS_SOURCE_STATUS_BATCH_CHUNK"] = prev
+            importlib.reload(scan)
+
     def test_tick_dispatches_before_bounded_lifecycle_observation(self):
         scanner = self._scanner()
         scanner._prev_snapshot = {}
@@ -1164,7 +1294,7 @@ class SchedulerRunnerTest(unittest.TestCase):
             side_effect=lambda *_args: calls.append("done-drift"))
         scanner._tick_auto = mock.Mock(side_effect=lambda *_args: calls.append("dispatch"))
         scanner._reconcile_source_statuses_safely = mock.Mock(
-            side_effect=lambda: calls.append("lifecycle"))
+            side_effect=lambda *_args: calls.append("lifecycle"))
 
         scanner._tick()
 
@@ -1173,6 +1303,10 @@ class SchedulerRunnerTest(unittest.TestCase):
         self.assertEqual(scanner.SOURCE_STATUS_WORKERS, 8)
         self.assertEqual(scanner.SOURCE_STATUS_MAX_PAGES, 100)
         self.assertLessEqual(scanner.SOURCE_STATUS_POINT_TIMEOUT_SECONDS, 30)
+        self.assertEqual(scanner.SOURCE_STATUS_BATCH_CHUNK, 50)  # conservative default
+        # Empirical hard cap: the Aone list filter silently returns empty above
+        # ~1000 OR-clauses, so the chunk must never exceed 500 (see scan.py).
+        self.assertLessEqual(scanner.SOURCE_STATUS_BATCH_CHUNK, 500)
 
     def test_source_status_point_read_uses_bounded_timeout(self):
         completed = SimpleNamespace(returncode=0, stdout=json.dumps({

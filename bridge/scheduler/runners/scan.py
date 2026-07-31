@@ -44,6 +44,23 @@ class ScanRunner(AoneQueryMixin):
         os.environ.get("JARVIS_SOURCE_STATUS_MAX_PAGES", "100"))
     SOURCE_STATUS_POINT_TIMEOUT_SECONDS = int(
         os.environ.get("JARVIS_SOURCE_STATUS_POINT_TIMEOUT_SECONDS", "30"))
+    # Out-of-union candidates are read in co-project chunks via the lightweight
+    # `workitem list --columns id,status --filter "id=A OR id=B ..."` endpoint
+    # instead of one full `workitem get` per Task. Tune the chunk size and the
+    # per-call timeout; ids the batch list does not return still fall back to
+    # the per-id `workitem get` point-read.
+    #
+    # Empirical cap (measured against the Aone `workitem list` endpoint on
+    # 2026-07-31): a filter with 1000 OR-clauses (~15KB) returns all matches,
+    # but 1100 (~16.5KB) returns rc=0 with an EMPTY result silently — at that
+    # size every id in the chunk would miss and fall back to the per-id
+    # `workitem get`, defeating the batch. The hard cap is half the proven-safe
+    # 1000 to leave margin for replica / payload variance. The fallback still
+    # prevents data loss above the cap; only efficiency degrades.
+    SOURCE_STATUS_BATCH_CHUNK = min(
+        500, max(1, int(os.environ.get("JARVIS_SOURCE_STATUS_BATCH_CHUNK", "50"))))
+    SOURCE_STATUS_BATCH_TIMEOUT_SECONDS = int(
+        os.environ.get("JARVIS_SOURCE_STATUS_BATCH_TIMEOUT_SECONDS", "60"))
 
     def __init__(self, *, logger, task_client, repo_root) -> None:
         self.handler = None
@@ -188,7 +205,123 @@ class ScanRunner(AoneQueryMixin):
                         aone_id, type(exc).__name__)
             return task, None
 
-    def _reconcile_source_statuses(self):
+    @staticmethod
+    def _batch_list_status(project, aone_ids):
+        """Lightweight column-restricted read of current business status for a
+        chunk of co-project ids via `workitem list --columns id,status --filter
+        "id=A OR id=B ..."`. Returns ``{aoneId: status}`` for ids it resolved
+        with a non-empty status. Best-effort: any failure returns ``{}`` so the
+        caller falls back to the per-id `workitem get` point-read for the ids
+        the batch did not surface (moved projects / list-read lag). The chunk
+        size is bounded by ``SOURCE_STATUS_BATCH_CHUNK`` by the caller.
+        """
+        aone_ids = [str(a or "").strip() for a in aone_ids if str(a or "").strip()]
+        if not aone_ids:
+            return {}
+        flt = " OR ".join("id=%s" % a for a in aone_ids)
+        try:
+            result = run_process_group(
+                [str(REPO_ROOT / "bin" / "a1id"), "--", "project", "workitem",
+                 "list", "--project", str(project),
+                 "--filter", flt, "--columns", "id,status",
+                 "--page-size", str(len(aone_ids)), "-f", "json"],
+                capture_output=True, text=True,
+                timeout=max(1, ScanRunner.SOURCE_STATUS_BATCH_TIMEOUT_SECONDS),
+                cwd=str(REPO_ROOT))
+            if result.returncode != 0:
+                log.warning("ScanRunner: batch status list project=%s rc=%d: %s",
+                            project, result.returncode,
+                            (result.stderr or "").strip()[:200])
+                return {}
+            data = json.loads(result.stdout)
+            if not isinstance(data, list):
+                return {}
+            out = {}
+            for it in data:
+                if not isinstance(it, dict):
+                    continue
+                aid = str(it.get("identifier") or it.get("id") or "").strip()
+                st = str(it.get("status") or "").strip()
+                if aid and st:
+                    out[aid] = st
+            return out
+        except Exception as exc:  # noqa: BLE001
+            log.warning("ScanRunner: batch status list project=%s failed: %s",
+                        project, type(exc).__name__)
+            return {}
+
+    def _resolve_source_statuses(self, tasks, union_status=None):
+        """Resolve current Aone business status for one page of candidate Tasks,
+        cheapest source first:
+
+        1. ``union_status`` — reuse the pool-union snapshot already fetched this
+           tick (authoritative for in-pool Tasks; zero extra Aone calls).
+        2. batch `workitem list --columns id,status` grouped by project — the
+           lightweight column-restricted read for out-of-union Tasks that still
+           carry a project key.
+        3. `workitem get` fallback — legacy Tasks missing a project key, plus
+           ids the batch list did not return. This preserves the point-read's
+           "a Task moved to an excluded/terminal Aone status must still be
+           observable here" guarantee.
+
+        Returns a list of ``(task, status_or_None)``.
+        """
+        union_status = union_status or {}
+        observations = []
+        batch_by_project = {}
+        fallback_tasks = []
+        for task in tasks:
+            aid = str(task.get("aoneId") or "").strip()
+            if aid and aid in union_status:
+                status = str(union_status[aid] or "").strip()
+                observations.append((task, status or None))
+                continue
+            project = (str(task.get("sourceProjectKey") or "").strip()
+                       or str(task.get("projectId") or "").strip()
+                       or str((task.get("sourceRef") or {}).get("projectId")
+                              or "").strip())
+            if aid and project:
+                batch_by_project.setdefault(project, []).append(task)
+            elif aid:
+                fallback_tasks.append(task)
+            else:
+                observations.append((task, None))
+        if batch_by_project:
+            chunk_size = max(1, int(self.SOURCE_STATUS_BATCH_CHUNK))
+            chunks = []
+            for project, grp in batch_by_project.items():
+                ids = [str(t.get("aoneId") or "").strip() for t in grp
+                       if str(t.get("aoneId") or "").strip()]
+                for i in range(0, len(ids), chunk_size):
+                    chunks.append((project, ids[i:i + chunk_size]))
+            batch_status = {}
+            if chunks:
+                workers = max(1, min(32, int(self.SOURCE_STATUS_WORKERS)))
+                with ThreadPoolExecutor(
+                        max_workers=workers,
+                        thread_name_prefix="aone-batch-status") as executor:
+                    for found in executor.map(
+                            lambda pc: self._batch_list_status(pc[0], pc[1]),
+                            chunks):
+                        if isinstance(found, dict):
+                            batch_status.update(found)
+            for grp in batch_by_project.values():
+                for task in grp:
+                    aid = str(task.get("aoneId") or "").strip()
+                    if aid in batch_status:
+                        observations.append((task, batch_status[aid] or None))
+                    else:
+                        fallback_tasks.append(task)  # batch missed → point-read
+        if fallback_tasks:
+            workers = max(1, min(32, int(self.SOURCE_STATUS_WORKERS)))
+            with ThreadPoolExecutor(
+                    max_workers=workers,
+                    thread_name_prefix="aone-source-status") as executor:
+                observations.extend(executor.map(
+                    self._point_read_source_status, fallback_tasks))
+        return observations
+
+    def _reconcile_source_statuses(self, union_status=None):
         """Reconcile lifecycle metadata for already tracked control-plane Tasks.
 
         Discovery/dispatch and lifecycle observation are deliberately separate. Candidate
@@ -206,7 +339,6 @@ class ScanRunner(AoneQueryMixin):
         if client is None:
             return
         page_size = max(1, min(500, int(self.SOURCE_STATUS_PAGE_SIZE)))
-        workers = max(1, min(32, int(self.SOURCE_STATUS_WORKERS)))
         max_pages = max(1, int(self.SOURCE_STATUS_MAX_PAGES))
         after = 0
         observed_total = 0
@@ -223,11 +355,7 @@ class ScanRunner(AoneQueryMixin):
                 raise ValueError(
                     "control plane source status candidate page is invalid")
             tasks = [task for task in page["items"] if isinstance(task, dict)]
-            with ThreadPoolExecutor(
-                    max_workers=workers,
-                    thread_name_prefix="aone-source-status") as executor:
-                observations = list(executor.map(
-                    self._point_read_source_status, tasks))
+            observations = self._resolve_source_statuses(tasks, union_status)
             changed = 0
             for task, source_status in observations:
                 if (
@@ -768,8 +896,12 @@ class ScanRunner(AoneQueryMixin):
         # 统一探测：python 直查 assignee∪tracker∪idle 并集（取代 scan.sh 出派发数据）。
         items = self._scan_union()
         if items is None:
-            self._reconcile_source_statuses_safely()
+            self._reconcile_source_statuses_safely(None)
             return
+        union_status = {
+            str(it.get("id") or ""): str(it.get("status") or "").strip()
+            for it in items if it.get("id")
+        }
         cur_snapshot = {str(it["id"]): it for it in items if it.get("id")}
         cur_ids = set(cur_snapshot.keys())
 
@@ -826,11 +958,11 @@ class ScanRunner(AoneQueryMixin):
 
         # Lifecycle observation follows discovery/dispatch. Each page uses bounded
         # concurrency, while the scheduled run consumes the complete candidate snapshot.
-        self._reconcile_source_statuses_safely()
+        self._reconcile_source_statuses_safely(union_status)
 
-    def _reconcile_source_statuses_safely(self):
+    def _reconcile_source_statuses_safely(self, union_status=None):
         try:
-            self._reconcile_source_statuses()
+            self._reconcile_source_statuses(union_status)
         except Exception:
             log.exception(
                 "ScanRunner source status reconcile failed; "
