@@ -1,3 +1,8 @@
 # Runtime dependencies for bridge/run.sh.
 PyYAML==6.0.2
 dingtalk-stream==0.24.3
+# websockets (pulled by dingtalk-stream) needs python-socks when a SOCKS proxy is
+# configured in the runtime env; without it the dingtalk stream connect raises
+# ImportError("connecting through a SOCKS proxy requires python-socks") and headless
+# runs abort before posting their Aone result comment.
+python-socks==2.8.2
