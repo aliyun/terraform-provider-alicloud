@@ -239,39 +239,41 @@ class WakePersistence:
             target=task["target"],
             targetType=task["target_type"],
         )
-        # A RESUME_ONLY wake resumes the SUSPENDED generation; it must not change the
-        # desired revision. policy_desired_revision salts the payload into the revision,
-        # so any freshly minted revision is a NEW desired generation the control plane
-        # refuses to cross to while the current one is suspended (Conflict.Generation-
-        # Boundary). When the reply runner surfaces the suspended Task's own identity we
-        # reuse it verbatim (revision, type, source, frozen input) and let comment_cursor
-        # carry the reply into the resumed session. The legacy AONE/wake envelope stays as
-        # a fallback for waits that predate the surfaced identity.
-        resume_revision = str(task.get("resume_desired_revision") or "").strip()
-        if resume_revision:
+        # Advance the wake with a new comment:<id> desired revision — that revision IS
+        # the wake signal the control plane requires to move a suspended Session to
+        # RESUMABLE (docs/execution-architecture.md, "Managed wait wake-up"). The bug was
+        # NOT the revision advance; it was that the wake also rewrote the Task to
+        # source=AONE / type=wake, and that identity flip tripped Conflict.Generation-
+        # Boundary for GITHUB/pr_ci_fix suspends. So when the reply runner surfaces the
+        # suspended Task's identity, keep source_type / task_type / source_ref on the same
+        # Task lineage while still advancing the revision and letting comment_cursor carry
+        # the reply. The legacy AONE/wake envelope remains for waits with no surfaced
+        # identity.
+        advanced_revision = policy_desired_revision(
+            revision, payload, policy_revision=self._policy_revision)
+        resume_source_type = str(task.get("resume_source_type") or "").strip()
+        resume_task_type = str(task.get("resume_task_type") or "").strip()
+        resume_recovery_policy = str(task.get("resume_recovery_policy") or "").strip()
+        if resume_source_type or resume_task_type:
             resume_source_ref = task.get("resume_source_ref")
-            resume_payload = task.get("resume_payload")
             envelope = TaskEnvelope(
                 task_key=_aone_task_key(project, aone_id),
-                source_type=str(task.get("resume_source_type") or "").strip() or "AONE",
+                source_type=resume_source_type or "AONE",
                 source_ref=(resume_source_ref
                             if isinstance(resume_source_ref, dict) and resume_source_ref
                             else source_ref),
-                task_type=str(task.get("resume_task_type") or "").strip() or "wake",
-                desired_revision=resume_revision,
-                trigger_mask=["WAKE"],
-                payload=(resume_payload
-                         if isinstance(resume_payload, dict) and resume_payload
-                         else payload),
-                recovery_policy="RESUME_ONLY", comment_cursor=cursor,
+                task_type=resume_task_type or "wake",
+                desired_revision=advanced_revision,
+                trigger_mask=["WAKE"], payload=payload,
+                recovery_policy=resume_recovery_policy or "RESUME_ONLY",
+                comment_cursor=cursor,
                 source_status=task.get("sourceStatus"),
             )
         else:
             envelope = TaskEnvelope(
                 task_key=_aone_task_key(project, aone_id), source_type="AONE",
                 source_ref=source_ref, task_type="wake",
-                desired_revision=policy_desired_revision(
-                    revision, payload, policy_revision=self._policy_revision),
+                desired_revision=advanced_revision,
                 trigger_mask=["WAKE"], payload=payload,
                 recovery_policy="RESUME_ONLY", comment_cursor=cursor,
                 source_status=task.get("sourceStatus"),
