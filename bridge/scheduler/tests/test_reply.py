@@ -110,6 +110,7 @@ class ReplyResumeIdentityTests(unittest.TestCase):
                                   "prUrl": "https://x/pull/10085"},
                     "taskType": "pr_ci_fix",
                     "sourceType": "GITHUB",
+                    "recoveryPolicy": "REPLAY_SAFE",
                     "desiredRevision": "pr-ci:ccf62d38|policy:v6|input:5ed89b08",
                 },
                 "session": {
@@ -134,6 +135,7 @@ class ReplyResumeIdentityTests(unittest.TestCase):
         self.assertEqual(ctx["resume_task_type"], "pr_ci_fix")
         self.assertEqual(ctx["resume_source_type"], "GITHUB")
         self.assertEqual(ctx["resume_source_ref"]["prUrl"], "https://x/pull/10085")
+        self.assertEqual(ctx["resume_recovery_policy"], "REPLAY_SAFE")
 
 
 class WakeResumeEnvelopeTests(unittest.TestCase):
@@ -171,6 +173,7 @@ class WakeResumeEnvelopeTests(unittest.TestCase):
                 "session_id": "rt-1220",
                 "resume_task_type": "pr_ci_fix",
                 "resume_source_type": "GITHUB",
+                "resume_recovery_policy": "REPLAY_SAFE",
                 "resume_source_ref": {"prUrl": "https://x/pull/10085",
                                       "head": "ccf62d38"},
             },
@@ -182,7 +185,10 @@ class WakeResumeEnvelopeTests(unittest.TestCase):
         self.assertEqual(env.task_type, "pr_ci_fix")
         self.assertEqual(env.source_type, "GITHUB")
         self.assertEqual(env.source_ref.get("prUrl"), "https://x/pull/10085")
-        self.assertEqual(env.recovery_policy, "RESUME_ONLY")
+        # Recovery policy PRESERVED (REPLAY_SAFE), not forced to RESUME_ONLY — forcing it
+        # would trip Conflict.GenerationBoundary (recoveryPolicyChanged) on the suspended
+        # REPLAY_SAFE generation, the same guard the identity flip hit.
+        self.assertEqual(env.recovery_policy, "REPLAY_SAFE")
         self.assertEqual(env.comment_cursor, 125726050)
         # Revision ADVANCED to comment:<id> (the wake signal), not the stale pr-ci rev.
         self.assertTrue(env.desired_revision.startswith("comment:125726050"))

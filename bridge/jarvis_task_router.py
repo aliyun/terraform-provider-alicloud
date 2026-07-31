@@ -253,6 +253,7 @@ class WakePersistence:
             revision, payload, policy_revision=self._policy_revision)
         resume_source_type = str(task.get("resume_source_type") or "").strip()
         resume_task_type = str(task.get("resume_task_type") or "").strip()
+        resume_recovery_policy = str(task.get("resume_recovery_policy") or "").strip()
         if resume_source_type or resume_task_type:
             resume_source_ref = task.get("resume_source_ref")
             envelope = TaskEnvelope(
@@ -264,7 +265,8 @@ class WakePersistence:
                 task_type=resume_task_type or "wake",
                 desired_revision=advanced_revision,
                 trigger_mask=["WAKE"], payload=payload,
-                recovery_policy="RESUME_ONLY", comment_cursor=cursor,
+                recovery_policy=resume_recovery_policy or "RESUME_ONLY",
+                comment_cursor=cursor,
                 source_status=task.get("sourceStatus"),
             )
         else:

@@ -157,6 +157,12 @@ class ReplyRunner:
                 # the same Task lineage while still advancing the revision.
                 "resume_task_type": str(task.get("taskType") or "").strip(),
                 "resume_source_type": str(task.get("sourceType") or "").strip(),
+                # Preserve the suspended Task's recovery policy. Forcing RESUME_ONLY flips a
+                # REPLAY_SAFE pr_ci_fix/pr_comment_reply suspend, which trips the same
+                # Conflict.GenerationBoundary guard (recoveryPolicyChanged) that the identity
+                # flip did. AONE-native suspends are already RESUME_ONLY, so this is a no-op
+                # for them.
+                "resume_recovery_policy": str(task.get("recoveryPolicy") or "").strip(),
                 "resume_source_ref": (task.get("sourceRef")
                                       if isinstance(task.get("sourceRef"), dict)
                                       else None),
