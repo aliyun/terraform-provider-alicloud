@@ -147,20 +147,19 @@ class ReplyRunner:
                 "target_type": str(frozen.get("targetType") or broadcast_type()),
                 "title": str(frozen.get("title") or
                              (task.get("sourceRef") or {}).get("title") or ""),
-                # Resume the SUSPENDED generation in place. A RESUME_ONLY wake must
-                # reuse the suspended Task's own identity and desired revision: minting
-                # a fresh revision makes the control plane treat it as a new desired
-                # generation, which RESUME_ONLY cannot cross to while the current one is
-                # suspended (Conflict.GenerationBoundary). The reply reaches the resumed
-                # session via comment_cursor, not via a revision bump. Carries pr_ci_fix
-                # / GITHUB suspends (and every other suspend) faithfully back to life.
-                "resume_desired_revision": str(task.get("desiredRevision") or "").strip(),
+                # Surface the SUSPENDED Task's identity so the wake advances *the same
+                # Task*. Per docs/execution-architecture.md the wake must advance with a
+                # new comment:<id> revision (that revision IS the wake signal; the control
+                # plane then sets the suspended Session to RESUMABLE). The original wake
+                # additionally rewrote the Task to source=AONE/type=wake — that identity
+                # flip is what tripped Conflict.GenerationBoundary for GITHUB/pr_ci_fix
+                # suspends. Preserving source_type/task_type/source_ref keeps the wake on
+                # the same Task lineage while still advancing the revision.
                 "resume_task_type": str(task.get("taskType") or "").strip(),
                 "resume_source_type": str(task.get("sourceType") or "").strip(),
                 "resume_source_ref": (task.get("sourceRef")
                                       if isinstance(task.get("sourceRef"), dict)
                                       else None),
-                "resume_payload": frozen if isinstance(frozen, dict) and frozen else None,
             }
             self._logger.info("aone.reply: #%s session=%s got %d reply comment(s)",
                               aone_id, session_id, len(new_comments))
