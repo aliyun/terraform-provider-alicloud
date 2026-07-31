@@ -61,6 +61,14 @@ class ScanRunner(AoneQueryMixin):
         500, max(1, int(os.environ.get("JARVIS_SOURCE_STATUS_BATCH_CHUNK", "50"))))
     SOURCE_STATUS_BATCH_TIMEOUT_SECONDS = int(
         os.environ.get("JARVIS_SOURCE_STATUS_BATCH_TIMEOUT_SECONDS", "60"))
+    # An idle ticket whose Aone `modified` is newer than its last jarvis-idle tag
+    # transition was touched externally after jarvis released it, yet neither the
+    # activity feed nor the comment list surfaced a human signal — the Aone list
+    # endpoint can lag a just-posted comment by tens of minutes. Rather than
+    # swallow the wake (advancing _prev_snapshot so it never re-evaluates), defer
+    # to the next ticks for this many retries before accepting idle_no_human.
+    IDLE_STALE_RETRY_MAX = int(
+        os.environ.get("JARVIS_IDLE_STALE_RETRY_MAX", "8"))
 
     def __init__(self, *, logger, task_client, repo_root) -> None:
         self.handler = None
@@ -76,6 +84,7 @@ class ScanRunner(AoneQueryMixin):
         self._done_watch_retry = set()
         self._done_watch_confirm = set()
         self._done_drift_retry = set()
+        self._idle_stale_retry = {}
         self._human_operators = self._load_human_operators()
         self.dispatch_pools = {
             value.strip() for value in os.environ.get("JARVIS_DISPATCH_POOLS", "").split(",")
@@ -543,6 +552,42 @@ class ScanRunner(AoneQueryMixin):
     def _last_idle_at(self, iid):
         return self._last_tag_added_at(iid, "jarvis-idle")
 
+    def _is_idle_stale_suspect(self, it):
+        """Heuristic for an idle ticket whose wake returned no human signal but
+        probably should have. The Aone `workitem list`/activity reads can lag a
+        just-posted comment by tens of minutes (server-side replica consistency),
+        so a genuinely-commented ticket can look like idle_no_human on the one
+        tick it is re-evaluated — and because _prev_snapshot advances on the
+        `modified` change, it would not be retried until the *next* modification.
+
+        Signal: the workitem `modified` is newer than the last jarvis-idle tag
+        transition (something external touched it after jarvis released), yet
+        neither _human_touched nor _human_comment saw a human. Defer to the next
+        ticks (idle_no_human_retry) for up to IDLE_STALE_RETRY_MAX retries; then
+        accept idle_no_human so a Kelude/system-modified ticket settles.
+
+        `_last_idle_at` reuses the per-tick _activity_cache populated by
+        _human_touched, so this adds no extra Aone call.
+        """
+        iid = str(it.get("id") or "")
+        if not iid:
+            return False
+        retry = getattr(self, "_idle_stale_retry", None)
+        if retry is None:
+            retry = self._idle_stale_retry = {}
+        if retry.get(iid, 0) >= self.IDLE_STALE_RETRY_MAX:
+            return False
+        modified = str(it.get("modified") or "").strip()
+        if not modified:
+            return False
+        last_idle = self._last_idle_at(iid)
+        if last_idle is None:
+            return False
+        mod_at = self._parse_aone_time(modified)
+        if mod_at is None:
+            return False
+        return mod_at > last_idle
+
     def _last_claimed_at(self, iid, strict=False):
         return self._last_tag_added_at(iid, "jarvis-claimed", strict=strict)
 
@@ -714,6 +759,9 @@ class ScanRunner(AoneQueryMixin):
         retry_ids = getattr(self, "_done_watch_retry", None)
         if retry_ids is None:
             retry_ids = self._done_watch_retry = set()
+        idle_stale_retry = getattr(self, "_idle_stale_retry", None)
+        if idle_stale_retry is None:
+            idle_stale_retry = self._idle_stale_retry = {}
         merged_status_map = getattr(self, "_pr_merged_status_by_pool", None)
         if merged_status_map is None:
             merged_status_map = self._pr_merged_status_by_pool = (
@@ -777,6 +825,11 @@ class ScanRunner(AoneQueryMixin):
                     # 人工在 jarvis 上轮动作之后介入 → 重新派发，force 覆盖去重台账。
                     force, decide_dispatch = True, True
                     action, reason = "dispatch", "new"
+                elif self._is_idle_stale_suspect(it):
+                    # 工单 modified 晚于上次 idle，但 activity/评论都未现人工信号
+                    # → 疑似 Aone 读陈旧（list/活动流滞后刚发评论数十分钟）；不推进
+                    # prev_snapshot，下轮重判，最多 IDLE_STALE_RETRY_MAX 次后回落。
+                    action, reason = "skip", "idle_no_human_retry"
                 else:
                     # 仍是 jarvis 自更新/停摆 → 交每日 daily nudge runner 的 nudge，不每轮重启实例。
                     action, reason = "skip", "idle_no_human"
@@ -931,6 +984,13 @@ class ScanRunner(AoneQueryMixin):
             done_watch_confirm = self._done_watch_confirm = set()
         done_watch_retry.intersection_update(current_done_ids)
         done_watch_confirm.intersection_update(current_done_ids)
+        idle_stale_retry = getattr(self, "_idle_stale_retry", None)
+        if idle_stale_retry is None:
+            idle_stale_retry = self._idle_stale_retry = {}
+        # Retain only tickets still present in the union (still Aone-tracked).
+        self._idle_stale_retry = {
+            iid: c for iid, c in idle_stale_retry.items() if iid in cur_ids}
+        idle_stale_retry = self._idle_stale_retry
         done_drift_retry = getattr(self, "_done_drift_retry", None)
         if done_drift_retry is None:
             done_drift_retry = self._done_drift_retry = set()
@@ -942,6 +1002,10 @@ class ScanRunner(AoneQueryMixin):
         retry_done_items = [cur_snapshot[iid]
                             for iid in pending_done_ids
                             if iid in cur_snapshot]
+        # Stale-suspect idle tickets re-evaluate every tick (without waiting for
+        # another `modified` change) until they dispatch or hit IDLE_STALE_RETRY_MAX.
+        retry_idle_items = [cur_snapshot[iid]
+                            for iid in idle_stale_retry if iid in cur_snapshot]
         drift_candidates = {}
         for item in (new_items + list(updated_items.values())
                      + [cur_snapshot[iid] for iid in done_drift_retry
@@ -950,9 +1014,11 @@ class ScanRunner(AoneQueryMixin):
         if drift_candidates:
             self._reconcile_done_status_drifts_safely(
                 [item for iid, item in drift_candidates.items() if iid])
-        if new_items or updated_items or (auto and retry_done_items):
+        if (new_items or updated_items
+                or (auto and (retry_done_items or retry_idle_items))):
             if auto:
-                self._tick_auto(new_items, updated_items, retry_done_items)
+                self._tick_auto(new_items, updated_items, retry_done_items,
+                                retry_idle_items)
             else:
                 self._tick_supervised(new_items, updated_items)
 
@@ -969,12 +1035,16 @@ class ScanRunner(AoneQueryMixin):
                 "scheduled run will retry from cursor zero")
             raise
 
-    def _tick_auto(self, new_items, updated_items=None, done_watch_items=None):
+    def _tick_auto(self, new_items, updated_items=None, done_watch_items=None,
+                   idle_stale_items=None):
         """Auto-dispatch candidates into the pool (broadcast, not authorize). Candidates =
         new items + externally-updated items; both flow through _decide, which skips
         claimed/done/terminal/idle-without-human and only re-dispatches an idle ticket
         (force=True) when a human touched it after jarvis."""
         updated_values = list((updated_items or {}).values())
+        idle_stale_retry = getattr(self, "_idle_stale_retry", None)
+        if idle_stale_retry is None:
+            idle_stale_retry = self._idle_stale_retry = {}
         event_done_ids = {
             str(item.get("id") or "")
             for item in list(new_items) + updated_values
@@ -988,7 +1058,8 @@ class ScanRunner(AoneQueryMixin):
         confirm_ids.update(iid for iid in event_done_ids if iid)
         candidates_by_id = {}
         for item in (list(new_items) + updated_values
-                     + list(done_watch_items or [])):
+                     + list(done_watch_items or [])
+                     + list(idle_stale_items or [])):
             candidates_by_id[str(item.get("id") or "")] = item
         candidates = [item for iid, item in candidates_by_id.items() if iid]
         dispatched, dropped = [], []
@@ -997,8 +1068,13 @@ class ScanRunner(AoneQueryMixin):
                 if (d["reason"] == "done" and d["id"] not in event_done_ids):
                     # This was the one-shot confirmation read and it was clean.
                     confirm_ids.discard(d["id"])
+                if d["reason"] == "idle_no_human_retry":
+                    idle_stale_retry[d["id"]] = idle_stale_retry.get(d["id"], 0) + 1
+                else:
+                    idle_stale_retry.pop(d["id"], None)
                 log.info("scan auto: skip #%s (%s)", d["id"], d["reason"])
                 continue
+            idle_stale_retry.pop(d["id"], None)  # dispatching resolves the stale suspicion
             ok, reason = self._dispatch(
                 d["item"], force=d.get("force", False),
                 dispatch_context=d.get("dispatch_context"))
