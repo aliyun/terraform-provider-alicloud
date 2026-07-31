@@ -45,6 +45,13 @@ def silent_logger() -> logging.Logger:
 class WeeklyCommentParticipationAggregationTests(unittest.TestCase):
     """口径单测：人/数字人分类、窗口过滤、系统噪声排除、workitemCount 聚合。"""
 
+    def setUp(self):
+        # _aggregate now parallel-prefetches comment lists per pool; stub it so
+        # these tests (which mock _list_comments directly) don't spawn real a1.
+        patch = mock.patch.object(wcp, "parallel_a1_per_id", return_value={})
+        patch.start()
+        self.addCleanup(patch.stop)
+
     def _runner(self, repo_root: Path) -> wcp.WeeklyCommentParticipationRunner:
         return wcp.WeeklyCommentParticipationRunner(
             task_client=FakeTaskClient(), repo_root=repo_root,

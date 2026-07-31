@@ -16,7 +16,7 @@ from bridge.jarvis_task_router import (
 
 from ..model import JobResult, JobResultStatus, ScheduledJobDefinition, is_aware
 from bridge.aone_tasks import REPO_ROOT, _task_result_instructions
-from bridge.helpers.aone import _is_human_comment
+from bridge.helpers.aone import _is_human_comment, _parse_a1_list, parallel_a1_per_id
 from bridge.process_group_runner import run_process_group
 
 
@@ -34,6 +34,7 @@ class ReplyRunner:
         self._page_size = max(1, min(500, int(os.environ.get(
             "JARVIS_MANAGED_WAIT_PAGE_SIZE", "100"))))
         self._poll_state: dict[str, dict[str, float]] = {}
+        self._reply_comment_cache: dict[str, list | None] = {}
         self._wake: WakePersistence | None = None
 
     @property
@@ -56,6 +57,10 @@ class ReplyRunner:
         return WAIT_TIERS[-1][1]
 
     def _fetch_comments(self, aone_id: str) -> list[dict[str, Any]] | None:
+        aone_id = str(aone_id)
+        cache = getattr(self, "_reply_comment_cache", None) or {}
+        if aone_id in cache:
+            return cache[aone_id]  # list or None (pre-fetched this tick)
         try:
             result = run_process_group(
                 [str(REPO_ROOT / "bin" / "a1id"), "--",
@@ -97,11 +102,37 @@ class ReplyRunner:
     def _tick(self) -> None:
         now = time.time()
         seen: set[str] = set()
+        self._reply_comment_cache = {}  # per-tick
         try:
             waits = list(self._list_waits())
         except Exception as exc:  # noqa: BLE001 - next slot rebuilds the snapshot.
             self._logger.warning("aone.reply list failed; will retry: %s", exc)
             return
+        # First pass: identify tier-DUE waits (mirror the loop's poll-interval
+        # gate, WITHOUT mutating _poll_state) and parallel-prefetch only THEIR
+        # comment lists. Preserves tiered polling — long-suspended sessions are
+        # not polled every tick — while removing the serial per-wait a1 stall.
+        due_ids: list[str] = []
+        for item in waits:
+            session = item.get("session") if isinstance(item.get("session"), dict) else {}
+            session_id = str(session.get("id") or "").strip()
+            aid = str(session.get("waitKey")
+                     or (item.get("task") or {}).get("aoneId") or "").strip()
+            if not session_id or not aid.isdigit():
+                continue
+            state = self._poll_state.setdefault(
+                session_id, {"first_seen": now, "last_poll": 0})
+            if now - state["last_poll"] < self._poll_interval(state["first_seen"]):
+                continue  # not due this tick
+            if aid not in due_ids:
+                due_ids.append(aid)
+        if due_ids:
+            self._reply_comment_cache = parallel_a1_per_id(
+                due_ids,
+                build_args=lambda aid: ["project", "workitem", "comment", "list",
+                                        aid, "-f", "json"],
+                parse=_parse_a1_list,
+                workers=8, timeout=30, label="reply-comment")
         for item in waits:
             task = item.get("task") if isinstance(item.get("task"), dict) else {}
             session = item.get("session") if isinstance(item.get("session"), dict) else {}

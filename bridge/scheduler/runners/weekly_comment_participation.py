@@ -32,7 +32,10 @@ from pathlib import Path
 from typing import Any, Optional
 
 from bridge.aone_tasks import AoneQueryMixin, REPO_ROOT
-from bridge.helpers.aone import _SHANGHAI_TZ, _contact_directory, _is_human_comment
+from bridge.helpers.aone import (
+    _SHANGHAI_TZ, _contact_directory, _is_human_comment, _parse_a1_list,
+    parallel_a1_per_id,
+)
 from bridge.process_group_runner import run_process_group
 from ..model import DailySchedule, JobResult, JobResultStatus, ScheduledJobDefinition, is_aware
 
@@ -168,6 +171,7 @@ class WeeklyCommentParticipationRunner:
         self._repo_root = Path(repo_root)
         self._log = logger
         self._environ = os.environ if environ is None else environ
+        self._comment_cache: dict = {}
 
     def _tf_pools(self) -> list[tuple[str, str, str]]:
         """[(pool_key, project, requirement_type)] for Terraform-line pools."""
@@ -255,6 +259,10 @@ class WeeklyCommentParticipationRunner:
 
     def _list_comments(self, workitem_id: str) -> Optional[list[dict]]:
         """List comments for one work item. None on failure; [] when none/empty."""
+        wid = str(workitem_id)
+        cache = getattr(self, "_comment_cache", None) or {}
+        if wid in cache:
+            return cache[wid]  # list, [] or None (pre-fetched this pool)
         try:
             result = run_process_group(
                 [str(REPO_ROOT / "bin" / "a1id"), "--",
@@ -299,6 +307,18 @@ class WeeklyCommentParticipationRunner:
             if requirements is None:
                 continue  # one pool's failure does not void the others
             requirements_covered += len(requirements)
+            # Parallel pre-fetch comment lists for this pool's requirements
+            # (bounded, best-effort) so the per-req loop reads the cache and
+            # makes zero a1 calls.
+            req_ids = list(dict.fromkeys(
+                str(r.get("id") or "") for r in requirements
+                if str(r.get("id") or "").isdigit()))
+            self._comment_cache = parallel_a1_per_id(
+                req_ids,
+                build_args=lambda aid: ["project", "workitem", "comment", "list",
+                                        aid, "-f", "json"],
+                parse=_parse_a1_list,
+                workers=8, timeout=90, label="weekly-comment") if req_ids else {}
             for req in requirements:
                 iid = str(req.get("id") or "")
                 if not iid:
