@@ -1619,6 +1619,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_route_map":                                         resourceAlicloudCenRouteMap(),
 			"alicloud_resource_manager_role":                                 resourceAlicloudResourceManagerRole(),
 			"alicloud_resource_manager_resource_group":                       resourceAliCloudResourceManagerResourceGroup(),
+			"alicloud_resource_manager_resource_group_settings":              resourceAliCloudResourceManagerResourceGroupSettings(),
 			"alicloud_resource_manager_folder":                               resourceAliCloudResourceManagerFolder(),
 			"alicloud_resource_manager_handshake":                            resourceAliCloudResourceManagerHandshake(),
 			"alicloud_resource_manager_handshake_acceptance":                 resourceAliCloudResourceManagerHandshakeAcceptance(),
