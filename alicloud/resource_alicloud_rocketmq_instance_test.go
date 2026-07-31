@@ -43,8 +43,9 @@ func TestAccAliCloudRocketmqInstance_SendReceiveRatioValidation(t *testing.T) {
 					"instance_name": name,
 					"product_info": []map[string]interface{}{
 						{
-							"msg_process_spec":       "rmq.p2.4xlarge",
-							"send_receive_ratio":     "0.03", // This should be out of range [0.05, 0.5] to test validation
+							"msg_process_spec": "rmq.p2.4xlarge",
+							// send_receive_ratio 0.03 is intentionally out of range [0.05, 0.5] to trigger the expected validation error
+							"send_receive_ratio":     "0.03",
 							"message_retention_time": "70",
 						},
 					},
@@ -1170,6 +1171,11 @@ func TestAccAliCloudRocketmqInstance_basic4101(t *testing.T) {
 							},
 						},
 					},
+					"software": []map[string]interface{}{
+						{
+							"maintain_time": "02:00-06:00",
+						},
+					},
 					"payment_type":    "PayAsYouGo",
 					"sub_series_code": "cluster_ha",
 					"instance_name":   name,
@@ -1191,6 +1197,11 @@ func TestAccAliCloudRocketmqInstance_basic4101(t *testing.T) {
 							"acl_types": []string{
 								"default", "apache_acl", "aliyun_ram"},
 							"default_vpc_auth_free": "false",
+						},
+					},
+					"software": []map[string]interface{}{
+						{
+							"maintain_time": "03:00-07:00",
 						},
 					},
 				}),
