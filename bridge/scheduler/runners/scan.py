@@ -25,9 +25,13 @@ from bridge.helpers.aone import (
 )
 from bridge.helpers.dingtalk import _dingtalk_event_enqueue
 from bridge.jarvis_task_router import (
-    ExecutionRouter, _task_envelope, broadcast_target, broadcast_type,
+    EnqueueResult, ExecutionRouter, _task_envelope, broadcast_target, broadcast_type,
 )
 from bridge.pending_dispatch import PendingDispatchRegistry
+from bridge.recovery_wakeup import (
+    epoch_key as _wakeup_epoch_key, should_wake as _wakeup_should_wake,
+    wake_redispatch as _wakeup_wake, enabled as _wakeup_enabled,
+)
 from bridge.process_group_runner import run_process_group
 from ..model import JobResult, JobResultStatus, ScheduledJobDefinition, is_aware
 
@@ -85,6 +89,7 @@ class ScanRunner(AoneQueryMixin):
         self._done_watch_confirm = set()
         self._done_drift_retry = set()
         self._idle_stale_retry = {}
+        self._woken_epochs = {}  # aone_id -> recovery_wakeup epoch key (防每 tick 重复 wake)
         self._human_operators = self._load_human_operators()
         self.dispatch_pools = {
             value.strip() for value in os.environ.get("JARVIS_DISPATCH_POOLS", "").split(",")
@@ -918,7 +923,62 @@ class ScanRunner(AoneQueryMixin):
                                     project=pool_project, force=force,
                                     terraform=terraform)
 
+        # 方案 A：force=True（新人工评论触发）且 Task 卡在 RECOVERY_REQUIRED+retry-超限时，
+        # upsert desired 无法唤醒回 READY（desired-state 与 execution status 分离，见
+        # docs/execution-architecture.md §RECOVERY_REQUIRED and the desired-state upsert
+        # boundary）。force-redispatch 推回 READY 让 persistent worker 重新 lease；幂等靠
+        # _woken_epochs ledger + force_redispatch_task request_id SHA-256。开关默认关。
+        if force and _wakeup_enabled():
+            if self._maybe_wake(iid):
+                return EnqueueResult(True, "recovery_wakeup_redispatched")
         return self.execution_router.enqueue(envelope, local_submit=local_submit)
+
+    def _maybe_wake(self, iid):
+        """force-redispatch a retry-exhausted RECOVERY_REQUIRED Task back to READY.
+
+        Returns True if a wake was issued (or already issued this epoch, so the
+        desired-state upsert is inert and skipped). Returns False on any miss
+        (no Task, not RECOVERY_REQUIRED, transport/CAS failure) so the caller
+        falls through to the normal enqueue path.
+        """
+        client = getattr(self.execution_router, "client", None)
+        if client is None:
+            return False
+        try:
+            response = client.get_task_by_aone(iid)
+        except Exception as exc:  # noqa: BLE001
+            log.warning("recovery_wakeup: get_task_by_aone #%s failed: %s", iid, exc)
+            return False
+        rows = response if isinstance(response, list) else (
+            [response] if isinstance(response, dict) else [])
+        for task in rows:
+            if not isinstance(task, dict) or not _wakeup_should_wake(task):
+                continue
+            task_id = str(task.get("id") or "").strip()
+            if not task_id:
+                continue
+            epoch = _wakeup_epoch_key(task, aone_id=iid)
+            if self._woken_epochs.get(iid) == epoch:
+                log.info("recovery_wakeup: #%s already woken this epoch, skip enqueue", iid)
+                return True
+            reason = ("scan recovery_wakeup: jarvis-idle/claimed + new human comment, "
+                      "Task %s RECOVERY_REQUIRED retry=%s/%s; desired-state upsert cannot "
+                      "flip execution status" % (
+                          task_id, task.get("retryCount"), task.get("maxRetries")))
+            try:
+                result = _wakeup_wake(client, task_id, iid, reason)
+            except Exception as exc:  # noqa: BLE001
+                log.warning("recovery_wakeup: wake #%s task=%s failed: %s",
+                            iid, task_id, exc)
+                return False
+            action = str(result.get("action") or "").upper()
+            if action in ("REDISPATCHED", "QUEUED", "TARGETED"):
+                self._woken_epochs[iid] = epoch
+                return True
+            log.warning("recovery_wakeup: #%s task=%s action=%s not redispatched",
+                        iid, task_id, action or "?")
+            return False
+        return False
 
     def _tick(self):
         """Scan the Aone pool union and feed new and updated items into dispatch.

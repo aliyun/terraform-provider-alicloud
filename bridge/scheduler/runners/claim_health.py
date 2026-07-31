@@ -19,6 +19,10 @@ from bridge.helpers.aone import _aone_event_flush, _aone_event_source_part
 from bridge.helpers.dingtalk import _dingtalk_event_enqueue, _dingtalk_event_flush
 from bridge.jarvis_task_router import ExecutionRouter
 from bridge.process_group_runner import run_process_group
+from bridge.recovery_wakeup import (
+    epoch_key as _wakeup_epoch_key, should_wake as _wakeup_should_wake,
+    wake_redispatch as _wakeup_wake, enabled as _wakeup_enabled,
+)
 from ..model import JobResult, JobResultStatus, ScheduledJobDefinition, is_aware
 
 
@@ -105,6 +109,38 @@ class ClaimHealthRunner(AoneQueryMixin):
                     items.extend(future.result())
                 except Exception as exc:  # noqa: BLE001
                     log.warning("ClaimHealthScheduler: claimed query failed: %s", exc)
+        return {str(item.get("id")): item for item in items if item.get("id")}
+
+    def _scan_idle_recovery(self):
+        """Read jarvis-idle inventory for RECOVERY_REQUIRED wakeup (方案 B 兜底).
+
+        Mirrors _scan_claimed but queries tag=jarvis-idle: a retry-exhausted
+        RECOVERY_REQUIRED Task bound to a dead RESUMABLE session blocks every later
+        claim, and scan's desired-state upsert cannot flip execution status, so
+        claim_health force-redispatches it back to READY. Enabled by
+        JARVIS_RECOVERY_WAKEUP_ENABLE (default off).
+        """
+        pools = self._read_pools()
+        if not pools:
+            return None
+
+        def query(entry):
+            key, project, _exclude, _merged = entry
+            rows = self._a1_list(project, "tag=jarvis-idle")
+            for item in rows:
+                item["pool"] = key
+                item["pool_project"] = str(project)
+            return rows
+
+        items = []
+        with ThreadPoolExecutor(
+                max_workers=min(8, len(pools)),
+                thread_name_prefix="idle-recovery") as ex:
+            for future in [ex.submit(query, entry) for entry in pools]:
+                try:
+                    items.extend(future.result())
+                except Exception as exc:  # noqa: BLE001
+                    log.warning("ClaimHealthScheduler: idle query failed: %s", exc)
         return {str(item.get("id")): item for item in items if item.get("id")}
 
     def _claim_health_activities(self, iid, strict=False):
@@ -729,6 +765,60 @@ class ClaimHealthRunner(AoneQueryMixin):
         delta = datetime.now() - latest
         return max(0, int(delta.total_seconds() // 60))
 
+    def _inspect_idle_recovery(self, item):
+        """方案 B：jarvis-idle Task 卡 RECOVERY_REQUIRED+retry-超限 → force-redispatch 唤醒。
+
+        scan（方案 A）实时检测人工评论唤醒；claim_health 兜底周期扫 idle 的
+        RECOVERY_REQUIRED Task。should_wake + epoch ledger（_claim_health_observations）
+        防每 slot 重复 wake。返回 anomaly dict 或 None。
+        """
+        if not _wakeup_enabled():
+            return None
+        iid = str(item.get("id") or "")
+        client = getattr(self.execution_router, "client", None)
+        if client is None:
+            return None
+        try:
+            response = client.get_task_by_aone(iid)
+        except Exception as exc:  # noqa: BLE001
+            log.warning("ClaimHealthScheduler: idle recovery get_task_by_aone #%s failed: %s",
+                        iid, exc)
+            return None
+        rows = self._task_rows(response)
+        if not rows:
+            return None
+        task = self._current_task(rows)
+        if not isinstance(task, dict) or not _wakeup_should_wake(task):
+            return None
+        task_id = str(task.get("id") or task.get("taskId") or "").strip()
+        if not task_id:
+            return None
+        epoch = _wakeup_epoch_key(task, aone_id=iid)
+        wake_key = ("recovery_wakeup", iid)
+        if self._claim_health_observations.get(wake_key) == epoch:
+            return None  # 已唤醒此 epoch，等 retry/desired 推进再尝试
+        reason = ("claim_health idle recovery: jarvis-idle Task %s RECOVERY_REQUIRED "
+                  "retry=%s/%s; scan desired-state upsert cannot flip execution status"
+                  % (task_id, task.get("retryCount"), task.get("maxRetries")))
+        try:
+            result = _wakeup_wake(client, task_id, iid, reason)
+        except Exception as exc:  # noqa: BLE001
+            log.warning("ClaimHealthScheduler: idle recovery wake #%s task=%s failed: %s",
+                        iid, task_id, exc)
+            return None
+        action = str(result.get("action") or "").upper()
+        if action not in ("REDISPATCHED", "QUEUED", "TARGETED"):
+            log.warning("ClaimHealthScheduler: idle recovery #%s task=%s action=%s not redispatched",
+                        iid, task_id, action or "?")
+            return None
+        self._claim_health_observations[wake_key] = epoch
+        new_gen = (result.get("task") or {}).get("generation", result.get("generation"))
+        return {
+            "category": "recovery-woken", "epoch": epoch, "confirm": True,
+            "detail": "force-redispatched Task %s gen %s→%s"
+                      % (task_id, task.get("generation"), new_gen),
+        }
+
     def run(self, definition: ScheduledJobDefinition,
             scheduled_for: datetime) -> JobResult:
         if definition.id != "aone.claim-health" or not is_aware(scheduled_for):
@@ -741,6 +831,15 @@ class ClaimHealthRunner(AoneQueryMixin):
         snapshot = self._scan_claimed()
         if snapshot is not None:
             self._reconcile_stale_claims(snapshot)
+        # 方案 B：兜底唤醒 jarvis-idle 的 RECOVERY_REQUIRED+retry-超限 Task
+        idle_snapshot = self._scan_idle_recovery()
+        if idle_snapshot:
+            for iid, item in idle_snapshot.items():
+                try:
+                    self._inspect_idle_recovery(item)
+                except Exception as exc:  # noqa: BLE001
+                    log.warning("ClaimHealthScheduler: idle recovery inspect #%s failed: %s",
+                                iid, exc)
         _aone_event_flush()
         _dingtalk_event_flush()
         return JobResult(JobResultStatus.SUCCEEDED)
