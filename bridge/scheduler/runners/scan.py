@@ -93,7 +93,13 @@ class ScanRunner(AoneQueryMixin):
             return set()
 
     def _union_filters(self, exclude_status, pr_merged_status=None):
-        """一个池的四源过滤：assignee / tracker / idle / terminal done watch。"""
+        """一个池的五源过滤：assignee / tracker / participants / idle / terminal done watch。
+
+        participants (ak.issue.member) 是 tracker (抄送) 的更广且更可靠的补充：
+        a1-server 对 workitem.tracker 里的数字人 WORKER id 解析会间歇性失败
+        (open-jarvis WORKER_1782379562571 解析不了)，导致整个 tracker 源查询失败、
+        漏掉只靠抄送发现的单。ak.issue.member 用同一组 WORKER id 却能稳定解析，
+        且参与者天然 ⊇ 抄送范围，补上 tracker 解析失败时漏掉的无标签单。"""
         worker_csv = ",".join(sorted(DIGITAL_WORKER_IDS))
         excl = "".join(" AND NOT status=%s" % s for s in (exclude_status or []))
         merged = _normalize_pr_merged_status(pr_merged_status)
@@ -101,13 +107,14 @@ class ScanRunner(AoneQueryMixin):
         return (
             "assignedTo=%s%s" % (worker_csv, excl),
             "workitem.tracker=%s%s" % (worker_csv, excl),
+            "ak.issue.member=%s%s" % (worker_csv, excl),
             "tag=jarvis-idle%s" % excl,
             "tag=jarvis-done%s" % done_excl,
         )
 
     def _query_pool_union(self, key, project, exclude_status,
                           pr_merged_status=None):
-        """一个池的 assignee∪tracker∪idle∪done 并集（按 id 去重）。四源查询
+        """一个池的 assignee∪tracker∪participants∪idle∪done 并集（按 id 去重）。五源查询
         并行发出（各自 a1 调用 best-effort），去重时 assignee 源优先。"""
         filters = self._union_filters(exclude_status, pr_merged_status)
         with ThreadPoolExecutor(max_workers=len(filters),
