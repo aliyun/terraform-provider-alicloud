@@ -22,6 +22,7 @@ from bridge.aone_tasks import (
 )
 from bridge.helpers.aone import (
     PERSONA_PUBLIC_IDENTITY, _aone_event_enqueue, _is_human_comment,
+    _parse_a1_list, parallel_a1_per_id,
 )
 from bridge.helpers.dingtalk import _dingtalk_event_enqueue
 from bridge.jarvis_task_router import (
@@ -85,6 +86,7 @@ class ScanRunner(AoneQueryMixin):
         self._human_cache = {}
         self._human_comment_cache = {}
         self._activity_cache = {}
+        self._raw_comment_cache = {}
         self._done_watch_retry = set()
         self._done_watch_confirm = set()
         self._done_drift_retry = set()
@@ -519,40 +521,99 @@ class ScanRunner(AoneQueryMixin):
             return None
         result = None
         failed = False
-        try:
-            r = run_process_group(
-                [str(REPO_ROOT / "bin" / "a1id"), "--", "project", "workitem",
-                 "comment", "list", iid, "-f", "json"],
-                capture_output=True, text=True, timeout=60, cwd=str(REPO_ROOT))
-            if r.returncode == 0:
-                data = json.loads(r.stdout)
-                if not isinstance(data, list):
-                    raise ValueError("comment list response is not an array")
-                comments = [c for c in data if isinstance(c, dict)]
-                if cutoff is not None:
-                    eligible = [c for c in comments
-                                if self._is_human_comment_after(c, cutoff)
-                                and _bounded_aone_comment(c)]
-                    result = self._latest_comment(eligible)
-                else:
-                    latest = self._latest_comment(comments)
-                    if latest:
-                        author = str(latest.get("author") or latest.get("creator") or "").strip()
-                        content = str(latest.get("content") or "").strip()
-                        if (self._is_human_comment(author, content)
-                                and _bounded_aone_comment(latest)):
-                            result = latest
+        comments = None
+        raw_cache = getattr(self, "_raw_comment_cache", None)
+        if raw_cache is not None and iid in raw_cache:
+            # Parallel pre-fetched by _prefetch_idle_claimed_a1: use it instead
+            # of an on-demand run_process_group so the serial _decide loop makes
+            # zero a1 calls. raw is a list (success) or None (prefetch failure).
+            raw = raw_cache[iid]
+            if isinstance(raw, list):
+                comments = [c for c in raw if isinstance(c, dict)]
             else:
-                log.warning("_human_commented: comment query failed #%s rc=%d: %s",
-                            iid, r.returncode, (r.stderr or "").strip()[:200])
                 failed = True
-        except Exception as e:  # noqa: BLE001
-            log.warning("_human_commented: comment error #%s: %s", iid, e)
-            failed = True
+        else:
+            try:
+                r = run_process_group(
+                    [str(REPO_ROOT / "bin" / "a1id"), "--", "project", "workitem",
+                     "comment", "list", iid, "-f", "json"],
+                    capture_output=True, text=True, timeout=60, cwd=str(REPO_ROOT))
+                if r.returncode == 0:
+                    data = json.loads(r.stdout)
+                    if not isinstance(data, list):
+                        raise ValueError("comment list response is not an array")
+                    comments = [c for c in data if isinstance(c, dict)]
+                else:
+                    log.warning("_human_commented: comment query failed #%s rc=%d: %s",
+                                iid, r.returncode, (r.stderr or "").strip()[:200])
+                    failed = True
+            except Exception as e:  # noqa: BLE001
+                log.warning("_human_commented: comment error #%s: %s", iid, e)
+                failed = True
+        if comments is not None and not failed:
+            if cutoff is not None:
+                eligible = [c for c in comments
+                            if self._is_human_comment_after(c, cutoff)
+                            and _bounded_aone_comment(c)]
+                result = self._latest_comment(eligible)
+            else:
+                latest = self._latest_comment(comments)
+                if latest:
+                    author = str(latest.get("author") or latest.get("creator") or "").strip()
+                    content = str(latest.get("content") or "").strip()
+                    if (self._is_human_comment(author, content)
+                            and _bounded_aone_comment(latest)):
+                        result = latest
         self._human_comment_cache[cache_key] = False if failed else result
         if failed and strict:
             raise RuntimeError("Aone comment query failed for #%s" % iid)
         return result
+
+    def _prefetch_idle_claimed_a1(self, items):
+        """Parallel pre-fetch of the per-id a1 calls the _decide loop would
+        otherwise make serially: `workitem comment list` + `workitem activity`
+        for every idle/done/claimed candidate. Fills `_raw_comment_cache` and
+        `_activity_cache` so the single-threaded `_decide` loop reads caches and
+        makes zero a1 calls — a1-server slowness can no longer stall dispatch.
+
+        Best-effort and bounded (`parallel_a1_per_id`); ids whose pre-fetch fails
+        get None in the cache and `_human_comment_since`/`_activities` fall back
+        to on-demand. No-op when there are no idle/done/claimed candidates.
+        """
+        idle_claimed = set()
+        for it in items or ():
+            if not isinstance(it, dict):
+                continue
+            tags = _tagset(it)
+            if not ("jarvis-idle" in tags or "jarvis-claimed" in tags
+                    or "jarvis-done" in tags):
+                continue
+            aid = str(it.get("id") or "")
+            if aid:
+                idle_claimed.add(aid)
+        if not idle_claimed:
+            return
+        workers = max(1, min(32, int(self.SOURCE_STATUS_WORKERS)))
+        activity_cache = getattr(self, "_activity_cache", None)
+        if activity_cache is None:
+            activity_cache = self._activity_cache = {}
+        raw_cache = getattr(self, "_raw_comment_cache", None)
+        if raw_cache is None:
+            raw_cache = self._raw_comment_cache = {}
+        acts = parallel_a1_per_id(
+            idle_claimed,
+            build_args=lambda aid: ["project", "workitem", "activity", aid, "-f", "json"],
+            parse=_parse_a1_list,
+            workers=workers, timeout=60, label="activity")
+        for aid, data in acts.items():
+            activity_cache[aid] = data  # list or None (feeds _human_touched/_last_*_at)
+        comms = parallel_a1_per_id(
+            idle_claimed,
+            build_args=lambda aid: ["project", "workitem", "comment", "list", aid, "-f", "json"],
+            parse=_parse_a1_list,
+            workers=workers, timeout=60, label="comment")
+        for aid, data in comms.items():
+            raw_cache[aid] = data  # list or None (feeds _human_comment_since)
 
     def _last_idle_at(self, iid):
         return self._last_tag_added_at(iid, "jarvis-idle")
@@ -825,6 +886,25 @@ class ScanRunner(AoneQueryMixin):
                 # idle+npe 的单就算有人评论也不重派，直到人工摘标签放行。
                 action, reason = "skip", "npe"
             elif "jarvis-idle" in tags:
+                # Why comment list is read here (not deferred to the Agent):
+                # _human_comment is the ONLY signal that distinguishes a human
+                # comment from a Kelude/system modification of an idle ticket.
+                # Comments do not enter the activity feed (so _human_touched
+                # can't catch them), `modified` changes for both human and
+                # Kelude edits (indistinguishable), and the `commentator`
+                # workitem-list column is a manual field that stays empty.
+                # So this is a cheap FILTER: it prevents false-positive Agent
+                # runs — measured ~5-8 Kelude/system-modified idle items are
+                # skipped per real dispatch, each an avoided headless-claude
+                # run (minutes) that dwarfs the parallel comment-list pre-fetch
+                # (seconds). It also captures the triggering comment's cursor
+                # for the Task envelope + expectedCommentCursor gate. Moving
+                # either to Agent runtime would turn those skips into Agent
+                # runs (net loss) and require reworking the cursor gate. The
+                # optimization floor is _prefetch_idle_claimed_a1's bounded
+                # parallel pre-fetch; further reduction needs a1 to support
+                # `comment list --columns`/`--after-id`, or to auto-populate
+                # `commentator` (both upstream gaps).
                 trigger_comment = self._human_comment(iid)
                 if self._human_touched(iid) or trigger_comment:
                     # 人工在 jarvis 上轮动作之后介入 → 重新派发，force 覆盖去重台账。
@@ -1005,6 +1085,7 @@ class ScanRunner(AoneQueryMixin):
         self._human_cache = {}   # per-tick cache reset for _human_touched
         self._human_comment_cache = {}
         self._activity_cache = {}
+        self._raw_comment_cache = {}
         self._human_operators = self._load_human_operators()  # reload whitelist each tick
         # 统一探测：python 直查 assignee∪tracker∪idle 并集（取代 scan.sh 出派发数据）。
         items = self._scan_union()
@@ -1122,6 +1203,10 @@ class ScanRunner(AoneQueryMixin):
                      + list(idle_stale_items or [])):
             candidates_by_id[str(item.get("id") or "")] = item
         candidates = [item for iid, item in candidates_by_id.items() if iid]
+        # Pre-fetch per-id a1 (comment list + activity) for idle/done/claimed
+        # candidates in parallel before the serial _decide loop, so a slow
+        # a1-server cannot stall dispatch. Fills caches the loop reads.
+        self._prefetch_idle_claimed_a1(candidates)
         dispatched, dropped = [], []
         for d in self._decide(candidates):
             if d["action"] != "dispatch":

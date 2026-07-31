@@ -826,6 +826,10 @@ class SchedulerRunnerTest(unittest.TestCase):
 
     def _scanner(self):
         s = scan.ScanRunner.__new__(scan.ScanRunner)
+        # _tick_auto now parallel-prefetches per-id a1 before _decide; stub it by
+        # default so decision/tick tests don't spawn real a1. Tests that exercise
+        # the pre-fetch itself `del s._prefetch_idle_claimed_a1` to restore it.
+        s._prefetch_idle_claimed_a1 = mock.Mock()
         return s
 
     def test_query_pool_union_merges_five_sources_and_dedups(self):
@@ -1340,6 +1344,67 @@ class SchedulerRunnerTest(unittest.TestCase):
         settled = dict(item, modified="2026-07-30 10:00:00")
         scanner._tick_auto([settled])
         self.assertNotIn("84621304", scanner._idle_stale_retry)
+
+    def test_parallel_a1_per_id_best_effort_and_bounded(self):
+        from bridge.helpers.aone import parallel_a1_per_id
+        # empty input -> {}
+        self.assertEqual(parallel_a1_per_id(
+            [], build_args=lambda i: ["x", i], parse=lambda s: s), {})
+        # rc!=0 -> {id: None}; rc==0 -> {id: parsed}; never raises
+        def fake_run(args, **_kwargs):
+            aid = str(args[-1])
+            if aid == "A":
+                return SimpleNamespace(returncode=1, stdout="", stderr="boom")
+            return SimpleNamespace(returncode=0, stdout='[{"id": 1}]', stderr="")
+        with mock.patch("bridge.helpers.aone.run_process_group",
+                        side_effect=fake_run):
+            out = parallel_a1_per_id(
+                ["A", "B"],
+                build_args=lambda aid: ["project", "workitem", "get", aid],
+                parse=lambda s: json.loads(s),
+                workers=2, timeout=5, label="unit")
+        self.assertEqual(out["A"], None)       # failure -> None, not raised
+        self.assertEqual(out["B"], [{"id": 1}])  # success -> parsed
+
+    def test_prefetch_idle_claimed_a1_fills_caches(self):
+        scanner = self._scanner()
+        del scanner._prefetch_idle_claimed_a1  # restore the real method
+        scanner._activity_cache = {}
+        scanner._raw_comment_cache = {}
+        items = [
+            {"id": "111", "tag": ["jarvis-idle"], "status": "评估中"},
+            {"id": "222", "tag": ["jarvis-done"], "status": "已完成"},
+            {"id": "333", "tag": [], "status": "评估中"},  # no jarvis tag -> not prefetched
+        ]
+        fetched = {"111": [{"op": 1}], "222": None}  # 111 ok, 222 fail
+        with mock.patch.object(
+                scan, "parallel_a1_per_id",
+                side_effect=lambda ids, **k: {aid: fetched.get(aid) for aid in ids}):
+            scanner._prefetch_idle_claimed_a1(items)
+        # idle/done ids prefetched into both caches; untagged id is not
+        self.assertIn("111", scanner._activity_cache)
+        self.assertIn("222", scanner._activity_cache)
+        self.assertNotIn("333", scanner._activity_cache)
+        self.assertEqual(scanner._raw_comment_cache["111"], [{"op": 1}])
+        self.assertIsNone(scanner._raw_comment_cache["222"])
+
+    def test_human_comment_since_reads_prefetched_raw_no_a1(self):
+        # With a pre-fetched _raw_comment_cache, _human_comment_since must NOT
+        # call run_process_group (the serial loop reads the cache).
+        scanner = self._scanner()
+        scanner._human_comment_cache = {}
+        scanner._raw_comment_cache = {"111": [
+            {"id": 9, "author": "辰羿", "createdAt": "2026-07-31 14:00:00",
+             "content": "go"}]}
+        scanner._last_idle_at = mock.Mock(return_value=datetime(2026, 7, 30, 18, 26))
+        with mock.patch.object(
+                scan, "run_process_group",
+                side_effect=AssertionError("on-demand a1 should not run with cache")):
+            result = scanner._human_comment_since(
+                "111", datetime(2026, 7, 30, 18, 26), "idle",
+                allow_without_cutoff=True)
+        self.assertIsNotNone(result)
+        self.assertEqual(result.get("id"), 9)
 
     def test_tick_dispatches_before_bounded_lifecycle_observation(self):
         scanner = self._scanner()

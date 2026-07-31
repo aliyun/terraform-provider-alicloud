@@ -18,6 +18,14 @@ class ReplyAuthorFieldTests(unittest.TestCase):
     key (a1's real shape) and asserting wake enqueue fires.
     """
 
+    def setUp(self):
+        # _tick now parallel-prefetches a1 before the per-wait loop; stub it so
+        # these tests (which mock _fetch_comments directly) don't spawn real a1.
+        patch = mock.patch(
+            "bridge.scheduler.runners.reply.parallel_a1_per_id", return_value={})
+        patch.start()
+        self.addCleanup(patch.stop)
+
     def _wait(self, aone_id, cursor):
         return {
             "task": {"aoneId": str(aone_id), "sourceRef": {"projectId": "1"}},
@@ -99,6 +107,14 @@ class ReplyResumeIdentityTests(unittest.TestCase):
     tripped Conflict.GenerationBoundary for GITHUB/pr_ci_fix suspends waiting on
     an Aone reply.
     """
+
+    def setUp(self):
+        # _tick now parallel-prefetches a1 before the per-wait loop; stub it so
+        # this test (which mocks _fetch_comments directly) doesn't spawn real a1.
+        patch = mock.patch(
+            "bridge.scheduler.runners.reply.parallel_a1_per_id", return_value={})
+        patch.start()
+        self.addCleanup(patch.stop)
 
     def test_suspended_identity_forwarded_to_wake(self):
         client = mock.Mock()

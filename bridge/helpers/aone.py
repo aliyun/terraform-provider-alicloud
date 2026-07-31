@@ -12,6 +12,7 @@ import re
 import subprocess
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 
 from bridge.process_group_runner import run_process_group
 
@@ -67,6 +68,75 @@ def _is_human_comment(author, content=""):
                 and "worker_" not in identity and "terraform-" not in identity
                 and identity not in {"kelude", "云知道平台公共账号"}
                 and not str(content or "").strip().lower().startswith("jarvis-claim"))
+
+
+def _parse_a1_list(stdout):
+    """Parse an a1 `-f json` response expected to be a list; None otherwise.
+
+    Shared by the parallel pre-fetch paths so non-list/bad JSON degrades to None
+    (a cache miss/failure) instead of poisoning downstream comment/activity logic.
+    """
+    try:
+        data = json.loads(stdout)
+    except Exception:  # noqa: BLE001
+        return None
+    return data if isinstance(data, list) else None
+
+
+def parallel_a1_per_id(aone_ids, *, build_args, parse, workers=8,
+                       timeout=60, label="a1"):
+    """Run one per-id a1 subcommand for each id in parallel (bounded), best-effort.
+
+    Moves serial per-item a1 calls (e.g. `workitem comment list <id>`,
+    `workitem activity <id>` — both per-id endpoints with no multi-id batch form)
+    out of a single-threaded tick loop into a bounded concurrent pre-fetch. The
+    caller fills its per-tick cache from the returned map so the serial loop
+    reads the cache and makes zero a1 calls.
+
+    build_args(iid) -> list[str] of a1 args AFTER `bin/a1id --`
+        (e.g. ["project","workitem","comment","list",iid,"-f","json"]).
+    parse(stdout) -> result|None  (site-specific; None on bad/unparseable).
+    workers/timeout: bounded concurrency + per-call timeout. Reuses
+        run_process_group's process-group kill on timeout, so a slow a1-server
+        cannot hang the batch past timeout.
+    Returns {iid: result_or_None}. Failures/timeouts -> {iid: None}; never raises.
+    """
+    ids = []
+    seen = set()
+    for raw in aone_ids or ():
+        aid = str(raw or "").strip()
+        if aid and aid not in seen:
+            seen.add(aid)
+            ids.append(aid)
+    if not ids:
+        return {}
+    out = {}
+
+    def _one(aid):
+        try:
+            r = run_process_group(
+                [str(REPO_ROOT / "bin" / "a1id"), "--"] + list(build_args(aid)),
+                capture_output=True, text=True, timeout=timeout,
+                cwd=str(REPO_ROOT))
+        except Exception as exc:  # noqa: BLE001 — one id cannot poison the batch
+            log.warning("parallel_a1_per_id[%s]: #%s raised: %s", label, aid, exc)
+            return aid, None
+        if r.returncode != 0:
+            log.warning("parallel_a1_per_id[%s]: #%s rc=%d: %s", label, aid,
+                        r.returncode, (r.stderr or "").strip()[:200])
+            return aid, None
+        try:
+            return aid, parse(r.stdout)
+        except Exception as exc:  # noqa: BLE001
+            log.warning("parallel_a1_per_id[%s]: #%s parse failed: %s", label, aid, exc)
+            return aid, None
+
+    max_workers = max(1, min(int(workers), len(ids)))
+    with ThreadPoolExecutor(max_workers=max_workers,
+                            thread_name_prefix="a1-%s" % label) as executor:
+        for aid, result in executor.map(_one, ids):
+            out[aid] = result
+    return out
 
 
 def _contact_directory():

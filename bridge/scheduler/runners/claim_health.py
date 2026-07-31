@@ -15,7 +15,9 @@ import time
 from bridge.aone_tasks import (
     AoneQueryMixin, REPO_ROOT, _is_terraform_project, _tagset, log, master_staff,
 )
-from bridge.helpers.aone import _aone_event_flush, _aone_event_source_part
+from bridge.helpers.aone import (
+    _aone_event_flush, _aone_event_source_part, _parse_a1_list, parallel_a1_per_id,
+)
 from bridge.helpers.dingtalk import _dingtalk_event_enqueue, _dingtalk_event_flush
 from bridge.jarvis_task_router import ExecutionRouter
 from bridge.process_group_runner import run_process_group
@@ -142,6 +144,33 @@ class ClaimHealthRunner(AoneQueryMixin):
                 except Exception as exc:  # noqa: BLE001
                     log.warning("ClaimHealthScheduler: idle query failed: %s", exc)
         return {str(item.get("id")): item for item in items if item.get("id")}
+
+    def _prefetch_claim_activity(self, items):
+        """Parallel pre-fetch of `workitem activity` for the claimed iids about
+        to be inspected, filling `_claim_health_activity_cache` so the per-iid
+        inspect reads the cache and makes zero a1 calls. Best-effort; misses
+        fall back to on-demand in `_claim_health_activities`.
+        """
+        ids = []
+        seen = set()
+        for it in items or ():
+            if not isinstance(it, dict):
+                continue
+            aid = str(it.get("id") or "").strip()
+            if aid and aid not in seen:
+                seen.add(aid)
+                ids.append(aid)
+        if not ids:
+            return
+        fetched = parallel_a1_per_id(
+            ids,
+            build_args=lambda aid: ["project", "workitem", "activity", aid, "-f", "json"],
+            parse=_parse_a1_list,
+            workers=8, timeout=60, label="claim-health-activity")
+        cache = getattr(self, "_claim_health_activity_cache", None)
+        if cache is None:
+            cache = self._claim_health_activity_cache = {}
+        cache.update(fetched)
 
     def _claim_health_activities(self, iid, strict=False):
         """Activity read isolated from the discovery thread's per-tick cache."""
@@ -830,6 +859,7 @@ class ClaimHealthRunner(AoneQueryMixin):
         self._claim_health_activity_cache = {}
         snapshot = self._scan_claimed()
         if snapshot is not None:
+            self._prefetch_claim_activity(snapshot.values())
             self._reconcile_stale_claims(snapshot)
         # 方案 B：兜底唤醒 jarvis-idle 的 RECOVERY_REQUIRED+retry-超限 Task
         idle_snapshot = self._scan_idle_recovery()
