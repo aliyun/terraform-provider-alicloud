@@ -124,6 +124,67 @@ requires two observations at least five minutes apart for missing Tasks,
 terminal residue or malformed control-plane structure. It only publishes an
 idempotent alert; it never releases a claim or executes business work.
 
+## RECOVERY_REQUIRED and the desired-state upsert boundary
+
+Discovery and execution are deliberately separate. When the scan runner's
+`_decide` selects `dispatch force=True` for a `jarvis-idle` ticket with a new
+human comment, `_dispatch` still goes through `execution_router.enqueue`
+(`bridge/jarvis_task_router.py:392-398`) → `_persist_task`
+(`bridge/jarvis_task_router.py:354-376`) → `client.upsert_desired_task`. That
+call advances the Task's **desiredRevision** (a `TASK_UPSERTED` event); it
+never changes the execution **status**. `force=True` is scoped to the
+EphemeralExecutor local dedup ledger (`scan.py:657-661`, gated by
+`not execution_router.is_task(envelope)`); on the control-plane Task path it
+is a no-op and cannot flip an execution state. Repeated `force=True` dispatch
+on a control-plane Task therefore rewrites the desired revision without
+advancing execution — a tracker who only reads the scan log will mistake this
+for "dispatched repeatedly but never leased."
+
+What actually controls leaseability:
+
+- `lease_task` (`bridge/jarvis_persistence_executor.py:1104-1161`,
+  `client.lease_task` at `bridge/jarvis_task_client.py:407`) only pulls Tasks
+  in `READY`. Tasks in `RECOVERY_REQUIRED`, `RETRY_WAIT`, `SUSPENDED`, or a
+  terminal state are never returned, regardless of how many times scan
+  re-upserts the desired revision. There is no `lease` INFO line for the
+  skipped Task because the server simply returns the next matching READY Task
+  (or none); only `task lease conflict` / `task lease failed` are logged.
+- Once `retryCount` exceeds `maxRetries` after a `SESSION_FAILED`, the Task
+  parks in `RECOVERY_REQUIRED` and every later `TASK_UPSERTED` becomes a
+  `RECOVERY_REQUIRED→RECOVERY_REQUIRED` no-op. Scan cannot self-heal it;
+  recovery requires the `recovery` runner, or an explicit `force-release` /
+  `force-redispatch` via `bootstrap/control-plane-status.sh`.
+- `field_repair` is a pre-execution gate inside `PersistentTaskExecution.execute`
+  (`bridge/persistent_tasks.py:1079-1086`, `field_repair_worker.repair_only`).
+  A `field_repair_transient` / `apply_timeout` here fails the Session **before**
+  `dispatch_item` is reached — so a bot.log without `dispatch_item #<id> start`
+  does not mean "never leased"; it means execution stopped at the field-repair
+  gate. Always corroborate with `bootstrap/control-plane-status.sh task
+  <aone_id>` (Task status / generation / retry / lastError / session
+  RESUMABLE / event timeline) before concluding "Worker did not lease".
+
+Observed case (Task 471, aone 528766/84103836, 2026-07-30~31): a human comment
+on a `jarvis-idle` ticket caused scan to upsert `desired=comment:<id>` three
+times; all events were `TASK_UPSERTED RECOVERY_REQUIRED→RECOVERY_REQUIRED`,
+because the Worker had already leased the Task, hit
+`field_repair_transient / apply_timeout` at the repair gate
+(`SESSION_FAILED RUNNING→RECOVERY_REQUIRED`), and parked at `retry=4/3`
+(over `maxRetries=3`). The human comment went unanswered until an operator
+manually closed the Aone status. `force=True` dispatching was inert
+throughout, and the `lease=- worker=-` RESUMABLE session was never re-leased
+because the Task never returned to READY.
+
+Separately, `_point_read_source_status` (`bridge/scheduler/runners/scan.py:146
+-182`) runs a full `a1id project workitem get <id>` subprocess to reconcile the
+control-plane `sourceStatus` display field, with
+`SOURCE_STATUS_POINT_TIMEOUT_SECONDS` defaulting to 30s. Heavy tickets (many
+comments / relations / long description) exceed this steadily for hours,
+leaving `sourceStatus` stale and emitting `point-read #<id> failed:
+TimeoutExpired` noise. This is display-only and does not affect dispatch or
+lease; the same `a1id` slowness is the likely root of the field-repair
+`apply_timeout` above. Raising the timeout or point-reading a lightweight
+status-only endpoint clears the noise and may reduce repair-gate timeouts.
+
 ## External side effects
 
 Operation receipts protect writes that are unsafe to replay blindly, such as
