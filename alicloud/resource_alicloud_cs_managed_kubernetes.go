@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	roacs "github.com/alibabacloud-go/cs-20151215/v7/client"
+	roacs "github.com/alibabacloud-go/cs-20151215/v8/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
@@ -797,6 +797,62 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 					},
 				},
 			},
+			"control_plane_endpoints_config": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"load_balancers_config": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"load_balancer_id": {
+										Type:     schema.TypeString,
+										Optional: true,
+										Computed: true,
+									},
+									"endpoint_type": {
+										Type:     schema.TypeString,
+										Optional: true,
+										Computed: true,
+									},
+									"endpoint": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
+						},
+						"internal_dns_config": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Computed: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"bind_vpcs": {
+										Type:     schema.TypeList,
+										Optional: true,
+										Computed: true,
+										Elem: &schema.Schema{
+											Type: schema.TypeString,
+										},
+									},
+									"enabled": {
+										Type:     schema.TypeBool,
+										Optional: true,
+										Computed: true,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 			"retain_resources": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -1084,6 +1140,29 @@ func resourceAlicloudCSManagedKubernetesCreate(d *schema.ResourceData, meta inte
 		}
 	}
 
+	if v, ok := d.GetOk("control_plane_endpoints_config"); ok {
+		m := v.([]interface{})[0].(map[string]interface{})
+		cfg := &roacs.CreateClusterRequestControlPlaneEndpointsConfig{}
+		if vv, ok := m["load_balancers_config"].([]interface{}); ok && len(vv) > 0 {
+			lbs := make([]*roacs.CreateClusterRequestControlPlaneEndpointsConfigLoadBalancersConfig, 0)
+			for _, item := range vv {
+				lb := item.(map[string]interface{})
+				lbs = append(lbs, &roacs.CreateClusterRequestControlPlaneEndpointsConfigLoadBalancersConfig{
+					LoadBalancerId: tea.String(lb["load_balancer_id"].(string)),
+					EndpointType:   tea.String(lb["endpoint_type"].(string)),
+				})
+			}
+			cfg.LoadBalancersConfig = lbs
+		}
+		if vv, ok := m["internal_dns_config"].([]interface{}); ok && len(vv) > 0 {
+			dns := vv[0].(map[string]interface{})
+			cfg.InternalDnsConfig = &roacs.CreateClusterRequestControlPlaneEndpointsConfigInternalDnsConfig{
+				BindVpcs: tea.StringSlice(expandStringList(dns["bind_vpcs"].([]interface{}))),
+			}
+		}
+		request.ControlPlaneEndpointsConfig = cfg
+	}
+
 	var err error
 	var resp *roacs.CreateClusterResponse
 	wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -1293,6 +1372,31 @@ func resourceAlicloudCSManagedKubernetesRead(d *schema.ResourceData, meta interf
 		d.Set("auto_mode", []map[string]interface{}{m})
 	}
 
+	if object.ControlPlaneEndpointsConfig != nil {
+		cpec := object.ControlPlaneEndpointsConfig
+		m := make(map[string]interface{})
+		if cpec.LoadBalancersConfig != nil {
+			lbs := make([]map[string]interface{}, 0)
+			for _, lb := range cpec.LoadBalancersConfig {
+				lbs = append(lbs, map[string]interface{}{
+					"load_balancer_id": tea.StringValue(lb.LoadBalancerId),
+					"endpoint_type":    tea.StringValue(lb.EndpointType),
+					"endpoint":         tea.StringValue(lb.Endpoint),
+				})
+			}
+			m["load_balancers_config"] = lbs
+		}
+		if cpec.InternalDnsConfig != nil {
+			m["internal_dns_config"] = []map[string]interface{}{
+				{
+					"bind_vpcs": tea.StringSliceValue(cpec.InternalDnsConfig.BindVpcs),
+					"enabled":   tea.BoolValue(cpec.InternalDnsConfig.Enabled),
+				},
+			}
+		}
+		d.Set("control_plane_endpoints_config", []map[string]interface{}{m})
+	}
+
 	// Get slb information and set connect
 	connection := make(map[string]string)
 	masterURL := tea.StringValue(object.MasterUrl)
@@ -1353,7 +1457,7 @@ func resourceAlicloudCSManagedKubernetesUpdate(d *schema.ResourceData, meta inte
 	invoker := NewInvoker()
 	// modifyCluster
 	if !d.IsNewResource() && d.HasChanges("resource_group_id", "name", "name_prefix", "deletion_protection", "maintenance_window", "operation_policy",
-		"custom_san", "vswitch_ids", "timezone", "security_group_id", "enable_rrsa") {
+		"custom_san", "vswitch_ids", "timezone", "security_group_id", "enable_rrsa", "control_plane_endpoints_config") {
 		if err := modifyCluster(d, meta, &invoker); err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifyCluster", AlibabaCloudSdkGoERROR)
 		}

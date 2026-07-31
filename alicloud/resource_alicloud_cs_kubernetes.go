@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	roacs "github.com/alibabacloud-go/cs-20151215/v7/client"
+	roacs "github.com/alibabacloud-go/cs-20151215/v8/client"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -1063,6 +1063,33 @@ func modifyCluster(d *schema.ResourceData, meta interface{}, invoker *Invoker) e
 		updated = true
 	}
 
+	if d.HasChange("control_plane_endpoints_config") {
+		if v := d.Get("control_plane_endpoints_config").([]interface{}); len(v) > 0 {
+			m := v[0].(map[string]interface{})
+			cfg := &roacs.ModifyClusterRequestControlPlaneEndpointsConfig{}
+			if vv, ok := m["load_balancers_config"].([]interface{}); ok && len(vv) > 0 {
+				lbs := make([]*roacs.ModifyClusterRequestControlPlaneEndpointsConfigLoadBalancersConfig, 0)
+				for _, item := range vv {
+					lb := item.(map[string]interface{})
+					lbs = append(lbs, &roacs.ModifyClusterRequestControlPlaneEndpointsConfigLoadBalancersConfig{
+						LoadBalancerId: tea.String(lb["load_balancer_id"].(string)),
+						EndpointType:   tea.String(lb["endpoint_type"].(string)),
+					})
+				}
+				cfg.LoadBalancersConfig = lbs
+			}
+			if vv, ok := m["internal_dns_config"].([]interface{}); ok && len(vv) > 0 {
+				dns := vv[0].(map[string]interface{})
+				cfg.InternalDnsConfig = &roacs.ModifyClusterRequestControlPlaneEndpointsConfigInternalDnsConfig{
+					BindVpcs: tea.StringSlice(expandStringList(dns["bind_vpcs"].([]interface{}))),
+					Enabled:  tea.Bool(dns["enabled"].(bool)),
+				}
+			}
+			request.ControlPlaneEndpointsConfig = cfg
+			updated = true
+		}
+	}
+
 	if updated == false {
 		return nil
 	}
@@ -1338,10 +1365,12 @@ func resourceAlicloudCSKubernetesDelete(d *schema.ResourceData, meta interface{}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	var resp *roacs.DeleteClusterResponse
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		resp, err = client.DeleteCluster(tea.String(d.Id()), args)
 		if err != nil {
-			if NeedRetry(err) {
+			// dependent resources (SLB/ENI/SG) created by the cluster may
+			// still be detaching shortly after the test steps finish
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"DependencyViolation.Resource"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
