@@ -4,6 +4,7 @@ import logging
 import unittest
 from unittest import mock
 
+from bridge.jarvis_task_router import EnqueueResult, WakePersistence
 from bridge.scheduler.runners.reply import ReplyRunner
 
 
@@ -89,6 +90,123 @@ class ReplyAuthorFieldTests(unittest.TestCase):
         )
         runner._tick()
         wake.enqueue.assert_not_called()
+
+
+class ReplyResumeIdentityTests(unittest.TestCase):
+    """reply.py must surface the SUSPENDED Task's identity (desired revision,
+    task type, source) into the wake context so the wake can resume that exact
+    generation in place. Without it, the wake mints a new revision the control
+    plane refuses to cross to under RESUME_ONLY (Conflict.GenerationBoundary),
+    which deadlocked pr_ci_fix suspends waiting for an Aone reply.
+    """
+
+    def test_suspended_identity_forwarded_to_wake(self):
+        client = mock.Mock()
+        client.list_pending_aone_reply_waits.return_value = {
+            "items": [{
+                "task": {
+                    "aoneId": "84923477",
+                    "sourceRef": {"projectId": "1086837",
+                                  "prUrl": "https://x/pull/10085"},
+                    "taskType": "pr_ci_fix",
+                    "sourceType": "GITHUB",
+                    "desiredRevision": "pr-ci:ccf62d38|policy:v6|input:5ed89b08",
+                },
+                "session": {
+                    "id": 1220, "waitKey": "84923477", "waitType": "AONE_REPLY",
+                    "waitCursor": 100, "runtimeSessionId": "rt-1220",
+                    "inputPayload": {"terraform": True, "project": "1086837",
+                                     "target": "grp", "targetType": "group",
+                                     "kind": "pr_ci_fix"},
+                },
+            }],
+            "hasMore": False, "nextAfterSessionId": 0,
+        }
+        runner = ReplyRunner(task_client=client, logger=logging.getLogger("t"))
+        runner._fetch_comments = lambda _aone_id: [
+            {"id": 200, "author": "辰羿", "content": "go"}]
+        wake = mock.Mock()
+        wake.enqueue.return_value = True
+        runner._wake = wake
+        runner._tick()
+        wake.enqueue.assert_called_once()
+        ctx = wake.enqueue.call_args.args[1]
+        self.assertEqual(ctx["resume_desired_revision"],
+                         "pr-ci:ccf62d38|policy:v6|input:5ed89b08")
+        self.assertEqual(ctx["resume_task_type"], "pr_ci_fix")
+        self.assertEqual(ctx["resume_source_type"], "GITHUB")
+        self.assertEqual(ctx["resume_source_ref"]["prUrl"], "https://x/pull/10085")
+        self.assertIsInstance(ctx["resume_payload"], dict)
+
+
+class WakeResumeEnvelopeTests(unittest.TestCase):
+    """WakePersistence.enqueue must resume the SUSPENDED generation in place:
+    reuse the suspended desired_revision / task_type / source_type verbatim and
+    let comment_cursor carry the reply, rather than minting a comment:<id>
+    revision (a new desired generation → Conflict.GenerationBoundary under
+    RESUME_ONLY). Legacy waits without a surfaced identity keep the old envelope.
+    """
+
+    def _wake(self):
+        captured = {}
+
+        class _Router:
+            def enqueue(self, envelope, local_submit=None):
+                captured["envelope"] = envelope
+                return EnqueueResult(True, "ok")
+
+        wake = WakePersistence(
+            execution_router=_Router(),
+            result_instructions=lambda _aone_id, _terraform: "",
+            policy_revision="terraform-rd-single-writer-v6",
+        )
+        return wake, captured
+
+    def test_resume_reuses_suspended_pr_ci_fix_identity(self):
+        wake, captured = self._wake()
+        ok = wake.enqueue(
+            "84923477",
+            {
+                "project": "1086837",
+                "target": "grp", "target_type": "group",
+                "session_id": "rt-1220",
+                "resume_desired_revision": "pr-ci:ccf62d38|policy:v6|input:5ed89b08",
+                "resume_task_type": "pr_ci_fix",
+                "resume_source_type": "GITHUB",
+                "resume_source_ref": {"prUrl": "https://x/pull/10085",
+                                      "head": "ccf62d38"},
+                "resume_payload": {"kind": "pr_ci_fix", "itemId": "84923477",
+                                   "target": "grp", "targetType": "group"},
+            },
+            [{"id": 125726050, "author": "辰羿", "content": "go"}],
+        )
+        self.assertTrue(ok)
+        env = captured["envelope"]
+        # Same desired generation → the control plane resumes instead of rejecting.
+        self.assertEqual(env.desired_revision,
+                         "pr-ci:ccf62d38|policy:v6|input:5ed89b08")
+        self.assertEqual(env.task_type, "pr_ci_fix")
+        self.assertEqual(env.source_type, "GITHUB")
+        self.assertEqual(env.recovery_policy, "RESUME_ONLY")
+        # Reply is carried by the cursor, not a revision bump.
+        self.assertEqual(env.comment_cursor, 125726050)
+        self.assertNotIn("comment:125726050", env.desired_revision)
+        self.assertEqual(env.source_ref.get("prUrl"), "https://x/pull/10085")
+
+    def test_legacy_wake_without_identity_falls_back(self):
+        wake, captured = self._wake()
+        ok = wake.enqueue(
+            "123",
+            {"project": "1", "target": "bot", "target_type": "broadcast",
+             "session_id": "rt-1"},
+            [{"id": 200, "author": "过载", "content": "ok"}],
+        )
+        self.assertTrue(ok)
+        env = captured["envelope"]
+        self.assertEqual(env.source_type, "AONE")
+        self.assertEqual(env.task_type, "wake")
+        self.assertIn("comment:200", env.desired_revision)
+        self.assertEqual(env.comment_cursor, 200)
 
 
 if __name__ == "__main__":

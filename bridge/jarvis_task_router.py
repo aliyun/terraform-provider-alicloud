@@ -239,15 +239,44 @@ class WakePersistence:
             target=task["target"],
             targetType=task["target_type"],
         )
-        result = self._router.enqueue(TaskEnvelope(
-            task_key=_aone_task_key(project, aone_id), source_type="AONE",
-            source_ref=source_ref, task_type="wake",
-            desired_revision=policy_desired_revision(
-                revision, payload, policy_revision=self._policy_revision),
-            trigger_mask=["WAKE"], payload=payload,
-            recovery_policy="RESUME_ONLY", comment_cursor=cursor,
-            source_status=task.get("sourceStatus"),
-        ))
+        # A RESUME_ONLY wake resumes the SUSPENDED generation; it must not change the
+        # desired revision. policy_desired_revision salts the payload into the revision,
+        # so any freshly minted revision is a NEW desired generation the control plane
+        # refuses to cross to while the current one is suspended (Conflict.Generation-
+        # Boundary). When the reply runner surfaces the suspended Task's own identity we
+        # reuse it verbatim (revision, type, source, frozen input) and let comment_cursor
+        # carry the reply into the resumed session. The legacy AONE/wake envelope stays as
+        # a fallback for waits that predate the surfaced identity.
+        resume_revision = str(task.get("resume_desired_revision") or "").strip()
+        if resume_revision:
+            resume_source_ref = task.get("resume_source_ref")
+            resume_payload = task.get("resume_payload")
+            envelope = TaskEnvelope(
+                task_key=_aone_task_key(project, aone_id),
+                source_type=str(task.get("resume_source_type") or "").strip() or "AONE",
+                source_ref=(resume_source_ref
+                            if isinstance(resume_source_ref, dict) and resume_source_ref
+                            else source_ref),
+                task_type=str(task.get("resume_task_type") or "").strip() or "wake",
+                desired_revision=resume_revision,
+                trigger_mask=["WAKE"],
+                payload=(resume_payload
+                         if isinstance(resume_payload, dict) and resume_payload
+                         else payload),
+                recovery_policy="RESUME_ONLY", comment_cursor=cursor,
+                source_status=task.get("sourceStatus"),
+            )
+        else:
+            envelope = TaskEnvelope(
+                task_key=_aone_task_key(project, aone_id), source_type="AONE",
+                source_ref=source_ref, task_type="wake",
+                desired_revision=policy_desired_revision(
+                    revision, payload, policy_revision=self._policy_revision),
+                trigger_mask=["WAKE"], payload=payload,
+                recovery_policy="RESUME_ONLY", comment_cursor=cursor,
+                source_status=task.get("sourceStatus"),
+            )
+        result = self._router.enqueue(envelope)
         if not result.accepted:
             return False
         if self._routine_notice is not None:
