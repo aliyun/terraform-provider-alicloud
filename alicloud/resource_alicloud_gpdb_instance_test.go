@@ -510,7 +510,7 @@ func TestAccAliCloudGPDBDBInstancePrepaid(t *testing.T) {
 }
 
 // gpdbServerlessTestRegion returns the region for the GPDB serverless acceptance
-// tests. It defaults to cn-beijing, which has serverless inventory, and can be
+// tests. It defaults to cn-hangzhou, which has ServerlessPro inventory, and can be
 // overridden via the GPDB_SERVERLESS_REGION environment variable so the remote
 // ACC run can target another region if the default ever reports
 // OperationDenied.InsufficientResourceCapacity.
@@ -518,18 +518,18 @@ func gpdbServerlessTestRegion() string {
 	if v := os.Getenv("GPDB_SERVERLESS_REGION"); v != "" {
 		return v
 	}
-	return "cn-beijing"
+	return "cn-hangzhou"
 }
 
 // gpdbServerlessTestZone returns the zone for the GPDB serverless acceptance
-// tests, paired with gpdbServerlessTestRegion. Defaults to cn-beijing-h and can
+// tests, paired with gpdbServerlessTestRegion. Defaults to cn-hangzhou-j and can
 // be overridden via the GPDB_SERVERLESS_ZONE environment variable so the instance
 // and its vswitch stay in the same zone.
 func gpdbServerlessTestZone() string {
 	if v := os.Getenv("GPDB_SERVERLESS_ZONE"); v != "" {
 		return v
 	}
-	return "cn-beijing-h"
+	return "cn-hangzhou-j"
 }
 
 func TestAccAliCloudGPDBDBInstanceServerless(t *testing.T) {
@@ -631,6 +631,81 @@ func TestAccAliCloudGPDBDBInstanceServerless(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"data_share_status": "closed",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"period", "used_time", "db_instance_class", "security_ip_list", "instance_group_count", "create_sample_data", "parameters"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudGPDBDBInstanceServerlessPro(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_gpdb_instance.default"
+	testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Region(gpdbServerlessTestRegion())})
+	ra := resourceAttrInit(resourceId, AliCloudGPDBDBInstanceMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &GpdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeGpdbDbInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sgpdbdbinstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGPDBDBInstanceBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_mode":      "ServerlessPro",
+					"description":           name,
+					"engine":                "gpdb",
+					"engine_version":        "7.0",
+					"zone_id":               gpdbServerlessTestZone(),
+					"instance_network_type": "VPC",
+					"payment_type":          "PayAsYouGo",
+					"serverless_resource":   "16",
+					"cache_storage_size":    "800",
+					"vpc_id":                "${data.alicloud_vpcs.default.ids.0}",
+					"vswitch_id":            "${local.vswitch_id}",
+					"create_sample_data":    "false",
+					"ip_whitelist": []map[string]interface{}{
+						{
+							"security_ip_list": "127.0.0.1",
+						},
+					},
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_mode":      "ServerlessPro",
+						"description":           name,
+						"engine":                "gpdb",
+						"engine_version":        "7.0",
+						"zone_id":               CHECKSET,
+						"instance_network_type": "VPC",
+						"payment_type":          "PayAsYouGo",
+						"serverless_resource":   "16",
+						"cache_storage_size":    "800",
+						"vpc_id":                CHECKSET,
+						"vswitch_id":            CHECKSET,
+						"ip_whitelist.#":        "1",
+						"tags.%":                "2",
+						"tags.Created":          "TF",
+						"tags.For":              "acceptance test",
 					}),
 				),
 			},
