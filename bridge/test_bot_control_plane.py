@@ -828,7 +828,7 @@ class SchedulerRunnerTest(unittest.TestCase):
         s = scan.ScanRunner.__new__(scan.ScanRunner)
         return s
 
-    def test_query_pool_union_merges_four_sources_and_dedups(self):
+    def test_query_pool_union_merges_five_sources_and_dedups(self):
         s = self._scanner()
         seen_filters = []
 
@@ -839,6 +839,10 @@ class SchedulerRunnerTest(unittest.TestCase):
             if flt.startswith("workitem.tracker="):
                 return [{"id": "1", "title": "重复(抄送同一单)"},
                         {"id": "2", "title": "抄送数字人单"}]
+            if flt.startswith("ak.issue.member="):
+                # participants (ak.issue.member) 是 tracker 的更广补充；这里回重复
+                # id=1，验证第 5 源也并入并集去重。
+                return [{"id": "1", "title": "参与者重复单"}]
             if flt.startswith("tag=jarvis-idle"):
                 return [{"id": "3", "title": "idle 单"}]
             if flt.startswith("tag=jarvis-done"):
@@ -852,10 +856,10 @@ class SchedulerRunnerTest(unittest.TestCase):
             "tf_customer", "1086837", ["Closed", "已发布", "已合入主线"],
             merged_status)
         ids = sorted(r["id"] for r in rows)
-        self.assertEqual(ids, ["1", "2", "3", "4"], "四源并集按 id 去重（#1 只保留一次）")
-        # 四源查询并行发出 → seen_filters 顺序不定，按集合断言。
+        self.assertEqual(ids, ["1", "2", "3", "4"], "五源并集按 id 去重（#1 在三源中重复只保留一次）")
+        # 五源查询并行发出 → seen_filters 顺序不定，按集合断言。
         worker_csv = ",".join(sorted(aone.DIGITAL_WORKER_IDS))
-        self.assertEqual(len(seen_filters), 4, "assignee/tracker/idle/done 四源各查一次")
+        self.assertEqual(len(seen_filters), 5, "assignee/tracker/participants/idle/done 五源各查一次")
         # 每源都叠加 pools.json 状态排除
         ordinary = [f for f in seen_filters if not f.startswith("tag=jarvis-done")]
         self.assertTrue(all("NOT status=Closed" in f and "NOT status=已发布" in f
@@ -1278,6 +1282,64 @@ class SchedulerRunnerTest(unittest.TestCase):
             else:
                 os.environ["JARVIS_SOURCE_STATUS_BATCH_CHUNK"] = prev
             importlib.reload(scan)
+
+    def _idle_stale_scanner(self):
+        s = self._scanner()
+        s.dispatch_pools = set()
+        s.dispatch_created_before = ""
+        s._pr_merged_status_by_pool = {}
+        s._last_idle_at = mock.Mock(return_value=datetime(2026, 7, 30, 18, 26))
+        s._human_comment = mock.Mock(return_value=None)
+        s._human_touched = mock.Mock(return_value=False)
+        # _decide always builds an envelope; stub it to keep these tests on the
+        # decision logic (skip path never consumes the envelope).
+        s._envelope = mock.Mock(return_value=SimpleNamespace())
+        return s
+
+    def test_idle_stale_suspect_triggers_retry_when_modified_after_idle(self):
+        # A jarvis-idle ticket whose `modified` is newer than its last idle
+        # transition, with no human signal detected, is a stale read (the Aone
+        # list/activity can lag a just-posted comment by tens of minutes) →
+        # retry next tick instead of swallowing. This is the #84621304/#17 mode.
+        scanner = self._idle_stale_scanner()
+        scanner._idle_stale_retry = {}
+        item = {"id": "84621304", "title": "x", "tag": "jarvis-idle",
+                "status": "评估中", "modified": "2026-07-31 14:09:58"}
+        d = scanner._decide([item])[0]
+        self.assertEqual(d["action"], "skip")
+        self.assertEqual(d["reason"], "idle_no_human_retry")
+
+    def test_idle_non_stale_stays_idle_no_human(self):
+        # `modified` before the last idle transition → genuinely idle, no retry.
+        scanner = self._idle_stale_scanner()
+        scanner._idle_stale_retry = {}
+        item = {"id": "84621304", "tag": "jarvis-idle", "status": "评估中",
+                "modified": "2026-07-30 10:00:00"}
+        self.assertEqual(scanner._decide([item])[0]["reason"], "idle_no_human")
+
+    def test_idle_stale_retry_caps_then_accepts(self):
+        # After IDLE_STALE_RETRY_MAX consecutive retries, accept idle_no_human so
+        # a Kelude/system-modified ticket settles instead of retrying forever.
+        scanner = self._idle_stale_scanner()
+        item = {"id": "84621304", "tag": "jarvis-idle", "status": "评估中",
+                "modified": "2026-07-31 14:09:58"}
+        scanner._idle_stale_retry = {"84621304": scanner.IDLE_STALE_RETRY_MAX - 1}
+        self.assertEqual(scanner._decide([item])[0]["reason"], "idle_no_human_retry")
+        scanner._idle_stale_retry = {"84621304": scanner.IDLE_STALE_RETRY_MAX}
+        self.assertEqual(scanner._decide([item])[0]["reason"], "idle_no_human")
+
+    def test_tick_auto_advances_and_clears_idle_stale_retry(self):
+        scanner = self._idle_stale_scanner()
+        scanner._idle_stale_retry = {}
+        item = {"id": "84621304", "tag": "jarvis-idle", "status": "评估中",
+                "modified": "2026-07-31 14:09:58", "title": "x"}
+        scanner._tick_auto([item])
+        self.assertEqual(scanner._idle_stale_retry.get("84621304"), 1)
+        # Once it is no longer stale-suspect (modified now before last idle), the
+        # non-retry skip clears the retry entry so it stops re-evaluating.
+        settled = dict(item, modified="2026-07-30 10:00:00")
+        scanner._tick_auto([settled])
+        self.assertNotIn("84621304", scanner._idle_stale_retry)
 
     def test_tick_dispatches_before_bounded_lifecycle_observation(self):
         scanner = self._scanner()
