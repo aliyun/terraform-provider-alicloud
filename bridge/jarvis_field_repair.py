@@ -157,7 +157,13 @@ class FieldRepairWorker:
                 str(self.repo_root / "bootstrap" / "aone-fields.sh"),
                 "inspect", str(item_id), str(project),
             ],
-            timeout=float(os.environ.get("JARVIS_FIELD_INSPECT_TIMEOUT", "30")),
+            # 60s instead of 30s: aone-fields.sh inspect chains multiple a1 calls and
+            # intermittent a1/network jitter can push it past 30s even when fields are
+            # all present (status=ready). A spurious field_repair_transient/
+            # inspect_timeout here blackholes the headless run before it starts; the
+            # higher floor avoids that while JARVIS_FIELD_INSPECT_TIMEOUT stays as a
+            # tight override.
+            timeout=float(os.environ.get("JARVIS_FIELD_INSPECT_TIMEOUT", "60")),
             controller=controller,
             env=self._aone_env(terraform),
         )
