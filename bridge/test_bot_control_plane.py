@@ -1170,7 +1170,7 @@ class SchedulerRunnerTest(unittest.TestCase):
 
         self.assertEqual(calls, ["done-drift", "dispatch", "lifecycle"])
         self.assertEqual(scanner.SOURCE_STATUS_PAGE_SIZE, 500)
-        self.assertEqual(scanner.SOURCE_STATUS_WORKERS, 32)
+        self.assertEqual(scanner.SOURCE_STATUS_WORKERS, 8)
         self.assertEqual(scanner.SOURCE_STATUS_MAX_PAGES, 100)
         self.assertLessEqual(scanner.SOURCE_STATUS_POINT_TIMEOUT_SECONDS, 30)
 

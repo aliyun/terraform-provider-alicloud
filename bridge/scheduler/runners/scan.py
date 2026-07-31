@@ -39,7 +39,7 @@ class ScanRunner(AoneQueryMixin):
     """Scan Aone pools and persist desired Tasks."""
 
     SOURCE_STATUS_PAGE_SIZE = int(os.environ.get("JARVIS_SOURCE_STATUS_PAGE_SIZE", "500"))
-    SOURCE_STATUS_WORKERS = int(os.environ.get("JARVIS_SOURCE_STATUS_WORKERS", "32"))
+    SOURCE_STATUS_WORKERS = int(os.environ.get("JARVIS_SOURCE_STATUS_WORKERS", "8"))
     SOURCE_STATUS_MAX_PAGES = int(
         os.environ.get("JARVIS_SOURCE_STATUS_MAX_PAGES", "100"))
     SOURCE_STATUS_POINT_TIMEOUT_SECONDS = int(
