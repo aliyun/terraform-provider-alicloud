@@ -268,6 +268,66 @@ func TestAccAliCloudPvtzZone_basic(t *testing.T) {
 		},
 	})
 }
+func TestAccAliCloudPvtzZone_dnsGroup(t *testing.T) {
+	var v map[string]interface{}
+
+	resourceId := "alicloud_pvtz_zone.default"
+	ra := resourceAttrInit(resourceId, pvtzZoneBasicMap)
+
+	serviceFunc := func() interface{} {
+		return &PvtzService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacc%d.test.com", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourcePvtzZoneConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"zone_name":         name,
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"zone_name":         name,
+						"dns_group":         CHECKSET,
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"user_client_ip", "lang"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"zone_name":         name,
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"dns_group":         "FAST_ZONE",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"dns_group": "FAST_ZONE",
+					}),
+				),
+			},
+		},
+	})
+}
 func TestAccAliCloudPvtzZone_multi(t *testing.T) {
 	var v map[string]interface{}
 

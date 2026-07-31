@@ -3,6 +3,7 @@
 ENHANCEMENTS:
 
 - resource/alicloud_gpdb_instance: support backup_id. ([#9988](https://github.com/aliyun/terraform-provider-alicloud/issues/9988))
+- resource/alicloud_pvtz_zone: support dns_group (NORMAL_ZONE/FAST_ZONE). ([#10089](https://github.com/aliyun/terraform-provider-alicloud/issues/10089))
 
 ## 1.286.0 (July 24, 2026)
 
