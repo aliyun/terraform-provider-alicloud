@@ -50,6 +50,11 @@ log = LOG
 POST_PR_HEADLESS_KINDS = frozenset(("pr_ci_fix", "pr_comment_reply"))
 TASK_BOOKEND_KINDS = frozenset(("ticket", "persona", "wake"))
 WAIT_EXPIRE_SEC = 14 * 24 * 3600
+# claim/release/finish each drive 4+ a1id calls (read, tag, status, readback).
+# Under Aone contention (source-status reconcile + concurrent workers) a single
+# a1id call can take 10-15s, so 60s was too tight and crashed sessions into
+# RECOVERY_REQUIRED. 180s gives headroom; the worker is gated by fence, not this.
+BOOKEND_TIMEOUT = int(os.environ.get("JARVIS_BOOKEND_TIMEOUT", "180"))
 _SUSPEND_RE = re.compile(r"\[\[SUSPEND:(.*?)\]\]", re.DOTALL)
 _SEMANTIC_ID_RE = re.compile(r"[a-z0-9][a-z0-9._:-]{0,95}")
 _CLOSABLE_RESOLUTION_KINDS = frozenset((
@@ -88,7 +93,7 @@ def _claim_workitem(item_id, project, terraform=False, reopen_done=False):
     result = run_process_group(
         [str(REPO_ROOT / "bootstrap" / "claim.sh"), "claim",
          str(item_id), str(project)],
-        cwd=str(REPO_ROOT), timeout=60, capture_output=True, text=True, env=env)
+        cwd=str(REPO_ROOT), timeout=BOOKEND_TIMEOUT, capture_output=True, text=True, env=env)
     if result.returncode:
         raise RuntimeError(
             "bridge claim failed for #%s (rc=%s): %s" % (
@@ -101,7 +106,7 @@ def release_claim(item_id, project, terraform=False):
     result = run_process_group(
         [str(REPO_ROOT / "bootstrap" / "claim.sh"), "release",
          str(item_id), str(project)],
-        cwd=str(REPO_ROOT), timeout=60, capture_output=True, text=True,
+        cwd=str(REPO_ROOT), timeout=BOOKEND_TIMEOUT, capture_output=True, text=True,
         env=_a1_command_env(terraform=terraform))
     if result.returncode:
         raise RuntimeError(
@@ -116,7 +121,7 @@ def _finish_workitem(item_id, project, terraform=False):
     result = run_process_group(
         [str(REPO_ROOT / "bootstrap" / "claim.sh"), "finish",
          str(item_id), str(project)],
-        cwd=str(REPO_ROOT), timeout=60, capture_output=True, text=True,
+        cwd=str(REPO_ROOT), timeout=BOOKEND_TIMEOUT, capture_output=True, text=True,
         env=_a1_command_env(terraform=terraform))
     if result.returncode:
         raise RuntimeError(
