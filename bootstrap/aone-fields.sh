@@ -175,10 +175,15 @@ resolve_missing() {
             if ($field.optionsLookupError // false) then
                 {kind:"unresolved", id:$field.id, name:$field.name,
                  reason:"options_lookup_error", options:[]}
-            elif ($title_matches | length) == 1 then
-                {kind:"assignment", id:$field.id, name:$field.name,
-                 value:($title_matches[0] | option_value), source:"title_match"}
             elif $default != null then
+                # An operator-configured default outranks title_match on purpose.
+                # title_match is substring token scoring over the whole candidate
+                # set; on a large org-wide tree it produces confident nonsense
+                # (a Terraform provider ticket scored "Cloud Control API" from the
+                # tokens "cloud"+"api"). Once a pool pins the answer in
+                # pools.json, the heuristic must not be able to override it, and
+                # a pinned-but-unmatched default stays fail-closed rather than
+                # silently falling through to guessing.
                 if ($default_matches | length) == 1 then
                     {kind:"assignment", id:$field.id, name:$field.name,
                      value:($default_matches[0] | option_value),
@@ -189,6 +194,9 @@ resolve_missing() {
                      configured:$default,
                      options:($options | map({value:option_value, displayValue:option_label}))}
                 end
+            elif ($title_matches | length) == 1 then
+                {kind:"assignment", id:$field.id, name:$field.name,
+                 value:($title_matches[0] | option_value), source:"title_match"}
             elif ($options | length) == 1 then
                 {kind:"assignment", id:$field.id, name:$field.name,
                  value:($options[0] | option_value), source:"single_option"}
@@ -214,6 +222,127 @@ resolve_missing() {
         {assignments:[$rows[] | select(.kind=="assignment") | del(.kind)],
          unresolved:[$rows[] | select(.kind=="unresolved") | del(.kind)]}
     '
+}
+
+# Field metadata (`field list` / `field options`) is per project*type and turns
+# over on the order of weeks, but one dispatch burst re-reads it on every
+# inspect — and `apply` alone inspects twice (CAS pre-check + readback). Cache
+# it so the repair path stops paying ~3.8s of a1 round-trips per inspect; that
+# per-inspect cost is what pushes field repair past its timeout when several
+# headless sessions run at once.
+#
+# TTL is deliberately short. This is the candidate set that gates a write, so
+# the window in which a removed option could still be offered is kept to
+# minutes — long enough to cover the concurrency burst that causes the pile-up,
+# short enough that `apply`'s own re-validation and readback stay the real
+# guard rather than a stale file.
+#
+# The workitem itself is deliberately NOT cached: `apply` compares the live
+# revision and candidate digest as its concurrency guard, so a stale workitem
+# read would silently defeat that check. Set JARVIS_FIELD_META_TTL=0 to bypass.
+field_meta_ttl() { echo "${JARVIS_FIELD_META_TTL:-900}"; }
+
+field_list_json() {
+    local project_id="$1" type_id="$2" ttl
+    ttl="$(field_meta_ttl)"
+    if [ "$ttl" -le 0 ] 2>/dev/null; then
+        $A1 project workitem field list --project "$project_id" --type "$type_id" -f json
+        return
+    fi
+    bash "$script_dir/cache.sh" get \
+        "aonefields_list_${project_id}_${type_id}" "$ttl" -- \
+        $A1 project workitem field list --project "$project_id" --type "$type_id" -f json
+}
+
+field_options_json() {
+    local field_id="$1" project_id="$2" type_id="$3" ttl
+    ttl="$(field_meta_ttl)"
+    if [ "$ttl" -le 0 ] 2>/dev/null; then
+        $A1 project workitem field options "$field_id" \
+            --project "$project_id" --type "$type_id" -f json
+        return
+    fi
+    bash "$script_dir/cache.sh" get \
+        "aonefields_opts_${project_id}_${type_id}_${field_id}" "$ttl" -- \
+        $A1 project workitem field options "$field_id" \
+            --project "$project_id" --type "$type_id" -f json
+}
+
+# Correlate one already-fetched workitem against its required field definitions.
+# Callers that already hold the workitem JSON (inspect) pass it straight in; the
+# `missing` subcommand fetches it first. Re-execing the script to reach this had
+# every inspect pay for a second `workitem get` of the same object — ~2.5s of
+# pure duplication, and two reads that can disagree under replica lag.
+compute_missing() {
+    local wi_json="$1" project_id="$2" type_id="$3"
+    local defs_json wi_tmp defs_tmp missing_json result field_id options_json normalized rc
+
+    if ! defs_json="$(field_list_json "$project_id" "$type_id")"; then
+        echo "aone-fields.sh: failed to list fields for project $project_id type $type_id" >&2
+        return 1
+    fi
+
+    wi_tmp="$(mktemp)"
+    defs_tmp="$(mktemp)"
+    printf '%s' "$wi_json" > "$wi_tmp"
+    printf '%s' "$defs_json" > "$defs_tmp"
+
+    missing_json="$(jq -c -n --slurpfile wi "$wi_tmp" --slurpfile defs "$defs_tmp" '
+        def ident: (.fieldIdentifier // .identifier // "" | tostring);
+        def current_value:
+            if (.value != null and .value != "" and .value != [] and .value != {})
+            then .value else (.displayValue // "") end;
+        def empty_value: . == null or . == "" or . == [] or . == {};
+        def definitions:
+            $defs[0] | if type == "array" then .
+            elif (.fields | type) == "array" then .fields
+            elif (.items | type) == "array" then .items
+            elif (.data | type) == "array" then .data
+            else [] end;
+        (($wi[0].fields // []) | map({key: ident, value: current_value}) | from_entries) as $current |
+        [definitions[]
+            | select(.isRequired == true or .isRequired == "true")
+            | select((.sourceType // "") as $s | ["system", "basic", "service.sprint"] | index($s) == null)
+            | ident as $id
+            | select($id != "")
+            | ($current[$id] // "") as $value
+            | select($value | empty_value)
+            | {
+                id: $id,
+                name: (.displayName // .name // ""),
+                description: (.description // ""),
+                format: (.format // ""),
+                sourceType: (.sourceType // ""),
+                current: $value,
+                options: (if (.options | type) == "array" then .options else [] end),
+                optionsSource: "field_list"
+              }
+        ]
+    ')"
+    rc=$?
+    rm -f "$wi_tmp" "$defs_tmp"
+    if [ "$rc" -ne 0 ]; then
+        echo "aone-fields.sh: failed to correlate workitem values with field definitions" >&2
+        return 1
+    fi
+
+    result="$missing_json"
+    while IFS= read -r field_id; do
+        [ -n "$field_id" ] || continue
+        if options_json="$(field_options_json "$field_id" "$project_id" "$type_id" 2>/dev/null)" \
+                && normalized="$(printf '%s' "$options_json" | normalize_options 2>/dev/null)"; then
+            result="$(printf '%s' "$result" | jq -c --arg id "$field_id" --argjson opts "$normalized" '
+                map(if .id == $id then .options = $opts | .optionsSource = "field_options" else . end)
+            ')"
+        else
+            echo "aone-fields.sh: warning: failed to load legal options for field $field_id" >&2
+            result="$(printf '%s' "$result" | jq -c --arg id "$field_id" '
+                map(if .id == $id then .optionsLookupError = true else . end)
+            ')"
+        fi
+    done < <(printf '%s' "$missing_json" | jq -r '.[] | select((.options | length) == 0) | .id')
+
+    printf '%s\n' "$result"
 }
 
 preflight_result() {
@@ -293,7 +422,7 @@ case "$cmd" in
                   project:$project,workitemType:$type,expectedProject:$expected}'
             exit 3
         fi
-        if ! missing_json="$(bash "$0" missing "$workitem_id")"; then
+        if ! missing_json="$(compute_missing "$wi_json" "$project_id" "$type_id")"; then
             jq -c -n --arg id "$workitem_id" --arg project "$project_id" \
                 --arg type "$type_id" \
                 '{status:"failed",errorType:"field_inspection_failed",
@@ -498,72 +627,7 @@ case "$cmd" in
             echo "aone-fields.sh: cannot resolve workitem type/project for $workitem_id" >&2
             exit 1
         fi
-
-        if ! defs_json="$($A1 project workitem field list --project "$project_id" --type "$type_id" -f json)"; then
-            echo "aone-fields.sh: failed to list fields for project $project_id type $type_id" >&2
-            exit 1
-        fi
-
-        wi_tmp="$(mktemp)"
-        defs_tmp="$(mktemp)"
-        trap 'rm -f "$wi_tmp" "$defs_tmp"' EXIT
-        printf '%s' "$wi_json" > "$wi_tmp"
-        printf '%s' "$defs_json" > "$defs_tmp"
-
-        missing_json="$(jq -c -n --slurpfile wi "$wi_tmp" --slurpfile defs "$defs_tmp" '
-            def ident: (.fieldIdentifier // .identifier // "" | tostring);
-            def current_value:
-                if (.value != null and .value != "" and .value != [] and .value != {})
-                then .value else (.displayValue // "") end;
-            def empty_value: . == null or . == "" or . == [] or . == {};
-            def definitions:
-                $defs[0] | if type == "array" then .
-                elif (.fields | type) == "array" then .fields
-                elif (.items | type) == "array" then .items
-                elif (.data | type) == "array" then .data
-                else [] end;
-            (($wi[0].fields // []) | map({key: ident, value: current_value}) | from_entries) as $current |
-            [definitions[]
-                | select(.isRequired == true or .isRequired == "true")
-                | select((.sourceType // "") as $s | ["system", "basic", "service.sprint"] | index($s) == null)
-                | ident as $id
-                | select($id != "")
-                | ($current[$id] // "") as $value
-                | select($value | empty_value)
-                | {
-                    id: $id,
-                    name: (.displayName // .name // ""),
-                    description: (.description // ""),
-                    format: (.format // ""),
-                    sourceType: (.sourceType // ""),
-                    current: $value,
-                    options: (if (.options | type) == "array" then .options else [] end),
-                    optionsSource: "field_list"
-                  }
-            ]
-        ')" || {
-            echo "aone-fields.sh: failed to correlate workitem values with field definitions" >&2
-            exit 1
-        }
-
-        result="$missing_json"
-        while IFS= read -r field_id; do
-            [ -n "$field_id" ] || continue
-            if options_json="$($A1 project workitem field options "$field_id" \
-                    --project "$project_id" --type "$type_id" -f json 2>/dev/null)" \
-                    && normalized="$(printf '%s' "$options_json" | normalize_options 2>/dev/null)"; then
-                result="$(printf '%s' "$result" | jq -c --arg id "$field_id" --argjson opts "$normalized" '
-                    map(if .id == $id then .options = $opts | .optionsSource = "field_options" else . end)
-                ')"
-            else
-                echo "aone-fields.sh: warning: failed to load legal options for field $field_id" >&2
-                result="$(printf '%s' "$result" | jq -c --arg id "$field_id" '
-                    map(if .id == $id then .optionsLookupError = true else . end)
-                ')"
-            fi
-        done < <(printf '%s' "$missing_json" | jq -r '.[] | select((.options | length) == 0) | .id')
-
-        printf '%s\n' "$result"
+        compute_missing "$wi_json" "$project_id" "$type_id" || exit 1
         ;;
 
     fill)
@@ -599,15 +663,20 @@ case "$cmd" in
         workitem_id="$2"
         valid_id "$workitem_id" || { echo "aone-fields.sh: invalid workitem id '$workitem_id'" >&2; exit 2; }
 
-        if ! missing_json="$(bash "$0" missing "$workitem_id")"; then
-            echo "aone-fields.sh: could not inspect missing fields for $workitem_id" >&2
-            exit 3
-        fi
         if ! wi_json="$($A1 project workitem get "$workitem_id" -f json)"; then
             echo "aone-fields.sh: failed to get workitem $workitem_id for inference" >&2
             exit 3
         fi
         project_id="$(workitem_value "$wi_json" space)"
+        type_id="$(workitem_value "$wi_json" workitemType)"
+        if [ -z "$project_id" ] || [ -z "$type_id" ]; then
+            echo "aone-fields.sh: cannot resolve workitem type/project for $workitem_id" >&2
+            exit 3
+        fi
+        if ! missing_json="$(compute_missing "$wi_json" "$project_id" "$type_id")"; then
+            echo "aone-fields.sh: could not inspect missing fields for $workitem_id" >&2
+            exit 3
+        fi
         title="$(printf '%s' "$wi_json" | jq -r '
             .title // ((.fields // []) | map(select((.fieldIdentifier // .identifier // "") == "title")) |
             .[0] | (.displayValue // .value // "")) // ""
@@ -680,7 +749,7 @@ case "$cmd" in
                 "$project_id" "$type_id" '[]' "$unresolved" '[]' false project_mismatch
             exit 3
         fi
-        if ! missing_json="$(bash "$0" missing "$workitem_id")"; then
+        if ! missing_json="$(compute_missing "$wi_json" "$project_id" "$type_id")"; then
             preflight_result failed preflight_validation_failed "$workitem_id" \
                 "$project_id" "$type_id" '[]' '[]' '[]' false required_fields_lookup_error
             exit 3
@@ -745,7 +814,11 @@ case "$cmd" in
                 false update_error
             exit 3
         fi
-        if ! readback="$(bash "$0" missing "$workitem_id")"; then
+        # Post-update readback must re-read the workitem itself — the pre-update
+        # wi_json cannot show the values we just wrote. Only the field metadata
+        # is allowed to come from cache here.
+        if ! readback_wi_json="$($A1 project workitem get "$workitem_id" -f json)" \
+                || ! readback="$(compute_missing "$readback_wi_json" "$project_id" "$type_id")"; then
             preflight_result failed preflight_validation_failed "$workitem_id" \
                 "$project_id" "$type_id" "$assignments" '[]' '[]' true readback_error
             exit 3

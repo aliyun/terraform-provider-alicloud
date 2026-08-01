@@ -85,6 +85,10 @@
         "产品类需求": "开发中",
         "功能缺陷": "Open"
       },
+      "claim_required_field_defaults_note": "107239 归属产品 -> 906688 开放平台/OpenAPI/Terraform。键用 field id、值用 option Identifier，显示名改名不会把它悄悄指到别处。不配这条时 title_match 会在 824 项全公司产品树里按标题 token 打分，为 Terraform 工单选出「Cloud Control API」。",
+      "claim_required_field_defaults": {
+        "107239": "906688"
+      },
       "exclude_status": [
         "已发布",
         "已取消",

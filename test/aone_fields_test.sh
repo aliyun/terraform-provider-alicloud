@@ -10,6 +10,15 @@ trap 'rm -rf "$tmp"' EXIT
 mkdir -p "$tmp/bin"
 log="$tmp/a1.log"
 
+# Keep the field-metadata cache out of the developer's real .my-day/cache, and
+# off by default here: each case below drives the a1 stub with different env
+# (A1_OPTIONS_FAIL_FIELD, A1_GENERIC_FIXTURES, ...) under the same project/type,
+# so a shared cache would serve case N's payload to case N+1 and silently void
+# the fail-closed assertions. The cache path itself is covered by its own case
+# at the end of this file.
+export JARVIS_CACHE_DIR="$tmp/cache"
+export JARVIS_FIELD_META_TTL=0
+
 cat > "$tmp/workitem.json" <<'JSON'
 {"fields":[
   {"identifier":"workitemType","value":"36","displayValue":"功能缺陷"},
@@ -40,8 +49,13 @@ if [ "$1 $2 $3" = "project workitem get" ]; then
   get_count="$(cat "$A1_TEST_STATE.get_count" 2>/dev/null || printf '0')"
   get_count=$((get_count + 1))
   printf '%s\n' "$get_count" > "$A1_TEST_STATE.get_count"
+  # Read 1 is preflight's own context read; read 2 is the explicit pre-mutation
+  # drift check (noop readback, or the read immediately before update). Drift is
+  # injected from read 2 so it lands on that check. This used to be read 3 only
+  # because preflight reached the field list through a nested `missing` that
+  # re-fetched the same workitem.
   if [ "${A1_DRIFT_BEFORE_UPDATE:-}" = "project" ] \
-      && [ ! -f "$A1_TEST_STATE.updated" ] && [ "$get_count" -ge 3 ]; then
+      && [ ! -f "$A1_TEST_STATE.updated" ] && [ "$get_count" -ge 2 ]; then
     jq '(.fields[] | select(.identifier=="space") | .value) = "528766"' "$A1_TEST_WI"
     exit 0
   fi
@@ -432,6 +446,70 @@ apply_out="$(PATH="$tmp/bin:$PATH" A1_AUTO_FIXTURES=1 A1_MUTATE_ON_UPDATE=1 \
 ' >/dev/null && [ "$(grep -c 'workitem update' "$log" || true)" -eq 1 ] \
   && ok "apply validates, updates once, and returns an empty readback" \
   || bad "legal apply failed rc=$rc out=$apply_out err=$(cat "$tmp/apply.err") log=$(cat "$log")"
+
+# --- configured default outranks a unique title match -----------------------
+# tf_provider pins 107239 归属产品 in config/pools.json. The generic 107239
+# option set also contains "云数据库 MongoDB 版", which a MongoDB-flavoured
+# title matches uniquely — the exact shape that made a real Terraform ticket
+# resolve to an unrelated product before the pinned default was given priority.
+cat > "$tmp/workitem.json" <<'JSON'
+{"title":"alicloud mongodb sharding instance apply failure","fields":[
+  {"identifier":"workitemType","value":"36","displayValue":"需求问题"},
+  {"identifier":"space","value":"528766","displayValue":"provider"},
+  {"identifier":"107239","value":"","displayValue":""}
+]}
+JSON
+cat > "$tmp/fields.json" <<'JSON'
+[
+  {"identifier":"107239","displayName":"归属产品","isRequired":true,"sourceType":"team","format":"plugin","options":[]}
+]
+JSON
+rm -f "$A1_TEST_STATE.updated" "$A1_TEST_STATE.get_count"
+: > "$log"
+inspect_out="$(PATH="$tmp/bin:$PATH" A1_GENERIC_FIXTURES=1 \
+  bash "$root/bootstrap/aone-fields.sh" inspect 9002 528766 2>/dev/null)"; rc=$?
+[ "$rc" -eq 0 ] && printf '%s' "$inspect_out" | jq -e '
+  .status=="repair_required" and .unresolved==[] and
+  (.assignments | length)==1 and
+  .assignments[0].id=="107239" and .assignments[0].value=="906688" and
+  .assignments[0].source=="configured_default"
+' >/dev/null && [ "$(grep -c 'workitem update' "$log" || true)" -eq 0 ] \
+  && ok "pinned pool default beats a unique title match" \
+  || bad "configured default precedence failed rc=$rc out=$inspect_out log=$(cat "$log")"
+
+# --- field metadata cache ---------------------------------------------------
+# Same inputs twice: the second pass must serve field list/options from cache
+# and issue no further metadata reads, while still reading the workitem itself
+# live (apply's revision/digest fence depends on that never being cached).
+cache_probe="$tmp/cache-probe"
+rm -rf "$cache_probe"
+rm -f "$A1_TEST_STATE.updated" "$A1_TEST_STATE.get_count"
+: > "$log"
+PATH="$tmp/bin:$PATH" A1_GENERIC_FIXTURES=1 JARVIS_CACHE_DIR="$cache_probe" \
+  JARVIS_FIELD_META_TTL=900 bash "$root/bootstrap/aone-fields.sh" \
+  missing 9002 >/dev/null 2>&1
+cold_list="$(grep -c 'field list' "$log" || true)"
+cold_opts="$(grep -c 'field options 107239' "$log" || true)"
+: > "$log"
+PATH="$tmp/bin:$PATH" A1_GENERIC_FIXTURES=1 JARVIS_CACHE_DIR="$cache_probe" \
+  JARVIS_FIELD_META_TTL=900 bash "$root/bootstrap/aone-fields.sh" \
+  missing 9002 >/dev/null 2>&1
+warm_list="$(grep -c 'field list' "$log" || true)"
+warm_opts="$(grep -c 'field options 107239' "$log" || true)"
+warm_get="$(grep -c 'workitem get' "$log" || true)"
+[ "$cold_list" -eq 1 ] && [ "$cold_opts" -eq 1 ] \
+  && [ "$warm_list" -eq 0 ] && [ "$warm_opts" -eq 0 ] && [ "$warm_get" -eq 1 ] \
+  && ok "warm metadata cache drops field reads but still reads the workitem live" \
+  || bad "cache contract failed cold(list=$cold_list opts=$cold_opts) warm(list=$warm_list opts=$warm_opts get=$warm_get)"
+
+# TTL=0 must fully bypass the cache even with a warm directory present.
+: > "$log"
+PATH="$tmp/bin:$PATH" A1_GENERIC_FIXTURES=1 JARVIS_CACHE_DIR="$cache_probe" \
+  JARVIS_FIELD_META_TTL=0 bash "$root/bootstrap/aone-fields.sh" \
+  missing 9002 >/dev/null 2>&1
+[ "$(grep -c 'field list' "$log" || true)" -eq 1 ] \
+  && ok "JARVIS_FIELD_META_TTL=0 bypasses a warm cache" \
+  || bad "TTL=0 did not bypass cache: $(cat "$log")"
 
 echo "Results: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]
