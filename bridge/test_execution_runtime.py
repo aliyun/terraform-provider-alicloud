@@ -12,7 +12,11 @@ sys.path.insert(0, str(HERE))
 
 import os  # noqa: E402
 
-from bridge.jarvis_execution_runtime import ExecutionRuntime, ProcessGuardian  # noqa: E402
+from datetime import datetime as real_dt, timezone as tz_module  # noqa: E402
+tz_utc = tz_module.utc
+
+from bridge.jarvis_execution_runtime import (  # noqa: E402
+    ExecutionRuntime, ProcessGuardian, _select_provider_settings)
 
 
 class ProcessGuardianTest(unittest.TestCase):
@@ -106,6 +110,109 @@ class ExecutionRuntimeTest(unittest.TestCase):
         self.assertEqual(result.stdout, "ok")
         self.assertEqual(captured, {
             "argv": ["tool"], "cwd": HERE, "env": {"TASK_ENV": "fenced"}})
+
+
+class ProviderResumeFailoverTest(unittest.TestCase):
+    """Resume no longer dies on a transient provider blip."""
+
+    MEM = "/path/a.json,/path/b.json,/path/c.json"
+    SID = "sess-failover-1"
+
+    def setUp(self):
+        self.tmp = self.tmpdir()
+        self.addCleanup(self.tmp.cleanup)
+        self.route_dir = self.tmp.name
+        self._patch_env = mock.patch.dict(
+            os.environ, {"JARVIS_PROVIDER_ROUTE_DIR": self.route_dir})
+        self._patch_env.start()
+        self.addCleanup(self._patch_env.stop)
+        # model stub: a.json/b.json are same family, c.json is a different one
+        self._models = {"/path/a.json": "qwen-3.7", "/path/b.json": "qwen-3.7-max",
+                        "/path/c.json": "glm-5.2"}
+        self.probes = {}  # path -> bool; default True
+
+    def tmpdir(self):
+        import tempfile
+        return tempfile.TemporaryDirectory()
+
+    def _probe(self, path):
+        return self.probes.get(path, True)
+
+    def _settings_model(self, path):
+        return self._models.get(path)
+
+    def _route_record(self, path, **extra):
+        return {"schemaVersion": 1, "sessionId": self.SID, "lane": "terraform",
+                "settingsPath": path, "model": self._models.get(path),
+                "selectedAt": "2026-07-01T00:00:00+00:00", **extra}
+
+    def _write_route(self, **extra):
+        from bridge.jarvis_execution_runtime import _provider_route_file
+        import json
+        f = _provider_route_file(self.SID)
+        f.parent.mkdir(parents=True, exist_ok=True)
+        record = self._route_record("/path/a.json", **extra)
+        f.write_text(json.dumps(record))
+
+    def test_resume_healthy_provider_unchanged(self):
+        self._write_route()
+        selected = _select_provider_settings(
+            self.MEM, self.SID, True, True, probe_settings=self._probe)
+        self.assertEqual(selected, "/path/a.json")
+
+    def test_first_probe_miss_returns_original_and_arms(self):
+        """A blip gets one backoff window before failover, not a RuntimeError."""
+        self.probes = {"/path/a.json": False}
+        self._write_route()
+        selected = _select_provider_settings(
+            self.MEM, self.SID, True, True, probe_settings=self._probe)
+        self.assertEqual(selected, "/path/a.json", "original provider first")
+        # firstFailedAt must now be pinned so the backoff clock starts
+        from bridge.jarvis_execution_runtime import _load_route_record
+        record = _load_route_record(self.SID, "terraform")
+        self.assertIn("firstFailedAt", record)
+
+    def test_backoff_expired_fails_over_to_same_family(self):
+        self.probes = {"/path/a.json": False, "/path/b.json": True}
+        # firstFailedAt 90s ago — past the 60s window
+        self._write_route(firstFailedAt=(
+            "2026-07-01T00:00:00+00:00"))
+        with mock.patch(
+                "bridge.jarvis_execution_runtime.datetime") as dt:
+            dt.now.return_value = real_dt(2026, 7, 1, 0, 1, 30, tzinfo=tz_utc)
+            dt.fromisoformat = real_dt.fromisoformat
+            selected = _select_provider_settings(
+                self.MEM, self.SID, True, True, probe_settings=self._probe)
+        self.assertEqual(selected, "/path/b.json", "same family preferred")
+        # route file updated to the new provider, failoverFrom recorded
+        from bridge.jarvis_execution_runtime import _load_route_record
+        record = _load_route_record(self.SID, "terraform")
+        self.assertEqual(record["settingsPath"], "/path/b.json")
+        self.assertEqual(record["failoverFrom"]["settingsPath"], "/path/a.json")
+
+    def test_no_healthy_candidate_raises(self):
+        self.probes = {"/path/a.json": False, "/path/b.json": False,
+                       "/path/c.json": False}
+        self._write_route(firstFailedAt="2026-07-01T00:00:00+00:00")
+        with mock.patch(
+                "bridge.jarvis_execution_runtime.datetime") as dt:
+            dt.now.return_value = real_dt(2026, 7, 1, 0, 5, 0, tzinfo=tz_utc)
+            dt.fromisoformat = real_dt.fromisoformat
+            with self.assertRaises(RuntimeError) as ctx:
+                _select_provider_settings(
+                    self.MEM, self.SID, True, True, probe_settings=self._probe)
+        self.assertIn("no healthy candidate", str(ctx.exception))
+
+    def test_new_session_uses_resolve_settings(self):
+        """The new-session path is unchanged: probe and pick a healthy one."""
+        self.probes = {"/path/a.json": False, "/path/b.json": True, "/path/c.json": False}
+        with mock.patch.multiple(
+                "bridge.jarvis_execution_runtime",
+                _probe_settings=self._probe,
+                _persist_provider_route=mock.Mock(return_value=True)):
+            selected = _select_provider_settings(
+                self.MEM, self.SID, True, False, probe_settings=self._probe)
+        self.assertEqual(selected, "/path/b.json")
 
 
 if __name__ == "__main__":

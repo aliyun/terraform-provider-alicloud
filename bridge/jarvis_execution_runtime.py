@@ -286,43 +286,94 @@ def _settings_model(path: str) -> Optional[str]:
 
 
 def _load_provider_route(session_id: str, lane: str) -> Optional[str]:
+    """Return the pinned settings path, or None. See :func:`_load_route_record`."""
+    record = _load_route_record(session_id, lane)
+    return record.get("settingsPath") if record else None
+
+
+def _load_route_record(session_id: str, lane: str) -> Optional[dict]:
+    """Return the full route record, including any failover bookkeeping."""
     if not session_id:
         return None
     try:
         route = json.loads(
             _provider_route_file(session_id).read_text(encoding="utf-8"))
-        selected = route.get("settingsPath")
         if (route.get("schemaVersion") == 1
                 and route.get("sessionId") == str(session_id)
                 and route.get("lane") == lane
-                and isinstance(selected, str) and selected):
-            return selected
+                and isinstance(route.get("settingsPath"), str)
+                and route.get("settingsPath")):
+            return route
     except (OSError, TypeError, ValueError):
         pass
     return None
 
 
-def _persist_provider_route(session_id: str, lane: str, selected: str) -> bool:
+def _persist_provider_route(
+    session_id: str, lane: str, selected: str, *,
+    failover: bool = False) -> bool:
+    """Pin or update the provider route for one session.
+
+    A new selection writes a fresh record. ``failover=True`` updates an existing
+    record in place: it swaps the settings path and model, stamps a new
+    ``selectedAt`` and records ``failoverFrom`` so the change is auditable, while
+    clearing the ``firstFailedAt`` that armed the failover. The route file is the
+    per-session source of truth, so updating it is how a resumed session learns
+    to use the new provider.
+    """
     if not session_id or not selected:
         return True
     target = _provider_route_file(session_id)
     try:
         target.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-        temporary = target.with_name(".%s.%s.tmp" % (target.name, os.getpid()))
-        temporary.write_text(json.dumps({
+        record = {
             "schemaVersion": 1,
             "sessionId": str(session_id),
             "lane": lane,
             "settingsPath": str(selected),
             "model": _settings_model(selected),
             "selectedAt": datetime.now(timezone.utc).isoformat(),
-        }, ensure_ascii=False), encoding="utf-8")
+        }
+        if failover:
+            previous = _load_route_record(session_id, lane) or {}
+            if previous.get("settingsPath") and previous.get("settingsPath") != selected:
+                record["failoverFrom"] = {
+                    "settingsPath": previous.get("settingsPath"),
+                    "model": previous.get("model"),
+                }
+        temporary = target.with_name(".%s.%s.tmp" % (target.name, os.getpid()))
+        temporary.write_text(json.dumps(record, ensure_ascii=False),
+                              encoding="utf-8")
         temporary.chmod(0o600)
         temporary.replace(target)
         return True
     except OSError as exc:
         LOG.warning("provider route persist failed session=%s: %s",
                     session_id, exc)
+        return False
+
+
+def _arm_provider_route_failure(session_id: str, lane: str) -> bool:
+    """Record the first time the pinned provider failed health check.
+
+    Idempotent: only writes on the first failure, so the backoff window is
+    measured from the genuine first blip, not the most recent retry.
+    """
+    target = _provider_route_file(session_id)
+    try:
+        route = _load_route_record(session_id, lane) or {}
+        if route.get("firstFailedAt"):
+            return True
+        route["firstFailedAt"] = datetime.now(timezone.utc).isoformat()
+        target.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+        temporary = target.with_name(".%s.%s.tmp" % (target.name, os.getpid()))
+        temporary.write_text(json.dumps(route, ensure_ascii=False),
+                             encoding="utf-8")
+        temporary.chmod(0o600)
+        temporary.replace(target)
+        return True
+    except OSError as exc:
+        LOG.warning("provider route arm failed session=%s: %s", session_id, exc)
         return False
 
 
@@ -354,6 +405,45 @@ def _infer_provider_route(session_id: str,
     return matches[0] if len(matches) == 1 else None
 
 
+# How long to keep retrying the original provider before a health-check failure
+# is treated as something other than a transient blip. The HeadlessRuntime retry
+# loop already backs off between attempts; this window lets one or two of those
+# retries land before failover arms, so a few-second gateway hiccup self-heals
+# instead of forcing a cross-provider resume.
+_PROVIDER_FAILURE_BACKOFF_SECONDS = 60
+
+
+def _failover_settings(
+    member: str, original: str, probe_settings: Callable[[str], bool],
+) -> Optional[str]:
+    """A healthy provider to resume on, preferring the same model family.
+
+    Same-family first keeps the resume context on a model that already produced
+    it -- a qwen to qwen or glm to glm swap is safer than qwen to glm. Falls
+    back to any healthy candidate when no same-family match exists, since
+    stranding the Task is worse than a cross-family resume.
+    """
+    candidates = [c for c in _settings_candidates(member)
+                  if c != original and probe_settings(c)]
+    if not candidates:
+        return None
+    original_model = _settings_model(original) or ""
+    family = original_model.split("-")[0] if original_model else ""
+    same_family = ([c for c in candidates
+                    if (_settings_model(c) or "").split("-")[0] == family]
+                   if family else [])
+    return same_family[0] if same_family else candidates[0]
+
+
+def _parse_route_timestamp(value) -> Optional[datetime]:
+    if not value or not isinstance(value, str):
+        return None
+    try:
+        return datetime.fromisoformat(str(value))
+    except (TypeError, ValueError):
+        return None
+
+
 def _select_provider_settings(
     member: str,
     session_id: str,
@@ -362,13 +452,36 @@ def _select_provider_settings(
     probe_settings: Callable[[str], bool] = _probe_settings,
 ) -> str:
     lane = "terraform" if terraform else "default"
-    selected = _load_provider_route(session_id, lane)
+    record = _load_route_record(session_id, lane)
+    selected = record.get("settingsPath") if record else None
     if selected:
-        if resume and not probe_settings(selected):
-            raise RuntimeError(
-                "model_provider_error: original provider route failed health "
-                "check; refusing cross-provider resume failover")
-        return selected
+        if not resume or probe_settings(selected):
+            return selected
+        # Resume with a provider that just failed its health probe. The old
+        # code raised immediately, so a multi-second gateway blip burned the
+        # whole retry budget into RECOVERY_REQUIRED because every retry hit
+        # the same raise before the process even started. Give the original
+        # provider one backoff window first -- the probe is a 5s /v1/messages
+        # call and the real CLI has its own connection retry -- then fail
+        # over to a healthy candidate and pin it so subsequent resumes use it.
+        first_failed = _parse_route_timestamp(record.get("firstFailedAt"))
+        if first_failed is None:
+            _arm_provider_route_failure(session_id, lane)
+            return selected
+        if ((datetime.now(timezone.utc) - first_failed).total_seconds()
+                < _PROVIDER_FAILURE_BACKOFF_SECONDS):
+            return selected
+        replacement = _failover_settings(member, selected, probe_settings)
+        if replacement:
+            _persist_provider_route(session_id, lane, replacement, failover=True)
+            LOG.warning(
+                "provider route failover session=%s %s -> %s (model %s -> %s)",
+                session_id, selected, replacement,
+                _settings_model(selected), _settings_model(replacement))
+            return replacement
+        raise RuntimeError(
+            "model_provider_error: original provider route failed health "
+            "check and no healthy candidate is available for failover")
     candidates = _settings_candidates(member)
     if resume:
         selected = (candidates[0] if len(candidates) == 1
@@ -383,10 +496,6 @@ def _select_provider_settings(
         raise RuntimeError(
             "model_provider_error: original provider route could not be pinned; "
             "refusing an unsafe resumable launch")
-    if resume and not probe_settings(selected):
-        raise RuntimeError(
-            "model_provider_error: original provider route failed health check; "
-            "refusing cross-provider resume failover")
     return selected
 
 
