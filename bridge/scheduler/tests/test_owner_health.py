@@ -28,6 +28,10 @@ class FakeClient:
         self.release_calls: list[dict[str, Any]] = []
         self.release_action = "RELEASED"
         self.payload_policy: Any = owner_health.HEADLESS_POLICY_REVISION
+        # desired == processing exercises the discard-resume branch; a pending
+        # newer desired revision exercises force-release. Default keeps the
+        # original force-release assertions intact.
+        self.desired_revision: Any = "rev-new"
 
     def list_ready_task_diagnostics(
             self, *, after_task_id: int = 0, limit: int = 100):
@@ -124,7 +128,7 @@ class FakeClient:
                 "stateVersion": 22,
                 "retryCount": 4,
                 "maxRetries": 3,
-                "desiredRevision": "rev-a",
+                "desiredRevision": self.desired_revision,
                 "processingRevision": "rev-a",
             },
             "sessions": [session],
@@ -137,9 +141,20 @@ class FakeClient:
         }
 
     def force_release_task(self, task_id: str, **kwargs):
-        self.release_calls.append(dict(kwargs, task_id=task_id))
-        return {"action": self.release_action, "status": "READY",
+        self.release_calls.append(dict(kwargs, task_id=task_id, via="force_release"))
+        # BLOCKED means the Task stays RECOVERY_REQUIRED; RELEASED means READY.
+        status = "RECOVERY_REQUIRED" if self.release_action == "BLOCKED" else "READY"
+        return {"action": self.release_action, "status": status,
                 "message": "fake release"}
+
+    def discard_resume_context(self, task_id: str, expected_session_id: int,
+                               reason: str = "", request_id=None):
+        self.release_calls.append({
+            "task_id": task_id, "expected_session_id": expected_session_id,
+            "reason": reason, "via": "discard_resume"})
+        # discard-resume does not return an `action`; it returns the Task
+        # already at READY (verified on task 3312).
+        return {"status": "READY", "message": "resume context discarded"}
 
 
 class OwnerHealthRunnerTest(unittest.TestCase):
@@ -388,6 +403,7 @@ class OwnerHealthAutoReleaseTest(unittest.TestCase):
         self.assertEqual(len(self.client.release_calls), 1)
         call = self.client.release_calls[0]
         self.assertEqual(call["task_id"], "3")
+        self.assertEqual(call["via"], "force_release")
         # Full CAS evidence, same snapshot shape the force-redispatch path uses.
         self.assertEqual(call["expected_session_id"], 33)
         self.assertEqual(call["expected_session_status"], "RESUMABLE")
@@ -458,6 +474,46 @@ class OwnerHealthAutoReleaseTest(unittest.TestCase):
         self.now += 3600
         self._reconcile(blocker)
         self.assertEqual(len(self.client.release_calls), 2)
+
+    def test_no_pending_revision_uses_discard_resume_to_revive(self):
+        """desired==processing: discard-resume moves the Task to READY."""
+        self.client.desired_revision = "rev-a"  # == processing
+        blocker = self._blocker()
+        self.assertTrue(blocker["releasable"])
+        queued, bodies = self._reconcile(blocker)
+
+        self.assertEqual(queued, 0, "discarded blockers must not page")
+        self.assertEqual(bodies, [])
+        calls = self.client.release_calls
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(calls[0]["via"], "discard_resume")
+        self.assertEqual(calls[0]["task_id"], "3")
+        self.assertEqual(calls[0]["expected_session_id"], 33)
+        self.assertIn("no transcript/branch/checkpoint", calls[0]["reason"])
+        self.assertEqual(self.runner._load_state()["episodes"], {})
+
+    def test_no_session_and_no_pending_revision_is_unactionable(self):
+        """Prior force-release cleared the Session; nothing can revive it."""
+        self.client.desired_revision = "rev-a"  # == processing, no pending
+        blocker = self._blocker()
+        self.assertTrue(blocker["releasable"])  # collect saw a live session
+        # But by the time reconcile runs, the fresh timeline shows the Session
+        # is already gone (a previous force-release pass cleared it).
+        original = self.client.get_task_timeline
+        self.client.get_task_timeline = lambda tid: {
+            "task": {**original("3")["task"], "currentSessionId": None},
+            "sessions": [], "currentWorker": None, "events": []}
+        queued, bodies = self._reconcile(blocker)
+
+        self.assertEqual(self.client.release_calls, [])
+        self.assertEqual(queued, 1, "page once with the real next step")
+        self.assertIn("幻影 Session 已被本 runner 清除", bodies[0])
+        self.assertIn("留一条人工评论", bodies[0])
+        # Not repeat: same episode, second window.
+        self.now += 7200
+        queued2, bodies2 = self._reconcile(blocker)
+        self.assertEqual(queued2, 0)
+        self.assertEqual(bodies2, [])
 
     def test_stale_frozen_policy_is_never_released(self):
         """Reviving it would fail StaleTaskPolicyError and re-strand every window."""

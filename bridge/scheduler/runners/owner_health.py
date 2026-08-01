@@ -353,11 +353,18 @@ class OwnerHealthRunner:
 
     def _release_stranded(
         self, task_id: int, item: Mapping[str, Any],
-    ) -> bool:
-        """Force-release one stranded Session. True when it is gone."""
+    ) -> tuple:
+        """Unstrand one Session. Returns (released, unactionable).
+
+        ``unactionable`` is True when the Task cannot be revived by any action
+        this runner can take (no live Session to discard, and no pending
+        revision to requeue). The caller pages once per episode with a real
+        next step instead of re-recommending a discard-resume that now has no
+        Session to act on.
+        """
         client = getattr(self, "client", None)
         if client is None:
-            return False
+            return False, False
         reason = (
             "owner-health auto-release: RESUME_ONLY task %s session %s is "
             "RESUMABLE with no transcript/branch/checkpoint to resume "
@@ -365,21 +372,36 @@ class OwnerHealthRunner:
             % (task_id, item.get("session_id") or "-", item.get("reason") or "-"))
         try:
             result = release_stranded(client, str(task_id), reason)
+        except ValueError as exc:
+            # "no longer owns session" / "no session and no pending revision":
+            # there is genuinely nothing to release. Do not keep retrying and
+            # do not re-recommend discard-resume; flag the episode so the caller
+            # pages once with a correct next step.
+            self.logger.warning(
+                "owner-health auto-release task=%s unactionable: %s",
+                task_id, exc)
+            return False, True
         except Exception as exc:  # noqa: BLE001
             self.logger.warning(
                 "owner-health auto-release task=%s skipped: %s: %s",
                 task_id, type(exc).__name__, exc)
-            return False
+            return False, False
+        # force-release reports an action (RELEASED / OWNERSHIP_CLEARED_*);
+        # discard-resume does not — it returns the Task already at READY.
+        # Either path worked when the Task is no longer parked.
         action = str((result or {}).get("action") or "").upper()
-        if action in RELEASE_SUCCESS_ACTIONS:
+        final_status = str((result or {}).get("status") or "").upper()
+        converged = action in RELEASE_SUCCESS_ACTIONS or final_status == "READY"
+        if converged:
             self.logger.info(
-                "owner-health auto-release task=%s aone=%s action=%s",
-                task_id, item.get("aone_id") or "-", action)
-            return True
+                "owner-health auto-release task=%s aone=%s action=%s status=%s",
+                task_id, item.get("aone_id") or "-", action or "discard_resume", final_status)
+            return True, False
         self.logger.warning(
-            "owner-health auto-release task=%s not released action=%s message=%s",
-            task_id, action or "?", str((result or {}).get("message") or "")[:200])
-        return False
+            "owner-health auto-release task=%s not released action=%s status=%s message=%s",
+            task_id, action or "?", final_status,
+            str((result or {}).get("message") or "")[:200])
+        return False, False
 
     def _load_state(self) -> dict[str, Any]:
         try:
@@ -465,18 +487,21 @@ class OwnerHealthRunner:
             # decide.
             if self._release_due(item, episode, now, first_seen):
                 episode["lastReleaseAt"] = now
-                released = self._release_stranded(task_id, item)
+                released, unactionable = self._release_stranded(task_id, item)
                 if released:
                     # The blocker is gone; drop the episode so a genuinely new
                     # one later starts its own dwell clock.
                     continue
+                if unactionable:
+                    episode["unactionable"] = True
                 current[str(task_id)] = episode
-            # A stale frozen policy will not resolve on its own and nothing here
-            # can clear it, so repeating the same page hourly adds no
-            # information — say it once per episode.
+            # Stale-policy and unactionable blockers cannot be cleared by
+            # anything this runner can do, so repeating the same page every
+            # window adds no information — say it once per episode.
             repeat_due = (
                 reason not in ONE_SHOT_REASONS
                 and not item.get("stale_policy")
+                and not episode.get("unactionable")
                 and now - last_alert >= self.repeat_seconds)
             if not last_alert or repeat_due:
                 dwell = self._duration(now - first_seen)
@@ -499,6 +524,17 @@ class OwnerHealthRunner:
                         "在 Aone 单上留一条人工评论即可让 scan 重新派发；"
                         "或人工评估后决定放弃该 Task。"
                         % HEADLESS_POLICY_REVISION)
+                elif episode.get("unactionable"):
+                    # The dead Session was already cleared on a prior pass and
+                    # no newer revision is queued, so neither discard-resume nor
+                    # force-release can revive it. Pointing the operator back at
+                    # discard-resume — which needs a live Session — was the bug.
+                    next_step = (
+                        "该 Task 的幻影 Session 已被本 runner 清除，但工单没有"
+                        "待处理的新修订可被重新排队，因此无法自动回到 READY，"
+                        "本告警不再重复。要让它重新派发，在 Aone 单上留一条"
+                        "人工评论即可让 scan 触发一次新 upsert；或人工评估后"
+                        "决定放弃该 Task。")
                 elif reason == "RESUME_OWNER_NOT_QUEUE_PULLING":
                     next_step = (
                         "请复核 Task/Session；确认旧 owner 已不再执行后，人工运行 "
