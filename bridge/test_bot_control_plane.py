@@ -2830,6 +2830,47 @@ class TaskBookendDispatchTest(unittest.TestCase):
         self.assertNotIn("finish", calls)
         self.assertNotIn("release", calls)
 
+    def test_rejected_result_names_the_broken_clause_not_missing(self):
+        """A refused result is not a missing one; the subtype has to say which."""
+        cases = (
+            ('[[AONE_RESULT:{"outcome":"idle","reply_body":"已交接",'
+             '"resolution":{"kind":"external_handoff"}}]]',
+             "invalid_task_result:handoff_incomplete"),
+            ('[[AONE_RESULT:{"outcome":"idle","reply_body":"责任不明",'
+             '"resolution":{"kind":"unknown_scope"}}]]',
+             "invalid_task_result:unknown_scope_no_owner"),
+            ('[[AONE_RESULT:{"outcome":"suspend","reply_body":"等人"}]]',
+             "invalid_task_result:suspend_no_wait_for"),
+            ('[[AONE_RESULT:{"outcome":"maybe","reply_body":"x"}]]',
+             "invalid_task_result:invalid_outcome"),
+            ('[[AONE_RESULT:{"outcome":"idle","reply_body":""}]]',
+             "invalid_task_result:empty_reply_body"),
+        )
+        for final, expected in cases:
+            with self.subTest(expected=expected):
+                out, calls = self._run(final)
+                self.assertEqual(out["status"], "error")
+                self.assertEqual(out["error"]["subtype"], expected)
+                # The cause leads the recorded message, so the 1000-char
+                # truncation cannot lose it.
+                self.assertTrue(
+                    out["error"]["message"].startswith("task result rejected:"),
+                    out["error"]["message"][:80])
+                self.assertNotIn("reply", calls)
+                self.assertNotIn("finish", calls)
+
+    def test_rejected_result_message_carries_the_correction(self):
+        out, _calls = self._run(
+            '[[AONE_RESULT:{"outcome":"idle","reply_body":"已交接",'
+            '"resolution":{"kind":"external_handoff"}}]]')
+        message = out["error"]["message"]
+        self.assertIn("handoff_incomplete", message)
+        self.assertIn("owner / source_comment / tracker", message)
+        # And the retry can read that same reason back out of lastError.
+        self.assertIn(
+            "owner / source_comment / tracker",
+            persistent_tasks_module.retry_correction_for(out["error"]))
+
     def test_comment_result_requires_matching_handled_comment_id(self):
         missing, missing_calls = self._run(
             '[[AONE_RESULT:{"outcome":"idle","reply_body":"忽略了评论"}]]',
