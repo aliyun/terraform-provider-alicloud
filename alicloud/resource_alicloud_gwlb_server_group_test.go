@@ -25,7 +25,7 @@ func TestAccAliCloudGwlbServerGroup_basic8419(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGwlbServerGroupBasicDependence8419)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, connectivity.EfloSupportRegions)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
@@ -67,18 +67,20 @@ func TestAccAliCloudGwlbServerGroup_basic8419(t *testing.T) {
 							"server_type": "Ecs",
 						},
 					},
-					"server_group_name": name,
+					"server_group_name":    name,
+					"server_failover_mode": "Rebalance",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"scheduler":         "5TCH",
-						"protocol":          "GENEVE",
-						"server_group_type": "Instance",
-						"resource_group_id": CHECKSET,
-						"vpc_id":            CHECKSET,
-						"dry_run":           "false",
-						"servers.#":         "1",
-						"server_group_name": name,
+						"scheduler":            "5TCH",
+						"protocol":             "GENEVE",
+						"server_group_type":    "Instance",
+						"resource_group_id":    CHECKSET,
+						"vpc_id":               CHECKSET,
+						"dry_run":              "false",
+						"servers.#":            "1",
+						"server_group_name":    name,
+						"server_failover_mode": "Rebalance",
 					}),
 				),
 			},
@@ -113,14 +115,16 @@ func TestAccAliCloudGwlbServerGroup_basic8419(t *testing.T) {
 							"server_id":   "${alicloud_instance.defaultH6McvC.network_interface_id}",
 						},
 					},
-					"server_group_name": name + "_update",
+					"server_group_name":    name + "_update",
+					"server_failover_mode": "NoRebalance",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"scheduler":         "3TCH",
-						"resource_group_id": CHECKSET,
-						"servers.#":         "1",
-						"server_group_name": name + "_update",
+						"scheduler":            "3TCH",
+						"resource_group_id":    CHECKSET,
+						"servers.#":            "1",
+						"server_group_name":    name + "_update",
+						"server_failover_mode": "NoRebalance",
 					}),
 				),
 			},
@@ -191,9 +195,6 @@ variable "region_id" {
   default = "cn-wulanchabu"
 }
 
-variable "zone_id1" {
-  default = "cn-wulanchabu-b"
-}
 
 data "alicloud_resource_manager_resource_groups" "default" {}
 
@@ -204,7 +205,7 @@ resource "alicloud_vpc" "defaultEaxcvb" {
 
 resource "alicloud_vswitch" "defaultc3uVID" {
   vpc_id       = alicloud_vpc.defaultEaxcvb.id
-  zone_id      = var.zone_id1
+  zone_id      = "cn-hangzhou-h"
   cidr_block   = "10.0.0.0/24"
   vswitch_name = "tf-test-vsw1"
 }
@@ -252,7 +253,7 @@ func TestAccAliCloudGwlbServerGroup_basic8500(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGwlbServerGroupBasicDependence8500)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, connectivity.EfloSupportRegions)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
@@ -490,7 +491,7 @@ func TestAccAliCloudGwlbServerGroup_basic8564(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGwlbServerGroupBasicDependence8564)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, connectivity.EfloSupportRegions)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
