@@ -174,12 +174,12 @@ class FieldRepairWorker:
                 str(self.repo_root / "bootstrap" / "aone-fields.sh"),
                 "inspect", str(item_id), str(project),
             ],
-            # 60s instead of 30s: aone-fields.sh inspect chains multiple a1 calls and
-            # intermittent a1/network jitter can push it past 30s even when fields are
-            # all present (status=ready). A spurious field_repair_transient/
-            # inspect_timeout here blackholes the headless run before it starts; the
-            # higher floor avoids that while JARVIS_FIELD_INSPECT_TIMEOUT stays as a
-            # tight override.
+            # 60s: inspect chains a workitem get plus cached field metadata,
+            # measured at ~8.5s cold and ~3.9s warm against the live API, so this
+            # leaves roughly 7x headroom. A spurious field_repair_transient/
+            # inspect_timeout here blackholes the headless run before it starts,
+            # which is why the floor stays well above the observed cost;
+            # JARVIS_FIELD_INSPECT_TIMEOUT remains available as a tight override.
             timeout=float(os.environ.get("JARVIS_FIELD_INSPECT_TIMEOUT", "60")),
             controller=controller,
             env=self._aone_env(terraform),
@@ -370,7 +370,16 @@ class FieldRepairWorker:
                 str(inspection.get("revision") or ""),
                 inspection_digest(inspection),
             ] + specs,
-            timeout=float(os.environ.get("JARVIS_FIELD_APPLY_TIMEOUT", "30")),
+            # 180s, not 30s: `aone-fields.sh apply` is not one call. It runs a
+            # full inspect for the CAS pre-check, the update, a second full
+            # inspect as readback, and a canonical workitem get — measured at
+            # 19.2s end-to-end on an idle machine against the live API. The old
+            # 30s default was smaller than the operation it was bounding, so
+            # apply_timeout was near-deterministic under any load and burned the
+            # Task retry budget until the ticket stranded in RECOVERY_REQUIRED.
+            # This keeps ~9x headroom for a contended worker while still
+            # bounding a hung process.
+            timeout=float(os.environ.get("JARVIS_FIELD_APPLY_TIMEOUT", "180")),
             controller=controller,
             env=self._aone_env(terraform),
         )
