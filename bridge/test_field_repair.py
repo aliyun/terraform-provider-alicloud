@@ -487,6 +487,136 @@ class FieldRepairBridgeIntegrationTest(unittest.TestCase):
                          [{"id": "140097", "name": "涉及云产品"}])
 
 
+class FieldRepairPlaceholderTest(unittest.TestCase):
+    """A pool placeholder rescues genuine undecidability — and nothing else."""
+
+    WITH_PLACEHOLDER = {
+        "id": "140097",
+        "name": "涉及云产品",
+        "reason": "no_title_match",
+        "options": [
+            {"value": "ecs", "displayValue": "ECS"},
+            {"value": "vpc", "displayValue": "VPC"},
+        ],
+        "placeholder": {"value": "vpc", "displayValue": "VPC"},
+    }
+
+    def _worker(self, results):
+        return FieldRepairWorkerTest._worker(self, results)
+
+    def _json_result(self, value, **kw):
+        return FieldRepairWorkerTest._json_result(value, **kw)
+
+    def _repair(self, worker):
+        return FieldRepairWorkerTest._repair(self, worker)
+
+    @staticmethod
+    def _model(payload):
+        return {"structured_output": payload}
+
+    LOW_CONFIDENCE = _model.__func__({
+        "assignments": [{
+            "fieldId": "140097", "value": "ecs", "confidence": 0.1,
+            "reason": "guessing",
+        }],
+        "unresolved": [],
+    })
+
+    def test_placeholder_fills_after_the_model_declines(self):
+        inspect = inspection(unresolved=[self.WITH_PLACEHOLDER])
+        applied = dict(inspect, status="ready", missing=[], unresolved=[],
+                       assignments=[{"id": "140097", "value": "vpc"}],
+                       filled=True, readback=[{"id": "140097", "value": "vpc"}])
+        worker, runtime, _client = self._worker([
+            self._json_result(inspect),
+            self._json_result(self.LOW_CONFIDENCE),
+            self._json_result(applied),
+        ])
+        result = self._repair(worker)
+        self.assertEqual(result["outcome"], "field_repaired")
+        self.assertEqual(result["placeholders"], [{
+            "id": "140097", "name": "涉及云产品",
+            "value": "vpc", "source": "pool_placeholder",
+        }])
+        self.assertTrue(result["candidateDigest"])
+        # The model still got its chance before the placeholder was used.
+        self.assertEqual(len(runtime.calls), 3)
+        apply_argv = runtime.calls[-1][0]
+        self.assertIn("140097=vpc", apply_argv)
+
+    def test_contract_violations_never_reach_the_placeholder(self):
+        illegal = self._model({
+            "assignments": [{
+                "fieldId": "140097", "value": "rds", "confidence": 0.99,
+                "reason": "not a legal candidate",
+            }],
+            "unresolved": [],
+        })
+        worker, runtime, _client = self._worker([
+            self._json_result(inspection(unresolved=[self.WITH_PLACEHOLDER])),
+            self._json_result(illegal),
+        ])
+        result = self._repair(worker)
+        self.assertEqual(result["outcome"], "required_fields_blocked")
+        self.assertEqual(result["failureReason"], "illegal_candidate")
+        # inspect + model only: apply must not run.
+        self.assertEqual(len(runtime.calls), 2)
+
+    def test_unconfigured_pool_keeps_blocking(self):
+        worker, runtime, _client = self._worker([
+            self._json_result(inspection()),
+            self._json_result(self.LOW_CONFIDENCE),
+        ])
+        result = self._repair(worker)
+        self.assertEqual(result["outcome"], "required_fields_blocked")
+        self.assertEqual(result["failureReason"], "low_confidence")
+        self.assertEqual(len(runtime.calls), 2)
+
+    def test_partial_placeholder_coverage_blocks(self):
+        """apply requires every missing field; a half-covered set must not try."""
+        bare = {
+            "id": "140282", "name": "Terraform需求类型",
+            "reason": "no_title_match",
+            "options": [{"value": "a", "displayValue": "A"},
+                        {"value": "b", "displayValue": "B"}],
+        }
+        inspect = inspection(unresolved=[self.WITH_PLACEHOLDER, bare])
+        worker, runtime, _client = self._worker([
+            self._json_result(inspect),
+            self._json_result(self._model({
+                "assignments": [],
+                "unresolved": [
+                    {"fieldId": "140097", "reason": "cannot tell"},
+                    {"fieldId": "140282", "reason": "cannot tell"},
+                ],
+            })),
+        ])
+        result = self._repair(worker)
+        self.assertEqual(result["outcome"], "required_fields_blocked")
+        self.assertEqual(result["failureReason"], "model_unresolved")
+        self.assertEqual(len(runtime.calls), 2)
+
+    def test_deterministic_answer_never_becomes_a_placeholder(self):
+        """A field the ladder already resolved reports no placeholder at all."""
+        deterministic = [{
+            "id": "140097", "name": "涉及云产品",
+            "value": "ecs", "source": "configured_default",
+        }]
+        inspect = inspection(unresolved=[], deterministic=deterministic)
+        inspect["missing"] = [self.WITH_PLACEHOLDER]
+        applied = dict(inspect, status="ready", missing=[], unresolved=[],
+                       assignments=deterministic, filled=True,
+                       readback=[{"id": "140097", "value": "ecs"}])
+        worker, runtime, _client = self._worker([
+            self._json_result(inspect),
+            self._json_result(applied),
+        ])
+        result = self._repair(worker)
+        self.assertEqual(result["outcome"], "field_repaired")
+        self.assertEqual(result["placeholders"], [])
+        self.assertEqual(len(runtime.calls), 2)
+
+
 class FieldRepairSubmitterNotifyTest(unittest.TestCase):
     BLOCKED = {
         "status": "suspended", "outcome": "required_fields_blocked",
@@ -539,6 +669,62 @@ class FieldRepairSubmitterNotifyTest(unittest.TestCase):
         self.assertEqual(staff, persistent_tasks.master_staff())
         staff2, _n2 = run_with({})
         self.assertEqual(staff2, persistent_tasks.master_staff())
+
+
+class FieldRepairPlaceholderNotifyTest(unittest.TestCase):
+    FILLED = {
+        "status": "completed", "outcome": "field_repaired",
+        "candidateDigest": "abc123",
+        "placeholders": [
+            {"id": "101987", "name": "客户名称", "value": "未知"},
+            {"id": "102312", "name": "客户问题分类1级", "value": "其他"},
+        ],
+    }
+
+    def test_posts_one_aone_comment_keyed_on_the_candidate_digest(self):
+        with mock.patch.object(
+                persistent_tasks, "_aone_event_enqueue",
+                return_value=True) as post:
+            persistent_tasks.notify_field_repair_placeholder(
+                "84432183", "1091779", False, self.FILLED)
+        post.assert_called_once()
+        args, kwargs = post.call_args
+        self.assertEqual(args[0], "84432183")
+        self.assertEqual(args[1], "1091779")
+        self.assertEqual(args[2],
+                         "field-repair-placeholder:1091779:84432183:abc123")
+        body = args[3]
+        self.assertIn("客户名称：未知", body)
+        self.assertIn("客户问题分类1级：其他", body)
+        # Non-terraform pool writes as jarvis and must opt past the tf gate.
+        self.assertTrue(kwargs["allow_non_tf"])
+        self.assertEqual(kwargs["identity"], "jarvis")
+
+    def test_terraform_pool_writes_as_the_public_rd_identity(self):
+        with mock.patch.object(
+                persistent_tasks, "_aone_event_enqueue",
+                return_value=True) as post:
+            persistent_tasks.notify_field_repair_placeholder(
+                "84432183", "1086837", True, self.FILLED)
+        _args, kwargs = post.call_args
+        self.assertFalse(kwargs["allow_non_tf"])
+        self.assertEqual(kwargs["identity"],
+                         persistent_tasks.PERSONA_PUBLIC_IDENTITY)
+
+    def test_no_placeholders_posts_nothing(self):
+        with mock.patch.object(
+                persistent_tasks, "_aone_event_enqueue") as post:
+            persistent_tasks.notify_field_repair_placeholder(
+                "84432183", "1091779", False,
+                {"status": "completed", "placeholders": []})
+        post.assert_not_called()
+
+    def test_notify_never_raises_when_the_publisher_fails(self):
+        with mock.patch.object(
+                persistent_tasks, "_aone_event_enqueue",
+                side_effect=RuntimeError("boom")):
+            persistent_tasks.notify_field_repair_placeholder(
+                "84432183", "1091779", False, self.FILLED)
 
 
 if __name__ == "__main__":

@@ -20,6 +20,19 @@ from bridge.jarvis_execution_runtime import DEFAULT_EXECUTION_RUNTIME, Execution
 
 
 DEFAULT_CONFIDENCE = 0.5
+
+# Model outcomes that mean "this field is genuinely undecidable from the ticket"
+# — either the model declined, was not confident enough, or could not be reached.
+# A pool-configured placeholder may stand in for these so the ticket keeps moving.
+# Deliberately excludes the contract-violation reasons (illegal_candidate,
+# invalid_model_json, incomplete_model_selection), which signal that the answer
+# and the candidate set disagree and must stay fail-closed.
+PLACEHOLDER_FALLBACK_REASONS = frozenset({
+    "low_confidence",
+    "model_unresolved",
+    "model_error",
+    "model_timeout",
+})
 MODEL_OUTPUT_SCHEMA = {
     "type": "object",
     "additionalProperties": False,
@@ -418,6 +431,47 @@ class FieldRepairWorker:
             ],
         }
 
+    @staticmethod
+    def _placeholder_assignments(
+            inspection: Mapping[str, Any], reason: str,
+    ) -> list:
+        """Stand-in values for fields nobody — heuristics or model — could decide.
+
+        Only for genuine undecidability. A contract violation
+        (``illegal_candidate``, ``invalid_model_json``,
+        ``incomplete_model_selection``, ``incomplete_assignment``) means the
+        candidate set and the answer disagree, and stamping a placeholder over
+        that would hide a real defect, so those keep failing closed.
+
+        Returns [] unless every still-unresolved field has a pool-configured
+        placeholder that ``aone-fields.sh`` already validated down to exactly one
+        legal option. A partial set is useless: ``apply`` requires the assignment
+        set to cover every missing field, so it would be rejected anyway.
+        """
+        if reason not in PLACEHOLDER_FALLBACK_REASONS:
+            return []
+        unresolved = inspection.get("unresolved") or []
+        if not unresolved:
+            return []
+        rows = []
+        for field in unresolved:
+            if not isinstance(field, Mapping):
+                return []
+            placeholder = field.get("placeholder")
+            if not isinstance(placeholder, Mapping):
+                return []
+            value = str(placeholder.get("value") or "")
+            field_id = str(field.get("id") or "")
+            if not value or not field_id:
+                return []
+            rows.append({
+                "id": field_id,
+                "name": str(field.get("name") or ""),
+                "value": value,
+                "source": "pool_placeholder",
+            })
+        return rows
+
     def repair_only(
             self, item_id: str, project: str, *,
             terraform: bool, controller: Any,
@@ -438,9 +492,16 @@ class FieldRepairWorker:
                     "outcome": "field_repair_not_needed",
                 }
             assignments = list(current.get("assignments") or [])
+            placeholders: list = []
             if current.get("unresolved"):
-                assignments.extend(
-                    self._model_assignments(current, controller))
+                try:
+                    assignments.extend(
+                        self._model_assignments(current, controller))
+                except RequiredFieldsBlocked as exc:
+                    placeholders = self._placeholder_assignments(current, exc.reason)
+                    if not placeholders:
+                        raise
+                    assignments.extend(placeholders)
             missing_ids = {
                 str(field.get("id") or "") for field in current["missing"]
             }
@@ -457,6 +518,8 @@ class FieldRepairWorker:
                 "status": "completed",
                 "outcome": "field_repaired",
                 "filled": applied.get("assignments") or assignments,
+                "placeholders": placeholders,
+                "candidateDigest": current_digest,
             }
         except RequiredFieldsBlocked as exc:
             return self._blocked(

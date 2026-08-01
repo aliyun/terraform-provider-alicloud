@@ -107,9 +107,10 @@ pool_policy() {
         [.pools[]? | select((.project | tostring) == $p)] | .[0] // {} |
         {
           defaults: (.claim_required_field_defaults // {}),
-          fallbacks: (.claim_required_field_fallbacks // {})
+          fallbacks: (.claim_required_field_fallbacks // {}),
+          placeholders: (.claim_required_field_placeholders // {})
         }
-    ' "$pools_cfg" 2>/dev/null || printf '{"defaults":{},"fallbacks":{}}'
+    ' "$pools_cfg" 2>/dev/null || printf '{"defaults":{},"fallbacks":{},"placeholders":{}}'
 }
 
 resolve_missing() {
@@ -157,10 +158,12 @@ resolve_missing() {
         ($title | title_tokens) as $tokens |
         ($policy.defaults // {}) as $defaults |
         ($policy.fallbacks // {}) as $fallbacks |
+        ($policy.placeholders // {}) as $placeholders |
         [$missing[] |
             . as $field |
             (($defaults[$field.id] // $defaults[$field.name] // null)) as $default |
             (($fallbacks[$field.id] // $fallbacks[$field.name] // null)) as $fallback |
+            (($placeholders[$field.id] // $placeholders[$field.name] // null)) as $placeholder |
             (($field.options // []) | map(select(option_value != "")) |
              unique_by(option_value)) as $options |
             ($options | map(. as $option | . + {
@@ -172,6 +175,18 @@ resolve_missing() {
             ($scored | map(select(._score == $best and $best > 0))) as $title_matches |
             (configured_matches($options; $default)) as $default_matches |
             (configured_matches($options; $fallback)) as $fallback_matches |
+            # A placeholder is not an answer — it is the pool saying "nobody can
+            # decide this one, stamp the field'"'"'s own neutral option so the ticket
+            # keeps moving and a human corrects it later". It is therefore only
+            # offered on the genuinely-undecidable branch below, never on a
+            # broken configured default/fallback (that is a config bug to fix,
+            # not something to paper over), and only when it resolves to exactly
+            # one legal option — otherwise no key is emitted at all.
+            ((configured_matches($options; $placeholder)) as $m |
+             if $placeholder != null and ($m | length) == 1
+             then {placeholder: {value: ($m[0] | option_value),
+                                 displayValue: ($m[0] | option_label)}}
+             else {} end) as $placeholder_hint |
             if ($field.optionsLookupError // false) then
                 {kind:"unresolved", id:$field.id, name:$field.name,
                  reason:"options_lookup_error", options:[]}
@@ -217,6 +232,7 @@ resolve_missing() {
                          elif $best == 0 then "no_title_match"
                          else "ambiguous_title_match" end),
                  options:($options | map({value:option_value, displayValue:option_label}))}
+                + $placeholder_hint
             end
         ] as $rows |
         {assignments:[$rows[] | select(.kind=="assignment") | del(.kind)],

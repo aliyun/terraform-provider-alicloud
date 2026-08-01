@@ -88,6 +88,7 @@ if [ "$1 $2 $3 $4" = "project workitem field options" ]; then
       140097) printf '[{"value":"","identifier":"terraform","displayValue":"Terraform"},{"value":"mongodb","identifier":"ignored-second-key","displayValue":"MongoDB"}]\n' ;;
       140282) printf '[{"value":"defined","displayValue":"有OpenAPI，资源未定义，开放平台维护"},{"value":"manual","displayValue":"手工资源"}]\n' ;;
       107239) printf '[{"Identifier":"906688","Name":"API 工具","Path":"产品/API 工具"},{"Identifier":"891438","Name":"云数据库 MongoDB 版","Path":"产品/MongoDB"}]\n' ;;
+      101987) printf '[{"identifier":"未知","value":"","displayValue":"未知"},{"identifier":"AcmeCorp","value":"","displayValue":"AcmeCorp"}]\n' ;;
     esac
     exit 0
   fi
@@ -513,6 +514,61 @@ PATH="$tmp/bin:$PATH" A1_GENERIC_FIXTURES=1 JARVIS_CACHE_DIR="$cache_probe" \
 [ "$(grep -c 'field list' "$log" || true)" -eq 1 ] \
   && ok "JARVIS_FIELD_META_TTL=0 bypasses a warm cache" \
   || bad "TTL=0 did not bypass cache: $(cat "$log")"
+
+# --- placeholder is offered only where nothing else can decide ---------------
+# tf_customer pins 101987 客户名称 as a placeholder, not a default: 604 real
+# customer names, so any fixed answer would be a lie. inspect must surface it as
+# a hint on the unresolved entry — never as an assignment, so the model still
+# gets to try first — and only after resolving to exactly one legal option.
+cat > "$tmp/workitem.json" <<'JSON'
+{"title":"required field placeholder probe","fields":[
+  {"identifier":"workitemType","value":"36","displayValue":"需求问题"},
+  {"identifier":"space","value":"1086837","displayValue":"tf-customer"},
+  {"identifier":"101987","value":"","displayValue":""}
+]}
+JSON
+cat > "$tmp/fields.json" <<'JSON'
+[
+  {"identifier":"101987","displayName":"客户名称","isRequired":true,"sourceType":"team","format":"list","options":[]}
+]
+JSON
+rm -f "$A1_TEST_STATE.updated" "$A1_TEST_STATE.get_count"
+: > "$log"
+inspect_out="$(PATH="$tmp/bin:$PATH" A1_GENERIC_FIXTURES=1 \
+  bash "$root/bootstrap/aone-fields.sh" inspect 84608993 1086837 2>/dev/null)"; rc=$?
+[ "$rc" -eq 0 ] && printf '%s' "$inspect_out" | jq -e '
+  .status=="repair_required" and .assignments==[] and
+  (.unresolved | length)==1 and
+  .unresolved[0].id=="101987" and
+  .unresolved[0].placeholder.value=="未知" and
+  .unresolved[0].placeholder.displayValue=="未知"
+' >/dev/null && [ "$(grep -c 'workitem update' "$log" || true)" -eq 0 ] \
+  && ok "unresolved field carries its pool placeholder as a hint" \
+  || bad "placeholder hint missing rc=$rc out=$inspect_out"
+
+# A pool with no placeholder configured must not grow the key at all.
+cat > "$tmp/workitem.json" <<'JSON'
+{"title":"no placeholder configured here","fields":[
+  {"identifier":"workitemType","value":"36","displayValue":"需求问题"},
+  {"identifier":"space","value":"528766","displayValue":"provider"},
+  {"identifier":"140097","value":"","displayValue":""}
+]}
+JSON
+cat > "$tmp/fields.json" <<'JSON'
+[
+  {"identifier":"140097","displayName":"涉及云产品","isRequired":true,"sourceType":"team","format":"list","options":[]}
+]
+JSON
+rm -f "$A1_TEST_STATE.updated" "$A1_TEST_STATE.get_count"
+: > "$log"
+inspect_out="$(PATH="$tmp/bin:$PATH" A1_AUTO_FIXTURES=1 \
+  bash "$root/bootstrap/aone-fields.sh" inspect 9002 528766 2>/dev/null)"; rc=$?
+[ "$rc" -eq 0 ] && printf '%s' "$inspect_out" | jq -e '
+  (.unresolved | length) > 0 and
+  ([.unresolved[] | select(has("placeholder"))] | length) == 0
+' >/dev/null \
+  && ok "pool without a configured placeholder emits no placeholder key" \
+  || bad "unexpected placeholder key rc=$rc out=$inspect_out"
 
 # --- every scanned pool pins 归属产品 -----------------------------------------
 # 107239 归属产品 is required in every pool the scanner touches, and it is a
