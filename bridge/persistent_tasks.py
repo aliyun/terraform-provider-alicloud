@@ -10,7 +10,7 @@ import signal
 import subprocess
 import threading
 import time
-from typing import Any, Callable, Collection
+from typing import Any, Callable, Collection, Mapping
 
 from bridge.aone_tasks import master_staff
 from bridge.helpers.aone import (
@@ -61,6 +61,87 @@ _CLOSABLE_RESOLUTION_KINDS = frozenset((
     "implemented_and_verified", "existing_supported_and_verified", "withdrawn",
 ))
 _HANDOFF_FIELDS = ("owner", "source_comment", "tracker")
+
+# What to tell the next attempt. A control-plane retry re-leases the Task and
+# replays the *same* frozen prompt, so without this the agent has no way to learn
+# which clause it broke and reproduces the identical rejection until the retry
+# budget is gone. Keep each line short: it is prepended to an already-long prompt.
+TASK_RESULT_CORRECTIONS = {
+    "missing": (
+        "上一轮没有输出可解析的 [[AONE_RESULT:{...}]]。请在最后单起一行输出它，"
+        "JSON 后紧跟 ]]，中间不要有空格或换行。"),
+    "invalid_outcome": (
+        "上一轮 AONE_RESULT 的 outcome 不合法。只接受 done / idle / suspend 三个值。"),
+    "empty_reply_body": (
+        "上一轮 AONE_RESULT 的 reply_body 为空。它是发给工单的唯一对外回复正文，必须非空。"),
+    "handoff_incomplete": (
+        "上一轮 AONE_RESULT 的 resolution.kind=external_handoff，但 handoff 三个字段"
+        "（owner / source_comment / tracker）没有全部填写。三者缺一即被拒。"),
+    "unknown_scope_no_owner": (
+        "上一轮 AONE_RESULT 的 resolution.kind=unknown_scope，但 handoff.owner 为空。"
+        "必须给出明确的人类 owner。"),
+    "suspend_no_wait_for": (
+        "上一轮 AONE_RESULT 的 outcome=suspend，但 suspend_wait_for 为空。"
+        "必须给出要 @ 等待的 staffId。"),
+}
+
+
+def task_result_correction(reason: str) -> str:
+    """One corrective sentence for a rejected task result, or ""."""
+    return TASK_RESULT_CORRECTIONS.get(str(reason or "").strip(), "")
+
+
+def retry_correction_for(last_error: Any) -> str:
+    """Corrective preamble for a retry whose predecessor's result was refused.
+
+    Reads the reason back out of the Task's own ``lastError`` subtype, so no extra
+    control-plane state is needed to carry it across the retry boundary. Returns ""
+    for every other failure — a timeout or a crash tells the agent nothing useful
+    about its output contract.
+    """
+    raw = last_error
+    if isinstance(raw, str):
+        try:
+            raw = json.loads(raw)
+        except (TypeError, ValueError):
+            return ""
+    if not isinstance(raw, Mapping):
+        return ""
+    subtype = str(raw.get("subtype") or "").strip()
+    if subtype == "missing_task_result":
+        reason = "missing"
+    elif subtype.startswith("invalid_task_result:"):
+        reason = subtype.split(":", 1)[1]
+    else:
+        return ""
+    correction = task_result_correction(reason)
+    if not correction:
+        return ""
+    return (
+        "⚠️ 上一轮的收尾结果被契约拒绝（%s），本轮必须修正后再输出：\n%s"
+        % (reason, correction))
+
+
+def _annotate_rejected_result(final: str, reason: str, unhandled: bool) -> str:
+    """Put the rejection cause where a 1000-char truncation cannot lose it.
+
+    ``task_failure_result`` records only the first 1000 characters of the agent's
+    final text, and these Sessions externalize no transcript, so the cause used to
+    be unrecoverable after the fact — the only way to guess which clause failed
+    was keyword-counting the log. Leading with the reason keeps it in the recorded
+    message and in the retry's view of ``lastError``.
+    """
+    text = str(final or "")
+    if unhandled:
+        head = "task result rejected: expected comment not handled"
+    elif reason in ("", "missing"):
+        head = "task result missing: no parseable [[AONE_RESULT:{...}]]"
+    else:
+        head = "task result rejected: %s" % reason
+    correction = task_result_correction(reason)
+    if correction:
+        head = "%s\n%s" % (head, correction)
+    return "%s\n---\n%s" % (head, text) if text else head
 _CLOSE_AUTHORIZATION_RE = re.compile(
     r"(?i)(?:确认\s*(?:可以|可)?\s*(?:关闭|结单)|同意\s*(?:关闭|结单)|"
     r"允许\s*(?:关闭|结单)|close[_ -]?authorized)")
@@ -366,14 +447,31 @@ def can_finish(result):
 
 
 def extract_task_result(text: str):
+    """Back-compatible two-tuple view of :func:`classify_task_result`."""
+    clean, result, _reason = classify_task_result(text)
+    return clean, result
+
+
+def classify_task_result(text: str):
+    """Return ``(clean, result, reason)``; ``reason`` is "" only on success.
+
+    The rejection reason exists because collapsing every one of these into a bare
+    ``None`` made a well-formed-but-non-compliant result indistinguishable from no
+    result at all. Both surfaced as ``missing_task_result``, so an agent that had
+    finished the work and merely omitted a handoff field looked like an agent that
+    had produced nothing — and the retry, carrying the identical prompt, failed
+    identically until the Task stranded.
+    """
     clean, payload = _extract_last_json(text, "[[AONE_RESULT:")
     if not isinstance(payload, dict):
-        return clean, None
+        return clean, None, "missing"
     outcome = str(payload.get("outcome") or "").strip().lower()
     reply = str(payload.get("reply_body") or "").strip()
     wait_for = str(payload.get("suspend_wait_for") or "").strip()
-    if outcome not in {"done", "idle", "suspend"} or not reply:
-        return clean, None
+    if outcome not in {"done", "idle", "suspend"}:
+        return clean, None, "invalid_outcome"
+    if not reply:
+        return clean, None, "empty_reply_body"
     links = payload.get("mr_cr_links")
     resolution = payload.get("resolution")
     resolution = resolution if isinstance(resolution, dict) else {}
@@ -407,14 +505,14 @@ def extract_task_result(text: str):
     kind = result["resolution"]["kind"]
     if kind == "external_handoff":
         if any(not result["handoff"].get(field) for field in _HANDOFF_FIELDS):
-            return clean, None
+            return clean, None, "handoff_incomplete"
         # A tracked external owner is still an open dependency.  Never let a model's
         # ``done`` token turn it into a terminal Aone state.
         result["outcome"] = "idle"
     elif kind == "unknown_scope":
         owner = result["handoff"].get("owner")
         if not owner:
-            return clean, None
+            return clean, None, "unknown_scope_no_owner"
         # Unknown responsibility must await a named human decision, even when the
         # model accidentally emitted ``done`` or ``idle``.
         result["outcome"] = "suspend"
@@ -426,8 +524,8 @@ def extract_task_result(text: str):
             result["finish_blocked_reason"] = reason
 
     if result["outcome"] == "suspend" and not result["suspend_wait_for"]:
-        return clean, None
-    return clean, result
+        return clean, None, "suspend_no_wait_for"
+    return clean, result, ""
 
 
 def extract_aone_event(text: str):
@@ -593,9 +691,10 @@ def dispatch_item(
             return "error"
 
         structured = None
+        reject_reason = ""
         if (not result.is_error and task_bookend is not None
                 and task_bookend.writes_reply):
-            _, structured = extract_task_result(final)
+            _, structured, reject_reason = classify_task_result(final)
         expected_comment = bool(
             task_bookend is not None
             and task_bookend.expected_comment_cursor is not None)
@@ -628,15 +727,24 @@ def dispatch_item(
             completion()
             return "done"
         if task_bookend is not None:
-            task_result = structured or extract_task_result(final)[1]
+            if structured is None and not reject_reason:
+                _, structured, reject_reason = classify_task_result(final)
+            task_result = structured
             unhandled = (
                 task_result is not None
                 and not task_bookend.handles_expected_comment(task_result))
             if task_result is None or unhandled:
-                return fail(ClaudeResult(
-                    final or "", True,
+                # Name the specific clause that was broken. "missing" stays
+                # missing_task_result; everything else was a real result the
+                # contract refused, and calling that "missing" is what made 31
+                # stranded tickets undiagnosable.
+                subtype = (
                     "unhandled_comment" if unhandled
-                    else "missing_task_result"))
+                    else "missing_task_result" if reject_reason in ("", "missing")
+                    else "invalid_task_result:%s" % reject_reason)
+                return fail(ClaudeResult(
+                    _annotate_rejected_result(final, reject_reason, unhandled),
+                    True, subtype))
             handed_off = task_bookend.commit(task_result)
             if task_result["outcome"] == "suspend":
                 if handed_off:
@@ -1112,6 +1220,15 @@ class PersistentTaskExecution:
             raise TaskInputContractError(
                 "INPUT_NOT_PORTABLE",
                 "Task requires nonblank itemId and prompt")
+        # Tell this attempt why the previous one's result was refused. The frozen
+        # payload prompt is identical on every retry, so without this the agent
+        # repeats the same contract violation until the budget is gone — the shape
+        # behind a long tail of Tasks stranded on missing_task_result. Prepended
+        # locally, never written back into the payload, so desiredRevision and the
+        # Task generation are untouched.
+        correction = retry_correction_for(task.get("lastError"))
+        if correction:
+            prompt = "%s\n\n%s" % (correction, prompt)
         if payload.get("inputContract") is not None:
             validate_portable_task_input(
                 payload, target_runtime=RUNTIME_PERSISTENT)

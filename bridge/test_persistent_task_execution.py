@@ -61,6 +61,48 @@ class PersistentTaskExecutionTest(unittest.TestCase):
                          ("frozen", "frozen prompt", "run-1", True))
         self.assertIs(captured["kwargs"]["session_controller"], controller)
 
+    def _run_with_last_error(self, last_error):
+        execution, captured = self._execution()
+        controller = SimpleNamespace(runtime_session_id="run-1", resumed=True,
+                                     bind_process=lambda _process: None)
+        result = execution.execute({
+            "task": {"taskType": "ticket", "lastError": last_error},
+            "session": {"inputPayload": {
+                "itemId": "84407231", "kind": "ticket", "prompt": "原始 prompt",
+                "project": "528766", "terraform": True,
+                "policyRevision": HEADLESS_POLICY_REVISION,
+                "target": "group-1", "targetType": "group"}},
+        }, controller)
+        self.assertEqual(result, "done")
+        return captured["args"][1]
+
+    def test_retry_after_a_rejected_result_is_told_what_was_wrong(self):
+        """Without this the retry replays the same prompt and fails identically."""
+        prompt = self._run_with_last_error(
+            '{"errorType":"JarvisExecutionFailed",'
+            '"subtype":"invalid_task_result:handoff_incomplete"}')
+        self.assertIn("handoff_incomplete", prompt)
+        self.assertIn("owner / source_comment / tracker", prompt)
+        # The frozen payload prompt is preserved, only prefixed.
+        self.assertTrue(prompt.endswith("原始 prompt"))
+
+    def test_retry_correction_accepts_a_dict_last_error(self):
+        prompt = self._run_with_last_error(
+            {"subtype": "missing_task_result"})
+        self.assertIn("[[AONE_RESULT:", prompt)
+        self.assertTrue(prompt.endswith("原始 prompt"))
+
+    def test_unrelated_failures_do_not_touch_the_prompt(self):
+        for last_error in (
+            '{"subtype":"timeout"}',
+            '{"subtype":"field_repair_transient","failureReason":"apply_timeout"}',
+            "not json at all",
+            None,
+        ):
+            with self.subTest(last_error=last_error):
+                self.assertEqual(
+                    self._run_with_last_error(last_error), "原始 prompt")
+
     def test_v5_frozen_aone_payload_fails_before_every_side_effect(self):
         calls = {
             "repair": 0, "identity": 0, "bookend": 0, "dispatch": 0,
