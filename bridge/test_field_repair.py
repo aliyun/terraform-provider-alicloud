@@ -596,6 +596,78 @@ class FieldRepairPlaceholderTest(unittest.TestCase):
         self.assertEqual(result["failureReason"], "model_unresolved")
         self.assertEqual(len(runtime.calls), 2)
 
+    NO_CANDIDATES = {
+        "id": "140097",
+        "name": "涉及云产品",
+        "reason": "options_lookup_error",
+        "options": [],
+        "placeholder": {"value": "vpc", "displayValue": "VPC",
+                        "unvalidated": True},
+    }
+
+    def test_empty_candidate_set_skips_the_model_and_uses_the_placeholder(self):
+        """A failed options read must not depend on how the model happens to fail."""
+        inspect = inspection(unresolved=[self.NO_CANDIDATES])
+        inspect["missing"] = [self.NO_CANDIDATES]
+        applied = dict(inspect, status="ready", missing=[], unresolved=[],
+                       assignments=[{"id": "140097", "value": "vpc"}],
+                       filled=True, readback=[{"id": "140097", "value": "vpc"}])
+        worker, runtime, _client = self._worker([
+            self._json_result(inspect),
+            self._json_result(applied),
+        ])
+        result = self._repair(worker)
+        self.assertEqual(result["outcome"], "field_repaired")
+        self.assertEqual(
+            [row["id"] for row in result["placeholders"]], ["140097"])
+        # inspect + apply only — the model was never invoked.
+        self.assertEqual(len(runtime.calls), 2)
+        self.assertFalse(any("--json-schema" in argv
+                             for argv, _cwd, _kw in runtime.calls))
+
+    def test_empty_candidate_set_without_a_placeholder_reports_the_lookup_error(self):
+        bare = dict(self.NO_CANDIDATES)
+        bare.pop("placeholder")
+        inspect = inspection(unresolved=[bare])
+        inspect["missing"] = [bare]
+        worker, runtime, _client = self._worker([
+            self._json_result(inspect),
+        ])
+        result = self._repair(worker)
+        self.assertEqual(result["outcome"], "required_fields_blocked")
+        self.assertEqual(result["failureReason"], "options_lookup_error")
+        self.assertEqual(len(runtime.calls), 1)
+
+    def test_one_field_without_candidates_holds_back_the_whole_model_call(self):
+        """Mixed batch: the model cannot answer completely, so do not call it."""
+        blind = dict(self.NO_CANDIDATES, id="102312", name="客户问题分类1级",
+                     placeholder={"value": "其他", "displayValue": "其他",
+                                  "unvalidated": True})
+        fields = [self.WITH_PLACEHOLDER, blind]
+        inspect = inspection(unresolved=fields)
+        inspect["missing"] = fields
+        applied = dict(inspect, status="ready", missing=[], unresolved=[],
+                       assignments=[{"id": "140097", "value": "vpc"},
+                                    {"id": "102312", "value": "其他"}],
+                       filled=True,
+                       readback=[{"id": "140097", "value": "vpc"},
+                                 {"id": "102312", "value": "其他"}])
+        worker, runtime, _client = self._worker([
+            self._json_result(inspect),
+            self._json_result(applied),
+        ])
+        result = self._repair(worker)
+        self.assertEqual(result["outcome"], "field_repaired")
+        # 140097 alone would have been answerable, but 102312 has no candidates,
+        # so the model could not have produced a complete legal answer.
+        self.assertEqual(
+            sorted(row["id"] for row in result["placeholders"]),
+            ["102312", "140097"])
+        self.assertEqual(len(runtime.calls), 2)
+        apply_argv = runtime.calls[-1][0]
+        self.assertIn("140097=vpc", apply_argv)
+        self.assertIn("102312=其他", apply_argv)
+
     def test_deterministic_answer_never_becomes_a_placeholder(self):
         """A field the ladder already resolved reports no placeholder at all."""
         deterministic = [{

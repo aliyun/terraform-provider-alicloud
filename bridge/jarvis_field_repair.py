@@ -32,6 +32,10 @@ PLACEHOLDER_FALLBACK_REASONS = frozenset({
     "model_unresolved",
     "model_error",
     "model_timeout",
+    # The candidate set could not be read at all, so the model was never asked.
+    # A failed options query is not evidence that the pinned option stopped
+    # existing, and apply re-validates against a fresh candidate set anyway.
+    "no_candidates",
 })
 MODEL_OUTPUT_SCHEMA = {
     "type": "object",
@@ -431,6 +435,22 @@ class FieldRepairWorker:
             ],
         }
 
+    def _model_has_candidates(self, inspection: Mapping[str, Any]) -> bool:
+        """True only if every field the model must answer has legal options.
+
+        The model has to cover every unresolved id, and each answer is checked
+        against that field's candidate set. One field with no candidates — the
+        shape ``options_lookup_error`` leaves behind — therefore makes a complete
+        legal answer impossible before the call is even made.
+        """
+        candidates = self._candidate_map(inspection)
+        for field in inspection.get("unresolved") or []:
+            if not isinstance(field, Mapping):
+                return False
+            if not candidates.get(str(field.get("id") or "")):
+                return False
+        return True
+
     @staticmethod
     def _placeholder_assignments(
             inspection: Mapping[str, Any], reason: str,
@@ -494,13 +514,26 @@ class FieldRepairWorker:
             assignments = list(current.get("assignments") or [])
             placeholders: list = []
             if current.get("unresolved"):
-                try:
-                    assignments.extend(
-                        self._model_assignments(current, controller))
-                except RequiredFieldsBlocked as exc:
-                    placeholders = self._placeholder_assignments(current, exc.reason)
+                if self._model_has_candidates(current):
+                    try:
+                        assignments.extend(
+                            self._model_assignments(current, controller))
+                    except RequiredFieldsBlocked as exc:
+                        placeholders = self._placeholder_assignments(
+                            current, exc.reason)
+                        if not placeholders:
+                            raise
+                        assignments.extend(placeholders)
+                else:
+                    # Asking the model to pick from an empty candidate set can
+                    # only end in illegal_candidate, and which error it lands on
+                    # would decide whether the placeholder is reachable — that is
+                    # the model's whim, not a decision. Skip the call and make
+                    # the outcome deterministic.
+                    placeholders = self._placeholder_assignments(
+                        current, "no_candidates")
                     if not placeholders:
-                        raise
+                        raise RequiredFieldsBlocked("options_lookup_error")
                     assignments.extend(placeholders)
             missing_ids = {
                 str(field.get("id") or "") for field in current["missing"]

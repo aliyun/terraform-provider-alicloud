@@ -177,19 +177,31 @@ resolve_missing() {
             (configured_matches($options; $fallback)) as $fallback_matches |
             # A placeholder is not an answer — it is the pool saying "nobody can
             # decide this one, stamp the field'"'"'s own neutral option so the ticket
-            # keeps moving and a human corrects it later". It is therefore only
-            # offered on the genuinely-undecidable branch below, never on a
-            # broken configured default/fallback (that is a config bug to fix,
-            # not something to paper over), and only when it resolves to exactly
-            # one legal option — otherwise no key is emitted at all.
+            # keeps moving and a human corrects it later". It is offered on the
+            # genuinely-undecidable branch and on options_lookup_error, but never
+            # on a broken configured default/fallback — that is a config bug to
+            # fix, not something to paper over.
             ((configured_matches($options; $placeholder)) as $m |
              if $placeholder != null and ($m | length) == 1
              then {placeholder: {value: ($m[0] | option_value),
                                  displayValue: ($m[0] | option_label)}}
              else {} end) as $placeholder_hint |
+            # With no candidate set there is nothing to validate the placeholder
+            # against, so pass the operator'"'"'s configured value through verbatim
+            # and mark it unvalidated. Losing the options read is not evidence
+            # that the pinned option stopped existing, and `apply` re-reads the
+            # candidate set and rejects an illegal value before writing, so the
+            # write-time gate still holds. Without this a single failed options
+            # query pushed the whole ticket into required_fields_blocked.
+            (if $placeholder != null
+             then {placeholder: {value: ($placeholder | tostring),
+                                 displayValue: ($placeholder | tostring),
+                                 unvalidated: true}}
+             else {} end) as $placeholder_blind |
             if ($field.optionsLookupError // false) then
                 {kind:"unresolved", id:$field.id, name:$field.name,
                  reason:"options_lookup_error", options:[]}
+                + $placeholder_blind
             elif $default != null then
                 # An operator-configured default outranks title_match on purpose.
                 # title_match is substring token scoring over the whole candidate
@@ -291,7 +303,7 @@ field_options_json() {
 # pure duplication, and two reads that can disagree under replica lag.
 compute_missing() {
     local wi_json="$1" project_id="$2" type_id="$3"
-    local defs_json wi_tmp defs_tmp missing_json result field_id options_json normalized rc
+    local defs_json wi_tmp defs_tmp missing_json result field_id options_json normalized rc _attempt
 
     if ! defs_json="$(field_list_json "$project_id" "$type_id")"; then
         echo "aone-fields.sh: failed to list fields for project $project_id type $type_id" >&2
@@ -345,13 +357,25 @@ compute_missing() {
     result="$missing_json"
     while IFS= read -r field_id; do
         [ -n "$field_id" ] || continue
-        if options_json="$(field_options_json "$field_id" "$project_id" "$type_id" 2>/dev/null)" \
-                && normalized="$(printf '%s' "$options_json" | normalize_options 2>/dev/null)"; then
+        # Retry once before declaring the candidate set unavailable. Losing this
+        # read is expensive out of proportion to its cause: with no options the
+        # field cannot be validated, so a single a1/network blip used to push the
+        # whole ticket into required_fields_blocked. A failed attempt writes
+        # nothing to the cache, so the retry really does re-query.
+        normalized=""
+        for _attempt in 1 2; do
+            if options_json="$(field_options_json "$field_id" "$project_id" "$type_id" 2>/dev/null)" \
+                    && normalized="$(printf '%s' "$options_json" | normalize_options 2>/dev/null)"; then
+                break
+            fi
+            normalized=""
+        done
+        if [ -n "$normalized" ]; then
             result="$(printf '%s' "$result" | jq -c --arg id "$field_id" --argjson opts "$normalized" '
                 map(if .id == $id then .options = $opts | .optionsSource = "field_options" else . end)
             ')"
         else
-            echo "aone-fields.sh: warning: failed to load legal options for field $field_id" >&2
+            echo "aone-fields.sh: warning: failed to load legal options for field $field_id (2 attempts)" >&2
             result="$(printf '%s' "$result" | jq -c --arg id "$field_id" '
                 map(if .id == $id then .optionsLookupError = true else . end)
             ')"
