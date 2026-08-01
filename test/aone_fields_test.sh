@@ -10,6 +10,15 @@ trap 'rm -rf "$tmp"' EXIT
 mkdir -p "$tmp/bin"
 log="$tmp/a1.log"
 
+# Keep the field-metadata cache out of the developer's real .my-day/cache, and
+# off by default here: each case below drives the a1 stub with different env
+# (A1_OPTIONS_FAIL_FIELD, A1_GENERIC_FIXTURES, ...) under the same project/type,
+# so a shared cache would serve case N's payload to case N+1 and silently void
+# the fail-closed assertions. The cache path itself is covered by its own case
+# at the end of this file.
+export JARVIS_CACHE_DIR="$tmp/cache"
+export JARVIS_FIELD_META_TTL=0
+
 cat > "$tmp/workitem.json" <<'JSON'
 {"fields":[
   {"identifier":"workitemType","value":"36","displayValue":"功能缺陷"},
@@ -40,8 +49,13 @@ if [ "$1 $2 $3" = "project workitem get" ]; then
   get_count="$(cat "$A1_TEST_STATE.get_count" 2>/dev/null || printf '0')"
   get_count=$((get_count + 1))
   printf '%s\n' "$get_count" > "$A1_TEST_STATE.get_count"
+  # Read 1 is preflight's own context read; read 2 is the explicit pre-mutation
+  # drift check (noop readback, or the read immediately before update). Drift is
+  # injected from read 2 so it lands on that check. This used to be read 3 only
+  # because preflight reached the field list through a nested `missing` that
+  # re-fetched the same workitem.
   if [ "${A1_DRIFT_BEFORE_UPDATE:-}" = "project" ] \
-      && [ ! -f "$A1_TEST_STATE.updated" ] && [ "$get_count" -ge 3 ]; then
+      && [ ! -f "$A1_TEST_STATE.updated" ] && [ "$get_count" -ge 2 ]; then
     jq '(.fields[] | select(.identifier=="space") | .value) = "528766"' "$A1_TEST_WI"
     exit 0
   fi
@@ -74,6 +88,7 @@ if [ "$1 $2 $3 $4" = "project workitem field options" ]; then
       140097) printf '[{"value":"","identifier":"terraform","displayValue":"Terraform"},{"value":"mongodb","identifier":"ignored-second-key","displayValue":"MongoDB"}]\n' ;;
       140282) printf '[{"value":"defined","displayValue":"有OpenAPI，资源未定义，开放平台维护"},{"value":"manual","displayValue":"手工资源"}]\n' ;;
       107239) printf '[{"Identifier":"906688","Name":"API 工具","Path":"产品/API 工具"},{"Identifier":"891438","Name":"云数据库 MongoDB 版","Path":"产品/MongoDB"}]\n' ;;
+      101987) printf '[{"identifier":"未知","value":"","displayValue":"未知"},{"identifier":"AcmeCorp","value":"","displayValue":"AcmeCorp"}]\n' ;;
     esac
     exit 0
   fi
@@ -199,9 +214,12 @@ auto_out="$(PATH="$tmp/bin:$PATH" A1_AUTO_FIXTURES=1 bash "$root/bootstrap/aone-
 [ "$rc" -eq 0 ] && printf '%s' "$auto_out" | jq -e '.filled == true and (.assignments | length) == 3' >/dev/null \
   && ok "auto-fill resolves configured default and unique title matches" \
   || bad "auto-fill failed rc=$rc out=$auto_out err=$(cat "$tmp/auto.err")"
+# 140097 涉及云产品 still title-matches the ticket's actual cloud product, while
+# 107239 归属产品 is now pinned by the pool: they answer different questions —
+# which product the issue is about vs. which product owns the work.
 grep -q -- '--cfs 140097=mongodb' "$log" \
   && grep -q -- '--cfs 140282=defined' "$log" \
-  && grep -q -- '--cfs 107239=891438' "$log" \
+  && grep -q -- '--cfs 107239=906688' "$log" \
   && ok "auto-fill submits every required field in one update" \
   || bad "auto-fill assignments missing: $(cat "$log")"
 
@@ -229,7 +247,7 @@ preflight_out="$(PATH="$tmp/bin:$PATH" A1_GENERIC_FIXTURES=1 A1_MUTATE_ON_UPDATE
   .status == "ok" and .filled == true and .readback == [] and
   ([.assignments[] | select(.id=="140097" and .value=="terraform" and .source=="validated_fallback")] | length) == 1 and
   ([.assignments[] | select(.id=="140282" and .value=="defined" and .source=="configured_default")] | length) == 1 and
-  ([.assignments[] | select(.id=="107239" and .value=="906688" and .source=="validated_fallback")] | length) == 1
+  ([.assignments[] | select(.id=="107239" and .value=="906688" and .source=="configured_default")] | length) == 1
 ' >/dev/null \
   && [ "$(grep -c 'project workitem update' "$log" || true)" -eq 1 ] \
   && [ "$(grep -c 'project workitem field options' "$log" || true)" -eq 3 ] \
@@ -432,6 +450,140 @@ apply_out="$(PATH="$tmp/bin:$PATH" A1_AUTO_FIXTURES=1 A1_MUTATE_ON_UPDATE=1 \
 ' >/dev/null && [ "$(grep -c 'workitem update' "$log" || true)" -eq 1 ] \
   && ok "apply validates, updates once, and returns an empty readback" \
   || bad "legal apply failed rc=$rc out=$apply_out err=$(cat "$tmp/apply.err") log=$(cat "$log")"
+
+# --- configured default outranks a unique title match -----------------------
+# tf_provider pins 107239 归属产品 in config/pools.json. The generic 107239
+# option set also contains "云数据库 MongoDB 版", which a MongoDB-flavoured
+# title matches uniquely — the exact shape that made a real Terraform ticket
+# resolve to an unrelated product before the pinned default was given priority.
+cat > "$tmp/workitem.json" <<'JSON'
+{"title":"alicloud mongodb sharding instance apply failure","fields":[
+  {"identifier":"workitemType","value":"36","displayValue":"需求问题"},
+  {"identifier":"space","value":"528766","displayValue":"provider"},
+  {"identifier":"107239","value":"","displayValue":""}
+]}
+JSON
+cat > "$tmp/fields.json" <<'JSON'
+[
+  {"identifier":"107239","displayName":"归属产品","isRequired":true,"sourceType":"team","format":"plugin","options":[]}
+]
+JSON
+rm -f "$A1_TEST_STATE.updated" "$A1_TEST_STATE.get_count"
+: > "$log"
+inspect_out="$(PATH="$tmp/bin:$PATH" A1_GENERIC_FIXTURES=1 \
+  bash "$root/bootstrap/aone-fields.sh" inspect 9002 528766 2>/dev/null)"; rc=$?
+[ "$rc" -eq 0 ] && printf '%s' "$inspect_out" | jq -e '
+  .status=="repair_required" and .unresolved==[] and
+  (.assignments | length)==1 and
+  .assignments[0].id=="107239" and .assignments[0].value=="906688" and
+  .assignments[0].source=="configured_default"
+' >/dev/null && [ "$(grep -c 'workitem update' "$log" || true)" -eq 0 ] \
+  && ok "pinned pool default beats a unique title match" \
+  || bad "configured default precedence failed rc=$rc out=$inspect_out log=$(cat "$log")"
+
+# --- field metadata cache ---------------------------------------------------
+# Same inputs twice: the second pass must serve field list/options from cache
+# and issue no further metadata reads, while still reading the workitem itself
+# live (apply's revision/digest fence depends on that never being cached).
+cache_probe="$tmp/cache-probe"
+rm -rf "$cache_probe"
+rm -f "$A1_TEST_STATE.updated" "$A1_TEST_STATE.get_count"
+: > "$log"
+PATH="$tmp/bin:$PATH" A1_GENERIC_FIXTURES=1 JARVIS_CACHE_DIR="$cache_probe" \
+  JARVIS_FIELD_META_TTL=900 bash "$root/bootstrap/aone-fields.sh" \
+  missing 9002 >/dev/null 2>&1
+cold_list="$(grep -c 'field list' "$log" || true)"
+cold_opts="$(grep -c 'field options 107239' "$log" || true)"
+: > "$log"
+PATH="$tmp/bin:$PATH" A1_GENERIC_FIXTURES=1 JARVIS_CACHE_DIR="$cache_probe" \
+  JARVIS_FIELD_META_TTL=900 bash "$root/bootstrap/aone-fields.sh" \
+  missing 9002 >/dev/null 2>&1
+warm_list="$(grep -c 'field list' "$log" || true)"
+warm_opts="$(grep -c 'field options 107239' "$log" || true)"
+warm_get="$(grep -c 'workitem get' "$log" || true)"
+[ "$cold_list" -eq 1 ] && [ "$cold_opts" -eq 1 ] \
+  && [ "$warm_list" -eq 0 ] && [ "$warm_opts" -eq 0 ] && [ "$warm_get" -eq 1 ] \
+  && ok "warm metadata cache drops field reads but still reads the workitem live" \
+  || bad "cache contract failed cold(list=$cold_list opts=$cold_opts) warm(list=$warm_list opts=$warm_opts get=$warm_get)"
+
+# TTL=0 must fully bypass the cache even with a warm directory present.
+: > "$log"
+PATH="$tmp/bin:$PATH" A1_GENERIC_FIXTURES=1 JARVIS_CACHE_DIR="$cache_probe" \
+  JARVIS_FIELD_META_TTL=0 bash "$root/bootstrap/aone-fields.sh" \
+  missing 9002 >/dev/null 2>&1
+[ "$(grep -c 'field list' "$log" || true)" -eq 1 ] \
+  && ok "JARVIS_FIELD_META_TTL=0 bypasses a warm cache" \
+  || bad "TTL=0 did not bypass cache: $(cat "$log")"
+
+# --- placeholder is offered only where nothing else can decide ---------------
+# tf_customer pins 101987 客户名称 as a placeholder, not a default: 604 real
+# customer names, so any fixed answer would be a lie. inspect must surface it as
+# a hint on the unresolved entry — never as an assignment, so the model still
+# gets to try first — and only after resolving to exactly one legal option.
+cat > "$tmp/workitem.json" <<'JSON'
+{"title":"required field placeholder probe","fields":[
+  {"identifier":"workitemType","value":"36","displayValue":"需求问题"},
+  {"identifier":"space","value":"1086837","displayValue":"tf-customer"},
+  {"identifier":"101987","value":"","displayValue":""}
+]}
+JSON
+cat > "$tmp/fields.json" <<'JSON'
+[
+  {"identifier":"101987","displayName":"客户名称","isRequired":true,"sourceType":"team","format":"list","options":[]}
+]
+JSON
+rm -f "$A1_TEST_STATE.updated" "$A1_TEST_STATE.get_count"
+: > "$log"
+inspect_out="$(PATH="$tmp/bin:$PATH" A1_GENERIC_FIXTURES=1 \
+  bash "$root/bootstrap/aone-fields.sh" inspect 84608993 1086837 2>/dev/null)"; rc=$?
+[ "$rc" -eq 0 ] && printf '%s' "$inspect_out" | jq -e '
+  .status=="repair_required" and .assignments==[] and
+  (.unresolved | length)==1 and
+  .unresolved[0].id=="101987" and
+  .unresolved[0].placeholder.value=="未知" and
+  .unresolved[0].placeholder.displayValue=="未知"
+' >/dev/null && [ "$(grep -c 'workitem update' "$log" || true)" -eq 0 ] \
+  && ok "unresolved field carries its pool placeholder as a hint" \
+  || bad "placeholder hint missing rc=$rc out=$inspect_out"
+
+# A pool with no placeholder configured must not grow the key at all.
+cat > "$tmp/workitem.json" <<'JSON'
+{"title":"no placeholder configured here","fields":[
+  {"identifier":"workitemType","value":"36","displayValue":"需求问题"},
+  {"identifier":"space","value":"528766","displayValue":"provider"},
+  {"identifier":"140097","value":"","displayValue":""}
+]}
+JSON
+cat > "$tmp/fields.json" <<'JSON'
+[
+  {"identifier":"140097","displayName":"涉及云产品","isRequired":true,"sourceType":"team","format":"list","options":[]}
+]
+JSON
+rm -f "$A1_TEST_STATE.updated" "$A1_TEST_STATE.get_count"
+: > "$log"
+inspect_out="$(PATH="$tmp/bin:$PATH" A1_AUTO_FIXTURES=1 \
+  bash "$root/bootstrap/aone-fields.sh" inspect 9002 528766 2>/dev/null)"; rc=$?
+[ "$rc" -eq 0 ] && printf '%s' "$inspect_out" | jq -e '
+  (.unresolved | length) > 0 and
+  ([.unresolved[] | select(has("placeholder"))] | length) == 0
+' >/dev/null \
+  && ok "pool without a configured placeholder emits no placeholder key" \
+  || bad "unexpected placeholder key rc=$rc out=$inspect_out"
+
+# --- every scanned pool pins 归属产品 -----------------------------------------
+# 107239 归属产品 is required in every pool the scanner touches, and it is a
+# plugin field over an 824-entry org-wide product tree — the one shape where
+# title_match reliably produces confident nonsense. A pool added without a pin
+# silently falls back to guessing, so fail here rather than in production.
+unpinned="$(jq -r '
+  .pools | to_entries[]
+  | select((.value.claim_required_field_defaults // {})["107239"] | not)
+  | .key' "$root/config/pools.json")"
+if [ -z "$unpinned" ]; then
+  ok "every pool pins 归属产品 (107239) with a configured default"
+else
+  bad "pools missing a 107239 default: $(printf '%s' "$unpinned" | tr '\n' ' ')"
+fi
 
 echo "Results: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]

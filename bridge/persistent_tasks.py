@@ -247,6 +247,54 @@ def notify_field_repair_blocked(item_id, project, repair_result):
             "field-repair submitter notify #%s failed: %s", item_id, exc)
 
 
+def notify_field_repair_placeholder(item_id, project, terraform, repair_result):
+    """Leave one idempotent Aone comment for fields filled with a placeholder.
+
+    Unlike the blocked DM this does not stop the Task — the point of a
+    placeholder is that work continues — so the note has to live on the ticket
+    where whoever picks it up will see it. It is posted as its own comment even
+    on Terraform pools: this run may never reach the RD finalizer's aggregated
+    reply (failure, suspend, retry exhaustion), and that is exactly when an
+    unnoticed placeholder does the most damage.
+
+    Idempotency, the marker, durable pending and post_uncertain all come from
+    the shared event publisher — do not add a second dedupe layer here. Keying
+    on the candidate digest means the same placeheld field set is announced once
+    no matter how many scan ticks or restarts follow, while a later placeholder
+    over a *different* field opens a new event.
+    """
+    try:
+        rows = [
+            row for row in (repair_result.get("placeholders") or [])
+            if isinstance(row, dict) and str(row.get("value") or "")
+        ]
+        if not rows:
+            return
+        digest = str(repair_result.get("candidateDigest") or "unknown")
+        lines = "\n".join(
+            "- %s：%s" % (
+                str(row.get("name") or row.get("id") or "").strip() or "（未知字段）",
+                str(row.get("value") or ""))
+            for row in rows)
+        text = (
+            "必填字段自动占位\n\n"
+            "以下必填字段无法自动判断填写，已先填入占位值让工单继续流转，"
+            "请接手时按实际情况更正：\n%s\n\n"
+            "（占位值不代表真实结论。改成实际值后，后续轮次不会再提示。）"
+            % lines)
+        if not _aone_event_enqueue(
+                item_id, project,
+                "field-repair-placeholder:%s:%s:%s" % (project, item_id, digest),
+                text,
+                allow_non_tf=not terraform,
+                identity=PERSONA_PUBLIC_IDENTITY if terraform else "jarvis"):
+            LOG.warning(
+                "field-repair placeholder note #%s not durably captured", item_id)
+    except Exception as exc:  # noqa: BLE001
+        LOG.warning(
+            "field-repair placeholder notify #%s failed: %s", item_id, exc)
+
+
 def _extract_last_json(text: str, prefix: str):
     value, decoder, spans, cursor = text or "", json.JSONDecoder(), [], 0
     while True:
@@ -1084,6 +1132,11 @@ class PersistentTaskExecution:
                     notify_field_repair_blocked(
                         item_id, project, repair_result)
                 return repair_result
+            # Placeholders do not stop the Task — that is the whole point — so
+            # this only leaves a note and falls through to the normal run.
+            if repair_result.get("placeholders"):
+                notify_field_repair_placeholder(
+                    item_id, project, terraform, repair_result)
         task_bookend = None
         if kind in self._post_pr_headless_kinds:
             if not self._terraform_rd_ready():

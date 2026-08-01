@@ -31,12 +31,16 @@
         "性能瓶颈": "Open",
         "任务": "处理中"
       },
+      "claim_required_field_defaults_note": "三个键语义不同：defaults=「这就是本池的正确答案」，静默填；fallbacks=「都没匹配上时的兜底」，静默填；placeholders=「我们不知道，这是占位」，填完还要在工单上留一条评论等人更正。107239 归属产品 从 fallback 提为 default：整个池的归属产品就是 Terraform，不该让标题 token 匹配去猜。140097 涉及云产品 刻意留在 fallback —— 它是每单不同的真实数据（MongoDB / Redis / …），title_match 按标题选具体云产品才是对的，terraform 只是识别不出时的兜底；提为 default 会让 MongoDB 工单 fail-closed 或被盖成 terraform。101987 客户名称 有 604 个选项且是真实客户数据，任何默认值都是假的，只能占位。",
       "claim_required_field_defaults": {
-        "140282": "有OpenAPI，资源未定义，开放平台维护"
+        "140282": "有OpenAPI，资源未定义，开放平台维护",
+        "107239": "906688"
       },
       "claim_required_field_fallbacks": {
-        "140097": "terraform/Terraform",
-        "107239": "906688"
+        "140097": "terraform/Terraform"
+      },
+      "claim_required_field_placeholders": {
+        "101987": "未知"
       },
       "pr_merged_status": {
         "type": "3",
@@ -84,6 +88,10 @@
       "progress_status": {
         "产品类需求": "开发中",
         "功能缺陷": "Open"
+      },
+      "claim_required_field_defaults_note": "107239 归属产品 -> 906688 开放平台/OpenAPI/Terraform。键用 field id、值用 option Identifier，显示名改名不会把它悄悄指到别处。不配这条时 title_match 会在 824 项全公司产品树里按标题 token 打分，为 Terraform 工单选出「Cloud Control API」。",
+      "claim_required_field_defaults": {
+        "107239": "906688"
       },
       "exclude_status": [
         "已发布",
@@ -142,6 +150,10 @@
         "需求问题": "问题解决中",
         "功能缺陷": "Open"
       },
+      "claim_required_field_defaults_note": "107239 的取值未经采样确认：该池的工单列表当时取不到，产品树里也没有 MCP 专属项。按同为 agentic_tools 线的 api_toolkit 对齐到 906685 Open API；若该池实际不要求 107239，这条配置不会被读到（默认值只对 missing 里的字段生效）。",
+      "claim_required_field_defaults": {
+        "107239": "906685"
+      },
       "exclude_status": [
         "Closed",
         "需求撤回",
@@ -170,6 +182,9 @@
       "progress_status": {
         "产品类需求": "开发中",
         "功能缺陷": "Open"
+      },
+      "claim_required_field_defaults": {
+        "107239": "906685"
       },
       "exclude_status": [
         "已发布",
@@ -214,6 +229,13 @@
         "功能缺陷": "Open",
         "线上问题": "Open",
         "任务": "处理中"
+      },
+      "claim_required_field_defaults_note": "102312 客户问题分类1级 刻意不配 default：它依赖每张工单的具体语义，钉死只会制造脏数据。改配 placeholder「其他」——模型也判不出来时先占位让工单流转，同时在单上留评论等人更正。",
+      "claim_required_field_defaults": {
+        "107239": "1136266"
+      },
+      "claim_required_field_placeholders": {
+        "102312": "其他"
       },
       "exclude_status": [
         "已发布",
