@@ -9,6 +9,8 @@ from unittest import mock
 
 from bridge.scheduler.runners import owner_health
 
+_ABSENT = object()
+
 
 class FakeClient:
     def __init__(self, *, now: float) -> None:
@@ -25,6 +27,7 @@ class FakeClient:
         }
         self.release_calls: list[dict[str, Any]] = []
         self.release_action = "RELEASED"
+        self.payload_policy: Any = owner_health.HEADLESS_POLICY_REVISION
 
     def list_ready_task_diagnostics(
             self, *, after_task_id: int = 0, limit: int = 100):
@@ -79,14 +82,21 @@ class FakeClient:
 
     def get_task_by_aone(self, aone_id: str):
         if aone_id == "84550003":
-            return [{
+            task = {
                 "id": 3,
                 "aoneId": "84550003",
                 "generation": 1,
                 "status": "RECOVERY_REQUIRED",
                 "recoveryPolicy": "RESUME_ONLY",
                 "currentSessionId": 33,
-            }]
+            }
+            # The real point-read carries the frozen payload; the executor
+            # refuses a Task whose policyRevision is not the current one, so
+            # auto-release has to see it. `None` models an API that stopped
+            # returning it at all.
+            if self.payload_policy is not _ABSENT:
+                task["payload"] = {"policyRevision": self.payload_policy}
+            return [task]
         return []
 
     def get_task_timeline(self, task_id: str):
@@ -448,6 +458,45 @@ class OwnerHealthAutoReleaseTest(unittest.TestCase):
         self.now += 3600
         self._reconcile(blocker)
         self.assertEqual(len(self.client.release_calls), 2)
+
+    def test_stale_frozen_policy_is_never_released(self):
+        """Reviving it would fail StaleTaskPolicyError and re-strand every window."""
+        self.client.payload_policy = "terraform-rd-single-writer-v4"
+        blocker = self._blocker()
+        self.assertFalse(blocker["releasable"])
+        self.assertTrue(blocker["stale_policy"])
+        queued, bodies = self._reconcile(blocker)
+
+        self.assertEqual(self.client.release_calls, [])
+        self.assertEqual(queued, 1)
+        # The page must name the real blocker, not send the operator after a
+        # discard-resume that cannot help.
+        self.assertIn("payload 冻结在旧策略版本", bodies[0])
+        self.assertIn("stale_task_policy_revision", bodies[0])
+        self.assertNotIn("discard-resume", bodies[0])
+
+    def test_stale_frozen_policy_pages_once_not_every_window(self):
+        self.client.payload_policy = "terraform-rd-single-writer-v4"
+        blocker = self._blocker()
+        _queued, bodies = self._reconcile(blocker)
+        self.assertEqual(len(bodies), 1)
+
+        self.now += 7200  # two repeat windows later
+        queued2, bodies2 = self._reconcile(blocker)
+        self.assertEqual(queued2, 0)
+        self.assertEqual(bodies2, [])
+
+    def test_absent_payload_is_treated_as_unverifiable_not_releasable(self):
+        self.client.payload_policy = _ABSENT
+        blocker = self._blocker()
+        self.assertFalse(blocker["releasable"])
+        # Unknown is not the same as stale: do not claim a cause we cannot see.
+        self.assertFalse(blocker["stale_policy"])
+        queued, bodies = self._reconcile(blocker)
+
+        self.assertEqual(self.client.release_calls, [])
+        self.assertEqual(queued, 1)
+        self.assertIn("discard-resume", bodies[0])
 
     def test_context_appearing_before_the_write_aborts_the_release(self):
         """The emptiness check is re-done on the fresh timeline, not the snapshot."""

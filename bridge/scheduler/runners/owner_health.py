@@ -15,6 +15,7 @@ from bridge.helpers.dingtalk import _dingtalk_event_enqueue, _dingtalk_event_flu
 from bridge.recovery_wakeup import (
     RELEASE_SUCCESS_ACTIONS, release_stranded, resume_context_empty,
 )
+from bridge.task_policy import HEADLESS_POLICY_REVISION
 from .claim_health import ClaimHealthRunner
 from ..model import JobResult, JobResultStatus, ScheduledJobDefinition, is_aware
 
@@ -269,6 +270,17 @@ class OwnerHealthRunner:
                     resumable and recovery_policy == "RESUME_ONLY"):
                 continue
             reason = reason or "RESUME_OWNER_UNAVAILABLE"
+            # A Task frozen under an older policy revision cannot run under the
+            # current executor — it fails StaleTaskPolicyError before doing any
+            # work. Reviving one would burn a fresh retry budget and strand it
+            # again every window, so releasing it is worse than leaving it: the
+            # payload needs regenerating, which only a new upsert can do. When
+            # the payload is absent entirely we cannot verify this, so treat that
+            # as unreleasable too rather than guessing.
+            payload = task.get("payload")
+            policy_known = isinstance(payload, Mapping)
+            stale_policy = policy_known and str(
+                payload.get("policyRevision") or "").strip() != HEADLESS_POLICY_REVISION
             current_worker = timeline.get("currentWorker")
             if not isinstance(current_worker, Mapping):
                 current_worker = {}
@@ -291,13 +303,17 @@ class OwnerHealthRunner:
                 "first_seen_hint": (
                     migrated_at or self._first_seen_hint(task, timeline)),
                 "source": "recovery-migration",
-                # Only a Session with no transcript/branch/checkpoint can be
-                # released without losing work; reconcile() uses this to decide
-                # whether to converge instead of paging a human.
+                # Only a Session with no transcript/branch/checkpoint and a Task
+                # the current executor would actually accept can be released
+                # without losing work or churning; reconcile() uses this to
+                # decide whether to converge instead of paging a human.
                 "releasable": bool(
                     resumable
                     and recovery_policy == "RESUME_ONLY"
-                    and resume_context_empty(session)),
+                    and resume_context_empty(session)
+                    and policy_known
+                    and not stale_policy),
+                "stale_policy": stale_policy,
             }
             blockers[task_id] = blocker
         return blockers
@@ -455,8 +471,12 @@ class OwnerHealthRunner:
                     # one later starts its own dwell clock.
                     continue
                 current[str(task_id)] = episode
+            # A stale frozen policy will not resolve on its own and nothing here
+            # can clear it, so repeating the same page hourly adds no
+            # information — say it once per episode.
             repeat_due = (
                 reason not in ONE_SHOT_REASONS
+                and not item.get("stale_policy")
                 and now - last_alert >= self.repeat_seconds)
             if not last_alert or repeat_due:
                 dwell = self._duration(now - first_seen)
@@ -468,7 +488,18 @@ class OwnerHealthRunner:
                 event_key = "owner-health:%s:%s:%s" % (
                     task_id, digest, alert_index)
                 aone_line = ("Aone：#%s" % aone_id) if aone_id else "Aone：-"
-                if reason == "RESUME_OWNER_NOT_QUEUE_PULLING":
+                if item.get("stale_policy"):
+                    # discard-resume would revive it straight into
+                    # StaleTaskPolicyError, so name the actual blocker instead.
+                    next_step = (
+                        "该 Task 的 payload 冻结在旧策略版本（当前 %s），"
+                        "唤醒后会直接失败于 stale_task_policy_revision，"
+                        "因此本 runner 不会自动释放它，也不再重复本告警。"
+                        "需要一次新的 upsert 按当前策略重建 payload —— "
+                        "在 Aone 单上留一条人工评论即可让 scan 重新派发；"
+                        "或人工评估后决定放弃该 Task。"
+                        % HEADLESS_POLICY_REVISION)
+                elif reason == "RESUME_OWNER_NOT_QUEUE_PULLING":
                     next_step = (
                         "请复核 Task/Session；确认旧 owner 已不再执行后，人工运行 "
                         "`bootstrap/control-plane-status.sh force-release %s %s "
