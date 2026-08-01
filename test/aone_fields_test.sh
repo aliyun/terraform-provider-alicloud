@@ -213,9 +213,12 @@ auto_out="$(PATH="$tmp/bin:$PATH" A1_AUTO_FIXTURES=1 bash "$root/bootstrap/aone-
 [ "$rc" -eq 0 ] && printf '%s' "$auto_out" | jq -e '.filled == true and (.assignments | length) == 3' >/dev/null \
   && ok "auto-fill resolves configured default and unique title matches" \
   || bad "auto-fill failed rc=$rc out=$auto_out err=$(cat "$tmp/auto.err")"
+# 140097 涉及云产品 still title-matches the ticket's actual cloud product, while
+# 107239 归属产品 is now pinned by the pool: they answer different questions —
+# which product the issue is about vs. which product owns the work.
 grep -q -- '--cfs 140097=mongodb' "$log" \
   && grep -q -- '--cfs 140282=defined' "$log" \
-  && grep -q -- '--cfs 107239=891438' "$log" \
+  && grep -q -- '--cfs 107239=906688' "$log" \
   && ok "auto-fill submits every required field in one update" \
   || bad "auto-fill assignments missing: $(cat "$log")"
 
@@ -243,7 +246,7 @@ preflight_out="$(PATH="$tmp/bin:$PATH" A1_GENERIC_FIXTURES=1 A1_MUTATE_ON_UPDATE
   .status == "ok" and .filled == true and .readback == [] and
   ([.assignments[] | select(.id=="140097" and .value=="terraform" and .source=="validated_fallback")] | length) == 1 and
   ([.assignments[] | select(.id=="140282" and .value=="defined" and .source=="configured_default")] | length) == 1 and
-  ([.assignments[] | select(.id=="107239" and .value=="906688" and .source=="validated_fallback")] | length) == 1
+  ([.assignments[] | select(.id=="107239" and .value=="906688" and .source=="configured_default")] | length) == 1
 ' >/dev/null \
   && [ "$(grep -c 'project workitem update' "$log" || true)" -eq 1 ] \
   && [ "$(grep -c 'project workitem field options' "$log" || true)" -eq 3 ] \
@@ -510,6 +513,21 @@ PATH="$tmp/bin:$PATH" A1_GENERIC_FIXTURES=1 JARVIS_CACHE_DIR="$cache_probe" \
 [ "$(grep -c 'field list' "$log" || true)" -eq 1 ] \
   && ok "JARVIS_FIELD_META_TTL=0 bypasses a warm cache" \
   || bad "TTL=0 did not bypass cache: $(cat "$log")"
+
+# --- every scanned pool pins 归属产品 -----------------------------------------
+# 107239 归属产品 is required in every pool the scanner touches, and it is a
+# plugin field over an 824-entry org-wide product tree — the one shape where
+# title_match reliably produces confident nonsense. A pool added without a pin
+# silently falls back to guessing, so fail here rather than in production.
+unpinned="$(jq -r '
+  .pools | to_entries[]
+  | select((.value.claim_required_field_defaults // {})["107239"] | not)
+  | .key' "$root/config/pools.json")"
+if [ -z "$unpinned" ]; then
+  ok "every pool pins 归属产品 (107239) with a configured default"
+else
+  bad "pools missing a 107239 default: $(printf '%s' "$unpinned" | tr '\n' ' ')"
+fi
 
 echo "Results: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]
