@@ -183,13 +183,24 @@ def resume_context_empty(session: Any) -> bool:
 
 
 def release_stranded(client: Any, task_id: str, reason: str) -> Dict[str, Any]:
-    """Force-release a RESUME_ONLY Task whose RESUMABLE Session has nothing to resume.
+    """Unstrand a RESUME_ONLY Task whose RESUMABLE Session has nothing to resume.
 
     ``force_redispatch_task`` is not usable here: the server requires
     ``REPLAY_SAFE`` and every stranded Task of this shape is ``RESUME_ONLY``, so
-    redispatch always answers BLOCKED. Force-release accepts ``RESUME_ONLY``,
-    fences and cancels the dead Session, and — when a newer desired revision is
-    already pending — queues it in a fresh generation.
+    redispatch always answers BLOCKED. Two APIs that *do* accept ``RESUME_ONLY``
+    split the work between them, and which one fits depends on whether a newer
+    desired revision is already queued:
+
+    - ``desired != processing`` → ``force_release_task``. It fences and cancels
+      the dead Session and requeues the pending revision in a fresh generation,
+      so the Task returns to READY with a reset retry budget.
+    - ``desired == processing`` → ``discard_resume_context``. There is no newer
+      revision for force-release to requeue, so it answers
+      ``OWNERSHIP_CLEARED_RECOVERY_REQUIRED`` — the dead Session is gone but the
+      Task stays parked. discard-resume, by contrast, cancels the Session and
+      moves the Task straight back to READY (verified on task 3312). Pointing
+      the operator at a discard-resume that needs a Session after we already
+      cleared it is what made four tasks stay stranded while still paging.
 
     The emptiness check is deliberately re-done against this fresh timeline
     rather than trusting the caller's snapshot: releasing a Session that has
@@ -197,9 +208,7 @@ def release_stranded(client: Any, task_id: str, reason: str) -> Dict[str, Any]:
     ``ValueError`` when the fresh read no longer matches, so the caller keeps
     alerting instead of silently doing nothing.
 
-    Returns the server response (``action`` / ``status`` / ``message``). CAS
-    fields come from the same ``_cas_snapshot`` the force-redispatch path uses,
-    so both stay byte-identical on the contract.
+    Returns the server response (``action`` / ``status`` / ``message``).
     """
     timeline = client.get_task_timeline(str(task_id))
     if not isinstance(timeline, Mapping):
@@ -218,6 +227,8 @@ def release_stranded(client: Any, task_id: str, reason: str) -> Dict[str, Any]:
         and str(candidate.get("id")) == str(session_id)
     ), None)
     if not isinstance(session, Mapping):
+        # No live Session to discard: nothing this path can do. The caller must
+        # stop recommending discard-resume, since that API needs a Session.
         raise ValueError("task %s no longer owns session %s" % (task_id, session_id))
     if str(session.get("status") or "").upper() != "RESUMABLE":
         raise ValueError(
@@ -225,13 +236,30 @@ def release_stranded(client: Any, task_id: str, reason: str) -> Dict[str, Any]:
     if not resume_context_empty(session):
         raise ValueError(
             "session %s now has resume context; refusing to release" % session_id)
-    snapshot = _cas_snapshot(timeline, task_id)
-    result = client.force_release_task(str(task_id), reason=reason, **snapshot)
+
+    desired = str(task.get("desiredRevision") or "")
+    processing = str(task.get("processingRevision") or "")
+    if desired and desired != processing:
+        # A newer revision is already queued; force-release requeues it in a
+        # fresh generation and the Task returns to READY.
+        snapshot = _cas_snapshot(timeline, task_id)
+        result = client.force_release_task(str(task_id), reason=reason, **snapshot)
+    elif session_id is not None:
+        # desired == processing: no revision to requeue. force-release would
+        # leave the Task parked RECOVERY_REQUIRED; discard-resume cancels the
+        # empty Session and moves it to READY (task 3312, 2026-08-01).
+        result = client.discard_resume_context(
+            str(task_id), int(session_id), reason=reason)
+    else:
+        raise ValueError(
+            "task %s has no session and no pending revision; nothing to release"
+            % task_id)
     action = (result or {}).get("action") if isinstance(result, dict) else None
     log.info(
-        "recovery_release task=%s session=%s action=%s status=%s",
+        "recovery_release task=%s session=%s action=%s status=%s desired_pending=%s",
         task_id, session_id, action,
-        (result or {}).get("status") if isinstance(result, dict) else None)
+        (result or {}).get("status") if isinstance(result, dict) else None,
+        desired != processing)
     return result if isinstance(result, dict) else {"raw": result}
 
 
