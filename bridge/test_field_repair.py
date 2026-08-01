@@ -534,9 +534,10 @@ class FieldRepairPlaceholderTest(unittest.TestCase):
         ])
         result = self._repair(worker)
         self.assertEqual(result["outcome"], "field_repaired")
+        # `value` is what gets written; `display` is what the ticket note shows.
         self.assertEqual(result["placeholders"], [{
             "id": "140097", "name": "涉及云产品",
-            "value": "vpc", "source": "pool_placeholder",
+            "value": "vpc", "display": "VPC", "source": "pool_placeholder",
         }])
         self.assertTrue(result["candidateDigest"])
         # The model still got its chance before the placeholder was used.
@@ -748,8 +749,11 @@ class FieldRepairPlaceholderNotifyTest(unittest.TestCase):
         "status": "completed", "outcome": "field_repaired",
         "candidateDigest": "abc123",
         "placeholders": [
-            {"id": "101987", "name": "客户名称", "value": "未知"},
-            {"id": "102312", "name": "客户问题分类1级", "value": "其他"},
+            # 101987 writes the label itself; 107239 is a plugin field whose
+            # write token is an opaque id, so the note must show the label.
+            {"id": "101987", "name": "客户名称", "value": "未知", "display": "未知"},
+            {"id": "107239", "name": "归属产品", "value": "906688",
+             "display": "Terraform"},
         ],
     }
 
@@ -767,7 +771,9 @@ class FieldRepairPlaceholderNotifyTest(unittest.TestCase):
                          "field-repair-placeholder:1091779:84432183:abc123")
         body = args[3]
         self.assertIn("客户名称：未知", body)
-        self.assertIn("客户问题分类1级：其他", body)
+        # The readable label, never the raw option id.
+        self.assertIn("归属产品：Terraform", body)
+        self.assertNotIn("906688", body)
         # Non-terraform pool writes as jarvis and must opt past the tf gate.
         self.assertTrue(kwargs["allow_non_tf"])
         self.assertEqual(kwargs["identity"], "jarvis")

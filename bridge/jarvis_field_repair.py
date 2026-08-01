@@ -497,6 +497,11 @@ class FieldRepairWorker:
                 "id": field_id,
                 "name": str(field.get("name") or ""),
                 "value": value,
+                # `value` is the canonical write token, which for a plugin field
+                # is an opaque option id. Carry the label too so the note left on
+                # the ticket says "Terraform" rather than "906688" — the person
+                # asked to correct it has to be able to read it.
+                "display": str(placeholder.get("displayValue") or "") or value,
                 "source": "pool_placeholder",
             })
         return rows
