@@ -83,6 +83,14 @@ if [ "$1 $2 $3 $4" = "project workitem field options" ]; then
   if [ "${A1_OPTIONS_FAIL_FIELD:-}" = "$5" ]; then
     exit 7
   fi
+  # Fail only the first attempt for this field, so the retry can be observed.
+  if [ "${A1_OPTIONS_FAIL_ONCE_FIELD:-}" = "$5" ]; then
+    once_marker="$A1_TEST_STATE.optfail.$5"
+    if [ ! -f "$once_marker" ]; then
+      : > "$once_marker"
+      exit 7
+    fi
+  fi
   if [ "${A1_GENERIC_FIXTURES:-}" = "1" ]; then
     case "$5" in
       140097) printf '[{"value":"","identifier":"terraform","displayValue":"Terraform"},{"value":"mongodb","identifier":"ignored-second-key","displayValue":"MongoDB"}]\n' ;;
@@ -545,6 +553,37 @@ inspect_out="$(PATH="$tmp/bin:$PATH" A1_GENERIC_FIXTURES=1 \
 ' >/dev/null && [ "$(grep -c 'workitem update' "$log" || true)" -eq 0 ] \
   && ok "unresolved field carries its pool placeholder as a hint" \
   || bad "placeholder hint missing rc=$rc out=$inspect_out"
+
+# A transient options failure must be retried, not turned into a blocked ticket.
+rm -f "$A1_TEST_STATE.updated" "$A1_TEST_STATE.get_count" "$A1_TEST_STATE.optfail."*
+: > "$log"
+inspect_out="$(PATH="$tmp/bin:$PATH" A1_GENERIC_FIXTURES=1 \
+  A1_OPTIONS_FAIL_ONCE_FIELD=101987 \
+  bash "$root/bootstrap/aone-fields.sh" inspect 84608993 1086837 2>/dev/null)"; rc=$?
+[ "$rc" -eq 0 ] && printf '%s' "$inspect_out" | jq -e '
+  .unresolved[0].id=="101987" and
+  (.unresolved[0].optionsLookupError // false) == false and
+  (.unresolved[0].options | length) == 2 and
+  (.unresolved[0].placeholder.unvalidated // false) == false
+' >/dev/null && [ "$(grep -c 'field options 101987' "$log" || true)" -eq 2 ] \
+  && ok "transient options failure is retried once and then validated normally" \
+  || bad "options retry failed rc=$rc out=$inspect_out log=$(cat "$log")"
+
+# A persistent options outage still yields the pinned placeholder, marked
+# unvalidated — apply re-reads the candidate set and remains the write-time gate.
+rm -f "$A1_TEST_STATE.updated" "$A1_TEST_STATE.get_count"
+: > "$log"
+inspect_out="$(PATH="$tmp/bin:$PATH" A1_GENERIC_FIXTURES=1 \
+  A1_OPTIONS_FAIL_FIELD=101987 \
+  bash "$root/bootstrap/aone-fields.sh" inspect 84608993 1086837 2>/dev/null)"; rc=$?
+[ "$rc" -eq 0 ] && printf '%s' "$inspect_out" | jq -e '
+  .unresolved[0].id=="101987" and
+  .unresolved[0].reason=="options_lookup_error" and
+  .unresolved[0].placeholder.value=="未知" and
+  .unresolved[0].placeholder.unvalidated==true
+' >/dev/null && [ "$(grep -c 'field options 101987' "$log" || true)" -eq 2 ] \
+  && ok "persistent options outage still offers the pinned placeholder, marked unvalidated" \
+  || bad "blind placeholder failed rc=$rc out=$inspect_out log=$(cat "$log")"
 
 # A pool with no placeholder configured must not grow the key at all.
 cat > "$tmp/workitem.json" <<'JSON'

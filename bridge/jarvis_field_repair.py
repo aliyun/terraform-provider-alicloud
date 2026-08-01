@@ -32,6 +32,10 @@ PLACEHOLDER_FALLBACK_REASONS = frozenset({
     "model_unresolved",
     "model_error",
     "model_timeout",
+    # The candidate set could not be read at all, so the model was never asked.
+    # A failed options query is not evidence that the pinned option stopped
+    # existing, and apply re-validates against a fresh candidate set anyway.
+    "no_candidates",
 })
 MODEL_OUTPUT_SCHEMA = {
     "type": "object",
@@ -170,12 +174,12 @@ class FieldRepairWorker:
                 str(self.repo_root / "bootstrap" / "aone-fields.sh"),
                 "inspect", str(item_id), str(project),
             ],
-            # 60s instead of 30s: aone-fields.sh inspect chains multiple a1 calls and
-            # intermittent a1/network jitter can push it past 30s even when fields are
-            # all present (status=ready). A spurious field_repair_transient/
-            # inspect_timeout here blackholes the headless run before it starts; the
-            # higher floor avoids that while JARVIS_FIELD_INSPECT_TIMEOUT stays as a
-            # tight override.
+            # 60s: inspect chains a workitem get plus cached field metadata,
+            # measured at ~8.5s cold and ~3.9s warm against the live API, so this
+            # leaves roughly 7x headroom. A spurious field_repair_transient/
+            # inspect_timeout here blackholes the headless run before it starts,
+            # which is why the floor stays well above the observed cost;
+            # JARVIS_FIELD_INSPECT_TIMEOUT remains available as a tight override.
             timeout=float(os.environ.get("JARVIS_FIELD_INSPECT_TIMEOUT", "60")),
             controller=controller,
             env=self._aone_env(terraform),
@@ -366,7 +370,16 @@ class FieldRepairWorker:
                 str(inspection.get("revision") or ""),
                 inspection_digest(inspection),
             ] + specs,
-            timeout=float(os.environ.get("JARVIS_FIELD_APPLY_TIMEOUT", "30")),
+            # 180s, not 30s: `aone-fields.sh apply` is not one call. It runs a
+            # full inspect for the CAS pre-check, the update, a second full
+            # inspect as readback, and a canonical workitem get — measured at
+            # 19.2s end-to-end on an idle machine against the live API. The old
+            # 30s default was smaller than the operation it was bounding, so
+            # apply_timeout was near-deterministic under any load and burned the
+            # Task retry budget until the ticket stranded in RECOVERY_REQUIRED.
+            # This keeps ~9x headroom for a contended worker while still
+            # bounding a hung process.
+            timeout=float(os.environ.get("JARVIS_FIELD_APPLY_TIMEOUT", "180")),
             controller=controller,
             env=self._aone_env(terraform),
         )
@@ -431,6 +444,22 @@ class FieldRepairWorker:
             ],
         }
 
+    def _model_has_candidates(self, inspection: Mapping[str, Any]) -> bool:
+        """True only if every field the model must answer has legal options.
+
+        The model has to cover every unresolved id, and each answer is checked
+        against that field's candidate set. One field with no candidates — the
+        shape ``options_lookup_error`` leaves behind — therefore makes a complete
+        legal answer impossible before the call is even made.
+        """
+        candidates = self._candidate_map(inspection)
+        for field in inspection.get("unresolved") or []:
+            if not isinstance(field, Mapping):
+                return False
+            if not candidates.get(str(field.get("id") or "")):
+                return False
+        return True
+
     @staticmethod
     def _placeholder_assignments(
             inspection: Mapping[str, Any], reason: str,
@@ -468,6 +497,11 @@ class FieldRepairWorker:
                 "id": field_id,
                 "name": str(field.get("name") or ""),
                 "value": value,
+                # `value` is the canonical write token, which for a plugin field
+                # is an opaque option id. Carry the label too so the note left on
+                # the ticket says "Terraform" rather than "906688" — the person
+                # asked to correct it has to be able to read it.
+                "display": str(placeholder.get("displayValue") or "") or value,
                 "source": "pool_placeholder",
             })
         return rows
@@ -494,13 +528,26 @@ class FieldRepairWorker:
             assignments = list(current.get("assignments") or [])
             placeholders: list = []
             if current.get("unresolved"):
-                try:
-                    assignments.extend(
-                        self._model_assignments(current, controller))
-                except RequiredFieldsBlocked as exc:
-                    placeholders = self._placeholder_assignments(current, exc.reason)
+                if self._model_has_candidates(current):
+                    try:
+                        assignments.extend(
+                            self._model_assignments(current, controller))
+                    except RequiredFieldsBlocked as exc:
+                        placeholders = self._placeholder_assignments(
+                            current, exc.reason)
+                        if not placeholders:
+                            raise
+                        assignments.extend(placeholders)
+                else:
+                    # Asking the model to pick from an empty candidate set can
+                    # only end in illegal_candidate, and which error it lands on
+                    # would decide whether the placeholder is reachable — that is
+                    # the model's whim, not a decision. Skip the call and make
+                    # the outcome deterministic.
+                    placeholders = self._placeholder_assignments(
+                        current, "no_candidates")
                     if not placeholders:
-                        raise
+                        raise RequiredFieldsBlocked("options_lookup_error")
                     assignments.extend(placeholders)
             missing_ids = {
                 str(field.get("id") or "") for field in current["missing"]

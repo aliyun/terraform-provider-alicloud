@@ -4,9 +4,12 @@ import logging
 import tempfile
 import unittest
 from pathlib import Path
+from typing import Any
 from unittest import mock
 
 from bridge.scheduler.runners import owner_health
+
+_ABSENT = object()
 
 
 class FakeClient:
@@ -14,6 +17,17 @@ class FakeClient:
         self.now = now
         self.ready_cursors: list[int] = []
         self.source_cursors: list[int] = []
+        # Default session carries a transcript, so it is NOT auto-releasable:
+        # there is real work to preserve and a human must decide. Tests that
+        # exercise the auto-release path clear these refs explicitly.
+        self.session_refs: dict[str, Any] = {
+            "transcriptUri": "/tmp/session-33.jsonl",
+            "branchRef": "worktree-84550003",
+            "checkpointUri": None,
+        }
+        self.release_calls: list[dict[str, Any]] = []
+        self.release_action = "RELEASED"
+        self.payload_policy: Any = owner_health.HEADLESS_POLICY_REVISION
 
     def list_ready_task_diagnostics(
             self, *, after_task_id: int = 0, limit: int = 100):
@@ -68,24 +82,52 @@ class FakeClient:
 
     def get_task_by_aone(self, aone_id: str):
         if aone_id == "84550003":
-            return [{
+            task = {
                 "id": 3,
                 "aoneId": "84550003",
                 "generation": 1,
                 "status": "RECOVERY_REQUIRED",
                 "recoveryPolicy": "RESUME_ONLY",
                 "currentSessionId": 33,
-            }]
+            }
+            # The real point-read carries the frozen payload; the executor
+            # refuses a Task whose policyRevision is not the current one, so
+            # auto-release has to see it. `None` models an API that stopped
+            # returning it at all.
+            if self.payload_policy is not _ABSENT:
+                task["payload"] = {"policyRevision": self.payload_policy}
+            return [task]
         return []
 
     def get_task_timeline(self, task_id: str):
         assert task_id == "3"
+        session = {
+            "id": 33,
+            "status": "RESUMABLE",
+            "workerKey": "worker-old-3",
+            "historicalWorkerKey": "worker-old-3",
+            "historicalWorkerId": 565,
+            "historicalWorkerProcessUuid": "proc-old-3",
+            "fenceToken": 4,
+        }
+        session.update(self.session_refs)
         return {
-            "sessions": [{
-                "id": 33,
-                "status": "RESUMABLE",
-                "workerKey": "worker-old-3",
-            }],
+            # The real endpoint returns the Task snapshot alongside the sessions;
+            # force-release reads its CAS fields from here.
+            "task": {
+                "id": 3,
+                "aoneId": "84550003",
+                "status": "RECOVERY_REQUIRED",
+                "recoveryPolicy": "RESUME_ONLY",
+                "currentSessionId": 33,
+                "generation": 1,
+                "stateVersion": 22,
+                "retryCount": 4,
+                "maxRetries": 3,
+                "desiredRevision": "rev-a",
+                "processingRevision": "rev-a",
+            },
+            "sessions": [session],
             "currentWorker": None,
             "events": [{
                 "eventType": "TASK_OWNER_MIGRATION",
@@ -93,6 +135,11 @@ class FakeClient:
                 "occurredAt": self.now - 7200,
             }],
         }
+
+    def force_release_task(self, task_id: str, **kwargs):
+        self.release_calls.append(dict(kwargs, task_id=task_id))
+        return {"action": self.release_action, "status": "READY",
+                "message": "fake release"}
 
 
 class OwnerHealthRunnerTest(unittest.TestCase):
@@ -284,6 +331,186 @@ class OwnerHealthRunnerTest(unittest.TestCase):
         self.assertNotIn("", probe_calls)
         self.assertIn("84550003", probe_calls)
         self.assertIn(3, blockers)
+
+
+class OwnerHealthAutoReleaseTest(unittest.TestCase):
+    """A RESUMABLE session with nothing to resume is converged, not paged about.
+
+    RESUME_ONLY pins a Task to one worker incarnation, so every bridge restart
+    strands another batch. Before this the runner only alerted, so each stranded
+    Task paged a human every repeat window forever while staying unrunnable.
+    """
+
+    def setUp(self):
+        self.now = 1_800_000_000.0
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.client = FakeClient(now=self.now)
+        # No transcript, branch or checkpoint: nothing to lose by releasing.
+        self.client.session_refs = {
+            "transcriptUri": None, "branchRef": None, "checkpointUri": None}
+        patcher = mock.patch.dict(
+            owner_health.os.environ,
+            {"JARVIS_OWNER_HEALTH_PAGE_SIZE": "1",
+             "JARVIS_OWNER_HEALTH_REPEAT_SEC": "3600"},
+        )
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self.runner = self._runner()
+
+    def _runner(self):
+        return owner_health.OwnerHealthRunner(
+            task_client=self.client,
+            logger=logging.getLogger(__name__),
+            repo_root=self.tmp.name,
+            state_path=Path(self.tmp.name) / "owner-health.json",
+            clock=lambda: self.now,
+        )
+
+    def _blocker(self):
+        return self.runner.collect_blockers()[3]
+
+    def _reconcile(self, blocker):
+        bodies = []
+        with mock.patch.object(
+                owner_health, "_dingtalk_event_enqueue",
+                side_effect=lambda *args, **_kw: bodies.append(args[5]) or True):
+            queued = self.runner.reconcile({3: blocker})
+        return queued, bodies
+
+    def test_empty_resume_context_is_released_instead_of_alerted(self):
+        blocker = self._blocker()
+        self.assertTrue(blocker["releasable"])
+        queued, bodies = self._reconcile(blocker)
+
+        self.assertEqual(queued, 0, "converged blockers must not page")
+        self.assertEqual(bodies, [])
+        self.assertEqual(len(self.client.release_calls), 1)
+        call = self.client.release_calls[0]
+        self.assertEqual(call["task_id"], "3")
+        # Full CAS evidence, same snapshot shape the force-redispatch path uses.
+        self.assertEqual(call["expected_session_id"], 33)
+        self.assertEqual(call["expected_session_status"], "RESUMABLE")
+        self.assertEqual(call["expected_generation"], 1)
+        self.assertEqual(call["expected_state_version"], 22)
+        self.assertEqual(call["expected_retry_count"], 4)
+        self.assertEqual(call["expected_fence_token"], 4)
+        self.assertIn("no transcript/branch/checkpoint", call["reason"])
+        # Episode dropped, so a genuinely new blocker restarts its dwell clock.
+        self.assertEqual(self.runner._load_state()["episodes"], {})
+
+    def test_session_with_a_transcript_is_never_released(self):
+        self.client.session_refs = {
+            "transcriptUri": "/tmp/session-33.jsonl",
+            "branchRef": None, "checkpointUri": None}
+        blocker = self._blocker()
+        self.assertFalse(blocker["releasable"])
+        queued, bodies = self._reconcile(blocker)
+
+        self.assertEqual(queued, 1)
+        self.assertEqual(self.client.release_calls, [])
+        self.assertIn("RECOVERY_REQUIRED", bodies[0])
+
+    def test_release_waits_out_the_dwell_threshold(self):
+        blocker = self._blocker()
+        with mock.patch.dict(
+                owner_health.os.environ,
+                {"JARVIS_OWNER_HEALTH_RELEASE_AFTER_SEC": "86400"}):
+            runner = self._runner()
+            with mock.patch.object(
+                    owner_health, "_dingtalk_event_enqueue", return_value=True):
+                queued = runner.reconcile({3: blocker})
+
+        # Blocker is only 2h old; a slow legitimate recovery may still land.
+        self.assertEqual(self.client.release_calls, [])
+        self.assertEqual(queued, 1)
+
+    def test_kill_switch_restores_alert_only_behaviour(self):
+        blocker = self._blocker()
+        with mock.patch.dict(
+                owner_health.os.environ,
+                {"JARVIS_OWNER_HEALTH_AUTO_RELEASE": "0"}):
+            runner = self._runner()
+            with mock.patch.object(
+                    owner_health, "_dingtalk_event_enqueue", return_value=True):
+                queued = runner.reconcile({3: blocker})
+
+        self.assertEqual(self.client.release_calls, [])
+        self.assertEqual(queued, 1)
+
+    def test_blocked_release_still_pages_and_does_not_hot_loop(self):
+        # e.g. "tasks whose source item is terminal cannot be force released".
+        self.client.release_action = "BLOCKED"
+        blocker = self._blocker()
+        queued, bodies = self._reconcile(blocker)
+        self.assertEqual(queued, 1)
+        self.assertEqual(len(bodies), 1)
+        self.assertEqual(len(self.client.release_calls), 1)
+
+        # Same window: no second attempt, and no second page.
+        self.now += 60
+        queued2, bodies2 = self._reconcile(blocker)
+        self.assertEqual(len(self.client.release_calls), 1)
+        self.assertEqual(queued2, 0)
+        self.assertEqual(bodies2, [])
+
+        # Next window: one more attempt is allowed.
+        self.now += 3600
+        self._reconcile(blocker)
+        self.assertEqual(len(self.client.release_calls), 2)
+
+    def test_stale_frozen_policy_is_never_released(self):
+        """Reviving it would fail StaleTaskPolicyError and re-strand every window."""
+        self.client.payload_policy = "terraform-rd-single-writer-v4"
+        blocker = self._blocker()
+        self.assertFalse(blocker["releasable"])
+        self.assertTrue(blocker["stale_policy"])
+        queued, bodies = self._reconcile(blocker)
+
+        self.assertEqual(self.client.release_calls, [])
+        self.assertEqual(queued, 1)
+        # The page must name the real blocker, not send the operator after a
+        # discard-resume that cannot help.
+        self.assertIn("payload 冻结在旧策略版本", bodies[0])
+        self.assertIn("stale_task_policy_revision", bodies[0])
+        self.assertNotIn("discard-resume", bodies[0])
+
+    def test_stale_frozen_policy_pages_once_not_every_window(self):
+        self.client.payload_policy = "terraform-rd-single-writer-v4"
+        blocker = self._blocker()
+        _queued, bodies = self._reconcile(blocker)
+        self.assertEqual(len(bodies), 1)
+
+        self.now += 7200  # two repeat windows later
+        queued2, bodies2 = self._reconcile(blocker)
+        self.assertEqual(queued2, 0)
+        self.assertEqual(bodies2, [])
+
+    def test_absent_payload_is_treated_as_unverifiable_not_releasable(self):
+        self.client.payload_policy = _ABSENT
+        blocker = self._blocker()
+        self.assertFalse(blocker["releasable"])
+        # Unknown is not the same as stale: do not claim a cause we cannot see.
+        self.assertFalse(blocker["stale_policy"])
+        queued, bodies = self._reconcile(blocker)
+
+        self.assertEqual(self.client.release_calls, [])
+        self.assertEqual(queued, 1)
+        self.assertIn("discard-resume", bodies[0])
+
+    def test_context_appearing_before_the_write_aborts_the_release(self):
+        """The emptiness check is re-done on the fresh timeline, not the snapshot."""
+        blocker = self._blocker()
+        self.assertTrue(blocker["releasable"])
+        # Session externalized a transcript between collect and reconcile.
+        self.client.session_refs = {
+            "transcriptUri": "/tmp/late.jsonl",
+            "branchRef": None, "checkpointUri": None}
+        queued, bodies = self._reconcile(blocker)
+
+        self.assertEqual(self.client.release_calls, [])
+        self.assertEqual(queued, 1, "falls back to paging instead of guessing")
+        self.assertEqual(len(bodies), 1)
 
 
 if __name__ == "__main__":

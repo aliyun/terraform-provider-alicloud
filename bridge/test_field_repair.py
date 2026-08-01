@@ -534,9 +534,10 @@ class FieldRepairPlaceholderTest(unittest.TestCase):
         ])
         result = self._repair(worker)
         self.assertEqual(result["outcome"], "field_repaired")
+        # `value` is what gets written; `display` is what the ticket note shows.
         self.assertEqual(result["placeholders"], [{
             "id": "140097", "name": "涉及云产品",
-            "value": "vpc", "source": "pool_placeholder",
+            "value": "vpc", "display": "VPC", "source": "pool_placeholder",
         }])
         self.assertTrue(result["candidateDigest"])
         # The model still got its chance before the placeholder was used.
@@ -595,6 +596,78 @@ class FieldRepairPlaceholderTest(unittest.TestCase):
         self.assertEqual(result["outcome"], "required_fields_blocked")
         self.assertEqual(result["failureReason"], "model_unresolved")
         self.assertEqual(len(runtime.calls), 2)
+
+    NO_CANDIDATES = {
+        "id": "140097",
+        "name": "涉及云产品",
+        "reason": "options_lookup_error",
+        "options": [],
+        "placeholder": {"value": "vpc", "displayValue": "VPC",
+                        "unvalidated": True},
+    }
+
+    def test_empty_candidate_set_skips_the_model_and_uses_the_placeholder(self):
+        """A failed options read must not depend on how the model happens to fail."""
+        inspect = inspection(unresolved=[self.NO_CANDIDATES])
+        inspect["missing"] = [self.NO_CANDIDATES]
+        applied = dict(inspect, status="ready", missing=[], unresolved=[],
+                       assignments=[{"id": "140097", "value": "vpc"}],
+                       filled=True, readback=[{"id": "140097", "value": "vpc"}])
+        worker, runtime, _client = self._worker([
+            self._json_result(inspect),
+            self._json_result(applied),
+        ])
+        result = self._repair(worker)
+        self.assertEqual(result["outcome"], "field_repaired")
+        self.assertEqual(
+            [row["id"] for row in result["placeholders"]], ["140097"])
+        # inspect + apply only — the model was never invoked.
+        self.assertEqual(len(runtime.calls), 2)
+        self.assertFalse(any("--json-schema" in argv
+                             for argv, _cwd, _kw in runtime.calls))
+
+    def test_empty_candidate_set_without_a_placeholder_reports_the_lookup_error(self):
+        bare = dict(self.NO_CANDIDATES)
+        bare.pop("placeholder")
+        inspect = inspection(unresolved=[bare])
+        inspect["missing"] = [bare]
+        worker, runtime, _client = self._worker([
+            self._json_result(inspect),
+        ])
+        result = self._repair(worker)
+        self.assertEqual(result["outcome"], "required_fields_blocked")
+        self.assertEqual(result["failureReason"], "options_lookup_error")
+        self.assertEqual(len(runtime.calls), 1)
+
+    def test_one_field_without_candidates_holds_back_the_whole_model_call(self):
+        """Mixed batch: the model cannot answer completely, so do not call it."""
+        blind = dict(self.NO_CANDIDATES, id="102312", name="客户问题分类1级",
+                     placeholder={"value": "其他", "displayValue": "其他",
+                                  "unvalidated": True})
+        fields = [self.WITH_PLACEHOLDER, blind]
+        inspect = inspection(unresolved=fields)
+        inspect["missing"] = fields
+        applied = dict(inspect, status="ready", missing=[], unresolved=[],
+                       assignments=[{"id": "140097", "value": "vpc"},
+                                    {"id": "102312", "value": "其他"}],
+                       filled=True,
+                       readback=[{"id": "140097", "value": "vpc"},
+                                 {"id": "102312", "value": "其他"}])
+        worker, runtime, _client = self._worker([
+            self._json_result(inspect),
+            self._json_result(applied),
+        ])
+        result = self._repair(worker)
+        self.assertEqual(result["outcome"], "field_repaired")
+        # 140097 alone would have been answerable, but 102312 has no candidates,
+        # so the model could not have produced a complete legal answer.
+        self.assertEqual(
+            sorted(row["id"] for row in result["placeholders"]),
+            ["102312", "140097"])
+        self.assertEqual(len(runtime.calls), 2)
+        apply_argv = runtime.calls[-1][0]
+        self.assertIn("140097=vpc", apply_argv)
+        self.assertIn("102312=其他", apply_argv)
 
     def test_deterministic_answer_never_becomes_a_placeholder(self):
         """A field the ladder already resolved reports no placeholder at all."""
@@ -676,8 +749,11 @@ class FieldRepairPlaceholderNotifyTest(unittest.TestCase):
         "status": "completed", "outcome": "field_repaired",
         "candidateDigest": "abc123",
         "placeholders": [
-            {"id": "101987", "name": "客户名称", "value": "未知"},
-            {"id": "102312", "name": "客户问题分类1级", "value": "其他"},
+            # 101987 writes the label itself; 107239 is a plugin field whose
+            # write token is an opaque id, so the note must show the label.
+            {"id": "101987", "name": "客户名称", "value": "未知", "display": "未知"},
+            {"id": "107239", "name": "归属产品", "value": "906688",
+             "display": "Terraform"},
         ],
     }
 
@@ -695,7 +771,9 @@ class FieldRepairPlaceholderNotifyTest(unittest.TestCase):
                          "field-repair-placeholder:1091779:84432183:abc123")
         body = args[3]
         self.assertIn("客户名称：未知", body)
-        self.assertIn("客户问题分类1级：其他", body)
+        # The readable label, never the raw option id.
+        self.assertIn("归属产品：Terraform", body)
+        self.assertNotIn("906688", body)
         # Non-terraform pool writes as jarvis and must opt past the tf gate.
         self.assertTrue(kwargs["allow_non_tf"])
         self.assertEqual(kwargs["identity"], "jarvis")

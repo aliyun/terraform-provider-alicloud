@@ -274,7 +274,9 @@ def notify_field_repair_placeholder(item_id, project, terraform, repair_result):
         lines = "\n".join(
             "- %s：%s" % (
                 str(row.get("name") or row.get("id") or "").strip() or "（未知字段）",
-                str(row.get("value") or ""))
+                # Prefer the human label; the raw value is an opaque option id
+                # for plugin/list fields and unreadable to whoever must fix it.
+                str(row.get("display") or row.get("value") or ""))
             for row in rows)
         text = (
             "必填字段自动占位\n\n"

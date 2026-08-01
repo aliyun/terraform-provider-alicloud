@@ -164,4 +164,87 @@ def wake_redispatch(
     return result if isinstance(result, dict) else {"raw": result}
 
 
-__all__ = ["enabled", "should_wake", "epoch_key", "wake_redispatch"]
+RESUME_CONTEXT_REFS = ("transcriptUri", "branchRef", "checkpointUri")
+
+
+def resume_context_empty(session: Any) -> bool:
+    """True when a RESUMABLE session has no externalized context to resume.
+
+    A Session that died before writing a transcript, a branch or a checkpoint is
+    ``RESUMABLE`` in name only — there is literally nothing to resume from. That
+    is the common shape for a Task that failed during field repair or claim,
+    before the agent ever started, and it is what makes releasing such a Session
+    lossless.
+    """
+    if not isinstance(session, Mapping):
+        return False
+    return not any(
+        str(session.get(ref) or "").strip() for ref in RESUME_CONTEXT_REFS)
+
+
+def release_stranded(client: Any, task_id: str, reason: str) -> Dict[str, Any]:
+    """Force-release a RESUME_ONLY Task whose RESUMABLE Session has nothing to resume.
+
+    ``force_redispatch_task`` is not usable here: the server requires
+    ``REPLAY_SAFE`` and every stranded Task of this shape is ``RESUME_ONLY``, so
+    redispatch always answers BLOCKED. Force-release accepts ``RESUME_ONLY``,
+    fences and cancels the dead Session, and — when a newer desired revision is
+    already pending — queues it in a fresh generation.
+
+    The emptiness check is deliberately re-done against this fresh timeline
+    rather than trusting the caller's snapshot: releasing a Session that has
+    since externalized a transcript would throw away real work. Raises
+    ``ValueError`` when the fresh read no longer matches, so the caller keeps
+    alerting instead of silently doing nothing.
+
+    Returns the server response (``action`` / ``status`` / ``message``). CAS
+    fields come from the same ``_cas_snapshot`` the force-redispatch path uses,
+    so both stay byte-identical on the contract.
+    """
+    timeline = client.get_task_timeline(str(task_id))
+    if not isinstance(timeline, Mapping):
+        raise ValueError(
+            "get_task_timeline(%s) returned non-mapping %s"
+            % (task_id, type(timeline).__name__))
+    task = timeline.get("task")
+    if not isinstance(task, Mapping):
+        raise ValueError("task timeline does not contain a task snapshot for %s" % task_id)
+    if str(task.get("recoveryPolicy") or "").upper() != "RESUME_ONLY":
+        raise ValueError("task %s is no longer RESUME_ONLY" % task_id)
+    session_id = task.get("currentSessionId")
+    session = next((
+        candidate for candidate in (timeline.get("sessions") or [])
+        if isinstance(candidate, Mapping)
+        and str(candidate.get("id")) == str(session_id)
+    ), None)
+    if not isinstance(session, Mapping):
+        raise ValueError("task %s no longer owns session %s" % (task_id, session_id))
+    if str(session.get("status") or "").upper() != "RESUMABLE":
+        raise ValueError(
+            "session %s is %s, not RESUMABLE" % (session_id, session.get("status")))
+    if not resume_context_empty(session):
+        raise ValueError(
+            "session %s now has resume context; refusing to release" % session_id)
+    snapshot = _cas_snapshot(timeline, task_id)
+    result = client.force_release_task(str(task_id), reason=reason, **snapshot)
+    action = (result or {}).get("action") if isinstance(result, dict) else None
+    log.info(
+        "recovery_release task=%s session=%s action=%s status=%s",
+        task_id, session_id, action,
+        (result or {}).get("status") if isinstance(result, dict) else None)
+    return result if isinstance(result, dict) else {"raw": result}
+
+
+__all__ = [
+    "enabled", "should_wake", "epoch_key", "wake_redispatch",
+    "resume_context_empty", "release_stranded", "RELEASE_SUCCESS_ACTIONS",
+]
+
+# force-release outcomes that mean the dead Session is gone. RELEASED also
+# requeued a pending revision in a fresh generation; OWNERSHIP_CLEARED_* only
+# cleared ownership because there was no newer revision to queue — the Task stays
+# RECOVERY_REQUIRED but stops being an owner-unavailable blocker either way.
+RELEASE_SUCCESS_ACTIONS = frozenset({
+    "RELEASED",
+    "OWNERSHIP_CLEARED_RECOVERY_REQUIRED",
+})

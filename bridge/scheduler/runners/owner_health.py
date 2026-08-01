@@ -12,6 +12,10 @@ from typing import Any, Mapping
 
 from bridge.aone_tasks import master_staff
 from bridge.helpers.dingtalk import _dingtalk_event_enqueue, _dingtalk_event_flush
+from bridge.recovery_wakeup import (
+    RELEASE_SUCCESS_ACTIONS, release_stranded, resume_context_empty,
+)
+from bridge.task_policy import HEADLESS_POLICY_REVISION
 from .claim_health import ClaimHealthRunner
 from ..model import JobResult, JobResultStatus, ScheduledJobDefinition, is_aware
 
@@ -62,6 +66,15 @@ class OwnerHealthRunner:
             "JARVIS_OWNER_HEALTH_MAX_PAGES", "100")))
         self.repeat_seconds = max(60, int(os.environ.get(
             "JARVIS_OWNER_HEALTH_REPEAT_SEC", "3600")))
+        # On by default: the precondition (a RESUMABLE session with no
+        # transcript, branch or checkpoint) already proves there is nothing to
+        # lose, and shipping this off would just recreate the alert flood it
+        # exists to stop. The env var is a kill switch, not an opt-in.
+        self.auto_release = str(os.environ.get(
+            "JARVIS_OWNER_HEALTH_AUTO_RELEASE", "1")).strip().lower() not in (
+                "0", "", "false", "no")
+        self.release_after_seconds = max(0, int(os.environ.get(
+            "JARVIS_OWNER_HEALTH_RELEASE_AFTER_SEC", "1800")))
         self.state_path = Path(state_path or os.environ.get(
             "JARVIS_OWNER_HEALTH_STATE",
             str(self.repo_root / ".my-day" / "bridge"
@@ -257,6 +270,17 @@ class OwnerHealthRunner:
                     resumable and recovery_policy == "RESUME_ONLY"):
                 continue
             reason = reason or "RESUME_OWNER_UNAVAILABLE"
+            # A Task frozen under an older policy revision cannot run under the
+            # current executor — it fails StaleTaskPolicyError before doing any
+            # work. Reviving one would burn a fresh retry budget and strand it
+            # again every window, so releasing it is worse than leaving it: the
+            # payload needs regenerating, which only a new upsert can do. When
+            # the payload is absent entirely we cannot verify this, so treat that
+            # as unreleasable too rather than guessing.
+            payload = task.get("payload")
+            policy_known = isinstance(payload, Mapping)
+            stale_policy = policy_known and str(
+                payload.get("policyRevision") or "").strip() != HEADLESS_POLICY_REVISION
             current_worker = timeline.get("currentWorker")
             if not isinstance(current_worker, Mapping):
                 current_worker = {}
@@ -279,6 +303,17 @@ class OwnerHealthRunner:
                 "first_seen_hint": (
                     migrated_at or self._first_seen_hint(task, timeline)),
                 "source": "recovery-migration",
+                # Only a Session with no transcript/branch/checkpoint and a Task
+                # the current executor would actually accept can be released
+                # without losing work or churning; reconcile() uses this to
+                # decide whether to converge instead of paging a human.
+                "releasable": bool(
+                    resumable
+                    and recovery_policy == "RESUME_ONLY"
+                    and resume_context_empty(session)
+                    and policy_known
+                    and not stale_policy),
+                "stale_policy": stale_policy,
             }
             blockers[task_id] = blocker
         return blockers
@@ -290,6 +325,61 @@ class OwnerHealthRunner:
         blockers.update(self._recovery_blockers())
         blockers.update(self._ready_blockers())
         return blockers
+
+    def _release_due(
+        self, item: Mapping[str, Any], episode: Mapping[str, Any],
+        now: float, first_seen: float,
+    ) -> bool:
+        """Whether to try converging this blocker instead of paging about it."""
+        if not self.auto_release:
+            return False
+        if not item.get("releasable"):
+            return False
+        if str(item.get("reason") or "") not in BLOCKING_REASONS:
+            return False
+        # The server already waits out its own owner grace before migrating to
+        # RECOVERY_REQUIRED. This extra dwell only guards against acting on a
+        # blocker we have just seen for the first time, where a slow legitimate
+        # recovery could still be in flight.
+        if now - first_seen < self.release_after_seconds:
+            return False
+        try:
+            last = float(episode.get("lastReleaseAt") or 0)
+        except (TypeError, ValueError):
+            last = 0
+        # One attempt per repeat window: a BLOCKED response (terminal source
+        # item, for instance) must not turn into a hot loop.
+        return not last or now - last >= self.repeat_seconds
+
+    def _release_stranded(
+        self, task_id: int, item: Mapping[str, Any],
+    ) -> bool:
+        """Force-release one stranded Session. True when it is gone."""
+        client = getattr(self, "client", None)
+        if client is None:
+            return False
+        reason = (
+            "owner-health auto-release: RESUME_ONLY task %s session %s is "
+            "RESUMABLE with no transcript/branch/checkpoint to resume "
+            "(reason=%s); releasing so it stops blocking and stops paging"
+            % (task_id, item.get("session_id") or "-", item.get("reason") or "-"))
+        try:
+            result = release_stranded(client, str(task_id), reason)
+        except Exception as exc:  # noqa: BLE001
+            self.logger.warning(
+                "owner-health auto-release task=%s skipped: %s: %s",
+                task_id, type(exc).__name__, exc)
+            return False
+        action = str((result or {}).get("action") or "").upper()
+        if action in RELEASE_SUCCESS_ACTIONS:
+            self.logger.info(
+                "owner-health auto-release task=%s aone=%s action=%s",
+                task_id, item.get("aone_id") or "-", action)
+            return True
+        self.logger.warning(
+            "owner-health auto-release task=%s not released action=%s message=%s",
+            task_id, action or "?", str((result or {}).get("message") or "")[:200])
+        return False
 
     def _load_state(self) -> dict[str, Any]:
         try:
@@ -365,8 +455,28 @@ class OwnerHealthRunner:
             first_seen = float(episode["firstSeenAt"])
             last_alert = float(episode.get("lastAlertAt") or 0)
             reason = str(item.get("reason") or "")
+            # Converge before paging. This runner used to only alert, so a
+            # Session that was RESUMABLE with nothing to resume paged a human
+            # every repeat window forever while the Task stayed unrunnable — and
+            # every bridge restart minted more of them, since RESUME_ONLY pins a
+            # Task to a worker incarnation that a restart destroys. Releasing a
+            # Session with no transcript/branch/checkpoint loses nothing, so do
+            # it and let the alert fire only for what a human must actually
+            # decide.
+            if self._release_due(item, episode, now, first_seen):
+                episode["lastReleaseAt"] = now
+                released = self._release_stranded(task_id, item)
+                if released:
+                    # The blocker is gone; drop the episode so a genuinely new
+                    # one later starts its own dwell clock.
+                    continue
+                current[str(task_id)] = episode
+            # A stale frozen policy will not resolve on its own and nothing here
+            # can clear it, so repeating the same page hourly adds no
+            # information — say it once per episode.
             repeat_due = (
                 reason not in ONE_SHOT_REASONS
+                and not item.get("stale_policy")
                 and now - last_alert >= self.repeat_seconds)
             if not last_alert or repeat_due:
                 dwell = self._duration(now - first_seen)
@@ -378,7 +488,18 @@ class OwnerHealthRunner:
                 event_key = "owner-health:%s:%s:%s" % (
                     task_id, digest, alert_index)
                 aone_line = ("Aone：#%s" % aone_id) if aone_id else "Aone：-"
-                if reason == "RESUME_OWNER_NOT_QUEUE_PULLING":
+                if item.get("stale_policy"):
+                    # discard-resume would revive it straight into
+                    # StaleTaskPolicyError, so name the actual blocker instead.
+                    next_step = (
+                        "该 Task 的 payload 冻结在旧策略版本（当前 %s），"
+                        "唤醒后会直接失败于 stale_task_policy_revision，"
+                        "因此本 runner 不会自动释放它，也不再重复本告警。"
+                        "需要一次新的 upsert 按当前策略重建 payload —— "
+                        "在 Aone 单上留一条人工评论即可让 scan 重新派发；"
+                        "或人工评估后决定放弃该 Task。"
+                        % HEADLESS_POLICY_REVISION)
+                elif reason == "RESUME_OWNER_NOT_QUEUE_PULLING":
                     next_step = (
                         "请复核 Task/Session；确认旧 owner 已不再执行后，人工运行 "
                         "`bootstrap/control-plane-status.sh force-release %s %s "
