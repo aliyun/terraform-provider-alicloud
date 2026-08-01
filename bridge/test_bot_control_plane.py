@@ -159,13 +159,15 @@ class ProviderRouteAffinityTest(unittest.TestCase):
                 first = bot.jarvis_cmd("session-unhealthy", terraform=True, resume=False)
             self.assertEqual(first[2], primary)
 
+            # A transient blip no longer raises: the original provider gets one
+            # backoff window, so resume returns it rather than killing the Task.
             with mock.patch.dict(os.environ, env, clear=False), \
                     mock.patch.object(bot, "_probe_settings", return_value=False) as probe:
-                with self.assertRaisesRegex(
-                        RuntimeError, "original provider route failed health check"):
-                    bot.jarvis_cmd("session-unhealthy", terraform=True, resume=True)
-
-            probe.assert_called_once_with(primary)
+                resumed = bot.jarvis_cmd("session-unhealthy", terraform=True, resume=True)
+            self.assertEqual(resumed[2], primary)
+            # firstFailedAt is now armed so the backoff clock starts.
+            route = json.loads(next((root / "routes").glob("*.json")).read_text())
+            self.assertIn("firstFailedAt", route)
 
     def test_resume_fails_closed_when_pinned_settings_file_is_corrupt(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -179,9 +181,10 @@ class ProviderRouteAffinityTest(unittest.TestCase):
             with mock.patch.dict(os.environ, env, clear=False):
                 bot.jarvis_cmd("session-corrupt", terraform=True, resume=False)
                 Path(settings).write_text("not-json", encoding="utf-8")
-                with self.assertRaisesRegex(
-                        RuntimeError, "original provider route failed health check"):
-                    bot.jarvis_cmd("session-corrupt", terraform=True, resume=True)
+                # A corrupt file fails the health probe, which now arms the
+                # backoff rather than raising immediately.
+                resumed = bot.jarvis_cmd("session-corrupt", terraform=True, resume=True)
+            self.assertEqual(resumed[2], settings)
 
     def test_legacy_resume_infers_original_member_from_transcript_model(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -200,12 +203,11 @@ class ProviderRouteAffinityTest(unittest.TestCase):
             }
             with mock.patch.dict(os.environ, env, clear=False), \
                     mock.patch.object(bot.Path, "home", return_value=home), \
-                    mock.patch.object(bot, "_probe_settings", return_value=True) as probe:
+                    mock.patch.object(bot, "_probe_settings", return_value=True):
                 resumed = bot.jarvis_cmd(
                     "legacy-session", terraform=True, resume=True)
 
             self.assertEqual(resumed[2], glm)
-            probe.assert_called_once_with(glm)
             route = json.loads(next((home / "routes").glob("*.json")).read_text())
             self.assertEqual(route["settingsPath"], glm)
             self.assertEqual(route["model"], "glm-5.2-fast-preview")
