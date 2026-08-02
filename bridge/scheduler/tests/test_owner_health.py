@@ -475,6 +475,30 @@ class OwnerHealthAutoReleaseTest(unittest.TestCase):
         self._reconcile(blocker)
         self.assertEqual(len(self.client.release_calls), 2)
 
+    def test_session_already_cleared_pages_once_not_every_window(self):
+        """A prior force-release cleared the Session; collect sees none.
+
+        Such a blocker is not releasable (no live Session to discard) and the
+        default alert path recommended a discard-resume that now has no
+        Session to act on — so it must be flagged unactionable and paged once,
+        not every repeat window.
+        """
+        blocker = self._blocker()
+        blocker["session_id"] = ""  # collect found no live Session
+        blocker["releasable"] = False
+        queued, bodies = self._reconcile(blocker)
+
+        self.assertEqual(self.client.release_calls, [])
+        self.assertEqual(queued, 1, "page once with the real next step")
+        self.assertIn("幻影 Session 已被本 runner 清除", bodies[0])
+        self.assertIn("留一条人工评论", bodies[0])
+
+        # Second window: unactionable, so no repeat.
+        self.now += 7200
+        queued2, bodies2 = self._reconcile(blocker)
+        self.assertEqual(queued2, 0)
+        self.assertEqual(bodies2, [])
+
     def test_no_pending_revision_uses_discard_resume_to_revive(self):
         """desired==processing: discard-resume moves the Task to READY."""
         self.client.desired_revision = "rev-a"  # == processing

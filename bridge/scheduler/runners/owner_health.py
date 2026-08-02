@@ -494,7 +494,15 @@ class OwnerHealthRunner:
                     continue
                 if unactionable:
                     episode["unactionable"] = True
-                current[str(task_id)] = episode
+            # A blocker with no live Session and no pending newer revision
+            # cannot be revived by anything this runner can do — the same
+            # dead-end as an explicitly-unactionable one, just discovered at
+            # collect time rather than inside _release_stranded. Treat it the
+            # same: page once, then stop repeating.
+            session_gone = not str(item.get("session_id") or "").strip()
+            if session_gone and not item.get("stale_policy"):
+                episode["unactionable"] = True
+            current[str(task_id)] = episode
             # Stale-policy and unactionable blockers cannot be cleared by
             # anything this runner can do, so repeating the same page every
             # window adds no information — say it once per episode.
