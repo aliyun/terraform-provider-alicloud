@@ -241,6 +241,93 @@ class ChromeBinaryChannelTests(unittest.TestCase):
                     target_text="Field")
         capture.assert_called_once()
 
+    def test_page_websocket_uses_cdp_create_when_new_fails(self):
+        # Layer 1 (/json/list) empty, layer 2 (/json/new) raises, layer 3
+        # (Target.createTarget over the browser-level CDP ws) must create the
+        # page — the path the old code had no fallback for.
+        list_empty = mock.MagicMock()
+        list_empty.__enter__.return_value.read.return_value = b"[]"
+        version_resp = mock.MagicMock()
+        version_resp.__enter__.return_value.read.return_value = (
+            b'{"webSocketDebuggerUrl":'
+            b'"ws://127.0.0.1:1/devtools/browser/abc"}')
+        list_with_page = mock.MagicMock()
+        list_with_page.__enter__.return_value.read.return_value = (
+            b'[{"id":"T1","type":"page",'
+            b'"webSocketDebuggerUrl":"ws://127.0.0.1:1/devtools/page/T1"}]')
+        cdp_client = mock.MagicMock()
+        cdp_client.call.return_value = {"targetId": "T1"}
+        with mock.patch.object(
+                js.urllib.request, "urlopen",
+                side_effect=[list_empty, OSError("refused"),
+                             version_resp, list_with_page]), \
+                mock.patch.object(
+                    js, "_ChromeDevTools", return_value=cdp_client):
+            ws = js._chrome_page_websocket(9222, timeout=0.5)
+        self.assertEqual(
+            ws, "ws://127.0.0.1:1/devtools/page/T1")
+        cdp_client.call.assert_called_with(
+            "Target.createTarget", {"url": "about:blank"})
+
+    def test_page_websocket_carries_diagnostics_when_all_layers_fail(self):
+        # All three layers fail: list empty, /json/new raises, /json/version
+        # returns no browser ws. The CaptureError must carry a diagnostic
+        # string instead of the old silent "page endpoint unavailable".
+        import itertools
+        list_empty = mock.MagicMock()
+        list_empty.__enter__.return_value.read.return_value = b"[]"
+        version_no_ws = mock.MagicMock()
+        version_no_ws.__enter__.return_value.read.return_value = b"{}"
+        with mock.patch.object(
+                js.urllib.request, "urlopen",
+                side_effect=itertools.cycle(
+                    [list_empty, OSError("refused"), version_no_ws])), \
+                mock.patch.object(js.time, "sleep"):
+            with self.assertRaises(js.CaptureError) as ctx:
+                js._chrome_page_websocket(9222, timeout=0.05)
+        msg = str(ctx.exception)
+        self.assertIn("chrome devtools page endpoint unavailable", msg)
+        self.assertIn("tried", msg)
+        self.assertIn("new:", msg)
+        self.assertIn("cdp create: no browser ws", msg)
+
+    def test_first_attempt_does_not_hold_coldstart_lock(self):
+        # The common case: a fresh capture succeeds on attempt 1 and must not
+        # touch the flock, so concurrent captures stay parallel.
+        channel = js.ChromeBinaryChannel(binary_finder=lambda: "/bin/chrome")
+        with mock.patch.dict(
+                os.environ, {"JARVIS_SCREENSHOT_CHROME_ATTEMPTS": "3"}), \
+                mock.patch.object(
+                    js, "_chrome_cdp_capture", return_value=None), \
+                mock.patch.object(js, "_chrome_coldstart_lock") as lock_fn, \
+                mock.patch.object(js.time, "sleep"):
+            channel.capture("https://example.com", "/tmp/shot.png")
+        lock_fn.assert_not_called()
+
+    def test_retry_holds_coldstart_lock_on_second_attempt(self):
+        # Attempt 1 fails with a retryable CDP-readiness error and runs
+        # unsynchronized; attempt 2 must hold the flock so it does not race a
+        # sibling cold-start.
+        channel = js.ChromeBinaryChannel(binary_finder=lambda: "/bin/chrome")
+        lock_ctx = mock.MagicMock()
+        lock_ctx.__enter__.return_value = None
+        lock_ctx.__exit__.return_value = False
+        with mock.patch.dict(
+                os.environ, {"JARVIS_SCREENSHOT_CHROME_ATTEMPTS": "3"}), \
+                mock.patch.object(
+                    js, "_chrome_cdp_capture",
+                    side_effect=[
+                        js.CaptureError(
+                            "chrome devtools page endpoint unavailable"),
+                        None]) as capture, \
+                mock.patch.object(
+                    js, "_chrome_coldstart_lock",
+                    return_value=lock_ctx) as lock_fn, \
+                mock.patch.object(js.time, "sleep"):
+            channel.capture("https://example.com", "/tmp/shot.png")
+        self.assertEqual(capture.call_count, 2)
+        lock_fn.assert_called_once()
+
 
 class CliTests(unittest.TestCase):
     """probe + capture exit codes (the no-Playwright-MCP regression surface)."""
