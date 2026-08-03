@@ -558,11 +558,31 @@ func resourceAliCloudSslCertificatesServiceInstanceDelete(d *schema.ResourceData
 	// deleted. The refund is attempted first and its failure tolerated: an instance whose order is
 	// no longer refundable — already expired, or already refunded on an earlier attempt — reports
 	// that it cannot be refunded, and such an instance is deletable as it stands.
+	//
+	// A freshly purchased instance answers with that same CouldNotRefund.NotSupport for the first
+	// seconds of its life, while its purchase order is still settling — a refund fired three
+	// seconds after payment has been seen rejected where one fired six seconds after succeeded.
+	// The code is therefore retried briefly before being taken at its word, or an instance
+	// destroyed right after creation is left unrefunded and its deletion stuck behind delete
+	// protection. The retry is bounded well below the delete timeout: for an instance that
+	// genuinely cannot be refunded, it only defers the tolerant path below.
 	refundRequest := map[string]interface{}{
 		"InstanceId":  d.Id(),
 		"ClientToken": buildClientToken("RefundInstance"),
 	}
-	if _, refundErr := client.RpcPost("cas", "2020-04-07", "RefundInstance", make(map[string]interface{}), refundRequest, true); refundErr != nil {
+	refundWait := incrementalWait(3*time.Second, 5*time.Second)
+	refundErr := resource.Retry(1*time.Minute, func() *resource.RetryError {
+		_, err := client.RpcPost("cas", "2020-04-07", "RefundInstance", make(map[string]interface{}), refundRequest, true)
+		if err == nil {
+			return nil
+		}
+		if NeedRetry(err) || IsExpectedErrors(err, []string{"CouldNotRefund.NotSupport"}) {
+			refundWait()
+			return resource.RetryableError(err)
+		}
+		return resource.NonRetryableError(err)
+	})
+	if refundErr != nil {
 		if !NotFoundError(refundErr) && !IsExpectedErrors(refundErr, []string{"CouldNotRefund.NotSupport", "OperationDenied.StatusNotSupport"}) {
 			return WrapErrorf(refundErr, DefaultErrorMsg, d.Id(), "RefundInstance", AlibabaCloudSdkGoERROR)
 		}
