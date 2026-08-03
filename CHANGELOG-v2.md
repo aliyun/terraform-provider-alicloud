@@ -1,4 +1,11 @@
-## 2.0.0-beta2 (Unreleased)
+## 2.0.0-beta2 (August 3, 2026)
+
+This beta rolls up every change merged from the 1.x line since v2.0.0-beta1 — see the `1.287.0` section of [CHANGELOG.md](CHANGELOG.md) — plus the v2-only fix below.
+
+BUG FIXES:
+
+- provider: report the actual provider version in the API `User-Agent`. `.goreleaser.yml` injected `-X main.version`, but `main.go` declares no `version` variable, so the linker discarded the value silently and v2.0.0-beta1 identified itself to Alibaba Cloud as `Terraform-Provider/1.286.0`. The ldflag now targets `alicloud/connectivity.providerVersion`, the variable that actually feeds the User-Agent, and the baked-in constant tracks the v2 line so unstamped local builds no longer claim v1. The stale `-X main.commit` flag has been dropped. ([#10109](https://github.com/aliyun/terraform-provider-alicloud/issues/10109))
+
 ## 2.0.0-beta1 (July 27, 2026)
 
 FEATURES:
