@@ -75,6 +75,10 @@ The following arguments are supported:
 
 * `engine` - (Required, ForceNew) The database engine used by the instance. Value options can refer to the latest docs [CreateDBInstance](https://www.alibabacloud.com/help/en/analyticdb-for-postgresql/latest/api-gpdb-2016-05-03-createdbinstance) `EngineVersion`.
 * `engine_version` - (Required, ForceNew) The version of the database engine used by the instance.
+* `minor_version` - (Optional, Computed, Available since v1.287.0) The minor version of the instance. When this attribute is changed, the provider calls the [UpgradeDBVersion](https://www.alibabacloud.com/help/en/analyticdb-for-postgresql/latest/api-gpdb-2016-05-03-upgradedbversion) operation to upgrade the minor version of the instance and waits until the upgrade is complete. The value must be a valid minor version of the instance's engine version.
+
+  -> **NOTE:** The instance is created with the latest minor version, so this attribute does not take effect at creation time; it only triggers a minor version upgrade when it is changed after the instance is created. The current minor version of the instance is read back into state.
+
 * `vswitch_id` - (Required, ForceNew) The vswitch id.
 * `db_instance_class` - (Optional, ForceNew) The db instance class. see [Instance specifications](https://www.alibabacloud.com/help/en/analyticdb-for-postgresql/latest/instance-types).
 
