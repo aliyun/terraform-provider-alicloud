@@ -33,6 +33,8 @@ CLI:
 from __future__ import annotations
 
 import base64
+import contextlib
+import fcntl
 import hashlib
 import json
 import math
@@ -379,46 +381,143 @@ class _ChromeDevTools:
             return message.get("result") or {}
 
 
-def _chrome_page_websocket(port: int, timeout: float = 30.0) -> str:
-    deadline = time.monotonic() + timeout
-    endpoint = "http://127.0.0.1:%s/json/list" % port
-    target_create_attempted = False
+def _find_page_in_list(list_endpoint: str) -> Optional[str]:
+    """Return the first real page target's ws from /json/list, or None.
+
+    A transient HTTP/JSON error returns None (the caller's loop retries) rather
+    than raising, so a single flaky /json/list fetch does not abort the whole
+    page-resolution attempt.
+    """
+    try:
+        with urllib.request.urlopen(list_endpoint, timeout=1) as response:
+            pages = json.loads(response.read().decode("utf-8"))
+    except (OSError, ValueError, json.JSONDecodeError):
+        return None
+    for page in pages:
+        # Fresh Chrome profiles may expose component-extension background pages
+        # before the command-line about:blank tab; CDP screenshot must target a
+        # normal page.
+        if page.get("type") != "page":
+            continue
+        ws = page.get("webSocketDebuggerUrl")
+        if ws:
+            return ws
+    return None
+
+
+def _put_new_page(new_endpoint: str, diagnostics: List[str]) -> Optional[str]:
+    """PUT /json/new?about:blank and return the new page ws, or None.
+
+    The historical HTTP shortcut. On newer headless builds it can be missing or
+    return a non-page target; failures are recorded into ``diagnostics`` instead
+    of being swallowed silently, so a stuck worker leaves a clue.
+    """
+    create = urllib.request.Request(new_endpoint, method="PUT")
+    try:
+        with urllib.request.urlopen(create, timeout=1) as response:
+            page = json.loads(response.read().decode("utf-8"))
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        diagnostics.append("new: %s" % exc)
+        return None
+    if page.get("type") == "page" and page.get("webSocketDebuggerUrl"):
+        return page["webSocketDebuggerUrl"]
+    diagnostics.append("new: not a page (%r)" % page.get("type"))
+    return None
+
+
+def _browser_websocket_url(port: int) -> Optional[str]:
+    """Return the browser-level DevTools ws from /json/version, or None.
+
+    headless=new always exposes a browser-level target. It is the entry point
+    for ``Target.createTarget`` — the reliable fallback when /json/list has no
+    page and the /json/new HTTP shortcut is unavailable or returns a non-page.
+    """
+    try:
+        with urllib.request.urlopen(
+                "http://127.0.0.1:%s/json/version" % port,
+                timeout=1) as response:
+            data = json.loads(response.read().decode("utf-8"))
+    except (OSError, ValueError, json.JSONDecodeError):
+        return None
+    return data.get("webSocketDebuggerUrl")
+
+
+def _create_page_via_cdp(browser_ws: str,
+                        list_endpoint: str) -> Optional[str]:
+    """Create a page target via the browser-level CDP ws.
+
+    Returns the new page's webSocketDebuggerUrl, or None. ``Target.createTarget``
+    returns only a targetId; we then poll /json/list for that target's ws so the
+    caller can attach a fresh page-level client.
+    """
+    client = _ChromeDevTools(browser_ws)
+    try:
+        result = client.call("Target.createTarget", {"url": "about:blank"})
+    except CaptureError:
+        return None
+    finally:
+        client.close()
+    target_id = result.get("targetId")
+    if not target_id:
+        return None
+    deadline = time.monotonic() + 5.0
     while time.monotonic() < deadline:
         try:
-            with urllib.request.urlopen(endpoint, timeout=1) as response:
+            with urllib.request.urlopen(list_endpoint, timeout=1) as response:
                 pages = json.loads(response.read().decode("utf-8"))
-            for page in pages:
-                # Fresh Chrome profiles may still expose component-extension
-                # background pages before the actual browser tab. CDP's
-                # screenshot command must target a normal page.
-                if page.get("type") != "page":
-                    continue
-                websocket_url = page.get("webSocketDebuggerUrl")
-                if websocket_url:
-                    return websocket_url
-            # Chrome normally creates the command-line about:blank tab, but a
-            # busy worker can expose DevToolsActivePort before that page is
-            # visible in /json/list. Ask the browser for one target instead of
-            # treating this short readiness race as a missing browser channel.
-            if not target_create_attempted:
-                target_create_attempted = True
-                create = urllib.request.Request(
-                    "http://127.0.0.1:%s/json/new?about%%3Ablank" % port,
-                    method="PUT",
-                )
-                try:
-                    with urllib.request.urlopen(
-                            create, timeout=1) as response:
-                        page = json.loads(response.read().decode("utf-8"))
-                    websocket_url = page.get("webSocketDebuggerUrl")
-                    if page.get("type") == "page" and websocket_url:
-                        return websocket_url
-                except (OSError, ValueError, json.JSONDecodeError):
-                    pass
         except (OSError, ValueError, json.JSONDecodeError):
-            pass
+            time.sleep(0.05)
+            continue
+        for page in pages:
+            if page.get("id") == target_id and page.get("type") == "page":
+                ws = page.get("webSocketDebuggerUrl")
+                if ws:
+                    return ws
         time.sleep(0.05)
-    raise CaptureError("chrome devtools page endpoint unavailable")
+    return None
+
+
+def _chrome_page_websocket(port: int, timeout: float = 30.0) -> str:
+    """Resolve a page-level DevTools ws for the given Chrome port.
+
+    Three layers, most reliable last: (1) an existing page already listed by
+    Chrome; (2) the /json/new HTTP shortcut; (3) ``Target.createTarget`` over the
+    browser-level CDP ws. Earlier code swallowed each layer's exception
+    silently, so a stuck worker only ever reported "page endpoint unavailable"
+    with no clue which layer died — layers now record a short diagnostic that
+    the final CaptureError carries.
+    """
+    deadline = time.monotonic() + timeout
+    list_endpoint = "http://127.0.0.1:%s/json/list" % port
+    new_endpoint = "http://127.0.0.1:%s/json/new?about%%3Ablank" % port
+    diagnostics: List[str] = []
+    cdp_create_attempted = False
+    while time.monotonic() < deadline:
+        # Layer 1: a page Chrome already lists.
+        found = _find_page_in_list(list_endpoint)
+        if found is not None:
+            return found
+        # Layers 2 + 3 run once; layer 1 then re-enters next loop to pick up
+        # whatever page now exists.
+        if not cdp_create_attempted:
+            cdp_create_attempted = True
+            # Layer 2: PUT /json/new (HTTP shortcut).
+            created = _put_new_page(new_endpoint, diagnostics)
+            if created is not None:
+                return created
+            # Layer 3: Target.createTarget over the browser-level CDP ws.
+            browser_ws = _browser_websocket_url(port)
+            if browser_ws:
+                cdp_ws = _create_page_via_cdp(browser_ws, list_endpoint)
+                if cdp_ws:
+                    return cdp_ws
+                diagnostics.append("cdp create: no page ws")
+            else:
+                diagnostics.append("cdp create: no browser ws")
+        time.sleep(0.05)
+    raise CaptureError(
+        "chrome devtools page endpoint unavailable"
+        + (("; tried " + "; ".join(diagnostics[-6:])) if diagnostics else ""))
 
 
 def _chrome_active_port(profile: Path, process: subprocess.Popen,
@@ -603,6 +702,33 @@ def _retryable_chrome_capture_error(exc: CaptureError) -> bool:
     )
 
 
+@contextlib.contextmanager
+def _chrome_coldstart_lock():
+    """Process-wide flock held only during a retry cold-start.
+
+    The first capture attempt is unsynchronized (concurrent captures stay
+    parallel — the common case under multi-worker three-layer screenshots).
+    Only when an attempt already failed with a CDP-readiness error do we hold
+    this lock for the next cold-start, so concurrent workers stop racing
+    Chrome's renderer/page subsystem to readiness. fcntl.flock serializes
+    across processes via the inode on Linux/macOS; within one process the
+    context manager is still correct (a re-entrant LOCK_EX on the same fd is
+    a no-op rather than a deadlock).
+    """
+    lock_path = os.path.join(
+        tempfile.gettempdir(), "jarvis-chrome-coldstart.lock")
+    fh = open(lock_path, "w")
+    try:
+        fcntl.flock(fh.fileno(), fcntl.LOCK_EX)
+        yield
+    finally:
+        try:
+            fcntl.flock(fh.fileno(), fcntl.LOCK_UN)
+        except OSError:
+            pass
+        fh.close()
+
+
 @dataclass
 class ChromeBinaryChannel(ScreenshotChannel):
     """Headless Chrome/Chromium captured through the DevTools protocol.
@@ -633,9 +759,21 @@ class ChromeBinaryChannel(ScreenshotChannel):
         attempts = _chrome_capture_attempts()
         for attempt in range(1, attempts + 1):
             try:
-                _chrome_cdp_capture(
-                    binary, url, out, wait_ms=wait_ms, full_page=full_page,
-                    width=width, height=height, target_text=target_text)
+                # First attempt runs unsynchronized so concurrent captures stay
+                # parallel. Retries serialize the cold-start via flock: an
+                # attempt-level failure usually means Chrome's renderer/page
+                # subsystem lost a readiness race under load, and the next
+                # cold-start should not compete with siblings.
+                if attempt == 1:
+                    _chrome_cdp_capture(
+                        binary, url, out, wait_ms=wait_ms, full_page=full_page,
+                        width=width, height=height, target_text=target_text)
+                else:
+                    with _chrome_coldstart_lock():
+                        _chrome_cdp_capture(
+                            binary, url, out, wait_ms=wait_ms,
+                            full_page=full_page, width=width, height=height,
+                            target_text=target_text)
                 return
             except CaptureError as exc:
                 if (not _retryable_chrome_capture_error(exc)
