@@ -58,8 +58,11 @@ Playwright MCP 的交互环境，headless 一律拿不到 `mcp__playwright__*`�
   finalizer 不得仅因截图失败 blocked/SUSPEND。**绝不静默跳过**。
 - **Step 2 截图**：交互会话仍可走 `mcp__playwright__*` 元素截图；headless / 无 MCP 时走
   `capture.sh capture`；`--full-page` 走 CDP 真全页，`--text` 截目标字段元素。Chrome 通道
-  对瞬时启动/CDP 错误使用全新 `--user-data-dir` 最多重试 3 次，并在 `/json/list` 暂无 page
-  时主动创建 `about:blank` target。
+  获取 page ws 走三层 fallback：现有 `/json/list` page → PUT `/json/new` →
+  `Target.createTarget` over browser-level CDP ws（`/json/version` 取 browser ws），每层失败
+  记录诊断串由最终 CaptureError 携带，不再 `except: pass` 静默吞。瞬时启动/CDP 错误使用全新
+  `--user-data-dir` 最多重试 3 次；重试那轮（attempt > 1）持 `fcntl.flock` 串行化冷启，避开
+  多 worker 并发冷启 chrome 的 renderer/page 子系统资源竞争——首次不锁，并发零开销。
 - 不影响交互模式与本机已有 Browser/Chrome 能力：交互态 Playwright MCP 与本机 Chrome 各自独立，
   headless 只新增仓库内通道，不改交互启动链。
 
@@ -89,7 +92,7 @@ python3 -m playwright install chromium
 | 不预装/不注入 Playwright MCP 的 headless 仍能打开测试页并产出有效截图 | `chrome_binary` 通过 CDP 实拍 `example.com` → 真全页有效 PNG（单测 + 本机自测） |
 | screenshot-evidence 最小链路在 headless 完成截图 + manifest | `capture.sh capture` 产 PNG，manifest `n-a` 行带原因被 `validate-manifest.py` 接受 |
 | 能力完全不可用→可诊断降级，不静默跳过 | `probe` exit 3 + `missing_capability:` 原因，skill 写 `n-a` 不删层，finalizer 继续唯一聚合评论 |
-| Chrome 瞬时启动/CDP 竞态 | 新 profile 最多 3 次 + 空 `/json/list` 主动创建 page target |
+| Chrome 瞬时启动/CDP 竞态 | 三层 fallback（`/json/list` page → `/json/new` → `Target.createTarget` over browser ws）+ 重试 flock 串行化冷启；新 profile 最多 3 次 |
 | 截图失败不阻断业务回复 | manifest 保留 `capture_error`/`missing_capability`，业务 outcome 不因此变为 blocked/SUSPENDED |
 | 自动化回归用例覆盖「无 Playwright MCP」场景 | `bridge/test_jarvis_screenshot.py`：无通道→exit 3、优先级、捕获派发、有效 PNG 产出 |
 | 不影响交互模式与本机 Browser/Chrome | 不改交互启动链；通道独立探测，交互 Playwright MCP 不受影响 |
