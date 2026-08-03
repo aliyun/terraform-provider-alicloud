@@ -174,7 +174,7 @@ class ChromeBinaryChannelTests(unittest.TestCase):
         response.__enter__.return_value.read.return_value = (
             __import__("json").dumps(payload).encode())
         with mock.patch.object(
-                js.urllib.request, "urlopen", return_value=response):
+                js._NO_PROXY_OPENER, "open", return_value=response):
             self.assertEqual(
                 js._chrome_page_websocket(9222, timeout=0.1),
                 "ws://localhost:1/page")
@@ -186,7 +186,7 @@ class ChromeBinaryChannelTests(unittest.TestCase):
         new_response.__enter__.return_value.read.return_value = (
             b'{"type":"page","webSocketDebuggerUrl":"ws://localhost:1/new"}')
         with mock.patch.object(
-                js.urllib.request, "urlopen",
+                js._NO_PROXY_OPENER, "open",
                 side_effect=[list_response, new_response]) as urlopen:
             self.assertEqual(
                 js._chrome_page_websocket(9222, timeout=0.1),
@@ -258,7 +258,7 @@ class ChromeBinaryChannelTests(unittest.TestCase):
         cdp_client = mock.MagicMock()
         cdp_client.call.return_value = {"targetId": "T1"}
         with mock.patch.object(
-                js.urllib.request, "urlopen",
+                js._NO_PROXY_OPENER, "open",
                 side_effect=[list_empty, OSError("refused"),
                              version_resp, list_with_page]), \
                 mock.patch.object(
@@ -279,7 +279,7 @@ class ChromeBinaryChannelTests(unittest.TestCase):
         version_no_ws = mock.MagicMock()
         version_no_ws.__enter__.return_value.read.return_value = b"{}"
         with mock.patch.object(
-                js.urllib.request, "urlopen",
+                js._NO_PROXY_OPENER, "open",
                 side_effect=itertools.cycle(
                     [list_empty, OSError("refused"), version_no_ws])), \
                 mock.patch.object(js.time, "sleep"):

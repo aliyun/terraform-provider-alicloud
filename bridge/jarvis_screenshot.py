@@ -381,6 +381,14 @@ class _ChromeDevTools:
             return message.get("result") or {}
 
 
+# Opener that bypasses any environment HTTP proxy for 127.0.0.1 DevTools
+# requests. On hosts behind a corporate proxy, urllib.request.urlopen routes
+# the localhost DevTools /json/* endpoints through the proxy and gets a 502,
+# which breaks the whole chrome_binary channel (every layer fails with
+# "no browser ws"). The websocket itself is raw TCP and is unaffected.
+_NO_PROXY_OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+
+
 def _find_page_in_list(list_endpoint: str) -> Optional[str]:
     """Return the first real page target's ws from /json/list, or None.
 
@@ -389,7 +397,7 @@ def _find_page_in_list(list_endpoint: str) -> Optional[str]:
     page-resolution attempt.
     """
     try:
-        with urllib.request.urlopen(list_endpoint, timeout=1) as response:
+        with _NO_PROXY_OPENER.open(list_endpoint, timeout=1) as response:
             pages = json.loads(response.read().decode("utf-8"))
     except (OSError, ValueError, json.JSONDecodeError):
         return None
@@ -414,7 +422,7 @@ def _put_new_page(new_endpoint: str, diagnostics: List[str]) -> Optional[str]:
     """
     create = urllib.request.Request(new_endpoint, method="PUT")
     try:
-        with urllib.request.urlopen(create, timeout=1) as response:
+        with _NO_PROXY_OPENER.open(create, timeout=1) as response:
             page = json.loads(response.read().decode("utf-8"))
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         diagnostics.append("new: %s" % exc)
@@ -433,7 +441,7 @@ def _browser_websocket_url(port: int) -> Optional[str]:
     page and the /json/new HTTP shortcut is unavailable or returns a non-page.
     """
     try:
-        with urllib.request.urlopen(
+        with _NO_PROXY_OPENER.open(
                 "http://127.0.0.1:%s/json/version" % port,
                 timeout=1) as response:
             data = json.loads(response.read().decode("utf-8"))
@@ -463,7 +471,7 @@ def _create_page_via_cdp(browser_ws: str,
     deadline = time.monotonic() + 5.0
     while time.monotonic() < deadline:
         try:
-            with urllib.request.urlopen(list_endpoint, timeout=1) as response:
+            with _NO_PROXY_OPENER.open(list_endpoint, timeout=1) as response:
                 pages = json.loads(response.read().decode("utf-8"))
         except (OSError, ValueError, json.JSONDecodeError):
             time.sleep(0.05)
