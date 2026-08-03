@@ -1,11 +1,50 @@
 ## 1.287.0 (Unreleased)
 
+- **New Resource:** `alicloud_ssl_certificates_service_contact` ([#9993](https://github.com/aliyun/terraform-provider-alicloud/issues/9993))
+- **New Resource:** `alicloud_apig_service` ([#10010](https://github.com/aliyun/terraform-provider-alicloud/issues/10010))
+- **New Resource:** `alicloud_polardb_dynamo_table` ([#10021](https://github.com/aliyun/terraform-provider-alicloud/issues/10021))
+- **New Resource:** `alicloud_polardb_dynamo_item` ([#10021](https://github.com/aliyun/terraform-provider-alicloud/issues/10021))
+- **New Resource:** `alicloud_apig_route` ([#10030](https://github.com/aliyun/terraform-provider-alicloud/issues/10030))
+- **New Resource:** `alicloud_apig_ai_model_provider` ([#10037](https://github.com/aliyun/terraform-provider-alicloud/issues/10037))
+- **New Resource:** `alicloud_message_service_account_logging` ([#10083](https://github.com/aliyun/terraform-provider-alicloud/issues/10083))
+- **New Resource:** `alicloud_resource_manager_resource_group_settings` ([#10098](https://github.com/aliyun/terraform-provider-alicloud/issues/10098))
+- **New Data Source:** `alicloud_ssl_certificates_service_contacts` ([#9993](https://github.com/aliyun/terraform-provider-alicloud/issues/9993))
+- **New Data Source:** `alicloud_apig_services` ([#10010](https://github.com/aliyun/terraform-provider-alicloud/issues/10010))
+- **New Data Source:** `alicloud_apig_routes` ([#10030](https://github.com/aliyun/terraform-provider-alicloud/issues/10030))
+- **New Data Source:** `alicloud_apig_ai_model_providers` ([#10037](https://github.com/aliyun/terraform-provider-alicloud/issues/10037))
+
 ENHANCEMENTS:
 
+- resource/alicloud_kvstore_instance: support replica counts. ([#9908](https://github.com/aliyun/terraform-provider-alicloud/issues/9908))
+- resource/alicloud_vpc: deprecate classic_link_enabled. ([#9968](https://github.com/aliyun/terraform-provider-alicloud/issues/9968))
+- resource/alicloud_privatelink_vpc_endpoint_service: support the resource field to associate service resources at creation. ([#9983](https://github.com/aliyun/terraform-provider-alicloud/issues/9983))
 - resource/alicloud_gpdb_instance: support backup_id. ([#9988](https://github.com/aliyun/terraform-provider-alicloud/issues/9988))
+- resource/alicloud_log_audit: preserve missing display name. ([#10007](https://github.com/aliyun/terraform-provider-alicloud/issues/10007))
+- resource/alicloud_redis_tair_instance: support config attribute. ([#10018](https://github.com/aliyun/terraform-provider-alicloud/issues/10018))
+- resource/alicloud_polardb_account: modify account type. ([#10021](https://github.com/aliyun/terraform-provider-alicloud/issues/10021))
+- resource/alicloud_cs_managed_kubernetes: support control_plane_endpoints_config. ([#10025](https://github.com/aliyun/terraform-provider-alicloud/issues/10025))
+- resource/alicloud_ess_attachment: fix always false condition. ([#10028](https://github.com/aliyun/terraform-provider-alicloud/issues/10028))
+- data-source/alicloud_ess_scaling_rules: fix loss of root cause. ([#10033](https://github.com/aliyun/terraform-provider-alicloud/issues/10033))
+- resource/alicloud_db_instance: support force_delete to destroy Subscription instances. ([#10036](https://github.com/aliyun/terraform-provider-alicloud/issues/10036))
+- resource/alicloud_sls_index: suppress API default diffs. ([#10041](https://github.com/aliyun/terraform-provider-alicloud/issues/10041))
+- resource/alicloud_amqp_instance: support storage encryption. ([#10042](https://github.com/aliyun/terraform-provider-alicloud/issues/10042))
+- docs: support setting skip_region_validation by the ALICLOUD_SKIP_REGION_VALIDATION environment variable. ([#10047](https://github.com/aliyun/terraform-provider-alicloud/issues/10047))
+- docs: expand short field descriptions in alicloud_apig_route to meet doc-check thresholds. ([#10048](https://github.com/aliyun/terraform-provider-alicloud/issues/10048))
+- resource/alicloud_ecs_disk: deprecate enable_auto_snapshot. ([#10054](https://github.com/aliyun/terraform-provider-alicloud/issues/10054))
+- resource/alicloud_oss_bucket: skip DeleteObjectVersions when no objects to delete during force_destroy. ([#10063](https://github.com/aliyun/terraform-provider-alicloud/issues/10063))
+- resource/alicloud_gwlb_listener: support tcp_idle_timeout. ([#10072](https://github.com/aliyun/terraform-provider-alicloud/issues/10072))
+- resource/alicloud_gwlb_server_group: support server_failover_mode. ([#10078](https://github.com/aliyun/terraform-provider-alicloud/issues/10078))
 - resource/alicloud_pvtz_zone: support dns_group (NORMAL_ZONE/FAST_ZONE). ([#10089](https://github.com/aliyun/terraform-provider-alicloud/issues/10089))
 - resource/alicloud_dts_migration_job: support source_endpoint_ssl and destination_endpoint_ssl. ([#10099](https://github.com/aliyun/terraform-provider-alicloud/issues/10099))
 - resource/alicloud_dts_synchronization_job: support source_endpoint_ssl and destination_endpoint_ssl. ([#10099](https://github.com/aliyun/terraform-provider-alicloud/issues/10099))
+- provider: add support for na-south-1 region validation. ([#10105](https://github.com/aliyun/terraform-provider-alicloud/issues/10105))
+
+BUG FIXES:
+
+- resource/alicloud_ram_security_preference: fix login_network_masks and login_session_duration being cleared by updating the other attributes. ([#10051](https://github.com/aliyun/terraform-provider-alicloud/issues/10051))
+- resource/alicloud_polardb_cluster: fix kms and tde bug. ([#10065](https://github.com/aliyun/terraform-provider-alicloud/issues/10065))
+- resource/alicloud_db_backup_policy: skip BackupInterval for Basic-edition DB backup policy. ([#10067](https://github.com/aliyun/terraform-provider-alicloud/issues/10067))
+- resource/alicloud_alikafka_instance: fix panic on empty serverless_config/confluent_config block. ([#10081](https://github.com/aliyun/terraform-provider-alicloud/issues/10081))
 
 ## 1.286.0 (July 24, 2026)
 
