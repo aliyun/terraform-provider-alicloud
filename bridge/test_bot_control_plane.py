@@ -10,7 +10,7 @@ import tempfile
 import threading
 import time
 import unittest
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from types import SimpleNamespace
@@ -832,6 +832,10 @@ class SchedulerRunnerTest(unittest.TestCase):
         # default so decision/tick tests don't spawn real a1. Tests that exercise
         # the pre-fetch itself `del s._prefetch_idle_claimed_a1` to restore it.
         s._prefetch_idle_claimed_a1 = mock.Mock()
+        # Keep _tick's durable discovery snapshot out of the repo's .my-day during
+        # tests; bridge/scheduler/tests/test_scan_snapshot.py covers it for real
+        # against a temp path.
+        s.snapshot_store = mock.Mock()
         return s
 
     def test_query_pool_union_merges_five_sources_and_dedups(self):
@@ -1289,63 +1293,119 @@ class SchedulerRunnerTest(unittest.TestCase):
                 os.environ["JARVIS_SOURCE_STATUS_BATCH_CHUNK"] = prev
             importlib.reload(scan)
 
-    def _idle_stale_scanner(self):
+    @staticmethod
+    def _aone_time(moment):
+        return moment.strftime("%Y-%m-%d %H:%M:%S")
+
+    def _idle_stale_scanner(self, last_idle=None):
         s = self._scanner()
         s.dispatch_pools = set()
         s.dispatch_created_before = ""
         s._pr_merged_status_by_pool = {}
-        s._last_idle_at = mock.Mock(return_value=datetime(2026, 7, 30, 18, 26))
+        # Default: jarvis released long ago, so `modified > last_idle` holds and the
+        # lag window is the only thing separating a real wake from a stale edit.
+        s._last_idle_at = mock.Mock(
+            return_value=last_idle if last_idle is not None
+            else datetime.now() - timedelta(days=27))
         s._human_comment = mock.Mock(return_value=None)
         s._human_touched = mock.Mock(return_value=False)
+        s._activity_cache = {}
+        s._human_comment_cache = {}
+        s._signal_query_retry = set()
         # _decide always builds an envelope; stub it to keep these tests on the
         # decision logic (skip path never consumes the envelope).
         s._envelope = mock.Mock(return_value=SimpleNamespace())
         return s
 
-    def test_idle_stale_suspect_triggers_retry_when_modified_after_idle(self):
-        # A jarvis-idle ticket whose `modified` is newer than its last idle
-        # transition, with no human signal detected, is a stale read (the Aone
-        # list/activity can lag a just-posted comment by tens of minutes) →
-        # retry next tick instead of swallowing. This is the #84621304/#17 mode.
+    def test_idle_recent_modification_defers_to_lag_window(self):
+        # `modified` newer than the last idle transition AND inside the lag window →
+        # the Aone read may still be catching up to a just-posted comment, so
+        # re-check next tick instead of concluding. This is the #84621304/#17 mode.
         scanner = self._idle_stale_scanner()
-        scanner._idle_stale_retry = {}
         item = {"id": "84621304", "title": "x", "tag": "jarvis-idle",
-                "status": "评估中", "modified": "2026-07-31 14:09:58"}
+                "status": "评估中",
+                "modified": self._aone_time(datetime.now() - timedelta(minutes=5))}
         d = scanner._decide([item])[0]
         self.assertEqual(d["action"], "skip")
-        self.assertEqual(d["reason"], "idle_no_human_retry")
+        self.assertEqual(d["reason"], "idle_lag_window")
+        self.assertFalse(d["conclusive"])  # 未定论 → 不得落盘
 
-    def test_idle_non_stale_stays_idle_no_human(self):
+    def test_idle_modified_before_last_idle_stays_idle_no_human(self):
         # `modified` before the last idle transition → genuinely idle, no retry.
-        scanner = self._idle_stale_scanner()
-        scanner._idle_stale_retry = {}
+        scanner = self._idle_stale_scanner(last_idle=datetime.now())
         item = {"id": "84621304", "tag": "jarvis-idle", "status": "评估中",
-                "modified": "2026-07-30 10:00:00"}
-        self.assertEqual(scanner._decide([item])[0]["reason"], "idle_no_human")
+                "modified": self._aone_time(datetime.now() - timedelta(minutes=5))}
+        d = scanner._decide([item])[0]
+        self.assertEqual(d["reason"], "idle_no_human")
+        self.assertTrue(d["conclusive"])
 
-    def test_idle_stale_retry_caps_then_accepts(self):
-        # After IDLE_STALE_RETRY_MAX consecutive retries, accept idle_no_human so
-        # a Kelude/system-modified ticket settles instead of retrying forever.
+    def test_idle_stale_modification_concludes_without_retry(self):
+        # Regression for the 165-of-259 idle backlog: one Kelude bulk 抄送 edit days
+        # ago leaves `modified` permanently newer than the last idle transition.
+        # Before the lag window that made the ticket a suspect forever — two a1 calls
+        # per tick for eight ticks after every restart, and it could never find
+        # anything, because the modification it was suspicious of was days old.
         scanner = self._idle_stale_scanner()
-        item = {"id": "84621304", "tag": "jarvis-idle", "status": "评估中",
-                "modified": "2026-07-31 14:09:58"}
-        scanner._idle_stale_retry = {"84621304": scanner.IDLE_STALE_RETRY_MAX - 1}
-        self.assertEqual(scanner._decide([item])[0]["reason"], "idle_no_human_retry")
-        scanner._idle_stale_retry = {"84621304": scanner.IDLE_STALE_RETRY_MAX}
-        self.assertEqual(scanner._decide([item])[0]["reason"], "idle_no_human")
+        item = {"id": "29114643", "tag": "jarvis-idle", "status": "评估中",
+                "modified": self._aone_time(datetime.now() - timedelta(days=18))}
+        d = scanner._decide([item])[0]
+        self.assertEqual(d["reason"], "idle_no_human")
+        self.assertTrue(d["conclusive"])
 
-    def test_tick_auto_advances_and_clears_idle_stale_retry(self):
+    def test_idle_failed_signal_read_is_never_conclusive(self):
+        # A failed comment read looks exactly like "no human signal". Concluding
+        # idle_no_human from it and persisting that would strand the ticket until its
+        # next Aone modification, so it must stay inconclusive and be re-read.
         scanner = self._idle_stale_scanner()
-        scanner._idle_stale_retry = {}
         item = {"id": "84621304", "tag": "jarvis-idle", "status": "评估中",
-                "modified": "2026-07-31 14:09:58", "title": "x"}
-        scanner._tick_auto([item])
-        self.assertEqual(scanner._idle_stale_retry.get("84621304"), 1)
-        # Once it is no longer stale-suspect (modified now before last idle), the
-        # non-retry skip clears the retry entry so it stops re-evaluating.
-        settled = dict(item, modified="2026-07-30 10:00:00")
-        scanner._tick_auto([settled])
-        self.assertNotIn("84621304", scanner._idle_stale_retry)
+                "modified": self._aone_time(datetime.now() - timedelta(days=18)),
+                "title": "x"}
+        scanner._human_comment_cache = {"idle:84621304": False}  # 查询失败标记
+        d = scanner._decide([item])[0]
+        self.assertEqual(d["reason"], "idle_query_retry")
+        self.assertFalse(d["conclusive"])
+
+    def test_failed_activity_read_is_never_conclusive(self):
+        # Same invariant via the other cache: _activities caches None on failure, and
+        # _last_idle_at would then return None, which used to fall straight through
+        # to a conclusive idle_no_human.
+        scanner = self._idle_stale_scanner()
+        scanner._activity_cache = {"84621304": None}
+        scanner._last_idle_at = mock.Mock(return_value=None)
+        item = {"id": "84621304", "tag": "jarvis-idle", "status": "评估中",
+                "modified": self._aone_time(datetime.now() - timedelta(days=18)),
+                "title": "x"}
+        d = scanner._decide([item])[0]
+        self.assertEqual(d["reason"], "idle_query_retry")
+        self.assertFalse(d["conclusive"])
+
+    def test_tick_auto_returns_only_conclusive_entries(self):
+        scanner = self._idle_stale_scanner()
+        stale = {"id": "29114643", "tag": "jarvis-idle", "status": "评估中",
+                 "modified": self._aone_time(datetime.now() - timedelta(days=18)),
+                 "title": "x"}
+        fresh = {"id": "84621304", "tag": "jarvis-idle", "status": "评估中",
+                 "modified": self._aone_time(datetime.now() - timedelta(minutes=5)),
+                 "title": "y"}
+        conclusive = scanner._tick_auto([stale, fresh])
+        self.assertIn("29114643", conclusive)      # 已定论 idle_no_human → 可落盘
+        self.assertNotIn("84621304", conclusive)   # lag window 内未定论 → 不落盘
+        self.assertEqual(conclusive["29114643"], stale["modified"])
+
+    def test_tick_auto_tracks_failed_reads_for_next_tick(self):
+        scanner = self._idle_stale_scanner()
+        item = {"id": "84621304", "tag": "jarvis-idle", "status": "评估中",
+                "modified": self._aone_time(datetime.now() - timedelta(days=18)),
+                "title": "x"}
+        scanner._human_comment_cache = {"idle:84621304": False}
+        conclusive = scanner._tick_auto([item])
+        self.assertNotIn("84621304", conclusive)
+        self.assertIn("84621304", scanner._signal_query_retry)
+        # A later clean read concludes and drops it from the retry set.
+        scanner._human_comment_cache = {}
+        conclusive = scanner._tick_auto([item])
+        self.assertIn("84621304", conclusive)
+        self.assertNotIn("84621304", scanner._signal_query_retry)
 
     def test_parallel_a1_per_id_best_effort_and_bounded(self):
         from bridge.helpers.aone import parallel_a1_per_id
@@ -1421,7 +1481,8 @@ class SchedulerRunnerTest(unittest.TestCase):
         calls = []
         scanner._reconcile_done_status_drifts_safely = mock.Mock(
             side_effect=lambda *_args: calls.append("done-drift"))
-        scanner._tick_auto = mock.Mock(side_effect=lambda *_args: calls.append("dispatch"))
+        scanner._tick_auto = mock.Mock(
+            side_effect=lambda *_args: (calls.append("dispatch"), {})[1])
         scanner._reconcile_source_statuses_safely = mock.Mock(
             side_effect=lambda *_args: calls.append("lifecycle"))
 
