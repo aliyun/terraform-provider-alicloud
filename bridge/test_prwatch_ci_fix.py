@@ -19,6 +19,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
+from bridge import jarvis_task_router as router  # noqa: E402
 from bridge.jarvis_task_router import EnqueueResult  # noqa: E402
 from bridge.helpers import aone as events  # noqa: E402
 from bridge.scheduler.runners import pr_watch as bot  # noqa: E402
@@ -1111,6 +1112,49 @@ class AutoRegisterTest(_DispatchBase):
         self._prs = [self._pr(9972, "feat/84291978-x")]
         self.sched._maybe_autoregister_open_prs()
         self.assertEqual(bot._prwatch_list(), {})
+
+
+class NotifyAttentionImportTest(unittest.TestCase):
+    """Regression: `_notify_attention` must resolve the notifier it calls.
+
+    The scheduler runner split left `pr_watch._notify_attention` calling
+    `_notify_task_attention` without importing it, so every attention notice
+    raised NameError.  `_TaskAttentionPublisher.upsert` catches notifier
+    exceptions best-effort, so the board flipped to 「转人工」 while Aone and
+    DingTalk stayed silent and the Task still reported success.
+
+    Every other attention test replaces `_notify_attention` in setUp, so the
+    real body never executed and the missing name survived.  This test calls it
+    directly and only stubs the outbound subprocess, keeping the name
+    resolution itself under test.
+    """
+
+    def test_notify_attention_reaches_the_real_notifier(self):
+        argv_seen = []
+
+        class _RecordingSubprocess:
+            @staticmethod
+            def run(argv, **kwargs):
+                argv_seen.append([str(part) for part in argv])
+                return None
+
+        original = router.subprocess
+        router.subprocess = _RecordingSubprocess
+        try:
+            bot.PrWatchRuntime._notify_attention(
+                "320687",
+                {"reason": "CI 已通过，等待人工 review/merge。",
+                 "action": "请 review 代码；确认无误后合并 PR。",
+                 "aoneUrl": "https://example.invalid/workitem",
+                 "prUrl": PR})
+        finally:
+            router.subprocess = original
+
+        self.assertEqual(
+            len(argv_seen), 1,
+            "the real notifier must be reached, not silently skipped")
+        self.assertIn("notify-dingtalk.sh", " ".join(argv_seen[0]))
+        self.assertIn("320687", argv_seen[0])
 
 
 if __name__ == "__main__":
