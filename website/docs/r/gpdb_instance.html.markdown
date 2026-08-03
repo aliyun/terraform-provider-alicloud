@@ -142,6 +142,18 @@ The following arguments are supported:
 
   -> **NOTE:** `data_share_status` is valid only when `db_instance_mode` is set to `Serverless`.
 
+* `status` - (Optional, Available since v1.288.0) The expected status of the instance. Valid values:
+  - `Running`: The instance is expected to be running. If the instance is paused, the provider resumes it.
+  - `Stopped`: The instance is expected to be stopped. If the instance is running, the provider pauses it.
+
+  When `status` is not set, it keeps the read-only behavior and the provider does not manage the instance status.
+
+  -> **NOTE:** Setting `status` actually pauses or resumes the instance. Pausing or resuming an instance is supported only for Serverless instances with kernel version V1.0.2.1 or later, the instance must be charged with the PayAsYouGo billing method, and pausing takes effect only when the instance is in the running state. See [PauseInstance](https://www.alibabacloud.com/help/en/analyticdb-for-postgresql/latest/api-gpdb-2016-05-03-pauseinstance) and [ResumeInstance](https://www.alibabacloud.com/help/en/analyticdb-for-postgresql/latest/api-gpdb-2016-05-03-resumeinstance).
+
+  -> **NOTE:** Pausing or resuming an instance is asynchronous. While a pause or resume request is in progress, the status of the instance transitions through `STOPPING` or `STARTING` and then converges to `STOPPED` (paused) or `Running` (resumed).
+
+  -> **NOTE:** `status` does not take part in the instance creation. A new instance is always created in the running state and is paused afterwards when `status` is set to `Stopped`.
+
 * `used_time` - (Optional) The used time. When the parameter `period` is `Year`, the `used_time` value is `1` to `3`. When the parameter `period` is `Month`, the `used_time` value is `1` to `9`. **NOTE:** From provider version 1.287.0, `used_time` is required (together with `period`) when `payment_type` is modified to `Subscription`.
 * `description` - (Optional) The description of the instance.
 * `backup_id` - (Optional, ForceNew, Available since v1.287.0) The ID of the backup set. If specified, the instance is created from the existing backup set. See [CreateDBInstance](https://www.alibabacloud.com/help/en/analyticdb-for-postgresql/latest/api-gpdb-2016-05-03-createdbinstance).
@@ -182,7 +194,7 @@ The parameters supports the following:
 The following attributes are exported:
 
 * `id` - The resource ID in terraform of AnalyticDB for PostgreSQL.
-* `status` - The status of the instance.
+* `status` - The status of the instance. When the instance is paused, the value is `STOPPED`.
 * `connection_string` - (Available since v1.196.0) The connection string of the instance.
 * `port` - (Available since v1.196.0) The connection port of the instance.
 

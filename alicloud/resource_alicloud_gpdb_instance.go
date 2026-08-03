@@ -369,8 +369,23 @@ func resourceAliCloudGpdbInstance() *schema.Resource {
 				ForceNew: true,
 			},
 			"status": {
-				Type:     schema.TypeString,
-				Computed: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"Running", "Stopped"}, false),
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					// The status returned by the API uses a different vocabulary than
+					// the configurable status: a paused instance is exposed as STOPPED
+					// (or STOPPING while being paused) and a running instance is
+					// exposed as Running (or STARTING while being resumed).
+					if new == "Stopped" && (old == "STOPPED" || old == "STOPPING") {
+						return true
+					}
+					if new == "Running" && (old == "Running" || old == "STARTING") {
+						return true
+					}
+					return false
+				},
 			},
 		},
 	}
@@ -562,6 +577,14 @@ func resourceAliCloudGpdbDbInstanceCreate(d *schema.ResourceData, meta interface
 		sslEnabledStateConf := BuildStateConf([]string{}, []string{fmt.Sprint(v)}, d.Timeout(schema.TimeoutCreate), 5*time.Second, gpdbService.DBInstanceSSLStateRefreshFunc(d, []string{}))
 		if _, err := sslEnabledStateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+
+	// A new instance is always created in the running state, so pause it
+	// afterwards when status is set to Stopped.
+	if v, ok := d.GetOk("status"); ok && fmt.Sprint(v) == "Stopped" {
+		if err := gpdbDbInstancePauseOrResume(client, &gpdbService, d.Id(), "Stopped", d.Timeout(schema.TimeoutCreate)); err != nil {
+			return err
 		}
 	}
 
@@ -1544,9 +1567,80 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 		d.SetPartial("data_share_status")
 	}
 
+	if !d.IsNewResource() && d.HasChange("status") {
+		_, desiredStatusRaw := d.GetChange("status")
+		desiredStatus := desiredStatusRaw.(string)
+		if desiredStatus != "" {
+			if err := gpdbDbInstancePauseOrResume(client, &gpdbService, d.Id(), desiredStatus, d.Timeout(schema.TimeoutUpdate)); err != nil {
+				return err
+			}
+		}
+		d.SetPartial("status")
+	}
+
 	d.Partial(false)
 
 	return resourceAliCloudGpdbDbInstanceRead(d, meta)
+}
+
+// gpdbDbInstancePauseOrResume pauses or resumes an instance according to the
+// desired status ("Stopped" or "Running") and waits until the instance status
+// converges. The API call is skipped when the instance is already in the
+// desired state or is transitioning to it, so the operation is idempotent.
+func gpdbDbInstancePauseOrResume(client *connectivity.AliyunClient, gpdbService *GpdbService, id, desiredStatus string, timeout time.Duration) error {
+	object, err := gpdbService.DescribeGpdbDbInstance(id)
+	if err != nil {
+		return WrapError(err)
+	}
+	currentStatus := fmt.Sprint(object["DBInstanceStatus"])
+	action := ""
+	targetStatus := ""
+	if desiredStatus == "Stopped" {
+		// PauseInstance only takes effect on a running instance, so skip the
+		// call when the instance is already paused or being paused.
+		if currentStatus != "STOPPED" && currentStatus != "STOPPING" {
+			action = "PauseInstance"
+		}
+		targetStatus = "STOPPED"
+	} else if desiredStatus == "Running" {
+		// ResumeInstance only takes effect on a paused instance, so skip the
+		// call when the instance is already running or being resumed.
+		if currentStatus != "Running" && currentStatus != "STARTING" {
+			action = "ResumeInstance"
+		}
+		targetStatus = "Running"
+	} else {
+		return nil
+	}
+	if action != "" {
+		request := map[string]interface{}{
+			"DBInstanceId": id,
+		}
+		var response map[string]interface{}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(timeout), func() *resource.RetryError {
+			response, err = client.RpcPost("gpdb", "2016-05-03", action, nil, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		}
+	}
+	// Pausing or resuming an instance is asynchronous, so wait until the
+	// instance status converges to the target one.
+	stateConf := BuildStateConf([]string{}, []string{targetStatus}, timeout, 30*time.Second, gpdbService.GpdbDbInstanceStateRefreshFunc(id, "DBInstanceStatus", []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, id)
+	}
+	return nil
 }
 
 func resourceAliCloudGpdbDbInstanceDelete(d *schema.ResourceData, meta interface{}) error {

@@ -923,6 +923,122 @@ func TestAccAliCloudGPDBDBInstanceServerlessPro(t *testing.T) {
 	})
 }
 
+// Pausing or resuming an instance is only supported for Serverless instances
+// with kernel version V1.0.2.1 or later, so this case runs against a Serverless
+// instance and drives the whole pause -> resume cycle through status.
+func TestAccAliCloudGPDBDBInstanceServerless_status(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_gpdb_instance.default"
+	testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Region(gpdbServerlessTestRegion())})
+	ra := resourceAttrInit(resourceId, AliCloudGPDBDBInstanceMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &GpdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeGpdbDbInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sgpdbdbinstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGPDBDBInstanceBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_mode":      "Serverless",
+					"description":           name,
+					"engine":                "gpdb",
+					"engine_version":        "6.0",
+					"zone_id":               gpdbServerlessTestZone(),
+					"instance_network_type": "VPC",
+					"instance_spec":         "4C16G",
+					"payment_type":          "PayAsYouGo",
+					"seg_node_num":          "2",
+					"vpc_id":                "${data.alicloud_vpcs.default.ids.0}",
+					"vswitch_id":            "${local.vswitch_id}",
+					"serverless_mode":       "Manual",
+					"status":                "Running",
+					"create_sample_data":    "false",
+					"ip_whitelist": []map[string]interface{}{
+						{
+							"security_ip_list": "127.0.0.1",
+						},
+					},
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_mode": "Serverless",
+						"description":      name,
+						"engine":           "gpdb",
+						"engine_version":   "6.0",
+						"zone_id":          CHECKSET,
+						"status":           "Running",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "Stopped",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "STOPPED",
+					}),
+				),
+			},
+			{
+				// Re-apply the same configuration to make sure a paused instance
+				// does not produce a permanent diff and no extra API call is made.
+				Config: testAccConfig(map[string]interface{}{
+					"status": "Stopped",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "STOPPED",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "Running",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "Running",
+					}),
+				),
+			},
+			{
+				// Removing status from the configuration leaves the instance
+				// unmanaged: no diff is produced and the instance keeps its
+				// current state.
+				Config: testAccConfig(map[string]interface{}{
+					"status": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "Running",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"period", "used_time", "db_instance_class", "security_ip_list", "instance_group_count", "create_sample_data", "parameters"},
+			},
+		},
+	})
+}
+
 func TestAccAliCloudGPDBDBInstanceServerless_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_gpdb_instance.default"
