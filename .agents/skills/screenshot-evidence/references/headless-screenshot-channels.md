@@ -63,6 +63,9 @@ Playwright MCP 的交互环境，headless 一律拿不到 `mcp__playwright__*`�
   记录诊断串由最终 CaptureError 携带，不再 `except: pass` 静默吞。瞬时启动/CDP 错误使用全新
   `--user-data-dir` 最多重试 3 次；重试那轮（attempt > 1）持 `fcntl.flock` 串行化冷启，避开
   多 worker 并发冷启 chrome 的 renderer/page 子系统资源竞争——首次不锁，并发零开销。
+  所有 127.0.0.1 DevTools HTTP 调用走 `_NO_PROXY_OPENER`（`build_opener(ProxyHandler({}))`）
+  无代理 opener 绕过环境 HTTP 代理，避免代理把 localhost DevTools /json/* 走代理 502
+  （三层全败 → "no browser ws"）；websocket 是裸 TCP 不受影响。
 - 不影响交互模式与本机已有 Browser/Chrome 能力：交互态 Playwright MCP 与本机 Chrome 各自独立，
   headless 只新增仓库内通道，不改交互启动链。
 
@@ -93,6 +96,7 @@ python3 -m playwright install chromium
 | screenshot-evidence 最小链路在 headless 完成截图 + manifest | `capture.sh capture` 产 PNG，manifest `n-a` 行带原因被 `validate-manifest.py` 接受 |
 | 能力完全不可用→可诊断降级，不静默跳过 | `probe` exit 3 + `missing_capability:` 原因，skill 写 `n-a` 不删层，finalizer 继续唯一聚合评论 |
 | Chrome 瞬时启动/CDP 竞态 | 三层 fallback（`/json/list` page → `/json/new` → `Target.createTarget` over browser ws）+ 重试 flock 串行化冷启；新 profile 最多 3 次 |
+| 环境 HTTP 代理拦截 localhost DevTools | `_NO_PROXY_OPENER`（`build_opener(ProxyHandler({}))`）无代理 opener 绕过；设 `HTTP_PROXY=http://127.0.0.1:1` capture.sh rc=0 |
 | 截图失败不阻断业务回复 | manifest 保留 `capture_error`/`missing_capability`，业务 outcome 不因此变为 blocked/SUSPENDED |
 | 自动化回归用例覆盖「无 Playwright MCP」场景 | `bridge/test_jarvis_screenshot.py`：无通道→exit 3、优先级、捕获派发、有效 PNG 产出 |
 | 不影响交互模式与本机 Browser/Chrome | 不改交互启动链；通道独立探测，交互 Playwright MCP 不受影响 |
