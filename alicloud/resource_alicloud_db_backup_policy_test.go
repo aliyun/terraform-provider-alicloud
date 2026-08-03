@@ -172,6 +172,16 @@ func TestAccAliCloudRdsDBBackupPolicyMySql(t *testing.T) {
 					}),
 				),
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"backup_interval": "60",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backup_interval": "60",
+					}),
+				),
+			},
 		},
 	})
 }

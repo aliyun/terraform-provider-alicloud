@@ -970,7 +970,19 @@ func (s *RdsService) ModifyDBBackupPolicy(d *schema.ResourceData, updateForData,
 			request["ArchiveBackupKeepCount"] = archiveBackupKeepCount
 			request["ArchiveBackupKeepPolicy"] = archiveBackupKeepPolicy
 		}
-		if (instance["Engine"] == "MySQL" || instance["Engine"] == "PostgreSQL") && instance["DBInstanceStorageType"] != "local_ssd" {
+
+		// handle backup_interval
+		if instance["Engine"] == "MySQL" {
+			// Only MySQL 5.7 and 8.0 High-availability or Cluster Edition instances with cloud disk storage support setting the backup interval
+			engineVersion := fmt.Sprint(instance["EngineVersion"])
+			category := fmt.Sprint(instance["Category"])
+			if (engineVersion == "5.7" || engineVersion == "8.0") &&
+				(category == "HighAvailability" || category == "cluster") &&
+				instance["DBInstanceStorageType"] != "local_ssd" {
+				request["BackupInterval"] = backupInterval
+			}
+		}
+		if instance["Engine"] == "PostgreSQL" && instance["DBInstanceStorageType"] != "local_ssd" {
 			// Basic version cannot set backup interval
 			if v, ok := instance["Category"].(string); ok && v != "Basic" {
 				request["BackupInterval"] = backupInterval
