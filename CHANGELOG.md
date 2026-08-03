@@ -1,4 +1,5 @@
-## 1.287.0 (Unreleased)
+## 1.288.0 (Unreleased)
+## 1.287.0 (August 03, 2026)
 
 - **New Resource:** `alicloud_ssl_certificates_service_contact` ([#9993](https://github.com/aliyun/terraform-provider-alicloud/issues/9993))
 - **New Resource:** `alicloud_apig_service` ([#10010](https://github.com/aliyun/terraform-provider-alicloud/issues/10010))

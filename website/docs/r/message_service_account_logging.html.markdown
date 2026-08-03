@@ -20,6 +20,12 @@ For information about Message Service Account Logging and how to use it, see [Wh
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_message_service_account_logging&exampleId=5dc46c29-c718-916b-c43d-fb134b9dae10494c35a6&activeTab=example&spm=docs.r.message_service_account_logging.0.5dc46c29c7&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -48,6 +54,10 @@ resource "alicloud_message_service_account_logging" "default" {
 ### Deleting `alicloud_message_service_account_logging` or removing it from your configuration
 
 Terraform cannot destroy resource `alicloud_message_service_account_logging`. Terraform will remove this resource from the state file, however resources may remain.
+
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_message_service_account_logging&spm=docs.r.message_service_account_logging.example&intl_lang=EN_US)
+
 
 ## Argument Reference
 
