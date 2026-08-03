@@ -10,7 +10,7 @@ description: |-
 # alicloud_gpdb_instance
 
 Provides a AnalyticDB for PostgreSQL instance resource supports replica set instances only. the AnalyticDB for PostgreSQL provides stable, reliable, and automatic scalable database services.
-You can see detail product introduction [here](https://www.alibabacloud.com/help/en/analyticdb-for-postgresql/latest/api-gpdb-2016-05-03-createdbinstance)
+You can see the detail product introduction in the [CreateDBInstance](https://www.alibabacloud.com/help/en/analyticdb-for-postgresql/latest/api-gpdb-2016-05-03-createdbinstance) API reference.
 
 -> **NOTE:** Available since v1.47.0.
 
@@ -84,13 +84,17 @@ The following arguments are supported:
 
   -> **NOTE:** This parameter must be passed in to create a storage reservation mode instance.
 
-* `db_instance_mode` - (Required, ForceNew) The db instance mode. Valid values: `StorageElastic`, `Serverless`, `Classic`.
-* `instance_spec` - (Optional) The specification of segment nodes. Valid values: `2C16G`, `4C32G`, `16C128G`, `2C8G`, `4C16G`, `8C32G`, `8C64G`, `16C64G`, `32C256G`, `64C512G`, `96C768G`, `128C1024G`.
+* `db_instance_mode` - (Required, ForceNew) The db instance mode. Valid values: `StorageElastic`, `Serverless`, `Classic`, `ServerlessPro`.
+
+  -> **NOTE:** `ServerlessPro` is a dedicated Serverless Pro instance form. When `db_instance_mode` is set to `ServerlessPro`, instance sizing is controlled via `serverless_resource` and `cache_storage_size` instead of `instance_spec`.
+
+* `instance_spec` - (Optional, Computed) The specification of segment nodes. Valid values: `2C16G`, `4C32G`, `16C128G`, `2C8G`, `4C16G`, `8C32G`, `8C64G`, `16C64G`, `32C256G`, `64C512G`, `96C768G`, `128C1024G`.
   - If `db_instance_category` is set to `HighAvailability`, and `db_instance_mode` is set to `StorageElastic`. Valid values: `2C16G`, `4C32G`, `16C128G`.
   - If `db_instance_category` is set to `Basic`, and `db_instance_mode` is set to `StorageElastic`. Valid values: `2C8G`, `4C16G`, `8C32G`, `16C64G`.
   - If `db_instance_mode` is set to `Serverless`. Valid values: `4C16G`, `8C32G`.
 
   -> **NOTE:** This parameter must be passed to create a storage elastic mode instance and a serverless version instance.
+  -> **NOTE:** For `ServerlessPro` instances, `instance_spec` is a server-side placeholder (e.g. `1C8G`) returned by the API and is not user-configurable; sizing is controlled via `serverless_resource` and `cache_storage_size`. The placeholder is read into state but should not be set in the configuration.
  
 * `storage_size` - (Optional, Int) The storage capacity. Unit: GB. Valid values: `50` to `4000`.
 
@@ -125,6 +129,8 @@ The following arguments are supported:
 * `maintain_end_time` - (Optional) The end time of the maintenance window for the instance. in the format of HH:mmZ (UTC time), for example 03:00Z. start time should be later than end time.
 * `resource_management_mode` - (Optional, Available since v1.225.0) Resource management mode. Valid values: `resourceGroup`, `resourceQueue`.
 * `serverless_mode` - (Optional, ForceNew, Available since v1.233.1) The mode of the Serverless instance. Valid values: `Manual`, `Auto`. **NOTE:** `serverless_mode` is valid only when `db_instance_mode` is set to `Serverless`.
+* `serverless_resource` - (Optional, ForceNew, Int, Available since v1.287.0) The computing resource threshold, in ACU. Valid values: `16` to `1024`. **NOTE:** `serverless_resource` is valid only when `db_instance_mode` is set to `ServerlessPro`.
+* `cache_storage_size` - (Optional, ForceNew, Int, Available since v1.287.0) The cache storage size, in GB. Valid values: `800` to `102400`. **NOTE:** `cache_storage_size` is valid only when `db_instance_mode` is set to `ServerlessPro`.
 * `prod_type` - (Optional, ForceNew, Available since v1.233.1) The type of the product. Default value: `standard`. Valid values: `standard`, `cost-effective`.
 * `data_share_status` - (Optional, Available since v1.233.1) Specifies whether to enable or disable data sharing. Default value: `closed`. Valid values:
   - `opened`: Enables data sharing.
@@ -146,7 +152,6 @@ The following arguments are supported:
 * `master_node_num` - (Optional, Int, Deprecated since v1.213.0) The number of Master nodes. **NOTE:** Field `master_node_num` has been deprecated from provider version 1.213.0.
 * `private_ip_address` - (Optional, Deprecated since v1.213.0) The private ip address. **NOTE:** Field `private_ip_address` has been deprecated from provider version 1.213.0.
 
-
 ### `ip_whitelist`
 
 The ip_whitelist supports the following:
@@ -162,6 +167,11 @@ The parameters supports the following:
 
 * `name` - (Required, Available since v1.231.0) The name of the parameter.
 * `value` - (Required, Available since v1.231.0) The value of the parameter.
+* `default_value` - (Available since v1.231.0) The default value of the parameter.
+* `is_changeable_config` - (Available since v1.231.0) Whether the parameter is changeable.
+* `force_restart_instance` - (Available since v1.231.0) Whether to force restart the instance to config the parameter.
+* `optional_range` - (Available since v1.231.0) The optional range of the parameter.
+* `parameter_description` - (Available since v1.231.0) The description of the parameter.
 
 ## Attributes Reference
 
@@ -171,12 +181,6 @@ The following attributes are exported:
 * `status` - The status of the instance.
 * `connection_string` - (Available since v1.196.0) The connection string of the instance.
 * `port` - (Available since v1.196.0) The connection port of the instance.
-* `parameters` - (Available since v1.231.0) A list of parameters. Each element contains the following attributes:
-  * `default_value` - (Available since v1.231.0) The default value of the parameter.
-  * `force_restart_instance` - (Available since v1.231.0) Whether to force restart the instance to config the parameter.
-  * `parameter_description` - (Available since v1.231.0) The description of the parameter.
-  * `optional_range` - (Available since v1.231.0) The optional range of the parameter.
-  * `is_changeable_config` - (Available since v1.231.0) Whether the parameter is changeable.
 
 ## Timeouts
 

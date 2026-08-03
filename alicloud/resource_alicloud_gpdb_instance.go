@@ -54,10 +54,9 @@ func resourceAliCloudGpdbInstance() *schema.Resource {
 				ForceNew: true,
 			},
 			"db_instance_mode": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"StorageElastic", "Serverless", "Classic"}, false),
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
 			},
 			"db_instance_class": {
 				Type:     schema.TypeString,
@@ -71,9 +70,9 @@ func resourceAliCloudGpdbInstance() *schema.Resource {
 				ValidateFunc: StringInSlice([]string{"Basic", "HighAvailability"}, false),
 			},
 			"instance_spec": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"2C16G", "4C32G", "16C128G", "2C8G", "4C16G", "8C32G", "8C64G", "16C64G", "32C256G", "64C512G", "96C768G", "128C1024G"}, false),
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
 			"storage_size": {
 				Type:     schema.TypeInt,
@@ -195,6 +194,18 @@ func resourceAliCloudGpdbInstance() *schema.Resource {
 				ForceNew:     true,
 				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"Manual", "Auto"}, false),
+			},
+			"serverless_resource": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
+			"cache_storage_size": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
 			},
 			"prod_type": {
 				Type:     schema.TypeString,
@@ -461,6 +472,14 @@ func resourceAliCloudGpdbDbInstanceCreate(d *schema.ResourceData, meta interface
 		request["ServerlessMode"] = v
 	}
 
+	if v, ok := d.GetOk("serverless_resource"); ok {
+		request["ServerlessResource"] = v
+	}
+
+	if v, ok := d.GetOk("cache_storage_size"); ok {
+		request["CacheStorageSize"] = strconv.Itoa(v.(int))
+	}
+
 	if v, ok := d.GetOk("prod_type"); ok {
 		request["ProdType"] = v
 	}
@@ -555,6 +574,10 @@ func resourceAliCloudGpdbDbInstanceRead(d *schema.ResourceData, meta interface{}
 	d.Set("vswitch_id", object["VSwitchId"])
 	d.Set("db_instance_mode", object["DBInstanceMode"])
 	d.Set("db_instance_category", object["DBInstanceCategory"])
+	// instance_spec is Computed: for ServerlessPro the API returns a server-side
+	// placeholder (e.g. "1C8G") that is not user-configurable; sizing is driven
+	// by serverless_resource and cache_storage_size. Reading it back unconditionally
+	// keeps state in sync with the API without producing a spurious diff.
 	d.Set("instance_spec", object["InstanceSpec"])
 	d.Set("instance_network_type", object["InstanceNetworkType"])
 	d.Set("vpc_id", object["VpcId"])
@@ -573,6 +596,12 @@ func resourceAliCloudGpdbDbInstanceRead(d *schema.ResourceData, meta interface{}
 	d.Set("maintain_start_time", object["MaintainStartTime"])
 	d.Set("maintain_end_time", object["MaintainEndTime"])
 	d.Set("serverless_mode", object["ServerlessMode"])
+	if v, ok := object["ServerlessResource"]; ok && v != nil && fmt.Sprint(v) != "" && fmt.Sprint(v) != "0" {
+		d.Set("serverless_resource", formatInt(v))
+	}
+	if v, ok := object["CacheStorageSize"]; ok && v != nil && fmt.Sprint(v) != "" && fmt.Sprint(v) != "0" {
+		d.Set("cache_storage_size", formatInt(v))
+	}
 	d.Set("prod_type", object["ProdType"])
 	d.Set("description", object["DBInstanceDescription"])
 	d.Set("connection_string", object["ConnectionString"])
