@@ -206,13 +206,11 @@ func TestAccAliCloudAlikafkaInstance_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"spec_type":       "professional",
-					"service_version": "2.2.0",
+					"spec_type": "professional",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"spec_type":       "professional",
-						"service_version": "2.2.0",
+						"spec_type": "professional",
 					}),
 				),
 			},

@@ -47,6 +47,12 @@ func resourceAliCloudGwlbListener() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
+			"tcp_idle_timeout": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: IntBetween(60, 6000),
+			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -82,6 +88,9 @@ func resourceAliCloudGwlbListenerCreate(d *schema.ResourceData, meta interface{}
 		request["ListenerDescription"] = v
 	}
 	request["ServerGroupId"] = d.Get("server_group_id")
+	if v, ok := d.GetOkExists("tcp_idle_timeout"); ok && v.(int) > 0 {
+		request["TcpIdleTimeout"] = v
+	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("Gwlb", "2024-04-15", action, query, request, true)
@@ -137,6 +146,9 @@ func resourceAliCloudGwlbListenerRead(d *schema.ResourceData, meta interface{}) 
 	if objectRaw["ServerGroupId"] != nil {
 		d.Set("server_group_id", objectRaw["ServerGroupId"])
 	}
+	if objectRaw["TcpIdleTimeout"] != nil {
+		d.Set("tcp_idle_timeout", objectRaw["TcpIdleTimeout"])
+	}
 	if objectRaw["ListenerStatus"] != nil {
 		d.Set("status", objectRaw["ListenerStatus"])
 	}
@@ -166,6 +178,10 @@ func resourceAliCloudGwlbListenerUpdate(d *schema.ResourceData, meta interface{}
 	if d.HasChange("listener_description") {
 		update = true
 		request["ListenerDescription"] = d.Get("listener_description")
+	}
+	if d.HasChange("tcp_idle_timeout") {
+		update = true
+		request["TcpIdleTimeout"] = d.Get("tcp_idle_timeout")
 	}
 
 	if d.HasChange("server_group_id") {

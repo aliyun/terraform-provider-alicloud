@@ -163,6 +163,18 @@ func resourceAlicloudDtsMigrationJob() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"source_endpoint_ssl": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"0", "1"}, false),
+			},
+			"destination_endpoint_ssl": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"0", "1", "3"}, false),
+			},
 			"structure_initialization": {
 				Type:     schema.TypeBool,
 				Required: true,
@@ -209,6 +221,9 @@ func resourceAlicloudDtsMigrationJobCreate(d *schema.ResourceData, meta interfac
 	request["DataSynchronization"] = d.Get("data_synchronization")
 	request["StructureInitialization"] = d.Get("structure_initialization")
 	request["DbList"] = d.Get("db_list")
+	if err := setDtsEndpointSSL(d, request); err != nil {
+		return WrapError(err)
+	}
 
 	request["DestinationEndpointInstanceType"] = d.Get("destination_endpoint_instance_type")
 	request["DestinationEndpointEngineName"] = d.Get("destination_endpoint_engine_name")
@@ -328,6 +343,9 @@ func resourceAlicloudDtsMigrationJobRead(d *schema.ResourceData, meta interface{
 		d.Set("destination_endpoint_port", v["Port"])
 		d.Set("destination_endpoint_region", v["Region"])
 		d.Set("destination_endpoint_user_name", v["UserName"])
+		if ssl := convertDtsEndpointSslResponse(v["SslSolutionEnum"]); ssl != nil {
+			d.Set("destination_endpoint_ssl", ssl)
+		}
 	}
 	d.Set("dts_instance_id", object["DtsInstanceID"])
 	d.Set("dts_job_name", object["DtsJobName"])
@@ -343,6 +361,9 @@ func resourceAlicloudDtsMigrationJobRead(d *schema.ResourceData, meta interface{
 		d.Set("source_endpoint_region", v["Region"])
 		d.Set("source_endpoint_role", v["RoleName"])
 		d.Set("source_endpoint_user_name", v["UserName"])
+		if ssl := convertDtsEndpointSslResponse(v["SslSolutionEnum"]); ssl != nil {
+			d.Set("source_endpoint_ssl", ssl)
+		}
 	}
 	d.Set("status", object["Status"])
 	return nil
@@ -407,6 +428,41 @@ func resourceAlicloudDtsMigrationJobUpdate(d *schema.ResourceData, meta interfac
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
 			}
+		}
+	}
+
+	if d.HasChange("source_endpoint_ssl") || d.HasChange("destination_endpoint_ssl") {
+		reserved, err := dtsEndpointSSLReserved(d)
+		if err != nil {
+			return WrapError(err)
+		}
+		modifyReservedReq := map[string]interface{}{
+			"DtsInstanceId":  d.Get("dts_instance_id"),
+			"RegionId":       client.RegionId,
+			"ModifyTypeEnum": "UPDATE_RESERVED",
+			"Reserved":       reserved,
+		}
+
+		action := "ModifyDtsJob"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("Dts", "2020-01-01", action, nil, modifyReservedReq, false)
+			if err != nil {
+				if IsExpectedErrors(err, []string{"InvalidJobStatus", "InvalidTaskStatus", "DTS.Msg.OperationDenied.JobStatusModifying", "DTS.Msg.ModifyDenied.JobStatusNotRunning"}) || NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, modifyReservedReq)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		if fmt.Sprint(response["Success"]) == "false" {
+			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
 	}
 	return resourceAlicloudDtsMigrationJobRead(d, meta)

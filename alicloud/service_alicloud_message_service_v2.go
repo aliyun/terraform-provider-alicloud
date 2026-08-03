@@ -601,3 +601,43 @@ func (s *MessageServiceServiceV2) MessageServiceEventRuleStateRefreshFunc(id str
 }
 
 // DescribeMessageServiceEventRule >>> Encapsulated.
+
+// DescribeMessageServiceAccountLogging <<< Encapsulated get interface for MessageService AccountLogging.
+
+func (s *MessageServiceServiceV2) DescribeMessageServiceAccountLogging(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["RegionId"] = client.RegionId
+	action := "GetAccountAttributes"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Mns-open", "2022-01-19", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.Data", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data", response)
+	}
+
+	return v.(map[string]interface{}), nil
+}
+
+// DescribeMessageServiceAccountLogging >>> Encapsulated.
