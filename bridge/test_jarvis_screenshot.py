@@ -16,6 +16,7 @@ import io
 import os
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -174,7 +175,7 @@ class ChromeBinaryChannelTests(unittest.TestCase):
         response.__enter__.return_value.read.return_value = (
             __import__("json").dumps(payload).encode())
         with mock.patch.object(
-                js.urllib.request, "urlopen", return_value=response):
+                js._NO_PROXY_OPENER, "open", return_value=response):
             self.assertEqual(
                 js._chrome_page_websocket(9222, timeout=0.1),
                 "ws://localhost:1/page")
@@ -186,7 +187,7 @@ class ChromeBinaryChannelTests(unittest.TestCase):
         new_response.__enter__.return_value.read.return_value = (
             b'{"type":"page","webSocketDebuggerUrl":"ws://localhost:1/new"}')
         with mock.patch.object(
-                js.urllib.request, "urlopen",
+                js._NO_PROXY_OPENER, "open",
                 side_effect=[list_response, new_response]) as urlopen:
             self.assertEqual(
                 js._chrome_page_websocket(9222, timeout=0.1),
@@ -258,7 +259,7 @@ class ChromeBinaryChannelTests(unittest.TestCase):
         cdp_client = mock.MagicMock()
         cdp_client.call.return_value = {"targetId": "T1"}
         with mock.patch.object(
-                js.urllib.request, "urlopen",
+                js._NO_PROXY_OPENER, "open",
                 side_effect=[list_empty, OSError("refused"),
                              version_resp, list_with_page]), \
                 mock.patch.object(
@@ -279,7 +280,7 @@ class ChromeBinaryChannelTests(unittest.TestCase):
         version_no_ws = mock.MagicMock()
         version_no_ws.__enter__.return_value.read.return_value = b"{}"
         with mock.patch.object(
-                js.urllib.request, "urlopen",
+                js._NO_PROXY_OPENER, "open",
                 side_effect=itertools.cycle(
                     [list_empty, OSError("refused"), version_no_ws])), \
                 mock.patch.object(js.time, "sleep"):
@@ -327,6 +328,30 @@ class ChromeBinaryChannelTests(unittest.TestCase):
             channel.capture("https://example.com", "/tmp/shot.png")
         self.assertEqual(capture.call_count, 2)
         lock_fn.assert_called_once()
+
+    def test_wait_content_stable_returns_when_size_stable(self):
+        # getLayoutMetrics returns a stable contentSize; _wait_content_stable
+        # returns after the stable window instead of hitting the timeout.
+        client = mock.MagicMock()
+        client.call.return_value = {"cssContentSize": {"width": 1000,
+                                                       "height": 800}}
+        start = time.monotonic()
+        js._wait_content_stable(client, stable_ms=100, timeout=2.0)
+        self.assertLess(time.monotonic() - start, 1.0)
+
+    def test_wait_content_stable_times_out_when_size_keeps_changing(self):
+        # contentSize keeps reflowing; _wait_content_stable hits the timeout
+        # backstop and returns rather than hanging forever (and does not raise).
+        client = mock.MagicMock()
+        counter = [0]
+        def increasing(*_args, **_kwargs):
+            counter[0] += 1
+            return {"cssContentSize": {"width": counter[0],
+                                       "height": counter[0]}}
+        client.call.side_effect = increasing
+        start = time.monotonic()
+        js._wait_content_stable(client, stable_ms=500, timeout=0.3)
+        self.assertLess(time.monotonic() - start, 1.0)
 
 
 class CliTests(unittest.TestCase):
