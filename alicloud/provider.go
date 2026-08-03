@@ -946,6 +946,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_ipam_ipams":                                   dataSourceAliCloudVpcIpamIpams(),
 			"alicloud_das_sql_log_configs":                              dataSourceAliCloudDasSqlLogConfigs(),
 			"alicloud_apig_plugin_classes":                              dataSourceAliCloudApigPluginClasses(),
+			"alicloud_ia_c_service_modules":                             dataSourceAliCloudIaCServiceModules(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_message_service_account_logging":                      resourceAliCloudMessageServiceAccountLogging(),
@@ -2128,6 +2129,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_polardb_zonal_db_cluster":                              resourceAliCloudPolarDbZonalCluster(),
 			"alicloud_polardb_zonal_endpoint":                                resourceAlicloudPolarDBZonalEndpoint(),
 			"alicloud_polardb_zonal_account":                                 resourceAlicloudPolarDBZonalAccount(),
+			"alicloud_ia_c_service_module":                                   resourceAliCloudIaCServiceModule(),
 		},
 	}
 	provider.ConfigureFunc = func(d *schema.ResourceData) (interface{}, error) {
