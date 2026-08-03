@@ -17,8 +17,8 @@ import time
 import uuid
 
 from bridge.jarvis_task_router import (
-    ExecutionRouter, _TaskAttentionPublisher, _source_ref_with_title,
-    _task_envelope, broadcast_target, broadcast_type,
+    ExecutionRouter, _TaskAttentionPublisher, _notify_task_attention,
+    _source_ref_with_title, _task_envelope, broadcast_target, broadcast_type,
 )
 
 from ..model import JobResult, JobResultStatus, is_aware
