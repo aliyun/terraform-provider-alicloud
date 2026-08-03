@@ -1,13 +1,24 @@
 module github.com/aliyun/terraform-provider-alicloud
 
+go 1.25.0
+
 require (
+	github.com/Masterminds/semver v1.5.0
 	github.com/PaesslerAG/jsonpath v0.1.1
 	github.com/agiledragon/gomonkey/v2 v2.3.1
+	github.com/alibabacloud-go/alibabacloud-gateway-oss v0.0.26
+	github.com/alibabacloud-go/alibabacloud-gateway-sls v0.3.0
+	github.com/alibabacloud-go/cs-20151215/v8 v8.0.4
+	github.com/alibabacloud-go/darabonba-openapi/v2 v2.2.4
+	github.com/alibabacloud-go/fc-open-20210406/v2 v2.0.7
+	github.com/alibabacloud-go/sts-20150401/v2 v2.0.2
 	github.com/alibabacloud-go/tea v1.5.2
 	github.com/alibabacloud-go/tea-roa v1.3.4
 	github.com/alibabacloud-go/tea-rpc v1.2.0
 	github.com/alibabacloud-go/tea-utils v1.4.5
+	github.com/alibabacloud-go/tea-utils/v2 v2.0.9
 	github.com/aliyun/alibaba-cloud-sdk-go v1.63.107
+	github.com/aliyun/alibabacloud-oss-go-sdk-v2 v1.5.0
 	github.com/aliyun/aliyun-datahub-sdk-go v0.1.5
 	github.com/aliyun/aliyun-log-go-sdk v0.1.108
 	github.com/aliyun/aliyun-mns-go-sdk v0.0.0-20210305050620-d1b5875bda58
@@ -15,54 +26,33 @@ require (
 	github.com/aliyun/aliyun-tablestore-go-sdk v1.7.16
 	github.com/aliyun/credentials-go v1.4.12
 	github.com/aliyun/fc-go-sdk v0.0.0-20220622030011-bc7ded2a9050
-	github.com/deckarep/golang-set v1.8.0
-	github.com/denverdino/aliyungo v0.0.0-20220929054937-e3c8bf5ad947
-	github.com/google/uuid v1.6.0
-	github.com/hashicorp/go-uuid v1.0.3
-	github.com/hashicorp/terraform-plugin-sdk v1.17.2
-	github.com/jmespath/go-jmespath v0.4.0 // indirect
-	github.com/mitchellh/go-homedir v1.1.0
-	github.com/pkg/errors v0.9.1
-	github.com/sirupsen/logrus v1.8.3
-	github.com/stretchr/testify v1.11.1
-	github.com/waigani/diffparser v0.0.0-20190828052634-7391f219313d
-	golang.org/x/net v0.55.0
-	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/api v0.25.3
-	k8s.io/apimachinery v0.25.3
-	//k8s.io/client-go v11.0.0+incompatible
-	k8s.io/client-go v0.25.3
-)
-
-require (
-	github.com/alibabacloud-go/alibabacloud-gateway-oss v0.0.26
-	github.com/alibabacloud-go/alibabacloud-gateway-sls v0.3.0
-	github.com/alibabacloud-go/darabonba-openapi/v2 v2.2.4
-	github.com/alibabacloud-go/fc-open-20210406/v2 v2.0.7
-	github.com/alibabacloud-go/sts-20150401/v2 v2.0.2
-	github.com/alibabacloud-go/tea-utils/v2 v2.0.9
-	github.com/aliyun/alibabacloud-oss-go-sdk-v2 v1.5.0
 	github.com/aws/aws-sdk-go-v2 v1.43.0
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.30
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.61.0
+	github.com/aws/smithy-go v1.27.3
 	github.com/blues/jsonata-go v1.5.4
+	github.com/deckarep/golang-set v1.8.0
+	github.com/denverdino/aliyungo v0.0.0-20220929054937-e3c8bf5ad947
+	github.com/google/uuid v1.6.0
 	github.com/hashicorp/errwrap v1.1.0
 	github.com/hashicorp/go-cleanhttp v0.5.2
+	github.com/hashicorp/go-uuid v1.0.3
+	github.com/hashicorp/terraform-plugin-sdk v1.17.2
 	github.com/keybase/go-crypto v0.0.0-20190416182011-b785b22cc757
+	github.com/mitchellh/go-homedir v1.1.0
+	github.com/pkg/errors v0.9.1
 	github.com/samber/lo v1.49.1
+	github.com/sirupsen/logrus v1.8.3
+	github.com/stretchr/testify v1.11.1
 	github.com/tidwall/sjson v1.2.5
+	github.com/waigani/diffparser v0.0.0-20190828052634-7391f219313d
+	golang.org/x/net v0.55.0
 	golang.org/x/tools v0.44.0
+	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
-)
-
-require github.com/alibabacloud-go/cs-20151215/v8 v8.0.4
-
-require (
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.31 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.31 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.13 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.12.8 // indirect
-	github.com/aws/smithy-go v1.27.3 // indirect
+	k8s.io/api v0.25.3
+	k8s.io/apimachinery v0.25.3
+	k8s.io/client-go v0.25.3
 )
 
 require (
@@ -71,7 +61,6 @@ require (
 	cloud.google.com/go/iam v1.1.7 // indirect
 	cloud.google.com/go/storage v1.39.1 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
-	github.com/Masterminds/semver v1.5.0
 	github.com/Masterminds/sprig v2.22.0+incompatible // indirect
 	github.com/PaesslerAG/gval v1.0.0 // indirect
 	github.com/PuerkitoBio/purell v1.1.1 // indirect
@@ -98,6 +87,10 @@ require (
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
 	github.com/armon/go-radix v1.0.0 // indirect
 	github.com/aws/aws-sdk-go v1.51.8 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.31 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.31 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.13 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.12.8 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bgentry/go-netrc v0.0.0-20140422174119-9fd32a8b3d3d // indirect
 	github.com/bgentry/speakeasy v0.1.0 // indirect
@@ -152,6 +145,7 @@ require (
 	github.com/hashicorp/yamux v0.1.1 // indirect
 	github.com/huandu/xstrings v1.4.0 // indirect
 	github.com/imdario/mergo v0.3.16 // indirect
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.17.8 // indirect
@@ -232,5 +226,3 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
-
-go 1.25.0
