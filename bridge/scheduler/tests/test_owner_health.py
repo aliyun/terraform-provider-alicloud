@@ -32,6 +32,10 @@ class FakeClient:
         # newer desired revision exercises force-release. Default keeps the
         # original force-release assertions intact.
         self.desired_revision: Any = "rev-new"
+        # Aone status of the source work item. Non-terminal by default so the
+        # existing stranded-detection assertions keep exercising the full path.
+        self.source_status: str = "Open"
+        self.point_read_aone_ids: list[str] = []
 
     def list_ready_task_diagnostics(
             self, *, after_task_id: int = 0, limit: int = 100):
@@ -78,13 +82,14 @@ class FakeClient:
                     "taskId": 3,
                     "sourceProjectKey": "2124589",
                     "aoneId": "84550003",
-                    "sourceStatus": "Open",
+                    "sourceStatus": self.source_status,
                 }],
                 "nextAfterTaskId": 3,
             }
         return {"items": []}
 
     def get_task_by_aone(self, aone_id: str):
+        self.point_read_aone_ids.append(aone_id)
         if aone_id == "84550003":
             task = {
                 "id": 3,
@@ -192,6 +197,41 @@ class OwnerHealthRunnerTest(unittest.TestCase):
         self.assertEqual(self.client.source_cursors, [0, 3])
         self.assertEqual(blockers[3]["status"], "RECOVERY_REQUIRED")
         self.assertEqual(blockers[3]["source"], "recovery-migration")
+
+    def test_terminal_source_item_is_not_a_recovery_blocker(self):
+        """源工单已终态的 Task 无任何可执行的恢复动作，不该反复告警。
+
+        服务端对这类 Task 直接拒绝 force-release（"tasks whose source item is
+        terminal cannot be force released"），而 desired != processing 时
+        discard-resume 也不合法，于是它会永久卡在 RECOVERY_REQUIRED 并按小时告警，
+        人却无从处理。源工单既已完结，本身也无事可做。
+        """
+        self.client.source_status = "已完成"
+
+        blockers = self.runner.collect_blockers()
+
+        self.assertNotIn(3, blockers, "终态源工单不应产生 recovery-migration blocker")
+        self.assertEqual(set(blockers), {1, 2}, "READY 诊断链路不受影响")
+        self.assertNotIn(
+            "84550003", self.client.point_read_aone_ids,
+            "应在 point-read 之前就跳过，不浪费一次 Task 查询")
+
+    def test_every_terminal_status_is_skipped(self):
+        for status in sorted(owner_health.TERMINAL_STATUSES):
+            with self.subTest(status=status):
+                self.client.source_status = status
+                self.client.source_cursors.clear()
+                self.assertNotIn(3, self.runner.collect_blockers())
+
+    def test_non_terminal_source_item_still_pages(self):
+        """反向保护：源工单未终态时仍按原样识别为阻塞项。"""
+        for status in ("Open", "开发中", "待处理", ""):
+            with self.subTest(status=status):
+                self.client.source_status = status
+                blockers = self.runner.collect_blockers()
+                self.assertIn(3, blockers)
+                self.assertEqual(blockers[3]["status"], "RECOVERY_REQUIRED")
+                self.assertEqual(blockers[3]["source"], "recovery-migration")
 
     def test_recovery_migration_alert_records_dwell_duration(self):
         blockers = self.runner.collect_blockers()

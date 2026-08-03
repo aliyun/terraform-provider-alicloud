@@ -10,7 +10,7 @@ from pathlib import Path
 import time
 from typing import Any, Mapping
 
-from bridge.aone_tasks import master_staff
+from bridge.aone_tasks import TERMINAL_STATUSES, master_staff
 from bridge.helpers.dingtalk import _dingtalk_event_enqueue, _dingtalk_event_flush
 from bridge.recovery_wakeup import (
     RELEASE_SUCCESS_ACTIONS, release_stranded, resume_context_empty,
@@ -226,6 +226,19 @@ class OwnerHealthRunner:
             # failure so one bad aone id does not poison the whole pass.
             aone_id = str(entry.get("aoneId") or "").strip()
             if not aone_id:
+                continue
+            # A terminal source item makes this Task unrecoverable *by contract*:
+            # the server refuses force-release with "tasks whose source item is
+            # terminal cannot be force released", and discard-resume is only
+            # legal once desired==processing. A Task that reached
+            # RECOVERY_REQUIRED with a newer revision still pending therefore has
+            # no operator action left, so paging for it every window is noise a
+            # human cannot act on. The work is done anyway — the source item is
+            # closed. Skip before the point-read: no action, no page, no cost.
+            if str(entry.get("sourceStatus") or "").strip() in TERMINAL_STATUSES:
+                self.logger.info(
+                    "owner-health skip terminal source aone=%s status=%s",
+                    aone_id, str(entry.get("sourceStatus") or "").strip())
                 continue
             try:
                 response = self.client.get_task_by_aone(aone_id)
