@@ -16,6 +16,7 @@ import io
 import os
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -327,6 +328,30 @@ class ChromeBinaryChannelTests(unittest.TestCase):
             channel.capture("https://example.com", "/tmp/shot.png")
         self.assertEqual(capture.call_count, 2)
         lock_fn.assert_called_once()
+
+    def test_wait_content_stable_returns_when_size_stable(self):
+        # getLayoutMetrics returns a stable contentSize; _wait_content_stable
+        # returns after the stable window instead of hitting the timeout.
+        client = mock.MagicMock()
+        client.call.return_value = {"cssContentSize": {"width": 1000,
+                                                       "height": 800}}
+        start = time.monotonic()
+        js._wait_content_stable(client, stable_ms=100, timeout=2.0)
+        self.assertLess(time.monotonic() - start, 1.0)
+
+    def test_wait_content_stable_times_out_when_size_keeps_changing(self):
+        # contentSize keeps reflowing; _wait_content_stable hits the timeout
+        # backstop and returns rather than hanging forever (and does not raise).
+        client = mock.MagicMock()
+        counter = [0]
+        def increasing(*_args, **_kwargs):
+            counter[0] += 1
+            return {"cssContentSize": {"width": counter[0],
+                                       "height": counter[0]}}
+        client.call.side_effect = increasing
+        start = time.monotonic()
+        js._wait_content_stable(client, stable_ms=500, timeout=0.3)
+        self.assertLess(time.monotonic() - start, 1.0)
 
 
 class CliTests(unittest.TestCase):

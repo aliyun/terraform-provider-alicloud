@@ -99,6 +99,25 @@ the pre-agent WAF with `rgv587_flag:sm`. Do not add `<script>`, `<button>`, `on*
 Viewer-side HCL copy is owned by the AutomationAgent app/viewer. Until the platform implements it,
 record `viewer_copy=platform_blocked`; do not emulate the feature inside uploaded HTML.
 
+## Standard report template
+
+Use `scripts/gen-report.py` to build the report HTML so screenshots are legible and clickable
+instead of each PD/finalizer hand-rolling a narrow-table layout. It wraps each `<img>` in
+`<a href="<signed-url>" target="_blank">` (the only zoom path the WAF allows — no JS lightbox)
+and uses a `<figure>` layout at `max-width:1200px` so details stay readable without clicking.
+
+```bash
+# layers.json: [{name, result, screenshot_url, source_url, source_label, note}, ...]
+python3 .Codex/skills/html-report-preview/scripts/gen-report.py \
+  --title "可视化查证报告 — Aone #<id>" \
+  --layers-file layers.json [--summary "..."] > report.html
+```
+
+`screenshot_url` must be the signed URL returned by `upload-screenshots.sh`. Do NOT hand-write
+`<img style="max-width:100%">` inside a narrow table `<td>` — that produced 36px-tall unreadable
+screenshots (SPA unrendered + td shrink + no click-to-zoom). The template floors layout at
+viewport width and anchors the original.
+
 ## Workflows
 
 For a non-Terraform local report:

@@ -577,6 +577,41 @@ def _target_clip(client: _ChromeDevTools, target_text: str) -> dict:
     }
 
 
+def _wait_content_stable(client: _ChromeDevTools, stable_ms: int = 500,
+                         timeout: float = 10.0) -> None:
+    """Wait for SPA content to stop reflowing before reading layout metrics.
+
+    `document.readyState` flips to `complete` before async SPA content has
+    laid out, so `Page.getLayoutMetrics` returns a tiny initial contentSize
+    (e.g. 36px tall — observed on GitHub /files and next.api pages) and the
+    screenshot captures an unrendered page. Poll cssContentSize until it stops
+    changing for ``stable_ms``, with a ``timeout`` backstop so a
+    still-loading page still gets captured rather than hanging forever.
+    """
+    deadline = time.monotonic() + timeout
+    last = None
+    stable_since = None
+    stable_seconds = stable_ms / 1000.0
+    while time.monotonic() < deadline:
+        try:
+            metrics = client.call("Page.getLayoutMetrics")
+        except CaptureError:
+            time.sleep(0.1)
+            continue
+        content = (metrics.get("cssContentSize")
+                   or metrics.get("contentSize") or {})
+        size = (content.get("width"), content.get("height"))
+        if size == last and size[1] not in (None, 0):
+            if stable_since is None:
+                stable_since = time.monotonic()
+            if time.monotonic() - stable_since >= stable_seconds:
+                return
+        else:
+            stable_since = None
+            last = size
+        time.sleep(0.1)
+
+
 def _chrome_cdp_capture(binary: str, url: str, out: str, *,
                         wait_ms: int, full_page: bool, width: int,
                         height: int, target_text: str = "") -> None:
@@ -627,6 +662,12 @@ def _chrome_cdp_capture(binary: str, url: str, out: str, *,
                 time.sleep(0.1)
             if wait_ms > 0:
                 time.sleep(wait_ms / 1000.0)
+            # SPA pages (GitHub /files, next.api) keep reflowing after
+            # readyState=complete; wait for content size to stabilize so
+            # getLayoutMetrics returns the real rendered page, not the
+            # 36px-tall initial shell that produces unreadable screenshots.
+            if full_page and not target_text:
+                _wait_content_stable(client)
 
             params = {
                 "format": "png",
@@ -639,9 +680,11 @@ def _chrome_cdp_capture(binary: str, url: str, out: str, *,
                 metrics = client.call("Page.getLayoutMetrics")
                 content = (metrics.get("cssContentSize")
                            or metrics.get("contentSize") or {})
-                content_width = max(1, math.ceil(float(
+                # Floor at viewport so a still-short or unrendered page still
+                # captures width x height, not a 36px-tall unreadable strip.
+                content_width = max(width, math.ceil(float(
                     content.get("width") or width)))
-                content_height = max(1, math.ceil(float(
+                content_height = max(height, math.ceil(float(
                     content.get("height") or height)))
                 max_height = max(2000, int(os.environ.get(
                     "JARVIS_SCREENSHOT_MAX_HEIGHT", "50000")))
