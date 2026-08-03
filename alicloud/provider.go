@@ -947,6 +947,7 @@ func Provider() *schema.Provider {
 			"alicloud_apig_plugin_classes":                              dataSourceAliCloudApigPluginClasses(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_message_service_account_logging":                      resourceAliCloudMessageServiceAccountLogging(),
 			"alicloud_apig_ai_model_provider":                               resourceAliCloudApigAiModelProvider(),
 			"alicloud_apig_service":                                         resourceAliCloudApigService(),
 			"alicloud_gpdb_api_key":                                         resourceAliCloudGpdbApiKey(),
@@ -1619,6 +1620,7 @@ func Provider() *schema.Provider {
 			"alicloud_cen_route_map":                                         resourceAlicloudCenRouteMap(),
 			"alicloud_resource_manager_role":                                 resourceAlicloudResourceManagerRole(),
 			"alicloud_resource_manager_resource_group":                       resourceAliCloudResourceManagerResourceGroup(),
+			"alicloud_resource_manager_resource_group_settings":              resourceAliCloudResourceManagerResourceGroupSettings(),
 			"alicloud_resource_manager_folder":                               resourceAliCloudResourceManagerFolder(),
 			"alicloud_resource_manager_handshake":                            resourceAliCloudResourceManagerHandshake(),
 			"alicloud_resource_manager_handshake_acceptance":                 resourceAliCloudResourceManagerHandshakeAcceptance(),

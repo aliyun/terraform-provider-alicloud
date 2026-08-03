@@ -156,8 +156,8 @@ The following arguments are supported:
 * `tags` - (Optional, Available since 1.68.0) A mapping of tags to assign to the resource.
   - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
   - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
-* `tde_status` - (Optional, Available since 1.121.3) turn on TDE encryption. Valid values are `Enabled`, `Disabled`. Default to `Disabled`. TDE cannot be closed after it is turned on. 
--> **NOTE:** `tde_status` Cannot modify after created when `db_type` is `PostgreSQL` or `Oracle`.`tde_status` only support modification from `Disabled` to `Enabled` when `db_type` is `MySQL`.
+* `tde_status` - (Optional, Available since 1.121.3) Specifies whether to enable TDE encryption. Valid values are `Enabled`, `Disabled`. Default to `Disabled`. TDE cannot be disabled after it is enabled. You can enable TDE during cluster creation or update an existing cluster to enable it.
+-> **NOTE:** `tde_status` only supports modification from `Disabled` to `Enabled`.
 * `encrypt_new_tables` - (Optional, Available since 1.124.1) turn on table auto encryption. Valid values are `ON`, `OFF`. Only MySQL 8.0 supports. 
 -> **NOTE:** `encrypt_new_tables` Polardb MySQL 8.0 cluster, after TDE and Automatic Encryption are enabled, all newly created tables are automatically encrypted in the cluster.
 * `encryption_key` - (Optional, Available since 1.200.0) The ID of the custom key. `encryption_key` cannot be modified after TDE is opened.

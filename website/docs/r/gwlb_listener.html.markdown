@@ -133,6 +133,7 @@ The following arguments are supported:
 * `load_balancer_id` - (Required, ForceNew) The GWLB instance ID.
 * `server_group_id` - (Required) The server group ID.
 * `tags` - (Optional, Map) The tags. You can specify at most 20 tags in each call.
+* `tcp_idle_timeout` - (Optional, Computed, Int) The timeout period of an idle TCP connection. Unit: seconds. Valid values: `60` to `6000`. Default value: `350`.
 
 ## Attributes Reference
 

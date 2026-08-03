@@ -42,6 +42,12 @@ func resourceAlicloudPvtzZone() *schema.Resource {
 				ValidateFunc: validation.StringInSlice([]string{"RECORD", "ZONE"}, false),
 				Default:      "ZONE",
 			},
+			"dns_group": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"NORMAL_ZONE", "FAST_ZONE"}, false),
+			},
 			"record_count": {
 				Type:     schema.TypeInt,
 				Computed: true,
@@ -131,6 +137,10 @@ func resourceAlicloudPvtzZoneCreate(d *schema.ResourceData, meta interface{}) er
 		request["ZoneName"] = v
 	}
 
+	if v, ok := d.GetOk("dns_group"); ok {
+		request["DnsGroup"] = v
+	}
+
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("pvtz", "2018-01-01", action, nil, request, false)
@@ -171,6 +181,7 @@ func resourceAlicloudPvtzZoneRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("zone_name", object["ZoneName"])
 	d.Set("name", object["ZoneName"])
 	d.Set("resource_group_id", object["ResourceGroupId"])
+	d.Set("dns_group", object["DnsGroup"])
 
 	if v, ok := object["SyncHostTask"]; ok && v != nil {
 		syncObject := v.(map[string]interface{})
@@ -267,6 +278,33 @@ func resourceAlicloudPvtzZoneUpdate(d *schema.ResourceData, meta interface{}) er
 				return resource.NonRetryableError(err)
 			}
 			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("dns_group") {
+		changeZoneDnsGroupReq := map[string]interface{}{
+			"ZoneId":   d.Id(),
+			"DnsGroup": d.Get("dns_group"),
+		}
+		if _, ok := d.GetOk("lang"); ok {
+			changeZoneDnsGroupReq["Lang"] = d.Get("lang")
+		}
+		action := "ChangeZoneDnsGroup"
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("pvtz", "2018-01-01", action, nil, changeZoneDnsGroupReq, false)
+			if err != nil {
+				if IsExpectedErrors(err, []string{"ServiceUnavailable", "System.Busy", "Throttling.User"}) || NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, changeZoneDnsGroupReq)
 			return nil
 		})
 		if err != nil {

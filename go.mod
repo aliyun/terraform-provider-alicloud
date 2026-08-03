@@ -3,7 +3,7 @@ module github.com/aliyun/terraform-provider-alicloud
 require (
 	github.com/PaesslerAG/jsonpath v0.1.1
 	github.com/agiledragon/gomonkey/v2 v2.3.1
-	github.com/alibabacloud-go/tea v1.3.13
+	github.com/alibabacloud-go/tea v1.5.2
 	github.com/alibabacloud-go/tea-roa v1.3.4
 	github.com/alibabacloud-go/tea-rpc v1.2.0
 	github.com/alibabacloud-go/tea-utils v1.4.5
@@ -37,11 +37,10 @@ require (
 require (
 	github.com/alibabacloud-go/alibabacloud-gateway-oss v0.0.26
 	github.com/alibabacloud-go/alibabacloud-gateway-sls v0.3.0
-	github.com/alibabacloud-go/cs-20151215/v7 v7.6.0
-	github.com/alibabacloud-go/darabonba-openapi/v2 v2.1.14
+	github.com/alibabacloud-go/darabonba-openapi/v2 v2.2.4
 	github.com/alibabacloud-go/fc-open-20210406/v2 v2.0.7
 	github.com/alibabacloud-go/sts-20150401/v2 v2.0.2
-	github.com/alibabacloud-go/tea-utils/v2 v2.0.7
+	github.com/alibabacloud-go/tea-utils/v2 v2.0.9
 	github.com/aliyun/alibabacloud-oss-go-sdk-v2 v1.5.0
 	github.com/aws/aws-sdk-go-v2 v1.43.0
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.30
@@ -56,20 +55,19 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 )
 
+require github.com/alibabacloud-go/cs-20151215/v8 v8.0.4
+
 require (
+	github.com/ProtonMail/go-crypto v1.4.1 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.31 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.31 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.13 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.12.8 // indirect
 	github.com/aws/smithy-go v1.27.3
-)
-
-require (
-	github.com/ProtonMail/go-crypto v1.4.1 // indirect
 	github.com/cloudflare/circl v1.6.3 // indirect
 	github.com/hashicorp/go-cty v1.5.0 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.8 // indirect
-	github.com/hashicorp/hc-install v0.9.5 // indirect
+	github.com/hashicorp/hc-install v0.9.4 // indirect
 	github.com/hashicorp/terraform-plugin-go v0.31.0 // indirect
 	github.com/hashicorp/terraform-plugin-log v0.10.0 // indirect
 	github.com/hashicorp/terraform-registry-address v0.4.0 // indirect
@@ -100,7 +98,6 @@ require (
 	github.com/alibabacloud-go/tea-rpc-utils v1.1.2 // indirect
 	github.com/alibabacloud-go/tea-xml v1.1.3 // indirect
 	github.com/andybalholm/brotli v1.1.0 // indirect
-	github.com/apparentlymart/go-cidr v1.1.0 // indirect
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
 	github.com/aws/aws-sdk-go v1.51.8 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -128,7 +125,7 @@ require (
 	github.com/google/gnostic v0.5.7-v3refs // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
-	github.com/gorilla/websocket v1.5.0 // indirect
+	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/grafana/regexp v0.0.0-20221005093135-b4c2bcb0a4b6 // indirect
 	github.com/hashicorp/go-checkpoint v0.5.0 // indirect
 	github.com/hashicorp/go-hclog v1.6.3 // indirect

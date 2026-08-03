@@ -3013,3 +3013,112 @@ func deleteRamRole(d *schema.ResourceData, meta interface{}) error {
 
 	return nil
 }
+
+func TestAccAliCloudPolarDBCluster_TDEOnCreateAndUpdateEncryptNewTables(t *testing.T) {
+	var v *polardb.DescribeDBClusterAttributeResponse
+	name := "tf-testAccPolarDBClusterTDECreate"
+	resourceId := "alicloud_polardb_cluster.default"
+	var basicMap = map[string]string{
+		"description":       CHECKSET,
+		"db_node_class":     CHECKSET,
+		"vswitch_id":        CHECKSET,
+		"db_type":           CHECKSET,
+		"db_version":        CHECKSET,
+		"tde_status":        "Enabled",
+		"connection_string": REGEXMATCH + clusterConnectionStringRegexp,
+		"status":            CHECKSET,
+		"create_time":       CHECKSET,
+	}
+	ra := resourceAttrInit(resourceId, basicMap)
+	serviceFunc := func() interface{} {
+		return &PolarDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribePolarDBClusterAttribute")
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourcePolarDBClusterKMSConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+		},
+
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_type":       "MySQL",
+					"db_version":    "8.0",
+					"pay_type":      "PostPaid",
+					"db_node_class": "polar.mysql.g1.tiny.c",
+					"vswitch_id":    "${local.vswitch_id}",
+					"vpc_id":        "${local.vpc_id}",
+					"description":   "${var.name}",
+					"tde_status":    "Enabled",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tde_status": "Enabled",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"encrypt_new_tables": "ON",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tde_status":         "Enabled",
+						"encrypt_new_tables": "ON",
+						"role_arn":           CHECKSET,
+					}),
+				),
+			},
+		},
+	})
+}
+
+func resourcePolarDBClusterKMSConfigDependence(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+		default = "%s"
+	}
+
+	data "alicloud_vpcs" "default" {
+		name_regex = "^default-NODELETING$"
+	}
+
+	resource "alicloud_vpc" "default" {
+    	vpc_name = var.name
+	}
+
+	resource "alicloud_vswitch" "default" {
+		zone_id = "cn-shanghai-l"
+		vpc_id = alicloud_vpc.default.id
+		cidr_block = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 4)
+	}
+	
+	locals {
+		vpc_id = alicloud_vpc.default.id
+		vswitch_id = concat(alicloud_vswitch.default.*.id, [""])[0]
+	}
+
+    data "alicloud_polardb_parameter_groups" "default" {
+          db_type = "MySQL"
+          db_version = "8.0"
+    }
+
+	data "alicloud_polardb_node_classes" "this" {
+	  db_type    = "MySQL"
+	  db_version = "8.0"
+      pay_type   = "PostPaid"
+	  category   = "Normal"
+	}
+
+`, name)
+}

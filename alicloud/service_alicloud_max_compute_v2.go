@@ -440,7 +440,16 @@ func (s *MaxComputeServiceV2) MaxComputeQuotaScheduleStateRefreshFunc(id string,
 // DescribeMaxComputeRoleUserAttachment <<< Encapsulated get interface for MaxCompute RoleUserAttachment.
 
 func (s *MaxComputeServiceV2) DescribeMaxComputeRoleUserAttachment(id string) (object map[string]interface{}, err error) {
-	client := s.client
+	return s.describeMaxComputeRoleUserAttachmentWithRoaGet(id, s.client.RoaGet)
+}
+
+// describeMaxComputeRoleUserAttachmentWithRoaGet is the testable core of
+// DescribeMaxComputeRoleUserAttachment. It accepts a roaGet func so the
+// externally-deleted-member error branch (and the rest of the Read path)
+// can be exercised by unit tests without a real AliyunClient; production
+// wires in s.client.RoaGet via the thin wrapper above. This mirrors the
+// WithApi injection pattern used by MaxComputeTenantRoleUserAttachmentStateRefreshFuncWithApi.
+func (s *MaxComputeServiceV2) describeMaxComputeRoleUserAttachmentWithRoaGet(id string, roaGet func(apiProductCode string, apiVersion string, pathName string, query map[string]*string, headers map[string]*string, body interface{}) (map[string]interface{}, error)) (object map[string]interface{}, err error) {
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]*string
@@ -457,7 +466,7 @@ func (s *MaxComputeServiceV2) DescribeMaxComputeRoleUserAttachment(id string) (o
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.RoaGet("MaxCompute", "2022-01-04", action, query, nil, nil)
+		response, err = roaGet("MaxCompute", "2022-01-04", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -470,6 +479,16 @@ func (s *MaxComputeServiceV2) DescribeMaxComputeRoleUserAttachment(id string) (o
 	})
 	addDebug(action, response, request)
 	if err != nil {
+		// When the linked RAM/ALIYUN user referenced by a role is deleted
+		// externally, the project role user list API returns a non-404 error
+		// whose message contains "baseId and tenantId do not match" instead
+		// of an empty user list. Treat that case as NotFound so the resource
+		// Read drops the attachment from state instead of failing refresh/apply.
+		// String match is a stop-gap until MaxCompute exposes a stable error
+		// code for the externally-deleted member case.
+		if strings.Contains(err.Error(), "baseId and tenantId do not match") {
+			return object, WrapErrorf(NotFoundErr("RoleUserAttachment", id), NotFoundMsg, err)
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 

@@ -42,9 +42,10 @@ The following arguments are supported:
 * `zone_name` - (Optional, ForceNew) The zone_name of the Private Zone. The `zone_name` is required when the value of the `name`  is Empty.
 * `remark` - (Optional) The remark of the Private Zone.
 * `proxy_pattern` - (Optional, Available in 1.69.0+) The recursive DNS proxy. Valid values:
-    - ZONE: indicates that the recursive DNS proxy is disabled.
-    - RECORD: indicates that the recursive DNS proxy is enabled.
-    Default to "ZONE".
+  - ZONE: indicates that the recursive DNS proxy is disabled.
+  - RECORD: indicates that the recursive DNS proxy is enabled.
+  Default to "ZONE".
+* `dns_group` - (Optional) The built-in authoritative location zone of the Private Zone. Valid values: `NORMAL_ZONE` (normal zone) and `FAST_ZONE` (fast zone). If not specified, the system uses the account default (accounts opened after April 30, 2025 default to `FAST_ZONE`). Updating this field switches the zone from `NORMAL_ZONE` to `FAST_ZONE`; the reverse direction (`FAST_ZONE` -> `NORMAL_ZONE`) is not supported by the API.
 * `user_client_ip` - (Optional, Available in 1.69.0+) The IP address of the client.
 * `lang` - (Optional, Available in 1.69.0+) The language. Valid values: "zh", "en", "jp".
 * `resource_group_id` - (Optional, ForceNew, Available in v1.86.0+) The Id of resource group which the Private Zone belongs.
@@ -66,6 +67,8 @@ The following attributes are exported:
 * `id` - The ID of the Private Zone.
 * `record_count` - The count of the Private Zone Record.
 * `is_ptr` - Whether the Private Zone is ptr.
+* `creation_time` - (Removed since v1.107.0+) The create time of the Private Zone.
+* `update_time` - (Removed since v1.107.0+) The update time of the Private Zone.
 
 ## Import
 

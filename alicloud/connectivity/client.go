@@ -16,7 +16,7 @@ import (
 
 	ossclient "github.com/alibabacloud-go/alibabacloud-gateway-oss/client"
 	gatewayclient "github.com/alibabacloud-go/alibabacloud-gateway-sls/client"
-	roaCS "github.com/alibabacloud-go/cs-20151215/v7/client"
+	roaCS "github.com/alibabacloud-go/cs-20151215/v8/client"
 	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
 	roa "github.com/alibabacloud-go/tea-roa/client"
 	rpc "github.com/alibabacloud-go/tea-rpc/client"
@@ -189,7 +189,7 @@ var loadSdkfromRemoteMutex = sync.Mutex{}
 var loadSdkEndpointMutex = sync.Mutex{}
 
 // The main version number that is being run at the moment.
-var providerVersion = "1.286.0"
+var providerVersion = "1.287.0"
 
 // Temporarily maintain map for old ecs client methods and store special endpoint information
 var EndpointMap = map[string]string{

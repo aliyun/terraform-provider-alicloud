@@ -734,3 +734,80 @@ func (s *DtsService) DescribeDtsInstance(id string) (object map[string]interface
 	}
 	return v.(map[string]interface{}), nil
 }
+
+// setDtsEndpointSSL folds source_endpoint_ssl and destination_endpoint_ssl into the DTS Reserve
+// parameter as its srcSSL and destSSL keys. ConfigureDtsJob has no dedicated SSL parameter, so
+// Reserve is the only place the connection mode can be sent. Values already present under those
+// keys in a user-supplied reserve are overwritten by the dedicated attributes.
+func setDtsEndpointSSL(d *schema.ResourceData, request map[string]interface{}) error {
+	srcSSL, srcOk := d.GetOk("source_endpoint_ssl")
+	destSSL, destOk := d.GetOk("destination_endpoint_ssl")
+	if !srcOk && !destOk {
+		return nil
+	}
+	reserve := make(map[string]interface{})
+	if v, ok := request["Reserve"]; ok {
+		if err := json.Unmarshal([]byte(fmt.Sprint(v)), &reserve); err != nil {
+			return WrapError(err)
+		}
+	}
+	if srcOk {
+		reserve["srcSSL"] = srcSSL
+	}
+	if destOk {
+		reserve["destSSL"] = destSSL
+	}
+	reserveJson, err := json.Marshal(reserve)
+	if err != nil {
+		return WrapError(err)
+	}
+	request["Reserve"] = string(reserveJson)
+	return nil
+}
+
+// convertDtsEndpointSslResponse maps the SslSolutionEnum returned by DescribeDtsJobDetail and
+// DescribeDtsJobs back to the srcSSL/destSSL code accepted by ConfigureDtsJob, so that
+// source_endpoint_ssl and destination_endpoint_ssl round-trip on read and import.
+//
+// The MongoDB Atlas value is matched under both spellings because the API metadata disagrees with
+// itself: SslSolutionEnum carries no machine-readable value list, and its documented description
+// says ENABLE_ONLY_4_MONGODB_ALTAS while its title says ENABLE_ONLY_4_MONGODB_ATLAS.
+//
+// Anything unrecognised returns nil rather than the raw value, so that callers leave the attribute
+// alone. Storing an unmapped enum would put a value outside the ValidateFunc domain into state,
+// which can never equal a legal config value and so leaves a diff that no apply can settle.
+func convertDtsEndpointSslResponse(source interface{}) interface{} {
+	switch source {
+	case "DISABLE":
+		return "0"
+	case "ENABLE_WITH_CERTIFICATE", "ENABLE_ONLY_4_MONGODB_ALTAS", "ENABLE_ONLY_4_MONGODB_ATLAS":
+		return "1"
+	case "ENABLE_ONLY_4_KAFKA_SCRAM_SHA_256":
+		return "3"
+	}
+	return nil
+}
+
+// dtsEndpointSSLReserved builds the Reserved payload for a ModifyDtsJob call issued with
+// ModifyTypeEnum=UPDATE_RESERVED. ModifyDtsJob merges Reserved into the job's existing reserve
+// instead of replacing it, so only the SSL keys need to be sent and any other reserve keys the
+// job already carries are left alone.
+//
+// Each key is gated on its own change. Both attributes are Computed, so an endpoint the user never
+// configured still reports a value here - one derived from the last read, not from the config.
+// Sending it back would re-assert a connection mode the user never asked for, and because the read
+// mapping is lossy it need not be the mode the endpoint actually had.
+func dtsEndpointSSLReserved(d *schema.ResourceData) (string, error) {
+	reserved := make(map[string]interface{})
+	if d.HasChange("source_endpoint_ssl") {
+		reserved["srcSSL"] = d.Get("source_endpoint_ssl")
+	}
+	if d.HasChange("destination_endpoint_ssl") {
+		reserved["destSSL"] = d.Get("destination_endpoint_ssl")
+	}
+	reservedJson, err := json.Marshal(reserved)
+	if err != nil {
+		return "", WrapError(err)
+	}
+	return string(reservedJson), nil
+}

@@ -28,9 +28,9 @@ func TestAccAliCloudGwlbListener_basic8508(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-wulanchabu"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -190,11 +190,8 @@ resource "alicloud_gwlb_server_group" "defaultoAkLbr" {
     health_check_protocol        = "TCP"
     health_check_connect_port    = "80"
     health_check_connect_timeout = "5"
-    health_check_domain          = ""
     health_check_enabled         = true
-    health_check_http_code       = ["http_2xx", "http_4xx", "http_3xx"]
     health_check_interval        = "10"
-    health_check_path            = ""
     healthy_threshold            = "2"
     unhealthy_threshold          = "2"
   }
@@ -229,11 +226,8 @@ resource "alicloud_gwlb_server_group" "defaultN4DOzm" {
     health_check_protocol        = "TCP"
     health_check_connect_port    = "80"
     health_check_connect_timeout = "5"
-    health_check_domain          = ""
     health_check_enabled         = true
-    health_check_http_code       = ["http_2xx", "http_4xx", "http_3xx"]
     health_check_interval        = "10"
-    health_check_path            = ""
     healthy_threshold            = "2"
     unhealthy_threshold          = "2"
   }
@@ -267,3 +261,74 @@ resource "alicloud_gwlb_server_group" "defaultN4DOzm" {
 }
 
 // Test Gwlb Listener. <<< Resource test cases, automatically generated.
+
+// TestAccAliCloudGwlbListener_tcpIdleTimeout8508 covers the tcp_idle_timeout
+// attribute: server default on omit, custom value on create, and update.
+func TestAccAliCloudGwlbListener_tcpIdleTimeout8508(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_gwlb_listener.default"
+	ra := resourceAttrInit(resourceId, AlicloudGwlbListenerMap8508)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &GwlbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeGwlbListener")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sgwlblistener%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGwlbListenerBasicDependence8508)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-wulanchabu"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				// omit tcp_idle_timeout → server default 350
+				Config: testAccConfig(map[string]interface{}{
+					"server_group_id":  "${alicloud_gwlb_server_group.defaultoAkLbr.id}",
+					"load_balancer_id": "${alicloud_gwlb_load_balancer.defaultQ5setL.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tcp_idle_timeout": "350",
+					}),
+				),
+			},
+			{
+				// set custom value 120
+				Config: testAccConfig(map[string]interface{}{
+					"server_group_id":  "${alicloud_gwlb_server_group.defaultoAkLbr.id}",
+					"load_balancer_id": "${alicloud_gwlb_load_balancer.defaultQ5setL.id}",
+					"tcp_idle_timeout": "120",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tcp_idle_timeout": "120",
+					}),
+				),
+			},
+			{
+				// update to 200
+				Config: testAccConfig(map[string]interface{}{
+					"server_group_id":  "${alicloud_gwlb_server_group.defaultoAkLbr.id}",
+					"load_balancer_id": "${alicloud_gwlb_load_balancer.defaultQ5setL.id}",
+					"tcp_idle_timeout": "200",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tcp_idle_timeout": "200",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run"},
+			},
+		},
+	})
+}
