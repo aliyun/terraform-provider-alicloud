@@ -956,6 +956,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ssl_certificates_service_company":                     resourceAliCloudSslCertificatesServiceCompany(),
 			"alicloud_ssl_certificates_service_contact":                     resourceAliCloudSslCertificatesServiceContact(),
 			"alicloud_ssl_certificates_service_instance":                    resourceAliCloudSslCertificatesServiceInstance(),
+			"alicloud_ssl_certificates_service_certificate_apply":           resourceAliCloudSslCertificatesServiceCertificateApply(),
 			"alicloud_apig_plugin_class":                                    resourceAliCloudApigPluginClass(),
 			"alicloud_apig_domain":                                          resourceAliCloudApigDomain(),
 			"alicloud_apig_route":                                           resourceAliCloudApigRoute(),
