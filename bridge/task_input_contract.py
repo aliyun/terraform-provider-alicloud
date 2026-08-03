@@ -117,6 +117,22 @@ def validate_portable_task_input(
             "INPUT_CONTRACT_MISMATCH",
             "expected %s, got %s"
             % (PORTABLE_INPUT_CONTRACT, contract or "<missing>"))
+    # A headless (PERSISTENT) executor enforces a current policy revision on
+    # every Task it runs, so a frozen payload that lost its policyRevision
+    # (the rehydrate-from-interactive shape, where the original session never
+    # stamped one) is not actually runnable there. Rejecting it here forces
+    # portable_replacement_for_redispatch to rebuild the payload with the
+    # current revision instead of passing the gap through to the executor,
+    # where it surfaces as stale_task_policy_revision: frozen=<missing>.
+    # INTERACTIVE payloads never carried a policyRevision and are not subject
+    # to that check, so only PERSISTENT requires it.
+    if target_runtime is not None and normalize_runtime(target_runtime) == RUNTIME_PERSISTENT:
+        revision = str(result.get("policyRevision") or "").strip()
+        if revision != HEADLESS_POLICY_REVISION:
+            raise TaskInputContractError(
+                "POLICY_REVISION_NOT_CURRENT",
+                "PERSISTENT runtime requires policyRevision=%s, got %s"
+                % (HEADLESS_POLICY_REVISION, revision or "<missing>"))
     return result
 
 
