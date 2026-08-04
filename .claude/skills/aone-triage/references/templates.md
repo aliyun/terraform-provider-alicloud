@@ -100,6 +100,13 @@ E 仅处理字段集合、类型、约束、CRUD/operation/映射。open-jarvis 
 规避能力缺口。pre 未收敛不得开始 Provider 生成/开发；D/E/G 不触发 Acube/528766。
 
 ## Requirement skeleton (Terraform 生成器问题/API 工具团队)
+
+### 代码库基准
+
+- workspace key：`terraform_generator_v4`；通过 `bash bootstrap/workspace.sh dir terraform_generator_v4` 解析本机目录，禁止手拼路径。
+- canonical Git URL：`git@gitlab.alibaba-inc.com:opensource-tools/terraform-generator-v4.git`；默认分支：`main`。
+- 已登记的验证命令：`composer test`、`composer lint`。本机缺少仓库或 SSH 访问权限时，按 `missing_capability` 升级，不能改用个人身份或以 Acube 产物替代生成器源码验证。
+
 默认池: `api_toolkit` / project `2100304`;产品字段优先选 Terraform;标题聚焦生成器行为,不要写成客户资源诉求。
 ```
 background: Terraform 资源 <terraform_resource> 研发中发现 Acube/terraform-generator-v4 生成行为与 Cloudspec resourceTypeCode 配置不一致,影响资源生成验收。

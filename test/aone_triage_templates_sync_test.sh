@@ -87,6 +87,8 @@ grep -Fq '直接 URL/ID 处理不受 assignedTo 限制' "$delivery"
 grep -Fq '正式发布必须取得明确的人工批准' "$delivery"
 grep -Fq 'tf_customer / tf_provider / mcp_server / automation_platform / api_toolkit' "$adhoc"
 grep -Fq 'bootstrap/workspace.sh dir' "$adhoc"
+grep -Fq 'workspace key：`terraform_generator_v4`' "$repo_root/.claude/skills/aone-triage/references/templates.md"
+grep -Fq 'git@gitlab.alibaba-inc.com:opensource-tools/terraform-generator-v4.git' "$repo_root/.claude/skills/aone-triage/references/templates.md"
 if grep -Fq 'tf_provider / tf_customer / mcp_server / cloudspec / api_toolkit' "$adhoc"; then
   echo 'adhoc-intake still exposes obsolete cloudspec pool candidate' >&2
   exit 1
