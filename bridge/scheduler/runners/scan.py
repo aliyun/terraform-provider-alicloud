@@ -133,6 +133,19 @@ class ScanRunner(AoneQueryMixin):
         # on restart: a failed read is never committed to the durable snapshot, so
         # the ticket comes back as new.
         self._signal_query_retry = set()
+        # Tickets whose dispatch did not land (control plane unavailable, enqueue
+        # rejected, queue full). `_prev_snapshot` is replaced wholesale *before* any
+        # decision is made, so without this set a failed dispatch is simply
+        # forgotten: next tick the ticket is neither new nor modified, and it waits
+        # for an unrelated Aone edit to be looked at again.
+        #
+        # Observed 2026-08-04: a momentary control-plane outage dropped two freshly
+        # created tickets at 10:26; seven ticks passed with no retry, and one only
+        # resurfaced because a human happened to edit it 40 minutes later. The
+        # durable snapshot already refuses to record such a ticket (so a restart
+        # re-reads it), but restarts are hours apart — this closes the same gap
+        # inside a running process.
+        self._dispatch_retry = set()
         self._woken_epochs = {}  # aone_id -> recovery_wakeup epoch key (防每 tick 重复 wake)
         self._human_operators = self._load_human_operators()
         self.dispatch_pools = {
@@ -1217,6 +1230,10 @@ class ScanRunner(AoneQueryMixin):
             query_retry = self._signal_query_retry = set()
         # Retain only tickets still present in the union (still Aone-tracked).
         query_retry.intersection_update(cur_ids)
+        dispatch_retry = getattr(self, "_dispatch_retry", None)
+        if dispatch_retry is None:
+            dispatch_retry = self._dispatch_retry = set()
+        dispatch_retry.intersection_update(cur_ids)
         done_drift_retry = getattr(self, "_done_drift_retry", None)
         if done_drift_retry is None:
             done_drift_retry = self._done_drift_retry = set()
@@ -1239,6 +1256,10 @@ class ScanRunner(AoneQueryMixin):
         # Idle tickets whose human-signal read failed this tick: re-read next tick.
         retry_query_items = [cur_snapshot[iid]
                              for iid in query_retry if iid in cur_snapshot]
+        # Tickets whose dispatch did not land: retry until it does. `_prev_snapshot`
+        # already advanced past them, so this set is their only way back.
+        retry_dispatch_items = [cur_snapshot[iid]
+                                for iid in dispatch_retry if iid in cur_snapshot]
         drift_candidates = {}
         for item in (new_items + list(updated_items.values())
                      + [cur_snapshot[iid] for iid in done_drift_retry
@@ -1250,11 +1271,12 @@ class ScanRunner(AoneQueryMixin):
         conclusive = {}
         if (new_items or updated_items
                 or (auto and (retry_done_items or lag_window_items
-                              or retry_query_items))):
+                              or retry_query_items or retry_dispatch_items))):
             if auto:
                 conclusive = self._tick_auto(
                     new_items, updated_items, retry_done_items,
-                    lag_window_items + retry_query_items) or {}
+                    lag_window_items + retry_query_items
+                    + retry_dispatch_items) or {}
             else:
                 self._tick_supervised(new_items, updated_items)
 
@@ -1292,11 +1314,13 @@ class ScanRunner(AoneQueryMixin):
             raise
 
     def _tick_auto(self, new_items, updated_items=None, done_watch_items=None,
-                   lag_window_items=None):
+                   retry_items=None):
         """Auto-dispatch candidates into the pool (broadcast, not authorize). Candidates =
-        new items + externally-updated items + lag-window idle suspects + retry sets; all
-        flow through _decide, which skips claimed/done/terminal/idle-without-human and only
-        re-dispatches an idle ticket (force=True) when a human touched it after jarvis.
+        new items + externally-updated items + ``retry_items`` (lag-window idle suspects,
+        failed human-signal reads, and failed dispatches — everything `_prev_snapshot`
+        would otherwise have moved past); all flow through _decide, which skips
+        claimed/done/terminal/idle-without-human and only re-dispatches an idle ticket
+        (force=True) when a human touched it after jarvis.
 
         Returns ``{aoneId: modified}`` for the tickets whose decision reached a conclusive
         resting state this tick — the only entries the caller may persist. Inconclusive
@@ -1307,6 +1331,9 @@ class ScanRunner(AoneQueryMixin):
         query_retry = getattr(self, "_signal_query_retry", None)
         if query_retry is None:
             query_retry = self._signal_query_retry = set()
+        dispatch_retry = getattr(self, "_dispatch_retry", None)
+        if dispatch_retry is None:
+            dispatch_retry = self._dispatch_retry = set()
         event_done_ids = {
             str(item.get("id") or "")
             for item in list(new_items) + updated_values
@@ -1321,7 +1348,7 @@ class ScanRunner(AoneQueryMixin):
         candidates_by_id = {}
         for item in (list(new_items) + updated_values
                      + list(done_watch_items or [])
-                     + list(lag_window_items or [])):
+                     + list(retry_items or [])):
             candidates_by_id[str(item.get("id") or "")] = item
         candidates = [item for iid, item in candidates_by_id.items() if iid]
         # Pre-fetch per-id a1 (comment list + activity) for idle/done/claimed
@@ -1340,6 +1367,10 @@ class ScanRunner(AoneQueryMixin):
                     query_retry.add(d["id"])
                 else:
                     query_retry.discard(d["id"])
+                # Any decision at all supersedes a pending dispatch retry: the
+                # ticket is now claimed/done/terminal or waiting on a read, none of
+                # which want the failed enqueue replayed.
+                dispatch_retry.discard(d["id"])
                 if d["conclusive"] and modified:
                     conclusive[d["id"]] = modified
                 log.info("scan auto: skip #%s (%s)", d["id"], d["reason"])
@@ -1352,6 +1383,7 @@ class ScanRunner(AoneQueryMixin):
                 if "jarvis-done" in _tagset(d["item"]):
                     self._done_watch_retry.discard(d["id"])
                     confirm_ids.discard(d["id"])
+                dispatch_retry.discard(d["id"])
                 if modified:
                     # The Task upsert was durably accepted → this ticket's decision
                     # is a resting state and may be persisted.
@@ -1362,6 +1394,10 @@ class ScanRunner(AoneQueryMixin):
             else:
                 if "jarvis-done" in _tagset(d["item"]):
                     self._done_watch_retry.add(d["id"])
+                # Keep it a candidate next tick. Not persisted either (the caller
+                # only commits `conclusive`), so the durable and in-memory paths
+                # now agree that a failed dispatch is unfinished business.
+                dispatch_retry.add(d["id"])
                 dropped.append((d["id"], reason))
                 log.warning("scan auto: #%s not dispatched (%s)", d["id"], reason)
 
