@@ -21,6 +21,17 @@
 
 实测单次 `a1 project workitem get` 约 **2.9s**（3 次采样：2.99 / 2.85 / 2.76）→ 约 **91 分钟 ≈ 1.5 小时**的调度线程时间，花在不可能成功的调用上。`owner-health`(4470 行) 与 `aone-workitem-ownership`(3080 行) 因此成为当日日志量前二。
 
+### 这不只是浪费：ownership snapshot 今天 0 次成功
+
+```
+158  aone-workitem-ownership: failed: SnapshotIncomplete: ownership snapshot incomplete: 1086837:779
+  0  成功发布
+```
+
+`_reuse_or_fail` 在无可用缓存时把条目计入 `failures`，随后整个 run 抛 `SnapshotIncomplete`（`:971-973`）；该 runner 的契约是 *"deliberately never publishes a partial inventory"*。所以**单条 poison 记录（task 4451 / aone 779）打挂了整个 ownership 快照发布，AutomationAgent board 的 ownership 数据全天陈旧**。这是进行中的功能性故障，不只是 CPU 浪费。
+
+**由此得出一个关键的范围结论**：三条 404 位于 **1086837（tf_customer，已登记池）**且 `sourceStatus=待处理`（非终态），所以**变更 a 的池过滤与终态过滤都不命中它们** —— 变更 a 减少无用读取，但救不了这个故障。**只有变更 b** 把它们盖成 `Invalid` 之后，终态过滤才接管。故 b 是本 spec 中唯一能止住中断的改动，优先级最高。
+
 ### 5 条 poison 条目
 
 ```
@@ -71,7 +82,9 @@ if result.returncode != 0:
 
 - **变更 a**：ownership runner 补池过滤 + terminal skip，与两个 sibling 对齐
 - **变更 b**：404 永久失败熔断 —— 发一次钉钉通知 + 自动盖终态
-- **变更 c**：项目级 403 后不再回退逐条 detail
+- **变更 c**：项目级 403 后不再回退逐条 detail。**但必须保留失败语义** —— 该 runner 契约是「never publishes a partial inventory」，未解析条目仍应经 `_reuse_or_fail` 走缓存复用或 `SnapshotIncomplete`。本变更去掉的是注定失败的逐条读取，**不是**失败本身。变更 a 落地后，能走到这个分支的只剩「已登记池被撤权」，此时大声失败才是正确行为。
+- **变更 d**（2026-08-04 追加，仓库主人授权并入本 bugfix）：控制面 endpoint 由预发切正式。`https://pre-agent.aliyun-inc.com` 目前**静默硬编码在 6 个运行时位置**（`persistent_worker.py:62`、`scheduler/scheduler.py:40`、`jarvis_dingtalk_bot.py:250`、`worker_offline.py:107`、`bootstrap/jarvis-interactive-worker.py:191`、`bootstrap/control-plane-status.py:36`），这正是没人发现整个机群跑在预发的原因。收敛为单一常量 `DEFAULT_CONTROL_PLANE_BASE_URL`，默认 `https://agent.aliyun-inc.com`，并断开 `JARVIS_CONTROL_PLANE_BASE_URL` → `JARVIS_HTML_REPORT_BASE_URL` 的 fallback（避免改报告主机时静默搬走控制面）。
+  **前提已实测验证**：新域名 HTTP 200；沿用同一 64 字符 token 鉴权通过；同一查询在两端返回**完全一致**的结果集（各 100 条、taskId/aoneId 全等），确认预发与正式**共用同一数据库** —— 因此不存在在途 Task/Session 变孤儿的迁移问题，这是纯 endpoint 变更。
 
 ### 明确不包含（deferred）
 
@@ -187,6 +200,6 @@ if result.returncode != 0:
 
 ## 六、上线
 
-三个变更互不依赖，可同一 PR。合并后需重启 bridge 生效 —— 与待决的 `JARVIS_DISPATCH_MAX` 重启可合并为同一次操作。
+四个变更互不依赖，同一 PR。合并后需重启 bridge 生效；`JARVIS_DISPATCH_MAX` 的重启由仓库主人自行处理（2026-08-04 明确），本 spec 不再承担该动作。
 
 **验收信号**（重启后一个完整日）：`workitem get failed (403|404)` 与 `workitem list failed (403)` 三个签名的日计数应从 1883 降到接近 0；`aone-workitem-ownership` 日志行数显著下降；`.my-day/bridge/source-poison-health.json` 出现 3 条 episode 且各带一次 `lastAlertAt`。
