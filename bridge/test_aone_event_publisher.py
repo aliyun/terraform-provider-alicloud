@@ -114,6 +114,24 @@ class PublisherTest(unittest.TestCase):
         self.assertEqual(len(self.create_calls), 2)
         self.assertIn(lid, self.ledger()["posted"])
 
+    def test_reusing_a_posted_key_is_logged_not_silent(self):
+        """Dedup on an already-posted key sends nothing but still reports success.
+
+        That is correct for a genuine retry and catastrophic for a key-scoping defect:
+        the caller commits and suspends on a reply nobody ever received. Leave a log
+        line so the second case is findable.
+        """
+        key = "task-reply:5047:1"
+        self.assertTrue(publisher._aone_event_publish(TID, PROJ, key, "第一轮回复"))
+        sent_once = len(self.create_calls)
+        with self.assertLogs(publisher.log, level="INFO") as logs:
+            self.assertTrue(
+                publisher._aone_event_publish(TID, PROJ, key, "第二轮回复"))
+        self.assertEqual(len(self.create_calls), sent_once)
+        self.assertTrue(
+            any("reused already-posted" in line for line in logs.output),
+            logs.output)
+
     def test_enqueue_accepts_durable_pending_event(self):
         key = "dispatch:ticket:sid-2:error-max-turns"
         self.fail_create = True
