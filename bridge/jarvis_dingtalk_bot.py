@@ -49,7 +49,7 @@ Env:
   JARVIS_SETTINGS                          override settings file for Jarvis (default: ~/.claude/idea_settings.json).
                                            冒号分隔可给多档摊额度/token；按 session_id 粘档(同单 resume 稳定)。
   CLAUDE_TIMEOUT                           per-round seconds (default 300).
-  JARVIS_DISPATCH_TIMEOUT                  headless dispatch timeout (default 43200 = 12h).
+  JARVIS_DISPATCH_TIMEOUT                  headless dispatch timeout (default 86400 = 24h).
   JARVIS_AUTO_DISPATCH                     0=accept "处理 #id / 全部处理" commands for
                                            Scheduler-staged pending tickets; default 1.
 
@@ -1544,7 +1544,7 @@ class JarvisHandler(AsyncChatbotHandler):
         """Card path (interactive authorize / handoff / wake): stream Jarvis into a live
         card, detect the suspend sentinel. Returns an outcome string. Active-set cleanup
         is owned by EphemeralExecutor, not here. ``terraform`` selects the model 车道."""
-        dispatch_timeout = int(os.environ.get("JARVIS_DISPATCH_TIMEOUT", "43200"))
+        dispatch_timeout = int(os.environ.get("JARVIS_DISPATCH_TIMEOUT", "86400"))
         try:
             log.info("dispatch_bg #%s start (timeout=%ds)", item_id, dispatch_timeout)
             result = self._stream_round(

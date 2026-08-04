@@ -622,7 +622,7 @@ def dispatch_item(
     """Run one headless generation and commit its Task-owned Aone bookend."""
     retries = int(os.environ.get("JARVIS_DISPATCH_RETRY_MAX", "2"))
     backoff = int(os.environ.get("JARVIS_DISPATCH_RETRY_BACKOFF", "30"))
-    timeout = int(os.environ.get("JARVIS_DISPATCH_TIMEOUT", "43200"))
+    timeout = int(os.environ.get("JARVIS_DISPATCH_TIMEOUT", "86400"))
     attempts = 1
 
     def fail(result):
