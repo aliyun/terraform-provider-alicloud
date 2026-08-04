@@ -1,4 +1,4 @@
-## 2.0.0-beta2 (August 3, 2026)
+## 2.0.0-beta2 (August 4, 2026)
 
 This beta rolls up every change merged from the 1.x line since v2.0.0-beta1 — see the `1.287.0` section of [CHANGELOG.md](CHANGELOG.md) — plus the v2-only fix below.
 
