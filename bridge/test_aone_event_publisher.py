@@ -520,3 +520,40 @@ class RevisitDispatchTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
+
+class PublishGateDiagnosticsTest(unittest.TestCase):
+    """Both permanent rejections must say why.
+
+    Callers only see a False return, and the bookend turns that into a generic
+    "reply not durably captured". Without a reason at the gate, the actual cause
+    is invisible from the log and has to be reconstructed by reading source.
+    """
+
+    DIGEST = "0" * publisher._AONE_EVENT_DIGEST_LEN
+
+    def test_project_gate_logs_the_reason(self):
+        with self.assertLogs("jarvis-aone", level="WARNING") as captured:
+            result = publisher._aone_event_publish_digest(
+                TID, "1091779", self.DIGEST, "body", allow_non_tf=False)
+        self.assertFalse(result)
+        joined = "\n".join(captured.output)
+        self.assertIn("not a terraform project", joined)
+        self.assertIn("allow_non_tf", joined)
+        self.assertIn("1091779", joined)
+
+    def test_malformed_request_logs_which_field_failed(self):
+        with self.assertLogs("jarvis-aone", level="WARNING") as captured:
+            result = publisher._aone_event_publish_digest(
+                "not-a-number", PROJ, self.DIGEST, "body", allow_non_tf=True)
+        self.assertFalse(result)
+        joined = "\n".join(captured.output)
+        self.assertIn("malformed request", joined)
+        self.assertIn("ticket_numeric=False", joined)
+
+    def test_empty_text_is_reported_rather_than_silently_dropped(self):
+        with self.assertLogs("jarvis-aone", level="WARNING") as captured:
+            result = publisher._aone_event_publish_digest(
+                TID, PROJ, self.DIGEST, "   ", allow_non_tf=True)
+        self.assertFalse(result)
+        self.assertIn("text=False", "\n".join(captured.output))

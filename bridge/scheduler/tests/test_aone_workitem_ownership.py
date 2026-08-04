@@ -427,6 +427,63 @@ class OwnershipRunnerTest(unittest.TestCase):
                 "unreadable historical placeholder" in message
                 for message in captured.output))
 
+    def test_missing_item_publishes_placeholder_instead_of_failing_the_pass(self):
+        """The outage scenario: one permanently absent id must not block the rest.
+
+        A single uncached 404 previously appended to ``failures`` and raised
+        SnapshotIncomplete, so the whole full-replace projection stopped being
+        published and every consumer kept the last good copy indefinitely.
+        """
+        from tempfile import TemporaryDirectory
+        with TemporaryDirectory() as directory:
+            client = FakeClient({
+                0: {
+                    "items": [
+                        {"taskId": 1, "sourceProjectKey": "1000001",
+                         "aoneId": "779"},
+                        {"taskId": 2, "sourceProjectKey": "1000001",
+                         "aoneId": "7002"},
+                    ],
+                    "hasMore": False,
+                    "nextAfterTaskId": None,
+                },
+            })
+            runner = self._runner(self._repo(directory), client)
+            runner._fetch_project_batch = lambda _project, _ids: {}
+
+            def _detail(iid):
+                if str(iid) == "779":
+                    raise ownership.AoneItemMissing(
+                        "Aone item does not exist: "
+                        "Error: workitem get failed (404): 工作项不存在")
+                return {
+                    "id": str(iid),
+                    "modified": "2026-08-04 10:00:00",
+                    "fields": [
+                        {"identifier": "ak.issue.member",
+                         "value": "100001", "displayValue": "甲"},
+                        {"identifier": "assignedTo",
+                         "value": "100002", "displayValue": "乙"},
+                    ],
+                }
+
+            runner._fetch_detail = _detail
+            runner._fetch_comments = lambda _iid: []
+
+            with self.assertLogs(
+                    "test-aone-workitem-ownership", level="WARNING") as captured:
+                result = runner.run(definition(), NOW)
+
+            # The pass must succeed and still publish, with the absent id present
+            # as a placeholder rather than silently dropped -- a full replace that
+            # omitted it would delete it from every consumer.
+            self.assertIs(result.status, JobResultStatus.SUCCEEDED)
+            published = {item["aoneId"] for item in client.puts[0][0]["items"]}
+            self.assertEqual(published, {"779", "7002"})
+            self.assertTrue(any(
+                "unreadable historical placeholder" in message
+                for message in captured.output))
+
     def test_batch_403_falls_back_to_detail_recovery_and_placeholder(self):
         from tempfile import TemporaryDirectory
         with TemporaryDirectory() as directory:
@@ -936,3 +993,82 @@ class ProjectPermissionFallbackTest(unittest.TestCase):
         """
         self.assertFalse(ownership._is_project_permission_failure(
             "a1 list failed rc=1: HTTP 403"))
+
+
+class PermanentlyAbsentItemTest(unittest.TestCase):
+    """A 404 must degrade like a 403, not kill the whole projection.
+
+    The snapshot is a full replace, so the runner refuses to publish a partial
+    inventory -- correct, because a partial replace would delete items. But that
+    made severity inverted: a 403 (we merely cannot see it, and a permission
+    grant could still fix it) got the graceful placeholder path, while a 404
+    (the item is permanently gone) fell through to the fatal path and could hold
+    the projection hostage indefinitely.
+    """
+
+    def _a1_failing(self, runner, stderr, returncode=1):
+        from types import SimpleNamespace
+        runner._process_runner = lambda *a, **k: SimpleNamespace(
+            returncode=returncode, stdout="", stderr=stderr)
+        return runner
+
+    def _runner(self):
+        from tempfile import TemporaryDirectory
+        directory = TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        root = Path(directory.name)
+        (root / "config").mkdir(parents=True)
+        (root / "config" / "contacts.json").write_text(
+            json.dumps({"contacts": [], "agent_fallbacks": {}}))
+        return ownership.AoneWorkitemOwnershipRunner(
+            task_client=FakeClient(),
+            repo_root=root,
+            logger=logging.getLogger("test-absent-item"),
+            environ={"JARVIS_AONE_OWNERSHIP_CACHE":
+                     str(root / "cache" / "ownership.json")},
+            clock=lambda: NOW,
+        )
+
+    def test_404_raises_item_missing(self):
+        runner = self._a1_failing(
+            self._runner(),
+            "Error: workitem get failed (404): 工作项不存在")
+        with self.assertRaises(ownership.AoneItemMissing):
+            runner._a1(["project", "workitem", "get", "779", "-f", "json"])
+
+    def test_403_still_raises_read_forbidden(self):
+        runner = self._a1_failing(
+            self._runner(),
+            "Error: workitem get failed (403): no read permission on workitem 7710")
+        with self.assertRaises(ownership.AoneReadForbidden):
+            runner._a1(["project", "workitem", "get", "7710", "-f", "json"])
+
+    def test_both_share_the_unreadable_base_so_one_catch_covers_them(self):
+        self.assertTrue(
+            issubclass(ownership.AoneItemMissing, ownership.AoneItemUnreadable))
+        self.assertTrue(
+            issubclass(ownership.AoneReadForbidden, ownership.AoneItemUnreadable))
+        # Both must stay SnapshotIncomplete for existing callers.
+        self.assertTrue(
+            issubclass(ownership.AoneItemUnreadable, ownership.SnapshotIncomplete))
+
+    def test_404_digits_inside_an_id_do_not_false_positive(self):
+        runner = self._a1_failing(
+            self._runner(),
+            "Error: workitem get failed (500): 工作项 404404 internal error")
+        with self.assertRaises(ownership.SnapshotIncomplete) as ctx:
+            runner._a1(["project", "workitem", "get", "404404", "-f", "json"])
+        self.assertNotIsInstance(ctx.exception, ownership.AoneItemUnreadable)
+
+    def test_other_failures_remain_fatal(self):
+        runner = self._a1_failing(self._runner(), "timed out")
+        with self.assertRaises(ownership.SnapshotIncomplete) as ctx:
+            runner._a1(["project", "workitem", "get", "85053506", "-f", "json"])
+        self.assertNotIsInstance(ctx.exception, ownership.AoneItemUnreadable)
+
+    def test_404_on_a_non_get_subcommand_is_not_reclassified(self):
+        runner = self._a1_failing(
+            self._runner(), "Error: workitem list failed (404): nope")
+        with self.assertRaises(ownership.SnapshotIncomplete) as ctx:
+            runner._a1(["project", "workitem", "list", "-f", "json"])
+        self.assertNotIsInstance(ctx.exception, ownership.AoneItemUnreadable)

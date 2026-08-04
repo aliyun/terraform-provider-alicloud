@@ -585,11 +585,25 @@ def _aone_event_publish_digest(ticket, project, event_digest, text,
     marker = _aone_event_marker_from_digest(event_digest)
     text_limit = _aone_event_public_text_limit(marker)
     text = _aone_event_prepare_text(text, limit=text_limit)
+    # Both rejections below are permanent for a given call, and callers treat a
+    # False return as "could not be delivered" without learning why. When the
+    # bookend hits one, the only surviving symptom upstream is a generic "reply
+    # not durably captured", so say which gate closed and on what.
     if (not ticket.isdigit() or not project
             or not _AONE_EVENT_DIGEST_RE.fullmatch(event_digest)
             or not marker or not text):
+        log.warning(
+            "aone-event: rejected #%s project=%s: malformed request "
+            "(ticket_numeric=%s project_set=%s digest_ok=%s marker=%s text=%s)",
+            ticket or "<empty>", project or "<empty>", ticket.isdigit(),
+            bool(project), bool(_AONE_EVENT_DIGEST_RE.fullmatch(event_digest)),
+            bool(marker), bool(text))
         return False
     if not _is_terraform_project(project) and not allow_non_tf:
+        log.warning(
+            "aone-event: rejected #%s project=%s: not a terraform project and "
+            "allow_non_tf is False; caller must opt in to publish here",
+            ticket, project)
         return False
     ledger_id = _aone_event_ledger_id_from_digest(ticket, event_digest)
     now = time.time()
