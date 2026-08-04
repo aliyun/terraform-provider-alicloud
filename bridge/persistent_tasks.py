@@ -89,6 +89,15 @@ TASK_RESULT_CORRECTIONS = {
     "suspend_no_wait_for": (
         "上一轮 AONE_RESULT 的 outcome=suspend，但 suspend_wait_for 为空。"
         "必须给出要 @ 等待的 staffId。"),
+    "file_reference_without_file": (
+        "上一轮哨兵只给了短引用 {\"from_file\": true}，但 .my-day/task-result/ 下没有这一单"
+        "的结果文件。短引用没有第二份副本，所以本轮判未完成。要么先跑 "
+        "`bootstrap/task-result.sh <工单号> --stdin` 把结果 JSON 写进文件、确认它退出码为 0 "
+        "之后再输出短引用，要么直接在哨兵里给出完整 JSON。"),
+    "file_reference_unusable": (
+        "上一轮哨兵给了短引用 {\"from_file\": true}，但结果文件读不出来（损坏、或不是 JSON "
+        "对象）。短引用没有第二份副本，务必先让 `bootstrap/task-result.sh` 成功退出"
+        "（它会当场校验并报错）再输出短引用；拿不准就直接在哨兵里给完整 JSON。"),
 }
 
 
@@ -571,28 +580,75 @@ def validate_task_result(payload):
     return result, ""
 
 
+def _is_file_reference(payload) -> bool:
+    """True when the sentinel points at the file channel instead of repeating it.
+
+    This is what keeps the compliant path the *cheap* one. Requiring the full payload
+    in the final message as well meant writing the file cost an extra generation of the
+    whole JSON while skipping it cost nothing (an absent file degraded to the sentinel
+    silently), so the more careful behaviour was also the more expensive one and the
+    agent rationally skipped it. With a short reference the payload is generated once,
+    as the script's stdin, and the final message stays far below the output limit that
+    truncates sentinels in the first place. A full payload is still accepted.
+    """
+    return isinstance(payload, dict) and bool(payload.get("from_file"))
+
+
+def _file_reference_reason(file_payload, file_note: str) -> str:
+    """Why a file-reference sentinel could not be honoured.
+
+    A file that was read but refused by the shared contract reports *its* reason, so
+    the correction already written for that reason applies verbatim instead of a
+    generic one the agent cannot act on.
+    """
+    if file_note:
+        return file_note if isinstance(file_payload, dict) else "file_reference_unusable"
+    return "file_reference_without_file"
+
+
 def classify_task_result_for_item(text: str, item_id):
     """Resolve this round's result from the file channel, then the stdout sentinel.
 
     The file wins when it validates: it is the transport that cannot be truncated by
-    the output limit. A present-but-rejected file does not veto the sentinel — the
-    run may have written the file by hand and still printed a good sentinel — but it
-    is logged, because silently preferring one channel over a broken other is how a
+    the output limit. A present-but-rejected file does not veto a *full* sentinel — the
+    run may have written the file by hand and still printed a good one — but it is
+    logged, because silently preferring one channel over a broken other is how a
     transport defect stays invisible.
+
+    A **file-reference** sentinel (``{"from_file": true}``) is different: it declares
+    the file to be the only copy, so an unusable file is a hard failure with its own
+    reason. Reporting ``missing`` there would coach the retry to print a sentinel the
+    run already printed, and the retry would fail identically until the Task stranded.
+
+    Which transport actually landed is logged at INFO. Success used to be completely
+    silent — and the executor clears the file after reading it — so adoption of the
+    file channel was unmeasurable from outside, which is how a channel nobody uses
+    looks exactly like a channel that works.
     """
+    file_payload, file_note = None, ""
     if item_id is not None:
         from bridge.task_result_file import read_task_result
-        payload, note = read_task_result(item_id)
-        if note:
+        file_payload, file_note = read_task_result(item_id)
+        if file_note:
             log.warning("task-result: #%s result file unusable (%s); "
-                        "falling back to the stdout sentinel", item_id, note)
-        elif isinstance(payload, dict):
-            result, reason = validate_task_result(payload)
+                        "falling back to the stdout sentinel", item_id, file_note)
+        elif isinstance(file_payload, dict):
+            result, reason = validate_task_result(file_payload)
             if result is not None:
+                log.info("task-result: #%s landed via the file channel", item_id)
                 return text, result, ""
+            file_note = reason
             log.warning("task-result: #%s result file rejected (%s); "
                         "falling back to the stdout sentinel", item_id, reason)
-    return classify_task_result(text)
+    clean, payload = _extract_last_json(text, "[[AONE_RESULT:")
+    if _is_file_reference(payload):
+        return clean, None, _file_reference_reason(file_payload, file_note)
+    if not isinstance(payload, dict):
+        return clean, None, _missing_reason(text)
+    result, reason = validate_task_result(payload)
+    if result is not None:
+        log.info("task-result: #%s landed via the stdout sentinel", item_id)
+    return clean, result, reason
 
 
 def extract_aone_event(text: str):
