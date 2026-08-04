@@ -227,6 +227,42 @@ class ConclusiveCommitTests(unittest.TestCase):
         self.assertEqual(runner._tick_auto([item]), {})
 
 
+def _make_tick_runner(path):
+    """A ScanRunner wired for a full ``_tick`` against a temp snapshot path."""
+    r = scan.ScanRunner.__new__(scan.ScanRunner)
+    r.snapshot_store = ScanSnapshotStore(path)
+    r.auto = True
+    r._prev_snapshot = {}
+    r._prefetch_idle_claimed_a1 = mock.Mock()
+    r._load_human_operators = lambda: set()
+    r._human_cache = {}
+    r._human_comment_cache = {}
+    r._activity_cache = {}
+    r._raw_comment_cache = {}
+    r._done_watch_retry = set()
+    r._done_watch_confirm = set()
+    r._done_drift_retry = set()
+    r._signal_query_retry = set()
+    r._dispatch_retry = set()
+    r.dispatch_pools = set()
+    r.dispatch_created_before = ""
+    r._pr_merged_status_by_pool = {}
+    r.pool = None
+    r._envelope = mock.Mock(return_value=SimpleNamespace())
+    r._reconcile_done_status_drifts_safely = mock.Mock()
+    r._reconcile_source_statuses_safely = mock.Mock()
+    return r
+
+
+def _make_union_item(**over):
+    item = {"id": "83612870", "title": "x", "status": "待处理", "priority": "",
+            "tag": "", "type": "", "category": "",
+            "modified": "2026-08-03 16:56:39", "created": "2026-06-26 17:15:07",
+            "assignedTo": "", "pool": "tf_provider", "pool_project": "528766"}
+    item.update(over)
+    return item
+
+
 class TickCommitTests(unittest.TestCase):
     """_tick must actually reach disk.
 
@@ -236,38 +272,8 @@ class TickCommitTests(unittest.TestCase):
     end-to-end instead of trusting the call site.
     """
 
-    def _runner(self, path):
-        r = scan.ScanRunner.__new__(scan.ScanRunner)
-        r.snapshot_store = ScanSnapshotStore(path)
-        r.auto = True
-        r._prev_snapshot = {}
-        r._prefetch_idle_claimed_a1 = mock.Mock()
-        r._load_human_operators = lambda: set()
-        r._human_cache = {}
-        r._human_comment_cache = {}
-        r._activity_cache = {}
-        r._raw_comment_cache = {}
-        r._done_watch_retry = set()
-        r._done_watch_confirm = set()
-        r._done_drift_retry = set()
-        r._signal_query_retry = set()
-        r.dispatch_pools = set()
-        r.dispatch_created_before = ""
-        r._pr_merged_status_by_pool = {}
-        r.pool = None
-        r._envelope = mock.Mock(return_value=SimpleNamespace())
-        r._reconcile_done_status_drifts_safely = mock.Mock()
-        r._reconcile_source_statuses_safely = mock.Mock()
-        return r
-
-    @staticmethod
-    def _union_item(**over):
-        item = {"id": "83612870", "title": "x", "status": "待处理", "priority": "",
-                "tag": "", "type": "", "category": "",
-                "modified": "2026-08-03 16:56:39", "created": "2026-06-26 17:15:07",
-                "assignedTo": "", "pool": "tf_provider", "pool_project": "528766"}
-        item.update(over)
-        return item
+    _runner = staticmethod(_make_tick_runner)
+    _union_item = staticmethod(_make_union_item)
 
     def test_tick_commits_conclusive_entries_to_disk(self):
         tmp = tempfile.TemporaryDirectory()
@@ -308,6 +314,78 @@ class TickCommitTests(unittest.TestCase):
         runner._tick()
 
         self.assertEqual(ScanSnapshotStore(path).load(), {"1": "m1"})
+
+
+class FailedDispatchRetryTests(unittest.TestCase):
+    """A dispatch that did not land must stay a candidate on the next tick.
+
+    ``_prev_snapshot`` is replaced wholesale *before* any decision is made, so
+    without an explicit retry set a failed dispatch is simply forgotten: on the
+    following tick the ticket is neither new nor modified, and it waits for an
+    unrelated Aone edit to be looked at again.
+
+    Observed in production on 2026-08-04: a momentary control-plane outage dropped
+    two freshly created tickets at 10:26, seven ticks passed with no retry, and one
+    of them only resurfaced because a human happened to edit it 40 minutes later.
+    The durable snapshot already refused to record them — that covers a restart,
+    but restarts are hours apart.
+    """
+
+    def _path(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        return Path(tmp.name) / "scan-snapshot.json"
+
+    def test_next_tick_retries_a_dispatch_that_did_not_land(self):
+        path = self._path()
+        runner = _make_tick_runner(path)
+        # The same union every tick: `modified` never changes, so the retry set is
+        # the only thing that can bring this ticket back.
+        runner._scan_union = lambda: [_make_union_item()]
+
+        runner._dispatch = mock.Mock(
+            return_value=(False, "control_plane_unavailable"))
+        runner._tick()
+        self.assertEqual(runner._dispatch.call_count, 1)
+        self.assertIn("83612870", runner._dispatch_retry)
+        self.assertEqual(ScanSnapshotStore(path).load(), {},
+                         "失败的派发不得落盘")
+
+        runner._dispatch = mock.Mock(return_value=(True, "new"))
+        runner._tick()
+        self.assertEqual(runner._dispatch.call_count, 1, "第二轮必须重试")
+        self.assertNotIn("83612870", runner._dispatch_retry)
+        self.assertEqual(ScanSnapshotStore(path).load(),
+                         {"83612870": "2026-08-03 16:56:39"})
+
+        runner._dispatch = mock.Mock(return_value=(True, "new"))
+        runner._tick()
+        self.assertEqual(runner._dispatch.call_count, 0,
+                         "已经落定，不该无限重试")
+
+    def test_conclusive_skip_clears_a_pending_dispatch_retry(self):
+        runner = _make_tick_runner(self._path())
+        runner._dispatch = mock.Mock(return_value=(False, "queue_full"))
+        runner._tick_auto([_make_union_item()])
+        self.assertIn("83612870", runner._dispatch_retry)
+
+        # The ticket then reaches a terminal status: that decision supersedes the
+        # failed enqueue, which must not be replayed.
+        runner._tick_auto([_make_union_item(status="已发布")])
+        self.assertNotIn("83612870", runner._dispatch_retry)
+
+    def test_retry_set_drops_tickets_that_left_the_union(self):
+        runner = _make_tick_runner(self._path())
+        runner._dispatch = mock.Mock(
+            return_value=(False, "control_plane_unavailable"))
+        runner._scan_union = lambda: [_make_union_item()]
+        runner._tick()
+        self.assertIn("83612870", runner._dispatch_retry)
+
+        runner._scan_union = lambda: [_make_union_item(id="99999999")]
+        runner._tick()
+        self.assertNotIn("83612870", runner._dispatch_retry,
+                         "已离开 union 的工单不应留在重试集合里")
 
 
 if __name__ == "__main__":
