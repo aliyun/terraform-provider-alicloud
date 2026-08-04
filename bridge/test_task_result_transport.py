@@ -20,6 +20,7 @@ from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from unittest import mock
 
+from bridge import aone_tasks
 from bridge import jarvis_dingtalk_bot as bot
 from bridge import persistent_tasks, task_result_file
 
@@ -304,6 +305,114 @@ class DispatchFailedWritesAoneTests(unittest.TestCase):
                 self._run(subtype=subtype)
                 self.assertEqual(len(self.published), 1)
                 self.assertIn(subtype, self.published[0]["text"])
+
+
+class FileReferenceSentinelTests(unittest.TestCase):
+    """短引用哨兵：大 payload 只生成一次（写文件），最后一行只指向它。
+
+    改前「照做」要把整份 payload 生成两遍——一份进 heredoc 工具入参，一份仍要按 prompt
+    要求原样进最后那条消息——而跳过文件通道**零惩罚**（文件缺失时静默回落哨兵）。于是更
+    负责的做法反而更费劲，模型按省力倾向就会跳过它（实测 b861d02e 拿到指令后一次没调）。
+    允许哨兵退化成 ``{"from_file": true}`` 之后：照做只生成一份 payload，且最后那条消息
+    小到不可能被输出上限截断——激励方向与契约终于一致，不必靠 prompt 加感叹号去压。
+
+    代价是短引用没有第二份副本，所以它只能是**允许**而非强制：短引用配上一个读不出来的
+    文件必须显式失败并说明原因，绝不能静默回落成 ``missing``——那等于用一个新的静默黑洞
+    换掉旧的。
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        patcher = mock.patch.object(
+            task_result_file, "TASK_RESULT_DIR", Path(self.tmp.name))
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self.addCleanup(self.tmp.cleanup)
+
+    def _classify(self, sentinel_payload):
+        return persistent_tasks.classify_task_result_for_item(
+            _sentinel(sentinel_payload), TID)
+
+    def test_file_reference_sentinel_lands_the_file_payload(self):
+        task_result_file.write_task_result(TID, _GOOD)
+        _clean, result, reason = self._classify({"from_file": True})
+        self.assertEqual(reason, "")
+        self.assertEqual(result["reply_body"], _GOOD["reply_body"])
+
+    def test_file_reference_sentinel_without_a_file_fails_explicitly(self):
+        _clean, result, reason = self._classify({"from_file": True})
+        self.assertIsNone(result)
+        # 绝不能报成 missing：重试提示会去教它「输出哨兵」，可它已经输出了，
+        # 于是重试带着同一份提示、同样失败，直到 Task 搁死。
+        self.assertEqual(reason, "file_reference_without_file")
+
+    def test_file_reference_sentinel_reports_the_file_rejection_reason(self):
+        task_result_file.write_task_result(TID, dict(_GOOD, reply_body="  "))
+        _clean, result, reason = self._classify({"from_file": True})
+        self.assertIsNone(result)
+        # 文件是唯一副本，所以要报**文件为什么被拒**，这样既有的纠正提示能直接复用。
+        self.assertEqual(reason, "empty_reply_body")
+
+    def test_file_reference_sentinel_with_unusable_file_fails_explicitly(self):
+        path = task_result_file.task_result_path(TID)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("{ 这不是 JSON", encoding="utf-8")
+        _clean, result, reason = self._classify({"from_file": True})
+        self.assertIsNone(result)
+        self.assertEqual(reason, "file_reference_unusable")
+
+    def test_full_payload_sentinel_still_lands_without_a_file(self):
+        _clean, result, reason = self._classify(_GOOD)
+        self.assertEqual(reason, "")
+        self.assertEqual(result["outcome"], "idle")
+
+    def test_both_new_reasons_carry_a_retry_correction(self):
+        for reason in ("file_reference_without_file", "file_reference_unusable"):
+            with self.subTest(reason=reason):
+                self.assertTrue(persistent_tasks.task_result_correction(reason))
+
+    def test_file_channel_landing_names_the_channel_in_the_log(self):
+        # 成功路径此前一行不打、消费后还删文件，于是新通道的采用率从外部完全测不出来。
+        task_result_file.write_task_result(TID, _GOOD)
+        with self.assertLogs("bridge.persistent_tasks", level="INFO") as caught:
+            self._classify({"from_file": True})
+        self.assertTrue(any("file" in line for line in caught.output), caught.output)
+
+    def test_sentinel_channel_landing_names_the_channel_in_the_log(self):
+        with self.assertLogs("bridge.persistent_tasks", level="INFO") as caught:
+            self._classify(_GOOD)
+        self.assertTrue(any("sentinel" in line for line in caught.output), caught.output)
+
+
+class ShortSentinelPromptTests(unittest.TestCase):
+    """契约改对了还不够：prompt 必须让「照做」看起来也是更省事的那条路。
+
+    旧措辞把文件通道写成「首选」，却只给哨兵写了后果（「缺失或非法的 AONE_RESULT 会被判
+    本轮未完成」），跳过文件通道一句后果都没有；再叠加「然后【仍然】输出同一份哨兵」，
+    照做就等于把整份 payload 生成两遍。实测拿到该指令的 run 一次都没调过脚本——那是这份
+    措辞下的理性选择，不是不听话。
+    """
+
+    def _prompts(self):
+        return (
+            aone_tasks._ticket_prompt(TID, "标题", "tf_customer", PROJ),
+            aone_tasks._ticket_prompt_terraform(TID, "标题", "tf_customer", PROJ),
+        )
+
+    def test_prompt_offers_the_short_reference_instead_of_a_duplicate_payload(self):
+        for prompt in self._prompts():
+            self.assertIn("bootstrap/task-result.sh %s --stdin" % TID, prompt)
+            self.assertIn('[[AONE_RESULT:{"from_file": true}]]', prompt)
+            self.assertIn("不必重复整份 JSON", prompt)
+
+    def test_prompt_states_what_the_short_reference_costs(self):
+        # 短引用是允许而非强制，缺文件的后果必须写明——否则只是换了个静默黑洞。
+        for prompt in self._prompts():
+            self.assertIn("短引用没有第二份副本", prompt)
+
+    def test_prompt_no_longer_demands_the_same_payload_twice(self):
+        for prompt in self._prompts():
+            self.assertNotIn("同一份哨兵", prompt)
 
 
 if __name__ == "__main__":
