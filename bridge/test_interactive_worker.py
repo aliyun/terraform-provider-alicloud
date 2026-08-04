@@ -2567,13 +2567,13 @@ class InteractiveWorkerTest(unittest.TestCase):
         self.assertEqual(client.base_url, "https://pre.example")
         self.assertEqual(client.token, "shared-report-token")
 
-    def test_control_plane_defaults_to_pre(self):
+    def test_control_plane_defaults_to_prod(self):
         with mock.patch.dict(os.environ, {
             "JARVIS_CONTROL_PLANE_BASE_URL": "",
             "JARVIS_HTML_REPORT_BASE_URL": "",
         }, clear=False):
             client = worker._client()
-        self.assertEqual(client.base_url, "https://pre-agent.aliyun-inc.com")
+        self.assertEqual(client.base_url, "https://agent.aliyun-inc.com")
 
     def test_unknown_sending_receipt_fails_closed_without_session_heartbeat(self):
         self._seed()

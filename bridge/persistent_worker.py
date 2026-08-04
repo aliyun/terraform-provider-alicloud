@@ -45,7 +45,9 @@ from bridge.jarvis_execution_runtime import (
 )
 from bridge.jarvis_field_repair import FieldRepairWorker
 from bridge.jarvis_persistence_executor import PersistenceExecutor
-from bridge.jarvis_task_client import ControlPlaneClient
+from bridge.jarvis_task_client import (
+    ControlPlaneClient, DEFAULT_CONTROL_PLANE_BASE_URL,
+)
 from bridge.jarvis_task_router import ExecutionRouter
 from bridge.process_group_runner import run_process_group
 
@@ -58,8 +60,7 @@ def _task_client_from_env() -> ControlPlaneClient:
     """Build the worker's mandatory control-plane client."""
     base_url = (
         os.environ.get("JARVIS_CONTROL_PLANE_BASE_URL", "").strip()
-        or os.environ.get("JARVIS_HTML_REPORT_BASE_URL", "").strip()
-        or "https://pre-agent.aliyun-inc.com"
+        or DEFAULT_CONTROL_PLANE_BASE_URL
     )
     token = (
         os.environ.get("JARVIS_CONTROL_PLANE_TOKEN", "").strip()

@@ -26,14 +26,17 @@ from pathlib import Path
 # 供 test/control_plane_status_test.sh 注入 stub client 做离线测试。
 sys.path.append(str(Path(__file__).resolve().parent.parent / "bridge"))
 
-from jarvis_task_client import ControlPlaneClient, ControlPlaneError  # noqa: E402
+from jarvis_task_client import (  # noqa: E402
+    ControlPlaneClient,
+    ControlPlaneError,
+    DEFAULT_CONTROL_PLANE_BASE_URL,
+)
 from task_input_contract import (  # noqa: E402
     TaskInputContractError,
     portable_replacement_for_redispatch,
 )
 
 EVENT_TAIL = 5  # task 视图只列最近 N 条 event（全量看服务端 timeline）
-DEFAULT_CONTROL_PLANE_BASE_URL = "https://pre-agent.aliyun-inc.com"
 
 
 def _client():

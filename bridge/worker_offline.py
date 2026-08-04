@@ -99,12 +99,13 @@ def _client_from_env(environ: Mapping[str, str], timeout: float):
     independent of the Scheduler module (and PyYAML) and never raises: a
     missing token just means "cannot offline remotely", which is best-effort.
     """
-    from bridge.jarvis_task_client import ControlPlaneClient
+    from bridge.jarvis_task_client import (
+        ControlPlaneClient, DEFAULT_CONTROL_PLANE_BASE_URL,
+    )
 
     base_url = (
         str(environ.get("JARVIS_CONTROL_PLANE_BASE_URL", "")).strip()
-        or str(environ.get("JARVIS_HTML_REPORT_BASE_URL", "")).strip()
-        or "https://pre-agent.aliyun-inc.com"
+        or DEFAULT_CONTROL_PLANE_BASE_URL
     )
     token = (
         str(environ.get("JARVIS_CONTROL_PLANE_TOKEN", "")).strip()

@@ -12,7 +12,7 @@
 
 - Spec: `docs/superpowers/specs/2026-08-04-poison-source-entry-guards-design.md`
 - Python stdlib only — no new dependencies.
-- Tests live in `bridge/scheduler/tests/`, `unittest` style, run with `.venv/bridge/bin/python -m pytest`.
+- Tests live in `bridge/scheduler/tests/`, `unittest` style, run with `../jarvis-preview/.venv/bridge/bin/python -m unittest`.
 - `_read_pools()` returning empty MUST NOT filter anything out (fail-open). This is the one place this work could turn a waste problem into an outage.
 - Commit messages: no AI attribution, no Aone ticket ids, no customer names (CLAUDE.md rule 5 treats commit messages as 对外产物).
 - Do not touch `master`; all work on branch `worktree-poison-source-guards`.
@@ -49,7 +49,7 @@ self.assertEqual(client.base_url, "https://agent.aliyun-inc.com")
 
 - [ ] **Step 2: Run them to verify they fail**
 
-Run: `.venv/bridge/bin/python -m pytest bridge/test_bot_control_plane.py bridge/test_interactive_worker.py -k base_url -v`
+Run: `../jarvis-preview/.venv/bridge/bin/python -m unittest bridge/test_bot_control_plane.py bridge/test_interactive_worker.py -k base_url -v`
 Expected: FAIL — actual is `https://pre-agent.aliyun-inc.com`.
 
 - [ ] **Step 3: Add the shared constant**
@@ -81,7 +81,7 @@ For the two `bootstrap/*.py` scripts, which are standalone and may not import br
 
 - [ ] **Step 5: Run the tests to verify they pass**
 
-Run: `.venv/bridge/bin/python -m pytest bridge/test_bot_control_plane.py bridge/test_interactive_worker.py -v`
+Run: `../jarvis-preview/.venv/bridge/bin/python -m unittest bridge/test_bot_control_plane.py bridge/test_interactive_worker.py -v`
 Expected: PASS.
 
 - [ ] **Step 6: Confirm no inlined pre host remains in runtime code**
@@ -193,7 +193,7 @@ if __name__ == "__main__":
 
 - [ ] **Step 2: Run to verify failure**
 
-Run: `.venv/bridge/bin/python -m pytest bridge/scheduler/tests/test_source_poison.py -v`
+Run: `../jarvis-preview/.venv/bridge/bin/python -m unittest bridge/scheduler/tests/test_source_poison.py -v`
 Expected: FAIL — `ModuleNotFoundError: bridge.scheduler.runners.source_poison`.
 
 - [ ] **Step 3: Implement the module**
@@ -337,7 +337,7 @@ class SourcePoisonLedger:
 
 - [ ] **Step 4: Run to verify pass**
 
-Run: `.venv/bridge/bin/python -m pytest bridge/scheduler/tests/test_source_poison.py -v`
+Run: `../jarvis-preview/.venv/bridge/bin/python -m unittest bridge/scheduler/tests/test_source_poison.py -v`
 Expected: PASS (7 tests).
 
 - [ ] **Step 5: Commit the module**
@@ -374,7 +374,7 @@ class ClassifyPointReadTest(unittest.TestCase):
 
 - [ ] **Step 7: Run to verify failure**
 
-Run: `.venv/bridge/bin/python -m pytest bridge/scheduler/tests/test_source_poison.py -k Classify -v`
+Run: `../jarvis-preview/.venv/bridge/bin/python -m unittest bridge/scheduler/tests/test_source_poison.py -k Classify -v`
 Expected: FAIL — `AttributeError: _classify_point_read_failure`.
 
 - [ ] **Step 8: Teach the point-read to classify**
@@ -415,7 +415,7 @@ from bridge.scheduler.runners.source_poison import (
 
 - [ ] **Step 9: Run to verify pass**
 
-Run: `.venv/bridge/bin/python -m pytest bridge/scheduler/tests/test_source_poison.py -v`
+Run: `../jarvis-preview/.venv/bridge/bin/python -m unittest bridge/scheduler/tests/test_source_poison.py -v`
 Expected: PASS.
 
 - [ ] **Step 10: Wire quarantine into the reconcile loop**
@@ -489,7 +489,7 @@ Declare `poison = []` alongside `changed = 0`, and reset it per page. Add the ne
 
 - [ ] **Step 11: Run the whole scan test suite for regressions**
 
-Run: `.venv/bridge/bin/python -m pytest bridge/scheduler/tests/ -v`
+Run: `../jarvis-preview/.venv/bridge/bin/python -m unittest bridge/scheduler/tests/ -v`
 Expected: PASS, no regressions in `test_scan_union.py` / `test_scan_snapshot.py`.
 
 - [ ] **Step 12: Commit**
@@ -558,7 +558,7 @@ Add a `_ownership_runner_for_candidates(items)` helper next to the file's existi
 
 - [ ] **Step 2: Run to verify failure**
 
-Run: `.venv/bridge/bin/python -m pytest bridge/scheduler/tests/test_aone_workitem_ownership.py -k CandidateFilter -v`
+Run: `../jarvis-preview/.venv/bridge/bin/python -m unittest bridge/scheduler/tests/test_aone_workitem_ownership.py -k CandidateFilter -v`
 Expected: FAIL — unregistered/terminal candidates are still returned.
 
 - [ ] **Step 3: Implement the filters**
@@ -618,7 +618,7 @@ After the page loop, one aggregate line only — per-entry logging costs more vo
 
 - [ ] **Step 4: Run to verify pass**
 
-Run: `.venv/bridge/bin/python -m pytest bridge/scheduler/tests/test_aone_workitem_ownership.py -v`
+Run: `../jarvis-preview/.venv/bridge/bin/python -m unittest bridge/scheduler/tests/test_aone_workitem_ownership.py -v`
 Expected: PASS, including the pre-existing tests.
 
 - [ ] **Step 5: Commit**
@@ -671,7 +671,7 @@ class ProjectPermissionFallbackTest(unittest.TestCase):
 
 - [ ] **Step 2: Run to verify failure**
 
-Run: `.venv/bridge/bin/python -m pytest bridge/scheduler/tests/test_aone_workitem_ownership.py -k ProjectPermission -v`
+Run: `../jarvis-preview/.venv/bridge/bin/python -m unittest bridge/scheduler/tests/test_aone_workitem_ownership.py -k ProjectPermission -v`
 Expected: FAIL — `ImportError: cannot import name '_is_project_permission_failure'`.
 
 - [ ] **Step 3: Implement the classifier and skip the fallback**
@@ -714,12 +714,12 @@ Replace the fallback body at `:871-879`:
 
 - [ ] **Step 4: Run to verify pass**
 
-Run: `.venv/bridge/bin/python -m pytest bridge/scheduler/tests/test_aone_workitem_ownership.py -v`
+Run: `../jarvis-preview/.venv/bridge/bin/python -m unittest bridge/scheduler/tests/test_aone_workitem_ownership.py -v`
 Expected: PASS.
 
 - [ ] **Step 5: Full suite**
 
-Run: `.venv/bridge/bin/python -m pytest bridge/scheduler/tests/ bridge/test_bot_control_plane.py bridge/test_interactive_worker.py -q`
+Run: `../jarvis-preview/.venv/bridge/bin/python -m unittest bridge/scheduler/tests/ bridge/test_bot_control_plane.py bridge/test_interactive_worker.py -q`
 Expected: PASS.
 
 - [ ] **Step 6: Commit**

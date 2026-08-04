@@ -79,7 +79,9 @@ from datetime import datetime, timedelta, timezone
 from urllib.request import Request, urlopen
 from urllib.error import URLError
 
-from bridge.jarvis_task_client import ControlPlaneClient, TaskEnvelope
+from bridge.jarvis_task_client import (
+    ControlPlaneClient, TaskEnvelope, DEFAULT_CONTROL_PLANE_BASE_URL,
+)
 from bridge.jarvis_capacity import CapacityManager
 from bridge.jarvis_task_router import ExecutionRouter, WakePersistence
 from bridge.persistent_tasks import (
@@ -246,8 +248,7 @@ def _task_client_from_env():
     """Build the mandatory AutomationAgent Task client."""
     base_url = (
         os.environ.get("JARVIS_CONTROL_PLANE_BASE_URL", "").strip()
-        or os.environ.get("JARVIS_HTML_REPORT_BASE_URL", "").strip()
-        or "https://pre-agent.aliyun-inc.com"
+        or DEFAULT_CONTROL_PLANE_BASE_URL
     )
     token = (
         os.environ.get("JARVIS_CONTROL_PLANE_TOKEN", "").strip()
