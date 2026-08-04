@@ -219,7 +219,7 @@ func (s *OosServiceV2) DescribeSecretParameterListTagResources(id string) (objec
 	action := "ListTagResources"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	request["ResourceIds"] = expandSingletonToList(id)
+	request["ResourceIds"] = convertObjectToJsonString(expandSingletonToList(id))
 	request["RegionId"] = client.RegionId
 
 	request["ResourceType"] = "secretparameter"
@@ -245,6 +245,48 @@ func (s *OosServiceV2) DescribeSecretParameterListTagResources(id string) (objec
 	}
 
 	return response, nil
+}
+
+// WaitForOosSecretParameterTagsConverged polls ListTagResources until the tag bindings
+// read back for the specified secret parameter match the expected tags. Tag bindings
+// written through UpdateSecretParameter are propagated asynchronously to the tag
+// storage behind ListTagResources, so an immediate read may miss them.
+func (s *OosServiceV2) WaitForOosSecretParameterTagsConverged(id string, expectedTags map[string]interface{}, timeout time.Duration) error {
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err := resource.Retry(timeout, func() *resource.RetryError {
+		object, err := s.DescribeSecretParameterListTagResources(id)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+
+		tagsMaps, _ := jsonpath.Get("$.TagResources.TagResource", object)
+		tagResources := make([]interface{}, 0)
+		for _, tagResource := range convertToInterfaceArray(tagsMaps) {
+			if tagResourceMap, ok := tagResource.(map[string]interface{}); ok && fmt.Sprint(tagResourceMap["ResourceId"]) == id {
+				tagResources = append(tagResources, tagResource)
+			}
+		}
+		currentTags := tagsToMap(tagResources)
+		if len(currentTags) != len(expectedTags) {
+			wait()
+			return resource.RetryableError(Error("The tags of OOS secret parameter %s have not been propagated yet, current: %v, expected: %v.", id, currentTags, expectedTags))
+		}
+		for key, value := range expectedTags {
+			if fmt.Sprint(currentTags[key]) != fmt.Sprint(value) {
+				wait()
+				return resource.RetryableError(Error("The tags of OOS secret parameter %s have not been propagated yet, current: %v, expected: %v.", id, currentTags, expectedTags))
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return WrapError(err)
+	}
+	return nil
 }
 
 func (s *OosServiceV2) OosSecretParameterStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -299,7 +341,7 @@ func (s *OosServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			action = "UntagResources"
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
-			request["ResourceIds"] = expandSingletonToList(d.Id())
+			request["ResourceIds"] = convertObjectToJsonString(expandSingletonToList(d.Id()))
 			request["RegionId"] = client.RegionId
 			if v, ok := d.GetOk("tags"); ok {
 				tagsTagKeyJsonPath, err := jsonpath.Get("$.tag_key", v)
@@ -331,7 +373,7 @@ func (s *OosServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			action = "TagResources"
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
-			request["ResourceIds"] = expandSingletonToList(d.Id())
+			request["ResourceIds"] = convertObjectToJsonString(expandSingletonToList(d.Id()))
 			request["RegionId"] = client.RegionId
 			tagsJsonPath, err := jsonpath.Get("$", d.Get("tags"))
 			if err == nil {
