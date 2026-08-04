@@ -15,7 +15,7 @@ from typing import Any, Callable, Collection, Mapping
 from bridge.aone_tasks import master_staff
 from bridge.helpers.aone import (
     PERSONA_PUBLIC_IDENTITY, REPO_ROOT, _a1_command_env, _aone_event_sanitize_text,
-    _is_human_comment,
+    _is_human_comment, _is_terraform_project,
 )
 from bridge.helpers.dingtalk import _dingtalk_event_enqueue
 from bridge.jarvis_task_router import (
@@ -1230,9 +1230,21 @@ class TaskAoneBookend:
         links = result.get("mr_cr_links") or []
         body = "%s\n\n关联：%s" % (reply, " ".join(links)) if links else reply
         event_key = self._scope_event_key("task-reply")
+        # The task-reply must land on the dispatching ticket's own project. A
+        # terraform-line Task (self.terraform=True → allow_non_tf=False) dispatched
+        # on a non-terraform-provider project (e.g. automation_platform/1091779,
+        # where TerraformRD also owns IaCService self-app delivery) was rejected by
+        # _aone_event_publish_digest's project gate before any ledger write, so the
+        # enqueue returned False and the executor retried forever ("task reply
+        # comment not durably captured"). Allow non-tf publishing whenever the
+        # ticket's project isn't a terraform-provider project, regardless of the
+        # Task's line: the reply is the RD's response to *this* ticket and cannot
+        # be rerouted elsewhere. Terraform-provider projects keep allow_non_tf=False
+        # so the terraform-line event ledger semantics there are unchanged.
+        allow_non_tf = (not self.terraform) or (not _is_terraform_project(self.project))
         if not _aone_event_enqueue(
                 self.item_id, self.project, event_key, body,
-                allow_non_tf=not self.terraform, identity=self._reply_identity()):
+                allow_non_tf=allow_non_tf, identity=self._reply_identity()):
             raise RuntimeError(
                 "task reply comment not durably captured for #%s" % self.item_id)
         outcome = result.get("outcome")
