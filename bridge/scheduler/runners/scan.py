@@ -24,7 +24,9 @@ from bridge.helpers.aone import (
     PERSONA_PUBLIC_IDENTITY, _aone_event_enqueue, _is_human_comment,
     _parse_a1_list, parallel_a1_per_id,
 )
-from bridge.helpers.dingtalk import _dingtalk_event_enqueue
+from bridge.helpers.dingtalk import (
+    _dingtalk_event_enqueue, _dingtalk_event_flush,
+)
 from bridge.jarvis_task_router import (
     EnqueueResult, ExecutionRouter, _task_envelope, broadcast_target, broadcast_type,
 )
@@ -35,6 +37,9 @@ from bridge.recovery_wakeup import (
     wake_redispatch as _wakeup_wake, enabled as _wakeup_enabled,
 )
 from bridge.process_group_runner import run_process_group
+from bridge.scheduler.runners.source_poison import (
+    SOURCE_NOT_FOUND, SourcePoisonLedger,
+)
 from ..model import JobResult, JobResultStatus, ScheduledJobDefinition, is_aware
 
 
@@ -258,6 +263,20 @@ class ScanRunner(AoneQueryMixin):
         return items
 
     @staticmethod
+    def _classify_point_read_failure(stderr):
+        """Return SOURCE_NOT_FOUND for a permanent absence, else ``None``.
+
+        Only a 404 proves the work item is gone. A 403 means we merely cannot
+        see it, which a permission grant can still fix, and everything else
+        (timeouts, transport errors) is transient by assumption. Returning
+        ``None`` preserves this method's documented contract that a failure
+        leaves the persisted status untouched.
+        """
+        if "workitem get failed (404)" in str(stderr or ""):
+            return SOURCE_NOT_FOUND
+        return None
+
+    @staticmethod
     def _point_read_source_status(task):
         """Read one canonical Aone Task's current business status.
 
@@ -276,9 +295,10 @@ class ScanRunner(AoneQueryMixin):
                 timeout=max(1, ScanRunner.SOURCE_STATUS_POINT_TIMEOUT_SECONDS),
                 cwd=str(REPO_ROOT))
             if result.returncode != 0:
+                stderr = (result.stderr or "").strip()
                 log.warning("ScanRunner: source status point-read #%s rc=%d: %s",
-                            aone_id, result.returncode, (result.stderr or "").strip()[:200])
-                return task, None
+                            aone_id, result.returncode, stderr[:200])
+                return task, ScanRunner._classify_point_read_failure(stderr)
             data = json.loads(result.stdout)
             fields = {field.get("identifier"): field for field in data.get("fields", [])
                       if isinstance(field, dict)}
@@ -435,6 +455,13 @@ class ScanRunner(AoneQueryMixin):
         observed_total = 0
         changed_total = 0
         pages = 0
+        # Permanent-absence handling spans the whole snapshot rather than one
+        # page: guard 3 asks whether any sibling id in the same project resolved
+        # during this pass, and that evidence may arrive on a later page.
+        ledger = SourcePoisonLedger(
+            Path(REPO_ROOT) / ".my-day" / "bridge" / "source-poison-health.json")
+        healthy_projects = set()
+        poison = []
         while True:
             page = client.list_source_status_candidates(
                 after_task_id=after, limit=page_size)
@@ -449,14 +476,29 @@ class ScanRunner(AoneQueryMixin):
             observations = self._resolve_source_statuses(tasks, union_status)
             changed = 0
             for task, source_status in observations:
+                task_id = str(task.get("taskId") or "").strip()
+                aone_id = str(task.get("aoneId") or "").strip()
+                if source_status is SOURCE_NOT_FOUND:
+                    poison.append(task)
+                    continue
+                if source_status:
+                    project_of = (
+                        str(task.get("sourceProjectKey") or "").strip()
+                        or str(task.get("projectId") or "").strip())
+                    if project_of:
+                        healthy_projects.add(project_of)
+                    # The id resolves again, so any recorded absence was
+                    # transient. Drop it, otherwise observations from unrelated
+                    # outages weeks apart would eventually satisfy the guards
+                    # together.
+                    if task_id and ledger.episode(task_id):
+                        ledger.forget(task_id)
                 if (
                     not source_status
                     or source_status
                     == str(task.get("sourceStatus") or "").strip()
                 ):
                     continue
-                task_id = str(task.get("taskId") or "").strip()
-                aone_id = str(task.get("aoneId") or "").strip()
                 if not task_id or not aone_id:
                     continue
                 try:
@@ -494,9 +536,74 @@ class ScanRunner(AoneQueryMixin):
                 raise ValueError(
                     "control plane source status cursor did not advance")
             after = next_after
+        changed_total += self._quarantine_absent_sources(
+            client, poison, ledger, healthy_projects)
         log.info(
             "ScanRunner: source status snapshot pages=%d observed=%d changed=%d",
             pages, observed_total, changed_total)
+
+    def _quarantine_absent_sources(self, client, poison, ledger,
+                                   healthy_projects):
+        """Stamp a terminal status on source items Aone says do not exist.
+
+        Left alone these are re-read every cycle forever, and an uncached read
+        failure aborts the whole ownership snapshot, so one bad id can keep the
+        board projection stale. Stamping ``Invalid`` — already a terminal status
+        — hands them to the terminal-source skips the other runners already
+        apply, without deleting anything.
+        """
+        quarantined = 0
+        try:
+            for task in poison:
+                task_id = str(task.get("taskId") or "").strip()
+                aone_id = str(task.get("aoneId") or "").strip()
+                project = (str(task.get("sourceProjectKey") or "").strip()
+                           or str(task.get("projectId") or "").strip())
+                if not task_id or not aone_id:
+                    continue
+                episode = ledger.record(task_id, aone_id)
+                if not ledger.should_quarantine(
+                        episode, aone_id,
+                        project_read_ok=project in healthy_projects):
+                    continue
+                try:
+                    digest = hashlib.sha256(b"Invalid").hexdigest()[:16]
+                    client.update_source_status(
+                        task_id, aone_id, "Invalid",
+                        request_id="source-status:%s:%s" % (task_id, digest))
+                except Exception as exc:  # noqa: BLE001 — one id cannot block the rest
+                    log.warning(
+                        "ScanRunner: source poison quarantine "
+                        "task=%s aone=#%s failed: %s", task_id, aone_id, exc)
+                    continue
+                quarantined += 1
+                log.warning(
+                    "ScanRunner: source item absent, quarantined "
+                    "task=%s aone=#%s project=%s → Invalid",
+                    task_id, aone_id, project)
+                if not ledger.alerted(task_id):
+                    if _dingtalk_event_enqueue(
+                            aone_id, project,
+                            "source-poison:not-found:%s" % task_id,
+                            master_staff(),
+                            "控制面候选条目已熔断",
+                            "task=%s aone=#%s project=%s\n"
+                            "Aone 持续返回 404（工作项不存在），已将 source status "
+                            "盖为 Invalid，停止每轮重读。"
+                            % (task_id, aone_id, project),
+                            allow_non_tf=True):
+                        ledger.mark_alerted(task_id)
+        finally:
+            # Persist the evidence even if a stamp or notification raised, so a
+            # crash cannot reset the observation count every pass.
+            try:
+                ledger.save()
+            except OSError as exc:
+                log.warning(
+                    "ScanRunner: source poison ledger save failed: %s", exc)
+        if poison:
+            _dingtalk_event_flush()
+        return quarantined
 
     def _in_scope(self, it):
         """灰度安全阀：item 是否在自动派发范围内。pool 白名单 + created 上限，两者空=不限。
