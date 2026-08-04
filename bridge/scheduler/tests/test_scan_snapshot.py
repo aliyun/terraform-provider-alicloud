@@ -11,6 +11,8 @@ So every test here pushes on the same question: did an outcome that never durabl
 landed get recorded as seen?
 """
 import os
+import subprocess
+import sys
 import tempfile
 import unittest
 from datetime import datetime, timedelta
@@ -70,6 +72,43 @@ class ScanSnapshotStoreTests(unittest.TestCase):
         leftovers = sorted(p.name for p in store.path.parent.iterdir()
                            if p.name.endswith(".tmp"))
         self.assertEqual(leftovers, [])
+
+
+class ConcurrentCommitTests(unittest.TestCase):
+    """``commit`` is read-modify-write, so two writers without a lock lose a merge.
+
+    Only the Scheduler ticks today, but all three bridge processes construct a
+    ScanRunner at startup, so single-writer is currently an accident of who
+    schedules the job rather than a guarantee. Real processes are used because
+    ``flock`` is per-open-file-description — threads in one process would not
+    exercise it.
+    """
+
+    def test_concurrent_commits_do_not_lose_entries(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        path = Path(tmp.name) / "scan-snapshot.json"
+        repo_root = Path(__file__).resolve().parents[3]
+        writers, per_writer = 4, 25
+        script = (
+            "import sys\n"
+            "sys.path.insert(0, %r)\n"
+            "from bridge.scan_snapshot import ScanSnapshotStore\n"
+            "store = ScanSnapshotStore(%r)\n"
+            "tag = sys.argv[1]\n"
+            "for i in range(%d):\n"
+            "    store.commit({'%%s-%%d' %% (tag, i): 'm'})\n"
+            % (str(repo_root), str(path), per_writer)
+        )
+        procs = [
+            subprocess.Popen([sys.executable, "-c", script, str(writer)])
+            for writer in range(writers)
+        ]
+        for proc in procs:
+            self.assertEqual(proc.wait(timeout=180), 0, "writer subprocess failed")
+        entries = ScanSnapshotStore(path).load()
+        # Every key is distinct, so a lost merge shows up as a missing key.
+        self.assertEqual(len(entries), writers * per_writer)
 
 
 class ScanRunnerHydrationTests(unittest.TestCase):
