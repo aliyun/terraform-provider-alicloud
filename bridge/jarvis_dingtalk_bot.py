@@ -400,6 +400,54 @@ def _normalized_failure_subtype(text, subtype, is_error=True):
     return value[:100]
 
 
+def _is_result_contract_failure(failure_subtype):
+    """True when the run reached the end and only failed the result handshake.
+
+    This is the narrow class where work is likely finished and merely unreported —
+    the PR is open, CI is green, and the ticket is blank. Infrastructure failures
+    (model provider/gateway outage, auth, crash, plain execution error) deliberately
+    stay off the work item: they are operator business, retryable, and posting them
+    on a customer-visible ticket is noise. That separation is asserted by
+    ModelProviderFailureRoutingTest and must hold.
+    """
+    subtype = str(failure_subtype or "").strip()
+    return (subtype == "unhandled_comment"
+            or subtype.startswith(("missing_task_result", "invalid_task_result:")))
+
+
+def _terminal_failure_aone_note(ticket, failure_subtype, attempts, release_state,
+                                pr_url=""):
+    """The minimum a human needs when the run died without producing its own reply.
+
+    An execution failure never gets to write the aggregated reply, so the work item —
+    the single source of truth — stayed completely blank while the work itself might
+    be finished and waiting: PR open, CI green, the operator already told by DingTalk
+    to go merge it, and nothing on the ticket to act from. This says only what bridge
+    itself knows for certain; it is explicitly not a conclusion about the work.
+    """
+    try:
+        attempt_count = max(1, int(attempts))
+    except (TypeError, ValueError):
+        attempt_count = 1
+    lines = [
+        "本轮自动化处理未能完成收尾，已按流程释放工单等待接手。",
+        "",
+        "- 失败原因：%s" % str(failure_subtype or "unknown"),
+        "- 尝试次数：%d" % attempt_count,
+        "- 认领释放：%s" % str(release_state or "不适用"),
+    ]
+    if pr_url:
+        lines.append(
+            "- 关联 PR：%s（仍由 bridge 持续看守，CI 与评审评论事件会继续自动处理）" % pr_url)
+    lines += [
+        "",
+        "说明：本轮未产出结构化收尾结果，故本条只同步 bridge 已确知的事实，"
+        "不代表对需求本身的结论。",
+        "下一步：PR 已就绪则可直接 review / merge；否则等待自动重新派发或人工接手。",
+    ]
+    return _aone_event_sanitize_text("\n".join(lines))
+
+
 def _dispatch_model_provider_summary(ticket, project, kind, attempts, release_state):
     """Sanitized, bounded operator notice for a recoverable model-provider outage."""
     try:
@@ -1717,12 +1765,19 @@ class JarvisHandler(AsyncChatbotHandler):
     def _dispatch_failed(self, item_id, res, notify, project, terraform=False,
                          kind="ticket", sid="unknown-session", attempts=None):
         """Retries exhausted / terminal error: record the death cause locally, release the
-        claim (ticket kind only — probe/revisit/wake pass project=None), and report the
-        failure through the caller-selected notice sink. Execution failures NEVER write the
-        Aone work item (neither Terraform nor non-Terraform) — the death cause stays in
-        bot.log and the DingTalk notice sink. Terraform model provider/gateway outages still
-        notify the master by idempotent DingTalk. Every step is best-effort and never
-        raises."""
+        claim (ticket kind only — probe/revisit/wake pass project=None), leave one bounded
+        note on the work item, and report the failure through the caller-selected notice
+        sink. Terraform model provider/gateway outages additionally notify the master by
+        idempotent DingTalk.
+
+        The Aone note carries only what bridge knows for itself (failure subtype, attempts,
+        release state, any watched PR) under its own ``dispatch-terminal:`` event key — the
+        run's aggregated reply stays the run's to write, and a later successful round must
+        not find its ``task-reply`` key already consumed. Withholding it entirely is what
+        left finished-but-unreported work invisible: PR open, CI green, the operator paged
+        to merge, and nothing on the single source of truth to act from.
+
+        Every step is best-effort and never raises."""
         retries = int(os.environ.get("JARVIS_DISPATCH_RETRY_MAX", "2"))
         tail = (res.text or "").strip()
         failure_subtype = _normalized_failure_subtype(
@@ -1770,6 +1825,35 @@ class JarvisHandler(AsyncChatbotHandler):
                         item_id)
             except Exception as e:  # noqa: BLE001
                 log.warning("_dispatch_failed #%s terminal event failed: %s", item_id, e)
+        if (project and str(item_id).isdigit()
+                and kind not in POST_PR_HEADLESS_KINDS
+                and _is_result_contract_failure(failure_subtype)):
+            # Leave the work item something to act from. The run owns the aggregated
+            # reply, but a run that died never wrote one — and the death cause alone
+            # lives in bot.log, where the person holding the ticket cannot see it.
+            # Its own event key, never task-reply: a later successful round must still
+            # be able to post the authoritative reply instead of being deduped away.
+            try:
+                pr_url = ""
+                with _prwatch_lock:
+                    entry = _prwatch_load().get(str(item_id)) or {}
+                pr_url = str(entry.get("pr_url") or "").strip()
+                event_key = "dispatch-terminal:%s:%s" % (
+                    _aone_event_source_part(kind),
+                    _aone_event_source_part(sid or "unknown-session"))
+                if not _aone_event_enqueue(
+                        item_id, project, event_key,
+                        _terminal_failure_aone_note(
+                            item_id, failure_subtype,
+                            attempts or (retries + 1), release_state, pr_url),
+                        allow_non_tf=not terraform,
+                        identity=(PERSONA_PUBLIC_IDENTITY if terraform
+                                  else "jarvis")):
+                    log.error("_dispatch_failed #%s terminal Aone note not "
+                              "durably captured", item_id)
+            except Exception as e:  # noqa: BLE001
+                log.warning("_dispatch_failed #%s terminal Aone note failed: %s",
+                            item_id, e)
         try:
             notify("⚠️ #%s 处理失败（已重试 %d 次）: %s …" % (
                 item_id, retries, failure_subtype))

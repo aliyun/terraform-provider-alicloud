@@ -515,7 +515,15 @@ def _task_result_instructions(item_id, terraform, expected_comment_cursor=None):
         "由 bridge executor 用【%s】身份一次性写出——你【绝不】对本工单跑 bootstrap/claim.sh、"
         "bootstrap/wrap.sh、release、finish，也不直接发工单评论、改状态或打标签。其余内部动作"
         "（查证、建关联需求/CR、worktree 开发等）照常，产物链接写进 reply_body。\n"
-        "结束时【必须】在最后单起一行输出结构化结果供 executor 落账：\n"
+        "⏱️ 本轮是一次性 headless 执行，**没有下一轮**：进程返回即结束，不会有人把你唤起。"
+        "所以子代理必须同步调用（run_in_background=false）并等它返回；"
+        "**绝不能**以「等后台子代理 / 等事件通知 / 稍后继续」结束本轮——那样收尾永远不会执行，"
+        "本轮全部工作都会被判为未完成。远程 ACC、CI 这类长任务不要空等：把已完成的进展与"
+        "跟踪句柄写进 outcome=idle 的结果交回，由 scheduler 在结果就绪后重新派发续跑。\n"
+        "结束时【必须】提交结构化结果供 executor 落账。**首选文件通道**（不受输出长度限制，"
+        "且会当场校验、不合规立刻报错让你在本轮内改）：\n"
+        "  bootstrap/task-result.sh %s --stdin <<'JSON'\n  { …同下面的 JSON… }\n  JSON\n"
+        "然后【仍然】在最后单起一行输出同一份哨兵作为兜底：\n"
         "[[AONE_RESULT:{\"outcome\":\"done|idle|suspend\",\"reply_body\":\"<写给工单的唯一对外回复正文>\","
         "\"target_status\":\"<可选:目标状态>\",\"mr_cr_links\":[\"<可选:MR/CR 链接>\"],"
         "\"resolution\":{\"kind\":\"implemented_and_verified|existing_supported_and_verified|withdrawn|external_handoff|unknown_scope\"},"
@@ -536,7 +544,7 @@ def _task_result_instructions(item_id, terraform, expected_comment_cursor=None):
         "marker；当前公开正文总预算为 %d 字符，mr_cr_links 同样计入。\n"
         "- 内容优先级：结论/状态、需人工判断项、验收结果、关键 MR/CR/报告链接、下一步与责任人。"
         "详细日志放进报告并只保留报告链接；不要在回复里堆叠原始日志。%s"
-        % (item_id, identity, handled_comment_field,
+        % (item_id, identity, item_id, handled_comment_field,
            _AONE_EVENT_WIRE_MAX, _AONE_EVENT_MARKER_LEN,
            _AONE_EVENT_TEXT_MAX, handled_comment_rule)
     )

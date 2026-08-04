@@ -68,8 +68,14 @@ _HANDOFF_FIELDS = ("owner", "source_comment", "tracker")
 # budget is gone. Keep each line short: it is prepended to an already-long prompt.
 TASK_RESULT_CORRECTIONS = {
     "missing": (
-        "上一轮没有输出可解析的 [[AONE_RESULT:{...}]]。请在最后单起一行输出它，"
-        "JSON 后紧跟 ]]，中间不要有空格或换行。"),
+        "上一轮没有输出可解析的 [[AONE_RESULT:{...}]]。首选用 "
+        "`bootstrap/task-result.sh <工单号>` 把结果 JSON 写入文件（它会当场校验并报错），"
+        "再在最后单起一行输出同一份 [[AONE_RESULT:{...}]]，JSON 后紧跟 ]]。"),
+    "awaiting_background_work": (
+        "上一轮以「等后台子代理/事件通知」结束，但 headless 没有下一轮，进程直接退出，"
+        "收尾从未执行。本轮所有子代理必须同步调用（run_in_background=false）并等它返回；"
+        "远程 ACC / CI 这类长任务不要空等，把当前进展与跟踪句柄写进 "
+        "outcome=idle 的结果交回，由 scheduler 在结果就绪时重新派发。"),
     "invalid_outcome": (
         "上一轮 AONE_RESULT 的 outcome 不合法。只接受 done / idle / suspend 三个值。"),
     "empty_reply_body": (
@@ -110,7 +116,7 @@ def retry_correction_for(last_error: Any) -> str:
     subtype = str(raw.get("subtype") or "").strip()
     if subtype == "missing_task_result":
         reason = "missing"
-    elif subtype.startswith("invalid_task_result:"):
+    elif subtype.startswith(("invalid_task_result:", "missing_task_result:")):
         reason = subtype.split(":", 1)[1]
     else:
         return ""
@@ -134,6 +140,9 @@ def _annotate_rejected_result(final: str, reason: str, unhandled: bool) -> str:
     text = str(final or "")
     if unhandled:
         head = "task result rejected: expected comment not handled"
+    elif reason == "awaiting_background_work":
+        head = ("task result missing: run ended awaiting background work "
+                "(headless has no next turn)")
     elif reason in ("", "missing"):
         head = "task result missing: no parseable [[AONE_RESULT:{...}]]"
     else:
@@ -466,14 +475,46 @@ def classify_task_result(text: str):
     """
     clean, payload = _extract_last_json(text, "[[AONE_RESULT:")
     if not isinstance(payload, dict):
-        return clean, None, "missing"
+        return clean, None, _missing_reason(text)
+    result, reason = validate_task_result(payload)
+    return clean, result, reason
+
+
+_AWAIT_WAKEUP_RE = re.compile(
+    r"后台(运行|等待|重跑|推进|轮询)|等待?.{0,8}(完成)?通知|重新唤起|唤起我"
+    r"|等待其事件|轮询中|background poll|等 ?CI|完成后.{0,12}(继续|收口)"
+    r"|(?:我)?等通知")
+
+
+def _missing_reason(text: str) -> str:
+    """Name *why* nothing was emitted when the shape is recognizable.
+
+    A run that ends its turn to await a background subagent / Monitor event / poll
+    wake-up never reaches finalization at all: headless has no next turn, so the
+    process just exits. That is a different defect from forgetting the sentinel and
+    needs a different correction, but both used to surface as bare ``missing`` —
+    which is why the retry replayed the same shape until the budget was gone.
+    """
+    if _AWAIT_WAKEUP_RE.search(text or ""):
+        return "awaiting_background_work"
+    return "missing"
+
+
+def validate_task_result(payload):
+    """Validate one already-parsed result object → ``(result, reason)``.
+
+    Shared by both transports so the file channel and the stdout sentinel cannot
+    drift into two different contracts.
+    """
+    if not isinstance(payload, dict):
+        return None, "missing"
     outcome = str(payload.get("outcome") or "").strip().lower()
     reply = str(payload.get("reply_body") or "").strip()
     wait_for = str(payload.get("suspend_wait_for") or "").strip()
     if outcome not in {"done", "idle", "suspend"}:
-        return clean, None, "invalid_outcome"
+        return None, "invalid_outcome"
     if not reply:
-        return clean, None, "empty_reply_body"
+        return None, "empty_reply_body"
     links = payload.get("mr_cr_links")
     resolution = payload.get("resolution")
     resolution = resolution if isinstance(resolution, dict) else {}
@@ -507,14 +548,14 @@ def classify_task_result(text: str):
     kind = result["resolution"]["kind"]
     if kind == "external_handoff":
         if any(not result["handoff"].get(field) for field in _HANDOFF_FIELDS):
-            return clean, None, "handoff_incomplete"
+            return None, "handoff_incomplete"
         # A tracked external owner is still an open dependency.  Never let a model's
         # ``done`` token turn it into a terminal Aone state.
         result["outcome"] = "idle"
     elif kind == "unknown_scope":
         owner = result["handoff"].get("owner")
         if not owner:
-            return clean, None, "unknown_scope_no_owner"
+            return None, "unknown_scope_no_owner"
         # Unknown responsibility must await a named human decision, even when the
         # model accidentally emitted ``done`` or ``idle``.
         result["outcome"] = "suspend"
@@ -526,8 +567,32 @@ def classify_task_result(text: str):
             result["finish_blocked_reason"] = reason
 
     if result["outcome"] == "suspend" and not result["suspend_wait_for"]:
-        return clean, None, "suspend_no_wait_for"
-    return clean, result, ""
+        return None, "suspend_no_wait_for"
+    return result, ""
+
+
+def classify_task_result_for_item(text: str, item_id):
+    """Resolve this round's result from the file channel, then the stdout sentinel.
+
+    The file wins when it validates: it is the transport that cannot be truncated by
+    the output limit. A present-but-rejected file does not veto the sentinel — the
+    run may have written the file by hand and still printed a good sentinel — but it
+    is logged, because silently preferring one channel over a broken other is how a
+    transport defect stays invisible.
+    """
+    if item_id is not None:
+        from bridge.task_result_file import read_task_result
+        payload, note = read_task_result(item_id)
+        if note:
+            log.warning("task-result: #%s result file unusable (%s); "
+                        "falling back to the stdout sentinel", item_id, note)
+        elif isinstance(payload, dict):
+            result, reason = validate_task_result(payload)
+            if result is not None:
+                return text, result, ""
+            log.warning("task-result: #%s result file rejected (%s); "
+                        "falling back to the stdout sentinel", item_id, reason)
+    return classify_task_result(text)
 
 
 def extract_aone_event(text: str):
@@ -672,6 +737,15 @@ def dispatch_item(
                 attempt.prompt, attempt.request.session_id, attempt.resume,
                 **kwargs)
 
+        expects_result = bool(
+            task_bookend is not None and task_bookend.writes_reply)
+        if expects_result:
+            # Freshness by deletion: whatever exists after the run was written by it.
+            # A leftover file from an earlier round would otherwise be published as
+            # this round's reply — the one failure mode a file channel must not have.
+            from bridge.task_result_file import clear_task_result
+            clear_task_result(item_id)
+
         result = HeadlessRuntime(
             run_attempt, transcript_exists=session_file_exists,
             sleeper=time.sleep, logger=LOG).execute(HeadlessRequest(
@@ -696,7 +770,7 @@ def dispatch_item(
         reject_reason = ""
         if (not result.is_error and task_bookend is not None
                 and task_bookend.writes_reply):
-            _, structured, reject_reason = classify_task_result(final)
+            _, structured, reject_reason = classify_task_result_for_item(final, item_id)
         expected_comment = bool(
             task_bookend is not None
             and task_bookend.expected_comment_cursor is not None)
@@ -730,7 +804,7 @@ def dispatch_item(
             return "done"
         if task_bookend is not None:
             if structured is None and not reject_reason:
-                _, structured, reject_reason = classify_task_result(final)
+                _, structured, reject_reason = classify_task_result_for_item(final, item_id)
             task_result = structured
             unhandled = (
                 task_result is not None
@@ -743,6 +817,11 @@ def dispatch_item(
                 subtype = (
                     "unhandled_comment" if unhandled
                     else "missing_task_result" if reject_reason in ("", "missing")
+                    # Nothing was emitted, but for a knowable reason. Keep the
+                    # missing_ prefix (it is still an absent result, not a refused
+                    # one) and carry the cause so the retry correction can name it.
+                    else "missing_task_result:%s" % reject_reason
+                    if reject_reason == "awaiting_background_work"
                     else "invalid_task_result:%s" % reject_reason)
                 return fail(ClaudeResult(
                     _annotate_rejected_result(final, reject_reason, unhandled),
