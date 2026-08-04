@@ -31,7 +31,7 @@ class HeadlessRequest:
     session_policy: SessionPolicy = SessionPolicy.NEW
     lane: Lane = Lane.DEFAULT
     model: Optional[str] = None
-    timeout_seconds: float = 43200
+    timeout_seconds: float = 86400
     max_retries: int = 2
     retry_backoff_seconds: float = 30
     on_spawn: Optional[Callable[[Any], None]] = None

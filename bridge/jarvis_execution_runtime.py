@@ -677,7 +677,7 @@ def run_claude_buffered(
         _headless_exec_command),
 ) -> ClaudeResult:
     timeout = timeout or int(
-        os.environ.get("JARVIS_DISPATCH_TIMEOUT", "43200"))
+        os.environ.get("JARVIS_DISPATCH_TIMEOUT", "86400"))
     argv = command_builder(
         session_id, terraform=terraform, resume=resume
     ) + ["-p", text, "--output-format", "json"]

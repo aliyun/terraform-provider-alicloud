@@ -95,7 +95,7 @@ class DailyProbeRunner:
                 session_policy=SessionPolicy.NEW,
                 lane=Lane.TERRAFORM,
                 timeout_seconds=_positive_float(
-                    self._environ.get("JARVIS_DISPATCH_TIMEOUT", "43200"),
+                    self._environ.get("JARVIS_DISPATCH_TIMEOUT", "86400"),
                     "JARVIS_DISPATCH_TIMEOUT",
                 ),
                 max_retries=_nonnegative_int(

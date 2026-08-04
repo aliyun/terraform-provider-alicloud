@@ -425,7 +425,7 @@ bootstrap/pr-watch.sh add <ticket> <pr_url> <project>
 
 ### Step 12: Poll PR Comments Until Merge
 
-> **单会话 vs 跨会话（重要）**：单次 headless 会话（~12h）撑不住 PR 从提交到 maintainer 合并的多日
+> **单会话 vs 跨会话（重要）**：单次 headless 会话（~24h）撑不住 PR 从提交到 maintainer 合并的多日
 > 窗口。**本会话只做首轮**：确认 CI 首轮结果、处理已在的评论；随后 Step 11.4 登记 `pr-watch.sh add`，
 > **PR-open 窗口内的 CI 失败修复 / 新评审评论回应 / 合并后收尾由后台 `PrWatchScheduler` 跨会话自动接管**
 > （autonomy.md `pr_ci_fix` / `pr_comment_reply` / 合并后 finish；见 `bridge/jarvis_dingtalk_bot.py`）。

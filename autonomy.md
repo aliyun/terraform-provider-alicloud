@@ -18,7 +18,7 @@
 - **身份约束**：非 Terraform 编排默认 jarvis；Terraform 内部按 terraform-pd/rd/qa 三个 subagent 分工，PD/QA 只返回结构化结果、禁止外写，开发阶段 RD 也不发工单进展。本次主处理 run 最后由 terraform-rd finalizer 聚合回复一次；后续重访/PR/终态失败的重要事件由同一 RD 身份幂等更新，无变化与重复事件静默。terraform-rd 未登录即阻断，不回退 jarvis，旧 pd/qa 身份仅兼容别名到 rd。需使用 chenyi/guozai/linjun/shanye 等个人身份时，必须在 Aone 工单评论中 @对应人并获得明确授权回复后方可使用。
 - **遇阻挂起**：非 Terraform 遇到必须人类确认/决策的点时，先在 Aone 工单评论中 @对应人；Terraform 不发独立阶段评论，由最终 terraform-rd 把问题与 @对象并入本 run 的唯一聚合回复。随后输出 `[[SUSPEND:...]]` 哨兵信号并退出进程。控制面把 Session 置 SUSPENDED；Scheduler 的 `reply` runner 轮询对应的 Aone 评论，检测到人工回复后持久化 wake Task，由 Persistent Worker 重新 lease 续跑。
 - **外化契约（多机安全）**：SUSPEND 挂起或 release 释放**之前**必须先把上下文与代码外化到远端，否则换一台机器无法续跑。非 Terraform 依次执行 `wrap.sh sync` + `github-identity.sh push`，并由当前 fenced Session 把 branch/transcript/result refs 写入控制面；Terraform 主处理 run 不做中途 sync，改由 RD finalizer 的单次 `wrap.sh done` 写入完整上下文，再 push 并完成 Session；后续重要事件由 bridge 独立 ledger 补偿，Aone 与钉钉分通道持久化，semantic source 只落短摘要，正文统一 sanitize，Aone `post_uncertain` 只查远端 marker 不重发。满 8 天无实质进展的重访催办固定发 Aone @ + 钉钉私信，同一 anchor/owner epoch 各通道至多成功一次。缺任一即视为 `unexternalized`，Session 不允许进入完成态。
-- **超时**：单轮执行上限 12 小时（`JARVIS_DISPATCH_TIMEOUT`）；挂起等待上限 14 天。
+- **超时**：单轮执行上限 24 小时（`JARVIS_DISPATCH_TIMEOUT`）；挂起等待上限 14 天。
 
 ---
 
@@ -88,5 +88,5 @@ E → D-临钧，不得由 E 直接执行 Provider PR/CI/ACC 或直接 release/i
 ## 机读策略块
 
 ```json
-{"mode":"supervised","modes":{"supervised":"逐项授权","unattended":"高置信自动","headless":"bridge委派,高自主+挂起唤醒"},"auto":["reply","create_req","tag","create_cr","worktree","prestage","cloudspec_self_close","adhoc_aone","pr_review","wrap_sync","wrap_done","fork_push","pr_ci_fix","pr_comment_reply"],"stop":["release_prod"],"escalate_if":["low_conf","verify_fail","redline","missing_capability","unexternalized"],"fork_push":{"scope":"api-tool-agent/terraform-provider-alicloud PR-head branches only","force":true,"via":"bootstrap/github-identity.sh push","preconditions":["target is own fork PR-head, never upstream aliyun/* or jarvis master","ACC remote tests PASS","only human gate is maintainer merge = release_prod"],"do_not":"SUSPEND/escalate/wait-for-ticket-approval when preconditions hold"},"headless":{"dispatch_timeout":43200,"suspend_expire":1209600,"suspend_signal":"[[SUSPEND:{...}]]"}}
+{"mode":"supervised","modes":{"supervised":"逐项授权","unattended":"高置信自动","headless":"bridge委派,高自主+挂起唤醒"},"auto":["reply","create_req","tag","create_cr","worktree","prestage","cloudspec_self_close","adhoc_aone","pr_review","wrap_sync","wrap_done","fork_push","pr_ci_fix","pr_comment_reply"],"stop":["release_prod"],"escalate_if":["low_conf","verify_fail","redline","missing_capability","unexternalized"],"fork_push":{"scope":"api-tool-agent/terraform-provider-alicloud PR-head branches only","force":true,"via":"bootstrap/github-identity.sh push","preconditions":["target is own fork PR-head, never upstream aliyun/* or jarvis master","ACC remote tests PASS","only human gate is maintainer merge = release_prod"],"do_not":"SUSPEND/escalate/wait-for-ticket-approval when preconditions hold"},"headless":{"dispatch_timeout":86400,"suspend_expire":1209600,"suspend_signal":"[[SUSPEND:{...}]]"}}
 ```
