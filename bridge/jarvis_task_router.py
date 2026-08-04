@@ -182,7 +182,7 @@ class WakePersistence:
         self,
         *,
         execution_router: Any,
-        result_instructions: Callable[[str, bool], str],
+        result_instructions: Callable[[str, bool, Optional[str]], str],
         policy_revision: str,
         title_for: Callable[[str], str] | None = None,
         project_for: Callable[[str], str] | None = None,
@@ -206,9 +206,6 @@ class WakePersistence:
             for comment in comments)
         terraform = bool(task.get("terraform"))
         project = str(task.get("project") or self._project_for(aone_id) or "")
-        prompt = (
-            "工单 #%s 收到新回复:\n%s\n\n请继续处理。\n\n%s"
-            % (aone_id, reply_text, self._result_instructions(aone_id, terraform)))
         comment_ids = []
         for comment in comments:
             try:
@@ -216,6 +213,22 @@ class WakePersistence:
             except (AttributeError, TypeError, ValueError):
                 pass
         cursor = max(comment_ids) if comment_ids else None
+        # Scope the wake round to the comment that triggered it, exactly like the scan
+        # terminal-comment handoff does. The executor turns expectedCommentCursor into
+        # TaskAoneBookend.expected_comment_cursor, which (a) suffixes the reply
+        # idempotency key and (b) arms handles_expected_comment. Omitting it collapsed
+        # the key back to task-reply:<task>:<generation> — already consumed by the first
+        # cursor-less scan round — so _aone_event_publish_digest short-circuited on the
+        # posted ledger id and every wake reply after the first was dropped with no
+        # comment, no pending record and no error, while the Task still suspended
+        # WAITING_FOR_HUMAN. The prompt carries the same cursor so the run echoes it back.
+        cursor_text = str(cursor) if cursor is not None else None
+        cursor_scope = (
+            {"expectedCommentCursor": cursor_text} if cursor_text else {})
+        prompt = (
+            "工单 #%s 收到新回复:\n%s\n\n请继续处理。\n\n%s"
+            % (aone_id, reply_text,
+               self._result_instructions(aone_id, terraform, cursor_text)))
         revision = (
             "comment:%s" % cursor
             if cursor is not None
@@ -238,6 +251,7 @@ class WakePersistence:
             terraform=terraform,
             target=task["target"],
             targetType=task["target_type"],
+            **cursor_scope,
         )
         # Advance the wake with a new comment:<id> desired revision — that revision IS
         # the wake signal the control plane requires to move a suspended Session to

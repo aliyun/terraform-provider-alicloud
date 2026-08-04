@@ -172,9 +172,14 @@ class WakeResumeEnvelopeTests(unittest.TestCase):
                 captured["envelope"] = envelope
                 return EnqueueResult(True, "ok")
 
+        def _instructions(aone_id, terraform, expected_comment_cursor=None):
+            captured["instructions_args"] = (
+                aone_id, terraform, expected_comment_cursor)
+            return ""
+
         wake = WakePersistence(
             execution_router=_Router(),
-            result_instructions=lambda _aone_id, _terraform: "",
+            result_instructions=_instructions,
             policy_revision="terraform-rd-single-writer-v6",
         )
         return wake, captured
@@ -209,6 +214,46 @@ class WakeResumeEnvelopeTests(unittest.TestCase):
         # Revision ADVANCED to comment:<id> (the wake signal), not the stale pr-ci rev.
         self.assertTrue(env.desired_revision.startswith("comment:125726050"))
         self.assertNotIn("pr-ci", env.desired_revision)
+
+    def test_wake_scopes_reply_key_to_triggering_comment(self):
+        """A wake round must carry expectedCommentCursor.
+
+        Without it TaskAoneBookend._scope_event_key drops the cursor suffix and the
+        reply key collapses to ``task-reply:<task>:<generation>`` — the key the first
+        (cursor-less scan) round already posted under. _aone_event_publish_digest then
+        short-circuits on that ledger id and returns True without sending anything, so
+        commit() treats the reply as delivered and suspends: no comment, no pending
+        ledger record, no error, while the Task reports WAITING_FOR_HUMAN. The prompt
+        must demand the same cursor back, or handles_expected_comment stays a no-op on
+        wake rounds too.
+        """
+        wake, captured = self._wake()
+        ok = wake.enqueue(
+            "85021172",
+            {"project": "1086837", "target": "grp", "target_type": "group",
+             "session_id": "rt-1338", "terraform": True},
+            [{"id": 125909562, "author": "辰羿", "content": "你再试试"},
+             {"id": 125925549, "author": "杉也", "content": "再试一下"}],
+        )
+        self.assertTrue(ok)
+        env = captured["envelope"]
+        self.assertEqual(env.payload["expectedCommentCursor"], "125925549")
+        self.assertEqual(captured["instructions_args"],
+                         ("85021172", True, "125925549"))
+
+    def test_wake_without_numeric_cursor_omits_scope(self):
+        """No numeric comment id → no cursor to scope with; stay on the old shape
+        rather than writing a null field the executor would have to special-case."""
+        wake, captured = self._wake()
+        ok = wake.enqueue(
+            "123",
+            {"project": "1", "target": "bot", "target_type": "broadcast",
+             "session_id": "rt-1"},
+            [{"id": "not-numeric", "author": "过载", "content": "ok"}],
+        )
+        self.assertTrue(ok)
+        self.assertNotIn("expectedCommentCursor", captured["envelope"].payload)
+        self.assertEqual(captured["instructions_args"], ("123", False, None))
 
     def test_legacy_wake_without_identity_falls_back(self):
         wake, captured = self._wake()

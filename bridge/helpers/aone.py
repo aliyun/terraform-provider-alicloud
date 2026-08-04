@@ -596,6 +596,11 @@ def _aone_event_publish_digest(ticket, project, event_digest, text,
     with _aone_event_lock:
         ledger = _aone_event_load()
         if ledger_id in ledger["posted"]:
+            # Say so. A caller that reuses a key already consumed by an earlier round
+            # gets "delivered" back and commits/suspends on it, so a key-scoping defect
+            # otherwise costs a human days of silence with nothing in the log to find.
+            log.info("aone-event: #%s reused already-posted %s; nothing sent",
+                     ticket, ledger_id)
             return True
         if ledger_id in _aone_event_inflight:
             return False
