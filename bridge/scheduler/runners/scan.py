@@ -187,27 +187,47 @@ class ScanRunner(AoneQueryMixin):
         a1-server 对 workitem.tracker 里的数字人 WORKER id 解析会间歇性失败
         (open-jarvis WORKER_1782379562571 解析不了)，导致整个 tracker 源查询失败、
         漏掉只靠抄送发现的单。ak.issue.member 用同一组 WORKER id 却能稳定解析，
-        且参与者天然 ⊇ 抄送范围，补上 tracker 解析失败时漏掉的无标签单。"""
+        且参与者天然 ⊇ 抄送范围，补上 tracker 解析失败时漏掉的无标签单。
+
+        返回 ``(filter_expr, excluded_statuses)``：状态排除**不进 filter_expr**，由调用方
+        在本地按 ``excluded_statuses`` 过滤。Aone 的 workitem list 每多一个
+        ``AND NOT status=`` 子句约多花 3 秒（同池同页实测 0/1/4/8/14 子句 =
+        4/5/15/27/38s），而每轮 5 池 × 5 源 = 25 个并发查询打同一接口，会把单条 35s 的
+        查询顶过 ``_a1_list`` 的 90s/页超时——该池当轮零行返回，池内所有工单既不判定也
+        不告警（2026-08-04 tf_customer 连续多轮全盲即此）。行里的 ``status`` 就是显示名
+        （``Fixed`` / ``已发布``），与 pools.json 的 exclude_status 同形，本地按集合过滤
+        与服务端等价且零额外调用。"""
         worker_csv = ",".join(sorted(DIGITAL_WORKER_IDS))
-        excl = "".join(" AND NOT status=%s" % s for s in (exclude_status or []))
+        excl = frozenset(exclude_status or ())
         merged = _normalize_pr_merged_status(pr_merged_status)
-        done_excl = " AND NOT status=%s" % merged["name"] if merged else ""
+        # done watch 必须看得见处于终态的 done 单，否则发现不了「完成后的人工追评」，
+        # 所以它只排 pr-merged 一个状态，不套用 excl。
+        done_excl = frozenset({merged["name"]}) if merged else frozenset()
         return (
-            "assignedTo=%s%s" % (worker_csv, excl),
-            "workitem.tracker=%s%s" % (worker_csv, excl),
-            "ak.issue.member=%s%s" % (worker_csv, excl),
-            "tag=jarvis-idle%s" % excl,
-            "tag=jarvis-done%s" % done_excl,
+            ("assignedTo=%s" % worker_csv, excl),
+            ("workitem.tracker=%s" % worker_csv, excl),
+            ("ak.issue.member=%s" % worker_csv, excl),
+            ("tag=jarvis-idle", excl),
+            ("tag=jarvis-done", done_excl),
         )
 
     def _query_pool_union(self, key, project, exclude_status,
                           pr_merged_status=None):
         """一个池的 assignee∪tracker∪participants∪idle∪done 并集（按 id 去重）。五源查询
-        并行发出（各自 a1 调用 best-effort），去重时 assignee 源优先。"""
-        filters = self._union_filters(exclude_status, pr_merged_status)
-        with ThreadPoolExecutor(max_workers=len(filters),
+        并行发出（各自 a1 调用 best-effort），去重时 assignee 源优先。
+
+        每源的状态排除在合并**之前**逐源做完。一条终态 done 单会被 assignee 源取到又
+        丢弃，却必须仍能经 done 源进入并集——丢弃因此绝不能触碰去重表。先过滤再合并让
+        这一点是结构性的：下面的去重循环不需要知道过滤存在。"""
+        specs = self._union_filters(exclude_status, pr_merged_status)
+        with ThreadPoolExecutor(max_workers=len(specs),
                                 thread_name_prefix="aone-union") as ex:
-            per_filter = list(ex.map(lambda f: self._a1_list(project, f), filters))
+            per_filter = list(ex.map(lambda s: self._a1_list(project, s[0]), specs))
+        per_filter = [
+            [it for it in src
+             if str(it.get("status") or "").strip() not in excluded]
+            for (_expr, excluded), src in zip(specs, per_filter)
+        ]
         rows = {}
         for src in per_filter:  # 顺序 = assignee→tracker→idle→done，去重保序
             for it in src:

@@ -845,7 +845,8 @@ class SchedulerRunnerTest(unittest.TestCase):
         def fake_a1_list(project, flt):
             seen_filters.append(flt)
             if flt.startswith("assignedTo="):
-                return [{"id": "1", "title": "指派单"}]
+                return [{"id": "1", "title": "指派单"},
+                        {"id": "9", "title": "已关单", "status": "Closed"}]
             if flt.startswith("workitem.tracker="):
                 return [{"id": "1", "title": "重复(抄送同一单)"},
                         {"id": "2", "title": "抄送数字人单"}]
@@ -856,7 +857,10 @@ class SchedulerRunnerTest(unittest.TestCase):
             if flt.startswith("tag=jarvis-idle"):
                 return [{"id": "3", "title": "idle 单"}]
             if flt.startswith("tag=jarvis-done"):
-                return [{"id": "4", "title": "done 监听单"}]
+                # #4 是终态 done 单：done 监听源必须留住它，否则发现不了完成后的
+                # 人工追评。#10 命中配置的合入状态，只有这一个该被 done 源排除。
+                return [{"id": "4", "title": "done 监听单", "status": "Fixed"},
+                        {"id": "10", "title": "已合入主线单", "status": "已合入主线"}]
             return []
 
         s._a1_list = fake_a1_list
@@ -866,20 +870,19 @@ class SchedulerRunnerTest(unittest.TestCase):
             "tf_customer", "1086837", ["Closed", "已发布", "已合入主线"],
             merged_status)
         ids = sorted(r["id"] for r in rows)
-        self.assertEqual(ids, ["1", "2", "3", "4"], "五源并集按 id 去重（#1 在三源中重复只保留一次）")
+        self.assertEqual(
+            ids, ["1", "2", "3", "4"],
+            "五源并集按 id 去重（#1 在三源中重复只保留一次）；#9 命中普通源的 "
+            "exclude_status 被丢弃；#10 命中 done 源的合入状态被丢弃；#4 虽是终态"
+            "但 done 源只排合入状态，必须留下")
         # 五源查询并行发出 → seen_filters 顺序不定，按集合断言。
         worker_csv = ",".join(sorted(aone.DIGITAL_WORKER_IDS))
         self.assertEqual(len(seen_filters), 5, "assignee/tracker/participants/idle/done 五源各查一次")
-        # 每源都叠加 pools.json 状态排除
-        ordinary = [f for f in seen_filters if not f.startswith("tag=jarvis-done")]
-        self.assertTrue(all("NOT status=Closed" in f and "NOT status=已发布" in f
-                            and "NOT status=已合入主线" in f
-                            for f in ordinary),
-                        "普通三源过滤须叠加 exclude_status")
-        done_filter = next(f for f in seen_filters if f.startswith("tag=jarvis-done"))
-        self.assertIn("NOT status=已合入主线", done_filter)
-        self.assertNotIn("NOT status=Closed", done_filter,
-                         "done 监听源只能额外排除配置的合入状态")
+        # 状态排除已下沉到客户端：每个 AND NOT status= 子句约让 Aone list 多花 3 秒，
+        # 25 源并发会顶穿 _a1_list 的 90s/页超时并让整池当轮零行返回，所以查询串里
+        # 不再带状态子句，排除改在合并前逐源执行（结果集等价）。
+        self.assertTrue(all("NOT status=" not in f for f in seen_filters),
+                        "状态排除不得再进查询串")
         # 数字人 id 单一真源
         self.assertTrue(any("assignedTo=%s" % worker_csv in f for f in seen_filters))
         self.assertTrue(any("workitem.tracker=%s" % worker_csv in f for f in seen_filters))
