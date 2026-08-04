@@ -94,6 +94,15 @@ def _scalar(value: Any) -> str:
     return str(value or "").strip()
 
 
+def _is_project_permission_failure(error: object) -> bool:
+    """True when a batch list failed because the whole project is unreadable.
+
+    Keyed on the structured marker rather than the human-readable copy, which
+    changes, or a bare ``403``, which can appear inside a work item id.
+    """
+    return "workitem list failed (403)" in str(error or "")
+
+
 def _workitem_id(value: Mapping[str, Any]) -> str:
     return _scalar(value.get("identifier") or value.get("id")
                    or value.get("aoneId"))
@@ -912,6 +921,18 @@ class AoneWorkitemOwnershipRunner:
                     indexed = self._fetch_project_batch(
                         project, [item["aoneId"] for item in batch])
                 except Exception as exc:  # noqa: BLE001
+                    if _is_project_permission_failure(exc):
+                        # A per-item read cannot succeed where the project-level
+                        # read was denied, so retrying each id only costs time.
+                        # The entries are deliberately left unresolved rather
+                        # than dropped: _reuse_or_fail still has to choose
+                        # between a cached reuse and SnapshotIncomplete, because
+                        # this runner never publishes a partial inventory.
+                        self._log.warning(
+                            "aone-workitem-ownership: project unreadable, "
+                            "skipping per-item fallback project=%s items=%d",
+                            project, len(batch))
+                        continue
                     for candidate in batch:
                         detail_reads.append((
                             candidate, None, self._cached(cache, candidate)))

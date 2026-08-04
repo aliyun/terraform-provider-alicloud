@@ -895,3 +895,44 @@ class CandidateFilterTest(unittest.TestCase):
         projects = type(runner)._registered_projects(runner)
         self.assertTrue(projects)
         self.assertIn("528766", projects)
+
+
+class ProjectPermissionFallbackTest(unittest.TestCase):
+    """Classify a project-scoped denial so its per-item retries are skipped.
+
+    Per-item detail reads cannot succeed when the whole project is unreadable,
+    so retrying each one only burns time. The entries are still left unresolved
+    on purpose: this runner never publishes a partial inventory, so they must
+    still reach the reuse-or-fail decision.
+    """
+
+    def test_project_level_403_classified_as_permission_failure(self):
+        self.assertTrue(ownership._is_project_permission_failure(
+            "a1 list failed rc=1: Error: workitem list failed (403): "
+            "您不是项目成员，没有项目权限，因此不能访问该项目。"))
+
+    def test_bare_403_inside_an_id_is_not_a_permission_failure(self):
+        self.assertFalse(ownership._is_project_permission_failure(
+            "Error: workitem get failed (404): 工作项 403403 不存在"))
+
+    def test_other_batch_failure_is_not_a_permission_failure(self):
+        self.assertFalse(ownership._is_project_permission_failure("timed out"))
+
+    def test_none_is_not_a_permission_failure(self):
+        self.assertFalse(ownership._is_project_permission_failure(None))
+
+    def test_exception_instance_is_accepted(self):
+        self.assertTrue(ownership._is_project_permission_failure(
+            RuntimeError("Error: workitem list failed (403): denied")))
+
+    def test_generic_http_403_still_falls_back(self):
+        """The skip is intentionally narrow.
+
+        Only the verified project-membership denial is treated as unrecoverable
+        per item. A bare transport-level 403 could be a gateway hiccup, so it
+        keeps the old per-item retry rather than silently giving up on the
+        project -- which is why the existing batch-403 fallback test, which
+        raises exactly this shape, still exercises the fallback path.
+        """
+        self.assertFalse(ownership._is_project_permission_failure(
+            "a1 list failed rc=1: HTTP 403"))
