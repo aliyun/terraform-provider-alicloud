@@ -64,8 +64,27 @@ class SnapshotIncomplete(RuntimeError):
     """The candidate universe could not be represented without data loss."""
 
 
-class AoneReadForbidden(SnapshotIncomplete):
+class AoneItemUnreadable(SnapshotIncomplete):
+    """One item cannot be represented from Aone, and retrying will not change that.
+
+    The snapshot is a full replace, so refusing to publish a partial inventory is
+    correct: a partial replace would delete items. That makes a single item the
+    runner can never read able to hold the whole projection hostage, which is why
+    these get a placeholder instead of failing the pass.
+    """
+
+
+class AoneReadForbidden(AoneItemUnreadable):
     """Aone explicitly denied detail visibility for one historical item."""
+
+
+class AoneItemMissing(AoneItemUnreadable):
+    """Aone reports the work item does not exist.
+
+    Strictly more final than a denial: a 403 could still be resolved by granting
+    permission, while a 404 means there is nothing left to read. Treating it as
+    fatal while treating 403 as recoverable had the severity ordering backwards.
+    """
 
 
 def _positive_int(environ: Mapping[str, str], name: str, default: int,
@@ -598,6 +617,12 @@ class AoneWorkitemOwnershipRunner:
                          or "no read permission" in diagnostic.lower())):
                 raise AoneReadForbidden(
                     "Aone detail read forbidden: %s" % diagnostic.strip()[:200])
+            # Keyed on the structured marker, not a bare "404", which can appear
+            # inside a work item id. Same shape as the 403 guard above.
+            if (args[:3] == ["project", "workitem", "get"]
+                    and re.search(r"workitem get failed \(404\)", diagnostic)):
+                raise AoneItemMissing(
+                    "Aone item does not exist: %s" % diagnostic.strip()[:200])
             raise SnapshotIncomplete(
                 "a1 %s failed rc=%d: %s"
                 % (args[2] if len(args) > 2 else "read", result.returncode,
@@ -989,7 +1014,7 @@ class AoneWorkitemOwnershipRunner:
                         candidate, detail, source_modified)
                     comment_reads.append(
                         (candidate, parsed, aliases, cached))
-                except AoneReadForbidden as exc:
+                except AoneItemUnreadable as exc:
                     if cached is not None:
                         self._reuse_or_fail(
                             candidate=candidate, cached=cached, error=exc,
