@@ -216,6 +216,42 @@ class OwnerHealthRunnerTest(unittest.TestCase):
             "84550003", self.client.point_read_aone_ids,
             "应在 point-read 之前就跳过，不浪费一次 Task 查询")
 
+    def test_terminal_source_skip_logs_once_not_per_entry(self):
+        """每个终态候选一行 info 会盖过它省下的告警。
+
+        skip 分支对**每个**终态源候选都命中，而它消掉的噪声只是其中
+        RECOVERY_REQUIRED 的子集。线上实测 161 行/轮（300s 间隔 ≈ 1900 行/小时），
+        而被替掉的告警只有约 124 行/小时——净增约 15 倍。聚合成一行保留规模可观测性，
+        明细降到 debug 供定位单条时取回。
+        """
+        self.client.source_status = "已完成"
+        self.runner.logger = mock.Mock()
+
+        self.runner.collect_blockers()
+
+        summaries = [call for call in self.runner.logger.info.call_args_list
+                     if "terminal-source" in str(call)]
+        self.assertEqual(len(summaries), 1, "每轮只应有一行汇总")
+        self.assertIn(1, summaries[0].args, "汇总必须带被跳过的条数")
+        self.assertFalse(
+            any("skip terminal source aone=" in str(call)
+                for call in self.runner.logger.info.call_args_list),
+            "逐条明细不得留在 info")
+        self.assertTrue(
+            any("skip terminal source aone=" in str(call)
+                for call in self.runner.logger.debug.call_args_list),
+            "逐条明细应仍可通过 debug 取回")
+
+    def test_no_summary_line_when_nothing_was_skipped(self):
+        self.client.source_status = "Open"
+        self.runner.logger = mock.Mock()
+
+        self.runner.collect_blockers()
+
+        self.assertFalse(
+            any("terminal-source" in str(call)
+                for call in self.runner.logger.info.call_args_list))
+
     def test_every_terminal_status_is_skipped(self):
         for status in sorted(owner_health.TERMINAL_STATUSES):
             with self.subTest(status=status):

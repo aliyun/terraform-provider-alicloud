@@ -218,6 +218,7 @@ class OwnerHealthRunner:
 
     def _recovery_blockers(self) -> dict[int, dict[str, Any]]:
         blockers: dict[int, dict[str, Any]] = {}
+        terminal_skipped = 0
         for entry in self._paged("list_source_status_candidates"):
             # list_source_status_candidates only returns Aone source status (4 fields:
             # taskId/sourceProjectKey/aoneId/sourceStatus), not the Task control-plane
@@ -236,7 +237,16 @@ class OwnerHealthRunner:
             # human cannot act on. The work is done anyway — the source item is
             # closed. Skip before the point-read: no action, no page, no cost.
             if str(entry.get("sourceStatus") or "").strip() in TERMINAL_STATUSES:
-                self.logger.info(
+                # Counted, not logged per entry. This branch fires for *every*
+                # terminal-source candidate, while the noise it removes is only the
+                # RECOVERY_REQUIRED subset the point-read below filters to. Measured
+                # in production: 161 lines per pass ≈ 1900/hour at the 300s interval,
+                # against the ~124 alert lines/hour the skip saves — the per-entry
+                # line cost more log volume than the alert it replaced. One summary
+                # line keeps the magnitude observable; per-entry detail stays at
+                # debug for when a specific id needs explaining.
+                terminal_skipped += 1
+                self.logger.debug(
                     "owner-health skip terminal source aone=%s status=%s",
                     aone_id, str(entry.get("sourceStatus") or "").strip())
                 continue
@@ -329,6 +339,10 @@ class OwnerHealthRunner:
                 "stale_policy": stale_policy,
             }
             blockers[task_id] = blocker
+        if terminal_skipped:
+            self.logger.info(
+                "owner-health skipped %d terminal-source candidate(s) before point-read",
+                terminal_skipped)
         return blockers
 
     def collect_blockers(self) -> dict[int, dict[str, Any]]:
