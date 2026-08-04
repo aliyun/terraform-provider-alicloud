@@ -371,12 +371,12 @@ func resourceAliCloudRamRoleDelete(d *schema.ResourceData, meta interface{}) err
 			if IsExpectedErrors(err, []string{"EntityNotExist.Role"}) || NotFoundError(err) {
 				return nil
 			}
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), listAction, AlibabaCloudSdkGoERROR)
 		}
 
 		policyResp, err := jsonpath.Get("$.Policies.Policy", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Policies.Policy", response)
+			return WrapErrorf(err, FailedGetAttributeMsg, listAction, "$.Policies.Policy", response)
 		}
 
 		// Loop and remove the Policies from the Role
@@ -389,6 +389,7 @@ func resourceAliCloudRamRoleDelete(d *schema.ResourceData, meta interface{}) err
 					"PolicyType": v.(map[string]interface{})["PolicyType"],
 				}
 
+				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 					response, err = client.RpcPost("Ram", "2015-05-01", policyAction, nil, policyRequest, true)
 					if err != nil {
@@ -400,13 +401,13 @@ func resourceAliCloudRamRoleDelete(d *schema.ResourceData, meta interface{}) err
 					}
 					return nil
 				})
-				addDebug(action, response, policyRequest)
+				addDebug(policyAction, response, policyRequest)
 
 				if err != nil {
-					if IsExpectedErrors(err, []string{"EntityNotExist"}) || NotFoundError(err) {
-						return nil
+					if IsExpectedErrors(err, []string{"EntityNotExist", "EntityNotExist.Role", "EntityNotExist.Role.Policy", "EntityNotExist.Policy"}) || NotFoundError(err) {
+						continue
 					}
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), policyAction, AlibabaCloudSdkGoERROR)
 				}
 			}
 

@@ -395,12 +395,16 @@ func resourceAliCloudRamPolicyDelete(d *schema.ResourceData, meta interface{}) e
 		addDebug(listAction, response, listRequest)
 
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			if IsExpectedErrors(err, []string{"EntityNotExist.Policy"}) || NotFoundError(err) {
+				return nil
+			}
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), listAction, AlibabaCloudSdkGoERROR)
 		}
 
-		userResp, err := jsonpath.Get("$.Users.User", response)
+		listResponse := response
+		userResp, err := jsonpath.Get("$.Users.User", listResponse)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Users.User", response)
+			return WrapErrorf(err, FailedGetAttributeMsg, listAction, "$.Users.User", listResponse)
 		}
 		if userResp != nil && len(userResp.([]interface{})) > 0 {
 			for _, v := range userResp.([]interface{}) {
@@ -422,20 +426,20 @@ func resourceAliCloudRamPolicyDelete(d *schema.ResourceData, meta interface{}) e
 					}
 					return nil
 				})
-				addDebug(action, response, userRequest)
+				addDebug(userAction, response, userRequest)
 
 				if err != nil {
-					if IsExpectedErrors(err, []string{"EntityNotExist"}) || NotFoundError(err) {
-						return nil
+					if IsExpectedErrors(err, []string{"EntityNotExist", "EntityNotExist.User", "EntityNotExist.User.Policy", "EntityNotExist.Policy"}) || NotFoundError(err) {
+						continue
 					}
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), userAction, AlibabaCloudSdkGoERROR)
 				}
 			}
 		}
 
-		groupResp, err := jsonpath.Get("$.Groups.Group", response)
+		groupResp, err := jsonpath.Get("$.Groups.Group", listResponse)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Groups.Group", response)
+			return WrapErrorf(err, FailedGetAttributeMsg, listAction, "$.Groups.Group", listResponse)
 		}
 		if groupResp != nil && len(groupResp.([]interface{})) > 0 {
 			for _, v := range groupResp.([]interface{}) {
@@ -457,20 +461,20 @@ func resourceAliCloudRamPolicyDelete(d *schema.ResourceData, meta interface{}) e
 					}
 					return nil
 				})
-				addDebug(action, response, groupRequest)
+				addDebug(groupAction, response, groupRequest)
 
 				if err != nil {
-					if IsExpectedErrors(err, []string{"EntityNotExist"}) || NotFoundError(err) {
-						return nil
+					if IsExpectedErrors(err, []string{"EntityNotExist", "EntityNotExist.Group", "EntityNotExist.Group.Policy", "EntityNotExist.Policy"}) || NotFoundError(err) {
+						continue
 					}
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), groupAction, AlibabaCloudSdkGoERROR)
 				}
 			}
 		}
 
-		roleResp, err := jsonpath.Get("$.Roles.Role", response)
+		roleResp, err := jsonpath.Get("$.Roles.Role", listResponse)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Roles.Role", response)
+			return WrapErrorf(err, FailedGetAttributeMsg, listAction, "$.Roles.Role", listResponse)
 		}
 		if roleResp != nil && len(roleResp.([]interface{})) > 0 {
 			for _, v := range roleResp.([]interface{}) {
@@ -492,13 +496,13 @@ func resourceAliCloudRamPolicyDelete(d *schema.ResourceData, meta interface{}) e
 					}
 					return nil
 				})
-				addDebug(action, response, roleRequest)
+				addDebug(roleAction, response, roleRequest)
 
 				if err != nil {
-					if IsExpectedErrors(err, []string{"EntityNotExist"}) || NotFoundError(err) {
-						return nil
+					if IsExpectedErrors(err, []string{"EntityNotExist", "EntityNotExist.Role", "EntityNotExist.Role.Policy", "EntityNotExist.Policy"}) || NotFoundError(err) {
+						continue
 					}
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), roleAction, AlibabaCloudSdkGoERROR)
 				}
 			}
 		}
@@ -520,23 +524,24 @@ func resourceAliCloudRamPolicyDelete(d *schema.ResourceData, meta interface{}) e
 			}
 			return nil
 		})
-		addDebug(action, response, listVersionsRequest)
+		addDebug(listVersionsAction, response, listVersionsRequest)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"EntityNotExist.Policy"}) || NotFoundError(err) {
 				return nil
 			}
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), listVersionsAction, AlibabaCloudSdkGoERROR)
 		}
 
 		versionsResp, er := jsonpath.Get("$.PolicyVersions.PolicyVersion", response)
 		if er != nil {
-			return WrapErrorf(er, FailedGetAttributeMsg, action, "$.PolicyVersions.PolicyVersion", response)
+			return WrapErrorf(er, FailedGetAttributeMsg, listVersionsAction, "$.PolicyVersions.PolicyVersion", response)
 		}
 		// More than one means there are other versions besides the default version
 		if versionsResp != nil && len(versionsResp.([]interface{})) > 1 {
 			for _, v := range versionsResp.([]interface{}) {
-				if !v.(map[string]interface{})["IsDefaultVersion"].(bool) {
+				isDefaultVersion, _ := v.(map[string]interface{})["IsDefaultVersion"].(bool)
+				if !isDefaultVersion {
 					versionAction := "DeletePolicyVersion"
 					versionRequest := map[string]interface{}{
 						"PolicyName": d.Id(),
@@ -556,6 +561,13 @@ func resourceAliCloudRamPolicyDelete(d *schema.ResourceData, meta interface{}) e
 						return nil
 					})
 					addDebug(versionAction, response, versionRequest)
+
+					if err != nil {
+						if IsExpectedErrors(err, []string{"EntityNotExist.Policy", "EntityNotExist.Policy.Version"}) || NotFoundError(err) {
+							continue
+						}
+						return WrapErrorf(err, DefaultErrorMsg, d.Id(), versionAction, AlibabaCloudSdkGoERROR)
+					}
 				}
 			}
 		}
