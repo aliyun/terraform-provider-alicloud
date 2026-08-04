@@ -15,7 +15,9 @@ import threading
 import time
 from typing import Any, Mapping
 
-from bridge.jarvis_task_client import ControlPlaneClient
+from bridge.jarvis_task_client import (
+    ControlPlaneClient, DEFAULT_CONTROL_PLANE_BASE_URL,
+)
 from bridge.scheduler.jobs import JOBS, runner_key
 from bridge.scheduler.runners import build_runners
 from bridge.scheduler.service import SCHEDULER_WORKER_KEY, SchedulerService
@@ -36,8 +38,7 @@ def _task_client_from_env(
     env = os.environ if environ is None else environ
     base_url = (
         env.get("JARVIS_CONTROL_PLANE_BASE_URL", "").strip()
-        or env.get("JARVIS_HTML_REPORT_BASE_URL", "").strip()
-        or "https://pre-agent.aliyun-inc.com"
+        or DEFAULT_CONTROL_PLANE_BASE_URL
     )
     token = (
         env.get("JARVIS_CONTROL_PLANE_TOKEN", "").strip()

@@ -8,7 +8,7 @@ multiple hosts by splitting the bridge into two roles.
 ```
                   ┌────────────────────────────────────────────────┐
                   │  Control plane (remote HTTP)                    │
-                  │  https://pre-agent.aliyun-inc.com               │
+                  │  https://agent.aliyun-inc.com                   │
                   │  Task / Session / Worker / fence / operations   │
                   └────────────────────────────────────────────────┘
                        ▲          ▲          ▲          ▲
@@ -467,7 +467,7 @@ fails:
 - Confirm the worker host can reach `${JARVIS_CONTROL_PLANE_BASE_URL}` (from
   `bootstrap/.env` or `bridge/jarvis.env`)
 - Confirm `JARVIS_CONTROL_PLANE_TOKEN` is populated and current
-- Check `curl -I https://pre-agent.aliyun-inc.com/` returns 200/301
+- Check `curl -I https://agent.aliyun-inc.com/` returns 200/301
 
 ### Claude binary geo-blocked
 

@@ -49,6 +49,7 @@ from a1_command_guard import pretool_a1_block_reason  # noqa: E402
 from jarvis_persistence_executor import _default_boot_id, make_worker_key  # noqa: E402
 from jarvis_task_client import (  # noqa: E402
     ControlPlaneClient,
+    DEFAULT_CONTROL_PLANE_BASE_URL,
     ControlPlaneConflict,
     ControlPlaneError,
     ControlPlaneRejected,
@@ -187,8 +188,7 @@ class StateStore:
 
 def _client(*, timeout_override: Optional[float] = None) -> ControlPlaneClient:
     base_url = (os.environ.get("JARVIS_CONTROL_PLANE_BASE_URL", "").strip()
-                or os.environ.get("JARVIS_HTML_REPORT_BASE_URL", "").strip()
-                or "https://pre-agent.aliyun-inc.com")
+                or DEFAULT_CONTROL_PLANE_BASE_URL)
     token = (os.environ.get("JARVIS_CONTROL_PLANE_TOKEN", "").strip()
              or os.environ.get("JARVIS_HTML_REPORT_TOKEN", "").strip())
     timeout = float(os.environ.get("JARVIS_CONTROL_PLANE_TIMEOUT", "10"))

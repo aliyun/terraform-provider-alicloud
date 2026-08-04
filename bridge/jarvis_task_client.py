@@ -182,6 +182,13 @@ class TaskEnvelope:
         return "jarvis-%s-%s" % (operation, hashlib.sha256(raw).hexdigest()[:32])
 
 
+# Single source of truth for the control-plane host. Six call sites used to
+# inline a pre-production host as their own silent fallback, which is how the
+# whole fleet came to run against pre unnoticed. Pre and prod share one
+# database, so moving this is an endpoint change with no state migration.
+DEFAULT_CONTROL_PLANE_BASE_URL = "https://agent.aliyun-inc.com"
+
+
 class ControlPlaneClient:
     """Small JSON-over-HTTP client for Jarvis control-plane APIs."""
 

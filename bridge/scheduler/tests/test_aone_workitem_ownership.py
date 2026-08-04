@@ -815,3 +815,124 @@ class OwnershipRunnerTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class CandidateFilterTest(unittest.TestCase):
+    """Registered-project and terminal-status candidate filters.
+
+    The two sibling consumers of the same control-plane inventory already skip
+    both classes of entry; this runner did not, so unreadable projects and
+    already-finished items kept costing an Aone read every cycle.
+    """
+
+    def _runner(self, items, pools):
+        from tempfile import TemporaryDirectory
+        directory = TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        root = Path(directory.name)
+        (root / "config").mkdir(parents=True)
+        (root / "config" / "contacts.json").write_text(
+            json.dumps({"contacts": [], "agent_fallbacks": {}}))
+        client = FakeClient({
+            0: {"items": items, "hasMore": False, "nextAfterTaskId": None},
+        })
+        runner = ownership.AoneWorkitemOwnershipRunner(
+            task_client=client,
+            repo_root=root,
+            logger=logging.getLogger("test-candidate-filter"),
+            environ={
+                "JARVIS_AONE_OWNERSHIP_CACHE":
+                    str(root / "cache" / "ownership.json"),
+            },
+            clock=lambda: NOW,
+        )
+        runner._registered_projects = lambda: pools
+        return runner
+
+    def test_unregistered_project_is_filtered(self):
+        runner = self._runner(
+            [{"taskId": 1, "sourceProjectKey": "709564",
+              "aoneId": "84574563", "sourceStatus": "待处理"}],
+            {"528766"})
+        self.assertEqual(runner._list_candidates(), [])
+
+    def test_terminal_status_is_filtered(self):
+        runner = self._runner(
+            [{"taskId": 2, "sourceProjectKey": "528766",
+              "aoneId": "84856234", "sourceStatus": "已发布待需求方验收"}],
+            {"528766"})
+        self.assertEqual(runner._list_candidates(), [])
+
+    def test_registered_non_terminal_is_kept(self):
+        runner = self._runner(
+            [{"taskId": 3, "sourceProjectKey": "528766",
+              "aoneId": "85053506", "sourceStatus": "待处理"}],
+            {"528766"})
+        self.assertEqual(len(runner._list_candidates()), 1)
+
+    def test_empty_pools_fails_open_and_keeps_everything(self):
+        runner = self._runner(
+            [{"taskId": 4, "sourceProjectKey": "709564",
+              "aoneId": "84574563", "sourceStatus": "待处理"}],
+            set())
+        self.assertEqual(len(runner._list_candidates()), 1)
+
+    def test_missing_source_status_is_kept(self):
+        runner = self._runner(
+            [{"taskId": 5, "sourceProjectKey": "528766", "aoneId": "85053557"}],
+            {"528766"})
+        self.assertEqual(len(runner._list_candidates()), 1)
+
+    def test_shipped_pools_json_is_readable_so_filter_really_engages(self):
+        """Guard the fail-open path from silently becoming the only path.
+
+        Every filter test above injects its own pool set; without this, a
+        malformed shipped pools.json would disable the filter in production
+        while the suite stayed green.
+        """
+        runner = self._runner([], set())
+        runner._repo_root = Path(__file__).resolve().parents[3]
+        projects = type(runner)._registered_projects(runner)
+        self.assertTrue(projects)
+        self.assertIn("528766", projects)
+
+
+class ProjectPermissionFallbackTest(unittest.TestCase):
+    """Classify a project-scoped denial so its per-item retries are skipped.
+
+    Per-item detail reads cannot succeed when the whole project is unreadable,
+    so retrying each one only burns time. The entries are still left unresolved
+    on purpose: this runner never publishes a partial inventory, so they must
+    still reach the reuse-or-fail decision.
+    """
+
+    def test_project_level_403_classified_as_permission_failure(self):
+        self.assertTrue(ownership._is_project_permission_failure(
+            "a1 list failed rc=1: Error: workitem list failed (403): "
+            "您不是项目成员，没有项目权限，因此不能访问该项目。"))
+
+    def test_bare_403_inside_an_id_is_not_a_permission_failure(self):
+        self.assertFalse(ownership._is_project_permission_failure(
+            "Error: workitem get failed (404): 工作项 403403 不存在"))
+
+    def test_other_batch_failure_is_not_a_permission_failure(self):
+        self.assertFalse(ownership._is_project_permission_failure("timed out"))
+
+    def test_none_is_not_a_permission_failure(self):
+        self.assertFalse(ownership._is_project_permission_failure(None))
+
+    def test_exception_instance_is_accepted(self):
+        self.assertTrue(ownership._is_project_permission_failure(
+            RuntimeError("Error: workitem list failed (403): denied")))
+
+    def test_generic_http_403_still_falls_back(self):
+        """The skip is intentionally narrow.
+
+        Only the verified project-membership denial is treated as unrecoverable
+        per item. A bare transport-level 403 could be a gateway hiccup, so it
+        keeps the old per-item retry rather than silently giving up on the
+        project -- which is why the existing batch-403 fallback test, which
+        raises exactly this shape, still exercises the fallback path.
+        """
+        self.assertFalse(ownership._is_project_permission_failure(
+            "a1 list failed rc=1: HTTP 403"))

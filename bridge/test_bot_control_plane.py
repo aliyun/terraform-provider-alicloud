@@ -368,14 +368,14 @@ class HandlerWiringTest(unittest.TestCase):
         self.assertIn("access_key_secret=[REDACTED]", excerpt)
         self.assertNotIn("super-secret-value", excerpt)
 
-    def test_task_client_defaults_to_pre_and_requires_token(self):
+    def test_task_client_defaults_to_prod_and_requires_token(self):
         for key in self.ENV_KEYS:
             os.environ.pop(key, None)
         with self.assertRaisesRegex(RuntimeError, "token is required"):
             bot._task_client_from_env()
         os.environ["JARVIS_HTML_REPORT_TOKEN"] = "shared-token"
         client = bot._task_client_from_env()
-        self.assertEqual(client.base_url, "https://pre-agent.aliyun-inc.com")
+        self.assertEqual(client.base_url, "https://agent.aliyun-inc.com")
         self.assertEqual(client.token, "shared-token")
 
 
