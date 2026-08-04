@@ -27,6 +27,7 @@ import re
 import subprocess
 from typing import Any, Callable, Mapping, Optional, Sequence
 
+from bridge.aone_tasks import TERMINAL_STATUSES
 from bridge.helpers.aone import _a1_command_env
 from bridge.process_group_runner import run_process_group
 from ..model import (
@@ -448,9 +449,36 @@ class AoneWorkitemOwnershipRunner:
             return None
         return result if result > 0 else None
 
+    def _registered_projects(self) -> set[str]:
+        """Project ids registered in this repo's ``config/pools.json``.
+
+        Read relative to ``self._repo_root`` rather than the process-wide repo
+        constant so the filter is exercised against the same tree the rest of
+        the runner uses, instead of whatever config the host happens to ship.
+
+        Returns an empty set on any failure, and callers MUST read empty as
+        "filter disabled": this runner refuses to publish a partial inventory,
+        so one unreadable config must never be able to empty the snapshot.
+        """
+        try:
+            pools = json.loads(
+                (Path(self._repo_root) / "config" / "pools.json").read_text()
+            ).get("pools", {})
+            return {
+                str(spec.get("project")).strip()
+                for spec in pools.values()
+                if isinstance(spec, Mapping)
+                and str(spec.get("project") or "").strip()
+            }
+        except Exception:  # noqa: BLE001 — fail open, never drop candidates
+            return set()
+
     def _list_candidates(self) -> list[dict[str, str]]:
         cursor = 0
         deduped: dict[str, dict[str, str]] = {}
+        registered = self._registered_projects()
+        skipped_unregistered = 0
+        skipped_terminal = 0
         for _page_number in range(self._max_pages):
             response = self._task_client.list_source_status_candidates(
                 after_task_id=cursor, limit=self._page_size)
@@ -481,6 +509,12 @@ class AoneWorkitemOwnershipRunner:
                         "task=%s aone=%s: missing sourceProjectKey/projectId",
                         task_id if task_id is not None else "<unknown>",
                         aone_id)
+                    continue
+                if registered and project not in registered:
+                    skipped_unregistered += 1
+                    continue
+                if _scalar(raw.get("sourceStatus")) in TERMINAL_STATUSES:
+                    skipped_terminal += 1
                     continue
                 key = self._candidate_key(project, aone_id)
                 deduped.setdefault(key, {
@@ -516,6 +550,15 @@ class AoneWorkitemOwnershipRunner:
         else:
             raise SnapshotIncomplete(
                 "control-plane candidate pagination exceeded max pages")
+
+        if skipped_unregistered or skipped_terminal:
+            # One aggregate line by design: a per-entry log costs more volume
+            # than the reads it documents, which the terminal-source skip in
+            # the owner-health runner already measured in production.
+            self._log.info(
+                "aone-workitem-ownership: skipped %d unregistered-project and "
+                "%d terminal-source candidate(s)",
+                skipped_unregistered, skipped_terminal)
 
         return sorted(
             deduped.values(),
