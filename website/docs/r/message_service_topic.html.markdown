@@ -46,7 +46,14 @@ The following arguments are supported:
 * `enable_logging` - (Optional, Bool, Available since v1.241.0) Specifies whether to enable the logging feature. Default value: `false`. Valid values:
   - `true`: Enable.
   - `false`: Disable.
+* `enable_sse` - (Optional, Bool, Available since v1.299.0) Specifies whether to enable server-side encryption (SSE) for the topic. Default value: `false`. Valid values:
+  - `true`: Enable.
+  - `false`: Disable.
+* `kms_key_id` - (Optional, Available since v1.299.0) The ID of the KMS key. Optional; recorded by the server when `enable_sse` is `true` (the MNS-open API always applies the `AES-256-GCM` algorithm).
 * `max_message_size` - (Optional, Int) The maximum length of the message that is sent to the topic. Default value: `65536`. Valid values: `1024` to `65536`. Unit: bytes.
+* `sse_algorithm` - (Optional, Available since v1.299.0) The server-side encryption algorithm. Valid value: `AES-256-GCM`.
+* `sse_type` - (Optional, Available since v1.299.0) The server-side encryption type. Valid value: `SMQ`.
+-> **NOTE:** The SSE attributes (`enable_sse`, `kms_key_id`, `sse_algorithm`, `sse_type`) are returned by the MNS-open `GetTopicAttributes` API only in some regions — for example, `cn-shanghai` returned them during testing — and are omitted from the response in other regions — for example, `cn-hangzhou` and `cn-beijing` did not return them during testing. This is a region deployment difference of the MNS-open API and does not affect `SetTopicAttributes`. In regions where these fields are not returned, the read-back value is empty, so a configured SSE block may show a plan diff; use `lifecycle.ignore_changes` on the SSE attributes if needed.
 * `tags` - (Optional, Map, Available since v1.241.0) A mapping of tags to assign to the resource.
 * `topic_name` - (Required, ForceNew) The name of the topic.
 * `topic_type` - (Optional, ForceNew, Computed, Available since v1.283.0) The type of the topic. Default value: `normal`. Valid values:
