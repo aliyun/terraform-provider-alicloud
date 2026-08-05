@@ -222,7 +222,39 @@ _has_unmerged_mr() {
         return 0
     fi
 
-    # Check 2: open GitHub PRs from api-tool-agent mentioning this ID.
+    # Check 2a: GitHub PRs passed via JARVIS_MR_CR_LINKS — direct state query.
+    # `gh search prs <aone-id>` is unreliable here: PR bodies are sanitized
+    # (CLAUDE.md 工作纪律 #5) and never contain the Aone workitem id, so the
+    # search returns []. The bridge executor passes mr_cr_links via env so we
+    # parse each github.com/<owner>/<repo>/pull/<num> and ask `gh pr view`.
+    # A gh failure (no token, network, PR removed) is treated as unmerged so
+    # finish stays blocked rather than closing a ticket whose code is in review.
+    if [ -n "${JARVIS_GITHUB_TOKEN:-}" ] && [ -n "${JARVIS_MR_CR_LINKS:-}" ]; then
+        local link rest owner repo num state
+        for link in $JARVIS_MR_CR_LINKS; do
+            case "$link" in
+                *github.com/*/pull/*) ;;
+                *) continue ;;
+            esac
+            rest="${link#*github.com/}"   # owner/repo/pull/NUM...
+            owner="${rest%%/*}"
+            rest="${rest#*/}"             # repo/pull/NUM...
+            repo="${rest%%/*}"
+            rest="${rest#*/pull/}"        # NUM...
+            num="${rest%%[!0-9]*}"        # truncate at first non-digit
+            [ -z "$num" ] && continue
+            state="$(GH_TOKEN="$JARVIS_GITHUB_TOKEN" gh pr view "$num" \
+                --repo "$owner/$repo" --json state -q '.state' 2>/dev/null || echo "")"
+            if [ "$state" != "MERGED" ]; then
+                return 0
+            fi
+        done
+        return 1
+    fi
+
+    # Check 2b (fallback): open GitHub PRs from api-tool-agent mentioning the ID.
+    # Kept for callers that don't pass JARVIS_MR_CR_LINKS; still unreliable when
+    # PR bodies omit the id (sanitize policy), but better than nothing.
     if [ -n "${JARVIS_GITHUB_TOKEN:-}" ]; then
         local prs
         prs="$(GH_TOKEN="$JARVIS_GITHUB_TOKEN" gh search prs \

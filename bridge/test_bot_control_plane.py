@@ -2808,6 +2808,74 @@ class TaskBookendDispatchTest(unittest.TestCase):
         # terraform reply → terraform-rd identity
         self.assertEqual(calls["reply"][1].get("identity"), bot.PERSONA_PUBLIC_IDENTITY)
 
+    def test_done_with_unmerged_pr_releases_not_finishes(self):
+        # Regression for ticket 85020657 ping-pong: RD returned outcome=done
+        # while PR#10117 was still OPEN (待 maintainer 合并). can_finish must
+        # query each mr_cr_link's PR state and downgrade to idle (release, no
+        # finish) when any PR is not MERGED, with the reason appended to the
+        # reply so the reader sees why it did not close.
+        with mock.patch.object(persistent_tasks_module, "_unmerged_prs",
+                               return_value=["aliyun/terraform-provider-alicloud#10117(OPEN)"]):
+            out, calls = self._run(
+                '[[AONE_RESULT:{"outcome":"done","reply_body":"PR 已就绪",'
+                '"resolution":{"kind":"implemented_and_verified"},'
+                '"evidence":["ACC passed"],"open_dependencies":[],"handoff":{},'
+                '"mr_cr_links":["https://github.com/aliyun/terraform-provider-alicloud/pull/10117"]}]]')
+        self.assertEqual(out, "done")
+        self.assertIn("release", calls)
+        self.assertNotIn("finish", calls)
+        self.assertIn("open PR not merged", calls["reply"][0][3])
+
+    def test_done_with_merged_pr_finishes(self):
+        # The mirror case: when every linked PR is MERGED, the PR gate passes
+        # and finish proceeds as before. Guards against the check over-firing.
+        with mock.patch.object(persistent_tasks_module, "_unmerged_prs",
+                               return_value=[]):
+            out, calls = self._run(
+                '[[AONE_RESULT:{"outcome":"done","reply_body":"已合并",'
+                '"resolution":{"kind":"implemented_and_verified"},'
+                '"evidence":["ACC passed"],"open_dependencies":[],"handoff":{},'
+                '"mr_cr_links":["https://github.com/aliyun/terraform-provider-alicloud/pull/10117"]}]]')
+        self.assertEqual(out, "done")
+        self.assertIn("finish", calls)
+        self.assertNotIn("release", calls)
+
+    def test_unmerged_prs_classifies_by_state(self):
+        # _unmerged_prs parses github.com/<owner>/<repo>/pull/<num> out of
+        # arbitrary link text, asks gh for state, and keeps only non-MERGED.
+        # A gh failure (no token / network / PR removed) is conservatively
+        # treated as unmerged (unverified) so finish stays blocked.
+        queried = []
+
+        def fake_run(cmd, **kw):
+            num = cmd[3]  # ["gh","pr","view",NUM,"--repo",...]
+            table = {"10117": ("MERGED", 0),
+                     "10118": ("OPEN", 0),
+                     "10119": ("CLOSED", 0),
+                     "10120": ("", 1)}
+            state, rc = table.get(num, ("", 1))
+            queried.append(num)
+            return SimpleNamespace(
+                returncode=rc,
+                stdout=(json.dumps({"state": state}) if state else ""),
+                stderr="")
+
+        links = [
+            "https://github.com/aliyun/terraform-provider-alicloud/pull/10117",
+            "http://github.com/aliyun/terraform-provider-alicloud/pull/10118",
+            "https://github.com/aliyun/terraform-provider-alicloud/pull/10119/files",
+            "https://github.com/aliyun/terraform-provider-alicloud/pull/10120",
+            "https://code.example/cr/999",  # non-github → skipped
+        ]
+        with mock.patch.object(persistent_tasks_module, "run_process_group",
+                               side_effect=fake_run):
+            unmerged = persistent_tasks_module._unmerged_prs(links)
+        self.assertEqual(sorted(queried), ["10117", "10118", "10119", "10120"])
+        self.assertIn("aliyun/terraform-provider-alicloud#10118(OPEN)", unmerged)
+        self.assertIn("aliyun/terraform-provider-alicloud#10119(CLOSED)", unmerged)
+        self.assertIn("aliyun/terraform-provider-alicloud#10120(unverified)", unmerged)
+        self.assertFalse(any("#10117" in u for u in unmerged))
+
     def test_idle_writes_reply_then_releases(self):
         out, calls = self._run(
             '[[AONE_RESULT:{"outcome":"idle","reply_body":"阶段完成"}]]')
