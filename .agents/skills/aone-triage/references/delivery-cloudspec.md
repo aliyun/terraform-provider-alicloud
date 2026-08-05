@@ -12,7 +12,7 @@
 → 需求建到 https://project.aone.alibaba-inc.com/v2/project/2124589/req,基于 app https://cd.aone.alibaba-inc.com/unite/micro/cr/app/260634/list 开发,自指派工号 **320687**(辰羿)。
 别的应用 / 别处的需求池 → 不走本文件。
 
-固定坐标(本应用,权威值见 config/pools.json mcp_server.apps):
+当前坐标（非永久标识；配置权威值见 `config/pools.json`，人工正式发布前须实时查询）：
 - 项目空间(建需求):**2124589**
 - 应用:**260634**(repo cloudspec-mcp/cloudspec)
 - 发布流水线:**65 日常 / 420 预发 / 67 正式**
@@ -53,19 +53,20 @@ mvn -q -Dtest=<TestClass> test           # 跑单个测试类
 
 ## 4. 预发
 ```
-a1 app link 260634            # 坑②:换目录后必重绑
-a1 app cr submit <cr> --pipeline-id 420
-a1 app pipeline status --pipeline-id 420
+bin/a1id -- cd-pipeline run 420 --app 260634 --cr-id <cr>
+bin/a1id -- cd-pipeline run status 420 --app 260634
 ```
 监控部署:轮询 `pipeline status`,看「预发部署」阶段到 SUCCESS(后面「预发验证 CR_PUBLISH_RELEASE」是人工发布卡点,WAITING 不影响已部署)。
 **预发后停下,等用户验证 + 明确反馈再进正式。** 别预发绿了就自动发线上——正式不可逆,放行权在用户。
 
-## 5. 正式(用户预发验证通过 + 反馈 OK 后)
-```
-a1 app cr submit <cr> --pipeline-id 67
-a1 app pipeline status --pipeline-id 67
-```
-**收口确认**:`pipeline status` 整体 SUCCESS → CR 自动置 FINISH。完成后按需建 MR 评审。
+## 5. 正式（人工审批并执行）
+
+Jarvis 不执行正式流水线。人工审批者先用
+`bin/a1id -- cd-pipeline list --app 260634` 核对当前绑定中名称/描述明确为正式、
+production 的流水线，再在 Jarvis 会话外执行并确认结果。禁止把历史流水线号当作永久标识；
+Jarvis 只放行 `config/pools.json` 中登记的 daily/prestage 组合，任何新增或未知流水线默认阻断。
+
+**收口确认**：人工确认正式流水线整体 SUCCESS → CR 自动置 FINISH。完成后按需建 MR 评审。
 
 ## 6. 清理(发布完成后)
 ```
@@ -76,7 +77,7 @@ CR FINISH + 正式 SUCCESS 后才清。
 
 ## 坑(逐条踩过)
 1. **必填字段**:建 req 前先 `field options` 查 version,带 `--version` + `--cfs 100340=日期`。
-2. **worktree 丢绑定**:换工作目录后 `app cr submit` 报 `no app linked`,先 `a1 app link 260634` 重绑。
+2. **显式应用绑定**：自动预发命令必须带 `--app 260634`，不得依赖随 cwd 变化的 link context。
 3. **预发 pipeline 是 420 不是 66**:66 是 aliyun-automation-agent 的,别混;`a1 app pipeline list --app 260634` 核实。
 4. **open_jarvis 身份限制**:open_jarvis 在此 app 可能无 committer,自动建 CR 会报错,需人工建或加权限。
 5. **无 mvnw**:本仓库没有 Maven Wrapper,用系统 `mvn` 命令。
@@ -88,5 +89,5 @@ CR FINISH + 正式 SUCCESS 后才清。
 ## 交付链路目录
 | 应用 | 项目 | app | 预发/正式 pipeline | 链路文件 |
 |------|------|-----|--------------------|----------|
-| cloudspec | 2124589 | 260634 | 420 / 67 | 本文件 |
+| cloudspec | 2124589 | 260634 | 当前 420 / 67（正式前重查） | 本文件 |
 | aliyun-automation-agent | 2124589 | 283346 | 66 / 67 | delivery-aliyun-automation-agent.md |

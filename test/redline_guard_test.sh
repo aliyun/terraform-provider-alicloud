@@ -137,6 +137,8 @@ expect "JARVIS_MASTER_OK cannot bypass pipeline 67" 2 \
     "bin/a1id -- cd-pipeline run 67 --app 260634 --cr-id 123" JARVIS_MASTER_OK=1
 expect "CloudSpec pre-release pipeline 420 allowed" 0 \
     "bin/a1id -- cd-pipeline run 420 --app 260634 --cr-id 123"
+expect "unknown future pipeline fails closed" 2 \
+    "bin/a1id -- cd-pipeline run 999 --app 260634 --cr-id 123"
 expect "missing classifier blocks a1 fail-closed" 2 \
     "bin/a1id -- cd-pipeline run 67 --app 260634 --cr-id 123" \
     JARVIS_A1_COMMAND_GUARD="$tmp/missing-guard.py"

@@ -18,9 +18,10 @@
 #   4. Any actual curl/wget invocation of Acube createBuildTaskV2. Terraform
 #      work continues on the source Aone Task; this API must never create a
 #      downstream 528766 workitem again.
-#   5. Jarvis production delivery commands, including legacy/canonical pipeline
-#      67 entrypoints and opaque rerun/task-action forms. A human must execute
-#      production release actions; pipeline 420 remains available for pre-release.
+#   5. Jarvis delivery execution is allowlist-only: config/pools.json daily and
+#      prestage IDs may run; every production, new, unknown, opaque rerun, and
+#      opaque task-action path stops for a human. Pipeline renumbering therefore
+#      fails closed instead of bypassing a fixed production-ID denylist.
 #
 # Contract (same as worktree-guard):
 #   stdin  = tool call JSON {tool_name, tool_input:{command,...}}

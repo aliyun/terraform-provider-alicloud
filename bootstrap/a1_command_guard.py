@@ -4,9 +4,10 @@
 Jarvis must never execute ``app pipeline exit-cr``, ``app pipeline quit`` or
 ``app cr quit``.  All three mutate CR/branch membership in a publish flow;
 conflicts and withdrawal requests must stop and be handed to a human instead.
-Jarvis must also never submit the shared formal-release pipeline 67.  That
-production action is intentionally left to a human, while pre-release
-pipelines such as CloudSpec pipeline 420 remain available to automation.
+Jarvis may submit only reviewed daily/prestage pipelines declared in
+``config/pools.json``. Every production, new, or unknown pipeline is left to a
+human, so renumbering a production pipeline fails closed instead of bypassing
+a fixed-ID denylist.
 Opaque reruns and task actions are rejected as well: their IDs do not carry
 enough pipeline identity for the guard to prove that an operation is non-prod.
 
@@ -20,10 +21,12 @@ The module is used in two places:
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import re
 import shlex
 import sys
+from pathlib import Path
 from typing import Any, Iterable, Mapping, Optional, Sequence
 
 
@@ -39,9 +42,9 @@ ACUBE_BUILD_TASK_MESSAGE = (
     "Acube createBuildTaskV2 is permanently disabled for Jarvis; "
     "Terraform work must continue on the source Aone Task"
 )
-PROD_RELEASE_MESSAGE = (
-    "formal pipeline 67 releases are permanently disabled for Jarvis; "
-    "a human must approve and run the production release"
+UNAPPROVED_PIPELINE_MESSAGE = (
+    "the application/pipeline pair is not in Jarvis's reviewed non-production "
+    "allowlist; a human must approve and run production or unknown releases"
 )
 OPAQUE_RERUN_MESSAGE = (
     "exact cd-pipeline reruns by run ID are disabled for Jarvis because the "
@@ -155,6 +158,84 @@ def _numeric_id(value: Optional[str]) -> Optional[int]:
     return int(value, 10)
 
 
+def _parse_nonprod_pipeline_bindings(data: Any) -> frozenset[tuple[str, int]]:
+    """Parse reviewed app+daily/prestage pairs; malformed policy allows none."""
+    try:
+        pools = data["pools"]
+        if not isinstance(pools, dict):
+            return frozenset()
+        allowed: set[tuple[str, int]] = set()
+        production: set[int] = set()
+        for pool in pools.values():
+            if not isinstance(pool, dict):
+                return frozenset()
+            apps = pool.get("apps")
+            if apps is None:
+                continue
+            if not isinstance(apps, list):
+                return frozenset()
+            for app in apps:
+                if not isinstance(app, dict):
+                    return frozenset()
+                pipelines = app.get("pipelines")
+                if not isinstance(pipelines, dict):
+                    return frozenset()
+                owners = {
+                    str(value).strip()
+                    for value in (app.get("app"), app.get("name"))
+                    if value is not None and str(value).strip()
+                }
+                if not owners:
+                    return frozenset()
+                for stage in ("daily", "prestage"):
+                    value = pipelines.get(stage)
+                    if value is None:
+                        continue
+                    if isinstance(value, int) and not isinstance(value, bool):
+                        allowed.update((owner, value) for owner in owners)
+                    else:
+                        return frozenset()
+                prod = pipelines.get("prod")
+                if not isinstance(prod, int) or isinstance(prod, bool):
+                    return frozenset()
+                production.add(prod)
+        if any(pipeline_id in production for _owner, pipeline_id in allowed):
+            return frozenset()
+        return frozenset(allowed)
+    except (KeyError, TypeError, ValueError):
+        return frozenset()
+
+
+def _configured_nonprod_pipeline_bindings() -> frozenset[tuple[str, int]]:
+    """Load reviewed bindings; missing or invalid config fails closed."""
+    try:
+        config_path = Path(__file__).resolve().parent.parent / "config" / "pools.json"
+        data = json.loads(config_path.read_text(encoding="utf-8"))
+        return _parse_nonprod_pipeline_bindings(data)
+    except (OSError, TypeError, ValueError):
+        return frozenset()
+
+
+def _pipeline_target_kind(
+    pipeline_values: Sequence[Optional[str]],
+    app_values: Sequence[Optional[str]],
+) -> Optional[str]:
+    if not pipeline_values or not app_values:
+        return "blocked-opaque-release-target"
+    pipeline_ids = [_numeric_id(value) for value in pipeline_values]
+    if any(value is None for value in pipeline_ids):
+        return "blocked-opaque-release-target"
+    owners = [str(value).strip() if value is not None else ""
+              for value in app_values]
+    if any(not owner or owner.startswith("-") for owner in owners):
+        return "blocked-opaque-release-target"
+    allowed = _configured_nonprod_pipeline_bindings()
+    if any((owner, pipeline_id) not in allowed
+           for owner in owners for pipeline_id in pipeline_ids):
+        return "blocked-unapproved-pipeline"
+    return None
+
+
 def _positionals(argv: Sequence[str], value_flags: Iterable[str]) -> list[str]:
     consumes = set(value_flags)
     result: list[str] = []
@@ -198,17 +279,29 @@ def _command_kind(argv: Sequence[str]) -> str:
         return "blocked-quit"
     if semantic[:3] == ["app", "cr", "submit"]:
         pipeline_values = _option_values(semantic[3:], "--pipeline-id")
-        pipeline_ids = [_numeric_id(value) for value in pipeline_values]
-        if 67 in pipeline_ids:
-            return "blocked-prod-release"
-        if not pipeline_values or any(value is None for value in pipeline_ids):
-            return "blocked-opaque-release-target"
+        # No pipeline ID only advances the CR to the publish page; it does not
+        # execute a delivery pipeline and is therefore outside release_prod.
+        if pipeline_values:
+            kind = _pipeline_target_kind(
+                pipeline_values, _option_values(semantic[3:], "--app"))
+            if kind:
+                return kind
+            return "other"
+    if tuple(semantic[:3]) in {
+            ("app", "pipeline", "reenter"),
+            ("app", "pipeline", "run"),
+            ("app", "pipeline", "retry"),
+    }:
+        kind = _pipeline_target_kind(
+            _option_values(semantic[3:], "--pipeline-id"),
+            _option_values(semantic[3:], "--app"),
+        )
+        if kind:
+            return kind
+        return "other"
     if semantic[:3] == ["cd-pipeline", "run", "rerun"]:
         tail = semantic[3:]
         pipeline_values = _option_values(tail, "--pipeline-id")
-        pipeline_ids = [_numeric_id(value) for value in pipeline_values]
-        if 67 in pipeline_ids:
-            return "blocked-prod-release"
         positionals = _positionals(
             tail,
             {"--pipeline-id", "--app", "--mvn", "--faas", "--param",
@@ -216,13 +309,50 @@ def _command_kind(argv: Sequence[str]) -> str:
         )
         if positionals:
             return "blocked-opaque-rerun"
-        if (not pipeline_values
-                or any(value is None for value in pipeline_ids)):
-            return "blocked-opaque-release-target"
+        kind = _pipeline_target_kind(
+            pipeline_values, _option_values(tail, "--app"))
+        if kind:
+            return kind
+        return "other"
     if semantic[:4] == ["cd-pipeline", "run", "task", "status"]:
         positionals = _positionals(semantic[4:], {"--task-id"})
         if positionals:
             return "blocked-opaque-task-action"
+        return "other"
+    if semantic[:6] == [
+            "app", "pipeline", "stage", "job", "task", "status",
+    ]:
+        positionals = _positionals(
+            semantic[6:], {"--task-id", "--task-inst-id"})
+        if positionals:
+            return "blocked-opaque-task-action"
+        return "other"
+    if (semantic[:5] == ["app", "pipeline", "stage", "job", "task"]
+            and semantic[5:6] != ["status"]):
+        # Component shortcuts are read-only only for status/log. Any other
+        # component action is opaque because argv carries no parent pipeline.
+        if semantic[5:6] == ["list"]:
+            return "other"
+        if len(semantic) >= 7 and semantic[6] in {"status", "log"}:
+            return "other"
+        return "blocked-opaque-task-action"
+    if semantic[:3] == ["app", "pipeline", "lib-deploy"]:
+        if semantic[3:4] == ["preview"]:
+            return "other"
+        return "blocked-opaque-release-target"
+    if semantic[:2] == ["app", "pipeline"]:
+        readonly = {
+            ("list",), ("status",), ("branch",),
+            ("instance", "list"),
+            ("stage", "list"), ("stage", "status"),
+            ("stage", "job", "list"), ("stage", "job", "status"),
+        }
+        tail = tuple(semantic[2:])
+        if any(tail[:len(prefix)] == prefix for prefix in readonly):
+            return "other"
+        return "blocked-opaque-release-target"
+    if semantic[:2] == ["cd-pipeline", "bind"]:
+        return "blocked-opaque-release-target"
     if semantic[:2] == ["cd-pipeline", "run"]:
         positionals = _positionals(
             semantic[2:],
@@ -230,8 +360,6 @@ def _command_kind(argv: Sequence[str]) -> str:
              "--interval", "--timeout"},
         )
         pipeline_id = _numeric_id(positionals[0]) if positionals else None
-        if pipeline_id == 67:
-            return "blocked-prod-release"
         if positionals and positionals[0] in {
                 "cancel", "get", "list", "rerun", "status", "task",
         }:
@@ -240,12 +368,21 @@ def _command_kind(argv: Sequence[str]) -> str:
             return "other"
         if pipeline_id is None:
             return "blocked-opaque-release-target"
+        kind = _pipeline_target_kind(
+            [str(pipeline_id)], _option_values(semantic[2:], "--app"))
+        if kind:
+            return kind
+        return "other"
+    if semantic[:1] == ["cd-pipeline"]:
+        if semantic[1:2] in [["get"], ["list"], ["release"], ["vars"]]:
+            return "other"
+        return "blocked-opaque-release-target"
     return "other"
 
 
 def _kind_message(kind: str, *, direct: bool = False) -> Optional[str]:
-    if kind == "blocked-prod-release":
-        return PROD_RELEASE_MESSAGE
+    if kind == "blocked-unapproved-pipeline":
+        return UNAPPROVED_PIPELINE_MESSAGE
     if kind == "blocked-opaque-rerun":
         return OPAQUE_RERUN_MESSAGE
     if kind == "blocked-opaque-task-action":
