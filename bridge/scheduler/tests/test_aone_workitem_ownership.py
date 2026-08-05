@@ -1343,3 +1343,172 @@ class UnreadableProjectStillCoversItsItemsTest(unittest.TestCase):
             # Real ownership from cache must win over a blank placeholder.
             self.assertEqual(published[0]["assignedToStaffId"], "100001")
             runner._fetch_detail.assert_not_called()
+
+
+class CandidateSetRaceCatchUpTest(unittest.TestCase):
+    """Recover from a candidate-set conflict without redoing the whole pass.
+
+    The server requires the published item keys to equal its current Aone Task
+    set, so any Task upserted between listing candidates and publishing rejects
+    the pass. Rebuilding from scratch pays the full read again (measured: ~2m44s
+    warm, ~11min cold) and re-runs the same exposure, so it loses roughly as
+    often as it wins -- observed 4 published against 3 conflicts in 30 minutes.
+
+    Re-listing candidates costs about a second and no Aone calls, so on conflict
+    the fix is to re-list, fetch only what appeared, drop what vanished, and
+    publish again. That shrinks the exposed window from minutes to seconds.
+    """
+
+    CODE = ownership.CANDIDATES_CHANGED_CODE
+
+    def _conflict(self):
+        from bridge.jarvis_task_client import ControlPlaneConflict
+        return ControlPlaneConflict(
+            "ownership snapshot items no longer match the current Aone Task set",
+            status=409, code=self.CODE)
+
+    def _client(self, pages, fail_times=0, code=None):
+        from bridge.jarvis_task_client import ControlPlaneConflict
+        outer = self
+
+        class RacyClient(FakeClient):
+            def __init__(self):
+                super().__init__(pages)
+                self.remaining = fail_times
+                self.list_calls = 0
+                self.next_pages = None
+
+            def list_source_status_candidates(self, *, after_task_id=0, limit=100):
+                if after_task_id == 0:
+                    self.list_calls += 1
+                    # The set moves only *between* listings, which is exactly the
+                    # race: the first pass builds from one view, the catch-up sees
+                    # the next.
+                    if self.list_calls > 1 and self.next_pages is not None:
+                        self.pages = self.next_pages
+                return super().list_source_status_candidates(
+                    after_task_id=after_task_id, limit=limit)
+
+            def put_aone_ownership_snapshot(self, payload, *, request_id=None):
+                if self.remaining > 0:
+                    self.remaining -= 1
+                    if code is not None:
+                        raise ControlPlaneConflict("other", status=409, code=code)
+                    raise outer._conflict()
+                return super().put_aone_ownership_snapshot(
+                    payload, request_id=request_id)
+
+        return RacyClient()
+
+    def _runner(self, directory, client):
+        root = Path(directory)
+        (root / "config").mkdir(parents=True, exist_ok=True)
+        (root / "config" / "contacts.json").write_text(
+            json.dumps({"contacts": [], "agent_fallbacks": {}}))
+        runner = ownership.AoneWorkitemOwnershipRunner(
+            task_client=client, repo_root=root,
+            logger=logging.getLogger("test-catchup"),
+            environ={"JARVIS_AONE_OWNERSHIP_CACHE":
+                     str(root / "cache" / "ownership.json")},
+            clock=lambda: NOW)
+        runner._fetch_project_batch = lambda _p, _ids: {}
+        runner._fetch_comments = lambda _iid: []
+        runner._fetch_detail = lambda iid: {
+            "id": str(iid), "modified": "2026-08-05 10:00:00",
+            "fields": [{"identifier": "assignedTo",
+                        "value": "100002", "displayValue": "乙"}]}
+        return runner
+
+    @staticmethod
+    def _page(*aone_ids):
+        return {0: {"items": [{"taskId": i + 1, "sourceProjectKey": "528766",
+                               "aoneId": a} for i, a in enumerate(aone_ids)],
+                    "hasMore": False, "nextAfterTaskId": None}}
+
+    def test_clean_publish_does_not_relist(self):
+        from tempfile import TemporaryDirectory
+        with TemporaryDirectory() as d:
+            client = self._client(self._page("85053506"))
+            runner = self._runner(d, client)
+            result = runner.run(definition(), NOW)
+            self.assertIs(result.status, JobResultStatus.SUCCEEDED)
+            self.assertEqual(client.list_calls, 1)
+            self.assertEqual(len(client.puts), 1)
+
+    def test_conflict_then_success_republishes_after_relisting(self):
+        from tempfile import TemporaryDirectory
+        with TemporaryDirectory() as d:
+            client = self._client(self._page("85053506"), fail_times=1)
+            runner = self._runner(d, client)
+            result = runner.run(definition(), NOW)
+            self.assertIs(result.status, JobResultStatus.SUCCEEDED)
+            # Re-listed once for the catch-up, and published the second payload.
+            self.assertEqual(client.list_calls, 2)
+            self.assertEqual(len(client.puts), 1)
+
+    def test_catch_up_fetches_only_the_added_candidate(self):
+        from tempfile import TemporaryDirectory
+        with TemporaryDirectory() as d:
+            client = self._client(self._page("85053506"), fail_times=1)
+            runner = self._runner(d, client)
+            built = []
+            original = runner._build_items
+
+            def spy(candidates, cache):
+                built.append([c["aoneId"] for c in candidates])
+                return original(candidates, cache)
+
+            runner._build_items = spy
+            # Second listing grows by one id, as a concurrent upsert would.
+            client.next_pages = self._page("85053506", "85101013")
+
+            result = runner.run(definition(), NOW)
+
+            self.assertIs(result.status, JobResultStatus.SUCCEEDED)
+            self.assertEqual(built[0], ["85053506"])
+            # The point of the change: only the newcomer is read again.
+            self.assertEqual(built[1], ["85101013"])
+            published = {i["aoneId"] for i in client.puts[0][0]["items"]}
+            self.assertEqual(published, {"85053506", "85101013"})
+
+    def test_catch_up_drops_a_vanished_candidate_without_reading(self):
+        from tempfile import TemporaryDirectory
+        with TemporaryDirectory() as d:
+            client = self._client(self._page("85053506", "85101013"),
+                                  fail_times=1)
+            runner = self._runner(d, client)
+            built = []
+            original = runner._build_items
+            runner._build_items = lambda c, k: (
+                built.append([x["aoneId"] for x in c]) or original(c, k))
+            client.next_pages = self._page("85053506")
+
+            result = runner.run(definition(), NOW)
+
+            self.assertIs(result.status, JobResultStatus.SUCCEEDED)
+            # Nothing new to read, so no second build at all.
+            self.assertEqual(len(built), 1)
+            published = {i["aoneId"] for i in client.puts[0][0]["items"]}
+            self.assertEqual(published, {"85053506"})
+
+    def test_repeated_conflicts_give_up_and_report_retryable(self):
+        from tempfile import TemporaryDirectory
+        with TemporaryDirectory() as d:
+            client = self._client(self._page("85053506"), fail_times=99)
+            runner = self._runner(d, client)
+            result = runner.run(definition(), NOW)
+            self.assertIs(result.status, JobResultStatus.RETRYABLE_FAILURE)
+            self.assertEqual(client.puts, [])
+            # Bounded: one initial listing plus one per catch-up attempt.
+            self.assertEqual(
+                client.list_calls, 1 + ownership.MAX_CATCH_UP_ATTEMPTS)
+
+    def test_a_different_conflict_is_not_caught_up(self):
+        from tempfile import TemporaryDirectory
+        with TemporaryDirectory() as d:
+            client = self._client(self._page("85053506"), fail_times=1,
+                                  code="Conflict.SomethingElse")
+            runner = self._runner(d, client)
+            result = runner.run(definition(), NOW)
+            self.assertIs(result.status, JobResultStatus.RETRYABLE_FAILURE)
+            self.assertEqual(client.list_calls, 1)
