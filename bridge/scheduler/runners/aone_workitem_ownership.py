@@ -28,6 +28,7 @@ import subprocess
 from typing import Any, Callable, Mapping, Optional, Sequence
 
 from bridge.helpers.aone import _a1_command_env
+from bridge.jarvis_task_client import ControlPlaneConflict
 from bridge.process_group_runner import run_process_group
 from ..model import (
     IntervalSchedule,
@@ -47,6 +48,14 @@ DEFAULT_MAX_PAGES = 1000
 DEFAULT_BATCH_SIZE = 100
 DEFAULT_COMMENT_WORKERS = 8
 DEFAULT_A1_TIMEOUT_SECONDS = 120
+
+# The server rejects a publish whose item keys do not equal its current Aone Task
+# set. Any Task upserted between listing candidates and publishing therefore
+# invalidates the pass. Re-listing costs about a second and no Aone reads, while
+# rebuilding costs the whole pass, so a conflict is caught up rather than retried
+# wholesale. Bounded so a continuously churning set cannot spin here forever.
+CANDIDATES_CHANGED_CODE = "Conflict.OwnershipSnapshotCandidatesChanged"
+MAX_CATCH_UP_ATTEMPTS = 3
 
 _STAFF_ID_RE = re.compile(
     r"^(?:\d+|WB\d+|V\d+_\d+)$", re.IGNORECASE)
@@ -111,6 +120,24 @@ def _rows(value: Any) -> list[dict[str, Any]]:
 def _scalar(value: Any) -> str:
     return str(value or "").strip()
 
+
+
+def _sorted_by_candidate_key(
+        by_key: Mapping[str, Mapping[str, Any]]) -> list[dict[str, Any]]:
+    """Stable project-then-numeric-id ordering for snapshot and cache writes."""
+    return [
+        dict(by_key[key])
+        for key in sorted(
+            by_key,
+            key=lambda value: (
+                value.split(":", 1)[0],
+                0 if value.split(":", 1)[1].isdigit() else 1,
+                int(value.split(":", 1)[1])
+                if value.split(":", 1)[1].isdigit()
+                else value.split(":", 1)[1],
+            ),
+        )
+    ]
 
 def _is_project_permission_failure(error: object) -> bool:
     """True when a batch list failed because the whole project is unreadable.
@@ -1056,19 +1083,7 @@ class AoneWorkitemOwnershipRunner:
         if set(output) != expected:
             raise SnapshotIncomplete(
                 "ownership snapshot output does not cover all candidates")
-        return [
-            output[key]
-            for key in sorted(
-                output,
-                key=lambda value: (
-                    value.split(":", 1)[0],
-                    0 if value.split(":", 1)[1].isdigit() else 1,
-                    int(value.split(":", 1)[1])
-                    if value.split(":", 1)[1].isdigit()
-                    else value.split(":", 1)[1],
-                ),
-            )
-        ]
+        return _sorted_by_candidate_key(output)
 
     def _save_cache(self, items: Sequence[Mapping[str, Any]]) -> None:
         payload = {
@@ -1088,11 +1103,13 @@ class AoneWorkitemOwnershipRunner:
             + "\n")
         os.replace(temporary, self._cache_path)
 
-    def _snapshot(self) -> dict[str, Any]:
-        candidates = self._list_candidates()
-        cache_items = self._build_items(candidates, self._load_cache())
+    def _collect_items(self) -> list[dict[str, Any]]:
+        cache_items = self._build_items(
+            self._list_candidates(), self._load_cache())
         self._save_cache(cache_items)
-        items = [self._public_item(item) for item in cache_items]
+        return cache_items
+
+    def _payload(self, cache_items: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
         now = self._clock()
         if not is_aware(now):
             raise SnapshotIncomplete("ownership snapshot clock must be timezone-aware")
@@ -1100,8 +1117,50 @@ class AoneWorkitemOwnershipRunner:
             "schemaVersion": SCHEMA_VERSION,
             "generatedAt": now.astimezone(timezone.utc).isoformat(),
             "complete": True,
-            "items": items,
+            "items": [self._public_item(item) for item in cache_items],
         }
+
+    def _publish(self, payload: Mapping[str, Any]) -> None:
+        digest = hashlib.sha256(json.dumps(
+            payload, ensure_ascii=False, sort_keys=True,
+            separators=(",", ":")).encode("utf-8")).hexdigest()[:32]
+        self._task_client.put_aone_ownership_snapshot(
+            payload, request_id="aone-ownership-snapshot-%s" % digest)
+
+    def _catch_up(
+        self, cache_items: Sequence[Mapping[str, Any]],
+    ) -> list[dict[str, Any]]:
+        """Re-align an already-built snapshot with the current candidate set.
+
+        Everything already read stays valid -- the conflict says the *set*
+        moved, not that the ownership data is wrong. So re-list (cheap, no Aone
+        reads), read only what appeared, forget what vanished, and keep the rest.
+        """
+        have = {
+            self._candidate_key(
+                _scalar(item.get("sourceProjectKey")),
+                _scalar(item.get("aoneId"))): dict(item)
+            for item in cache_items
+        }
+        wanted = {
+            self._candidate_key(
+                candidate["sourceProjectKey"], candidate["aoneId"]): candidate
+            for candidate in self._list_candidates()
+        }
+        added = [candidate for key, candidate in wanted.items() if key not in have]
+        dropped = [key for key in have if key not in wanted]
+        kept = {key: value for key, value in have.items() if key in wanted}
+        if added:
+            for item in self._build_items(added, self._load_cache()):
+                kept[self._candidate_key(
+                    _scalar(item.get("sourceProjectKey")),
+                    _scalar(item.get("aoneId")))] = item
+        self._log.warning(
+            "aone-workitem-ownership: candidate set moved during publish; "
+            "caught up +%d -%d (now %d)", len(added), len(dropped), len(kept))
+        merged = _sorted_by_candidate_key(kept)
+        self._save_cache(merged)
+        return merged
 
     def run(
         self, definition: ScheduledJobDefinition, scheduled_for: datetime,
@@ -1115,13 +1174,20 @@ class AoneWorkitemOwnershipRunner:
                 JobResultStatus.PERMANENT_FAILURE,
                 error="aone-workitem-ownership requires an interval schedule")
         try:
-            payload = self._snapshot()
-            digest = hashlib.sha256(json.dumps(
-                payload, ensure_ascii=False, sort_keys=True,
-                separators=(",", ":")).encode("utf-8")).hexdigest()[:32]
-            self._task_client.put_aone_ownership_snapshot(
-                payload,
-                request_id="aone-ownership-snapshot-%s" % digest)
+            cache_items = self._collect_items()
+            payload = self._payload(cache_items)
+            attempts = 0
+            while True:
+                try:
+                    self._publish(payload)
+                    break
+                except ControlPlaneConflict as conflict:
+                    if (str(getattr(conflict, "code", "")) != CANDIDATES_CHANGED_CODE
+                            or attempts >= MAX_CATCH_UP_ATTEMPTS):
+                        raise
+                    attempts += 1
+                    cache_items = self._catch_up(cache_items)
+                    payload = self._payload(cache_items)
         except Exception as exc:  # noqa: BLE001
             self._log.warning(
                 "aone-workitem-ownership: failed: %s: %s",
