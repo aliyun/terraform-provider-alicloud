@@ -175,6 +175,33 @@ class WeeklyCommentParticipationAggregationTests(unittest.TestCase):
 
 
 class DeliveryMetricsAggregationTests(unittest.TestCase):
+    def test_agent_intervention_ignores_claim_and_tag_activities(self):
+        created = datetime(2026, 7, 1, tzinfo=SHANGHAI).timestamp()
+        closed = datetime(2026, 7, 3, tzinfo=SHANGHAI).timestamp()
+        activities = [
+            {
+                "operator": "jarvis",
+                "property": "状态",
+                "newValue": "jarvis-claim claimed #1",
+                "eventTime": "2026-07-01 08:00",
+            },
+            {
+                "operator": "Terraform-研发数字人",
+                "property": "标签",
+                "newValue": "jarvis-claimed",
+                "eventTime": "2026-07-01 08:01",
+            },
+            {
+                "operator": "Kelude",
+                "property": "状态",
+                "newValue": "自动流转",
+                "eventTime": "2026-07-01 08:02",
+            },
+        ]
+
+        self.assertIsNone(wcp._first_agent_intervention_at(
+            [], activities, created, closed))
+
     def setUp(self):
         patch = mock.patch.object(wcp, "parallel_a1_per_id", return_value={})
         patch.start()
@@ -271,15 +298,20 @@ class DeliveryMetricsAggregationTests(unittest.TestCase):
         snapshot = runner._aggregate_delivery(
             datetime(2026, 7, 27, 6, 42, tzinfo=SHANGHAI))
 
-        self.assertEqual(snapshot["windowDays"], 30)
-        self.assertEqual(snapshot["durationBasis"], "calendar_hours")
+        self.assertEqual(snapshot["coverageStart"], "2023-04-01T00:00:00+08:00")
+        self.assertEqual(snapshot["cohortBasis"], "created_at")
+        self.assertEqual(snapshot["scope"], "closed_success_only")
+        self.assertEqual(snapshot["durationBasis"], "calendar_days")
         self.assertEqual(snapshot["closedCount"], 2)
         by_id = {item["id"]: item for item in snapshot["workitems"]}
         self.assertEqual(set(by_id), {"1001", "2002"})
         self.assertEqual(by_id["1001"]["statusClass"], "closed")
         self.assertEqual(by_id["1001"]["closedAt"],
                          "2026-07-21T10:00:00+08:00")
-        self.assertEqual(by_id["1001"]["deliveryHours"], 480.0)
+        self.assertEqual(by_id["1001"]["deliveryDays"], 20.0)
+        self.assertEqual(by_id["1001"]["firstAgentInterventionAt"],
+                         "2026-07-06T10:00:00+08:00")
+        self.assertEqual(by_id["1001"]["agentInterventionElapsedDays"], 15.0)
         self.assertEqual(by_id["1001"]["humanCommentCount"], 1)
         self.assertEqual(by_id["1001"]["digitalCommentCount"], 1)
         self.assertEqual(by_id["1001"]["systemCommentCount"], 1)
@@ -289,7 +321,7 @@ class DeliveryMetricsAggregationTests(unittest.TestCase):
 
         summaries = {row["pool"]: row for row in snapshot["pools"]}
         self.assertEqual(summaries["tf_customer"]["closedCount"], 1)
-        self.assertEqual(summaries["tf_customer"]["averageDeliveryHours"], 480.0)
+        self.assertEqual(summaries["tf_customer"]["averageDeliveryDays"], 20.0)
         self.assertEqual(summaries["tf_customer"]["humanCommentTotal"], 1)
         self.assertEqual(summaries["tf_provider"]["closedCount"], 1)
         self.assertEqual(summaries["tf_provider"]["humanCommentTotal"], 2)
@@ -337,8 +369,10 @@ class DeliveryMetricsAggregationTests(unittest.TestCase):
         self.assertEqual(snapshot["closedCount"], 1)
         self.assertEqual(snapshot["workitems"][0]["humanCommentCount"], 0)
         self.assertEqual(snapshot["workitems"][0]["totalCommentCount"], 0)
+        self.assertIsNone(snapshot["workitems"][0]["firstAgentInterventionAt"])
+        self.assertIsNone(snapshot["workitems"][0]["agentInterventionElapsedDays"])
 
-    def test_delivery_candidate_scan_includes_entire_window_start_day(self):
+    def test_delivery_candidate_scan_starts_at_fy24_coverage_boundary(self):
         runner = self._runner()
         runner._tf_pools = lambda: [
             ("tf_customer", "1086837", "需求问题")]
@@ -355,7 +389,30 @@ class DeliveryMetricsAggregationTests(unittest.TestCase):
 
         self.assertEqual(
             candidate_starts,
-            [datetime(2026, 6, 27, 0, 0, tzinfo=SHANGHAI).timestamp()])
+            [datetime(2023, 4, 1, 0, 0, tzinfo=SHANGHAI).timestamp()])
+
+    def test_closed_candidate_scan_is_created_at_sorted_and_stops_before_fy24(self):
+        runner = self._runner()
+        recent = {
+            "identifier": "1001", "subject": "FY24 item", "status": "验收通过",
+            "gmtCreate": "2023-04-01 00:00:00",
+        }
+        old = {
+            "identifier": "999", "subject": "old item", "status": "验收通过",
+            "gmtCreate": "2023-03-31 23:59:59",
+        }
+        result = SimpleNamespace(
+            returncode=0, stdout=json.dumps([recent, old], ensure_ascii=False),
+            stderr="")
+        with mock.patch.object(wcp, "run_process_group", return_value=result) as run:
+            rows = runner._list_closed_requirements(
+                "1086837", "需求问题", ("验收通过",),
+                datetime(2023, 4, 1, tzinfo=SHANGHAI).timestamp())
+
+        self.assertEqual([row["id"] for row in rows], ["1001"])
+        command = run.call_args.args[0]
+        self.assertIn("gmtCreate:desc", command)
+        self.assertNotIn("finishTime:desc", command)
 
 
 class WeeklyCommentParticipationPublishTests(unittest.TestCase):
@@ -411,10 +468,13 @@ class WeeklyCommentParticipationPublishTests(unittest.TestCase):
         snapshot = {
             "snapshotId": "20260727T064200+0800",
             "generatedAt": "2026-07-27T06:42:00+08:00",
-            "windowStart": "2026-06-27T06:42:00+08:00",
+            "windowStart": "2023-04-01T00:00:00+08:00",
             "windowEnd": "2026-07-27T06:42:00+08:00",
-            "windowDays": 30,
-            "durationBasis": "calendar_hours",
+            "coverageStart": "2023-04-01T00:00:00+08:00",
+            "coverageEnd": "2026-07-27T06:42:00+08:00",
+            "cohortBasis": "created_at",
+            "scope": "closed_success_only",
+            "durationBasis": "calendar_days",
             "closedCount": 3,
             "pools": [],
             "workitems": [{"id": str(index), "title": "x" * 20}

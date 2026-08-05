@@ -3,8 +3,9 @@
 每日聚合 Terraform 两个池（tf_customer 需求问题 + tf_provider 产品类需求）近 7 天
 评论参与度，PUT 到控制面看板统计 endpoint（KV key=tf-weekly-comment-participation）。
 统计口径由本 runner 保证规则化（BoardStatService 只做 KV 存取，不再计算）。
-同时按精确 Aone activity 聚合近 30 天真实成功关单，逐页写入独立快照后 commit；
-`待发布`等 solution 状态不算最终关单，周期是自然小时而非 SLA/工作日。
+同时按精确 Aone activity 聚合 FY24（2023-04-01）起、当前状态为最终成功关单的
+createdAt cohort，逐页写入独立快照后 commit；`待发布`等 solution 状态不算最终关单，
+周期是自然天而非 SLA/工作日。
 
 口径：
   - 窗口：[scheduled_for - 7d, scheduled_for]，Asia/Shanghai。
@@ -50,7 +51,7 @@ STAT_KEY = "tf-weekly-comment-participation"
 BOARD_STATS_PATH = "/api/jarvis/v1/board/stats"
 DELIVERY_METRICS_PATH = "/api/jarvis/v1/board/delivery-metrics"
 WINDOW_DAYS = 7
-DELIVERY_WINDOW_DAYS = 30
+DELIVERY_COVERAGE_START = datetime(2023, 4, 1, tzinfo=_SHANGHAI_TZ)
 DELIVERY_PAGE_ITEMS = 100
 DELIVERY_PAGE_MAX_BYTES = 480 * 1024
 LIST_PAGE_SIZE = 1000
@@ -63,7 +64,7 @@ log = logging.getLogger("jarvis-weekly-comment-participation")
 _TF_REQUIREMENT_TYPES = {"tf_customer": "需求问题", "tf_provider": "产品类需求"}
 
 # Aone 的「已给出方案/待正式发布」与「真正关单」不是同一件事。只有
-# closed_success 会进入近 30 天关单 cohort；其余分类保留在快照口径中用于审计。
+# closed_success 会进入 FY24 起关单 cohort；其余分类保留在快照口径中用于审计。
 _DELIVERY_STATUS_DEFINITIONS = {
     "tf_customer": {
         "solution": ("已合入主线", "已发布待需求方验收"),
@@ -268,14 +269,14 @@ def _rounded(value: float) -> float:
     return round(float(value), 2)
 
 
-def _duration_summary(hours: list[float]) -> dict[str, Optional[float] | int]:
-    ordered = sorted(hours)
+def _duration_summary(days: list[float]) -> dict[str, Optional[float] | int]:
+    ordered = sorted(days)
     if not ordered:
         return {
             "durationSampleCount": 0,
-            "averageDeliveryHours": None,
-            "medianDeliveryHours": None,
-            "p90DeliveryHours": None,
+            "averageDeliveryDays": None,
+            "medianDeliveryDays": None,
+            "p90DeliveryDays": None,
         }
     size = len(ordered)
     middle = size // 2
@@ -284,10 +285,93 @@ def _duration_summary(hours: list[float]) -> dict[str, Optional[float] | int]:
     p90 = ordered[max(0, math.ceil(size * 0.90) - 1)]
     return {
         "durationSampleCount": size,
-        "averageDeliveryHours": _rounded(sum(ordered) / size),
-        "medianDeliveryHours": _rounded(median),
-        "p90DeliveryHours": _rounded(p90),
+        "averageDeliveryDays": _rounded(sum(ordered) / size),
+        "medianDeliveryDays": _rounded(median),
+        "p90DeliveryDays": _rounded(p90),
     }
+
+
+def _agent_duration_summary(days: list[float]) -> dict[str, Optional[float] | int]:
+    ordered = sorted(days)
+    if not ordered:
+        return {
+            "agentInterventionSampleCount": 0,
+            "averageAgentInterventionElapsedDays": None,
+            "medianAgentInterventionElapsedDays": None,
+            "p90AgentInterventionElapsedDays": None,
+        }
+    size = len(ordered)
+    middle = size // 2
+    median = (ordered[middle] if size % 2
+              else (ordered[middle - 1] + ordered[middle]) / 2)
+    return {
+        "agentInterventionSampleCount": size,
+        "averageAgentInterventionElapsedDays": _rounded(sum(ordered) / size),
+        "medianAgentInterventionElapsedDays": _rounded(median),
+        "p90AgentInterventionElapsedDays": _rounded(
+            ordered[max(0, math.ceil(size * 0.90) - 1)]),
+    }
+
+
+def _activity_author(activity: dict) -> Any:
+    for key in (
+        "operator", "author", "creator", "createdBy", "commentator",
+        "operatorName", "modifier",
+    ):
+        if activity.get(key) not in (None, ""):
+            return activity.get(key)
+    return ""
+
+
+def _activity_content(activity: dict) -> str:
+    return " ".join(filter(None, (
+        _scalar_text(activity.get(key)) for key in (
+            "property", "field", "fieldName", "action", "title",
+            "newValue", "toValue", "toStatus",
+        )
+    )))
+
+
+def _first_agent_intervention_at(
+    comments: list[dict], activities: list[dict],
+    created_epoch: float, closed_epoch: float,
+) -> Optional[float]:
+    """Earliest substantive digital comment/activity within the item lifecycle."""
+    candidates: list[float] = []
+    for comment in comments:
+        content = str(
+            comment.get("content") or comment.get("body")
+            or comment.get("message") or "").strip()
+        classified = _classify_author(
+            comment.get("author") or comment.get("creator")
+            or comment.get("commentator") or "", content)
+        occurred = _to_epoch(
+            comment.get("createdAt") or comment.get("created")
+            or comment.get("gmtCreate"))
+        if (classified is not None and classified[0] == "digital" and content
+                and occurred is not None
+                and created_epoch <= occurred <= closed_epoch):
+            candidates.append(occurred)
+    for activity in activities:
+        content = _activity_content(activity).strip()
+        low = content.lower()
+        classified = _classify_author(_activity_author(activity), content)
+        occurred = None
+        for key in ("eventTime", "occurredAt", "createdAt", "gmtCreate", "time"):
+            occurred = _to_epoch(activity.get(key))
+            if occurred is not None:
+                break
+        # Tag/label bookkeeping changes do not establish substantive intervention.
+        bookkeeping = any(
+            token in low for token in (
+                "tag", "label", "标签", "jarvis-claim",
+            )
+        )
+        if (classified is not None and classified[0] == "digital" and content
+                and not bookkeeping and occurred is not None
+                and created_epoch <= occurred <= closed_epoch):
+            candidates.append(occurred)
+    return min(candidates) if candidates else None
 
 
 def _parse_comment_list(stdout: str) -> Optional[list]:
@@ -422,12 +506,13 @@ class WeeklyCommentParticipationRunner:
 
     def _list_closed_requirements(
         self, project: str, req_type: str, closed_statuses: tuple[str, ...],
-        window_start_epoch: float,
+        coverage_start_epoch: float,
     ) -> Optional[list[dict]]:
-        """List current successful closes, narrowed by status and finishTime.
+        """List current successful closes created since the finite FY24 boundary.
 
-        finishTime is only a candidate/early-stop field. Exact closedAt is resolved
-        from the activity stream later.
+        Current status narrows the scan to closed-success items; gmtCreate ordering
+        makes the snapshot cover createdAt cohorts rather than close-time cohorts.
+        Exact closedAt is still resolved from the activity stream later.
         """
         rows: list[dict] = []
         seen: set[str] = set()
@@ -442,8 +527,8 @@ class WeeklyCommentParticipationRunner:
                          "--project", str(project), "--type", req_type,
                          "--status", status,
                          "--columns",
-                         "id,title,type,status,finishTime,finished,gmtCreate",
-                         "--sort", "finishTime:desc",
+                         "id,title,type,status,gmtCreate",
+                         "--sort", "gmtCreate:desc",
                          "--page", str(page), "--page-size", str(LIST_PAGE_SIZE),
                          "-f", "json"],
                         capture_output=True, text=True, timeout=120,
@@ -470,14 +555,13 @@ class WeeklyCommentParticipationRunner:
                 if not isinstance(data, list):
                     data = []
                 for item in data:
-                    finished = (
-                        item.get("finishTime") or item.get("finished")
-                        or item.get("gmtFinished")
-                    )
-                    finished_epoch = _to_epoch(finished)
-                    if finished_epoch is None:
+                    created = (
+                        item.get("gmtCreate") or item.get("createdAt")
+                        or item.get("created"))
+                    created_epoch = _to_epoch(created)
+                    if created_epoch is None:
                         continue
-                    if finished_epoch < window_start_epoch:
+                    if created_epoch < coverage_start_epoch:
                         status_done = True
                         break
                     item_id = str(
@@ -492,11 +576,7 @@ class WeeklyCommentParticipationRunner:
                         "type": _scalar_text(
                             item.get("type") or item.get("workitemType")),
                         "status": _scalar_text(item.get("status")) or status,
-                        "createdAt": (
-                            item.get("gmtCreate") or item.get("createdAt")
-                            or item.get("created")
-                        ),
-                        "finishedCandidateAt": finished_epoch,
+                        "createdAt": created,
                     })
                 if len(data) < LIST_PAGE_SIZE:
                     status_done = True
@@ -659,15 +739,10 @@ class WeeklyCommentParticipationRunner:
         }
 
     def _aggregate_delivery(self, scheduled_for: datetime) -> dict:
-        """Build the exact 30-day successful-close cohort and per-item metrics."""
+        """Build FY24+ closed-success items for createdAt-cohort querying."""
         now = scheduled_for.astimezone(_SHANGHAI_TZ)
-        window_start = now - timedelta(days=DELIVERY_WINDOW_DAYS)
-        start_epoch = window_start.timestamp()
-        # ``finishTime`` from workitem list is date-only (00:00). Use the
-        # beginning of the boundary day for candidate pagination, then apply
-        # the exact rolling-window cutoff to activity timestamps below.
-        candidate_start_epoch = window_start.replace(
-            hour=0, minute=0, second=0, microsecond=0).timestamp()
+        coverage_start = DELIVERY_COVERAGE_START
+        coverage_start_epoch = coverage_start.timestamp()
         end_epoch = now.timestamp()
         workitems: list[dict] = []
         pool_summaries: list[dict] = []
@@ -679,7 +754,7 @@ class WeeklyCommentParticipationRunner:
             closed_statuses = tuple(
                 status_definitions.get(pool_key, {}).get("closed", ()))
             requirements = self._list_closed_requirements(
-                project, req_type, closed_statuses, candidate_start_epoch)
+                project, req_type, closed_statuses, coverage_start_epoch)
             if requirements is None:
                 raise RuntimeError(
                     "delivery candidate query failed for pool %s" % pool_key)
@@ -727,10 +802,11 @@ class WeeklyCommentParticipationRunner:
                         "delivery-metrics: skip #%s because exact close activity "
                         "is missing", item_id)
                     continue
-                if closed_epoch < start_epoch or closed_epoch > end_epoch:
+                if closed_epoch > end_epoch:
                     continue
                 created_epoch = _to_epoch(requirement.get("createdAt"))
-                if created_epoch is None or created_epoch > closed_epoch:
+                if (created_epoch is None or created_epoch < coverage_start_epoch
+                        or created_epoch >= end_epoch or created_epoch > closed_epoch):
                     failed_workitem_ids.append(item_id)
                     pool_failed += 1
                     self._log.warning(
@@ -762,7 +838,14 @@ class WeeklyCommentParticipationRunner:
                         human += 1
                     else:
                         digital += 1
-                delivery_hours = _rounded((closed_epoch - created_epoch) / 3600)
+                delivery_days = _rounded(
+                    (closed_epoch - created_epoch) / (24 * 3600))
+                first_agent_epoch = _first_agent_intervention_at(
+                    comments, activities, created_epoch, closed_epoch)
+                agent_elapsed_days = (
+                    _rounded((closed_epoch - first_agent_epoch) / (24 * 3600))
+                    if first_agent_epoch is not None else None
+                )
                 item = {
                     "id": item_id,
                     "title": str(requirement.get("title") or ""),
@@ -774,7 +857,13 @@ class WeeklyCommentParticipationRunner:
                         created_epoch, _SHANGHAI_TZ)),
                     "closedAt": _iso(datetime.fromtimestamp(
                         closed_epoch, _SHANGHAI_TZ)),
-                    "deliveryHours": delivery_hours,
+                    "deliveryDays": delivery_days,
+                    "firstAgentInterventionAt": (
+                        _iso(datetime.fromtimestamp(
+                            first_agent_epoch, _SHANGHAI_TZ))
+                        if first_agent_epoch is not None else None
+                    ),
+                    "agentInterventionElapsedDays": agent_elapsed_days,
                     "humanCommentCount": human,
                     "digitalCommentCount": digital,
                     "systemCommentCount": system,
@@ -787,7 +876,12 @@ class WeeklyCommentParticipationRunner:
                 pool_items.append(item)
                 workitems.append(item)
 
-            durations = [float(item["deliveryHours"]) for item in pool_items]
+            durations = [float(item["deliveryDays"]) for item in pool_items]
+            agent_durations = [
+                float(item["agentInterventionElapsedDays"])
+                for item in pool_items
+                if item["agentInterventionElapsedDays"] is not None
+            ]
             human_total = sum(
                 int(item["humanCommentCount"]) for item in pool_items)
             summary = {
@@ -797,6 +891,7 @@ class WeeklyCommentParticipationRunner:
                 "closedCount": len(pool_items),
                 "failedWorkitemCount": pool_failed,
                 **_duration_summary(durations),
+                **_agent_duration_summary(agent_durations),
                 "humanCommentTotal": human_total,
                 "humanCommentAverage": (
                     _rounded(human_total / len(pool_items))
@@ -811,10 +906,15 @@ class WeeklyCommentParticipationRunner:
         return {
             "snapshotId": now.strftime("%Y%m%dT%H%M%S%z"),
             "generatedAt": _iso(now),
-            "windowStart": _iso(window_start),
+            # window* are retained for older readers; they now describe finite coverage.
+            "windowStart": _iso(coverage_start),
             "windowEnd": _iso(now),
-            "windowDays": DELIVERY_WINDOW_DAYS,
-            "durationBasis": "calendar_hours",
+            "windowDays": (now.date() - coverage_start.date()).days,
+            "coverageStart": _iso(coverage_start),
+            "coverageEnd": _iso(now),
+            "cohortBasis": "created_at",
+            "scope": "closed_success_only",
+            "durationBasis": "calendar_days",
             "percentileMethod": "nearest_rank",
             "complete": not failed_workitem_ids,
             "candidateCount": candidate_count,
