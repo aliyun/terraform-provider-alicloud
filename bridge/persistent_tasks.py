@@ -216,12 +216,19 @@ def release_claim(item_id, project, terraform=False):
     return True
 
 
-def _finish_workitem(item_id, project, terraform=False):
+def _finish_workitem(item_id, project, terraform=False, mr_cr_links=None):
+    env = _a1_command_env(terraform=terraform)
+    # 把 mr_cr_links 透传给 claim.sh 的 _has_unmerged_mr Check 2：解析每个
+    # github.com/<owner>/<repo>/pull/<num> 直查 state，替代被 sanitize 纪则破坏的
+    # `gh search prs <工单号>`（PR body 不含工单号，永远搜不到）。
+    links = [str(link) for link in (mr_cr_links or []) if str(link).strip()]
+    if links:
+        env["JARVIS_MR_CR_LINKS"] = " ".join(links)
     result = run_process_group(
         [str(REPO_ROOT / "bootstrap" / "claim.sh"), "finish",
          str(item_id), str(project)],
         cwd=str(REPO_ROOT), timeout=BOOKEND_TIMEOUT, capture_output=True, text=True,
-        env=_a1_command_env(terraform=terraform))
+        env=env)
     if result.returncode:
         raise RuntimeError(
             "bridge finish failed for #%s (rc=%s): %s" % (
@@ -440,6 +447,50 @@ def _string_list(value):
     if not isinstance(value, list):
         return []
     return [str(item).strip() for item in value if str(item).strip()]
+
+
+_PR_URL_RE = re.compile(
+    r"github\.com/([^/\s\"'<>]+)/([^/\s\"'<>]+)/pull/(\d+)", re.IGNORECASE)
+
+
+def _unmerged_prs(links):
+    """Return list of ``owner/repo#num`` markers for GitHub PR links not MERGED.
+
+    ``gh search prs <aone-id>`` cannot find these PRs: PR bodies are sanitized
+    (CLAUDE.md 工作纪律 #5) and never carry the Aone workitem id, so the search
+    returns []. We instead parse ``github.com/<owner>/<repo>/pull/<num>`` out of
+    each link and ask ``gh pr view --json state`` directly. A gh failure (no
+    token, network, PR removed) is treated as unmerged so finish stays blocked
+    rather than silently closing a ticket whose code is still under review.
+    """
+    checks = []
+    for link in links or []:
+        if not isinstance(link, str):
+            continue
+        match = _PR_URL_RE.search(link)
+        if match:
+            checks.append((match.group(1), match.group(2), match.group(3)))
+    unmerged = []
+    env = dict(os.environ)
+    if env.get("GH_TOKEN", "") == "" and env.get("JARVIS_GITHUB_TOKEN", ""):
+        env["GH_TOKEN"] = env["JARVIS_GITHUB_TOKEN"]
+    for owner, repo, num in checks:
+        result = run_process_group(
+            ["gh", "pr", "view", num,
+             "--repo", "%s/%s" % (owner, repo), "--json", "state"],
+            cwd=str(REPO_ROOT), timeout=30, capture_output=True, text=True,
+            env=env)
+        if result.returncode != 0:
+            unmerged.append("%s/%s#%s(unverified)" % (owner, repo, num))
+            continue
+        try:
+            state = (json.loads(result.stdout or "{}") or {}).get("state", "")
+        except Exception:  # noqa: BLE001
+            state = ""
+        if str(state).upper() != "MERGED":
+            unmerged.append(
+                "%s/%s#%s(%s)" % (owner, repo, num, state or "unknown"))
+    return unmerged
 
 
 def can_finish(result):
@@ -1025,6 +1076,13 @@ class TaskAoneBookend:
         allowed, reason = can_finish(result)
         if not allowed:
             return allowed, reason
+        # PR 实态硬检查：mr_cr_links 里任一 GitHub PR 未 MERGED 则禁止 finish。
+        # RD 在 PR OPEN 时仍可能返回 outcome=done（误把「技术工作完成」当「可闭环」）；
+        # gh search prs <工单号> 又被 sanitize 纪则破坏（PR body 不含工单号）。
+        # 这里直查每个 PR 的 state，OPEN/CLOSED 未合并 / gh 查不到都拦住，降级 idle。
+        unmerged = _unmerged_prs(result.get("mr_cr_links"))
+        if unmerged:
+            return False, "open PR not merged: %s" % ", ".join(unmerged)
         kind = str((result.get("resolution") or {}).get("kind") or "").strip()
         if kind not in {"existing_supported_and_verified", "withdrawn"}:
             return True, ""
@@ -1261,7 +1319,8 @@ class TaskAoneBookend:
             # jarvis-done remains observable by the terminal-comment watch. Any human
             # comment racing before/during/after finish is compared with this run's
             # claimed-tag activity high-water and becomes a comment:<id> generation.
-            _finish_workitem(self.item_id, self.project, terraform=self.terraform)
+            _finish_workitem(self.item_id, self.project, terraform=self.terraform,
+                             mr_cr_links=result.get("mr_cr_links"))
             return False
 
         # Idle is the durable terminal barrier for non-final or handed-off Tasks. Releasing first
