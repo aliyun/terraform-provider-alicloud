@@ -1255,3 +1255,91 @@ class NotFoundVariantsTest(unittest.TestCase):
         with self.assertRaises(ownership.SnapshotIncomplete) as ctx:
             runner._a1(["project", "workitem", "list", "-f", "json"])
         self.assertNotIsInstance(ctx.exception, ownership.AoneItemUnreadable)
+
+
+class UnreadableProjectStillCoversItsItemsTest(unittest.TestCase):
+    """Skipping a doomed read must not drop the item from the inventory.
+
+    When a project-level list is denied, retrying each id individually cannot
+    succeed, so the per-item fallback is skipped. But the items still have to
+    appear in the output: the coverage assertion requires every candidate, and
+    the server requires exact set equality. Skipping the read is fine; skipping
+    the item fails the whole pass with "output does not cover all candidates".
+    """
+
+    def _runner(self, directory, client):
+        root = Path(directory)
+        (root / "config").mkdir(parents=True, exist_ok=True)
+        (root / "config" / "contacts.json").write_text(
+            json.dumps({"contacts": [], "agent_fallbacks": {}}))
+        return ownership.AoneWorkitemOwnershipRunner(
+            task_client=client, repo_root=root,
+            logger=logging.getLogger("test-unreadable-project"),
+            environ={"JARVIS_AONE_OWNERSHIP_CACHE":
+                     str(root / "cache" / "ownership.json")},
+            clock=lambda: NOW)
+
+    def test_denied_project_items_are_published_as_placeholders(self):
+        from tempfile import TemporaryDirectory
+        with TemporaryDirectory() as directory:
+            client = FakeClient({
+                0: {
+                    "items": [{"taskId": 1, "sourceProjectKey": "709564",
+                               "aoneId": "84574563"}],
+                    "hasMore": False, "nextAfterTaskId": None,
+                },
+            })
+            runner = self._runner(directory, client)
+
+            def batch(_project, _ids):
+                raise ownership.SnapshotIncomplete(
+                    "a1 list failed rc=1: Error: workitem list failed (403): "
+                    "您不是项目成员，没有项目权限")
+
+            runner._fetch_project_batch = batch
+            runner._fetch_detail = mock.Mock()
+            runner._fetch_comments = mock.Mock()
+
+            result = runner.run(definition(), NOW)
+
+            self.assertIs(result.status, JobResultStatus.SUCCEEDED)
+            published = client.puts[0][0]["items"]
+            self.assertEqual([i["aoneId"] for i in published], ["84574563"])
+            self.assertIsNone(published[0]["assignedToStaffId"])
+            # The point of the skip: no per-item read was attempted.
+            runner._fetch_detail.assert_not_called()
+            runner._fetch_comments.assert_not_called()
+
+    def test_denied_project_prefers_cache_over_placeholder(self):
+        from tempfile import TemporaryDirectory
+        with TemporaryDirectory() as directory:
+            cache_path = Path(directory) / "cache" / "ownership.json"
+            cache_path.parent.mkdir(parents=True, exist_ok=True)
+            cache_path.write_text(json.dumps({"version": 1, "items": {
+                "709564:84574563": {
+                    "sourceProjectKey": "709564", "aoneId": "84574563",
+                    "participantStaffIds": [], "assignedToStaffId": "100001",
+                    "latestCommentAuthorStaffId": None,
+                    "sourceUpdatedAt": "2026-08-01 10:00:00",
+                },
+            }}))
+            client = FakeClient({
+                0: {
+                    "items": [{"taskId": 1, "sourceProjectKey": "709564",
+                               "aoneId": "84574563"}],
+                    "hasMore": False, "nextAfterTaskId": None,
+                },
+            })
+            runner = self._runner(directory, client)
+            runner._fetch_project_batch = lambda _p, _i: (
+                (_ for _ in ()).throw(ownership.SnapshotIncomplete(
+                    "Error: workitem list failed (403): denied")))
+            runner._fetch_detail = mock.Mock()
+
+            result = runner.run(definition(), NOW)
+
+            self.assertIs(result.status, JobResultStatus.SUCCEEDED)
+            published = client.puts[0][0]["items"]
+            # Real ownership from cache must win over a blank placeholder.
+            self.assertEqual(published[0]["assignedToStaffId"], "100001")
+            runner._fetch_detail.assert_not_called()

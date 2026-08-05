@@ -910,10 +910,20 @@ class AoneWorkitemOwnershipRunner:
                     if _is_project_permission_failure(exc):
                         # A per-item read cannot succeed where the project-level
                         # read was denied, so retrying each id only costs time.
-                        # The entries are deliberately left unresolved rather
-                        # than dropped: _reuse_or_fail still has to choose
-                        # between a cached reuse and SnapshotIncomplete, because
-                        # this runner never publishes a partial inventory.
+                        # Skip the read -- but never the item: every candidate
+                        # must still reach the output, or the coverage assertion
+                        # below fails the pass and the server rejects the publish
+                        # for not matching its Task set. Resolve each one the same
+                        # way an explicit per-item denial would: cached ownership
+                        # if we have it, otherwise a placeholder.
+                        for candidate in batch:
+                            key = self._candidate_key(
+                                candidate["sourceProjectKey"],
+                                candidate["aoneId"])
+                            cached = self._cached(cache, candidate)
+                            output[key] = (
+                                cached if cached is not None
+                                else self._placeholder(candidate, None))
                         self._log.warning(
                             "aone-workitem-ownership: project unreadable, "
                             "skipping per-item fallback project=%s items=%d",
