@@ -1200,3 +1200,58 @@ class FailedPassStillPersistsProgressTest(unittest.TestCase):
             # The unrelated pre-existing entry must survive the partial save.
             self.assertIn("528766:99999999", cache["items"])
             self.assertIn("528766:85053506", cache["items"])
+
+
+class NotFoundVariantsTest(unittest.TestCase):
+    """a1 reports a missing work item in more than one shape.
+
+    Observed in production, both meaning the same thing:
+      Error: workitem get failed (404): 工作项不存在   (2493 occurrences)
+      Error: workitem 84997516 not found              (67 occurrences)
+
+    Only the first was classified, so the second kept taking the fatal path and
+    one such id was enough to stop the projection publishing.
+    """
+
+    def _runner(self, stderr):
+        from tempfile import TemporaryDirectory
+        from types import SimpleNamespace
+        directory = TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        root = Path(directory.name)
+        (root / "config").mkdir(parents=True)
+        (root / "config" / "contacts.json").write_text(
+            json.dumps({"contacts": [], "agent_fallbacks": {}}))
+        runner = ownership.AoneWorkitemOwnershipRunner(
+            task_client=FakeClient(), repo_root=root,
+            logger=logging.getLogger("test-notfound"),
+            environ={"JARVIS_AONE_OWNERSHIP_CACHE":
+                     str(root / "cache" / "ownership.json")},
+            clock=lambda: NOW)
+        runner._process_runner = lambda *a, **k: SimpleNamespace(
+            returncode=1, stdout="", stderr=stderr)
+        return runner
+
+    def test_bare_not_found_shape_is_classified_as_missing(self):
+        runner = self._runner("Error: workitem 84997516 not found")
+        with self.assertRaises(ownership.AoneItemMissing):
+            runner._a1(["project", "workitem", "get", "84997516", "-f", "json"])
+
+    def test_404_marker_shape_still_classified_as_missing(self):
+        runner = self._runner(
+            "Error: workitem get failed (404): 工作项不存在")
+        with self.assertRaises(ownership.AoneItemMissing):
+            runner._a1(["project", "workitem", "get", "779", "-f", "json"])
+
+    def test_not_found_without_an_id_stays_fatal(self):
+        """Keep it narrow: an id is required, so unrelated prose cannot match."""
+        runner = self._runner("Error: project not found")
+        with self.assertRaises(ownership.SnapshotIncomplete) as ctx:
+            runner._a1(["project", "workitem", "get", "85053506", "-f", "json"])
+        self.assertNotIsInstance(ctx.exception, ownership.AoneItemUnreadable)
+
+    def test_not_found_on_a_non_get_subcommand_stays_fatal(self):
+        runner = self._runner("Error: workitem 84997516 not found")
+        with self.assertRaises(ownership.SnapshotIncomplete) as ctx:
+            runner._a1(["project", "workitem", "list", "-f", "json"])
+        self.assertNotIsInstance(ctx.exception, ownership.AoneItemUnreadable)

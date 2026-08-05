@@ -574,10 +574,14 @@ class AoneWorkitemOwnershipRunner:
                          or "no read permission" in diagnostic.lower())):
                 raise AoneReadForbidden(
                     "Aone detail read forbidden: %s" % diagnostic.strip()[:200])
-            # Keyed on the structured marker, not a bare "404", which can appear
-            # inside a work item id. Same shape as the 403 guard above.
+            # a1 reports a missing item in two shapes, both seen in production:
+            #   workitem get failed (404): 工作项不存在
+            #   workitem <id> not found
+            # Keyed on those markers rather than a bare "404" or a bare "not
+            # found", either of which can appear inside an id or unrelated prose.
             if (args[:3] == ["project", "workitem", "get"]
-                    and re.search(r"workitem get failed \(404\)", diagnostic)):
+                    and (re.search(r"workitem get failed \(404\)", diagnostic)
+                         or re.search(r"workitem \d+ not found", diagnostic))):
                 raise AoneItemMissing(
                     "Aone item does not exist: %s" % diagnostic.strip()[:200])
             raise SnapshotIncomplete(
