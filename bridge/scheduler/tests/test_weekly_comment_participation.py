@@ -166,6 +166,196 @@ class WeeklyCommentParticipationAggregationTests(unittest.TestCase):
             self.assertEqual(rd[0], "digital")
             self.assertEqual(rd[2], "Terraform RD")
             self.assertTrue(rd[3])
+            jarvis = wcp._classify_author("jarvis", "已处理")
+            self.assertEqual(jarvis[0], "digital")
+            self.assertTrue(jarvis[3])
+            chinese = wcp._classify_author("Terraform-研发数字人", "已处理")
+            self.assertEqual(chinese[0], "digital")
+            self.assertTrue(chinese[3])
+
+
+class DeliveryMetricsAggregationTests(unittest.TestCase):
+    def setUp(self):
+        patch = mock.patch.object(wcp, "parallel_a1_per_id", return_value={})
+        patch.start()
+        self.addCleanup(patch.stop)
+
+    def _runner(self) -> wcp.WeeklyCommentParticipationRunner:
+        return wcp.WeeklyCommentParticipationRunner(
+            task_client=FakeTaskClient(), repo_root=Path("/repo"),
+            logger=silent_logger())
+
+    def test_status_mapping_never_treats_solution_or_excluded_as_closed(self):
+        self.assertEqual(
+            wcp._classify_delivery_status("tf_customer", "已合入主线"), "solution")
+        self.assertEqual(
+            wcp._classify_delivery_status("tf_customer", "验收通过"), "closed")
+        self.assertEqual(
+            wcp._classify_delivery_status("tf_customer", "客户未响应"), "excluded")
+        self.assertEqual(
+            wcp._classify_delivery_status("tf_provider", "待发布"), "solution")
+        self.assertEqual(
+            wcp._classify_delivery_status("tf_provider", "已发布"), "closed")
+        self.assertEqual(
+            wcp._classify_delivery_status("tf_provider", "长期跟进"), "external_wait")
+        self.assertEqual(
+            wcp._classify_delivery_status("tf_provider", "开发中"), "open")
+
+    def test_comment_parser_maps_aone_no_comments_text_to_empty_list(self):
+        self.assertEqual(wcp._parse_comment_list("No comments found\n"), [])
+        self.assertIsNone(wcp._parse_comment_list("not valid json"))
+
+    def test_delivery_aggregate_uses_exact_close_activity_and_all_comments(self):
+        runner = self._runner()
+        runner._tf_pools = lambda: [
+            ("tf_customer", "1086837", "需求问题"),
+            ("tf_provider", "528766", "产品类需求"),
+        ]
+        rows = {
+            "1086837": [
+                {
+                    "id": "1001", "title": "客户需求已验收", "status": "验收通过",
+                    "createdAt": "2026-07-01 10:00:00",
+                    "modified": datetime(2026, 7, 25, tzinfo=SHANGHAI).timestamp(),
+                },
+                {
+                    "id": "1002", "title": "已提供方案", "status": "已合入主线",
+                    "createdAt": "2026-07-02 10:00:00",
+                    "modified": datetime(2026, 7, 26, tzinfo=SHANGHAI).timestamp(),
+                },
+            ],
+            "528766": [
+                {
+                    "id": "2001", "title": "待正式发布", "status": "待发布",
+                    "createdAt": "2026-07-03 10:00:00",
+                    "modified": datetime(2026, 7, 26, tzinfo=SHANGHAI).timestamp(),
+                },
+                {
+                    "id": "2002", "title": "已发布资源", "status": "已发布",
+                    "createdAt": "2026-07-10 10:00:00",
+                    "modified": datetime(2026, 7, 26, tzinfo=SHANGHAI).timestamp(),
+                },
+            ],
+        }
+        runner._list_closed_requirements = (
+            lambda project, req_type, statuses, ws: rows[project])
+        activities = {
+            "1001": [
+                {"property": "状态", "newValue": "验收通过",
+                 "eventTime": "2026-07-21 10:00:00"},
+            ],
+            "2002": [
+                {"fieldName": "status", "toValue": {"displayValue": "已发布"},
+                 "createdAt": "2026-07-22 22:00:00"},
+            ],
+        }
+        comments = {
+            "1001": [
+                {"author": "夏节", "content": "人工评论一",
+                 "createdAt": "2026-07-05 10:00:00"},
+                {"author": "terraform-rd", "content": "数字人评论",
+                 "createdAt": "2026-07-06 10:00:00"},
+                {"author": "kelude", "content": "状态流转",
+                 "createdAt": "2026-07-21 10:00:00"},
+            ],
+            "2002": [
+                {"author": "过载", "content": "人工评论二",
+                 "createdAt": "2026-07-20 10:00:00"},
+                {"author": "过载", "content": "人工评论三",
+                 "createdAt": "2026-07-21 10:00:00"},
+            ],
+        }
+        runner._list_activities = lambda iid: activities.get(iid, [])
+        runner._list_comments = lambda iid: comments.get(iid, [])
+
+        snapshot = runner._aggregate_delivery(
+            datetime(2026, 7, 27, 6, 42, tzinfo=SHANGHAI))
+
+        self.assertEqual(snapshot["windowDays"], 30)
+        self.assertEqual(snapshot["durationBasis"], "calendar_hours")
+        self.assertEqual(snapshot["closedCount"], 2)
+        by_id = {item["id"]: item for item in snapshot["workitems"]}
+        self.assertEqual(set(by_id), {"1001", "2002"})
+        self.assertEqual(by_id["1001"]["statusClass"], "closed")
+        self.assertEqual(by_id["1001"]["closedAt"],
+                         "2026-07-21T10:00:00+08:00")
+        self.assertEqual(by_id["1001"]["deliveryHours"], 480.0)
+        self.assertEqual(by_id["1001"]["humanCommentCount"], 1)
+        self.assertEqual(by_id["1001"]["digitalCommentCount"], 1)
+        self.assertEqual(by_id["1001"]["systemCommentCount"], 1)
+        self.assertEqual(by_id["1001"]["totalCommentCount"], 3)
+        self.assertNotIn("1002", by_id)
+        self.assertNotIn("2001", by_id)  # 待发布是 solution，不是最终关单
+
+        summaries = {row["pool"]: row for row in snapshot["pools"]}
+        self.assertEqual(summaries["tf_customer"]["closedCount"], 1)
+        self.assertEqual(summaries["tf_customer"]["averageDeliveryHours"], 480.0)
+        self.assertEqual(summaries["tf_customer"]["humanCommentTotal"], 1)
+        self.assertEqual(summaries["tf_provider"]["closedCount"], 1)
+        self.assertEqual(summaries["tf_provider"]["humanCommentTotal"], 2)
+        self.assertEqual(summaries["tf_provider"]["humanCommentAverage"], 2.0)
+
+    def test_delivery_aggregate_marks_partial_when_item_has_no_exact_status_activity(self):
+        runner = self._runner()
+        runner._tf_pools = lambda: [
+            ("tf_provider", "528766", "产品类需求")]
+        runner._list_closed_requirements = lambda project, req_type, statuses, ws: [{
+            "id": "2002", "title": "已发布资源", "status": "已发布",
+            "createdAt": "2026-07-10 10:00:00",
+            "modified": datetime(2026, 7, 26, tzinfo=SHANGHAI).timestamp(),
+        }]
+        runner._list_activities = lambda iid: []
+        runner._list_comments = lambda iid: []
+
+        snapshot = runner._aggregate_delivery(
+            datetime(2026, 7, 27, 6, 42, tzinfo=SHANGHAI))
+
+        self.assertFalse(snapshot["complete"])
+        self.assertEqual(snapshot["failedWorkitemIds"], ["2002"])
+        self.assertEqual(snapshot["failedWorkitemCount"], 1)
+        self.assertEqual(snapshot["closedCount"], 0)
+
+    def test_zero_comment_closed_item_stays_in_snapshot_with_zero_humans(self):
+        runner = self._runner()
+        runner._tf_pools = lambda: [
+            ("tf_customer", "1086837", "需求问题")]
+        runner._list_closed_requirements = (
+            lambda project, req_type, statuses, ws: [{
+                "id": "1003", "title": "无评论关单", "status": "验收通过",
+                "createdAt": "2026-07-20 10:00:00",
+            }])
+        runner._list_activities = lambda iid: [{
+            "property": "状态", "newValue": "验收通过",
+            "eventTime": "2026-07-21 10:00:00",
+        }]
+        runner._list_comments = lambda iid: []
+
+        snapshot = runner._aggregate_delivery(
+            datetime(2026, 7, 27, 6, 42, tzinfo=SHANGHAI))
+
+        self.assertTrue(snapshot["complete"])
+        self.assertEqual(snapshot["closedCount"], 1)
+        self.assertEqual(snapshot["workitems"][0]["humanCommentCount"], 0)
+        self.assertEqual(snapshot["workitems"][0]["totalCommentCount"], 0)
+
+    def test_delivery_candidate_scan_includes_entire_window_start_day(self):
+        runner = self._runner()
+        runner._tf_pools = lambda: [
+            ("tf_customer", "1086837", "需求问题")]
+        candidate_starts = []
+
+        def list_candidates(project, req_type, statuses, window_start_epoch):
+            candidate_starts.append(window_start_epoch)
+            return []
+
+        runner._list_closed_requirements = list_candidates
+
+        runner._aggregate_delivery(
+            datetime(2026, 7, 27, 6, 42, tzinfo=SHANGHAI))
+
+        self.assertEqual(
+            candidate_starts,
+            [datetime(2026, 6, 27, 0, 0, tzinfo=SHANGHAI).timestamp()])
 
 
 class WeeklyCommentParticipationPublishTests(unittest.TestCase):
@@ -216,6 +406,50 @@ class WeeklyCommentParticipationPublishTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             runner._publish({"totalComments": 1})
 
+    def test_publish_delivery_writes_pages_then_commits_snapshot(self):
+        runner = self._runner()
+        snapshot = {
+            "snapshotId": "20260727T064200+0800",
+            "generatedAt": "2026-07-27T06:42:00+08:00",
+            "windowStart": "2026-06-27T06:42:00+08:00",
+            "windowEnd": "2026-07-27T06:42:00+08:00",
+            "windowDays": 30,
+            "durationBasis": "calendar_hours",
+            "closedCount": 3,
+            "pools": [],
+            "workitems": [{"id": str(index), "title": "x" * 20}
+                          for index in range(5)],
+        }
+        captured = []
+
+        def open_request(request, timeout):
+            captured.append(request)
+            response = SimpleNamespace(getcode=lambda: 200, read=lambda: b"{}")
+            return mock.MagicMock(
+                __enter__=lambda self: response,
+                __exit__=lambda self, *args: False)
+
+        with mock.patch.object(wcp, "DELIVERY_PAGE_ITEMS", 2), \
+             mock.patch.object(wcp.urllib.request, "urlopen",
+                               side_effect=open_request):
+            runner._publish_delivery(snapshot)
+
+        self.assertEqual(len(captured), 4)
+        self.assertEqual([request.get_method() for request in captured],
+                         ["PUT", "PUT", "PUT", "POST"])
+        self.assertTrue(captured[0].full_url.endswith(
+            "/api/jarvis/v1/board/delivery-metrics/snapshots/"
+            "20260727T064200%2B0800/pages/0"))
+        self.assertTrue(captured[-1].full_url.endswith(
+            "/api/jarvis/v1/board/delivery-metrics/snapshots/"
+            "20260727T064200%2B0800/commit"))
+        first_page = json.loads(captured[0].data.decode("utf-8"))
+        self.assertEqual(first_page["items"][0]["id"], "0")
+        commit = json.loads(captured[-1].data.decode("utf-8"))
+        self.assertEqual(commit["pageCount"], 3)
+        self.assertEqual(commit["itemCount"], 5)
+        self.assertNotIn("workitems", commit)
+
 
 class WeeklyCommentParticipationRunTests(unittest.TestCase):
     def _runner(self) -> wcp.WeeklyCommentParticipationRunner:
@@ -226,6 +460,10 @@ class WeeklyCommentParticipationRunTests(unittest.TestCase):
             "totalComments": 0, "participants": [],
             "ticketsTouched": 0, "requirementsCovered": 0}
         runner._publish = lambda payload: None
+        runner._aggregate_delivery = lambda scheduled_for: {
+            "snapshotId": "20260727T064200+0800",
+            "closedCount": 0, "pools": [], "workitems": []}
+        runner._publish_delivery = lambda payload: None
         return runner
 
     def test_success_returns_succeeded(self):
@@ -249,6 +487,19 @@ class WeeklyCommentParticipationRunTests(unittest.TestCase):
             RuntimeError("board stats PUT HTTP 500"))
         result = runner.run(definition(), datetime(2026, 7, 27, 6, 42, tzinfo=SHANGHAI))
         self.assertIs(result.status, JobResultStatus.RETRYABLE_FAILURE)
+
+    def test_delivery_failure_does_not_block_legacy_weekly_publish(self):
+        runner = self._runner()
+        published = []
+        runner._publish = published.append
+        runner._aggregate_delivery = lambda scheduled_for: (
+            (_ for _ in ()).throw(RuntimeError("pool list failed")))
+
+        result = runner.run(
+            definition(), datetime(2026, 7, 27, 6, 42, tzinfo=SHANGHAI))
+
+        self.assertIs(result.status, JobResultStatus.RETRYABLE_FAILURE)
+        self.assertEqual(len(published), 1)
 
 
 if __name__ == "__main__":

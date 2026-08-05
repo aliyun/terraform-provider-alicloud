@@ -126,7 +126,14 @@ def parallel_a1_per_id(aone_ids, *, build_args, parse, workers=8,
                         r.returncode, (r.stderr or "").strip()[:200])
             return aid, None
         try:
-            return aid, parse(r.stdout)
+            parse_input = r.stdout
+            # Aone CLI reports the valid zero-comment state on stderr even
+            # with rc=0. Preserve that semantic result for comment parsers
+            # instead of turning every zero-comment workitem into a failure.
+            if (not str(parse_input or "").strip()
+                    and str(r.stderr or "").strip().lower() == "no comments found"):
+                parse_input = r.stderr
+            return aid, parse(parse_input)
         except Exception as exc:  # noqa: BLE001
             log.warning("parallel_a1_per_id[%s]: #%s parse failed: %s", label, aid, exc)
             return aid, None

@@ -31,6 +31,12 @@
         "性能瓶颈": "Open",
         "任务": "处理中"
       },
+      "delivery_metrics_status": {
+        "solution": ["已合入主线", "已发布待需求方验收"],
+        "closed": ["验收通过"],
+        "excluded": ["需求撤回", "已拒绝", "客户未响应"],
+        "external_wait": []
+      },
       "claim_required_field_defaults_note": "三个键语义不同：defaults=「这就是本池的正确答案」，静默填；fallbacks=「都没匹配上时的兜底」，静默填；placeholders=「我们不知道，这是占位」，填完还要在工单上留一条评论等人更正。107239 归属产品 从 fallback 提为 default：整个池的归属产品就是 Terraform，不该让标题 token 匹配去猜。140097 涉及云产品 刻意留在 fallback —— 它是每单不同的真实数据（MongoDB / Redis / …），title_match 按标题选具体云产品才是对的，terraform 只是识别不出时的兜底；提为 default 会让 MongoDB 工单 fail-closed 或被盖成 terraform。101987 客户名称 有 604 个选项且是真实客户数据，任何默认值都是假的，只能占位。",
       "claim_required_field_defaults": {
         "140282": "有OpenAPI，资源未定义，开放平台维护",
@@ -88,6 +94,12 @@
       "progress_status": {
         "产品类需求": "开发中",
         "功能缺陷": "Open"
+      },
+      "delivery_metrics_status": {
+        "solution": ["待发布"],
+        "closed": ["已发布", "已完成"],
+        "excluded": ["已取消", "已拒绝"],
+        "external_wait": ["长期跟进", "暂无计划"]
       },
       "claim_required_field_defaults_note": "107239 归属产品 -> 906688 开放平台/OpenAPI/Terraform。键用 field id、值用 option Identifier，显示名改名不会把它悄悄指到别处。不配这条时 title_match 会在 824 项全公司产品树里按标题 token 打分，为 Terraform 工单选出「Cloud Control API」。",
       "claim_required_field_defaults": {

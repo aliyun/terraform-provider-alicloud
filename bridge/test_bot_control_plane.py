@@ -1431,6 +1431,23 @@ class SchedulerRunnerTest(unittest.TestCase):
         self.assertEqual(out["A"], None)       # failure -> None, not raised
         self.assertEqual(out["B"], [{"id": 1}])  # success -> parsed
 
+    def test_parallel_a1_per_id_preserves_zero_comment_stderr(self):
+        from bridge.helpers.aone import parallel_a1_per_id
+
+        with mock.patch(
+                "bridge.helpers.aone.run_process_group",
+                return_value=SimpleNamespace(
+                    returncode=0, stdout="", stderr="No comments found\n")):
+            out = parallel_a1_per_id(
+                ["1001"],
+                build_args=lambda aid: [
+                    "project", "workitem", "comment", "list", aid],
+                parse=lambda value: [] if value.strip() == "No comments found"
+                else None,
+                workers=1, timeout=5, label="unit-comments")
+
+        self.assertEqual(out["1001"], [])
+
     def test_prefetch_idle_claimed_a1_fills_caches(self):
         scanner = self._scanner()
         del scanner._prefetch_idle_claimed_a1  # restore the real method
