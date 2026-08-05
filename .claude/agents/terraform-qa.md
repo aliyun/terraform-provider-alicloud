@@ -73,8 +73,9 @@ D 手写紧急/非紧急/生成发布的源单 owner 分别为新山（521957）
 
 ### `verification_mode: cloudspec_pre`
 
-仅用于分支 E。核验 CloudSpec feature 分支、`aliyun cspec build`、资源级 check、
-`amp publish pre --dry-run`/正式 pre 回执及最终 pre Meta 是否与结构合同收敛。此模式
+仅用于分支 E。核验 CloudSpec feature 分支、本轮单次 build、变更资源逐个串行 check 的结果，
+确认同一模型目录没有后台或多 Agent 并行 check，且全部 check 通过后才执行 pre dry-run/
+正式 pre。继续核验最终 pre Meta 是否与结构合同收敛。此模式
 **不运行远程 AccTest**；发现未收敛时退回 RD 修复。通过后返回
 `next=terraform-rd/dev`，由 RD 在同一源单上下文继续 Provider dev/CI/PR，再回 QA 运行
 远程 AccTest。QA 不调用 `createBuildTaskV2`，不创建/关联/指派 528766。

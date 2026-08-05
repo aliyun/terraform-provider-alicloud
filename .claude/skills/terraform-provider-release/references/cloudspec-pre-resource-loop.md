@@ -134,8 +134,9 @@ ModelProvider: string
 
 1. 用 `cloudspec-amp-workflow` 完成 amp doctor、创建/切换 `feature/*` 分支并 clone 对应 cspec 模型。禁止在 master/main 编辑。
 2. 确认目录已有 `main.cspec`，加载 `cloudspec-idl-guide` 后用 `cloudspec-resource-edit` 修改资源；涉及操作或 flag 模式时再加载对应专项技能。
-3. 运行 `aliyun cspec build`。失败时用 `cloudspec-build-fix` 定位并修复，直至通过。
-4. 对每个变更资源运行 `aliyun cspec check --name <ResourceName>`；用 `cloudspec-norm-check-fix` 修复本次增量，直至通过。
+3. 完成本轮 IDL 编辑后只运行一次 `aliyun cspec build`；失败时批量修复后再重跑。
+4. 对每个变更资源逐个、前台、串行运行 `aliyun cspec check --name <ResourceName>`；同一模型
+   目录禁止后台或多 Agent 并行 check。失败时批量修复，再重跑本轮 build/check。
 5. 提交并推送 CloudSpec feature 分支，把 commit、MR/CR、build/check 输出摘要交 finalizer 聚合回原主单。
 
 语义不确定时不得借 codefix 猜答案，回到第 2 节会审。AMP 登录、SSH、模型仓权限或 pre
@@ -143,7 +144,7 @@ ModelProvider: string
 
 ## 4. 发布 pre 与收敛验证
 
-发布必须由 `cloudspec-amp-workflow` 执行，且先预演后真发：
+全部资源 check 通过后，发布继续由 `cloudspec-amp-workflow` 执行，且先预演后真发：
 
 ```bash
 amp branch get -o json

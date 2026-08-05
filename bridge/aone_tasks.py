@@ -638,7 +638,9 @@ PD/QA 全程只读或执行内部验证，不得写 Aone、钉钉、MR/CR，不�
      源单 owner，G 源单给新山；都由 Jarvis/TerraformRD 主动开发，严禁 528766 承载。
 3) 把 PD 返回完整交给 Task terraform-rd：
    - I：no-op，不改 CloudSpec/Provider，不执行外部路由动作；
-   - E：只做到 CloudSpec build/check/publish pre 与 pre Meta 收敛，返回
+   - E：只做到 CloudSpec build/check/publish pre 与 pre Meta 收敛；同一编辑批次只 build
+     一次，再对变更资源逐个、前台、串行 check，同一模型目录禁止后台或多 Agent 并行 check。
+     全部 check 通过后才执行 pre dry-run/publish。随后返回
      `next=terraform-qa/cloudspec_pre_verify`；pre 未收敛不得开始 Provider 生成/开发；
    - pure datasource：RD route phase 只幂等同步源单 assignee + per-type progress_status，
      随后直接在源单上下文开发；不得触碰 528766，源单 bookend 全留给 bridge executor。
