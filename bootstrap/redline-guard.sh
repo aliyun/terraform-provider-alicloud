@@ -18,6 +18,10 @@
 #   4. Any actual curl/wget invocation of Acube createBuildTaskV2. Terraform
 #      work continues on the source Aone Task; this API must never create a
 #      downstream 528766 workitem again.
+#   5. Jarvis delivery execution is allowlist-only: config/pools.json daily and
+#      prestage IDs may run; every production, new, unknown, opaque rerun, and
+#      opaque task-action path stops for a human. Pipeline renumbering therefore
+#      fails closed instead of bypassing a fixed production-ID denylist.
 #
 # Contract (same as worktree-guard):
 #   stdin  = tool call JSON {tool_name, tool_input:{command,...}}
@@ -40,7 +44,7 @@ deny() {
 # Worker fence. It distinguishes executed curl/wget (including bash -lc and
 # same-command variable wrappers) from rg/grep/printf text inspection.
 guard_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-guard_py="$guard_dir/a1_command_guard.py"
+guard_py="${JARVIS_A1_COMMAND_GUARD:-$guard_dir/a1_command_guard.py}"
 python_bin="/usr/bin/python3"
 [ -x "$python_bin" ] || python_bin="$(command -v python3 2>/dev/null || true)"
 if [ -n "$python_bin" ] && [ -f "$guard_py" ]; then
@@ -53,11 +57,19 @@ if [ -n "$python_bin" ] && [ -f "$guard_py" ]; then
         deny "${detail#a1 safety: }"
     fi
     rm -f "${TMPDIR:-/tmp}/jarvis-redline-guard.$$"
+    if [ "$guard_rc" -ne 0 ]; then
+        if printf '%s' "$cmd" | grep -qE '(^|[;&|[:space:]])([^;&|[:space:]]*/)?(a1|a1id)([[:space:]]|$)'; then
+            deny "a1 safety classifier failed(rc=$guard_rc); blocking a1/a1id command fail-closed"
+        fi
+    fi
 else
     # The specific red line must fail closed if its parser is unavailable.
     if printf '%s' "$cmd" | grep -Fq 'createBuildTaskV2' \
         && printf '%s' "$cmd" | grep -qE '(^|[;&|[:space:]])(curl|wget)([[:space:]]|$)'; then
         deny "Acube createBuildTaskV2 is permanently disabled for Jarvis"
+    fi
+    if printf '%s' "$cmd" | grep -qE '(^|[;&|[:space:]])([^;&|[:space:]]*/)?(a1|a1id)([[:space:]]|$)'; then
+        deny "a1 safety classifier is unavailable; blocking a1/a1id command fail-closed"
     fi
 fi
 

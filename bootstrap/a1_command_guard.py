@@ -1,9 +1,15 @@
 #!/usr/bin/env python3
-"""Fail-closed safety gate for destructive a1 CR-flow commands.
+"""Fail-closed safety gate for destructive a1 release/CR-flow commands.
 
 Jarvis must never execute ``app pipeline exit-cr``, ``app pipeline quit`` or
 ``app cr quit``.  All three mutate CR/branch membership in a publish flow;
 conflicts and withdrawal requests must stop and be handed to a human instead.
+Jarvis may submit only reviewed daily/prestage pipelines declared in
+``config/pools.json``. Every production, new, or unknown pipeline is left to a
+human, so renumbering a production pipeline fails closed instead of bypassing
+a fixed-ID denylist.
+Opaque reruns and task actions are rejected as well: their IDs do not carry
+enough pipeline identity for the guard to prove that an operation is non-prod.
 
 The module is used in two places:
 
@@ -15,10 +21,12 @@ The module is used in two places:
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import re
 import shlex
 import sys
+from pathlib import Path
 from typing import Any, Iterable, Mapping, Optional, Sequence
 
 
@@ -33,6 +41,23 @@ DIRECT_QUIT_MESSAGE = (
 ACUBE_BUILD_TASK_MESSAGE = (
     "Acube createBuildTaskV2 is permanently disabled for Jarvis; "
     "Terraform work must continue on the source Aone Task"
+)
+UNAPPROVED_PIPELINE_MESSAGE = (
+    "the application/pipeline pair is not in Jarvis's reviewed non-production "
+    "allowlist; a human must approve and run production or unknown releases"
+)
+OPAQUE_RERUN_MESSAGE = (
+    "exact cd-pipeline reruns by run ID are disabled for Jarvis because the "
+    "pipeline cannot be proven non-production; use an explicit non-prod "
+    "--pipeline-id and application instead"
+)
+OPAQUE_TASK_ACTION_MESSAGE = (
+    "cd-pipeline task actions are disabled for Jarvis because a task ID cannot "
+    "be proven non-production; a human must run production approvals and actions"
+)
+OPAQUE_RELEASE_TARGET_MESSAGE = (
+    "the delivery pipeline target cannot be proven non-production; "
+    "Jarvis requires an explicit numeric non-prod pipeline ID"
 )
 
 _GLOBAL_NO_VALUE = {
@@ -115,15 +140,258 @@ def _without_global_flags(argv: Sequence[str]) -> tuple[list[str], list[str]]:
     return semantic, forwarded
 
 
+def _option_values(argv: Sequence[str], name: str) -> list[Optional[str]]:
+    values: list[Optional[str]] = []
+    for index, token in enumerate(argv):
+        if token == name:
+            values.append(str(argv[index + 1]) if index + 1 < len(argv) else None)
+        else:
+            prefix = name + "="
+            if token.startswith(prefix):
+                values.append(token[len(prefix):])
+    return values
+
+
+def _numeric_id(value: Optional[str]) -> Optional[int]:
+    if value is None or re.fullmatch(r"\+?[0-9]+", value) is None:
+        return None
+    return int(value, 10)
+
+
+def _parse_nonprod_pipeline_bindings(data: Any) -> frozenset[tuple[str, int]]:
+    """Parse reviewed app+daily/prestage pairs; malformed policy allows none."""
+    try:
+        pools = data["pools"]
+        if not isinstance(pools, dict):
+            return frozenset()
+        allowed: set[tuple[str, int]] = set()
+        production: set[int] = set()
+        for pool in pools.values():
+            if not isinstance(pool, dict):
+                return frozenset()
+            apps = pool.get("apps")
+            if apps is None:
+                continue
+            if not isinstance(apps, list):
+                return frozenset()
+            for app in apps:
+                if not isinstance(app, dict):
+                    return frozenset()
+                pipelines = app.get("pipelines")
+                if not isinstance(pipelines, dict):
+                    return frozenset()
+                owners = {
+                    str(value).strip()
+                    for value in (app.get("app"), app.get("name"))
+                    if value is not None and str(value).strip()
+                }
+                if not owners:
+                    return frozenset()
+                for stage in ("daily", "prestage"):
+                    value = pipelines.get(stage)
+                    if value is None:
+                        continue
+                    if isinstance(value, int) and not isinstance(value, bool):
+                        allowed.update((owner, value) for owner in owners)
+                    else:
+                        return frozenset()
+                prod = pipelines.get("prod")
+                if not isinstance(prod, int) or isinstance(prod, bool):
+                    return frozenset()
+                production.add(prod)
+        if any(pipeline_id in production for _owner, pipeline_id in allowed):
+            return frozenset()
+        return frozenset(allowed)
+    except (KeyError, TypeError, ValueError):
+        return frozenset()
+
+
+def _configured_nonprod_pipeline_bindings() -> frozenset[tuple[str, int]]:
+    """Load reviewed bindings; missing or invalid config fails closed."""
+    try:
+        config_path = Path(__file__).resolve().parent.parent / "config" / "pools.json"
+        data = json.loads(config_path.read_text(encoding="utf-8"))
+        return _parse_nonprod_pipeline_bindings(data)
+    except (OSError, TypeError, ValueError):
+        return frozenset()
+
+
+def _pipeline_target_kind(
+    pipeline_values: Sequence[Optional[str]],
+    app_values: Sequence[Optional[str]],
+) -> Optional[str]:
+    if not pipeline_values or not app_values:
+        return "blocked-opaque-release-target"
+    pipeline_ids = [_numeric_id(value) for value in pipeline_values]
+    if any(value is None for value in pipeline_ids):
+        return "blocked-opaque-release-target"
+    owners = [str(value).strip() if value is not None else ""
+              for value in app_values]
+    if any(not owner or owner.startswith("-") for owner in owners):
+        return "blocked-opaque-release-target"
+    allowed = _configured_nonprod_pipeline_bindings()
+    if any((owner, pipeline_id) not in allowed
+           for owner in owners for pipeline_id in pipeline_ids):
+        return "blocked-unapproved-pipeline"
+    return None
+
+
+def _positionals(argv: Sequence[str], value_flags: Iterable[str]) -> list[str]:
+    consumes = set(value_flags)
+    result: list[str] = []
+    index = 0
+    after_separator = False
+    while index < len(argv):
+        token = str(argv[index])
+        if after_separator:
+            result.append(token)
+            index += 1
+            continue
+        if token == "--":
+            after_separator = True
+            index += 1
+            continue
+        if token in consumes:
+            index += 2
+            continue
+        if any(token.startswith(flag + "=") for flag in consumes):
+            index += 1
+            continue
+        if token.startswith("-"):
+            index += 1
+            continue
+        result.append(token)
+        index += 1
+    return result
+
+
 def _command_kind(argv: Sequence[str]) -> str:
     semantic, _forwarded = _without_global_flags(argv)
+    if "--help" in semantic or "-h" in semantic:
+        return "other"
     if semantic[:3] == ["app", "pipeline", "exit-cr"]:
         return "blocked-quit"
     if semantic[:3] == ["app", "pipeline", "quit"]:
         return "blocked-quit"
     if semantic[:3] == ["app", "cr", "quit"]:
         return "blocked-quit"
+    if semantic[:3] == ["cd-pipeline", "run", "cancel"]:
+        return "blocked-quit"
+    if semantic[:3] == ["app", "cr", "submit"]:
+        pipeline_values = _option_values(semantic[3:], "--pipeline-id")
+        # No pipeline ID only advances the CR to the publish page; it does not
+        # execute a delivery pipeline and is therefore outside release_prod.
+        if pipeline_values:
+            kind = _pipeline_target_kind(
+                pipeline_values, _option_values(semantic[3:], "--app"))
+            if kind:
+                return kind
+            return "other"
+    if tuple(semantic[:3]) in {
+            ("app", "pipeline", "reenter"),
+            ("app", "pipeline", "run"),
+            ("app", "pipeline", "retry"),
+    }:
+        kind = _pipeline_target_kind(
+            _option_values(semantic[3:], "--pipeline-id"),
+            _option_values(semantic[3:], "--app"),
+        )
+        if kind:
+            return kind
+        return "other"
+    if semantic[:3] == ["cd-pipeline", "run", "rerun"]:
+        tail = semantic[3:]
+        pipeline_values = _option_values(tail, "--pipeline-id")
+        positionals = _positionals(
+            tail,
+            {"--pipeline-id", "--app", "--mvn", "--faas", "--param",
+             "--interval", "--timeout"},
+        )
+        if positionals:
+            return "blocked-opaque-rerun"
+        kind = _pipeline_target_kind(
+            pipeline_values, _option_values(tail, "--app"))
+        if kind:
+            return kind
+        return "other"
+    if semantic[:4] == ["cd-pipeline", "run", "task", "status"]:
+        positionals = _positionals(semantic[4:], {"--task-id"})
+        if positionals:
+            return "blocked-opaque-task-action"
+        return "other"
+    if semantic[:6] == [
+            "app", "pipeline", "stage", "job", "task", "status",
+    ]:
+        positionals = _positionals(
+            semantic[6:], {"--task-id", "--task-inst-id"})
+        if positionals:
+            return "blocked-opaque-task-action"
+        return "other"
+    if (semantic[:5] == ["app", "pipeline", "stage", "job", "task"]
+            and semantic[5:6] != ["status"]):
+        # Component shortcuts are read-only only for status/log. Any other
+        # component action is opaque because argv carries no parent pipeline.
+        if semantic[5:6] == ["list"]:
+            return "other"
+        if len(semantic) >= 7 and semantic[6] in {"status", "log"}:
+            return "other"
+        return "blocked-opaque-task-action"
+    if semantic[:3] == ["app", "pipeline", "lib-deploy"]:
+        if semantic[3:4] == ["preview"]:
+            return "other"
+        return "blocked-opaque-release-target"
+    if semantic[:2] == ["app", "pipeline"]:
+        readonly = {
+            ("list",), ("status",), ("branch",),
+            ("instance", "list"),
+            ("stage", "list"), ("stage", "status"),
+            ("stage", "job", "list"), ("stage", "job", "status"),
+        }
+        tail = tuple(semantic[2:])
+        if any(tail[:len(prefix)] == prefix for prefix in readonly):
+            return "other"
+        return "blocked-opaque-release-target"
+    if semantic[:2] == ["cd-pipeline", "bind"]:
+        return "blocked-opaque-release-target"
+    if semantic[:2] == ["cd-pipeline", "run"]:
+        positionals = _positionals(
+            semantic[2:],
+            {"--app", "--cr-id", "--mvn", "--faas", "--param",
+             "--interval", "--timeout"},
+        )
+        pipeline_id = _numeric_id(positionals[0]) if positionals else None
+        if positionals and positionals[0] in {
+                "cancel", "get", "list", "rerun", "status", "task",
+        }:
+            return "other"
+        if not positionals and "--help" in semantic:
+            return "other"
+        if pipeline_id is None:
+            return "blocked-opaque-release-target"
+        kind = _pipeline_target_kind(
+            [str(pipeline_id)], _option_values(semantic[2:], "--app"))
+        if kind:
+            return kind
+        return "other"
+    if semantic[:1] == ["cd-pipeline"]:
+        if semantic[1:2] in [["get"], ["list"], ["release"], ["vars"]]:
+            return "other"
+        return "blocked-opaque-release-target"
     return "other"
+
+
+def _kind_message(kind: str, *, direct: bool = False) -> Optional[str]:
+    if kind == "blocked-unapproved-pipeline":
+        return UNAPPROVED_PIPELINE_MESSAGE
+    if kind == "blocked-opaque-rerun":
+        return OPAQUE_RERUN_MESSAGE
+    if kind == "blocked-opaque-task-action":
+        return OPAQUE_TASK_ACTION_MESSAGE
+    if kind == "blocked-opaque-release-target":
+        return OPAQUE_RELEASE_TARGET_MESSAGE
+    if kind == "blocked-quit":
+        return DIRECT_QUIT_MESSAGE if direct else BLOCKED_CR_EXIT_MESSAGE
+    return None
 
 
 def _a1id_payload(argv: Sequence[str]) -> Sequence[str]:
@@ -407,17 +675,25 @@ def _pretool_reason_from_command(
         if exec_index is None:
             continue
         executable = _basename(invocation[exec_index])
-        exec_args = invocation[exec_index + 1:]
+        exec_args = [
+            _expand_simple_vars(str(token), variables)
+            for token in invocation[exec_index + 1:]
+        ]
         if executable == "a1":
             kind = _command_kind(exec_args)
-            if kind == "blocked-quit":
-                return (DIRECT_QUIT_MESSAGE if
-                        _without_global_flags(exec_args)[0][:3] == ["app", "cr", "quit"]
-                        else BLOCKED_CR_EXIT_MESSAGE)
+            reason = _kind_message(
+                kind,
+                direct=(kind == "blocked-quit" and
+                        _without_global_flags(exec_args)[0][:3]
+                        == ["app", "cr", "quit"]),
+            )
+            if reason:
+                return reason
         elif executable == "a1id":
             kind = _command_kind(_a1id_payload(exec_args))
-            if kind == "blocked-quit":
-                return BLOCKED_CR_EXIT_MESSAGE
+            reason = _kind_message(kind)
+            if reason:
+                return reason
         elif executable in {"bash", "sh", "zsh"}:
             # ``bash bin/a1id -- ...`` is a common explicit-wrapper form.
             script_index = exec_index + 1
@@ -427,9 +703,14 @@ def _pretool_reason_from_command(
                 script_index += 1
             if (script_index < len(invocation)
                     and _basename(invocation[script_index]) == "a1id"):
-                kind = _command_kind(_a1id_payload(invocation[script_index + 1:]))
-                if kind == "blocked-quit":
-                    return BLOCKED_CR_EXIT_MESSAGE
+                script_args = [
+                    _expand_simple_vars(str(token), variables)
+                    for token in invocation[script_index + 1:]
+                ]
+                kind = _command_kind(_a1id_payload(script_args))
+                reason = _kind_message(kind)
+                if reason:
+                    return reason
 
         # Cover common ``bash -c/-lc/-fc 'a1 ...'`` wrappers.  shlex
         # deliberately leaves the quoted script as one token.
@@ -464,8 +745,9 @@ def pretool_a1_block_reason(event: Mapping[str, Any]) -> Optional[str]:
 
 def run_guarded(a1_bin: str, argv: Sequence[str]) -> None:
     kind = _command_kind(argv)
-    if kind == "blocked-quit":
-        raise GuardError(BLOCKED_CR_EXIT_MESSAGE)
+    reason = _kind_message(kind)
+    if reason:
+        raise GuardError(reason)
     os.execvpe(a1_bin, [a1_bin, *argv], os.environ.copy())
 
 
@@ -492,8 +774,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         raw_args = raw_args[1:] if raw_args[:1] == ["--"] else raw_args
         return 2 if _aone_workitem_write(raw_args) else 0
     if args.check_a1id_argv:
-        if _command_kind(_a1id_payload(raw_args)) == "blocked-quit":
-            print("a1 safety: %s" % BLOCKED_CR_EXIT_MESSAGE, file=sys.stderr)
+        reason = _kind_message(_command_kind(_a1id_payload(raw_args)))
+        if reason:
+            print("a1 safety: %s" % reason, file=sys.stderr)
             return 2
         return 0
     a1_args = raw_args
