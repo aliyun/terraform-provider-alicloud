@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
 
@@ -8,6 +9,8 @@ import (
 	"github.com/denverdino/aliyungo/cs"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestAccAliCloudCSKubernetesNodePool_basic(t *testing.T) {
@@ -8055,3 +8058,542 @@ resource "alicloud_cs_managed_kubernetes" "defaultNppPcz" {
 }
 
 // Test Ack Nodepool. <<< Resource test cases, automatically generated.
+
+func TestAccAliCloudCSKubernetesNodePool_containerdConfig(t *testing.T) {
+	var v *cs.NodePoolDetail
+
+	resourceId := "alicloud_cs_kubernetes_node_pool.containerd_config"
+	ra := resourceAttrInit(resourceId, AlicloudAckNodepoolMap12069)
+
+	serviceFunc := func() interface{} {
+		return &CsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccNodePool-containerd-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudAckNodepoolBasicDependence12069)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":        name,
+					"cluster_id":  "${alicloud_cs_managed_kubernetes.defaultNppPcz.id}",
+					"vswitch_ids": []string{"${alicloud_vswitch.defaultT8D8ss.id}"},
+					"instance_types": []string{
+						"ecs.g7.xlarge",
+					},
+					"desired_size":         "1",
+					"system_disk_category": "cloud_essd",
+					"system_disk_size":     "40",
+					"image_type":           "AliyunLinux3ContainerOptimized",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":       name,
+						"cluster_id": CHECKSET,
+						// Guard: an unconfigured node pool must not surface server-side
+						// defaults as containerd_config, otherwise it produces a spurious diff.
+						"containerd_config.#": "0",
+					}),
+				),
+			},
+			// check: containerd_config basic
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"containerd_config": []map[string]interface{}{{
+						"max_concurrent_downloads":    "10",
+						"ignore_image_defined_volume": "true",
+						"insecure_registries":         []string{"registry.example.com"},
+					}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"containerd_config.#":                             "1",
+						"containerd_config.0.max_concurrent_downloads":    "10",
+						"containerd_config.0.ignore_image_defined_volume": "true",
+						"containerd_config.0.insecure_registries.#":       "1",
+						"containerd_config.0.insecure_registries.0":       "registry.example.com",
+					}),
+				),
+			},
+			// check: containerd_config update
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"containerd_config": []map[string]interface{}{{
+						"max_concurrent_downloads":    "5",
+						"limit_core":                  "10",
+						"limit_no_file":               "1024",
+						"limit_mem_lock":              "65536",
+						"ignore_image_defined_volume": "true",
+						"insecure_registries":         []string{"registry.example.com"},
+						"registry_mirrors": []string{
+							"docker.io=https://mirror.example.com&override_path,https://mirror2.example.com",
+						},
+					}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"containerd_config.#":                             "1",
+						"containerd_config.0.max_concurrent_downloads":    "5",
+						"containerd_config.0.limit_core":                  "10",
+						"containerd_config.0.limit_no_file":               "1024",
+						"containerd_config.0.limit_mem_lock":              "65536",
+						"containerd_config.0.ignore_image_defined_volume": "true",
+						"containerd_config.0.insecure_registries.#":       "1",
+						"containerd_config.0.insecure_registries.0":       "registry.example.com",
+						"containerd_config.0.registry_mirrors.#":          "1",
+						"containerd_config.0.registry_mirrors.0":          "docker.io=https://mirror.example.com&override_path,https://mirror2.example.com",
+					}),
+				),
+			},
+			// check: explicit zero values (limit_core = "0", ignore_image_defined_volume = "false")
+			// must be sent to the API and kept in state, instead of being treated as "not set".
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"containerd_config": []map[string]interface{}{{
+						"max_concurrent_downloads":    "5",
+						"limit_core":                  "0",
+						"limit_no_file":               "1024",
+						"limit_mem_lock":              "65536",
+						"ignore_image_defined_volume": "false",
+						"insecure_registries":         []string{"registry.example.com"},
+						"registry_mirrors": []string{
+							"docker.io=https://mirror.example.com&override_path,https://mirror2.example.com",
+						},
+					}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"containerd_config.0.limit_core":                  "0",
+						"containerd_config.0.ignore_image_defined_volume": "false",
+					}),
+				),
+			},
+			// check: unsetting a single nullable field (limit_core removed from the config,
+			// which is "" under TypeString semantics) drops the key on the cloud side and
+			// reads back as "".
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"containerd_config": []map[string]interface{}{{
+						"max_concurrent_downloads":    "5",
+						"limit_no_file":               "1024",
+						"limit_mem_lock":              "65536",
+						"ignore_image_defined_volume": "false",
+						"insecure_registries":         []string{"registry.example.com"},
+						"registry_mirrors": []string{
+							"docker.io=https://mirror.example.com&override_path,https://mirror2.example.com",
+						},
+					}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"containerd_config.0.limit_core": "",
+					}),
+				),
+			},
+			// check: clearing a list (registry_mirrors no longer provided) empties it under
+			// the API's full-replacement semantics.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"containerd_config": []map[string]interface{}{{
+						"max_concurrent_downloads":    "5",
+						"limit_no_file":               "1024",
+						"limit_mem_lock":              "65536",
+						"ignore_image_defined_volume": "false",
+						"insecure_registries":         []string{"registry.example.com"},
+					}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"containerd_config.0.registry_mirrors.#": "0",
+						"containerd_config.0.registry_mirrors.0": REMOVEKEY,
+					}),
+				),
+			},
+			// check: removing the whole containerd_config block clears all custom containerd
+			// configuration (an empty map is sent) and state shows containerd_config.# = 0.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"containerd_config": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"containerd_config.#":                             "0",
+						"containerd_config.0.max_concurrent_downloads":    REMOVEKEY,
+						"containerd_config.0.limit_core":                  REMOVEKEY,
+						"containerd_config.0.limit_no_file":               REMOVEKEY,
+						"containerd_config.0.limit_mem_lock":              REMOVEKEY,
+						"containerd_config.0.ignore_image_defined_volume": REMOVEKEY,
+						"containerd_config.0.insecure_registries.#":       REMOVEKEY,
+						"containerd_config.0.insecure_registries.0":       REMOVEKEY,
+						"containerd_config.0.registry_mirrors.#":          REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"eflo_node_group", "password", "rolling_policy", "update_nodes", "upgrade_policy"},
+			},
+		},
+	})
+}
+
+// TestAccAliCloudCSKubernetesNodePool_containerdConfigCreate verifies the Create-time
+// post-send path: CreateNodePool does not accept containerd_config, so the Create function
+// must re-send it via ModifyNodePoolNodeConfig after the node pool becomes active. The very
+// first apply already declares a containerd_config block; if the post-send were missing, the
+// configuration would be silently dropped and the first Read would leave a non-empty plan.
+func TestAccAliCloudCSKubernetesNodePool_containerdConfigCreate(t *testing.T) {
+	var v *cs.NodePoolDetail
+
+	resourceId := "alicloud_cs_kubernetes_node_pool.containerd_config_create"
+	ra := resourceAttrInit(resourceId, AlicloudAckNodepoolMap12069)
+
+	serviceFunc := func() interface{} {
+		return &CsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccNodePool-containerd-create-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudAckNodepoolBasicDependence12069)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			// check: the containerd_config block declared at Create time is applied through
+			// the post-send call and read back exactly as configured, so the first apply
+			// converges without a follow-up diff. Covers numeric string fields, an explicit
+			// zero (limit_core = "0"), an explicit "false", and both list fields.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":        name,
+					"cluster_id":  "${alicloud_cs_managed_kubernetes.defaultNppPcz.id}",
+					"vswitch_ids": []string{"${alicloud_vswitch.defaultT8D8ss.id}"},
+					"instance_types": []string{
+						"ecs.g7.xlarge",
+					},
+					"desired_size":         "1",
+					"system_disk_category": "cloud_essd",
+					"system_disk_size":     "40",
+					"image_type":           "AliyunLinux3ContainerOptimized",
+					"containerd_config": []map[string]interface{}{{
+						"max_concurrent_downloads":    "5",
+						"limit_core":                  "0",
+						"limit_no_file":               "1024",
+						"limit_mem_lock":              "65536",
+						"ignore_image_defined_volume": "false",
+						"insecure_registries":         []string{"registry.example.com"},
+						"registry_mirrors": []string{
+							"docker.io=https://mirror.example.com&override_path,https://mirror2.example.com",
+						},
+					}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":                                            name,
+						"cluster_id":                                      CHECKSET,
+						"containerd_config.#":                             "1",
+						"containerd_config.0.max_concurrent_downloads":    "5",
+						"containerd_config.0.limit_core":                  "0",
+						"containerd_config.0.limit_no_file":               "1024",
+						"containerd_config.0.limit_mem_lock":              "65536",
+						"containerd_config.0.ignore_image_defined_volume": "false",
+						"containerd_config.0.insecure_registries.#":       "1",
+						"containerd_config.0.insecure_registries.0":       "registry.example.com",
+						"containerd_config.0.registry_mirrors.#":          "1",
+						"containerd_config.0.registry_mirrors.0":          "docker.io=https://mirror.example.com&override_path,https://mirror2.example.com",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"eflo_node_group", "password", "rolling_policy", "update_nodes", "upgrade_policy"},
+			},
+		},
+	})
+}
+
+// TestUnitFlattenContainerdConfig covers the API-response-to-schema conversion of the
+// containerd_config block: only keys explicitly returned by the API are written into the
+// element map (missing key = "not set"), numeric fields accept both json.Number and the
+// float64 fallback and are rendered as decimal strings for the nullable TypeString fields,
+// and an empty/nil response yields an empty list.
+func TestUnitFlattenContainerdConfig(t *testing.T) {
+	tests := []struct {
+		name string
+		raw  interface{}
+		want []map[string]interface{}
+	}{
+		{
+			name: "nil input returns empty list",
+			raw:  nil,
+			want: []map[string]interface{}{},
+		},
+		{
+			name: "empty map returns empty list",
+			raw:  map[string]interface{}{},
+			want: []map[string]interface{}{},
+		},
+		{
+			name: "non-map input returns empty list",
+			raw:  "not-a-map",
+			want: []map[string]interface{}{},
+		},
+		{
+			name: "partial response only writes returned keys",
+			raw: map[string]interface{}{
+				"maxConcurrentDownloads": json.Number("3"),
+			},
+			want: []map[string]interface{}{{
+				"max_concurrent_downloads": 3,
+			}},
+		},
+		{
+			name: "json.Number values render as decimal strings",
+			raw: map[string]interface{}{
+				"maxConcurrentDownloads": json.Number("5"),
+				"limitCore":              json.Number("1"),
+				"limitNoFile":            json.Number("65536"),
+				"limitMemLock":           json.Number("128849018880"),
+			},
+			want: []map[string]interface{}{{
+				"max_concurrent_downloads": 5,
+				"limit_core":               "1",
+				"limit_no_file":            "65536",
+				"limit_mem_lock":           "128849018880",
+			}},
+		},
+		{
+			name: "float64 fallback values render as decimal strings",
+			raw: map[string]interface{}{
+				"maxConcurrentDownloads": float64(10),
+				"limitCore":              float64(2),
+				"limitNoFile":            float64(2048),
+				"limitMemLock":           float64(65536),
+			},
+			want: []map[string]interface{}{{
+				"max_concurrent_downloads": 10,
+				"limit_core":               "2",
+				"limit_no_file":            "2048",
+				"limit_mem_lock":           "65536",
+			}},
+		},
+		{
+			name: "bool true renders as string true",
+			raw: map[string]interface{}{
+				"ignoreImageDefinedVolume": true,
+			},
+			want: []map[string]interface{}{{
+				"ignore_image_defined_volume": "true",
+			}},
+		},
+		{
+			name: "bool false renders as string false",
+			raw: map[string]interface{}{
+				"ignoreImageDefinedVolume": false,
+			},
+			want: []map[string]interface{}{{
+				"ignore_image_defined_volume": "false",
+			}},
+		},
+		{
+			name: "large json.Number is not truncated",
+			raw: map[string]interface{}{
+				"limitNoFile": json.Number("9007199254740991"),
+			},
+			want: []map[string]interface{}{{
+				"limit_no_file": "9007199254740991",
+			}},
+		},
+		{
+			name: "non-empty registry lists are written",
+			raw: map[string]interface{}{
+				"registryMirrors":    []interface{}{"https://mirror.example.com"},
+				"insecureRegistries": []interface{}{"registry.example.com:5000"},
+			},
+			want: []map[string]interface{}{{
+				"registry_mirrors":    []interface{}{"https://mirror.example.com"},
+				"insecure_registries": []interface{}{"registry.example.com:5000"},
+			}},
+		},
+		{
+			name: "empty or nil registry lists are skipped",
+			raw: map[string]interface{}{
+				"limitCore":          json.Number("1"),
+				"registryMirrors":    []interface{}{},
+				"insecureRegistries": nil,
+			},
+			want: []map[string]interface{}{{
+				"limit_core": "1",
+			}},
+		},
+		{
+			name: "explicit zero values stay distinct from missing keys",
+			raw: map[string]interface{}{
+				"limitCore":                json.Number("0"),
+				"ignoreImageDefinedVolume": false,
+			},
+			want: []map[string]interface{}{{
+				"limit_core":                  "0",
+				"ignore_image_defined_volume": "false",
+			}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, flattenContainerdConfig(tt.raw))
+		})
+	}
+}
+
+// TestUnitExpandContainerdConfig covers the schema-to-API-request conversion of the
+// containerd_config block using the resource's real schema via schema.TestResourceDataRaw.
+// The nullable string fields (limit_core/limit_no_file/limit_mem_lock/
+// ignore_image_defined_volume) skip "" ("not set") and send explicit values, including
+// "0"/"false"; removing the whole block yields an empty map ({} clears the cloud-side
+// configuration under the API's full-replacement semantics). Invalid values bypassing the
+// schema ValidateFunc layer surface as errors from strconv.ParseInt/ParseBool.
+func TestUnitExpandContainerdConfig(t *testing.T) {
+	resourceSchema := resourceAliCloudAckNodepool().Schema
+
+	tests := []struct {
+		name    string
+		raw     map[string]interface{}
+		want    map[string]interface{}
+		wantErr bool
+	}{
+		{
+			name: "block absent returns empty map",
+			raw:  map[string]interface{}{},
+			want: map[string]interface{}{},
+		},
+		{
+			name: "block removed (empty list) returns empty map",
+			raw: map[string]interface{}{
+				"containerd_config": []interface{}{},
+			},
+			want: map[string]interface{}{},
+		},
+		{
+			name: "all fields unset sends no keys",
+			raw: map[string]interface{}{
+				"containerd_config": []interface{}{map[string]interface{}{
+					"max_concurrent_downloads":    0,
+					"limit_core":                  "",
+					"limit_no_file":               "",
+					"limit_mem_lock":              "",
+					"ignore_image_defined_volume": "",
+					"registry_mirrors":            []interface{}{},
+					"insecure_registries":         []interface{}{},
+				}},
+			},
+			want: map[string]interface{}{},
+		},
+		{
+			name: "explicit zero and false are sent",
+			raw: map[string]interface{}{
+				"containerd_config": []interface{}{map[string]interface{}{
+					"limit_core":                  "0",
+					"ignore_image_defined_volume": "false",
+				}},
+			},
+			want: map[string]interface{}{
+				"limitCore":                int64(0),
+				"ignoreImageDefinedVolume": false,
+			},
+		},
+		{
+			name: "normal values convert to int64, bool and lists",
+			raw: map[string]interface{}{
+				"containerd_config": []interface{}{map[string]interface{}{
+					"max_concurrent_downloads":    5,
+					"limit_core":                  "1",
+					"limit_no_file":               "65536",
+					"limit_mem_lock":              "128849018880",
+					"ignore_image_defined_volume": "true",
+					"registry_mirrors":            []interface{}{"https://mirror.example.com"},
+					"insecure_registries":         []interface{}{"registry.example.com:5000"},
+				}},
+			},
+			want: map[string]interface{}{
+				"maxConcurrentDownloads":   int64(5),
+				"limitCore":                int64(1),
+				"limitNoFile":              int64(65536),
+				"limitMemLock":             int64(128849018880),
+				"ignoreImageDefinedVolume": true,
+				"registryMirrors":          []interface{}{"https://mirror.example.com"},
+				"insecureRegistries":       []interface{}{"registry.example.com:5000"},
+			},
+		},
+		{
+			name: "empty registry_mirrors list omits registryMirrors key",
+			raw: map[string]interface{}{
+				"containerd_config": []interface{}{map[string]interface{}{
+					"limit_core":       "1",
+					"registry_mirrors": []interface{}{},
+				}},
+			},
+			want: map[string]interface{}{
+				"limitCore": int64(1),
+			},
+		},
+		{
+			name: "invalid limit_core returns error",
+			raw: map[string]interface{}{
+				"containerd_config": []interface{}{map[string]interface{}{
+					"limit_core": "abc",
+				}},
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid ignore_image_defined_volume returns error",
+			raw: map[string]interface{}{
+				"containerd_config": []interface{}{map[string]interface{}{
+					"ignore_image_defined_volume": "maybe",
+				}},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d := schema.TestResourceDataRaw(t, resourceSchema, tt.raw)
+			got, err := expandContainerdConfig(d)
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
