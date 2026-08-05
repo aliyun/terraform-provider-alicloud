@@ -16,6 +16,28 @@ type OssServiceV2 struct {
 	client *connectivity.AliyunClient
 }
 
+func parseOssBucketAclResponse(response map[string]interface{}) (map[string]interface{}, error) {
+	responseJSON, err := json.Marshal(response)
+	if err != nil {
+		return nil, err
+	}
+
+	var normalizedResponse map[string]interface{}
+	if err := json.Unmarshal(responseJSON, &normalizedResponse); err != nil {
+		return nil, err
+	}
+
+	v, err := jsonpath.Get("$.AccessControlPolicy.AccessControlList", normalizedResponse)
+	if err != nil {
+		return nil, err
+	}
+	acl, ok := v.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("unexpected AccessControlList type %T", v)
+	}
+	return acl, nil
+}
+
 // DescribeOssBucketAcl <<< Encapsulated get interface for Oss BucketAcl.
 
 func (s *OssServiceV2) DescribeOssBucketAcl(id string) (object map[string]interface{}, err error) {
@@ -54,12 +76,12 @@ func (s *OssServiceV2) DescribeOssBucketAcl(id string) (object map[string]interf
 		return object, WrapErrorf(NotFoundErr("BucketAcl", id), NotFoundMsg, response)
 	}
 
-	v, err := jsonpath.Get("$.AccessControlPolicy.AccessControlList", response)
+	v, err := parseOssBucketAclResponse(response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.AccessControlPolicy.AccessControlList", response)
 	}
 
-	return v.(map[string]interface{}), nil
+	return v, nil
 }
 
 func (s *OssServiceV2) OssBucketAclStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
