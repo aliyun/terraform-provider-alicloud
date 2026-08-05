@@ -874,12 +874,18 @@ if __name__ == "__main__":
     unittest.main()
 
 
-class CandidateFilterTest(unittest.TestCase):
-    """Registered-project and terminal-status candidate filters.
+class CandidateUniverseIsPublishedInFullTest(unittest.TestCase):
+    """No candidate may be dropped from the inventory, for any reason.
 
-    The two sibling consumers of the same control-plane inventory already skip
-    both classes of entry; this runner did not, so unreadable projects and
-    already-finished items kept costing an Aone read every cycle.
+    The projection is a full replace and the server enforces exact set equality
+    against its own Aone Task set, so omitting an item is rejected outright --
+    a partial replace would delete that item from every consumer. Skipping the
+    expensive *read* for an item is fine; skipping the *item* is not.
+
+    This previously regressed: a filter dropped unregistered-project and
+    terminal-status candidates to save reads, which shrank the published set and
+    made the server refuse every publish. The saving was illusory anyway, since
+    the content cache already makes unchanged items free after one read.
     """
 
     def _runner(self, items, pools):
@@ -906,19 +912,21 @@ class CandidateFilterTest(unittest.TestCase):
         runner._registered_projects = lambda: pools
         return runner
 
-    def test_unregistered_project_is_filtered(self):
+    def test_unregistered_project_candidate_is_kept(self):
         runner = self._runner(
             [{"taskId": 1, "sourceProjectKey": "709564",
               "aoneId": "84574563", "sourceStatus": "待处理"}],
             {"528766"})
-        self.assertEqual(runner._list_candidates(), [])
+        self.assertEqual(
+            [c["aoneId"] for c in runner._list_candidates()], ["84574563"])
 
-    def test_terminal_status_is_filtered(self):
+    def test_terminal_status_candidate_is_kept(self):
         runner = self._runner(
             [{"taskId": 2, "sourceProjectKey": "528766",
               "aoneId": "84856234", "sourceStatus": "已发布待需求方验收"}],
             {"528766"})
-        self.assertEqual(runner._list_candidates(), [])
+        self.assertEqual(
+            [c["aoneId"] for c in runner._list_candidates()], ["84856234"])
 
     def test_registered_non_terminal_is_kept(self):
         runner = self._runner(
@@ -927,31 +935,36 @@ class CandidateFilterTest(unittest.TestCase):
             {"528766"})
         self.assertEqual(len(runner._list_candidates()), 1)
 
-    def test_empty_pools_fails_open_and_keeps_everything(self):
-        runner = self._runner(
-            [{"taskId": 4, "sourceProjectKey": "709564",
-              "aoneId": "84574563", "sourceStatus": "待处理"}],
-            set())
-        self.assertEqual(len(runner._list_candidates()), 1)
-
     def test_missing_source_status_is_kept(self):
         runner = self._runner(
             [{"taskId": 5, "sourceProjectKey": "528766", "aoneId": "85053557"}],
             {"528766"})
         self.assertEqual(len(runner._list_candidates()), 1)
 
-    def test_shipped_pools_json_is_readable_so_filter_really_engages(self):
-        """Guard the fail-open path from silently becoming the only path.
+    def test_mixed_universe_is_kept_whole(self):
+        runner = self._runner(
+            [{"taskId": 1, "sourceProjectKey": "709564",
+              "aoneId": "84574563", "sourceStatus": "待处理"},
+             {"taskId": 2, "sourceProjectKey": "528766",
+              "aoneId": "84856234", "sourceStatus": "已发布待需求方验收"},
+             {"taskId": 3, "sourceProjectKey": "528766",
+              "aoneId": "85053506", "sourceStatus": "待处理"}],
+            {"528766"})
+        self.assertEqual(
+            sorted(c["aoneId"] for c in runner._list_candidates()),
+            ["84574563", "84856234", "85053506"])
 
-        Every filter test above injects its own pool set; without this, a
-        malformed shipped pools.json would disable the filter in production
-        while the suite stayed green.
+    def test_candidate_without_project_is_still_excluded(self):
+        """The one legitimate exclusion: the server excludes these too.
+
+        JarvisControlPlaneService skips tasks whose project cannot be resolved
+        (isUnresolvedLegacyProject), so both sides drop them and the sets match.
         """
-        runner = self._runner([], set())
-        runner._repo_root = Path(__file__).resolve().parents[3]
-        projects = type(runner)._registered_projects(runner)
-        self.assertTrue(projects)
-        self.assertIn("528766", projects)
+        runner = self._runner(
+            [{"taskId": 6, "aoneId": "84437980", "sourceStatus": "待处理"}],
+            {"528766"})
+        self.assertEqual(runner._list_candidates(), [])
+
 
 
 class ProjectPermissionFallbackTest(unittest.TestCase):
@@ -1072,3 +1085,118 @@ class PermanentlyAbsentItemTest(unittest.TestCase):
         with self.assertRaises(ownership.SnapshotIncomplete) as ctx:
             runner._a1(["project", "workitem", "list", "-f", "json"])
         self.assertNotIsInstance(ctx.exception, ownership.AoneItemUnreadable)
+
+
+class FailedPassStillPersistsProgressTest(unittest.TestCase):
+    """A pass that cannot complete must still bank the reads it did finish.
+
+    _build_items raises before _snapshot reaches _save_cache, so historically a
+    single bad item discarded every successful read in that pass. With hundreds
+    of candidates that turns one unreadable item into a permanent standstill:
+    each pass re-reads everything, hits the same item, and saves nothing. The
+    cache froze for three days that way.
+
+    Persisting must merge rather than replace, because _save_cache rewrites the
+    whole file -- a replace with only this pass's successes would delete the
+    cached entries of the items that failed.
+    """
+
+    def _runner(self, directory, client):
+        root = Path(directory)
+        (root / "config").mkdir(parents=True, exist_ok=True)
+        (root / "config" / "contacts.json").write_text(
+            json.dumps({"contacts": [], "agent_fallbacks": {}}))
+        return ownership.AoneWorkitemOwnershipRunner(
+            task_client=client,
+            repo_root=root,
+            logger=logging.getLogger("test-partial-progress"),
+            environ={"JARVIS_AONE_OWNERSHIP_CACHE":
+                     str(root / "cache" / "ownership.json")},
+            clock=lambda: NOW,
+        )
+
+    def _detail(self, iid):
+        return {
+            "id": str(iid),
+            "modified": "2026-08-05 10:00:00",
+            "fields": [{"identifier": "assignedTo",
+                        "value": "100002", "displayValue": "乙"}],
+        }
+
+    def test_successful_reads_are_cached_even_though_the_pass_fails(self):
+        from tempfile import TemporaryDirectory
+        with TemporaryDirectory() as directory:
+            client = FakeClient({
+                0: {
+                    "items": [
+                        {"taskId": 1, "sourceProjectKey": "528766",
+                         "aoneId": "85053506"},
+                        {"taskId": 2, "sourceProjectKey": "528766",
+                         "aoneId": "85053557"},
+                    ],
+                    "hasMore": False, "nextAfterTaskId": None,
+                },
+            })
+            runner = self._runner(directory, client)
+            runner._fetch_project_batch = lambda _p, _ids: {}
+
+            def detail(iid):
+                if str(iid) == "85053557":
+                    # Not 403/404: the fatal class, e.g. a malformed response.
+                    raise ownership.SnapshotIncomplete(
+                        "Aone detail fields must be an array")
+                return self._detail(iid)
+
+            runner._fetch_detail = detail
+            runner._fetch_comments = lambda _iid: []
+
+            result = runner.run(definition(), NOW)
+            self.assertIs(result.status, JobResultStatus.RETRYABLE_FAILURE)
+            self.assertEqual(client.puts, [])
+
+            cache = json.loads(
+                (Path(directory) / "cache" / "ownership.json").read_text())
+            self.assertIn("528766:85053506", cache["items"])
+            self.assertNotIn("528766:85053557", cache["items"])
+
+    def test_persisting_progress_does_not_delete_existing_entries(self):
+        from tempfile import TemporaryDirectory
+        with TemporaryDirectory() as directory:
+            cache_path = Path(directory) / "cache" / "ownership.json"
+            cache_path.parent.mkdir(parents=True, exist_ok=True)
+            cache_path.write_text(json.dumps({"version": 1, "items": {
+                "528766:99999999": {
+                    "sourceProjectKey": "528766", "aoneId": "99999999",
+                    "participantStaffIds": [], "assignedToStaffId": "100001",
+                    "latestCommentAuthorStaffId": None,
+                    "sourceUpdatedAt": "2026-08-01 10:00:00",
+                },
+            }}))
+            client = FakeClient({
+                0: {
+                    "items": [
+                        {"taskId": 1, "sourceProjectKey": "528766",
+                         "aoneId": "85053506"},
+                        {"taskId": 2, "sourceProjectKey": "528766",
+                         "aoneId": "85053557"},
+                    ],
+                    "hasMore": False, "nextAfterTaskId": None,
+                },
+            })
+            runner = self._runner(directory, client)
+            runner._fetch_project_batch = lambda _p, _ids: {}
+
+            def detail(iid):
+                if str(iid) == "85053557":
+                    raise ownership.SnapshotIncomplete("malformed")
+                return self._detail(iid)
+
+            runner._fetch_detail = detail
+            runner._fetch_comments = lambda _iid: []
+
+            runner.run(definition(), NOW)
+
+            cache = json.loads(cache_path.read_text())
+            # The unrelated pre-existing entry must survive the partial save.
+            self.assertIn("528766:99999999", cache["items"])
+            self.assertIn("528766:85053506", cache["items"])
