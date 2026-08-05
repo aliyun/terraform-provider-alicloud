@@ -505,6 +505,117 @@ func TestAccAliCloudGPDBDBInstancePrepaid(t *testing.T) {
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"period", "used_time", "db_instance_class", "security_ip_list", "instance_group_count", "create_sample_data", "parameters"},
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type": "PayAsYouGo",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type": "PayAsYouGo",
+					}),
+				),
+			},
+		},
+	})
+}
+
+// TestAccAliCloudGPDBDBInstanceModifyPaymentType verifies modifying the billing
+// method of an existing instance in both directions (PayAsYouGo -> Subscription
+// and Subscription -> PayAsYouGo) via the GPDB ModifyDBInstancePayType API. The
+// instance is pinned to cn-beijing and uses the cheapest Basic StorageElastic
+// form (2C8G, 2 segment nodes, 50GB storage), because the conversion to
+// Subscription produces a real one-month prepaid order that cannot be refunded.
+// The final update returns the instance to PayAsYouGo so Delete can release the
+// real instance and the destroy check can verify cleanup.
+func TestAccAliCloudGPDBDBInstanceModifyPaymentType(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_gpdb_instance.default"
+	testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Region("cn-beijing")})
+	ra := resourceAttrInit(resourceId, AliCloudGPDBDBInstanceMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &GpdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeGpdbDbInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sgpdbdbinstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGPDBDBInstanceBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_category":  "Basic",
+					"db_instance_mode":      "StorageElastic",
+					"description":           name,
+					"engine":                "gpdb",
+					"engine_version":        "6.0",
+					"zone_id":               "${data.alicloud_gpdb_zones.default.ids.0}",
+					"instance_network_type": "VPC",
+					"instance_spec":         "2C8G",
+					"payment_type":          "PayAsYouGo",
+					"seg_storage_type":      "cloud_essd",
+					"seg_node_num":          "2",
+					"storage_size":          "50",
+					"vpc_id":                "${data.alicloud_vpcs.default.ids.0}",
+					"vswitch_id":            "${local.vswitch_id}",
+					"create_sample_data":    "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_category":  "Basic",
+						"db_instance_mode":      "StorageElastic",
+						"description":           name,
+						"engine":                "gpdb",
+						"engine_version":        "6.0",
+						"zone_id":               CHECKSET,
+						"instance_network_type": "VPC",
+						"instance_spec":         "2C8G",
+						"payment_type":          "PayAsYouGo",
+						"seg_storage_type":      "cloud_essd",
+						"seg_node_num":          "2",
+						"storage_size":          "50",
+						"vpc_id":                CHECKSET,
+						"vswitch_id":            CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type": "Subscription",
+					"period":       "Month",
+					"used_time":    "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type": "Subscription",
+					}),
+				),
+			},
+			{
+				// Convert the Subscription instance back to PayAsYouGo. Period and
+				// UsedTime are only required when converting to Subscription, so the
+				// values that remain in the configuration are not sent in this step.
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type": "PayAsYouGo",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type": "PayAsYouGo",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"period", "used_time", "db_instance_class", "security_ip_list", "instance_group_count", "create_sample_data", "parameters"},
+			},
 		},
 	})
 }
