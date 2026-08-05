@@ -439,10 +439,11 @@ class WeeklyCommentParticipationPublishTests(unittest.TestCase):
                          ["PUT", "PUT", "PUT", "POST"])
         self.assertTrue(captured[0].full_url.endswith(
             "/api/jarvis/v1/board/delivery-metrics/snapshots/"
-            "20260727T064200%2B0800/pages/0"))
+            "20260727T064200+0800/pages/0"))
         self.assertTrue(captured[-1].full_url.endswith(
             "/api/jarvis/v1/board/delivery-metrics/snapshots/"
-            "20260727T064200%2B0800/commit"))
+            "20260727T064200+0800/commit"))
+        self.assertNotIn("%", captured[0].full_url)
         first_page = json.loads(captured[0].data.decode("utf-8"))
         self.assertEqual(first_page["items"][0]["id"], "0")
         commit = json.loads(captured[-1].data.decode("utf-8"))

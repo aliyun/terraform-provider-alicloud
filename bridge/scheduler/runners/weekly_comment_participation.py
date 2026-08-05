@@ -897,7 +897,10 @@ class WeeklyCommentParticipationRunner:
         snapshot_id = str(snapshot.get("snapshotId") or "")
         if not snapshot_id:
             raise RuntimeError("delivery snapshotId is required")
-        encoded_id = urllib.parse.quote(snapshot_id, safe="")
+        # Snapshot IDs are generated as YYYYMMDDTHHMMSS+ZZZZ. Keep the plus
+        # literal in the path: AutomationAgent deliberately rejects percent-
+        # encoded Jarvis control-plane paths as ambiguous.
+        encoded_id = urllib.parse.quote(snapshot_id, safe="+")
         workitems = list(snapshot.get("workitems") or [])
         pages = self._delivery_pages(workitems)
         root = (
