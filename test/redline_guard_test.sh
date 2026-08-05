@@ -128,6 +128,21 @@ expect "ordinary Aone create remains allowed" 0 \
 expect "ordinary Aone relation remains allowed" 0 \
     "a1 project workitem relation create --project 528766 --workitem 1 --target 2"
 
+# --- production delivery hard gate -----------------------------------------
+expect "legacy pipeline 67 submit blocked" 2 \
+    "a1 app cr submit 123 --pipeline-id 67"
+expect "canonical CloudSpec pipeline 67 run blocked" 2 \
+    "bin/a1id -- cd-pipeline run 67 --app 260634 --cr-id 123"
+expect "JARVIS_MASTER_OK cannot bypass pipeline 67" 2 \
+    "bin/a1id -- cd-pipeline run 67 --app 260634 --cr-id 123" JARVIS_MASTER_OK=1
+expect "CloudSpec pre-release pipeline 420 allowed" 0 \
+    "bin/a1id -- cd-pipeline run 420 --app 260634 --cr-id 123"
+expect "missing classifier blocks a1 fail-closed" 2 \
+    "bin/a1id -- cd-pipeline run 67 --app 260634 --cr-id 123" \
+    JARVIS_A1_COMMAND_GUARD="$tmp/missing-guard.py"
+expect "missing classifier does not block unrelated shell" 0 \
+    "git status --short" JARVIS_A1_COMMAND_GUARD="$tmp/missing-guard.py"
+
 echo
 echo "pass=$pass fail=$fail"
 [ "$fail" -eq 0 ]

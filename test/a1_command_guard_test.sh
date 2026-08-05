@@ -44,6 +44,33 @@ blocked = {
     "! a1 app pipeline quit --pipeline-id 66": "app pipeline quit",
     "time -p a1 app cr quit 123 --pipeline-id 66": "app cr quit",
     "nohup a1 app pipeline quit --pipeline-id 66": "app pipeline quit",
+    "a1 app cr submit 123 --pipeline-id 67": "pipeline 67",
+    "a1 app cr submit 123 --pipeline-id +67": "pipeline 67",
+    "a1 app cr submit 123 --pipeline-id=067": "pipeline 67",
+    "a1 app cr submit 123 --pipeline-id 420 --pipeline-id 67": "pipeline 67",
+    "a1 app cr submit 123": "cannot be proven non-production",
+    "a1 --format=json app cr submit 123 --pipeline-id=67": "pipeline 67",
+    "a1 app --quiet cr --format json submit 123 --pipeline-id 67": "pipeline 67",
+    "bin/a1id -- app cr submit 123 --pipeline-id=67": "pipeline 67",
+    "bash bin/a1id as jarvis -- app cr submit 123 --pipeline-id 67": "pipeline 67",
+    "pid=67; a1 app cr submit 123 --pipeline-id $pid": "pipeline 67",
+    "pipeline=--pipeline-id=67; bin/a1id -- app cr submit 123 $pipeline": "pipeline 67",
+    "/bin/bash -lc 'a1 app cr submit 123 --pipeline-id 67'": "pipeline 67",
+    "a1 cd-pipeline run 67 --app 260634 --cr-id 123": "pipeline 67",
+    "a1 cd-pipeline run +67 --app 260634 --cr-id 123": "pipeline 67",
+    "a1 cd-pipeline run 067 --app 260634 --cr-id 123": "pipeline 67",
+    "a1 cd-pipeline run --app 260634 67 --cr-id 123": "pipeline 67",
+    "bin/a1id -- cd-pipeline run 67 --app=260634 --cr-id=123": "pipeline 67",
+    "pid=67; bin/a1id -- cd-pipeline run $pid --app 260634 --cr-id 123": "pipeline 67",
+    "a1 cd-pipeline run rerun --pipeline-id 67 --app 260634": "pipeline 67",
+    "a1 cd-pipeline run rerun --pipeline-id 420 --pipeline-id 67 --app 260634":
+        "pipeline 67",
+    "a1 cd-pipeline run rerun --pipeline-id $pid --app 260634":
+        "cannot be proven non-production",
+    "a1 cd-pipeline run rerun 3087676553": "cannot be proven non-production",
+    "bin/a1id -- cd-pipeline run task status deploy-order-list --task-id 3344115914":
+        "task actions",
+    "a1 cd-pipeline run cancel 3087676553": "app pipeline exit-cr",
     "curl -fsS 'https://acube.example/api/createBuildTaskV2' -d '{}'":
         "createBuildTaskV2",
     "url='https://acube.example/api/createBuildTaskV2'; wget -qO- \"$url\"":
@@ -98,6 +125,16 @@ for command, marker in blocked.items():
 allowed = (
     "a1 app cr get 123 --format json",
     "bin/a1id -- app cr get 123 --format json",
+    "a1 app cr submit 123 --pipeline-id 420",
+    "bin/a1id -- app cr submit 123 --pipeline-id=420",
+    "a1 app pipeline status --pipeline-id 67",
+    "a1 app cr submit --help",
+    "a1 cd-pipeline run 420 --app 260634 --cr-id 123",
+    "bin/a1id -- cd-pipeline run --app 260634 420 --cr-id 123",
+    "a1 cd-pipeline run rerun --pipeline-id 420 --app 260634",
+    "a1 cd-pipeline run task status --task-id 3344115914",
+    "a1 cd-pipeline run status 67 --app 260634",
+    "a1 cd-pipeline run --help",
     "rg -n exit-cr docs",
     "echo a1 app pipeline exit-cr",
     "printf '%s' 'a1 app cr quit'",
@@ -130,11 +167,17 @@ for argv in (
     ["app", "pipeline", "exit-cr", "--pipeline-id", "66"],
     ["--format=json", "app", "pipeline", "quit", "--pipeline-id=66"],
     ["app", "cr", "quit", "123", "--pipeline-id", "66"],
+    ["app", "cr", "submit", "123", "--pipeline-id", "67"],
+    ["--format=json", "app", "cr", "submit", "123", "--pipeline-id=67"],
+    ["cd-pipeline", "run", "67", "--app", "260634", "--cr-id", "123"],
+    ["cd-pipeline", "run", "rerun", "--pipeline-id", "67", "--app", "260634"],
+    ["cd-pipeline", "run", "rerun", "3087676553"],
+    ["cd-pipeline", "run", "task", "status", "resume", "--task-id", "3344115914"],
 ):
     try:
         g.run_guarded("a1", argv)
     except g.GuardError as exc:
-        assert "permanently disabled" in str(exc)
+        assert "disabled" in str(exc)
     else:
         raise SystemExit("blocked mutation reached the real a1: %r" % argv)
 assert not calls
@@ -176,6 +219,13 @@ blocked_argv=(
   '-- app cr quit 123 --pipeline-id 66'
   '-- app --quiet cr --format json quit 123 --pipeline-id=66'
   'as jarvis -- --quiet app cr quit 123 --pipeline-id=66'
+  '-- app cr submit 123 --pipeline-id 67'
+  '-- --format=json app cr submit 123 --pipeline-id=67'
+  'as jarvis -- app --quiet cr --format json submit 123 --pipeline-id 67'
+  '-- cd-pipeline run 67 --app 260634 --cr-id 123'
+  '-- cd-pipeline run rerun --pipeline-id 67 --app 260634'
+  '-- cd-pipeline run rerun 3087676553'
+  '-- cd-pipeline run task status resume --task-id 3344115914'
 )
 for command in "${blocked_argv[@]}"; do
     rm -rf "$identity_root/identities"
@@ -186,7 +236,7 @@ for command in "${blocked_argv[@]}"; do
     run_a1id $command >/dev/null 2>"$tmp/blocked.err"
     rc=$?
     if [ "$rc" -ne 0 ] && [ ! -s "$capture" ] \
-        && grep -Fq 'stop and ask a human' "$tmp/blocked.err"; then
+        && grep -Eq 'stop and ask a human|human must approve|cannot be proven non-production|task actions are disabled' "$tmp/blocked.err"; then
         ok "a1id early-denies with zero real-a1 calls: $command"
     else
         no "a1id deny failed rc=$rc command=$command log=$(cat "$capture")"
@@ -202,6 +252,28 @@ if [ "$rc" -eq 0 ] && grep -Fq 'ARGS=app cr get 123 --format json' "$capture"; t
     ok "ordinary a1id commands still pass through"
 else
     no "ordinary a1 command regression rc=$rc err=$(cat "$tmp/ordinary.err")"
+fi
+
+: > "$capture"
+run_a1id -- app cr submit 123 --pipeline-id 420 \
+    >/dev/null 2>"$tmp/pre-release.err"
+rc=$?
+if [ "$rc" -eq 0 ] \
+    && grep -Fq 'ARGS=app cr submit 123 --pipeline-id 420' "$capture"; then
+    ok "CloudSpec pre-release pipeline 420 remains allowed"
+else
+    no "pre-release pipeline regression rc=$rc err=$(cat "$tmp/pre-release.err")"
+fi
+
+: > "$capture"
+run_a1id -- cd-pipeline run 420 --app 260634 --cr-id 123 \
+    >/dev/null 2>"$tmp/canonical-pre-release.err"
+rc=$?
+if [ "$rc" -eq 0 ] \
+    && grep -Fq 'ARGS=cd-pipeline run 420 --app 260634 --cr-id 123' "$capture"; then
+    ok "canonical CloudSpec pre-release pipeline 420 remains allowed"
+else
+    no "canonical pre-release regression rc=$rc err=$(cat "$tmp/canonical-pre-release.err")"
 fi
 
 : > "$capture"
