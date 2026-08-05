@@ -84,6 +84,11 @@ func resourceAliyunSecurityGroupRule() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"source_group_owner_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"prefix_list_id": {
 				Type:             schema.TypeString,
 				Optional:         true,
@@ -179,6 +184,14 @@ func resourceAliyunSecurityGroupRuleCreate(d *schema.ResourceData, meta interfac
 			permissionsMap["SourceGroupOwnerAccount"] = v
 		} else {
 			permissionsMap["DestGroupOwnerAccount"] = v
+		}
+	}
+
+	if v, ok := d.GetOk("source_group_owner_id"); ok {
+		if direction == string(DirectionIngress) {
+			permissionsMap["SourceGroupOwnerId"] = v
+		} else {
+			permissionsMap["DestGroupOwnerId"] = v
 		}
 	}
 
@@ -518,6 +531,14 @@ func buildAliyunSGRuleRequest(d *schema.ResourceData, meta interface{}) (*reques
 			request.QueryParams["SourceGroupOwnerAccount"] = v.(string)
 		} else {
 			request.QueryParams["DestGroupOwnerAccount"] = v.(string)
+		}
+	}
+
+	if v, ok := d.GetOk("source_group_owner_id"); ok {
+		if direction == string(DirectionIngress) {
+			request.QueryParams["SourceGroupOwnerId"] = v.(string)
+		} else {
+			request.QueryParams["DestGroupOwnerId"] = v.(string)
 		}
 	}
 
