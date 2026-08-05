@@ -35,11 +35,37 @@ func resourceAliCloudMessageServiceTopic() *schema.Resource {
 				Computed:      true,
 				ConflictsWith: []string{"logging_enabled"},
 			},
+			"enable_sse": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
+			"encryption_enabled": {
+				Type:     schema.TypeBool,
+				Computed: true,
+			},
+			"kms_key_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"max_message_size": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
 				ValidateFunc: IntBetween(1024, 65536),
+			},
+			"sse_algorithm": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"AES-256-GCM"}, false),
+			},
+			"sse_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"SMQ", "KMS"}, false),
 			},
 			"tags": tagsSchema(),
 			"topic_name": {
@@ -80,6 +106,20 @@ func resourceAliCloudMessageServiceTopicCreate(d *schema.ResourceData, meta inte
 		request["EnableLogging"] = v
 	} else if v, ok := d.GetOkExists("logging_enabled"); ok {
 		request["EnableLogging"] = v
+	}
+	// A new topic has SSE off by default, so EnableSSE is only sent when
+	// explicitly enabled in the configuration.
+	if v := d.Get("enable_sse"); v.(bool) {
+		request["EnableSSE"] = v
+	}
+	if v, ok := d.GetOk("sse_type"); ok {
+		request["SseType"] = v
+	}
+	if v, ok := d.GetOk("sse_algorithm"); ok {
+		request["SseAlgorithm"] = v
+	}
+	if v, ok := d.GetOk("kms_key_id"); ok {
+		request["KmsKeyId"] = v
 	}
 	if v, ok := d.GetOkExists("max_message_size"); ok {
 		request["MaxMessageSize"] = v
@@ -131,7 +171,12 @@ func resourceAliCloudMessageServiceTopicRead(d *schema.ResourceData, meta interf
 
 	d.Set("create_time", objectRaw["CreateTime"])
 	d.Set("enable_logging", objectRaw["LoggingEnabled"])
+	d.Set("enable_sse", objectRaw["EnableSSE"])
+	d.Set("encryption_enabled", objectRaw["EncryptionEnabled"])
+	d.Set("kms_key_id", objectRaw["KmsKeyId"])
 	d.Set("max_message_size", objectRaw["MaxMessageSize"])
+	d.Set("sse_algorithm", objectRaw["SseAlgorithm"])
+	d.Set("sse_type", objectRaw["SseType"])
 	d.Set("topic_name", objectRaw["TopicName"])
 	d.Set("topic_type", objectRaw["TopicType"])
 	d.Set("logging_enabled", objectRaw["LoggingEnabled"])
@@ -176,6 +221,25 @@ func resourceAliCloudMessageServiceTopicUpdate(d *schema.ResourceData, meta inte
 
 		if v, ok := d.GetOkExists("max_message_size"); ok {
 			request["MaxMessageSize"] = v
+		}
+	}
+
+	if !d.IsNewResource() && (d.HasChange("enable_sse") || d.HasChange("sse_type") || d.HasChange("sse_algorithm") || d.HasChange("kms_key_id")) {
+		update = true
+
+		// The whole SSE family is sent together on any SSE change. EnableSSE
+		// is set unconditionally via d.Get (not GetOkExists, which may treat
+		// an existing value as non-existent), so the current switch value is
+		// always sent, including the explicit false that disables SSE.
+		request["EnableSSE"] = d.Get("enable_sse")
+		if v, ok := d.GetOk("sse_type"); ok {
+			request["SseType"] = v
+		}
+		if v, ok := d.GetOk("sse_algorithm"); ok {
+			request["SseAlgorithm"] = v
+		}
+		if v, ok := d.GetOk("kms_key_id"); ok {
+			request["KmsKeyId"] = v
 		}
 	}
 
