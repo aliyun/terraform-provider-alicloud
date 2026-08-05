@@ -574,10 +574,14 @@ class AoneWorkitemOwnershipRunner:
                          or "no read permission" in diagnostic.lower())):
                 raise AoneReadForbidden(
                     "Aone detail read forbidden: %s" % diagnostic.strip()[:200])
-            # Keyed on the structured marker, not a bare "404", which can appear
-            # inside a work item id. Same shape as the 403 guard above.
+            # a1 reports a missing item in two shapes, both seen in production:
+            #   workitem get failed (404): 工作项不存在
+            #   workitem <id> not found
+            # Keyed on those markers rather than a bare "404" or a bare "not
+            # found", either of which can appear inside an id or unrelated prose.
             if (args[:3] == ["project", "workitem", "get"]
-                    and re.search(r"workitem get failed \(404\)", diagnostic)):
+                    and (re.search(r"workitem get failed \(404\)", diagnostic)
+                         or re.search(r"workitem \d+ not found", diagnostic))):
                 raise AoneItemMissing(
                     "Aone item does not exist: %s" % diagnostic.strip()[:200])
             raise SnapshotIncomplete(
@@ -906,10 +910,20 @@ class AoneWorkitemOwnershipRunner:
                     if _is_project_permission_failure(exc):
                         # A per-item read cannot succeed where the project-level
                         # read was denied, so retrying each id only costs time.
-                        # The entries are deliberately left unresolved rather
-                        # than dropped: _reuse_or_fail still has to choose
-                        # between a cached reuse and SnapshotIncomplete, because
-                        # this runner never publishes a partial inventory.
+                        # Skip the read -- but never the item: every candidate
+                        # must still reach the output, or the coverage assertion
+                        # below fails the pass and the server rejects the publish
+                        # for not matching its Task set. Resolve each one the same
+                        # way an explicit per-item denial would: cached ownership
+                        # if we have it, otherwise a placeholder.
+                        for candidate in batch:
+                            key = self._candidate_key(
+                                candidate["sourceProjectKey"],
+                                candidate["aoneId"])
+                            cached = self._cached(cache, candidate)
+                            output[key] = (
+                                cached if cached is not None
+                                else self._placeholder(candidate, None))
                         self._log.warning(
                             "aone-workitem-ownership: project unreadable, "
                             "skipping per-item fallback project=%s items=%d",
