@@ -104,8 +104,8 @@ The following arguments are supported:
 * `vpc_id` - (Optional, ForceNew) The vpc ID of the resource.
 * `zone_id` - (Optional, ForceNew) The zone ID of the instance.
 * `instance_group_count` - (Optional, ForceNew, Int) The number of nodes. Valid values: `2`, `4`, `8`, `12`, `16`, `24`, `32`, `64`, `96`, `128`.
-* `payment_type` - (Optional, ForceNew) The billing method of the instance. Valid values: `Subscription`, `PayAsYouGo`.
-* `period` - (Optional) The duration that you will buy the resource, in month. required when `payment_type` is `Subscription`. Valid values: `Year`, `Month`.
+* `payment_type` - (Optional) The billing method of the instance. Valid values: `Subscription`, `PayAsYouGo`. **NOTE:** From provider version 1.287.0, `payment_type` can be modified in both directions between `Subscription` and `PayAsYouGo`. When modifying the billing method of an instance to `Subscription`, `period` and `used_time` are required; when modifying the billing method of an instance to `PayAsYouGo`, `period` and `used_time` are not required. See [ModifyDBInstancePayType](https://www.alibabacloud.com/help/en/analyticdb-for-postgresql/latest/api-gpdb-2016-05-03-modifydbinstancepaytype).
+* `period` - (Optional) The duration that you will buy the resource, in month. required when `payment_type` is `Subscription`, including when `payment_type` is modified to `Subscription`. Valid values: `Year`, `Month`.
 * `resource_group_id` - (Optional) The ID of the enterprise resource group to which the instance belongs.
 * `master_cu` - (Optional, Int, Available since v1.213.0) The amount of coordinator node resources. Valid values: `2`, `4`, `8`, `16`, `32`.
 * `seg_node_num` - (Optional, Int) Calculate the number of nodes. Valid values: `2` to `512`. The value range of the high-availability version of the storage elastic mode is `4` to `512`, and the value must be a multiple of `4`. The value range of the basic version of the storage elastic mode is `2` to `512`, and the value must be a multiple of `2`. The-Serverless version has a value range of `2` to `512`. The value must be a multiple of `2`.
@@ -138,7 +138,7 @@ The following arguments are supported:
 
   -> **NOTE:** `data_share_status` is valid only when `db_instance_mode` is set to `Serverless`.
 
-* `used_time` - (Optional) The used time. When the parameter `period` is `Year`, the `used_time` value is `1` to `3`. When the parameter `period` is `Month`, the `used_time` value is `1` to `9`.
+* `used_time` - (Optional) The used time. When the parameter `period` is `Year`, the `used_time` value is `1` to `3`. When the parameter `period` is `Month`, the `used_time` value is `1` to `9`. **NOTE:** From provider version 1.287.0, `used_time` is required (together with `period`) when `payment_type` is modified to `Subscription`.
 * `description` - (Optional) The description of the instance.
 * `backup_id` - (Optional, ForceNew, Available since v1.287.0) The ID of the backup set. If specified, the instance is created from the existing backup set. See [CreateDBInstance](https://www.alibabacloud.com/help/en/analyticdb-for-postgresql/latest/api-gpdb-2016-05-03-createdbinstance).
 * `src_db_instance_name` - (Optional, ForceNew, Available since v1.287.0) The source instance ID for creating an instance from a backup set. Must be set together with `backup_id`; the GPDB CreateDBInstance API requires `SrcDbInstanceName` and `BackupId` to be null or not null at the same time. See [CreateDBInstance](https://www.alibabacloud.com/help/en/analyticdb-for-postgresql/latest/api-gpdb-2016-05-03-createdbinstance).

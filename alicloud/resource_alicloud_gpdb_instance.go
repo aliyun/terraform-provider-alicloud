@@ -35,6 +35,14 @@ func resourceAliCloudGpdbInstance() *schema.Resource {
 			if (backupId == "") != (srcDbInstanceName == "") {
 				return fmt.Errorf("`backup_id` and `src_db_instance_name` must be set together (both set or both empty); the GPDB CreateDBInstance API requires BackupId and SrcDbInstanceName to be null or not null at the same time")
 			}
+			if diff.Id() != "" && diff.HasChange("payment_type") {
+				_, newPaymentType := diff.GetChange("payment_type")
+				if fmt.Sprint(newPaymentType) == "Subscription" {
+					if diff.Get("period").(string) == "" || diff.Get("used_time").(string) == "" {
+						return fmt.Errorf("`period` and `used_time` must be set when `payment_type` is modified to `Subscription`; the GPDB ModifyDBInstancePayType API requires Period and UsedTime for converting an instance to the prepaid billing method")
+					}
+				}
+			}
 			return nil
 		},
 		Schema: map[string]*schema.Schema{
@@ -112,7 +120,6 @@ func resourceAliCloudGpdbInstance() *schema.Resource {
 			"payment_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
 			},
@@ -723,6 +730,76 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 			return WrapError(err)
 		}
 		d.SetPartial("tags")
+	}
+
+	if !d.IsNewResource() && d.HasChange("payment_type") {
+		_, newPaymentType := d.GetChange("payment_type")
+		request = map[string]interface{}{
+			"RegionId":     client.RegionId,
+			"DBInstanceId": d.Id(),
+			"PayType":      convertGpdbDbInstancePaymentTypeRequest(newPaymentType.(string)),
+		}
+		if newPaymentType.(string) == "Subscription" {
+			period := ""
+			if v, ok := d.GetOk("period"); ok {
+				period = v.(string)
+			}
+			usedTime := ""
+			if v, ok := d.GetOk("used_time"); ok {
+				usedTime = v.(string)
+			}
+			if period == "" {
+				return fmt.Errorf("`period` must be set when `payment_type` is modified to `Subscription`; the GPDB ModifyDBInstancePayType API requires Period (valid values: `Month`, `Year`) for converting an instance to the prepaid billing method")
+			}
+			if usedTime == "" {
+				return fmt.Errorf("`used_time` must be set when `payment_type` is modified to `Subscription`; the GPDB ModifyDBInstancePayType API requires UsedTime (1 to 9 when `period` is `Month`, 1 to 3 when `period` is `Year`) for converting an instance to the prepaid billing method")
+			}
+			usedTimeInt, err := strconv.Atoi(usedTime)
+			if err != nil {
+				return fmt.Errorf("`used_time` must be an integer string when `payment_type` is modified to `Subscription`, got %q", usedTime)
+			}
+			if (period == "Month" && (usedTimeInt < 1 || usedTimeInt > 9)) || (period == "Year" && (usedTimeInt < 1 || usedTimeInt > 3)) {
+				return fmt.Errorf("`used_time` %q is invalid: when `period` is `Month`, `used_time` must be between 1 and 9, and when `period` is `Year`, `used_time` must be between 1 and 3", usedTime)
+			}
+			// The ModifyDBInstancePayType API only requires Period and UsedTime when
+			// converting an instance to the prepaid billing method; they must not be
+			// sent when converting back to PayAsYouGo.
+			request["Period"] = period
+			request["UsedTime"] = usedTime
+		}
+		action := "ModifyDBInstancePayType"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = client.RpcPost("gpdb", "2016-05-03", action, nil, request, true)
+			if err != nil {
+				if IsExpectedErrors(err, []string{"OperationDenied.OrderProcessing"}) || NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, gpdbService.GpdbDbInstanceStateRefreshFunc(d.Id(), "DBInstanceStatus", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
+		// The billing method conversion is order-driven: DescribeDBInstanceAttribute may keep
+		// reporting the previous PayType until the conversion order takes effect, so also wait
+		// until the new value is actually applied to avoid Read observing the stale value.
+		paymentTypeTarget := fmt.Sprint(convertGpdbDbInstancePaymentTypeRequest(newPaymentType.(string)))
+		paymentTypeStateConf := BuildStateConf([]string{}, []string{paymentTypeTarget}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, gpdbService.GpdbDbInstanceScaleStateRefreshFunc(d.Id(), "PayType", paymentTypeTarget))
+		if _, err := paymentTypeStateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
+		d.SetPartial("payment_type")
 	}
 
 	update := false
