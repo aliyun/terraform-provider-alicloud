@@ -1,6 +1,6 @@
 ---
 name: terraform-provider-release
-description: Release a Terraform Provider resource together with its data source for Alibaba Cloud. The full journey starts from requirement understanding — discover which OpenAPIs satisfy the user need, locate the product space with CloudSpec tooling, create the branch, define/repair the resource, publish to pre, then generate resource/datasource/tests from pre. Also reviews user-provided resource designs against their backing APIs (design-correctness verdict + fix list), and enforces resource-doc ↔ API-doc alignment (unclear descriptions get supplemented from OpenAPI docs). Covers new-resource publishing (including CloudSpec resource inference from existing CRUDL OpenAPIs), updates to existing resources, and mid-flight CloudSpec repair (property rename, HCL-keyword clash fix). Runs a CloudSpec pre-environment requirement-alignment gate, a post-generation hand-fix checklist for known generator-v4 defects, and a test-time CloudSpec IDL repair/publish/regenerate loop. Anchored on an Aone work item, runs in an isolated worktree, forbids local compilation, verifies orchestration APIs and remote ACC tests, and governs the PR through merge. NOT for generator implementation defects or resourceTypeCode mapping corruption — use provider-resource-dev. NOT for reviewing an existing PR — use terraform-pr-review.
+description: Release a Terraform Provider resource together with its data source for Alibaba Cloud. The full journey starts from requirement understanding — discover which OpenAPIs satisfy the user need, locate the product space with CloudSpec tooling, create the branch, define/repair the resource, publish to pre, then generate resource/datasource/tests from pre. Also reviews user-provided resource designs against their backing APIs (design-correctness verdict + fix list), and enforces resource-doc ↔ API-doc alignment (unclear descriptions get supplemented from OpenAPI docs). Covers new-resource publishing (including CloudSpec resource inference from existing CRUDL OpenAPIs), updates to existing resources, and mid-flight CloudSpec repair (property rename, HCL-keyword clash fix). Runs a CloudSpec pre-environment requirement-alignment gate, a post-generation hand-fix checklist for known generator-v4 defects, and a test-time CloudSpec IDL repair/publish/regenerate loop. Anchored on an Aone work item, runs in an isolated worktree, forbids local full-tree build/vet, verifies orchestration APIs and remote ACC tests, and governs the PR through merge. NOT for generator implementation defects or resourceTypeCode mapping corruption — use provider-resource-dev. NOT for reviewing an existing PR — use terraform-pr-review.
 metadata:
   version: "0.9.0"
   domain: terraform-provider
@@ -61,7 +61,9 @@ jarvis 语境下，本 skill 所有"ask the user"节点按以下规则改走三�
 **Key constraints**
 - A single **Aone work item** MUST be linked; this skill is responsible for keeping the work item up to date
 - All development, testing, and fixes happen inside an **isolated worktree** so concurrent tasks never pollute each other
-- **Local compilation is strictly forbidden** — compiling the alicloud provider locally crashes the workstation. Run static checks only.
+- **Local full-tree validation is forbidden** for this provider: never run `go build ./...` or
+  `go vet ./...` locally. Use staged, package-scoped validation below; full-tree checks belong to
+  remote PR CI.
 - For any generator-based path, **derive the concrete release scope by diffing AMP metadata against the local provider code** (requirement gap analysis) and **verify all orchestration APIs are OpenAPI** before generation; write both findings back to Aone
 - Before provider work starts, compare the Aone requirement with the **CloudSpec pre** resource definition; ambiguity is a hard stop requiring the four-person human review
 - When an ACC failure proves the CloudSpec definition is wrong, reclassify it as **branch E**, fix and publish the IDL to **pre**, wait for pre metadata convergence, and pass `cloudspec_pre` QA. Then continue as source-ticket D-generated: synchronize owner 临钧（429768）, enqueue the typed durable DM with `python3 -m bridge.terraform_route_notify --subtype generated`, and let Jarvis/TerraformRD directly complete Provider development, PR CI, remote ACC, and PR in the source-ticket context. Do not create, reuse, relate, assign, claim, or bookend 528766.
@@ -109,6 +111,10 @@ Every provider resource release MUST be linked to an Aone work item.
 - **需求缺失、相互矛盾或无法判定**：同时通知 @辰羿(320687)、@临钧(429768)、@过载(484483)、@原根(265607)，释放并挂起工单；禁止生成、编码或根据经验猜需求。
 
 完整取数、判定、HCL 保留字硬门、人工通知和留痕格式见 [CloudSpec pre 资源闭环](references/cloudspec-pre-resource-loop.md)。
+
+CloudSpec 校验按编辑批次执行：本轮 IDL 修改完成后 build 一次，再对变更资源逐个、前台、
+串行 check；同一模型目录禁止后台或多 Agent 并行 check。全部 check 通过后才进入 pre
+dry-run/publish。
 
 ### Step 1.6: 需求 → OpenAPI 圈定 → CloudSpec 定义（Requirement-First Path）
 
@@ -274,7 +280,9 @@ The generator produces:
 
 **文档对齐 API（必做）**：resource/datasource 文档的每个 attribute 描述必须与来源 API 的官方文档对应——描述不清（「The name of the resource」类空话）→ 从 OpenAPI 文档的参数 description 补充取值范围/格式/默认值/约束；枚举值、单位与 API 文档一致写全；API 文档本身缺失不编造，标记待补。规则与取数工具见 [需求 → OpenAPI 圈定闭环](references/requirement-to-openapi-discovery.md) C 规。
 
-修完运行 Step 8 静态检查（`gofmt -l alicloud/` + docs 三方一致性），全绿才进 Step 9。
+修完先按 Step 8 的 edit-batch 阶段处理：若本批有 Go 变更，只对 changed Go files
+`gofmt -w` 一次；再跑 docs 三方一致性。此时不提前跑 batch-end vet——测试在 Step 9
+稳定后、首次 push/远程 ACC 前再统一跑。
 
 ### Step 7: Hand-written Update Path
 
@@ -285,17 +293,23 @@ Check whether the Aone work item contains a **business requirement description**
 - **Description present** → develop the provider code by hand according to that requirement
 - **Description absent** → ask the user to contact the cloud product developer to add the requirement into the Aone work item, **pause subsequent steps** until the requirement is in place
 
-### Step 8: Static Check (Local Compilation Forbidden)
+### Step 8: Staged Local Validation
 
-> **Critical warning**: **compiling the alicloud provider locally crashes the workstation**.
-> NEVER run `go build`, `go install`, `make`, or any other command that triggers a full provider build.
+`config/workspaces.json` 的 `terraform_provider.validation` 是本仓校验真源。不要在每个
+Edit 后无条件跑一遍 fmt/test/vet；按下面两个阶段执行：
 
-Run static checks only on the generated or hand-written code（工作区登记命令见 `config/workspaces.json` ops）:
+1. **Edit batch**：先完成一个连贯编辑批次；每个连贯批次只在末尾执行一次对应格式化。
+   - docs-only 批次跳过全部 Go 命令，只跑相关文档检查。
+   - 有 Go 变更时，仅对 changed Go files 运行一次
+     `gofmt -w <changed-go-files>`；定向测试
+     `go test ./alicloud -run <Name>` 只在能验证当前批次时按需运行。
+2. **Batch end gate**：代码与测试都稳定后、**首次 push 或远程 ACC 前**，运行一次
+   `go vet -p=1 ./alicloud`。若变更涉及其它 Go package，只 vet 对应 package
+   （`go vet -p=1 <changed-package>`），不要扩大到全树。
 
-```bash
-gofmt -l alicloud/        # ops.fmt —— 输出为空即过
-go vet ./alicloud         # ops.vet —— 单包静态分析;禁 go vet ./...(全树编译,会崩工作站)
-```
+本地始终禁止 `go vet ./...` 与 `go build ./...`；这两项全树检查由远程 PR CI 执行。
+后续 CI 修复也先把修改合并为一个连贯批次，只重跑受影响的定向检查，并在批次结束跑一次
+对应 package vet；不得每个 Edit 重复 vet。单纯 docs 修复继续跳过 Go 命令。
 
 ### Step 9: Generate / Write Test Cases
 
@@ -472,7 +486,8 @@ Once the PR is merged:
 
 ## Important Notes
 
-1. **Never compile locally** — building the alicloud provider locally will crash the workstation; static checks only.
+1. **Never run local full-tree build/vet** — `go build ./...` and `go vet ./...` are remote PR CI
+   responsibilities. Locally use the Step 8 staged, package-scoped policy.
 2. **Aone work item is both source and sink** — every task must be linked to a work item, and progress MUST be written back at each milestone (requirement-gap analysis, non-OpenAPI APIs detected, development complete, tests passed, PR CI green, PR merged).
 3. **Worktree isolation** — one worktree per Aone work item; concurrent tasks must not contaminate each other.
 4. **Step 5 is mandatory for generator paths** — never skip the requirement-gap analysis (5.3) or the OpenAPI check (5.4) for new resources or auto-generated existing-resource updates. Both produce visibility signals on the Aone work item even when they do not block progress.

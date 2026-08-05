@@ -289,6 +289,10 @@ require_terms "$routing" \
   '不调用 Acube `createBuildTaskV2`' \
   '不创建/复用/关联/claim/bookend'
 require_terms "$release_loop" \
+  '只运行一次 `aliyun cspec build`' \
+  '逐个、前台、串行' \
+  '禁止后台或多 Agent' \
+  '全部资源 check 通过后' \
   'verification_mode: cloudspec_pre' \
   'next=terraform-rd/dev' \
   'Provider PR' \
@@ -305,6 +309,9 @@ for file in "$pd_agent" "$pd_mirror"; do
 done
 for file in "$rd_agent" "$rd_mirror"; do
   require_terms "$file" \
+    '逐个、前台、' \
+    '禁止后台或多 Agent' \
+    '全部 check 通过后' \
     'role: terraform-rd | terraform-qa | terraform-rd-finalizer' \
     'action: fix | acc_verify | cloudspec_pre_verify | finalize' \
     '文档源证据不足时返回 `status: blocked`、`next=terraform-rd-finalizer/finalize`' \
@@ -316,6 +323,9 @@ for file in "$rd_agent" "$rd_mirror"; do
 done
 for file in "$qa_agent" "$qa_mirror"; do
   require_terms "$file" \
+    '逐个串行 check' \
+    '后台或多 Agent' \
+    '全部 check 通过后' \
     'verification_mode: cloudspec_pre' \
     'build/check/pre Meta 收敛' \
     '不运行远程 AccTest' \
@@ -410,6 +420,9 @@ require_terms "$runtime" \
   'D/G source-only runtime hard gate' \
   'python3 -m bridge.terraform_route_notify' \
   'terraform-route:d:<subtype>:owner:<staffId>' \
+  '逐个、前台、串行 check' \
+  '禁止后台或多 Agent' \
+  '全部 check 通过后' \
   '通过 cloudspec_pre_verify 后在同一源单上下文继续 Provider'
 forbid_terms "$runtime" \
   'E → D-临钧' \

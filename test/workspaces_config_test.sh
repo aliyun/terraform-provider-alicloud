@@ -128,6 +128,28 @@ jq -e '.workspaces.terraform_provider.fork_remote=="fork"' \
   "$repo_root/config/workspaces.json" >/dev/null
 jq -e '.workspaces.terraform_provider.jarvis_github_login=="api-tool-agent"' \
   "$repo_root/config/workspaces.json" >/dev/null
+jq -e '
+  .workspaces.terraform_provider as $provider |
+  $provider.ops == {
+    "test":"go test ./alicloud -run <Name>",
+    "vet":"go vet -p=1 ./alicloud",
+    "fmt":"gofmt -w <changed-go-files>"
+  } and
+  $provider.validation.strategy == "staged" and
+  $provider.validation.edit_batch.go_changed == [
+    "ops.fmt",
+    "ops.test (only when a targeted test is useful)"
+  ] and
+  $provider.validation.edit_batch.docs_only == [] and
+  $provider.validation.batch_end.when ==
+    "after code and tests are stable, before first push or remote ACC" and
+  $provider.validation.batch_end.go_changed == ["ops.vet"] and
+  $provider.validation.batch_end.other_go_package_changed ==
+    ["go vet -p=1 <changed-package>"] and
+  $provider.validation.remote_pr_ci == ["go vet ./...","go build ./..."] and
+  $provider.validation.local_forbidden == ["go vet ./...","go build ./..."] and
+  ($provider.ops | has("build") | not)
+' "$repo_root/config/workspaces.json" >/dev/null
 
 # tf_playground 数据仓登记(git 化场景语料库,直推 master 模型;probe.sh probe_playground_dir 会解析)
 jq -e '.workspaces.tf_playground.git_url=="git@gitlab.alibaba-inc.com:terraflow/tf_playground.git"' \

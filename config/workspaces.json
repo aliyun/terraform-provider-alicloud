@@ -6,8 +6,22 @@
       "mirror_git_url": "https://code.alibaba-inc.com/opensource-tools/terraform-provider-alicloud.git",
       "upstream_remote": "origin", "fork_remote": "fork", "jarvis_github_login": "api-tool-agent", "default_branch": "master",
       "pools": ["tf_provider","tf_customer"],
-      "ops": {"test":"go test ./alicloud -run <Name>","vet":"go vet ./alicloud","fmt":"gofmt -l alicloud/"},
-      "desc": "alicloud provider 开发/评审; 本地禁全量 build/vet(go build ./... 与 go vet ./... 全树编译会崩工作站,故 ops 不含 build、vet 限单包)——验证=ops.fmt+ops.vet+远程 ACC(invoke-terraform-acc-test-remote); 远端布局(实机): git_url=github 真源(macmini/开发机直拉), mirror_git_url=opensource-tools 内部镜像(role=worker 的机器用;macmini bootstrap/provider-mirror-sync.sh 每 10 分钟从 github 上游泵 heads/tags 保鲜, jarvis-sync-heartbeat 分支承载新鲜度, sync-provider.sh 滞后>2h 自动告警降置信;共享仓,泵不 prune 不删他人分支), fork=api-tool-agent fork(推送目标,在 github——短期仅 macmini 可推,worker push relay 见后续结构单); 评审看 upstream aliyun PR(API 层,仅 macmini/PrWatch 可达); Jarvis 写 GitHub PR/评论/推分支必须用 JARVIS_GITHUB_TOKEN(api-tool-agent) 经 bootstrap/github-identity.sh push, head=api-tool-agent:<branch>"
+      "ops": {"test":"go test ./alicloud -run <Name>","vet":"go vet -p=1 ./alicloud","fmt":"gofmt -w <changed-go-files>"},
+      "validation": {
+        "strategy": "staged",
+        "edit_batch": {
+          "go_changed": ["ops.fmt", "ops.test (only when a targeted test is useful)"],
+          "docs_only": []
+        },
+        "batch_end": {
+          "when": "after code and tests are stable, before first push or remote ACC",
+          "go_changed": ["ops.vet"],
+          "other_go_package_changed": ["go vet -p=1 <changed-package>"]
+        },
+        "remote_pr_ci": ["go vet ./...", "go build ./..."],
+        "local_forbidden": ["go vet ./...", "go build ./..."]
+      },
+      "desc": "alicloud provider 开发/评审采用 staged validation:每个连贯 Go 编辑批次只对 changed-go-files 格式化一次,定向测试按需执行;代码和测试稳定后、首次 push/远程 ACC 前只跑一次 ops.vet(go vet -p=1 ./alicloud),其它 Go package 只 vet 对应 package;docs-only 跳过 Go 命令。本地禁 go build ./... 与 go vet ./...,全树检查交远程 PR CI。现有 ops 键保持兼容;远程 ACC 使用 invoke-terraform-acc-test-remote。远端布局(实机): git_url=github 真源(macmini/开发机直拉), mirror_git_url=opensource-tools 内部镜像(role=worker 的机器用;macmini bootstrap/provider-mirror-sync.sh 每 10 分钟从 github 上游泵 heads/tags 保鲜, jarvis-sync-heartbeat 分支承载新鲜度, sync-provider.sh 滞后>2h 自动告警降置信;共享仓,泵不 prune 不删他人分支), fork=api-tool-agent fork(推送目标,在 github——短期仅 macmini 可推,worker push relay 见后续结构单);评审看 upstream aliyun PR(API 层,仅 macmini/PrWatch 可达);Jarvis 写 GitHub PR/评论/推分支必须用 JARVIS_GITHUB_TOKEN(api-tool-agent) 经 bootstrap/github-identity.sh push,head=api-tool-agent:<branch>"
     },
     "automation_agent": {
       "repo": "aliyun-automation-agent",

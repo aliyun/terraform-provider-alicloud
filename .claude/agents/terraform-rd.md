@@ -125,6 +125,9 @@ subagent 不会自动注入 SessionStart,**技能须主动通过 Skill 工具调
   operationMapping 与生命周期等结构合同。RD 必须由 AMP 创建 task 专属 feature 分支并使用
   AMP 返回的 SSH URL clone cloudspec-model，完成 build/check/publish pre 与 pre Meta 收敛；
   不创建 2165097。
+- CloudSpec 校验按编辑批次执行：本轮 IDL 修改完成后 build 一次，再对变更资源逐个、前台、
+  串行 check；同一模型目录禁止后台或多 Agent 并行 check。全部 check 通过后才执行 pre
+  dry-run/publish。
 - E 的研发返回 `next=terraform-qa/cloudspec_pre_verify`。QA 只核验 build/check/pre Meta
   收敛，不运行远程 AccTest；pass 后返回 RD，在同一源单上下文继续 Provider dev/CI/PR，再交
   QA 运行远程 AccTest。不触发 Acube `createBuildTaskV2`，不创建/复用 528766。
@@ -191,17 +194,19 @@ subagent 不会自动注入 SessionStart,**技能须主动通过 Skill 工具调
 jq '.workspaces.<repo>.ops' config/workspaces.json
 workspace_path="$(bash bootstrap/workspace.sh dir <repo>)"
 
-# 3. 在 worktree 分支上修改文件(使用 Edit/Write 工具)
+# 3. 在 worktree 分支上完成一个连贯编辑批次(不要每次 Edit 后运行整套 ops)
 
-# 4. 构建/静态验证(只跑 workspaces.json 登记的 ops,该仓没登记的命令不要自造)
-#    ⚠ terraform_provider 仓**禁本地全量 build/vet**——go build ./... / go vet ./... 全树编译会崩工作站,
-#      该仓 ops 已不含 build:验证 = ops.fmt(gofmt -l alicloud/) + ops.vet(go vet ./alicloud 单包)
-#      + 远程 ACC(invoke-terraform-acc-test-remote,交 QA)
-cd <workspace_path> && <ops.build>   # 仓 ops 无 build 则跳过本行
-cd <workspace_path> && <ops.vet>
-
-# 5. 测试(如有;只跑登记的 ops.test——provider 仓为定向 -run 单测,禁全量 go test ./...)
-cd <workspace_path> && <ops.test>
+# 4. 非 terraform_provider 仓:照常运行 workspaces.json 登记的 build/test/lint 等 ops,
+#    没登记的命令不要自造。terraform_provider 单独按 validation.staged 执行:
+#    · docs-only 批次:跳过全部 Go 命令。
+#    · Go 批次:每个连贯编辑批次结束时仅对 changed-go-files 运行一次 ops.fmt
+#      (gofmt -w <changed-go-files>);定向 ops.test 只在对当前批次有用时运行,不做每 Edit 全套检查。
+#    · 代码和测试稳定后、首次 push 或远程 ACC 前,运行一次 ops.vet:
+#      go vet -p=1 ./alicloud。若改了其它 Go package,只 vet 对应 package。
+#    · terraform_provider 本地禁止 go vet ./... 与 go build ./...;全树检查交远程 PR CI。
+#    · CI 修复循环先合并成一个连贯修复批次,只重跑受影响的定向检查,批次结束再跑一次 vet;
+#      不得每个 Edit 重复 vet。
+cd <workspace_path> && <registered-non-provider-ops-or-staged-provider-validation>
 
 # 6. 返回内部研发结果，不发 Aone/钉钉进展；MR/CR 链接交给 finalizer 聚合
 
@@ -303,7 +308,8 @@ gh pr view <url> --json files -q '.files[].path'        # 改了哪些文件
 - 结论(high_conf/low_conf + 风险等级)
 - 逐项(字段/import/用例)+ 证据(源码行/OpenAPI/grep 结果)
 - 建议(必改 / 建议 / 可选)
-- go build/vet 结果(跑了附结果;未跑注明局限)
+- 已登记 build/test 或 staged validation 结果(terraform_provider 附定向检查与 batch-end vet;
+  docs-only 注明已跳过 Go 命令;全树 build/vet 以远程 PR CI 为准)
 
 ## 写操作范围(授权后)
 
