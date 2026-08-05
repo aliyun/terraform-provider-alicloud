@@ -179,9 +179,25 @@ AK/SK，也禁止把任何明文/密文凭据放进命令参数、日志、报�
 
 ### Step 4: 组装 HTML 报告
 
-用 Python 组装 HTML，要点：
+**默认走 `gen-report.py --manifest`，它替你完成 Step 3 的上传与签名 URL 接线：**
 
-1. **图片用 OSS 签名 URL**（`<img src="<signed-url>">`），不用 base64（WAF 拦截）
+```bash
+python3 .Codex/skills/html-report-preview/scripts/gen-report.py \
+  --title "可视化查证报告 — Aone #<id>" \
+  --manifest .my-day/screenshots/<aone-id>/evidence-manifest.md \
+  --aone-id <aone-id> > report.html
+```
+
+manifest 里任何一层的截图换不到签名 URL 就 **exit 3 且不产出报告**，不会悄悄生成一份缺图的
+报告。已经跑过 Step 3 的用 `--image-urls image-urls.txt` 复用。
+
+**只有 manifest 表达不了的版式才手搓 HTML**，且下列硬要求一条不减：
+
+1. **图片用 OSS 签名 URL**（`<img src="<signed-url>">`），不用 base64（WAF 拦截）。
+   **把截图文件名写进正文（如 `截图：openapi_foo.png（见 manifest）`）不算证据**——
+   报告会一张图都不显示，且上传时被 `screenshot_prose_without_img` 拒绝。
+   把 PNG 拷到 HTML 旁边同样无效：只有 `.html`/`.htm` 会被上传，图片会被
+   `image_files_dropped` 拒绝。
 2. **来源文字加超链接**：如 `来源：<a href="...">next.api.alibabacloud.com · Cloudfw / CreateNatFirewallControlPolicy</a>`
 3. **对比用 grid 布局**：左红（❌ 错误）右绿（✅ 正确）
 4. **附交叉验证表**：验证层 / 结果 / 证据链接
@@ -199,6 +215,10 @@ bash bootstrap/html-report-preview.sh upload <aone-id> <report.html>
 ```
 
 Terraform finalizer 必须先校验 manifest 中三层都存在（或有明确 N/A 原因），再上传截图和报告。
+**manifest 齐全不等于报告齐全**：manifest 只记录本地截图路径，finalizer 还必须确认待上传的
+报告里每一层非 N/A 截图都以 `<img src="https://...">` 形式嵌入了签名 URL。用
+`gen-report.py --manifest` 时这一步由工具保证；手搓 HTML 时上传前自查
+`grep -c '<img' report.html` 是否等于非 N/A 层数。
 存在 `n-a` 时可以上传包含降级说明的部分报告；若截图、manifest 或上传链路失败，则跳过报告，
 把失败分类和原因写入唯一聚合评论，继续按文字证据收口业务结论。
 上传命令不得传 `--comment`；将返回的预览 URL 写进唯一聚合回复。executor 托管的 headless

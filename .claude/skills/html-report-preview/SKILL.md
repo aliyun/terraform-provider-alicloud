@@ -1,6 +1,6 @@
 ---
 name: html-report-preview
-description: Upload HTML report artifacts to AutomationAgent online preview storage and return shareable review links. Use when Jarvis/Claude Code needs to upload local .html/.htm files, .zip files containing HTML, directories of HTML reports, or Aone work item attachments for online review; when asked to comment preview links back to Aone; or when configuring/troubleshooting JARVIS_HTML_REPORT_TOKEN, /api/reports/aone uploads, or /reports/aone preview links.
+description: Upload HTML report artifacts to AutomationAgent online preview storage and return shareable review links. Use when Jarvis/Claude Code needs to upload local .html/.htm files, .zip files containing HTML, directories of HTML reports, or Aone work item attachments for online review; when a report must show screenshots (images are never uploaded with the HTML — they must first become signed URLs via upload-screenshots.sh, and prose filenames or co-located PNGs are rejected); when asked to comment preview links back to Aone; or when configuring/troubleshooting JARVIS_HTML_REPORT_TOKEN, /api/reports/aone uploads, or /reports/aone preview links.
 ---
 
 # HTML Report Preview
@@ -42,7 +42,27 @@ Uploads require `Authorization: Bearer $JARVIS_HTML_REPORT_TOKEN`. The helper al
 
 Never commit the plaintext token to tracked files, skill files, tests, or Aone comments. If the token is missing, the helper must return exit code `3`; JSONL mode emits `success:false,status:blocked,code:missing_token` before any curl or Aone call. Ask for it to be configured in the environment or gitignored `bootstrap/.env`; do not fall back to personal browser cookies or a personal BUC session for this server-token upload path.
 
-## Image Handling (WAF constraint)
+## Image Handling (mandatory two-step path)
+
+**Every screenshot in a report MUST go through these two steps. There is no third option.**
+
+1. `upload-screenshots.sh` → returns a signed `https://` URL per image.
+2. Reference that signed URL as `<img src="<signed-url>">` in the HTML.
+
+Only `<img>` (or `<picture>`) with an absolute `https://` src puts a screenshot on the page.
+None of these do — each produces a report that renders with **no screenshot at all**:
+
+| Anti-pattern | Why it fails |
+|---|---|
+| `截图：openapi_foo.png（见 manifest）` in prose | text, not an image; rejected as `screenshot_prose_without_img` |
+| `<img src="openapi_foo.png">` (relative) | rejected as `invalid_image_reference` |
+| PNGs placed next to the HTML, then uploading the directory/ZIP | only `.html`/`.htm` members are uploaded; images are dropped and the input is rejected as `image_files_dropped` |
+| base64 `data:` URI | blocked by the WAF (see below) |
+
+A report that names a screenshot file in its text but embeds no image is refused before any
+network call with `screenshot_prose_without_img`. Text inside `<pre>`/`<code>` is treated as
+sample code and ignored, and a report carrying the documented `missing_capability` degradation
+note is allowed to be image-free — so genuinely text-only and degraded reports still upload.
 
 **Do NOT embed screenshots as base64 `data:` URIs in the uploaded HTML.** The preprod WAF (Anti-Bot `rgv587`) runs content inspection on the multipart upload and blocks any HTML whose body carries base64 image data — PNG and JPEG alike, regardless of size. Symptom: `POST /api/reports/aone/<id>` returns HTTP 200 whose body is a `waf_block*.html` / `punish` page instead of the `{"success":true,...,"viewUrl":...}` JSON. This is not a token, endpoint, or method problem (an empty-body POST reaches the app and returns a clean 415).
 
@@ -57,6 +77,10 @@ input file, directory, or ZIP. Image references are allowed only when all of the
 
 The whole batch fails closed with `invalid_image_reference`; no report in that batch is uploaded.
 `<source srcset>` outside `<picture>` is not an image source and is outside this check.
+
+A directory or ZIP input is also rejected with `image_files_dropped` when it contains
+`.png`/`.jpg`/`.jpeg`/`.webp`/`.gif`/`.bmp` members: only HTML members are ever uploaded, so
+co-locating images with the report cannot work. Convert them to signed URLs first.
 
 **Workaround — use AutomationAgent's private image upload API and signed GET URLs:**
 
@@ -101,10 +125,28 @@ record `viewer_copy=platform_blocked`; do not emulate the feature inside uploade
 
 ## Standard report template
 
-Use `scripts/gen-report.py` to build the report HTML so screenshots are legible and clickable
-instead of each PD/finalizer hand-rolling a narrow-table layout. It wraps each `<img>` in
-`<a href="<signed-url>" target="_blank">` (the only zoom path the WAF allows — no JS lightbox)
-and uses a `<figure>` layout at `max-width:1200px` so details stay readable without clicking.
+**Build the report with `scripts/gen-report.py`, not by hand.** It performs the two mandatory
+image steps for you, so the failure mode where screenshots exist on disk but never reach the
+report cannot happen. It wraps each `<img>` in `<a href="<signed-url>" target="_blank">` (the only
+zoom path the WAF allows — no JS lightbox) and uses a `<figure>` layout at `max-width:1200px` so
+details stay readable without clicking.
+
+Preferred: feed it the manifest and let it upload and wire the signed URLs itself.
+
+```bash
+python3 .claude/skills/html-report-preview/scripts/gen-report.py \
+  --title "可视化查证报告 — Aone #<id>" \
+  --manifest .my-day/screenshots/<aone-id>/evidence-manifest.md \
+  --aone-id <aone-id> [--summary "..."] > report.html
+```
+
+It reads the manifest's `layer|result|screenshot|source|note` table, uploads each local
+screenshot via `upload-screenshots.sh`, and embeds the returned signed URL. If any screenshot in
+the manifest has no signed URL it **fails closed with exit 3 and writes no report** — rather than
+silently emitting one with a missing image. Reuse an earlier upload with
+`--image-urls image-urls.txt` instead of `--aone-id`.
+
+Explicit layers remain supported when you are not driving from a manifest:
 
 ```bash
 # layers.json: [{name, result, screenshot_url, source_url, source_label, note}, ...]
@@ -118,6 +160,10 @@ python3 .claude/skills/html-report-preview/scripts/gen-report.py \
 screenshots (SPA unrendered + td shrink + no click-to-zoom). The template floors layout at
 viewport width and anchors the original.
 
+If you do hand-roll the HTML anyway, the two image steps still apply in full: a hand-rolled
+report that mentions screenshot filenames without `<img src="<signed-url>">` is rejected at
+upload, and copying the PNGs next to it does not help.
+
 ## Workflows
 
 For a non-Terraform local report:
@@ -126,7 +172,7 @@ For a non-Terraform local report:
 bash bootstrap/html-report-preview.sh upload 83873535 /path/to/report.html --comment
 ```
 
-For a ZIP or directory, pass the ZIP or directory path. The helper extracts/uploads each `.html` or `.htm` file and prints one preview link per file.
+For a ZIP or directory, pass the ZIP or directory path. The helper extracts/uploads each `.html` or `.htm` file and prints one preview link per file. **Only HTML members are uploaded** — a directory or ZIP is for batching multiple reports, never for shipping a report together with its images. Images in it are rejected with `image_files_dropped`; turn screenshots into signed URLs first.
 
 For an Aone work item attachment:
 
