@@ -128,7 +128,11 @@ func testAccEssScalingGroupAlbServerGroupNotForceAttach(name string) string {
 	variable "name" {
 		default = "%s"
 	}
-	
+	data "alicloud_images" "default1" {
+		name_regex  = "^ubuntu_26"
+  		most_recent = true
+  		owners      = "system"
+	}
 	resource "alicloud_ess_scaling_group" "default" {
 	  min_size = "0"
 	  max_size = "2"
@@ -143,7 +147,7 @@ func testAccEssScalingGroupAlbServerGroupNotForceAttach(name string) string {
 	
 	resource "alicloud_ess_scaling_configuration" "default" {
 		scaling_group_id = alicloud_ess_scaling_group.default.id
-		image_id = data.alicloud_images.default.images[0].id
+		image_id = "ubuntu_26_04_x64_20G_alibase_20260618.vhd"
 		instance_type = data.alicloud_instance_types.default1.instance_types.0.id
 		security_group_id = alicloud_security_group.default.id
 		force_delete = true
@@ -172,7 +176,11 @@ func testAccEssScalingGroupAlbServerGroup(name string) string {
 	variable "name" {
 		default = "%s"
 	}
-	
+	data "alicloud_images" "default1" {
+		name_regex  = "^ubuntu_26"
+  		most_recent = true
+  		owners      = "system"
+	}
 	resource "alicloud_ess_scaling_group" "default" {
 	  min_size = "0"
 	  max_size = "2"
@@ -186,7 +194,7 @@ func testAccEssScalingGroupAlbServerGroup(name string) string {
 	}
 	resource "alicloud_ess_scaling_configuration" "default" {
 		scaling_group_id = alicloud_ess_scaling_group.default.id
-		image_id = data.alicloud_images.default.images[0].id
+		image_id = "ubuntu_26_04_x64_20G_alibase_20260618.vhd"
 		instance_type = data.alicloud_instance_types.default1.instance_types.0.id
 		security_group_id = alicloud_security_group.default.id
 		force_delete = true
