@@ -40,7 +40,7 @@ func resourceAliCloudAlidnsCloudGtmMonitorTemplate() *schema.Resource {
 			"failure_rate": {
 				Type:         schema.TypeInt,
 				Required:     true,
-				ValidateFunc: IntInSlice([]int{0, 20, 50, 80, 100}),
+				ValidateFunc: IntInSlice([]int{20, 50, 80, 100}),
 			},
 			"interval": {
 				Type:         schema.TypeString,
