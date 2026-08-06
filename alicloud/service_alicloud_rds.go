@@ -950,7 +950,20 @@ func (s *RdsService) ModifyDBBackupPolicy(d *schema.ResourceData, updateForData,
 			"BackupPolicyMode":      "DataBackupPolicy",
 			"SourceIp":              s.client.SourceIp,
 			"ReleasedKeepPolicy":    releasedKeepPolicy,
-			"Category":              category,
+		}
+		// MySQL local disk instances do not support the flash backup feature and reject Category
+		// whatever its value. Category is Computed, so once Read has stored the queried value it
+		// would otherwise be sent back on every subsequent update
+		if !(instance["Engine"] == "MySQL" && instance["DBInstanceStorageType"] == "local_ssd") {
+			request["Category"] = category
+		}
+		if instance["Engine"] == "MySQL" && instance["DBInstanceStorageType"] == "local_ssd" {
+			// Incremental backup applies to SQL Server cloud disk and MySQL local disk instances,
+			// and IncBackupInterval only takes effect once it is enabled
+			request["EnableIncrementDataBackup"] = enableIncrementDataBackup
+			if v, ok := d.GetOk("inc_backup_interval"); ok {
+				request["IncBackupInterval"] = v.(int)
+			}
 		}
 		if instance["Engine"] == "SQLServer" && instance["Category"] == "AlwaysOn" {
 			if v, ok := d.GetOk("backup_priority"); ok {
@@ -986,6 +999,11 @@ func (s *RdsService) ModifyDBBackupPolicy(d *schema.ResourceData, updateForData,
 			// Basic version cannot set backup interval
 			if v, ok := instance["Category"].(string); ok && v != "Basic" {
 				request["BackupInterval"] = backupInterval
+			}
+		}
+		if instance["Engine"] == "MySQL" && d.Get("enable_backup_log").(bool) {
+			if v, ok := d.GetOkExists("enable_pitr_protection"); ok {
+				request["EnablePitrProtection"] = v.(bool)
 			}
 		}
 
