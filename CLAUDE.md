@@ -56,7 +56,8 @@
     Jarvis/TerraformRD 在源单直接开发。严禁为 pure datasource
     create/reuse-as-carrier/reassign/relation/claim/wrap/release/finish 528766。历史 relation
     只读保留，不删、不迁、不关、不改派；不是开发、完成或 blocker 门，允许引用已有 PR 防重复。
-    RD route phase 只幂等同步源单 assignee + per-type progress_status；bridge executor 独占源单
+    RD route phase 只幂等同步源单 assignee + per-type progress_status（assignee 一律经
+    `bootstrap/aone-assign.sh`，真人持单不改派，见 #12）；bridge executor 独占源单
     claim/唯一回复/tag/release/finish。CI pending/fail 或 QA fail 均回 RD 修复，不得标为
     blocked；open PR + QA pass 时源单 release，不 finish。D/E/G 改为同类源单直办契约；
     I 的 2169561/可选 Provider docs 528766、H 的 528766、A/F 保持原边界。pure datasource
@@ -66,12 +67,25 @@
     非紧急给过载（484483），生成/发布腿（含 E pre 收敛后）给临钧（429768）；G 源单给
     新山（521957）。全部由 Jarvis/TerraformRD 在源单上下文主动开发，不得因改派、通知或
     历史 relation 观察等待，且严禁对 528766 执行任何承载动作。D 由 RD finalizer 先幂等同步
-    源单 assignee + per-type progress_status，再调用类型化入口 enqueue DM；event key 固定
+    源单 assignee（经 `bootstrap/aone-assign.sh`，真人持单不改派，见 #12）+ per-type
+    progress_status，再调用类型化入口 enqueue DM；event key 固定
     `terraform-route:d:<subtype>:owner:<staffId>`，同 ticket/subtype/owner 只一条，owner/subtype
     变化才生成新事件。durable pending 不阻断开发，posted/suppressed 不重发，
     `post_uncertain` 保持同 receipt；ledger 无法持久化不得宣称通知完成。G 不发送新增 route DM。
     build/test/CI/QA fail 留在 RD↔QA 修复闭环；open PR + QA pass 时源单 release 不 finish，
     正式发布仍为人工硬门。I/H/pure datasource/A/F 的反向保护保持不变。
+
+12. **assignee 人工接管保护**：写 Aone assignee 一律经
+    `bootstrap/aone-assign.sh <工单号> <工号>`，**禁止**裸调
+    `a1 project workitem update --assignee`（`bootstrap/a1_command_guard.py` PreToolUse
+    硬门会拦下）。**当前 assignee 已是 API 团队在册真人时不得改派** —— 判据 = 在
+    `config/contacts.json` 内、工号非 `WORKER_` 前缀、且非 `legacy_inbound_only`。
+    目标与当前一致按幂等 no-op 成功；`WORKER_` 数字人与非团队人员（如提单人）仍可改派，
+    初始路由不受影响；读不到当前 assignee 或 roster 时 fail-closed 拒绝，绝不盲改。
+    「幂等同步 assignee」只表示**收敛到一次正确落位**，不是每轮无条件覆写：首次写入生效、
+    后续覆写被拒，因此数字人也不能在两个真人之间来回甩单。仅当仓库主人本轮当面授权，
+    才可 `JARVIS_ASSIGN_OK=1` 单次绕过。**why**：路由判定在多轮之间并不稳定，而人工把单
+    改回自己恰恰会触发下一轮重派，形成「人越纠正、机器越顽固」的对抗回环。
 
 ## 自我迭代
 
