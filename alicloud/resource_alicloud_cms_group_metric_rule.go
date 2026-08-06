@@ -394,6 +394,9 @@ func resourceAliCloudCmsGroupMetricRuleRead(d *schema.ResourceData, meta interfa
 	d.Set("email_subject", object["MailSubject"])
 	d.Set("effective_interval", object["EffectiveInterval"])
 	d.Set("no_effective_interval", object["NoEffectiveInterval"])
+	// interval is a write-only parameter: DescribeMetricRuleList does not return it,
+	// so it is not read back here (the configured value is retained) and it is excluded
+	// from ImportStateVerify.
 	d.Set("period", formatInt(object["Period"]))
 	d.Set("silence_time", formatInt(object["SilenceTime"]))
 	d.Set("webhook", object["Webhook"])
@@ -586,6 +589,13 @@ func resourceAliCloudCmsGroupMetricRuleUpdate(d *schema.ResourceData, meta inter
 		request["NoEffectiveInterval"] = v
 	}
 
+	if !d.IsNewResource() && d.HasChange("interval") {
+		update = true
+	}
+	if v, ok := d.GetOk("interval"); ok {
+		request["Interval"] = v
+	}
+
 	if !d.IsNewResource() && d.HasChange("period") {
 		update = true
 
@@ -722,6 +732,7 @@ func resourceAliCloudCmsGroupMetricRuleUpdate(d *schema.ResourceData, meta inter
 		d.SetPartial("email_subject")
 		d.SetPartial("effective_interval")
 		d.SetPartial("no_effective_interval")
+		d.SetPartial("interval")
 		d.SetPartial("period")
 		d.SetPartial("silence_time")
 		d.SetPartial("webhook")
