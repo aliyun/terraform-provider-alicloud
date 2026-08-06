@@ -846,7 +846,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_api_gateway_plugins":                              dataSourceAlicloudApiGatewayPlugins(),
 			"alicloud_message_service_queues":                           dataSourceAlicloudMessageServiceQueues(),
 			"alicloud_message_service_topics":                           dataSourceAlicloudMessageServiceTopics(),
-			"alicloud_message_service_subscriptions":                    dataSourceAlicloudMessageServiceSubscriptions(),
+			"alicloud_message_service_subscriptions":                    dataSourceAliCloudMessageServiceSubscriptions(),
 			"alicloud_cen_transit_router_prefix_list_associations":      dataSourceAlicloudCenTransitRouterPrefixListAssociations(),
 			"alicloud_dms_enterprise_proxies":                           dataSourceAlicloudDmsEnterpriseProxies(),
 			"alicloud_vpc_public_ip_address_pool_cidr_blocks":           dataSourceAlicloudVpcPublicIpAddressPoolCidrBlocks(),

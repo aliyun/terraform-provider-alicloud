@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -50,14 +51,49 @@ func resourceAliCloudMessageServiceSubscription() *schema.Resource {
 					},
 				},
 			},
+			"dm_attributes": {
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"subject": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+						},
+						"account_name": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+						},
+					},
+				},
+			},
+			"dysms_attributes": {
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"template_code": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+						},
+						"sign_name": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+						},
+					},
+				},
+			},
 			"endpoint": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
-			},
-			"sts_role_arn": {
-				Type:     schema.TypeString,
-				Optional: true,
 				ForceNew: true,
 			},
 			"filter_tag": {
@@ -65,11 +101,15 @@ func resourceAliCloudMessageServiceSubscription() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"last_modify_time": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
 			"notify_content_format": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 				Computed: true,
+				ForceNew: true,
 			},
 			"notify_strategy": {
 				Type:     schema.TypeString,
@@ -80,15 +120,42 @@ func resourceAliCloudMessageServiceSubscription() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
+			"sts_role_arn": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"subscription_name": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
+			"tenant_rate_limit_policy": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"max_receives_per_second": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+					},
+				},
+			},
 			"topic_name": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+			},
+			"topic_owner": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 		},
 	}
@@ -104,12 +171,78 @@ func resourceAliCloudMessageServiceSubscriptionCreate(d *schema.ResourceData, me
 	query := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
-	request["TopicName"] = d.Get("topic_name")
-	request["SubscriptionName"] = d.Get("subscription_name")
+	if v, ok := d.GetOk("topic_name"); ok {
+		request["TopicName"] = v
+	}
+	if v, ok := d.GetOk("subscription_name"); ok {
+		request["SubscriptionName"] = v
+	}
+	request["RegionId"] = client.RegionId
+
+	dlqPolicy := make(map[string]interface{})
+
+	if v := d.Get("dlq_policy"); !IsNil(v) {
+		deadLetterTargetQueue1, _ := jsonpath.Get("$[0].dead_letter_target_queue", v)
+		if deadLetterTargetQueue1 != nil && deadLetterTargetQueue1 != "" {
+			dlqPolicy["DeadLetterTargetQueue"] = deadLetterTargetQueue1
+		}
+		enabled1, _ := jsonpath.Get("$[0].enabled", v)
+		if enabled1 != nil && enabled1 != "" {
+			dlqPolicy["Enabled"] = enabled1
+		}
+
+		dlqPolicyJson, err := json.Marshal(dlqPolicy)
+		if err != nil {
+			return WrapError(err)
+		}
+		request["DlqPolicy"] = string(dlqPolicyJson)
+	}
 
 	if v, ok := d.GetOk("notify_strategy"); ok {
 		request["NotifyStrategy"] = v
 	}
+	if v, ok := d.GetOk("sts_role_arn"); ok {
+		request["StsRoleArn"] = v
+	}
+	tenantRateLimitPolicy := make(map[string]interface{})
+
+	if v := d.Get("tenant_rate_limit_policy"); !IsNil(v) {
+		enabled3, _ := jsonpath.Get("$[0].enabled", v)
+		if enabled3 != nil && enabled3 != "" {
+			tenantRateLimitPolicy["Enabled"] = enabled3
+		}
+		maxReceivesPerSecond1, _ := jsonpath.Get("$[0].max_receives_per_second", v)
+		if maxReceivesPerSecond1 != nil && maxReceivesPerSecond1 != "" {
+			tenantRateLimitPolicy["MaxReceivesPerSecond"] = maxReceivesPerSecond1
+		}
+
+		tenantRateLimitPolicyJson, err := json.Marshal(tenantRateLimitPolicy)
+		if err != nil {
+			return WrapError(err)
+		}
+		request["TenantRateLimitPolicy"] = string(tenantRateLimitPolicyJson)
+	}
+
+	request["PushType"] = d.Get("push_type")
+	dmAttributes := make(map[string]interface{})
+
+	if v := d.Get("dm_attributes"); !IsNil(v) {
+		subject1, _ := jsonpath.Get("$[0].subject", v)
+		if subject1 != nil && subject1 != "" {
+			dmAttributes["Subject"] = subject1
+		}
+		accountName1, _ := jsonpath.Get("$[0].account_name", v)
+		if accountName1 != nil && accountName1 != "" {
+			dmAttributes["AccountName"] = accountName1
+		}
+
+		dmAttributesJson, err := json.Marshal(dmAttributes)
+		if err != nil {
+			return WrapError(err)
+		}
+		request["DmAttributes"] = string(dmAttributesJson)
+	}
+
 	if v, ok := d.GetOk("notify_content_format"); ok {
 		request["NotifyContentFormat"] = v
 	}
@@ -117,27 +250,23 @@ func resourceAliCloudMessageServiceSubscriptionCreate(d *schema.ResourceData, me
 		request["MessageTag"] = v
 	}
 	request["Endpoint"] = d.Get("endpoint")
-	if v, ok := d.GetOk("sts_role_arn"); ok {
-		request["StsRoleArn"] = v
-	}
-	request["PushType"] = d.Get("push_type")
-	objectDataLocalMap := make(map[string]interface{})
+	dysmsAttributes := make(map[string]interface{})
 
-	if v := d.Get("dlq_policy"); !IsNil(v) {
-		deadLetterTargetQueue1, _ := jsonpath.Get("$[0].dead_letter_target_queue", v)
-		if deadLetterTargetQueue1 != nil && deadLetterTargetQueue1 != "" {
-			objectDataLocalMap["DeadLetterTargetQueue"] = deadLetterTargetQueue1
+	if v := d.Get("dysms_attributes"); !IsNil(v) {
+		templateCode1, _ := jsonpath.Get("$[0].template_code", v)
+		if templateCode1 != nil && templateCode1 != "" {
+			dysmsAttributes["TemplateCode"] = templateCode1
 		}
-		enabled1, _ := jsonpath.Get("$[0].enabled", v)
-		if enabled1 != nil && enabled1 != "" {
-			objectDataLocalMap["Enabled"] = enabled1
+		signName1, _ := jsonpath.Get("$[0].sign_name", v)
+		if signName1 != nil && signName1 != "" {
+			dysmsAttributes["SignName"] = signName1
 		}
 
-		objectDataLocalMapJson, err := json.Marshal(objectDataLocalMap)
+		dysmsAttributesJson, err := json.Marshal(dysmsAttributes)
 		if err != nil {
 			return WrapError(err)
 		}
-		request["DlqPolicy"] = string(objectDataLocalMapJson)
+		request["DysmsAttributes"] = string(dysmsAttributesJson)
 	}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -180,8 +309,10 @@ func resourceAliCloudMessageServiceSubscriptionRead(d *schema.ResourceData, meta
 	d.Set("create_time", objectRaw["CreateTime"])
 	d.Set("endpoint", objectRaw["Endpoint"])
 	d.Set("filter_tag", objectRaw["FilterTag"])
+	d.Set("last_modify_time", objectRaw["LastModifyTime"])
 	d.Set("notify_content_format", objectRaw["NotifyContentFormat"])
 	d.Set("notify_strategy", objectRaw["NotifyStrategy"])
+	d.Set("topic_owner", objectRaw["TopicOwner"])
 	d.Set("subscription_name", objectRaw["SubscriptionName"])
 	d.Set("topic_name", objectRaw["TopicName"])
 
@@ -200,6 +331,21 @@ func resourceAliCloudMessageServiceSubscriptionRead(d *schema.ResourceData, meta
 	if err := d.Set("dlq_policy", dlqPolicyMaps); err != nil {
 		return err
 	}
+	tenantRateLimitPolicyMaps := make([]map[string]interface{}, 0)
+	tenantRateLimitPolicyMap := make(map[string]interface{})
+	tenantRateLimitPolicyRaw := make(map[string]interface{})
+	if objectRaw["TenantRateLimitPolicy"] != nil {
+		tenantRateLimitPolicyRaw = objectRaw["TenantRateLimitPolicy"].(map[string]interface{})
+	}
+	if len(tenantRateLimitPolicyRaw) > 0 {
+		tenantRateLimitPolicyMap["enabled"] = tenantRateLimitPolicyRaw["Enabled"]
+		tenantRateLimitPolicyMap["max_receives_per_second"] = tenantRateLimitPolicyRaw["MaxReceivesPerSecond"]
+
+		tenantRateLimitPolicyMaps = append(tenantRateLimitPolicyMaps, tenantRateLimitPolicyMap)
+	}
+	if err := d.Set("tenant_rate_limit_policy", tenantRateLimitPolicyMaps); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -212,45 +358,66 @@ func resourceAliCloudMessageServiceSubscriptionUpdate(d *schema.ResourceData, me
 	update := false
 
 	var err error
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
-	}
+	parts := strings.Split(d.Id(), ":")
 	action := "SetSubscriptionAttributes"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["TopicName"] = parts[0]
 	request["SubscriptionName"] = parts[1]
-
-	if d.HasChange("notify_strategy") {
-		update = true
-	}
-	if v, ok := d.GetOk("notify_strategy"); ok {
-		request["NotifyStrategy"] = v
-	}
-
+	request["RegionId"] = client.RegionId
 	if d.HasChange("dlq_policy") {
 		update = true
-		objectDataLocalMap := make(map[string]interface{})
+		dlqPolicy := make(map[string]interface{})
 
 		if v := d.Get("dlq_policy"); v != nil {
 			enabled1, _ := jsonpath.Get("$[0].enabled", v)
 			if enabled1 != nil && (d.HasChange("dlq_policy.0.enabled") || enabled1 != "") {
-				objectDataLocalMap["Enabled"] = enabled1
+				dlqPolicy["Enabled"] = enabled1
 
-				if objectDataLocalMap["Enabled"].(bool) {
+				if dlqPolicy["Enabled"].(bool) {
 					deadLetterTargetQueue1, _ := jsonpath.Get("$[0].dead_letter_target_queue", v)
 					if deadLetterTargetQueue1 != nil && (d.HasChange("dlq_policy.0.dead_letter_target_queue") || deadLetterTargetQueue1 != "") {
-						objectDataLocalMap["DeadLetterTargetQueue"] = deadLetterTargetQueue1
+						dlqPolicy["DeadLetterTargetQueue"] = deadLetterTargetQueue1
 					}
 				}
 			}
 
-			objectDataLocalMapJson, err := json.Marshal(objectDataLocalMap)
+			dlqPolicyJson, err := json.Marshal(dlqPolicy)
 			if err != nil {
 				return WrapError(err)
 			}
-			request["DlqPolicy"] = string(objectDataLocalMapJson)
+			request["DlqPolicy"] = string(dlqPolicyJson)
+		}
+	}
+
+	if d.HasChange("notify_strategy") {
+		update = true
+	}
+	// NotifyStrategy is required by SetSubscriptionAttributes even when only
+	// other attributes change; omitting it fails with Missing:NotifyStrategy.
+	if v, ok := d.GetOk("notify_strategy"); ok {
+		request["NotifyStrategy"] = v
+	}
+
+	if d.HasChange("tenant_rate_limit_policy") {
+		update = true
+		tenantRateLimitPolicy := make(map[string]interface{})
+
+		if v := d.Get("tenant_rate_limit_policy"); v != nil {
+			enabled3, _ := jsonpath.Get("$[0].enabled", v)
+			if enabled3 != nil && enabled3 != "" {
+				tenantRateLimitPolicy["Enabled"] = enabled3
+			}
+			maxReceivesPerSecond1, _ := jsonpath.Get("$[0].max_receives_per_second", v)
+			if maxReceivesPerSecond1 != nil && maxReceivesPerSecond1 != "" {
+				tenantRateLimitPolicy["MaxReceivesPerSecond"] = maxReceivesPerSecond1
+			}
+
+			tenantRateLimitPolicyJson, err := json.Marshal(tenantRateLimitPolicy)
+			if err != nil {
+				return WrapError(err)
+			}
+			request["TenantRateLimitPolicy"] = string(tenantRateLimitPolicyJson)
 		}
 	}
 
@@ -279,22 +446,20 @@ func resourceAliCloudMessageServiceSubscriptionUpdate(d *schema.ResourceData, me
 func resourceAliCloudMessageServiceSubscriptionDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
-	}
+	parts := strings.Split(d.Id(), ":")
 	action := "Unsubscribe"
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
+	var err error
 	request = make(map[string]interface{})
-	request["SubscriptionName"] = parts[1]
 	request["TopicName"] = parts[0]
+	request["SubscriptionName"] = parts[1]
+	request["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("Mns-open", "2022-01-19", action, query, request, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
