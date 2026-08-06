@@ -19,6 +19,14 @@ SUMMARY_TMP_DIR="$(mktemp -d)"
 export A1_LOG
 trap 'rm -rf "$FAKE_BIN_DIR" "$RUNS_DIR" "$POOLS_TMP" "$A1_LOG" "$SUMMARY_TMP_DIR" "$FAKE_JARVIS_ROOT"' EXIT
 
+# wrap.sh routes its Aone writes through the control-plane receipt path whenever
+# the host session's interactive signals are visible (bootstrap/wrap.sh:118
+# _receipt_fenced). These tests want the plain-write path, so isolate the signals
+# instead of relying on the fake ids happening to miss has-current (Aone 85192197).
+# shellcheck source=lib/hermetic.sh
+source "$SCRIPT_DIR/lib/hermetic.sh"
+jarvis_test_hermetic_init "$FAKE_BIN_DIR"
+
 cat > "$FAKE_BIN_DIR/a1" <<'EOF'
 #!/usr/bin/env bash
 echo "$*" >> "${A1_LOG:-/dev/null}"
