@@ -652,13 +652,20 @@ func resourceAliCloudRocketmqInstanceRead(d *schema.ResourceData, meta interface
 	bssOpenApiService := BssOpenApiService{client}
 	queryAvailableInstancesObject, err := bssOpenApiService.QueryAvailableInstancesWithoutProductType(d.Id(), client.RegionId, "ons", "ons")
 	if err != nil {
-		return WrapError(err)
+		// The renewal info from the BSS billing API only feeds three non-critical
+		// attributes (auto_renew/auto_renew_period/auto_renew_period_unit). For some
+		// account and region combinations the billing endpoint is not applicable and
+		// returns an error even though the instance itself is healthy, which must not
+		// abort the whole read. Treat the query as best-effort: log and skip these
+		// attributes instead of returning a fatal error.
+		log.Printf("[WARN] querying renewal info for RocketMQ instance %s failed, skip setting auto_renew attributes: %v", d.Id(), err)
+	} else {
+		d.Set("auto_renew", queryAvailableInstancesObject["RenewStatus"] == "AutoRenewal")
+		if v, ok := queryAvailableInstancesObject["RenewalDuration"]; ok && fmt.Sprint(v) != "0" {
+			d.Set("auto_renew_period", formatInt(v))
+		}
+		d.Set("auto_renew_period_unit", convertAmqpInstanceRenewalDurationUnitResponse(queryAvailableInstancesObject["RenewalDurationUnit"]))
 	}
-	d.Set("auto_renew", queryAvailableInstancesObject["RenewStatus"] == "AutoRenewal")
-	if v, ok := queryAvailableInstancesObject["RenewalDuration"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("auto_renew_period", formatInt(v))
-	}
-	d.Set("auto_renew_period_unit", convertAmqpInstanceRenewalDurationUnitResponse(queryAvailableInstancesObject["RenewalDurationUnit"]))
 
 	objectRaw, err = rocketmqServiceV2.DescribeInstanceGetInstanceIpWhitelist(d.Id())
 	if err != nil && !NotFoundError(err) {
