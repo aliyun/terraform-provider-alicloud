@@ -197,11 +197,52 @@ if count == 0:
 PY
 }
 
+# Only HTML members are ever uploaded, so images sitting beside the report are
+# silently dropped and the report renders with broken/absent screenshots. Refuse
+# the input instead: screenshots must become signed URLs via upload-screenshots.sh.
+reject_dropped_image_files() {
+    local found="$1"
+
+    [ -n "$found" ] || return 0
+    echo "html-report-preview: images are dropped, not uploaded with the report: $found" >&2
+    echo "html-report-preview: run .claude/skills/screenshot-evidence/scripts/upload-screenshots.sh first, then reference the signed https URLs" >&2
+    upload_failed "image_files_dropped"
+}
+
+zip_image_members() {
+    python3 - "$1" <<'PY'
+import posixpath
+import sys
+import zipfile
+
+SUFFIXES = (".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp")
+names = []
+try:
+    with zipfile.ZipFile(sys.argv[1]) as zf:
+        for info in zf.infolist():
+            if info.is_dir():
+                continue
+            if info.filename.lower().endswith(SUFFIXES):
+                base = posixpath.basename(info.filename)
+                if base:
+                    names.append(base)
+except (OSError, zipfile.BadZipFile):
+    raise SystemExit(0)
+print(" ".join(sorted(names)[:5]))
+PY
+}
+
 collect_html_inputs() {
     local input="$1"
     local tmp_dir="$2"
 
     [ -e "$input" ] || die "input not found: $input"
+    if [ -d "$input" ]; then
+        reject_dropped_image_files "$(find "$input" -type f \
+            \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' \
+               -o -iname '*.webp' -o -iname '*.gif' -o -iname '*.bmp' \) \
+            -exec basename {} \; 2>/dev/null | sort | head -5 | tr '\n' ' ')"
+    fi
     if [ -d "$input" ]; then
         local found=0
         while IFS= read -r -d '' file; do
@@ -212,6 +253,7 @@ collect_html_inputs() {
     elif is_html_path "$input"; then
         printf '%s\t%s\n' "$input" "$(basename "$input")"
     elif is_zip_path "$input"; then
+        reject_dropped_image_files "$(zip_image_members "$input")"
         extract_zip_htmls "$input" "$tmp_dir" || die "zip has no HTML files: $input"
     else
         die "only .html, .htm, .zip, or a directory of HTML files are supported: $input"
@@ -226,6 +268,16 @@ import re
 import sys
 from html.parser import HTMLParser
 from urllib.parse import urlsplit
+
+IMAGE_SUFFIX_RE = re.compile(r"\.(?:png|jpe?g|webp|gif|bmp)$", re.IGNORECASE)
+# A screenshot filename mentioned in running text, e.g. "截图：openapi_create.png".
+# Tokens containing "://" are URLs, not the prose-only pattern we are hunting.
+PROSE_IMAGE_RE = re.compile(r"[\w./-]+\.(?:png|jpe?g|webp|gif|bmp)\b", re.IGNORECASE)
+# Text inside these elements is sample code/config, not a screenshot caption.
+LITERAL_TAGS = {"pre", "code", "script", "style", "textarea"}
+# The documented degradation marker from the screenshot-evidence skill: a report
+# that explains why screenshots are absent is legitimately image-free.
+DEGRADED_MARKERS = ("missing_capability",)
 
 
 def valid_https_url(value):
@@ -271,6 +323,13 @@ class ImageReferenceValidator(HTMLParser):
         super().__init__(convert_charrefs=True)
         self.picture_depth = 0
         self.invalid = False
+        # Screenshot-presence tracking: a "visual evidence" report that names its
+        # screenshots only in prose renders with nothing to look at, and the
+        # reference checks above cannot catch it because there is no ref to check.
+        self.img_count = 0
+        self.embedded_image_url = False
+        self.literal_depth = 0
+        self.prose = []
 
     def validate_url(self, value):
         if not valid_https_url(value or ""):
@@ -285,8 +344,20 @@ class ImageReferenceValidator(HTMLParser):
         if not all(valid_https_url(url) for url in urls):
             self.invalid = True
 
+    def note_embedded_url(self, value):
+        for candidate in re.split(r"[\s,]+", value or ""):
+            candidate = candidate.strip()
+            if candidate.lower().startswith("https://") and IMAGE_SUFFIX_RE.search(
+                urlsplit(candidate).path
+            ):
+                self.embedded_image_url = True
+
     def inspect(self, tag, attrs):
         tag = tag.lower()
+        if tag == "img":
+            self.img_count += 1
+        for _, value in attrs:
+            self.note_embedded_url(value)
         if tag == "img":
             for name, value in attrs:
                 name = name.lower()
@@ -301,15 +372,36 @@ class ImageReferenceValidator(HTMLParser):
 
     def handle_starttag(self, tag, attrs):
         self.inspect(tag, attrs)
-        if tag.lower() == "picture":
+        tag = tag.lower()
+        if tag == "picture":
             self.picture_depth += 1
+        if tag in LITERAL_TAGS:
+            self.literal_depth += 1
 
     def handle_startendtag(self, tag, attrs):
         self.inspect(tag, attrs)
 
     def handle_endtag(self, tag):
-        if tag.lower() == "picture" and self.picture_depth > 0:
+        tag = tag.lower()
+        if tag == "picture" and self.picture_depth > 0:
             self.picture_depth -= 1
+        if tag in LITERAL_TAGS and self.literal_depth > 0:
+            self.literal_depth -= 1
+
+    def handle_data(self, data):
+        if self.literal_depth == 0:
+            self.prose.append(data)
+
+    def prose_only_screenshot(self):
+        """Report names screenshot files in prose yet embeds no image at all."""
+        if self.img_count or self.embedded_image_url:
+            return False
+        text = "".join(self.prose)
+        if any(marker in text for marker in DEGRADED_MARKERS):
+            return False
+        return any(
+            "://" not in match.group(0) for match in PROSE_IMAGE_RE.finditer(text)
+        )
 
 
 try:
@@ -321,7 +413,9 @@ try:
 except (OSError, UnicodeError, ValueError):
     raise SystemExit(1)
 
-raise SystemExit(1 if validator.invalid else 0)
+if validator.invalid:
+    raise SystemExit(1)
+raise SystemExit(4 if validator.prose_only_screenshot() else 0)
 PY
 }
 
@@ -388,9 +482,13 @@ upload_input() {
     # partially publish valid entries before a later unsafe report is rejected.
     while IFS=$'\t' read -r file label; do
         [ -n "$file" ] || continue
-        if ! validate_html_image_references "$file"; then
-            upload_failed "invalid_image_reference"
-        fi
+        local check_rc=0
+        validate_html_image_references "$file" || check_rc=$?
+        case "$check_rc" in
+            0) ;;
+            4) upload_failed "screenshot_prose_without_img" ;;
+            *) upload_failed "invalid_image_reference" ;;
+        esac
     done <"$inputs_file"
 
     while IFS=$'\t' read -r file label; do

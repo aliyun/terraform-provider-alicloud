@@ -26,14 +26,150 @@ Usage:
     gen-report.py --title "可视化查证报告 — Aone #XXX" \
                   --layers-file layers.json [--summary "..."] > report.html
     cat layers.json | gen-report.py --title "..." > report.html
+
+    # From an evidence-manifest.md: uploads each local screenshot via
+    # upload-screenshots.sh and embeds the returned signed URL. Fails closed
+    # (exit 3) if any manifest screenshot has no signed URL, so a screenshot-less
+    # "visual evidence" report can never be produced by accident.
+    gen-report.py --title "..." --manifest evidence-manifest.md \
+                  --aone-id 12345678 > report.html
+    # Or reuse an earlier upload:
+    gen-report.py --title "..." --manifest evidence-manifest.md \
+                  --image-urls image-urls.txt > report.html
 """
 import argparse
 import html as html_mod
 import json
+import os
+import subprocess
 import sys
 from pathlib import Path
 
 _BADGE = {"pass": "✅ pass", "n-a": "— n/a", "fail": "❌ fail"}
+_IMAGE_SUFFIXES = (".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp")
+
+
+class ManifestError(RuntimeError):
+    """Manifest could not be turned into a report with every screenshot embedded."""
+
+
+def _split_row(line):
+    return [cell.strip() for cell in line.strip().strip("|").split("|")]
+
+
+def parse_manifest(text):
+    """Extract layer rows from an evidence-manifest.md pipe table.
+
+    Returns a list of dicts with the manifest's own column names, so a row's
+    `screenshot` value is still the LOCAL path at this point.
+    """
+    header = None
+    rows = []
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("|"):
+            continue
+        cells = _split_row(stripped)
+        if set("".join(cells)) <= set("-: "):
+            continue
+        if header is None:
+            header = [cell.lower() for cell in cells]
+            continue
+        rows.append(dict(zip(header, cells)))
+    if header is None:
+        raise ManifestError("no pipe table found in manifest")
+    for required in ("layer", "result", "screenshot"):
+        if required not in header:
+            raise ManifestError("manifest table has no '%s' column" % required)
+    if not rows:
+        raise ManifestError("manifest table has no layer rows")
+    return rows
+
+
+def parse_image_urls(text):
+    """Parse `name|signed_url` lines emitted by upload-screenshots.sh."""
+    mapping = {}
+    for line in text.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "|" not in line:
+            continue
+        name, _, url = line.partition("|")
+        name, url = name.strip(), url.strip()
+        if name and url:
+            mapping[name] = url
+    return mapping
+
+
+def _local_screenshot(value):
+    """Local screenshot path in a manifest cell, or "" when absent/already a URL."""
+    value = (value or "").strip()
+    if not value or value.lower() in {"n/a", "na", "-", "—"}:
+        return ""
+    if "://" in value:
+        return ""
+    if not value.lower().endswith(_IMAGE_SUFFIXES):
+        return ""
+    return value
+
+
+def default_uploader():
+    """Sibling skill's uploader, resolved without hardcoding the skills root.
+
+    This file lives at <skills>/html-report-preview/scripts/gen-report.py, so the
+    uploader is found the same way in every mirrored skills tree.
+    """
+    return (Path(__file__).resolve().parents[2]
+            / "screenshot-evidence" / "scripts" / "upload-screenshots.sh")
+
+
+def upload_screenshots(aone_id, directory, uploader):
+    """Run the repo-owned uploader and return its name->signed_url mapping."""
+    script = Path(uploader) if uploader else default_uploader()
+    if not script.is_file():
+        raise ManifestError("uploader not found: %s" % script)
+    try:
+        done = subprocess.run(
+            ["bash", str(script), str(aone_id), str(directory)],
+            capture_output=True, text=True, check=False)
+    except OSError as exc:
+        raise ManifestError("uploader could not run: %s" % exc.strerror)
+    if done.returncode != 0:
+        # stderr carries only the uploader's fixed sanitized codes.
+        raise ManifestError("uploader failed (exit %d): %s"
+                            % (done.returncode, done.stderr.strip()))
+    return parse_image_urls(done.stdout)
+
+
+def manifest_layers(rows, image_urls):
+    """Attach signed URLs to manifest rows, failing closed on any gap.
+
+    A screenshot named in the manifest but missing from image_urls would render
+    as an image-free "visual evidence" report, so it is an error, not a warning.
+    """
+    layers = []
+    missing = []
+    for row in rows:
+        local = _local_screenshot(row.get("screenshot"))
+        shot_url = ""
+        if local:
+            stem = os.path.splitext(os.path.basename(local))[0]
+            shot_url = image_urls.get(stem, "")
+            if not shot_url:
+                missing.append(stem)
+        layers.append({
+            "name": row.get("layer", ""),
+            "result": row.get("result", "n-a"),
+            "screenshot_url": shot_url,
+            "source_url": row.get("source", ""),
+            "source_label": row.get("source", "") or "N/A",
+            "note": row.get("note", ""),
+        })
+    if missing:
+        raise ManifestError(
+            "no signed URL for screenshot(s): %s; run upload-screenshots.sh and "
+            "pass --image-urls, or supply --aone-id to upload here"
+            % ", ".join(sorted(set(missing))))
+    return layers
 
 
 def _esc(value):
@@ -93,10 +229,44 @@ def main(argv):
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--title", required=True)
     p.add_argument("--layers-file", help="JSON file of layers (default: stdin)")
+    p.add_argument("--manifest",
+                   help="evidence-manifest.md; screenshots become signed URLs")
+    p.add_argument("--image-urls",
+                   help="name|signed_url file from upload-screenshots.sh; "
+                        "omit to upload the manifest's screenshots here")
+    p.add_argument("--aone-id", help="Aone id, required to upload from --manifest")
+    p.add_argument("--uploader",
+                   help="path to upload-screenshots.sh (default: sibling skill)")
     p.add_argument("--summary", default="")
     p.add_argument("--out", help="output path (default: stdout)")
     args = p.parse_args(argv)
-    if args.layers_file:
+    if args.manifest and args.layers_file:
+        p.error("--manifest and --layers-file are mutually exclusive")
+    if args.manifest:
+        try:
+            rows = parse_manifest(Path(args.manifest).read_text(encoding="utf-8"))
+            if args.image_urls:
+                urls = parse_image_urls(
+                    Path(args.image_urls).read_text(encoding="utf-8"))
+            elif any(_local_screenshot(r.get("screenshot")) for r in rows):
+                if not args.aone_id:
+                    raise ManifestError(
+                        "--aone-id is required to upload screenshots; or pass "
+                        "--image-urls from a previous upload-screenshots.sh run")
+                shots = {os.path.dirname(_local_screenshot(r.get("screenshot")))
+                         for r in rows if _local_screenshot(r.get("screenshot"))}
+                if len(shots) != 1:
+                    raise ManifestError(
+                        "screenshots span %d directories; upload them yourself "
+                        "and pass --image-urls" % len(shots))
+                urls = upload_screenshots(args.aone_id, shots.pop(), args.uploader)
+            else:
+                urls = {}
+            layers = manifest_layers(rows, urls)
+        except (OSError, ManifestError) as exc:
+            sys.stderr.write("gen-report: %s\n" % exc)
+            return 3
+    elif args.layers_file:
         layers = json.loads(Path(args.layers_file).read_text(encoding="utf-8"))
     else:
         layers = json.loads(sys.stdin.read())

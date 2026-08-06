@@ -344,6 +344,110 @@ else
     assert_fail "unsafe ZIP must be fully validated before curl (log: $(cat "$curl_log"))"
 fi
 
+echo "=== Test 11: reject screenshots named in prose but never embedded ==="
+assert_rejected_prose_screenshot() {
+    local name="$1"
+    local markup="$2"
+    local fixture="$tmpdir/prose-$name.html"
+    printf '%s\n' "$markup" >"$fixture"
+    : >"$curl_log"
+    output=$(CURL_LOG="$curl_log" JARVIS_CURL_BIN="$tmpbin/curl" \
+        JARVIS_HTML_REPORT_TOKEN="test-token" \
+        bash "$proj_root/bootstrap/html-report-preview.sh" upload FAKE_AONE_ID "$fixture" \
+        --base-url https://pre.example 2>&1)
+    exit_code=$?
+    if [ "$exit_code" -ne 0 ]; then
+        assert_pass "$name prose-only screenshot is rejected"
+    else
+        assert_fail "$name prose-only screenshot must be rejected"
+    fi
+    assert_contains "$output" "screenshot_prose_without_img" \
+        "$name uses the fixed prose-without-img diagnostic"
+    if [ ! -s "$curl_log" ]; then
+        assert_pass "$name is rejected before curl"
+    else
+        assert_fail "$name must not call curl (log: $(cat "$curl_log"))"
+    fi
+}
+
+# The exact shape that shipped a screenshot-less "visual evidence" report.
+assert_rejected_prose_screenshot cn-caption \
+    '<html><body><p>截图：openapi_create_artifact_subscription_rule.png（见 manifest）</p></body></html>'
+assert_rejected_prose_screenshot en-caption \
+    '<html><body><td>screenshot: provider_cr_resources.jpg</td></body></html>'
+
+assert_accepted_html() {
+    local name="$1"
+    local markup="$2"
+    local fixture="$tmpdir/accept-$name.html"
+    printf '%s\n' "$markup" >"$fixture"
+    : >"$curl_log"
+    output=$(CURL_LOG="$curl_log" JARVIS_CURL_BIN="$tmpbin/curl" \
+        JARVIS_HTML_REPORT_TOKEN="test-token" \
+        bash "$proj_root/bootstrap/html-report-preview.sh" upload FAKE_AONE_ID "$fixture" \
+        --base-url https://pre.example 2>&1)
+    exit_code=$?
+    if [ "$exit_code" -eq 0 ]; then
+        assert_pass "$name is accepted"
+    else
+        assert_fail "$name must upload (got $exit_code: $output)"
+    fi
+}
+
+# No false positives: a genuinely text-only report, and the documented
+# missing_capability degradation, must both still upload.
+assert_accepted_html text-only \
+    '<html><body><p>三层查证均通过，无需截图。</p></body></html>'
+assert_accepted_html degraded-missing-capability \
+    '<html><body><p>截图降级：openapi.png 未生成，missing_capability: 无可用浏览器通道</p></body></html>'
+assert_accepted_html prose-plus-real-img \
+    '<html><body><p>截图：openapi.png</p><img src="https://images.example/openapi.png"></body></html>'
+
+echo "=== Test 12: reject inputs whose sibling images would be silently dropped ==="
+img_dir="$tmpdir/report-with-images"
+mkdir -p "$img_dir"
+printf '<html><body><p>见下方截图</p></body></html>\n' >"$img_dir/report.html"
+printf 'fake-png-bytes' >"$img_dir/openapi_shot.png"
+: >"$curl_log"
+output=$(CURL_LOG="$curl_log" JARVIS_CURL_BIN="$tmpbin/curl" JARVIS_HTML_REPORT_TOKEN="test-token" \
+    bash "$proj_root/bootstrap/html-report-preview.sh" upload FAKE_AONE_ID "$img_dir" \
+    --base-url https://pre.example 2>&1)
+exit_code=$?
+echo "$output"
+if [ "$exit_code" -ne 0 ]; then
+    assert_pass "directory carrying images is rejected"
+else
+    assert_fail "directory carrying images must be rejected"
+fi
+assert_contains "$output" "image_files_dropped" "directory uses the fixed dropped-image diagnostic"
+if [ ! -s "$curl_log" ]; then
+    assert_pass "dropped-image directory performs no uploads"
+else
+    assert_fail "dropped-image directory must not call curl (log: $(cat "$curl_log"))"
+fi
+
+img_zip="$tmpdir/report-with-images.zip"
+python3 - "$img_zip" <<'PY'
+import sys
+import zipfile
+
+with zipfile.ZipFile(sys.argv[1], "w") as archive:
+    archive.writestr("report.html", "<html><body><p>见下方截图</p></body></html>")
+    archive.writestr("openapi_shot.png", "fake-png-bytes")
+PY
+: >"$curl_log"
+output=$(CURL_LOG="$curl_log" JARVIS_CURL_BIN="$tmpbin/curl" JARVIS_HTML_REPORT_TOKEN="test-token" \
+    bash "$proj_root/bootstrap/html-report-preview.sh" upload FAKE_AONE_ID "$img_zip" \
+    --base-url https://pre.example 2>&1)
+exit_code=$?
+echo "$output"
+if [ "$exit_code" -ne 0 ]; then
+    assert_pass "ZIP carrying images is rejected"
+else
+    assert_fail "ZIP carrying images must be rejected"
+fi
+assert_contains "$output" "image_files_dropped" "ZIP uses the fixed dropped-image diagnostic"
+
 echo ""
 echo "=== Summary ==="
 echo "PASS: $PASS  FAIL: $FAIL"
