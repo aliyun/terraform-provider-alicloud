@@ -22,7 +22,7 @@ from bridge.aone_tasks import (
 )
 from bridge.helpers.aone import (
     PERSONA_PUBLIC_IDENTITY, _aone_event_enqueue, _is_human_comment,
-    _parse_a1_list, parallel_a1_per_id,
+    _parse_a1_list, handled_comment_floor, parallel_a1_per_id,
 )
 from bridge.helpers.dingtalk import (
     _dingtalk_event_enqueue, _dingtalk_event_flush,
@@ -45,6 +45,45 @@ from ..model import JobResult, JobResultStatus, ScheduledJobDefinition, is_aware
 
 
 RUNNER_KEY = "scan"
+
+# Selects which idle human-signal predicate decides dispatch.
+#   on      (default) cursor gate decides.
+#   shadow  legacy decides; the gate is evaluated too and disagreements logged.
+#   off     legacy only — kill switch.
+# Defaulted to `on` after a shadow pass over 289 live idle tickets: 278 agreed to
+# skip, 7 agreed to dispatch, 4 were dispatched only by the gate (the swallowed
+# backlog), and **0** were dispatched only by legacy — i.e. the gate suppressed
+# nothing the old predicate would have acted on. See `ScanRunner._human_comment`.
+_CURSOR_GATE_MODES = ("off", "shadow", "on")
+
+
+def _cursor_gate_mode():
+    mode = os.environ.get("JARVIS_SCAN_CURSOR_GATE", "on").strip().lower()
+    return mode if mode in _CURSOR_GATE_MODES else "on"
+
+
+def _live_task_row(client, aone_id):
+    """One control-plane Task row for this Aone id, or None. Never raises.
+
+    A read failure yields None, which drops the handled floor to 0 and makes the
+    caller fall back to the reply comparison — i.e. it leans toward dispatching.
+    That direction is deliberate: one duplicate run costs minutes, a suppressed
+    dispatch loses a human comment permanently.
+    """
+    if client is None:
+        return None
+    reader = getattr(client, "get_task_by_aone", None)
+    if not callable(reader):
+        return None
+    try:
+        rows = reader(str(aone_id))
+    except Exception:  # noqa: BLE001
+        return None
+    if isinstance(rows, dict):
+        rows = rows.get("items") if isinstance(rows.get("items"), list) else [rows]
+    if not isinstance(rows, list):
+        return None
+    return next((row for row in rows if isinstance(row, dict)), None)
 
 
 class ScanRunner(AoneQueryMixin):
@@ -678,9 +717,105 @@ class ScanRunner(AoneQueryMixin):
         return self._human_comment(iid) is not None
 
     def _human_comment(self, iid):
+        """Latest human comment this ticket still owes an answer for, or None.
+
+        Two implementations, selected by ``JARVIS_SCAN_CURSOR_GATE``:
+
+        ``on``      (default) cursor gate decides — see ``_unhandled_human_comment``.
+        ``shadow``  legacy decides; the cursor gate is evaluated too and any
+                    disagreement is logged. Use to re-validate after changes here.
+        ``off``     legacy wall-clock cutoff only — kill switch.
+        """
+        mode = _cursor_gate_mode()
+        if mode == "off":
+            return self._legacy_idle_human_comment(iid)
+        if mode == "on":
+            return self._unhandled_human_comment(iid)
+        legacy = self._legacy_idle_human_comment(iid)
+        try:
+            gated = self._unhandled_human_comment(iid)
+        except Exception:  # noqa: BLE001 — shadow evaluation must never fail a tick
+            log.exception("cursor gate shadow evaluation failed #%s", iid)
+            return legacy
+        if bool(legacy) != bool(gated):
+            log.info(
+                "cursor gate shadow: #%s legacy=%s gated=%s (would %s)",
+                iid, (legacy or {}).get("id") or "-", (gated or {}).get("id") or "-",
+                "dispatch" if gated else "skip")
+        return legacy
+
+    def _legacy_idle_human_comment(self, iid):
         """Latest human comment after the last idle transition, or None."""
         return self._human_comment_since(
             iid, self._last_idle_at(iid), "idle", allow_without_cutoff=True)
+
+    def _unhandled_human_comment(self, iid):
+        """Latest human comment above the handled floor, or None.
+
+        Consults no tag and no wall clock, so jarvis re-stamping ``jarvis-idle`` on
+        release can no longer push the cutoff past an unanswered comment. When the
+        Task yields no comment cursor at all — 82.5% of idle tickets, measured —
+        falls back to "is the latest human comment newer than jarvis's own last
+        reply", which is 100%-covered by the comment list already pre-fetched for
+        idle candidates and is likewise immune to re-tagging.
+        """
+        iid = str(iid)
+        comments = self._comment_rows(iid)
+        if comments is None:
+            return None  # unreadable → _signal_read_unreliable owns the retry
+        latest_human, latest_bot = None, 0
+        for comment in comments:
+            if not isinstance(comment, dict):
+                continue
+            cid = self._numeric_comment_id(comment)
+            if not cid:
+                continue
+            author = str(comment.get("author") or comment.get("creator") or "")
+            if _is_human_comment(author, str(comment.get("content") or "")):
+                if latest_human is None or cid > self._numeric_comment_id(latest_human):
+                    latest_human = comment
+            else:
+                latest_bot = max(latest_bot, cid)
+        if latest_human is None:
+            return None
+        router = getattr(self, "execution_router", None)
+        floor, _reason = handled_comment_floor(
+            _live_task_row(getattr(router, "client", None), iid))
+        threshold = floor if floor else latest_bot
+        return (latest_human
+                if self._numeric_comment_id(latest_human) > threshold else None)
+
+    @staticmethod
+    def _numeric_comment_id(comment):
+        value = str((comment or {}).get("id") or "").strip()
+        return int(value) if value.isdigit() else 0
+
+    def _comment_rows(self, iid):
+        """Pre-fetched comment rows for one ticket, or None when unreadable.
+
+        `_prefetch_idle_claimed_a1` fills the cache for every idle candidate before
+        the serial `_decide` loop, so the on-demand read is only a safety net (an id
+        that reached this gate without going through the pre-fetch).
+        """
+        iid = str(iid)
+        cache = getattr(self, "_raw_comment_cache", None)
+        if isinstance(cache, dict) and iid in cache:
+            raw = cache[iid]
+            return raw if isinstance(raw, list) else None
+        try:
+            r = run_process_group(
+                [str(REPO_ROOT / "bin" / "a1id"), "--", "project", "workitem",
+                 "comment", "list", iid, "-f", "json"],
+                capture_output=True, text=True, timeout=60, cwd=str(REPO_ROOT))
+            if r.returncode != 0:
+                log.warning("cursor gate: comment query failed #%s rc=%d: %s",
+                            iid, r.returncode, (r.stderr or "").strip()[:200])
+                return None
+            data = json.loads(r.stdout)
+            return data if isinstance(data, list) else None
+        except Exception as e:  # noqa: BLE001 — best effort; caller retries next tick
+            log.warning("cursor gate: comment error #%s: %s", iid, e)
+            return None
 
     def _claimed_human_comment(self, iid, strict=False):
         """Latest human comment received while the current claim is running."""
