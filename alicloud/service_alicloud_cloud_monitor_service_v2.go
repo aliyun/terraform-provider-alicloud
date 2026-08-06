@@ -671,6 +671,44 @@ func (s *CloudMonitorServiceServiceV2) DescribeCloudMonitorServiceMetricAlarmRul
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
+
+func (s *CloudMonitorServiceServiceV2) DescribeCloudMonitorServiceMetricAlarmRuleTargets(id string) (objects []interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["RuleId"] = id
+
+	action := "DescribeMetricRuleTargets"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Cms", "2019-01-01", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return objects, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	// An alarm rule with no push channel returns an empty Targets list. That is a valid
+	// state of an existing rule, not a missing resource, so return an empty slice here
+	// and leave NotFound detection to DescribeCloudMonitorServiceMetricAlarmRule.
+	v, _ := jsonpath.Get("$.Targets.Target[*]", response)
+
+	return convertToInterfaceArray(v), nil
+}
+
 func (s *CloudMonitorServiceServiceV2) CloudMonitorServiceMetricAlarmRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
 	return s.CloudMonitorServiceMetricAlarmRuleStateRefreshFuncWithApi(id, field, failStates, s.DescribeCloudMonitorServiceMetricAlarmRule)
 }
