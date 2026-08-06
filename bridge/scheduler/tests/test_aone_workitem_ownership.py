@@ -224,7 +224,7 @@ class OwnershipRunnerTest(unittest.TestCase):
                 by_key[("2124589", "200")]
                 ["latestCommentAuthorStaffId"])
 
-    def test_unchanged_source_updated_at_reuses_cache_without_comment_read(self):
+    def test_current_cache_with_unchanged_source_reuses_without_comment_read(self):
         from tempfile import TemporaryDirectory
         with TemporaryDirectory() as directory:
             root = self._repo(directory)
@@ -247,7 +247,7 @@ class OwnershipRunnerTest(unittest.TestCase):
             }
             runner._cache_path.parent.mkdir(parents=True)
             runner._cache_path.write_text(json.dumps({
-                "version": 1,
+                "version": 2,
                 "items": {"2100304:100": cached},
             }))
             runner._fetch_project_batch = lambda project, ids: {
@@ -267,6 +267,126 @@ class OwnershipRunnerTest(unittest.TestCase):
             runner._fetch_detail.assert_not_called()
             runner._fetch_comments.assert_not_called()
             self.assertEqual(client.puts[0][0]["items"], [cached])
+
+    def test_v1_cache_is_refreshed_even_when_source_modified_is_unchanged(self):
+        from tempfile import TemporaryDirectory
+        with TemporaryDirectory() as directory:
+            root = self._repo(directory)
+            client = FakeClient({
+                0: {
+                    "items": [{"taskId": 1, "sourceProjectKey": "2100304",
+                               "aoneId": "100"}],
+                    "hasMore": False,
+                    "nextAfterTaskId": None,
+                },
+            })
+            runner = self._runner(root, client)
+            runner._cache_path.parent.mkdir(parents=True)
+            runner._cache_path.write_text(json.dumps({
+                "version": 1,
+                "items": {
+                    "2100304:100": {
+                        "sourceProjectKey": "2100304",
+                        "aoneId": "100",
+                        "participantStaffIds": ["100001"],
+                        "assignedToStaffId": "100002",
+                        "latestCommentAuthorStaffId": None,
+                        "sourceUpdatedAt": "2026-07-28 10:00:00",
+                    },
+                },
+            }))
+            runner._fetch_project_batch = lambda project, ids: {
+                "100": {
+                    "id": "100",
+                    "modified": "2026-07-28 10:00:00",
+                },
+            }
+            runner._fetch_detail = mock.Mock(return_value={
+                "id": "100",
+                "updatedAt": "2026-07-28 10:00:00",
+                "fields": [
+                    {
+                        "identifier": "ak.issue.member",
+                        "value": "100001",
+                        "displayValue": "甲",
+                    },
+                    {
+                        "identifier": "workitem.tracker",
+                        "value": "100002",
+                        "displayValue": "乙",
+                    },
+                ],
+            })
+            runner._fetch_comments = mock.Mock(return_value=[])
+
+            result = runner.run(definition(), NOW)
+
+            self.assertIs(result.status, JobResultStatus.SUCCEEDED)
+            runner._fetch_detail.assert_called_once_with("100")
+            runner._fetch_comments.assert_called_once_with("100")
+            self.assertEqual(
+                client.puts[0][0]["items"][0]["participantStaffIds"],
+                ["100001", "100002"])
+            saved = json.loads(runner._cache_path.read_text())
+            self.assertEqual(saved["version"], 2)
+
+    def test_v1_cache_stays_fallback_only_after_read_failure(self):
+        from tempfile import TemporaryDirectory
+        with TemporaryDirectory() as directory:
+            root = self._repo(directory)
+            cache_path = root / "cache" / "ownership.json"
+            cache_path.parent.mkdir(parents=True)
+            cached = {
+                "sourceProjectKey": "2100304",
+                "aoneId": "100",
+                "participantStaffIds": ["100001"],
+                "assignedToStaffId": "100002",
+                "latestCommentAuthorStaffId": None,
+                "sourceUpdatedAt": "2026-07-28 10:00:00",
+            }
+            cache_path.write_text(json.dumps({
+                "version": 1,
+                "items": {"2100304:100": cached},
+            }))
+
+            def run_failed_refresh():
+                client = FakeClient({
+                    0: {
+                        "items": [{
+                            "taskId": 1,
+                            "sourceProjectKey": "2100304",
+                            "aoneId": "100",
+                        }],
+                        "hasMore": False,
+                        "nextAfterTaskId": None,
+                    },
+                })
+                runner = self._runner(root, client)
+                runner._fetch_project_batch = lambda project, ids: {
+                    "100": {
+                        "id": "100",
+                        "modified": "2026-07-28 10:00:00",
+                    },
+                }
+                runner._fetch_detail = mock.Mock(
+                    side_effect=ownership.SnapshotIncomplete(
+                        "temporary detail failure"))
+                runner._fetch_comments = mock.Mock()
+
+                result = runner.run(definition(), NOW)
+
+                self.assertIs(result.status, JobResultStatus.SUCCEEDED)
+                runner._fetch_detail.assert_called_once_with("100")
+                runner._fetch_comments.assert_not_called()
+                self.assertEqual(client.puts[0][0]["items"], [cached])
+
+            # The first failed migration keeps the old row as a fallback.
+            run_failed_refresh()
+            self.assertEqual(
+                json.loads(cache_path.read_text())["version"], 2)
+            # A process restart must still retry instead of treating the fallback
+            # written under the v2 envelope as semantically refreshed.
+            run_failed_refresh()
 
     def test_legacy_candidate_without_project_is_warned_and_skipped(self):
         from tempfile import TemporaryDirectory
@@ -741,7 +861,7 @@ class OwnershipRunnerTest(unittest.TestCase):
                 and call.args[1] == "participant"
                 for call in runner._log.warning.call_args_list))
 
-    def test_tracker_and_creator_add_comment_aliases_not_participants(self):
+    def test_participants_union_tracker_humans_with_stable_dedup_and_sort(self):
         from tempfile import TemporaryDirectory
         with TemporaryDirectory() as directory:
             runner = self._runner(self._repo(directory), FakeClient())
@@ -758,19 +878,23 @@ class OwnershipRunnerTest(unittest.TestCase):
                 "fields": [
                     {
                         "identifier": "ak.issue.member",
-                        "value": "100001",
-                        "displayValue": "参与者甲",
+                        "value": "100003,WORKER_1,100001",
+                        "displayValue":
+                            "参与者丙,open-jarvis,参与者甲",
                     },
                     {
                         "identifier": "workitem.tracker",
-                        "value": "WB00000001,100002",
-                        "displayValue": "跟踪者甲,跟踪者乙",
+                        "value": "WB00000001,100002,100001,WORKER_1",
+                        "displayValue":
+                            "跟踪者甲,跟踪者乙,参与者甲,open-jarvis",
                     },
                 ],
             }, "2026-07-28 10:00:00")
 
-            self.assertEqual(parsed["participantStaffIds"], ["100001"])
-            self.assertNotIn("WB00000001", parsed["participantStaffIds"])
+            self.assertEqual(parsed["participantStaffIds"], [
+                "100001", "100002", "100003", "WB00000001",
+            ])
+            self.assertNotIn("WORKER_1", parsed["participantStaffIds"])
             self.assertEqual(aliases["跟踪者甲"], "WB00000001")
             self.assertEqual(aliases["跟踪者乙"], "100002")
             self.assertEqual(aliases["创建者甲"], "100004")
@@ -827,7 +951,9 @@ class OwnershipRunnerTest(unittest.TestCase):
                 ],
             }, "2026-07-28 10:00:00")
 
-            self.assertEqual(parsed["participantStaffIds"], ["100003"])
+            self.assertEqual(
+                parsed["participantStaffIds"],
+                ["100003", "100010", "100011"])
             self.assertEqual(parsed["assignedToStaffId"], "100002")
             self.assertEqual(aliases["甲"], "")
             # contacts.json maps 甲 to 100001, but an explicit ambiguous alias
