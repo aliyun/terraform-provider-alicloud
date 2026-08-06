@@ -194,7 +194,7 @@ func (s *SlbService) DescribeSlbListener(id string) (listener map[string]interfa
 		})
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"The specified resource does not exist"}) {
+			if IsExpectedErrors(err, []string{"The specified resource does not exist", "InvalidParameter"}) {
 				return resource.NonRetryableError(WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR))
 			} else if IsExpectedErrors(err, SlbIsBusy) {
 				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR))
