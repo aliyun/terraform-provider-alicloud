@@ -85,6 +85,15 @@ func dataSourceAlicloudEcsNetworkInterfaces() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"page_number": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"page_size": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Default:  PageSizeLarge,
+			},
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -277,8 +286,16 @@ func dataSourceAlicloudEcsNetworkInterfacesRead(d *schema.ResourceData, meta int
 	if v, ok := d.GetOk("vpc_id"); ok {
 		request["VpcId"] = v
 	}
-	request["PageSize"] = PageSizeLarge
-	request["PageNumber"] = 1
+	if v, ok := d.GetOk("page_number"); ok && v.(int) > 0 {
+		request["PageNumber"] = v.(int)
+	} else {
+		request["PageNumber"] = 1
+	}
+	if v, ok := d.GetOk("page_size"); ok && v.(int) > 0 {
+		request["PageSize"] = v.(int)
+	} else {
+		request["PageSize"] = PageSizeLarge
+	}
 	var objects []map[string]interface{}
 	var networkInterfaceNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
@@ -322,6 +339,10 @@ func dataSourceAlicloudEcsNetworkInterfacesRead(d *schema.ResourceData, meta int
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.NetworkInterfaceSets.NetworkInterfaceSet", response)
 		}
 		result, _ := resp.([]interface{})
+		if isPagingRequest(d) {
+			objects = result
+			break
+		}
 		for _, v := range result {
 			item := v.(map[string]interface{})
 			if networkInterfaceNameRegex != nil {
@@ -336,7 +357,7 @@ func dataSourceAlicloudEcsNetworkInterfacesRead(d *schema.ResourceData, meta int
 			}
 			objects = append(objects, item)
 		}
-		if len(result) < PageSizeLarge {
+		if len(result) < request["PageSize"].(int) {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
