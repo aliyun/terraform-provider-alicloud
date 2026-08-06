@@ -20,7 +20,7 @@ from bridge.helpers.aone import (
 from bridge.helpers.dingtalk import _dingtalk_event_enqueue
 from bridge.jarvis_task_router import (
     _TaskAttentionPublisher, _attention_owner_staff_id, _source_ref_with_title,
-    _task_envelope, broadcast_target, broadcast_type,
+    _task_envelope, live_task_lineage, broadcast_target, broadcast_type,
 )
 from bridge.headless_runtime import (
     HeadlessRequest,
@@ -1164,11 +1164,24 @@ class TaskAoneBookend:
             "<<<AONE_COMMENT_START>>>\n%s\n<<<AONE_COMMENT_END>>>\n"
             "必须处理截至该 cursor 的全部未处理人工评论，并在最终 AONE_RESULT "
             "中原样回填 handled_comment_id=\"%s\"。" % (cursor, quoted, cursor))
+        # This handoff advances the revision on the generation that is running
+        # right now, so it must not flip that generation's lineage. A ticket
+        # generation can legitimately be running on a post-PR lineage: scan adopts
+        # pr_watch's lineage when it holds the live generation and keeps ticket
+        # semantics in payload["kind"] — which is what enables this handoff at all
+        # (_handoff_enabled requires kind == "ticket"). Asserting AONE/ticket here
+        # would trip Conflict.GenerationBoundary, and
+        # _persist_terminal_comment_handoff raises on rejection, failing the whole
+        # run at its terminal transition.
+        lineage = live_task_lineage(
+            getattr(self.controller, "client", None), self.item_id) or {}
         return _task_envelope(
             item_id=self.item_id,
             project=self.project,
-            task_type="ticket",
-            source_type="AONE",
+            task_type=lineage.get("task_type") or "ticket",
+            source_type=lineage.get("source_type") or "AONE",
+            recovery_policy=lineage.get("recovery_policy") or "RESUME_ONLY",
+            payload_kind="ticket",
             source_ref=_source_ref_with_title(
                 {"aoneId": self.item_id, "projectId": self.project}, title),
             desired_revision="comment:%s" % cursor,

@@ -3155,6 +3155,76 @@ class TaskBookendDispatchTest(unittest.TestCase):
         reply.assert_not_called()
         release.assert_not_called()
 
+    def _live_task_controller(self, **lineage):
+        ctrl = self._controller()
+        row = {"id": 603, "status": "RUNNING"}
+        row.update(lineage)
+        ctrl.client.get_task_by_aone = mock.Mock(return_value=[row])
+        return ctrl
+
+    def _capture_handoff(self, ctrl):
+        # Baseline read first, then the newer comment on every later read: commit
+        # probes again after release, so a one-shot iterator would raise.
+        reads = {"n": 0}
+
+        def reader():
+            reads["n"] += 1
+            if reads["n"] == 1:
+                return {"id": 10, "creator": "reviewer", "content": "baseline"}
+            return {"id": 11, "creator": "reviewer", "content": "new"}
+
+        captured = []
+        bookend = bot._TaskAoneBookend(
+            ctrl, "84407231", "1086837", True, "ticket",
+            comment_reader=reader, handoff_writer=captured.append)
+        bookend.capture_comment_baseline()
+        with mock.patch.object(persistent_tasks_module, "_aone_event_enqueue",
+                               return_value=True), \
+             mock.patch.object(persistent_tasks_module, "_release_post_pr_claim"):
+            bookend.commit({"outcome": "idle", "reply_body": "handed off"})
+        self.assertEqual(len(captured), 1)
+        return captured[0]
+
+    def test_handoff_advances_on_a_live_post_pr_lineage(self):
+        """A ticket generation can legitimately run on a GITHUB/pr_ci_fix lineage:
+        scan adopts pr_watch's lineage when it holds the live generation, keeping
+        ticket semantics in payload["kind"] — which is exactly what enables this
+        handoff (`_handoff_enabled` requires kind == "ticket"). Asserting
+        AONE/ticket here would flip a live lineage, and
+        `_persist_terminal_comment_handoff` raises on rejection, so the flip does
+        not lose the comment quietly — it fails the whole run at its terminal
+        transition.
+        """
+        env = self._capture_handoff(self._live_task_controller(
+            sourceType="GITHUB", taskType="pr_ci_fix",
+            recoveryPolicy="REPLAY_SAFE"))
+        self.assertEqual(env.source_type, "GITHUB")
+        self.assertEqual(env.task_type, "pr_ci_fix")
+        self.assertEqual(env.recovery_policy, "REPLAY_SAFE")
+
+    def test_handoff_keeps_ticket_semantics_on_a_live_post_pr_lineage(self):
+        env = self._capture_handoff(self._live_task_controller(
+            sourceType="GITHUB", taskType="pr_ci_fix",
+            recoveryPolicy="REPLAY_SAFE"))
+        # The handed-off generation must still write the single RD reply, so its
+        # execution semantics stay ticket even on a post-PR lineage.
+        self.assertEqual(env.payload["kind"], "ticket")
+        self.assertEqual(env.comment_cursor, "11")
+        self.assertEqual(env.source_ref["aoneId"], "84407231")
+
+    def test_handoff_keeps_own_lineage_without_a_readable_task(self):
+        # Default fixture client has no get_task_by_aone: unchanged behaviour.
+        env = self._capture_handoff(self._controller())
+        self.assertEqual(env.source_type, "AONE")
+        self.assertEqual(env.task_type, "ticket")
+
+    def test_handoff_keeps_own_lineage_when_task_is_resting(self):
+        env = self._capture_handoff(self._live_task_controller(
+            status="SUCCEEDED", sourceType="GITHUB", taskType="pr_ci_fix",
+            recoveryPolicy="REPLAY_SAFE"))
+        self.assertEqual(env.source_type, "AONE")
+        self.assertEqual(env.task_type, "ticket")
+
     def test_done_with_new_comment_releases_instead_of_finishing(self):
         handed_off = []
         out, calls = self._run(
