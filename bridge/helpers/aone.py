@@ -70,6 +70,59 @@ def _is_human_comment(author, content=""):
                 and not str(content or "").strip().lower().startswith("jarvis-claim"))
 
 
+_COMMENT_REVISION = re.compile(r"^comment:(\d+)")
+
+# Task statuses in which a queued desiredRevision will still actually execute.
+# Anything else — SUSPENDED, a terminal state with desired != processed, or
+# RECOVERY_REQUIRED past its retry budget — holds the revision without ever
+# running it, so it must not count as "this comment is taken care of".
+_EXECUTABLE_TASK_STATUSES = frozenset({"READY", "LEASED", "RUNNING"})
+
+
+def comment_id_from_revision(revision):
+    """Numeric comment id in a ``comment:<id>|policy:…|input:…`` revision, else 0.
+
+    ``modified:``/``pr-ci:``/``interactive:`` revisions carry no comment, so they
+    contribute nothing to the handled floor.
+    """
+    match = _COMMENT_REVISION.match(str(revision or "").strip())
+    return int(match.group(1)) if match else 0
+
+
+def handled_comment_floor(task_row):
+    """``(floor, reason)`` — the highest comment id already handled or reliably queued.
+
+    ``processedRevision`` is authoritative: that generation ran to completion.
+    ``desiredRevision`` only counts while the Task is in a state that will still
+    execute it, because a queued cursor on a parked Task is exactly the trap that
+    loses a comment — #74939817 is RECOVERY_REQUIRED/retry=4/3 with its
+    commentCursor already equal to the comment nobody has answered. Treating that
+    as handled would re-create the bug this gate exists to fix.
+
+    Returns ``0`` whenever nothing is known, which makes the caller fall back to
+    the reply-based comparison rather than suppress a dispatch.
+    """
+    if not isinstance(task_row, dict):
+        return 0, "no_task"
+    handled = comment_id_from_revision(task_row.get("processedRevision"))
+    queued = comment_id_from_revision(task_row.get("desiredRevision"))
+    if not queued or queued <= handled:
+        return handled, "processed"
+    status = str(task_row.get("status") or "").strip().upper()
+    if status not in _EXECUTABLE_TASK_STATUSES:
+        return handled, "queued_ignored:%s" % (status.lower() or "unknown")
+    try:
+        retry = int(task_row.get("retryCount"))
+        max_retries = int(task_row.get("maxRetries"))
+    except (TypeError, ValueError):
+        # Unknown retry budget: assume it can still run, but say so. Over-trusting
+        # here only delays a dispatch by one generation; the Task is live either way.
+        return queued, "queued:retry_unknown"
+    if retry > max_retries:
+        return handled, "queued_ignored:retry_exhausted"
+    return queued, "queued"
+
+
 def _parse_a1_list(stdout):
     """Parse an a1 `-f json` response expected to be a list; None otherwise.
 
