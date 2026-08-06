@@ -28,7 +28,8 @@ from bridge.helpers.dingtalk import (
     _dingtalk_event_enqueue, _dingtalk_event_flush,
 )
 from bridge.jarvis_task_router import (
-    EnqueueResult, ExecutionRouter, _task_envelope, broadcast_target, broadcast_type,
+    EnqueueResult, ExecutionRouter, _task_envelope, live_task_lineage,
+    broadcast_target, broadcast_type,
 )
 from bridge.pending_dispatch import PendingDispatchRegistry
 from bridge.scan_snapshot import ScanSnapshotStore
@@ -1178,11 +1179,23 @@ class ScanRunner(AoneQueryMixin):
                 "expectedCommentCursor": cursor,
                 "triggerComment": context.get("comment"),
             }
+        # A live generation on this task key may belong to pr_watch
+        # (GITHUB/pr_ci_fix/REPLAY_SAFE).  Asserting our own AONE/ticket lineage
+        # over it is what the control plane rejects as Conflict.GenerationBoundary,
+        # which is how #85008321's human comment was lost.  Advance the revision on
+        # whichever lineage is live; keep ticket semantics via payload_kind so the
+        # executor still selects the writes_reply=True bookend and the cursor gate.
+        # Resolved defensively: tests build ScanRunner via __new__, so the router
+        # may be absent. No router → no lineage read → our own lineage, unchanged.
+        router = getattr(self, "execution_router", None)
+        lineage = live_task_lineage(getattr(router, "client", None), iid) or {}
         return _task_envelope(
             item_id=iid,
             project=project,
-            task_type="ticket",
-            source_type="AONE",
+            task_type=lineage.get("task_type") or "ticket",
+            source_type=lineage.get("source_type") or "AONE",
+            recovery_policy=lineage.get("recovery_policy") or "RESUME_ONLY",
+            payload_kind="ticket",
             source_ref={"aoneId": iid, "projectId": str(project), "title": title},
             desired_revision=context["revision"],
             trigger="SCAN",

@@ -509,6 +509,67 @@ class AttentionProjectionTest(_DispatchBase):
         self.assertEqual(len(self.notices), 1)
 
 
+class _LineageClient:
+    """Control-plane read stub exposing one live Task row."""
+
+    def __init__(self, row):
+        self.row = row
+
+    def get_task_by_aone(self, aone_id):
+        return [self.row] if self.row is not None else []
+
+
+class CiFixLineageTest(_DispatchBase):
+    """Reverse of the #85008321 collision: a CI fix must not flip a live
+    AONE/ticket generation to GITHUB/pr_ci_fix.  Observed 2026-08-05 23:56 and
+    2026-08-06 00:23 as `CI fix not submitted
+    (control_plane_rejected:Conflict.GenerationBoundary)` — the CI failure went
+    unfixed while an ordinary ticket run held the generation.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.sched._gh_pr_ci = lambda url: ("sha1", ["Compile"], False)
+
+    def _dispatch_with_live_task(self, row):
+        self.sched.task_client = _LineageClient(row)
+        self.sched._maybe_dispatch_ci_fix(TID, self._entry())
+        self.assertEqual(len(self.pool.submitted), 1)
+        return self.pool.submitted[0]["envelope"]
+
+    def test_adopts_live_ticket_lineage(self):
+        env = self._dispatch_with_live_task({
+            "id": 6261, "status": "RUNNING", "sourceType": "AONE",
+            "taskType": "ticket", "recoveryPolicy": "RESUME_ONLY"})
+        self.assertEqual(env.source_type, "AONE")
+        self.assertEqual(env.task_type, "ticket")
+        self.assertEqual(env.recovery_policy, "RESUME_ONLY")
+
+    def test_keeps_post_pr_execution_semantics_while_adopting(self):
+        # payload["kind"] drives the Aone bookend: a CI fix must keep the
+        # writes_reply=False variant even when it runs on a ticket lineage,
+        # otherwise it would be expected to produce an [[AONE_RESULT]] reply.
+        env = self._dispatch_with_live_task({
+            "id": 6261, "status": "RUNNING", "sourceType": "AONE",
+            "taskType": "ticket", "recoveryPolicy": "RESUME_ONLY"})
+        self.assertEqual(env.payload["kind"], "pr_ci_fix")
+        self.assertEqual(env.source_ref["prUrl"], PR)
+
+    def test_resting_ticket_task_keeps_post_pr_lineage(self):
+        env = self._dispatch_with_live_task({
+            "id": 6261, "status": "SUCCEEDED", "sourceType": "AONE",
+            "taskType": "ticket", "recoveryPolicy": "RESUME_ONLY"})
+        self.assertEqual(env.source_type, "GITHUB")
+        self.assertEqual(env.task_type, "pr_ci_fix")
+        self.assertEqual(env.recovery_policy, "REPLAY_SAFE")
+
+    def test_no_live_task_keeps_post_pr_lineage(self):
+        env = self._dispatch_with_live_task(None)
+        self.assertEqual(env.source_type, "GITHUB")
+        self.assertEqual(env.task_type, "pr_ci_fix")
+        self.assertEqual(env.recovery_policy, "REPLAY_SAFE")
+
+
 class MaybeDispatchCiFixTest(_DispatchBase):
     def setUp(self):
         super().setUp()
