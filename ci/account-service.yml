@@ -1,0 +1,54 @@
+---
+groups:
+  - name: account_service
+    jobs:
+      - domestic_account
+      - intern_account
+
+shared:
+  - &validate
+    task: validate
+    file: terraform-provider-alicloud/ci/tasks/account.yml
+    params: &validate-params
+      ALICLOUD_REGION: {{alicloud_region}}
+  - &clone-provider
+    get: terraform-provider-alicloud
+    resource: terraform-provider-alicloud
+    trigger: true
+
+jobs:
+  - name: domestic_account
+    serial: true
+    plan:
+      - get: trigger-every-day
+        trigger: true
+      - <<: *clone-provider
+      - <<: *validate
+        params:
+          <<: *validate-params
+          ALICLOUD_ACCESS_KEY: {{alicloud_ak_sub_account}}
+          ALICLOUD_SECRET_KEY: {{alicloud_sk_sub_account}}
+  - name: intern_account
+    serial: true
+    plan:
+      - get: trigger-every-day
+        trigger: true
+      - <<: *clone-provider
+      - <<: *validate
+        params:
+          <<: *validate-params
+          ALICLOUD_ACCESS_KEY: {{alicloud_ak_intl_account}}
+          ALICLOUD_SECRET_KEY: {{alicloud_sk_intl_account}}
+
+
+
+resources:
+  - name: terraform-provider-alicloud
+    type: git
+    source:
+      uri: https://github.com/aliyun/terraform-provider-alicloud.git
+      branch: master
+  - name: trigger-every-day
+    type: time
+    source:
+      interval: 24h
