@@ -31,6 +31,10 @@ func resourceAliCloudRedisBackup() *schema.Resource {
 				Type:     schema.TypeInt,
 				Computed: true,
 			},
+			"cluster_backup_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"backup_retention_period": {
 				Type:     schema.TypeInt,
 				Optional: true,
@@ -110,6 +114,23 @@ func resourceAliCloudRedisBackupCreate(d *schema.ResourceData, meta interface{})
 					if backupID, ok := backup["BackupId"]; ok {
 						// Update ID with the actual BackupId
 						d.SetId(fmt.Sprintf("%v:%v", instanceID, backupID))
+
+						// Resolve the owning cluster backup set id (cb-*) for cluster-architecture
+						// instances. Standalone instances are signalled either by an empty result
+						// or by InvalidClusterInstance.NotFound; both are non-fatal. Any other API
+						// error must surface — a silent empty cluster_backup_id would break
+						// downstream clone resources with an unactionable InvalidParameter.Missing.
+						clusterBackupID, cbErr := redisServiceV2.DescribeRedisClusterBackupId(instanceID, fmt.Sprint(backupID))
+						if cbErr != nil {
+							if !IsExpectedErrors(cbErr, []string{"InvalidClusterInstance.NotFound"}) {
+								return WrapErrorf(cbErr, DefaultErrorMsg, d.Id(), "DescribeClusterBackupList", AlibabaCloudSdkGoERROR)
+							}
+							log.Printf("[DEBUG] alicloud_redis_backup: no cluster backup set for %s (standalone instance)", d.Id())
+						} else if clusterBackupID != "" {
+							d.Set("cluster_backup_id", clusterBackupID)
+						} else {
+							log.Printf("[DEBUG] alicloud_redis_backup: no cluster backup set for %s (standalone instance)", d.Id())
+						}
 					}
 				}
 			}
@@ -150,36 +171,61 @@ func resourceAliCloudRedisBackupUpdate(d *schema.ResourceData, meta interface{})
 func resourceAliCloudRedisBackupDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
+	redisServiceV2 := RedisServiceV2{client}
 	parts := strings.Split(d.Id(), ":")
-	action := "DeleteBackup"
-	var request map[string]interface{}
-	var response map[string]interface{}
-	query := make(map[string]interface{})
-	var err error
-	request = make(map[string]interface{})
-	request["BackupId"] = parts[1]
-	request["InstanceId"] = parts[0]
-	request["RegionId"] = client.RegionId
+	instanceID := parts[0]
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = client.RpcPost("R-kvstore", "2015-01-01", action, query, request, true)
-		if err != nil {
-			if NeedRetry(err) {
-				wait()
-				return resource.RetryableError(err)
+	// Cluster-architecture instances hold one BackupId per shard under a single cluster
+	// backup set id (cb-*). R-kvstore has no cluster-level DeleteClusterBackup API, so we
+	// have to fan out shard-level DeleteBackup calls; otherwise only the state-recorded
+	// shard is removed and the rest linger. Standalone instances (cluster_backup_id empty
+	// or unset — including pre-fix state that never populated the field) take the single
+	// shard path unchanged.
+	backupIDs := []string{parts[1]}
+	if clusterBackupID, ok := d.Get("cluster_backup_id").(string); ok && clusterBackupID != "" {
+		shardIDs, listErr := redisServiceV2.ListClusterBackupShardIds(instanceID, clusterBackupID)
+		if listErr != nil {
+			// The cluster instance may already be gone (destroy order or manual cleanup);
+			// treat that as no fan-out needed and fall back to the state-recorded shard.
+			if !IsExpectedErrors(listErr, []string{"InvalidClusterInstance.NotFound"}) {
+				return WrapErrorf(listErr, DefaultErrorMsg, d.Id(), "DescribeClusterBackupList", AlibabaCloudSdkGoERROR)
 			}
-			return resource.NonRetryableError(err)
+		} else if len(shardIDs) > 0 {
+			backupIDs = shardIDs
 		}
-		return nil
-	})
-	addDebug(action, response, request)
+	}
 
-	if err != nil {
-		if NotFoundError(err) {
-			return nil
+	action := "DeleteBackup"
+	query := make(map[string]interface{})
+	for _, backupID := range backupIDs {
+		request := map[string]interface{}{
+			"BackupId":   backupID,
+			"InstanceId": instanceID,
+			"RegionId":   client.RegionId,
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+
+		var response map[string]interface{}
+		var err error
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+			response, err = client.RpcPost("R-kvstore", "2015-01-01", action, query, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+
+		if err != nil {
+			if NotFoundError(err) {
+				continue
+			}
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
 	}
 
 	return nil
