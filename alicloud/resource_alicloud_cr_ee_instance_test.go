@@ -54,7 +54,11 @@ func TestAccAliCloudCrInstance_Basic(t *testing.T) {
 					}),
 				),
 			},
-			// Currently, the API does not support sts
+			// The cr ResetLoginPassword API rejects the credentials used by the
+			// acceptance test framework with STS_NOT_SUPPORT ("STS is not supported."),
+			// so password / kms_encrypted_password / kms_encryption_context cannot be
+			// exercised here. Verified again 2026-08-04, RequestId
+			// 019FCBFA-FBDA-54DA-A088-BDF2D5779CF2.
 			//{
 			//	Config: testAccConfig(map[string]interface{}{
 			//		"password": "YourPassword123",
@@ -428,6 +432,13 @@ resource "alicloud_ram_role" "defaultRole" {
   EOF
 }
 
+# NOTE: this policy is created only when it does not already exist, and an existing
+# one is reused as-is without its content being checked or updated. Its Resource list
+# must therefore cover every bucket name the CR acceptance tests may generate, not just
+# the bucket of the run that happened to create it first - otherwise CR cannot operate
+# the custom OSS bucket of later runs, instance activation never completes and the
+# instance stays PENDING until the create timeout. Keep the tf-testacc-* / tfacc*
+# wildcards in sync with the names built by the test functions in this file.
 resource "alicloud_ram_policy" "defaultLPolicy" {
   count = length(data.alicloud_ram_policies.cr_custom_oss.names) > 0 ? 0 : 1
   policy_name = "AliyunContainerRegistryCustomizedOSSBucketRolePolicy"
@@ -461,7 +472,11 @@ resource "alicloud_ram_policy" "defaultLPolicy" {
                 "acs:oss:*:*:cri-*",
                 "acs:oss:*:*:cri-*/*",
                 "acs:oss:*:*:${var.name}",
-                "acs:oss:*:*:${var.name}/*"
+                "acs:oss:*:*:${var.name}/*",
+                "acs:oss:*:*:tf-testacc-*",
+                "acs:oss:*:*:tf-testacc-*/*",
+                "acs:oss:*:*:tfacc*",
+                "acs:oss:*:*:tfacc*/*"
             ],
             "Effect": "Allow",
             "Condition": {
@@ -492,7 +507,11 @@ resource "alicloud_ram_policy" "defaultLPolicy" {
                 "acs:oss:*:*:cri-*",
                 "acs:oss:*:*:cri-*/*",
                 "acs:oss:*:*:${var.name}",
-                "acs:oss:*:*:${var.name}/*"
+                "acs:oss:*:*:${var.name}/*",
+                "acs:oss:*:*:tf-testacc-*",
+                "acs:oss:*:*:tf-testacc-*/*",
+                "acs:oss:*:*:tfacc*",
+                "acs:oss:*:*:tfacc*/*"
             ],
             "Effect": "Allow",
             "Condition": {
@@ -659,6 +678,125 @@ variable "name" {
 }
 
 data "alicloud_resource_manager_resource_groups" "default" {}
+
+
+`, name)
+}
+
+// Case 实例标签生命周期测试
+func TestAccAliCloudCrInstance_tags(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cr_ee_instance.default"
+	ra := resourceAttrInit(resourceId, AlicloudCrInstanceMapTags)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CrServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCrInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfacccrtags%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCrInstanceBasicDependenceTags)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			// 创建时携带标签
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_name":  name,
+					"instance_type":  "Basic",
+					"payment_type":   "Subscription",
+					"period":         "1",
+					"renewal_status": "ManualRenewal",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_name": name,
+						"instance_type": "Basic",
+						"payment_type":  "Subscription",
+						"tags.%":        "2",
+						"tags.Created":  "TF",
+						"tags.For":      "Test",
+					}),
+				),
+			},
+			// 修改已有标签的值并新增标签
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+						"Env":     "Acceptance",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "3",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+						"tags.Env":     "Acceptance",
+					}),
+				),
+			},
+			// 删除部分标签
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "1",
+						"tags.Created": "TF-update",
+						"tags.For":     REMOVEKEY,
+						"tags.Env":     REMOVEKEY,
+					}),
+				),
+			},
+			// 清空标签
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"custom_oss_bucket", "default_oss_bucket", "image_scanner", "instance_type", "namespace_quota", "password", "period", "repo_quota", "vpc_quota"},
+			},
+		},
+	})
+}
+
+var AlicloudCrInstanceMapTags = map[string]string{
+	"end_time":             CHECKSET,
+	"status":               CHECKSET,
+	"create_time":          CHECKSET,
+	"instance_endpoints.#": CHECKSET,
+	"region_id":            CHECKSET,
+}
+
+func AlicloudCrInstanceBasicDependenceTags(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
 
 
 `, name)

@@ -46,6 +46,10 @@ resource "alicloud_cr_ee_instance" "default" {
   renewal_status = "AutoRenewal"
   instance_type  = "Advanced"
   instance_name  = "${var.name}-${random_integer.default.result}"
+  tags = {
+    Created = "TF"
+    For     = "Test"
+  }
 }
 ```
 
@@ -108,6 +112,7 @@ The following arguments are supported:
 -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `resource_group_id` - (Optional, Computed, Available since v1.235.0) The ID of the resource group
+* `tags` - (Optional, Map, Available since v1.288.0) A mapping of tags to assign to the resource.
 * `vpc_quota` - (Optional, Int, Available since v1.268.0) The number of VPC access controls.
 
 -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
