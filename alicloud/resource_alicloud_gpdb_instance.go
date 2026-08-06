@@ -56,6 +56,11 @@ func resourceAliCloudGpdbInstance() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"minor_version": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"vswitch_id": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -578,6 +583,9 @@ func resourceAliCloudGpdbDbInstanceRead(d *schema.ResourceData, meta interface{}
 
 	d.Set("engine", object["Engine"])
 	d.Set("engine_version", object["EngineVersion"])
+	if v, ok := object["MinorVersion"]; ok && fmt.Sprint(v) != "" {
+		d.Set("minor_version", v)
+	}
 	d.Set("vswitch_id", object["VSwitchId"])
 	d.Set("db_instance_mode", object["DBInstanceMode"])
 	d.Set("db_instance_category", object["DBInstanceCategory"])
@@ -831,6 +839,49 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		d.SetPartial("description")
+	}
+
+	update = false
+	request = map[string]interface{}{
+		"RegionId":     client.RegionId,
+		"DBInstanceId": d.Id(),
+	}
+	if !d.IsNewResource() && d.HasChange("minor_version") {
+		if v, ok := d.GetOk("minor_version"); ok && v.(string) != "" {
+			update = true
+			request["MinorVersion"] = v
+		}
+	}
+	if update {
+		action := "UpgradeDBVersion"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = client.RpcPost("gpdb", "2016-05-03", action, nil, request, true)
+			if err != nil {
+				if IsExpectedErrors(err, []string{"Throttling.User"}) || NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		// UpgradeDBVersion is asynchronous and returns a task id: the instance keeps
+		// reporting its previous status and minor version for a short window before the
+		// upgrade takes effect, so wait until the instance is back to a settled status
+		// (Running, or IDLE for serverless instances) and reports the target minor version.
+		minorVersionTarget := fmt.Sprint(request["MinorVersion"])
+		minorVersionStateConf := BuildStateConf([]string{}, []string{minorVersionTarget}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, gpdbService.GpdbDbInstanceMinorVersionStateRefreshFunc(d.Id(), minorVersionTarget))
+		if _, err := minorVersionStateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
+		d.SetPartial("minor_version")
 	}
 
 	update = false

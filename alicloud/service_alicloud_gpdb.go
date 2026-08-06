@@ -799,6 +799,32 @@ func (s *GpdbService) GpdbDbInstanceScaleStateRefreshFunc(id, field, target stri
 	}
 }
 
+// GpdbDbInstanceMinorVersionStateRefreshFunc waits until a minor version upgrade
+// triggered by UpgradeDBVersion has been applied. The upgrade is asynchronous: the
+// instance keeps reporting its previous status and MinorVersion for a short window
+// before the upgrade takes effect, so waiting only for a settled status can return
+// before the new version is applied and leave Read observing the stale value. The
+// upgrade is complete once the instance reports the target MinorVersion while its
+// status is back to Running, or IDLE for serverless instances.
+func (s *GpdbService) GpdbDbInstanceMinorVersionStateRefreshFunc(id, target string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeGpdbDbInstance(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		status := fmt.Sprint(object["DBInstanceStatus"])
+		current := fmt.Sprint(object["MinorVersion"])
+		if (status == "Running" || status == "IDLE") && current == target {
+			return object, target, nil
+		}
+		// Not settled yet: report a non-target state so the waiter keeps polling.
+		return object, fmt.Sprintf("%s/%s", status, current), nil
+	}
+}
+
 func (s *GpdbService) DescribeGpdbDbInstancePlan(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	action := "DescribeDBInstancePlans"
