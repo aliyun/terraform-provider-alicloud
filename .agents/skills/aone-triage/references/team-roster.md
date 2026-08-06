@@ -6,6 +6,13 @@
 
 这批云产品的 provider 代码由专人维护,**不接镇元**;不用查覆盖度,直接指派 + @。
 
+**这张表是机器强制的,不只是文档**:同一份名单以 `config/contacts.json` 的
+`product_maintainers` 落库,`bootstrap/aone-assign.sh` 把这些工号视作受保护的真人 owner ——
+**工单已指派给专属维护人时拒绝改派**(含改派到过载/新山/临钧等 API 团队共享兜底人),
+`bridge/terraform_route_notify.py` 据同一判定跳过会指错人的 route DM。改这张表必须同步改
+JSON,`test/product_maintainers_parity_test.sh` 会卡住漂移。他们**故意不在** `contacts` 数组里
+——那个数组同时是钉钉委派白名单(`api_tool_staff`)。
+
 | 云产品 | 花名 | 工号 |
 |---|---|---|
 | 容器服务 Kubernetes (ACK) | 若即 | 377376 |
