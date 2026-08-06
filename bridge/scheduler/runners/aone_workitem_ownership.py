@@ -12,6 +12,8 @@ changed items load comments concurrently with a bounded worker pool.  If an
 individual Aone read fails transiently, a previously complete cached item may be
 reused verbatim (including its old ``sourceUpdatedAt``).  An uncached failure
 fails the whole scheduled run, preserving the server's last complete snapshot.
+Cache v1 predates tracker participation, so its rows are retained only as
+read-failure fallbacks until each one has been refreshed into cache v2.
 """
 
 from __future__ import annotations
@@ -42,6 +44,8 @@ from ..model import (
 RUNNER_KEY = "aone_workitem_ownership"
 JOB_KEY = "aone.workitem-ownership"
 SCHEMA_VERSION = "aone-workitem-ownership.v1"
+CACHE_VERSION = 2
+_CACHE_REFRESH_REQUIRED = "_refreshRequired"
 
 DEFAULT_PAGE_SIZE = 500
 DEFAULT_MAX_PAGES = 1000
@@ -665,16 +669,27 @@ class AoneWorkitemOwnershipRunner:
                 "aone-workitem-ownership: cache unreadable path=%s error=%s",
                 self._cache_path, type(exc).__name__)
             return {}
-        if not isinstance(data, Mapping) or data.get("version") != 1:
+        if not isinstance(data, Mapping):
+            return {}
+        version = data.get("version")
+        if version not in (1, CACHE_VERSION):
             return {}
         items = data.get("items")
         if not isinstance(items, Mapping):
             return {}
-        return {
-            str(key): dict(item)
-            for key, item in items.items()
-            if isinstance(item, Mapping)
-        }
+        loaded: dict[str, dict[str, Any]] = {}
+        for key, item in items.items():
+            if not isinstance(item, Mapping):
+                continue
+            cached = dict(item)
+            if version == 1:
+                # v1 participantStaffIds only represented ak.issue.member. Keep
+                # the row available if Aone is no longer readable, but do not
+                # let an unchanged modified timestamp suppress the one-time
+                # refresh needed to add workitem.tracker.
+                cached[_CACHE_REFRESH_REQUIRED] = True
+            loaded[str(key)] = cached
+        return loaded
 
     @staticmethod
     def _valid_cached_item(
@@ -688,6 +703,7 @@ class AoneWorkitemOwnershipRunner:
         updated = item.get("sourceUpdatedAt")
         source_modified = item.get("_sourceModified")
         placeholder = item.get("_placeholder", False)
+        refresh_required = item.get(_CACHE_REFRESH_REQUIRED, False)
         if (item.get("sourceProjectKey") != project
                 or item.get("aoneId") != aone_id
                 or not isinstance(participants, list)
@@ -700,7 +716,8 @@ class AoneWorkitemOwnershipRunner:
                 or (updated is not None and not isinstance(updated, str))
                 or (source_modified is not None
                     and not isinstance(source_modified, str))
-                or not isinstance(placeholder, bool)):
+                or not isinstance(placeholder, bool)
+                or not isinstance(refresh_required, bool)):
             return None
         result = {
             "sourceProjectKey": project,
@@ -714,6 +731,8 @@ class AoneWorkitemOwnershipRunner:
             result["_sourceModified"] = source_modified
         if placeholder:
             result["_placeholder"] = True
+        if refresh_required:
+            result[_CACHE_REFRESH_REQUIRED] = True
         return result
 
     def _cached(
@@ -808,11 +827,12 @@ class AoneWorkitemOwnershipRunner:
                     source_label, project, aone_id)
 
         merge_aliases(assignee_aliases, "assignee")
-        _tracker_ids, tracker_aliases = self._parse_detail_field(
+        tracker_ids, tracker_aliases = self._parse_detail_field(
             fields.get("workitem.tracker"),
             project=project, aone_id=aone_id,
             label="tracker", multiple=True)
         merge_aliases(tracker_aliases, "tracker")
+        participant_ids = sorted(set(participant_ids) | set(tracker_ids))
 
         creator = detail.get("creator")
         if isinstance(creator, Mapping):
@@ -977,6 +997,7 @@ class AoneWorkitemOwnershipRunner:
                         cached_marker = cached.get("sourceUpdatedAt")
                     if (row is not None and cached is not None
                             and not cached.get("_placeholder")
+                            and not cached.get(_CACHE_REFRESH_REQUIRED)
                             and source_modified is not None
                             and cached_marker == source_modified):
                         output[self._candidate_key(project, aone_id)] = cached
@@ -1087,7 +1108,7 @@ class AoneWorkitemOwnershipRunner:
 
     def _save_cache(self, items: Sequence[Mapping[str, Any]]) -> None:
         payload = {
-            "version": 1,
+            "version": CACHE_VERSION,
             "items": {
                 self._candidate_key(
                     _scalar(item.get("sourceProjectKey")),
