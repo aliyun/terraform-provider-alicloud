@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -423,7 +423,7 @@ func DownloadUserKubeConf(client *connectivity.AliyunClient, clusterId string) (
 		return "", WrapError(fmt.Errorf("failed to get current working dir,because of %v", err))
 	}
 
-	kubeConfPath := path.Join(wd, fmt.Sprintf("%s-kubeconf", clusterId))
+	kubeConfPath := kubeconfPath(wd, clusterId)
 
 	err = ioutil.WriteFile(kubeConfPath, []byte(content), 0755)
 
@@ -432,6 +432,13 @@ func DownloadUserKubeConf(client *connectivity.AliyunClient, clusterId string) (
 	}
 
 	return kubeConfPath, nil
+}
+
+// kubeconfPath joins the working directory and the cluster id into a local
+// kubeconfig file path. It uses filepath.Join so the result honours the
+// OS-specific path separator instead of always using '/'.
+func kubeconfPath(wd, clusterId string) string {
+	return filepath.Join(wd, fmt.Sprintf("%s-kubeconf", clusterId))
 }
 
 // delete autoscaler component
