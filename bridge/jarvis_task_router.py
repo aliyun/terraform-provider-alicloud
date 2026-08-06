@@ -64,16 +64,93 @@ def _aone_task_key(project: object, item_id: object) -> str:
     return "aone:%s:%s" % (value, str(item_id))
 
 
+# Task statuses with no live generation.  A lineage flip is accepted at rest
+# (52 observed SUCCEEDED->READY upserts), so adoption is scoped to live
+# generations only — otherwise an ordinary ticket run would inherit a post-PR
+# REPLAY_SAFE policy it has no reason to run under.  Both CANCEL spellings are
+# accepted: the server returns CANCELED, claim_health matches CANCELLED.
+_RESTING_TASK_STATUSES = frozenset({"SUCCEEDED", "FAILED", "CANCELED", "CANCELLED"})
+
+
+def _task_rows(response):
+    """Normalize a get_task_by_aone response to a list of task rows.
+
+    Mirrors ``PrWatchRuntime._attention_task_rows``; kept here rather than
+    imported because pr_watch imports from this module.  The live control plane
+    answers with a bare list, but the wrapped and single-object shapes are both
+    in use by callers/fakes, and silently missing one would read as "no live
+    Task" — which is exactly the fail-open that loses a comment.
+    """
+    if isinstance(response, list):
+        return [row for row in response if isinstance(row, dict)]
+    if isinstance(response, dict) and isinstance(response.get("items"), list):
+        return [row for row in response["items"] if isinstance(row, dict)]
+    if isinstance(response, dict) and (
+            response.get("id") is not None or response.get("taskId") is not None):
+        return [response]
+    return []
+
+
+def live_task_lineage(client, aone_id):
+    """Lineage of the live control-plane Task on this Aone key, or ``None``.
+
+    Two producers share one task key ``aone:<project>:<id>``: scan dispatches
+    AONE/ticket/RESUME_ONLY, pr_watch dispatches GITHUB/pr_ci_fix/REPLAY_SAFE.
+    The control plane rejects an upsert that changes sourceType/taskType
+    (``4c731ae09``) or recoveryPolicy (``4aeffcc6b``) while a generation is live
+    — ``Conflict.GenerationBoundary``.  So whoever arrives second must advance
+    the desired revision on the lineage already there instead of asserting its
+    own; a same-lineage advance while RUNNING is routinely accepted.
+
+    Returns only the three guarded fields.  ``source_ref`` is deliberately NOT
+    adopted: pr_watch's is ``{prUrl, head, title}`` with no aoneId/projectId, and
+    downstream readers fall back on those.  best-effort — any failure returns
+    ``None`` so the caller keeps its own lineage rather than blocking dispatch.
+    """
+    if client is None:
+        return None
+    reader = getattr(client, "get_task_by_aone", None)
+    if not callable(reader):
+        return None
+    try:
+        rows = reader(str(aone_id))
+    except Exception:  # noqa: BLE001 — a read failure must not block dispatch
+        return None
+    for row in _task_rows(rows):
+        if str(row.get("status") or "").strip().upper() in _RESTING_TASK_STATUSES:
+            continue
+        source_type = str(row.get("sourceType") or "").strip()
+        task_type = str(row.get("taskType") or "").strip()
+        if not source_type or not task_type:
+            continue
+        return {
+            "source_type": source_type,
+            "task_type": task_type,
+            "recovery_policy": str(row.get("recoveryPolicy") or "").strip(),
+        }
+    return None
+
+
 def _task_envelope(*, item_id, project, task_type, source_type, source_ref,
                    desired_revision, trigger, prompt, recovery_policy="RESUME_ONLY",
                    persona=None, priority=None, comment_cursor=None,
                    required_capabilities=None, max_retries=None,
-                   source_status=None, **payload) -> TaskEnvelope:
-    """Build a control-plane Task without importing a worker implementation."""
+                   source_status=None, payload_kind=None,
+                   **payload) -> TaskEnvelope:
+    """Build a control-plane Task without importing a worker implementation.
+
+    ``task_type``/``source_type``/``recovery_policy`` are the Task's **lineage** —
+    what the control-plane upsert guard compares.  ``payload_kind`` is its
+    **execution semantics** — ``persistent_tasks`` picks the Aone bookend from
+    ``payload["kind"]``, so a ``pr_ci_fix`` kind selects the writes_reply=False
+    variant.  They default to the same value, but a producer advancing the
+    revision on someone else's live lineage (see ``live_task_lineage``) must keep
+    its own semantics, or the run would process a comment and post no reply.
+    """
     body = portable_task_payload(
         item_id=item_id,
         project=(project or ("local" if str(source_type).upper() != "AONE" else "")),
-        kind=task_type,
+        kind=payload_kind or task_type,
         prompt=prompt,
         origin_runtime=RUNTIME_PERSISTENT,
         trigger=trigger,

@@ -18,7 +18,8 @@ import uuid
 
 from bridge.jarvis_task_router import (
     ExecutionRouter, _TaskAttentionPublisher, _notify_task_attention,
-    _source_ref_with_title, _task_envelope, broadcast_target, broadcast_type,
+    _source_ref_with_title, _task_envelope, live_task_lineage,
+    broadcast_target, broadcast_type,
 )
 
 from ..model import JobResult, JobResultStatus, is_aware
@@ -788,11 +789,18 @@ class PrWatchRuntime:
         work = (lambda: self.handler.dispatch_item(
             tid, prompt, sid, False, notify, tgt, ttype,
             kind="pr_ci_fix", project=project, terraform=True))
+        # An ordinary ticket generation may be live on this same task key.
+        # Asserting GITHUB/pr_ci_fix over it is what the control plane rejects as
+        # Conflict.GenerationBoundary, which left CI failures unfixed. Advance the
+        # revision on whichever lineage is live and keep post-PR semantics via
+        # payload_kind (writes_reply=False — a CI fix owes no Aone reply).
+        lineage = live_task_lineage(self.task_client, tid) or {}
         envelope = _task_envelope(
             item_id=tid,
             project=project,
-            task_type="pr_ci_fix",
-            source_type="GITHUB",
+            task_type=lineage.get("task_type") or "pr_ci_fix",
+            source_type=lineage.get("source_type") or "GITHUB",
+            payload_kind="pr_ci_fix",
             source_ref=_source_ref_with_title(
                 {"prUrl": str(entry.get("pr_url") or ""), "head": head},
                 entry.get("title")),
@@ -803,7 +811,9 @@ class PrWatchRuntime:
             # CI failure and force-pushes (effect-idempotent — the branch converges to the
             # latest fix, CI re-validates). max_retries bounds control-plane replay of this
             # one head; the distinct-heads attempt cap stays in _maybe_dispatch_ci_fix.
-            recovery_policy="REPLAY_SAFE",
+            # A live foreign lineage overrides it (see live_task_lineage): the guard
+            # rejects a recoveryPolicy flip across a live generation.
+            recovery_policy=lineage.get("recovery_policy") or "REPLAY_SAFE",
             max_retries=int(os.environ.get("JARVIS_POSTPR_MAX_RETRIES", "2")),
             failingChecks=failing[:20],
             terraform=True,
@@ -992,11 +1002,15 @@ class PrWatchRuntime:
         work = (lambda: self.handler.dispatch_item(
             tid, prompt, sid, False, notify, tgt, ttype,
             kind="pr_comment_reply", project=project, terraform=True))
+        # Same generation-boundary rule as the CI-fix leg above: advance the
+        # revision on a live foreign lineage, keep post-PR execution semantics.
+        lineage = live_task_lineage(self.task_client, tid) or {}
         envelope = _task_envelope(
             item_id=tid,
             project=project,
-            task_type="pr_comment_reply",
-            source_type="GITHUB",
+            task_type=lineage.get("task_type") or "pr_comment_reply",
+            source_type=lineage.get("source_type") or "GITHUB",
+            payload_kind="pr_comment_reply",
             source_ref=_source_ref_with_title(
                 {"prUrl": str(entry.get("pr_url") or ""), "commentKey": key},
                 entry.get("title")),
@@ -1006,8 +1020,9 @@ class PrWatchRuntime:
             # REPLAY_SAFE: a worker death re-leases this reply Task; the run re-reads the
             # comment and re-replies. The GitHub reply is marker-guarded (see
             # _pr_comment_reply_prompt) so a replay does not duplicate it. max_retries
-            # bounds control-plane replay of this comment key.
-            recovery_policy="REPLAY_SAFE",
+            # bounds control-plane replay of this comment key. A live foreign lineage
+            # overrides it — the guard rejects a policy flip across a live generation.
+            recovery_policy=lineage.get("recovery_policy") or "REPLAY_SAFE",
             max_retries=int(os.environ.get("JARVIS_POSTPR_MAX_RETRIES", "2")),
             commentAuthor=author,
             commentSnippet=snippet,
