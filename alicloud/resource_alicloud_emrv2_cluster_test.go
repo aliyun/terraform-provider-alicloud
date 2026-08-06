@@ -462,8 +462,8 @@ func TestAccAliCloudEmrV2Cluster_basic(t *testing.T) {
 															"threshold":           "10",
 															"tags": []map[string]interface{}{
 																{
-																	"key":   "app",
-																	"value": "emr",
+																	"key":   "queue_name",
+																	"value": "root",
 																},
 															},
 														},
@@ -522,6 +522,185 @@ func TestAccAliCloudEmrV2Cluster_basic(t *testing.T) {
 						"node_groups.#":                        "3",
 						"node_groups.2.private_pool_options.#": "1",
 						"force_sleep":                          "240",
+					}),
+				),
+			},
+			// Drop min_adjustment_value from both scaling rules, reproducing the customer
+			// configuration that took over a console-created policy. This exercises the
+			// PutAutoScalingPolicy update path with the optional field omitted. Note that the
+			// API accepts MinAdjustmentValue=0, so apply succeeds either way: this step
+			// guards against a regression that breaks the omitted-field path outright, while
+			// the actual "0 must not be sent" contract is pinned by the request-level unit
+			// tests in resource_alicloud_emrv2_cluster_unit_test.go.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"node_groups": []map[string]interface{}{
+						{
+							"node_group_type":      "MASTER",
+							"node_group_name":      "emr-master",
+							"payment_type":         "PayAsYouGo",
+							"vswitch_ids":          []string{"${alicloud_vswitch.default.id}"},
+							"instance_types":       []string{"ecs.g7.xlarge"},
+							"node_count":           "1",
+							"with_public_ip":       "false",
+							"graceful_shutdown":    "false",
+							"spot_instance_remedy": "false",
+							"system_disk": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "80",
+									"performance_level": "PL0",
+									"count":             "1",
+								},
+							},
+							"data_disks": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "90",
+									"count":             "3",
+									"performance_level": "PL0",
+								},
+							},
+						},
+						{
+							"node_group_type":      "CORE",
+							"node_group_name":      "emr-core",
+							"payment_type":         "PayAsYouGo",
+							"vswitch_ids":          []string{"${alicloud_vswitch.default.id}"},
+							"instance_types":       []string{"ecs.g7.xlarge"},
+							"node_count":           "3",
+							"with_public_ip":       "false",
+							"graceful_shutdown":    "false",
+							"spot_instance_remedy": "false",
+							"system_disk": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "80",
+									"performance_level": "PL0",
+									"count":             "1",
+								},
+							},
+							"data_disks": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "80",
+									"count":             "3",
+									"performance_level": "PL0",
+								},
+							},
+						},
+						{
+							"node_group_type":      "TASK",
+							"node_group_name":      "emr-task",
+							"payment_type":         "PayAsYouGo",
+							"vswitch_ids":          []string{"${alicloud_vswitch.default.id}"},
+							"instance_types":       []string{"ecs.g7.xlarge"},
+							"node_count":           "1",
+							"with_public_ip":       "false",
+							"graceful_shutdown":    "false",
+							"spot_instance_remedy": "false",
+							"private_pool_options": []map[string]interface{}{
+								{
+									"private_pool_ids": []string{"${alicloud_ecs_capacity_reservation.default.id}"},
+									"match_criteria":   "Target",
+								},
+							},
+							"node_resize_strategy": "PRIORITY",
+							"auto_scaling_policy": []map[string]interface{}{
+								{
+									"constraints": []map[string]interface{}{
+										{
+											"max_capacity": "999",
+											"min_capacity": "1",
+										},
+									},
+									"scaling_rules": []map[string]interface{}{
+										{
+											"rule_name":        "scalingRule01",
+											"trigger_type":     "METRICS_TRIGGER",
+											"activity_type":    "SCALE_OUT",
+											"adjustment_type":  "CHANGE_IN_CAPACITY",
+											"adjustment_value": "1",
+											"metrics_trigger": []map[string]interface{}{
+												{
+													"time_window":              "120",
+													"evaluation_count":         "1",
+													"cool_down_interval":       "120",
+													"condition_logic_operator": "And",
+													"time_constraints": []map[string]interface{}{
+														{
+															"start_time": "00:00",
+															"end_time":   "23:59",
+														},
+													},
+													"conditions": []map[string]interface{}{
+														{
+															"metric_name":         "yarn_resourcemanager_queue_AvailableMBPercentage",
+															"statistics":          "AVG",
+															"comparison_operator": "LE",
+															"threshold":           "10",
+															"tags": []map[string]interface{}{
+																{
+																	"key":   "queue_name",
+																	"value": "root",
+																},
+															},
+														},
+													},
+												},
+											},
+										},
+										{
+											"rule_name":        "scalingRule02",
+											"trigger_type":     "TIME_TRIGGER",
+											"activity_type":    "SCALE_OUT",
+											"adjustment_type":  "CHANGE_IN_CAPACITY",
+											"adjustment_value": "1",
+											"time_trigger": []map[string]interface{}{
+												{
+													"launch_time":            "22:00:00",
+													"start_time":             startTime,
+													"end_time":               endTime,
+													"launch_expiration_time": "3600",
+													"recurrence_type":        "DAILY",
+													"recurrence_value":       "3",
+												},
+											},
+										},
+									},
+								},
+							},
+							"spot_bid_prices": []map[string]interface{}{
+								{
+									"instance_type": "ecs.g7.xlarge",
+									"bid_price":     "1",
+								},
+							},
+							"system_disk": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "80",
+									"performance_level": "PL0",
+									"count":             "1",
+								},
+							},
+							"data_disks": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "80",
+									"count":             "3",
+									"performance_level": "PL0",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"node_groups.#": "3",
+						"node_groups.2.auto_scaling_policy.0.scaling_rules.#":                      "2",
+						"node_groups.2.auto_scaling_policy.0.scaling_rules.0.min_adjustment_value": "0",
+						"node_groups.2.auto_scaling_policy.0.scaling_rules.1.min_adjustment_value": "0",
 					}),
 				),
 			},
