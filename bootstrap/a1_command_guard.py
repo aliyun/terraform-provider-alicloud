@@ -59,6 +59,13 @@ OPAQUE_RELEASE_TARGET_MESSAGE = (
     "the delivery pipeline target cannot be proven non-production; "
     "Jarvis requires an explicit numeric non-prod pipeline ID"
 )
+RAW_ASSIGNEE_MESSAGE = (
+    "writing an Aone assignee directly is disabled for Jarvis; a raw "
+    "`project workitem update --assignee` cannot tell that a real API-team "
+    "member has already taken the ticket over, so it silently overwrites the "
+    "human owner every dispatch. Use `bootstrap/aone-assign.sh <workitem-id> "
+    "<staff-id>`, which refuses to reassign a ticket held by an active human"
+)
 
 _GLOBAL_NO_VALUE = {
     "--debug", "--no-update-check", "-q", "--quiet", "--verbose",
@@ -277,6 +284,12 @@ def _command_kind(argv: Sequence[str]) -> str:
         return "blocked-quit"
     if semantic[:3] == ["cd-pipeline", "run", "cancel"]:
         return "blocked-quit"
+    # Assignee writes must go through bootstrap/aone-assign.sh, which checks
+    # whether an active API-team human already owns the ticket. A raw a1 call
+    # has no such check and overwrote human owners on every dispatch.
+    if (semantic[:3] == ["project", "workitem", "update"]
+            and _option_values(semantic[3:], "--assignee")):
+        return "blocked-raw-assignee"
     if semantic[:3] == ["app", "cr", "submit"]:
         pipeline_values = _option_values(semantic[3:], "--pipeline-id")
         # No pipeline ID only advances the CR to the publish page; it does not
@@ -389,6 +402,8 @@ def _kind_message(kind: str, *, direct: bool = False) -> Optional[str]:
         return OPAQUE_TASK_ACTION_MESSAGE
     if kind == "blocked-opaque-release-target":
         return OPAQUE_RELEASE_TARGET_MESSAGE
+    if kind == "blocked-raw-assignee":
+        return RAW_ASSIGNEE_MESSAGE
     if kind == "blocked-quit":
         return DIRECT_QUIT_MESSAGE if direct else BLOCKED_CR_EXIT_MESSAGE
     return None

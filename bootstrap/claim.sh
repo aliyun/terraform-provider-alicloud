@@ -207,10 +207,19 @@ _advance_status() {
     return 0
 }
 
+# Normalize whatever text arrives on stdin into a deduped list of canonical
+# github.com/<owner>/<repo>/pull/<num> URLs, one per line. Trailing path parts
+# (/files, /commits) and markdown wrappers are dropped by the pattern itself.
+_extract_pr_links() {
+    grep -oE 'https?://github\.com/[A-Za-z0-9._-]+/[A-Za-z0-9._-]+/pull/[0-9]+' \
+        2>/dev/null | sort -u
+}
+
 # Check for unmerged MRs/PRs associated with a workitem.
 # Returns 0 if unmerged MRs found, 1 if none found.
 # Checks: (1) active worktree branches containing the workitem ID,
-#         (2) open GitHub PRs from api-tool-agent mentioning the ID.
+#         (2) concrete PR links (executor env ∪ the ticket's own Aone comments),
+#         (3) open api-tool-agent PRs whose head branch carries the ID.
 _has_unmerged_mr() {
     local id="$1"
 
@@ -222,26 +231,37 @@ _has_unmerged_mr() {
         return 0
     fi
 
-    # Check 2a: GitHub PRs passed via JARVIS_MR_CR_LINKS — direct state query.
-    # `gh search prs <aone-id>` is unreliable here: PR bodies are sanitized
+    # Check 2: concrete PR links, from two independent sources unioned together.
+    #
+    # `gh search prs <aone-id>` cannot be one of them: PR bodies are sanitized
     # (CLAUDE.md 工作纪律 #5) and never contain the Aone workitem id, so the
-    # search returns []. The bridge executor passes mr_cr_links via env so we
-    # parse each github.com/<owner>/<repo>/pull/<num> and ask `gh pr view`.
-    # A gh failure (no token, network, PR removed) is treated as unmerged so
-    # finish stays blocked rather than closing a ticket whose code is in review.
-    if [ -n "${JARVIS_GITHUB_TOKEN:-}" ] && [ -n "${JARVIS_MR_CR_LINKS:-}" ]; then
+    # search returns [] for every compliant PR — the gate it guarded had been
+    # structurally dead (verified 2026-08-06 against #85020657 / PR 10117).
+    #
+    # 2a. JARVIS_MR_CR_LINKS — what the bridge executor passes from the task
+    #     result's mr_cr_links.
+    # 2b. The work item's own Aone comments — the RD aggregate reply must carry
+    #     the MR/CR link (aone-triage skill), making the ticket a durable record
+    #     of its own PRs. Unioned rather than used only as a fallback, because a
+    #     model that under-reports mr_cr_links is exactly the failure this gate
+    #     exists to catch.
+    local links="" comment_text=""
+    comment_text="$(${A1:-$jarvis_root/bin/a1id --} project workitem comment list \
+        "$id" -f json 2>/dev/null || true)"
+    links="$(printf '%s\n%s\n' "${JARVIS_MR_CR_LINKS:-}" "$comment_text" \
+        | _extract_pr_links | tr '\n' ' ')"
+
+    if [ -n "${JARVIS_GITHUB_TOKEN:-}" ] && [ -n "${links// /}" ]; then
+        # A gh failure (no token, network, PR removed) is treated as unmerged so
+        # finish stays blocked rather than closing a ticket whose code is in review.
         local link rest owner repo num state
-        for link in $JARVIS_MR_CR_LINKS; do
-            case "$link" in
-                *github.com/*/pull/*) ;;
-                *) continue ;;
-            esac
-            rest="${link#*github.com/}"   # owner/repo/pull/NUM...
+        for link in $links; do
+            rest="${link#*github.com/}"   # owner/repo/pull/NUM
             owner="${rest%%/*}"
-            rest="${rest#*/}"             # repo/pull/NUM...
+            rest="${rest#*/}"             # repo/pull/NUM
             repo="${rest%%/*}"
-            rest="${rest#*/pull/}"        # NUM...
-            num="${rest%%[!0-9]*}"        # truncate at first non-digit
+            rest="${rest#*/pull/}"        # NUM
+            num="${rest%%[!0-9]*}"
             [ -z "$num" ] && continue
             state="$(GH_TOKEN="$JARVIS_GITHUB_TOKEN" gh pr view "$num" \
                 --repo "$owner/$repo" --json state -q '.state' 2>/dev/null || echo "")"
@@ -252,20 +272,19 @@ _has_unmerged_mr() {
         return 1
     fi
 
-    # Check 2b (fallback): open GitHub PRs from api-tool-agent mentioning the ID.
-    # Kept for callers that don't pass JARVIS_MR_CR_LINKS; still unreliable when
-    # PR bodies omit the id (sanitize policy), but better than nothing.
+    # Check 3 (no concrete link anywhere): match the workitem id against the head
+    # branch of open api-tool-agent PRs. Jarvis names PR branches after the ticket
+    # (worktree-<id>-*, feat/<id>-*, docs/<slug>-<id>, ...). Sampled 2026-08-06:
+    # 23 of 30 open PRs embed the id, so this recovers most link-less callers. It
+    # is deliberately last — a naming convention is weaker evidence than a link.
     if [ -n "${JARVIS_GITHUB_TOKEN:-}" ]; then
-        local prs
-        prs="$(GH_TOKEN="$JARVIS_GITHUB_TOKEN" gh search prs \
-            --author api-tool-agent --state open "$id" \
-            --json repository,number,title --limit 5 2>/dev/null || echo "[]")"
-        if [ "$prs" != "[]" ] && [ -n "$prs" ]; then
-            local count
-            count="$(echo "$prs" | jq 'length' 2>/dev/null || echo 0)"
-            if [ "$count" -gt 0 ] 2>/dev/null; then
-                return 0
-            fi
+        local branches
+        branches="$(GH_TOKEN="$JARVIS_GITHUB_TOKEN" gh pr list \
+            --repo "${JARVIS_PROVIDER_REPO:-aliyun/terraform-provider-alicloud}" \
+            --author api-tool-agent --state open --limit 100 \
+            --json headRefName -q '.[].headRefName' 2>/dev/null || echo "")"
+        if [ -n "$branches" ] && printf '%s\n' "$branches" | grep -qF "$id"; then
+            return 0
         fi
     fi
 

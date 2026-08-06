@@ -389,5 +389,44 @@ else
     no "interactive-worker -I import smoke"
 fi
 
+# ── PreToolUse: raw assignee writes must route through aone-assign.sh ────────
+# Regression for tf_customer assignee overwrite (#84486902 / #84955165 /
+# #85115148): the route phase told the model to "幂等同步源单 assignee" and it
+# called a1 directly, so a human takeover was silently overwritten every
+# dispatch. Nothing in the repo wrote --assignee, so a prompt rule alone had no
+# enforcement point; this gate is that point.
+pretool() {
+    python3 "$guard" --check-pretool-command "$1" >/dev/null 2>&1
+    echo $?
+}
+blocked_cmds=(
+    "bin/a1id -- project workitem update 85020657 --assignee 484483"
+    "bin/a1id -- project workitem update 85020657 --assignee=484483"
+    "bin/a1id as terraform-rd -- project workitem update 85020657 --assignee 521957"
+    "a1 project workitem update 85020657 --assignee 484483"
+)
+for cmd in "${blocked_cmds[@]}"; do
+    if [ "$(pretool "$cmd")" = "2" ]; then
+        ok "raw assignee write blocked: ${cmd:0:52}"
+    else
+        no "raw assignee write NOT blocked: $cmd"
+    fi
+done
+
+allowed_cmds=(
+    "bash bootstrap/aone-assign.sh 85020657 484483"
+    "bin/a1id -- project workitem update 85020657 --status 问题解决中"
+    "bin/a1id -- project workitem update 85020657 --tag jarvis-idle"
+    "bin/a1id -- project workitem get 85020657"
+    "grep -rn -- --assignee bootstrap/"
+)
+for cmd in "${allowed_cmds[@]}"; do
+    if [ "$(pretool "$cmd")" != "2" ]; then
+        ok "not over-blocked: ${cmd:0:52}"
+    else
+        no "over-blocked: $cmd"
+    fi
+done
+
 echo "a1_command_guard_test: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]
