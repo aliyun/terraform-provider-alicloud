@@ -242,9 +242,14 @@ PR 或团队成员给出命中根因的修复证据，复用现有结果，避�
   <handwritten-urgent|handwritten-normal|generated>`，最后才交 `AONE_RESULT`。禁止模型裸调
   `notify-dingtalk.sh`。
 - assignee 同步一律经 `bootstrap/aone-assign.sh`（见上方「保持最后处理人」）。**退码 3 =
-  已有 API 团队真人持单**：保留原 owner 继续开发，不重试、不升级、不因此 blocked，并
-  **跳过本轮 route DM** —— DM 收件人按 subtype 固定映射、与实际 assignee 无关，单已由真人
-  持有时发出去会指错人。上面三条 owner 映射只在尚无真人持单时用于首次落位。
+  已有真人持单**（API 团队在册真人 **或** 云产品专属维护名单）：保留原 owner 继续开发，
+  不重试、不升级、不因此 blocked，并**跳过本轮 route DM** —— DM 收件人按 subtype 固定映射、
+  与实际 assignee 无关，单已由真人持有时发出去会指错人。上面三条 owner 映射只在尚无真人
+  持单时用于首次落位。
+- route DM 的跳过是**机器强制**的，不靠模型自觉：`bridge/terraform_route_notify.py` 在 enqueue
+  前先跑 `bootstrap/aone-assign.sh --check <ticket> <收件人工号>`，退码 3 就直接返回
+  `state=skipped_owner_protected`、`notification_complete=false` 且不入 ledger。这是**有意的
+  no-op，不是投递失败**：不重试、不升级，聚合回复里按「route DM 未发送（单由真人持有）」写。
 - D 通知 event key 固定 `terraform-route:d:<subtype>:owner:<staffId>`；ticket 参与 ledger id。
   同 ticket/subtype/owner 重试只一条，owner/subtype 变化产生新事件。durable pending 不阻断
   开发；posted/suppressed 不重发，post_uncertain 保持同一 receipt；ledger 无法持久化不得
@@ -322,7 +327,14 @@ status/tag、release/finish），不解析或重放 downstream 动作；finalize
 ### 分支 A — 专属维护名单
 
 只更新源单 assignee + 按 `config/pools.json` 当前 workitemType 对应的 progress_status，
-由 finalizer 聚合 @负责人；不建 tf_provider 关联单。专属名单见 team-roster。
+由 finalizer 聚合 @负责人；不建 tf_provider 关联单。专属名单见 team-roster，机器可读副本是
+`config/contacts.json` 的 `product_maintainers`。
+
+**已指派专属维护人 = 分支 A 已完成，后续轮次不得重判成 D/G/pure datasource 改派回 API 团队。**
+`bootstrap/aone-assign.sh` 把专属维护人视作受保护真人 owner（退码 3），
+`bridge/terraform_route_notify.py` 同步跳过 route DM。开发、评论、PR 照常，只是 owner 不动；
+确需换人由人工在 Aone 改派。判据只看**当前 assignee 是否在名单内**，不重新推断产品归属——
+产品归属推断不稳定，正是它把 #84363256 从若即甩到过载的。
 
 ### 分支 D/G — 源单 Provider 研发；H 保持关联单
 
@@ -407,13 +419,28 @@ PR 路径单独使用当前配置：需求类 PR merged 先写
 
 **这条不只适用于关单阶段 —— route/开发阶段同样保持最后处理人。** 写 assignee 一律经
 `bootstrap/aone-assign.sh <工单号> <工号>`（裸 `a1 ... --assignee` 由
-`bootstrap/a1_command_guard.py` PreToolUse 硬门拦下）。当前 assignee 已是
-`config/contacts.json` 在册真人（工号非 `WORKER_` 前缀且非 `legacy_inbound_only`）时
-**不得改派**，脚本会以退码 3 拒绝；目标与当前一致则幂等 no-op。本节各分支写的
-「源单 assignee=新山/过载/临钧」只在**尚无真人持单**时生效，用于首次落位，不是每轮覆写。
-`WORKER_` 数字人与非团队人员（如提单人）持单时仍按分支正常改派。**why**：急/非急判定在
-多轮之间不稳定，无条件覆写会让数字人在两个真人之间来回甩单（实例 #85115148：
-过载→新山→过载，全程无人工介入），也会反复推翻真人的接管（#84486902、#84955165）。
+`bootstrap/a1_command_guard.py` PreToolUse 硬门拦下）。当前 assignee 已是**真人**时
+**不得改派**，脚本会以退码 3 拒绝；目标与当前一致则幂等 no-op。受保护的真人是两份名单的并集：
+
+1. `config/contacts.json` `contacts` 在册 API 团队真人（工号非 `WORKER_` 前缀且非
+   `legacy_inbound_only`）；
+2. `config/contacts.json` `product_maintainers` = **云产品专属维护名单**（分支 A，人类可读版本
+   见 team-roster）。他们**不在** `contacts` 里（那个数组同时是钉钉委派白名单），所以必须单独
+   列为受保护 owner。
+
+本节各分支写的「源单 assignee=新山/过载/临钧」只在**尚无真人持单**时生效，用于首次落位，
+不是每轮覆写。`WORKER_` 数字人与非团队人员（如提单人）持单时仍按分支正常改派。
+**why**：急/非急判定在多轮之间不稳定，无条件覆写会让数字人在两个真人之间来回甩单
+（实例 #85115148：过载→新山→过载，全程无人工介入），也会反复推翻真人的接管
+（#84486902、#84955165）。
+
+**分支 A 优先于 D/G/pure datasource：工单当前 assignee 已在专属维护名单内，即表示分支 A
+已完成路由，本轮不得再按 D/G/pure datasource 把单改派给 API 团队共享兜底人**（过载/新山/
+临钧），也不得据此发 route DM。这类单仍可正常开发、评论、提 PR，只是 owner 不动。
+**why**（实例 #84363256）：ACK 死分支单 07-16 按分支 A 指派给若即；08-06 数字人把它重判成
+「D 手写非紧急」，改派若即→过载并 DM 过载「已按手写 resource 非紧急路由给你」。产品命中
+专属维护名单在决策树里本就排在 D 之前，专属维护人也不是 API 团队成员——这是纯路由回退，
+而当时只查 `contacts` 的守卫看不见。
 terraform-rd finalizer 是 downstream single-writer，先完成关联与源单路由字段同步，再决定
 终局 `target_status`。executor 只负责原主单 bookend：托管时按 finalizer 返回的
 `AONE_RESULT` 落唯一回复、outcome status/tag 与 release/finish，不执行或重放 downstream
