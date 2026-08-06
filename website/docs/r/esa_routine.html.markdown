@@ -20,7 +20,7 @@ For information about ESA Routine and how to use it, see [What is Routine](https
 
 Basic Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_esa_routine&exampleId=dccb9f7a-016f-67d9-b149-8f737d5d73e49f363584&activeTab=example&spm=docs.r.esa_routine.0.dccb9f7a01&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_esa_routine&exampleId=940aea73-1488-5ed3-a3c2-596cc4cfb742065ed016&activeTab=example&spm=docs.r.esa_routine.0.940aea7314&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
@@ -44,6 +44,12 @@ resource "alicloud_esa_routine" "default" {
 ```
 
 Manage the routine code from a local file:
+
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_esa_routine&exampleId=866258cb-3497-4e9d-06d4-cc2d4e34c70021bb3e19&activeTab=example&spm=docs.r.esa_routine.1.866258cb34&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
 
 ```terraform
 resource "alicloud_esa_routine" "from_file" {

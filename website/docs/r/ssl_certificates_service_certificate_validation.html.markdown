@@ -24,6 +24,12 @@ For information about Certificate Management Service (Original SSL Certificate) 
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_ssl_certificates_service_certificate_validation&exampleId=a011a9b4-8070-c006-5c14-f1591a6ece2082f86751&activeTab=example&spm=docs.r.ssl_certificates_service_certificate_validation.0.a011a9b480&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -81,6 +87,12 @@ resource "alicloud_ssl_certificates_service_certificate_validation" "default" {
 
 Downstream services should reference the certificate exposed by this resource, so that the reference is only resolved once the certificate actually exists:
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_ssl_certificates_service_certificate_validation&exampleId=64503979-a151-2982-8369-cd7c4a0e3be6196f0b48&activeTab=example&spm=docs.r.ssl_certificates_service_certificate_validation.1.64503979a1&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 resource "alicloud_alb_listener" "default" {
   certificates {
@@ -92,6 +104,10 @@ resource "alicloud_alb_listener" "default" {
 ### Deleting `alicloud_ssl_certificates_service_certificate_validation` or removing it from your configuration
 
 Terraform cannot destroy resource `alicloud_ssl_certificates_service_certificate_validation`. Terraform will remove this resource from the state file, however resources may remain.
+
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ssl_certificates_service_certificate_validation&spm=docs.r.ssl_certificates_service_certificate_validation.example&intl_lang=EN_US)
+
 
 ## Argument Reference
 
