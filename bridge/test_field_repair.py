@@ -24,16 +24,26 @@ from bridge.jarvis_task_router import EnqueueResult  # noqa: E402
 from bridge import jarvis_dingtalk_bot as bot  # noqa: E402
 from bridge import persistent_tasks  # noqa: E402
 from bridge.scheduler.runners.scan import ScanRunner  # noqa: E402
+from bridge.task_policy import HEADLESS_POLICY_REVISION  # noqa: E402
 
 
 def ticket_payload():
-    """The business ticket payload a lease carries (no repair continuation)."""
+    """The business ticket payload a lease carries (no repair continuation).
+
+    "historical" in the tests below means "persisted before field repair existed",
+    i.e. no repair continuation marker — not "persisted under an older policy".
+    `policyRevision` therefore has to be current: `portable_task_payload` stamps it
+    on every real PERSISTENT payload, and `PersistentTaskExecution.execute` fences
+    an AONE/terraform payload that lacks it (`stale_task_policy_revision`). Leaving
+    it out made these fixtures unrunnable rather than historical.
+    """
     return {
         "itemId": "84629920",
         "project": "1086837",
         "kind": "ticket",
         "prompt": "handle ticket",
         "terraform": True,
+        "policyRevision": HEADLESS_POLICY_REVISION,
     }
 
 
