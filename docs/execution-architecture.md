@@ -131,22 +131,59 @@ Discovery and execution are deliberately separate. When the scan runner's
 human comment, `_dispatch` still goes through `execution_router.enqueue`
 (`bridge/jarvis_task_router.py:392-398`) → `_persist_task`
 (`bridge/jarvis_task_router.py:354-376`) → `client.upsert_desired_task`. That
-call advances the Task's **desiredRevision** (a `TASK_UPSERTED` event); it
-never changes the execution **status**. `force=True` is scoped to the
-EphemeralExecutor local dedup ledger (`scan.py:657-661`, gated by
-`not execution_router.is_task(envelope)`); on the control-plane Task path it
-is a no-op and cannot flip an execution state. Repeated `force=True` dispatch
-on a control-plane Task therefore rewrites the desired revision without
-advancing execution — a tracker who only reads the scan log will mistake this
-for "dispatched repeatedly but never leased."
+call advances the Task's **desiredRevision** (a `TASK_UPSERTED` event).
+`force=True` is scoped to the EphemeralExecutor local dedup ledger
+(`scan.py:657-661`, gated by `not execution_router.is_task(envelope)`); on the
+control-plane Task path it does not itself flip an execution state.
+
+**Whether the upsert moves the execution status depends on the status it finds**
+— an earlier revision of this section claimed it "never" does, which is true
+only for the states below and is exactly why the zombie loop went unnoticed for
+weeks:
+
+| Task status when the upsert lands | Effect |
+|---|---|
+| `RUNNING` / `LEASED` | `TASK_UPSERTED RUNNING→RUNNING`. Inert for status. The running Session finishes as `SESSION_COMPLETED RUNNING→READY` instead of `→SUCCEEDED` when desired advanced mid-run, so the newer revision still gets executed. |
+| `RECOVERY_REQUIRED` / `RETRY_WAIT` | Inert (`RECOVERY_REQUIRED→RECOVERY_REQUIRED`). Scan cannot self-heal these; see the Task 471 case below. |
+| `READY` | `READY→READY`. Already queued. |
+| **resting** — `SUCCEEDED` / `FAILED` / `CANCELED` | **Re-arms the Task to `READY`.** A Worker then leases it and runs a full generation. |
+
+That last row is a feature when the revision genuinely advanced (it is how a
+human comment on a finished ticket gets answered) and a defect when it did not.
+The control plane's idempotency cannot tell the two apart, because
+`TaskEnvelope.request_id` hashes the whole envelope rather than the revision:
+`sourceStatus` moving as the ticket advances, an edited title or a reworded
+prompt each mint a fresh key for byte-identical desired state.
+
+So discovery must not re-publish a revision the control plane already holds.
+`ScanRunner._desired_revision_already_published` compares
+`envelope.desired_revision` against the live Task's `desiredRevision` before
+`enqueue` and returns `noop_desired_revision_unchanged` on a match — accepted
+(nothing left to do, so the decision comes to rest and is not replayed) but not
+counted as a dispatch. An unreadable Task falls through to the upsert: one
+duplicate run costs minutes, a suppressed dispatch can lose a human comment
+permanently. Re-arming a genuinely parked Task stays the `recovery` runner's
+job, not discovery's.
+
+Observed case (Task 665, aone 1086837/84202521, 2026-07-19~08-07): `generation`
+reached 12 with `desiredRevision` frozen at
+`modified:2026-07-29-18:22|policy:v6|input:15fc9fc6130092f8`. The timeline holds
+seven `TASK_UPSERTED SUCCEEDED→READY` re-arms plus one `CANCELED→READY` — the
+last of these on 08-07T09:38Z, *after* `TASK_SOURCE_TERMINAL_CONVERGED` had
+already cancelled the Task on a terminal source status. Each re-arm consumed a
+lease slot for 20-40 minutes to re-reach the same conclusion. Five such zombies
+(`gen` 6/8/12/8 and one real run) filled all five slots of the only online
+worker, and new tickets queued behind `ready → NO_FREE_SLOTS`.
 
 What actually controls leaseability:
 
 - `lease_task` (`bridge/jarvis_persistence_executor.py:1104-1161`,
   `client.lease_task` at `bridge/jarvis_task_client.py:407`) only pulls Tasks
-  in `READY`. Tasks in `RECOVERY_REQUIRED`, `RETRY_WAIT`, `SUSPENDED`, or a
-  terminal state are never returned, regardless of how many times scan
-  re-upserts the desired revision. There is no `lease` INFO line for the
+  in `READY`. Tasks in `RECOVERY_REQUIRED`, `RETRY_WAIT` or `SUSPENDED` are
+  never returned, regardless of how many times scan re-upserts the desired
+  revision — unlike a resting Task, which an upsert first moves to `READY` and
+  which is leasable from then on (see the table above). There is no `lease`
+  INFO line for the
   skipped Task because the server simply returns the next matching READY Task
   (or none); only `task lease conflict` / `task lease failed` are logged.
 - Once `retryCount` exceeds `maxRetries` after a `SESSION_FAILED`, the Task

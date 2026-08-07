@@ -46,6 +46,11 @@ from ..model import JobResult, JobResultStatus, ScheduledJobDefinition, is_aware
 
 RUNNER_KEY = "scan"
 
+# `_dispatch` outcome for "the control plane already holds this desired revision".
+# Accepted (there is nothing left to do, so the decision is a resting state) but
+# deliberately not counted as a dispatch: no new generation, no lease, no slot.
+NOOP_DESIRED_REVISION = "noop_desired_revision_unchanged"
+
 # Selects which idle human-signal predicate decides dispatch.
 #   on      (default) cursor gate decides.
 #   shadow  legacy decides; the gate is evaluated too and disagreements logged.
@@ -1386,7 +1391,47 @@ class ScanRunner(AoneQueryMixin):
         if force and _wakeup_enabled():
             if self._maybe_wake(iid):
                 return EnqueueResult(True, "recovery_wakeup_redispatched")
+        if self._desired_revision_already_published(iid, envelope):
+            return EnqueueResult(True, NOOP_DESIRED_REVISION)
         return self.execution_router.enqueue(envelope, local_submit=local_submit)
+
+    def _desired_revision_already_published(self, iid, envelope):
+        """True when the control plane already holds this exact desired revision.
+
+        An upsert is a desired-state write, but on a **resting** Task
+        (SUCCEEDED/FAILED/CANCELED) the control plane also re-arms it to READY.
+        So re-sending a revision it already has is not the harmless no-op this
+        file used to assume: it resurrects a finished Task, a Persistent Worker
+        leases it, and one execution slot burns 20-40 minutes re-reaching the
+        same conclusion. Task 665 collected seven
+        `TASK_UPSERTED SUCCEEDED→READY` events and one `CANCELED→READY` that way
+        — the last one after the sensor had already converged that Task on a
+        terminal source status — and five such zombies filled all five slots of
+        the only online worker until every genuinely new ticket queued behind
+        `NO_FREE_SLOTS`.
+
+        The control plane's own idempotency cannot absorb these: `request_id`
+        hashes the whole envelope, so drift in any unrelated field
+        (`sourceStatus` as the ticket advances, an edited title, a reworded
+        prompt) mints a fresh key for byte-identical desired state.
+
+        Genuinely new work always moves the revision — `comment:<id>` for a new
+        human comment, `modified:<ts>` for an Aone edit, plus the policy/input
+        salt `policy_desired_revision` adds — so equality here means there is
+        nothing left to publish. Re-arming a parked Task is the `recovery`
+        runner's job (see `docs/execution-architecture.md`), not discovery's.
+
+        Unreadable → False, i.e. upsert anyway. One duplicate run costs minutes;
+        a suppressed dispatch can lose a human comment permanently. That is the
+        same bias `_live_task_row` documents.
+        """
+        desired = str(getattr(envelope, "desired_revision", "") or "").strip()
+        if not desired:
+            return False
+        row = _live_task_row(getattr(self.execution_router, "client", None), iid)
+        if not isinstance(row, dict):
+            return False
+        return str(row.get("desiredRevision") or "").strip() == desired
 
     def _maybe_wake(self, iid):
         """force-redispatch a retry-exhausted RECOVERY_REQUIRED Task back to READY.
@@ -1663,9 +1708,15 @@ class ScanRunner(AoneQueryMixin):
                     # The Task upsert was durably accepted → this ticket's decision
                     # is a resting state and may be persisted.
                     conclusive[d["id"]] = modified
-                dispatched.append(d)
-                log.info("scan auto: dispatched #%s %s (force=%s)",
-                         d["id"], d["title"][:80], d.get("force", False))
+                if reason == NOOP_DESIRED_REVISION:
+                    # Desired state was already published, so nothing was re-armed.
+                    # Counting this as a dispatch is what made the zombie
+                    # re-dispatch loop read as healthy throughput in bot.log.
+                    log.info("scan auto: no upsert #%s (%s)", d["id"], reason)
+                else:
+                    dispatched.append(d)
+                    log.info("scan auto: dispatched #%s %s (force=%s)",
+                             d["id"], d["title"][:80], d.get("force", False))
             else:
                 if "jarvis-done" in _tagset(d["item"]):
                     self._done_watch_retry.add(d["id"])
