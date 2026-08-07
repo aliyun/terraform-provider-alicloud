@@ -773,11 +773,13 @@ func (s *GpdbService) GpdbDbInstanceStateRefreshFunc(id string, field string, fa
 }
 
 // GpdbDbInstanceScaleStateRefreshFunc waits until a DescribeDBInstanceAttribute scalar field
-// reaches the expected value while the instance is back to Running. UpgradeDBInstance scaling
-// is asynchronous: the instance keeps reporting Running for a short window before it transitions
-// into the scaling state, so waiting only for Running can return before the new value is applied
-// and leave Read observing the stale value.
-func (s *GpdbService) GpdbDbInstanceScaleStateRefreshFunc(id, field, target string) resource.StateRefreshFunc {
+// reaches the expected value while the instance is back to one of the stable statuses.
+// UpgradeDBInstance scaling is asynchronous: the instance keeps reporting a stable status for
+// a short window before it transitions into the scaling state, so waiting only for the status
+// can return before the new value is applied and leave Read observing the stale value.
+// Most instances settle in Running after scaling, while ServerlessPro instances may settle
+// in Running or IDLE.
+func (s *GpdbService) GpdbDbInstanceScaleStateRefreshFunc(id, field, target string, stableStatuses []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeGpdbDbInstance(id)
 		if err != nil {
@@ -791,8 +793,10 @@ func (s *GpdbService) GpdbDbInstanceScaleStateRefreshFunc(id, field, target stri
 		if _, ok := object[field].(float64); ok {
 			current = fmt.Sprint(formatInt(object[field]))
 		}
-		if status == "Running" && current == target {
-			return object, target, nil
+		for _, stableStatus := range stableStatuses {
+			if status == stableStatus && current == target {
+				return object, target, nil
+			}
 		}
 		// Not settled yet: report a non-target state so the waiter keeps polling.
 		return object, fmt.Sprintf("%s/%s", status, current), nil

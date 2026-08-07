@@ -133,8 +133,8 @@ The following arguments are supported:
 * `maintain_end_time` - (Optional) The end time of the maintenance window for the instance. in the format of HH:mmZ (UTC time), for example 03:00Z. start time should be later than end time.
 * `resource_management_mode` - (Optional, Available since v1.225.0) Resource management mode. Valid values: `resourceGroup`, `resourceQueue`.
 * `serverless_mode` - (Optional, ForceNew, Available since v1.233.1) The mode of the Serverless instance. Valid values: `Manual`, `Auto`. **NOTE:** `serverless_mode` is valid only when `db_instance_mode` is set to `Serverless`.
-* `serverless_resource` - (Optional, ForceNew, Int, Available since v1.287.0) The computing resource threshold, in ACU. Valid values: `16` to `1024`. **NOTE:** `serverless_resource` is valid only when `db_instance_mode` is set to `ServerlessPro`.
-* `cache_storage_size` - (Optional, ForceNew, Int, Available since v1.287.0) The cache storage size, in GB. Valid values: `800` to `102400`. **NOTE:** `cache_storage_size` is valid only when `db_instance_mode` is set to `ServerlessPro`.
+* `serverless_resource` - (Optional, Int, Available since v1.287.0) The computing resource threshold, in ACU. Valid values: `16` to `1024`. **NOTE:** `serverless_resource` is valid only when `db_instance_mode` is set to `ServerlessPro`. The value can be modified in place for `ServerlessPro` instances.
+* `cache_storage_size` - (Optional, Int, Available since v1.287.0) The cache storage size, in GB. Valid values: `800` to `102400`. **NOTE:** `cache_storage_size` is valid only when `db_instance_mode` is set to `ServerlessPro`. The value can be modified in place for `ServerlessPro` instances.
 * `prod_type` - (Optional, ForceNew, Available since v1.233.1) The type of the product. Default value: `standard`. Valid values: `standard`, `cost-effective`.
 * `data_share_status` - (Optional, Available since v1.233.1) Specifies whether to enable or disable data sharing. Default value: `closed`. Valid values:
   - `opened`: Enables data sharing.
