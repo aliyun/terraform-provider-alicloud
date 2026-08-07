@@ -61,6 +61,73 @@ def _nonblank(value: Any, name: str) -> str:
     return text
 
 
+_MAX_SIGNED_INT64 = (1 << 63) - 1
+_MAX_UNRESOLVABLE_SOURCE_CLEANUP_TASKS = 200
+_UNRESOLVABLE_SOURCE_SNAPSHOT_COUNT_FIELDS = (
+    "tasks",
+    "sessions",
+    "events",
+    "operations",
+    "pendingRequiredOperations",
+    "blockingRequiredOperations",
+)
+
+
+def _cleanup_task_ids(task_ids: Any) -> list[int]:
+    """Validate explicit control-plane Task IDs before any HTTP request."""
+    if isinstance(task_ids, (str, bytes, bytearray, Mapping)):
+        raise TypeError("task_ids must be a sequence of control-plane Task IDs")
+    try:
+        values = list(task_ids)
+    except TypeError as exc:
+        raise TypeError(
+            "task_ids must be a sequence of control-plane Task IDs") from exc
+    if not values:
+        raise ValueError("task_ids must not be empty")
+    if len(values) > _MAX_UNRESOLVABLE_SOURCE_CLEANUP_TASKS:
+        raise ValueError("task_ids must not contain more than 200 entries")
+    normalized = []
+    seen = set()
+    for value in values:
+        if isinstance(value, bool) or not isinstance(value, int):
+            raise TypeError("each task_id must be a positive signed int64")
+        if value <= 0 or value > _MAX_SIGNED_INT64:
+            raise ValueError("each task_id must be a positive signed int64")
+        if value in seen:
+            raise ValueError("task_ids must be unique")
+        seen.add(value)
+        normalized.append(value)
+    return normalized
+
+
+def _cleanup_snapshot(expected_snapshot: Any, task_count: int) -> Dict[str, Any]:
+    """Require the complete preview snapshot while preserving it byte-for-field."""
+    if not isinstance(expected_snapshot, Mapping):
+        raise TypeError("expected_snapshot must be a mapping")
+    snapshot = dict(expected_snapshot)
+    missing = [
+        field for field in _UNRESOLVABLE_SOURCE_SNAPSHOT_COUNT_FIELDS
+        if field not in snapshot
+    ]
+    if "taskIdsDigest" not in snapshot:
+        missing.append("taskIdsDigest")
+    if missing:
+        raise ValueError(
+            "expected_snapshot is incomplete; missing %s" % ", ".join(missing))
+    for field in _UNRESOLVABLE_SOURCE_SNAPSHOT_COUNT_FIELDS:
+        value = snapshot[field]
+        if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+            raise ValueError(
+                "expected_snapshot.%s must be a non-negative integer" % field)
+    if not isinstance(snapshot["taskIdsDigest"], str) \
+            or not snapshot["taskIdsDigest"].strip():
+        raise ValueError("expected_snapshot.taskIdsDigest must not be blank")
+    if snapshot["tasks"] != task_count:
+        raise ValueError(
+            "expected_snapshot.tasks must match the number of task_ids")
+    return snapshot
+
+
 def _aone_id_from_task_key(task_key: Any) -> Optional[str]:
     """Return the work-item id encoded by a canonical Aone task key.
 
@@ -221,7 +288,8 @@ class ControlPlaneClient:
     AONE_OWNERSHIP_SNAPSHOT_PATH = "tasks/aone-ownership-snapshot"
     BOARD_STAT_PATH = "board/stats/{stat_key}"
     TASK_ATTENTION_PATH = "tasks/{task_id}/attention"
-    LEGACY_KIND_CLEANUP_PATH = "admin/tasks/legacy-kind/cleanup"
+    UNRESOLVABLE_SOURCE_CLEANUP_PATH = (
+        "admin/tasks/unresolvable-source/cleanup")
     PENDING_AONE_WAITS_PATH = "sessions/waits/aone-reply"
     EXTERNAL_OPERATION_RECOVERY_CANDIDATES_PATH = (
         "operations/external-recovery-candidates")
@@ -934,28 +1002,47 @@ class ControlPlaneClient:
                 hashlib.sha256(material).hexdigest()[:32])
         return self._post(path, payload, request_id=rid)
 
-    def preview_legacy_kind_cleanup(self) -> Any:
-        """Preview residual tasks whose task_type is a deprecated execution kind.
+    def preview_unresolvable_source_cleanup(self, task_ids: Any) -> Dict[str, Any]:
+        """Preview deletion of explicit control-plane Tasks with lost source data."""
+        ids = _cleanup_task_ids(task_ids)
+        return self._post(
+            self.UNRESOLVABLE_SOURCE_CLEANUP_PATH + "/preview",
+            {"taskIds": ids},
+            admin=True,
+        )
 
-        Read-only. Returns the snapshot (counts + SHA-256 task-id digest), active
-        blockers, an ``executable`` flag, and the deprecated ``taskTypes`` allowlist.
+    def cleanup_unresolvable_source_tasks(
+            self, *, task_ids: Any, expected_snapshot: Mapping[str, Any], reason: str,
+            request_id: Optional[str] = None) -> Dict[str, Any]:
+        """Delete the exact IDs and complete snapshot returned by the preview.
+
+        The endpoint has no replay receipt. A successful request removes the Tasks,
+        so replaying it is expected to fail server-side as unknown IDs.
         """
-        return self._get(self.LEGACY_KIND_CLEANUP_PATH, admin=True)
+        ids = _cleanup_task_ids(task_ids)
+        snapshot = _cleanup_snapshot(expected_snapshot, len(ids))
+        return self._post(self.UNRESOLVABLE_SOURCE_CLEANUP_PATH, {
+            "confirmation": "DELETE_UNRESOLVABLE_SOURCE_TASKS",
+            "expectedSnapshot": snapshot,
+            "taskIds": ids,
+            "reason": _nonblank(reason, "reason"),
+        }, request_id=request_id, admin=True)
+
+    def preview_legacy_kind_cleanup(self) -> Any:
+        """Tombstone for the retired task-type-wide cleanup contract."""
+        raise ControlPlaneError(
+            "legacy cleanup was retired; use "
+            "preview_unresolvable_source_cleanup([CONTROL_PLANE_TASK_ID]) or "
+            "control-plane-status unresolvable-source-cleanup TASK_ID...")
 
     def cleanup_legacy_kind_tasks(self, expected_snapshot: Mapping[str, Any],
                                   confirmation: str, *,
                                   request_id: Optional[str] = None) -> Dict[str, Any]:
-        """Delete the exact previewed set of deprecated-kind residual tasks.
-
-        The control plane re-validates ``expectedSnapshot`` against a fresh scan and
-        rejects with 409 if anything changed, or if active tasks/sessions block it.
-        """
-        if not isinstance(expected_snapshot, Mapping):
-            raise TypeError("expected_snapshot must be a mapping")
-        return self._post(self.LEGACY_KIND_CLEANUP_PATH, {
-            "confirmation": _nonblank(confirmation, "confirmation"),
-            "expectedSnapshot": dict(expected_snapshot),
-        }, request_id=request_id, admin=True)
+        """Tombstone for the retired task-type-wide cleanup contract."""
+        del expected_snapshot, confirmation, request_id
+        raise ControlPlaneError(
+            "legacy cleanup was retired; use cleanup_unresolvable_source_tasks("
+            "task_ids=..., expected_snapshot=..., reason=...) with a fresh preview")
 
     def list_source_status_candidates(self, *, after_task_id: int = 0,
                                       limit: int = 100) -> Any:

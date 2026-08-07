@@ -10,16 +10,19 @@
 
 凭证由 wrapper 经共享 machine runtime loader 加载。普通诊断/恢复命令使用
 JARVIS_CONTROL_PLANE_TOKEN（可由 JARVIS_HTML_REPORT_TOKEN 回填）；
-``legacy-cleanup`` 只使用独立的 JARVIS_CONTROL_PLANE_ADMIN_TOKEN。
+``unresolvable-source-cleanup`` 只使用独立的
+JARVIS_CONTROL_PLANE_ADMIN_TOKEN。``legacy-cleanup`` 是零网络墓碑命令。
 控制面地址可显式覆盖，默认指向生产控制面。
 本文件只读环境变量、不读 env 文件。``discard-resume``、``force-release`` 和
-``force-redispatch`` 是写操作，且必须显式 ``--yes``。
+``force-redispatch`` 是写操作，且必须显式 ``--yes``；
+``unresolvable-source-cleanup`` 只有带 ``--yes`` 时才写，并额外要求非空 reason。
 
 退出码：0=成功；1=控制面无该工单任务；2=参数/凭证问题；3=控制面请求失败；
 4=Task 输入不满足跨 Runtime 契约。
 """
 
 import argparse
+import hashlib
 import os
 import sys
 from pathlib import Path
@@ -31,7 +34,9 @@ sys.path.append(str(Path(__file__).resolve().parent.parent / "bridge"))
 from jarvis_task_client import (  # noqa: E402
     ControlPlaneClient,
     ControlPlaneError,
+    ControlPlaneUnavailable,
     DEFAULT_CONTROL_PLANE_BASE_URL,
+    InvalidResponse,
 )
 from task_input_contract import (  # noqa: E402
     TaskInputContractError,
@@ -39,6 +44,15 @@ from task_input_contract import (  # noqa: E402
 )
 
 EVENT_TAIL = 5  # task 视图只列最近 N 条 event（全量看服务端 timeline）
+MAX_SIGNED_INT64 = (1 << 63) - 1
+CLEANUP_SNAPSHOT_COUNT_FIELDS = (
+    "tasks",
+    "sessions",
+    "events",
+    "operations",
+    "pendingRequiredOperations",
+    "blockingRequiredOperations",
+)
 
 
 def _client(command):
@@ -47,11 +61,11 @@ def _client(command):
     token = os.environ.get("JARVIS_CONTROL_PLANE_TOKEN", "").strip()
     admin_token = os.environ.get("JARVIS_CONTROL_PLANE_ADMIN_TOKEN", "").strip()
     timeout = float(os.environ.get("JARVIS_CONTROL_PLANE_TIMEOUT", "10"))
-    if command == "legacy-cleanup":
+    if command == "unresolvable-source-cleanup":
         if not admin_token:
             sys.stderr.write(
                 "error: JARVIS_CONTROL_PLANE_ADMIN_TOKEN is not configured; "
-                "legacy-cleanup never falls back to the worker token\n")
+                "unresolvable-source-cleanup never falls back to the worker token\n")
             raise SystemExit(2)
         # This command only calls /admin/**. Do not retain the ordinary worker
         # token in its client, even when both credentials exist in the runtime.
@@ -65,6 +79,118 @@ def _client(command):
     # Non-admin commands do not retain the privileged credential. Their HTTP
     # requests can only authenticate with the ordinary control-plane token.
     return ControlPlaneClient(base, token, timeout=timeout)
+
+
+def _control_plane_task_id(value):
+    try:
+        task_id = int(value)
+    except (TypeError, ValueError) as exc:
+        raise argparse.ArgumentTypeError(
+            "TASK_ID must be a positive control-plane Task ID (not an Aone ID)"
+        ) from exc
+    if task_id <= 0 or task_id > MAX_SIGNED_INT64:
+        raise argparse.ArgumentTypeError(
+            "TASK_ID must be a positive signed int64 control-plane Task ID")
+    return task_id
+
+
+def _validate_cleanup_arguments(task_ids, reason, yes):
+    if len(task_ids) > 200:
+        return "at most 200 control-plane Task IDs may be cleaned at once"
+    if len(set(task_ids)) != len(task_ids):
+        return "control-plane Task IDs must be unique"
+    if yes and not str(reason or "").strip():
+        return "--yes requires a nonblank --reason TEXT"
+    return ""
+
+
+def _validate_cleanup_preview(preview, requested_task_ids):
+    """Return the complete CAS tuple or a reason why deletion must not proceed."""
+    if not isinstance(preview, dict):
+        raise ValueError("preview response must be an object")
+    required_root = ("snapshot", "activeTasks", "activeSessions", "executable", "taskIds")
+    missing_root = [field for field in required_root if field not in preview]
+    if missing_root:
+        raise ValueError(
+            "preview response is incomplete; missing %s" % ", ".join(missing_root))
+    snapshot = preview["snapshot"]
+    if not isinstance(snapshot, dict):
+        raise ValueError("preview.snapshot must be an object")
+    missing_snapshot = [
+        field for field in CLEANUP_SNAPSHOT_COUNT_FIELDS
+        if field not in snapshot
+    ]
+    if "taskIdsDigest" not in snapshot:
+        missing_snapshot.append("taskIdsDigest")
+    if missing_snapshot:
+        raise ValueError(
+            "preview.snapshot is incomplete; missing %s"
+            % ", ".join(missing_snapshot))
+    for field in CLEANUP_SNAPSHOT_COUNT_FIELDS:
+        value = snapshot[field]
+        if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+            raise ValueError(
+                "preview.snapshot.%s must be a non-negative integer" % field)
+    digest = snapshot["taskIdsDigest"]
+    if not isinstance(digest, str) or not digest.strip():
+        raise ValueError("preview.snapshot.taskIdsDigest must not be blank")
+    for field in ("activeTasks", "activeSessions"):
+        value = preview[field]
+        if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+            raise ValueError("preview.%s must be a non-negative integer" % field)
+    if not isinstance(preview["executable"], bool):
+        raise ValueError("preview.executable must be a boolean")
+    task_ids = preview["taskIds"]
+    if not isinstance(task_ids, list) or not task_ids:
+        raise ValueError("preview.taskIds must be a nonempty array")
+    if any(isinstance(value, bool) or not isinstance(value, int)
+           or value <= 0 or value > MAX_SIGNED_INT64 for value in task_ids):
+        raise ValueError("preview.taskIds must contain positive signed int64 values")
+    if len(set(task_ids)) != len(task_ids) or task_ids != sorted(task_ids):
+        raise ValueError("preview.taskIds must be sorted and unique")
+    if sorted(requested_task_ids) != task_ids:
+        raise ValueError(
+            "preview.taskIds does not match the requested control-plane Task IDs")
+    if snapshot["tasks"] != len(task_ids):
+        raise ValueError("preview.snapshot.tasks does not match preview.taskIds")
+    canonical = ",".join(str(task_id) for task_id in task_ids).encode("utf-8")
+    expected_digest = hashlib.sha256(canonical).hexdigest()
+    if snapshot["taskIdsDigest"] != expected_digest:
+        raise ValueError(
+            "preview.snapshot.taskIdsDigest does not match canonical preview.taskIds")
+    return snapshot, task_ids
+
+
+def _validate_cleanup_result(result, expected_snapshot, expected_task_ids):
+    """Validate the server's destructive response before claiming deletion."""
+    if not isinstance(result, dict):
+        raise ValueError("cleanup response must be an object")
+    before = result.get("before")
+    after = result.get("after")
+    deleted = result.get("deletedTaskIds")
+    if not isinstance(before, dict) or before != expected_snapshot:
+        raise ValueError("cleanup.before does not equal the preview snapshot")
+    if not isinstance(after, dict):
+        raise ValueError("cleanup.after must be an object")
+    missing_after = [
+        field for field in CLEANUP_SNAPSHOT_COUNT_FIELDS
+        if field not in after
+    ]
+    if "taskIdsDigest" not in after:
+        missing_after.append("taskIdsDigest")
+    if missing_after:
+        raise ValueError(
+            "cleanup.after is incomplete; missing %s" % ", ".join(missing_after))
+    if any(isinstance(after[field], bool) or not isinstance(after[field], int)
+           or after[field] != 0 for field in CLEANUP_SNAPSHOT_COUNT_FIELDS):
+        raise ValueError("cleanup.after counts did not converge to zero")
+    if after["taskIdsDigest"] != expected_snapshot["taskIdsDigest"]:
+        raise ValueError(
+            "cleanup.after.taskIdsDigest does not preserve the canonical target digest")
+    if deleted != expected_task_ids:
+        raise ValueError(
+            "cleanup.deletedTaskIds does not equal the normalized preview taskIds")
+    return before, after, deleted
 
 
 def _trunc(text, limit):
@@ -447,40 +573,74 @@ def cmd_force_redispatch(
     return 0
 
 
-def cmd_legacy_cleanup(client, yes):
-    preview = client.preview_legacy_kind_cleanup()
-    if not isinstance(preview, dict):
-        sys.stderr.write("error: unexpected legacy-cleanup preview response\n")
+def cmd_legacy_cleanup():
+    sys.stderr.write(
+        "error: legacy-cleanup was retired and sent no HTTP request; use "
+        "unresolvable-source-cleanup CONTROL_PLANE_TASK_ID... to preview, then "
+        "repeat with --reason TEXT --yes\n")
+    return 2
+
+
+def cmd_unresolvable_source_cleanup(client, task_ids, reason, yes):
+    preview = client.preview_unresolvable_source_cleanup(task_ids)
+    try:
+        snapshot, normalized_ids = _validate_cleanup_preview(preview, task_ids)
+    except ValueError as exc:
+        sys.stderr.write(
+            "error: malformed unresolvable-source cleanup preview; deletion was not "
+            "attempted: %s\n" % exc)
         return 3
-    snapshot = preview.get("snapshot") if isinstance(preview.get("snapshot"), dict) else {}
-    task_types = preview.get("taskTypes") or []
-    executable = bool(preview.get("executable"))
-    print("legacy-kind residual tasks (task_type in %s):" % (task_types or "-"))
-    print("  tasks=%s sessions=%s events=%s operations=%s pendingRequiredOps=%s" % (
-        snapshot.get("tasks", 0), snapshot.get("sessions", 0), snapshot.get("events", 0),
-        snapshot.get("operations", 0), snapshot.get("pendingRequiredOperations", 0)))
+
+    print("unresolvable-source cleanup preview:")
+    print("  controlPlaneTaskIds=%s (control-plane Task IDs, not Aone IDs)" %
+          ",".join(str(task_id) for task_id in normalized_ids))
+    print(
+        "  tasks=%s sessions=%s events=%s operations=%s "
+        "pendingRequiredOperations=%s blockingRequiredOperations=%s"
+        % tuple(snapshot[field] for field in CLEANUP_SNAPSHOT_COUNT_FIELDS))
     print("  activeTasks=%s activeSessions=%s executable=%s digest=%s" % (
-        preview.get("activeTasks", 0), preview.get("activeSessions", 0),
-        executable, snapshot.get("taskIdsDigest", "-")))
-    if int(snapshot.get("tasks", 0) or 0) == 0:
-        print("nothing to clean up.")
-        return 0
+        preview["activeTasks"], preview["activeSessions"],
+        preview["executable"], snapshot["taskIdsDigest"]))
+
     if not yes:
+        print(
+            "preview only; no rows deleted. After review, repeat with "
+            "--reason TEXT --yes.")
+        return 0
+
+    blockers = (
+        preview["activeTasks"],
+        preview["activeSessions"],
+        snapshot["blockingRequiredOperations"],
+    )
+    if not preview["executable"] or any(blockers):
         sys.stderr.write(
-            "error: legacy-cleanup deletes the exact previewed residual tasks and their "
-            "session/event/operation rows; review the preview above and pass --yes\n")
-        return 2
-    if not executable:
-        sys.stderr.write(
-            "error: legacy-cleanup is blocked by active tasks or active sessions; "
-            "retry after they settle\n")
+            "error: cleanup blocked; requires executable=true, activeTasks=0, "
+            "activeSessions=0, and blockingRequiredOperations=0\n")
         return 3
-    result = client.cleanup_legacy_kind_tasks(
-        snapshot, "DELETE_LEGACY_KIND_TASKS",
-        request_id="legacy-kind-cleanup:%s" % snapshot.get("taskIdsDigest", ""))
-    before = result.get("before") if isinstance(result.get("before"), dict) else {}
-    after = result.get("after") if isinstance(result.get("after"), dict) else {}
-    print("deleted legacy-kind tasks: before=%s after=%s" % (
+
+    try:
+        result = client.cleanup_unresolvable_source_tasks(
+            task_ids=normalized_ids,
+            expected_snapshot=snapshot,
+            reason=str(reason).strip(),
+        )
+    except (ControlPlaneUnavailable, InvalidResponse) as exc:
+        sys.stderr.write(
+            "error: cleanup outcome is post-uncertain (%s); do not replay because "
+            "the server has no idempotent receipt—inspect the Task IDs first\n" % exc)
+        return 3
+    try:
+        before, after, deleted = _validate_cleanup_result(
+            result, snapshot, normalized_ids)
+    except ValueError as exc:
+        sys.stderr.write(
+            "error: cleanup response is post-uncertain (%s); do not replay because "
+            "the server has no idempotent receipt—inspect the Task IDs first\n" % exc)
+        return 3
+    print("deleted control-plane Task IDs: %s" % (
+        ",".join(str(task_id) for task_id in deleted) or "-"))
+    print("  before.tasks=%s after.tasks=%s" % (
         before.get("tasks", "?"), after.get("tasks", "?")))
     return 0
 
@@ -541,10 +701,29 @@ def main(argv=None):
         "--yes", action="store_true", help="confirm cross-machine redispatch")
     p_legacy = sub.add_parser(
         "legacy-cleanup",
-        help="preview (default) / delete residual tasks of deprecated kinds (e.g. field_repair)")
+        help="retired cleanup command; prints migration usage and sends no HTTP")
     p_legacy.add_argument("--yes", action="store_true",
-                          help="confirm deletion of the exact previewed residual tasks")
+                          help=argparse.SUPPRESS)
+    p_cleanup = sub.add_parser(
+        "unresolvable-source-cleanup",
+        help="preview/delete explicitly selected control-plane Tasks whose source is unresolvable")
+    p_cleanup.add_argument(
+        "task_ids", nargs="+", type=_control_plane_task_id, metavar="TASK_ID",
+        help="positive control-plane Task ID (not an Aone work-item ID; max 200)")
+    p_cleanup.add_argument(
+        "--reason", help="nonblank audit reason (required with --yes)")
+    p_cleanup.add_argument(
+        "--yes", action="store_true",
+        help="delete only the complete, executable preview snapshot")
     args = parser.parse_args(argv)
+    if args.cmd == "legacy-cleanup":
+        return cmd_legacy_cleanup()
+    if args.cmd == "unresolvable-source-cleanup":
+        argument_error = _validate_cleanup_arguments(
+            args.task_ids, args.reason, args.yes)
+        if argument_error:
+            sys.stderr.write("error: %s\n" % argument_error)
+            return 2
     client = _client(args.cmd)
     try:
         if args.cmd == "workers":
@@ -555,8 +734,9 @@ def main(argv=None):
             return cmd_task(client, args.aone_id)
         if args.cmd == "operation":
             return cmd_operation(client, args.operation_id)
-        if args.cmd == "legacy-cleanup":
-            return cmd_legacy_cleanup(client, args.yes)
+        if args.cmd == "unresolvable-source-cleanup":
+            return cmd_unresolvable_source_cleanup(
+                client, args.task_ids, args.reason, args.yes)
         if args.cmd == "force-release":
             return cmd_force_release(
                 client, args.task_id, args.session_id, args.reason, args.yes)
@@ -566,6 +746,9 @@ def main(argv=None):
                 args.target_worker, args.target_host, args.target_runtime)
         return cmd_discard_resume(
             client, args.task_id, args.session_id, args.reason, args.yes)
+    except (TypeError, ValueError) as e:
+        sys.stderr.write("error: %s\n" % e)
+        return 2
     except ControlPlaneError as e:
         sys.stderr.write("error: %s\n" % e)
         return 3

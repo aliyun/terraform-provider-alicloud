@@ -56,6 +56,14 @@ class ControlPlaneError(RuntimeError):
         self.status = status
 
 
+class ControlPlaneUnavailable(ControlPlaneError):
+    pass
+
+
+class InvalidResponse(ControlPlaneError):
+    pass
+
+
 DEFAULT_CONTROL_PLANE_BASE_URL = "https://agent.aliyun-inc.com"
 
 
@@ -255,17 +263,62 @@ class ControlPlaneClient:
             },
         }
 
-    def preview_legacy_kind_cleanup(self):
-        return {
-            "snapshot": {
-                "tasks": 0, "sessions": 0, "events": 0, "operations": 0,
-                "pendingRequiredOperations": 0, "taskIdsDigest": "empty",
-            },
-            "taskTypes": ["field_repair"],
-            "activeTasks": 0,
-            "activeSessions": 0,
-            "executable": True,
+    def preview_unresolvable_source_cleanup(self, task_ids):
+        if task_ids != [42, 11]:
+            raise SystemExit("stub: unexpected preview Task IDs %r" % task_ids)
+        mode = os.environ.get("STUB_MODE")
+        snapshot = {
+            "tasks": 2, "sessions": 2, "events": 6, "operations": 2,
+            "pendingRequiredOperations": 1,
+            "blockingRequiredOperations": 0,
+            "taskIdsDigest":
+                "e8c6be00eb7135170c95468e0a3b757b263063396701e8c082e2457730c435d2",
         }
+        active_tasks = 1 if mode == "cleanup_active_task" else 0
+        active_sessions = 1 if mode == "cleanup_active_session" else 0
+        if mode == "cleanup_blocking_operation":
+            snapshot["blockingRequiredOperations"] = 1
+        if mode == "cleanup_bad_digest":
+            snapshot["taskIdsDigest"] = "not-the-canonical-digest"
+        preview = {
+            "snapshot": snapshot,
+            "activeTasks": active_tasks,
+            "activeSessions": active_sessions,
+            "executable": not (
+                active_tasks or active_sessions
+                or snapshot["blockingRequiredOperations"]),
+            "taskIds": [11, 42],
+        }
+        if mode == "cleanup_malformed_preview":
+            del preview["snapshot"]["blockingRequiredOperations"]
+        return preview
+
+    def cleanup_unresolvable_source_tasks(
+            self, *, task_ids, expected_snapshot, reason, request_id=None):
+        mode = os.environ.get("STUB_MODE")
+        if mode in {
+                "cleanup_active_task", "cleanup_active_session",
+                "cleanup_blocking_operation", "cleanup_malformed_preview",
+                "cleanup_bad_digest"}:
+            raise SystemExit("stub: cleanup must not run for blocked/malformed preview")
+        expected = {
+            "tasks": 2, "sessions": 2, "events": 6, "operations": 2,
+            "pendingRequiredOperations": 1,
+            "blockingRequiredOperations": 0,
+            "taskIdsDigest":
+                "e8c6be00eb7135170c95468e0a3b757b263063396701e8c082e2457730c435d2",
+        }
+        if (task_ids != [11, 42] or expected_snapshot != expected
+                or reason != "source record removed" or request_id is not None):
+            raise SystemExit(
+                "stub: cleanup did not forward normalized IDs/full snapshot/reason")
+        after = dict(expected)
+        for field in (
+                "tasks", "sessions", "events", "operations",
+                "pendingRequiredOperations", "blockingRequiredOperations"):
+            after[field] = 0
+        deleted = [42, 11] if mode == "cleanup_bad_result" else [11, 42]
+        return {"before": expected, "after": after, "deletedTaskIds": deleted}
 PY
 
 # 统一调用姿势：env 文件覆盖到临时目录；清空四个凭证 env（空串=未配置）；PYTHONPATH 前插 stub。
@@ -305,20 +358,102 @@ out="$(OVERRIDE_ADMIN_TOKEN=admin-only run_cli workers 2>&1)"; rc=$?
 has "JARVIS_CONTROL_PLANE_TOKEN" "$out" "workers still requires worker token"
 hasnot "admin-only" "$out" "workers error does not print admin token"
 
-out="$(OVERRIDE_TOKEN=worker-only run_cli legacy-cleanup 2>&1)"; rc=$?
-[ $rc -eq 2 ] && ok "legacy-cleanup never falls back to worker token" || \
-  no "legacy-cleanup with only worker token rc=$rc (want 2)"
+out="$(OVERRIDE_TOKEN=worker-only \
+  run_cli unresolvable-source-cleanup 42 11 2>&1)"; rc=$?
+[ $rc -eq 2 ] && ok "unresolvable cleanup never falls back to worker token" || \
+  no "unresolvable cleanup with only worker token rc=$rc (want 2)"
 has "JARVIS_CONTROL_PLANE_ADMIN_TOKEN" "$out" \
-  "legacy-cleanup names its independent credential"
-hasnot "worker-only" "$out" "legacy-cleanup error does not print worker token"
+  "unresolvable cleanup names its independent credential"
+hasnot "worker-only" "$out" "cleanup error does not print worker token"
 
 out="$(OVERRIDE_TOKEN=worker-only OVERRIDE_ADMIN_TOKEN=admin-only \
   STUB_EXPECT_TOKEN= STUB_EXPECT_ADMIN_TOKEN=admin-only \
-  run_cli legacy-cleanup 2>&1)"; rc=$?
-[ $rc -eq 0 ] && ok "legacy-cleanup accepts admin token without retaining worker token" || \
-  no "legacy-cleanup admin-token rc=$rc: $out"
-has "nothing to clean up" "$out" "legacy-cleanup reaches admin preview"
-hasnot "admin-only" "$out" "legacy-cleanup output does not print admin token"
+  run_cli unresolvable-source-cleanup 42 11 2>&1)"; rc=$?
+[ $rc -eq 0 ] && ok "cleanup preview accepts only the admin token" || \
+  no "cleanup preview admin-token rc=$rc: $out"
+has "controlPlaneTaskIds=11,42" "$out" "preview prints normalized Task IDs"
+has "blockingRequiredOperations=0" "$out" "preview prints the complete snapshot"
+has "preview only; no rows deleted" "$out" "default invocation is preview-only"
+hasnot "admin-only" "$out" "cleanup output does not print admin token"
+
+out="$(STUB_EXPECT_BASE=http://must-not-be-used run_cli legacy-cleanup 2>&1)"; rc=$?
+[ $rc -eq 2 ] && ok "legacy-cleanup is a zero-network tombstone" || \
+  no "legacy-cleanup tombstone rc=$rc: $out"
+has "unresolvable-source-cleanup CONTROL_PLANE_TASK_ID" "$out" \
+  "legacy-cleanup prints migration usage"
+has "sent no HTTP request" "$out" "legacy-cleanup explicitly confirms zero HTTP"
+
+# ── 4b) 显式 Task ID cleanup：参数门、blocker、完整 CAS 与 post-uncertain ────
+out="$(OVERRIDE_ADMIN_TOKEN=admin-only STUB_EXPECT_BASE=http://must-not-be-used \
+  run_cli unresolvable-source-cleanup 42 11 --yes 2>&1)"; rc=$?
+[ $rc -eq 2 ] && ok "cleanup --yes requires a reason before client creation" || \
+  no "cleanup missing reason rc=$rc: $out"
+has "--yes requires a nonblank --reason" "$out" "cleanup explains reason gate"
+
+out="$(OVERRIDE_ADMIN_TOKEN=admin-only STUB_EXPECT_BASE=http://must-not-be-used \
+  run_cli unresolvable-source-cleanup 11 11 2>&1)"; rc=$?
+[ $rc -eq 2 ] && ok "cleanup rejects duplicate Task IDs before client creation" || \
+  no "cleanup duplicate IDs rc=$rc: $out"
+has "Task IDs must be unique" "$out" "cleanup explains unique-ID gate"
+
+out="$(OVERRIDE_ADMIN_TOKEN=admin-only STUB_EXPECT_BASE=http://must-not-be-used \
+  run_cli unresolvable-source-cleanup 0 2>&1)"; rc=$?
+[ $rc -eq 2 ] && ok "cleanup rejects nonpositive Task IDs" || \
+  no "cleanup zero ID rc=$rc: $out"
+has "positive signed int64 control-plane Task ID" "$out" \
+  "cleanup identifies the control-plane Task ID contract"
+
+out="$(OVERRIDE_ADMIN_TOKEN=admin-only STUB_EXPECT_TOKEN= \
+  STUB_EXPECT_ADMIN_TOKEN=admin-only \
+  run_cli unresolvable-source-cleanup 42 11 \
+  --reason 'source record removed' --yes 2>&1)"; rc=$?
+[ $rc -eq 0 ] && ok "cleanup forwards normalized IDs and the full preview CAS" || \
+  no "cleanup confirmed rc=$rc: $out"
+has "deleted control-plane Task IDs: 11,42" "$out" \
+  "cleanup prints deletion only after consistent response"
+has "before.tasks=2 after.tasks=0" "$out" "cleanup prints before/after counts"
+hasnot "admin-only" "$out" "confirmed cleanup does not print admin token"
+
+for mode in cleanup_active_task cleanup_active_session cleanup_blocking_operation; do
+  out="$(OVERRIDE_ADMIN_TOKEN=admin-only STUB_MODE="$mode" \
+    run_cli unresolvable-source-cleanup 42 11 \
+    --reason 'source record removed' --yes 2>&1)"; rc=$?
+  [ $rc -eq 3 ] && ok "cleanup blocks $mode preview" || \
+    no "cleanup $mode rc=$rc: $out"
+  has "cleanup blocked" "$out" "cleanup explains $mode blocker"
+  hasnot "deleted control-plane Task IDs" "$out" \
+    "cleanup never claims deletion for $mode"
+done
+
+out="$(OVERRIDE_ADMIN_TOKEN=admin-only STUB_MODE=cleanup_malformed_preview \
+  run_cli unresolvable-source-cleanup 42 11 \
+  --reason 'source record removed' --yes 2>&1)"; rc=$?
+[ $rc -eq 3 ] && ok "cleanup rejects an incomplete preview" || \
+  no "cleanup malformed preview rc=$rc: $out"
+has "missing blockingRequiredOperations" "$out" \
+  "cleanup names the incomplete snapshot field"
+hasnot "deleted control-plane Task IDs" "$out" \
+  "cleanup never runs after a malformed preview"
+
+out="$(OVERRIDE_ADMIN_TOKEN=admin-only STUB_MODE=cleanup_bad_digest \
+  run_cli unresolvable-source-cleanup 42 11 \
+  --reason 'source record removed' --yes 2>&1)"; rc=$?
+[ $rc -eq 3 ] && ok "cleanup rejects a preview with a noncanonical digest" || \
+  no "cleanup bad preview digest rc=$rc: $out"
+has "taskIdsDigest does not match canonical preview.taskIds" "$out" \
+  "cleanup validates the server digest semantics"
+hasnot "deleted control-plane Task IDs" "$out" \
+  "cleanup never runs after a bad preview digest"
+
+out="$(OVERRIDE_ADMIN_TOKEN=admin-only STUB_MODE=cleanup_bad_result \
+  run_cli unresolvable-source-cleanup 42 11 \
+  --reason 'source record removed' --yes 2>&1)"; rc=$?
+[ $rc -eq 3 ] && ok "cleanup treats an inconsistent success DTO as post-uncertain" || \
+  no "cleanup inconsistent result rc=$rc: $out"
+has "post-uncertain" "$out" "cleanup labels an inconsistent result post-uncertain"
+has "do not replay" "$out" "cleanup warns that the endpoint has no receipt"
+hasnot "deleted control-plane Task IDs" "$out" \
+  "cleanup does not claim deletion for an inconsistent result"
 
 # ── 5) 默认生产 base url + JARVIS_HTML_REPORT_TOKEN 回退 ─────────────────────
 printf 'JARVIS_HTML_REPORT_TOKEN=sekrit-token\n' >"$JENV"

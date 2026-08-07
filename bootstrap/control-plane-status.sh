@@ -15,14 +15,16 @@
 #                      --target-runtime INTERACTIVE|PERSISTENT --reason TEXT --yes
 #                      原子隔离旧 Session，并定向到另一台在线兼容 Worker；
 #                      READY 只表示已定向排队，不表示目标 Worker 已开始执行
-#   legacy-cleanup [--yes]
-#                      预览（默认）/删除 task_type 为已废弃 kind（如 field_repair）的
-#                      残留僵尸 Task 及其 session/event/operation 行；带 --yes 才删，
-#                      服务端按精确快照+active 守护，改动后 409。
+#   unresolvable-source-cleanup TASK_ID... [--reason TEXT] [--yes]
+#                      TASK_ID 是 control-plane Task ID，不是 Aone ID。默认只预览；
+#                      --yes 还必须带非空 reason，且仅删除服务端回显的规范化 ID 和
+#                      完整 CAS 快照。active Task/Session 或 blocking required operation
+#                      会阻断删除。
+#   legacy-cleanup     已退役墓碑：只打印迁移用法，绝不发 HTTP。
 #
 # 环境加载与 run-interactive-worker-hook.sh 同源：主仓 gitignored bootstrap/.env +
 # bridge/jarvis.env；普通命令 token 缺省回退 JARVIS_HTML_REPORT_TOKEN；
-# legacy-cleanup 只接受 JARVIS_CONTROL_PLANE_ADMIN_TOKEN，绝不回退普通 token。
+# unresolvable-source-cleanup 只接受 JARVIS_CONTROL_PLANE_ADMIN_TOKEN，绝不回退普通 token。
 # 控制面 base url 可由 JARVIS_CONTROL_PLANE_BASE_URL /
 # JARVIS_HTML_REPORT_BASE_URL 覆盖，默认生产控制面。
 # 实现体在同目录 control-plane-status.py。

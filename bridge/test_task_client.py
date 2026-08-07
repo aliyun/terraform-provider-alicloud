@@ -78,6 +78,18 @@ def body(req):
     return json.loads(req.data.decode())
 
 
+def cleanup_snapshot(tasks=2, blocking=0):
+    return {
+        "tasks": tasks,
+        "sessions": tasks,
+        "events": tasks * 3,
+        "operations": tasks,
+        "pendingRequiredOperations": blocking,
+        "blockingRequiredOperations": blocking,
+        "taskIdsDigest": "digest-%s" % tasks,
+    }
+
+
 class TaskEnvelopeTest(unittest.TestCase):
     def test_serializes_and_omits_empty_optional_fields(self):
         env = envelope()
@@ -197,19 +209,24 @@ class ClientContractTest(unittest.TestCase):
             "https://pre-agent.example/", "super-secret",
             admin_token=admin_token, timeout=4.5, opener=opener)
 
-    def test_admin_get_uses_admin_token_not_worker_token(self):
+    def test_admin_preview_post_uses_admin_token_not_worker_token(self):
         opener = RecordingOpener(responses=[FakeResponse({"executable": False})])
         client = self.make_admin(opener)
-        client.preview_legacy_kind_cleanup()
+        client.preview_unresolvable_source_cleanup([7])
         req, _timeout = opener.calls[0]
+        self.assertEqual(req.get_method(), "POST")
         self.assertEqual(req.full_url,
-                         "https://pre-agent.example/api/jarvis/v1/admin/tasks/legacy-kind/cleanup")
+                         "https://pre-agent.example/api/jarvis/v1/admin/tasks/"
+                         "unresolvable-source/cleanup/preview")
         self.assertEqual(headers(req)["authorization"], "Bearer admin-secret")
+        self.assertEqual(body(req), {"taskIds": [7]})
 
     def test_admin_post_uses_admin_token(self):
         opener = RecordingOpener(responses=[FakeResponse({"deleted": 0})])
         client = self.make_admin(opener)
-        client.cleanup_legacy_kind_tasks({"counts": 0}, "CLEANUP")
+        client.cleanup_unresolvable_source_tasks(
+            task_ids=[7], expected_snapshot=cleanup_snapshot(tasks=1),
+            reason="operator reviewed")
         req, _timeout = opener.calls[0]
         self.assertEqual(headers(req)["authorization"], "Bearer admin-secret")
 
@@ -219,10 +236,23 @@ class ClientContractTest(unittest.TestCase):
                 opener = RecordingOpener()
                 client = self.make_admin(opener, admin_token=missing)
                 with self.assertRaises(ControlPlaneError):
-                    client.preview_legacy_kind_cleanup()
+                    client.preview_unresolvable_source_cleanup([7])
                 with self.assertRaises(ControlPlaneError):
-                    client.cleanup_legacy_kind_tasks({"counts": 0}, "CLEANUP")
+                    client.cleanup_unresolvable_source_tasks(
+                        task_ids=[7], expected_snapshot=cleanup_snapshot(tasks=1),
+                        reason="operator reviewed")
                 self.assertEqual(opener.calls, [])  # no request ever sent
+
+    def test_legacy_cleanup_methods_are_zero_network_tombstones(self):
+        opener = RecordingOpener()
+        client = self.make_admin(opener)
+        with self.assertRaisesRegex(
+                ControlPlaneError, "preview_unresolvable_source_cleanup"):
+            client.preview_legacy_kind_cleanup()
+        with self.assertRaisesRegex(
+                ControlPlaneError, "cleanup_unresolvable_source_tasks"):
+            client.cleanup_legacy_kind_tasks({"old": True}, "DELETE")
+        self.assertEqual(opener.calls, [])
 
     def test_endpoint_namespace_and_credential_mode_must_match(self):
         opener = RecordingOpener()
@@ -859,43 +889,76 @@ class ClientContractTest(unittest.TestCase):
         })
         self.assertEqual(headers(request)["idempotency-key"], "targeted-poll-1")
 
-    def test_legacy_kind_cleanup_preview_and_delete_use_admin_contract(self):
-        snapshot = {
-            "tasks": 1, "sessions": 1, "events": 3, "operations": 0,
-            "pendingRequiredOperations": 0, "taskIdsDigest": "abc",
-        }
+    def test_unresolvable_source_cleanup_uses_exact_admin_contract(self):
+        snapshot = cleanup_snapshot()
         opener = RecordingOpener(responses=[
             FakeResponse({"snapshot": snapshot, "activeTasks": 0,
                           "activeSessions": 0, "executable": True,
-                          "taskTypes": ["field_repair"]}),
+                          "taskIds": [11, 42]}),
             FakeResponse({"before": snapshot,
-                          "after": dict(snapshot, tasks=0, sessions=0, events=0)}),
+                          "after": dict(snapshot, tasks=0, sessions=0, events=0),
+                          "deletedTaskIds": [11, 42]}),
         ])
         c = self.make_admin(opener)
 
-        preview = c.preview_legacy_kind_cleanup()
+        preview = c.preview_unresolvable_source_cleanup([42, 11])
         req, _timeout = opener.calls[0]
-        self.assertEqual(req.get_method(), "GET")
+        self.assertEqual(req.get_method(), "POST")
         self.assertTrue(req.full_url.endswith(
-            "/api/jarvis/v1/admin/tasks/legacy-kind/cleanup"))
+            "/api/jarvis/v1/admin/tasks/unresolvable-source/cleanup/preview"))
         # Admin endpoints authenticate with the independent admin token, never the
         # worker token.
         self.assertEqual(headers(req)["authorization"], "Bearer admin-secret")
-        self.assertEqual(preview["taskTypes"], ["field_repair"])
+        self.assertEqual(body(req), {"taskIds": [42, 11]})
+        self.assertEqual(preview["taskIds"], [11, 42])
 
-        result = c.cleanup_legacy_kind_tasks(
-            preview["snapshot"], "DELETE_LEGACY_KIND_TASKS", request_id="legacy-abc")
+        result = c.cleanup_unresolvable_source_tasks(
+            task_ids=preview["taskIds"], expected_snapshot=preview["snapshot"],
+            reason="source record was removed",
+            request_id="cleanup-correlation")
         req2, _t2 = opener.calls[1]
         self.assertEqual(req2.get_method(), "POST")
         self.assertTrue(req2.full_url.endswith(
-            "/api/jarvis/v1/admin/tasks/legacy-kind/cleanup"))
+            "/api/jarvis/v1/admin/tasks/unresolvable-source/cleanup"))
         self.assertEqual(headers(req2)["authorization"], "Bearer admin-secret")
         self.assertEqual(body(req2), {
-            "confirmation": "DELETE_LEGACY_KIND_TASKS",
+            "confirmation": "DELETE_UNRESOLVABLE_SOURCE_TASKS",
             "expectedSnapshot": snapshot,
+            "taskIds": [11, 42],
+            "reason": "source record was removed",
         })
-        self.assertEqual(headers(req2)["idempotency-key"], "legacy-abc")
+        self.assertEqual(headers(req2)["idempotency-key"], "cleanup-correlation")
         self.assertEqual(result["after"]["tasks"], 0)
+
+    def test_unresolvable_source_cleanup_validates_before_network(self):
+        invalid_task_ids = (
+            [], [0], [-1], [1 << 63], [1, 1], [True], ["1"],
+            list(range(1, 202)), {1: "task"},
+        )
+        for task_ids in invalid_task_ids:
+            with self.subTest(task_ids=repr(task_ids)[:80]):
+                opener = RecordingOpener()
+                c = self.make_admin(opener)
+                with self.assertRaises((TypeError, ValueError)):
+                    c.preview_unresolvable_source_cleanup(task_ids)
+                self.assertEqual(opener.calls, [])
+
+        valid = cleanup_snapshot(tasks=1)
+        invalid_cleanup = (
+            ([7], dict(valid, blockingRequiredOperations=-1), "reason"),
+            ([7], {key: value for key, value in valid.items()
+                   if key != "blockingRequiredOperations"}, "reason"),
+            ([7], dict(valid, tasks=2), "reason"),
+            ([7], valid, "   "),
+        )
+        for task_ids, snapshot, reason in invalid_cleanup:
+            with self.subTest(snapshot=snapshot, reason=repr(reason)):
+                opener = RecordingOpener()
+                c = self.make_admin(opener)
+                with self.assertRaises((TypeError, ValueError)):
+                    c.cleanup_unresolvable_source_tasks(
+                        task_ids=task_ids, expected_snapshot=snapshot, reason=reason)
+                self.assertEqual(opener.calls, [])
 
     def test_direct_claim_is_targeted_task_and_allows_zero_free_slots(self):
         opener = RecordingOpener()
@@ -974,7 +1037,7 @@ class ClientContractTest(unittest.TestCase):
         with self.assertRaises(ControlPlaneUnavailable) as admin_error:
             self.make_admin(
                 RecordingOpener(error=URLError(socket.timeout()))
-            ).preview_legacy_kind_cleanup()
+            ).preview_unresolvable_source_cleanup([7])
         self.assertNotIn("admin-secret", str(admin_error.exception))
         self.assertNotIn("super-secret", str(admin_error.exception))
 
