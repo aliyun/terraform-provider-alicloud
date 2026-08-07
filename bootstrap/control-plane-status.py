@@ -49,7 +49,8 @@ def _client():
             "(JARVIS_HTML_REPORT_TOKEN is reused as fallback)\n")
         raise SystemExit(2)
     timeout = float(os.environ.get("JARVIS_CONTROL_PLANE_TIMEOUT", "10"))
-    return ControlPlaneClient(base, token, timeout=timeout)
+    admin_token = os.environ.get("JARVIS_CONTROL_PLANE_ADMIN_TOKEN", "").strip()
+    return ControlPlaneClient(base, token, admin_token=admin_token, timeout=timeout)
 
 
 def _trunc(text, limit):

@@ -114,7 +114,8 @@ def _client_from_env(environ: Mapping[str, str], timeout: float):
     if not token:
         LOG.warning("worker-offline: no control-plane token; skipping remote OFFLINE")
         return None
-    return ControlPlaneClient(base_url, token, timeout=timeout)
+    admin_token = str(environ.get("JARVIS_CONTROL_PLANE_ADMIN_TOKEN", "")).strip()
+    return ControlPlaneClient(base_url, token, admin_token=admin_token, timeout=timeout)
 
 
 def _offline_one(client: Any, record: Mapping[str, Any]) -> bool:

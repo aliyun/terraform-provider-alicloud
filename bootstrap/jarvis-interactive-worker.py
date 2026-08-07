@@ -194,7 +194,8 @@ def _client(*, timeout_override: Optional[float] = None) -> ControlPlaneClient:
     timeout = float(os.environ.get("JARVIS_CONTROL_PLANE_TIMEOUT", "10"))
     if timeout_override is not None:
         timeout = min(timeout, float(timeout_override))
-    return ControlPlaneClient(base_url, token, timeout=timeout)
+    admin_token = os.environ.get("JARVIS_CONTROL_PLANE_ADMIN_TOKEN", "").strip()
+    return ControlPlaneClient(base_url, token, admin_token=admin_token, timeout=timeout)
 
 
 def _retry_unavailable(call: Callable[[], T]) -> T:
