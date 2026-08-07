@@ -202,9 +202,9 @@ class OwnershipRunnerTest(unittest.TestCase):
             self.assertEqual(len(payload["items"]), 3)
             self.assertEqual(payload["staffOptions"], [
                 {"displayName": "乙", "staffId": "100002"},
-                {"displayName": "同名", "staffId": "100001"},
                 {"displayName": "同名", "staffId": "100003"},
                 {"displayName": "外部参与者", "staffId": "900001"},
+                {"displayName": "甲", "staffId": "100001"},
             ])
 
             by_key = {
@@ -280,8 +280,111 @@ class OwnershipRunnerTest(unittest.TestCase):
                 if key != "_staffOptions"
             }])
             self.assertEqual(client.puts[0][0]["staffOptions"], [
-                {"displayName": "测试用户甲", "staffId": "100001"},
+                {"displayName": "乙", "staffId": "100002"},
+                {"displayName": "甲", "staffId": "100001"},
             ])
+
+    def test_staff_options_union_api_contacts_with_board_people(self):
+        from tempfile import TemporaryDirectory
+        with TemporaryDirectory() as directory:
+            root = self._repo(directory)
+            (root / "config" / "contacts.json").write_text(json.dumps({
+                "contacts": [
+                    {
+                        "id": "265607",
+                        "name": "朱明明",
+                        "flower": "原根",
+                    },
+                    {
+                        "id": "320687",
+                        "name": "陈汉璋",
+                        "flower": "辰羿",
+                        "github": "ChenHanZhang",
+                    },
+                    {
+                        "id": "100001",
+                        "name": "通讯录实名",
+                        "flower": "同名",
+                    },
+                    {
+                        "id": "WORKER_1",
+                        "name": "open-jarvis",
+                        "flower": "同名",
+                    },
+                    {
+                        "id": "479782",
+                        "name": "历史成员",
+                        "flower": "谜拟",
+                        "legacy_inbound_only": True,
+                    },
+                    {
+                        "id": "",
+                        "name": "无工号成员",
+                        "flower": "无工号",
+                    },
+                ],
+                "product_maintainers": [
+                    {"id": "377376", "flower": "若即"},
+                ],
+                "agent_fallbacks": {
+                    "WORKER_1": "484483",
+                },
+                "github": [
+                    {"id": "999999", "flower": "代码成员"},
+                ],
+            }, ensure_ascii=False))
+            runner = self._runner(root, FakeClient())
+
+            payload = runner._payload([{
+                "sourceProjectKey": "2100304",
+                "aoneId": "100",
+                "participantStaffIds": [
+                    "100001", "100002", "265607", "900001",
+                ],
+                "assignedToStaffId": None,
+                "latestCommentAuthorStaffId": None,
+                "sourceUpdatedAt": "2026-07-28 10:00:00",
+                "_staffOptions": [
+                    {
+                        "displayName": "Aone旧别名",
+                        "staffId": "265607",
+                    },
+                    {
+                        "displayName": "同名",
+                        "staffId": "100002",
+                    },
+                    {
+                        "displayName": "外部参与者",
+                        "staffId": "900001",
+                    },
+                ],
+            }])
+
+            self.assertEqual(payload["staffOptions"], [
+                {"displayName": "原根", "staffId": "265607"},
+                {"displayName": "同名", "staffId": "100001"},
+                {"displayName": "同名", "staffId": "100002"},
+                {"displayName": "外部参与者", "staffId": "900001"},
+                {"displayName": "辰羿", "staffId": "320687"},
+            ])
+            self.assertNotIn(
+                {"displayName": "Aone旧别名", "staffId": "265607"},
+                payload["staffOptions"])
+            self.assertEqual(
+                set(payload["staffOptions"][0]),
+                {"displayName", "staffId"})
+            self.assertNotIn(
+                "377376",
+                {option["staffId"] for option in payload["staffOptions"]})
+            self.assertNotIn(
+                "479782",
+                {option["staffId"] for option in payload["staffOptions"]})
+            self.assertNotIn(
+                "484483",
+                {option["staffId"] for option in payload["staffOptions"]})
+            self.assertNotIn(
+                "999999",
+                {option["staffId"] for option in payload["staffOptions"]})
 
     def test_v2_cache_is_refreshed_even_when_source_modified_is_unchanged(self):
         from tempfile import TemporaryDirectory

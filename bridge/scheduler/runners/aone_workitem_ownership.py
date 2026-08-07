@@ -285,6 +285,7 @@ class ContactDirectory:
         if not isinstance(contacts, list):
             raise SnapshotIncomplete("contacts.json contacts must be an array")
         self._by_token: dict[str, str] = {}
+        staff_options: dict[str, tuple[int, str]] = {}
         for contact in contacts:
             if not isinstance(contact, Mapping):
                 continue
@@ -295,6 +296,28 @@ class ContactDirectory:
                 token = _scalar(contact.get(key))
                 if token:
                     self._by_token[token.lower()] = staff_id
+            if (staff_id.lower().startswith("worker_")
+                    or contact.get("legacy_inbound_only") is True):
+                continue
+            flower = _display_alias(contact.get("flower"))
+            name = _display_alias(contact.get("name"))
+            display_name = flower or name
+            if not display_name or display_name.casefold() == staff_id.casefold():
+                continue
+            candidate = (1 if flower else 0, display_name)
+            current = staff_options.get(staff_id)
+            if current is None or candidate[0] > current[0]:
+                staff_options[staff_id] = candidate
+        self._staff_options = {
+            staff_id: display_name
+            for staff_id, (_priority, display_name) in staff_options.items()
+        }
+
+    def staff_options(self) -> list[dict[str, str]]:
+        return [
+            {"displayName": display_name, "staffId": staff_id}
+            for staff_id, display_name in self._staff_options.items()
+        ]
 
     def resolve(
         self,
@@ -1202,12 +1225,21 @@ class AoneWorkitemOwnershipRunner:
             for field in ("assignedToStaffId", "latestCommentAuthorStaffId"):
                 if item.get(field):
                     ownership_ids.add(item[field])
+        directory_options = {
+            option["staffId"]: option["displayName"]
+            for option in self._contact_directory().staff_options()
+        }
         staff_options = {
             (option["displayName"], option["staffId"])
             for item in cache_items
             for option in item.get(_STAFF_OPTIONS, [])
             if option.get("staffId") in ownership_ids
+            and option.get("staffId") not in directory_options
         }
+        staff_options.update(
+            (display_name, staff_id)
+            for staff_id, display_name in directory_options.items()
+        )
         return {
             "schemaVersion": SCHEMA_VERSION,
             "generatedAt": now.astimezone(timezone.utc).isoformat(),
