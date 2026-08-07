@@ -108,6 +108,11 @@ jarvis_runtime_config_diagnose() {
   else
     printf 'control_plane_token=missing\n'
   fi
+  if [ -n "${JARVIS_CONTROL_PLANE_ADMIN_TOKEN:-}" ]; then
+    printf 'control_plane_admin_token=configured\n'
+  else
+    printf 'control_plane_admin_token=missing\n'
+  fi
 }
 
 if [ "${BASH_SOURCE[0]}" = "$0" ]; then

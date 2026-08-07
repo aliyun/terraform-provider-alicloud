@@ -241,7 +241,7 @@ class ControlPlaneClient:
         # back to the worker token: an empty admin_token makes admin endpoints fail
         # closed rather than silently degrade to worker credentials, mirroring the
         # server-side BucAuthFilter "never falls back" contract.
-        self.admin_token = str(admin_token or "")
+        self.admin_token = str(admin_token or "").strip()
         self.timeout = float(timeout)
         if self.timeout <= 0:
             raise ValueError("timeout must be positive")
@@ -306,6 +306,14 @@ class ControlPlaneClient:
     def _request(self, method: str, suffix: str, *, payload: Optional[Mapping[str, Any]] = None,
                  request_id: Optional[str] = None, admin: bool = False) -> Any:
         method = _nonblank(method, "method").upper()
+        normalized_suffix = _nonblank(suffix, "suffix").lstrip("/")
+        is_admin_endpoint = normalized_suffix.startswith("admin/")
+        if bool(admin) != is_admin_endpoint:
+            # Credential choice must agree with the URL namespace. This keeps a
+            # newly added admin call from accidentally sending the worker token,
+            # and prevents an admin token from being attached to a worker route.
+            raise ControlPlaneError(
+                "control plane: credential mode does not match endpoint namespace")
         if payload is not None and not isinstance(payload, Mapping):
             raise TypeError("payload must be a mapping")
         body = None
@@ -330,7 +338,8 @@ class ControlPlaneClient:
                 "control plane: admin_token is not configured for an admin endpoint")
         if token:
             headers["Authorization"] = "Bearer " + token
-        req = Request(self._endpoint(suffix), data=body, method=method, headers=headers)
+        req = Request(
+            self._endpoint(normalized_suffix), data=body, method=method, headers=headers)
         try:
             with self._opener(req, timeout=self.timeout) as resp:
                 status_value = getattr(resp, "status", None)

@@ -33,6 +33,19 @@ from bridge.process_identity import (
 
 LOG = logging.getLogger("jarvis-bridge-supervisor")
 REPO_ROOT = Path(__file__).resolve().parents[1]
+ADMIN_TOKEN_ENV = "JARVIS_CONTROL_PLANE_ADMIN_TOKEN"
+
+
+def _unprivileged_component_env(environ: Mapping[str, str]) -> dict[str, str]:
+    """Return a child environment without the control-plane admin credential.
+
+    None of the current bridge components calls an admin endpoint. The only
+    current admin caller is the explicit operator CLI, so the supervisor must
+    not fan its credential out to Scheduler, Bot, Worker, or OFFLINE helpers.
+    """
+    child_env = dict(environ)
+    child_env.pop(ADMIN_TOKEN_ENV, None)
+    return child_env
 
 
 @dataclass(frozen=True)
@@ -108,7 +121,7 @@ class SubprocessComponent:
         state_dir: Path,
     ) -> None:
         self.spec = spec
-        self.environ = dict(environ)
+        self.environ = _unprivileged_component_env(environ)
         self.pidfile = state_dir / spec.pidfile
         self.identity_file = state_dir / ("%s.identity" % spec.pidfile)
         self.process: Optional[subprocess.Popen[str]] = None
@@ -158,7 +171,8 @@ class SubprocessComponent:
                 return
         self.pidfile.unlink(missing_ok=True)
         self.identity_file.unlink(missing_ok=True)
-        env = dict(self.environ)
+        # Defense in depth for components instantiated outside BridgeSupervisor.
+        env = _unprivileged_component_env(self.environ)
         env["PYTHONUNBUFFERED"] = "1"
         pythonpath = env.get("PYTHONPATH", "")
         env["PYTHONPATH"] = (
@@ -505,7 +519,8 @@ class BridgeSupervisor:
         component_factory: Callable[..., Any] = SubprocessComponent,
         stop_event: Optional[threading.Event] = None,
     ) -> None:
-        self.environ = dict(os.environ if environ is None else environ)
+        self.environ = _unprivileged_component_env(
+            os.environ if environ is None else environ)
         self.role = validate_runtime(self.environ)
         self.state_dir = Path(self.environ.get(
             "JARVIS_BRIDGE_STATE_DIR",
@@ -554,7 +569,10 @@ class BridgeSupervisor:
 
     def _new_component(self, spec: ComponentSpec) -> Any:
         return self.component_factory(
-            spec, environ=self.environ, state_dir=self.state_dir)
+            spec,
+            environ=_unprivileged_component_env(self.environ),
+            state_dir=self.state_dir,
+        )
 
     def _start_until_ready(
         self,
@@ -711,7 +729,7 @@ class BridgeSupervisor:
             subprocess.run(
                 [sys.executable, "-m", "bridge.worker_offline", "--all"],
                 cwd=str(REPO_ROOT),
-                env=self.environ,
+                env=_unprivileged_component_env(self.environ),
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
                 timeout=float(self.environ.get(
@@ -723,6 +741,9 @@ class BridgeSupervisor:
 
 
 def main() -> int:
+    # The long-lived supervisor has no admin operation. Drop an operator token
+    # loaded from shared machine config before keeping or spawning anything.
+    os.environ.pop(ADMIN_TOKEN_ENV, None)
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s %(levelname)s [%(threadName)s] %(message)s",

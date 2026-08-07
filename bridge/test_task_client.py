@@ -214,13 +214,24 @@ class ClientContractTest(unittest.TestCase):
         self.assertEqual(headers(req)["authorization"], "Bearer admin-secret")
 
     def test_admin_endpoint_fails_closed_without_admin_token(self):
+        for missing in ("", " \t "):
+            with self.subTest(admin_token=repr(missing)):
+                opener = RecordingOpener()
+                client = self.make_admin(opener, admin_token=missing)
+                with self.assertRaises(ControlPlaneError):
+                    client.preview_legacy_kind_cleanup()
+                with self.assertRaises(ControlPlaneError):
+                    client.cleanup_legacy_kind_tasks({"counts": 0}, "CLEANUP")
+                self.assertEqual(opener.calls, [])  # no request ever sent
+
+    def test_endpoint_namespace_and_credential_mode_must_match(self):
         opener = RecordingOpener()
-        client = self.make_admin(opener, admin_token="")
+        client = self.make_admin(opener)
         with self.assertRaises(ControlPlaneError):
-            client.preview_legacy_kind_cleanup()
+            client._get("admin/unmarked")
         with self.assertRaises(ControlPlaneError):
-            client.cleanup_legacy_kind_tasks({"counts": 0}, "CLEANUP")
-        self.assertEqual(opener.calls, [])  # no request ever sent
+            client._get("workers", admin=True)
+        self.assertEqual(opener.calls, [])
 
     def test_worker_endpoint_ignores_admin_token_and_uses_worker_token(self):
         opener = RecordingOpener(responses=[FakeResponse(raw=b"[]")])
@@ -228,6 +239,15 @@ class ClientContractTest(unittest.TestCase):
         client.list_workers()
         req, _timeout = opener.calls[0]
         self.assertEqual(headers(req)["authorization"], "Bearer super-secret")
+
+    def test_worker_endpoint_never_falls_back_to_admin_token(self):
+        opener = RecordingOpener(responses=[FakeResponse(raw=b"[]")])
+        client = ControlPlaneClient(
+            "https://pre-agent.example/", admin_token="admin-secret",
+            timeout=4.5, opener=opener)
+        client.list_workers()
+        req, _timeout = opener.calls[0]
+        self.assertNotIn("authorization", headers(req))
 
     def test_all_worker_and_session_endpoints(self):
         opener = RecordingOpener(responses=[
@@ -950,6 +970,13 @@ class ClientContractTest(unittest.TestCase):
         with self.assertRaises(ControlPlaneUnavailable):
             self.make(RecordingOpener(error=err)).register_worker(
                 {"worker_key": "w"}, request_id="r")
+
+        with self.assertRaises(ControlPlaneUnavailable) as admin_error:
+            self.make_admin(
+                RecordingOpener(error=URLError(socket.timeout()))
+            ).preview_legacy_kind_cleanup()
+        self.assertNotIn("admin-secret", str(admin_error.exception))
+        self.assertNotIn("super-secret", str(admin_error.exception))
 
     def test_invalid_success_json_is_rejected(self):
         opener = RecordingOpener(responses=[FakeResponse(raw=b"not-json")])

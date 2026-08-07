@@ -2073,11 +2073,14 @@ class InteractiveWorkerTest(unittest.TestCase):
             return {"verifyHostCommand": True}
 
         def execvpe(executable, command, env):
+            self.assertNotIn("JARVIS_CONTROL_PLANE_ADMIN_TOKEN", env)
             order.append(("exec", executable, list(command),
                           env["JARVIS_INTERACTIVE_SESSION_ID"]))
             raise RuntimeError("exec intercepted")
 
-        with mock.patch.object(worker, "register_headless",
+        with mock.patch.dict(os.environ, {
+                "JARVIS_CONTROL_PLANE_ADMIN_TOKEN": "operator-only",
+        }, clear=False), mock.patch.object(worker, "register_headless",
                                side_effect=register), \
                 mock.patch.object(worker.os, "execvpe", side_effect=execvpe):
             with self.assertRaisesRegex(RuntimeError, "exec intercepted"):
@@ -2090,6 +2093,18 @@ class InteractiveWorkerTest(unittest.TestCase):
         self.assertEqual(order[1],
                          ("exec", "/bin/echo", ["/bin/echo", "ready"],
                           "headless-session-1"))
+
+    def test_detached_sidecar_never_inherits_admin_token(self):
+        process = mock.Mock(pid=43210)
+        with mock.patch.dict(os.environ, {
+                "JARVIS_CONTROL_PLANE_ADMIN_TOKEN": "operator-only",
+        }, clear=False), mock.patch.object(
+                worker.subprocess, "Popen", return_value=process) as popen:
+            self.assertEqual(
+                worker._spawn_daemon(self._store(), "worker-key"), 43210)
+
+        self.assertNotIn(
+            "JARVIS_CONTROL_PLANE_ADMIN_TOKEN", popen.call_args.kwargs["env"])
 
     def test_pid_reuse_cannot_keep_an_old_worker_alive(self):
         state = self._seed()
@@ -2562,10 +2577,12 @@ class InteractiveWorkerTest(unittest.TestCase):
             "JARVIS_CONTROL_PLANE_BASE_URL": "https://pre.example",
             "JARVIS_CONTROL_PLANE_TOKEN": "",
             "JARVIS_HTML_REPORT_TOKEN": "shared-report-token",
+            "JARVIS_CONTROL_PLANE_ADMIN_TOKEN": "operator-only",
         }, clear=False):
             client = worker._client()
         self.assertEqual(client.base_url, "https://pre.example")
         self.assertEqual(client.token, "shared-report-token")
+        self.assertEqual(client.admin_token, "")
 
     def test_control_plane_defaults_to_prod(self):
         with mock.patch.dict(os.environ, {

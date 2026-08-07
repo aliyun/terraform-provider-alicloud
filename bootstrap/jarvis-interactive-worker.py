@@ -79,6 +79,14 @@ HOOK_BLOCK_EXIT = 2
 POST_PR_AONE_WRITE_POLICY = "post-pr-read-only"
 POST_PR_HEADLESS_KINDS = frozenset(("pr_ci_fix", "pr_comment_reply"))
 T = TypeVar("T")
+ADMIN_TOKEN_ENV = "JARVIS_CONTROL_PLANE_ADMIN_TOKEN"
+
+
+def _unprivileged_child_env() -> Dict[str, str]:
+    """Copy the process environment without the operator-only admin secret."""
+    env = os.environ.copy()
+    env.pop(ADMIN_TOKEN_ENV, None)
+    return env
 
 
 def _nonblank(value: Any, name: str) -> str:
@@ -194,8 +202,7 @@ def _client(*, timeout_override: Optional[float] = None) -> ControlPlaneClient:
     timeout = float(os.environ.get("JARVIS_CONTROL_PLANE_TIMEOUT", "10"))
     if timeout_override is not None:
         timeout = min(timeout, float(timeout_override))
-    admin_token = os.environ.get("JARVIS_CONTROL_PLANE_ADMIN_TOKEN", "").strip()
-    return ControlPlaneClient(base_url, token, admin_token=admin_token, timeout=timeout)
+    return ControlPlaneClient(base_url, token, timeout=timeout)
 
 
 def _retry_unavailable(call: Callable[[], T]) -> T:
@@ -462,7 +469,7 @@ def _spawn_daemon(store: StateStore, expected_worker_key: str) -> int:
     log_path = store.path.with_suffix(".log")
     _ensure_private_dir(log_path.parent)
     log_fd = os.open(str(log_path), os.O_CREAT | os.O_APPEND | os.O_WRONLY, 0o600)
-    env = os.environ.copy()
+    env = _unprivileged_child_env()
     try:
         process = subprocess.Popen(
             [sys.executable, str(Path(__file__).resolve()), "daemon",
@@ -2891,7 +2898,7 @@ def exec_headless(session_id: str, command: list[str],
         headless_policy=headless_policy)
     if not result.get("verifyHostCommand"):
         raise RuntimeError("headless wrapper process could not be verified")
-    env = os.environ.copy()
+    env = _unprivileged_child_env()
     env["JARVIS_INTERACTIVE_CLIENT"] = client_name
     env["JARVIS_INTERACTIVE_SESSION_ID"] = session_id
     os.execvpe(command[0], list(command), env)
@@ -4434,6 +4441,9 @@ def _parser() -> argparse.ArgumentParser:
 
 
 def main(argv: Optional[list[str]] = None) -> int:
+    # Direct invocations may bypass the shell wrapper. This executable and its
+    # long-lived sidecar have no admin calls, so discard the credential early.
+    os.environ.pop(ADMIN_TOKEN_ENV, None)
     args = _parser().parse_args(argv)
     if args.command == "hook":
         try:

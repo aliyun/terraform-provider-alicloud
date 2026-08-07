@@ -13,8 +13,10 @@
 #   ~/.config/a1/                              a1 CLI login state (all identities)
 #   ~/.claude/                                 claude settings + gateway/token files
 #   ~/.aliyun/config.json                      aliyun CLI AK (OpenAPI 查证 / cred check)
-#   $JARVIS_ROOT/bootstrap/.env                GitHub PAT, control-plane token, etc.
+#   $JARVIS_ROOT/bootstrap/.env                GitHub PAT, worker control-plane token, etc.
 #   $JARVIS_ROOT/bridge/jarvis.env             DingTalk, model lanes, JARVIS_* vars
+#   The operator-only JARVIS_CONTROL_PLANE_ADMIN_TOKEN is stripped from both
+#   env files before packaging and must never be installed on worker hosts.
 #   $JARVIS_ROOT/config/workspaces.local.json  (if present) — sanitized/re-derived
 #                                              on worker; this ships as reference
 #
@@ -243,10 +245,14 @@ chmod 644 "$STAGE/home/.gitconfig"
 printf 'GIT_HTTPS_URL=https://%s/%s.git\n' "$GIT_HOST" "$GIT_REPO_PATH" \
   >> "$STAGE/MANIFEST"
 ok "packaged git-credentials for Deploy Token ${GIT_TOKEN_USER}@${GIT_HOST}/${GIT_REPO_PATH}"
-[ -f "$JARVIS_ROOT/bootstrap/.env" ] \
-  && cp -p "$JARVIS_ROOT/bootstrap/.env" "$STAGE/repo/bootstrap/.env"
-[ -f "$JARVIS_ROOT/bridge/jarvis.env" ] \
-  && cp -p "$JARVIS_ROOT/bridge/jarvis.env" "$STAGE/repo/bridge/jarvis.env"
+if [ -f "$JARVIS_ROOT/bootstrap/.env" ]; then
+  bash "$SCRIPT_DIR/worker-env-sanitize.sh" \
+    "$JARVIS_ROOT/bootstrap/.env" "$STAGE/repo/bootstrap/.env"
+fi
+if [ -f "$JARVIS_ROOT/bridge/jarvis.env" ]; then
+  bash "$SCRIPT_DIR/worker-env-sanitize.sh" \
+    "$JARVIS_ROOT/bridge/jarvis.env" "$STAGE/repo/bridge/jarvis.env"
+fi
 [ -f "$JARVIS_ROOT/config/workspaces.local.json" ] \
   && cp -p "$JARVIS_ROOT/config/workspaces.local.json" "$STAGE/repo/config/workspaces.local.json"
 

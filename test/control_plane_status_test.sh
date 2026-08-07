@@ -56,8 +56,11 @@ class ControlPlaneError(RuntimeError):
         self.status = status
 
 
+DEFAULT_CONTROL_PLANE_BASE_URL = "https://agent.aliyun-inc.com"
+
+
 class ControlPlaneClient:
-    def __init__(self, base_url, token="", timeout=10.0, **kwargs):
+    def __init__(self, base_url, token="", admin_token="", timeout=10.0, **kwargs):
         if not base_url:
             raise SystemExit("stub: base_url must be forwarded")
         expect_base = os.environ.get("STUB_EXPECT_BASE")
@@ -65,8 +68,12 @@ class ControlPlaneClient:
             raise SystemExit("stub: unexpected base %r (want %r)" %
                              (base_url, expect_base))
         expect = os.environ.get("STUB_EXPECT_TOKEN")
-        if expect and token != expect:
+        if expect is not None and token != expect:
             raise SystemExit("stub: unexpected token %r (want %r)" % (token, expect))
+        expect_admin = os.environ.get("STUB_EXPECT_ADMIN_TOKEN")
+        if expect_admin is not None and admin_token != expect_admin:
+            raise SystemExit(
+                "stub: unexpected admin token configuration")
 
     def list_workers(self):
         return [
@@ -247,6 +254,18 @@ class ControlPlaneClient:
                 "activityStatus": "IDLE",
             },
         }
+
+    def preview_legacy_kind_cleanup(self):
+        return {
+            "snapshot": {
+                "tasks": 0, "sessions": 0, "events": 0, "operations": 0,
+                "pendingRequiredOperations": 0, "taskIdsDigest": "empty",
+            },
+            "taskTypes": ["field_repair"],
+            "activeTasks": 0,
+            "activeSessions": 0,
+            "executable": True,
+        }
 PY
 
 # 统一调用姿势：env 文件覆盖到临时目录；清空四个凭证 env（空串=未配置）；PYTHONPATH 前插 stub。
@@ -258,6 +277,7 @@ run_cli() {
   XDG_CONFIG_HOME="$TMP/xdg" \
   JARVIS_CONTROL_PLANE_BASE_URL="${OVERRIDE_BASE_URL:-}" \
   JARVIS_CONTROL_PLANE_TOKEN="${OVERRIDE_TOKEN:-}" \
+  JARVIS_CONTROL_PLANE_ADMIN_TOKEN="${OVERRIDE_ADMIN_TOKEN:-}" \
   JARVIS_HTML_REPORT_BASE_URL="" \
   JARVIS_HTML_REPORT_TOKEN="" \
   PYTHONPATH="$STUB${PYTHONPATH:+:$PYTHONPATH}" \
@@ -278,13 +298,36 @@ out="$(run_cli workers 2>&1)"; rc=$?
 [ $rc -eq 2 ] && ok "missing token rc=2" || no "missing token rc=$rc (want 2)"
 has "JARVIS_CONTROL_PLANE_TOKEN" "$out" "missing token names the env var"
 
-# ── 4) 默认预发 base url + JARVIS_HTML_REPORT_TOKEN 回退 ─────────────────────
-printf 'JARVIS_HTML_REPORT_TOKEN=sekrit-token\n' >"$JENV"
-out="$(STUB_EXPECT_BASE=https://pre-agent.aliyun-inc.com \
-  STUB_EXPECT_TOKEN=sekrit-token run_cli workers 2>&1)"; rc=$?
-[ $rc -eq 0 ] && ok "default pre base rc=0" || no "default pre base rc=$rc: $out"
+# ── 4) admin/worker 凭证按命令隔离，互不回退 ────────────────────────────────
+out="$(OVERRIDE_ADMIN_TOKEN=admin-only run_cli workers 2>&1)"; rc=$?
+[ $rc -eq 2 ] && ok "workers never falls back to admin token" || \
+  no "workers with only admin token rc=$rc (want 2)"
+has "JARVIS_CONTROL_PLANE_TOKEN" "$out" "workers still requires worker token"
+hasnot "admin-only" "$out" "workers error does not print admin token"
 
-# ── 5) env 文件显式 base url + token 回退 → workers 表格 ─────────────────────
+out="$(OVERRIDE_TOKEN=worker-only run_cli legacy-cleanup 2>&1)"; rc=$?
+[ $rc -eq 2 ] && ok "legacy-cleanup never falls back to worker token" || \
+  no "legacy-cleanup with only worker token rc=$rc (want 2)"
+has "JARVIS_CONTROL_PLANE_ADMIN_TOKEN" "$out" \
+  "legacy-cleanup names its independent credential"
+hasnot "worker-only" "$out" "legacy-cleanup error does not print worker token"
+
+out="$(OVERRIDE_TOKEN=worker-only OVERRIDE_ADMIN_TOKEN=admin-only \
+  STUB_EXPECT_TOKEN= STUB_EXPECT_ADMIN_TOKEN=admin-only \
+  run_cli legacy-cleanup 2>&1)"; rc=$?
+[ $rc -eq 0 ] && ok "legacy-cleanup accepts admin token without retaining worker token" || \
+  no "legacy-cleanup admin-token rc=$rc: $out"
+has "nothing to clean up" "$out" "legacy-cleanup reaches admin preview"
+hasnot "admin-only" "$out" "legacy-cleanup output does not print admin token"
+
+# ── 5) 默认生产 base url + JARVIS_HTML_REPORT_TOKEN 回退 ─────────────────────
+printf 'JARVIS_HTML_REPORT_TOKEN=sekrit-token\n' >"$JENV"
+out="$(STUB_EXPECT_BASE=https://agent.aliyun-inc.com \
+  STUB_EXPECT_TOKEN=sekrit-token run_cli workers 2>&1)"; rc=$?
+[ $rc -eq 0 ] && ok "default production base rc=0" || \
+  no "default production base rc=$rc: $out"
+
+# ── 6) env 文件显式 base url + token 回退 → workers 表格 ─────────────────────
 printf 'JARVIS_CONTROL_PLANE_BASE_URL=http://stub.example\nJARVIS_HTML_REPORT_TOKEN=sekrit-token\n' >"$JENV"
 out="$(STUB_EXPECT_BASE=http://stub.example STUB_EXPECT_TOKEN=sekrit-token \
   run_cli workers 2>&1)"; rc=$?

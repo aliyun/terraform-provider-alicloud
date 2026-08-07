@@ -10,6 +10,9 @@ repo_root="$(cd "$script_dir/.." && pwd)"
 # shellcheck disable=SC1091
 source "$script_dir/runtime-config.sh"
 jarvis_load_runtime_config || exit $?
+# Interactive workers never call /admin/**. Keep an operator credential loaded
+# by the shared runtime config out of this process and every detached sidecar.
+unset JARVIS_CONTROL_PLANE_ADMIN_TOKEN
 
 if [ -n "${JARVIS_INTERACTIVE_WORKER_PYTHON:-}" ]; then
   python_bin="$JARVIS_INTERACTIVE_WORKER_PYTHON"

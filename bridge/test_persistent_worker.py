@@ -56,6 +56,17 @@ class PersistentWorkerTest(unittest.TestCase):
             ephemeral_executor=self.pool,
         )
 
+    def test_worker_client_never_retains_admin_token(self):
+        with mock.patch.dict(os.environ, {
+            "JARVIS_CONTROL_PLANE_BASE_URL": "https://control.example",
+            "JARVIS_CONTROL_PLANE_TOKEN": "worker-token",
+            "JARVIS_CONTROL_PLANE_ADMIN_TOKEN": "operator-only",
+        }, clear=False):
+            client = persistent_worker._task_client_from_env()
+
+        self.assertEqual(client.token, "worker-token")
+        self.assertEqual(client.admin_token, "")
+
     def test_composes_executor_outside_jarvis_handler(self):
         runtime = self._runtime()
         worker = persistent_worker.PersistentWorker(

@@ -70,11 +70,9 @@ def _task_client_from_env() -> ControlPlaneClient:
         raise RuntimeError(
             "Persistent worker requires JARVIS_CONTROL_PLANE_TOKEN or "
             "JARVIS_HTML_REPORT_TOKEN")
-    admin_token = os.environ.get("JARVIS_CONTROL_PLANE_ADMIN_TOKEN", "").strip()
     return ControlPlaneClient(
         base_url,
         token,
-        admin_token=admin_token,
         timeout=float(os.environ.get("JARVIS_CONTROL_PLANE_TIMEOUT", "10")),
     )
 

@@ -119,6 +119,8 @@ class BridgeSupervisorTest(unittest.TestCase):
         process = mock.Mock()
         process.pid = 4321
         process.stdout = []
+        environ = self._env(Path("/unused"), role="worker")
+        environ["JARVIS_CONTROL_PLANE_ADMIN_TOKEN"] = "must-not-reach-worker"
         with tempfile.TemporaryDirectory() as temp_dir, mock.patch.object(
                 main.subprocess, "Popen", return_value=process) as popen, \
              mock.patch.object(
@@ -126,14 +128,39 @@ class BridgeSupervisorTest(unittest.TestCase):
              mock.patch.object(main.os, "getpgid", return_value=4321):
             component = main.SubprocessComponent(
                 main.PERSISTENT_WORKER,
-                environ=self._env(Path(temp_dir), role="worker"),
+                environ=environ,
                 state_dir=Path(temp_dir),
             )
             component.start()
             component._pump.join(timeout=1)
 
         self.assertTrue(popen.call_args.kwargs["start_new_session"])
+        self.assertNotIn(
+            "JARVIS_CONTROL_PLANE_ADMIN_TOKEN", popen.call_args.kwargs["env"])
         self.assertEqual(component.process_group_id, 4321)
+
+    def test_supervisor_does_not_give_admin_token_to_any_bridge_component(self):
+        captured = {}
+
+        def factory(spec, **kwargs):
+            captured[spec.name] = dict(kwargs["environ"])
+            return object()
+
+        with tempfile.TemporaryDirectory() as temp_dir, mock.patch(
+                "bridge.scheduler.scheduler.validate"):
+            environ = self._env(Path(temp_dir))
+            environ["JARVIS_CONTROL_PLANE_ADMIN_TOKEN"] = "operator-only"
+            supervisor = main.BridgeSupervisor(
+                environ=environ, component_factory=factory)
+            for spec in supervisor.specs:
+                supervisor._new_component(spec)
+
+        self.assertEqual(set(captured), {
+            "scheduler", "persistent-worker", "dingtalk-bot"})
+        self.assertTrue(all(
+            "JARVIS_CONTROL_PLANE_ADMIN_TOKEN" not in child_env
+            for child_env in captured.values()
+        ))
 
     def test_component_stop_kills_grandchild_after_leader_exits(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -440,8 +467,9 @@ class BridgeSupervisorTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir, mock.patch(
                 "bridge.scheduler.scheduler.validate"), mock.patch(
                 "bridge.main.subprocess.run") as run:
-            supervisor = main.BridgeSupervisor(
-                environ=self._env(Path(temp_dir)))
+            environ = self._env(Path(temp_dir))
+            environ["JARVIS_CONTROL_PLANE_ADMIN_TOKEN"] = "operator-only"
+            supervisor = main.BridgeSupervisor(environ=environ)
             supervisor._offline_forced_workers()
 
         run.assert_called_once()
@@ -449,6 +477,8 @@ class BridgeSupervisorTest(unittest.TestCase):
         self.assertIn("-m", argv)
         self.assertIn("bridge.worker_offline", argv)
         self.assertIn("--all", argv)
+        self.assertNotIn(
+            "JARVIS_CONTROL_PLANE_ADMIN_TOKEN", run.call_args.kwargs["env"])
 
     def test_offline_helper_never_raises_when_subprocess_fails(self):
         with tempfile.TemporaryDirectory() as temp_dir, mock.patch(

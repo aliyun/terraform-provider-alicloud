@@ -21,8 +21,10 @@
 #                      服务端按精确快照+active 守护，改动后 409。
 #
 # 环境加载与 run-interactive-worker-hook.sh 同源：主仓 gitignored bootstrap/.env +
-# bridge/jarvis.env；token 缺省回退 JARVIS_HTML_REPORT_TOKEN；控制面 base url 可由
-# JARVIS_CONTROL_PLANE_BASE_URL / JARVIS_HTML_REPORT_BASE_URL 覆盖，默认预发。
+# bridge/jarvis.env；普通命令 token 缺省回退 JARVIS_HTML_REPORT_TOKEN；
+# legacy-cleanup 只接受 JARVIS_CONTROL_PLANE_ADMIN_TOKEN，绝不回退普通 token。
+# 控制面 base url 可由 JARVIS_CONTROL_PLANE_BASE_URL /
+# JARVIS_HTML_REPORT_BASE_URL 覆盖，默认生产控制面。
 # 实现体在同目录 control-plane-status.py。
 
 set -uo pipefail

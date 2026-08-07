@@ -48,11 +48,9 @@ def _task_client_from_env(
         raise RuntimeError(
             "Scheduler requires JARVIS_CONTROL_PLANE_TOKEN or "
             "JARVIS_HTML_REPORT_TOKEN")
-    admin_token = env.get("JARVIS_CONTROL_PLANE_ADMIN_TOKEN", "").strip()
     return ControlPlaneClient(
         base_url,
         token,
-        admin_token=admin_token,
         timeout=float(env.get("JARVIS_CONTROL_PLANE_TIMEOUT", "10")),
     )
 

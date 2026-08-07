@@ -108,6 +108,15 @@ class WorkerOfflineTest(unittest.TestCase):
             client=None, environ={}, directory=self.dir)
         self.assertEqual(count, 0)
 
+    def test_offline_helper_client_never_retains_admin_token(self):
+        client = worker_offline._client_from_env({
+            "JARVIS_CONTROL_PLANE_TOKEN": "worker-token",
+            "JARVIS_CONTROL_PLANE_ADMIN_TOKEN": "operator-only",
+        }, 3.0)
+
+        self.assertEqual(client.token, "worker-token")
+        self.assertEqual(client.admin_token, "")
+
 
 if __name__ == "__main__":
     unittest.main()

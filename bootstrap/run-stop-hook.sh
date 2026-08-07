@@ -17,6 +17,9 @@ wrap_check="$script_dir/wrap-check.sh"
 # shellcheck disable=SC1091
 source "$script_dir/runtime-config.sh"
 jarvis_load_runtime_config || exit $?
+# stop-check is an ordinary worker endpoint; never retain or forward an admin
+# credential that happens to be present on an operator workstation.
+unset JARVIS_CONTROL_PLANE_ADMIN_TOKEN
 
 python_bin="${JARVIS_INTERACTIVE_WORKER_PYTHON:-}"
 if [ -z "$python_bin" ]; then

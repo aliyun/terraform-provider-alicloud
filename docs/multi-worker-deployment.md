@@ -38,6 +38,34 @@ spawns headless claude, reports back. Every added worker grows total lease
 capacity by its local `JARVIS_DISPATCH_MAX`. No coordination needed between
 workers — fenced `claimTask` on the control plane is the only interlock.
 
+## Control-plane credential boundary
+
+All Scheduler, Persistent Worker, Bot, and worker-OFFLINE endpoints authenticate
+only with `JARVIS_CONTROL_PLANE_TOKEN` (or its existing report-token compatibility
+source). They never fall back to `JARVIS_CONTROL_PLANE_ADMIN_TOKEN`. The admin
+credential is not a fleet credential: do not put it in a worker `jarvis.env`, copy
+it with `worker-credentials-package.sh`, or install it on an ordinary worker host.
+
+The only current admin caller is the explicit operator command
+`bootstrap/control-plane-status.sh legacy-cleanup`. Run it on a trusted
+scheduler/operator host and inject the secret only into that command's environment.
+For example, this reads the value without echoing it or placing it in shell history:
+
+```bash
+read -r -s JARVIS_CONTROL_PLANE_ADMIN_TOKEN
+export JARVIS_CONTROL_PLANE_ADMIN_TOKEN
+bootstrap/control-plane-status.sh legacy-cleanup
+unset JARVIS_CONTROL_PLANE_ADMIN_TOKEN
+```
+
+`legacy-cleanup` accepts the admin token without requiring or retaining the ordinary
+worker token. Every other `control-plane-status` command requires the worker token
+and does not retain the admin token. The bridge supervisor strips the admin variable
+from every child component and its OFFLINE helper; the current Scheduler has no admin
+operation and therefore receives no admin credential. If a future Scheduler feature
+needs an admin endpoint, add an explicit reviewed injection boundary for that one
+trusted client rather than broadening worker configuration.
+
 ## SchedulerEngine ownership
 
 All periodic jobs are owned by the new `SchedulerEngine`; the legacy Bridge
@@ -168,10 +196,16 @@ Give workers the OSS URL + expected sha256.
 ### B. Credential bundle → OSS (repeat before each worker install run)
 
 The bundle carries: `~/.config/a1/` (a1 CLI login state), `~/.claude/*.json`
-(model-lane settings archives), `bootstrap/.env` + `bridge/jarvis.env`
-(GitHub PAT, control-plane token, gateway routes), plus `~/.git-credentials`
+(model-lane settings archives), sanitized copies of `bootstrap/.env` +
+`bridge/jarvis.env` (GitHub PAT, worker control-plane token, gateway routes),
+plus `~/.git-credentials`
 + `~/.gitconfig` so workers can `git pull` jarvis-preview over HTTPS with a
 GitLab Deploy Token — no ssh setup on the worker.
+
+The packager removes every `JARVIS_CONTROL_PLANE_ADMIN_TOKEN` line before it
+creates the encrypted archive. Keep that admin credential only in the trusted
+scheduler/operator host's machine runtime or one-command environment; it is
+never part of worker bootstrap material.
 
 One-time setup: create a Deploy Token in GitLab web UI (scheduler-side, once):
 
