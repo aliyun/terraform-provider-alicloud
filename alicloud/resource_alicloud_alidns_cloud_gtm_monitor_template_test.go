@@ -510,3 +510,49 @@ variable "name" {
 
 `, name)
 }
+
+// TestAccAliCloudAlidnsCloudGtmMonitorTemplate_evaluationCountValidation verifies that
+// evaluation_count=0 is rejected at plan time. The backing OpenAPI only allows {1,2,3};
+// the schema validator previously permitted 0, which passed plan but failed at apply.
+func TestAccAliCloudAlidnsCloudGtmMonitorTemplate_evaluationCountValidation(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_alidns_cloud_gtm_monitor_template.default"
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &AlidnsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAlidnsCloudGtmMonitorTemplate")
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccalidns%d", rand)
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: rc.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+resource "alicloud_alidns_cloud_gtm_monitor_template" "default" {
+  name             = var.name
+  protocol         = "tcp"
+  ip_version       = "IPv4"
+  interval         = "60"
+  timeout          = "2000"
+  evaluation_count = 0
+  failure_rate     = 50
+  isp_city_nodes {
+    city_code = "357"
+    isp_code  = "465"
+  }
+  isp_city_nodes {
+    city_code = "738"
+    isp_code  = "465"
+  }
+}
+`, name),
+				ExpectError: regexp.MustCompile(`expected evaluation_count to be one of \[1 2 3\], got 0`),
+			},
+		},
+	})
+}
