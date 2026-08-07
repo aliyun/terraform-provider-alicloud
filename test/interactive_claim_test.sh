@@ -87,6 +87,15 @@ chmod +x "$tmp/interactive-runner.sh"
 export JARVIS_ROOT="$tmp"
 export JARVIS_A1="$tmp/bin/a1"
 export JARVIS_INTERACTIVE_WORKER_RUNNER="$tmp/interactive-runner.sh"
+# This suite deliberately simulates an interactive session and drives claim.sh's
+# control-plane gate through the stub runner above. Clear any signal inherited
+# from the host session first (canonical list in test/lib/hermetic.sh), then open
+# exactly one, and pin the endpoint at the discard port so a broken stub fails
+# fast instead of reaching production (Aone 85192197).
+# shellcheck source=lib/hermetic.sh
+source "$test_dir/lib/hermetic.sh"
+jarvis_test_hermetic_isolate_signals
+jarvis_test_hermetic_pin_control_plane
 export CODEX_THREAD_ID="codex-test-thread"
 export TEST_LOG="$tmp/events.log"
 export TEST_DIR="$tmp"
@@ -321,6 +330,46 @@ elif grep -q 'worker:cli complete' "$TEST_LOG"; then
   bad "finish begin failure keeps session active"
 else
   ok "finish begin failure fails closed before Aone"
+fi
+
+# ── existence gate: never mint a Task for a work item we cannot read ─────────
+# Regression for the fake control-plane Tasks in Aone 85192197. The pre-claim
+# point-read used to be `|| true`, so an unreadable id degraded to an empty title
+# and prepare-claim ran anyway. The assertion that matters is that the worker CLI
+# is never reached: no prepare-claim means no Task, no session, no receipt.
+reset_case
+export A1_GET_RC=1
+if run_claim claim 84345050 2100304; then
+  bad "unreadable work item must not claim"
+elif grep -q 'worker:cli prepare-claim' "$TEST_LOG"; then
+  bad "unreadable work item reached prepare-claim (would mint a control-plane Task)"
+elif grep -q 'a1:project workitem update' "$TEST_LOG"; then
+  bad "unreadable work item performed an Aone write"
+else
+  ok "unreadable work item refuses before prepare-claim (no Task, no Aone write)"
+fi
+
+# The refusal must be about existence, not a side effect of some later gate: the
+# same run with a readable work item has to reach prepare-claim.
+reset_case
+if run_claim claim 84345050 2100304 && grep -q 'worker:cli prepare-claim' "$TEST_LOG"; then
+  ok "readable work item still reaches prepare-claim"
+else
+  bad "readable work item must still claim normally"
+fi
+
+# The gate must separate "unreadable" from "flaked once": a single blip is still
+# tolerated (asserted above as backward compatibility), so the gate retries and
+# only refuses when the retry fails too. Assert the retry actually happens,
+# otherwise the blip case would only pass by accident.
+reset_case
+export A1_GET_RC=1
+run_claim claim 84345050 2100304
+gets="$(grep -c '^a1:project workitem get 84345050' "$TEST_LOG")"
+if [ "$gets" -ge 2 ]; then
+  ok "existence gate retries the point-read before refusing (${gets} reads)"
+else
+  bad "existence gate refused after a single read (${gets}); a blip would be misread as nonexistent"
 fi
 
 echo "$pass passed, $fail failed"

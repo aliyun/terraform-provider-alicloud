@@ -8,10 +8,6 @@
 
 set -uo pipefail
 
-# These tests exercise the legacy/non-interactive path. Codex/Claude set native
-# session ids in their own tool subprocesses, so explicitly isolate the suite.
-unset CODEX_THREAD_ID CLAUDE_CODE_SESSION_ID
-
 test_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 proj_root="$(cd "$test_dir/.." && pwd)"
 
@@ -22,6 +18,15 @@ tmpstate=$(mktemp)
 tmpcapture=$(mktemp)
 tmpgetcnt=$(mktemp)
 trap 'rm -rf "$tmpbin" "$tmpconfig"; rm -f "$tmplog" "$tmpstate" "$tmpcapture" "$tmpgetcnt" "${tmpstatuscap:-}" "${tmpstatusstate:-}"' EXIT
+
+# These tests exercise the legacy/non-interactive path against a stubbed a1, but
+# claim.sh decides "interactive" from inherited env, not from the stub. Unsetting
+# only CODEX_THREAD_ID/CLAUDE_CODE_SESSION_ID left JARVIS_INTERACTIVE_CLIENT and
+# JARVIS_INTERACTIVE_SESSION_ID in place, so every claim.sh call below used to
+# mint a real control-plane Task for these made-up ids (Aone 85192197).
+# shellcheck source=lib/hermetic.sh
+source "$test_dir/lib/hermetic.sh"
+jarvis_test_hermetic_init "$tmpbin"
 
 PASS=0
 FAIL=0

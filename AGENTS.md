@@ -78,14 +78,23 @@
 12. **assignee 人工接管保护**：写 Aone assignee 一律经
     `bootstrap/aone-assign.sh <工单号> <工号>`，**禁止**裸调
     `a1 project workitem update --assignee`（`bootstrap/a1_command_guard.py` PreToolUse
-    硬门会拦下）。**当前 assignee 已是 API 团队在册真人时不得改派** —— 判据 = 在
-    `config/contacts.json` 内、工号非 `WORKER_` 前缀、且非 `legacy_inbound_only`。
-    目标与当前一致按幂等 no-op 成功；`WORKER_` 数字人与非团队人员（如提单人）仍可改派，
-    初始路由不受影响；读不到当前 assignee 或 roster 时 fail-closed 拒绝，绝不盲改。
+    硬门会拦下）。**当前 assignee 已是真人时不得改派** —— 受保护 = `config/contacts.json`
+    两份名单的并集：① `contacts` 在册 API 团队真人（工号非 `WORKER_` 前缀且非
+    `legacy_inbound_only`）；② `product_maintainers` **云产品专属维护名单**（tf_customer
+    分支 A，人类可读版本见 aone-triage 的 team-roster，两侧由
+    `test/product_maintainers_parity_test.sh` 强制同步）。专属维护人**不在** `contacts` 内
+    （那个数组同时是钉钉委派白名单），必须单独保护。目标与当前一致按幂等 no-op 成功；
+    `WORKER_` 数字人与非团队人员（如提单人）仍可改派，初始路由不受影响；读不到当前
+    assignee、roster 缺失或任一名单为空时 fail-closed 拒绝，绝不盲改。
     「幂等同步 assignee」只表示**收敛到一次正确落位**，不是每轮无条件覆写：首次写入生效、
-    后续覆写被拒，因此数字人也不能在两个真人之间来回甩单。仅当仓库主人本轮当面授权，
-    才可 `JARVIS_ASSIGN_OK=1` 单次绕过。**why**：路由判定在多轮之间并不稳定，而人工把单
-    改回自己恰恰会触发下一轮重派，形成「人越纠正、机器越顽固」的对抗回环。
+    后续覆写被拒，因此数字人也不能在两个真人之间来回甩单。**分支 A 优先于 D/G/pure
+    datasource**：单已指派专属维护人即表示路由已完成，后续轮次不得重判后改派给过载/新山/
+    临钧，`bridge/terraform_route_notify.py` 也据 `aone-assign.sh --check` 跳过会指错人的
+    route DM（`skipped_owner_protected` 是有意 no-op，不重试、不升级、不宣称已通知）。
+    仅当仓库主人本轮当面授权，才可 `JARVIS_ASSIGN_OK=1` 单次绕过。**why**：路由判定在多轮
+    之间并不稳定，而人工把单改回自己恰恰会触发下一轮重派，形成「人越纠正、机器越顽固」的
+    对抗回环；只保护 API 团队名单还会漏掉整条分支 A（实例 84363256：ACK 单从专属维护人被
+    甩到 API 团队共享兜底人）。
 
 ## 自我迭代
 

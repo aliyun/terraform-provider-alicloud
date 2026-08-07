@@ -599,12 +599,35 @@ case "$cmd" in
             fi
         }
         if _is_interactive_context; then
-            interactive_title="$(_get_workitem_title "$workitem_id" || true)"
+            # This pre-claim point-read doubles as an existence gate, so it costs no
+            # extra a1 call. It used to be `|| true`: an unreadable work item degraded
+            # to an empty title and the claim proceeded to mint a control-plane Task
+            # for a source that does not exist. That is how ids invented by the test
+            # suite (9001, 771…7712) became real Tasks — five of them burned retry 4/3
+            # and sent real `tag jarvis-claimed` writes at Aone (Aone 85192197).
+            #
+            # Refusing here, BEFORE prepare-claim, is also strictly safer than failing
+            # later: no Task, no session and no operation receipt exist yet, so there
+            # is nothing to leave in an indeterminate state that a fence would then
+            # demand be reconciled.
+            #
+            # One retry separates the two cases that used to look identical: a
+            # single flaky read (tolerated by design — see the backward-compat case
+            # in test/interactive_claim_test.sh) versus a work item that genuinely
+            # cannot be read. A made-up id fails both attempts; a blip does not.
+            if ! interactive_title="$(_get_workitem_title "$workitem_id")" \
+                && ! interactive_title="$(_get_workitem_title "$workitem_id")"; then
+                echo "claim.sh: refusing to claim $workitem_id — the Aone point-read failed," >&2
+                echo "claim.sh: so this work item cannot be confirmed to exist. A control-plane" >&2
+                echo "claim.sh: Task must never be created for an unreadable source." >&2
+                echo "claim.sh: a1 said: $($A1 project workitem get "$workitem_id" -f json 2>&1 | head -2 | tr '\n' ' ')" >&2
+                exit 2
+            fi
             # Capture the Aone status displayValue BEFORE _claim_tag_update /
             # _advance_status mutate it, so the interactive direct claim reports the
-            # pre-claim source_status in the canonical TaskEnvelope. Best-effort like
-            # title: an empty read degrades to omitting sourceStatus (no NULL write
-            # beyond what already exists) and never blocks the claim flow.
+            # pre-claim source_status in the canonical TaskEnvelope. Still
+            # best-effort: existence is already proven above, and an empty read only
+            # degrades to omitting sourceStatus (no NULL write beyond what exists).
             interactive_status="$(_get_status "$workitem_id" || true)"
             interactive_prepare="$(_interactive_worker prepare-claim "$workitem_id" "$project_id" "$interactive_title" "$interactive_status")"
             interactive_rc=$?

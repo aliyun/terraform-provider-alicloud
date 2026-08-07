@@ -1,5 +1,5 @@
 {
-  "_desc": "API 工具团队联系人花名表：姓名/花名/工号。建单时解析指派(assignee)/抄送(tracker)/参与者(participant)。花名为 null 表示该成员无花名(外包/工号 WB 前缀)。id 为 WORKER_ 前缀=agent/机器人身份。agent_fallbacks 用于重访催办：Aone @ 与钉钉私信均改发真人兜底，绝不私信 WORKER_。标为 legacy inbound only 的联系人与 fallback 仅用于历史单、旧评论作者和存量 assignee 重访兼容，禁止参与新工单路由。Terraform 对外唯一数字人是 TerraformRD；PD/RD/QA 仅作为内部 subagent 分诊、研发、验收，旧 PD/QA 身份不得出站。bridge _load_human_operators 将 jarvis 自身与 Terraform 数字人排除出「人工介入门」白名单；外部 agent 的历史活动仍算人工介入。github 是 PR 评论 poll 的动态「我方」login 白名单来源，缺失或损坏时仍保留 api-tool-agent 内置兜底。",
+  "_desc": "API 工具团队联系人花名表：姓名/花名/工号。建单时解析指派(assignee)/抄送(tracker)/参与者(participant)。花名为 null 表示该成员无花名(外包/工号 WB 前缀)。id 为 WORKER_ 前缀=agent/机器人身份。agent_fallbacks 用于重访催办：Aone @ 与钉钉私信均改发真人兜底，绝不私信 WORKER_。标为 legacy inbound only 的联系人与 fallback 仅用于历史单、旧评论作者和存量 assignee 重访兼容，禁止参与新工单路由。Terraform 对外唯一数字人是 TerraformRD；PD/RD/QA 仅作为内部 subagent 分诊、研发、验收，旧 PD/QA 身份不得出站。bridge _load_human_operators 将 jarvis 自身与 Terraform 数字人排除出「人工介入门」白名单；外部 agent 的历史活动仍算人工介入。github 是 PR 评论 poll 的动态「我方」login 白名单来源，缺失或损坏时仍保留 api-tool-agent 内置兜底。云产品专属维护名单是独立的 product_maintainers 表，不在 contacts 内，见 product_maintainers_desc。",
   "contacts": [
     {"name": "逄磊",   "flower": "马裘",   "id": "404709"},
     {"name": "徐文平", "flower": null,     "id": "WB01146046"},
@@ -24,6 +24,20 @@
     {"name": "靳滢",   "flower": "夏节",   "id": "401498"},
     {"name": "镇元agent", "flower": null,  "id": "WORKER_1783326253279", "legacy_inbound_only": true},
     {"name": "open-jarvis", "flower": null, "id": "WORKER_1782379562571"}
+  ],
+  "product_maintainers_desc": "云产品专属维护名单（tf_customer 分支 A）：这些云产品的 provider 代码由云产品团队专人维护，不接镇元、不走 API 团队共享研发池。**不是** API 工具团队成员，因此故意不进 contacts —— contacts 的 id 同时是钉钉委派白名单(api_tool_staff)与「我方」判定来源，混入会顺带发出去委派权。本表唯一用途：bootstrap/aone-assign.sh 把这些工号视作受保护的真人 owner，工单已指派给他们时拒绝改派（含改派到过载/新山/临钧等共享兜底人），bridge/terraform_route_notify.py 据同一判定跳过会指错人的 route DM。人类可读版本在 .claude/skills/aone-triage/references/team-roster.md「专属维护名单」表，两者由 test/product_maintainers_parity_test.sh 强制同步。",
+  "product_maintainers": [
+    {"product": "容器服务 Kubernetes (ACK)", "flower": "若即",     "id": "377376"},
+    {"product": "日志服务 SLS",              "flower": "豁朗",     "id": "269032"},
+    {"product": "消息服务 MNS",              "flower": "曼红",     "id": "38570"},
+    {"product": "OSS",                       "flower": "凡修",     "id": "71145"},
+    {"product": "弹性伸缩 ESS",              "flower": "扶柳",     "id": "WB530580"},
+    {"product": "表格存储 OTS",              "flower": "景哲",     "id": "263417"},
+    {"product": "E-MapReduce (EMR)",         "flower": "鱼戏",     "id": "373227"},
+    {"product": "RDS",                       "flower": "柴天生",   "id": "WB01586841"},
+    {"product": "PolarDB",                   "flower": "米汐",     "id": "527630"},
+    {"product": "MSE",                       "flower": "棠溪",     "id": "401341"},
+    {"product": "ClickHouse",                "flower": "逸颉",     "id": "439859"}
   ],
   "agent_fallbacks_desc": "legacy inbound only：只解析历史单/旧评论/存量 assignee 的重访催办，不得作为新工单路由或建单依据。",
   "agent_fallbacks": {
