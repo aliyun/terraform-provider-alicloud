@@ -720,7 +720,7 @@ func TestAccAliCloudRdsDBInstance_VpcId(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force", "force_restart", "db_is_ignore_case", "tde_status", "role_arn", "tde_encryption_key"},
+				ImportStateVerifyIgnore: []string{"force", "force_restart", "db_is_ignore_case", "tde_status", "role_arn", "tde_encryption_key", "node_id", "server_cert", "server_key", "ssl_connection_string", "sql_collector_status", "db_param_group_id"},
 			},
 		},
 	})
@@ -4587,6 +4587,140 @@ resource "alicloud_rds_whitelist_template" "default1" {
 }
 
 `, name, templateName, templateName1)
+}
+
+// testAccCheckDBInstanceSecurityIpArray verifies that the IP array named
+// arrayName exists on the instance and contains exactly expectedIPs (order
+// independent). It is used to assert that a custom IP array is created on the
+// first apply and that the default array is not polluted with the user's IPs.
+func testAccCheckDBInstanceSecurityIpArray(n, arrayName string, expectedIPs []string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[n]
+		if !ok {
+			return fmt.Errorf("Not found: %s", n)
+		}
+		if rs.Primary.ID == "" {
+			return fmt.Errorf("No DB Instance ID is set")
+		}
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		rdsService := RdsService{client}
+		resp, err := rdsService.DescribeDBSecurityIps(rs.Primary.ID)
+		if err != nil {
+			return err
+		}
+		log.Printf("[DEBUG] check instance %s security ip arrays %#v", rs.Primary.ID, resp)
+		expected := make(map[string]struct{}, len(expectedIPs))
+		for _, ip := range expectedIPs {
+			expected[strings.TrimSpace(ip)] = struct{}{}
+		}
+		for _, item := range resp {
+			ipArray, ok := item.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			name, ok := ipArray["DBInstanceIPArrayName"].(string)
+			if !ok || name != arrayName {
+				continue
+			}
+			actual, ok := ipArray["SecurityIPList"].(string)
+			if !ok {
+				return fmt.Errorf("DB security ip array %q has no SecurityIPList", arrayName)
+			}
+			got := make(map[string]struct{})
+			for _, ip := range strings.Split(actual, COMMA_SEPARATED) {
+				got[strings.TrimSpace(ip)] = struct{}{}
+			}
+			if len(got) != len(expected) {
+				return fmt.Errorf("DB security ip array %q expected %d ips (%v), got %d (%q)", arrayName, len(expected), expectedIPs, len(got), actual)
+			}
+			for ip := range expected {
+				if _, ok := got[ip]; !ok {
+					return fmt.Errorf("DB security ip array %q missing expected ip %q, got %q", arrayName, ip, actual)
+				}
+			}
+			return nil
+		}
+		return fmt.Errorf("DB security ip array %q not found on instance %s", arrayName, rs.Primary.ID)
+	}
+}
+
+func TestAccAliCloudRdsDBInstance_CustomIPArray(t *testing.T) {
+	var instance map[string]interface{}
+	resourceId := "alicloud_db_instance.default"
+	ra := resourceAttrInit(resourceId, instanceBasicMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
+		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDBInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccDBInstanceCustomIPArray%d", rand.Intn(1000))
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBInstanceConfigDependence)
+	customSecurityIps := []string{"10.168.1.12", "100.69.7.112"}
+	updatedSecurityIps := []string{"10.168.1.13", "100.69.7.113"}
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				// CreateDBInstance only populates the default IP array. A custom
+				// db_instance_ip_array_name must be created via ModifySecurityIps
+				// right after the instance is running, and the default array must
+				// stay at localhost instead of being polluted with the user's IPs.
+				Config: testAccConfig(map[string]interface{}{
+					"engine":                    "MySQL",
+					"engine_version":            "8.0",
+					"instance_type":             "mysql.n1e.small.1",
+					"instance_storage":          "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min}",
+					"instance_charge_type":      "Postpaid",
+					"instance_name":             "${var.name}",
+					"vswitch_id":                "${local.vswitch_id}",
+					"monitoring_period":         "60",
+					"db_instance_storage_type":  "cloud_essd",
+					"db_instance_ip_array_name": "terraform_test",
+					"security_ips":              customSecurityIps,
+					"whitelist_network_type":    "VPC",
+					"modify_mode":               "Cover",
+					"force":                     "No",
+					"node_id":                   "",
+					"server_cert":               "",
+					"server_key":                "",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine":                    "MySQL",
+						"engine_version":            "8.0",
+						"instance_type":             CHECKSET,
+						"instance_storage":          CHECKSET,
+						"instance_name":             name,
+						"db_instance_storage_type":  "cloud_essd",
+						"db_instance_ip_array_name": "terraform_test",
+						"security_ips.#":            "2",
+					}),
+					testAccCheckDBInstanceSecurityIpArray(resourceId, "terraform_test", customSecurityIps),
+					testAccCheckDBInstanceSecurityIpArray(resourceId, "default", []string{LOCAL_HOST_IP}),
+				),
+			},
+			{
+				// Updating security_ips on the custom array should rewrite the
+				// custom array and leave the default array untouched.
+				Config: testAccConfig(map[string]interface{}{
+					"security_ips": updatedSecurityIps,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_ip_array_name": "terraform_test",
+						"security_ips.#":            "2",
+					}),
+					testAccCheckDBInstanceSecurityIpArray(resourceId, "terraform_test", updatedSecurityIps),
+					testAccCheckDBInstanceSecurityIpArray(resourceId, "default", []string{LOCAL_HOST_IP}),
+				),
+			},
+		},
+	})
 }
 func testAccCheckSecurityIpExists(n string, ips []map[string]interface{}) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
