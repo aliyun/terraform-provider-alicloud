@@ -143,8 +143,26 @@ class InteractiveWorkerTest(unittest.TestCase):
         }, clear=False)
         self.env.start()
         os.environ.pop("CLAUDE_CODE_SESSION_ID", None)
+        # The ambient host must not decide which state file these tests bind to.
+        # `_runtime_context` walks the real process tree, and when the nearest host
+        # is `claude` with no native CLAUDE_CODE_SESSION_ID it falls back to the
+        # persisted JARVIS_INTERACTIVE_* pair. Running the suite from inside a
+        # registered interactive Claude session therefore resolved every
+        # `_current_store()` to that session's real state path instead of
+        # `self.temp`, and 34 tests died on "interactive worker is not registered"
+        # — green in CI and in a plain shell, red exactly when jarvis checks its own
+        # work. Clear the inherited identity and neutralize the process-tree probe,
+        # as StopCheckTest already does; the handful of tests that assert on a
+        # specific nearest host or persisted pair set them in an inner patch, which
+        # takes precedence over both.
+        os.environ.pop("JARVIS_INTERACTIVE_CLIENT", None)
+        os.environ.pop("JARVIS_INTERACTIVE_SESSION_ID", None)
+        self._nearest_patch = mock.patch.object(
+            worker, "_nearest_runtime_client", return_value="")
+        self._nearest_patch.start()
 
     def tearDown(self):
+        self._nearest_patch.stop()
         self.env.stop()
         self.temp.cleanup()
 
