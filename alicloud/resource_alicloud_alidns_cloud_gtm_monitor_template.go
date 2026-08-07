@@ -30,7 +30,7 @@ func resourceAliCloudAlidnsCloudGtmMonitorTemplate() *schema.Resource {
 			"evaluation_count": {
 				Type:         schema.TypeInt,
 				Required:     true,
-				ValidateFunc: IntInSlice([]int{0, 1, 2, 3}),
+				ValidateFunc: IntInSlice([]int{1, 2, 3}),
 			},
 			"extend_info": {
 				Type:     schema.TypeString,
