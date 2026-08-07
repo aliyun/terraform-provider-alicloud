@@ -231,11 +231,17 @@ class ControlPlaneClient:
     OPERATION_PATH = "operations/{operation_id}"
     OPERATION_BY_KEY_PATH = "operations/by-key"
 
-    def __init__(self, base_url: str, token: str = "", *, timeout: float = 10.0,
+    def __init__(self, base_url: str, token: str = "", *, admin_token: str = "",
+                 timeout: float = 10.0,
                  api_prefix: str = DEFAULT_PREFIX,
                  opener: Optional[Callable[..., Any]] = None):
         self.base_url = _nonblank(base_url, "base_url").rstrip("/")
         self.token = str(token or "")
+        # Independent privileged credential for /api/jarvis/v1/admin/**. Never falls
+        # back to the worker token: an empty admin_token makes admin endpoints fail
+        # closed rather than silently degrade to worker credentials, mirroring the
+        # server-side BucAuthFilter "never falls back" contract.
+        self.admin_token = str(admin_token or "").strip()
         self.timeout = float(timeout)
         if self.timeout <= 0:
             raise ValueError("timeout must be positive")
@@ -298,8 +304,16 @@ class ControlPlaneClient:
         raise ControlPlaneRejected(message, **kwargs)
 
     def _request(self, method: str, suffix: str, *, payload: Optional[Mapping[str, Any]] = None,
-                 request_id: Optional[str] = None) -> Any:
+                 request_id: Optional[str] = None, admin: bool = False) -> Any:
         method = _nonblank(method, "method").upper()
+        normalized_suffix = _nonblank(suffix, "suffix").lstrip("/")
+        is_admin_endpoint = normalized_suffix.startswith("admin/")
+        if bool(admin) != is_admin_endpoint:
+            # Credential choice must agree with the URL namespace. This keeps a
+            # newly added admin call from accidentally sending the worker token,
+            # and prevents an admin token from being attached to a worker route.
+            raise ControlPlaneError(
+                "control plane: credential mode does not match endpoint namespace")
         if payload is not None and not isinstance(payload, Mapping):
             raise TypeError("payload must be a mapping")
         body = None
@@ -314,9 +328,18 @@ class ControlPlaneClient:
             headers["Content-Type"] = "application/json"
             headers["Idempotency-Key"] = _nonblank(
                 request_id or self.new_request_id(), "request_id")
-        if self.token:
-            headers["Authorization"] = "Bearer " + self.token
-        req = Request(self._endpoint(suffix), data=body, method=method, headers=headers)
+        # Admin endpoints (/api/jarvis/v1/admin/**) require the independent admin
+        # credential; the worker token must never authenticate them. Fail closed
+        # when no admin_token is configured instead of falling back, matching the
+        # server-side BucAuthFilter contract.
+        token = self.admin_token if admin else self.token
+        if admin and not token:
+            raise ControlPlaneError(
+                "control plane: admin_token is not configured for an admin endpoint")
+        if token:
+            headers["Authorization"] = "Bearer " + token
+        req = Request(
+            self._endpoint(normalized_suffix), data=body, method=method, headers=headers)
         try:
             with self._opener(req, timeout=self.timeout) as resp:
                 status_value = getattr(resp, "status", None)
@@ -350,14 +373,15 @@ class ControlPlaneClient:
         return parsed
 
     def _post(self, suffix: str, payload: Mapping[str, Any], *,
-              request_id: Optional[str] = None) -> Dict[str, Any]:
-        parsed = self._request("POST", suffix, payload=payload, request_id=request_id)
+              request_id: Optional[str] = None, admin: bool = False) -> Dict[str, Any]:
+        parsed = self._request("POST", suffix, payload=payload, request_id=request_id,
+                               admin=admin)
         if not isinstance(parsed, dict):
             raise InvalidResponse("control plane mutation response must be an object")
         return parsed
 
-    def _get(self, suffix: str) -> Any:
-        return self._request("GET", suffix)
+    def _get(self, suffix: str, *, admin: bool = False) -> Any:
+        return self._request("GET", suffix, admin=admin)
 
     def _mutation(self, method: str, suffix: str, *,
                   payload: Optional[Mapping[str, Any]] = None,
@@ -916,7 +940,7 @@ class ControlPlaneClient:
         Read-only. Returns the snapshot (counts + SHA-256 task-id digest), active
         blockers, an ``executable`` flag, and the deprecated ``taskTypes`` allowlist.
         """
-        return self._get(self.LEGACY_KIND_CLEANUP_PATH)
+        return self._get(self.LEGACY_KIND_CLEANUP_PATH, admin=True)
 
     def cleanup_legacy_kind_tasks(self, expected_snapshot: Mapping[str, Any],
                                   confirmation: str, *,
@@ -931,7 +955,7 @@ class ControlPlaneClient:
         return self._post(self.LEGACY_KIND_CLEANUP_PATH, {
             "confirmation": _nonblank(confirmation, "confirmation"),
             "expectedSnapshot": dict(expected_snapshot),
-        }, request_id=request_id)
+        }, request_id=request_id, admin=True)
 
     def list_source_status_candidates(self, *, after_task_id: int = 0,
                                       limit: int = 100) -> Any:

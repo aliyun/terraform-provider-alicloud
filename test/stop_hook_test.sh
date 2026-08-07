@@ -299,6 +299,38 @@ assert_lifecycle_prefers_system_python() {
     fi
 }
 
+assert_interactive_wrapper_strips_admin_token() {
+    local fake_python="$tmp_root/fake-worker-python"
+    local empty_env="$tmp_root/empty-worker.env"
+    local rc
+    : >"$empty_env"
+    chmod 600 "$empty_env"
+    cat >"$fake_python" <<'EOF'
+#!/usr/bin/env bash
+if [ -n "${JARVIS_CONTROL_PLANE_ADMIN_TOKEN:-}" ]; then
+    echo "admin token reached interactive worker" >&2
+    exit 91
+fi
+exit 0
+EOF
+    chmod +x "$fake_python"
+    JARVIS_CONTROL_PLANE_ADMIN_TOKEN="operator-only" \
+        JARVIS_INTERACTIVE_BOOTSTRAP_ENV="$empty_env" \
+        JARVIS_INTERACTIVE_BRIDGE_ENV="$empty_env" \
+        XDG_CONFIG_HOME="$tmp_root/no-runtime-config" \
+        HOME="$tmp_root" \
+        JARVIS_INTERACTIVE_WORKER_PYTHON="$fake_python" \
+        JARVIS_INTERACTIVE_WORKER_MANAGER="/unused/worker.py" \
+        bash "$repo_root/bootstrap/run-interactive-worker-hook.sh" cli status \
+        >"$tmp_out" 2>&1
+    rc=$?
+    if [ "$rc" -eq 0 ]; then
+        ok "interactive wrapper strips operator admin token"
+    else
+        no "interactive wrapper leaked operator admin token (rc=$rc output=$(tr '\n' ' ' <"$tmp_out"))"
+    fi
+}
+
 assert_claude_has_all_tool_worker_fence_handler() {
     local command matcher
     command="$(jq -r '.hooks.PreToolUse[0].hooks[0].command' \
@@ -401,6 +433,11 @@ make_fake_stop_scripts() {
     mkdir -p "$dir"
     cp "$repo_root/bootstrap/run-stop-hook.sh" "$dir/run-stop-hook.sh"
     cp "$repo_root/bootstrap/runtime-config.sh" "$dir/runtime-config.sh"
+    # Force the primary control-plane check into its documented unavailable
+    # fallback. Do not depend on a machine-local manager path or runtime env.
+    cat > "$dir/jarvis-interactive-worker.py" <<'PY'
+raise SystemExit(1)
+PY
     cat > "$dir/wrap-check.sh" <<'EOF'
 #!/usr/bin/env bash
 cat >/dev/null
@@ -478,6 +515,7 @@ assert_codex_tool_activity_hook_runs_outside_git
 assert_codex_pretool_root_resolution_fails_closed
 assert_pretool_wrapper_normalizes_all_failures_to_block
 assert_lifecycle_prefers_system_python
+assert_interactive_wrapper_strips_admin_token
 assert_claude_has_all_tool_worker_fence_handler
 assert_stale_global_runner_cannot_bypass_current_hooks
 assert_codex_stop_has_single_ordered_handler

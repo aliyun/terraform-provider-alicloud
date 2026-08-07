@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from zoneinfo import ZoneInfo
 
-from bridge.scheduler.scheduler import require_scheduler_role
+from bridge.scheduler.scheduler import _task_client_from_env, require_scheduler_role
 from bridge.scheduler.engine import TriggerPlanner
 from bridge.scheduler.model import (
     AdaptiveSchedule, DailySchedule, HandlerRunner, IntervalSchedule, JobResult,
@@ -34,6 +34,15 @@ def definition(*, revision: int = 1, schedule=None) -> ScheduledJobDefinition:
 
 
 class SchedulerCoreTests(unittest.TestCase):
+    def test_scheduler_client_uses_only_worker_token(self):
+        client = _task_client_from_env({
+            "JARVIS_CONTROL_PLANE_TOKEN": "scheduler-worker-token",
+            "JARVIS_CONTROL_PLANE_ADMIN_TOKEN": "operator-only",
+        })
+
+        self.assertEqual(client.token, "scheduler-worker-token")
+        self.assertEqual(client.admin_token, "")
+
     def test_default_scheduler_drain_timeout_is_30_seconds(self):
         self.assertEqual(service._stop_timeout(None, {}), 30.0)
 

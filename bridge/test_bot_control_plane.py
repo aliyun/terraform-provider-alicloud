@@ -264,6 +264,7 @@ class _FakePersistenceExecutor:
 class HandlerWiringTest(unittest.TestCase):
     ENV_KEYS = (
         "JARVIS_CONTROL_PLANE_BASE_URL", "JARVIS_CONTROL_PLANE_TOKEN",
+        "JARVIS_CONTROL_PLANE_ADMIN_TOKEN",
         "JARVIS_HTML_REPORT_BASE_URL",
         "JARVIS_HTML_REPORT_TOKEN",
         "JARVIS_BRIDGE_ROLE",
@@ -374,9 +375,11 @@ class HandlerWiringTest(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "token is required"):
             bot._task_client_from_env()
         os.environ["JARVIS_HTML_REPORT_TOKEN"] = "shared-token"
+        os.environ["JARVIS_CONTROL_PLANE_ADMIN_TOKEN"] = "operator-only"
         client = bot._task_client_from_env()
         self.assertEqual(client.base_url, "https://agent.aliyun-inc.com")
         self.assertEqual(client.token, "shared-token")
+        self.assertEqual(client.admin_token, "")
 
 
 class AoneReplyRunnerTest(unittest.TestCase):

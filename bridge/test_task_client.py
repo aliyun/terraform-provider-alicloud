@@ -15,6 +15,7 @@ sys.path.insert(0, str(HERE))
 from bridge.jarvis_task_client import (  # noqa: E402
     ControlPlaneClient,
     ControlPlaneConflict,
+    ControlPlaneError,
     ControlPlaneUnavailable,
     HandoffRequested,
     InvalidResponse,
@@ -188,6 +189,65 @@ class ClientContractTest(unittest.TestCase):
         self.assertNotIn("shadow", body(req))
         self.assertEqual(body(req)["desiredRevision"],
                          "modified:2026-07-15T01:02:03Z")
+
+    def make_admin(self, opener, *, admin_token="admin-secret"):
+        # Independent admin credential for /api/jarvis/v1/admin/**; mirrors the
+        # server-side BucAuthFilter "never falls back" contract.
+        return ControlPlaneClient(
+            "https://pre-agent.example/", "super-secret",
+            admin_token=admin_token, timeout=4.5, opener=opener)
+
+    def test_admin_get_uses_admin_token_not_worker_token(self):
+        opener = RecordingOpener(responses=[FakeResponse({"executable": False})])
+        client = self.make_admin(opener)
+        client.preview_legacy_kind_cleanup()
+        req, _timeout = opener.calls[0]
+        self.assertEqual(req.full_url,
+                         "https://pre-agent.example/api/jarvis/v1/admin/tasks/legacy-kind/cleanup")
+        self.assertEqual(headers(req)["authorization"], "Bearer admin-secret")
+
+    def test_admin_post_uses_admin_token(self):
+        opener = RecordingOpener(responses=[FakeResponse({"deleted": 0})])
+        client = self.make_admin(opener)
+        client.cleanup_legacy_kind_tasks({"counts": 0}, "CLEANUP")
+        req, _timeout = opener.calls[0]
+        self.assertEqual(headers(req)["authorization"], "Bearer admin-secret")
+
+    def test_admin_endpoint_fails_closed_without_admin_token(self):
+        for missing in ("", " \t "):
+            with self.subTest(admin_token=repr(missing)):
+                opener = RecordingOpener()
+                client = self.make_admin(opener, admin_token=missing)
+                with self.assertRaises(ControlPlaneError):
+                    client.preview_legacy_kind_cleanup()
+                with self.assertRaises(ControlPlaneError):
+                    client.cleanup_legacy_kind_tasks({"counts": 0}, "CLEANUP")
+                self.assertEqual(opener.calls, [])  # no request ever sent
+
+    def test_endpoint_namespace_and_credential_mode_must_match(self):
+        opener = RecordingOpener()
+        client = self.make_admin(opener)
+        with self.assertRaises(ControlPlaneError):
+            client._get("admin/unmarked")
+        with self.assertRaises(ControlPlaneError):
+            client._get("workers", admin=True)
+        self.assertEqual(opener.calls, [])
+
+    def test_worker_endpoint_ignores_admin_token_and_uses_worker_token(self):
+        opener = RecordingOpener(responses=[FakeResponse(raw=b"[]")])
+        client = self.make_admin(opener)
+        client.list_workers()
+        req, _timeout = opener.calls[0]
+        self.assertEqual(headers(req)["authorization"], "Bearer super-secret")
+
+    def test_worker_endpoint_never_falls_back_to_admin_token(self):
+        opener = RecordingOpener(responses=[FakeResponse(raw=b"[]")])
+        client = ControlPlaneClient(
+            "https://pre-agent.example/", admin_token="admin-secret",
+            timeout=4.5, opener=opener)
+        client.list_workers()
+        req, _timeout = opener.calls[0]
+        self.assertNotIn("authorization", headers(req))
 
     def test_all_worker_and_session_endpoints(self):
         opener = RecordingOpener(responses=[
@@ -811,13 +871,16 @@ class ClientContractTest(unittest.TestCase):
             FakeResponse({"before": snapshot,
                           "after": dict(snapshot, tasks=0, sessions=0, events=0)}),
         ])
-        c = self.make(opener)
+        c = self.make_admin(opener)
 
         preview = c.preview_legacy_kind_cleanup()
         req, _timeout = opener.calls[0]
         self.assertEqual(req.get_method(), "GET")
         self.assertTrue(req.full_url.endswith(
             "/api/jarvis/v1/admin/tasks/legacy-kind/cleanup"))
+        # Admin endpoints authenticate with the independent admin token, never the
+        # worker token.
+        self.assertEqual(headers(req)["authorization"], "Bearer admin-secret")
         self.assertEqual(preview["taskTypes"], ["field_repair"])
 
         result = c.cleanup_legacy_kind_tasks(
@@ -826,6 +889,7 @@ class ClientContractTest(unittest.TestCase):
         self.assertEqual(req2.get_method(), "POST")
         self.assertTrue(req2.full_url.endswith(
             "/api/jarvis/v1/admin/tasks/legacy-kind/cleanup"))
+        self.assertEqual(headers(req2)["authorization"], "Bearer admin-secret")
         self.assertEqual(body(req2), {
             "confirmation": "DELETE_LEGACY_KIND_TASKS",
             "expectedSnapshot": snapshot,
@@ -906,6 +970,13 @@ class ClientContractTest(unittest.TestCase):
         with self.assertRaises(ControlPlaneUnavailable):
             self.make(RecordingOpener(error=err)).register_worker(
                 {"worker_key": "w"}, request_id="r")
+
+        with self.assertRaises(ControlPlaneUnavailable) as admin_error:
+            self.make_admin(
+                RecordingOpener(error=URLError(socket.timeout()))
+            ).preview_legacy_kind_cleanup()
+        self.assertNotIn("admin-secret", str(admin_error.exception))
+        self.assertNotIn("super-secret", str(admin_error.exception))
 
     def test_invalid_success_json_is_rejected(self):
         opener = RecordingOpener(responses=[FakeResponse(raw=b"not-json")])

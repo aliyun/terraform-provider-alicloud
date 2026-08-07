@@ -8,8 +8,10 @@
                     operations 回执状态）
   operation <id>    单个 operation + Task/Session/fence/readbackSpec（只读）
 
-凭证由 wrapper 经共享 machine runtime loader 加载（token 回退
-JARVIS_HTML_REPORT_TOKEN）；控制面地址可显式覆盖，默认指向预发。
+凭证由 wrapper 经共享 machine runtime loader 加载。普通诊断/恢复命令使用
+JARVIS_CONTROL_PLANE_TOKEN（可由 JARVIS_HTML_REPORT_TOKEN 回填）；
+``legacy-cleanup`` 只使用独立的 JARVIS_CONTROL_PLANE_ADMIN_TOKEN。
+控制面地址可显式覆盖，默认指向生产控制面。
 本文件只读环境变量、不读 env 文件。``discard-resume``、``force-release`` 和
 ``force-redispatch`` 是写操作，且必须显式 ``--yes``。
 
@@ -39,16 +41,29 @@ from task_input_contract import (  # noqa: E402
 EVENT_TAIL = 5  # task 视图只列最近 N 条 event（全量看服务端 timeline）
 
 
-def _client():
+def _client(command):
     base = (os.environ.get("JARVIS_CONTROL_PLANE_BASE_URL", "").strip()
             or DEFAULT_CONTROL_PLANE_BASE_URL)
     token = os.environ.get("JARVIS_CONTROL_PLANE_TOKEN", "").strip()
+    admin_token = os.environ.get("JARVIS_CONTROL_PLANE_ADMIN_TOKEN", "").strip()
+    timeout = float(os.environ.get("JARVIS_CONTROL_PLANE_TIMEOUT", "10"))
+    if command == "legacy-cleanup":
+        if not admin_token:
+            sys.stderr.write(
+                "error: JARVIS_CONTROL_PLANE_ADMIN_TOKEN is not configured; "
+                "legacy-cleanup never falls back to the worker token\n")
+            raise SystemExit(2)
+        # This command only calls /admin/**. Do not retain the ordinary worker
+        # token in its client, even when both credentials exist in the runtime.
+        return ControlPlaneClient(
+            base, admin_token=admin_token, timeout=timeout)
     if not token:
         sys.stderr.write(
             "error: JARVIS_CONTROL_PLANE_TOKEN is not configured "
             "(JARVIS_HTML_REPORT_TOKEN is reused as fallback)\n")
         raise SystemExit(2)
-    timeout = float(os.environ.get("JARVIS_CONTROL_PLANE_TIMEOUT", "10"))
+    # Non-admin commands do not retain the privileged credential. Their HTTP
+    # requests can only authenticate with the ordinary control-plane token.
     return ControlPlaneClient(base, token, timeout=timeout)
 
 
@@ -530,7 +545,7 @@ def main(argv=None):
     p_legacy.add_argument("--yes", action="store_true",
                           help="confirm deletion of the exact previewed residual tasks")
     args = parser.parse_args(argv)
-    client = _client()
+    client = _client(args.cmd)
     try:
         if args.cmd == "workers":
             return cmd_workers(client)
