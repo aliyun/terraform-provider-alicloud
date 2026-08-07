@@ -620,6 +620,12 @@ func resourceAliCloudInstance() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: IntBetween(1, 64),
 			},
+			"instance_metadata_tags": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"enabled", "disabled"}, false),
+			},
 			"ipv6_address_count": {
 				Type:          schema.TypeInt,
 				Optional:      true,
@@ -1690,6 +1696,13 @@ func resourceAliCloudInstanceRead(d *schema.ResourceData, meta interface{}) erro
 		d.Set("cpu_options", cpuOptionsMaps)
 	}
 
+	// InstanceMetadataTags is returned by DescribeInstances under MetadataOptions when
+	// AdditionalAttributes contains META_OPTIONS, but it is not present in the SDK
+	// MetadataOptions struct, so read it from the raw response map.
+	if metadataOptions, ok := ecsInstanceAttribute["MetadataOptions"].(map[string]interface{}); ok {
+		d.Set("instance_metadata_tags", metadataOptions["InstanceMetadataTags"])
+	}
+
 	return nil
 }
 
@@ -2320,7 +2333,7 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 		d.SetPartial("maintenance_notify")
 	}
 
-	if d.HasChange("http_endpoint") || d.HasChange("http_tokens") {
+	if d.HasChange("http_endpoint") || d.HasChange("http_tokens") || d.HasChange("instance_metadata_tags") {
 		var response map[string]interface{}
 		action := "ModifyInstanceMetadataOptions"
 		request := map[string]interface{}{
@@ -2335,6 +2348,9 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 		}
 		if v, ok := d.GetOk("http_tokens"); ok {
 			request["HttpTokens"] = v
+		}
+		if v, ok := d.GetOk("instance_metadata_tags"); ok {
+			request["InstanceMetadataTags"] = v
 		}
 
 		wait := incrementalWait(3*time.Second, 3*time.Second)
