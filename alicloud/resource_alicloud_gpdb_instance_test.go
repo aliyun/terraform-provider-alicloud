@@ -408,6 +408,85 @@ func TestAccAliCloudGPDBDBInstance_basic0(t *testing.T) {
 	})
 }
 
+// TestAccAliCloudGPDBDBInstance_importBackfillsParameters is a regression test for
+// `terraform import`. ImportStatePassthrough seeds the state with only the
+// instance id, so the previous Read guard `d.GetOk("parameters")` was false on
+// import and the DescribeParameters block was skipped entirely, leaving the
+// imported state with an empty `parameters` set. Read now writes the full
+// server-side parameter set back into state when no parameters are declared in
+// the configuration, so an imported instance reflects its real parameters.
+func TestAccAliCloudGPDBDBInstance_importBackfillsParameters(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_gpdb_instance.default"
+	ra := resourceAttrInit(resourceId, AliCloudGPDBDBInstanceMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &GpdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeGpdbDbInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sgpdbdbinstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGPDBDBInstanceBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				// Create an instance without declaring any `parameters` block,
+				// mirroring the state shape `terraform import` starts from
+				// (state carries only the instance id).
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_category":  "HighAvailability",
+					"db_instance_class":     "gpdb.group.segsdx1",
+					"db_instance_mode":      "StorageElastic",
+					"engine":                "gpdb",
+					"engine_version":        "6.0",
+					"zone_id":               "${data.alicloud_gpdb_zones.default.ids.0}",
+					"instance_network_type": "VPC",
+					"instance_spec":         "2C16G",
+					"instance_group_count":  "2",
+					"payment_type":          "PayAsYouGo",
+					"seg_storage_type":      "cloud_essd",
+					"seg_node_num":          "4",
+					"storage_size":          "50",
+					"vpc_id":                "${data.alicloud_vpcs.default.ids.0}",
+					"vswitch_id":            "${local.vswitch_id}",
+					"create_sample_data":    "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type": "PayAsYouGo",
+					}),
+				),
+			},
+			{
+				// Import the instance. ImportStateVerify is intentionally left
+				// off because the configuration declares no `parameters`; the
+				// point is to assert that Read backfills the server-side
+				// parameter set into state instead of skipping it.
+				ResourceName: resourceId,
+				ImportState:  true,
+				Check: resource.ComposeTestCheckFunc(
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources[resourceId]
+						if !ok {
+							return fmt.Errorf("resource not found in state: %s", resourceId)
+						}
+						count := rs.Primary.Attributes["parameters.#"]
+						if count == "" || count == "0" {
+							return fmt.Errorf("expected parameters to be backfilled after import, got parameters.#=%q", count)
+						}
+						return nil
+					},
+				),
+			},
+		},
+	})
+}
+
 // TestAccAliCloudGPDBDBInstance_minorVersion covers the minor_version attribute.
 // GPDB instances are always provisioned with the latest minor version and
 // UpgradeDBVersion cannot downgrade, so a real upgrade to a higher version cannot
