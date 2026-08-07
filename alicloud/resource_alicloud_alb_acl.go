@@ -215,7 +215,7 @@ func resourceAlicloudAlbAclUpdate(d *schema.ResourceData, meta interface{}) erro
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("Alb", "2020-06-16", action, nil, updateAclAttributeReq, true)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"OperationFailed.ResourceGroupStatusCheckFail", "SystemBusy", "Throttling"}) || NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"OperationFailed.ResourceGroupStatusCheckFail", "SystemBusy", "Throttling", "AclStatusNotStable"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -264,7 +264,7 @@ func resourceAlicloudAlbAclUpdate(d *schema.ResourceData, meta interface{}) erro
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 					response, err = client.RpcPost("Alb", "2020-06-16", action, nil, removeEntriesFromAclReq, true)
 					if err != nil {
-						if IsExpectedErrors(err, []string{"IncorrectStatus.Acl", "OperationFailed.ResourceGroupStatusCheckFail", "SystemBusy", "Throttling"}) || NeedRetry(err) {
+						if IsExpectedErrors(err, []string{"IncorrectStatus.Acl", "OperationFailed.ResourceGroupStatusCheckFail", "SystemBusy", "Throttling", "AclStatusNotStable"}) || NeedRetry(err) {
 							wait()
 							return resource.RetryableError(err)
 						}
@@ -308,7 +308,7 @@ func resourceAlicloudAlbAclUpdate(d *schema.ResourceData, meta interface{}) erro
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 					response, err = client.RpcPost("Alb", "2020-06-16", action, nil, addEntriesToAclReq, true)
 					if err != nil {
-						if IsExpectedErrors(err, []string{"OperationFailed.ResourceGroupStatusCheckFail", "SystemBusy", "Throttling"}) || NeedRetry(err) {
+						if IsExpectedErrors(err, []string{"OperationFailed.ResourceGroupStatusCheckFail", "SystemBusy", "Throttling", "AclStatusNotStable"}) || NeedRetry(err) {
 							wait()
 							return resource.RetryableError(err)
 						}
@@ -350,7 +350,7 @@ func resourceAlicloudAlbAclDelete(d *schema.ResourceData, meta interface{}) erro
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("Alb", "2020-06-16", action, nil, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"OperationFailed.ResourceGroupStatusCheckFail", "SystemBusy", "ResourceInUse.Acl", "IncorrectStatus.Acl"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"OperationFailed.ResourceGroupStatusCheckFail", "SystemBusy", "ResourceInUse.Acl", "IncorrectStatus.Acl", "AclStatusNotStable"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
