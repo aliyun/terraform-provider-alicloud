@@ -47,24 +47,36 @@ credential is not a fleet credential: do not put it in a worker `jarvis.env`, co
 it with `worker-credentials-package.sh`, or install it on an ordinary worker host.
 
 The only current admin caller is the explicit operator command
-`bootstrap/control-plane-status.sh legacy-cleanup`. Run it on a trusted
+`bootstrap/control-plane-status.sh unresolvable-source-cleanup`. Run it on a trusted
 scheduler/operator host and inject the secret only into that command's environment.
+Its positional values are **control-plane Task IDs, not Aone work-item IDs**.
 For example, this reads the value without echoing it or placing it in shell history:
 
 ```bash
 read -r -s JARVIS_CONTROL_PLANE_ADMIN_TOKEN
 export JARVIS_CONTROL_PLANE_ADMIN_TOKEN
-bootstrap/control-plane-status.sh legacy-cleanup
+bootstrap/control-plane-status.sh unresolvable-source-cleanup 123 456
+# After reviewing the normalized IDs, complete snapshot, and all blocker counts:
+bootstrap/control-plane-status.sh unresolvable-source-cleanup 123 456 \
+  --reason 'verified source records no longer exist' --yes
 unset JARVIS_CONTROL_PLANE_ADMIN_TOKEN
 ```
 
-`legacy-cleanup` accepts the admin token without requiring or retaining the ordinary
-worker token. Every other `control-plane-status` command requires the worker token
-and does not retain the admin token. The bridge supervisor strips the admin variable
-from every child component and its OFFLINE helper; the current Scheduler has no admin
-operation and therefore receives no admin credential. If a future Scheduler feature
-needs an admin endpoint, add an explicit reviewed injection boundary for that one
-trusted client rather than broadening worker configuration.
+Without `--yes`, the command only previews. Confirmed cleanup additionally requires a
+nonblank `--reason`, an `executable=true` preview, zero active Tasks/Sessions, and zero
+blocking required operations. It forwards the server-normalized IDs and the complete
+preview snapshot as a CAS. A successful deletion has no idempotent receipt; do not
+blindly replay an uncertain response, because the IDs will be unknown after success.
+The retired `legacy-cleanup` command is a zero-network tombstone that prints this
+migration path instead of forwarding to a broader deletion contract.
+
+`unresolvable-source-cleanup` accepts the admin token without requiring or retaining
+the ordinary worker token. Every other active `control-plane-status` command requires
+the worker token and does not retain the admin token. The bridge supervisor strips the
+admin variable from every child component and its OFFLINE helper; the current Scheduler
+has no admin operation and therefore receives no admin credential. If a future Scheduler
+feature needs an admin endpoint, add an explicit reviewed injection boundary for that
+one trusted client rather than broadening worker configuration.
 
 ## SchedulerEngine ownership
 
