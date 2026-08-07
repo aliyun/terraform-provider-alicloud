@@ -87,6 +87,15 @@ chmod +x "$tmp/interactive-runner.sh"
 export JARVIS_ROOT="$tmp"
 export JARVIS_A1="$tmp/bin/a1"
 export JARVIS_INTERACTIVE_WORKER_RUNNER="$tmp/interactive-runner.sh"
+# This suite deliberately simulates an interactive session and drives claim.sh's
+# control-plane gate through the stub runner above. Clear any signal inherited
+# from the host session first (canonical list in test/lib/hermetic.sh), then open
+# exactly one, and pin the endpoint at the discard port so a broken stub fails
+# fast instead of reaching production (Aone 85192197).
+# shellcheck source=lib/hermetic.sh
+source "$test_dir/lib/hermetic.sh"
+jarvis_test_hermetic_isolate_signals
+jarvis_test_hermetic_pin_control_plane
 export CODEX_THREAD_ID="codex-test-thread"
 export TEST_LOG="$tmp/events.log"
 export TEST_DIR="$tmp"

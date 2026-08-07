@@ -93,8 +93,14 @@ export TEST_LOG="$tmp/events.log"
 export IW_BEGIN_COUNT="$tmp/begin-count"
 export A1_COMMENTS_FILE="$tmp/comments.json"
 export CODE_DIR="$tmp"   # 非 git 目录 → code_footer 为空，正文确定可复算
-# fenced 标记：模拟 Codex 交互会话；先清可能来自外层 Claude 会话的标记
-unset CLAUDE_CODE_SESSION_ID JARVIS_INTERACTIVE_CLIENT JARVIS_INTERACTIVE_SESSION_ID
+# fenced 标记：模拟 Codex 交互会话。先按 test/lib/hermetic.sh 的清单清掉一切可能
+# 从外层会话继承的交互标记（原来漏了 CODEX_THREAD_ID 本身，在 Codex 宿主上会带进
+# 宿主的真实 thread id），再显式只打开一个，并把控制面 endpoint 钉到丢弃端口 ——
+# 万一本文件的 stub runner 失效，也不会打到生产（Aone 85192197）。
+# shellcheck source=lib/hermetic.sh
+source "$test_dir/lib/hermetic.sh"
+jarvis_test_hermetic_isolate_signals
+jarvis_test_hermetic_pin_control_plane
 export CODEX_THREAD_ID="codex-wrap-test-thread"
 
 WRAP="$repo_root/bootstrap/wrap.sh"
