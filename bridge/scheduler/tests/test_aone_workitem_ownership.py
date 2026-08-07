@@ -130,7 +130,7 @@ class OwnershipRunnerTest(unittest.TestCase):
                         {
                             "identifier": "ak.issue.member",
                             "value": "100003,WORKER_1",
-                            "displayValue": "未收录花名,open-jarvis",
+                            "displayValue": "同名,open-jarvis",
                         },
                         {
                             "identifier": "assignedTo",
@@ -162,12 +162,12 @@ class OwnershipRunnerTest(unittest.TestCase):
                         {
                             "identifier": "ak.issue.member",
                             "value": "100001",
-                            "displayValue": "测试用户甲",
+                            "displayValue": "同名",
                         },
                         {
                             "identifier": "assignedTo",
                             "value": "100001",
-                            "displayValue": "测试用户甲",
+                            "displayValue": "同名",
                         },
                     ],
                 },
@@ -178,7 +178,7 @@ class OwnershipRunnerTest(unittest.TestCase):
                     {"id": "8", "createdAt": "2026-07-28 09:00:00",
                      "author": "乙"},
                     {"id": "9", "createdAt": "2026-07-28 11:00:00",
-                     "author": "未收录花名"},
+                     "author": "同名"},
                 ],
                 "101": [],
                 "200": [
@@ -200,6 +200,12 @@ class OwnershipRunnerTest(unittest.TestCase):
             self.assertTrue(
                 request_id.startswith("aone-ownership-snapshot-"))
             self.assertEqual(len(payload["items"]), 3)
+            self.assertEqual(payload["staffOptions"], [
+                {"displayName": "乙", "staffId": "100002"},
+                {"displayName": "同名", "staffId": "100003"},
+                {"displayName": "外部参与者", "staffId": "900001"},
+                {"displayName": "甲", "staffId": "100001"},
+            ])
 
             by_key = {
                 (item["sourceProjectKey"], item["aoneId"]): item
@@ -244,10 +250,13 @@ class OwnershipRunnerTest(unittest.TestCase):
                 "assignedToStaffId": "100002",
                 "latestCommentAuthorStaffId": "100001",
                 "sourceUpdatedAt": "2026-07-28 10:00:00",
+                "_staffOptions": [
+                    {"displayName": "测试用户甲", "staffId": "100001"},
+                ],
             }
             runner._cache_path.parent.mkdir(parents=True)
             runner._cache_path.write_text(json.dumps({
-                "version": 2,
+                "version": 3,
                 "items": {"2100304:100": cached},
             }))
             runner._fetch_project_batch = lambda project, ids: {
@@ -266,9 +275,118 @@ class OwnershipRunnerTest(unittest.TestCase):
             self.assertIs(result.status, JobResultStatus.SUCCEEDED)
             runner._fetch_detail.assert_not_called()
             runner._fetch_comments.assert_not_called()
-            self.assertEqual(client.puts[0][0]["items"], [cached])
+            self.assertEqual(client.puts[0][0]["items"], [{
+                key: value for key, value in cached.items()
+                if key != "_staffOptions"
+            }])
+            self.assertEqual(client.puts[0][0]["staffOptions"], [
+                {"displayName": "乙", "staffId": "100002"},
+                {"displayName": "甲", "staffId": "100001"},
+            ])
 
-    def test_v1_cache_is_refreshed_even_when_source_modified_is_unchanged(self):
+    def test_staff_options_union_api_contacts_with_board_people(self):
+        from tempfile import TemporaryDirectory
+        with TemporaryDirectory() as directory:
+            root = self._repo(directory)
+            (root / "config" / "contacts.json").write_text(json.dumps({
+                "contacts": [
+                    {
+                        "id": "265607",
+                        "name": "朱明明",
+                        "flower": "原根",
+                    },
+                    {
+                        "id": "320687",
+                        "name": "陈汉璋",
+                        "flower": "辰羿",
+                        "github": "ChenHanZhang",
+                    },
+                    {
+                        "id": "100001",
+                        "name": "通讯录实名",
+                        "flower": "同名",
+                    },
+                    {
+                        "id": "WORKER_1",
+                        "name": "open-jarvis",
+                        "flower": "同名",
+                    },
+                    {
+                        "id": "479782",
+                        "name": "历史成员",
+                        "flower": "谜拟",
+                        "legacy_inbound_only": True,
+                    },
+                    {
+                        "id": "",
+                        "name": "无工号成员",
+                        "flower": "无工号",
+                    },
+                ],
+                "product_maintainers": [
+                    {"id": "377376", "flower": "若即"},
+                ],
+                "agent_fallbacks": {
+                    "WORKER_1": "484483",
+                },
+                "github": [
+                    {"id": "999999", "flower": "代码成员"},
+                ],
+            }, ensure_ascii=False))
+            runner = self._runner(root, FakeClient())
+
+            payload = runner._payload([{
+                "sourceProjectKey": "2100304",
+                "aoneId": "100",
+                "participantStaffIds": [
+                    "100001", "100002", "265607", "900001",
+                ],
+                "assignedToStaffId": None,
+                "latestCommentAuthorStaffId": None,
+                "sourceUpdatedAt": "2026-07-28 10:00:00",
+                "_staffOptions": [
+                    {
+                        "displayName": "Aone旧别名",
+                        "staffId": "265607",
+                    },
+                    {
+                        "displayName": "同名",
+                        "staffId": "100002",
+                    },
+                    {
+                        "displayName": "外部参与者",
+                        "staffId": "900001",
+                    },
+                ],
+            }])
+
+            self.assertEqual(payload["staffOptions"], [
+                {"displayName": "原根", "staffId": "265607"},
+                {"displayName": "同名", "staffId": "100001"},
+                {"displayName": "同名", "staffId": "100002"},
+                {"displayName": "外部参与者", "staffId": "900001"},
+                {"displayName": "辰羿", "staffId": "320687"},
+            ])
+            self.assertNotIn(
+                {"displayName": "Aone旧别名", "staffId": "265607"},
+                payload["staffOptions"])
+            self.assertEqual(
+                set(payload["staffOptions"][0]),
+                {"displayName", "staffId"})
+            self.assertNotIn(
+                "377376",
+                {option["staffId"] for option in payload["staffOptions"]})
+            self.assertNotIn(
+                "479782",
+                {option["staffId"] for option in payload["staffOptions"]})
+            self.assertNotIn(
+                "484483",
+                {option["staffId"] for option in payload["staffOptions"]})
+            self.assertNotIn(
+                "999999",
+                {option["staffId"] for option in payload["staffOptions"]})
+
+    def test_v2_cache_is_refreshed_even_when_source_modified_is_unchanged(self):
         from tempfile import TemporaryDirectory
         with TemporaryDirectory() as directory:
             root = self._repo(directory)
@@ -283,7 +401,7 @@ class OwnershipRunnerTest(unittest.TestCase):
             runner = self._runner(root, client)
             runner._cache_path.parent.mkdir(parents=True)
             runner._cache_path.write_text(json.dumps({
-                "version": 1,
+                "version": 2,
                 "items": {
                     "2100304:100": {
                         "sourceProjectKey": "2100304",
@@ -328,7 +446,7 @@ class OwnershipRunnerTest(unittest.TestCase):
                 client.puts[0][0]["items"][0]["participantStaffIds"],
                 ["100001", "100002"])
             saved = json.loads(runner._cache_path.read_text())
-            self.assertEqual(saved["version"], 2)
+            self.assertEqual(saved["version"], 3)
 
     def test_v1_cache_stays_fallback_only_after_read_failure(self):
         from tempfile import TemporaryDirectory
@@ -383,7 +501,7 @@ class OwnershipRunnerTest(unittest.TestCase):
             # The first failed migration keeps the old row as a fallback.
             run_failed_refresh()
             self.assertEqual(
-                json.loads(cache_path.read_text())["version"], 2)
+                json.loads(cache_path.read_text())["version"], 3)
             # A process restart must still retry instead of treating the fallback
             # written under the v2 envelope as semantically refreshed.
             run_failed_refresh()

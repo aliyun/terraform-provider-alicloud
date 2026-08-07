@@ -12,8 +12,9 @@ changed items load comments concurrently with a bounded worker pool.  If an
 individual Aone read fails transiently, a previously complete cached item may be
 reused verbatim (including its old ``sourceUpdatedAt``).  An uncached failure
 fails the whole scheduled run, preserving the server's last complete snapshot.
-Cache v1 predates tracker participation, so its rows are retained only as
-read-failure fallbacks until each one has been refreshed into cache v2.
+Cache v1 predates tracker participation and cache v2 predates board-scoped
+display aliases, so either legacy row is retained only as a read-failure
+fallback until it has been refreshed into cache v3.
 """
 
 from __future__ import annotations
@@ -44,8 +45,9 @@ from ..model import (
 RUNNER_KEY = "aone_workitem_ownership"
 JOB_KEY = "aone.workitem-ownership"
 SCHEMA_VERSION = "aone-workitem-ownership.v1"
-CACHE_VERSION = 2
+CACHE_VERSION = 3
 _CACHE_REFRESH_REQUIRED = "_refreshRequired"
+_STAFF_OPTIONS = "_staffOptions"
 
 DEFAULT_PAGE_SIZE = 500
 DEFAULT_MAX_PAGES = 1000
@@ -197,6 +199,40 @@ def _identity_tokens(value: Any) -> set[str]:
     return tokens
 
 
+def _display_alias(value: Any) -> Optional[str]:
+    """Extract one non-sensitive display alias from an Aone identity shape."""
+    candidate: Any = value
+    if isinstance(value, Mapping):
+        candidate = next((
+            value.get(key) for key in (
+                "nickName", "nickname", "flower", "displayName",
+                "display_name", "realName", "name",
+            )
+            if value.get(key) is not None
+            and not isinstance(value.get(key), (Mapping, list, tuple))
+        ), None)
+    raw = _scalar(candidate)
+    if not raw:
+        return None
+    mention = _MENTION_RE.fullmatch(raw)
+    if mention:
+        raw = mention.group(1).strip()
+    raw = " ".join(raw.split())
+    if (not raw or len(raw) > 80 or "@" in raw
+            or re.search(r"\d{7,}", raw)):
+        return None
+    return raw
+
+
+def _staff_option(display: Any, staff_id: Optional[str]) -> Optional[dict[str, str]]:
+    if not staff_id or staff_id.lower().startswith("worker_"):
+        return None
+    alias = _display_alias(display)
+    if not alias or alias.casefold() == staff_id.casefold():
+        return None
+    return {"displayName": alias, "staffId": staff_id}
+
+
 def _explicit_staff_ids(value: Any) -> set[str]:
     candidates: set[str] = set()
     if isinstance(value, Mapping):
@@ -249,6 +285,7 @@ class ContactDirectory:
         if not isinstance(contacts, list):
             raise SnapshotIncomplete("contacts.json contacts must be an array")
         self._by_token: dict[str, str] = {}
+        staff_options: dict[str, tuple[int, str]] = {}
         for contact in contacts:
             if not isinstance(contact, Mapping):
                 continue
@@ -259,6 +296,28 @@ class ContactDirectory:
                 token = _scalar(contact.get(key))
                 if token:
                     self._by_token[token.lower()] = staff_id
+            if (staff_id.lower().startswith("worker_")
+                    or contact.get("legacy_inbound_only") is True):
+                continue
+            flower = _display_alias(contact.get("flower"))
+            name = _display_alias(contact.get("name"))
+            display_name = flower or name
+            if not display_name or display_name.casefold() == staff_id.casefold():
+                continue
+            candidate = (1 if flower else 0, display_name)
+            current = staff_options.get(staff_id)
+            if current is None or candidate[0] > current[0]:
+                staff_options[staff_id] = candidate
+        self._staff_options = {
+            staff_id: display_name
+            for staff_id, (_priority, display_name) in staff_options.items()
+        }
+
+    def staff_options(self) -> list[dict[str, str]]:
+        return [
+            {"displayName": display_name, "staffId": staff_id}
+            for staff_id, display_name in self._staff_options.items()
+        ]
 
     def resolve(
         self,
@@ -672,7 +731,7 @@ class AoneWorkitemOwnershipRunner:
         if not isinstance(data, Mapping):
             return {}
         version = data.get("version")
-        if version not in (1, CACHE_VERSION):
+        if version not in (1, 2, CACHE_VERSION):
             return {}
         items = data.get("items")
         if not isinstance(items, Mapping):
@@ -682,11 +741,10 @@ class AoneWorkitemOwnershipRunner:
             if not isinstance(item, Mapping):
                 continue
             cached = dict(item)
-            if version == 1:
-                # v1 participantStaffIds only represented ak.issue.member. Keep
-                # the row available if Aone is no longer readable, but do not
-                # let an unchanged modified timestamp suppress the one-time
-                # refresh needed to add workitem.tracker.
+            if version != CACHE_VERSION:
+                # Legacy rows remain available if Aone is temporarily
+                # unreadable, but must not suppress the one-time refresh needed
+                # to add newer snapshot fields.
                 cached[_CACHE_REFRESH_REQUIRED] = True
             loaded[str(key)] = cached
         return loaded
@@ -704,6 +762,7 @@ class AoneWorkitemOwnershipRunner:
         source_modified = item.get("_sourceModified")
         placeholder = item.get("_placeholder", False)
         refresh_required = item.get(_CACHE_REFRESH_REQUIRED, False)
+        staff_options = item.get(_STAFF_OPTIONS, [])
         if (item.get("sourceProjectKey") != project
                 or item.get("aoneId") != aone_id
                 or not isinstance(participants, list)
@@ -717,7 +776,13 @@ class AoneWorkitemOwnershipRunner:
                 or (source_modified is not None
                     and not isinstance(source_modified, str))
                 or not isinstance(placeholder, bool)
-                or not isinstance(refresh_required, bool)):
+                or not isinstance(refresh_required, bool)
+                or not isinstance(staff_options, list)
+                or any(
+                    not isinstance(option, Mapping)
+                    or not isinstance(option.get("displayName"), str)
+                    or not isinstance(option.get("staffId"), str)
+                    for option in staff_options)):
             return None
         result = {
             "sourceProjectKey": project,
@@ -733,6 +798,10 @@ class AoneWorkitemOwnershipRunner:
             result["_placeholder"] = True
         if refresh_required:
             result[_CACHE_REFRESH_REQUIRED] = True
+        result[_STAFF_OPTIONS] = [
+            {"displayName": option["displayName"], "staffId": option["staffId"]}
+            for option in staff_options
+        ]
         return result
 
     def _cached(
@@ -752,6 +821,7 @@ class AoneWorkitemOwnershipRunner:
         aone_id: str,
         label: str,
         multiple: bool,
+        staff_options: Optional[list[dict[str, str]]] = None,
     ) -> tuple[list[str], dict[str, str]]:
         if field is None:
             return [], {}
@@ -779,6 +849,10 @@ class AoneWorkitemOwnershipRunner:
             if staff_id:
                 resolved.append(staff_id)
                 identity = identity or staff_id
+                if displays and staff_options is not None:
+                    option = _staff_option(displays[index], staff_id)
+                    if option is not None:
+                        staff_options.append(option)
             if displays:
                 ambiguous_alias = _merge_alias(
                     aliases, displays[index], identity,
@@ -800,14 +874,17 @@ class AoneWorkitemOwnershipRunner:
         project = candidate["sourceProjectKey"]
         aone_id = candidate["aoneId"]
         fields = _field_map(detail)
+        staff_options: list[dict[str, str]] = []
         participant_ids, aliases = self._parse_detail_field(
             fields.get("ak.issue.member"),
             project=project, aone_id=aone_id,
-            label="participant", multiple=True)
+            label="participant", multiple=True,
+            staff_options=staff_options)
         assigned_ids, assignee_aliases = self._parse_detail_field(
             fields.get("assignedTo"),
             project=project, aone_id=aone_id,
-            label="assignee", multiple=False)
+            label="assignee", multiple=False,
+            staff_options=staff_options)
 
         def merge_aliases(
             source: Mapping[str, str], source_label: str,
@@ -830,7 +907,8 @@ class AoneWorkitemOwnershipRunner:
         tracker_ids, tracker_aliases = self._parse_detail_field(
             fields.get("workitem.tracker"),
             project=project, aone_id=aone_id,
-            label="tracker", multiple=True)
+            label="tracker", multiple=True,
+            staff_options=staff_options)
         merge_aliases(tracker_aliases, "tracker")
         participant_ids = sorted(set(participant_ids) | set(tracker_ids))
 
@@ -861,6 +939,7 @@ class AoneWorkitemOwnershipRunner:
                 assigned_ids[0] if assigned_ids else None),
             "sourceUpdatedAt": (
                 _scalar(detail.get("updatedAt")) or None),
+            _STAFF_OPTIONS: staff_options,
         }
         marker = source_modified or parsed["sourceUpdatedAt"]
         if marker is not None:
@@ -1067,9 +1146,15 @@ class AoneWorkitemOwnershipRunner:
                 key = self._candidate_key(project, aone_id)
                 try:
                     comments = future.result()
-                    parsed["latestCommentAuthorStaffId"] = (
-                        self._parse_latest_comment_author(
-                            project, aone_id, comments, aliases))
+                    latest_author = self._parse_latest_comment_author(
+                        project, aone_id, comments, aliases)
+                    parsed["latestCommentAuthorStaffId"] = latest_author
+                    latest = _latest_comment(comments)
+                    option = _staff_option(
+                        _comment_author(latest) if latest is not None else None,
+                        latest_author)
+                    if option is not None:
+                        parsed[_STAFF_OPTIONS].append(option)
                     output[key] = parsed
                 except Exception as exc:  # noqa: BLE001
                     self._reuse_or_fail(
@@ -1134,10 +1219,37 @@ class AoneWorkitemOwnershipRunner:
         now = self._clock()
         if not is_aware(now):
             raise SnapshotIncomplete("ownership snapshot clock must be timezone-aware")
+        ownership_ids: set[str] = set()
+        for item in cache_items:
+            ownership_ids.update(item.get("participantStaffIds") or [])
+            for field in ("assignedToStaffId", "latestCommentAuthorStaffId"):
+                if item.get(field):
+                    ownership_ids.add(item[field])
+        directory_options = {
+            option["staffId"]: option["displayName"]
+            for option in self._contact_directory().staff_options()
+        }
+        staff_options = {
+            (option["displayName"], option["staffId"])
+            for item in cache_items
+            for option in item.get(_STAFF_OPTIONS, [])
+            if option.get("staffId") in ownership_ids
+            and option.get("staffId") not in directory_options
+        }
+        staff_options.update(
+            (display_name, staff_id)
+            for staff_id, display_name in directory_options.items()
+        )
         return {
             "schemaVersion": SCHEMA_VERSION,
             "generatedAt": now.astimezone(timezone.utc).isoformat(),
             "complete": True,
+            "staffOptions": [
+                {"displayName": display_name, "staffId": staff_id}
+                for display_name, staff_id in sorted(
+                    staff_options,
+                    key=lambda option: (option[0].casefold(), option[1]))
+            ],
             "items": [self._public_item(item) for item in cache_items],
         }
 
