@@ -625,6 +625,91 @@ func TestAccAliCloudMessageServiceQueue_basic1_twin(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudMessageServiceQueue_sse(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_message_service_queue.default"
+	ra := resourceAttrInit(resourceId, AliCloudMessageServiceQueueMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &MessageServiceServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeMessageServiceQueue")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAccMessageServiceQueue-name%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMessageServiceQueueSSEDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"queue_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"queue_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_sse":    "true",
+					"sse_algorithm": "AES-256-GCM",
+					"kms_key_id":    "${alicloud_kms_key.default.id}",
+					"sse_type":      "SMQ",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"queue_name":    name,
+						"enable_sse":    "true",
+						"sse_algorithm": "AES-256-GCM",
+						"sse_type":      "SMQ",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_sse":    "false",
+					"sse_algorithm": REMOVEKEY,
+					"sse_type":      REMOVEKEY,
+					"kms_key_id":    REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"queue_name":    name,
+						"enable_sse":    "false",
+						"sse_algorithm": REMOVEKEY,
+						"sse_type":      REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func AliCloudMessageServiceQueueSSEDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "%s"
+}
+
+resource "alicloud_kms_key" "default" {
+  description             = "${var.name}-kms-key"
+  pending_window_in_days  = 7
+}
+`, name)
+}
+
 var AliCloudMessageServiceQueueMap0 = map[string]string{
 	"create_time":              CHECKSET,
 	"delay_seconds":            CHECKSET,
@@ -674,6 +759,10 @@ func TestUnitAliCloudMessageServiceQueue(t *testing.T) {
 		"visibility_timeout":       40,
 		"polling_wait_seconds":     3,
 		"logging_enabled":          false,
+		"enable_sse":               false,
+		"kms_key_id":               "",
+		"sse_algorithm":            "",
+		"sse_type":                 "",
 	}
 	for key, value := range attributes {
 		err := dInit.Set(key, value)
@@ -702,6 +791,10 @@ func TestUnitAliCloudMessageServiceQueue(t *testing.T) {
 			"VisibilityTimeout":      40,
 			"PollingWaitSeconds":     3,
 			"LoggingEnabled":         false,
+			"EnableSSE":              false,
+			"KmsKeyId":               "",
+			"SseAlgorithm":           "",
+			"SseType":                "",
 		},
 	}
 	CreateMockResponse := map[string]interface{}{}
@@ -792,6 +885,10 @@ func TestUnitAliCloudMessageServiceQueue(t *testing.T) {
 		"visibility_timeout":       30,
 		"polling_wait_seconds":     0,
 		"logging_enabled":          true,
+		"enable_sse":               true,
+		"kms_key_id":               "kms-test-key-id",
+		"sse_algorithm":            "AES-256-GCM",
+		"sse_type":                 "SMQ",
 	}
 	diff, err := newInstanceDiff("alicloud_message_service_queue", attributes, attributesDiff, dInit.State())
 	if err != nil {
@@ -808,6 +905,10 @@ func TestUnitAliCloudMessageServiceQueue(t *testing.T) {
 			"VisibilityTimeout":      30,
 			"PollingWaitSeconds":     0,
 			"LoggingEnabled":         true,
+			"EnableSSE":              true,
+			"KmsKeyId":               "kms-test-key-id",
+			"SseAlgorithm":           "AES-256-GCM",
+			"SseType":                "SMQ",
 		},
 	}
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}

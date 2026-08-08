@@ -59,6 +59,15 @@ func resourceAliCloudMessageServiceQueue() *schema.Resource {
 					},
 				},
 			},
+			"enable_sse": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"kms_key_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"logging_enabled": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -92,6 +101,16 @@ func resourceAliCloudMessageServiceQueue() *schema.Resource {
 				Computed:     true,
 				ForceNew:     true,
 				ValidateFunc: StringInSlice([]string{"normal", "fifo"}, false),
+			},
+			"sse_algorithm": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"sse_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
 			"tags": tagsSchema(),
 			"visibility_timeout": {
@@ -133,6 +152,18 @@ func resourceAliCloudMessageServiceQueueCreate(d *schema.ResourceData, meta inte
 	}
 	if v, ok := d.GetOkExists("logging_enabled"); ok {
 		request["EnableLogging"] = v
+	}
+	if v, ok := d.GetOkExists("enable_sse"); ok {
+		request["EnableSSE"] = v
+	}
+	if v, ok := d.GetOkExists("kms_key_id"); ok {
+		request["KmsKeyId"] = v
+	}
+	if v, ok := d.GetOkExists("sse_algorithm"); ok {
+		request["SseAlgorithm"] = v
+	}
+	if v, ok := d.GetOkExists("sse_type"); ok {
+		request["SseType"] = v
 	}
 	if v, ok := d.GetOk("queue_type"); ok {
 		request["QueueType"] = v
@@ -205,11 +236,15 @@ func resourceAliCloudMessageServiceQueueRead(d *schema.ResourceData, meta interf
 
 	d.Set("create_time", objectRaw["CreateTime"])
 	d.Set("delay_seconds", objectRaw["DelaySeconds"])
+	d.Set("enable_sse", objectRaw["EnableSSE"])
+	d.Set("kms_key_id", objectRaw["KmsKeyId"])
 	d.Set("logging_enabled", objectRaw["LoggingEnabled"])
 	d.Set("maximum_message_size", objectRaw["MaximumMessageSize"])
 	d.Set("message_retention_period", objectRaw["MessageRetentionPeriod"])
 	d.Set("polling_wait_seconds", objectRaw["PollingWaitSeconds"])
 	d.Set("queue_type", objectRaw["QueueType"])
+	d.Set("sse_algorithm", objectRaw["SseAlgorithm"])
+	d.Set("sse_type", objectRaw["SseType"])
 	d.Set("visibility_timeout", objectRaw["VisibilityTimeout"])
 	d.Set("queue_name", objectRaw["QueueName"])
 
@@ -293,6 +328,38 @@ func resourceAliCloudMessageServiceQueueUpdate(d *schema.ResourceData, meta inte
 	}
 	if v, ok := d.GetOkExists("logging_enabled"); ok {
 		request["EnableLogging"] = v
+	}
+
+	if !d.IsNewResource() && d.HasChange("enable_sse") {
+		update = true
+
+		if v, ok := d.GetOkExists("enable_sse"); ok {
+			request["EnableSSE"] = v
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("kms_key_id") {
+		update = true
+
+		if v, ok := d.GetOkExists("kms_key_id"); ok {
+			request["KmsKeyId"] = v
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("sse_algorithm") {
+		update = true
+
+		if v, ok := d.GetOkExists("sse_algorithm"); ok {
+			request["SseAlgorithm"] = v
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("sse_type") {
+		update = true
+
+		if v, ok := d.GetOkExists("sse_type"); ok {
+			request["SseType"] = v
+		}
 	}
 
 	if !d.IsNewResource() && d.HasChange("dlq_policy") {

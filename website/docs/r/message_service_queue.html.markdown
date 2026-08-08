@@ -48,6 +48,10 @@ resource "alicloud_message_service_queue" "default" {
 The following arguments are supported:
 * `delay_seconds` - (Optional, Int) The period after which all messages sent to the queue are consumed. Default value: `0`. Valid values: `0` to `604800`. Unit: seconds.
 * `dlq_policy` - (Optional, Set, Available since v1.244.0) The dead-letter queue policy. See [`dlq_policy`](#dlq_policy) below.
+* `enable_sse` - (Optional, Bool, Available since v1.299.0) Specifies whether to enable server-side encryption (SSE) for the queue. Default value: `false`. Valid values:
+  - `true`: Enable.
+  - `false`: Disable.
+* `kms_key_id` - (Optional, Available since v1.299.0) The ID of the KMS key. Optional; recorded by the server when `enable_sse` is `true` (the MNS-open API always applies the `AES-256-GCM` algorithm).
 * `logging_enabled` - (Optional, Bool) Specifies whether to enable the logging feature. Default value: `false`. Valid values:
   - `true`: Enable.
   - `false`: Disable.
@@ -58,6 +62,9 @@ The following arguments are supported:
 * `queue_type` - (Optional, ForceNew, Available since v1.283.0) The type of the queue. Default value: `normal`. Valid values:
   - `normal`: Standard queue.
   - `fifo`: FIFO queue.
+* `sse_algorithm` - (Optional, Available since v1.299.0) The server-side encryption algorithm. Valid value: `AES-256-GCM`.
+* `sse_type` - (Optional, Available since v1.299.0) The server-side encryption type. Valid value: `SMQ`.
+-> **NOTE:** The SSE attributes (`enable_sse`, `kms_key_id`, `sse_algorithm`, `sse_type`) are returned by the MNS-open `GetQueueAttributes` API only in some regions — for example, `cn-shanghai` returned them during testing — and are omitted from the response in other regions — for example, `cn-hangzhou` and `cn-beijing` did not return them during testing. This is a region deployment difference of the MNS-open API and does not affect `SetQueueAttributes`. In regions where these fields are not returned, the read-back value is empty, so a configured SSE block may show a plan diff; use `lifecycle.ignore_changes` on the SSE attributes if needed.
 * `tags` - (Optional, Map, Available since v1.241.0) A mapping of tags to assign to the resource.
 * `visibility_timeout` - (Optional, Int) The duration for which a message stays in the Inactive state after the message is received from the queue. Valid values: `1` to `43200`. Unit: seconds. Default value: `30`.
 
