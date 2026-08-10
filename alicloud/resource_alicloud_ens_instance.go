@@ -162,6 +162,10 @@ func resourceAliCloudEnsInstance() *schema.Resource {
 				Computed: true,
 				ForceNew: true,
 			},
+			"order_detail": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"password": {
 				Type:      schema.TypeString,
 				Optional:  true,
@@ -199,6 +203,10 @@ func resourceAliCloudEnsInstance() *schema.Resource {
 				Required:     true,
 				ValidateFunc: StringMatch(regexp.MustCompile("^[A-Za-z0-9_-]+$"), "Scheduling level, through which node-level scheduling or area scheduling is performed. Optional values:-Node-level scheduling: Region-Regional scheduling: Big (region),Middle (province),Small (city)"),
 			},
+			"schedule_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"scheduling_price_strategy": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -213,6 +221,12 @@ func resourceAliCloudEnsInstance() *schema.Resource {
 				Optional: true,
 				Computed: true,
 				ForceNew: true,
+			},
+			"spot_duration": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
 			},
 			"spot_strategy": {
 				Type:     schema.TypeString,
@@ -400,6 +414,9 @@ func resourceAliCloudEnsInstanceCreate(d *schema.ResourceData, meta interface{})
 	if v, ok := d.GetOk("spot_strategy"); ok {
 		request["SpotStrategy"] = v
 	}
+	if v, ok := d.GetOk("spot_duration"); ok {
+		request["SpotDuration"] = v
+	}
 	if v, ok := d.GetOk("tags"); ok {
 		tagsMap := ConvertTags(v.(map[string]interface{}))
 		request = expandTagsToMap(request, tagsMap)
@@ -481,6 +498,15 @@ func resourceAliCloudEnsInstanceRead(d *schema.ResourceData, meta interface{}) e
 	}
 	if objectRaw["SpotStrategy"] != nil {
 		d.Set("spot_strategy", objectRaw["SpotStrategy"])
+	}
+	if objectRaw["SpotDuration"] != nil {
+		d.Set("spot_duration", objectRaw["SpotDuration"])
+	}
+	if objectRaw["ScheduleId"] != nil {
+		d.Set("schedule_id", objectRaw["ScheduleId"])
+	}
+	if objectRaw["OrderDetail"] != nil {
+		d.Set("order_detail", objectRaw["OrderDetail"])
 	}
 	if objectRaw["Status"] != nil {
 		d.Set("status", objectRaw["Status"])

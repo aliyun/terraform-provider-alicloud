@@ -103,7 +103,7 @@ The following arguments are supported:
   - false (default): non-mandatory
 
 * `host_name` - (Optional, Computed, Available since v1.208.0) The host name of the instance. Example value: test-HostName
-* `image_id` - (Optional, ForceNew, Available since v1.208.0) The image ID of the instance. The arm version card cannot be filled in. Other specifications are required. Example value: m-5si16wo6simkt267p8b7h * * * *
+* `image_id` - (Optional, ForceNew, Available since v1.208.0) The image ID of the instance. The arm version card cannot be filled in. Other specifications are required. Example value: m-5si16wo6simkt267p8b7h \* \* \* \*
 * `include_data_disks` - (Optional) Whether the Payment type of the disk created with the instance is converted.
 * `instance_charge_strategy` - (Optional, Available since v1.208.0) The instance billing policy. Optional values:
   - instance: instance granularity (the subscription method does not support instance)
@@ -126,6 +126,7 @@ The following arguments are supported:
 -> **NOTE:**  At least one of `Password`, `KeyPairName`, and **PasswordInherit.
 * `net_district_code` - (Optional, Available since v1.208.0) The area code. Example value: 350000. Required for regional-level scheduling, invalid for node-level scheduling
 * `net_work_id` - (Optional, ForceNew) The network ID of the instance. Can only be used in node-level scheduling
+* `order_detail` - (Computed) The order details.
 * `password` - (Optional, Available since v1.208.0) The instance password. At least one of Password, KeyPairName, and PasswordInherit
 * `password_inherit` - (Optional, Available since v1.208.0) Whether to use image preset password prompt: Password and KeyPairNamePasswordInherit must be passed
 * `payment_type` - (Required, Available since v1.208.0) Instance payment method. Since v1.230.0, you can modify payment_type. Optional values:
@@ -144,6 +145,7 @@ The following arguments are supported:
 * `schedule_area_level` - (Required, Available since v1.208.0) Scheduling level, through which node-level scheduling or area scheduling is performed. Optional values:
   - Node-level scheduling: Region
   - Regional scheduling: Big (region),Middle (province),Small (city)
+* `schedule_id` - (Computed) The pre-scheduling ID.
 * `scheduling_price_strategy` - (Optional, Available since v1.208.0) Scheduling price policy. If it is not filled in, the default priority is low price. Value:
   - PriceLowPriority
   - PriceLowPriority (priority low price)
@@ -151,6 +153,7 @@ The following arguments are supported:
   - Concentrate for node-level scheduling
   - For regional scheduling, Concentrate, Disperse
 * `security_id` - (Optional, ForceNew) ID of the security group to which the instance belongs.
+* `spot_duration` - (Optional, ForceNew, Computed, Int) The protection period of the preemptible instance. Unit: hours. Value range: 0, 1.
 * `spot_strategy` - (Optional, ForceNew, Available since v1.230.0) The bidding strategy for pay-as-you-go instances. It takes effect when the value of the 'InstanceChargeType' parameter is set to 'PostPaid. Value range:
   - NoSpot: normal pay-as-you-go instance (default)
   - SpotAsPriceGo: The system automatically bids, following the actual price in the current market.
@@ -159,7 +162,7 @@ The following arguments are supported:
 * `tags` - (Optional, ForceNew, Map, Available since v1.230.0) The tag bound to the instance
 * `unique_suffix` - (Optional, Available since v1.208.0) Indicates whether to add an ordered suffix to HostName and InstanceName. The ordered suffix starts from 001 and cannot exceed 999.
 * `user_data` - (Optional, Available since v1.208.0) User-defined data, maximum support 16KB. You can pass in the UserData information. The UserData is encoded in Base64 format.
-* `vswitch_id` - (Optional, ForceNew) The ID of the vSwitch to which the instance belongs. Can only be used in node-level scheduling
+* `vswitch_id` - (Optional, ForceNew, Computed) The ID of the vSwitch to which the instance belongs. Can only be used in node-level scheduling. Required when the scheduling strategy is regional scheduling (ScheduleAreaLevel is Big, Middle, or Small); optional when the scheduling strategy is node-level scheduling (ScheduleAreaLevel is Region).
 
 ### `data_disk`
 
