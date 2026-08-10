@@ -119,8 +119,9 @@ func resourceAlicloudOssBucket() *schema.Resource {
 			},
 
 			"referer_config": {
-				Type:     schema.TypeList,
-				Optional: true,
+				Type:       schema.TypeList,
+				Optional:   true,
+				Deprecated: "Field 'referer_config' has been deprecated since provider version 1.220.0. New resource 'alicloud_oss_bucket_referer' instead.",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"allow_empty": {
@@ -347,8 +348,9 @@ func resourceAlicloudOssBucket() *schema.Resource {
 			},
 
 			"policy": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:       schema.TypeString,
+				Optional:   true,
+				Deprecated: "Field 'policy' has been deprecated since provider version 1.220.0. New resource 'alicloud_oss_bucket_policy' instead.",
 			},
 			"creation_date": {
 				Type:     schema.TypeString,

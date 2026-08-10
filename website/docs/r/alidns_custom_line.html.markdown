@@ -50,8 +50,8 @@ The following arguments are supported:
 
 The ip_segment_list supports the following:
 
-* `start_ip` - (Required) The start IP address of the CIDR block.
-* `end_ip` - (Required) The end IP address of the CIDR block.
+* `start_ip` - (Required) The start IP address of an IP range pair. Each entry in `ip_segment_list` is a `start_ip`-`end_ip` contiguous IP range pair (e.g. `192.0.2.1` and `192.0.2.125`), not a CIDR block.
+* `end_ip` - (Required) The end IP address of an IP range pair. Must be greater than or equal to `start_ip`.
 
 
 ## Attributes Reference
