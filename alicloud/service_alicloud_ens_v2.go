@@ -1016,6 +1016,82 @@ func (s *EnsServiceV2) EnsNatGatewayStateRefreshFunc(id string, field string, fa
 }
 
 // DescribeEnsNatGateway >>> Encapsulated.
+// DescribeEnsBucket <<< Encapsulated get interface for Ens Bucket.
+
+func (s *EnsServiceV2) DescribeEnsBucket(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	action := "GetBucketInfo"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["BucketName"] = id
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		addDebug(action, response, request)
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.BucketInfo", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.BucketInfo", response)
+	}
+
+	if v == nil {
+		return object, WrapErrorf(NotFoundErr("Bucket", id), NotFoundMsg, response)
+	}
+
+	return v.(map[string]interface{}), nil
+}
+
+func (s *EnsServiceV2) EnsBucketStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeEnsBucket(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Return an untyped nil so the boxed interface{} is truly nil;
+				// a nil map[string]interface{} (the named return) boxed into
+				// interface{} is non-nil, which would make StateChangeConf's
+				// "res == nil" gone-check fail and, with a non-empty Pending
+				// list, surface as `unexpected state '', wanted target ''`.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		if field == "" {
+			return object, "Available", nil
+		}
+		v, err := jsonpath.Get(field, object)
+		if err != nil {
+			return nil, "", WrapError(err)
+		}
+		currentStatus := fmt.Sprint(v)
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeEnsBucket >>> Encapsulated.
+
 // DescribeEnsKeyPair <<< Encapsulated get interface for Ens KeyPair.
 
 func (s *EnsServiceV2) DescribeEnsKeyPair(id string) (object map[string]interface{}, err error) {
