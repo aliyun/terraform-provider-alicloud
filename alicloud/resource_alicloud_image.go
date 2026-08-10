@@ -175,6 +175,10 @@ func resourceAliCloudEcsImage() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"usable": {
+				Type:     schema.TypeBool,
+				Computed: true,
+			},
 			"tags": tagsSchema(),
 			// Not the public attribute and it used to automatically delete dependence snapshots while deleting the image.
 			// Available in 1.136.0
@@ -282,7 +286,24 @@ func resourceAliCloudEcsImageCreate(d *schema.ResourceData, meta interface{}) er
 	d.SetId(fmt.Sprint(response["ImageId"]))
 
 	ecsServiceV2 := EcsServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, ecsServiceV2.EcsImageStateRefreshFunc(d.Id(), "Status", []string{"CreateFailed"}))
+	// Wait for Usable=true (image immediately launchable) rather than Status=Available
+	// (which can flip before the image is usable); fast-fail on Status=CreateFailed.
+	stateConf := BuildStateConf([]string{}, []string{"true"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, func() (interface{}, string, error) {
+		object, err := ecsServiceV2.describeEcsImage(d.Id(), "ALL")
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		statusRaw, _ := jsonpath.Get("Status", object)
+		currentStatus := fmt.Sprint(statusRaw)
+		if currentStatus == "CreateFailed" {
+			return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+		}
+		usableRaw, _ := jsonpath.Get("Usable", object)
+		return object, fmt.Sprint(usableRaw), nil
+	})
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -333,6 +354,9 @@ func resourceAliCloudEcsImageRead(d *schema.ResourceData, meta interface{}) erro
 	}
 	if objectRaw["Status"] != nil {
 		d.Set("status", objectRaw["Status"])
+	}
+	if objectRaw["Usable"] != nil {
+		d.Set("usable", objectRaw["Usable"])
 	}
 
 	diskDeviceMapping1Raw, _ := jsonpath.Get("$.DiskDeviceMappings.DiskDeviceMapping", objectRaw)
