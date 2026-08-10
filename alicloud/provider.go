@@ -1242,6 +1242,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_gpdb_remote_adb_data_source":                          resourceAliCloudGpdbRemoteADBDataSource(),
 			"alicloud_ens_nat_gateway":                                      resourceAliCloudEnsNatGateway(),
 			"alicloud_ens_eip_instance_attachment":                          resourceAliCloudEnsEipInstanceAttachment(),
+			"alicloud_ens_common_bandwidth_eip_attachment":                  resourceAliCloudEnsCommonBandwidthEipAttachment(),
 			"alicloud_ddos_bgp_policy":                                      resourceAliCloudDdosBgpPolicy(),
 			"alicloud_cen_transit_router_ecr_attachment":                    resourceAliCloudCenTransitRouterEcrAttachment(),
 			"alicloud_alb_load_balancer_security_group_attachment":          resourceAliCloudAlbLoadBalancerSecurityGroupAttachment(),
