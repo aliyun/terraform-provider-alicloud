@@ -31,6 +31,7 @@ func resourceAliCloudInstance() *schema.Resource {
 			Update: schema.DefaultTimeout(10 * time.Minute),
 			Delete: schema.DefaultTimeout(20 * time.Minute),
 		},
+		CustomizeDiff: resourceAliCloudInstanceCustomizeDiff,
 		Schema: map[string]*schema.Schema{
 			"availability_zone": {
 				Type:     schema.TypeString,
@@ -43,6 +44,11 @@ func resourceAliCloudInstance() *schema.Resource {
 				AtLeastOneOf: []string{"image_id", "launch_template_id", "launch_template_name"},
 				Optional:     true,
 				Computed:     true,
+			},
+			"replace_instance_on_image_update": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
 			},
 			"instance_type": {
 				Type:         schema.TypeString,
@@ -2684,6 +2690,37 @@ func resourceAliCloudInstanceDelete(d *schema.ResourceData, meta interface{}) er
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 	return nil
+}
+
+func resourceAliCloudInstanceCustomizeDiff(diff *schema.ResourceDiff, v interface{}) error {
+	// Nothing to force on create. This also terminates the second, state-less diff pass that
+	// ForceNew triggers, where Id() is empty and RequiresNew has already been carried over.
+	if diff.Id() == "" {
+		return nil
+	}
+	// replace_instance_on_image_update is the switch: it guides what an image_id change means. Left off,
+	// the change keeps its default behaviour of replacing the system disk of the running instance in place.
+	if !diff.Get("replace_instance_on_image_update").(bool) {
+		return nil
+	}
+	// ForceNew reports an error when there is no change for the given key, so image_id is the only
+	// key the replacement can be anchored on, and only while it is actually changing.
+	if !diff.HasChange("image_id") {
+		return nil
+	}
+	// A value that is not yet known at plan time cannot be compared meaningfully.
+	if !diff.NewValueKnown("image_id") {
+		return nil
+	}
+	// image_id is Optional and Computed: with no value in the configuration it is filled in from
+	// the API, so an empty or an unchanged side is not user intent and must not destroy anything.
+	oldRaw, newRaw := diff.GetChange("image_id")
+	oldImageId, _ := oldRaw.(string)
+	newImageId, _ := newRaw.(string)
+	if oldImageId == "" || newImageId == "" || oldImageId == newImageId {
+		return nil
+	}
+	return diff.ForceNew("image_id")
 }
 
 func modifyInstanceChargeType(d *schema.ResourceData, meta interface{}, forceDelete bool) error {

@@ -104,7 +104,8 @@ to create several ECS instances one-click.
 
 The following arguments are supported:
 
-* `image_id` - (Optional) The Image to use for the instance. ECS instance's image can be replaced via changing `image_id`. When it is changed, the instance will reboot to make the change take effect. If you do not use `launch_template_id` or `launch_template_name` to specify a launch template, you must specify `image_id`.
+* `image_id` - (Optional) The Image to use for the instance. ECS instance's image can be replaced via changing `image_id`. When it is changed, the instance will reboot to make the change take effect. If you do not use `launch_template_id` or `launch_template_name` to specify a launch template, you must specify `image_id`. See also `replace_instance_on_image_update`, which controls whether such a change is applied in place or by replacing the instance.
+
 * `instance_type` - (Optional) The type of instance to start. When it is changed, the instance will reboot to make the change take effect. If you do not use `launch_template_id` or `launch_template_name` to specify a launch template, you must specify `instance_type`.
 * `io_optimized` - (Removed) It has been deprecated on instance resource. All the launched alicloud instances will be I/O optimized.
 * `is_outdated` - (Optional) Whether to use outdated instance type.
@@ -264,6 +265,12 @@ The following arguments are supported:
 
 * `image_options` - (Optional, Set, Available since v1.237.0) The options of images. See [`image_options`](#image_options) below.
 * `cpu_options` - (Optional, Set, Available since v1.267.0) The options of cpu. See [`cpu_options`](#cpu_options) below.
+* `replace_instance_on_image_update` - (Optional, Bool, Available since v1.289.0) Whether to replace the instance when `image_id` is updated, instead of updating it in place. Default value: `false`. Valid values:
+  - `false`: The system disk of the existing instance is replaced with the new image and the instance ID is retained.
+  - `true`: The instance is destroyed and created again, and `terraform plan` reports the change as `forces replacement`.
+
+  -> **NOTE:** Setting `replace_instance_on_image_update` to `true` changes how an `image_id` update is applied: the instance is destroyed and created again, so its instance ID, its private IP address and the data on all of its disks are lost. Make sure the instance can actually be destroyed before applying such a change, because the destroy fails if `deletion_protection` is `true`, or if `instance_charge_type` is `PrePaid` and `force_delete` is not `true`, and it is rejected at plan time if the resource has a `prevent_destroy` lifecycle rule. Replacement is only forced when both the old and the new `image_id` are known and not empty, so an instance whose image is supplied by a launch template instead of by the configuration is not affected.
+
 * `allocate_public_ip` - (Optional, Bool, Deprecated since v1.7.0) Field `allocate_public_ip` has been deprecated from provider version 1.7.0. Setting  `internet_max_bandwidth_out` larger than 0 will allocate public ip for instance.
 * `internet_max_bandwidth_in` - (Optional, Int, Deprecated since v1.121.2) Maximum incoming bandwidth from the public network, measured in Mbps (Mega bit per second). Value range: [1, 200]. If this value is not specified, then automatically sets it to 200 Mbps.
 * `role_name` - (Optional, Deprecated since v1.275.0) The name of the Resource Access Management (RAM) role. **NOTE:** From version 1.250.0, If you want to use `role_name`, We recommend you to use the resource [alicloud_ecs_ram_role_attachment](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/ecs_ram_role_attachment). Field `role_name` has been deprecated from provider version 1.275.0. New resource [alicloud_ecs_ram_role_attachment](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/ecs_ram_role_attachment) instead. From version 1.276.0, `role_name` can be modified.
