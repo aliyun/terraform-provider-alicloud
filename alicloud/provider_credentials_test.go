@@ -1115,7 +1115,7 @@ func TestProviderConfigure_AssumeRoleConfig(t *testing.T) {
 	resourceData := schema.TestResourceDataRaw(t, provider.Schema, raw)
 
 	// 只测试配置能够正确解析，不测试实际的 STS 调用
-	assumeRoleList := resourceData.Get("assume_role").(*schema.Set).List()
+	assumeRoleList := resourceData.Get("assume_role").([]interface{})
 	if len(assumeRoleList) != 1 {
 		t.Fatalf("Expected 1 assume_role config, got %d", len(assumeRoleList))
 	}
@@ -1153,7 +1153,7 @@ func TestProviderConfigure_AssumeRoleDefaultSessionName(t *testing.T) {
 	resourceData := schema.TestResourceDataRaw(t, provider.Schema, raw)
 
 	// 测试配置解析，验证 session_name 的默认值逻辑
-	assumeRoleList := resourceData.Get("assume_role").(*schema.Set).List()
+	assumeRoleList := resourceData.Get("assume_role").([]interface{})
 	if len(assumeRoleList) != 1 {
 		t.Fatalf("Expected 1 assume_role config, got %d", len(assumeRoleList))
 	}
