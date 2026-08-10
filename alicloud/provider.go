@@ -614,6 +614,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_sddp_configs":                                     dataSourceAlicloudSddpConfigs(),
 			"alicloud_hbr_restore_jobs":                                 dataSourceAlicloudHbrRestoreJobs(),
 			"alicloud_alb_listeners":                                    dataSourceAlicloudAlbListeners(),
+			"alicloud_ens_gateway_qos":                                  dataSourceAliCloudEnsGatewayQos(),
 			"alicloud_ens_key_pairs":                                    dataSourceAlicloudEnsKeyPairs(),
 			"alicloud_sae_applications":                                 dataSourceAlicloudSaeApplications(),
 			"alicloud_alb_rules":                                        dataSourceAliCloudAlbRules(),
@@ -949,6 +950,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_apig_plugin_classes":                              dataSourceAliCloudApigPluginClasses(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_ens_gateway_qos":                                      resourceAliCloudEnsGatewayQos(),
 			"alicloud_message_service_account_logging":                      resourceAliCloudMessageServiceAccountLogging(),
 			"alicloud_apig_ai_model_provider":                               resourceAliCloudApigAiModelProvider(),
 			"alicloud_apig_service":                                         resourceAliCloudApigService(),
