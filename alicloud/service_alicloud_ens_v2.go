@@ -1168,3 +1168,87 @@ func (s *EnsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 }
 
 // SetResourceTags >>> tag function encapsulated.
+
+// DescribeEnsBucketLifecycle <<< Encapsulated get interface for Ens BucketLifecycle.
+
+func (s *EnsServiceV2) DescribeEnsBucketLifecycle(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	action := "GetBucketLifecycle"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	parts := strings.Split(id, ":")
+	if len(parts) < 2 {
+		return object, WrapError(fmt.Errorf("Invalid Resource Id %s. Expected id in format <bucket_name>:<rule_id>", id))
+	}
+	query["BucketName"] = parts[0]
+	query["RuleId"] = parts[1]
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+
+	if err != nil {
+		if IsExpectedErrors(err, []string{"NoSuchBucket", "NoSuchLifecycle"}) {
+			return object, WrapErrorf(NotFoundErr("BucketLifecycle", id), NotFoundMsg, err)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.Rule[*]", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Rule[*]", response)
+	}
+
+	rules, ok := v.([]interface{})
+	if !ok || len(rules) == 0 {
+		return object, WrapErrorf(NotFoundErr("BucketLifecycle", id), NotFoundMsg, response)
+	}
+
+	for _, raw := range rules {
+		rule, ok := raw.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		if fmt.Sprint(rule["ID"]) == parts[1] {
+			return rule, nil
+		}
+	}
+
+	return object, WrapErrorf(NotFoundErr("BucketLifecycle", id), NotFoundMsg, response)
+}
+
+func (s *EnsServiceV2) EnsBucketLifecycleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeEnsBucketLifecycle(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeEnsBucketLifecycle >>> Encapsulated.
