@@ -1168,3 +1168,65 @@ func (s *EnsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 }
 
 // SetResourceTags >>> tag function encapsulated.
+
+// DescribeEnsLoadBalancerTcpListener <<< Encapsulated get interface for Ens LoadBalancer TCP Listener.
+func (s *EnsServiceV2) DescribeEnsLoadBalancerTcpListener(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		err = WrapError(err)
+		return
+	}
+	action := "DescribeLoadBalancerTCPListenerAttribute"
+	request := map[string]interface{}{
+		"LoadBalancerId": parts[0],
+		"ListenerPort":   parts[1],
+	}
+	query := map[string]interface{}{}
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	var response map[string]interface{}
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	if response["ListenerPort"] == nil {
+		return object, WrapErrorf(NotFoundErr("LoadBalancerTcpListener", id), NotFoundMsg, response)
+	}
+	return response, nil
+}
+
+func (s *EnsServiceV2) EnsLoadBalancerTcpListenerStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeEnsLoadBalancerTcpListener(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		if err != nil {
+			return nil, "", WrapError(err)
+		}
+		currentStatus := fmt.Sprint(v)
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeEnsLoadBalancerTcpListener >>> Encapsulated.
