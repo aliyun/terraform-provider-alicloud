@@ -172,6 +172,7 @@ func Provider() terraform.ResourceProvider {
 			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
+			"alicloud_ens_nat_gateway_snat_entries":                   dataSourceAliCloudEnsNatGatewaySnatEntries(),
 			"alicloud_redis_global_security_ip_groups":                dataSourceAliCloudRedisGlobalSecurityIpGroups(),
 			"alicloud_cr_artifact_subscription_rules":                 dataSourceAliCloudCrArtifactSubscriptionRules(),
 			"alicloud_cms_event_notify_policies":                      dataSourceAliCloudCmsEventNotifyPolicies(),
@@ -956,6 +957,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_apig_plugin_classes":                              dataSourceAliCloudApigPluginClasses(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_ens_nat_gateway_snat_entry":                           resourceAliCloudEnsNatGatewaySnatEntry(),
 			"alicloud_redis_global_security_ip_group":                       resourceAliCloudRedisGlobalSecurityIpGroup(),
 			"alicloud_cr_artifact_subscription_rule":                        resourceAliCloudCrArtifactSubscriptionRule(),
 			"alicloud_cms_event_notify_policy":                              resourceAliCloudCmsEventNotifyPolicy(),
