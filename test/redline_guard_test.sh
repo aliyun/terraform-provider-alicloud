@@ -128,6 +128,107 @@ expect "ordinary Aone create remains allowed" 0 \
 expect "ordinary Aone relation remains allowed" 0 \
     "a1 project workitem relation create --project 528766 --workitem 1 --target 2"
 
+# --- CloudSpec local-resource-test permanent red line -----------------------
+expect "direct aliyun cspec test blocked" 2 \
+    "aliyun cspec test --name Example"
+expect "absolute aliyun cspec test blocked" 2 \
+    "/usr/local/bin/aliyun cspec test"
+expect "env/nohup wrapper blocked" 2 \
+    "env PROFILE=test nohup aliyun cspec test --name Example &"
+expect "time wrapper blocked" 2 \
+    "time -p aliyun cspec test"
+expect "command wrapper blocked" 2 \
+    "command aliyun cspec test"
+expect "aliyun spaced profile flag blocked" 2 \
+    "aliyun --profile test cspec test"
+expect "aliyun equals profile flag blocked" 2 \
+    "aliyun --profile=test cspec test"
+expect "aliyun short profile flag blocked" 2 \
+    "aliyun -p test cspec test"
+expect "aliyun source profile and sts flags blocked" 2 \
+    "aliyun --source-profile base --sts-region cn-hangzhou --sts-endpoint sts.aliyuncs.com cspec test"
+expect "aliyun endpoint and timeout flags blocked" 2 \
+    "aliyun -e cspec.example --connect-timeout 5 --read-timeout=30 cspec test"
+expect "bash -lc wrapper blocked" 2 \
+    "bash -lc 'aliyun cspec test --name Example'"
+expect "simple variable wrapper blocked" 2 \
+    "cli=aliyun; section=cspec; action=test; \$cli \$section \$action"
+expect "bare dollar command substitution blocked" 2 \
+    'result=$(aliyun cspec test --name Example)'
+expect "double-quoted dollar command substitution blocked" 2 \
+    'printf "%s\n" "$(aliyun --profile test cspec test)"'
+expect "bare backtick command substitution blocked" 2 \
+    'result=`aliyun cspec test --name Example`'
+expect "nested command substitution blocked" 2 \
+    'result=$(printf "%s" "$(aliyun cspec test)")'
+expect "sudo wrapper blocked" 2 \
+    "sudo -u nobody aliyun cspec test"
+expect "timeout wrapper blocked" 2 \
+    "timeout --signal TERM 30s aliyun cspec test"
+expect "xargs wrapper blocked" 2 \
+    "printf x | xargs -n1 aliyun cspec test"
+expect "parallel wrapper blocked" 2 \
+    "parallel --jobs 2 aliyun cspec test ::: one two"
+expect "env split-string wrapper blocked" 2 \
+    "env -S 'aliyun --profile test cspec test'"
+expect "JARVIS_MASTER_OK cannot bypass aliyun cspec test" 2 \
+    "aliyun cspec test" JARVIS_MASTER_OK=1
+expect "rg aliyun cspec test audit allowed" 0 \
+    "rg -n 'aliyun cspec test' ."
+expect "grep aliyun cspec test audit allowed" 0 \
+    "grep -R 'aliyun cspec test' docs"
+expect "printf aliyun cspec test audit allowed" 0 \
+    "printf '%s' 'aliyun cspec test'"
+expect "single-quoted dollar substitution audit allowed" 0 \
+    "printf '%s' '\$(aliyun cspec test)'"
+expect "single-quoted backtick audit allowed" 0 \
+    "printf '%s' '\`aliyun cspec test\`'"
+expect "escaped dollar substitution audit allowed" 0 \
+    'printf "%s" "\$(aliyun cspec test)"'
+expect "escaped backtick substitution audit allowed" 0 \
+    'printf "%s" "\`aliyun cspec test\`"'
+expect "xargs echo audit allowed" 0 \
+    "printf 'aliyun cspec test' | xargs echo"
+expect "parallel printf audit allowed" 0 \
+    "parallel printf ::: 'aliyun cspec test'"
+expect "env split-string printf audit allowed" 0 \
+    "env -S 'printf aliyun-cspec-test'"
+expect "sudo rg audit allowed" 0 \
+    "sudo rg -n 'aliyun cspec test' docs"
+expect "go test remains allowed" 0 \
+    "go test ./alicloud -run TestAccExample"
+expect "aliyun cspec build remains allowed" 0 \
+    "aliyun cspec build"
+expect "aliyun cspec check remains allowed" 0 \
+    "aliyun cspec check --name Example"
+expect "missing classifier still blocks direct aliyun cspec test" 2 \
+    "aliyun --profile test cspec test" \
+    JARVIS_A1_COMMAND_GUARD="$tmp/missing-guard.py"
+expect "missing classifier blocks dollar command substitution" 2 \
+    'result=$(aliyun cspec test)' \
+    JARVIS_A1_COMMAND_GUARD="$tmp/missing-guard.py"
+expect "missing classifier blocks backtick command substitution" 2 \
+    'result=`aliyun cspec test`' \
+    JARVIS_A1_COMMAND_GUARD="$tmp/missing-guard.py"
+expect "missing classifier still allows printf audit" 0 \
+    "printf '%s' 'aliyun cspec test'" \
+    JARVIS_A1_COMMAND_GUARD="$tmp/missing-guard.py"
+expect "missing classifier allows quoted substitution audit" 0 \
+    "printf '%s' '\$(aliyun cspec test)'" \
+    JARVIS_A1_COMMAND_GUARD="$tmp/missing-guard.py"
+
+printf '%s\n' '#!/usr/bin/env python3' 'raise SystemExit(70)' > "$tmp/crashing-guard.py"
+chmod +x "$tmp/crashing-guard.py"
+expect "crashing classifier still blocks direct cspec test" 2 \
+    "sudo aliyun --source-profile base cspec test" \
+    JARVIS_A1_COMMAND_GUARD="$tmp/crashing-guard.py"
+expect "crashing classifier still blocks command substitution" 2 \
+    'result=$(aliyun cspec test)' \
+    JARVIS_A1_COMMAND_GUARD="$tmp/crashing-guard.py"
+expect "crashing classifier still allows rg audit" 0 \
+    "rg -n 'aliyun cspec test' docs" \
+    JARVIS_A1_COMMAND_GUARD="$tmp/crashing-guard.py"
+
 # --- production delivery hard gate -----------------------------------------
 expect "legacy pipeline 67 submit blocked" 2 \
     "a1 app cr submit 123 --pipeline-id 67"

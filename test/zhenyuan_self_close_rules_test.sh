@@ -132,6 +132,7 @@ templates_mirror="$repo_root/.agents/skills/aone-triage/references/templates.md"
 verification="$repo_root/.claude/skills/provider-resource-dev/references/zhenyuan-verification.md"
 team_roster="$repo_root/.claude/skills/aone-triage/references/team-roster.md"
 team_roster_mirror="$repo_root/.agents/skills/aone-triage/references/team-roster.md"
+release_skill="$repo_root/.claude/skills/terraform-provider-release/SKILL.md"
 release_loop="$repo_root/.claude/skills/terraform-provider-release/references/cloudspec-pre-resource-loop.md"
 pd_agent="$repo_root/.claude/agents/terraform-pd.md"
 pd_mirror="$repo_root/.codex/agents/terraform-pd.toml"
@@ -141,6 +142,9 @@ qa_agent="$repo_root/.claude/agents/terraform-qa.md"
 qa_mirror="$repo_root/.codex/agents/terraform-qa.toml"
 runtime="$repo_root/bridge/aone_tasks.py"
 persona="$repo_root/loops/persona-collab.md"
+triage_loop="$repo_root/loops/aone-triage.md"
+release_skill_codex="$repo_root/.agents/skills/terraform-provider-release/SKILL.md"
+release_loop_codex="$repo_root/.agents/skills/terraform-provider-release/references/cloudspec-pre-resource-loop.md"
 acube="$repo_root/.claude/skills/aone-triage/references/acube-createBuildTaskV2-workflow.md"
 acube_mirror="$repo_root/.agents/skills/aone-triage/references/acube-createBuildTaskV2-workflow.md"
 
@@ -298,6 +302,15 @@ require_terms "$release_loop" \
   'Provider PR' \
   '远程 ACC' \
   'E 禁止调用 Acube `createBuildTaskV2`'
+
+cspec_test_ban='硬禁令：Terraform 开发进入 CloudSpec 链路后，任何阶段严禁执行 `aliyun cspec test`，包括直接、包装、后台或并行调用；仅允许 build、变更资源逐个前台串行 check、pre dry-run/publish 与 pre Meta 收敛，且不影响 Provider `go test` 与远程 AccTest。'
+for file in \
+  "$release_skill" "$release_skill_codex" \
+  "$release_loop" "$release_loop_codex" \
+  "$rd_agent" "$rd_mirror" "$qa_agent" "$qa_mirror" \
+  "$triage_loop" "$persona" "$runtime"; do
+  require_terms "$file" "$cspec_test_ban"
+done
 
 # PD/RD/QA next schemas remain precise and clarify stays retired.
 for file in "$pd_agent" "$pd_mirror"; do

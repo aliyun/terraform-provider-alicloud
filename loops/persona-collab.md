@@ -123,6 +123,7 @@ CloudSpec 路由分为两个互斥分支：
 - E 的 QA 使用 `verification_mode: cloudspec_pre`，只验 build/check/pre Meta 收敛，不运行远程
   AccTest；pass 后返回 `terraform-rd/dev`。RD 随后在同一源单上下文继续 Provider dev/CI/PR，
   再交 QA 运行远程 AccTest。全程不触发 Acube，不创建或复用 528766。
+- 硬禁令：Terraform 开发进入 CloudSpec 链路后，任何阶段严禁执行 `aliyun cspec test`，包括直接、包装、后台或并行调用；仅允许 build、变更资源逐个前台串行 check、pre dry-run/publish 与 pre Meta 收敛，且不影响 Provider `go test` 与远程 AccTest。
 - pre 未收敛不得开始 Provider 生成/开发。普通分支 D 同样保持 PR CI + 远程 ACC。
 - 权限、AMP 登录、SSH 或 pre 能力失败返回 `missing_capability` / `blocked`，不得回退
   个人身份。prod/online、master/main merge/push 与正式 release 仍是人工硬门。

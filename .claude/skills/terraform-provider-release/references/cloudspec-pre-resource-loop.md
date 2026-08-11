@@ -137,6 +137,7 @@ ModelProvider: string
 3. 完成本轮 IDL 编辑后只运行一次 `aliyun cspec build`；失败时批量修复后再重跑。
 4. 对每个变更资源逐个、前台、串行运行 `aliyun cspec check --name <ResourceName>`；同一模型
    目录禁止后台或多 Agent 并行 check。失败时批量修复，再重跑本轮 build/check。
+   硬禁令：Terraform 开发进入 CloudSpec 链路后，任何阶段严禁执行 `aliyun cspec test`，包括直接、包装、后台或并行调用；仅允许 build、变更资源逐个前台串行 check、pre dry-run/publish 与 pre Meta 收敛，且不影响 Provider `go test` 与远程 AccTest。
 5. 提交并推送 CloudSpec feature 分支，把 commit、MR/CR、build/check 输出摘要交 finalizer 聚合回原主单。
 
 语义不确定时不得借 codefix 猜答案，回到第 2 节会审。AMP 登录、SSH、模型仓权限或 pre

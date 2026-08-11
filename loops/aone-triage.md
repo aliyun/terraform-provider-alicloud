@@ -126,6 +126,7 @@ build/test/CI/QA fail 均回 RD 修复；open PR + QA pass 时源单 release 不
   QA 先走 `cloudspec_pre_verify`，不跑远程 ACC。pre 验收通过后返回 RD，在同一源单上下文
   继续 Provider dev/CI/PR，再交 QA 运行远程 ACC；不触发 Acube `createBuildTaskV2`，不创建
   或复用 528766。
+- 硬禁令：Terraform 开发进入 CloudSpec 链路后，任何阶段严禁执行 `aliyun cspec test`，包括直接、包装、后台或并行调用；仅允许 build、变更资源逐个前台串行 check、pre dry-run/publish 与 pre Meta 收敛，且不影响 Provider `go test` 与远程 AccTest。
 - pre 未收敛不得开始 Provider 生成/开发。PD/QA 不外写，
   finalizer 保持 single-writer。prod/online、master/main merge/push 与正式 release 仍是人工硬门。
 只有云产品 OpenAPI 本身缺能力时，才按分支 F 等待上游。

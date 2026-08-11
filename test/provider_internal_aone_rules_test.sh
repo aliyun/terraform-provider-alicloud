@@ -208,4 +208,17 @@ for qa_agent in \
     'clarify'
 done
 
+cspec_test_ban='硬禁令：Terraform 开发进入 CloudSpec 链路后，任何阶段严禁执行 `aliyun cspec test`，包括直接、包装、后台或并行调用；仅允许 build、变更资源逐个前台串行 check、pre dry-run/publish 与 pre Meta 收敛，且不影响 Provider `go test` 与远程 AccTest。'
+for file in \
+  "$repo_root/.claude/skills/terraform-provider-release/SKILL.md" \
+  "$repo_root/.claude/skills/terraform-provider-release/references/cloudspec-pre-resource-loop.md" \
+  "$repo_root/.agents/skills/terraform-provider-release/SKILL.md" \
+  "$repo_root/.agents/skills/terraform-provider-release/references/cloudspec-pre-resource-loop.md" \
+  "$repo_root/.claude/agents/terraform-rd.md" \
+  "$repo_root/.claude/agents/terraform-qa.md" \
+  "$repo_root/.codex/agents/terraform-rd.toml" \
+  "$repo_root/.codex/agents/terraform-qa.toml"; do
+  require_terms "$file" "$cspec_test_ban"
+done
+
 echo "provider_internal_aone_rules_test: PASS"

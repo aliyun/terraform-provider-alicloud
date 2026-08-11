@@ -42,6 +42,11 @@ ACUBE_BUILD_TASK_MESSAGE = (
     "Acube createBuildTaskV2 is permanently disabled for Jarvis; "
     "Terraform work must continue on the source Aone Task"
 )
+CSPEC_TEST_MESSAGE = (
+    "aliyun cspec test is permanently disabled for Jarvis; Terraform CloudSpec "
+    "validation is limited to build, resource-scoped foreground serial check, "
+    "pre publish, and pre Meta convergence"
+)
 UNAPPROVED_PIPELINE_MESSAGE = (
     "the application/pipeline pair is not in Jarvis's reviewed non-production "
     "allowlist; a human must approve and run production or unknown releases"
@@ -450,6 +455,114 @@ def _shell_tokens(command: str) -> list[str]:
     return list(lexer)
 
 
+def _dollar_substitution_end(command: str, start: int) -> Optional[int]:
+    """Return the closing ``)`` for an unquoted ``$(`` at ``start``.
+
+    This is a bounded shell lexer, not an evaluator.  It only needs to keep
+    quoted/escaped parentheses and nested command substitutions from closing
+    the outer substitution early.  No shell or ambient state is consulted.
+    """
+    depth = 1
+    quote: Optional[str] = None
+    index = start + 2
+    while index < len(command):
+        char = command[index]
+        if quote == "'":
+            if char == "'":
+                quote = None
+            index += 1
+            continue
+        if char == "\\":
+            index += 2
+            continue
+        if char == "'":
+            quote = "'"
+            index += 1
+            continue
+        if char == '"':
+            quote = None if quote == '"' else '"'
+            index += 1
+            continue
+        if char == "$" and index + 1 < len(command) \
+                and command[index + 1] == "(" \
+                and not (index + 2 < len(command)
+                         and command[index + 2] == "("):
+            nested_end = _dollar_substitution_end(command, index)
+            if nested_end is None:
+                return None
+            index = nested_end + 1
+            continue
+        if quote is None:
+            if char == "(":
+                depth += 1
+            elif char == ")":
+                depth -= 1
+                if depth == 0:
+                    return index
+        index += 1
+    return None
+
+
+def _backtick_substitution_end(command: str, start: int) -> Optional[int]:
+    """Return the next unescaped legacy-command-substitution backtick."""
+    index = start + 1
+    while index < len(command):
+        if command[index] == "\\":
+            index += 2
+            continue
+        if command[index] == "`":
+            return index
+        index += 1
+    return None
+
+
+def _command_substitutions(command: str) -> Iterable[str]:
+    """Yield executable ``$()`` and backtick programs from shell source.
+
+    Single quotes and a preceding backslash make the syntax literal.  Double
+    quotes do not: command substitutions inside them are still executed by the
+    shell.  Nested programs are classified recursively by the caller.
+    """
+    quote: Optional[str] = None
+    index = 0
+    while index < len(command):
+        char = command[index]
+        if quote == "'":
+            if char == "'":
+                quote = None
+            index += 1
+            continue
+        if char == "\\":
+            index += 2
+            continue
+        if char == "'":
+            quote = "'"
+            index += 1
+            continue
+        if char == '"':
+            quote = None if quote == '"' else '"'
+            index += 1
+            continue
+        if char == "$" and index + 1 < len(command) \
+                and command[index + 1] == "(" \
+                and not (index + 2 < len(command)
+                         and command[index + 2] == "("):
+            end = _dollar_substitution_end(command, index)
+            if end is None:
+                return
+            yield command[index + 2:end]
+            index = end + 1
+            continue
+        if char == "`":
+            end = _backtick_substitution_end(command, index)
+            if end is None:
+                return
+            yield command[index + 1:end]
+            index = end + 1
+            continue
+        index += 1
+
+
 def _command_slices(tokens: Sequence[str]) -> Iterable[Sequence[str]]:
     start = 0
     for index, token in enumerate(tokens):
@@ -539,6 +652,57 @@ def _execution_index(invocation: Sequence[str]) -> Optional[int]:
     if index < len(invocation) and _basename(invocation[index]) in {
             "env", "command", "exec", "time", "nohup",
     }:
+        nested = _execution_index(invocation[index:])
+        return None if nested is None else index + nested
+    if index < len(invocation) and _basename(invocation[index]) == "sudo":
+        index += 1
+        sudo_value_options = {
+            "-C", "--close-from", "-D", "--chdir", "-g", "--group", "-h",
+            "--host", "-p", "--prompt", "-R", "--chroot", "-r", "--role",
+            "-T", "--command-timeout", "-t", "--type", "-u", "--user",
+        }
+        while index < len(invocation):
+            token = str(invocation[index])
+            if token == "--":
+                index += 1
+                break
+            if token in sudo_value_options:
+                index += 2
+                continue
+            if any(token.startswith(option + "=")
+                   for option in sudo_value_options if option.startswith("--")):
+                index += 1
+                continue
+            if token.startswith("-"):
+                index += 1
+                continue
+            if _SIMPLE_ASSIGNMENT.fullmatch(token):
+                index += 1
+                continue
+            break
+        nested = _execution_index(invocation[index:])
+        return None if nested is None else index + nested
+    if index < len(invocation) and _basename(invocation[index]) == "timeout":
+        index += 1
+        timeout_value_options = {"-k", "--kill-after", "-s", "--signal"}
+        while index < len(invocation):
+            token = str(invocation[index])
+            if token == "--":
+                index += 1
+                break
+            if token in timeout_value_options:
+                index += 2
+                continue
+            if any(token.startswith(option + "=")
+                   for option in timeout_value_options if option.startswith("--")):
+                index += 1
+                continue
+            if token.startswith("-"):
+                index += 1
+                continue
+            break
+        # timeout's first positional is the duration, followed by the command.
+        index += 1
         nested = _execution_index(invocation[index:])
         return None if nested is None else index + nested
     return index if index < len(invocation) else None
@@ -631,6 +795,75 @@ def _remember_simple_assignments(
         break
 
 
+def _env_split_programs(invocation: Sequence[str]) -> Iterable[str]:
+    """Yield programs executed through GNU/coreutils ``env -S``."""
+    for index, token in enumerate(invocation):
+        if _basename(str(token)) != "env":
+            continue
+        cursor = index + 1
+        while cursor < len(invocation):
+            option = str(invocation[cursor])
+            if option in {"-S", "--split-string"}:
+                if cursor + 1 < len(invocation):
+                    yield str(invocation[cursor + 1])
+                break
+            if option.startswith("--split-string="):
+                yield option.split("=", 1)[1]
+                break
+            if option in {"-u", "--unset", "-C", "--chdir"}:
+                cursor += 2
+                continue
+            if option.startswith("-") or _SIMPLE_ASSIGNMENT.fullmatch(option):
+                cursor += 1
+                continue
+            break
+
+
+def _fanout_payload(invocation: Sequence[str], exec_index: int) -> Sequence[str]:
+    """Return the statically declared command run by xargs/GNU parallel."""
+    executable = _basename(str(invocation[exec_index]))
+    if executable not in {"xargs", "parallel"}:
+        return ()
+    cursor = exec_index + 1
+    xargs_value_options = {
+        "-a", "--arg-file", "-d", "--delimiter", "-E", "--eof", "-I",
+        "--replace", "-L", "--max-lines", "-n", "--max-args", "-P",
+        "--max-procs", "-s", "--max-chars",
+    }
+    parallel_value_options = {
+        "-a", "--arg-file", "-j", "--jobs", "--timeout", "--delay",
+        "--tagstring", "--results", "--workdir", "--sshlogin",
+        "--sshloginfile", "--env",
+    }
+    value_options = (xargs_value_options if executable == "xargs"
+                     else parallel_value_options)
+    short_with_attached_value = (
+        ("-a", "-d", "-E", "-I", "-L", "-n", "-P", "-s")
+        if executable == "xargs" else ("-a", "-j")
+    )
+    while cursor < len(invocation):
+        token = str(invocation[cursor])
+        if token == "--":
+            cursor += 1
+            break
+        if token in value_options:
+            cursor += 2
+            continue
+        if any(token.startswith(option + "=")
+               for option in value_options if option.startswith("--")):
+            cursor += 1
+            continue
+        if any(token.startswith(option) and token != option
+               for option in short_with_attached_value):
+            cursor += 1
+            continue
+        if token.startswith("-"):
+            cursor += 1
+            continue
+        break
+    return invocation[cursor:]
+
+
 def _is_acube_build_invocation(
     invocation: Sequence[str],
     variables: Mapping[str, str],
@@ -660,13 +893,51 @@ def _is_acube_build_invocation(
     )
 
 
+def _is_cspec_test_invocation(
+    invocation: Sequence[str],
+    variables: Mapping[str, str],
+) -> bool:
+    """Recognize execution of ``aliyun cspec test`` without matching audits."""
+    exec_index = _execution_index(invocation)
+    if exec_index is None:
+        return False
+    executable = _basename(
+        _expand_simple_vars(str(invocation[exec_index]), variables))
+    if executable != "aliyun":
+        return False
+    expanded_args = [
+        _expand_simple_vars(str(token), variables)
+        for token in invocation[exec_index + 1:]
+    ]
+    # Do not maintain an allowlist of aliyun global flags here.  Once the
+    # structural parser has proved that the actual executable is ``aliyun``,
+    # every expanded argument belongs to that execution.  Looking for the
+    # forbidden adjacent command words across the complete argv means unknown
+    # and future flags cannot become bypasses merely because this guard has not
+    # learned their value/no-value shape yet.
+    return any(
+        expanded_args[index:index + 2] == ["cspec", "test"]
+        for index in range(len(expanded_args) - 1)
+    )
+
+
 def _pretool_reason_from_command(
     command: str,
     depth: int = 0,
     inherited_variables: Optional[Mapping[str, str]] = None,
 ) -> Optional[str]:
-    if depth > 2:
+    if depth > 8:
         return None
+    # shlex flattens quotes and treats the parentheses in ``$()`` as command
+    # separators.  Inspect executable substitutions first, while the raw quote
+    # and escape information is still available, and reuse this same classifier
+    # recursively.  This remains side-effect free: the extracted source is
+    # parsed as text and is never passed to a shell.
+    for nested_command in _command_substitutions(command):
+        nested = _pretool_reason_from_command(
+            nested_command, depth + 1, inherited_variables)
+        if nested:
+            return nested
     try:
         tokens = _shell_tokens(command)
     except ValueError:
@@ -684,12 +955,31 @@ def _pretool_reason_from_command(
     variables: dict[str, str] = dict(inherited_variables or {})
     for invocation in invocations:
         _remember_simple_assignments(invocation, variables)
+        for split_program in _env_split_programs(invocation):
+            nested = _pretool_reason_from_command(
+                _expand_simple_vars(split_program, variables),
+                depth + 1,
+                variables,
+            )
+            if nested:
+                return nested
+        if _is_cspec_test_invocation(invocation, variables):
+            return CSPEC_TEST_MESSAGE
         if _is_acube_build_invocation(invocation, variables):
             return ACUBE_BUILD_TASK_MESSAGE
         exec_index = _execution_index(invocation)
         if exec_index is None:
             continue
         executable = _basename(invocation[exec_index])
+        fanout_payload = _fanout_payload(invocation, exec_index)
+        if fanout_payload:
+            nested = _pretool_reason_from_command(
+                shlex.join(str(token) for token in fanout_payload),
+                depth + 1,
+                variables,
+            )
+            if nested:
+                return nested
         exec_args = [
             _expand_simple_vars(str(token), variables)
             for token in invocation[exec_index + 1:]
