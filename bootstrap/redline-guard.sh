@@ -22,6 +22,8 @@
 #      prestage IDs may run; every production, new, unknown, opaque rerun, and
 #      opaque task-action path stops for a human. Pipeline renumbering therefore
 #      fails closed instead of bypassing a fixed production-ID denylist.
+#   6. Any actual `aliyun cspec test` execution. Terraform CloudSpec validation
+#      is limited to build, foreground serial resource check, and pre convergence.
 #
 # Contract (same as worktree-guard):
 #   stdin  = tool call JSON {tool_name, tool_input:{command,...}}
@@ -47,34 +49,47 @@ guard_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 guard_py="${JARVIS_A1_COMMAND_GUARD:-$guard_dir/a1_command_guard.py}"
 python_bin="/usr/bin/python3"
 [ -x "$python_bin" ] || python_bin="$(command -v python3 2>/dev/null || true)"
-if [ -n "$python_bin" ] && [ -f "$guard_py" ]; then
-    "$python_bin" -I "$guard_py" --check-pretool-command "$cmd" \
-        >/dev/null 2>"${TMPDIR:-/tmp}/jarvis-redline-guard.$$"
-    guard_rc=$?
-    if [ "$guard_rc" -eq 2 ]; then
-        detail="$(cat "${TMPDIR:-/tmp}/jarvis-redline-guard.$$" 2>/dev/null || true)"
-        rm -f "${TMPDIR:-/tmp}/jarvis-redline-guard.$$"
-        deny "${detail#a1 safety: }"
+guard_rc=1
+guard_detail="${TMPDIR:-/tmp}/jarvis-redline-guard.$$"
+canonical_guard="$guard_dir/a1_command_guard.py"
+if [ -n "$python_bin" ]; then
+    for classifier in "$guard_py" "$canonical_guard"; do
+        [ -f "$classifier" ] || continue
+        [ "$classifier" = "$canonical_guard" ] && [ "$guard_py" = "$canonical_guard" ] \
+            && [ "$guard_rc" -ne 1 ] && continue
+        "$python_bin" -I "$classifier" --check-pretool-command "$cmd" \
+            >/dev/null 2>"$guard_detail"
+        guard_rc=$?
+        [ "$guard_rc" -eq 0 ] || [ "$guard_rc" -eq 2 ] && break
+    done
+fi
+if [ "$guard_rc" -eq 2 ]; then
+    detail="$(cat "$guard_detail" 2>/dev/null || true)"
+    rm -f "$guard_detail"
+    deny "${detail#a1 safety: }"
+fi
+rm -f "$guard_detail"
+
+if [ "$guard_rc" -ne 0 ]; then
+    # No classifier can prove quote/execution semantics. Fail closed on the
+    # three CloudSpec words anywhere in the text; false positives are safer
+    # than letting a permanent prohibition disappear with a broken parser.
+    if printf '%s' "$cmd" | grep -Fq 'aliyun' \
+        && printf '%s' "$cmd" | grep -Fq 'cspec' \
+        && printf '%s' "$cmd" | grep -Fq 'test'; then
+        deny "aliyun cspec test is permanently disabled for Jarvis (classifier unavailable)"
     fi
-    rm -f "${TMPDIR:-/tmp}/jarvis-redline-guard.$$"
-    if [ "$guard_rc" -ne 0 ]; then
-        if printf '%s' "$cmd" | grep -qE '(^|[;&|[:space:]])([^;&|[:space:]]*/)?(a1|a1id)([[:space:]]|$)'; then
-            deny "a1 safety classifier failed(rc=$guard_rc); blocking a1/a1id command fail-closed"
-        fi
-    fi
-else
-    # The specific red line must fail closed if its parser is unavailable.
     if printf '%s' "$cmd" | grep -Fq 'createBuildTaskV2' \
         && printf '%s' "$cmd" | grep -qE '(^|[;&|[:space:]])(curl|wget)([[:space:]]|$)'; then
         deny "Acube createBuildTaskV2 is permanently disabled for Jarvis"
     fi
     if printf '%s' "$cmd" | grep -qE '(^|[;&|[:space:]])([^;&|[:space:]]*/)?(a1|a1id)([[:space:]]|$)'; then
-        deny "a1 safety classifier is unavailable; blocking a1/a1id command fail-closed"
+        deny "a1 safety classifier failed(rc=$guard_rc); blocking a1/a1id command fail-closed"
     fi
 fi
 
 # Per-turn escape hatch applies to repository/master maintenance red lines,
-# never to the permanent Acube downstream-task prohibition above.
+# never to the permanent Acube or aliyun-cspec-test prohibitions above.
 if [ "${JARVIS_MASTER_OK:-}" = "1" ]; then
     exit 0
 fi

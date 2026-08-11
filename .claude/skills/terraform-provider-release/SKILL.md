@@ -114,7 +114,7 @@ Every provider resource release MUST be linked to an Aone work item.
 
 CloudSpec 校验按编辑批次执行：本轮 IDL 修改完成后 build 一次，再对变更资源逐个、前台、
 串行 check；同一模型目录禁止后台或多 Agent 并行 check。全部 check 通过后才进入 pre
-dry-run/publish。
+dry-run/publish。硬禁令：Terraform 开发进入 CloudSpec 链路后，任何阶段严禁执行 `aliyun cspec test`，包括直接、包装、后台或并行调用；仅允许 build、变更资源逐个前台串行 check、pre dry-run/publish 与 pre Meta 收敛，且不影响 Provider `go test` 与远程 AccTest。
 
 ### Step 1.6: 需求 → OpenAPI 圈定 → CloudSpec 定义（Requirement-First Path）
 

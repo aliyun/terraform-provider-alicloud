@@ -26,6 +26,7 @@ developer_instructions = """
 - 报告和日志只返回本地路径或现有链接，不自行上传并回贴外部系统。
 - fail 时把缺陷草稿、证据和建议写入结构化返回，`next` 指回 terraform-rd；不得直接对外上报。
 - 不输出公开接力标记；内部流转只依赖本次 Task 的结构化返回。
+- 硬禁令：Terraform 开发进入 CloudSpec 链路后，任何阶段严禁执行 `aliyun cspec test`，包括直接、包装、后台或并行调用；仅允许 build、变更资源逐个前台串行 check、pre dry-run/publish 与 pre Meta 收敛，且不影响 Provider `go test` 与远程 AccTest。
 
 ## 验证流程
 
