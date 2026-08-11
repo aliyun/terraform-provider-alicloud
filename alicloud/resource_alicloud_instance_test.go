@@ -2348,6 +2348,7 @@ func TestAccAliCloudECSInstanceMetadataOptions(t *testing.T) {
 					"http_tokens":                   "optional",
 					"http_endpoint":                 "enabled",
 					"http_put_response_hop_limit":   "2",
+					"instance_metadata_tags":        "enabled",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -2355,6 +2356,7 @@ func TestAccAliCloudECSInstanceMetadataOptions(t *testing.T) {
 						"http_tokens":                 "optional",
 						"http_endpoint":               "enabled",
 						"http_put_response_hop_limit": "2",
+						"instance_metadata_tags":      "enabled",
 					}),
 				),
 			},
@@ -2388,6 +2390,16 @@ func TestAccAliCloudECSInstanceMetadataOptions(t *testing.T) {
 						"instance_name": name,
 						"http_tokens":   "optional",
 						"http_endpoint": "enabled",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_metadata_tags": "disabled",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_metadata_tags": "disabled",
 					}),
 				),
 			},
