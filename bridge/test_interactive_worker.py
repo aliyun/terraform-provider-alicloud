@@ -6,6 +6,7 @@ import importlib.util
 import io
 import os
 import stat
+import subprocess
 import tempfile
 import threading
 import unittest
@@ -221,6 +222,28 @@ class InteractiveWorkerTest(unittest.TestCase):
                 },
             }, source="test", now=issued_at)
         return state
+
+    def _cloudspec_repo(self):
+        repo = Path(self.temp.name) / "cloudspec-model"
+        repo.mkdir()
+        subprocess.run(["git", "init", "-q", repo], check=True)
+        subprocess.run(
+            ["git", "-C", repo, "config", "user.email", "guard@example.com"],
+            check=True)
+        subprocess.run(
+            ["git", "-C", repo, "config", "user.name", "Guard Test"],
+            check=True)
+        subprocess.run(
+            ["git", "-C", repo, "checkout", "-q", "-b", "feature/guard"],
+            check=True)
+        (repo / "operations").mkdir()
+        (repo / "main.cspec").write_text("namespace test\n", encoding="utf-8")
+        (repo / "operations" / "GetThing.cspec").write_text(
+            "operation GetThing\n", encoding="utf-8")
+        subprocess.run(["git", "-C", repo, "add", "."], check=True)
+        subprocess.run(
+            ["git", "-C", repo, "commit", "-qm", "initial"], check=True)
+        return repo
 
     def test_session_hook_registers_private_non_pulling_worker_and_offlines(self):
         fake = FakeClient()
@@ -1132,6 +1155,304 @@ class InteractiveWorkerTest(unittest.TestCase):
         self.assertIn("当前工具调用已阻断", stderr.getvalue())
         self.assertEqual(after["current"]["fenceToken"], 9)
         self.assertNotIn("lostOwnership", after)
+
+    def test_pre_tool_use_persists_cloudspec_baseline_and_blocks_later_diff(self):
+        repo = self._cloudspec_repo()
+        state = self._seed()
+        state["current"] = {
+            "aoneId": "99999999", "projectId": "2100304", "taskId": "task-guard",
+            "sessionId": "session-guard", "fenceToken": 19, "generation": 1,
+            "cycle": 1, "runtimeSessionId": "interactive:guard:1",
+            "leaseSeconds": 120, "heartbeatEnabled": True,
+        }
+        self._add_permit(state)
+        self._store().save(state)
+        event = {
+            "hook_event_name": "PreToolUse",
+            "session_id": "native-thread-1",
+            "turn_id": "turn-guard",
+            "tool_use_id": "tool-register-repo",
+            "tool_name": "Bash",
+            "cwd": str(repo),
+            "tool_input": {"command": "git status --short"},
+        }
+        with mock.patch.object(
+                worker, "_client",
+                side_effect=AssertionError("operation guard must stay local")), \
+                mock.patch.object(worker, "_calling_process_matches", return_value=True), \
+                contextlib.redirect_stdout(io.StringIO()), \
+                contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(worker.hook("codex", event), 0)
+        guard = self._store().load()[worker.CLOUDSPEC_OPERATION_GUARD_KEY]
+        self.assertIn(str(repo.resolve()), guard["repositories"])
+
+        (repo / "operations" / "GetThing.cspec").write_text(
+            "operation GetThing changed\n", encoding="utf-8")
+        stderr = io.StringIO()
+        with mock.patch.object(
+                worker, "_client",
+                side_effect=AssertionError("operation guard must stay local")), \
+                mock.patch.object(worker, "_calling_process_matches", return_value=True), \
+                contextlib.redirect_stdout(io.StringIO()), \
+                contextlib.redirect_stderr(stderr):
+            self.assertEqual(worker.hook(
+                "codex", {**event, "tool_use_id": "tool-after-operation-diff"}), 2)
+        self.assertIn("operations/GetThing.cspec", stderr.getvalue())
+        self.assertIn("不存在模型侧绕过开关", stderr.getvalue())
+
+    def test_pre_tool_use_blocks_first_standard_write_to_operation_path(self):
+        repo = self._cloudspec_repo()
+        state = self._seed()
+        state["current"] = {
+            "aoneId": "99999999", "projectId": "2100304", "taskId": "task-guard",
+            "sessionId": "session-guard", "fenceToken": 19, "generation": 1,
+            "cycle": 1, "runtimeSessionId": "interactive:guard:1",
+            "leaseSeconds": 120, "heartbeatEnabled": True,
+        }
+        self._add_permit(state)
+        self._store().save(state)
+        event = {
+            "hook_event_name": "PreToolUse",
+            "session_id": "native-thread-1",
+            "turn_id": "turn-guard",
+            "tool_use_id": "tool-write-operation",
+            "tool_name": "Edit",
+            "cwd": str(repo),
+            "tool_input": {
+                "file_path": str(repo / "operations" / "GetThing.cspec"),
+            },
+        }
+        stderr = io.StringIO()
+        with mock.patch.object(worker, "_calling_process_matches", return_value=True), \
+                contextlib.redirect_stdout(io.StringIO()), \
+                contextlib.redirect_stderr(stderr):
+            self.assertEqual(worker.hook("codex", event), 2)
+        self.assertIn("写入目标位于 IDL operations/", stderr.getvalue())
+        self.assertNotIn(
+            worker.CLOUDSPEC_OPERATION_GUARD_KEY, self._store().load())
+
+    def test_cross_directory_shell_path_registers_repo_before_operation_diff(self):
+        repo = self._cloudspec_repo()
+        state = self._seed()
+        state["current"] = {
+            "aoneId": "99999999", "projectId": "2100304", "cycle": 1,
+        }
+        self._store().save(state)
+        operation = repo / "operations" / "GetThing.cspec"
+        event = {
+            "tool_name": "Bash",
+            "cwd": self.temp.name,
+            "tool_input": {
+                "command": (
+                    "/usr/bin/python3 -c \"from pathlib import Path; "
+                    "Path('%s').write_text('changed')\"" % operation),
+            },
+        }
+
+        self.assertIsNone(worker._cloudspec_operation_guard_reason(
+            self._store(), event))
+        guard = self._store().load()[worker.CLOUDSPEC_OPERATION_GUARD_KEY]
+        self.assertIn(str(repo.resolve()), guard["repositories"])
+
+        operation.write_text("changed", encoding="utf-8")
+        reason = worker._cloudspec_operation_guard_reason(self._store())
+        self.assertIn("operations/GetThing.cspec", reason)
+
+    def test_relative_cd_registers_sibling_repo_before_compound_shell(self):
+        repo = self._cloudspec_repo()
+        state = self._seed()
+        state["current"] = {
+            "aoneId": "99999999", "projectId": "2100304", "cycle": 1,
+        }
+        self._store().save(state)
+        event = {
+            "tool_name": "Bash",
+            "cwd": self.temp.name,
+            "tool_input": {"command": (
+                "cd %s && printf changed > operations/GetThing.cspec && "
+                "git add operations/GetThing.cspec && git commit -m changed"
+                % repo.name)},
+        }
+
+        self.assertIsNone(worker._cloudspec_operation_guard_reason(
+            self._store(), event))
+        guard = self._store().load()[worker.CLOUDSPEC_OPERATION_GUARD_KEY]
+        self.assertIn(str(repo.resolve()), guard["repositories"])
+
+    def test_deleted_main_cannot_hide_initial_operation_diff(self):
+        repo = self._cloudspec_repo()
+        subprocess.run(
+            ["git", "-C", repo, "rm", "-q", "main.cspec"], check=True)
+        (repo / "operations" / "GetThing.cspec").write_text(
+            "changed", encoding="utf-8")
+        state = self._seed()
+        state["current"] = {
+            "aoneId": "99999999", "projectId": "2100304", "cycle": 1,
+        }
+        self._store().save(state)
+
+        reason = worker._cloudspec_operation_guard_reason(
+            self._store(), {"tool_name": "Bash", "cwd": str(repo),
+                            "tool_input": {"command": "git status --short"}})
+
+        self.assertIn("operations/GetThing.cspec", reason)
+
+    def test_repo_discovery_timeout_blocks_standard_write(self):
+        state = self._seed()
+        state["current"] = {
+            "aoneId": "99999999", "projectId": "2100304", "cycle": 1,
+        }
+        self._store().save(state)
+        original_run = subprocess.run
+
+        def run_with_timeout(args, **kwargs):
+            if "rev-parse" in args and "--show-toplevel" in args:
+                raise subprocess.TimeoutExpired(args, 5)
+            return original_run(args, **kwargs)
+
+        with mock.patch.object(worker.subprocess, "run", side_effect=run_with_timeout):
+            reason = worker._cloudspec_operation_guard_reason(
+                self._store(), {"tool_name": "Write", "cwd": self.temp.name,
+                                "tool_input": {"file_path": str(
+                                    Path(self.temp.name) / "x.cspec")}})
+
+        self.assertIn("无法解析写入目标仓库", reason)
+
+    def test_amp_authorize_publish_rechecks_operation_diff_at_wrapper_boundary(self):
+        repo = self._cloudspec_repo()
+        state = self._seed()
+        state["current"] = {
+            "aoneId": "99999999", "projectId": "2100304", "cycle": 1,
+            "heartbeatEnabled": True,
+        }
+        self._store().save(state)
+        self.assertIsNone(worker._cloudspec_operation_guard_reason(
+            self._store(), {"tool_name": "Bash", "cwd": str(repo),
+                            "tool_input": {"command": "amp_safe publish pre"}}))
+        with mock.patch.object(worker, "_session_permit_block_reason",
+                               return_value=None), \
+                mock.patch.object(worker, "_calling_process_matches",
+                                  return_value=True):
+            self.assertEqual(worker.amp_authorize("publish", str(repo)), 0)
+        (repo / "operations" / "GetThing.cspec").write_text(
+            "operation GetThing changed\n", encoding="utf-8")
+        stderr = io.StringIO()
+        with mock.patch.object(worker, "_session_permit_block_reason",
+                               return_value=None), \
+                mock.patch.object(worker, "_calling_process_matches",
+                                  return_value=True), \
+                contextlib.redirect_stderr(stderr):
+            self.assertEqual(worker.amp_authorize("publish", str(repo)), 2)
+        self.assertIn("operations/GetThing.cspec", stderr.getvalue())
+
+    def test_amp_authorize_publish_refuses_to_create_late_baseline(self):
+        repo = self._cloudspec_repo()
+        state = self._seed()
+        state["current"] = {
+            "aoneId": "99999999", "projectId": "2100304", "cycle": 1,
+            "heartbeatEnabled": True,
+        }
+        self._store().save(state)
+        stderr = io.StringIO()
+        with mock.patch.object(worker, "_session_permit_block_reason",
+                               return_value=None), \
+                mock.patch.object(worker, "_calling_process_matches",
+                                  return_value=True), \
+                contextlib.redirect_stderr(stderr):
+            self.assertEqual(worker.amp_authorize("publish", str(repo)), 2)
+        self.assertIn("baseline was not established", stderr.getvalue())
+
+    def test_amp_authorize_requires_claim_and_feature_branch(self):
+        repo = self._cloudspec_repo()
+        self._store().save(self._seed())
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr):
+            self.assertEqual(worker.amp_authorize("publish", str(repo)), 2)
+        self.assertIn("active claimed task", stderr.getvalue())
+
+        state = self._seed()
+        state["current"] = {
+            "aoneId": "99999999", "projectId": "2100304", "cycle": 1,
+            "heartbeatEnabled": True,
+        }
+        self._store().save(state)
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr):
+            self.assertEqual(worker.amp_authorize("publish", str(repo)), 2)
+        self.assertIn("Lease Proof", stderr.getvalue())
+
+        subprocess.run(
+            ["git", "-C", repo, "branch", "-m", "not-feature"], check=True)
+        self.assertIsNone(worker._cloudspec_operation_guard_reason(
+            self._store(), {"tool_name": "Bash", "cwd": str(repo),
+                            "tool_input": {"command": "amp_safe publish pre"}}))
+        stderr = io.StringIO()
+        with mock.patch.object(worker, "_session_permit_block_reason",
+                               return_value=None), \
+                mock.patch.object(worker, "_calling_process_matches",
+                                  return_value=True), \
+                contextlib.redirect_stderr(stderr):
+            self.assertEqual(worker.amp_authorize("publish", str(repo)), 2)
+        self.assertIn("feature/* Git branch", stderr.getvalue())
+
+    def test_amp_authorize_non_publish_action_still_freezes_on_known_operation_diff(self):
+        repo = self._cloudspec_repo()
+        state = self._seed()
+        state["current"] = {
+            "aoneId": "99999999", "projectId": "2100304", "cycle": 1,
+            "heartbeatEnabled": True,
+        }
+        self._store().save(state)
+        with mock.patch.object(worker, "_session_permit_block_reason",
+                               return_value=None), \
+                mock.patch.object(worker, "_calling_process_matches",
+                                  return_value=True):
+            self.assertEqual(worker.amp_authorize("init", str(repo)), 0)
+        (repo / "operations" / "GetThing.cspec").write_text(
+            "changed", encoding="utf-8")
+
+        stderr = io.StringIO()
+        with mock.patch.object(worker, "_session_permit_block_reason",
+                               return_value=None), \
+                mock.patch.object(worker, "_calling_process_matches",
+                                  return_value=True), \
+                contextlib.redirect_stderr(stderr):
+            self.assertEqual(worker.amp_authorize("branch-create", str(repo)), 2)
+        self.assertIn("operations/GetThing.cspec", stderr.getvalue())
+
+    def test_cloudspec_guard_epoch_survives_recovery_and_resets_next_cycle(self):
+        active = {
+            "claimCounter": 1,
+            "current": {
+                "aoneId": "99999999", "projectId": "2100304", "cycle": 1,
+                "sessionId": "old-session", "fenceToken": 1, "generation": 2,
+            },
+        }
+        recovering = {
+            "claimCounter": 1,
+            "pendingClaim": {
+                "aoneId": "99999999", "projectId": "2100304", "cycle": 1,
+                "phase": "READY_TO_RECOVER",
+            },
+        }
+        resumed = {
+            "claimCounter": 1,
+            "current": {
+                "aoneId": "99999999", "projectId": "2100304", "cycle": 1,
+                "sessionId": "new-session", "fenceToken": 9, "generation": 2,
+            },
+        }
+        next_cycle = {
+            "claimCounter": 2,
+            "current": {
+                "aoneId": "99999999", "projectId": "2100304", "cycle": 2,
+                "sessionId": "next-session", "fenceToken": 10, "generation": 3,
+            },
+        }
+        epoch = worker._cloudspec_guard_epoch(active)
+        self.assertEqual(worker._cloudspec_guard_epoch(recovering), epoch)
+        self.assertEqual(worker._cloudspec_guard_epoch(resumed), epoch)
+        self.assertNotEqual(worker._cloudspec_guard_epoch(next_cycle), epoch)
 
     def test_528766_lineage_does_not_blanket_block_aone_writes(self):
         state = self._seed()
@@ -2871,6 +3192,16 @@ class InteractiveWorkerTest(unittest.TestCase):
             "leaseSeconds": 120, "heartbeatEnabled": True,
         }
         state["pendingOperation"] = {"operationId": "op-old"}
+        state[worker.CLOUDSPEC_OPERATION_GUARD_KEY] = {
+            "assignmentEpoch": "task:2100304:84345050:7",
+            "repositories": {
+                "/workspace/model": {
+                    "baseline": "a" * 40,
+                    "branch": "feature/guard",
+                    "components": [""],
+                },
+            },
+        }
         self._store().save(state)
         fake = FakeClient()
         event = {
@@ -2891,6 +3222,9 @@ class InteractiveWorkerTest(unittest.TestCase):
         self.assertEqual(recovered["pendingClaim"]["phase"], "READY_TO_RECOVER")
         self.assertEqual(recovered["pendingClaim"]["runtimeSessionId"],
                          "interactive:cycle:7")
+        self.assertEqual(
+            recovered[worker.CLOUDSPEC_OPERATION_GUARD_KEY],
+            state[worker.CLOUDSPEC_OPERATION_GUARD_KEY])
         self.assertNotEqual(recovered["workerKey"], state["workerKey"])
 
         fake.claim_error = worker.ControlPlaneConflict("old lease still active")
@@ -3692,6 +4026,32 @@ class StopCheckTest(unittest.TestCase):
             sessionPermit={"sessionStatus": "COMPLETED", "issuedAt": 1},
         )
         self.assertEqual(worker.stop_check(), 0)
+
+    def test_stop_check_operation_diff_precedes_terminal_session_pass(self):
+        self._seed(
+            current={"aoneId": "123", "sessionId": "s-1"},
+            sessionPermit={"sessionStatus": "COMPLETED", "issuedAt": 1},
+        )
+        stderr = io.StringIO()
+        with mock.patch.object(
+                worker, "_cloudspec_operation_guard_reason",
+                return_value="cloudspec-operation-diff-guard: operations/X.cspec"), \
+                contextlib.redirect_stderr(stderr):
+            self.assertEqual(worker.stop_check(), 2)
+        self.assertIn("operations/X.cspec", stderr.getvalue())
+
+    def test_stop_check_guard_exception_is_fail_closed(self):
+        self._seed(
+            current={"aoneId": "123", "sessionId": "s-1"},
+            sessionPermit={"sessionStatus": "COMPLETED", "issuedAt": 1},
+        )
+        stderr = io.StringIO()
+        with mock.patch.object(
+                worker, "_cloudspec_operation_guard_reason",
+                side_effect=RuntimeError("state unavailable")), \
+                contextlib.redirect_stderr(stderr):
+            self.assertEqual(worker.stop_check(), 2)
+        self.assertIn("Stop diff 校验", stderr.getvalue())
 
     def test_stop_check_terminal_session_failed_passes(self):
         """Session FAILED → exit 0."""

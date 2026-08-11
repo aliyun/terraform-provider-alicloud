@@ -46,6 +46,13 @@ sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(BRIDGE_DIR))
 
 from a1_command_guard import pretool_a1_block_reason  # noqa: E402
+from cloudspec_operation_diff_guard import (  # noqa: E402
+    OperationDiffGuardError,
+    capture_repository_baseline,
+    discover_cloudspec_components,
+    inspect_repository,
+    path_is_cloudspec_operation,
+)
 from jarvis_persistence_executor import _default_boot_id, make_worker_key  # noqa: E402
 from jarvis_task_client import (  # noqa: E402
     ControlPlaneClient,
@@ -80,6 +87,14 @@ POST_PR_AONE_WRITE_POLICY = "post-pr-read-only"
 POST_PR_HEADLESS_KINDS = frozenset(("pr_ci_fix", "pr_comment_reply"))
 T = TypeVar("T")
 ADMIN_TOKEN_ENV = "JARVIS_CONTROL_PLANE_ADMIN_TOKEN"
+CLOUDSPEC_OPERATION_GUARD_KEY = "cloudspecOperationDiffGuard"
+CLOUDSPEC_OPERATION_WRITE_TOOLS = frozenset((
+    "edit", "write", "multiedit", "notebookedit", "apply_patch",
+))
+CLOUDSPEC_OPERATION_PATCH_PATH_RE = re.compile(
+    r"^\*\*\* (?:Add|Update|Delete) File: (.+)$", re.MULTILINE)
+CLOUDSPEC_OPERATION_SHELL_ABS_PATH_RE = re.compile(
+    r"/(?:[^\s'\";|&()<>{}\[\],]+)")
 
 
 def _unprivileged_child_env() -> Dict[str, str]:
@@ -524,6 +539,300 @@ def _assignment_epoch(state: Mapping[str, Any]) -> str:
             str(current.get("generation") or "missing"),
         )
     return "idle:%s" % int(state.get("claimCounter") or 0)
+
+
+def _cloudspec_guard_epoch(state: Mapping[str, Any]) -> str:
+    """Keep the diff baseline across process/session recovery for one claim."""
+    for key in ("current", "pendingClaim", "recoveryPending"):
+        candidate = state.get(key)
+        if not isinstance(candidate, Mapping):
+            continue
+        aone_id = str(candidate.get("aoneId") or "").strip()
+        project_id = str(candidate.get("projectId") or "").strip()
+        cycle = str(candidate.get("cycle") or "").strip()
+        if aone_id and project_id and cycle:
+            return "task:%s:%s:%s" % (project_id, aone_id, cycle)
+    return "idle:%s" % int(state.get("claimCounter") or 0)
+
+
+def _cloudspec_guard_base_path(state: Mapping[str, Any],
+                               event: Optional[Mapping[str, Any]]) -> Path:
+    tool_input = event.get("tool_input") if isinstance(event, Mapping) else None
+    candidates = []
+    if isinstance(tool_input, Mapping):
+        candidates.extend((tool_input.get("workdir"), tool_input.get("cwd")))
+    if isinstance(event, Mapping):
+        candidates.append(event.get("cwd"))
+    candidates.extend((state.get("cwd"), os.getcwd()))
+    for value in candidates:
+        if not isinstance(value, str) or not value.strip():
+            continue
+        try:
+            return Path(value).expanduser().resolve(strict=False)
+        except (OSError, RuntimeError, ValueError):
+            continue
+    return Path(os.getcwd()).resolve(strict=False)
+
+
+def _cloudspec_guard_event_paths(state: Mapping[str, Any],
+                                 event: Optional[Mapping[str, Any]]) -> tuple[Path, ...]:
+    base = _cloudspec_guard_base_path(state, event)
+    values: list[str] = []
+    tool_input = event.get("tool_input") if isinstance(event, Mapping) else None
+    if isinstance(tool_input, Mapping):
+        for key in ("file_path", "notebook_path", "path"):
+            value = tool_input.get(key)
+            if isinstance(value, str) and value.strip():
+                values.append(value)
+        tool_name = str(event.get("tool_name") or "")
+        if tool_name.rsplit(".", 1)[-1].lower() == "apply_patch":
+            for key in ("patch", "input"):
+                value = tool_input.get(key)
+                if isinstance(value, str):
+                    values.extend(CLOUDSPEC_OPERATION_PATCH_PATH_RE.findall(value))
+        if tool_name.rsplit(".", 1)[-1].lower() in {"bash", "shell", "exec", "exec_command"}:
+            command = tool_input.get("command") or tool_input.get("cmd")
+            if isinstance(command, str):
+                # Register repositories referenced by cross-directory shell
+                # commands before they run.  Token parsing covers ordinary
+                # git -C/cd/script invocations; the absolute-path scan also
+                # covers paths embedded in python/perl/ruby snippets.
+                try:
+                    tokens = shlex.split(command, posix=True)
+                except ValueError:
+                    tokens = []
+                for index, token in enumerate(tokens):
+                    expanded = os.path.expandvars(os.path.expanduser(token))
+                    if expanded.startswith("/") or "/" in expanded:
+                        values.append(expanded)
+                    # A sibling repo has no slash in ordinary `cd model` or
+                    # `git -C model` syntax. Register it before the compound
+                    # shell can edit, commit, and publish in one tool call.
+                    previous = tokens[index - 1] if index else ""
+                    if (previous == "cd"
+                            or previous in {"-C", "--git-dir", "--work-tree"}):
+                        values.append(expanded)
+                values.extend(CLOUDSPEC_OPERATION_SHELL_ABS_PATH_RE.findall(command))
+    paths = [base]
+    for value in values:
+        try:
+            candidate = Path(value).expanduser()
+            if not candidate.is_absolute():
+                candidate = base / candidate
+            paths.append(candidate.resolve(strict=False))
+        except (OSError, RuntimeError, ValueError):
+            # The repository inspector cannot prove malformed paths safe. Keep
+            # the unresolved value under the base so write-time validation can
+            # fail closed if the containing Git repository is CloudSpec.
+            paths.append(base / value)
+    return tuple(dict.fromkeys(paths))
+
+
+def _cloudspec_guard_repo_root(path: Path) -> Optional[Path]:
+    probe = path
+    while not probe.exists() and probe != probe.parent:
+        probe = probe.parent
+    if probe.is_file():
+        probe = probe.parent
+    try:
+        completed = subprocess.run(
+            ["git", "-C", os.fspath(probe), "rev-parse", "--show-toplevel"],
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+            timeout=5,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise OperationDiffGuardError("git rev-parse timed out") from exc
+    except (OSError, ValueError) as exc:
+        raise OperationDiffGuardError("cannot execute git rev-parse: %s" % exc) from exc
+    if completed.returncode != 0:
+        error = os.fsdecode(completed.stderr).strip()
+        if "not a git repository" in error.lower():
+            return None
+        raise OperationDiffGuardError(
+            "git rev-parse failed: %s" % (error[-800:] or completed.returncode))
+    try:
+        root = Path(os.fsdecode(completed.stdout).strip()).resolve()
+    except (OSError, RuntimeError, ValueError):
+        return None
+    return root if root.is_dir() else None
+
+
+def _cloudspec_guard_repo_has_main(repo_root: Path) -> Optional[bool]:
+    """Cheap current+HEAD prefilter before the strict repository inspector."""
+    try:
+        completed = subprocess.run(
+            ["git", "-C", os.fspath(repo_root), "ls-files", "--cached",
+             "--others", "--exclude-standard", "-z"],
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            check=False,
+            timeout=5,
+        )
+    except (OSError, subprocess.TimeoutExpired, ValueError):
+        return None
+    if completed.returncode != 0:
+        return None
+    current_has_main = any(
+        value == b"main.cspec" or value.endswith(b"/main.cspec")
+        for value in completed.stdout.split(b"\x00") if value)
+    if current_has_main:
+        return True
+    try:
+        baseline = subprocess.run(
+            ["git", "-C", os.fspath(repo_root), "ls-tree", "-r",
+             "--name-only", "-z", "HEAD", "--"],
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+            timeout=5,
+        )
+    except (OSError, subprocess.TimeoutExpired, ValueError):
+        return None
+    if baseline.returncode != 0:
+        # An unborn repository with no current main.cspec cannot contain a
+        # baseline CloudSpec component. Other failures remain ambiguous.
+        error = os.fsdecode(baseline.stderr).lower()
+        return False if "not a valid object name head" in error else None
+    return any(
+        value == b"main.cspec" or value.endswith(b"/main.cspec")
+        for value in baseline.stdout.split(b"\x00") if value)
+
+
+def _cloudspec_guard_tool_is_write(event: Optional[Mapping[str, Any]]) -> bool:
+    if not isinstance(event, Mapping):
+        return False
+    tool_name = str(event.get("tool_name") or "").rsplit(".", 1)[-1].lower()
+    return tool_name in CLOUDSPEC_OPERATION_WRITE_TOOLS
+
+
+def _cloudspec_guard_message(repo_root: str, detail: str,
+                             paths: tuple[str, ...] = ()) -> str:
+    rendered = "\n".join("  - %s" % path for path in paths)
+    suffix = "\n命中路径:\n%s" % rendered if rendered else ""
+    return (
+        "cloudspec-operation-diff-guard: 当前工具调用已阻断。\n"
+        "Jarvis 永久无权修改 CloudSpec IDL operations/；需要人工检查并处置，"
+        "不存在模型侧绕过开关。\nrepo=%s\nreason=%s%s"
+        % (repo_root, detail, suffix)
+    )
+
+
+def _cloudspec_operation_guard_reason(
+        store: StateStore,
+        event: Optional[Mapping[str, Any]] = None) -> Optional[str]:
+    """Persist task-epoch baselines and reject every operation-path change.
+
+    The entire decision is local and serialized by the existing authority
+    store. Root agents and subagents therefore share one baseline set, while a
+    new task assignment receives a fresh epoch automatically.
+    """
+    with store.locked():
+        state = store.load_unlocked()
+        if not state:
+            return None
+        epoch = _cloudspec_guard_epoch(state)
+        existing_guard = state.get(CLOUDSPEC_OPERATION_GUARD_KEY)
+        existing_repositories_value = (
+            existing_guard.get("repositories")
+            if isinstance(existing_guard, Mapping) else {})
+        existing_repositories = (
+            dict(existing_repositories_value)
+            if isinstance(existing_repositories_value, Mapping) else {})
+
+        # Scan the previous epoch before clearing it. A release or process
+        # transition must not erase evidence created by the final tool call;
+        # clean repositories are then discarded for the next task as normal.
+        for repo_value, record_value in tuple(existing_repositories.items()):
+            record = record_value if isinstance(record_value, Mapping) else {}
+            baseline = str(record.get("baseline") or "")
+            branch = str(record.get("branch") or "")
+            inspection = inspect_repository(
+                repo_value, baseline, expected_branch=branch)
+            if inspection.blocked:
+                return _cloudspec_guard_message(
+                    repo_value, "无法证明仓库 diff 安全: %s" % inspection.reason)
+            if inspection.paths:
+                return _cloudspec_guard_message(
+                    repo_value, "本任务 diff 涉及 IDL operations/", inspection.paths)
+
+        if (not isinstance(existing_guard, Mapping)
+                or str(existing_guard.get("assignmentEpoch")) != epoch):
+            guard = {"assignmentEpoch": epoch, "repositories": {}}
+        else:
+            guard = dict(existing_guard)
+            guard["repositories"] = existing_repositories
+        repositories = guard["repositories"]
+
+        candidate_paths = _cloudspec_guard_event_paths(state, event)
+        path_repositories: list[tuple[Path, Path]] = []
+        for path in candidate_paths:
+            try:
+                repo_root = _cloudspec_guard_repo_root(path)
+            except OperationDiffGuardError as exc:
+                if _cloudspec_guard_tool_is_write(event):
+                    return _cloudspec_guard_message(
+                        os.fspath(path), "无法解析写入目标仓库: %s" % exc)
+                continue
+            if repo_root is None:
+                continue
+            path_repositories.append((path, repo_root))
+            repo_key = os.fspath(repo_root)
+            if repo_key in repositories:
+                continue
+            may_have_main = _cloudspec_guard_repo_has_main(repo_root)
+            if may_have_main is False:
+                continue
+            if may_have_main is None:
+                return _cloudspec_guard_message(
+                    repo_key, "无法判断仓库是否包含 CloudSpec main.cspec")
+            try:
+                baseline = capture_repository_baseline(repo_root)
+                components = discover_cloudspec_components(repo_root)
+                if not components and not baseline.components:
+                    continue
+            except OperationDiffGuardError as exc:
+                return _cloudspec_guard_message(
+                    repo_key, "无法建立可信任务基线: %s" % exc)
+            repositories[repo_key] = {
+                "baseline": baseline.head,
+                "branch": baseline.branch,
+                "components": list(baseline.components),
+            }
+            inspection = inspect_repository(repo_root, baseline)
+            if inspection.blocked:
+                return _cloudspec_guard_message(
+                    repo_key, "无法证明初始仓库 diff 安全: %s" % inspection.reason)
+            if inspection.paths:
+                return _cloudspec_guard_message(
+                    repo_key, "初始任务 diff 已涉及 IDL operations/", inspection.paths)
+
+        # Standard file-edit tools are stopped before the first forbidden diff
+        # can be created. Shell/exec commands register every repo referenced by
+        # their cwd, ordinary path tokens, or embedded absolute paths before
+        # execution; the baseline catches their diff on PostToolUse/next
+        # PreToolUse/Stop.
+        if _cloudspec_guard_tool_is_write(event):
+            for path, repo_root in path_repositories:
+                repo_key = os.fspath(repo_root)
+                if repo_key not in repositories:
+                    continue
+                try:
+                    if path_is_cloudspec_operation(repo_root, path):
+                        return _cloudspec_guard_message(
+                            repo_key, "写入目标位于 IDL operations/",
+                            (os.fspath(path),))
+                except OperationDiffGuardError as exc:
+                    return _cloudspec_guard_message(
+                        repo_key, "无法证明写入路径安全: %s" % exc)
+
+        state[CLOUDSPEC_OPERATION_GUARD_KEY] = guard
+        store.save_unlocked(state)
+    return None
 
 
 def _session_meta(transcript_path: Any) -> Dict[str, Any]:
@@ -1403,6 +1712,11 @@ def _guard_pre_tool_use(store: StateStore, client_name: str,
         if turn_reason:
             return turn_reason
 
+    operation_diff_reason = _cloudspec_operation_guard_reason(
+        authority_store, event)
+    if operation_diff_reason:
+        return operation_diff_reason
+
     # UNKNOWN and terminal-state recovery must never hide the evidence needed
     # to choose a lawful next action. These exact commands are read-only and do
     # not weaken task/session ownership fencing for mutations.
@@ -2207,6 +2521,10 @@ def _build_incarnation_state(
         "version": os.environ.get(
             "JARVIS_INTERACTIVE_WORKER_VERSION", "interactive-v1"),
         "claimCounter": int(old_state.get("claimCounter") or 0),
+        # Local-only CloudSpec baselines survive a host/session restart. Their
+        # own task epoch resets them when the next claim cycle begins.
+        CLOUDSPEC_OPERATION_GUARD_KEY: old_state.get(
+            CLOUDSPEC_OPERATION_GUARD_KEY),
         "targetedPollCounter": (
             int(old_state.get("targetedPollCounter") or 0)
             if same_incarnation else 0),
@@ -4311,11 +4629,23 @@ def stop_check() -> int:
         return 1
     try:
         state = store.load()
-    except (RuntimeError, OSError):
-        return 1
+    except (RuntimeError, OSError) as exc:
+        print("cloudspec-operation-diff-guard: 无法读取 Worker 安全状态；Stop 已阻断: %s"
+              % type(exc).__name__, file=sys.stderr)
+        return HOOK_BLOCK_EXIT
 
     if not state:
         return 0
+
+    try:
+        operation_diff_reason = _cloudspec_operation_guard_reason(store)
+    except Exception as exc:
+        print("cloudspec-operation-diff-guard: 无法完成 Stop diff 校验；Stop 已阻断: %s"
+              % type(exc).__name__, file=sys.stderr)
+        return HOOK_BLOCK_EXIT
+    if operation_diff_reason:
+        print(operation_diff_reason, file=sys.stderr)
+        return HOOK_BLOCK_EXIT
 
     current = state.get("current")
     if not isinstance(current, Mapping):
@@ -4351,6 +4681,138 @@ def stop_check() -> int:
           "请先 claim.sh release 或 wrap.sh done 收尾" % (aone_id, session_status or "ACTIVE"),
           file=sys.stderr)
     return HOOK_BLOCK_EXIT
+
+
+def amp_authorize(action: str, repo_root: str) -> int:
+    """Authorize a trusted amp_safe mutation against the active task fence.
+
+    The wrapper invokes this immediately before the real AMP subprocess.  It
+    reuses the task-epoch baseline from PreToolUse/Stop, closing the window in
+    which one shell command edits an operation and publishes it immediately.
+    """
+    allowed_actions = {
+        "init", "branch-create", "branch-switch",
+        "context-set-branch", "publish",
+    }
+    if action not in allowed_actions:
+        print("amp-safe: unknown authorization action", file=sys.stderr)
+        return HOOK_BLOCK_EXIT
+    store = _current_store()
+    state = store.load()
+    current = state.get("current")
+    if not isinstance(current, Mapping):
+        print("amp-safe: active claimed task is required", file=sys.stderr)
+        return HOOK_BLOCK_EXIT
+    local_reason = _local_tool_block_reason(state)
+    if local_reason:
+        print("amp-safe: %s" % local_reason, file=sys.stderr)
+        return HOOK_BLOCK_EXIT
+    permit_reason = _session_permit_block_reason(state, current)
+    if permit_reason:
+        print("amp-safe: %s" % permit_reason, file=sys.stderr)
+        return HOOK_BLOCK_EXIT
+    client_name = str(state.get("client") or "")
+    if not client_name or not _calling_process_matches(state, client_name):
+        print("amp-safe: Worker process incarnation cannot be verified",
+              file=sys.stderr)
+        return HOOK_BLOCK_EXIT
+    if client_name == "codex" and not state.get("turnActive", True):
+        print("amp-safe: Codex turn is no longer active", file=sys.stderr)
+        return HOOK_BLOCK_EXIT
+
+    try:
+        candidate = Path(repo_root).expanduser().resolve(strict=False)
+    except (OSError, RuntimeError, ValueError) as exc:
+        print("amp-safe: invalid repository path: %s" % exc, file=sys.stderr)
+        return HOOK_BLOCK_EXIT
+
+    discovered: Optional[Path] = None
+    if action == "publish":
+        try:
+            discovered = _cloudspec_guard_repo_root(candidate)
+        except OperationDiffGuardError as exc:
+            print("amp-safe: cannot prove publish repository safe: %s" % exc,
+                  file=sys.stderr)
+            return HOOK_BLOCK_EXIT
+        if discovered is None:
+            print("amp-safe: publish must run inside a CloudSpec Git repository",
+                  file=sys.stderr)
+            return HOOK_BLOCK_EXIT
+        # PreToolUse must establish the baseline before the wrapper starts. If
+        # authorize were allowed to create it now, a compound shell could edit
+        # and commit operations/ first, then make the changed HEAD look clean.
+        guard_before = state.get(CLOUDSPEC_OPERATION_GUARD_KEY)
+        repositories_before = (guard_before.get("repositories")
+                               if isinstance(guard_before, Mapping) else None)
+        if (not isinstance(repositories_before, Mapping)
+                or os.fspath(discovered) not in repositories_before):
+            print("amp-safe: trusted task baseline was not established before publish",
+                  file=sys.stderr)
+            return HOOK_BLOCK_EXIT
+
+    # This scan also rechecks every previously registered model repository.
+    # Once any operations/ diff exists, all later AMP actions remain frozen.
+    operation_reason = _cloudspec_operation_guard_reason(
+        store,
+        {
+            "tool_name": "Bash",
+            "cwd": os.fspath(candidate),
+            "tool_input": {"command": "bootstrap/amp_safe.py"},
+        },
+    )
+    if operation_reason:
+        print(operation_reason, file=sys.stderr)
+        return HOOK_BLOCK_EXIT
+    if action != "publish":
+        return 0
+    assert discovered is not None
+    has_main = _cloudspec_guard_repo_has_main(discovered)
+    if has_main is not True:
+        detail = ("repository does not contain main.cspec" if has_main is False
+                  else "cannot prove repository contains main.cspec")
+        print("amp-safe: %s" % detail, file=sys.stderr)
+        return HOOK_BLOCK_EXIT
+
+    latest = store.load()
+    guard = latest.get(CLOUDSPEC_OPERATION_GUARD_KEY)
+    repositories = (guard.get("repositories")
+                    if isinstance(guard, Mapping) else None)
+    record = (repositories.get(os.fspath(discovered))
+              if isinstance(repositories, Mapping) else None)
+    if not isinstance(record, Mapping):
+        print("amp-safe: trusted task baseline was not persisted", file=sys.stderr)
+        return HOOK_BLOCK_EXIT
+    baseline = str(record.get("baseline") or "")
+    branch = str(record.get("branch") or "")
+    inspection = inspect_repository(
+        discovered, baseline, expected_branch=branch)
+    if inspection.blocked:
+        print("amp-safe: cannot prove publish diff safe: %s" % inspection.reason,
+              file=sys.stderr)
+        return HOOK_BLOCK_EXIT
+    if inspection.paths:
+        print(_cloudspec_guard_message(
+            os.fspath(discovered),
+            "publish diff involves IDL operations/",
+            inspection.paths,
+        ), file=sys.stderr)
+        return HOOK_BLOCK_EXIT
+    if not inspection.current_branch.startswith("feature/"):
+        print("amp-safe: publish requires a feature/* Git branch; found %s"
+              % (inspection.current_branch or "unknown"), file=sys.stderr)
+        return HOOK_BLOCK_EXIT
+    latest = store.load()
+    latest_current = latest.get("current")
+    if not isinstance(latest_current, Mapping):
+        print("amp-safe: active claimed task disappeared during authorization",
+              file=sys.stderr)
+        return HOOK_BLOCK_EXIT
+    final_reason = (_local_tool_block_reason(latest)
+                    or _session_permit_block_reason(latest, latest_current))
+    if final_reason:
+        print("amp-safe: %s" % final_reason, file=sys.stderr)
+        return HOOK_BLOCK_EXIT
+    return 0
 
 
 def worker_status() -> Any:
@@ -4435,6 +4897,12 @@ def _parser() -> argparse.ArgumentParser:
     exec_parser.add_argument("headless_command", nargs=argparse.REMAINDER)
     context_parser = sub.add_parser("post-pr-context")
     context_parser.add_argument("--pid", type=int, default=os.getppid())
+    amp_parser = sub.add_parser("amp-authorize")
+    amp_parser.add_argument("--action", required=True, choices=(
+        "init", "branch-create", "branch-switch",
+        "context-set-branch", "publish",
+    ))
+    amp_parser.add_argument("--repo", required=True)
     sub.add_parser("status")
     sub.add_parser("stop-check")
     return parser
@@ -4532,6 +5000,8 @@ def main(argv: Optional[list[str]] = None) -> int:
                 headless_policy=policy)
         elif args.command == "post-pr-context":
             return 0 if post_pr_context_active(args.pid) else 1
+        elif args.command == "amp-authorize":
+            return amp_authorize(args.action, args.repo)
         elif args.command == "status":
             _print_json(worker_status())
         elif args.command == "stop-check":
