@@ -59,21 +59,25 @@ def source(item_id: str, *, pool="1086837", status="开发中",
     }
 
 
-def previous_snapshot(*items, cursor="2026-07-26T06:42:00+08:00"):
+def previous_snapshot(
+        *items, cursor="2026-07-26T06:42:00+08:00", agent_ids=()):
+    cursors = {} if cursor is None else {
+        "tf_customer": cursor, "tf_provider": cursor,
+    }
     return {
         "manifest": {
-            "snapshotId": "old", "poolCursors": {
-                "tf_customer": cursor, "tf_provider": cursor,
-            },
+            "snapshotId": "old", "poolCursors": cursors,
         },
         "workitems": list(items),
+        "_agentWorkitemIds": list(agent_ids),
     }
 
 
 class IncrementalCollectionTests(unittest.TestCase):
-    def test_bootstrap_keeps_all_lifecycle_facts_but_enriches_only_recent(self):
+    def test_bootstrap_keeps_all_lifecycle_facts_and_comments_only_agent_ids(self):
         instance = runner()
-        old = source("1000", modified=NOW - timedelta(days=30))
+        old = source(
+            "1000", status="验收通过", modified=NOW - timedelta(days=30))
         recent = source("1001", status="验收通过")
         instance._list_incremental_requirements = mock.Mock(
             side_effect=[[old, recent], []])
@@ -83,7 +87,8 @@ class IncrementalCollectionTests(unittest.TestCase):
             "eventTime": "2026-07-26 10:00:00",
         }])
 
-        result = instance._aggregate_delivery(NOW, None)
+        result = instance._aggregate_delivery(
+            NOW, previous_snapshot(cursor=None, agent_ids=("1001",)))
 
         self.assertEqual(result["scope"], "lifecycle_fact_cache")
         self.assertEqual(result["collectionMode"], "bootstrap")
@@ -93,8 +98,8 @@ class IncrementalCollectionTests(unittest.TestCase):
             "changedWorkitemCount": 2,
         })
         by_id = {row["id"]: row for row in result["workitems"]}
-        self.assertEqual(by_id["1000"]["commentFreshness"], "unknown")
-        self.assertEqual(by_id["1000"]["statusClass"], "open")
+        self.assertEqual(by_id["1000"]["commentFreshness"], "not_applicable")
+        self.assertEqual(by_id["1000"]["statusClass"], "closed")
         self.assertEqual(by_id["1001"]["closedAt"], "2026-07-26T10:00:00+08:00")
 
     def test_incremental_budget_is_two_lists_plus_changed_comments_and_transitions(self):
@@ -119,7 +124,9 @@ class IncrementalCollectionTests(unittest.TestCase):
             "createdAt": "2026-07-27 05:00:00",
         }])
 
-        result = instance._aggregate_delivery(NOW, previous_snapshot(unchanged))
+        result = instance._aggregate_delivery(
+            NOW, previous_snapshot(
+                unchanged, agent_ids=("1001", "2001")))
 
         self.assertEqual(result["collectionMode"], "incremental")
         self.assertEqual(result["collectionStats"]["listCalls"], 2)
@@ -165,12 +172,71 @@ class IncrementalCollectionTests(unittest.TestCase):
             side_effect=[[source("1001")], []])
         instance._list_comments = mock.Mock(return_value=None)
 
-        result = instance._aggregate_delivery(NOW, previous_snapshot(prior))
+        result = instance._aggregate_delivery(
+            NOW, previous_snapshot(prior, agent_ids=("1001",)))
         item = next(row for row in result["workitems"] if row["id"] == "1001")
         self.assertEqual(item["commentEvents"], [event])
         self.assertEqual(item["humanCommentCount"], 1)
         self.assertEqual(item["commentFreshness"], "stale")
         self.assertEqual(result["freshness"]["staleCommentWorkitemCount"], 1)
+
+    def test_changed_non_agent_skips_comments_and_clears_legacy_cache(self):
+        instance = runner()
+        prior = {
+            **source("1001"), "pool": "tf_customer", "poolId": "1086837",
+            "statusClass": "open", "modifiedAt": "2026-07-25T10:00:00+08:00",
+            "commentEvents": [{
+                "createdAt": "2026-07-25T10:00:00+08:00",
+                "authorToken": "legacy", "authorName": "旧", "digital": False,
+            }],
+            "humanCommentCount": 1, "digitalCommentCount": 0,
+            "systemCommentCount": 0, "totalCommentCount": 1,
+            "commentFreshAt": "2026-07-25T10:00:00+08:00",
+            "commentFreshness": "fresh",
+        }
+        instance._list_incremental_requirements = mock.Mock(
+            side_effect=[[source("1001")], []])
+        instance._list_comments = mock.Mock(side_effect=AssertionError)
+
+        result = instance._aggregate_delivery(NOW, previous_snapshot(prior))
+
+        item = next(row for row in result["workitems"] if row["id"] == "1001")
+        instance._list_comments.assert_not_called()
+        self.assertEqual(result["collectionStats"]["commentCalls"], 0)
+        self.assertEqual(item["commentEvents"], [])
+        self.assertIsNone(item["humanCommentCount"])
+        self.assertIsNone(item["totalCommentCount"])
+        self.assertIsNone(item["commentFreshAt"])
+        self.assertEqual(item["commentFreshness"], "not_applicable")
+
+    def test_new_agent_id_refreshes_unchanged_nonfresh_item_once(self):
+        instance = runner()
+        prior = {
+            **source("1001", modified=NOW - timedelta(days=20)),
+            "pool": "tf_customer", "poolId": "1086837",
+            "statusClass": "open", "modifiedAt": "2026-07-01T10:00:00+08:00",
+            "commentEvents": [], "humanCommentCount": None,
+            "digitalCommentCount": None, "systemCommentCount": None,
+            "totalCommentCount": None, "commentFreshAt": None,
+            "commentFreshness": "not_applicable",
+        }
+        instance._list_incremental_requirements = mock.Mock(side_effect=[[], []])
+        instance._list_comments = mock.Mock(return_value=[{
+            "author": "terraform-rd", "content": "done",
+            "createdAt": "2026-07-25 10:00:00",
+        }])
+        instance._list_activities = mock.Mock(side_effect=AssertionError)
+
+        result = instance._aggregate_delivery(
+            NOW, previous_snapshot(prior, agent_ids=("1001",)))
+
+        item = next(row for row in result["workitems"] if row["id"] == "1001")
+        self.assertEqual(result["collectionStats"]["changedWorkitemCount"], 0)
+        self.assertEqual(result["collectionStats"]["commentCalls"], 1)
+        self.assertEqual(result["collectionStats"]["activityCalls"], 0)
+        self.assertEqual(item["commentFreshness"], "fresh")
+        self.assertEqual(item["digitalCommentCount"], 1)
+        instance._list_activities.assert_not_called()
 
     def test_legacy_upgrade_clears_all_aone_inferred_agent_metrics(self):
         instance = runner()
@@ -306,7 +372,7 @@ class ProjectionAndTransportTests(unittest.TestCase):
         instance = runner()
         instance._list_active_requirements = mock.Mock(side_effect=AssertionError)
         snapshot = {"workitems": [{
-            "id": "1", "commentEvents": [
+            "id": "1", "commentFreshness": "fresh", "commentEvents": [
                 {"createdAt": "2026-07-25T10:00:00+08:00", "authorToken": "h1",
                  "authorName": "夏节", "digital": False},
                 {"createdAt": "2026-07-24T10:00:00+08:00", "authorToken": "rd",
@@ -314,10 +380,14 @@ class ProjectionAndTransportTests(unittest.TestCase):
                 {"createdAt": "2026-07-01T10:00:00+08:00", "authorToken": "old",
                  "authorName": "旧", "digital": False},
             ],
+        }, {
+            "id": "2", "commentFreshness": "not_applicable",
+            "commentEvents": [],
         }]}
         payload = instance._aggregate(NOW, snapshot)
         self.assertEqual(payload["totalComments"], 2)
         self.assertEqual(payload["ticketsTouched"], 1)
+        self.assertEqual(payload["requirementsCovered"], 1)
         self.assertEqual({row["name"] for row in payload["participants"]},
                          {"夏节", "Terraform RD"})
         instance._list_active_requirements.assert_not_called()
@@ -327,6 +397,7 @@ class ProjectionAndTransportTests(unittest.TestCase):
         response = SimpleNamespace(getcode=lambda: 200, read=lambda: json.dumps({
             "manifest": {"snapshotId": "s1", "poolCursors": {}},
             "items": [{"id": "1"}],
+            "agentWorkitemIds": ["1", "2", "1", None, {"id": "3"}, ["4"]],
         }).encode())
         opener = mock.MagicMock()
         opener.return_value = mock.MagicMock(
@@ -340,6 +411,7 @@ class ProjectionAndTransportTests(unittest.TestCase):
             "delivery-metrics/snapshots/current")
         self.assertEqual(request.headers["Authorization"], "Bearer machine")
         self.assertEqual(current["workitems"], [{"id": "1"}])
+        self.assertEqual(current["_agentWorkitemIds"], ["1", "2"])
 
     def test_current_snapshot_404_means_bootstrap_but_409_fails_closed(self):
         instance = runner()
@@ -349,6 +421,19 @@ class ProjectionAndTransportTests(unittest.TestCase):
         conflict = wcp.urllib.error.HTTPError("x", 409, "", {}, io.BytesIO(b"bad"))
         with mock.patch.object(wcp.urllib.request, "urlopen", side_effect=conflict):
             with self.assertRaises(RuntimeError):
+                instance._load_delivery_snapshot()
+
+    def test_current_snapshot_missing_agent_projection_fails_closed(self):
+        instance = runner()
+        response = SimpleNamespace(getcode=lambda: 200, read=lambda: json.dumps({
+            "manifest": {"snapshotId": "legacy", "poolCursors": {}},
+            "items": [{"id": "1"}],
+        }).encode())
+        opener = mock.MagicMock()
+        opener.return_value = mock.MagicMock(
+            __enter__=lambda self: response, __exit__=lambda self, *args: False)
+        with mock.patch.object(wcp.urllib.request, "urlopen", opener):
+            with self.assertRaisesRegex(RuntimeError, "agentWorkitemIds"):
                 instance._load_delivery_snapshot()
 
     def test_publish_delivery_keeps_manifest_fields_and_chunks_items(self):

@@ -48,7 +48,7 @@ jobs:
 
   - key: aone.weekly-comment-participation
     runner: weekly_comment_participation
-    revision: 4
+    revision: 5
     description: 每日聚合 Terraform 需求近 7 天评论参与度与 FY24 起按创建时间归属的真实关单交付度量
     schedule: {kind: daily, hour: 6, minute: 42, timezone: Asia/Shanghai}
     misfire: CURRENT_DAY
