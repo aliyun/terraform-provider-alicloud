@@ -86,8 +86,73 @@ func testAccPreCheck(t *testing.T) {
 	if v := os.Getenv("ALICLOUD_REGION"); v == "" {
 		log.Println("[INFO] Test: Using cn-beijing as test region")
 		os.Setenv("ALICLOUD_REGION", "cn-beijing")
+		defaultRegionToTest = "cn-beijing"
 	} else {
 		defaultRegionToTest = v
+	}
+}
+
+// Test_testAccPreChecksSyncDefaultRegion verifies that prechecks keep the
+// package-level region used by sharedClientForRegion in sync with the final
+// ALICLOUD_REGION value. It does not contact any cloud API.
+func Test_testAccPreChecksSyncDefaultRegion(t *testing.T) {
+	testCases := []struct {
+		name           string
+		initialRegion  string
+		checkoutRegion string
+		wantRegion     string
+		preCheck       func(*testing.T)
+	}{
+		{
+			name:          "default precheck fallback",
+			wantRegion:    string(connectivity.Beijing),
+			initialRegion: "",
+			preCheck:      testAccPreCheck,
+		},
+		{
+			name:          "regional precheck fallback",
+			wantRegion:    string(connectivity.Beijing),
+			initialRegion: "",
+			preCheck: func(t *testing.T) {
+				testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Beijing})
+			},
+		},
+		{
+			name:           "regional precheck checkout override",
+			initialRegion:  string(connectivity.Hangzhou),
+			checkoutRegion: "true",
+			wantRegion:     string(connectivity.EUCentral1),
+			preCheck: func(t *testing.T) {
+				testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.EUCentral1})
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Setenv("ALICLOUD_ACCESS_KEY", "test-access-key")
+			t.Setenv("ALICLOUD_SECRET_KEY", "test-secret-key")
+			t.Setenv("CHECKOUT_REGION", testCase.checkoutRegion)
+			t.Setenv("ALICLOUD_REGION", testCase.initialRegion)
+			if testCase.initialRegion == "" {
+				if err := os.Unsetenv("ALICLOUD_REGION"); err != nil {
+					t.Fatalf("unset ALICLOUD_REGION: %s", err)
+				}
+			}
+
+			originalDefaultRegion := defaultRegionToTest
+			t.Cleanup(func() { defaultRegionToTest = originalDefaultRegion })
+			defaultRegionToTest = testCase.initialRegion
+
+			testCase.preCheck(t)
+
+			if got := defaultRegionToTest; got != testCase.wantRegion {
+				t.Fatalf("defaultRegionToTest = %q, want %q", got, testCase.wantRegion)
+			}
+			if got := os.Getenv("ALICLOUD_REGION"); got != testCase.wantRegion {
+				t.Fatalf("ALICLOUD_REGION = %q, want %q", got, testCase.wantRegion)
+			}
+		})
 	}
 }
 
@@ -190,6 +255,7 @@ func testAccPreCheckWithRegions(t *testing.T, supported bool, regions []connecti
 		os.Setenv("ALICLOUD_REGION", "cn-beijing")
 	}
 	checkoutSupportedRegions(t, supported, regions)
+	defaultRegionToTest = os.Getenv("ALICLOUD_REGION")
 }
 
 func checkoutSupportedRegions(t *testing.T, supported bool, regions []connectivity.Region) {
