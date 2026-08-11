@@ -617,7 +617,34 @@ func resourceAliCloudKvstoreInstanceCreate(d *schema.ResourceData, meta interfac
 	addDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_kvstore_instance", action, AlibabaCloudSdkGoERROR)
+		// A lost-response / timeout error (Post "https://..." or Client.Timeout) means the
+		// request very likely reached the backend, which may already have accepted the
+		// instance creation even though the InstanceId never made it back to the client.
+		// The request carries a stable idempotency Token set once above, so replaying
+		// CreateInstance returns the already-accepted instance instead of provisioning a
+		// new one. Best-effort reclaim its InstanceId here so the instance is tracked in
+		// state and stays destroyable rather than leaking.
+		if NoCodeRegexRetry(err) && (response == nil || response["InstanceId"] == nil) {
+			reclaimWait := incrementalWait(3*time.Second, 3*time.Second)
+			_ = resource.Retry(1*time.Minute, func() *resource.RetryError {
+				reclaimResp, reclaimErr := client.RpcPost("R-kvstore", "2015-01-01", action, nil, request, true)
+				if reclaimErr != nil {
+					if NoCodeRegexRetry(reclaimErr) {
+						reclaimWait()
+						return resource.RetryableError(reclaimErr)
+					}
+					return resource.NonRetryableError(reclaimErr)
+				}
+				response = reclaimResp
+				return nil
+			})
+			addDebug(action+"_Reclaim", response, request)
+		}
+		if response == nil || response["InstanceId"] == nil {
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_kvstore_instance", action, AlibabaCloudSdkGoERROR)
+		}
+		// InstanceId reclaimed from the idempotent replay; fall through to persist it in
+		// state and wait for the instance to reach Normal.
 	}
 
 	d.SetId(fmt.Sprint(response["InstanceId"]))
