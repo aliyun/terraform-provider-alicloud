@@ -27,7 +27,8 @@ PYTHONPATH="$repo_root" "$python_bin" -m unittest \
   bridge.test_prwatch_ci_fix \
   bridge.test_stale_revisit \
   bridge.test_task_router \
-  bridge.scheduler.tests.test_runners
+  bridge.scheduler.tests.test_runners \
+  bridge.scheduler.tests.test_weekly_comment_participation
 rc=$?
 
 if [ "$rc" -eq 0 ]; then

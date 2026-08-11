@@ -1,25 +1,10 @@
-"""Runner for Terraform weekly participation and delivery-metrics snapshots.
+"""Incremental Terraform lifecycle facts and weekly comment participation.
 
-每日聚合 Terraform 两个池（tf_customer 需求问题 + tf_provider 产品类需求）近 7 天
-评论参与度，PUT 到控制面看板统计 endpoint（KV key=tf-weekly-comment-participation）。
-统计口径由本 runner 保证规则化（BoardStatService 只做 KV 存取，不再计算）。
-同时按精确 Aone activity 聚合 FY24（2023-04-01）起、当前状态为最终成功关单的
-createdAt cohort，逐页写入独立快照后 commit；`待发布`等 solution 状态不算最终关单，
-周期是自然天而非 SLA/工作日。
-
-口径：
-  - 窗口：[scheduled_for - 7d, scheduled_for]，Asia/Shanghai。
-  - 单源：workitemType 为该池需求类型、gmtModified 落在窗口内（含状态流转/评论引起的修改）
-    的需求单；按 modified:desc 列出，越过窗口起点即早停，避免扫描全量历史单。
-  - 评论：取窗口内 createdAt，按作者分类——
-      * 人  → participants[].digital=false，name 经 config/contacts.json 解析花名
-      * 数字人（worker_/open-jarvis/terraform-*/jarvis/数字人）→ digital=true
-      * 系统噪声（kelude/云知道平台公共账号/空、jarvis-claim 认领书签）→ 排除
-  - 参与者：commentCount（窗口内评论数）+ workitemCount（覆盖的不同需求数）。
-  - totalComments = 窗口内全部纳入评论（人+数字人）；ticketsTouched = 有 ≥1 纳入评论的需求数。
-
-前端 board.html insights-board 读取 participants[].{name,commentCount,workitemCount,digital}
-与 totalComments/windowStart/windowEnd/generatedAt（Capability 1 已实现 GET 展示）。
+The committed AutomationAgent snapshot is the durable fact cache. Each run lists
+the two Terraform pools once from their persisted modified cursors (with overlap),
+refreshes comments only for changed items and activity only for changed terminal
+transitions, then commits a complete chunked snapshot. The seven-day participation
+view is a projection of the same cached ``commentEvents``; it never scans Aone again.
 """
 
 from __future__ import annotations
@@ -29,7 +14,6 @@ import json
 import logging
 import math
 import os
-import subprocess
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -39,7 +23,6 @@ from typing import Any, Optional
 from bridge.aone_tasks import AoneQueryMixin, REPO_ROOT
 from bridge.helpers.aone import (
     _SHANGHAI_TZ, _contact_directory, _is_human_comment, _parse_a1_list,
-    parallel_a1_per_id,
 )
 from bridge.process_group_runner import run_process_group
 from ..model import DailySchedule, JobResult, JobResultStatus, ScheduledJobDefinition, is_aware
@@ -50,12 +33,15 @@ JOB_KEY = "aone.weekly-comment-participation"
 STAT_KEY = "tf-weekly-comment-participation"
 BOARD_STATS_PATH = "/api/jarvis/v1/board/stats"
 DELIVERY_METRICS_PATH = "/api/jarvis/v1/board/delivery-metrics"
+DEFAULT_METRICS_BASE_URL = "https://pre-agent.aliyun-inc.com"
+METRICS_BASE_URL_ENV = "JARVIS_METRICS_BASE_URL"
 WINDOW_DAYS = 7
 DELIVERY_COVERAGE_START = datetime(2023, 4, 1, tzinfo=_SHANGHAI_TZ)
 DELIVERY_PAGE_ITEMS = 100
 DELIVERY_PAGE_MAX_BYTES = 480 * 1024
 LIST_PAGE_SIZE = 1000
 LIST_MAX_PAGES = 50
+CURSOR_OVERLAP = timedelta(minutes=10)
 
 log = logging.getLogger("jarvis-weekly-comment-participation")
 
@@ -313,72 +299,62 @@ def _agent_duration_summary(days: list[float]) -> dict[str, Optional[float] | in
     }
 
 
-def _activity_author(activity: dict) -> Any:
-    for key in (
-        "operator", "author", "creator", "createdBy", "commentator",
-        "operatorName", "modifier",
-    ):
-        if activity.get(key) not in (None, ""):
-            return activity.get(key)
-    return ""
-
-
-def _activity_content(activity: dict) -> str:
-    return " ".join(filter(None, (
-        _scalar_text(activity.get(key)) for key in (
-            "property", "field", "fieldName", "action", "title",
-            "newValue", "toValue", "toStatus",
-        )
-    )))
-
-
-def _first_agent_intervention_at(
-    comments: list[dict], activities: list[dict],
-    created_epoch: float, closed_epoch: float,
-) -> Optional[float]:
-    """Earliest substantive digital comment/activity within the item lifecycle."""
-    candidates: list[float] = []
-    for comment in comments:
-        content = str(
-            comment.get("content") or comment.get("body")
-            or comment.get("message") or "").strip()
-        classified = _classify_author(
-            comment.get("author") or comment.get("creator")
-            or comment.get("commentator") or "", content)
-        occurred = _to_epoch(
-            comment.get("createdAt") or comment.get("created")
-            or comment.get("gmtCreate"))
-        if (classified is not None and classified[0] == "digital" and content
-                and occurred is not None
-                and created_epoch <= occurred <= closed_epoch):
-            candidates.append(occurred)
-    for activity in activities:
-        content = _activity_content(activity).strip()
-        low = content.lower()
-        classified = _classify_author(_activity_author(activity), content)
-        occurred = None
-        for key in ("eventTime", "occurredAt", "createdAt", "gmtCreate", "time"):
-            occurred = _to_epoch(activity.get(key))
-            if occurred is not None:
-                break
-        # Tag/label bookkeeping changes do not establish substantive intervention.
-        bookkeeping = any(
-            token in low for token in (
-                "tag", "label", "标签", "jarvis-claim",
-            )
-        )
-        if (classified is not None and classified[0] == "digital" and content
-                and not bookkeeping and occurred is not None
-                and created_epoch <= occurred <= closed_epoch):
-            candidates.append(occurred)
-    return min(candidates) if candidates else None
-
-
 def _parse_comment_list(stdout: str) -> Optional[list]:
     """Parse comment-list JSON while preserving Aone's textual zero-comment state."""
     if str(stdout or "").strip().lower() == "no comments found":
         return []
     return _parse_a1_list(stdout)
+
+
+def _comment_facts(comments: list[dict]) -> tuple[list[dict], dict[str, int]]:
+    """Return the compact comment cache used by both delivery and weekly metrics."""
+    facts: list[dict] = []
+    counts = {"human": 0, "digital": 0, "system": 0}
+    for comment in comments:
+        content = str(comment.get("content") or comment.get("body")
+                      or comment.get("message") or "")
+        author = (comment.get("author") or comment.get("creator")
+                  or comment.get("commentator") or "")
+        occurred = _to_epoch(comment.get("createdAt") or comment.get("created")
+                             or comment.get("gmtCreate"))
+        classified = _classify_author(author, content)
+        if classified is None:
+            counts["system"] += 1
+            kind, token, name, digital = "system", "", "", False
+        else:
+            kind, token, name, digital = classified
+            counts[kind] += 1
+        facts.append({
+            "createdAt": (_iso(datetime.fromtimestamp(occurred, _SHANGHAI_TZ))
+                          if occurred is not None else None),
+            "kind": kind,
+            "authorToken": token,
+            "authorName": name,
+            "digital": digital,
+        })
+    return facts, counts
+
+
+def _snapshot_from_response(payload: Any) -> tuple[Optional[dict], Optional[list]]:
+    """Isolate AutomationAgent's full-snapshot and manifest+pages wire shapes."""
+    if not isinstance(payload, dict):
+        return None, None
+    candidate = payload.get("snapshot") if isinstance(payload.get("snapshot"), dict) else payload
+    manifest = candidate.get("manifest") if isinstance(candidate.get("manifest"), dict) else candidate
+    workitems = candidate.get("workitems")
+    if not isinstance(workitems, list):
+        workitems = candidate.get("items")
+    if isinstance(workitems, list):
+        return dict(manifest), [row for row in workitems if isinstance(row, dict)]
+    pages = candidate.get("pages")
+    if isinstance(pages, list):
+        flattened: list[dict] = []
+        for page in pages:
+            entries = page.get("items") if isinstance(page, dict) else page
+            if isinstance(entries, list):
+                flattened.extend(row for row in entries if isinstance(row, dict))
+        return dict(manifest), flattened
+    return dict(manifest), None
 
 
 class WeeklyCommentParticipationRunner:
@@ -390,8 +366,98 @@ class WeeklyCommentParticipationRunner:
         self._repo_root = Path(repo_root)
         self._log = logger
         self._environ = os.environ if environ is None else environ
+        # Metrics storage is deliberately independent from Task lease/control
+        # APIs. Only this runner uses the dedicated endpoint; token and timeout
+        # remain the Scheduler machine credentials.
+        self._metrics_base_url = str(
+            self._environ.get(METRICS_BASE_URL_ENV, "") or "").strip().rstrip("/") \
+            or DEFAULT_METRICS_BASE_URL
+        self._metrics_token = str(getattr(task_client, "token", "") or "")
+        self._metrics_timeout = float(getattr(task_client, "timeout", 10) or 10)
         self._comment_cache: dict = {}
         self._activity_cache: dict = {}
+
+    def _list_incremental_requirements(
+        self, project: str, req_type: str, modified_after: Optional[float],
+        coverage_start_epoch: float,
+    ) -> Optional[list[dict]]:
+        """List one pool once, with a server-side modified cursor when incremental."""
+        rows: list[dict] = []
+        pages_called = 0
+        page = 1
+        while page <= LIST_MAX_PAGES:
+            command = [
+                str(REPO_ROOT / "bin" / "a1id"), "--", "project", "workitem",
+                "list", "--project", str(project), "--type", req_type,
+                "--columns", "id,title,type,status,modified,gmtCreate",
+                "--sort", "modified:desc", "--page", str(page),
+                "--page-size", str(LIST_PAGE_SIZE),
+            ]
+            coverage_cutoff = datetime.fromtimestamp(
+                coverage_start_epoch, _SHANGHAI_TZ).strftime(
+                    "%Y-%m-%d %H:%M:%S")
+            filters = ["created>='%s'" % coverage_cutoff]
+            if modified_after is not None:
+                cutoff = datetime.fromtimestamp(
+                    modified_after, _SHANGHAI_TZ).strftime("%Y-%m-%d %H:%M:%S")
+                filters.insert(0, "modified>'%s'" % cutoff)
+            command += ["--filter", " AND ".join(filters)]
+            command += ["-f", "json"]
+            try:
+                pages_called += 1
+                result = run_process_group(
+                    command, capture_output=True, text=True, timeout=120,
+                    cwd=str(REPO_ROOT))
+            except Exception as exc:  # noqa: BLE001
+                self._log.warning(
+                    "delivery-metrics: incremental list raised project=%s "
+                    "page=%d: %s", project, page, exc)
+                self._last_list_pages = pages_called
+                return None
+            if result.returncode != 0:
+                self._log.warning(
+                    "delivery-metrics: incremental list failed project=%s "
+                    "page=%d rc=%d: %s", project, page, result.returncode,
+                    (result.stderr or "").strip()[:200])
+                self._last_list_pages = pages_called
+                return None
+            try:
+                data = json.loads(result.stdout or "[]")
+            except Exception as exc:  # noqa: BLE001
+                self._log.warning(
+                    "delivery-metrics: incremental list bad JSON project=%s "
+                    "page=%d: %s", project, page, exc)
+                self._last_list_pages = pages_called
+                return None
+            if not isinstance(data, list):
+                data = []
+            for source in data:
+                if not isinstance(source, dict):
+                    continue
+                created = (source.get("gmtCreate") or source.get("createdAt")
+                           or source.get("created"))
+                created_epoch = _to_epoch(created)
+                if created_epoch is None or created_epoch < coverage_start_epoch:
+                    continue
+                modified = source.get("modified") or source.get("gmtModified")
+                modified_epoch = _to_epoch(modified)
+                item_id = str(source.get("identifier") or source.get("id") or "")
+                if not item_id or modified_epoch is None:
+                    continue
+                rows.append({
+                    "id": item_id,
+                    "project": str(project),
+                    "title": source.get("subject") or source.get("title") or "",
+                    "type": _scalar_text(source.get("type") or source.get("workitemType")),
+                    "status": _scalar_text(source.get("status")),
+                    "createdAt": created,
+                    "modified": modified_epoch,
+                })
+            if len(data) < LIST_PAGE_SIZE:
+                break
+            page += 1
+        self._last_list_pages = pages_called
+        return rows
 
     def _tf_pools(self) -> list[tuple[str, str, str]]:
         """[(pool_key, project, requirement_type)] for Terraform-line pools."""
@@ -649,289 +715,328 @@ class WeeklyCommentParticipationRunner:
             return []
         return [entry for entry in data if isinstance(entry, dict)]
 
-    def _aggregate(self, scheduled_for: datetime) -> dict:
+    def _aggregate(self, scheduled_for: datetime, snapshot: dict) -> dict:
+        """Project the weekly view exclusively from persisted comment events."""
         now = scheduled_for.astimezone(_SHANGHAI_TZ)
-        window_end = now
         window_start = now - timedelta(days=WINDOW_DAYS)
-        window_start_epoch = window_start.timestamp()
-        window_end_epoch = window_end.timestamp()
-
-        # participants[token] = {name, digital, commentCount, workitems:set}
         participants: dict[str, dict] = {}
-        total_comments = 0
-        tickets_touched: set[str] = set()
-        requirements_covered = 0
-
-        for _key, project, req_type in self._tf_pools():
-            requirements = self._list_active_requirements(
-                project, req_type, window_start_epoch)
-            if requirements is None:
-                continue  # one pool's failure does not void the others
-            requirements_covered += len(requirements)
-            # Parallel pre-fetch comment lists for this pool's requirements
-            # (bounded, best-effort) so the per-req loop reads the cache and
-            # makes zero a1 calls.
-            req_ids = list(dict.fromkeys(
-                str(r.get("id") or "") for r in requirements
-                if str(r.get("id") or "").isdigit()))
-            self._comment_cache = parallel_a1_per_id(
-                req_ids,
-                build_args=lambda aid: ["project", "workitem", "comment", "list",
-                                        aid, "-f", "json"],
-                parse=_parse_a1_list,
-                workers=8, timeout=90, label="weekly-comment") if req_ids else {}
-            for req in requirements:
-                iid = str(req.get("id") or "")
-                if not iid:
+        touched: set[str] = set()
+        total = 0
+        for item in snapshot.get("workitems") or []:
+            item_touched = False
+            for event in item.get("commentEvents") or []:
+                occurred = _to_epoch(event.get("createdAt"))
+                if (occurred is None or occurred < window_start.timestamp()
+                        or occurred > now.timestamp()):
                     continue
-                comments = self._list_comments(iid)
-                if comments is None:
+                token = str(event.get("authorToken") or "")
+                name = str(event.get("authorName") or token)
+                if not token:
                     continue
-                touched = False
-                for comment in comments:
-                    created_epoch = _to_epoch(
-                        comment.get("createdAt") or comment.get("created")
-                        or comment.get("gmtCreate"))
-                    if created_epoch is None:
-                        continue
-                    if created_epoch < window_start_epoch or created_epoch > window_end_epoch:
-                        continue
-                    author = (comment.get("author") or comment.get("creator")
-                              or comment.get("commentator") or "")
-                    content = (comment.get("content") or comment.get("body")
-                               or comment.get("message") or "")
-                    classified = _classify_author(author, content)
-                    if classified is None:
-                        continue
-                    _kind, token, name, digital = classified
-                    entry = participants.get(token)
-                    if entry is None:
-                        entry = {
-                            "name": name, "digital": digital,
-                            "commentCount": 0, "workitems": set(),
-                        }
-                        participants[token] = entry
-                    entry["commentCount"] += 1
-                    entry["workitems"].add(iid)
-                    total_comments += 1
-                    touched = True
-                if touched:
-                    tickets_touched.add(iid)
-
-        participants_list = [
-            {
-                "name": entry["name"],
-                "commentCount": entry["commentCount"],
-                "workitemCount": len(entry["workitems"]),
-                "digital": entry["digital"],
-            }
-            for entry in participants.values()
-        ]
-        participants_list.sort(key=lambda e: (-e["commentCount"], e["name"]))
+                entry = participants.setdefault(token, {
+                    "name": name, "digital": bool(event.get("digital")),
+                    "commentCount": 0, "workitems": set(),
+                })
+                entry["commentCount"] += 1
+                entry["workitems"].add(str(item.get("id") or ""))
+                total += 1
+                item_touched = True
+            if item_touched:
+                touched.add(str(item.get("id") or ""))
+        rows = [{
+            "name": value["name"], "commentCount": value["commentCount"],
+            "workitemCount": len(value["workitems"]),
+            "digital": value["digital"],
+        } for value in participants.values()]
+        rows.sort(key=lambda row: (-row["commentCount"], row["name"]))
         return {
-            "windowStart": _iso(window_start),
-            "windowEnd": _iso(window_end),
-            "generatedAt": _iso(now),
-            "totalComments": total_comments,
-            "ticketsTouched": len(tickets_touched),
-            "requirementsCovered": requirements_covered,
-            "participants": participants_list,
+            "windowStart": _iso(window_start), "windowEnd": _iso(now),
+            "generatedAt": _iso(now), "totalComments": total,
+            "ticketsTouched": len(touched),
+            "requirementsCovered": len(snapshot.get("workitems") or []),
+            "participants": rows,
         }
 
-    def _aggregate_delivery(self, scheduled_for: datetime) -> dict:
-        """Build FY24+ closed-success items for createdAt-cohort querying."""
+    def _aggregate_delivery(
+        self, scheduled_for: datetime, previous: Optional[dict] = None,
+    ) -> dict:
+        """Merge modified workitems into the durable FY24 lifecycle fact cache."""
         now = scheduled_for.astimezone(_SHANGHAI_TZ)
         coverage_start = DELIVERY_COVERAGE_START
-        coverage_start_epoch = coverage_start.timestamp()
-        end_epoch = now.timestamp()
-        workitems: list[dict] = []
-        pool_summaries: list[dict] = []
-        failed_workitem_ids: list[str] = []
-        candidate_count = 0
         status_definitions = self._delivery_status_definitions()
+        previous = previous or {}
+        previous_items = {
+            str(row.get("id")): dict(row)
+            for row in previous.get("workitems") or []
+            if isinstance(row, dict) and row.get("id")
+        }
+        manifest = (previous.get("manifest")
+                    if isinstance(previous.get("manifest"), dict) else previous)
+        prior_cursors = manifest.get("poolCursors") or {}
+        workitems = dict(previous_items)
+        pool_cursors = dict(prior_cursors)
+        stale_comments: set[str] = set()
+        pending_activities: set[str] = set()
+        stats = {"listCalls": 0, "commentCalls": 0, "activityCalls": 0,
+                 "changedWorkitemCount": 0}
+        any_bootstrap = False
+        recent_cutoff = (now - timedelta(days=WINDOW_DAYS)).timestamp()
 
         for pool_key, project, req_type in self._tf_pools():
-            closed_statuses = tuple(
-                status_definitions.get(pool_key, {}).get("closed", ()))
-            requirements = self._list_closed_requirements(
-                project, req_type, closed_statuses, coverage_start_epoch)
-            if requirements is None:
-                raise RuntimeError(
-                    "delivery candidate query failed for pool %s" % pool_key)
-            candidate_count += len(requirements)
-
-            ids = list(dict.fromkeys(
-                str(row.get("id") or "") for row in requirements
-                if str(row.get("id") or "").isdigit()))
-            self._comment_cache = parallel_a1_per_id(
-                ids,
-                build_args=lambda aid: [
-                    "project", "workitem", "comment", "list", aid, "-f", "json"],
-                parse=_parse_comment_list, workers=8, timeout=90,
-                label="delivery-comments") if ids else {}
-            self._activity_cache = parallel_a1_per_id(
-                ids,
-                build_args=lambda aid: [
-                    "project", "workitem", "activity", aid,
-                    "--sort", "asc", "--limit", "0", "-f", "json"],
-                parse=_parse_a1_list, workers=8, timeout=90,
-                label="delivery-activity") if ids else {}
-
-            pool_items: list[dict] = []
-            pool_failed = 0
-            for requirement in requirements:
-                item_id = str(requirement.get("id") or "")
+            cursor_epoch = _to_epoch(prior_cursors.get(pool_key))
+            bootstrap = cursor_epoch is None
+            any_bootstrap = any_bootstrap or bootstrap
+            query_after = None if bootstrap else cursor_epoch - CURSOR_OVERLAP.total_seconds()
+            self._last_list_pages = 0
+            changed = self._list_incremental_requirements(
+                project, req_type, query_after, coverage_start.timestamp())
+            stats["listCalls"] += max(1, int(self._last_list_pages or 0))
+            if changed is None:
+                # The caller must not publish this candidate. In particular, do not
+                # persist partially advanced pool cursors from earlier pools.
+                raise RuntimeError("delivery incremental list failed for pool %s" % pool_key)
+            stats["changedWorkitemCount"] += len(changed)
+            changed_ids = {str(row.get("id") or "") for row in changed}
+            # Activity failures are durable retry state. Retrying them does not
+            # trigger another comment fetch and does not move the pool cursor.
+            for prior in previous_items.values():
+                if (prior.get("pool") == pool_key and prior.get("pendingTransition")
+                        and str(prior.get("id") or "") not in changed_ids):
+                    changed.append({
+                        "id": str(prior["id"]), "project": project,
+                        "title": prior.get("title") or "", "type": req_type,
+                        "status": prior.get("status") or "",
+                        "createdAt": prior.get("createdAt"),
+                        "modified": _to_epoch(prior.get("modifiedAt")) or 0,
+                        "_retryActivity": True,
+                    })
+            max_modified = now.timestamp() if bootstrap else cursor_epoch
+            for requirement in changed:
+                item_id = str(requirement["id"])
+                prior = previous_items.get(item_id, {})
+                modified_epoch = float(requirement["modified"])
+                retry_activity = bool(requirement.get("_retryActivity"))
+                if not retry_activity:
+                    max_modified = max(modified_epoch, max_modified or modified_epoch)
                 status = _scalar_text(requirement.get("status"))
                 status_class = _classify_delivery_status(
                     pool_key, status, status_definitions)
-                if status_class != "closed":
-                    continue
-                activities = self._list_activities(item_id)
-                if activities is None:
-                    failed_workitem_ids.append(item_id)
-                    pool_failed += 1
-                    self._log.warning(
-                        "delivery-metrics: skip #%s because activity query failed",
-                        item_id)
-                    continue
-                closed_epoch = _exact_closed_at(activities, closed_statuses)
-                if closed_epoch is None:
-                    failed_workitem_ids.append(item_id)
-                    pool_failed += 1
-                    self._log.warning(
-                        "delivery-metrics: skip #%s because exact close activity "
-                        "is missing", item_id)
-                    continue
-                if closed_epoch > end_epoch:
-                    continue
                 created_epoch = _to_epoch(requirement.get("createdAt"))
-                if (created_epoch is None or created_epoch < coverage_start_epoch
-                        or created_epoch >= end_epoch or created_epoch > closed_epoch):
-                    failed_workitem_ids.append(item_id)
-                    pool_failed += 1
-                    self._log.warning(
-                        "delivery-metrics: skip #%s because createdAt is invalid",
-                        item_id)
-                    continue
-                comments = self._list_comments(item_id)
-                if comments is None:
-                    failed_workitem_ids.append(item_id)
-                    pool_failed += 1
-                    self._log.warning(
-                        "delivery-metrics: skip #%s because comment query failed",
-                        item_id)
-                    continue
-                human = 0
-                digital = 0
-                system = 0
-                for comment in comments:
-                    author = (
-                        comment.get("author") or comment.get("creator")
-                        or comment.get("commentator") or "")
-                    content = (
-                        comment.get("content") or comment.get("body")
-                        or comment.get("message") or "")
-                    classified = _classify_author(author, content)
-                    if classified is None:
-                        system += 1
-                    elif classified[0] == "human":
-                        human += 1
-                    else:
-                        digital += 1
-                delivery_days = _rounded(
-                    (closed_epoch - created_epoch) / (24 * 3600))
-                first_agent_epoch = _first_agent_intervention_at(
-                    comments, activities, created_epoch, closed_epoch)
-                agent_elapsed_days = (
-                    _rounded((closed_epoch - first_agent_epoch) / (24 * 3600))
-                    if first_agent_epoch is not None else None
-                )
-                item = {
-                    "id": item_id,
-                    "title": str(requirement.get("title") or ""),
-                    "pool": pool_key,
-                    "poolId": project,
-                    "status": status,
+                item = dict(prior)
+                item.update({
+                    "id": item_id, "title": str(requirement.get("title") or ""),
+                    "pool": pool_key, "poolId": project, "status": status,
                     "statusClass": status_class,
-                    "createdAt": _iso(datetime.fromtimestamp(
-                        created_epoch, _SHANGHAI_TZ)),
-                    "closedAt": _iso(datetime.fromtimestamp(
-                        closed_epoch, _SHANGHAI_TZ)),
-                    "deliveryDays": delivery_days,
-                    "firstAgentInterventionAt": (
-                        _iso(datetime.fromtimestamp(
-                            first_agent_epoch, _SHANGHAI_TZ))
-                        if first_agent_epoch is not None else None
-                    ),
-                    "agentInterventionElapsedDays": agent_elapsed_days,
-                    "humanCommentCount": human,
-                    "digitalCommentCount": digital,
-                    "systemCommentCount": system,
-                    "totalCommentCount": len(comments),
-                    "url": (
-                        "https://project.aone.alibaba-inc.com/v2/project/"
-                        f"{project}/req/{item_id}"
-                    ),
-                }
-                pool_items.append(item)
-                workitems.append(item)
+                    "createdAt": (_iso(datetime.fromtimestamp(created_epoch, _SHANGHAI_TZ))
+                                  if created_epoch is not None else None),
+                    "modifiedAt": _iso(datetime.fromtimestamp(modified_epoch, _SHANGHAI_TZ)),
+                    "url": ("https://project.aone.alibaba-inc.com/v2/project/"
+                            f"{project}/req/{item_id}"),
+                })
 
-            durations = [float(item["deliveryDays"]) for item in pool_items]
-            agent_durations = [
-                float(item["agentInterventionElapsedDays"])
-                for item in pool_items
-                if item["agentInterventionElapsedDays"] is not None
-            ]
-            human_total = sum(
-                int(item["humanCommentCount"]) for item in pool_items)
-            summary = {
-                "pool": pool_key,
-                "poolId": project,
+                fetch_comments = (not retry_activity and (not bootstrap or modified_epoch >= recent_cutoff
+                                  or bool(prior and prior.get("statusClass") == "closed"))
+                                 )
+                if fetch_comments:
+                    stats["commentCalls"] += 1
+                    comments = self._list_comments(item_id)
+                    if comments is None:
+                        item["commentFreshness"] = "stale"
+                        item.setdefault("commentEvents", [])
+                        item.setdefault("humanCommentCount", None)
+                        item.setdefault("digitalCommentCount", None)
+                        item.setdefault("systemCommentCount", None)
+                        item.setdefault("totalCommentCount", None)
+                        item.setdefault("commentFreshAt", None)
+                        stale_comments.add(item_id)
+                    else:
+                        facts, counts = _comment_facts(comments)
+                        item["commentEvents"] = [{
+                            key: fact[key] for key in (
+                                "createdAt", "authorToken", "authorName", "digital")
+                        } for fact in facts if fact["kind"] != "system"]
+                        item.update({
+                            "humanCommentCount": counts["human"],
+                            "digitalCommentCount": counts["digital"],
+                            "systemCommentCount": counts["system"],
+                            "totalCommentCount": len(comments),
+                            "commentFreshAt": _iso(now),
+                            "commentFreshness": "fresh",
+                        })
+                elif not prior:
+                    item.update({
+                        "commentEvents": [], "humanCommentCount": None,
+                        "digitalCommentCount": None, "systemCommentCount": None,
+                        "totalCommentCount": None, "commentFreshAt": None,
+                        "commentFreshness": "unknown",
+                    })
+
+                transition_statuses: tuple[str, ...] = ()
+                transition_field = ""
+                enrich_transition = retry_activity or not bootstrap or modified_epoch >= recent_cutoff
+                if status_class == "closed" and enrich_transition:
+                    transition_statuses = tuple(status_definitions[pool_key]["closed"])
+                    transition_field = "closedAt"
+                elif status_class == "solution" and enrich_transition:
+                    transition_statuses = tuple(status_definitions[pool_key]["solution"])
+                    transition_field = "solutionAt"
+                if transition_statuses:
+                    # A changed closed item may have reopened and closed again since
+                    # the last cursor. Never count the previous close if refresh fails.
+                    item[transition_field] = None
+                    stats["activityCalls"] += 1
+                    activities = self._list_activities(item_id)
+                    exact_epoch = (_exact_closed_at(activities, transition_statuses)
+                                   if activities is not None else None)
+                    if exact_epoch is None:
+                        item["activityFreshness"] = "stale"
+                        item["pendingTransition"] = transition_field
+                        pending_activities.add(item_id)
+                    else:
+                        item[transition_field] = _iso(datetime.fromtimestamp(
+                            exact_epoch, _SHANGHAI_TZ))
+                        item["activityFreshness"] = "fresh"
+                        item.pop("pendingTransition", None)
+                elif status_class in ("closed", "solution") and not prior.get(
+                        "closedAt" if status_class == "closed" else "solutionAt"):
+                    item["activityFreshness"] = "unknown"
+                if status_class not in ("closed", "solution"):
+                    item.pop("pendingTransition", None)
+                if status_class != "closed":
+                    item["closedAt"] = None
+                closed_epoch = _to_epoch(item.get("closedAt")) if status_class == "closed" else None
+                if closed_epoch is not None and created_epoch is not None and closed_epoch >= created_epoch:
+                    item["deliveryDays"] = _rounded(
+                        (closed_epoch - created_epoch) / (24 * 3600))
+                else:
+                    item["deliveryDays"] = None
+                workitems[item_id] = item
+            if max_modified is not None:
+                pool_cursors[pool_key] = _iso(datetime.fromtimestamp(
+                    max_modified, _SHANGHAI_TZ))
+
+        # Agent metrics are AutomationAgent-local projections. Clear legacy
+        # Aone-derived inference from changed and unchanged cached items alike.
+        for item in workitems.values():
+            item["firstAgentInterventionAt"] = None
+            item["agentInterventionElapsedDays"] = None
+            item.pop("agentParticipated", None)
+            item.pop("agentActiveDays", None)
+        ordered = sorted(workitems.values(), key=lambda row: (
+            row.get("modifiedAt") or "", row.get("id") or ""), reverse=True)
+        pool_summaries: list[dict] = []
+        for pool_key, project, _req_type in self._tf_pools():
+            pool_items = [row for row in ordered if row.get("pool") == pool_key]
+            closed = [row for row in pool_items
+                      if row.get("statusClass") == "closed" and row.get("closedAt")]
+            durations = [float(row["deliveryDays"]) for row in closed
+                         if row.get("deliveryDays") is not None]
+            human_values = [int(row["humanCommentCount"]) for row in closed
+                            if row.get("humanCommentCount") is not None]
+            pool_summaries.append({
+                "pool": pool_key, "poolId": project,
                 "poolName": _POOL_NAMES.get(pool_key, pool_key),
-                "closedCount": len(pool_items),
-                "failedWorkitemCount": pool_failed,
-                **_duration_summary(durations),
-                **_agent_duration_summary(agent_durations),
-                "humanCommentTotal": human_total,
-                "humanCommentAverage": (
-                    _rounded(human_total / len(pool_items))
-                    if pool_items else None
-                ),
-            }
-            pool_summaries.append(summary)
-
-        workitems.sort(
-            key=lambda row: (row.get("closedAt") or "", row.get("id") or ""),
-            reverse=True)
+                "workitemCount": len(pool_items), "closedCount": len(closed),
+                "failedWorkitemCount": sum(
+                    row.get("id") in pending_activities for row in pool_items),
+                **_duration_summary(durations), **_agent_duration_summary([]),
+                "humanCommentTotal": sum(human_values),
+                "humanCommentAverage": (_rounded(sum(human_values) / len(closed))
+                                        if closed and len(human_values) == len(closed)
+                                        else None),
+            })
+        stale_count = sum(
+            row.get("commentFreshness") == "stale" for row in ordered)
+        unknown_count = sum(
+            row.get("commentFreshness") == "unknown" for row in ordered)
         return {
             "snapshotId": now.strftime("%Y%m%dT%H%M%S%z"),
-            "generatedAt": _iso(now),
-            # window* are retained for older readers; they now describe finite coverage.
-            "windowStart": _iso(coverage_start),
+            "generatedAt": _iso(now), "windowStart": _iso(coverage_start),
             "windowEnd": _iso(now),
             "windowDays": (now.date() - coverage_start.date()).days,
-            "coverageStart": _iso(coverage_start),
-            "coverageEnd": _iso(now),
-            "cohortBasis": "created_at",
-            "scope": "closed_success_only",
-            "durationBasis": "calendar_days",
-            "percentileMethod": "nearest_rank",
-            "complete": not failed_workitem_ids,
-            "candidateCount": candidate_count,
-            "closedCount": len(workitems),
-            "failedWorkitemCount": len(failed_workitem_ids),
-            "failedWorkitemIds": failed_workitem_ids,
-            "pools": pool_summaries,
-            "statusDefinitions": status_definitions,
-            "workitems": workitems,
+            "coverageStart": _iso(coverage_start), "coverageEnd": _iso(now),
+            "cohortBasis": "created_at", "scope": "lifecycle_fact_cache",
+            "durationBasis": "calendar_days", "percentileMethod": "nearest_rank",
+            "complete": not pending_activities,
+            "candidateCount": len(ordered),
+            "closedCount": sum(row["closedCount"] for row in pool_summaries),
+            "failedWorkitemCount": len(pending_activities),
+            "failedWorkitemIds": sorted(pending_activities),
+            "pools": pool_summaries, "statusDefinitions": status_definitions,
+            "poolCursors": pool_cursors,
+            "collectionMode": "bootstrap" if any_bootstrap else "incremental",
+            "collectionStats": stats,
+            "freshness": {
+                "collectedAt": _iso(now),
+                "staleCommentWorkitemCount": stale_count,
+                "unknownCommentWorkitemCount": unknown_count,
+                "pendingActivityWorkitemCount": len(pending_activities),
+            },
+            "workitems": ordered,
         }
 
-    def _request_json(self, method: str, path: str, payload: dict) -> None:
-        base = str(getattr(self._task_client, "base_url", "") or "").rstrip("/")
-        token = str(getattr(self._task_client, "token", "") or "")
-        timeout = float(getattr(self._task_client, "timeout", 10) or 10)
+    def _get_json(self, path: str, *, missing_ok: bool = False) -> Optional[Any]:
+        """Authenticated machine-token GET; snapshot wire parsing stays elsewhere."""
+        base = self._metrics_base_url
+        token = self._metrics_token
+        timeout = self._metrics_timeout
         if not base:
-            raise RuntimeError("control plane base_url is not configured")
+            raise RuntimeError("metrics base_url is not configured")
+        headers = {"Accept": "application/json", "User-Agent": "jarvis-board-stats/1"}
+        if token:
+            headers["Authorization"] = "Bearer " + token
+        request = urllib.request.Request(base + path, method="GET", headers=headers)
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                status = response.getcode()
+                body = response.read()
+        except urllib.error.HTTPError as exc:
+            if missing_ok and exc.code == 404:
+                return None
+            detail = (exc.read() or b"")[:200].decode("utf-8", "replace")
+            raise RuntimeError("board metrics GET HTTP %s: %s" % (
+                exc.code, detail)) from exc
+        except (urllib.error.URLError, TimeoutError, OSError) as exc:
+            raise RuntimeError("board metrics GET unavailable: %s" % (
+                type(exc).__name__,)) from exc
+        if status < 200 or status >= 300:
+            raise RuntimeError("board metrics GET HTTP %s" % status)
+        try:
+            return json.loads(body or b"{}")
+        except (TypeError, ValueError) as exc:
+            raise RuntimeError("board metrics GET returned invalid JSON") from exc
+
+    def _load_delivery_snapshot(self) -> Optional[dict]:
+        payload = self._get_json(
+            DELIVERY_METRICS_PATH + "/snapshots/current", missing_ok=True)
+        if payload is None:
+            return None
+        manifest, items = _snapshot_from_response(payload)
+        if manifest is None:
+            raise RuntimeError("current delivery snapshot has invalid shape")
+        if items is None:
+            snapshot_id = str(manifest.get("snapshotId") or "")
+            page_count = manifest.get("pageCount")
+            if not snapshot_id or not isinstance(page_count, int):
+                raise RuntimeError("current delivery snapshot has no items/pages")
+            items = []
+            encoded_id = urllib.parse.quote(snapshot_id, safe="+")
+            for page_number in range(page_count):
+                page = self._get_json(
+                    DELIVERY_METRICS_PATH + "/snapshots/" + encoded_id
+                    + "/pages/" + str(page_number))
+                page_items = page.get("items") if isinstance(page, dict) else None
+                if not isinstance(page_items, list):
+                    raise RuntimeError("current delivery snapshot page is invalid")
+                items.extend(row for row in page_items if isinstance(row, dict))
+        return {**manifest, "manifest": manifest, "workitems": items}
+
+    def _request_json(self, method: str, path: str, payload: dict) -> None:
+        base = self._metrics_base_url
+        token = self._metrics_token
+        timeout = self._metrics_timeout
+        if not base:
+            raise RuntimeError("metrics base_url is not configured")
         url = base + path
         body = json.dumps(payload, ensure_ascii=False,
                           separators=(",", ":")).encode("utf-8")
@@ -1035,10 +1140,11 @@ class WeeklyCommentParticipationRunner:
                 JobResultStatus.PERMANENT_FAILURE,
                 error="Terraform metrics runner requires a daily schedule")
         try:
-            payload = self._aggregate(scheduled_for)
-            self._publish(payload)
-            delivery = self._aggregate_delivery(scheduled_for)
+            previous = self._load_delivery_snapshot()
+            delivery = self._aggregate_delivery(scheduled_for, previous)
             self._publish_delivery(delivery)
+            payload = self._aggregate(scheduled_for, delivery)
+            self._publish(payload)
         except Exception as exc:  # noqa: BLE001 — network/Aone faults are retryable
             self._log.warning(
                 "weekly-comment-participation: failed: %s: %s",
