@@ -112,6 +112,25 @@ def _iso(dt: datetime) -> str:
     return dt.isoformat()
 
 
+def _aone_list_filter(
+    coverage_start_epoch: float, modified_after: Optional[float] = None,
+) -> str:
+    """Serialize the strict date syntax accepted by ``a1 workitem list``.
+
+    Aone reliably applies date-only boundaries. Its backend accepts but ignores
+    second-level ISO modified filters, so this is only a coarse server filter;
+    the caller enforces the strict second-level cursor after parsing each row.
+    """
+    coverage = datetime.fromtimestamp(
+        coverage_start_epoch, _SHANGHAI_TZ).strftime("%Y-%m-%d")
+    filters = ["created>=%s" % coverage]
+    if modified_after is not None:
+        modified = datetime.fromtimestamp(
+            modified_after, _SHANGHAI_TZ).strftime("%Y-%m-%d")
+        filters.insert(0, "modified>=%s" % modified)
+    return " AND ".join(filters)
+
+
 def _author_string(author: Any) -> str:
     """Flatten Aone's several author shapes to one display/identity string."""
     if isinstance(author, dict):
@@ -410,15 +429,8 @@ class WeeklyCommentParticipationRunner:
                 "--sort", "modified:desc", "--page", str(page),
                 "--page-size", str(LIST_PAGE_SIZE),
             ]
-            coverage_cutoff = datetime.fromtimestamp(
-                coverage_start_epoch, _SHANGHAI_TZ).strftime(
-                    "%Y-%m-%d %H:%M:%S")
-            filters = ["created>='%s'" % coverage_cutoff]
-            if modified_after is not None:
-                cutoff = datetime.fromtimestamp(
-                    modified_after, _SHANGHAI_TZ).strftime("%Y-%m-%d %H:%M:%S")
-                filters.insert(0, "modified>'%s'" % cutoff)
-            command += ["--filter", " AND ".join(filters)]
+            command += ["--filter", _aone_list_filter(
+                coverage_start_epoch, modified_after)]
             command += ["-f", "json"]
             try:
                 pages_called += 1
@@ -460,6 +472,13 @@ class WeeklyCommentParticipationRunner:
                 modified_epoch = _to_epoch(modified)
                 item_id = str(source.get("identifier") or source.get("id") or "")
                 if not item_id or modified_epoch is None:
+                    continue
+                # The server filter is intentionally date-granular. a1 emits
+                # gmtModified at minute precision, so equality with the overlap
+                # threshold must stay eligible: it may hide later seconds or a
+                # finally-consistent update within that boundary minute.
+                if (modified_after is not None
+                        and modified_epoch < modified_after):
                     continue
                 rows.append({
                     "id": item_id,

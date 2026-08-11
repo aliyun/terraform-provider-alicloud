@@ -299,32 +299,51 @@ class IncrementalCollectionTests(unittest.TestCase):
 
     def test_list_uses_exact_modified_filter_and_counts_real_pages(self):
         instance = runner()
-        response = SimpleNamespace(returncode=0, stdout="[]", stderr="")
+        response = SimpleNamespace(returncode=0, stdout=json.dumps([
+            {"identifier": "before", "subject": "before", "status": "开发中",
+             "gmtCreate": "2023-04-01 00:00:00",
+             "gmtModified": "2026-07-26 06:31:59"},
+            {"identifier": "equal", "subject": "equal", "status": "开发中",
+             "gmtCreate": "2023-04-01 00:00:00",
+             "gmtModified": "2026-07-26 06:32:00"},
+            {"identifier": "after", "subject": "after", "status": "开发中",
+             "gmtCreate": "2023-04-01 00:00:00",
+             "gmtModified": "2026-07-26 06:32:01"},
+        ]), stderr="")
         with mock.patch.object(wcp, "run_process_group", return_value=response) as run:
             result = instance._list_incremental_requirements(
                 "1086837", "需求问题",
                 datetime(2026, 7, 26, 6, 32, tzinfo=SHANGHAI).timestamp(),
                 datetime(2023, 4, 1, tzinfo=SHANGHAI).timestamp())
-        self.assertEqual(result, [])
+        self.assertEqual(
+            [row["id"] for row in result], ["equal", "after"])
         argv = run.call_args.args[0]
         index = argv.index("--filter")
         self.assertEqual(
             argv[index + 1],
-            "modified>'2026-07-26 06:32:00' AND "
-            "created>='2023-04-01 00:00:00'")
+            "modified>=2026-07-26 AND created>=2023-04-01")
         self.assertEqual(instance._last_list_pages, 1)
 
     def test_bootstrap_list_pushes_fy24_coverage_into_filter(self):
         instance = runner()
-        response = SimpleNamespace(returncode=0, stdout="[]", stderr="")
+        response = SimpleNamespace(returncode=0, stdout=json.dumps([
+            {"identifier": "older-modified", "subject": "older", "status": "开发中",
+             "gmtCreate": "2023-04-01 00:00:00",
+             "gmtModified": "2023-04-02 00:00:00"},
+            {"identifier": "newer-modified", "subject": "newer", "status": "开发中",
+             "gmtCreate": "2023-04-01 00:00:00",
+             "gmtModified": "2026-07-26 06:32:01"},
+        ]), stderr="")
         with mock.patch.object(wcp, "run_process_group", return_value=response) as run:
             result = instance._list_incremental_requirements(
                 "1086837", "需求问题", None,
                 datetime(2023, 4, 1, tzinfo=SHANGHAI).timestamp())
-        self.assertEqual(result, [])
+        self.assertEqual(
+            [row["id"] for row in result],
+            ["older-modified", "newer-modified"])
         argv = run.call_args.args[0]
         index = argv.index("--filter")
-        self.assertEqual(argv[index + 1], "created>='2023-04-01 00:00:00'")
+        self.assertEqual(argv[index + 1], "created>=2023-04-01")
 
 
 class ProjectionAndTransportTests(unittest.TestCase):
