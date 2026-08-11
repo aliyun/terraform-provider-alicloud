@@ -2,9 +2,9 @@
 
 The committed AutomationAgent snapshot is the durable fact cache. Each run lists
 the two Terraform pools once from their persisted modified cursors (with overlap),
-refreshes comments only for changed items and activity only for changed terminal
-transitions, then commits a complete chunked snapshot. The seven-day participation
-view is a projection of the same cached ``commentEvents``; it never scans Aone again.
+refreshes comments only for AutomationAgent's ``agentWorkitemIds`` and activity
+only for changed terminal transitions, then commits a complete chunked snapshot.
+The seven-day participation view projects the same cached ``commentEvents``.
 """
 
 from __future__ import annotations
@@ -110,6 +110,25 @@ def _to_epoch(value: Any) -> Optional[float]:
 def _iso(dt: datetime) -> str:
     """ISO 8601 with offset, parseable by the board frontend ``new Date(value)``."""
     return dt.isoformat()
+
+
+def _aone_list_filter(
+    coverage_start_epoch: float, modified_after: Optional[float] = None,
+) -> str:
+    """Serialize the strict date syntax accepted by ``a1 workitem list``.
+
+    Aone reliably applies date-only boundaries. Its backend accepts but ignores
+    second-level ISO modified filters, so this is only a coarse server filter;
+    the caller enforces the strict second-level cursor after parsing each row.
+    """
+    coverage = datetime.fromtimestamp(
+        coverage_start_epoch, _SHANGHAI_TZ).strftime("%Y-%m-%d")
+    filters = ["created>=%s" % coverage]
+    if modified_after is not None:
+        modified = datetime.fromtimestamp(
+            modified_after, _SHANGHAI_TZ).strftime("%Y-%m-%d")
+        filters.insert(0, "modified>=%s" % modified)
+    return " AND ".join(filters)
 
 
 def _author_string(author: Any) -> str:
@@ -357,6 +376,23 @@ def _snapshot_from_response(payload: Any) -> tuple[Optional[dict], Optional[list
     return dict(manifest), None
 
 
+def _agent_workitem_ids_from_response(payload: Any) -> Optional[list[str]]:
+    """Parse AutomationAgent's top-level comment-eligibility projection."""
+    if not isinstance(payload, dict):
+        return None
+    values = payload.get("agentWorkitemIds")
+    if not isinstance(values, list):
+        return None
+    normalized: list[str] = []
+    for value in values:
+        if isinstance(value, bool) or not isinstance(value, (str, int)):
+            continue
+        item_id = str(value).strip()
+        if item_id:
+            normalized.append(item_id)
+    return list(dict.fromkeys(normalized))
+
+
 class WeeklyCommentParticipationRunner:
     """Aggregate weekly Terraform comment participation and push to the board stat KV."""
 
@@ -393,15 +429,8 @@ class WeeklyCommentParticipationRunner:
                 "--sort", "modified:desc", "--page", str(page),
                 "--page-size", str(LIST_PAGE_SIZE),
             ]
-            coverage_cutoff = datetime.fromtimestamp(
-                coverage_start_epoch, _SHANGHAI_TZ).strftime(
-                    "%Y-%m-%d %H:%M:%S")
-            filters = ["created>='%s'" % coverage_cutoff]
-            if modified_after is not None:
-                cutoff = datetime.fromtimestamp(
-                    modified_after, _SHANGHAI_TZ).strftime("%Y-%m-%d %H:%M:%S")
-                filters.insert(0, "modified>'%s'" % cutoff)
-            command += ["--filter", " AND ".join(filters)]
+            command += ["--filter", _aone_list_filter(
+                coverage_start_epoch, modified_after)]
             command += ["-f", "json"]
             try:
                 pages_called += 1
@@ -443,6 +472,13 @@ class WeeklyCommentParticipationRunner:
                 modified_epoch = _to_epoch(modified)
                 item_id = str(source.get("identifier") or source.get("id") or "")
                 if not item_id or modified_epoch is None:
+                    continue
+                # The server filter is intentionally date-granular. a1 emits
+                # gmtModified at minute precision, so equality with the overlap
+                # threshold must stay eligible: it may hide later seconds or a
+                # finally-consistent update within that boundary minute.
+                if (modified_after is not None
+                        and modified_epoch < modified_after):
                     continue
                 rows.append({
                     "id": item_id,
@@ -753,7 +789,9 @@ class WeeklyCommentParticipationRunner:
             "windowStart": _iso(window_start), "windowEnd": _iso(now),
             "generatedAt": _iso(now), "totalComments": total,
             "ticketsTouched": len(touched),
-            "requirementsCovered": len(snapshot.get("workitems") or []),
+            "requirementsCovered": sum(
+                item.get("commentFreshness") != "not_applicable"
+                for item in snapshot.get("workitems") or []),
             "participants": rows,
         }
 
@@ -772,6 +810,9 @@ class WeeklyCommentParticipationRunner:
         }
         manifest = (previous.get("manifest")
                     if isinstance(previous.get("manifest"), dict) else previous)
+        agent_workitem_ids = frozenset(str(value) for value in (
+            previous.get("_agentWorkitemIds")
+            or previous.get("agentWorkitemIds") or []) if str(value))
         prior_cursors = manifest.get("poolCursors") or {}
         workitems = dict(previous_items)
         pool_cursors = dict(prior_cursors)
@@ -810,13 +851,40 @@ class WeeklyCommentParticipationRunner:
                         "modified": _to_epoch(prior.get("modifiedAt")) or 0,
                         "_retryActivity": True,
                     })
+            queued = {str(row.get("id") or ""): row for row in changed}
+            # AutomationAgent may newly project an unchanged lifecycle item into
+            # the agent cohort. Refresh its comments once without moving the Aone
+            # cursor or querying activity.
+            for prior in previous_items.values():
+                prior_id = str(prior.get("id") or "")
+                if (prior.get("pool") != pool_key
+                        or prior_id not in agent_workitem_ids
+                        or prior.get("commentFreshness") == "fresh"):
+                    continue
+                queued_row = queued.get(prior_id)
+                if queued_row is not None:
+                    queued_row["_commentRefreshOnly"] = True
+                    continue
+                refresh = {
+                    "id": prior_id, "project": project,
+                    "title": prior.get("title") or "", "type": req_type,
+                    "status": prior.get("status") or "",
+                    "createdAt": prior.get("createdAt"),
+                    "modified": _to_epoch(prior.get("modifiedAt")) or 0,
+                    "_commentRefreshOnly": True,
+                }
+                changed.append(refresh)
+                queued[prior_id] = refresh
             max_modified = now.timestamp() if bootstrap else cursor_epoch
             for requirement in changed:
                 item_id = str(requirement["id"])
                 prior = previous_items.get(item_id, {})
                 modified_epoch = float(requirement["modified"])
                 retry_activity = bool(requirement.get("_retryActivity"))
-                if not retry_activity:
+                comment_refresh_only = bool(
+                    requirement.get("_commentRefreshOnly"))
+                aone_changed = item_id in changed_ids
+                if aone_changed:
                     max_modified = max(modified_epoch, max_modified or modified_epoch)
                 status = _scalar_text(requirement.get("status"))
                 status_class = _classify_delivery_status(
@@ -834,9 +902,10 @@ class WeeklyCommentParticipationRunner:
                             f"{project}/req/{item_id}"),
                 })
 
-                fetch_comments = (not retry_activity and (not bootstrap or modified_epoch >= recent_cutoff
-                                  or bool(prior and prior.get("statusClass") == "closed"))
-                                 )
+                fetch_comments = (
+                    item_id in agent_workitem_ids
+                    and (aone_changed or comment_refresh_only)
+                )
                 if fetch_comments:
                     stats["commentCalls"] += 1
                     comments = self._list_comments(item_id)
@@ -863,7 +932,7 @@ class WeeklyCommentParticipationRunner:
                             "commentFreshAt": _iso(now),
                             "commentFreshness": "fresh",
                         })
-                elif not prior:
+                elif not prior and item_id in agent_workitem_ids:
                     item.update({
                         "commentEvents": [], "humanCommentCount": None,
                         "digitalCommentCount": None, "systemCommentCount": None,
@@ -873,7 +942,9 @@ class WeeklyCommentParticipationRunner:
 
                 transition_statuses: tuple[str, ...] = ()
                 transition_field = ""
-                enrich_transition = retry_activity or not bootstrap or modified_epoch >= recent_cutoff
+                enrich_transition = retry_activity or (
+                    aone_changed
+                    and (not bootstrap or modified_epoch >= recent_cutoff))
                 if status_class == "closed" and enrich_transition:
                     transition_statuses = tuple(status_definitions[pool_key]["closed"])
                     transition_field = "closedAt"
@@ -922,6 +993,13 @@ class WeeklyCommentParticipationRunner:
             item["agentInterventionElapsedDays"] = None
             item.pop("agentParticipated", None)
             item.pop("agentActiveDays", None)
+            if str(item.get("id") or "") not in agent_workitem_ids:
+                item.update({
+                    "commentEvents": [], "humanCommentCount": None,
+                    "digitalCommentCount": None, "systemCommentCount": None,
+                    "totalCommentCount": None, "commentFreshAt": None,
+                    "commentFreshness": "not_applicable",
+                })
         ordered = sorted(workitems.values(), key=lambda row: (
             row.get("modifiedAt") or "", row.get("id") or ""), reverse=True)
         pool_summaries: list[dict] = []
@@ -949,6 +1027,8 @@ class WeeklyCommentParticipationRunner:
             row.get("commentFreshness") == "stale" for row in ordered)
         unknown_count = sum(
             row.get("commentFreshness") == "unknown" for row in ordered)
+        not_applicable_count = sum(
+            row.get("commentFreshness") == "not_applicable" for row in ordered)
         return {
             "snapshotId": now.strftime("%Y%m%dT%H%M%S%z"),
             "generatedAt": _iso(now), "windowStart": _iso(coverage_start),
@@ -970,6 +1050,7 @@ class WeeklyCommentParticipationRunner:
                 "collectedAt": _iso(now),
                 "staleCommentWorkitemCount": stale_count,
                 "unknownCommentWorkitemCount": unknown_count,
+                "notApplicableCommentWorkitemCount": not_applicable_count,
                 "pendingActivityWorkitemCount": len(pending_activities),
             },
             "workitems": ordered,
@@ -1012,8 +1093,12 @@ class WeeklyCommentParticipationRunner:
         if payload is None:
             return None
         manifest, items = _snapshot_from_response(payload)
+        agent_workitem_ids = _agent_workitem_ids_from_response(payload)
         if manifest is None:
             raise RuntimeError("current delivery snapshot has invalid shape")
+        if agent_workitem_ids is None:
+            raise RuntimeError(
+                "current delivery snapshot has no agentWorkitemIds projection")
         if items is None:
             snapshot_id = str(manifest.get("snapshotId") or "")
             page_count = manifest.get("pageCount")
@@ -1029,7 +1114,10 @@ class WeeklyCommentParticipationRunner:
                 if not isinstance(page_items, list):
                     raise RuntimeError("current delivery snapshot page is invalid")
                 items.extend(row for row in page_items if isinstance(row, dict))
-        return {**manifest, "manifest": manifest, "workitems": items}
+        return {
+            **manifest, "manifest": manifest, "workitems": items,
+            "_agentWorkitemIds": agent_workitem_ids,
+        }
 
     def _request_json(self, method: str, path: str, payload: dict) -> None:
         base = self._metrics_base_url
