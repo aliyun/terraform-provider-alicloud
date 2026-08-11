@@ -1924,6 +1924,26 @@ func (s *VpcService) DescribeVpnGatewayVcoRoute(id string) (object map[string]in
 	return object, nil
 }
 
+func (s *VpcService) VpnGatewayVcoRouteStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeVpnGatewayVcoRoute(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		state := fmt.Sprint(object["State"])
+		for _, failState := range failStates {
+			if state == failState {
+				return object, state, WrapError(Error(FailedToReachTargetStatus, state))
+			}
+		}
+		return object, state, nil
+	}
+}
+
 func (s *VpcService) DescribeExpressConnectGrantRuleToCen(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	action := "DescribeGrantRulesToCen"

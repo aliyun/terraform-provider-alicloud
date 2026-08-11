@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"hash/crc32"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -107,6 +108,10 @@ func dataSourceAliCloudVpnGatewayVpnAttachments() *schema.Resource {
 						},
 						"enable_tunnels_bgp": {
 							Type:     schema.TypeBool,
+							Computed: true,
+						},
+						"tunnel_bandwidth": {
+							Type:     schema.TypeString,
 							Computed: true,
 						},
 						"health_check_config": {
@@ -512,6 +517,18 @@ func dataSourceAliCloudVpnGatewayVpnAttachmentRead(d *schema.ResourceData, meta 
 		mapping["enable_dpd"] = objectRaw["EnableDpd"]
 		mapping["enable_nat_traversal"] = objectRaw["EnableNatTraversal"]
 		mapping["enable_tunnels_bgp"] = objectRaw["EnableTunnelsBgp"]
+		if tunnelBandwidth, ok := objectRaw["TunnelBandwidth"].(string); ok {
+			switch strings.ToLower(tunnelBandwidth) {
+			case "large":
+				mapping["tunnel_bandwidth"] = "Large"
+			case "standard":
+				mapping["tunnel_bandwidth"] = "Standard"
+			default:
+				mapping["tunnel_bandwidth"] = tunnelBandwidth
+			}
+		} else {
+			mapping["tunnel_bandwidth"] = objectRaw["TunnelBandwidth"]
+		}
 		mapping["internet_ip"] = objectRaw["InternetIp"]
 		mapping["local_subnet"] = objectRaw["LocalSubnet"]
 		mapping["network_type"] = objectRaw["NetworkType"]

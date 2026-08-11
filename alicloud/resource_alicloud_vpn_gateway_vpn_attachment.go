@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"hash/crc32"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -98,6 +99,13 @@ func resourceAliCloudVpnGatewayVpnAttachment() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Computed: true,
+			},
+			"tunnel_bandwidth": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"Standard", "Large"}, false),
 			},
 			"health_check_config": {
 				Type:     schema.TypeList,
@@ -591,6 +599,9 @@ func resourceAliCloudVpnGatewayVpnAttachmentCreate(d *schema.ResourceData, meta 
 	if v, ok := d.GetOkExists("enable_tunnels_bgp"); ok {
 		request["EnableTunnelsBgp"] = v
 	}
+	if v, ok := d.GetOk("tunnel_bandwidth"); ok {
+		request["TunnelBandwidth"] = v
+	}
 	if v, ok := d.GetOk("tunnel_options_specification"); ok {
 		tunnelOptionsSpecificationMapsArray := make([]interface{}, 0)
 		for _, dataLoop1 := range v.(*schema.Set).List() {
@@ -750,6 +761,18 @@ func resourceAliCloudVpnGatewayVpnAttachmentRead(d *schema.ResourceData, meta in
 	d.Set("enable_dpd", objectRaw["EnableDpd"])
 	d.Set("enable_nat_traversal", objectRaw["EnableNatTraversal"])
 	d.Set("enable_tunnels_bgp", objectRaw["EnableTunnelsBgp"])
+	if tunnelBandwidth, ok := objectRaw["TunnelBandwidth"].(string); ok {
+		switch strings.ToLower(tunnelBandwidth) {
+		case "large":
+			d.Set("tunnel_bandwidth", "Large")
+		case "standard":
+			d.Set("tunnel_bandwidth", "Standard")
+		default:
+			d.Set("tunnel_bandwidth", tunnelBandwidth)
+		}
+	} else {
+		d.Set("tunnel_bandwidth", objectRaw["TunnelBandwidth"])
+	}
 	d.Set("local_subnet", objectRaw["LocalSubnet"])
 	d.Set("network_type", objectRaw["NetworkType"])
 	d.Set("remote_subnet", objectRaw["RemoteSubnet"])
