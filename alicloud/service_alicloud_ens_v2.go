@@ -614,7 +614,7 @@ func (s *EnsServiceV2) DescribeEnsSecurityGroup(id string) (object map[string]in
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"ens.interface.error"}) {
+		if IsExpectedErrors(err, []string{"ens.interface.error", "InvalidSecurityGroupId.NotFound"}) {
 			return object, WrapErrorf(NotFoundErr("SecurityGroup", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)

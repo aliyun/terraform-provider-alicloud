@@ -616,6 +616,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_hbr_restore_jobs":                                 dataSourceAlicloudHbrRestoreJobs(),
 			"alicloud_alb_listeners":                                    dataSourceAlicloudAlbListeners(),
 			"alicloud_ens_key_pairs":                                    dataSourceAlicloudEnsKeyPairs(),
+			"alicloud_ens_security_groups":                             dataSourceAliCloudEnsSecurityGroups(),
 			"alicloud_sae_applications":                                 dataSourceAlicloudSaeApplications(),
 			"alicloud_alb_rules":                                        dataSourceAliCloudAlbRules(),
 			"alicloud_cms_metric_rule_templates":                        dataSourceAlicloudCmsMetricRuleTemplates(),
