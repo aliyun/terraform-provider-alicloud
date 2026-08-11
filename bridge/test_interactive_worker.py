@@ -1258,6 +1258,27 @@ class InteractiveWorkerTest(unittest.TestCase):
         reason = worker._cloudspec_operation_guard_reason(self._store())
         self.assertIn("operations/GetThing.cspec", reason)
 
+    def test_relative_cd_registers_sibling_repo_before_compound_shell(self):
+        repo = self._cloudspec_repo()
+        state = self._seed()
+        state["current"] = {
+            "aoneId": "99999999", "projectId": "2100304", "cycle": 1,
+        }
+        self._store().save(state)
+        event = {
+            "tool_name": "Bash",
+            "cwd": self.temp.name,
+            "tool_input": {"command": (
+                "cd %s && printf changed > operations/GetThing.cspec && "
+                "git add operations/GetThing.cspec && git commit -m changed"
+                % repo.name)},
+        }
+
+        self.assertIsNone(worker._cloudspec_operation_guard_reason(
+            self._store(), event))
+        guard = self._store().load()[worker.CLOUDSPEC_OPERATION_GUARD_KEY]
+        self.assertIn(str(repo.resolve()), guard["repositories"])
+
     def test_deleted_main_cannot_hide_initial_operation_diff(self):
         repo = self._cloudspec_repo()
         subprocess.run(
@@ -1296,6 +1317,108 @@ class InteractiveWorkerTest(unittest.TestCase):
                                     Path(self.temp.name) / "x.cspec")}})
 
         self.assertIn("无法解析写入目标仓库", reason)
+
+    def test_amp_authorize_publish_rechecks_operation_diff_at_wrapper_boundary(self):
+        repo = self._cloudspec_repo()
+        state = self._seed()
+        state["current"] = {
+            "aoneId": "99999999", "projectId": "2100304", "cycle": 1,
+            "heartbeatEnabled": True,
+        }
+        self._store().save(state)
+        self.assertIsNone(worker._cloudspec_operation_guard_reason(
+            self._store(), {"tool_name": "Bash", "cwd": str(repo),
+                            "tool_input": {"command": "amp_safe publish pre"}}))
+        with mock.patch.object(worker, "_session_permit_block_reason",
+                               return_value=None), \
+                mock.patch.object(worker, "_calling_process_matches",
+                                  return_value=True):
+            self.assertEqual(worker.amp_authorize("publish", str(repo)), 0)
+        (repo / "operations" / "GetThing.cspec").write_text(
+            "operation GetThing changed\n", encoding="utf-8")
+        stderr = io.StringIO()
+        with mock.patch.object(worker, "_session_permit_block_reason",
+                               return_value=None), \
+                mock.patch.object(worker, "_calling_process_matches",
+                                  return_value=True), \
+                contextlib.redirect_stderr(stderr):
+            self.assertEqual(worker.amp_authorize("publish", str(repo)), 2)
+        self.assertIn("operations/GetThing.cspec", stderr.getvalue())
+
+    def test_amp_authorize_publish_refuses_to_create_late_baseline(self):
+        repo = self._cloudspec_repo()
+        state = self._seed()
+        state["current"] = {
+            "aoneId": "99999999", "projectId": "2100304", "cycle": 1,
+            "heartbeatEnabled": True,
+        }
+        self._store().save(state)
+        stderr = io.StringIO()
+        with mock.patch.object(worker, "_session_permit_block_reason",
+                               return_value=None), \
+                mock.patch.object(worker, "_calling_process_matches",
+                                  return_value=True), \
+                contextlib.redirect_stderr(stderr):
+            self.assertEqual(worker.amp_authorize("publish", str(repo)), 2)
+        self.assertIn("baseline was not established", stderr.getvalue())
+
+    def test_amp_authorize_requires_claim_and_feature_branch(self):
+        repo = self._cloudspec_repo()
+        self._store().save(self._seed())
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr):
+            self.assertEqual(worker.amp_authorize("publish", str(repo)), 2)
+        self.assertIn("active claimed task", stderr.getvalue())
+
+        state = self._seed()
+        state["current"] = {
+            "aoneId": "99999999", "projectId": "2100304", "cycle": 1,
+            "heartbeatEnabled": True,
+        }
+        self._store().save(state)
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr):
+            self.assertEqual(worker.amp_authorize("publish", str(repo)), 2)
+        self.assertIn("Lease Proof", stderr.getvalue())
+
+        subprocess.run(
+            ["git", "-C", repo, "branch", "-m", "not-feature"], check=True)
+        self.assertIsNone(worker._cloudspec_operation_guard_reason(
+            self._store(), {"tool_name": "Bash", "cwd": str(repo),
+                            "tool_input": {"command": "amp_safe publish pre"}}))
+        stderr = io.StringIO()
+        with mock.patch.object(worker, "_session_permit_block_reason",
+                               return_value=None), \
+                mock.patch.object(worker, "_calling_process_matches",
+                                  return_value=True), \
+                contextlib.redirect_stderr(stderr):
+            self.assertEqual(worker.amp_authorize("publish", str(repo)), 2)
+        self.assertIn("feature/* Git branch", stderr.getvalue())
+
+    def test_amp_authorize_non_publish_action_still_freezes_on_known_operation_diff(self):
+        repo = self._cloudspec_repo()
+        state = self._seed()
+        state["current"] = {
+            "aoneId": "99999999", "projectId": "2100304", "cycle": 1,
+            "heartbeatEnabled": True,
+        }
+        self._store().save(state)
+        with mock.patch.object(worker, "_session_permit_block_reason",
+                               return_value=None), \
+                mock.patch.object(worker, "_calling_process_matches",
+                                  return_value=True):
+            self.assertEqual(worker.amp_authorize("init", str(repo)), 0)
+        (repo / "operations" / "GetThing.cspec").write_text(
+            "changed", encoding="utf-8")
+
+        stderr = io.StringIO()
+        with mock.patch.object(worker, "_session_permit_block_reason",
+                               return_value=None), \
+                mock.patch.object(worker, "_calling_process_matches",
+                                  return_value=True), \
+                contextlib.redirect_stderr(stderr):
+            self.assertEqual(worker.amp_authorize("branch-create", str(repo)), 2)
+        self.assertIn("operations/GetThing.cspec", stderr.getvalue())
 
     def test_cloudspec_guard_epoch_survives_recovery_and_resets_next_cycle(self):
         active = {

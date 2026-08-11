@@ -71,6 +71,12 @@ RAW_ASSIGNEE_MESSAGE = (
     "human owner every dispatch. Use `bootstrap/aone-assign.sh <workitem-id> "
     "<staff-id>`, which refuses to reassign a ticket held by an active human"
 )
+DIRECT_AMP_MESSAGE = (
+    "direct or unisolated amp execution is permanently disabled for Jarvis; "
+    "use `/usr/bin/python3 -I <jarvis>/bootstrap/amp_safe.py ...` so task "
+    "fencing, feature-branch policy, operations/ diff protection, and publish "
+    "dry-run ordering are enforced"
+)
 
 _GLOBAL_NO_VALUE = {
     "--debug", "--no-update-check", "-q", "--quiet", "--verbose",
@@ -84,11 +90,20 @@ _SIMPLE_VAR_REF = re.compile(
     r"\$(?:\{([A-Za-z_][A-Za-z0-9_]*)\}|([A-Za-z_][A-Za-z0-9_]*))")
 _HTTP_CLIENTS = frozenset({"curl", "wget", "http", "https"})
 _SCRIPT_CLIENT = re.compile(
-    r"^(?:python(?:\d+(?:\.\d+)*)?|pypy(?:\d+)?|node(?:js)?|ruby|perl|php)$")
+    r"^(?:python(?:\d+(?:\.\d+)*)?|pypy(?:\d+)?|node(?:js)?|ruby|perl|php|awk|gawk)$")
 _SCRIPT_NETWORK_HINT = re.compile(
     r"(?:requests?\s*\.|httpx\s*\.|aiohttp\s*\.|urllib(?:3|\.request)|"
     r"http\.client|fetch\s*\(|axios\s*[\.(]|https?\s*\.\s*request|"
     r"superagent\s*[\.(]|child_process|subprocess|curl\b|wget\b)",
+    re.IGNORECASE,
+)
+_SCRIPT_PROCESS_HINT = re.compile(
+    r"(?:subprocess\s*\.|os\s*\.\s*(?:exec|spawn|system)|child_process|"
+    r"(?:spawn|exec|system)\s*\()",
+    re.IGNORECASE,
+)
+_AMP_PROGRAM_HINT = re.compile(
+    r"(?<![A-Za-z0-9_.-])(?:[^\s'\"\[\](),;]+/)?amp(?![A-Za-z0-9_.-])",
     re.IGNORECASE,
 )
 
@@ -921,10 +936,119 @@ def _is_cspec_test_invocation(
     )
 
 
+def _is_direct_amp_invocation(
+    invocation: Sequence[str],
+    variables: Mapping[str, str],
+) -> bool:
+    """Recognize raw AMP execution, including common inline process wrappers.
+
+    The trusted wrapper is accepted only through isolated system Python. Its
+    child process is outside the Agent tool command and is guarded again by
+    the wrapper itself immediately before execution.
+    """
+    exec_index = _execution_index(invocation)
+    if exec_index is None:
+        return False
+    expanded = [
+        _expand_simple_vars(str(token), variables) for token in invocation
+    ]
+    executable_token = expanded[exec_index]
+    executable = _basename(executable_token)
+    if executable == "amp":
+        return True
+    arguments = expanded[exec_index + 1:]
+    wrapper_indexes = [
+        index for index, value in enumerate(arguments)
+        if _basename(value) == "amp_safe.py"
+    ]
+    if executable == "amp_safe.py":
+        return True
+    if wrapper_indexes:
+        trusted_wrapper = Path(__file__).resolve().with_name("amp_safe.py")
+        return not (
+            executable_token == "/usr/bin/python3"
+            and wrapper_indexes == [1]
+            and arguments[0] == "-I"
+            and Path(arguments[1]).expanduser().resolve(strict=False)
+            == trusted_wrapper
+        )
+    if _SCRIPT_CLIENT.fullmatch(executable) is None:
+        return False
+    expanded_args = " ".join(arguments)
+    # Cover the ordinary inline-language spelling used to evade literal
+    # executable matching: subprocess.run(["am" + "p", ...]).
+    compact_args = re.sub(r"(['\"])\s*\+\s*\1", "", expanded_args)
+    return bool(
+        _SCRIPT_PROCESS_HINT.search(compact_args)
+        and _AMP_PROGRAM_HINT.search(compact_args)
+    )
+
+
+def _static_nested_programs(
+    invocation: Sequence[str], variables: Mapping[str, str], base_dir: Path,
+) -> Iterable[str]:
+    """Yield statically available programs executed by common indirections."""
+    exec_index = _execution_index(invocation)
+    if exec_index is None:
+        return
+    expanded = [
+        _expand_simple_vars(str(token), variables) for token in invocation
+    ]
+    executable = _basename(expanded[exec_index])
+    arguments = expanded[exec_index + 1:]
+    if executable == "eval" and arguments:
+        yield " ".join(arguments)
+    if executable == "find":
+        for marker in ("-exec", "-execdir", "-ok", "-okdir"):
+            if marker in arguments:
+                start = arguments.index(marker) + 1
+                payload = arguments[start:]
+                if payload and payload[-1] in {";", "+"}:
+                    payload = payload[:-1]
+                if payload:
+                    yield shlex.join(payload)
+    script_value = ""
+    direct_script = False
+    if executable in {"source", "."} and arguments:
+        script_value = arguments[0]
+    elif executable in {"bash", "sh", "zsh", "dash", "ksh"}:
+        for value in arguments:
+            if value == "--":
+                continue
+            if value.startswith("-"):
+                continue
+            script_value = value
+            break
+    elif "/" in expanded[exec_index]:
+        script_value = expanded[exec_index]
+        direct_script = True
+    if not script_value:
+        return
+    script = Path(script_value).expanduser()
+    if not script.is_absolute():
+        script = base_dir / script
+    try:
+        if not script.is_file() or script.stat().st_size > 1024 * 1024:
+            return
+        program = script.read_text(encoding="utf-8", errors="replace")
+        if direct_script and not program.startswith("#!"):
+            return
+        if program.startswith("#!"):
+            program = program.partition("\n")[2]
+        yield program
+        # Newlines are shell separators, while shlex's whitespace mode cannot
+        # retain that distinction. Inspect individual physical lines as well
+        # so a harmless `set -e` or comment cannot hide a later raw amp exec.
+        yield from (line for line in program.splitlines() if line.strip())
+    except OSError:
+        return
+
+
 def _pretool_reason_from_command(
     command: str,
     depth: int = 0,
     inherited_variables: Optional[Mapping[str, str]] = None,
+    base_dir: Optional[Path] = None,
 ) -> Optional[str]:
     if depth > 8:
         return None
@@ -933,9 +1057,10 @@ def _pretool_reason_from_command(
     # and escape information is still available, and reuse this same classifier
     # recursively.  This remains side-effect free: the extracted source is
     # parsed as text and is never passed to a shell.
+    command_base = Path.cwd() if base_dir is None else base_dir
     for nested_command in _command_substitutions(command):
         nested = _pretool_reason_from_command(
-            nested_command, depth + 1, inherited_variables)
+            nested_command, depth + 1, inherited_variables, command_base)
         if nested:
             return nested
     try:
@@ -960,9 +1085,18 @@ def _pretool_reason_from_command(
                 _expand_simple_vars(split_program, variables),
                 depth + 1,
                 variables,
+                command_base,
             )
             if nested:
                 return nested
+        for nested_program in _static_nested_programs(
+                invocation, variables, command_base):
+            nested = _pretool_reason_from_command(
+                nested_program, depth + 1, variables, command_base)
+            if nested:
+                return nested
+        if _is_direct_amp_invocation(invocation, variables):
+            return DIRECT_AMP_MESSAGE
         if _is_cspec_test_invocation(invocation, variables):
             return CSPEC_TEST_MESSAGE
         if _is_acube_build_invocation(invocation, variables):
@@ -977,6 +1111,7 @@ def _pretool_reason_from_command(
                 shlex.join(str(token) for token in fanout_payload),
                 depth + 1,
                 variables,
+                command_base,
             )
             if nested:
                 return nested
@@ -1023,7 +1158,8 @@ def _pretool_reason_from_command(
             for index in range(exec_index + 1, len(invocation) - 1):
                 if invocation[index] in {"-c", "-lc", "-fc"}:
                     nested = _pretool_reason_from_command(
-                        str(invocation[index + 1]), depth + 1, variables)
+                        str(invocation[index + 1]), depth + 1, variables,
+                        command_base)
                     if nested:
                         return nested
     return None
@@ -1045,7 +1181,13 @@ def pretool_a1_block_reason(event: Mapping[str, Any]) -> Optional[str]:
         command = tool_input.get("cmd")
     if not isinstance(command, str) or not command.strip():
         return None
-    return _pretool_reason_from_command(command)
+    base_value = (tool_input.get("workdir") or tool_input.get("cwd")
+                  or event.get("cwd") or os.getcwd())
+    try:
+        base_dir = Path(str(base_value)).expanduser().resolve(strict=False)
+    except (OSError, RuntimeError, ValueError):
+        base_dir = Path.cwd()
+    return _pretool_reason_from_command(command, base_dir=base_dir)
 
 
 def run_guarded(a1_bin: str, argv: Sequence[str]) -> None:
@@ -1070,7 +1212,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     args = _parser().parse_args(argv)
     raw_args = list(args.a1_args)
     if args.check_pretool_command is not None:
-        reason = _pretool_reason_from_command(args.check_pretool_command)
+        reason = _pretool_reason_from_command(
+            args.check_pretool_command, base_dir=Path.cwd())
         if reason:
             print("a1 safety: %s" % reason, file=sys.stderr)
             return 2

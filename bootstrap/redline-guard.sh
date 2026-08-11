@@ -24,6 +24,10 @@
 #      fails closed instead of bypassing a fixed production-ID denylist.
 #   6. Any actual `aliyun cspec test` execution. Terraform CloudSpec validation
 #      is limited to build, foreground serial resource check, and pre convergence.
+#   7. Any direct `amp` or unisolated amp_safe execution. Jarvis must invoke
+#      `/usr/bin/python3 -I <jarvis>/bootstrap/amp_safe.py` so the task baseline,
+#      operations/ diff, feature branch, and publish order are revalidated next
+#      to the real AMP subprocess.
 #
 # Contract (same as worktree-guard):
 #   stdin  = tool call JSON {tool_name, tool_input:{command,...}}
@@ -82,6 +86,9 @@ if [ "$guard_rc" -ne 0 ]; then
     if printf '%s' "$cmd" | grep -Fq 'createBuildTaskV2' \
         && printf '%s' "$cmd" | grep -qE '(^|[;&|[:space:]])(curl|wget)([[:space:]]|$)'; then
         deny "Acube createBuildTaskV2 is permanently disabled for Jarvis"
+    fi
+    if printf '%s' "$cmd" | grep -qE '(^|[;&|[:space:]])([^;&|[:space:]]*/)?amp([;&|[:space:]]|$)'; then
+        deny "direct amp execution is permanently disabled for Jarvis; use /usr/bin/python3 -I <jarvis>/bootstrap/amp_safe.py"
     fi
     if printf '%s' "$cmd" | grep -qE '(^|[;&|[:space:]])([^;&|[:space:]]*/)?(a1|a1id)([[:space:]]|$)'; then
         deny "a1 safety classifier failed(rc=$guard_rc); blocking a1/a1id command fail-closed"

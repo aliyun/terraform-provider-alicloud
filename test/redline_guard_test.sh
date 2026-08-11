@@ -36,6 +36,12 @@ expect() { # <desc> <want-exit> <command> [env...]
     if [ "$got" = "$want" ]; then ok "$desc"; else no "$desc (want exit $want, got $got)"; fi
 }
 
+expect_at() { # <desc> <want-exit> <cwd> <command>
+    local desc="$1" want="$2" run_cwd="$3" cmd="$4" got
+    got="$(cd "$run_cwd" && run_guard "$cmd")"
+    if [ "$got" = "$want" ]; then ok "$desc"; else no "$desc (want exit $want, got $got)"; fi
+}
+
 # --- master push red line ----------------------------------------------------
 expect "bare master push blocked (cwd unknown, fail-closed)" 2 \
     "git push origin master"
@@ -213,6 +219,64 @@ expect "missing classifier blocks backtick command substitution" 2 \
 expect "missing classifier still allows printf audit" 0 \
     "printf '%s' 'aliyun cspec test'" \
     JARVIS_A1_COMMAND_GUARD="$tmp/missing-guard.py"
+
+# --- direct AMP permanent red line ------------------------------------------
+expect "direct amp blocked" 2 \
+    "amp doctor -o json"
+expect "absolute amp blocked" 2 \
+    "/Users/example/.local/bin/amp publish pre"
+expect "direct amp_safe shebang blocked" 2 \
+    "$repo_root/bootstrap/amp_safe.py doctor"
+expect "non-isolated python amp_safe blocked" 2 \
+    "/usr/bin/python3 $repo_root/bootstrap/amp_safe.py doctor"
+expect "PATH python amp_safe blocked" 2 \
+    "python3 -I $repo_root/bootstrap/amp_safe.py doctor"
+expect "same-name copied amp_safe blocked" 2 \
+    "/usr/bin/python3 -I /tmp/amp_safe.py doctor"
+expect "env command amp blocked" 2 \
+    "env PROFILE=test command amp branch get"
+expect "variable-built amp blocked" 2 \
+    "cli=amp; action=doctor; \$cli \$action"
+expect "nested shell amp blocked" 2 \
+    "bash -lc 'amp publish daily --dry-run'"
+expect "command substitution amp blocked" 2 \
+    'result=$(amp api list -o json)'
+expect "xargs amp blocked" 2 \
+    "printf x | xargs amp doctor"
+expect "python subprocess amp blocked" 2 \
+    "python3 -c 'import subprocess; subprocess.run([\"amp\",\"doctor\"])'"
+expect "node child process amp blocked" 2 \
+    "node -e 'require(\"child_process\").spawn(\"amp\",[\"doctor\"])'"
+expect "eval amp blocked" 2 \
+    "eval 'amp doctor'"
+expect "find exec amp blocked" 2 \
+    "find . -maxdepth 0 -exec amp doctor ';'"
+expect "awk system amp blocked" 2 \
+    "awk 'BEGIN { system(\"amp doctor\") }'"
+printf '%s\n' '#!/usr/bin/env bash' 'amp doctor' > "$tmp/run-amp.sh"
+chmod +x "$tmp/run-amp.sh"
+expect "shell script amp blocked" 2 \
+    "bash $tmp/run-amp.sh"
+expect "sourced shell script amp blocked" 2 \
+    "source $tmp/run-amp.sh"
+expect_at "relative shell script amp blocked" 2 "$tmp" \
+    "bash ./run-amp.sh"
+expect_at "relative sourced script amp blocked" 2 "$tmp" \
+    "source ./run-amp.sh"
+expect_at "relative direct shebang script amp blocked" 2 "$tmp" \
+    "./run-amp.sh"
+expect "absolute direct shebang script amp blocked" 2 \
+    "$tmp/run-amp.sh"
+expect "python concatenated subprocess amp blocked" 2 \
+    "python3 -c 'import subprocess; subprocess.run([\"am\"+\"p\",\"doctor\"])'"
+expect "trusted amp wrapper command allowed" 0 \
+    "/usr/bin/python3 -I $repo_root/bootstrap/amp_safe.py doctor"
+expect "trusted wrapper cannot mask chained raw amp" 2 \
+    "/usr/bin/python3 -I $repo_root/bootstrap/amp_safe.py doctor; amp doctor"
+expect "amp text audit allowed" 0 \
+    "rg -n 'amp publish' ."
+expect "missing classifier still blocks direct amp" 2 \
+    "amp doctor" JARVIS_A1_COMMAND_GUARD="$tmp/missing-guard.py"
 expect "missing classifier allows quoted substitution audit" 0 \
     "printf '%s' '\$(aliyun cspec test)'" \
     JARVIS_A1_COMMAND_GUARD="$tmp/missing-guard.py"
