@@ -262,6 +262,46 @@ class IncrementalCollectionTests(unittest.TestCase):
 
 
 class ProjectionAndTransportTests(unittest.TestCase):
+    def test_metrics_publish_defaults_to_preprod_without_mutating_task_client(self):
+        client = FakeTaskClient(base_url="https://agent.aliyun-inc.com")
+        instance = wcp.WeeklyCommentParticipationRunner(
+            task_client=client, repo_root=Path("/repo"),
+            logger=logging.getLogger("test-weekly-comment"), environ={})
+        response = SimpleNamespace(getcode=lambda: 200, read=lambda: b"{}")
+        opener = mock.MagicMock()
+        opener.return_value = mock.MagicMock(
+            __enter__=lambda self: response, __exit__=lambda self, *args: False)
+
+        with mock.patch.object(wcp.urllib.request, "urlopen", opener):
+            instance._publish({"totalComments": 0, "participants": []})
+
+        self.assertEqual(opener.call_args.args[0].full_url,
+                         "https://pre-agent.aliyun-inc.com/api/jarvis/v1/board/"
+                         "stats/tf-weekly-comment-participation")
+        self.assertEqual(client.base_url, "https://agent.aliyun-inc.com")
+
+    def test_metrics_endpoint_has_dedicated_config_override(self):
+        instance = wcp.WeeklyCommentParticipationRunner(
+            task_client=FakeTaskClient(base_url="https://agent.aliyun-inc.com"),
+            repo_root=Path("/repo"), logger=logging.getLogger("test-weekly-comment"),
+            environ={"JARVIS_METRICS_BASE_URL": "https://metrics.example/"})
+        response = SimpleNamespace(getcode=lambda: 200, read=lambda: b"{}")
+        opener = mock.MagicMock()
+        opener.return_value = mock.MagicMock(
+            __enter__=lambda self: response, __exit__=lambda self, *args: False)
+
+        with mock.patch.object(wcp.urllib.request, "urlopen", opener):
+            instance._get_json("/metrics-test")
+
+        self.assertEqual(opener.call_args.args[0].full_url,
+                         "https://metrics.example/metrics-test")
+
+    def test_missing_metrics_base_uses_metrics_specific_error(self):
+        instance = runner()
+        instance._metrics_base_url = ""
+        with self.assertRaisesRegex(RuntimeError, "metrics base_url"):
+            instance._publish({"totalComments": 0, "participants": []})
+
     def test_weekly_projection_uses_cached_comment_events_only(self):
         instance = runner()
         instance._list_active_requirements = mock.Mock(side_effect=AssertionError)
@@ -295,8 +335,9 @@ class ProjectionAndTransportTests(unittest.TestCase):
             current = instance._load_delivery_snapshot()
         request = opener.call_args.args[0]
         self.assertEqual(request.get_method(), "GET")
-        self.assertTrue(request.full_url.endswith(
-            "/api/jarvis/v1/board/delivery-metrics/snapshots/current"))
+        self.assertEqual(request.full_url,
+            "https://pre-agent.aliyun-inc.com/api/jarvis/v1/board/"
+            "delivery-metrics/snapshots/current")
         self.assertEqual(request.headers["Authorization"], "Bearer machine")
         self.assertEqual(current["workitems"], [{"id": "1"}])
 

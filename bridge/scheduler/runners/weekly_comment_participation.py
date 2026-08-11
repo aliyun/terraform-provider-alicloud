@@ -33,6 +33,8 @@ JOB_KEY = "aone.weekly-comment-participation"
 STAT_KEY = "tf-weekly-comment-participation"
 BOARD_STATS_PATH = "/api/jarvis/v1/board/stats"
 DELIVERY_METRICS_PATH = "/api/jarvis/v1/board/delivery-metrics"
+DEFAULT_METRICS_BASE_URL = "https://pre-agent.aliyun-inc.com"
+METRICS_BASE_URL_ENV = "JARVIS_METRICS_BASE_URL"
 WINDOW_DAYS = 7
 DELIVERY_COVERAGE_START = datetime(2023, 4, 1, tzinfo=_SHANGHAI_TZ)
 DELIVERY_PAGE_ITEMS = 100
@@ -364,6 +366,14 @@ class WeeklyCommentParticipationRunner:
         self._repo_root = Path(repo_root)
         self._log = logger
         self._environ = os.environ if environ is None else environ
+        # Metrics storage is deliberately independent from Task lease/control
+        # APIs. Only this runner uses the dedicated endpoint; token and timeout
+        # remain the Scheduler machine credentials.
+        self._metrics_base_url = str(
+            self._environ.get(METRICS_BASE_URL_ENV, "") or "").strip().rstrip("/") \
+            or DEFAULT_METRICS_BASE_URL
+        self._metrics_token = str(getattr(task_client, "token", "") or "")
+        self._metrics_timeout = float(getattr(task_client, "timeout", 10) or 10)
         self._comment_cache: dict = {}
         self._activity_cache: dict = {}
 
@@ -967,11 +977,11 @@ class WeeklyCommentParticipationRunner:
 
     def _get_json(self, path: str, *, missing_ok: bool = False) -> Optional[Any]:
         """Authenticated machine-token GET; snapshot wire parsing stays elsewhere."""
-        base = str(getattr(self._task_client, "base_url", "") or "").rstrip("/")
-        token = str(getattr(self._task_client, "token", "") or "")
-        timeout = float(getattr(self._task_client, "timeout", 10) or 10)
+        base = self._metrics_base_url
+        token = self._metrics_token
+        timeout = self._metrics_timeout
         if not base:
-            raise RuntimeError("control plane base_url is not configured")
+            raise RuntimeError("metrics base_url is not configured")
         headers = {"Accept": "application/json", "User-Agent": "jarvis-board-stats/1"}
         if token:
             headers["Authorization"] = "Bearer " + token
@@ -1022,11 +1032,11 @@ class WeeklyCommentParticipationRunner:
         return {**manifest, "manifest": manifest, "workitems": items}
 
     def _request_json(self, method: str, path: str, payload: dict) -> None:
-        base = str(getattr(self._task_client, "base_url", "") or "").rstrip("/")
-        token = str(getattr(self._task_client, "token", "") or "")
-        timeout = float(getattr(self._task_client, "timeout", 10) or 10)
+        base = self._metrics_base_url
+        token = self._metrics_token
+        timeout = self._metrics_timeout
         if not base:
-            raise RuntimeError("control plane base_url is not configured")
+            raise RuntimeError("metrics base_url is not configured")
         url = base + path
         body = json.dumps(payload, ensure_ascii=False,
                           separators=(",", ":")).encode("utf-8")
