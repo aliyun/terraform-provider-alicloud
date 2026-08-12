@@ -131,6 +131,42 @@ resource "alicloud_alb_rule" "default" {
 }
 ```
 
+Removing a request header before forwarding
+
+A forwarding rule must contain exactly one final action (`ForwardGroup`, `Redirect` or `FixedResponse`), and that action is executed last, so the `RemoveHeader` extension action has to be declared with a smaller `order`. The example below reuses the listener and the server group created above.
+
+```terraform
+resource "alicloud_alb_rule" "remove_header" {
+  rule_name   = "${var.name}_remove_header"
+  listener_id = alicloud_alb_listener.default.id
+  priority    = "556"
+  rule_conditions {
+    host_config {
+      values = ["www.example.com"]
+    }
+    type = "Host"
+  }
+
+  rule_actions {
+    remove_header_config {
+      key = "X-Debug-Trace"
+    }
+    order = "1"
+    type  = "RemoveHeader"
+  }
+
+  rule_actions {
+    forward_group_config {
+      server_group_tuples {
+        server_group_id = alicloud_alb_server_group.default.id
+      }
+    }
+    order = "9"
+    type  = "ForwardGroup"
+  }
+}
+```
+
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_alb_rule&spm=docs.r.alb_rule.example&intl_lang=EN_US)
 
 ## Argument Reference
@@ -139,7 +175,10 @@ The following arguments are supported:
 
 * `listener_id` - (Required, ForceNew) The ID of the listener to which the forwarding rule belongs.
 * `rule_name` - (Required) The name of the forwarding rule. The name must be 2 to 128 characters in length, and can contain letters, digits, periods (.), underscores (_), and hyphens (-). The name must start with a letter.
-* `priority` - (Required, Int) The priority of the rule. Valid values: `1` to `10000`. A smaller value indicates a higher priority. **Note*:* The priority of each rule within the same listener must be unique.
+* `priority` - (Required, Int) The priority of the rule. Valid values: `1` to `10000`. A smaller value indicates a higher priority.
+
+  -> **NOTE:** The priority of each rule within the same listener must be unique.
+
 * `direction` - (Optional, ForceNew, Available since v1.205.0) The direction to which the forwarding rule is applied. Default value: `Request`. Valid values:
   - `Request`: The forwarding rule is applied to the client requests received by ALB.
   - `Response`: The forwarding rule is applied to the responses returned by backend servers.
@@ -152,14 +191,21 @@ The following arguments are supported:
 The rule_actions supports the following:
 
 * `order` - (Required, Int) The order of the forwarding rule actions. Valid values: `1` to `50000`. The actions are performed in ascending order. You cannot leave this parameter empty. Each value must be unique.
+
+  -> **NOTE:** The `ForwardGroup`, `Redirect` or `FixedResponse` action is performed last, so its `order` must be greater than the `order` of every other action in the same rule. Otherwise the rule is rejected with `IllegalParam.Order`.
+
 * `type` - (Required) The action type. Valid values: `ForwardGroup`, `Redirect`, `FixedResponse`, `Rewrite`, `InsertHeader`, `RemoveHeader`, `TrafficLimit`, `TrafficMirror` and `Cors`.
-  **Note:** The preceding actions can be classified into two types:  `FinalType`: A forwarding rule can contain only one `FinalType` action, which is executed last. This type of action can contain only one `ForwardGroup`, `Redirect` or `FixedResponse` action. `ExtType`: A forwarding rule can contain one or more `ExtType` actions, which are executed before `FinalType` actions and need to coexist with the `FinalType` actions. This type of action can contain multiple `InsertHeader` actions or one `Rewrite` action.
-  **NOTE:** The `TrafficLimit` and `TrafficMirror` option is available since 1.162.0.
-  **NOTE:** From version 1.205.0, `type` can be set to `Cors`.
+
+  -> **NOTE:** A forwarding rule must contain exactly one `ForwardGroup`, `Redirect` or `FixedResponse` action, which is performed last. Every other action is performed before it and can only be used together with it: a rule can contain multiple `InsertHeader` actions, but at most one `Rewrite` action.
+
+  -> **NOTE:** The `TrafficLimit` and `TrafficMirror` option is available since 1.162.0.
+
+  -> **NOTE:** From version 1.205.0, `type` can be set to `Cors`.
+
 * `fixed_response_config` - (Optional, Set) The configuration of the fixed response. See [`fixed_response_config`](#rule_actions-fixed_response_config) below.
 * `forward_group_config` - (Optional, Set) The forward response action within ALB. See [`forward_group_config`](#rule_actions-forward_group_config) below.
 * `insert_header_config` - (Optional, Set) The configuration of the inserted header field. See [`insert_header_config`](#rule_actions-insert_header_config) below.
-* `remove_header_config` - (Optional, Set) The configuration of the inserted header field. See [`remove_header_config`](#rule_actions-remove_header_config) below.
+* `remove_header_config` - (Optional, Set) The configuration of the removed header field. See [`remove_header_config`](#rule_actions-remove_header_config) below.
 * `redirect_config` - (Optional, Set) The configuration of the external redirect action. See [`redirect_config`](#rule_actions-redirect_config) below.
 * `rewrite_config` - (Optional, Set) The redirect action within ALB. See [`rewrite_config`](#rule_actions-rewrite_config) below.
 * `traffic_limit_config` - (Optional, Set, Available since v1.162.0) The Flow speed limit. See [`traffic_limit_config`](#rule_actions-traffic_limit_config) below.
@@ -187,7 +233,8 @@ The server_group_tuples supports the following:
 
 * `server_group_id` - (Optional) The ID of the destination server group to which requests are forwarded.
 * `weight` - (Optional, Int, Available since v1.162.0) The Weight of server group. Default value: `100`. Valid values: `0` to `100`.
-**NOTE:** `weight` is required when the number of `server_group_tuples` is greater than 2. From version 1.264.0, `weight` can be set to `0`.
+
+  -> **NOTE:** `weight` is required when the number of `server_group_tuples` is greater than 2. From version 1.264.0, `weight` can be set to `0`.
 
 ### `rule_actions-forward_group_config-server_group_sticky_session`
 
@@ -200,7 +247,10 @@ The server_group_sticky_session supports the following:
 
 The insert_header_config supports the following:
 
-* `key` - (Optional) The name of the inserted header field. The name must be 1 to 40 characters in length, and can contain letters, digits, underscores (_), and hyphens (-). You cannot use the same name in InsertHeader. Note You cannot use Cookie or Host in the name.
+* `key` - (Optional) The name of the inserted header field. The name must be 1 to 40 characters in length, and can contain letters, digits, underscores (_), and hyphens (-). You cannot use the same name in InsertHeader.
+
+  -> **NOTE:** The header name cannot be set to the following fields (case insensitive): slb-id, slb-ip, x-forwarded-for, x-forwarded-proto, x-forwarded-eip, x-forwarded-port, x-forwarded-client-srcport, connection, upgrade, content-length, transfer-encoding, keep-alive, te, host, cookie, remoteip, authority, and x-forwarded-host.
+
 * `value` - (Optional) The content of the inserted header field. Valid values:
   * If the `value_type` is set to `SystemDefined`, the following values are used:
     - `ClientSrcPort`: the port of the client.
@@ -220,7 +270,7 @@ The insert_header_config supports the following:
 The remove_header_config supports the following:
 
 * `key` - (Optional) The name of the removed header field. It can be 1 to 40 characters in length and supports upper and lower case letters a to z, numbers, underscores (_), and dashes (-). Header field names cannot be used repeatedly in RemoveHeader. 
-  * Request Direction: The header name cannot be set to the following fields (case insensitive):slb-id, slb-ip, x-forwarded-for, x-forwarded-proto, x-forwarded-eip, x-forwarded-port, x-forwarded-client-srcport, connection, upgrade, content-length, transfer-encoding, keep-alive, te, host, cookie, remoteip, and authority. 
+  * Request Direction: The header name cannot be set to the following fields (case insensitive):slb-id, slb-ip, x-forwarded-for, x-forwarded-proto, x-forwarded-eip, x-forwarded-port, x-forwarded-client-srcport, connection, upgrade, content-length, transfer-encoding, keep-alive, te, host, cookie, remoteip, authority, and x-forwarded-host.
   * Response Direction: The header name cannot be set to the following fields (case insensitive):connection, upgrade, content-length, transfer-encoding.
 
 ### `rule_actions-redirect_config`
@@ -231,7 +281,10 @@ The redirect_config supports the following:
 * `http_code` - (Optional) The redirect method. Valid values: `301`, `302`, `303`, `307`, and `308`.
 * `path` - (Optional) The path of the destination to which requests are directed. Valid values: The path must be `1` to `128` characters in length, and start with a forward slash (/). The path can contain letters, digits, asterisks (*), question marks (?) and the following special characters: $ - _ . + / & ~ @ :. It cannot contain the following special characters: " % # ; ! ( ) [ ] ^ , ”. The path is case-sensitive. Default value: ${path}. You can also reference ${host}, ${protocol}, and ${port}. Each variable can appear at most once. You can use the preceding variables at the same time, or use them with a valid string.
 * `port` - (Optional) The port of the destination to which requests are redirected. Valid values: `1` to `63335`. Default value: ${port}. You cannot use this value together with other characters at the same time.
-* `protocol` - (Optional) The protocol of the requests to be redirected. Valid values: `HTTP` and `HTTPS`. Default value: `${protocol}`. You cannot use this value together with other characters at the same time. Note HTTPS listeners can redirect only HTTPS requests.
+* `protocol` - (Optional) The protocol of the requests to be redirected. Valid values: `HTTP` and `HTTPS`. Default value: `${protocol}`. You cannot use this value together with other characters at the same time.
+
+  -> **NOTE:** HTTPS listeners can redirect only HTTPS requests.
+
 * `query` - (Optional) The query string of the request to be redirected. The query string must be `1` to `128` characters in length, can contain letters and printable characters. It cannot contain the following special characters: # [ ] { } \ | < > &. Default value: ${query}. You can also reference ${host}, ${protocol}, and ${port}. Each variable can appear at most once. You can use the preceding variables at the same time, or use them together with a valid string.
 
 ### `rule_actions-rewrite_config`
@@ -247,7 +300,9 @@ The rewrite_config supports the following:
 The traffic_limit_config supports the following:
 
 * `qps` - (Optional, Int) The Number of requests per second. Valid values: `1` to `100000`.
-* `per_ip_qps` - (Optional, Int) The number of requests per second for a single IP address. Value range: 1~1000000. Note: If the QPS parameter is also configured, the value of the PerIpQps parameter must be smaller than the value of the QPS parameter.
+* `per_ip_qps` - (Optional, Int) The number of requests per second for a single IP address. Value range: 1~1000000.
+
+  -> **NOTE:** If `qps` is also configured, the value of `per_ip_qps` must be smaller than the value of `qps`.
 
 ### `rule_actions-traffic_mirror_config`
 
@@ -290,10 +345,13 @@ The rule_conditions supports the following:
   - `QueryString`: Requests are forwarded based on the query string.
   - `Method`: Request are forwarded based on the request method.
   - `Cookie`: Requests are forwarded based on the cookie.
-  - `SourceIp`: Requests are forwarded based on the source ip. **NOTE:** The `SourceIp` option is available since 1.162.0.
-  - `ResponseHeader`: Response header. **NOTE:** The `SourceIp` option is available since 1.213.1.
-  - `ResponseStatusCode`: Response status code. **NOTE:** The `SourceIp` option is available since 1.213.1.
-* `cookie_config` - (Optional, Set) The configuration of the cookie. See See [`cookie_config`](#rule_conditions-cookie_config) below.
+  - `SourceIp`: Requests are forwarded based on the source ip.
+  - `ResponseHeader`: Response header.
+  - `ResponseStatusCode`: Response status code.
+
+  -> **NOTE:** `SourceIp` is available since v1.162.0. `ResponseHeader` and `ResponseStatusCode` are available since v1.213.1.
+
+* `cookie_config` - (Optional, Set) The configuration of the cookie. See [`cookie_config`](#rule_conditions-cookie_config) below.
 * `header_config` - (Optional, Set) The configuration of the header field. See [`header_config`](#rule_conditions-header_config) below.
 * `response_header_config` - (Optional, Set) The configuration of the header field. See [`response_header_config`](#rule_conditions-response_header_config) below.
 * `response_status_code_config` - (Optional, Set) The configuration of the header field. See [`response_status_code_config`](#rule_conditions-response_status_code_config) below.
@@ -340,7 +398,9 @@ The response_status_code_config supports the following:
 
 The host_config supports the following:
 
-* `values` - (Optional, List) The name of the host. **Note: ** The host name must meet the following rules: The hostname must be 3 to 128 characters in length, and can contain lowercase letters, digits, hyphens (-), periods (.), asterisks (*), and question marks (?). The host name must contain at least one period (.), and cannot start or end with a period (.). The rightmost field can contain only letters and wildcards, and cannot contain digits or hyphens (-). Other fields cannot start or end with a hyphen (-). You can enter asterisks (*) and question marks (?) anywhere in a field.
+* `values` - (Optional, List) The name of the host.
+
+  -> **NOTE:** The host name must meet the following rules: The hostname must be 3 to 128 characters in length, and can contain lowercase letters, digits, hyphens (-), periods (.), asterisks (*), and question marks (?). The host name must contain at least one period (.), and cannot start or end with a period (.). The rightmost field can contain only letters and wildcards, and cannot contain digits or hyphens (-). Other fields cannot start or end with a hyphen (-). You can enter asterisks (*) and question marks (?) anywhere in a field.
 
 ### `rule_conditions-method_config`
 
