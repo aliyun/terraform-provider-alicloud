@@ -448,7 +448,57 @@ func resourceAlicloudDtsSynchronizationJobCreate(d *schema.ResourceData, meta in
 	d.SetId(fmt.Sprint(response["DtsJobId"]))
 	d.Set("dts_instance_id", response["DtsInstanceId"])
 	dtsService := DtsService{client}
-	stateConf := BuildStateConf([]string{}, []string{"Synchronizing", "NotStarted"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, dtsService.DtsSynchronizationJobStateRefreshFunc(d.Id(), []string{"PrecheckFailed", "InitializeFailed", "Failed"}))
+	// DescribeDtsSynchronizationJob maps the transient Initializing state to Synchronizing
+	// so the wait does not block on the data initialization phase. Right after ConfigureDtsJob
+	// returns, the job can briefly report Initializing and then fall back to Prechecking while
+	// the service provisions workers, so a single mapped observation must not end the wait.
+	// Require the target state on two consecutive refreshes before the job is considered
+	// ready, so the wait does not end on a transient mapped observation while the service
+	// is still provisioning workers.
+	targetStates := []string{"Synchronizing", "NotStarted"}
+	stableTargetOccurrences := 0
+	stableRefreshFunc := func() (interface{}, string, error) {
+		object, state, err := dtsService.DtsSynchronizationJobStateRefreshFunc(d.Id(), []string{"PrecheckFailed", "InitializeFailed", "Failed"})()
+		if err != nil {
+			return object, state, err
+		}
+		isTarget := false
+		for _, target := range targetStates {
+			if state == target {
+				isTarget = true
+				break
+			}
+		}
+		if isTarget {
+			// Seal the hole the shared state mapping leaves open: while the job is
+			// still prechecking or initializing, DescribeDtsSynchronizationJob maps
+			// the transient Initializing status to Synchronizing (a target state),
+			// but SynchronizationDirection is not reported yet. Releasing the create
+			// wait on that mapped observation would leave the new resource's
+			// direction empty until the next refresh, so hold the wait until the
+			// direction is actually populated, mirroring the non-empty Read
+			// write-back below. Two consecutive observations of a target state with
+			// a populated direction are required before the job is considered ready.
+			direction := ""
+			if obj, ok := object.(map[string]interface{}); ok {
+				direction, _ = obj["SynchronizationDirection"].(string)
+			}
+			if direction == "" {
+				stableTargetOccurrences = 0
+				return object, "Initializing", nil
+			}
+			stableTargetOccurrences++
+			if stableTargetOccurrences >= 2 {
+				return object, state, nil
+			}
+			// Keep polling until the target state is observed twice in a row:
+			// the first observation may still be transient.
+			return object, "Initializing", nil
+		}
+		stableTargetOccurrences = 0
+		return object, state, nil
+	}
+	stateConf := BuildStateConf([]string{}, targetStates, d.Timeout(schema.TimeoutCreate), 5*time.Second, stableRefreshFunc)
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -504,7 +554,16 @@ func resourceAlicloudDtsSynchronizationJobRead(d *schema.ResourceData, meta inte
 	}
 	d.Set("status", object["Status"])
 	d.Set("structure_initialization", migrationModeObj["StructureInitialization"])
-	d.Set("synchronization_direction", object["SynchronizationDirection"])
+	// DescribeDtsJobDetail does not return SynchronizationDirection while the job is still
+	// prechecking or initializing, and the create wait may end in those phases because the
+	// shared state mapping treats Initializing as Synchronizing to skip the data initialization.
+	// The direction is configured once by ConfigureDtsJob and is force-new immutable, so keep
+	// the current state value until the API reports a non-empty one instead of overwriting it
+	// with an empty response, which would surface as a force-new diff on the next plan.
+	if direction, ok := object["SynchronizationDirection"].(string); ok && direction != "" {
+		d.Set("synchronization_direction", direction)
+	}
+	d.Set("instance_class", object["DtsJobClass"])
 
 	parameters, err := dtsService.QueryChangedJobParameters(d.Id())
 	if err != nil {
@@ -645,11 +704,28 @@ func resourceAlicloudDtsSynchronizationJobUpdate(d *schema.ResourceData, meta in
 	request = map[string]interface{}{
 		"DtsJobId": d.Id(),
 	}
+	// ConfigureDtsJob does not accept InstanceClass, so the job is created with the
+	// service-side default. TransferInstanceClass supports both upgrade and downgrade;
+	// the server decides the direction from InstanceClass versus the actual spec and
+	// returns NoPermission for accounts without downgrade permission. Compare the
+	// configured class against the actual one returned by DescribeDtsJobDetail and
+	// request the transfer whenever they differ, so create-time convergence and
+	// user-initiated downgrades both flow through a single apply instead of being
+	// silently skipped.
 	if d.HasChange("instance_class") {
 		if v, ok := d.GetOk("instance_class"); ok {
-			request["InstanceClass"] = v
+			configClass := v.(string)
+			dtsService := DtsService{client}
+			object, err := dtsService.DescribeDtsSynchronizationJob(d.Id())
+			if err != nil {
+				return WrapError(err)
+			}
+			actualClass, _ := object["DtsJobClass"].(string)
+			if configClass != actualClass {
+				request["InstanceClass"] = configClass
+				update = true
+			}
 		}
-		update = true
 	}
 	request["RegionId"] = client.RegionId
 	request["OrderType"] = "UPGRADE"
