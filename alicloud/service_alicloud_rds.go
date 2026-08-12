@@ -846,9 +846,7 @@ func (s *RdsService) ModifyDBBackupPolicy(d *schema.ResourceData, updateForData,
 	}
 
 	retentionPeriod := "7"
-	if v, ok := d.GetOk("backup_retention_period"); ok && v.(int) != 7 {
-		retentionPeriod = strconv.Itoa(v.(int))
-	} else if v, ok := d.GetOk("retention_period"); ok && v.(int) != 0 {
+	if v, ok := d.GetOk("backup_retention_period"); ok {
 		retentionPeriod = strconv.Itoa(v.(int))
 	}
 

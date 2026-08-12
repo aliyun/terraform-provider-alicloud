@@ -531,6 +531,18 @@ func TestAccAliCloudRdsDBBackupPolicyPostgreSQL(t *testing.T) {
 						"backup_interval":             "60",
 					}),
 				),
+			},
+			// 7 is the schema default of backup_retention_period, and a configured 7 used to be
+			// discarded in favour of the deprecated retention_period, which made this a silent no-op
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"backup_retention_period": "7",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backup_retention_period": "7",
+					}),
+				),
 			}},
 	})
 }
