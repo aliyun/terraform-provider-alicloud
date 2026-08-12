@@ -88,6 +88,12 @@ def _descends_from(pid: int, ancestor_pid: int,
     return False
 
 
+@dataclass(frozen=True)
+class AmpBrokerDecision:
+    allowed: bool
+    reason: str
+
+
 class HeadlessAmpBroker:
     """Executor-owned, process-bound authorization broker for AMP mutations."""
 
@@ -111,6 +117,9 @@ class HeadlessAmpBroker:
         self._bound_pid = 0
         self._bound_started_at = ""
         self._repo_identity: Optional[tuple[str, int, int]] = None
+        self._project_identity: Optional[tuple[str, str, str]] = None
+        self._branch_identity: Optional[str] = None
+        self._pin_lock = threading.Lock()
         self._closed = threading.Event()
         self._thread = threading.Thread(
             target=self._serve, name="HeadlessAmpBroker", daemon=True)
@@ -178,34 +187,180 @@ class HeadlessAmpBroker:
             return bool(index >= 1 and tokens[index - 1] == "-I")
         return False
 
-    def _authorize(self, peer_pid: int, request: Mapping[str, Any]) -> bool:
+    @staticmethod
+    def _project_target(value: Any) -> Optional[tuple[str, str, str]]:
+        if not isinstance(value, Mapping):
+            return None
+        project_id = str(value.get("projectId") or "")
+        pop_code = str(value.get("popCode") or "")
+        pop_version = str(value.get("popVersion") or "")
+        try:
+            valid_version = bool(
+                re.fullmatch(r"\d{4}-\d{2}-\d{2}", pop_version)
+                and datetime.strptime(pop_version, "%Y-%m-%d"))
+        except ValueError:
+            valid_version = False
+        if (not project_id.isdecimal() or int(project_id) <= 0
+                or not re.fullmatch(r"[A-Za-z][A-Za-z0-9._-]{0,127}", pop_code)
+                or not valid_version):
+            return None
+        return project_id, pop_code.lower(), pop_version
+
+    @staticmethod
+    def _init_scope(value: Any) -> Optional[tuple[tuple[str, str], ...]]:
+        if not isinstance(value, Mapping):
+            return None
+        keys = frozenset(value)
+        if keys == {"projectId"}:
+            project_id = str(value.get("projectId") or "")
+            return (("projectId", project_id),) if (
+                project_id.isdecimal() and int(project_id) > 0) else None
+        if keys == {"popCode", "popVersion"}:
+            pop_code = str(value.get("popCode") or "")
+            pop_version = str(value.get("popVersion") or "")
+            try:
+                valid_version = bool(
+                    re.fullmatch(r"\d{4}-\d{2}-\d{2}", pop_version)
+                    and datetime.strptime(pop_version, "%Y-%m-%d"))
+            except ValueError:
+                valid_version = False
+            if (re.fullmatch(r"[A-Za-z][A-Za-z0-9._-]{0,127}", pop_code)
+                    and valid_version):
+                return (("popCode", pop_code.lower()),
+                        ("popVersion", pop_version))
+        return None
+
+    @staticmethod
+    def _project_id_scope(value: Any) -> Optional[str]:
+        if not isinstance(value, Mapping) or frozenset(value) != {"projectId"}:
+            return None
+        project_id = str(value.get("projectId") or "")
+        return project_id if (project_id.isdecimal()
+                              and int(project_id) > 0) else None
+
+    def _authorize_decision(
+            self, peer_pid: int, request: Mapping[str, Any],
+    ) -> AmpBrokerDecision:
         if not self._enabled or peer_pid <= 0:
-            return False
+            return AmpBrokerDecision(False, "broker_not_enabled")
         if not _descends_from(
                 peer_pid, self._bound_pid, self._bound_started_at):
-            return False
+            return AmpBrokerDecision(False, "peer_not_bound_descendant")
         if not self._trusted_wrapper_process(peer_pid):
-            return False
+            return AmpBrokerDecision(False, "peer_not_trusted_wrapper")
+        if int(request.get("schemaVersion") or 0) != 2:
+            return AmpBrokerDecision(False, "unsupported_request_schema")
         action = str(request.get("action") or "")
         if action not in self._ALLOWED_ACTIONS:
-            return False
+            return AmpBrokerDecision(False, "action_not_allowed")
+        target = request.get("target")
+        receipt = request.get("receipt")
+        if not isinstance(target, Mapping) or not isinstance(receipt, Mapping):
+            return AmpBrokerDecision(False, "target_or_receipt_missing")
+        if (str(target.get("action") or "") != action
+                or str(receipt.get("action") or "") != action
+                or not receipt.get("allowed")):
+            return AmpBrokerDecision(False, "action_receipt_mismatch")
+        # A staging init establishes only local context. Its input scope has no
+        # resolved project triple yet and must never establish broker pins.
+        if action == "init":
+            scope = self._init_scope(target.get("project"))
+            if (scope is None or self._init_scope(receipt.get("project")) != scope
+                    or str(target.get("repoMode") or "") != "local-context"
+                    or str(receipt.get("repoMode") or "") != "local-context"):
+                return AmpBrokerDecision(False, "init_scope_receipt_invalid")
+            if not self._strict_fence_check():
+                return AmpBrokerDecision(False, "strict_fence_denied")
+            return AmpBrokerDecision(True, "authorized_local_context")
+
+        project_identity = self._project_target(target.get("project"))
+        if project_identity is None and action == "branch-create":
+            project_id = self._project_id_scope(target.get("project"))
+            project_identity = ((project_id, "", "")
+                                if project_id is not None else None)
+        if project_identity is None:
+            return AmpBrokerDecision(False, "project_target_invalid")
+        receipt_identity = self._project_target(receipt.get("project"))
+        if receipt_identity is None and action == "branch-create":
+            receipt_project_id = self._project_id_scope(receipt.get("project"))
+            receipt_identity = ((receipt_project_id, "", "")
+                                if receipt_project_id is not None else None)
+        if receipt_identity != project_identity:
+            return AmpBrokerDecision(False, "project_receipt_mismatch")
+        branch = str(target.get("branch") or "")
+        publish_status = (
+            action == "publish" and str(target.get("publishKind") or "") == "status")
+        feature_branch = re.fullmatch(
+            r"feature/[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?"
+            r"(?:/[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?)*", branch)
+        if not publish_status and feature_branch is None:
+            return AmpBrokerDecision(False, "branch_target_invalid")
         repo = str(request.get("repo") or "")
         try:
             resolved = Path(repo).expanduser().resolve(strict=True)
         except (OSError, RuntimeError, ValueError):
-            return False
+            return AmpBrokerDecision(False, "repo_unresolvable")
         if not resolved.is_dir():
-            return False
-        try:
-            stat = resolved.stat()
-            identity = (os.fspath(resolved), int(stat.st_dev), int(stat.st_ino))
-        except OSError:
-            return False
-        if self._repo_identity is None:
-            self._repo_identity = identity
-        elif self._repo_identity != identity:
-            return False
-        return self._strict_fence_check()
+            return AmpBrokerDecision(False, "repo_not_directory")
+        repo_mode = str(target.get("repoMode") or "")
+        receipt_mode = str(receipt.get("repoMode") or "")
+        if repo_mode != receipt_mode:
+            return AmpBrokerDecision(False, "repo_mode_mismatch")
+        if publish_status:
+            if repo_mode != "project":
+                return AmpBrokerDecision(False, "publish_status_repo_mode_invalid")
+            if not self._strict_fence_check():
+                return AmpBrokerDecision(False, "strict_fence_denied")
+            return AmpBrokerDecision(True, "authorized_publish_status")
+
+        identity: Optional[tuple[str, int, int]] = None
+        if repo_mode == "model":
+            if (str(receipt.get("repo") or "") != os.fspath(resolved)
+                    or re.fullmatch(r"[0-9a-f]{40,64}", str(
+                        receipt.get("baseline") or "")) is None
+                    or str(receipt.get("branch") or "") != branch):
+                return AmpBrokerDecision(False, "canonical_baseline_receipt_invalid")
+            try:
+                stat = resolved.stat()
+                identity = (os.fspath(resolved), int(stat.st_dev), int(stat.st_ino))
+            except OSError:
+                return AmpBrokerDecision(False, "repo_identity_unavailable")
+        elif (repo_mode != "project"
+              or (action != "branch-create" and not publish_status)):
+            return AmpBrokerDecision(False, "repo_mode_not_allowed_for_action")
+
+        if not self._strict_fence_check():
+            return AmpBrokerDecision(False, "strict_fence_denied")
+        # Validate the complete candidate before pinning. A malformed request,
+        # wrong cwd, or stale fence therefore cannot poison later requests.
+        with self._pin_lock:
+            if not self._strict_fence_check():
+                return AmpBrokerDecision(False, "strict_fence_denied_before_pin")
+            if self._project_identity is not None:
+                pinned = self._project_identity
+                if (pinned[0] != project_identity[0]
+                        or (pinned[1:] != ("", "")
+                            and project_identity[1:] != ("", "")
+                            and pinned[1:] != project_identity[1:])):
+                    return AmpBrokerDecision(False, "project_identity_mismatch")
+            if (identity is not None and self._repo_identity is not None
+                    and self._repo_identity != identity):
+                return AmpBrokerDecision(False, "repo_identity_mismatch")
+            if (self._branch_identity is not None
+                    and self._branch_identity != branch):
+                return AmpBrokerDecision(False, "branch_identity_mismatch")
+            if (self._project_identity is None
+                    or (self._project_identity[1:] == ("", "")
+                        and project_identity[1:] != ("", ""))):
+                self._project_identity = project_identity
+            if identity is not None and self._repo_identity is None:
+                self._repo_identity = identity
+            if self._branch_identity is None:
+                self._branch_identity = branch
+        return AmpBrokerDecision(True, "authorized")
+
+    def _authorize(self, peer_pid: int, request: Mapping[str, Any]) -> bool:
+        return self._authorize_decision(peer_pid, request).allowed
 
     def _serve(self) -> None:
         while not self._closed.is_set():
@@ -216,18 +371,33 @@ class HeadlessAmpBroker:
             except OSError:
                 break
             with connection:
-                allowed = False
+                decision = AmpBrokerDecision(False, "invalid_request")
+                value: Any = None
                 try:
                     raw = connection.recv(4097)
-                    if raw and len(raw) <= 4096:
+                    if not raw:
+                        decision = AmpBrokerDecision(False, "peer_probe")
+                    elif len(raw) <= 4096:
                         value = json.loads(raw.decode("utf-8"))
                         if isinstance(value, Mapping):
-                            allowed = self._authorize(
+                            decision = self._authorize_decision(
                                 self._peer_pid(connection), value)
                 except (OSError, UnicodeError, ValueError):
-                    allowed = False
+                    decision = AmpBrokerDecision(False, "request_decode_failed")
+                if not decision.allowed and decision.reason != "peer_probe":
+                    LOG.warning(
+                        "headless AMP authorization denied reason=%s action=%s repo=%s",
+                        decision.reason,
+                        str(value.get("action") or "") if isinstance(
+                            value, Mapping) else "",
+                        str(value.get("repo") or "") if isinstance(
+                            value, Mapping) else "")
                 try:
-                    connection.sendall(b"OK\n" if allowed else b"DENY\n")
+                    connection.sendall((json.dumps({
+                        "allowed": decision.allowed,
+                        "reason": decision.reason,
+                    }, ensure_ascii=True, sort_keys=True,
+                        separators=(",", ":")) + "\n").encode("utf-8"))
                 except OSError:
                     pass
 

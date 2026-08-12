@@ -4,6 +4,7 @@
 import contextlib
 import importlib.util
 import io
+import json
 import os
 import stat
 import subprocess
@@ -244,6 +245,15 @@ class InteractiveWorkerTest(unittest.TestCase):
         subprocess.run(
             ["git", "-C", repo, "commit", "-qm", "initial"], check=True)
         return repo
+
+    @staticmethod
+    def _amp_target(action="publish", repo_mode="model"):
+        return json.dumps({
+            "schemaVersion": 1, "action": action, "repoMode": repo_mode,
+            "project": {"projectId": "3065873", "popCode": "eventbridge",
+                        "popVersion": "2020-04-01"},
+            "branch": "feature/guard", "publishKind": "pre",
+        })
 
     def test_session_hook_registers_private_non_pulling_worker_and_offlines(self):
         fake = FakeClient()
@@ -1333,7 +1343,8 @@ class InteractiveWorkerTest(unittest.TestCase):
                                return_value=None), \
                 mock.patch.object(worker, "_calling_process_matches",
                                   return_value=True):
-            self.assertEqual(worker.amp_authorize("publish", str(repo)), 0)
+            self.assertEqual(worker.amp_authorize(
+                "publish", str(repo), self._amp_target()), 0)
         (repo / "operations" / "GetThing.cspec").write_text(
             "operation GetThing changed\n", encoding="utf-8")
         stderr = io.StringIO()
@@ -1342,7 +1353,8 @@ class InteractiveWorkerTest(unittest.TestCase):
                 mock.patch.object(worker, "_calling_process_matches",
                                   return_value=True), \
                 contextlib.redirect_stderr(stderr):
-            self.assertEqual(worker.amp_authorize("publish", str(repo)), 2)
+            self.assertEqual(worker.amp_authorize(
+                "publish", str(repo), self._amp_target()), 2)
         self.assertIn("operations/GetThing.cspec", stderr.getvalue())
 
     def test_amp_authorize_publish_refuses_to_create_late_baseline(self):
@@ -1359,7 +1371,8 @@ class InteractiveWorkerTest(unittest.TestCase):
                 mock.patch.object(worker, "_calling_process_matches",
                                   return_value=True), \
                 contextlib.redirect_stderr(stderr):
-            self.assertEqual(worker.amp_authorize("publish", str(repo)), 2)
+            self.assertEqual(worker.amp_authorize(
+                "publish", str(repo), self._amp_target()), 2)
         self.assertIn("baseline was not established", stderr.getvalue())
 
     def test_headless_amp_authorize_keeps_local_baseline_and_operation_gate(self):
@@ -1380,7 +1393,8 @@ class InteractiveWorkerTest(unittest.TestCase):
                 mock.patch.object(worker, "_calling_process_matches",
                              return_value=True), \
                 contextlib.redirect_stderr(io.StringIO()) as stderr:
-            self.assertEqual(worker.amp_authorize("publish", str(repo)), 2)
+            self.assertEqual(worker.amp_authorize(
+                "publish", str(repo), self._amp_target()), 2)
             self.assertIn("baseline was not established", stderr.getvalue())
 
             self.assertIsNone(worker._cloudspec_operation_guard_reason(
@@ -1388,10 +1402,12 @@ class InteractiveWorkerTest(unittest.TestCase):
                     "tool_name": "Bash", "cwd": str(repo),
                     "tool_input": {"command": "amp_safe publish pre"},
                 }))
-            self.assertEqual(worker.amp_authorize("publish", str(repo)), 0)
+            self.assertEqual(worker.amp_authorize(
+                "publish", str(repo), self._amp_target()), 0)
             (repo / "operations" / "GetThing.cspec").write_text(
                 "changed", encoding="utf-8")
-            self.assertEqual(worker.amp_authorize("publish", str(repo)), 2)
+            self.assertEqual(worker.amp_authorize(
+                "publish", str(repo), self._amp_target()), 2)
 
     def test_headless_fake_parent_broker_cannot_mint_local_authority(self):
         state = self._seed()
@@ -1405,7 +1421,13 @@ class InteractiveWorkerTest(unittest.TestCase):
                 mock.patch.object(worker, "_calling_process_matches",
                                   return_value=True), \
                 contextlib.redirect_stderr(io.StringIO()) as stderr:
-            self.assertEqual(worker.amp_authorize("init", self.temp.name), 2)
+            self.assertEqual(worker.amp_authorize(
+                "init", self.temp.name, json.dumps({
+                    "schemaVersion": 1, "action": "init",
+                    "repoMode": "local-context",
+                    "project": {"projectId": "3065873"},
+                    "branch": None,
+                })), 2)
         self.assertIn("active claimed task", stderr.getvalue())
 
     def test_amp_authorize_requires_claim_and_feature_branch(self):
@@ -1413,7 +1435,8 @@ class InteractiveWorkerTest(unittest.TestCase):
         self._store().save(self._seed())
         stderr = io.StringIO()
         with contextlib.redirect_stderr(stderr):
-            self.assertEqual(worker.amp_authorize("publish", str(repo)), 2)
+            self.assertEqual(worker.amp_authorize(
+                "publish", str(repo), self._amp_target()), 2)
         self.assertIn("active claimed task", stderr.getvalue())
 
         state = self._seed()
@@ -1424,7 +1447,8 @@ class InteractiveWorkerTest(unittest.TestCase):
         self._store().save(state)
         stderr = io.StringIO()
         with contextlib.redirect_stderr(stderr):
-            self.assertEqual(worker.amp_authorize("publish", str(repo)), 2)
+            self.assertEqual(worker.amp_authorize(
+                "publish", str(repo), self._amp_target()), 2)
         self.assertIn("Lease Proof", stderr.getvalue())
 
         subprocess.run(
@@ -1438,7 +1462,8 @@ class InteractiveWorkerTest(unittest.TestCase):
                 mock.patch.object(worker, "_calling_process_matches",
                                   return_value=True), \
                 contextlib.redirect_stderr(stderr):
-            self.assertEqual(worker.amp_authorize("publish", str(repo)), 2)
+            self.assertEqual(worker.amp_authorize(
+                "publish", str(repo), self._amp_target()), 2)
         self.assertIn("feature/* Git branch", stderr.getvalue())
 
     def test_amp_authorize_non_publish_action_still_freezes_on_known_operation_diff(self):
@@ -1453,7 +1478,13 @@ class InteractiveWorkerTest(unittest.TestCase):
                                return_value=None), \
                 mock.patch.object(worker, "_calling_process_matches",
                                   return_value=True):
-            self.assertEqual(worker.amp_authorize("init", str(repo)), 0)
+            self.assertEqual(worker.amp_authorize(
+                "init", str(repo), json.dumps({
+                    "schemaVersion": 1, "action": "init",
+                    "repoMode": "local-context",
+                    "project": {"projectId": "3065873"},
+                    "branch": None,
+                })), 0)
         (repo / "operations" / "GetThing.cspec").write_text(
             "changed", encoding="utf-8")
 
@@ -1463,7 +1494,9 @@ class InteractiveWorkerTest(unittest.TestCase):
                 mock.patch.object(worker, "_calling_process_matches",
                                   return_value=True), \
                 contextlib.redirect_stderr(stderr):
-            self.assertEqual(worker.amp_authorize("branch-create", str(repo)), 2)
+            self.assertEqual(worker.amp_authorize(
+                "branch-create", str(repo),
+                self._amp_target("branch-create", "project")), 2)
         self.assertIn("operations/GetThing.cspec", stderr.getvalue())
 
     def test_cloudspec_guard_epoch_survives_recovery_and_resets_next_cycle(self):

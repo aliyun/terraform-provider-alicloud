@@ -122,10 +122,28 @@ class HeadlessAmpBrokerTest(unittest.TestCase):
         self.addCleanup(self.broker.close)
         self.process = mock.Mock(pid=os.getpid())
 
-    def _request(self, repo=None, action="publish", peer=None):
+    def _request(self, repo=None, action="publish", peer=None, *,
+                 project_id="3065873", repo_mode="model",
+                 branch="feature/guard", publish_kind="pre"):
+        resolved = Path(repo or HERE).resolve()
+        project = {"projectId": project_id, "popCode": "eventbridge",
+                   "popVersion": "2020-04-01"}
+        target = {
+            "schemaVersion": 1, "action": action, "repoMode": repo_mode,
+            "project": project, "branch": branch,
+            "publishKind": publish_kind if action == "publish" else None,
+        }
+        receipt = {
+            "allowed": True, "action": action, "repoMode": repo_mode,
+            "project": project,
+        }
+        if repo_mode == "model":
+            receipt.update(repo=str(resolved), baseline="a" * 40,
+                           branch=branch)
         return self.broker._authorize(
             os.getpid() if peer is None else peer,
-            {"action": action, "repo": str(repo or HERE)})
+            {"schemaVersion": 2, "action": action, "repo": str(resolved),
+             "target": target, "receipt": receipt})
 
     def test_disabled_until_full_bind_callback_enables_it(self):
         with mock.patch("bridge.jarvis_execution_runtime._descends_from",
@@ -161,6 +179,109 @@ class HeadlessAmpBrokerTest(unittest.TestCase):
             self.assertFalse(self._request(second))
             self.controller.verify_current_fence.return_value = False
             self.assertFalse(self._request(first))
+
+    def test_invalid_first_repository_does_not_poison_later_canonical_pin(self):
+        self.broker.enable(self.process)
+        with tempfile.TemporaryDirectory() as wrong, \
+                tempfile.TemporaryDirectory() as canonical, \
+                mock.patch("bridge.jarvis_execution_runtime._descends_from",
+                           return_value=True), \
+                mock.patch.object(self.broker, "_trusted_wrapper_process",
+                                  return_value=True):
+            request = {
+                "schemaVersion": 2, "action": "publish", "repo": wrong,
+                "target": {
+                    "schemaVersion": 1, "action": "publish",
+                    "repoMode": "model", "branch": "feature/guard",
+                    "publishKind": "pre",
+                    "project": {"projectId": "3065873",
+                                "popCode": "eventbridge",
+                                "popVersion": "2020-04-01"}},
+                "receipt": {
+                    "allowed": True, "action": "publish", "repoMode": "model",
+                    "repo": canonical, "baseline": "a" * 40,
+                    "branch": "feature/guard",
+                    "project": {"projectId": "3065873",
+                                "popCode": "eventbridge",
+                                "popVersion": "2020-04-01"}},
+            }
+            decision = self.broker._authorize_decision(os.getpid(), request)
+            self.assertFalse(decision.allowed)
+            self.assertEqual(decision.reason,
+                             "canonical_baseline_receipt_invalid")
+            self.assertIsNone(self.broker._repo_identity)
+            self.assertTrue(self._request(canonical))
+
+    def test_cross_project_remote_mutation_is_denied_after_project_pin(self):
+        self.broker.enable(self.process)
+        with tempfile.TemporaryDirectory() as repo, \
+                mock.patch("bridge.jarvis_execution_runtime._descends_from",
+                           return_value=True), \
+                mock.patch.object(self.broker, "_trusted_wrapper_process",
+                                  return_value=True):
+            self.assertTrue(self._request(repo))
+            decision = self.broker._authorize_decision(
+                os.getpid(), self._request_payload(
+                    repo, project_id="3033394"))
+            self.assertFalse(decision.allowed)
+            self.assertEqual(decision.reason, "project_identity_mismatch")
+
+    def test_mutations_pin_feature_branch_for_the_session(self):
+        self.broker.enable(self.process)
+        with tempfile.TemporaryDirectory() as repo, \
+                mock.patch("bridge.jarvis_execution_runtime._descends_from",
+                           return_value=True), \
+                mock.patch.object(self.broker, "_trusted_wrapper_process",
+                                  return_value=True):
+            self.assertTrue(self._request(repo, branch="feature/one"))
+            decision = self.broker._authorize_decision(
+                os.getpid(), self._request_payload(repo, branch="feature/two"))
+            self.assertFalse(decision.allowed)
+            self.assertEqual(decision.reason, "branch_identity_mismatch")
+            self.assertEqual(self.broker._branch_identity, "feature/one")
+
+    def test_init_and_publish_status_never_establish_mutation_pins(self):
+        self.broker.enable(self.process)
+        with tempfile.TemporaryDirectory() as repo, \
+                mock.patch("bridge.jarvis_execution_runtime._descends_from",
+                           return_value=True), \
+                mock.patch.object(self.broker, "_trusted_wrapper_process",
+                                  return_value=True):
+            resolved = str(Path(repo).resolve())
+            init_project = {"popCode": "eventbridge",
+                            "popVersion": "2020-04-01"}
+            init_request = {
+                "schemaVersion": 2, "action": "init", "repo": resolved,
+                "target": {"schemaVersion": 1, "action": "init",
+                           "repoMode": "local-context",
+                           "project": init_project, "branch": None},
+                "receipt": {"allowed": True, "action": "init",
+                            "repoMode": "local-context",
+                            "project": init_project},
+            }
+            self.assertTrue(self.broker._authorize(
+                os.getpid(), init_request))
+            self.assertTrue(self._request(
+                repo, publish_kind="status", repo_mode="project", branch=""))
+            self.assertIsNone(self.broker._repo_identity)
+            self.assertIsNone(self.broker._project_identity)
+            self.assertIsNone(self.broker._branch_identity)
+
+    def _request_payload(self, repo, *, project_id="3065873",
+                         branch="feature/guard"):
+        resolved = str(Path(repo).resolve())
+        project = {"projectId": project_id, "popCode": "eventbridge",
+                   "popVersion": "2020-04-01"}
+        return {
+            "schemaVersion": 2, "action": "publish", "repo": resolved,
+            "target": {"schemaVersion": 1, "action": "publish",
+                       "repoMode": "model", "branch": branch,
+                       "publishKind": "pre", "project": project},
+            "receipt": {"allowed": True, "action": "publish",
+                        "repoMode": "model", "repo": resolved,
+                        "baseline": "a" * 40, "branch": branch,
+                        "project": project},
+        }
 
 
 class ProviderResumeFailoverTest(unittest.TestCase):
