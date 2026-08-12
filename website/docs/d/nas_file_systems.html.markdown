@@ -11,13 +11,14 @@ description: |-
 
 This data source provides FileSystems available to the user.
 
--> **NOTE**: Available in 1.35.0+
+-> **NOTE:** Available since v1.35.0+
 
 ## Example Usage
 
 ```terraform
 data "alicloud_nas_file_systems" "fs" {
   protocol_type     = "NFS"
+  file_system_type  = "standard"
   description_regex = "${alicloud_nas_file_system.foo.description}"
 }
 
@@ -25,26 +26,29 @@ output "alicloud_nas_file_systems_id" {
   value = "${data.alicloud_nas_file_systems.fs.systems.0.id}"
 }
 ```
+
 ## Argument Reference
 
 The following arguments are supported:
 
 * `ids` - (Optional) A list of FileSystemId.
-* `storage_type` - (Required, ForceNew) The storage type of the file system.
+* `storage_type` - (Optional, ForceNew) The storage type of the file system.
   * Valid values:
     * `Performance` (Available when the `file_system_type` is `standard`)
     * `Capacity` (Available when the `file_system_type` is `standard`)
     * `standard` (Available in v1.140.0+ and when the `file_system_type` is `extreme`)
     * `advance` (Available in v1.140.0+ and when the `file_system_type` is `extreme`)
-* `protocol_type` - (Required, ForceNew) The protocol type of the file system.
+* `protocol_type` - (Optional, ForceNew) The protocol type of the file system.
                                      Valid values:
                                            `NFS`,
                                            `SMB` (Available when the `file_system_type` is `standard`).
 * `description_regex` - (Optional) A regex string to filter the results by the ：FileSystem description.
-* `file_system_type` - (Optional, Available in v1.140.0+) The type of the file system.
+* `file_system_type` - (Optional, Available in v1.140.0+) The type of the file system. Filter file systems by the specified type. If not specified, all file system types are returned.
                                       Valid values:
-                                            `standard` (Default),
-                                            `extreme`.
+                                            `standard`,
+                                            `extreme`,
+                                            `cpfs`,
+                                            `cpfsse`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -64,13 +68,11 @@ The following attributes are exported in addition to the arguments listed above:
   * `capacity` - (Optional, Available in v1.140.0+) The capacity of the file system.
   * `file_system_type` - (Optional, Available in v1.140.0+) The type of the file system.
                             Valid values:
-                            `standard` (Default),
-                            `extreme`.
-  * `encrypt_type` - (Optional, Available in v1.121.2+) Whether the file system is encrypted. 
-    * Valid values:
-      * `0`: The file system is not encrypted.
-      * `1`: The file system is encrypted with a managed secret key.
-      * `2`: User management key.
+                            `standard`,
+                            `extreme`,
+                            `cpfs`,
+                            `cpfsse`.
+  * `encrypt_type` - (Optional, Available in v1.121.2+) Whether the file system is encrypted. Valid values: `0` (The file system is not encrypted), `1` (The file system is encrypted with a managed secret key), `2` (User management key).
   * `kms_key_id` - (Optional, Available in v1.140.0+) The id of the KMS key.
   * `zone_id` - (Optional, Available in v1.140.0+) The id of the zone. Each region consists of multiple isolated locations known as zones. Each zone has an independent power supply and network.
  
