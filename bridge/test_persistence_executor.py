@@ -109,6 +109,9 @@ class FakeClient:
     def relinquish_session(self, *args, **kwargs):
         return self._call("relinquish_session", *args, **kwargs)
 
+    def get_task_timeline(self, *args, **kwargs):
+        return self._call("get_task_timeline", *args, **kwargs)
+
 
 class ManualFuture:
     def __init__(self, fn, args):
@@ -281,6 +284,41 @@ class SessionControllerTest(unittest.TestCase):
                             heartbeats[1]["kwargs"]["request_id"])
         self.assertEqual(controller.lease["session"]["runtimeSessionId"],
                          "runtime-new")
+
+    def test_mutation_fence_requires_fresh_exact_timeline(self):
+        timeline = {
+            "sessions": [{"id": "s1", "taskId": "t1", "generation": 3,
+                          "fenceToken": 7, "runtimeSessionId": "runtime-new",
+                          "status": "RUNNING"}],
+        }
+        lease = lease_response(runtime_session_id="runtime-new")
+        lease["task"]["generation"] = 3
+        client = FakeClient(get_task_timeline=[timeline])
+        controller = SessionController(
+            client, "mac:boot:proc", lease, lease_seconds=45,
+            lease_safety_margin=10, logger=LOG)
+        self.assertTrue(controller.start())
+        self.assertTrue(controller.verify_current_fence())
+        self.assertEqual(len(client.named("heartbeat_session")), 1)
+        self.assertEqual(len(client.named("get_task_timeline")), 1)
+
+    def test_mutation_fence_has_no_transport_grace_or_stale_timeline(self):
+        lease = lease_response(runtime_session_id="runtime-new")
+        lease["task"]["generation"] = 3
+        for client in (
+                FakeClient(heartbeat_session=[ControlPlaneUnavailable("down")]),
+                FakeClient(get_task_timeline=[{
+                    "sessions": [{"id": "s1", "taskId": "t1",
+                                  "generation": 3, "fenceToken": 8,
+                                  "runtimeSessionId": "runtime-new",
+                                  "status": "RUNNING"}],
+                }])):
+            with self.subTest(client=client):
+                controller = SessionController(
+                    client, "mac:boot:proc", lease, lease_seconds=45,
+                    lease_safety_margin=10, logger=LOG)
+                self.assertTrue(controller.start())
+                self.assertFalse(controller.verify_current_fence())
 
     def test_resumed_lease_reuses_persisted_runtime_session_id(self):
         lease = lease_response(resumed=True, runtime_session_id="runtime-existing")

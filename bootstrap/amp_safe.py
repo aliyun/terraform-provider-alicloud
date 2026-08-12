@@ -10,9 +10,12 @@ a human-only production gate.
 
 from __future__ import annotations
 
+import json
 import os
 import pwd
 import re
+import socket
+import struct
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -27,6 +30,7 @@ _VALUE_LIMIT = 1024
 _FIXED_FLAGS = ("-o", "json", "--no-interactive")
 _TESTING_ENV = "JARVIS_AMP_SAFE_TESTING"
 _AMP_BIN_ENV = "JARVIS_AMP_BIN"
+_HEADLESS_BROKER_ENV = "JARVIS_HEADLESS_AMP_BROKER"
 _UNSAFE_ENV_NAMES = frozenset({
     "BASH_ENV", "CDPATH", "ENV", "GIT_CONFIG", "GIT_CONFIG_GLOBAL",
     "GIT_CONFIG_SYSTEM", "GIT_DIR", "GIT_EXEC_PATH", "GIT_SSH",
@@ -339,6 +343,62 @@ def _child_environment(environ: Mapping[str, str]) -> dict[str, str]:
 
 
 def _authorize(action: str, repo: Path) -> int:
+    broker_path = os.environ.get(_HEADLESS_BROKER_ENV, "").strip()
+    if broker_path:
+        try:
+            broker = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            broker.settimeout(10)
+            broker.connect(broker_path)
+            if sys.platform == "darwin":
+                peer_pid = int.from_bytes(
+                    broker.getsockopt(0, 2, 4), sys.byteorder)
+            else:
+                peercred = getattr(socket, "SO_PEERCRED", None)
+                if peercred is None:
+                    raise OSError("peer credentials unavailable")
+                peer_pid = struct.unpack(
+                    "3i", broker.getsockopt(
+                        socket.SOL_SOCKET, peercred, 12))[0]
+            # A model-controlled child can bind its own socket and override the
+            # environment.  The real broker lives in the bridge executor, which
+            # must be an ancestor of this wrapper process.
+            ancestor = os.getppid()
+            peer_is_ancestor = False
+            for _depth in range(64):
+                if ancestor <= 1:
+                    break
+                if ancestor == peer_pid:
+                    peer_is_ancestor = True
+                    break
+                completed = subprocess.run(
+                    ["/bin/ps", "-o", "ppid=", "-p", str(ancestor)],
+                    capture_output=True, text=True, timeout=2, check=False)
+                ancestor = int(completed.stdout.strip() or 0)
+            if not peer_is_ancestor:
+                raise OSError("broker peer is not the headless executor")
+            broker.sendall(json.dumps({
+                "action": action,
+                "repo": os.fspath(repo.resolve(strict=True)),
+            }, ensure_ascii=True, sort_keys=True,
+                separators=(",", ":")).encode("utf-8"))
+            broker.shutdown(socket.SHUT_WR)
+            response = broker.recv(32)
+        except (OSError, RuntimeError, ValueError) as exc:
+            raise AmpSafeError(
+                "headless AMP authorization broker unavailable: %s"
+                % type(exc).__name__) from exc
+        finally:
+            try:
+                broker.close()
+            except (NameError, OSError):
+                pass
+        if response != b"OK\n":
+            print("amp-safe: headless Task fence denied AMP mutation",
+                  file=sys.stderr)
+            return 2
+        # The broker proves the executor-owned remote lease only. Continue
+        # through the local authorizer as a second, independent gate for the
+        # pre-established CloudSpec baseline and operations/ diff scan.
     worker = Path(__file__).resolve().with_name("jarvis-interactive-worker.py")
     try:
         completed = subprocess.run(

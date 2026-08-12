@@ -1603,6 +1603,48 @@ def _calling_process_matches(state: Mapping[str, Any], client_name: str) -> bool
     return bool(expected_start and actual_start and expected_start == actual_start)
 
 
+def _headless_broker_matches_executor(state: Mapping[str, Any]) -> bool:
+    """Reject model-created broker sockets, including an Agent parent broker."""
+    path = os.environ.get("JARVIS_HEADLESS_AMP_BROKER", "").strip()
+    try:
+        host_pid = int(state.get("hostPid") or 0)
+        if (not path or host_pid <= 0
+                or _process_start_identity(host_pid) !=
+                str(state.get("hostProcessStartedAt") or "")):
+            return False
+        probe = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        probe.settimeout(2)
+        probe.connect(path)
+        if sys.platform == "darwin":
+            peer_pid = int.from_bytes(probe.getsockopt(0, 2, 4), sys.byteorder)
+        else:
+            import struct
+            peercred = getattr(socket, "SO_PEERCRED", None)
+            if peercred is None:
+                return False
+            peer_pid = struct.unpack(
+                "3i", probe.getsockopt(socket.SOL_SOCKET, peercred, 12))[0]
+        # The bridge owns the broker and spawned the headless host. It must be
+        # strictly above hostPid. A fake broker created by the Agent and then
+        # used to fork amp_safe is at/below hostPid and fails this direction.
+        current = host_pid
+        for _depth in range(64):
+            parent, _command = _process_info(current)
+            if parent <= 1 or parent == current:
+                return False
+            if parent == peer_pid:
+                return True
+            current = parent
+        return False
+    except (OSError, TypeError, ValueError):
+        return False
+    finally:
+        try:
+            probe.close()
+        except (NameError, OSError):
+            pass
+
+
 def _codex_turn_block_reason(state: Mapping[str, Any],
                              event: Mapping[str, Any],
                              binding: Optional[Mapping[str, Any]] = None) -> Optional[str]:
@@ -3217,6 +3259,13 @@ def exec_headless(session_id: str, command: list[str],
     if not result.get("verifyHostCommand"):
         raise RuntimeError("headless wrapper process could not be verified")
     env = _unprivileged_child_env()
+    # The persistent executor remains the sole control-plane lease owner.  A
+    # headless model never needs the worker bearer token: AMP mutations are
+    # authorized by the executor-owned broker and all Task transitions remain
+    # in the bridge process.  Keeping the token here would let same-UID model
+    # code query a timeline for the current fence and call transition endpoints
+    # directly, defeating the broker boundary.
+    env.pop("JARVIS_CONTROL_PLANE_TOKEN", None)
     env["JARVIS_INTERACTIVE_CLIENT"] = client_name
     env["JARVIS_INTERACTIVE_SESSION_ID"] = session_id
     os.execvpe(command[0], list(command), env)
@@ -4700,23 +4749,29 @@ def amp_authorize(action: str, repo_root: str) -> int:
     store = _current_store()
     state = store.load()
     current = state.get("current")
-    if not isinstance(current, Mapping):
+    headless_authority = bool(
+        state.get("headlessRegistered")
+        and _headless_broker_matches_executor(state))
+    if not isinstance(current, Mapping) and not headless_authority:
         print("amp-safe: active claimed task is required", file=sys.stderr)
         return HOOK_BLOCK_EXIT
     local_reason = _local_tool_block_reason(state)
-    if local_reason:
+    if local_reason and not (headless_authority and not isinstance(current, Mapping)):
         print("amp-safe: %s" % local_reason, file=sys.stderr)
         return HOOK_BLOCK_EXIT
-    permit_reason = _session_permit_block_reason(state, current)
-    if permit_reason:
-        print("amp-safe: %s" % permit_reason, file=sys.stderr)
-        return HOOK_BLOCK_EXIT
+    if not headless_authority:
+        assert isinstance(current, Mapping)
+        permit_reason = _session_permit_block_reason(state, current)
+        if permit_reason:
+            print("amp-safe: %s" % permit_reason, file=sys.stderr)
+            return HOOK_BLOCK_EXIT
     client_name = str(state.get("client") or "")
-    if not client_name or not _calling_process_matches(state, client_name):
+    if (not client_name or not _calling_process_matches(state, client_name)):
         print("amp-safe: Worker process incarnation cannot be verified",
               file=sys.stderr)
         return HOOK_BLOCK_EXIT
-    if client_name == "codex" and not state.get("turnActive", True):
+    if (not headless_authority and client_name == "codex"
+            and not state.get("turnActive", True)):
         print("amp-safe: Codex turn is no longer active", file=sys.stderr)
         return HOOK_BLOCK_EXIT
 
@@ -4803,12 +4858,19 @@ def amp_authorize(action: str, repo_root: str) -> int:
         return HOOK_BLOCK_EXIT
     latest = store.load()
     latest_current = latest.get("current")
-    if not isinstance(latest_current, Mapping):
-        print("amp-safe: active claimed task disappeared during authorization",
-              file=sys.stderr)
-        return HOOK_BLOCK_EXIT
-    final_reason = (_local_tool_block_reason(latest)
-                    or _session_permit_block_reason(latest, latest_current))
+    if headless_authority:
+        if not latest.get("headlessRegistered"):
+            print("amp-safe: headless process authority disappeared",
+                  file=sys.stderr)
+            return HOOK_BLOCK_EXIT
+        final_reason = None
+    else:
+        if not isinstance(latest_current, Mapping):
+            print("amp-safe: active claimed task disappeared during authorization",
+                  file=sys.stderr)
+            return HOOK_BLOCK_EXIT
+        final_reason = (_local_tool_block_reason(latest)
+                        or _session_permit_block_reason(latest, latest_current))
     if final_reason:
         print("amp-safe: %s" % final_reason, file=sys.stderr)
         return HOOK_BLOCK_EXIT

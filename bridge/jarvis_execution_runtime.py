@@ -16,8 +16,10 @@ import json
 import logging
 import re
 import signal
+import socket
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -35,6 +37,199 @@ GuardedSpawn = Callable[
     [Sequence[str], Path, SpawnCallback, Optional[Mapping[str, str]]],
     Tuple[Any, Optional[int]],
 ]
+
+_HEADLESS_AMP_BROKER_ENV = "JARVIS_HEADLESS_AMP_BROKER"
+
+
+def _process_start_identity(pid: int) -> str:
+    try:
+        completed = subprocess.run(
+            ["/bin/ps", "-o", "lstart=", "-p", str(int(pid))],
+            capture_output=True, text=True, timeout=2, check=False)
+    except (OSError, subprocess.SubprocessError, TypeError, ValueError):
+        return ""
+    return completed.stdout.strip()
+
+
+def _process_parent(pid: int) -> int:
+    try:
+        completed = subprocess.run(
+            ["/bin/ps", "-o", "ppid=", "-p", str(int(pid))],
+            capture_output=True, text=True, timeout=2, check=False)
+        return int(completed.stdout.strip() or 0)
+    except (OSError, subprocess.SubprocessError, TypeError, ValueError):
+        return 0
+
+
+def _process_command(pid: int) -> str:
+    try:
+        completed = subprocess.run(
+            ["/bin/ps", "-o", "command=", "-p", str(int(pid))],
+            capture_output=True, text=True, timeout=2, check=False)
+    except (OSError, subprocess.SubprocessError, TypeError, ValueError):
+        return ""
+    return completed.stdout.strip()
+
+
+def _descends_from(pid: int, ancestor_pid: int,
+                   ancestor_started_at: str) -> bool:
+    current = int(pid)
+    for _depth in range(64):
+        if current <= 1:
+            return False
+        if current == int(ancestor_pid):
+            return bool(
+                ancestor_started_at
+                and _process_start_identity(current) == ancestor_started_at)
+        parent = _process_parent(current)
+        if parent <= 0 or parent == current:
+            return False
+        current = parent
+    return False
+
+
+class HeadlessAmpBroker:
+    """Executor-owned, process-bound authorization broker for AMP mutations."""
+
+    _ALLOWED_ACTIONS = frozenset((
+        "init", "branch-create", "branch-switch",
+        "context-set-branch", "publish",
+    ))
+
+    def __init__(self, controller: Any, runtime_session_id: str):
+        self.controller = controller
+        self.runtime_session_id = str(runtime_session_id)
+        self.directory = tempfile.TemporaryDirectory(prefix="jarvis-amp-broker-")
+        os.chmod(self.directory.name, 0o700)
+        self.path = os.path.join(self.directory.name, "authorize.sock")
+        self._socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        self._socket.bind(self.path)
+        os.chmod(self.path, 0o600)
+        self._socket.listen(8)
+        self._socket.settimeout(0.2)
+        self._enabled = False
+        self._bound_pid = 0
+        self._bound_started_at = ""
+        self._repo_identity: Optional[tuple[str, int, int]] = None
+        self._closed = threading.Event()
+        self._thread = threading.Thread(
+            target=self._serve, name="HeadlessAmpBroker", daemon=True)
+        self._thread.start()
+
+    def enable(self, process: Any) -> None:
+        pid = int(getattr(process, "pid", 0))
+        started_at = _process_start_identity(pid)
+        if pid <= 0 or not started_at:
+            raise RuntimeError("AMP broker cannot bind headless process")
+        self._bound_pid = pid
+        self._bound_started_at = started_at
+        self._enabled = True
+
+    def close(self) -> None:
+        self._enabled = False
+        self._closed.set()
+        try:
+            self._socket.close()
+        except OSError:
+            pass
+        self._thread.join(timeout=1)
+        self.directory.cleanup()
+
+    def _peer_pid(self, connection: socket.socket) -> int:
+        if sys.platform == "darwin":
+            try:
+                # Darwin LOCAL_PEERPID = 2 at SOL_LOCAL = 0.
+                return int.from_bytes(
+                    connection.getsockopt(0, 2, 4), sys.byteorder)
+            except OSError:
+                return 0
+        peercred = getattr(socket, "SO_PEERCRED", None)
+        if peercred is None:
+            return 0
+        try:
+            import struct
+            return int(struct.unpack(
+                "3i", connection.getsockopt(socket.SOL_SOCKET, peercred, 12))[0])
+        except (OSError, struct.error):
+            return 0
+
+    def _strict_fence_check(self) -> bool:
+        verify = getattr(self.controller, "verify_current_fence", None)
+        return bool(callable(verify) and verify({
+            "reason": "headless_amp_authorize",
+            "runtimeSessionId": self.runtime_session_id,
+        }))
+
+    @staticmethod
+    def _trusted_wrapper_process(pid: int) -> bool:
+        command = _process_command(pid)
+        if not command:
+            return False
+        try:
+            tokens = __import__("shlex").split(command)
+        except ValueError:
+            return False
+        trusted = str(
+            (Path(__file__).resolve().parents[1]
+             / "bootstrap" / "amp_safe.py").resolve())
+        for index, token in enumerate(tokens):
+            if os.path.realpath(token) != trusted:
+                continue
+            return bool(index >= 1 and tokens[index - 1] == "-I")
+        return False
+
+    def _authorize(self, peer_pid: int, request: Mapping[str, Any]) -> bool:
+        if not self._enabled or peer_pid <= 0:
+            return False
+        if not _descends_from(
+                peer_pid, self._bound_pid, self._bound_started_at):
+            return False
+        if not self._trusted_wrapper_process(peer_pid):
+            return False
+        action = str(request.get("action") or "")
+        if action not in self._ALLOWED_ACTIONS:
+            return False
+        repo = str(request.get("repo") or "")
+        try:
+            resolved = Path(repo).expanduser().resolve(strict=True)
+        except (OSError, RuntimeError, ValueError):
+            return False
+        if not resolved.is_dir():
+            return False
+        try:
+            stat = resolved.stat()
+            identity = (os.fspath(resolved), int(stat.st_dev), int(stat.st_ino))
+        except OSError:
+            return False
+        if self._repo_identity is None:
+            self._repo_identity = identity
+        elif self._repo_identity != identity:
+            return False
+        return self._strict_fence_check()
+
+    def _serve(self) -> None:
+        while not self._closed.is_set():
+            try:
+                connection, _ = self._socket.accept()
+            except socket.timeout:
+                continue
+            except OSError:
+                break
+            with connection:
+                allowed = False
+                try:
+                    raw = connection.recv(4097)
+                    if raw and len(raw) <= 4096:
+                        value = json.loads(raw.decode("utf-8"))
+                        if isinstance(value, Mapping):
+                            allowed = self._authorize(
+                                self._peer_pid(connection), value)
+                except (OSError, UnicodeError, ValueError):
+                    allowed = False
+                try:
+                    connection.sendall(b"OK\n" if allowed else b"DENY\n")
+                except OSError:
+                    pass
 
 
 @dataclass(frozen=True)
@@ -683,11 +878,31 @@ def run_claude_buffered(
     ) + ["-p", text, "--output-format", "json"]
     argv += ["--resume", session_id] if resume else [
         "--session-id", session_id]
-    execution = (execution_runtime or DEFAULT_EXECUTION_RUNTIME).run_buffered(
-        headless_wrapper(session_id, argv),
-        Path(jarvis_root()), timeout=timeout, on_spawn=on_spawn,
-        guarded=guarded,
-        env=a1_command_env(terraform=terraform))
+    environment = a1_command_env(terraform=terraform)
+    broker: Optional[HeadlessAmpBroker] = None
+    spawn_callback = on_spawn
+    if guarded and on_spawn is not None:
+        callback_owner = getattr(on_spawn, "__self__", None)
+        controller = getattr(callback_owner, "controller", callback_owner)
+        if callable(getattr(controller, "verify_current_fence", None)):
+            broker = HeadlessAmpBroker(controller, session_id)
+            environment[_HEADLESS_AMP_BROKER_ENV] = broker.path
+
+            def bind_and_enable(process: Any) -> None:
+                on_spawn(process)
+                # For TaskAoneBookend this is deliberately after both the
+                # control-plane PID bind and the Aone claimed-tag write.
+                broker.enable(process)
+
+            spawn_callback = bind_and_enable
+    try:
+        execution = (execution_runtime or DEFAULT_EXECUTION_RUNTIME).run_buffered(
+            headless_wrapper(session_id, argv),
+            Path(jarvis_root()), timeout=timeout, on_spawn=spawn_callback,
+            guarded=guarded, env=environment)
+    finally:
+        if broker is not None:
+            broker.close()
     if execution.timed_out:
         return ClaudeResult(execution.stdout or "", True, "timeout")
     return classify_result(

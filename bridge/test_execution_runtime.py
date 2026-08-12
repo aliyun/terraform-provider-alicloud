@@ -3,6 +3,7 @@
 
 import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -16,7 +17,8 @@ from datetime import datetime as real_dt, timezone as tz_module  # noqa: E402
 tz_utc = tz_module.utc
 
 from bridge.jarvis_execution_runtime import (  # noqa: E402
-    ExecutionRuntime, ProcessGuardian, _select_provider_settings)
+    ExecutionRuntime, HeadlessAmpBroker, ProcessGuardian,
+    _select_provider_settings)
 
 
 class ProcessGuardianTest(unittest.TestCase):
@@ -110,6 +112,55 @@ class ExecutionRuntimeTest(unittest.TestCase):
         self.assertEqual(result.stdout, "ok")
         self.assertEqual(captured, {
             "argv": ["tool"], "cwd": HERE, "env": {"TASK_ENV": "fenced"}})
+
+
+class HeadlessAmpBrokerTest(unittest.TestCase):
+    def setUp(self):
+        self.controller = mock.Mock()
+        self.controller.verify_current_fence.return_value = True
+        self.broker = HeadlessAmpBroker(self.controller, "runtime-1")
+        self.addCleanup(self.broker.close)
+        self.process = mock.Mock(pid=os.getpid())
+
+    def _request(self, repo=None, action="publish", peer=None):
+        return self.broker._authorize(
+            os.getpid() if peer is None else peer,
+            {"action": action, "repo": str(repo or HERE)})
+
+    def test_disabled_until_full_bind_callback_enables_it(self):
+        with mock.patch("bridge.jarvis_execution_runtime._descends_from",
+                        return_value=True), \
+                mock.patch.object(self.broker, "_trusted_wrapper_process",
+                                  return_value=True):
+            self.assertFalse(self._request())
+            self.broker.enable(self.process)
+            self.assertTrue(self._request())
+
+    def test_requires_descendant_and_exact_trusted_wrapper(self):
+        self.broker.enable(self.process)
+        with mock.patch("bridge.jarvis_execution_runtime._descends_from",
+                        return_value=False), \
+                mock.patch.object(self.broker, "_trusted_wrapper_process",
+                                  return_value=True):
+            self.assertFalse(self._request())
+        with mock.patch("bridge.jarvis_execution_runtime._descends_from",
+                        return_value=True), \
+                mock.patch.object(self.broker, "_trusted_wrapper_process",
+                                  return_value=False):
+            self.assertFalse(self._request())
+
+    def test_binds_first_repository_inode_and_rechecks_fence(self):
+        self.broker.enable(self.process)
+        with tempfile.TemporaryDirectory() as first, \
+                tempfile.TemporaryDirectory() as second, \
+                mock.patch("bridge.jarvis_execution_runtime._descends_from",
+                           return_value=True), \
+                mock.patch.object(self.broker, "_trusted_wrapper_process",
+                                  return_value=True):
+            self.assertTrue(self._request(first))
+            self.assertFalse(self._request(second))
+            self.controller.verify_current_fence.return_value = False
+            self.assertFalse(self._request(first))
 
 
 class ProviderResumeFailoverTest(unittest.TestCase):
