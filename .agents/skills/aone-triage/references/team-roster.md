@@ -22,7 +22,7 @@ JSON,`test/product_maintainers_parity_test.sh` 会卡住漂移。他们**故意�
 | 弹性伸缩 ESS | 扶柳 | WB530580 |
 | 表格存储 OTS | 景哲 | 263417 |
 | E-MapReduce (EMR) | 鱼戏 | 373227 |
-| RDS | 柴天生 | WB01586841 |
+| RDS | 张晨晨 | WB01029273 |
 | PolarDB | 米汐 | 527630 |
 | MSE | 棠溪 | 401341 |
 | ClickHouse | 逸颉 | 439859 |
