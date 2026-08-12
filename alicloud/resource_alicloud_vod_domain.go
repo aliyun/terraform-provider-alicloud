@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -79,14 +80,45 @@ func resourceAlicloudVodDomain() *schema.Resource {
 			},
 			"ssl_pub": {
 				Type:     schema.TypeString,
+				Optional: true,
 				Computed: true,
 			},
 			"ssl_protocol": {
-				Type:     schema.TypeString,
-				Computed: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"on", "off"}, false),
 			},
 			"cert_name": {
 				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"cert_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"cert_region": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"cert_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"upload", "cas"}, false),
+			},
+			"ssl_pri": {
+				Type:      schema.TypeString,
+				Optional:  true,
+				Computed:  true,
+				Sensitive: true,
+			},
+			"env": {
+				Type:     schema.TypeString,
+				Optional: true,
 				Computed: true,
 			},
 			"scope": {
@@ -184,10 +216,35 @@ func resourceAlicloudVodDomainRead(d *schema.ResourceData, meta interface{}) err
 	d.Set("gmt_modified", object["GmtModified"])
 	d.Set("gmt_created", object["GmtCreated"])
 	d.Set("weight", object["Weight"])
-	d.Set("ssl_pub", object["SSLPub"])
+	// DescribeVodDomainDetail does not always return SSLPub even when HTTPS is enabled; keep the configured value instead of clearing it.
+	if v, ok := object["SSLPub"]; ok && v != nil && fmt.Sprint(v) != "" {
+		d.Set("ssl_pub", v)
+	}
 	d.Set("ssl_protocol", object["SSLProtocol"])
 	d.Set("cert_name", object["CertName"])
 	d.Set("cname", object["Cname"])
+	// The SSL private key (ssl_pri) and env are write-only and not returned by the API,
+	// keep the values configured in the configuration to avoid perpetual diff.
+	certObject, certErr := vodService.DescribeVodDomainCertificateInfo(d.Id())
+	if certErr != nil {
+		log.Printf("[DEBUG] Resource alicloud_vod_domain vodService.DescribeVodDomainCertificateInfo Failed!!! %s", certErr)
+	} else if certObject != nil {
+		if v, ok := certObject["CertId"]; ok && v != nil {
+			// DescribeVodDomainCertificateInfo returns the certificate ID with a
+			// region suffix (e.g. "13227737-cn-hangzhou"), while the bare ID is
+			// configured; strip the suffix so the value converges.
+			certId := fmt.Sprint(v)
+			if region, ok := certObject["CertRegion"].(string); ok && region != "" {
+				certId = strings.TrimSuffix(certId, "-"+region)
+			}
+			d.Set("cert_id", certId)
+		}
+		d.Set("cert_region", certObject["CertRegion"])
+		d.Set("cert_type", certObject["CertType"])
+		if v, ok := certObject["CertName"]; ok && v != nil {
+			d.Set("cert_name", v)
+		}
+	}
 	if v, ok := object["Sources"].(map[string]interface{})["Source"].([]interface{}); ok {
 		source := make([]map[string]interface{}, 0)
 		for _, val := range v {
@@ -266,6 +323,17 @@ func resourceAlicloudVodDomainUpdate(d *schema.ResourceData, meta interface{}) e
 	stateConf := BuildStateConf([]string{"configuring"}, []string{"online"}, d.Timeout(schema.TimeoutDelete), 5*time.Second, vodService.VodStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
+	}
+
+	if d.HasChange("ssl_protocol") || d.HasChange("ssl_pub") || d.HasChange("cert_name") || d.HasChange("cert_id") || d.HasChange("cert_region") || d.HasChange("cert_type") || d.HasChange("ssl_pri") || d.HasChange("env") {
+		if err := vodService.SetVodDomainSSLCertificate(d); err != nil {
+			return WrapError(err)
+		}
+		// Setting the SSL certificate may put the domain back into the configuring state.
+		sslStateConf := BuildStateConf([]string{"configuring"}, []string{"online"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, vodService.VodStateRefreshFunc(d.Id(), []string{}))
+		if _, err := sslStateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
 	}
 
 	return resourceAlicloudVodDomainRead(d, meta)
