@@ -270,6 +270,45 @@ func (s *MongoDBService) ModifyMongoDBSecurityIps(d *schema.ResourceData, ips st
 	return nil
 }
 
+func (s *MongoDBService) ModifyMongoDBSecurityIpsGroup(d *schema.ResourceData, groupName, attribute, ips, modifyMode string) error {
+	var response map[string]interface{}
+	var err error
+	client := s.client
+	action := "ModifySecurityIps"
+	request := make(map[string]interface{})
+	request["RegionId"] = s.client.RegionId
+	request["DBInstanceId"] = d.Id()
+	request["SecurityIps"] = ips
+	request["ModifyMode"] = modifyMode
+	request["SecurityIpGroupName"] = groupName
+	request["SecurityIpGroupAttribute"] = attribute
+
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+
+	stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 0, s.RdsMongodbDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapError(err)
+	}
+
+	return nil
+}
+
 func (s *MongoDBService) DescribeMongoDBSecurityGroupId(id string) (object []interface{}, err error) {
 	var response map[string]interface{}
 	client := s.client
