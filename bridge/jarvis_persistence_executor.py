@@ -697,6 +697,55 @@ class SessionController:
                                  self.session_id, type(exc).__name__)
                 return False
 
+    def verify_current_fence(
+            self, detail: Optional[Mapping[str, Any]] = None) -> bool:
+        """Require a fresh exact control-plane read for an external mutation."""
+        with self._transition_lock:
+            with self._lock:
+                if (not self._started or self._terminal_action is not None
+                        or self._ownership_lost
+                        or self._pending_terminal is not None
+                        or self._stop_requested):
+                    return False
+                task_id = _field(self.task, "id", "taskId", "task_id")
+                generation = self.task.get("generation")
+                session_id = self.session_id
+                fence = self.fence_token
+                runtime_session_id = self.runtime_session_id
+            try:
+                response, request_started_at = self._heartbeat_request(
+                    self._lease_detail(detail))
+                if not isinstance(response, Mapping):
+                    return False
+                timeline = self.client.get_task_timeline(str(task_id))
+                sessions = (timeline.get("sessions")
+                            if isinstance(timeline, Mapping) else None)
+                if not isinstance(sessions, list):
+                    return False
+                session = next((value for value in sessions
+                                if isinstance(value, Mapping)
+                                and str(value.get("id")) == str(session_id)), None)
+                valid = bool(
+                    isinstance(session, Mapping)
+                    and str(session.get("taskId")) == str(task_id)
+                    and str(session.get("generation")) == str(generation)
+                    and str(session.get("fenceToken")) == str(fence)
+                    and str(session.get("runtimeSessionId") or "") == str(runtime_session_id)
+                    and str(session.get("status") or "").upper() in {"LEASED", "RUNNING"})
+                if valid:
+                    self._refresh_lease_proof(response, request_started_at)
+                return valid
+            except HandoffRequested:
+                self._lose_ownership(
+                    "force_handoff:mutation_verify", acknowledge_handoff=True)
+            except StaleFence:
+                self._lose_ownership("stale_fence:mutation_verify")
+            except Exception as exc:  # noqa: BLE001 - strict deny
+                self.log.warning(
+                    "mutation fence verification failed session=%s error=%s",
+                    self.session_id, type(exc).__name__)
+            return False
+
     def adopt_lease(self, lease: Mapping[str, Any]) -> bool:
         """Adopt the fence token from a re-issued lease for this same session.
 

@@ -4,6 +4,7 @@
 import json
 import os
 import stat
+import struct
 import sys
 import tempfile
 import unittest
@@ -327,6 +328,37 @@ class AmpSafeTest(unittest.TestCase):
         self.assertEqual(execute.call_args.kwargs["cwd"],
                          os.fspath(self.root.resolve()))
         self.assertNotIn("PYTHONPATH", execute.call_args.kwargs["env"])
+
+    def test_fake_headless_broker_peer_outside_ancestor_chain_is_rejected(self):
+        broker = mock.Mock()
+        broker.getsockopt.return_value = struct.pack("I", 999999)
+        with mock.patch.dict(os.environ, {
+                "JARVIS_HEADLESS_AMP_BROKER": "/tmp/fake.sock"}), \
+                mock.patch.object(amp_safe.socket, "socket", return_value=broker), \
+                mock.patch.object(amp_safe.os, "getppid", return_value=123), \
+                mock.patch.object(
+                    amp_safe.subprocess, "run",
+                    return_value=SimpleNamespace(stdout="1\n", returncode=0)):
+            with self.assertRaisesRegex(
+                    amp_safe.AmpSafeError, "broker unavailable"):
+                amp_safe._authorize("publish", self.root.resolve())
+
+    def test_headless_broker_success_still_runs_local_operation_authorizer(self):
+        broker = mock.Mock()
+        broker.getsockopt.return_value = struct.pack("I", 42)
+        broker.recv.return_value = b"OK\n"
+        with mock.patch.dict(os.environ, {
+                "JARVIS_HEADLESS_AMP_BROKER": "/tmp/trusted.sock"}), \
+                mock.patch.object(amp_safe.socket, "socket", return_value=broker), \
+                mock.patch.object(amp_safe.os, "getppid", return_value=42), \
+                mock.patch.object(
+                    amp_safe.subprocess, "run",
+                    return_value=SimpleNamespace(returncode=0)) as execute:
+            self.assertEqual(
+                amp_safe._authorize("publish", self.root.resolve()), 0)
+        command = execute.call_args.args[0]
+        self.assertIn("amp-authorize", command)
+        broker.sendall.assert_called_once()
 
 
 if __name__ == "__main__":

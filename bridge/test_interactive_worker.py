@@ -1362,6 +1362,52 @@ class InteractiveWorkerTest(unittest.TestCase):
             self.assertEqual(worker.amp_authorize("publish", str(repo)), 2)
         self.assertIn("baseline was not established", stderr.getvalue())
 
+    def test_headless_amp_authorize_keeps_local_baseline_and_operation_gate(self):
+        repo = self._cloudspec_repo()
+        state = self._seed()
+        state["client"] = "claude"
+        state["clientSessionId"] = "headless-session-1"
+        state["headlessRegistered"] = True
+        state["current"] = None
+        self._claude_store().save(state)
+        with mock.patch.dict(os.environ, {
+                "CODEX_THREAD_ID": "",
+                "JARVIS_INTERACTIVE_CLIENT": "claude",
+                "JARVIS_INTERACTIVE_SESSION_ID": "headless-session-1",
+                "JARVIS_HEADLESS_AMP_BROKER": "/trusted/broker",
+        }), mock.patch.object(worker, "_headless_broker_matches_executor",
+                             return_value=True), \
+                mock.patch.object(worker, "_calling_process_matches",
+                             return_value=True), \
+                contextlib.redirect_stderr(io.StringIO()) as stderr:
+            self.assertEqual(worker.amp_authorize("publish", str(repo)), 2)
+            self.assertIn("baseline was not established", stderr.getvalue())
+
+            self.assertIsNone(worker._cloudspec_operation_guard_reason(
+                self._claude_store(), {
+                    "tool_name": "Bash", "cwd": str(repo),
+                    "tool_input": {"command": "amp_safe publish pre"},
+                }))
+            self.assertEqual(worker.amp_authorize("publish", str(repo)), 0)
+            (repo / "operations" / "GetThing.cspec").write_text(
+                "changed", encoding="utf-8")
+            self.assertEqual(worker.amp_authorize("publish", str(repo)), 2)
+
+    def test_headless_fake_parent_broker_cannot_mint_local_authority(self):
+        state = self._seed()
+        state["headlessRegistered"] = True
+        state["current"] = None
+        self._store().save(state)
+        with mock.patch.dict(os.environ, {
+                "JARVIS_HEADLESS_AMP_BROKER": "/attacker/socket"}), \
+                mock.patch.object(worker, "_headless_broker_matches_executor",
+                                  return_value=False), \
+                mock.patch.object(worker, "_calling_process_matches",
+                                  return_value=True), \
+                contextlib.redirect_stderr(io.StringIO()) as stderr:
+            self.assertEqual(worker.amp_authorize("init", self.temp.name), 2)
+        self.assertIn("active claimed task", stderr.getvalue())
+
     def test_amp_authorize_requires_claim_and_feature_branch(self):
         repo = self._cloudspec_repo()
         self._store().save(self._seed())
@@ -2413,12 +2459,14 @@ class InteractiveWorkerTest(unittest.TestCase):
 
         def execvpe(executable, command, env):
             self.assertNotIn("JARVIS_CONTROL_PLANE_ADMIN_TOKEN", env)
+            self.assertNotIn("JARVIS_CONTROL_PLANE_TOKEN", env)
             order.append(("exec", executable, list(command),
                           env["JARVIS_INTERACTIVE_SESSION_ID"]))
             raise RuntimeError("exec intercepted")
 
         with mock.patch.dict(os.environ, {
                 "JARVIS_CONTROL_PLANE_ADMIN_TOKEN": "operator-only",
+                "JARVIS_CONTROL_PLANE_TOKEN": "worker-only",
         }, clear=False), mock.patch.object(worker, "register_headless",
                                side_effect=register), \
                 mock.patch.object(worker.os, "execvpe", side_effect=execvpe):
