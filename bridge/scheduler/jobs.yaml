@@ -64,6 +64,15 @@ jobs:
     retry_delay_seconds: 60
     enabled: true
 
+  - key: aone.priority-inbox
+    runner: aone_priority_inbox
+    revision: 1
+    description: 同步各需求池中真人被指派、抄送或参与的未终态 Aone，供看板优先级梳理
+    schedule: {kind: interval, interval_seconds: 900, run_immediately: true}
+    misfire: COALESCE
+    retry_delay_seconds: 120
+    enabled: true
+
   - key: aone.reply
     runner: reply
     revision: 1
