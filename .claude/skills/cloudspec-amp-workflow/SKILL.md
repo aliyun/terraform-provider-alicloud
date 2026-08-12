@@ -33,6 +33,10 @@ allowed-tools: Bash, Read, Write, Edit, AskUserQuestion
 5. **危险操作显式 `--yes`**（branch delete / api delete 等），并先 `--dry-run`。
 6. **环境名全小写**（`daily / pre / online`）—— amp 手册明确要求，错大小写会触发 `INVALID_INPUT`。
 7. **不写认证信息到 git 或日志** —— amp 常规认证只依赖 BUC 登录；BUC token 不读、不打印、不让用户在对话里粘贴。AK/SK 仅在用户明确要求兼容低频旧链路时作为可选配置，并且只能由用户在本地安全终端处理。
+8. **Jarvis 访问 Code 私库只用 Jarvis private token** —— 只读 API 走
+   `bin/a1id -- repo ...`；clone/push 走本 skill 的
+   `scripts/jarvis-code-git.sh`。禁止使用 TerraformRD/个人身份、SSH key、`SshUrl`，也禁止把
+   token 拼进 URL、remote、命令参数或日志。private token 不可用时 fail-closed，不回退 SSH。
 
 ### Jarvis 可信执行覆盖（Agent 必须遵守）
 
@@ -198,6 +202,19 @@ amp doctor -o json
 
 JSON 里除可选 `AKSK_MISSING` 外，所有常规 `checks[*].status == "ok"` 才算 bootstrap 完成。任意常规项还红 → 回到对应 step 2.3-2.7，**不要继续 step 3**。如果仅剩 AK/SK 相关检查失败，记录为低频可选项后继续。
 
+### 2.9 Jarvis Code private token 体检
+
+Jarvis/数字人环境在 clone 前必须验证独立的 jarvis Code 凭据；AMP BUC 登录与 Code private
+token 是两套认证，前者成功不能替代后者：
+
+```bash
+bash <skill-dir>/scripts/jarvis-code-git.sh check
+bin/a1id -- repo view <group/repo> -f json
+```
+
+缺凭据时，让仓库主人在安全终端把 Code private token 登录到 jarvis 隔离配置；不得在对话中
+粘贴 token，不得借 TerraformRD、个人身份或 SSH 绕过。
+
 ---
 
 ## 3. 分支管理
@@ -263,9 +280,11 @@ amp branch delete --branch <name> --yes -o json
 
 ---
 
-## 4. 克隆 cspec 源码仓库 + 进入 cspec 工作流
+## 4. 用 Jarvis private token 克隆 cspec 源码 + 进入 cspec 工作流
 
-> amp 后端在 `amp init` 时已返回完整 `SshUrl`，本节利用该 URL 直接 clone，无需用户手动拼仓库名。
+> amp 后端在 `amp init` 时返回项目 ID、项目名和 `SshUrl`。Jarvis 只用这些信息确定
+> `<group/repo>`，**不得执行或保存 `SshUrl`**；实际 Git transport 固定为 Jarvis Code
+> private-token HTTPS。
 >
 > **硬约束**：amp branch 与 git branch **同名**，但**只能用 `amp branch create` 创建**。直接 `git checkout -b` 创建的 git 分支后端不识别，无法 publish。本 skill 永远先 `amp branch create`，再 `git clone -b`。
 
@@ -288,7 +307,14 @@ amp branch delete --branch <name> --yes -o json
 amp init --pop-code <popCode> --pop-version <version> --debug --no-interactive -o json 2>&1
 ```
 
-从 debug 输出中提取 `response_body` 里的 `SshUrl` 字段，即为完整 git clone 地址。
+从 debug 输出提取项目 ID，并把 `SshUrl`/`ProjectName` 仅解析为 `<group/repo>`。随后用 Jarvis
+身份 point-read 仓库和目标分支：
+
+```bash
+bin/a1id -- repo view <group/repo> -f json
+bin/a1id -- repo branch list --repo <group/repo> \
+  --keyword <branchName> --per-page 100 -f json
+```
 
 **用户只需提供**：
 - `pop-code`（产品 POP Code，如 ecs、polardb、OpenAPIExplorer）
@@ -326,9 +352,10 @@ namespace 格式：`alicloud.{Product}.{popCode}.v{YYYYMMDD}`
 
 **B. 用户直接提供完整仓库名或 git URL**
 
-直接用，不做解析。
+只解析出 `<group/repo>`；丢弃 URL 中的 scheme、host 与认证信息。Jarvis 禁止直接使用用户给的
+URL clone，更禁止接受带 token 的 URL。
 
-### 4.3 选定本地路径 + git clone
+### 4.3 选定本地路径 + private-token HTTPS clone
 
 ```
 Q: clone 到哪里？
@@ -340,16 +367,23 @@ Q: clone 到哪里？
 选 C 时跳过 clone，直接进 step 4.4。
 
 ```bash
-git clone -b <branchName> <SshUrl> <localPath>
+bash <skill-dir>/scripts/jarvis-code-git.sh clone \
+  <group/repo> <branchName> <absolute-localPath>
 ```
 
 `<branchName>` = step 3.3 刚 `amp branch create` 出来的同名分支。
+
+helper 从 `~/.config/a1/identities/jarvis/auth.yaml` 读取 `platforms.code` private token，并仅通过
+`GIT_ASKPASS` 交给 Git；remote 保持无凭证 HTTPS URL。禁止自行读取/打印 token，禁止临时改
+全局 `credential.helper`，禁止把 token 写进 `.git/config`。
 
 **失败诊断**：
 
 | 失败信号 | 原因 | 处理 |
 |---|---|---|
-| `Permission denied (publickey)` | SSH key 没加到 GitLab | 引导用户去 `https://code.alibaba-inc.com/profile/keys` 加公钥，**不要改 ~/.ssh** |
+| `jarvis Code auth ... missing` | jarvis 隔离配置无 Code private token | 仓库主人在安全终端登录 jarvis Code token；不在对话粘贴，不回退 SSH |
+| `HTTP 401/403` | private token 失效或无仓库权限 | 用 `bin/a1id -- repo view/branch list` 区分 token 失效与 repo ACL；保持 jarvis 身份 |
+| `Permission denied (publickey)` | 错误地进入了 SSH 路径 | 停止并改用 `jarvis-code-git.sh`；**不要配置或借用 SSH key** |
 | `remote: ERROR: ... not found` | 仓库不存在 / 后端 SshUrl 有误 | 让用户复核 pop-code，或走 step 4.2 fallback 手动提供 URL |
 | `error: Remote branch <name> not found` | amp branch 还没同步到 git 远端 | `amp branch get --branch <name>` 确认存在 → 等 30s 重试；仍失败则开 issue |
 
@@ -412,7 +446,14 @@ amp context set branch <branchName>
 
 1. 本 skill 输出一句明确指引：「仓库已 clone 到 `<localPath>`，分支 `<branchName>` 就绪。请在该目录做 .cspec 编辑——按 cloudspec-idl-guide 路由。完成后回到 cloudspec-amp-workflow 做发布。」
 2. **元数据生产统一走 cspec 文件**，不使用 `amp api create / update / delete`。生产路径：编辑 `.cspec` → `aliyun cspec build` → `amp publish`。`amp api list / get` 仅用于发布前只读验证。
-3. 不要**自动**替用户 `git add / commit / push`——cspec 工具链 + amp publish 会自己处理源码同步。但在 build + check 全绿后，**应提示用户是否要 commit + push 到远端分支以持久化变更**（详见 cloudspec-idl-guide 第五节），用户明确确认后方可执行 git 操作。
+3. 不要**自动**替用户 `git add / commit / push`——cspec 工具链 + amp publish 会自己处理源码同步。但在 build + check 全绿且已获授权后，push 必须继续使用 Jarvis private-token helper：
+
+   ```bash
+   bash <skill-dir>/scripts/jarvis-code-git.sh push \
+     <model-repo-dir> <group/repo> HEAD refs/heads/<feature-branch>
+   ```
+
+   helper 永久拒绝 master/main；不得改用 SSH 或把 token 持久化到 remote。
 
 ---
 

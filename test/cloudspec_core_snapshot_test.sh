@@ -31,6 +31,13 @@ for skill in "${required_skills[@]}"; do
   jq -e --arg skill "$skill" '.skills | index($skill) != null' "$lock" >/dev/null
 done
 
+for root in .claude .agents; do
+  helper="$repo_root/$root/skills/cloudspec-amp-workflow/scripts/jarvis-code-git.sh"
+  test -x "$helper"
+  grep -q 'scripts/jarvis-code-git.sh' \
+    "$repo_root/$root/skills/cloudspec-amp-workflow/SKILL.md"
+done
+
 # 机器人只拿业务技能，不把正式插件默认 telemetry hook 带进仓库。
 test ! -e "$repo_root/.claude/plugins/cloudspec-core/hooks"
 test ! -e "$repo_root/.agents/plugins/cloudspec-core/hooks"
