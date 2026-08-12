@@ -170,6 +170,7 @@ func Provider() terraform.ResourceProvider {
 			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
+			"alicloud_realtime_compute_session_clusters":              dataSourceAliCloudRealtimeComputeSessionClusters(),
 			"alicloud_redis_global_security_ip_groups":                dataSourceAliCloudRedisGlobalSecurityIpGroups(),
 			"alicloud_apig_ai_model_providers":                        dataSourceAliCloudApigAiModelProviders(),
 			"alicloud_apig_services":                                  dataSourceAliCloudApigServices(),
@@ -616,7 +617,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_hbr_restore_jobs":                                 dataSourceAlicloudHbrRestoreJobs(),
 			"alicloud_alb_listeners":                                    dataSourceAlicloudAlbListeners(),
 			"alicloud_ens_key_pairs":                                    dataSourceAlicloudEnsKeyPairs(),
-			"alicloud_ens_security_groups":                             dataSourceAliCloudEnsSecurityGroups(),
+			"alicloud_ens_security_groups":                              dataSourceAliCloudEnsSecurityGroups(),
 			"alicloud_sae_applications":                                 dataSourceAlicloudSaeApplications(),
 			"alicloud_alb_rules":                                        dataSourceAliCloudAlbRules(),
 			"alicloud_cms_metric_rule_templates":                        dataSourceAlicloudCmsMetricRuleTemplates(),
@@ -951,6 +952,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_apig_plugin_classes":                              dataSourceAliCloudApigPluginClasses(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_realtime_compute_session_cluster":                     resourceAliCloudRealtimeComputeSessionCluster(),
 			"alicloud_redis_global_security_ip_group":                       resourceAliCloudRedisGlobalSecurityIpGroup(),
 			"alicloud_message_service_account_logging":                      resourceAliCloudMessageServiceAccountLogging(),
 			"alicloud_apig_ai_model_provider":                               resourceAliCloudApigAiModelProvider(),
