@@ -38,6 +38,16 @@ func TestAccAlicloudNASFileSystem_DataSource(t *testing.T) {
 			"ids": `["${alicloud_nas_file_system.default.id}_fake"]`,
 		}),
 	}
+	fileSystemTypeConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudFileSystemDataSourceConfig(rand, map[string]string{
+			"file_system_type":  `"standard"`,
+			"description_regex": `"^${alicloud_nas_file_system.default.description}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudFileSystemDataSourceConfig(rand, map[string]string{
+			"file_system_type":  `"extreme"`,
+			"description_regex": `"^${alicloud_nas_file_system.default.description}"`,
+		}),
+	}
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudFileSystemDataSourceConfig(rand, map[string]string{
 			"storage_type":      `"${alicloud_nas_file_system.default.storage_type}"`,
@@ -52,7 +62,7 @@ func TestAccAlicloudNASFileSystem_DataSource(t *testing.T) {
 	}
 
 	fileSystemCheckInfo.dataSourceTestCheck(t, rand, storageTypeConf, protocolTypeConf,
-		descriptionConf, idsConf, allConf)
+		descriptionConf, idsConf, fileSystemTypeConf, allConf)
 }
 
 func testAccCheckAlicloudFileSystemDataSourceConfig(rand int, attrMap map[string]string) string {
