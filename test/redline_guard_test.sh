@@ -271,6 +271,8 @@ expect "python concatenated subprocess amp blocked" 2 \
     "python3 -c 'import subprocess; subprocess.run([\"am\"+\"p\",\"doctor\"])'"
 expect "trusted amp wrapper command allowed" 0 \
     "/usr/bin/python3 -I $repo_root/bootstrap/amp_safe.py doctor"
+expect "trusted amp wrapper with explicit repo root allowed" 0 \
+    "/usr/bin/python3 -I $repo_root/bootstrap/amp_safe.py --repo-root $repo_root doctor"
 expect "trusted wrapper cannot mask chained raw amp" 2 \
     "/usr/bin/python3 -I $repo_root/bootstrap/amp_safe.py doctor; amp doctor"
 expect "amp text audit allowed" 0 \

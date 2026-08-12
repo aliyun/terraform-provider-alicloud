@@ -4732,7 +4732,8 @@ def stop_check() -> int:
     return HOOK_BLOCK_EXIT
 
 
-def amp_authorize(action: str, repo_root: str) -> int:
+def amp_authorize(action: str, repo_root: str,
+                  target_json: str = "{}") -> int:
     """Authorize a trusted amp_safe mutation against the active task fence.
 
     The wrapper invokes this immediately before the real AMP subprocess.  It
@@ -4744,7 +4745,18 @@ def amp_authorize(action: str, repo_root: str) -> int:
         "context-set-branch", "publish",
     }
     if action not in allowed_actions:
-        print("amp-safe: unknown authorization action", file=sys.stderr)
+        print("amp-safe: reason=action_not_allowed detail=unknown authorization action",
+              file=sys.stderr)
+        return HOOK_BLOCK_EXIT
+    try:
+        target = json.loads(target_json)
+    except (TypeError, ValueError):
+        target = None
+    if (not isinstance(target, Mapping)
+            or int(target.get("schemaVersion") or 0) != 1
+            or str(target.get("action") or "") != action):
+        print("amp-safe: reason=target_invalid "
+              "detail=invalid structured authorization target", file=sys.stderr)
         return HOOK_BLOCK_EXIT
     store = _current_store()
     state = store.load()
@@ -4753,7 +4765,8 @@ def amp_authorize(action: str, repo_root: str) -> int:
         state.get("headlessRegistered")
         and _headless_broker_matches_executor(state))
     if not isinstance(current, Mapping) and not headless_authority:
-        print("amp-safe: active claimed task is required", file=sys.stderr)
+        print("amp-safe: reason=active_task_required "
+              "detail=active claimed task is required", file=sys.stderr)
         return HOOK_BLOCK_EXIT
     local_reason = _local_tool_block_reason(state)
     if local_reason and not (headless_authority and not isinstance(current, Mapping)):
@@ -4767,30 +4780,35 @@ def amp_authorize(action: str, repo_root: str) -> int:
             return HOOK_BLOCK_EXIT
     client_name = str(state.get("client") or "")
     if (not client_name or not _calling_process_matches(state, client_name)):
-        print("amp-safe: Worker process incarnation cannot be verified",
+        print("amp-safe: reason=worker_incarnation_mismatch "
+              "detail=Worker process incarnation cannot be verified",
               file=sys.stderr)
         return HOOK_BLOCK_EXIT
     if (not headless_authority and client_name == "codex"
             and not state.get("turnActive", True)):
-        print("amp-safe: Codex turn is no longer active", file=sys.stderr)
+        print("amp-safe: reason=turn_inactive "
+              "detail=Codex turn is no longer active", file=sys.stderr)
         return HOOK_BLOCK_EXIT
 
     try:
         candidate = Path(repo_root).expanduser().resolve(strict=False)
     except (OSError, RuntimeError, ValueError) as exc:
-        print("amp-safe: invalid repository path: %s" % exc, file=sys.stderr)
+        print("amp-safe: reason=repo_invalid detail=%s" % exc, file=sys.stderr)
         return HOOK_BLOCK_EXIT
 
     discovered: Optional[Path] = None
-    if action == "publish":
+    require_model_repo = str(target.get("repoMode") or "") == "model"
+    if require_model_repo:
         try:
             discovered = _cloudspec_guard_repo_root(candidate)
         except OperationDiffGuardError as exc:
-            print("amp-safe: cannot prove publish repository safe: %s" % exc,
+            print("amp-safe: reason=repo_unprovable "
+                  "detail=cannot prove mutation repository safe: %s" % exc,
                   file=sys.stderr)
             return HOOK_BLOCK_EXIT
         if discovered is None:
-            print("amp-safe: publish must run inside a CloudSpec Git repository",
+            print("amp-safe: reason=repo_not_cloudspec "
+                  "detail=mutation must target a CloudSpec Git repository",
                   file=sys.stderr)
             return HOOK_BLOCK_EXIT
         # PreToolUse must establish the baseline before the wrapper starts. If
@@ -4801,7 +4819,8 @@ def amp_authorize(action: str, repo_root: str) -> int:
                                if isinstance(guard_before, Mapping) else None)
         if (not isinstance(repositories_before, Mapping)
                 or os.fspath(discovered) not in repositories_before):
-            print("amp-safe: trusted task baseline was not established before publish",
+            print("amp-safe: reason=baseline_not_registered "
+                  "detail=trusted task baseline was not established before mutation",
                   file=sys.stderr)
             return HOOK_BLOCK_EXIT
 
@@ -4818,7 +4837,12 @@ def amp_authorize(action: str, repo_root: str) -> int:
     if operation_reason:
         print(operation_reason, file=sys.stderr)
         return HOOK_BLOCK_EXIT
-    if action != "publish":
+    if not require_model_repo:
+        _print_json({
+            "allowed": True, "action": action,
+            "repoMode": str(target.get("repoMode") or ""),
+            "project": target.get("project") or {},
+        })
         return 0
     assert discovered is not None
     has_main = _cloudspec_guard_repo_has_main(discovered)
@@ -4842,17 +4866,17 @@ def amp_authorize(action: str, repo_root: str) -> int:
     inspection = inspect_repository(
         discovered, baseline, expected_branch=branch)
     if inspection.blocked:
-        print("amp-safe: cannot prove publish diff safe: %s" % inspection.reason,
+        print("amp-safe: cannot prove mutation diff safe: %s" % inspection.reason,
               file=sys.stderr)
         return HOOK_BLOCK_EXIT
     if inspection.paths:
         print(_cloudspec_guard_message(
             os.fspath(discovered),
-            "publish diff involves IDL operations/",
+            "mutation diff involves IDL operations/",
             inspection.paths,
         ), file=sys.stderr)
         return HOOK_BLOCK_EXIT
-    if not inspection.current_branch.startswith("feature/"):
+    if action == "publish" and not inspection.current_branch.startswith("feature/"):
         print("amp-safe: publish requires a feature/* Git branch; found %s"
               % (inspection.current_branch or "unknown"), file=sys.stderr)
         return HOOK_BLOCK_EXIT
@@ -4874,6 +4898,12 @@ def amp_authorize(action: str, repo_root: str) -> int:
     if final_reason:
         print("amp-safe: %s" % final_reason, file=sys.stderr)
         return HOOK_BLOCK_EXIT
+    _print_json({
+        "allowed": True, "action": action, "repoMode": "model",
+        "repo": os.fspath(discovered), "baseline": baseline,
+        "branch": inspection.current_branch,
+        "project": target.get("project") or {},
+    })
     return 0
 
 
@@ -4965,6 +4995,7 @@ def _parser() -> argparse.ArgumentParser:
         "context-set-branch", "publish",
     ))
     amp_parser.add_argument("--repo", required=True)
+    amp_parser.add_argument("--target-json", default="{}")
     sub.add_parser("status")
     sub.add_parser("stop-check")
     return parser
@@ -5063,7 +5094,7 @@ def main(argv: Optional[list[str]] = None) -> int:
         elif args.command == "post-pr-context":
             return 0 if post_pr_context_active(args.pid) else 1
         elif args.command == "amp-authorize":
-            return amp_authorize(args.action, args.repo)
+            return amp_authorize(args.action, args.repo, args.target_json)
         elif args.command == "status":
             _print_json(worker_status())
         elif args.command == "stop-check":

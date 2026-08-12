@@ -2,6 +2,7 @@
 """Tests for the strict AMP CLI safety wrapper."""
 
 import json
+import io
 import os
 import stat
 import struct
@@ -40,6 +41,12 @@ class AmpSafeTest(unittest.TestCase):
         self.stub = self.root / "amp-stub"
         self.stub.write_text(_AMP_STUB, encoding="utf-8")
         self.stub.chmod(self.stub.stat().st_mode | stat.S_IXUSR)
+        (self.root / ".amp").mkdir()
+        (self.root / ".amp" / "context.yaml").write_text(
+            "project_id: '3065873'\n"
+            "pop_code: eventbridge\n"
+            "version: 2020-04-01\n"
+            "branch: feature/test-safe\n", encoding="utf-8")
         self.environment = dict(os.environ)
         self.environment.update({
             "JARVIS_AMP_SAFE_TESTING": "1",
@@ -99,7 +106,8 @@ class AmpSafeTest(unittest.TestCase):
             (("init", "--pop-code", "ecs", "--pop-version", "2014-05-26",
               "--branch", "feature/add-tag"), "init"),
             (("branch", "create", "--branch", "feature/add-tag",
-              "--description", "add tag"), "branch-create"),
+              "--description", "add tag", "--project-id", "3065873"),
+             "branch-create"),
             (("branch", "switch", "feature/add-tag"), "branch-switch"),
             (("context", "set", "branch", "feature/add-tag"),
              "context-set-branch"),
@@ -114,6 +122,10 @@ class AmpSafeTest(unittest.TestCase):
                 self.assertEqual(events[0]["action"], action)
                 self.assertEqual(events[0]["repo"], os.fspath(self.root.resolve()))
                 self.assert_fixed_flags(events[1])
+                if action != "init":
+                    self.assertIn("--project-id", events[1]["argv"])
+                    self.assertNotIn("--pop-code", events[1]["argv"])
+                    self.assertNotIn("--pop-version", events[1]["argv"])
 
     def test_real_daily_and_pre_publish_dry_run_once_before_real_call(self):
         for environment in ("daily", "pre"):
@@ -179,7 +191,8 @@ class AmpSafeTest(unittest.TestCase):
         self.authorization_code = 23
 
         self.assertEqual(
-            self.run_amp("branch", "create", "--branch", "feature/safe"), 23)
+            self.run_amp("branch", "create", "--branch", "feature/safe",
+                         "--project-id", "3065873"), 23)
 
         self.assertEqual(
             [event["kind"] for event in self.events()], ["authorize"])
@@ -254,11 +267,81 @@ class AmpSafeTest(unittest.TestCase):
                 with self.assertRaisesRegex(amp_safe.AmpSafeError, "feature/"):
                     amp_safe.parse_amp_argv(argv)
 
+    def test_mutation_scope_grammar_rejects_ambiguous_or_malformed_targets(self):
+        rejected = (
+            ("init", "--pop-code", "eventbridge/2020-04-01",
+             "--pop-version", "2020-04-01"),
+            ("init", "--pop-code", "eventbridge"),
+            ("branch", "create", "--branch", "feature/no-scope"),
+            ("branch", "create", "--branch", "feature/pop-scope",
+             "--pop-code", "eventbridge", "--pop-version", "2020-04-01"),
+            ("branch", "create", "--branch", "feature/x",
+             "--project-id", "3065873", "--pop-code", "eventbridge",
+             "--pop-version", "2020-04-01"),
+            ("init", "--project-id", "0"),
+            ("init", "--pop-code", "eventbridge", "--pop-version", "2020-13-01"),
+        )
+        for argv in rejected:
+            with self.subTest(argv=argv), self.assertRaises(amp_safe.AmpSafeError):
+                amp_safe.parse_amp_argv(argv)
+
+    def test_remote_mutation_executes_only_with_context_project_id(self):
+        self.assertEqual(self.run_amp(
+            "branch", "create", "--branch", "feature/project-fence",
+            "--project-id", "3065873"), 0)
+        argv = self.events()[1]["argv"]
+        self.assertIn("--project-id", argv)
+        self.assertEqual(argv[argv.index("--project-id") + 1], "3065873")
+        self.assertNotIn("--pop-code", argv)
+        self.assertNotIn("--pop-version", argv)
+
+    def test_branch_create_can_use_staging_context_only_with_project_id(self):
+        staging = self.root / "staging"
+        staging.mkdir()
+        self.clear_events()
+        self.assertEqual(amp_safe.run(
+            ("branch", "create", "--branch", "feature/staging",
+             "--project-id", "3065873"), cwd=staging,
+            environ=self.environment, authorizer=self.authorize), 0)
+        argv = self.events()[1]["argv"]
+        self.assertEqual(argv[argv.index("--project-id") + 1], "3065873")
+
+    def test_branch_create_project_id_must_match_existing_context(self):
+        with self.assertRaisesRegex(
+                amp_safe.AmpSafeError, "does not match trusted AMP context"):
+            self.run_amp("branch", "create", "--branch", "feature/wrong-project",
+                         "--project-id", "3033394")
+
+    def test_explicit_repo_root_controls_authorization_and_child_cwd(self):
+        unrelated = self.root / "unrelated"
+        unrelated.mkdir()
+        self.assertEqual(amp_safe.run(
+            ("branch", "create", "--branch", "feature/explicit-root",
+             "--project-id", "3065873"),
+            cwd=unrelated, repo_root=self.root,
+            environ=self.environment, authorizer=self.authorize), 0)
+        events = self.events()
+        self.assertEqual(events[0]["repo"], str(self.root.resolve()))
+        self.assertEqual(events[1]["argv"][-5:-3],
+                         ["--project-id", "3065873"])
+
+    def test_cli_repo_root_is_explicit_absolute_prefix(self):
+        with mock.patch.object(amp_safe, "run", return_value=0) as execute:
+            self.assertEqual(amp_safe.main((
+                "--repo-root", str(self.root), "doctor")), 0)
+        self.assertEqual(execute.call_args.args[0], ["doctor"])
+        self.assertEqual(execute.call_args.kwargs["repo_root"], self.root)
+        stderr = io.StringIO()
+        with mock.patch("sys.stderr", new=stderr):
+            self.assertEqual(amp_safe.main((
+                "--repo-root", "relative", "doctor")), 2)
+        self.assertIn("absolute path", stderr.getvalue())
+
     def test_description_metacharacters_remain_one_literal_argv_value(self):
         description = "$(touch should-not-run); still literal"
         self.assertEqual(self.run_amp(
             "branch", "create", "--branch", "feature/literal",
-            "--description", description), 0)
+            "--description", description, "--project-id", "3065873"), 0)
 
         amp_event = self.events()[1]
         index = amp_event["argv"].index("--description")
@@ -311,9 +394,22 @@ class AmpSafeTest(unittest.TestCase):
     def test_default_authorizer_calls_worker_with_exact_action_and_cwd(self):
         with mock.patch.object(
                 amp_safe.subprocess, "run",
-                return_value=SimpleNamespace(returncode=0)) as execute:
+                return_value=SimpleNamespace(
+                    returncode=0, stderr="", stdout=json.dumps({
+                        "allowed": True, "action": "branch-create",
+                        "repoMode": "project",
+                        "project": {"projectId": "3065873",
+                                    "popCode": "eventbridge",
+                                    "popVersion": "2020-04-01"},
+                    }))) as execute:
             self.assertEqual(
-                amp_safe._authorize("branch-create", self.root.resolve()), 0)
+                amp_safe._authorize("branch-create", self.root.resolve(), {
+                    "schemaVersion": 1, "action": "branch-create",
+                    "repoMode": "project", "branch": "feature/test-safe",
+                    "project": {"projectId": "3065873",
+                                "popCode": "eventbridge",
+                                "popVersion": "2020-04-01"},
+                }), 0)
 
         command = execute.call_args.args[0]
         self.assertEqual(command[0], sys.executable)
@@ -322,6 +418,7 @@ class AmpSafeTest(unittest.TestCase):
             mock.ANY,
             "amp-authorize", "--action", "branch-create", "--repo",
             os.fspath(self.root.resolve()),
+            "--target-json", mock.ANY,
         ])
         self.assertTrue(command[2].endswith(
             "/bootstrap/jarvis-interactive-worker.py"))
@@ -332,33 +429,94 @@ class AmpSafeTest(unittest.TestCase):
     def test_fake_headless_broker_peer_outside_ancestor_chain_is_rejected(self):
         broker = mock.Mock()
         broker.getsockopt.return_value = struct.pack("I", 999999)
+        receipt = json.dumps({
+            "allowed": True, "action": "publish", "repoMode": "model",
+            "repo": str(self.root.resolve()), "baseline": "a" * 40,
+            "project": {"projectId": "3065873", "popCode": "eventbridge",
+                        "popVersion": "2020-04-01"},
+        })
         with mock.patch.dict(os.environ, {
                 "JARVIS_HEADLESS_AMP_BROKER": "/tmp/fake.sock"}), \
                 mock.patch.object(amp_safe.socket, "socket", return_value=broker), \
                 mock.patch.object(amp_safe.os, "getppid", return_value=123), \
                 mock.patch.object(
                     amp_safe.subprocess, "run",
-                    return_value=SimpleNamespace(stdout="1\n", returncode=0)):
+                    side_effect=(SimpleNamespace(
+                        stdout=receipt, stderr="", returncode=0),
+                                 SimpleNamespace(stdout="1\n", returncode=0))):
             with self.assertRaisesRegex(
                     amp_safe.AmpSafeError, "broker unavailable"):
-                amp_safe._authorize("publish", self.root.resolve())
+                amp_safe._authorize("publish", self.root.resolve(), {
+                    "schemaVersion": 1, "action": "publish",
+                    "repoMode": "model", "branch": "feature/test-safe",
+                    "publishKind": "pre",
+                    "project": {"projectId": "3065873",
+                                "popCode": "eventbridge",
+                                "popVersion": "2020-04-01"},
+                })
 
     def test_headless_broker_success_still_runs_local_operation_authorizer(self):
         broker = mock.Mock()
         broker.getsockopt.return_value = struct.pack("I", 42)
-        broker.recv.return_value = b"OK\n"
+        broker.recv.return_value = b'{"allowed":true,"reason":"authorized"}\n'
         with mock.patch.dict(os.environ, {
                 "JARVIS_HEADLESS_AMP_BROKER": "/tmp/trusted.sock"}), \
                 mock.patch.object(amp_safe.socket, "socket", return_value=broker), \
                 mock.patch.object(amp_safe.os, "getppid", return_value=42), \
-                mock.patch.object(
-                    amp_safe.subprocess, "run",
-                    return_value=SimpleNamespace(returncode=0)) as execute:
+                mock.patch.object(amp_safe.subprocess, "run",
+                    return_value=SimpleNamespace(
+                        returncode=0, stderr="", stdout=json.dumps({
+                            "allowed": True, "action": "publish",
+                            "repoMode": "model", "repo": str(self.root.resolve()),
+                            "baseline": "a" * 40,
+                            "project": {"projectId": "3065873",
+                                        "popCode": "eventbridge",
+                                        "popVersion": "2020-04-01"},
+                        }))) as execute:
             self.assertEqual(
-                amp_safe._authorize("publish", self.root.resolve()), 0)
+                amp_safe._authorize("publish", self.root.resolve(), {
+                    "schemaVersion": 1, "action": "publish",
+                    "repoMode": "model", "branch": "feature/test-safe",
+                    "publishKind": "pre",
+                    "project": {"projectId": "3065873",
+                                "popCode": "eventbridge",
+                                "popVersion": "2020-04-01"},
+                }), 0)
         command = execute.call_args.args[0]
         self.assertIn("amp-authorize", command)
         broker.sendall.assert_called_once()
+
+    def test_headless_broker_deny_reason_is_returned_to_caller(self):
+        broker = mock.Mock()
+        broker.getsockopt.return_value = struct.pack("I", 42)
+        broker.recv.return_value = (
+            b'{"allowed":false,"reason":"project_identity_mismatch"}\n')
+        receipt = json.dumps({
+            "allowed": True, "action": "publish", "repoMode": "model",
+            "repo": str(self.root.resolve()), "baseline": "a" * 40,
+            "branch": "feature/test-safe",
+            "project": {"projectId": "3065873", "popCode": "eventbridge",
+                        "popVersion": "2020-04-01"},
+        })
+        stderr = io.StringIO()
+        with mock.patch.dict(os.environ, {
+                "JARVIS_HEADLESS_AMP_BROKER": "/tmp/trusted.sock"}), \
+                mock.patch.object(amp_safe.socket, "socket", return_value=broker), \
+                mock.patch.object(amp_safe.os, "getppid", return_value=42), \
+                mock.patch.object(amp_safe.subprocess, "run",
+                    return_value=SimpleNamespace(
+                        returncode=0, stderr="", stdout=receipt)), \
+                mock.patch("sys.stderr", new=stderr):
+            code = amp_safe._authorize("publish", self.root.resolve(), {
+                "schemaVersion": 1, "action": "publish",
+                "repoMode": "model", "branch": "feature/test-safe",
+                "publishKind": "pre",
+                "project": {"projectId": "3065873",
+                            "popCode": "eventbridge",
+                            "popVersion": "2020-04-01"},
+            })
+        self.assertEqual(code, 2)
+        self.assertIn("reason=project_identity_mismatch", stderr.getvalue())
 
 
 if __name__ == "__main__":

@@ -34,6 +34,33 @@ allowed-tools: Bash, Read, Write, Edit, AskUserQuestion
 6. **环境名全小写**（`daily / pre / online`）—— amp 手册明确要求，错大小写会触发 `INVALID_INPUT`。
 7. **不写认证信息到 git 或日志** —— amp 常规认证只依赖 BUC 登录；BUC token 不读、不打印、不让用户在对话里粘贴。AK/SK 仅在用户明确要求兼容低频旧链路时作为可选配置，并且只能由用户在本地安全终端处理。
 
+### Jarvis 可信执行覆盖（Agent 必须遵守）
+
+本文后续的 `amp ...` 命令是人工终端的原生 CLI 参考。Jarvis/
+Claude/Codex **禁止直接执行 raw amp**，必须使用仓库内可信 wrapper：
+
+```bash
+/usr/bin/python3 -I <jarvis-root>/bootstrap/amp_safe.py \
+  --repo-root <absolute-workspace-or-model-repo> \
+  <allowed-amp-subcommand-and-arguments>
+```
+
+- `--repo-root` 必须是绝对路径，每一次调用都显式传入；不得假设上一个
+  Bash 工具调用里的 `cd` 会在下一次保留。
+- clone 前的 `init` / `branch create` 使用该任务独占的 bootstrap workspace；
+  clone 后的 `init` / `context` / `branch switch` / `publish` 使用含
+  `main.cspec` 的 model Git 仓库根。
+- Jarvis 执行 `branch create` 时必须显式传
+  `--project-id <context.project_id>`；不允许省略 scope，也不允许用
+  `--pop-code/--pop-version` 代替 project-id 执行远程建分支。
+- 任何远程写操作必须由 wrapper 将实际 AMP `project_id` + feature branch
+  与任务 fence 绑定；禁止使用含 `/` 的混合 `pop-code/version` 字符串，
+  也不得用可歧义 pop-code 覆盖已确定的 project-id。
+- `publish` 额外要求任务开始前已建立的 Git baseline；任何
+  `operations/` diff 仍永久阻断，daily/pre 仍执行 dry-run 后二次授权。
+- wrapper 返回的 `reason=<code>` 是可恢复性判定真源。错误 repo/scope
+  被拒绝后应修正参数重试，不应要求需求方“再评论一次”。
+
 ### 设计取向
 
 - **task-oriented**（与 amp CLI 同款）：按"用户要完成的事"分组，不按后端 Action 透出。
@@ -197,6 +224,7 @@ amp branch get --branch <name> -o json
 
 ```bash
 amp branch create \
+  --project-id <context.project_id> \
   --branch <name> \
   --description "<msg>" \
   -o json
@@ -502,7 +530,7 @@ skill 内部流程：
 1. step 2 bootstrap 自动代跳（doctor → 补 endpoint/openapi-version/BUC 登录/workspace；AK/SK 仅低频可选）。
 2. step 2.7 `amp init --pop-code ecs --pop-version 2014-05-26 --debug -o json`
    → 解析 debug 获得 `SshUrl = git@...cloudspec-model/ECS_pop_Ecs_2014-05-26.git`。
-3. step 3.3 `amp branch create --branch feature/add-user-tag --description "..."`。
+3. step 3.3 `amp branch create --project-id <context.project_id> --branch feature/add-user-tag --description "..."`。
 4. step 3.4 `amp context set branch feature/add-user-tag`。
 5. step 4.3 AskUserQuestion 问 clone 路径 → `git clone -b feature/add-user-tag <SshUrl> <localPath>`。
 6. step 4.4 输出："仓库 clone 到 `<localPath>`，分支 `feature/add-user-tag` 就绪。请按 cloudspec-idl-guide 编辑 .cspec，完成后回来 publish。"
