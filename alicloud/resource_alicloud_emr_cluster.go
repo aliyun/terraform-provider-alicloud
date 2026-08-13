@@ -664,12 +664,10 @@ func resourceAlicloudEmrClusterCreate(d *schema.ResourceData, meta interface{}) 
 
 	d.SetId(fmt.Sprint(response["ClusterId"]))
 
-	d.Partial(true)
 	emrService := EmrService{client}
 	if err := emrService.setEmrClusterTags(d); err != nil {
 		return WrapError(err)
 	}
-	d.Partial(false)
 
 	stateConf := BuildStateConf([]string{"CREATING"}, []string{"IDLE"}, d.Timeout(schema.TimeoutCreate), 6*time.Minute, emrService.EmrClusterStateRefreshFunc(d.Id(), []string{"CREATE_FAILED"}))
 	stateConf.PollInterval = 10 * time.Second

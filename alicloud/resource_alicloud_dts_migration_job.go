@@ -404,7 +404,6 @@ func resourceAlicloudDtsMigrationJobUpdate(d *schema.ResourceData, meta interfac
 	client := meta.(*connectivity.AliyunClient)
 	dtsService := DtsService{client}
 	var response map[string]interface{}
-	d.Partial(false)
 
 	if d.HasChange("status") {
 		object, err := dtsService.DescribeDtsMigrationJob(d.Id())

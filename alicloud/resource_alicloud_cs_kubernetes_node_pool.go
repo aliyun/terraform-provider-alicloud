@@ -3130,6 +3130,7 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 			}
 			// The removal of a node is logically independent.
 			// The removal of a node should not involve parameter changes.
+			d.Partial(false)
 			return resourceAliCloudAckNodepoolRead(d, meta)
 		}
 		update = true

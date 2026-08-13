@@ -178,7 +178,6 @@ func resourceAlicloudDtsMigrationInstanceRead(d *schema.ResourceData, meta inter
 func resourceAlicloudDtsMigrationInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	dtsService := DtsService{client}
-	d.Partial(false)
 
 	if d.HasChange("tags") {
 		if err := dtsService.SetResourceTags(d, "ALIYUN::DTS::INSTANCE"); err != nil {

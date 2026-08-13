@@ -183,7 +183,6 @@ func resourceAlicloudSlbServerCertificateUpdate(d *schema.ResourceData, meta int
 		return WrapError(err)
 	}
 	if d.IsNewResource() {
-		d.Partial(false)
 		return resourceAlicloudSlbServerCertificateRead(d, meta)
 	}
 	if !d.IsNewResource() && d.HasChange("name") {

@@ -225,7 +225,6 @@ func resourceAliCloudServiceMeshUserPermissionUpdate(d *schema.ResourceData, met
 func resourceAliCloudServiceMeshUserPermissionDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
-	d.Partial(true)
 	var err error
 
 	request := map[string]interface{}{

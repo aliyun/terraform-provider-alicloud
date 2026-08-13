@@ -735,7 +735,6 @@ func resourceAliCloudEcsInstanceSetRead(d *schema.ResourceData, meta interface{}
 func resourceAliCloudEcsInstanceSetUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
-	d.Partial(false)
 
 	if d.HasChange("tags") {
 		instanceIds := make([]string, 0)

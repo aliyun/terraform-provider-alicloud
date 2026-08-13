@@ -773,8 +773,6 @@ func resourceAliCloudSlbListenerUpdate(d *schema.ResourceData, meta interface{})
 		}
 	}
 
-	d.Partial(false)
-
 	return resourceAliCloudSlbListenerRead(d, meta)
 }
 

@@ -112,7 +112,6 @@ func resourceAliyunApigatewayAppUpdate(d *schema.ResourceData, meta interface{})
 		return WrapError(err)
 	}
 	if d.IsNewResource() {
-		d.Partial(false)
 		return resourceAliyunApigatewayAppRead(d, meta)
 	}
 	if d.HasChange("name") || d.HasChange("description") {
