@@ -188,7 +188,6 @@ func resourceAlicloudPolarDBEndpointAddressUpdate(d *schema.ResourceData, meta i
 	}
 
 	if d.IsNewResource() {
-		d.Partial(false)
 		return resourceAlicloudPolarDBEndpointAddressRead(d, meta)
 	}
 

@@ -335,6 +335,7 @@ func resourceAliCloudReservedInstanceUpdate(d *schema.ResourceData, meta interfa
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
+	d.Partial(false)
 
 	return resourceAliCloudReservedInstanceRead(d, meta)
 }

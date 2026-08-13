@@ -121,7 +121,6 @@ func resourceAliCloudRdsDBProxyPublicUpdate(d *schema.ResourceData, meta interfa
 	client := meta.(*connectivity.AliyunClient)
 	rdsService := RdsService{client}
 	if d.IsNewResource() {
-		d.Partial(false)
 		return resourceAliCloudRdsDBProxyPublicRead(d, meta)
 	}
 
