@@ -5,6 +5,7 @@ import logging
 import os
 import sys
 import tempfile
+import threading
 import time
 import unittest
 from pathlib import Path
@@ -395,6 +396,54 @@ class SessionControllerTest(unittest.TestCase):
         self.assertTrue(lifecycle.ownership_lost)
         self.assertEqual(len(client.named("acknowledge_force_handoff")), 1)
         self.assertEqual(client.named("complete_session"), [])
+
+    def test_force_handoff_ack_failure_retries_without_repeating_local_stop(self):
+        client = FakeClient(
+            heartbeat_session=[HandoffRequested("handoff")],
+            acknowledge_force_handoff=[
+                ControlPlaneUnavailable("offline"), {"accepted": True},
+            ])
+        stopped = []
+        lifecycle = self.make(
+            client,
+            stop_process=lambda current, reason: stopped.append(reason))
+        lifecycle.start()
+
+        self.assertFalse(lifecycle.heartbeat())
+        self.assertFalse(lifecycle.force_handoff_acknowledged)
+        self.assertTrue(lifecycle.accept_force_handoff_request(7))
+        self.assertTrue(lifecycle.force_handoff_acknowledged)
+        self.assertTrue(lifecycle.accept_force_handoff_request(7))
+
+        self.assertEqual(stopped, ["force_handoff:heartbeat"])
+        self.assertEqual(len(client.named("acknowledge_force_handoff")), 2)
+
+    def test_force_handoff_ack_conflict_is_conclusive_and_not_replayed(self):
+        client = FakeClient(
+            heartbeat_session=[HandoffRequested("handoff")],
+            acknowledge_force_handoff=[ControlPlaneConflict("already handled")])
+        lifecycle = self.make(
+            client, stop_process=lambda current, reason: None)
+        lifecycle.start()
+
+        self.assertFalse(lifecycle.heartbeat())
+        self.assertTrue(lifecycle.force_handoff_acknowledged)
+        self.assertTrue(lifecycle.accept_force_handoff_request(7))
+
+        self.assertEqual(len(client.named("acknowledge_force_handoff")), 1)
+
+    def test_force_handoff_directive_with_wrong_fence_neither_stops_nor_acks(self):
+        client = FakeClient()
+        stopped = []
+        lifecycle = self.make(
+            client,
+            stop_process=lambda current, reason: stopped.append(reason))
+        lifecycle.start()
+
+        self.assertFalse(lifecycle.accept_force_handoff_request(8))
+
+        self.assertEqual(stopped, [])
+        self.assertEqual(client.named("acknowledge_force_handoff"), [])
 
     def test_force_handoff_does_not_ack_when_local_stop_fails(self):
         client = FakeClient(heartbeat_session=[HandoffRequested("handoff")])
@@ -854,6 +903,52 @@ class PersistenceExecutorTest(unittest.TestCase):
         self.assertEqual(ack[0]["args"], ("s1", "mac:boot:proc", 7))
         self.assertTrue(worker._sessions["s1"].controller.ownership_lost)
 
+    def test_concurrent_worker_handoff_directives_stop_and_ack_once(self):
+        class BlockingAckClient(FakeClient):
+            def __init__(self):
+                super().__init__(lease_task=[lease_response()])
+                self.ack_entered = threading.Event()
+                self.ack_release = threading.Event()
+
+            def acknowledge_force_handoff(self, *args, **kwargs):
+                self.calls.append({
+                    "name": "acknowledge_force_handoff",
+                    "args": args,
+                    "kwargs": kwargs,
+                })
+                self.ack_entered.set()
+                if not self.ack_release.wait(2):
+                    raise AssertionError("test did not release handoff ACK")
+                return {"accepted": True}
+
+        client = BlockingAckClient()
+        executor = ManualExecutor()
+        stopped = []
+        worker = self.make(
+            client, lambda *_args: None,
+            lambda lifecycle, reason: stopped.append(
+                (lifecycle.session_id, reason)), executor=executor)
+        self.assertTrue(worker.run_once())
+        directive = [{"sessionId": "s1", "oldFenceToken": 7}]
+        first = threading.Thread(
+            target=worker._process_force_handoff_requests, args=(directive,))
+        second = threading.Thread(
+            target=worker._process_force_handoff_requests, args=(directive,))
+
+        first.start()
+        self.assertTrue(client.ack_entered.wait(2))
+        second.start()
+        client.ack_release.set()
+        first.join(2)
+        second.join(2)
+
+        self.assertFalse(first.is_alive())
+        self.assertFalse(second.is_alive())
+        self.assertEqual(stopped, [
+            ("s1", "force_handoff:worker_directive"),
+        ])
+        self.assertEqual(len(client.named("acknowledge_force_handoff")), 1)
+
     def test_worker_handoff_directive_acks_when_session_is_no_longer_local(self):
         client = FakeClient(list_force_handoff_requests=[[{
             "sessionId": "s9", "oldFenceToken": 4,
@@ -866,6 +961,29 @@ class PersistenceExecutorTest(unittest.TestCase):
         ack = client.named("acknowledge_force_handoff")
         self.assertEqual(len(ack), 1)
         self.assertEqual(ack[0]["args"], ("s9", "mac:boot:proc", 4))
+
+    def test_restart_recovery_uses_old_fence_and_retries_failed_ack(self):
+        directive = {
+            "sessionId": "s9", "oldFenceToken": 4,
+            "targetWorkerKey": "worker-2",
+        }
+        client = FakeClient(
+            list_force_handoff_requests=[[directive], [directive]],
+            acknowledge_force_handoff=[
+                ControlPlaneUnavailable("offline"), {"accepted": True},
+            ])
+        worker = self.make(client, lambda *_args: None, lambda *_args: None)
+
+        self.assertFalse(worker.run_once())
+        self.assertFalse(worker.network_healthy)
+        self.assertTrue(worker.run_once())
+
+        ack = client.named("acknowledge_force_handoff")
+        self.assertEqual(len(ack), 2)
+        self.assertEqual(ack[0]["args"], ("s9", "mac:boot:proc", 4))
+        self.assertEqual(ack[1]["args"], ("s9", "mac:boot:proc", 4))
+        self.assertEqual(
+            ack[0]["kwargs"]["request_id"], ack[1]["kwargs"]["request_id"])
 
     def test_session_heartbeat_includes_best_effort_progress_excerpt(self):
         client = FakeClient(lease_task=[lease_response()], heartbeat_session=[{}])

@@ -10,6 +10,9 @@
 #   force-release <task_id> [session_id] --reason TEXT --yes
 #                      fresh-read Task timeline 后携带完整 CAS，人工强制解除精确 ownership；
 #                      绝不由 scheduler/owner-health 自动调用
+#   force-handoff <task_id> [session_id] --reason TEXT --yes
+#                      fresh-read 完整 active ownership CAS 后，以 FORCE_HANDOFF
+#                      typed confirmation 原子取消旧 Session、推进 generation 并重发 pending revision
 #   force-redispatch <task_id> [session_id]
 #                      (--auto-target | --target-worker KEY | --target-host HOST)
 #                      --target-runtime INTERACTIVE|PERSISTENT --reason TEXT --yes

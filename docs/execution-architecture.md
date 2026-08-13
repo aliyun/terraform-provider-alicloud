@@ -69,6 +69,21 @@ failed handoff and lease expiry/recovery reconciles the existing
 crash cannot be taken over until the old heartbeat/leases are stale and no
 Session remains `LEASED` or `RUNNING`.
 
+An operator-requested active handoff is a separate, explicitly acknowledged
+preemption. The `force-handoff` machine API accepts only a freshly read, full
+Task/Session/Worker CAS snapshot for a Task in `LEASED`, `RUNNING`, or
+`FINALIZING`, plus the typed `FORCE_HANDOFF` confirmation and an audit reason.
+In one transaction the control plane fences and cancels the old Session,
+advances generation, and re-publishes the pending desired revision at `READY`.
+Its stable outcome receipt is authoritative even if the returned Task view has
+already advanced because a successor leased it.
+
+The older Worker handoff-directive protocol remains independently fail-closed:
+the old Worker stops the exact locally owned process tree before ACKing the
+directive's old fence token, and a mismatched fence is never acknowledged.
+Concurrent copies invoke the local stop hook and successful/conclusive ACK at
+most once. An unavailable ACK remains retryable with the same idempotency key.
+
 ## Managed wait wake-up
 
 A managed Session persists `waitType`, `waitKey`, `waitCursor`, and expiry in
@@ -190,7 +205,10 @@ What actually controls leaseability:
   parks in `RECOVERY_REQUIRED` and every later `TASK_UPSERTED` becomes a
   `RECOVERY_REQUIRED→RECOVERY_REQUIRED` no-op. Scan cannot self-heal it;
   recovery requires the `recovery` runner, or an explicit `force-release` /
-  `force-redispatch` via `bootstrap/control-plane-status.sh`.
+  `force-redispatch` via `bootstrap/control-plane-status.sh`. Active ownership
+  uses the separate acknowledged `force-handoff`. It atomically revokes the
+  control-plane fence, but does not provide the old two-phase protocol's proof
+  that the remote process exited before replacement work was published.
 - `field_repair` is a pre-execution gate inside `PersistentTaskExecution.execute`
   (`bridge/persistent_tasks.py:1079-1086`, `field_repair_worker.repair_only`).
   A `field_repair_transient` / `apply_timeout` here fails the Session **before**

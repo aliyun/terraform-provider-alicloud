@@ -735,6 +735,110 @@ class ClientContractTest(unittest.TestCase):
 
         self.assertIsNone(body(opener.calls[0][0])["expectedDesiredRevision"])
 
+    def test_force_handoff_posts_full_cas_with_stable_idempotency(self):
+        response = {
+            "task": {"id": 42, "status": "READY", "generation": 4},
+            "releasedSessionId": 7,
+            "previousGeneration": 3,
+            "newGeneration": 4,
+            "previousFenceToken": 4,
+            "newFenceToken": 5,
+            "previousProcessingRevision": "desired:3",
+            "desiredRevision": "desired:4",
+            "publishedStatus": "READY",
+            "action": "ACTIVE_HANDOFF_COMPLETED",
+            "message": "old session canceled and desired revision re-published",
+        }
+        opener = RecordingOpener(responses=[
+            FakeResponse(response), FakeResponse(response),
+        ])
+        client = self.make(opener)
+        arguments = {
+            "expected_task_status": "RUNNING",
+            "expected_session_id": 7,
+            "expected_session_status": "RUNNING",
+            "expected_generation": 3,
+            "expected_state_version": 9,
+            "expected_fence_token": 4,
+            "expected_retry_count": 2,
+            "expected_desired_revision": "desired:4",
+            "expected_processing_revision": "desired:3",
+            "expected_worker_key": "persistent:bridge:mac-1",
+            "expected_worker_id": 19,
+            "expected_worker_process_uuid": "process-old-19",
+            "reason": "move active work to the replacement worker",
+        }
+
+        first = client.force_handoff_task("task/42", **arguments)
+        second = client.force_handoff_task("task/42", **arguments)
+
+        self.assertEqual(first["action"], "ACTIVE_HANDOFF_COMPLETED")
+        self.assertEqual(second["releasedSessionId"], 7)
+        expected_body = {
+            "expectedTaskStatus": "RUNNING",
+            "expectedSessionId": 7,
+            "expectedSessionStatus": "RUNNING",
+            "expectedGeneration": 3,
+            "expectedStateVersion": 9,
+            "expectedFenceToken": 4,
+            "expectedRetryCount": 2,
+            "expectedDesiredRevision": "desired:4",
+            "expectedProcessingRevision": "desired:3",
+            "expectedWorkerKey": "persistent:bridge:mac-1",
+            "expectedWorkerId": 19,
+            "expectedWorkerProcessUuid": "process-old-19",
+            "confirmationToken": "FORCE_HANDOFF",
+            "reason": "move active work to the replacement worker",
+        }
+        for req, _timeout in opener.calls:
+            self.assertEqual(req.get_method(), "POST")
+            self.assertTrue(req.full_url.endswith(
+                "/api/jarvis/v1/tasks/task%2F42/force-handoff"))
+            self.assertEqual(body(req), expected_body)
+        first_key = headers(opener.calls[0][0])["idempotency-key"]
+        second_key = headers(opener.calls[1][0])["idempotency-key"]
+        self.assertEqual(first_key, second_key)
+        self.assertTrue(first_key.startswith("jarvis-force-handoff-"))
+
+    def test_force_handoff_rejects_incomplete_active_owner_cas_without_http(self):
+        opener = RecordingOpener()
+        client = self.make(opener)
+        valid = {
+            "expected_task_status": "RUNNING",
+            "expected_session_id": 7,
+            "expected_session_status": "RUNNING",
+            "expected_generation": 3,
+            "expected_state_version": 9,
+            "expected_fence_token": 4,
+            "expected_retry_count": 2,
+            "expected_desired_revision": "desired:4",
+            "expected_processing_revision": "desired:3",
+            "expected_worker_key": "persistent:bridge:mac-1",
+            "expected_worker_id": 19,
+            "expected_worker_process_uuid": "process-old-19",
+            "reason": "move active work to the replacement worker",
+        }
+        invalid_values = (
+            ("expected_desired_revision", None),
+            ("expected_desired_revision", "  "),
+            ("expected_processing_revision", None),
+            ("expected_processing_revision", "  "),
+            ("expected_worker_key", None),
+            ("expected_worker_key", "  "),
+            ("expected_worker_id", None),
+            ("expected_worker_process_uuid", None),
+            ("expected_worker_process_uuid", "  "),
+        )
+
+        for field, invalid in invalid_values:
+            with self.subTest(field=field, invalid=invalid):
+                arguments = dict(valid)
+                arguments[field] = invalid
+                with self.assertRaisesRegex(ValueError, field):
+                    client.force_handoff_task("42", **arguments)
+
+        self.assertEqual(opener.calls, [])
+
     def test_force_redispatch_posts_full_cas_and_explicit_target(self):
         response = {
             "task": {"id": 42, "status": "READY", "generation": 4},

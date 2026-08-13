@@ -126,6 +126,7 @@ class ControlPlaneClient:
     def get_task_timeline(self, task_id):
         if os.environ.get("STUB_MODE") == "no_read_allowed":
             raise SystemExit("stub: timeline must not be read without --yes")
+        handoff_status = os.environ.get("STUB_HANDOFF_STATUS")
         source_input = {
             "itemId": "84386065",
             "project": "2100304",
@@ -136,7 +137,7 @@ class ControlPlaneClient:
         source_digest = hashlib.sha256(json.dumps(
             source_input, ensure_ascii=False, sort_keys=True,
             separators=(",", ":")).encode()).hexdigest()
-        return {"task": {"id": 11, "status": "RECOVERY_REQUIRED",
+        return {"task": {"id": 11, "status": handoff_status or "RECOVERY_REQUIRED",
                          "generation": 3, "stateVersion": 9,
                          "retryCount": 2, "desiredRevision": "rev-2",
                          "processingRevision": "rev-2",
@@ -153,7 +154,7 @@ class ControlPlaneClient:
                 "effectiveInputPayload": source_input,
                 "effectiveInputDigest": source_digest,
                 "currentWorker": None,
-                "sessions": [{"id": 7, "status": "RESUMABLE", "fenceToken": 4,
+                "sessions": [{"id": 7, "status": handoff_status or "RESUMABLE", "fenceToken": 4,
                               "historicalWorkerId": 19,
                               "historicalWorkerKey": "interactive:codex:macmini:old",
                               "historicalWorkerProcessUuid": "process-old-19",
@@ -205,6 +206,57 @@ class ControlPlaneClient:
             "releasedSessionId": 7,
             "previousGeneration": 3,
         }
+
+    def force_handoff_task(self, task_id, **kwargs):
+        mode = os.environ.get("STUB_MODE")
+        if mode == "handoff_404":
+            raise ControlPlaneError("control plane HTTP 404: not found", status=404)
+        if mode == "handoff_409":
+            raise ControlPlaneError(
+                "control plane HTTP 409 Conflict.ForceHandoffCas: task changed",
+                status=409)
+        handoff_status = os.environ.get("STUB_HANDOFF_STATUS", "RUNNING")
+        expected = {
+            "expected_task_status": handoff_status,
+            "expected_session_id": 7,
+            "expected_session_status": handoff_status,
+            "expected_generation": 3,
+            "expected_state_version": 9,
+            "expected_fence_token": 4,
+            "expected_retry_count": 2,
+            "expected_desired_revision": "rev-2",
+            "expected_processing_revision": "rev-2",
+            "expected_worker_key": "interactive:codex:macmini:old",
+            "expected_worker_id": 19,
+            "expected_worker_process_uuid": "process-old-19",
+            "reason": "operator acknowledged active handoff",
+        }
+        if str(task_id) != "11" or kwargs != expected:
+            raise SystemExit("stub: unexpected force-handoff arguments %r" % kwargs)
+        response = {
+            "task": {"id": 11, "status": "RUNNING", "generation": 4},
+            "releasedSessionId": 7,
+            "previousGeneration": 3,
+            "newGeneration": 4,
+            "previousFenceToken": 4,
+            "newFenceToken": 5,
+            "previousProcessingRevision": "rev-2",
+            "desiredRevision": "rev-2",
+            "publishedStatus": "READY",
+            "action": "ACTIVE_HANDOFF_COMPLETED",
+            "message": "old session canceled and desired revision re-published",
+        }
+        if mode == "handoff_inconsistent":
+            response["newGeneration"] = 3
+            response["publishedStatus"] = "STOP_PENDING"
+        if os.environ.get("STUB_HANDOFF_LEGACY") == "1":
+            return {
+                "task": {"id": 11, "status": "READY", "generation": 4},
+                "releasedSessionId": 7,
+                "action": "ACTIVE_HANDOFF_COMPLETED",
+                "message": "legacy TaskView response",
+            }
+        return response
 
     def force_redispatch_task(self, task_id, **kwargs):
         mode = os.environ.get("STUB_MODE")
@@ -536,7 +588,82 @@ out="$(STUB_MODE=force_409 run_cli force-release 11 7 \
 has "control plane HTTP 409 Conflict.ForceReleaseCas: task changed" "$out" \
   "force-release preserves 409 explanation"
 
-# ── 11) force-redispatch 必须选择自动/指定目标，并在服务端原子选机 ───────────
+# ── 11) force-handoff 必须确认并 fresh-read active Task 完整 CAS ────────────
+out="$(STUB_MODE=no_read_allowed run_cli force-handoff 11 \
+  --reason 'operator acknowledged active handoff' 2>&1)"; rc=$?
+[ $rc -eq 2 ] && ok "force-handoff without --yes rc=2" || \
+  no "force-handoff without --yes rc=$rc"
+has "pass --yes" "$out" "force-handoff explains confirmation gate"
+hasnot "timeline must not be read" "$out" \
+  "force-handoff refuses before timeline read"
+
+out="$(STUB_MODE=no_read_allowed run_cli force-handoff 11 \
+  --reason '   ' --yes 2>&1)"; rc=$?
+[ $rc -eq 2 ] && ok "force-handoff blank reason rc=2" || \
+  no "force-handoff blank reason rc=$rc"
+has "nonblank --reason" "$out" "force-handoff requires an audit reason"
+hasnot "timeline must not be read" "$out" \
+  "force-handoff rejects blank reason before timeline read"
+
+for task_status in LEASED RUNNING FINALIZING; do
+  out="$(STUB_HANDOFF_STATUS="$task_status" run_cli force-handoff 11 \
+    --reason 'operator acknowledged active handoff' --yes 2>&1)"; rc=$?
+  [ $rc -eq 0 ] && ok "force-handoff $task_status snapshot rc=0" || \
+    no "force-handoff $task_status snapshot rc=$rc: $out"
+done
+has "action=ACTIVE_HANDOFF_COMPLETED" "$out" \
+  "force-handoff prints action"
+has "oldGeneration=3" "$out" "force-handoff prints old generation"
+has "newGeneration=4" "$out" "force-handoff prints new generation"
+has "oldSession=7" "$out" "force-handoff prints old session"
+has "publishedStatus=READY" "$out" "force-handoff prints published status"
+has "currentStatus=RUNNING" "$out" \
+  "force-handoff tolerates TaskView advancing after stable receipt"
+has "stable receipt" "$out" "force-handoff identifies stable outcome"
+has "pending desired revision was re-published" "$out" \
+  "force-handoff reports pending revision handoff"
+has "currentStatus may already have advanced" "$out" \
+  "force-handoff distinguishes receipt from current TaskView"
+
+out="$(STUB_HANDOFF_STATUS=RUNNING STUB_HANDOFF_LEGACY=1 \
+  run_cli force-handoff 11 \
+  --reason 'operator acknowledged active handoff' --yes 2>&1)"; rc=$?
+[ $rc -eq 0 ] && ok "force-handoff TaskView fallback rc=0" || \
+  no "force-handoff TaskView fallback rc=$rc: $out"
+has "outcome=TaskView fallback" "$out" \
+  "force-handoff supports transitional TaskView-only response"
+
+out="$(STUB_HANDOFF_STATUS=RUNNING STUB_MODE=handoff_inconsistent \
+  run_cli force-handoff 11 \
+  --reason 'operator acknowledged active handoff' --yes 2>&1)"; rc=$?
+[ $rc -eq 3 ] && ok "force-handoff inconsistent receipt rc=3" || \
+  no "force-handoff inconsistent receipt rc=$rc: $out"
+has "inconsistent success DTO" "$out" \
+  "force-handoff rejects STOP_PENDING-like receipt"
+has "do not claim completion" "$out" \
+  "force-handoff does not report incomplete handoff as success"
+hasnot "acknowledged force handoff" "$out" \
+  "force-handoff prints no success line for incomplete receipt"
+
+out="$(STUB_HANDOFF_STATUS=RUNNING STUB_MODE=handoff_404 \
+  run_cli force-handoff 11 7 \
+  --reason 'operator acknowledged active handoff' --yes 2>&1)"; rc=$?
+[ $rc -eq 3 ] && ok "force-handoff 404 rc=3" || \
+  no "force-handoff 404 rc=$rc"
+has "server version has not been deployed" "$out" \
+  "force-handoff 404 names undeployed server"
+
+out="$(STUB_HANDOFF_STATUS=RUNNING STUB_MODE=handoff_409 \
+  run_cli force-handoff 11 7 \
+  --reason 'operator acknowledged active handoff' --yes 2>&1)"; rc=$?
+[ $rc -eq 3 ] && ok "force-handoff 409 rc=3" || \
+  no "force-handoff 409 rc=$rc"
+has "refresh the timeline before retrying" "$out" \
+  "force-handoff 409 explains stale CAS recovery"
+has "Conflict.ForceHandoffCas: task changed" "$out" \
+  "force-handoff preserves 409 explanation"
+
+# ── 12) force-redispatch 必须选择自动/指定目标，并在服务端原子选机 ───────────
 out="$(STUB_MODE=no_read_allowed run_cli force-redispatch 11 \
   --auto-target --target-runtime PERSISTENT \
   --reason 'move reviewed task to another host' 2>&1)"; rc=$?
