@@ -443,6 +443,50 @@ func (s *ThreatDetectionServiceV2) ThreatDetectionFileUploadLimitStateRefreshFun
 
 // DescribeThreatDetectionFileUploadLimit >>> Encapsulated.
 
+// DescribeThreatDetectionRdDefaultSyncList <<< Encapsulated get interface for ThreatDetection RdDefaultSyncList.
+
+func (s *ThreatDetectionServiceV2) DescribeThreatDetectionRdDefaultSyncList(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	action := "ListRdDefaultSyncList"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.Data", response)
+	if err != nil {
+		// An account that has never configured a default synchronization list
+		// gets a ListRdDefaultSyncList response without a Data field. This
+		// resource is an account-level singleton that always exists, so an
+		// unconfigured list is a valid empty state (no synchronized folders)
+		// rather than a missing resource; report it as an empty object.
+		return map[string]interface{}{}, nil
+	}
+
+	return v.(map[string]interface{}), nil
+}
+
+// DescribeThreatDetectionRdDefaultSyncList >>> Encapsulated.
+
 // DescribeThreatDetectionMaliciousFileWhitelistConfig <<< Encapsulated get interface for ThreatDetection MaliciousFileWhitelistConfig.
 
 func (s *ThreatDetectionServiceV2) DescribeThreatDetectionMaliciousFileWhitelistConfig(id string) (object map[string]interface{}, err error) {
