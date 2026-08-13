@@ -1,0 +1,4 @@
+interface:
+  display_name: "AMP 文档治理"
+  short_description: "查询、治理并提交镇元 API、Struct 和资源文档审核"
+  default_prompt: "Use $amp-doc-backend to govern an AMP document through the Jarvis safety wrapper and report the real review or online state."

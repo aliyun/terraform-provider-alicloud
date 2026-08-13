@@ -37,15 +37,13 @@ for pool in tf_customer tf_provider mcp_server api_toolkit automation_platform; 
     || bad "$pool.assignee digital-worker set mismatch"
 done
 
-# S3d: 结构型 CloudSpec gap 不再出站；text-only 文档 metadata 恢复专用 submit-only 出口。
+# S3d: CloudSpec 结构与 text-only 文档都不再通过 upstream pool 出站。
 jq -e '
   (.upstream.cloudspec_gap? == null)
-  and (.upstream.cloudspec_docs_quality.project == 2169561)
-  and (.upstream.cloudspec_docs_quality.assignee == 373108)
-  and (.upstream.cloudspec_docs_quality.access == "submit_only")
+  and (.upstream.cloudspec_docs_quality? == null)
 ' "$POOLS_JSON" >/dev/null \
-  && ok "CloudSpec structural gap removed and docs-quality route restored" \
-  || bad "CloudSpec upstream route split is misconfigured"
+  && ok "CloudSpec upstream routes removed for source-ticket self-close" \
+  || bad "CloudSpec upstream routes must be absent"
 
 jq -e '.pools.automation_platform.line=="automation_platform"' "$POOLS_JSON" >/dev/null \
   && ok "automation_platform uses independent line" || bad "automation_platform line mismatch"

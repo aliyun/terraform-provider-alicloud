@@ -63,7 +63,7 @@ class TerraformPureDatasourceSourceOnlyPromptTest(unittest.TestCase):
             "D/G source-only runtime hard gate",
             "D/G 同样严禁 "
             "create/reuse-as-carrier/reassign/relation/claim/wrap/release/finish 528766",
-            "I 仍保留 2169561 文档质量主腿",
+            "I 仍在源单使用 amp-doc-backend 自闭环且不创建文档关联单",
             "H 仍保留 528766",
         )
         for phrase in required:
@@ -94,8 +94,7 @@ class TerraformPureDatasourceSourceOnlyPromptTest(unittest.TestCase):
             "源工单由 bridge executor bookend",
             "open PR + QA pass 时源单 release，不 finish",
             "正式发布仍为人工硬门",
-            "I 仍保留 2169561 文档质量主腿",
-            "公开 Provider docs 同错时独立 528766",
+            "I 仍在源单使用 amp-doc-backend 自闭环且不创建文档关联单",
             "H 仍保留 528766 并指派夏节（401498）",
         )
         for phrase in required:

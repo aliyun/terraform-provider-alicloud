@@ -23,14 +23,14 @@ Release a Terraform Provider resource together with its corresponding data sourc
 
 ## 路由上下文硬门
 
-- **分支 I — CloudSpec 文档文本 metadata**（resource/property/operation description、字段解释、
-  NOTE、枚举文案，且不改变字段集合、类型、约束或 CRUD）不进入本 release 开发流；由 finalizer
-  创建或复用 2169561 指派念依（373108），必要时另保留独立 528766 Provider docs 紧急兜底腿。
+- **分支 I — CloudSpec 文档文本 metadata**（resource/API/struct description、字段解释、NOTE、
+  枚举文案，且不改变字段集合、类型、约束或 CRUD）不进入本 release 开发流；RD 在源单使用
+  `amp-doc-backend`，不创建文档质量或 Provider docs 关联单。
 - **分支 E — CloudSpec 结构 metadata 原主单自闭环**只处理字段集合、类型、约束、CRUD、
   operationMapping 或生命周期。用 CloudSpec skills + AMP 修到 pre Meta 收敛后，QA 以
   `verification_mode: cloudspec_pre` 验证；pass 后在同一源单上下文继续 Provider
   生成/开发、PR CI 与远程 ACC。
-- D/E/G 禁止 create/reuse-as-carrier/reassign/relation/claim/wrap/release/finish 528766，
+- D/E/G/I 禁止 create/reuse-as-carrier/reassign/relation/claim/wrap/release/finish 528766，
   也禁止为 E 调用 Acube `createBuildTaskV2`。历史 relation 只读，不是开发、完成、阻塞或
   observe 门。
 - **普通分支 D**及常规 requirement-first/new-resource release 保持后续生成、Provider PR CI

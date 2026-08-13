@@ -247,13 +247,19 @@ class InteractiveWorkerTest(unittest.TestCase):
         return repo
 
     @staticmethod
-    def _amp_target(action="publish", repo_mode="model"):
-        return json.dumps({
+    def _amp_target(action="publish", repo_mode="model", document=None):
+        target = {
             "schemaVersion": 1, "action": action, "repoMode": repo_mode,
             "project": {"projectId": "3065873", "popCode": "eventbridge",
                         "popVersion": "2020-04-01"},
             "branch": "feature/guard", "publishKind": "pre",
-        })
+        }
+        if action.startswith("doc-"):
+            target["publishKind"] = None
+            target["document"] = document or {
+                "type": "api", "key": "DescribeWidgets",
+                "language": "ZH_CN"}
+        return json.dumps(target)
 
     def test_session_hook_registers_private_non_pulling_worker_and_offlines(self):
         fake = FakeClient()
@@ -1356,6 +1362,58 @@ class InteractiveWorkerTest(unittest.TestCase):
             self.assertEqual(worker.amp_authorize(
                 "publish", str(repo), self._amp_target()), 2)
         self.assertIn("operations/GetThing.cspec", stderr.getvalue())
+
+    def test_amp_authorize_doc_mutation_returns_document_bound_receipt(self):
+        repo = self._cloudspec_repo()
+        state = self._seed()
+        state["current"] = {
+            "aoneId": "99999999", "projectId": "2100304", "cycle": 1,
+            "heartbeatEnabled": True,
+        }
+        self._store().save(state)
+        self.assertIsNone(worker._cloudspec_operation_guard_reason(
+            self._store(), {"tool_name": "Bash", "cwd": str(repo),
+                            "tool_input": {"command": "trusted-wrapper"}}))
+        document = {"type": "resource", "key": "ALIYUN::ECS::Instance",
+                    "environment": "online", "auditors": ["123456"]}
+        stdout = io.StringIO()
+        with mock.patch.object(worker, "_session_permit_block_reason",
+                               return_value=None), \
+                mock.patch.object(worker, "_calling_process_matches",
+                                  return_value=True), \
+                contextlib.redirect_stdout(stdout):
+            self.assertEqual(worker.amp_authorize(
+                "doc-recommend-resource", str(repo), self._amp_target(
+                    "doc-recommend-resource", document=document)), 0)
+        receipt = json.loads(stdout.getvalue())
+        self.assertEqual(receipt["action"], "doc-recommend-resource")
+        self.assertEqual(receipt["project"]["projectId"], "3065873")
+        self.assertEqual(receipt["branch"], "feature/guard")
+        self.assertEqual(receipt["document"], document)
+
+    def test_amp_authorize_rejects_malformed_doc_scope(self):
+        repo = self._cloudspec_repo()
+        state = self._seed()
+        state["current"] = {
+            "aoneId": "99999999", "projectId": "2100304", "cycle": 1,
+            "heartbeatEnabled": True,
+        }
+        self._store().save(state)
+        self.assertIsNone(worker._cloudspec_operation_guard_reason(
+            self._store(), {"tool_name": "Bash", "cwd": str(repo),
+                            "tool_input": {"command": "trusted-wrapper"}}))
+        stderr = io.StringIO()
+        with mock.patch.object(worker, "_session_permit_block_reason",
+                               return_value=None), \
+                mock.patch.object(worker, "_calling_process_matches",
+                                  return_value=True), \
+                contextlib.redirect_stderr(stderr):
+            self.assertEqual(worker.amp_authorize(
+                "doc-create", str(repo), self._amp_target(
+                    "doc-create", document={
+                        "type": "resource", "key": "Widget",
+                        "language": "ZH_CN"})), 2)
+        self.assertIn("document_target_invalid", stderr.getvalue())
 
     def test_amp_authorize_publish_refuses_to_create_late_baseline(self):
         repo = self._cloudspec_repo()

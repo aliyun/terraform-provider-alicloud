@@ -67,7 +67,7 @@ bash bootstrap/aone-image-extract.sh <id>          # 附件截图→本地,skill
 | **2124589** mcp_server | 自家应用交付(Agent门户/AgentRuntime/aliyun-automation-agent/PlayGround) | `references/delivery-aliyun-automation-agent.md` |
 | **1091779** automation_platform | 自动化服务台 / IaCService 产品研发与交付(不含 Agent 链路) | `references/delivery-aliyun-automation-platform.md` |
 | cwd 在 cloudspec repo 或诉求涉 cloudspec / OpenAPI MCP Server | 自家应用交付(cloudspec) | `references/delivery-cloudspec.md` |
-| CloudSpec 文档文本 metadata | **分支 I** | 仅限 description、字段解释、NOTE、枚举文案且不改变字段集合/类型/约束/CRUD；创建或复用 2169561 指派念依，公开 Provider docs 同错时独立补 528766 紧急兜底腿 |
+| CloudSpec 文档文本 metadata | **分支 I** | 仅限 resource/API/struct description、字段解释、NOTE、枚举文案且不改变字段集合/类型/约束/CRUD；RD 在源单用 `amp-doc-backend` 自闭环，不创建文档关联单 |
 | CloudSpec 资源/schema/结构 metadata | **分支 E → 源单 Provider dev** | 原主单用 CloudSpec skills + AMP 修到 pre Meta 收敛；pre 验收后在同一源单上下文继续 Provider dev/CI/远程 ACC/PR，不走 2165097/Acube/528766 |
 | 其它 | 无 domain reference → 走本文件通用流程 | — |
 
@@ -80,7 +80,7 @@ bash bootstrap/aone-image-extract.sh <id>          # 附件截图→本地,skill
 | 标题子类型 | 正确处理 |
 |---|---|
 | **[Terraform 资源发布自动审核流程]** | **调 `terraform-provider-release` skill 跑完整 SOP**——需求差距分析(AMP 元数据 vs provider 代码)+ 远程 ACC 实测 + 出 PR。平台流水线的「源码生成/打包上传容器」只是构建产物,**不等于代码已进 provider 仓、更不等于 ACC 验证过**;jarvis 仍须按 SOP 补 ACC + PR(PR merge 是人工门)。**禁止只复核告警就 release**——那是漏跑发布流程,不算处理达标。 |
-| **[Terraform 文档发布自动审核流程]** | **复核确认闸门**(不跑资源 ACC):对比 OpenAPI、CloudSpec 文档源与 Provider 公开文档。text-only CloudSpec 文档 metadata 走 I→2169561；公开 Provider docs 同错时独立补 528766 紧急兜底。CloudSpec 源正确、仅 Provider 本地生成/展示偏差才走 D；涉及结构变化则走 E，pre 验收后源单继续 Provider 开发。 |
+| **[Terraform 文档发布自动审核流程]** | **复核确认闸门**(不跑资源 ACC):对比 OpenAPI、CloudSpec 文档源与 Provider 公开文档。text-only CloudSpec 文档 metadata 走 I 源单自闭环：resource recommend + online 后验验证，API/struct 只申请审核；CloudSpec 源正确、仅 Provider 本地生成/展示偏差走 D；结构变化走 E。 |
 
 ### 2. 按类型分诊(通用)
 
@@ -139,8 +139,8 @@ bash bootstrap/aone-image-extract.sh <id>          # 附件截图→本地,skill
 
 | 动作 | 命令 |
 |---|---|
-| 回复评论 | 非 Terraform 走 wrap.sh done；Terraform 源工单由 executor 在最终 RD 聚合后 done 一次。D/E/G/pure datasource 禁止任何 528766 承载动作；I 的 Provider docs 紧急兜底腿与 H 的合法 528766 实际 claim 时由 RD finalizer 另做一次聚合 bookend。后续重要事件只走 bridge RD-only event publisher。多行用 `--summary-stdin`/`--summary-file`，别先单独回复 |
-| CloudSpec 文档文本 metadata（I） | terraform-rd finalizer 单写创建或复用 2169561 并指派念依；Provider 公开 docs 同错时按分池防重独立补 528766 紧急兜底；executor 只做原主单 bookend |
+| 回复评论 | 非 Terraform 走 wrap.sh done；Terraform 源工单由 executor 在最终 RD 聚合后 done 一次。D/E/G/I/pure datasource 禁止任何 528766 承载动作；只有 H 的合法 528766 实际 claim 时由 RD finalizer 另做一次聚合 bookend。后续重要事件只走 bridge RD-only event publisher。多行用 `--summary-stdin`/`--summary-file`，别先单独回复 |
+| CloudSpec 文档文本 metadata（I） | terraform-rd 在源单用 `amp-doc-backend` 执行；finalizer 聚合真实发布/审核状态，executor 只做原主单 bookend；禁止文档关联单 |
 | CloudSpec 结构 metadata（E） | PD 返回 `requested_external_actions: []` 与 `next=terraform-rd/dev`；RD 修 CloudSpec 到 pre Meta 收敛，QA pre 验收后回 RD 在同一源单上下文继续 Provider dev/CI/PR，再由 QA 远程 ACC；不走 Acube/528766 |
 | pure datasource | 紧急源单指派新山、非紧急源单指派过载；Jarvis/TerraformRD 在源单直接开发，严禁创建或复用 528766 |
 | D/G source-only | D 手写紧急/非紧急/生成发布分别同步源单给新山/过载/临钧并主动开发，D finalizer 通过 ledger 幂等 enqueue owner DM；G 源单给新山并主动开发、不发 route DM；D/E/G 严禁 528766 承载 |
@@ -184,12 +184,13 @@ bash bootstrap/aone-image-extract.sh <id>          # 附件截图→本地,skill
   ledger 无法持久化不得宣称通知完成。G 不发新增 route DM。
 - 不得因 owner/status、通知或历史 relation 观察等待；build/test/CI/QA fail 回 RD 修复。
   open PR + QA pass 时源单 release 不 finish，正式发布仍为人工硬门。
-- I 仍 2169561→念依，public docs 同错时独立 528766→过载；H 仍 528766→夏节；A/F 与 pure
+- I 仍在源单走 `amp-doc-backend`，严禁 528766 承载且不发 route DM；只有 H 仍
+  528766→夏节；A/F 与 pure
   datasource 保持原边界。
 
 ### 转单/建关联单 body 内容原则
 
-给他人写关联单 body(例如 I-念依 / H-夏节等承接)时,body 是承接方唯一的
+给他人写合法关联单 body（例如 H-夏节等承接）时,body 是承接方唯一的
 **决策依据**,jarvis 给的信息完备度决定承接方能否直接拍板还是回来反复问。D/E/G 不建关联单；
 I/H 按各自专用契约。其它关联单规则:
 
@@ -205,9 +206,9 @@ I/H 按各自专用契约。其它关联单规则:
 非 Terraform 使用第一组通用骨架。Terraform 工单先在同一 run 内完成 PD→RD→QA 结构化协作，
 PD/QA 不写外部系统；最后由 RD finalizer 汇总全部证据、MR/CR 链接、路由动作与下一步。
 控制面 executor 托管时，源工单禁止模型直接 claim/wrap/release/评论，只返回
-`AONE_RESULT` 供 executor 收口。D/E/G/pure datasource 严禁对 528766 执行承载动作；I 的
-Provider docs 紧急兜底腿与 H 仍按各自合法边界处理，RD finalizer 只对本 run 实际 claim 的
-I/H 研发单执行一次关联单 bookend。D route DM 是唯一主处理通知例外：finalizer 必须先同步
+`AONE_RESULT` 供 executor 收口。D/E/G/I/pure datasource 严禁对 528766 执行承载动作；
+只有 H 仍按既有合法边界处理，RD finalizer 只对本 run 实际 claim 的 H 研发单执行一次
+关联单 bookend。D route DM 是唯一主处理通知例外：finalizer 必须先同步
 源单 owner/status，再经类型化 ledger enqueue，最后交 AONE_RESULT；G 不发 route DM。后续
 重要事件由 bridge 统一幂等发布，不复用阶段评论通道。
 
@@ -223,8 +224,8 @@ bash bootstrap/claim.sh finish  <id> <pool-project>   # 真闭环 → jarvis-don
 # Terraform 源工单（executor 托管）：finalizer 只返回一条聚合结果，不直接执行下列命令
 # [[AONE_RESULT:{"outcome":"done|idle|suspend","reply_body":"<完整聚合回复>",...}]]
 
-# I Provider docs 紧急兜底腿或 H 的合法 528766：仅 RD finalizer 执行，每条命令最多一次
-# D/E/G/pure datasource 严禁进入本骨架。
+# 只有 H 的合法 528766 由 RD finalizer 执行，每条命令最多一次。
+# D/E/G/I/pure datasource 严禁进入本骨架。
 JARVIS_A1_IDENTITY=terraform-rd bash bootstrap/claim.sh claim <related-id> 528766
 JARVIS_A1_IDENTITY=terraform-rd bash bootstrap/wrap.sh done <related-id> --summary-stdin --no-status <<'EOF'
 <PD + RD + QA + 路由动作 + 下一步的完整聚合回复>
@@ -288,7 +289,7 @@ options 为空，脚本会继续查询 field options API，并返回合法候选
 - `JARVIS_A1_IDENTITY=terraform-rd bash bootstrap/claim.sh finish` 内置了硬闸门(退码 2),即使遗漏也会拦截
 
 **关联单 claim 规则**:D/E/G/pure datasource 的历史 relation 均仅供只读防重，不 claim、
-不改派、不关单。I 的公开 docs 紧急兜底腿由内部链跟进；2169561 念依单不 claim。H 的
+不改派、不关单。I 不创建文档关联单；H 的
 528766→夏节保持原边界。最终 RD 审查动作并把结果合入主单唯一聚合回复。
 
 ## 自己交付(改自家应用)
@@ -328,7 +329,7 @@ options 为空，脚本会继续查询 field options API，并返回合法候选
 - ❌ 命中 canned 且材料未齐仍进入正式路由/开发；只读安全查证只能补事实，不构成路由授权
 - ❌ pure datasource 复用历史 528766 当承载单，或对其 create/reassign/relation/claim/
   wrap/release/finish；source-only 只允许源单 owner/status 同步与源单直接开发
-- ❌ 把 text-only 文档 metadata 送进 E，或只建 528766 而漏建 I 的 2169561 念依主腿
+- ❌ 把 text-only 文档 metadata 送进 E，或为 I 创建文档质量/Provider docs 关联单；正确路径是源单 `amp-doc-backend`
 - ❌ 把结构 metadata 送进 I；字段集合、类型、约束或 CRUD 变化必须走 E
 - ❌ E pre 未验收就开始 Provider 生成/开发；正确路径是 pre QA 通过后在源单上下文继续 Provider dev/CI/PR/远程 ACC
 - ❌ `amp publish pre` 成功就 `finish` 或宣称正式发布 —— prod/online、master/main 与正式发布仍是人工硬门

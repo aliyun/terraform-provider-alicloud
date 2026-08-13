@@ -88,8 +88,8 @@ pure datasource。该契约优先于旧 G/urgent-D，但不得外溢：
    独占源单 claim/唯一回复/tag/release/finish。PD/QA 不外写。
 5. CI pending/fail 或 QA fail 均回 RD 修复，不得标为 blocked；只有真实能力缺失、重试耗尽、
    明确外部依赖或人工决策才可 blocked/SUSPENDED。open PR + QA pass 时源单 release，不 finish。
-6. D/E/G 改为同类源单直办契约；I 的 2169561/可选 Provider docs 528766、H 的 528766、
-   A/F 保持原边界。
+6. D/E/G/I 改为同类源单直办契约；I 使用文档后端自闭环且严禁 528766 承载，
+   只有 H 保持既有合法 528766 边界，A/F 保持原边界。
 
 ### D/G source-only + D route DM 契约
 
@@ -105,16 +105,17 @@ pure datasource。该契约优先于旧 G/urgent-D，但不得外溢：
    receipt；ledger 无法持久化不得宣称通知完成。G 不发新增 route DM。
 4. 不得因 owner/status、通知或历史 relation 观察等待；build/test/CI/QA fail 回 RD 修复。
    open PR + QA pass 时源单 release 不 finish，正式发布仍为人工硬门。
-5. I 仍 2169561→念依，public docs 同错时独立 528766→过载；H 仍 528766→夏节；pure
+5. I 在源单使用 `amp-doc-backend`，严禁 528766 承载且不发 route DM；只有 H 仍
+   528766→夏节；pure
    datasource/A/F 不变。
 
 CloudSpec 路由分为两个互斥分支：
 
-- **分支 I — CloudSpec 文档文本 metadata**：resource/property/operation description、字段解释、
-  NOTE 与枚举文案，且不改变字段集合、类型、约束或 CRUD。PD 只提出创建或复用项目 2169561、
-  指派念依（373108）的动作；公开 Provider docs 同时错误时，再提出独立 528766 紧急兜底腿。
-  两腿分池防重，一个池已有 relation 不能抑制另一个池的缺失补建。RD/QA 都 no-op 验证，
-  finalizer `single-writer` 执行动作。
+- **分支 I — CloudSpec 文档文本 metadata 源单自闭环**：resource/API/struct description、字段解释、
+  NOTE 与枚举文案，且不改变字段集合、类型、约束或 CRUD。PD 返回
+  `requested_external_actions: []`；RD 使用 `amp-doc-backend`。resource 只走 recommend-resource
+  并做 get/online 后验验证；API/struct 只保存草稿并 submit-audit，审核成功绝不当成正式发布。
+  QA 复核命令边界和结果语义，finalizer `single-writer` 只聚合源单结果，不创建关联单。
 - **分支 E — CloudSpec 结构 metadata 原主单自闭环**：字段集合、类型、约束、CRUD、
   operationMapping 或生命周期缺口。PD 返回 `requested_external_actions: []`、
   `next=terraform-rd/dev`；RD 调用 `terraform-provider-release` 的
@@ -144,8 +145,8 @@ MR/CR 链接只在这条最终聚合回复中同步。Terraform 例外：开 MR/
 
 控制面 Task 下，**源工单禁止模型直接 claim/wrap/release/评论**，**源工单仍由 executor
 bookend**。pure datasource 进一步由 **bridge executor 独占源单 claim/唯一回复/tag/release/finish**，
-RD route phase 仅同步 owner/status。D/E/G/pure datasource 严禁承载 528766；只有 I 的
-Provider docs 紧急兜底腿与 H 保持合法 528766，实际 claim 时由 RD finalizer bookend。
+RD route phase 仅同步 owner/status。D/E/G/I/pure datasource 严禁承载 528766；只有 H
+按既有边界保留合法 528766，实际 claim 时由 RD finalizer bookend。
 模型必须在末尾返回：
 
 ```text
@@ -153,7 +154,7 @@ Provider docs 紧急兜底腿与 H 保持合法 528766，实际 claim 时由 RD 
 ```
 
 executor 使用 terraform-rd 身份对源工单单次落账。RD finalizer 对本 run 合法实际
-claim 的 I/H 528766 执行 `claim → wrap.sh done → release/finish`，每条命令至多一次；PR
+claim 的 H 528766 执行 `claim → wrap.sh done → release/finish`，每条命令至多一次；PR
 未合并、blocked 或待人工确认时只 release，不得 finish。非 executor 托管的独立 finalizer
 才对源工单执行相同 bookend。
 禁止阶段回复、中途 `wrap.sh sync`、钉钉进展通知或新公开接力标记。此约束不等于“工单全生命周期

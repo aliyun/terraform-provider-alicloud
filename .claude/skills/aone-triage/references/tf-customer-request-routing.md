@@ -46,9 +46,10 @@ JARVIS_A1_IDENTITY=terraform-rd bash bootstrap/wrap.sh done \
 │
 └─ 资源或资源文档问题
    │
-   ├─ 变更严格为 text-only CloudSpec 文档 metadata（分支 I）
-   │  └─ 分支 I：创建或复用 2169561，指派念依
-   │     └─ Provider 公开 docs 同时错误时，独立补 528766 紧急兜底腿
+   ├─ 变更严格为 text-only resource/API/struct 文档 metadata（分支 I）
+   │  └─ 分支 I：RD 在源单使用 amp-doc-backend 自闭环，不创建关联单
+   │     ├─ resource：recommend-resource + get/online 后验验证
+   │     └─ API/struct：保存草稿并申请审核，绝不宣称正式发布
    │
    └─ 非文档问题、包含任何结构变更，或已证明 CloudSpec 文档源正确
       │
@@ -69,25 +70,18 @@ JARVIS_A1_IDENTITY=terraform-rd bash bootstrap/wrap.sh done \
 ## 分支 I — CloudSpec 文档文本 metadata
 
 只有变更严格为 **text-only** 时才命中 I：修改
-`resource/property/operation description`、字段解释、NOTE 与枚举文案，同时
+resource/API/struct description、字段解释、NOTE 与枚举文案，同时
 **不改变字段集合、类型、约束或 CRUD**。只要需要新增/删除字段、改变类型/required/
 约束/枚举集合、调整 CRUD/operation 结构或映射，就不是 I，必须重新判定结构分支。
 
-I 的主腿固定从 `config/pools.json` 的 `upstream.cloudspec_docs_quality` 读取，**创建或复用**
-2169561 文档质量关联单并指派念依（373108）；该入口是 `submit_only`，不纳入 Jarvis 主动
-扫描或内部开发。PD/QA 不外写，PD 只提结构化动作，由 terraform-rd finalizer 这个
-downstream `single-writer` 执行 create/relation/assign；executor 只负责原主单 bookend。
+I 返回 `requested_external_actions: []`，由 RD 在 task 专属模型 feature 分支调用
+`amp-doc-backend`。resource 唯一写路径是单资源 `recommend-resource --env online`，写后必须
+`get --type resource --env online` 验证；只有 online 证据证明本次新内容生效才可宣称发布，
+仅有审核记录或无法关联本次变更时写待审核/未验证。API/struct 固定走 get→白名单编辑→create
+草稿→list-approver→submit-audit→get-audit-url，submit 成功只表示进入审核。
 
-若 Provider 公开 docs 同时错误，I 还必须保留**独立 528766 紧急兜底腿**，指派过载（484483）
-处理可被下次生成覆盖的临时公开文档修正。两条腿执行**分池防重**：
-
-- 2169561 按文档质量池 relation/同题关联单检查，只补缺失的 I 主腿；
-- 528766 按 Provider 池 relation/同题关联单检查，只在公开 docs 确有错误时补缺失的紧急腿；
-- **一个池已有 relation 不能抑制另一个池的缺失补建**，也不能把两个池合并成一张单；
-- 每条 relation 只写一次；已有正确关联单直接复用，不重复 create、改派或阶段回复。
-
-I 不触发 CloudSpec 原主单结构自闭环，也不触发 E 的 Provider 开发腿；公开 Provider docs 没有错误时
-不得为了“留档”创建 528766。
+I 禁止新建、复用、关联或指派旧文档质量池和 Provider docs 兜底关联单。PD/QA 不外写，
+terraform-rd finalizer 是 `single-writer`，只聚合真实后端状态；executor 只负责原主单 bookend。
 
 ## CloudSpec 结构 OK 判定
 
@@ -147,7 +141,7 @@ prod/online、master/main merge/push 与正式发布始终是人工硬门；不�
 ## 团队分工速查
 
 普通 Provider 与 I/E 分工见 [team-roster.md](./team-roster.md)。E 全程保持原主单承接关系，
-由内部 PD→RD→QA→RD→QA→RD-finalizer 链处理；I 关联单指派念依。
+由内部 PD→RD→QA→RD→QA→RD-finalizer 链处理；I 同样在源单闭环。
 
 ## Step 1 — 读单与前置分诊
 
@@ -159,7 +153,7 @@ prod/online、master/main merge/push 与正式发布始终是人工硬门；不�
 - 附件中的完整错误、Terraform HCL、API 请求/响应与期望。
 
 缺陷类型（功能缺陷/线上问题/性能瓶颈）在普通 Provider 分支按紧急处理。E 的结构自闭环
-不因紧急而另建手工并行单；I 仅在 Provider 公开 docs 同时错误时启用独立 528766 紧急兜底腿。
+不因紧急而另建手工并行单；I 不创建文档关联单。
 
 ### Canned 缺参前置门
 
@@ -194,7 +188,8 @@ prod/online、master/main merge/push 与正式发布始终是人工硬门；不�
 文档问题必须比较 OpenAPI、CloudSpec 资源文档与 Provider docs 三侧，并先判定变更边界：
 CloudSpec 源错误且变更严格 text-only 时进入 I；CloudSpec 源正确而 Provider 本地生成物/
 展示有偏差时进入 D；一旦同时改变字段集合、类型、约束或 CRUD，则进入结构分支 E。只改
-Provider markdown 会被后续生成覆盖，只能作为 I 的独立 528766 紧急兜底腿，不能替代 I 主腿。
+Provider markdown 会被后续生成覆盖；只有 CloudSpec 源正确、差异仅在 Provider 本地生成/
+展示时才走 D。I 严禁创建、复用、关联、claim 或 bookend 任何 528766 兜底单。
 
 ## Step 3 — 执行动作
 
@@ -225,7 +220,8 @@ PR 或团队成员给出命中根因的修复证据，复用现有结果，避�
   `retry exhausted`、明确外部依赖或人工决策才可 blocked/SUSPENDED。
 - **open PR + QA pass 时源单 release，不 finish**，等待人工合并；PR/CI/QA 未完成也不能因
   历史 relation 进入观察等待。
-- **D/E/G 同样严禁 528766 承载；I/H/pure datasource/A/F 保持原边界**。
+- **D/E/G 同样严禁 528766 承载；I 与 pure datasource 也严禁进入；只有 H
+  保持既有合法 528766 边界，A/F 不变**。
 
 ### D/G source-only + D route DM 契约
 
@@ -256,7 +252,7 @@ PR 或团队成员给出命中根因的修复证据，复用现有结果，避�
   宣称通知完成，必须在最终聚合中如实说明。
 - build/test/CI 或 QA fail 都回 RD 修复重验。open PR + QA pass 时源单 release，不 finish；
   prod/online、master/main merge/push 与正式发布仍是人工硬门。
-- 反向保护：I 仍创建/复用 2169561→念依，public docs 同错时保留独立 528766→过载；
+- 反向保护：I 仍在源单使用 `amp-doc-backend` 自闭环且不创建文档关联单；
   H 仍 528766→夏节；pure datasource、A/F 保持原边界。
 
 ### Existing-related 状态机
@@ -273,11 +269,11 @@ relation，但 D/E/G 的 relation 永远只读：
 | D route owner/status 同步完成 | finalizer 调类型化入口 enqueue DM；durable pending 可继续，持久化失败只报告“通知未完成” |
 | G route owner/status 同步完成 | 不发送新增 route DM；直接继续开发 |
 | E pre QA pass | 回 RD 在同一源单上下文继续 Provider dev/CI/PR，再交 QA 远程 ACC；不触发 Acube |
-| 新工单，或前次路由错误 | 分支 A 只同步源单；I 按 2169561/可选 528766 分池判断；H 仅在 528766 缺失时创建。错误历史 relation 不迁移、不关闭 |
-| 路由为 I | 2169561 主腿和可选 528766 紧急腿分别 point-read；每池已有正确 relation 就复用，只补该池缺口 |
+| 新工单，或前次路由错误 | 分支 A 只同步源单；I 在源单调用文档后端且严禁 528766 承载；只有 H 在 528766 缺失时创建。错误历史 relation 不迁移、不关闭 |
+| 路由为 I | requested_external_actions=[]；resource 推荐后 online 验证，API/struct 提交审核并返回 URL，不创建关联单 |
 | 路由为 H 且 528766 缺失 | 补建一次并指派夏节（401498），按 H 标签合并保护同步源单 |
 | 已有 PR 待人工合并，或存在明确外部依赖/人工决策 | 前者聚合后 release，后者 blocked/SUSPENDED 后 release；均不得 finish |
-| 由人类或外部链承接的 I/H/A/F 分支，目标关系齐全且距上次实质进展不足 8 天 | **观察等待**：不评论、不改状态、不改派、不 create |
+| 由人类或外部链承接的 H/A/F 分支，目标关系齐全且距上次实质进展不足 8 天 | **观察等待**：不评论、不改状态、不改派、不 create |
 | 由人类或外部链承接的既有边界分支，目标关系齐全且 **距上次实质进展 ≥8 天** | 由 bridge 的稳定 epoch 走固定 Aone @ + 钉钉双通道催办；不启动新的 PD/RD/QA run |
 | 承接方已有结论，但仍缺客户或云产品材料 | **追料/补料**：finalizer 唯一回复提出材料清单并 `release/idle`，不新建关联单 |
 | 关联单或承接方已有可复核终结论 | **终局收敛**：按“非 PR 终局结果表”更新源单；不新建关联单、不改到共享兜底 assignee |
@@ -286,11 +282,9 @@ relation，但 D/E/G 的 relation 永远只读：
 
 - **分支 A 不要求关联单**；assignee 已是专属维护人即表示路由齐全，绝不能按“缺关联单”补建
   528766。
-- I 的正确主池是 2169561；只有 Provider 公开 docs 同时错误才有 528766 紧急腿。两池 relation
-  分开判定，禁止因一池已存在而跳过另一池，也禁止在公开 docs 正确时补 528766。
-- pure datasource 与 D/E/G 都没有“正确目标池”；任何 528766 relation 都只能只读保留，不能
+- I 与 pure datasource、D/E/G 都没有“正确目标池”；任何 528766 或旧文档 relation 都只能只读保留，不能
   触发复用、改派、relation 修复、claim 或 bookend，也不抑制源单开发。
-- H 的正确目标池仍是 528766；I 仍按 2169561/可选 528766 分池防重。
+- H 的正确目标池仍是 528766；I 只走源单文档后端。
 - D route notification 只通过持久化 ledger 类型化入口；同 key 不重发，不能由模型裸调脚本。
 - 终结论优先于追料；只有结论本身仍依赖客户材料时才进入追料。无法确认 relation 是否属于
   当前诉求时，宁可观察或 blocked，请求人工核对，不能猜测后重复建单。
@@ -319,7 +313,7 @@ relation，但 D/E/G 的 relation 永远只读：
 
 未映射的 workitemType 必须 blocked 并查合法枚举，不能取 progress_status 的第一个值兜底。
 PD 只在 `requested_external_actions` 提案；无论是否由 executor 托管，terraform-rd finalizer
-是 downstream single-writer，负责合法 I/H create/relation/assign、源单路由字段同步与 D
+是 downstream single-writer，负责 I 文档后端结果聚合、合法 H create/relation/assign、源单路由字段同步与 D
 类型化 DM enqueue。executor 只负责原主单 bookend（claim、唯一回复、outcome
 status/tag、release/finish），不解析或重放 downstream 动作；finalizer 完成动作后再返回
 `AONE_RESULT`。独立 finalizer 仍使用 terraform-rd 身份执行同样动作及源单唯一回复。
@@ -488,16 +482,17 @@ CloudSpec 结构三条件已对齐；如为文档问题，已证明源头正确�
 
 ```markdown
 ### 结论
-变更仅涉及 <resource/property/operation description、字段解释、NOTE、枚举文案>，
+变更仅涉及 <resource/API/struct description、字段解释、NOTE、枚举文案>，
 不改变字段集合、类型、约束或 CRUD，已按 I 路由。
 
-### 路由回执
-- CloudSpec 文档质量单（2169561，念依）：<created/reused + 链接>
-- Provider 公开 docs：<正确，无 528766 / 同时错误，528766 紧急兜底 created/reused + 链接>
-- 分池防重：<两个池各自 relation point-read 结果>
+### 文档后端回执
+- 类型：<resource / API / struct>
+- resource：<recommend-resource 结果 + get/online 后验验证>
+- API/struct：<白名单草稿 diff + submit-audit 结果 + 审核 URL>
+- 关联单：N/A（分支 I 源单自闭环）
 
 ### 下一步
-等待文档源修复；公开文档紧急腿不能替代 2169561 主腿。正式发布与主干合并仍是人工硬门。
+resource 仅在 online 证据证明新内容生效时宣称发布；API/struct 只写已进入审核，尚未正式发布。
 ```
 
 ### 模板 C2 — CloudSpec 结构 metadata（E → 源单 Provider dev）
@@ -563,7 +558,8 @@ assignee 保持最后处理人，本轮 release/idle；材料到齐后重新进�
   claim/wrap/release。
 - pure datasource 与 D/E/G 由 bridge executor 独占源单 claim/唯一回复/tag/release/finish；
   RD/finalizer 只按各分支同步 route 字段，D 另 enqueue route DM，严禁对 528766 执行承载动作。
-- I 的 Provider docs 紧急兜底腿与 H 的合法 528766 仍按原路径 claim/bookend；PR 未合并不得 finish。
+- I 仅在源单聚合文档后端结果，严禁 claim/bookend 528766；只有 H 的合法 528766
+  仍按原路径 claim/bookend，PR 未合并不得 finish。
 - 独立 finalizer 才对源工单显式使用 `JARVIS_A1_IDENTITY=terraform-rd` 做一次 done。
 - 普通 tf_provider 研发单的状态按 `config/pools.json`。
 - E 到 pre 后必须先过 cloudspec_pre_verify，再在源单上下文完成 Provider PR/CI/远程 ACC；
@@ -586,8 +582,8 @@ assignee 保持最后处理人，本轮 release/idle；材料到齐后重新进�
 
 ### CloudSpec I/E 分流
 
-- ❌ 把 text-only 文档 metadata 送进 E；正确路径是 I → 2169561 念依。
-- ❌ I 只开 528766 Provider 文档兜底，漏掉 2169561 主腿，或一池 relation 抑制另一池补建。
+- ❌ 把 text-only 文档 metadata 送进 E；正确路径是 I 源单 `amp-doc-backend`。
+- ❌ I 创建文档质量或 Provider docs 关联单，或把 API/struct 审核申请当作正式发布。
 - ❌ 把字段集合、类型、约束或 CRUD 变更伪装成 I；这些结构 metadata 必须走 E。
 - ❌ E pre 未通过 cloudspec_pre_verify 就开始 Provider 生成/开发。
 - ❌ E/D/G 触发 Acube 或创建/复用 528766；这些分支必须源单直办。
@@ -603,7 +599,7 @@ assignee 保持最后处理人，本轮 release/idle；材料到齐后重新进�
 - ❌ 上游 API 缺口仍建 Provider 研发单。
 - ❌ 专属维护产品污染共享研发池。
 - ❌ D route DM 裸调 `notify-dingtalk.sh`，绕过持久化 ledger 与稳定 receipt。
-- ❌ I 的 528766 紧急兜底腿代替 2169561 文档质量主腿。
+- ❌ resource 未做 get/online 后验验证就宣称发布成功。
 
 ### CLI 与出站
 

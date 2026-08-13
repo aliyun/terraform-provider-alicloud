@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "skills": {
+    "amp-doc-backend": {
+      "source": "agenthub.aliyun-inc.com",
+      "sourceUrl": "https://agenthub.aliyun-inc.com/api/skill-sources/amp-doc-backend",
+      "sourceType": "well-known",
+      "computedHash": "cf6e53663ef63cb1363949e9ac4fd351ec8389e2262b0b41dd40a3e32fa4406d",
+      "wellKnownDigest": "sha256:770eda2e8e4342acd247288174e20c8b77407a86dd1e7af1bf750df254328c5c"
+    }
+  }
+}

@@ -124,7 +124,7 @@ class HeadlessAmpBrokerTest(unittest.TestCase):
 
     def _request(self, repo=None, action="publish", peer=None, *,
                  project_id="3065873", repo_mode="model",
-                 branch="feature/guard", publish_kind="pre"):
+                 branch="feature/guard", publish_kind="pre", document=None):
         resolved = Path(repo or HERE).resolve()
         project = {"projectId": project_id, "popCode": "eventbridge",
                    "popVersion": "2020-04-01"}
@@ -137,6 +137,12 @@ class HeadlessAmpBrokerTest(unittest.TestCase):
             "allowed": True, "action": action, "repoMode": repo_mode,
             "project": project,
         }
+        if action.startswith("doc-"):
+            document = document or {
+                "type": "api", "key": "DescribeWidgets",
+                "language": "ZH_CN"}
+            target["document"] = document
+            receipt["document"] = document
         if repo_mode == "model":
             receipt.update(repo=str(resolved), baseline="a" * 40,
                            branch=branch)
@@ -240,6 +246,50 @@ class HeadlessAmpBrokerTest(unittest.TestCase):
             self.assertEqual(decision.reason, "branch_identity_mismatch")
             self.assertEqual(self.broker._branch_identity, "feature/one")
 
+    def test_doc_mutations_require_exact_document_receipt(self):
+        self.broker.enable(self.process)
+        document = {"type": "resource", "key": "ALIYUN::ECS::Instance",
+                    "environment": "online", "auditors": ["123456"]}
+        with tempfile.TemporaryDirectory() as repo, \
+                mock.patch("bridge.jarvis_execution_runtime._descends_from",
+                           return_value=True), \
+                mock.patch.object(self.broker, "_trusted_wrapper_process",
+                                  return_value=True):
+            self.assertTrue(self._request(
+                repo, action="doc-recommend-resource", document=document))
+            payload = self._request_payload(
+                repo, action="doc-recommend-resource", document=document)
+            payload["receipt"]["document"] = {
+                "type": "resource", "key": "ALIYUN::ECS::Other",
+                "environment": "online", "auditors": ["123456"]}
+            decision = self.broker._authorize_decision(os.getpid(), payload)
+            self.assertFalse(decision.allowed)
+            self.assertEqual(decision.reason, "document_receipt_mismatch")
+
+    def test_doc_mutations_reject_malformed_action_specific_scope(self):
+        self.broker.enable(self.process)
+        malformed = (
+            ("doc-create", {"type": "resource", "key": "Widget",
+                            "language": "ZH_CN"}),
+            ("doc-submit-audit", {"type": "api", "key": "Widget",
+                                  "auditors": []}),
+            ("doc-recommend-resource", {"type": "resource", "key": "../x",
+                                        "environment": "online"}),
+            ("doc-approver-role", {"type": "approver-role", "key": "other"}),
+        )
+        with tempfile.TemporaryDirectory() as repo, \
+                mock.patch("bridge.jarvis_execution_runtime._descends_from",
+                           return_value=True), \
+                mock.patch.object(self.broker, "_trusted_wrapper_process",
+                                  return_value=True):
+            for action, document in malformed:
+                with self.subTest(action=action, document=document):
+                    decision = self.broker._authorize_decision(
+                        os.getpid(), self._request_payload(
+                            repo, action=action, document=document))
+                    self.assertFalse(decision.allowed)
+                    self.assertEqual(decision.reason, "document_target_invalid")
+
     def test_init_and_publish_status_never_establish_mutation_pins(self):
         self.broker.enable(self.process)
         with tempfile.TemporaryDirectory() as repo, \
@@ -268,20 +318,29 @@ class HeadlessAmpBrokerTest(unittest.TestCase):
             self.assertIsNone(self.broker._branch_identity)
 
     def _request_payload(self, repo, *, project_id="3065873",
-                         branch="feature/guard"):
+                         branch="feature/guard", action="publish",
+                         document=None):
         resolved = str(Path(repo).resolve())
         project = {"projectId": project_id, "popCode": "eventbridge",
                    "popVersion": "2020-04-01"}
-        return {
-            "schemaVersion": 2, "action": "publish", "repo": resolved,
-            "target": {"schemaVersion": 1, "action": "publish",
+        payload = {
+            "schemaVersion": 2, "action": action, "repo": resolved,
+            "target": {"schemaVersion": 1, "action": action,
                        "repoMode": "model", "branch": branch,
-                       "publishKind": "pre", "project": project},
-            "receipt": {"allowed": True, "action": "publish",
+                       "publishKind": "pre" if action == "publish" else None,
+                       "project": project},
+            "receipt": {"allowed": True, "action": action,
                         "repoMode": "model", "repo": resolved,
                         "baseline": "a" * 40, "branch": branch,
                         "project": project},
         }
+        if action.startswith("doc-"):
+            document = document or {
+                "type": "api", "key": "DescribeWidgets",
+                "language": "ZH_CN"}
+            payload["target"]["document"] = document
+            payload["receipt"]["document"] = document
+        return payload
 
 
 class ProviderResumeFailoverTest(unittest.TestCase):

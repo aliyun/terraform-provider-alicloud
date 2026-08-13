@@ -37,7 +37,7 @@ JSON,`test/product_maintainers_parity_test.sh` 会卡住漂移。他们**故意�
 | **Provider 侧全局改造 G**(非单一产品/资源:region 白名单/框架 utility/公共 endpoint/provider.go 基础/SDK bump) | 源单新山；TerraformRD 源单直办，不建 528766、不发 route DM | 521957 |
 | **pure datasource source-only（紧急）**：仅 data source 查询/过滤/分页/输出/Read | 源单新山；Jarvis/TerraformRD 在源单直接开发，不建 528766 | 521957 |
 | **pure datasource source-only（非紧急）**：仅 data source 查询/过滤/分页/输出/Read | 源单过载；Jarvis/TerraformRD 在源单直接开发，不建 528766 | 484483 |
-| **CloudSpec 文档文本 metadata（I）**：resource/property/operation description、字段解释、NOTE、枚举文案，且不改变字段集合/类型/约束/CRUD | 念依（2169561 submit_only） | 373108 |
+| **CloudSpec 文档文本 metadata（I）**：resource/API/struct description、字段解释、NOTE、枚举文案，且不改变字段集合/类型/约束/CRUD | TerraformRD 源单使用 amp-doc-backend，不建关联单、不发 route DM | 源单 |
 | **CloudSpec 结构 metadata（E）**：资源未定义、字段集合/类型/约束/CRUD/映射不满足诉求 | 原主单修到 pre Meta 收敛，pre QA 后源单继续 Provider dev/CI/远程 ACC/PR | 429768（生成/发布 owner） |
 | D 生成/发布腿（含 E pre 收敛后） | 源单临钧；TerraformRD 源单直办，不建 528766；finalizer enqueue generated DM | 429768 |
 | **D 手写 resource 紧急**（含 CloudSpec 源正确的 Provider 本地文档偏差） | 源单新山；TerraformRD 源单直办，不建 528766；finalizer enqueue handwritten-urgent DM | 521957 |
@@ -57,7 +57,7 @@ JSON,`test/product_maintainers_parity_test.sh` 会卡住漂移。他们**故意�
   bridge executor 独占源单 claim/唯一回复/tag/release/finish。
 - CI pending/fail 或 QA fail 均回 RD 修复，不得标为 blocked；
   open PR + QA pass 时源单 release，不 finish。
-- D/E/G 同样严禁 528766 承载；I/H/pure datasource/A/F 保持原边界。
+- D/E/G/I 同样严禁 528766 承载；I 使用文档后端自闭环，H/pure datasource/A/F 保持原边界。
 
 ### D/G source-only + D route DM 契约
 
@@ -67,17 +67,18 @@ JSON,`test/product_maintainers_parity_test.sh` 会卡住漂移。他们**故意�
   只读，不构成开发、完成或 blocker 门。
 - D finalizer 先同步源单 owner/status，再通过 `bridge.terraform_route_notify` enqueue
   subtype DM，最后交 AONE_RESULT；G 不发新增 route DM。不得因路由/通知/relation 观察等待。
-- open PR + QA pass 时源单 release 不 finish；正式发布仍为人工硬门。I/H/pure datasource/A/F
+- open PR + QA pass 时源单 release 不 finish；正式发布仍为人工硬门。I 的文档后端源单自闭环、H/pure datasource/A/F
   保持原边界。
 
 **I/E 路由契约**:
-- I 创建或复用 2169561 并指派念依；Provider 公开 docs 同时错误时独立补 528766 紧急兜底腿。
-  两池分池防重，一个池已有 relation 不能压掉另一个池的缺失补建。
+- I 由 RD 在源单使用 `amp-doc-backend`；resource 只走 `recommend-resource` 并做 online 验证，
+  API/struct 只走 `submit-audit` 提交审核；
+  不创建文档质量或 Provider docs 关联单。
 - E 的 PD 返回 `requested_external_actions: []`、`next=terraform-rd/dev`；RD 使用
   `cloudspec-amp-workflow` 与 IDL/resource/operation/build/norm skills修到 pre Meta 收敛。
 - E pre 未收敛不得开始 Provider 生成/开发；收敛并通过 pre QA 后回 RD，在源单上下文继续
   Provider dev/CI/PR，再交 QA 远程 ACC。不触发 Acube/528766。
-- PD/QA 不外写；terraform-rd finalizer 是 downstream single-writer，负责 I/E 路由动作与
+- PD/QA 不外写；terraform-rd finalizer 是 downstream single-writer，负责 I/E 结果收口与
   下游副作用；executor 只负责原主单 bookend。AMP 登录、SSH 或仓库
   权限失败返回 `missing_capability` / `blocked`；不得回退 2165097。
 - prod/online、master/main merge/push 与正式发布仍是人工硬门。

@@ -4732,6 +4732,50 @@ def stop_check() -> int:
     return HOOK_BLOCK_EXIT
 
 
+def _amp_document_target(action: str, value: Any) -> Optional[dict[str, Any]]:
+    if not isinstance(value, Mapping):
+        return None
+    document = dict(value)
+    key = str(document.get("key") or "")
+    if (re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:/-]{0,255}", key) is None
+            or ".." in key or "//" in key):
+        return None
+    if action == "doc-approver-role":
+        return document if document == {
+            "type": "approver-role", "key": "doc_auditor"} else None
+    doc_type = str(document.get("type") or "")
+    language = str(document.get("language") or "")
+    environment = str(document.get("environment") or "")
+    auditors = document.get("auditors")
+    if auditors is not None:
+        if (not isinstance(auditors, list) or not auditors
+                or len(auditors) > 10
+                or any(not isinstance(item, str)
+                       or re.fullmatch(r"[1-9][0-9]{0,18}", item) is None
+                       for item in auditors)
+                or len(set(auditors)) != len(auditors)):
+            return None
+    if action == "doc-create":
+        valid = (frozenset(document) == {"type", "key", "language"}
+                 and doc_type in {"api", "struct"}
+                 and language in {"ZH_CN", "EN_US"})
+    elif action == "doc-submit-audit":
+        valid = (frozenset(document) == {
+                    "type", "key", "language", "auditors"}
+                 and doc_type in {"api", "struct"}
+                 and language in {"ZH_CN", "EN_US"}
+                 and auditors is not None)
+    elif action == "doc-recommend-resource":
+        expected = {"type", "key", "environment"}
+        if auditors is not None:
+            expected.add("auditors")
+        valid = (frozenset(document) == expected and doc_type == "resource"
+                 and environment == "online")
+    else:
+        valid = False
+    return document if valid else None
+
+
 def amp_authorize(action: str, repo_root: str,
                   target_json: str = "{}") -> int:
     """Authorize a trusted amp_safe mutation against the active task fence.
@@ -4743,6 +4787,8 @@ def amp_authorize(action: str, repo_root: str,
     allowed_actions = {
         "init", "branch-create", "branch-switch",
         "context-set-branch", "publish",
+        "doc-create", "doc-submit-audit", "doc-recommend-resource",
+        "doc-approver-role",
     }
     if action not in allowed_actions:
         print("amp-safe: reason=action_not_allowed detail=unknown authorization action",
@@ -4758,6 +4804,18 @@ def amp_authorize(action: str, repo_root: str,
         print("amp-safe: reason=target_invalid "
               "detail=invalid structured authorization target", file=sys.stderr)
         return HOOK_BLOCK_EXIT
+    document = None
+    if action.startswith("doc-"):
+        if str(target.get("repoMode") or "") != "model":
+            print("amp-safe: reason=document_repo_mode_invalid "
+                  "detail=document mutation requires a model repository",
+                  file=sys.stderr)
+            return HOOK_BLOCK_EXIT
+        document = _amp_document_target(action, target.get("document"))
+        if document is None:
+            print("amp-safe: reason=document_target_invalid "
+                  "detail=invalid structured document scope", file=sys.stderr)
+            return HOOK_BLOCK_EXIT
     store = _current_store()
     state = store.load()
     current = state.get("current")
@@ -4876,6 +4934,12 @@ def amp_authorize(action: str, repo_root: str,
             inspection.paths,
         ), file=sys.stderr)
         return HOOK_BLOCK_EXIT
+    if (action.startswith("doc-")
+            and str(target.get("branch") or "") != inspection.current_branch):
+        print("amp-safe: reason=branch_target_mismatch "
+              "detail=document target branch does not match trusted repository",
+              file=sys.stderr)
+        return HOOK_BLOCK_EXIT
     if action == "publish" and not inspection.current_branch.startswith("feature/"):
         print("amp-safe: publish requires a feature/* Git branch; found %s"
               % (inspection.current_branch or "unknown"), file=sys.stderr)
@@ -4903,6 +4967,7 @@ def amp_authorize(action: str, repo_root: str,
         "repo": os.fspath(discovered), "baseline": baseline,
         "branch": inspection.current_branch,
         "project": target.get("project") or {},
+        **({"document": document} if document is not None else {}),
     })
     return 0
 
@@ -4993,6 +5058,8 @@ def _parser() -> argparse.ArgumentParser:
     amp_parser.add_argument("--action", required=True, choices=(
         "init", "branch-create", "branch-switch",
         "context-set-branch", "publish",
+        "doc-create", "doc-submit-audit", "doc-recommend-resource",
+        "doc-approver-role",
     ))
     amp_parser.add_argument("--repo", required=True)
     amp_parser.add_argument("--target-json", default="{}")

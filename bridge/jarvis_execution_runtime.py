@@ -100,6 +100,8 @@ class HeadlessAmpBroker:
     _ALLOWED_ACTIONS = frozenset((
         "init", "branch-create", "branch-switch",
         "context-set-branch", "publish",
+        "doc-create", "doc-submit-audit", "doc-recommend-resource",
+        "doc-approver-role",
     ))
 
     def __init__(self, controller: Any, runtime_session_id: str):
@@ -238,6 +240,53 @@ class HeadlessAmpBroker:
         return project_id if (project_id.isdecimal()
                               and int(project_id) > 0) else None
 
+    @staticmethod
+    def _document_target(action: str, value: Any) -> Optional[dict[str, Any]]:
+        if not isinstance(value, Mapping):
+            return None
+        document = dict(value)
+        key = str(document.get("key") or "")
+        if (re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:/-]{0,255}", key) is None
+                or ".." in key or "//" in key):
+            return None
+        if action == "doc-approver-role":
+            return document if document == {
+                "type": "approver-role", "key": "doc_auditor"} else None
+        doc_type = str(document.get("type") or "")
+        language = str(document.get("language") or "")
+        environment = str(document.get("environment") or "")
+        auditors = document.get("auditors")
+        if auditors is not None:
+            if (not isinstance(auditors, list) or not auditors
+                    or len(auditors) > 10
+                    or any(not isinstance(item, str)
+                           or re.fullmatch(r"[1-9][0-9]{0,18}", item) is None
+                           for item in auditors)
+                    or len(set(auditors)) != len(auditors)):
+                return None
+        if action == "doc-create":
+            if (frozenset(document) != {"type", "key", "language"}
+                    or doc_type not in {"api", "struct"}
+                    or language not in {"ZH_CN", "EN_US"}):
+                return None
+        elif action == "doc-submit-audit":
+            if (frozenset(document) != {
+                    "type", "key", "language", "auditors"}
+                    or doc_type not in {"api", "struct"}
+                    or language not in {"ZH_CN", "EN_US"}
+                    or auditors is None):
+                return None
+        elif action == "doc-recommend-resource":
+            expected = {"type", "key", "environment"}
+            if auditors is not None:
+                expected.add("auditors")
+            if (frozenset(document) != expected or doc_type != "resource"
+                    or environment != "online"):
+                return None
+        else:
+            return None
+        return document
+
     def _authorize_decision(
             self, peer_pid: int, request: Mapping[str, Any],
     ) -> AmpBrokerDecision:
@@ -261,6 +310,14 @@ class HeadlessAmpBroker:
                 or str(receipt.get("action") or "") != action
                 or not receipt.get("allowed")):
             return AmpBrokerDecision(False, "action_receipt_mismatch")
+        if action.startswith("doc-"):
+            document = self._document_target(action, target.get("document"))
+            if document is None:
+                return AmpBrokerDecision(False, "document_target_invalid")
+            receipt_document = self._document_target(
+                action, receipt.get("document"))
+            if receipt_document != document:
+                return AmpBrokerDecision(False, "document_receipt_mismatch")
         # A staging init establishes only local context. Its input scope has no
         # resolved project triple yet and must never establish broker pins.
         if action == "init":

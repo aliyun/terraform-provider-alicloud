@@ -43,8 +43,9 @@ create/reuse-as-carrier/reassign/relation/claim/wrap/release/finish 528766。历
 - CI pending/fail 或 QA fail 均回 RD 修复。open PR + QA pass 时 release 源单、不 finish；
   prod/online、master/main merge/push 与正式发布仍是人工硬门。
 
-反向保护：I 的 CloudSpec text-only 文档进入 2169561 并指派念依（373108）；若公开 Provider
-docs 同时错误，另保留独立 528766 兜底腿并指派过载（484483）。H 仍进入 528766 并指派夏节。
+反向保护：I 的 CloudSpec text-only resource/API/struct 文档由 RD 在源单使用
+`amp-doc-backend` 自闭环，不创建旧文档质量池或 Provider docs 兜底关联单；CloudSpec 源正确、
+仅 Provider 本地文档生成/展示偏差时才走 D。H 仍进入 528766 并指派夏节。
 A/F 保持原路由。PD/QA 不外写；源单唯一聚合 bookend 仍由 bridge executor 执行。
 
 ## 步骤

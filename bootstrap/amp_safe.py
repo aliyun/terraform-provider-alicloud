@@ -30,7 +30,11 @@ _FEATURE_BRANCH_RE = re.compile(
 _POP_CODE_RE = re.compile(r"^[A-Za-z][A-Za-z0-9._-]{0,127}$")
 _POP_VERSION_RE = re.compile(r"^(\d{4})-(\d{2})-(\d{2})$")
 _PROJECT_ID_RE = re.compile(r"^[1-9][0-9]{0,18}$")
+_DOC_KEY_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/-]{0,255}$")
+_EMP_ID_RE = re.compile(r"^[1-9][0-9]{0,18}$")
 _VALUE_LIMIT = 1024
+_JSON_LIMIT = 256 * 1024
+_JSON_NODE_LIMIT = 20000
 _FIXED_FLAGS = ("-o", "json", "--no-interactive")
 _TESTING_ENV = "JARVIS_AMP_SAFE_TESTING"
 _AMP_BIN_ENV = "JARVIS_AMP_BIN"
@@ -58,15 +62,16 @@ class AmpInvocation:
     dry_run: bool = False
     scope: tuple[tuple[str, str], ...] = ()
     branch: Optional[str] = None
+    document: tuple[tuple[str, Any], ...] = ()
 
 
 Authorizer = Callable[[str, Path], int]
 BranchResolver = Callable[[Path], str]
 
 
-def _value(value: object, label: str) -> str:
+def _value(value: object, label: str, *, limit: int = _VALUE_LIMIT) -> str:
     text = str(value)
-    if (not text or len(text) > _VALUE_LIMIT or "\x00" in text
+    if (not text or len(text.encode("utf-8")) > limit or "\x00" in text
             or "\n" in text or "\r" in text):
         raise AmpSafeError("%s is empty or malformed" % label)
     return text
@@ -107,6 +112,112 @@ def _project_id(value: object) -> str:
     return project_id
 
 
+def _doc_type(value: object, *, writable: bool = False) -> str:
+    doc_type = _value(value, "type").lower()
+    allowed = {"api", "struct"} if writable else {"api", "struct", "resource"}
+    if doc_type not in allowed:
+        raise AmpSafeError(
+            "type must be %s" % " or ".join(sorted(allowed)))
+    return doc_type
+
+
+def _doc_key(value: object, label: str = "doc-key") -> str:
+    key = _value(value, label)
+    if (_DOC_KEY_RE.fullmatch(key) is None or ".." in key or "//" in key):
+        raise AmpSafeError(
+            "%s must be a bounded AMP API, struct, or resource name" % label)
+    return key
+
+
+def _language(value: object) -> str:
+    language = _value(value, "language")
+    if language not in {"ZH_CN", "EN_US"}:
+        raise AmpSafeError("language must be ZH_CN or EN_US")
+    return language
+
+
+def _environment(value: object, *, resource_write: bool = False) -> str:
+    environment = _value(value, "env").lower()
+    allowed = {"online"} if resource_write else {"daily", "pre", "online"}
+    if environment not in allowed:
+        raise AmpSafeError("env must be %s" % " or ".join(sorted(allowed)))
+    return environment
+
+
+def _emp_id(value: object, label: str = "emp-id") -> str:
+    emp_id = _value(value, label)
+    if _EMP_ID_RE.fullmatch(emp_id) is None:
+        raise AmpSafeError("%s must be a positive decimal identifier" % label)
+    return emp_id
+
+
+def _json_object(value: object, label: str) -> str:
+    raw = _value(value, label, limit=_JSON_LIMIT)
+
+    def object_pairs(pairs: Sequence[tuple[str, Any]]) -> dict[str, Any]:
+        result: dict[str, Any] = {}
+        for key, item in pairs:
+            if key in result:
+                raise AmpSafeError("%s contains duplicate JSON key: %s" % (
+                    label, key))
+            result[key] = item
+        return result
+
+    def reject_constant(constant: str) -> None:
+        raise AmpSafeError("%s contains non-standard JSON value: %s" % (
+            label, constant))
+
+    try:
+        parsed = json.loads(
+            raw, object_pairs_hook=object_pairs, parse_constant=reject_constant)
+    except AmpSafeError:
+        raise
+    except (RecursionError, TypeError, ValueError) as exc:
+        raise AmpSafeError("%s must be valid JSON" % label) from exc
+    if not isinstance(parsed, Mapping):
+        raise AmpSafeError("%s must be a JSON object" % label)
+
+    nodes = 0
+
+    def visit(item: Any, depth: int) -> None:
+        nonlocal nodes
+        nodes += 1
+        if nodes > _JSON_NODE_LIMIT or depth > 64:
+            raise AmpSafeError("%s JSON structure is too complex" % label)
+        if isinstance(item, Mapping):
+            for key, nested in item.items():
+                if not isinstance(key, str) or len(key.encode("utf-8")) > _VALUE_LIMIT:
+                    raise AmpSafeError("%s contains an unsafe JSON key" % label)
+                visit(nested, depth + 1)
+        elif isinstance(item, list):
+            for nested in item:
+                visit(nested, depth + 1)
+        elif isinstance(item, str) and len(item.encode("utf-8")) > _JSON_LIMIT:
+            raise AmpSafeError("%s contains an oversized JSON string" % label)
+
+    visit(parsed, 0)
+    canonical = json.dumps(
+        parsed, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    if len(canonical.encode("utf-8")) > _JSON_LIMIT:
+        raise AmpSafeError("%s exceeds the JSON size limit" % label)
+    return canonical
+
+
+def _auditor_emp_ids(value: object) -> str:
+    raw = _value(value, "auditor-emp-ids", limit=4096)
+    try:
+        parsed = json.loads(raw)
+    except (TypeError, ValueError) as exc:
+        raise AmpSafeError("auditor-emp-ids must be a JSON array") from exc
+    if (not isinstance(parsed, list) or not parsed or len(parsed) > 10
+            or any(isinstance(item, bool) for item in parsed)):
+        raise AmpSafeError("auditor-emp-ids must contain 1 to 10 empIds")
+    auditors = [_emp_id(item, "auditor empId") for item in parsed]
+    if len(set(auditors)) != len(auditors):
+        raise AmpSafeError("auditor-emp-ids must not contain duplicates")
+    return json.dumps(auditors, ensure_ascii=True, separators=(",", ":"))
+
+
 def _canonical_scope(
         values: Mapping[str, str], *, required: bool,
 ) -> tuple[tuple[str, str], ...]:
@@ -135,12 +246,14 @@ def _parse_options(
         value_flags: Sequence[str] = (),
         boolean_flags: Sequence[str] = (),
         positional_count: int = 0,
+        value_limits: Optional[Mapping[str, int]] = None,
 ) -> tuple[dict[str, str], set[str], tuple[str, ...]]:
     allowed_values = frozenset(value_flags)
     allowed_booleans = frozenset(boolean_flags)
     values: dict[str, str] = {}
     booleans: set[str] = set()
     positional: list[str] = []
+    limits = value_limits or {}
     index = 0
     while index < len(tokens):
         token = _value(tokens[index], "argument")
@@ -157,12 +270,15 @@ def _parse_options(
             if name in values:
                 raise AmpSafeError("duplicate AMP flag: %s" % name)
             if separator:
-                option_value = _value(inline, name)
+                option_value = _value(
+                    inline, name, limit=int(limits.get(name, _VALUE_LIMIT)))
                 index += 1
             else:
                 if index + 1 >= len(tokens):
                     raise AmpSafeError("missing value for AMP flag: %s" % name)
-                option_value = _value(tokens[index + 1], name)
+                option_value = _value(
+                    tokens[index + 1], name,
+                    limit=int(limits.get(name, _VALUE_LIMIT)))
                 if option_value.startswith("-"):
                     raise AmpSafeError("missing value for AMP flag: %s" % name)
                 index += 2
@@ -255,8 +371,11 @@ def _parse_branch(tokens: Sequence[str]) -> AmpInvocation:
 
 
 def _parse_context(tokens: Sequence[str]) -> AmpInvocation:
+    if tuple(tokens) == ("show",):
+        return AmpInvocation(("context", "show"))
     if tuple(tokens[:2]) != ("set", "branch"):
-        raise AmpSafeError("only 'context set branch <feature/...>' is allowed")
+        raise AmpSafeError(
+            "only 'context show' or 'context set branch <feature/...>' is allowed")
     values, booleans, positional = _parse_options(
         tokens[2:], value_flags=_SCOPE_FLAGS, positional_count=1)
     branch = _feature_branch(positional[0])
@@ -285,6 +404,132 @@ def _parse_api(tokens: Sequence[str]) -> AmpInvocation:
         return AmpInvocation((
             "api", "get", *_canonical_options(values, booleans, order)))
     raise AmpSafeError("api write or unknown subcommand is not allowed: %s" % command)
+
+
+def _require_options(values: Mapping[str, str], names: Sequence[str],
+                     command: str) -> None:
+    missing = [name for name in names if name not in values]
+    if missing:
+        raise AmpSafeError("%s requires %s" % (command, ", ".join(missing)))
+
+
+def _doc_document_scope(values: Mapping[str, str], *, resource: bool = False,
+                        role: bool = False) -> tuple[tuple[str, Any], ...]:
+    if role:
+        return (("type", "approver-role"), ("key", "doc_auditor"))
+    key_flag = "--resource-name" if resource else "--doc-key"
+    scope: list[tuple[str, Any]] = [
+        ("type", "resource" if resource else values["--type"]),
+        ("key", values[key_flag]),
+    ]
+    if "--language" in values:
+        scope.append(("language", values["--language"]))
+    if "--env" in values:
+        scope.append(("environment", values["--env"]))
+    if "--auditor-emp-ids" in values:
+        scope.append(("auditors", tuple(json.loads(values["--auditor-emp-ids"]))))
+    if "--auditor-emp-id" in values:
+        scope.append(("auditors", (values["--auditor-emp-id"],)))
+    return tuple(scope)
+
+
+def _parse_doc(tokens: Sequence[str]) -> AmpInvocation:
+    if not tokens:
+        raise AmpSafeError("doc requires an allowed read or mutation subcommand")
+    command = tokens[0]
+    rest = tokens[1:]
+    if command in {"get", "get-audit-url"}:
+        order = ("--type", "--doc-key", "--language", "--env", "--project-id")
+        values, booleans, _ = _parse_options(rest, value_flags=order)
+        _require_options(values, ("--type", "--doc-key"), "doc %s" % command)
+        values["--type"] = _doc_type(values["--type"])
+        values["--doc-key"] = _doc_key(values["--doc-key"])
+        if "--language" in values:
+            values["--language"] = _language(values["--language"])
+        if "--env" in values:
+            values["--env"] = _environment(values["--env"])
+        if "--project-id" in values:
+            values["--project-id"] = _project_id(values["--project-id"])
+        return AmpInvocation((
+            "doc", command, *_canonical_options(values, booleans, order)))
+    if command == "list-approver":
+        values, booleans, _ = _parse_options(
+            rest, value_flags=("--project-id",))
+        if "--project-id" in values:
+            values["--project-id"] = _project_id(values["--project-id"])
+        return AmpInvocation((
+            "doc", command,
+            *_canonical_options(values, booleans, ("--project-id",))))
+    if command == "approver-role":
+        order = ("--reason", "--project-id")
+        values, booleans, _ = _parse_options(rest, value_flags=order)
+        if "--project-id" in values:
+            values["--project-id"] = _project_id(values["--project-id"])
+        if "--reason" not in values:
+            return AmpInvocation((
+                "doc", command, *_canonical_options(values, booleans, order)))
+        _require_options(values, ("--project-id",), "doc approver-role --reason")
+        scope = _canonical_scope(values, required=True)
+        return AmpInvocation(
+            ("doc", command, *_canonical_options(values, booleans, order)),
+            authorize_action="doc-approver-role", scope=scope,
+            document=_doc_document_scope(values, role=True))
+    if command == "create":
+        order = ("--type", "--doc-key", "--doc-meta", "--meta", "--language",
+                 "--project-id")
+        values, booleans, _ = _parse_options(
+            rest, value_flags=order,
+            value_limits={"--doc-meta": _JSON_LIMIT, "--meta": _JSON_LIMIT})
+        _require_options(values, ("--type", "--doc-key", "--doc-meta", "--meta",
+                                  "--project-id"), "doc create")
+        values["--type"] = _doc_type(values["--type"], writable=True)
+        values["--doc-key"] = _doc_key(values["--doc-key"])
+        values["--doc-meta"] = _json_object(values["--doc-meta"], "doc-meta")
+        values["--meta"] = _json_object(values["--meta"], "meta")
+        values["--language"] = _language(values.get("--language", "ZH_CN"))
+        values["--project-id"] = _project_id(values["--project-id"])
+        scope = _canonical_scope(values, required=True)
+        return AmpInvocation(
+            ("doc", command, *_canonical_options(values, booleans, order)),
+            authorize_action="doc-create", scope=scope,
+            document=_doc_document_scope(values))
+    if command == "submit-audit":
+        order = ("--type", "--doc-key", "--auditor-emp-ids", "--side-info",
+                 "--language", "--project-id")
+        values, booleans, _ = _parse_options(
+            rest, value_flags=order, value_limits={"--auditor-emp-ids": 4096})
+        _require_options(values, ("--type", "--doc-key", "--auditor-emp-ids",
+                                  "--project-id"), "doc submit-audit")
+        values["--type"] = _doc_type(values["--type"], writable=True)
+        values["--doc-key"] = _doc_key(values["--doc-key"])
+        values["--auditor-emp-ids"] = _auditor_emp_ids(
+            values["--auditor-emp-ids"])
+        values["--language"] = _language(values.get("--language", "ZH_CN"))
+        values["--project-id"] = _project_id(values["--project-id"])
+        scope = _canonical_scope(values, required=True)
+        return AmpInvocation(
+            ("doc", command, *_canonical_options(values, booleans, order)),
+            authorize_action="doc-submit-audit", scope=scope,
+            document=_doc_document_scope(values))
+    if command == "recommend-resource":
+        order = ("--resource-name", "--env", "--auditor-emp-id", "--project-id")
+        values, booleans, _ = _parse_options(rest, value_flags=order)
+        _require_options(values, ("--resource-name", "--env", "--project-id"),
+                         "doc recommend-resource")
+        values["--resource-name"] = _doc_key(
+            values["--resource-name"], "resource-name")
+        values["--env"] = _environment(
+            values["--env"], resource_write=True)
+        if "--auditor-emp-id" in values:
+            values["--auditor-emp-id"] = _emp_id(
+                values["--auditor-emp-id"], "auditor-emp-id")
+        values["--project-id"] = _project_id(values["--project-id"])
+        scope = _canonical_scope(values, required=True)
+        return AmpInvocation(
+            ("doc", command, *_canonical_options(values, booleans, order)),
+            authorize_action="doc-recommend-resource", scope=scope,
+            document=_doc_document_scope(values, resource=True))
+    raise AmpSafeError("doc subcommand is not allowed: %s" % command)
 
 
 def _parse_publish(tokens: Sequence[str]) -> AmpInvocation:
@@ -317,7 +562,7 @@ def _parse_publish(tokens: Sequence[str]) -> AmpInvocation:
 
 def parse_amp_argv(argv: Sequence[str]) -> AmpInvocation:
     """Parse and canonicalize the complete safe AMP argv surface."""
-    tokens = tuple(_value(value, "argument") for value in argv)
+    tokens = tuple(_value(value, "argument", limit=_JSON_LIMIT) for value in argv)
     if not tokens:
         raise AmpSafeError("an AMP command is required")
     command = tokens[0]
@@ -338,6 +583,8 @@ def parse_amp_argv(argv: Sequence[str]) -> AmpInvocation:
         return _parse_context(rest)
     if command == "api":
         return _parse_api(rest)
+    if command == "doc":
+        return _parse_doc(rest)
     if command == "publish":
         return _parse_publish(rest)
     raise AmpSafeError("AMP command is not allowed: %s" % command)
@@ -414,6 +661,20 @@ def _authorization_target(
             "schemaVersion": 1, "action": action,
             "repoMode": "local-context", "project": explicit,
             "branch": invocation.branch,
+        }
+    if action.startswith("doc-"):
+        context = _load_amp_context(repo)
+        for key, value in explicit.items():
+            if context.get(key, "").lower() != value.lower():
+                raise AmpSafeError(
+                    "explicit mutation scope does not match trusted AMP context")
+        branch = _feature_branch(context.get("branch") or "")
+        return {
+            "schemaVersion": 1, "action": action, "repoMode": "model",
+            "project": {key: context[key] for key in
+                        ("projectId", "popCode", "popVersion")},
+            "branch": branch, "publishKind": None,
+            "document": dict(invocation.document),
         }
     context_path = repo / ".amp" / "context.yaml"
     if (action == "branch-create" and not context_path.exists()

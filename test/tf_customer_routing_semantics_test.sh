@@ -84,15 +84,14 @@ for route in "$source_route" "$mirror_route"; do
   require_terms "$route" \
     '分支 I — CloudSpec 文档文本 metadata' \
     'text-only' \
-    'resource/property/operation description' \
+    'resource/API/struct description' \
     '字段解释、NOTE 与枚举文案' \
     '不改变字段集合、类型、约束或 CRUD' \
-    '2169561' \
-    '念依（373108）' \
-    'submit_only' \
-    '独立 528766 紧急兜底腿' \
-    '分池防重' \
-    '一个池已有 relation 不能抑制另一个池的缺失补建' \
+    'amp-doc-backend' \
+    'recommend-resource --env online' \
+    'get --type resource --env online' \
+    'submit 成功只表示进入审核' \
+    '不创建文档关联单' \
     'CloudSpec 文档源正确，Provider 本地文档生成/展示偏差' \
     '分支 D' \
     '分支 E — CloudSpec 结构 metadata 原主单自闭环' \
@@ -272,9 +271,7 @@ test "$(jq -r '.pools.tf_customer.progress_status["性能瓶颈"]' "$pools")" = 
 test "$(jq -r '.pools.tf_customer.done_status["性能瓶颈"]' "$pools")" = 'Fixed'
 jq -e '
   (.upstream.cloudspec_gap? == null)
-  and (.upstream.cloudspec_docs_quality.project == 2169561)
-  and (.upstream.cloudspec_docs_quality.assignee == 373108)
-  and (.upstream.cloudspec_docs_quality.access == "submit_only")
+  and (.upstream.cloudspec_docs_quality? == null)
 ' "$pools" >/dev/null
 
 echo "tf_customer_routing_semantics_test: PASS"

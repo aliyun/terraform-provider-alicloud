@@ -114,16 +114,15 @@ print("  Property/Operation/PrimaryOperation:",
 
 #### 分支 I — CloudSpec 文档文本 metadata
 
-文档问题先比较 OpenAPI 长期语义、CloudSpec `resource/property/operation description` 与
-Provider docs。变更只涉及 description、字段解释、NOTE 与枚举文案，且
+文档问题先比较 OpenAPI 长期语义、CloudSpec resource/API/struct description 与 Provider docs。
+变更只涉及 description、字段解释、NOTE 与枚举文案，且
 **不改变字段集合、类型、约束或 CRUD** 时，才是 text-only I：
 
-- 从 `config/pools.json` 的 `upstream.cloudspec_docs_quality` **创建或复用** 2169561，
-  指派念依（373108），入口保持 `submit_only`；
-- Provider 公开 docs 同时错误时，补一条**独立 528766 紧急兜底腿**，指派过载（484483）；
-- 两池执行**分池防重**，一个池已有 relation 不能抑制另一个池的缺失补建；
-- PD/QA 不外写，terraform-rd finalizer 作为 downstream `single-writer` 执行动作；
-  executor 只负责原主单 bookend。
+- PD 返回 `requested_external_actions: []`，RD 在源单调用 `amp-doc-backend`；
+- resource 只执行单资源 `recommend-resource --env online`，并强制 get/online 后验验证；
+- API/struct 只保存白名单文档草稿并提交审核、查询审核 URL；审核成功不等于正式发布；
+- 不创建文档关联单：禁止创建、复用、关联或指派旧文档质量池/Provider docs 兜底单。PD/QA 不外写，executor
+  只负责原主单 bookend。
 
 CloudSpec 文档源正确、仅 Provider 本地生成/展示偏差时走 D；文档改动同时涉及字段集合、类型、
 约束、枚举集合、CRUD/operation 或映射时不再是 I，走结构分支 E。
@@ -205,8 +204,7 @@ D finalizer 先幂等同步上述 owner/status，再执行
 不得回退其它承接人或身份。`amp publish prod` / prod/online、master/main merge/push 与正式发布
 始终是人工硬门，不得 finish 或宣称正式发布。
 
-I text-only 文档仍进入 2169561/念依；公开 Provider docs 同时错误时另建独立 528766/
-过载兜底腿。H 仍进入 528766/夏节，A/F 保持原路由。
+I text-only 文档仍在源单使用 `amp-doc-backend` 自闭环；H 仍进入 528766/夏节，A/F 保持原路由。
 
 ### 分支 F:上游 API 缺口
 
