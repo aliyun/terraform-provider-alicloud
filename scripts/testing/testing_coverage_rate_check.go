@@ -787,6 +787,37 @@ func formatAttributesAsTree(attributes []interface{}) string {
 	return buffer.String()
 }
 
+// neverReadBackAttributes returns the attributes in testIgnoreSet that the
+// resource/data source implementation never writes back with d.Set (e.g.
+// create-only inputs that the Get/List API does not return). Such attributes
+// have no source during import, so keeping them in ImportStateVerifyIgnore is
+// legitimate even when they are ForceNew. The exemption set stays empty when
+// the implementation file cannot be read, so the check fails closed.
+func neverReadBackAttributes(resourceName string, fileType string, testIgnoreSet mapset.Set) mapset.Set {
+	exemptions := mapset.NewSet()
+	implPath := "alicloud/resource_alicloud_" + resourceName + ".go"
+	if fileType == "data source" {
+		implPath = "alicloud/data_source_alicloud_" + resourceName + ".go"
+	}
+	content, err := os.ReadFile(implPath)
+	if err != nil {
+		return exemptions
+	}
+	src := string(content)
+	for _, attr := range testIgnoreSet.ToSlice() {
+		attrStr, ok := attr.(string)
+		if !ok {
+			continue
+		}
+		// Nested ignore entries (parent.child) are covered by the parent d.Set.
+		root := strings.SplitN(attrStr, ".", 2)[0]
+		if !strings.Contains(src, fmt.Sprintf("d.Set(%q", root)) {
+			exemptions.Add(attrStr)
+		}
+	}
+	return exemptions
+}
+
 func checkAttributeSet(resourceName string, fileType string, schemaMustSet, testMustSet,
 	schemaModifySet, testModifySet, schemaForceNewSet, schemaAllSet, testIgnoreSet,
 	schemaDeprecatedSet mapset.Set) bool {
@@ -808,12 +839,22 @@ func checkAttributeSet(resourceName string, fileType string, schemaMustSet, test
 		log.Infof("resource %s attributes has 100%% testing coverage rate ", resourceName)
 	}
 
-	forceNewButIgnore := schemaForceNewSet.Intersect(testIgnoreSet).ToSlice()
+	// ForceNew attributes in ImportStateVerifyIgnore usually mean the resource
+	// should be fixed to read them back. Create-only input attributes that the
+	// Get/List API never returns are the exception: Read never writes them back
+	// with d.Set, so the imported state can never contain them and listing them
+	// in ImportStateVerifyIgnore is the only workable pattern. Exempt exactly
+	// those attributes.
+	unreadAttrs := neverReadBackAttributes(resourceName, fileType, testIgnoreSet)
+	forceNewButIgnore := schemaForceNewSet.Intersect(testIgnoreSet).Difference(unreadAttrs).ToSlice()
 	if len(forceNewButIgnore) != 0 {
 		isIgnoreLegal = false
 		forceNewButIgnoreStr, _ := json.Marshal(forceNewButIgnore)
-		// TODO: 从READ方法区分是否是私有属性，从而区分应该修改ignore数组还是应该修改资源属性
 		log.Errorf("resource %s [ForceNew] attributes %v are in ImportStateVerifyIgnore array ", resourceName, string(forceNewButIgnoreStr))
+	}
+	if exempted := schemaForceNewSet.Intersect(testIgnoreSet).Intersect(unreadAttrs); exempted.Cardinality() > 0 {
+		exemptedStr, _ := json.Marshal(exempted.ToSlice())
+		log.Infof("resource %s [ForceNew] attributes %v stay in ImportStateVerifyIgnore because the resource Read never writes them back", resourceName, string(exemptedStr))
 	}
 	// Attributes in ImportStateVerifyIgnore that are neither part of the
 	// active schema nor deprecated are genuinely redundant. Deprecated fields

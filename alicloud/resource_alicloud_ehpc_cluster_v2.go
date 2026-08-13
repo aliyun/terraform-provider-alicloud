@@ -28,6 +28,25 @@ func resourceAliCloudEhpcClusterV2() *schema.Resource {
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
+			"additional_packages": {
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"name": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+						},
+						"version": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+						},
+					},
+				},
+			},
 			"addons": {
 				Type:      schema.TypeList,
 				Optional:  true,
@@ -95,6 +114,28 @@ func resourceAliCloudEhpcClusterV2() *schema.Resource {
 					},
 				},
 			},
+			"cluster_custom_configuration": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"script": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"args": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
+			"cluster_description": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"cluster_mode": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -103,6 +144,10 @@ func resourceAliCloudEhpcClusterV2() *schema.Resource {
 			"cluster_name": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"cluster_status": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"cluster_vswitch_id": {
 				Type:     schema.TypeString,
@@ -121,6 +166,35 @@ func resourceAliCloudEhpcClusterV2() *schema.Resource {
 			"deletion_protection": {
 				Type:     schema.TypeBool,
 				Optional: true,
+			},
+			"ehpc_version": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"enable_scale_in": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
+			"enable_scale_out": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
+			"grow_interval": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
+			"idle_interval": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
+			"is_enterprise_security_group": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
 			},
 			"manager": {
 				Type:     schema.TypeList,
@@ -291,11 +365,230 @@ func resourceAliCloudEhpcClusterV2() *schema.Resource {
 					},
 				},
 			},
+			"max_core_count": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
+			"max_count": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
+			"modify_time": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"monitor_spec": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"enable_compute_load_monitor": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Computed: true,
+						},
+					},
+				},
+			},
+			"queues": {
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"queue_name": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+						},
+						"enable_scale_out": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							ForceNew: true,
+						},
+						"enable_scale_in": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							ForceNew: true,
+						},
+						"min_count": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							ForceNew: true,
+						},
+						"max_count": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							ForceNew: true,
+						},
+						"initial_count": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							ForceNew: true,
+						},
+						"inter_connect": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+						},
+						"vswitch_ids": {
+							Type:     schema.TypeList,
+							Optional: true,
+							ForceNew: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"compute_nodes": {
+							Type:     schema.TypeList,
+							Optional: true,
+							ForceNew: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"instance_type": {
+										Type:     schema.TypeString,
+										Optional: true,
+										ForceNew: true,
+									},
+									"image_id": {
+										Type:     schema.TypeString,
+										Optional: true,
+										ForceNew: true,
+									},
+									"instance_charge_type": {
+										Type:     schema.TypeString,
+										Optional: true,
+										ForceNew: true,
+									},
+									"period_unit": {
+										Type:     schema.TypeString,
+										Optional: true,
+										ForceNew: true,
+									},
+									"period": {
+										Type:     schema.TypeInt,
+										Optional: true,
+										ForceNew: true,
+									},
+									"auto_renew": {
+										Type:     schema.TypeBool,
+										Optional: true,
+										ForceNew: true,
+									},
+									"auto_renew_period": {
+										Type:     schema.TypeInt,
+										Optional: true,
+										ForceNew: true,
+									},
+									"spot_strategy": {
+										Type:     schema.TypeString,
+										Optional: true,
+										ForceNew: true,
+									},
+									"spot_price_limit": {
+										Type:     schema.TypeFloat,
+										Optional: true,
+										ForceNew: true,
+									},
+									"duration": {
+										Type:     schema.TypeInt,
+										Optional: true,
+										ForceNew: true,
+									},
+									"enable_ht": {
+										Type:     schema.TypeBool,
+										Optional: true,
+										ForceNew: true,
+									},
+									"system_disk": {
+										Type:     schema.TypeList,
+										Optional: true,
+										ForceNew: true,
+										MaxItems: 1,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"category": {
+													Type:     schema.TypeString,
+													Optional: true,
+													ForceNew: true,
+												},
+												"size": {
+													Type:     schema.TypeInt,
+													Optional: true,
+													ForceNew: true,
+												},
+												"level": {
+													Type:     schema.TypeString,
+													Optional: true,
+													ForceNew: true,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						"allocation_strategy": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+						},
+						"ram_role": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+						},
+						"hostname_prefix": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+						},
+						"hostname_suffix": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+						},
+						"keep_alive_nodes": {
+							Type:     schema.TypeList,
+							Optional: true,
+							ForceNew: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"max_count_per_cycle": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							ForceNew: true,
+						},
+						"reserved_node_pool_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+						},
+					},
+				},
+			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
 				ForceNew: true,
+			},
+			"scheduler_spec": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"enable_topology_awareness": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Computed: true,
+						},
+					},
+				},
 			},
 			"security_group_id": {
 				Type:     schema.TypeString,
@@ -341,6 +634,7 @@ func resourceAliCloudEhpcClusterV2() *schema.Resource {
 					},
 				},
 			},
+			"tags": tagsSchemaForceNew(),
 		},
 	}
 }
@@ -556,6 +850,194 @@ func resourceAliCloudEhpcClusterV2Create(d *schema.ResourceData, meta interface{
 	if v, ok := d.GetOk("client_version"); ok {
 		request["ClientVersion"] = v
 	}
+	if v, ok := d.GetOk("cluster_description"); ok {
+		request["ClusterDescription"] = v
+	}
+	if v, ok := d.GetOkExists("is_enterprise_security_group"); ok {
+		request["IsEnterpriseSecurityGroup"] = v
+	}
+	if v := d.Get("cluster_custom_configuration"); len(convertToInterfaceArray(v)) > 0 {
+		clusterCustomConfiguration := make(map[string]interface{})
+		script1, _ := jsonpath.Get("$[0].script", v)
+		if script1 != nil && script1 != "" {
+			clusterCustomConfiguration["Script"] = script1
+		}
+		args1, _ := jsonpath.Get("$[0].args", v)
+		if args1 != nil && args1 != "" {
+			clusterCustomConfiguration["Args"] = args1
+		}
+
+		if len(clusterCustomConfiguration) > 0 {
+			clusterCustomConfigurationJson, err := json.Marshal(clusterCustomConfiguration)
+			if err != nil {
+				return WrapError(err)
+			}
+			request["ClusterCustomConfiguration"] = string(clusterCustomConfigurationJson)
+		}
+	}
+	if v, ok := d.GetOkExists("max_count"); ok {
+		request["MaxCount"] = v
+	}
+	if v, ok := d.GetOkExists("max_core_count"); ok {
+		request["MaxCoreCount"] = v
+	}
+	if v, ok := d.GetOkExists("grow_interval"); ok {
+		request["GrowInterval"] = v
+	}
+	if v, ok := d.GetOkExists("idle_interval"); ok {
+		request["IdleInterval"] = v
+	}
+	if v, ok := d.GetOk("tags"); ok {
+		tagsMapsArray := make([]interface{}, 0)
+		for key, value := range v.(map[string]interface{}) {
+			// CreateCluster expects the lowercase item fields "key"/"value";
+			// PascalCase fields are rejected with InvalidParams "Tags.0.key".
+			tagsMapsArray = append(tagsMapsArray, map[string]interface{}{
+				"key":   key,
+				"value": value,
+			})
+		}
+		tagsMapsJson, err := json.Marshal(tagsMapsArray)
+		if err != nil {
+			return WrapError(err)
+		}
+		request["Tags"] = string(tagsMapsJson)
+	}
+	if v, ok := d.GetOk("additional_packages"); ok {
+		additionalPackagesMapsArray := make([]interface{}, 0)
+		for _, dataLoop := range convertToInterfaceArray(v) {
+			dataLoopTmp := dataLoop.(map[string]interface{})
+			dataLoopMap := make(map[string]interface{})
+			if rawValue, ok := dataLoopTmp["name"]; ok && rawValue != "" {
+				dataLoopMap["Name"] = rawValue
+			}
+			if rawValue, ok := dataLoopTmp["version"]; ok && rawValue != "" {
+				dataLoopMap["Version"] = rawValue
+			}
+			additionalPackagesMapsArray = append(additionalPackagesMapsArray, dataLoopMap)
+		}
+		additionalPackagesMapsJson, err := json.Marshal(additionalPackagesMapsArray)
+		if err != nil {
+			return WrapError(err)
+		}
+		request["AdditionalPackages"] = string(additionalPackagesMapsJson)
+	}
+	if v, ok := d.GetOk("queues"); ok {
+		queuesMapsArray := make([]interface{}, 0)
+		for _, dataLoop := range convertToInterfaceArray(v) {
+			dataLoopTmp := dataLoop.(map[string]interface{})
+			dataLoopMap := make(map[string]interface{})
+			if rawValue, ok := dataLoopTmp["queue_name"]; ok && rawValue != "" {
+				dataLoopMap["QueueName"] = rawValue
+			}
+			if rawValue, ok := dataLoopTmp["enable_scale_out"]; ok && rawValue.(bool) {
+				dataLoopMap["EnableScaleOut"] = rawValue
+			}
+			if rawValue, ok := dataLoopTmp["enable_scale_in"]; ok && rawValue.(bool) {
+				dataLoopMap["EnableScaleIn"] = rawValue
+			}
+			if rawValue, ok := dataLoopTmp["min_count"]; ok && rawValue.(int) != 0 {
+				dataLoopMap["MinCount"] = rawValue
+			}
+			if rawValue, ok := dataLoopTmp["max_count"]; ok && rawValue.(int) != 0 {
+				dataLoopMap["MaxCount"] = rawValue
+			}
+			if rawValue, ok := dataLoopTmp["initial_count"]; ok && rawValue.(int) != 0 {
+				dataLoopMap["InitialCount"] = rawValue
+			}
+			if rawValue, ok := dataLoopTmp["inter_connect"]; ok && rawValue != "" {
+				dataLoopMap["InterConnect"] = rawValue
+			}
+			if rawValue := convertToInterfaceArray(dataLoopTmp["vswitch_ids"]); len(rawValue) > 0 {
+				dataLoopMap["VSwitchIds"] = rawValue
+			}
+			if rawValue, ok := dataLoopTmp["allocation_strategy"]; ok && rawValue != "" {
+				dataLoopMap["AllocationStrategy"] = rawValue
+			}
+			if rawValue, ok := dataLoopTmp["ram_role"]; ok && rawValue != "" {
+				dataLoopMap["RamRole"] = rawValue
+			}
+			if rawValue, ok := dataLoopTmp["hostname_prefix"]; ok && rawValue != "" {
+				dataLoopMap["HostnamePrefix"] = rawValue
+			}
+			if rawValue, ok := dataLoopTmp["hostname_suffix"]; ok && rawValue != "" {
+				dataLoopMap["HostnameSuffix"] = rawValue
+			}
+			if rawValue := convertToInterfaceArray(dataLoopTmp["keep_alive_nodes"]); len(rawValue) > 0 {
+				dataLoopMap["KeepAliveNodes"] = rawValue
+			}
+			if rawValue, ok := dataLoopTmp["max_count_per_cycle"]; ok && rawValue.(int) != 0 {
+				dataLoopMap["MaxCountPerCycle"] = rawValue
+			}
+			if rawValue, ok := dataLoopTmp["reserved_node_pool_id"]; ok && rawValue != "" {
+				dataLoopMap["ReservedNodePoolId"] = rawValue
+			}
+			computeNodesMapsArray := make([]interface{}, 0)
+			for _, computeNodeLoop := range convertToInterfaceArray(dataLoopTmp["compute_nodes"]) {
+				computeNodeLoopTmp := computeNodeLoop.(map[string]interface{})
+				computeNodeMap := make(map[string]interface{})
+				if rawValue, ok := computeNodeLoopTmp["instance_type"]; ok && rawValue != "" {
+					computeNodeMap["InstanceType"] = rawValue
+				}
+				if rawValue, ok := computeNodeLoopTmp["image_id"]; ok && rawValue != "" {
+					computeNodeMap["ImageId"] = rawValue
+				}
+				if rawValue, ok := computeNodeLoopTmp["instance_charge_type"]; ok && rawValue != "" {
+					computeNodeMap["InstanceChargeType"] = rawValue
+				}
+				if rawValue, ok := computeNodeLoopTmp["period_unit"]; ok && rawValue != "" {
+					computeNodeMap["PeriodUnit"] = rawValue
+				}
+				if rawValue, ok := computeNodeLoopTmp["period"]; ok && rawValue.(int) != 0 {
+					computeNodeMap["Period"] = rawValue
+				}
+				if rawValue, ok := computeNodeLoopTmp["auto_renew"]; ok && rawValue.(bool) {
+					computeNodeMap["AutoRenew"] = rawValue
+				}
+				if rawValue, ok := computeNodeLoopTmp["auto_renew_period"]; ok && rawValue.(int) != 0 {
+					computeNodeMap["AutoRenewPeriod"] = rawValue
+				}
+				if rawValue, ok := computeNodeLoopTmp["spot_strategy"]; ok && rawValue != "" {
+					computeNodeMap["SpotStrategy"] = rawValue
+				}
+				if rawValue, ok := computeNodeLoopTmp["spot_price_limit"]; ok && rawValue.(float64) != 0 {
+					computeNodeMap["SpotPriceLimit"] = rawValue
+				}
+				if rawValue, ok := computeNodeLoopTmp["duration"]; ok && rawValue.(int) != 0 {
+					computeNodeMap["Duration"] = rawValue
+				}
+				if rawValue, ok := computeNodeLoopTmp["enable_ht"]; ok && rawValue.(bool) {
+					computeNodeMap["EnableHT"] = rawValue
+				}
+				systemDisk := make(map[string]interface{})
+				if systemDiskLoop := convertToInterfaceArray(computeNodeLoopTmp["system_disk"]); len(systemDiskLoop) > 0 {
+					systemDiskTmp := systemDiskLoop[0].(map[string]interface{})
+					if rawValue, ok := systemDiskTmp["category"]; ok && rawValue != "" {
+						systemDisk["Category"] = rawValue
+					}
+					if rawValue, ok := systemDiskTmp["size"]; ok && rawValue.(int) != 0 {
+						systemDisk["Size"] = rawValue
+					}
+					if rawValue, ok := systemDiskTmp["level"]; ok && rawValue != "" {
+						systemDisk["Level"] = rawValue
+					}
+				}
+				if len(systemDisk) > 0 {
+					computeNodeMap["SystemDisk"] = systemDisk
+				}
+				computeNodesMapsArray = append(computeNodesMapsArray, computeNodeMap)
+			}
+			if len(computeNodesMapsArray) > 0 {
+				dataLoopMap["ComputeNodes"] = computeNodesMapsArray
+			}
+			queuesMapsArray = append(queuesMapsArray, dataLoopMap)
+		}
+		queuesMapsJson, err := json.Marshal(queuesMapsArray)
+		if err != nil {
+			return WrapError(err)
+		}
+		request["Queues"] = string(queuesMapsJson)
+	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("EHPC", "2024-07-30", action, query, request, true)
@@ -582,6 +1064,53 @@ func resourceAliCloudEhpcClusterV2Create(d *schema.ResourceData, meta interface{
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
+	// CreateCluster ignores GrowInterval/IdleInterval and does not accept
+	// EnableScaleOut/EnableScaleIn/MonitorSpec/SchedulerSpec; apply the full
+	// updatable state through UpdateCluster right after the cluster is running.
+	postCreateUpdate := false
+	if _, ok := d.GetOkExists("grow_interval"); ok {
+		postCreateUpdate = true
+	}
+	if _, ok := d.GetOkExists("idle_interval"); ok {
+		postCreateUpdate = true
+	}
+	if _, ok := d.GetOkExists("enable_scale_out"); ok {
+		postCreateUpdate = true
+	}
+	if _, ok := d.GetOkExists("enable_scale_in"); ok {
+		postCreateUpdate = true
+	}
+	if len(convertToInterfaceArray(d.Get("monitor_spec"))) > 0 {
+		postCreateUpdate = true
+	}
+	if len(convertToInterfaceArray(d.Get("scheduler_spec"))) > 0 {
+		postCreateUpdate = true
+	}
+	if postCreateUpdate {
+		updateRequest, err := ehpcClusterV2UpdatableRequest(d)
+		if err != nil {
+			return WrapError(err)
+		}
+		updateRequest["ClusterId"] = d.Id()
+		action = "UpdateCluster"
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("EHPC", "2024-07-30", action, query, updateRequest, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, updateRequest)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+
 	return resourceAliCloudEhpcClusterV2Read(d, meta)
 }
 
@@ -603,13 +1132,68 @@ func resourceAliCloudEhpcClusterV2Read(d *schema.ResourceData, meta interface{})
 	d.Set("cluster_category", objectRaw["ClusterCategory"])
 	d.Set("cluster_mode", objectRaw["ClusterMode"])
 	d.Set("cluster_name", objectRaw["ClusterName"])
+	d.Set("cluster_status", objectRaw["ClusterStatus"])
 	d.Set("cluster_vswitch_id", objectRaw["ClusterVSwitchId"])
 	d.Set("cluster_vpc_id", objectRaw["ClusterVpcId"])
 	d.Set("create_time", objectRaw["ClusterCreateTime"])
 	deletionProtection := fmt.Sprint(objectRaw["DeleteProtection"])
 	d.Set("deletion_protection", formatBool(deletionProtection))
+	d.Set("ehpc_version", objectRaw["EhpcVersion"])
+	d.Set("enable_scale_in", objectRaw["EnableScaleIn"])
+	d.Set("enable_scale_out", objectRaw["EnableScaleOut"])
+	d.Set("grow_interval", formatInt(objectRaw["GrowInterval"]))
+	d.Set("idle_interval", formatInt(objectRaw["IdleInterval"]))
+	d.Set("max_core_count", formatInt(objectRaw["MaxCoreCount"]))
+	d.Set("max_count", formatInt(objectRaw["MaxCount"]))
+	d.Set("modify_time", objectRaw["ClusterModifyTime"])
 	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
 	d.Set("security_group_id", objectRaw["SecurityGroupId"])
+
+	clusterCustomConfigurationMaps := make([]map[string]interface{}, 0)
+	clusterCustomConfigurationMap := make(map[string]interface{})
+	clusterCustomConfigurationRaw := make(map[string]interface{})
+	if objectRaw["ClusterCustomConfiguration"] != nil {
+		clusterCustomConfigurationRaw = objectRaw["ClusterCustomConfiguration"].(map[string]interface{})
+	}
+	if len(clusterCustomConfigurationRaw) > 0 {
+		clusterCustomConfigurationMap["script"] = clusterCustomConfigurationRaw["Script"]
+		clusterCustomConfigurationMap["args"] = clusterCustomConfigurationRaw["Args"]
+
+		clusterCustomConfigurationMaps = append(clusterCustomConfigurationMaps, clusterCustomConfigurationMap)
+	}
+	if err := d.Set("cluster_custom_configuration", clusterCustomConfigurationMaps); err != nil {
+		return err
+	}
+
+	monitorSpecMaps := make([]map[string]interface{}, 0)
+	monitorSpecMap := make(map[string]interface{})
+	monitorSpecRaw := make(map[string]interface{})
+	if objectRaw["MonitorSpec"] != nil {
+		monitorSpecRaw = objectRaw["MonitorSpec"].(map[string]interface{})
+	}
+	if len(monitorSpecRaw) > 0 {
+		monitorSpecMap["enable_compute_load_monitor"] = monitorSpecRaw["EnableComputeLoadMonitor"]
+
+		monitorSpecMaps = append(monitorSpecMaps, monitorSpecMap)
+	}
+	if err := d.Set("monitor_spec", monitorSpecMaps); err != nil {
+		return err
+	}
+
+	schedulerSpecMaps := make([]map[string]interface{}, 0)
+	schedulerSpecMap := make(map[string]interface{})
+	schedulerSpecRaw := make(map[string]interface{})
+	if objectRaw["SchedulerSpec"] != nil {
+		schedulerSpecRaw = objectRaw["SchedulerSpec"].(map[string]interface{})
+	}
+	if len(schedulerSpecRaw) > 0 {
+		schedulerSpecMap["enable_topology_awareness"] = schedulerSpecRaw["EnableTopologyAwareness"]
+
+		schedulerSpecMaps = append(schedulerSpecMaps, schedulerSpecMap)
+	}
+	if err := d.Set("scheduler_spec", schedulerSpecMaps); err != nil {
+		return err
+	}
 
 	managerMaps := make([]map[string]interface{}, 0)
 	managerMap := make(map[string]interface{})
@@ -761,6 +1345,78 @@ func resourceAliCloudEhpcClusterV2Read(d *schema.ResourceData, meta interface{})
 	return nil
 }
 
+// ehpcClusterV2UpdatableRequest builds the complete set of updatable parameters for
+// UpdateCluster. UpdateCluster applies a full state: parameters that are not carried
+// in the request are reset to their defaults (DeletionProtection is turned off,
+// GrowInterval/IdleInterval fall back to 2/6), so every updatable attribute must be
+// resent together to preserve the values applied at create time.
+func ehpcClusterV2UpdatableRequest(d *schema.ResourceData) (map[string]interface{}, error) {
+	request := make(map[string]interface{})
+	if v, ok := d.GetOkExists("deletion_protection"); ok {
+		request["DeletionProtection"] = v
+	}
+	if v := d.Get("client_version"); v.(string) != "" {
+		request["ClientVersion"] = v
+	}
+	if v := d.Get("cluster_name"); v.(string) != "" {
+		request["ClusterName"] = v
+	}
+	if v := d.Get("cluster_description"); v.(string) != "" {
+		request["ClusterDescription"] = v
+	}
+	request["MaxCount"] = d.Get("max_count")
+	request["MaxCoreCount"] = d.Get("max_core_count")
+	request["GrowInterval"] = d.Get("grow_interval")
+	request["IdleInterval"] = d.Get("idle_interval")
+	request["EnableScaleOut"] = d.Get("enable_scale_out")
+	request["EnableScaleIn"] = d.Get("enable_scale_in")
+
+	clusterCustomConfiguration := make(map[string]interface{})
+	script1, _ := jsonpath.Get("$[0].script", d.Get("cluster_custom_configuration"))
+	if script1 != nil && script1 != "" {
+		clusterCustomConfiguration["Script"] = script1
+	}
+	args1, _ := jsonpath.Get("$[0].args", d.Get("cluster_custom_configuration"))
+	if args1 != nil && args1 != "" {
+		clusterCustomConfiguration["Args"] = args1
+	}
+	if len(clusterCustomConfiguration) > 0 {
+		clusterCustomConfigurationJson, err := json.Marshal(clusterCustomConfiguration)
+		if err != nil {
+			return nil, WrapError(err)
+		}
+		request["ClusterCustomConfiguration"] = string(clusterCustomConfigurationJson)
+	}
+
+	monitorSpec := make(map[string]interface{})
+	enableComputeLoadMonitor1, _ := jsonpath.Get("$[0].enable_compute_load_monitor", d.Get("monitor_spec"))
+	if enableComputeLoadMonitor1 != nil && enableComputeLoadMonitor1 != "" {
+		monitorSpec["EnableComputeLoadMonitor"] = enableComputeLoadMonitor1
+	}
+	if len(monitorSpec) > 0 {
+		monitorSpecJson, err := json.Marshal(monitorSpec)
+		if err != nil {
+			return nil, WrapError(err)
+		}
+		request["MonitorSpec"] = string(monitorSpecJson)
+	}
+
+	schedulerSpec := make(map[string]interface{})
+	enableTopologyAwareness1, _ := jsonpath.Get("$[0].enable_topology_awareness", d.Get("scheduler_spec"))
+	if enableTopologyAwareness1 != nil && enableTopologyAwareness1 != "" {
+		schedulerSpec["EnableTopologyAwareness"] = enableTopologyAwareness1
+	}
+	if len(schedulerSpec) > 0 {
+		schedulerSpecJson, err := json.Marshal(schedulerSpec)
+		if err != nil {
+			return nil, WrapError(err)
+		}
+		request["SchedulerSpec"] = string(schedulerSpecJson)
+	}
+
+	return request, nil
+}
+
 func resourceAliCloudEhpcClusterV2Update(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
@@ -774,19 +1430,20 @@ func resourceAliCloudEhpcClusterV2Update(d *schema.ResourceData, meta interface{
 	query = make(map[string]interface{})
 	request["ClusterId"] = d.Id()
 
-	if d.HasChange("client_version") {
+	if d.HasChange("client_version") || d.HasChange("deletion_protection") || d.HasChange("cluster_name") || d.HasChange("cluster_description") || d.HasChange("max_count") || d.HasChange("max_core_count") ||
+		d.HasChange("grow_interval") || d.HasChange("idle_interval") || d.HasChange("enable_scale_out") || d.HasChange("enable_scale_in") ||
+		d.HasChange("cluster_custom_configuration") || d.HasChange("monitor_spec") || d.HasChange("scheduler_spec") {
 		update = true
-		request["ClientVersion"] = d.Get("client_version")
 	}
 
-	if d.HasChange("deletion_protection") {
-		update = true
-		request["DeletionProtection"] = d.Get("deletion_protection")
-	}
-
-	if d.HasChange("cluster_name") {
-		update = true
-		request["ClusterName"] = d.Get("cluster_name")
+	if update {
+		fullRequest, err := ehpcClusterV2UpdatableRequest(d)
+		if err != nil {
+			return WrapError(err)
+		}
+		for k, v := range fullRequest {
+			request[k] = v
+		}
 	}
 
 	if update {

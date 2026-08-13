@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -25,9 +26,9 @@ func TestAccAliCloudAlidnsCloudGtmMonitorTemplate_basic12684(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -109,9 +110,9 @@ func TestAccAliCloudAlidnsCloudGtmMonitorTemplate_basic12685(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -227,9 +228,9 @@ func TestAccAliCloudAlidnsCloudGtmMonitorTemplate_basic12690(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -356,9 +357,9 @@ func TestAccAliCloudAlidnsCloudGtmMonitorTemplate_basic12691(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -420,6 +421,87 @@ func TestAccAliCloudAlidnsCloudGtmMonitorTemplate_basic12691(t *testing.T) {
 var AlicloudAlidnsCloudGtmMonitorTemplateMap12691 = map[string]string{}
 
 func AlicloudAlidnsCloudGtmMonitorTemplateBasicDependence12691(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+`, name)
+}
+
+// This case verifies the failure_rate ValidateFunc enum after removing 0:
+// 100 is accepted (it remains in the valid set), while 0 is rejected.
+func TestAccAliCloudAlidnsCloudGtmMonitorTemplate_failureRateEnum(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_alidns_cloud_gtm_monitor_template.default"
+	ra := resourceAttrInit(resourceId, AlicloudAlidnsCloudGtmMonitorTemplateMapFailureRateEnum)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &AlidnsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAlidnsCloudGtmMonitorTemplate")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccalidns%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudAlidnsCloudGtmMonitorTemplateBasicDependenceFailureRateEnum)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ip_version": "IPv4",
+					"timeout":    "2000",
+					"isp_city_nodes": []map[string]interface{}{
+						{
+							"city_code": "357",
+							"isp_code":  "465",
+						},
+						{
+							"city_code": "738",
+							"isp_code":  "465",
+						},
+					},
+					"evaluation_count": "2",
+					"protocol":         "http",
+					"extend_info":      "{\\\"code\\\":500,\\\"followRedirect\\\":true,\\\"path\\\":\\\"/\\\"}",
+					"failure_rate":     "100",
+					"name":             name,
+					"interval":         "60",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"failure_rate": "100",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"failure_rate": "0",
+				}),
+				ExpectError: regexp.MustCompile(`expected failure_rate to be one of`),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"failure_rate": "100",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"failure_rate": "100",
+					}),
+				),
+			},
+		},
+	})
+}
+
+var AlicloudAlidnsCloudGtmMonitorTemplateMapFailureRateEnum = map[string]string{}
+
+func AlicloudAlidnsCloudGtmMonitorTemplateBasicDependenceFailureRateEnum(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"

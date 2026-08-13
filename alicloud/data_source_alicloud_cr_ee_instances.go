@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"fmt"
 	"regexp"
 	"sort"
 
@@ -28,6 +29,7 @@ func dataSourceAlicloudCrEEInstances() *schema.Resource {
 				Optional: true,
 				Default:  false,
 			},
+			"tags": tagsSchema(),
 
 			// Computed values
 			"ids": {
@@ -96,6 +98,11 @@ func dataSourceAlicloudCrEEInstances() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"tags": {
+							Type:     schema.TypeMap,
+							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
 					},
 				},
 			},
@@ -106,6 +113,7 @@ func dataSourceAlicloudCrEEInstances() *schema.Resource {
 func dataSourceAlicloudCrEEInstancesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	crService := &CrService{client}
+	crServiceV2 := CrServiceV2{client}
 	pageNo := 1
 	pageSize := 50
 
@@ -163,7 +171,27 @@ func dataSourceAlicloudCrEEInstancesRead(d *schema.ResourceData, meta interface{
 		instanceMaps []map[string]interface{}
 	)
 
+	tagsFilter, tagsFilterSet := d.GetOk("tags")
+
 	for _, instance := range instances {
+		instanceTags, err := crServiceV2.ListCrInstanceTags(instance.InstanceId)
+		if err != nil {
+			return WrapError(err)
+		}
+
+		if tagsFilterSet {
+			matched := true
+			for key, value := range tagsFilter.(map[string]interface{}) {
+				if v, ok := instanceTags[key]; !ok || fmt.Sprint(v) != fmt.Sprint(value) {
+					matched = false
+					break
+				}
+			}
+			if !matched {
+				continue
+			}
+		}
+
 		usageResp, err := crService.GetCrEEInstanceUsage(instance.InstanceId)
 		if err != nil {
 			return WrapError(err)
@@ -203,6 +231,7 @@ func dataSourceAlicloudCrEEInstancesRead(d *schema.ResourceData, meta interface{
 		mapping["repo_usage"] = usageResp.RepoUsage
 		mapping["vpc_endpoints"] = vpcDomains
 		mapping["public_endpoints"] = publicDomains
+		mapping["tags"] = instanceTags
 
 		ids = append(ids, instance.InstanceId)
 		names = append(names, instance.InstanceName)

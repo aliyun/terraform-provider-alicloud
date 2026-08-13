@@ -128,9 +128,9 @@ func TestAccAliCloudOOSSecretParameter_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -231,9 +231,9 @@ func TestAccAliCloudOOSSecretParameter_basic1(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -271,6 +271,83 @@ func TestAccAliCloudOOSSecretParameter_basic1(t *testing.T) {
 			},
 		},
 	})
+}
+
+// TestAccAliCloudOOSSecretParameter_tagsIsolation verifies that each secret parameter
+// only reads back its own tags when multiple secret parameters exist in the same region.
+func TestAccAliCloudOOSSecretParameter_tagsIsolation(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_oos_secret_parameter.default"
+	checkoutSupportedRegions(t, true, connectivity.OOSSupportRegions)
+	ra := resourceAttrInit(resourceId, AlicloudOOSSecretParameterMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &OosService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeOosSecretParameter")
+	rac := resourceAttrCheckInit(rc, ra)
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%soossecretparameter%d", defaultRegionToTest, rand)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccOosSecretParameterTagsIsolationConfig(name),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("alicloud_oos_secret_parameter.default", "tags.%", "1"),
+					resource.TestCheckResourceAttr("alicloud_oos_secret_parameter.default", "tags.Created", "tfTestAcc"),
+					resource.TestCheckResourceAttr("alicloud_oos_secret_parameter.second", "tags.%", "1"),
+					resource.TestCheckResourceAttr("alicloud_oos_secret_parameter.second", "tags.For", "OosSecretParameterSecond"),
+				),
+			},
+		},
+	})
+}
+
+func testAccOosSecretParameterTagsIsolationConfig(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+		default = "%s"
+	}
+
+	data "alicloud_kms_keys" "default" {
+		status = "Enabled"
+	}
+
+	resource "alicloud_kms_key" "default" {
+		count = length(data.alicloud_kms_keys.default.ids) > 0 ? 0 : 1
+		description = var.name
+		status = "Enabled"
+		pending_window_in_days = 7
+	}
+
+	locals {
+		key_id = length(data.alicloud_kms_keys.default.ids) > 0 ? data.alicloud_kms_keys.default.ids.0 : concat(alicloud_kms_key.default.*.id, [""])[0]
+	}
+
+	resource "alicloud_oos_secret_parameter" "default" {
+		secret_parameter_name = var.name
+		value                 = "tf-testacc-oos_secret_parameter"
+		type                  = "Secret"
+		key_id                = local.key_id
+		tags = {
+			Created = "tfTestAcc"
+		}
+	}
+
+	resource "alicloud_oos_secret_parameter" "second" {
+		secret_parameter_name = "${var.name}_second"
+		value                 = "tf-testacc-oos_secret_parameter_second"
+		type                  = "Secret"
+		key_id                = local.key_id
+		tags = {
+			For = "OosSecretParameterSecond"
+		}
+	}
+	`, name)
 }
 
 var AlicloudOOSSecretParameterMap0 = map[string]string{
@@ -346,6 +423,22 @@ func TestUnitAlicloudOOSSecretParameter(t *testing.T) {
 			},
 			"Type":            "type",
 			"ResourceGroupId": "resource_group_id",
+		},
+		"TagResources": map[string]interface{}{
+			"TagResource": []interface{}{
+				map[string]interface{}{
+					"TagKey":       "Created",
+					"TagValue":     "TF",
+					"ResourceId":   "MockName",
+					"ResourceType": "secretparameter",
+				},
+				map[string]interface{}{
+					"TagKey":       "For",
+					"TagValue":     "Test",
+					"ResourceId":   "MockName",
+					"ResourceType": "secretparameter",
+				},
+			},
 		},
 	}
 
@@ -626,9 +719,9 @@ func TestAccAliCloudOOSSecretParameter_basic9594(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithTime(t, []int{1})
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
