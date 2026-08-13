@@ -190,7 +190,7 @@ func (s *DataWorksServiceV2) DescribeDataWorksProjectMember(id string) (object m
 		response, err = client.RpcPost("dataworks-public", "2024-05-18", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) || IsExpectedErrors(err, []string{"9990020002"}) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"9990020002", "9990040003"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -666,8 +666,8 @@ func (s *DataWorksServiceV2) DescribeDataWorksDwResourceGroup(id string) (object
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
 		response, err = client.RpcGet("dataworks-public", "2024-05-18", action, query, nil)
 
-		if err != nil || IsExpectedErrors(err, []string{"9990040003"}) {
-			if NeedRetry(err) {
+		if err != nil {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"9990040003"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
