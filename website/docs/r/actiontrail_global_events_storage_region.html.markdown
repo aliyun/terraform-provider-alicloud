@@ -35,7 +35,7 @@ resource "alicloud_actiontrail_global_events_storage_region" "foo" {
 
 The following arguments are supported:
 
-* `storage_region` - (Optional) Global Events Storage Region.
+* `storage_region` - (Optional) Global Events Storage Region. Valid values: `ap-southeast-1`, `cn-hangzhou`.
 
 ## Attributes Reference
 
