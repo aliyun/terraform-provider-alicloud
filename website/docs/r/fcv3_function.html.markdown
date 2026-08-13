@@ -171,6 +171,7 @@ The custom_container_config supports the following:
 * `health_check_config` - (Optional, List) Function custom health check configuration See [`health_check_config`](#custom_container_config-health_check_config) below.
 * `image` - (Optional) The container Image address.
 * `port` - (Optional, Int) The listening port of the HTTP Server when the custom container runs.
+* `registry_config` - (Optional, List) The configuration of the private image registry. See [`registry_config`](#custom_container_config-registry_config) below.
 
 ### `custom_container_config-health_check_config`
 
@@ -181,6 +182,32 @@ The custom_container_config-health_check_config supports the following:
 * `period_seconds` - (Optional, Int) Health check cycle. The value range is 1~120. The default value is 3.
 * `success_threshold` - (Optional, Int) The threshold for the number of successful health checks. When the threshold is reached, the system considers that the health check is successful. The value range is 1~120. The default value is 1.
 * `timeout_seconds` - (Optional, Int) Health check timeout. Value range 1~3. The default value is 1.
+
+### `custom_container_config-registry_config`
+
+The custom_container_config-registry_config supports the following:
+* `auth_config` - (Optional, List) The authentication configuration of the image registry. See [`auth_config`](#custom_container_config-registry_config-auth_config) below.
+* `cert_config` - (Optional, List) The certificate configuration of the image registry. See [`cert_config`](#custom_container_config-registry_config-cert_config) below.
+* `network_config` - (Optional, List) The network configuration of the image registry. See [`network_config`](#custom_container_config-registry_config-network_config) below.
+
+### `custom_container_config-registry_config-auth_config`
+
+The custom_container_config-registry_config-auth_config supports the following:
+* `password` - (Optional, Sensitive) The password of the image registry.
+* `user_name` - (Optional) The username of the image registry.
+
+### `custom_container_config-registry_config-cert_config`
+
+The custom_container_config-registry_config-cert_config supports the following:
+* `insecure` - (Optional, Bool) Specifies whether to disable certificate verification.
+* `root_ca_cert_base64` - (Optional, Sensitive) The root certificate in Base64 encoding.
+
+### `custom_container_config-registry_config-network_config`
+
+The custom_container_config-registry_config-network_config supports the following:
+* `security_group_id` - (Optional) The security group ID.
+* `v_switch_id` - (Optional) The vSwitch ID.
+* `vpc_id` - (Optional) The VPC ID.
 
 ### `custom_dns`
 
