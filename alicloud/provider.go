@@ -172,6 +172,7 @@ func Provider() terraform.ResourceProvider {
 		DataSourcesMap: map[string]*schema.Resource{
 			"alicloud_redis_global_security_ip_groups":                dataSourceAliCloudRedisGlobalSecurityIpGroups(),
 			"alicloud_cr_artifact_subscription_rules":                 dataSourceAliCloudCrArtifactSubscriptionRules(),
+			"alicloud_cms_event_notify_policies":                      dataSourceAliCloudCmsEventNotifyPolicies(),
 			"alicloud_apig_ai_model_providers":                        dataSourceAliCloudApigAiModelProviders(),
 			"alicloud_apig_services":                                  dataSourceAliCloudApigServices(),
 			"alicloud_apig_gateways":                                  dataSourceAliCloudApigGateways(),
@@ -617,7 +618,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_hbr_restore_jobs":                                 dataSourceAlicloudHbrRestoreJobs(),
 			"alicloud_alb_listeners":                                    dataSourceAlicloudAlbListeners(),
 			"alicloud_ens_key_pairs":                                    dataSourceAlicloudEnsKeyPairs(),
-			"alicloud_ens_security_groups":                             dataSourceAliCloudEnsSecurityGroups(),
+			"alicloud_ens_security_groups":                              dataSourceAliCloudEnsSecurityGroups(),
 			"alicloud_sae_applications":                                 dataSourceAlicloudSaeApplications(),
 			"alicloud_alb_rules":                                        dataSourceAliCloudAlbRules(),
 			"alicloud_cms_metric_rule_templates":                        dataSourceAlicloudCmsMetricRuleTemplates(),
@@ -954,6 +955,7 @@ func Provider() terraform.ResourceProvider {
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_redis_global_security_ip_group":                       resourceAliCloudRedisGlobalSecurityIpGroup(),
 			"alicloud_cr_artifact_subscription_rule":                        resourceAliCloudCrArtifactSubscriptionRule(),
+			"alicloud_cms_event_notify_policy":                              resourceAliCloudCmsEventNotifyPolicy(),
 			"alicloud_message_service_account_logging":                      resourceAliCloudMessageServiceAccountLogging(),
 			"alicloud_apig_ai_model_provider":                               resourceAliCloudApigAiModelProvider(),
 			"alicloud_apig_service":                                         resourceAliCloudApigService(),
