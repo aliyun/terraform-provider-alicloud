@@ -112,8 +112,9 @@ func TestAccAliCloudEnsNetwork_basic5077(t *testing.T) {
 }
 
 var AlicloudEnsNetworkMap5077 = map[string]string{
-	"status":      CHECKSET,
-	"create_time": CHECKSET,
+	"status":          CHECKSET,
+	"create_time":     CHECKSET,
+	"router_table_id": CHECKSET,
 }
 
 func AlicloudEnsNetworkBasicDependence5077(name string) string {
