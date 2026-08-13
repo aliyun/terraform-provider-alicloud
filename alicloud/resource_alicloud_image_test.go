@@ -30,9 +30,9 @@ func TestAccAliCloudECSImageBasic(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -132,9 +132,9 @@ func TestAccAliCloudECSImageBasic1(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -176,14 +176,14 @@ func TestAccAliCloudECSImageBasic2(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 9999)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	name := fmt.Sprintf("tf-testAccEcsImageConfigBasic%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceImageBasicConfigDependence1)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceImageBasicConfigDependence2)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -197,27 +197,45 @@ func TestAccAliCloudECSImageBasic2(t *testing.T) {
 						{
 							"disk_type":   "system",
 							"device":      "/dev/xvda",
-							"size":        "2000",
+							"size":        20,
 							"snapshot_id": "${alicloud_ecs_snapshot.default.id}",
+						},
+						{
+							"disk_type":   "data",
+							"device":      "/dev/xvdb",
+							"size":        20,
+							"snapshot_id": "${alicloud_ecs_snapshot.data.id}",
 						},
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"image_name":            name,
-						"description":           fmt.Sprintf("tf-testAccEcsImageConfigBasic%ddescription", rand),
-						"tags.%":                "2",
-						"tags.Created":          "TF",
-						"tags.For":              "acceptance test123",
-						"disk_device_mapping.#": "1",
+						"image_name":                        name,
+						"description":                       fmt.Sprintf("tf-testAccEcsImageConfigBasic%ddescription", rand),
+						"tags.%":                            "2",
+						"tags.Created":                      "TF",
+						"tags.For":                          "acceptance test123",
+						"disk_device_mapping.#":             "2",
+						"disk_device_mapping.0.disk_type":   "system",
+						"disk_device_mapping.0.device":      "/dev/xvda",
+						"disk_device_mapping.0.size":        "20",
+						"disk_device_mapping.0.snapshot_id": CHECKSET,
+						"disk_device_mapping.1.disk_type":   "data",
+						"disk_device_mapping.1.device":      "/dev/xvdb",
+						"disk_device_mapping.1.size":        "20",
+						"disk_device_mapping.1.snapshot_id": CHECKSET,
 					}),
+					resource.TestCheckResourceAttrPair(resourceId, "disk_device_mapping.0.snapshot_id", "alicloud_ecs_snapshot.default", "id"),
+					resource.TestCheckResourceAttrPair(resourceId, "disk_device_mapping.1.snapshot_id", "alicloud_ecs_snapshot.data", "id"),
 				),
 			},
 		},
 	})
 }
 
-var testAccImageCheckMap = map[string]string{}
+var testAccImageCheckMap = map[string]string{
+	"usable": "true",
+}
 
 func resourceImageBasicConfigDependence(name string) string {
 	return fmt.Sprintf(`
@@ -226,117 +244,140 @@ variable "name" {
 }
 
 data "alicloud_instance_types" "default" {
-  instance_type_family = "ecs.sn1ne"
+  instance_type_family = "ecs.g8i"
+  system_disk_category = "cloud_essd"
+}
+
+locals {
+  zone_id = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
 }
 
 data "alicloud_images" "default" {
   name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
+  most_recent = true
   owners      = "system"
   instance_type = data.alicloud_instance_types.default.ids.0
 }
 
-data "alicloud_vpcs" "default" {
-	name_regex = "^default-NODELETING$"
+resource "alicloud_vpc" "default" {
+  cidr_block = "192.168.0.0/16"
+  vpc_name   = var.name
 }
-data "alicloud_vswitches" "default" {
-	vpc_id = data.alicloud_vpcs.default.ids.0
-	zone_id = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
-}
-resource "alicloud_vswitch" "vswitch" {
-  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id            = data.alicloud_vpcs.default.ids.0
-  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id           = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+
+resource "alicloud_vswitch" "default" {
+  vpc_id            = alicloud_vpc.default.id
+  cidr_block        = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 2)
+  zone_id           = local.zone_id
   vswitch_name      = var.name
 }
 
-locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
-}
 resource "alicloud_security_group" "default" {
   name   = "${var.name}"
-  vpc_id = data.alicloud_vpcs.default.ids.0
+  vpc_id = alicloud_vpc.default.id
 }
+
 resource "alicloud_instance" "default" {
-  image_id = "${data.alicloud_images.default.ids[0]}"
-  instance_type = "${data.alicloud_instance_types.default.ids[0]}"
-  security_groups = "${[alicloud_security_group.default.id]}"
-  vswitch_id = local.vswitch_id
-  instance_name = "${var.name}"
+  image_id             = "${data.alicloud_images.default.ids[0]}"
+  instance_type        = "${data.alicloud_instance_types.default.ids[0]}"
+  security_groups      = "${[alicloud_security_group.default.id]}"
+  vswitch_id           = alicloud_vswitch.default.id
+  system_disk_category = "cloud_essd"
+  instance_name        = "${var.name}"
+  status               = "Stopped"
 }
 `, name)
 }
 
 func resourceImageBasicConfigDependence1(name string) string {
+	return resourceImageBasicConfigDependenceWithSnapshot(name, "")
+}
+
+func resourceImageBasicConfigDependence2(name string) string {
+	return resourceImageBasicConfigDependenceWithSnapshot(name, "  system_disk_size     = 20\n") + `
+resource "alicloud_disk" "data" {
+  disk_name         = var.name
+  availability_zone = local.zone_id
+  category          = "cloud_essd"
+  size              = 20
+}
+
+resource "alicloud_disk_attachment" "data" {
+  disk_id     = alicloud_disk.data.id
+  instance_id = alicloud_instance.default.id
+}
+
+resource "alicloud_ecs_snapshot" "data" {
+  category      = "standard"
+  description   = "Test data disk snapshot for Terraform"
+  disk_id       = alicloud_disk_attachment.data.disk_id
+  snapshot_name = "${var.name}-data"
+
+  timeouts {
+    create = "10m"
+  }
+}
+`
+}
+
+func resourceImageBasicConfigDependenceWithSnapshot(name, systemDiskSize string) string {
 	return fmt.Sprintf(`
 variable "name" {
 	default = "%s"
 }
 
-data "alicloud_zones" default {
-  available_resource_creation = "Instance"
+data "alicloud_instance_types" "default" {
+  instance_type_family = "ecs.g8i"
+  system_disk_category = "cloud_essd"
 }
 
-
-data "alicloud_instance_types" "default" {
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  instance_type_family = "ecs.sn1ne"
+locals {
+  zone_id = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
 }
 
 data "alicloud_images" "default" {
   name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
+  most_recent = true
   owners      = "system"
   instance_type = data.alicloud_instance_types.default.ids.0
 }
 
-data "alicloud_vpcs" "default" {
-	name_regex = "^default-NODELETING$"
+resource "alicloud_vpc" "default" {
+  cidr_block = "192.168.0.0/16"
+  vpc_name   = var.name
 }
-data "alicloud_vswitches" "default" {
-	vpc_id = data.alicloud_vpcs.default.ids.0
-	zone_id      = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
-}
-resource "alicloud_vswitch" "vswitch" {
-  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id            = data.alicloud_vpcs.default.ids.0
-  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id           = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+
+resource "alicloud_vswitch" "default" {
+  vpc_id            = alicloud_vpc.default.id
+  cidr_block        = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 2)
+  zone_id           = local.zone_id
   vswitch_name      = var.name
 }
+
 locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+  vswitch_id = alicloud_vswitch.default.id
 }
 
 resource "alicloud_security_group" "default" {
   name   = "${var.name}"
-  vpc_id = data.alicloud_vpcs.default.ids.0
+  vpc_id = alicloud_vpc.default.id
 }
 resource "alicloud_instance" "default" {
-  image_id = "${data.alicloud_images.default.ids[0]}"
-  instance_type = "${data.alicloud_instance_types.default.ids[0]}"
-  security_groups = "${[alicloud_security_group.default.id]}"
-  vswitch_id = local.vswitch_id
-  instance_name = "${var.name}"
-}
-
-resource "alicloud_disk" "default" {
-  count = "2"
-  disk_name = "${var.name}"
-  availability_zone = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
-  category          = "cloud_efficiency"
-  size              = "20"
-}
-
-resource "alicloud_disk_attachment" "default" {
-  count = "2"
-  disk_id     = "${element(alicloud_disk.default.*.id,count.index)}"
-  instance_id = alicloud_instance.default.id
+  image_id             = "${data.alicloud_images.default.ids[0]}"
+  instance_type        = "${data.alicloud_instance_types.default.ids[0]}"
+  security_groups      = "${[alicloud_security_group.default.id]}"
+  vswitch_id           = local.vswitch_id
+  system_disk_category = "cloud_essd"
+%s  instance_name        = "${var.name}"
+  status               = "Stopped"
 }
 
 resource "alicloud_ecs_snapshot" "default" {
 	category = "standard"
 	description = "Test For Terraform"
-	disk_id = alicloud_disk_attachment.default.0.disk_id
+	disk_id = alicloud_instance.default.system_disk_id
+	timeouts {
+		create = "10m"
+	}
 	retention_days = "20"
 	snapshot_name = var.name
 	tags 				 = {
@@ -345,7 +386,7 @@ resource "alicloud_ecs_snapshot" "default" {
 	}
 }
 
-`, name)
+`, name, systemDiskSize)
 }
 
 func TestAccAliCloudECSImageBasic7009(t *testing.T) {
@@ -364,9 +405,9 @@ func TestAccAliCloudECSImageBasic7009(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -611,6 +652,7 @@ func TestAccAliCloudECSImageBasic7009(t *testing.T) {
 var AlicloudEcsImageMap7009 = map[string]string{
 	"status":      CHECKSET,
 	"create_time": CHECKSET,
+	"usable":      "true",
 }
 
 func AlicloudEcsImageBasicDependence7009(name string) string {
@@ -620,45 +662,47 @@ variable "name" {
 }
 
 data "alicloud_instance_types" "default" {
-  instance_type_family = "ecs.sn1ne"
+  instance_type_family = "ecs.g8i"
+  system_disk_category = "cloud_essd"
+}
+
+locals {
+  zone_id = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
 }
 
 data "alicloud_resource_manager_resource_groups" "default" {}
 
 data "alicloud_images" "default" {
   name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
+  most_recent = true
   owners      = "system"
   instance_type = data.alicloud_instance_types.default.ids.0
 }
 
-data "alicloud_vpcs" "default" {
-	name_regex = "^default-NODELETING$"
+resource "alicloud_vpc" "default" {
+  cidr_block = "192.168.0.0/16"
+  vpc_name   = var.name
 }
-data "alicloud_vswitches" "default" {
-	vpc_id = data.alicloud_vpcs.default.ids.0
-	zone_id = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
-}
-resource "alicloud_vswitch" "vswitch" {
-  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id            = data.alicloud_vpcs.default.ids.0
-  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id           = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+
+resource "alicloud_vswitch" "default" {
+  vpc_id            = alicloud_vpc.default.id
+  cidr_block        = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 2)
+  zone_id           = local.zone_id
   vswitch_name      = var.name
 }
 
-locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
-}
 resource "alicloud_security_group" "default" {
   name   = "${var.name}"
-  vpc_id = data.alicloud_vpcs.default.ids.0
+  vpc_id = alicloud_vpc.default.id
 }
 resource "alicloud_instance" "default" {
-  image_id = "${data.alicloud_images.default.ids[0]}"
-  instance_type = "${data.alicloud_instance_types.default.ids[0]}"
-  security_groups = "${[alicloud_security_group.default.id]}"
-  vswitch_id = local.vswitch_id
-  instance_name = "${var.name}"
+  image_id             = "${data.alicloud_images.default.ids[0]}"
+  instance_type        = "${data.alicloud_instance_types.default.ids[0]}"
+  security_groups      = "${[alicloud_security_group.default.id]}"
+  vswitch_id           = alicloud_vswitch.default.id
+  system_disk_category = "cloud_essd"
+  instance_name        = "${var.name}"
+  status               = "Stopped"
 }
 
 `, name)

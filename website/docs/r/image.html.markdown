@@ -173,9 +173,12 @@ The following attributes are exported:
   * `import_oss_bucket` - Import the bucket of the OSS to which the image belongs.
   * `progress` - Copy the progress of the task.
   * `remain_time` - For an image being replicated, return the remaining time of the replication task, in seconds.
-* `status` - The status of the image. By default, if you do not specify this parameter, only images in the Available state are returned. 
+* `status` - The status of the image. By default, if you do not specify this parameter, only images in the Available state are returned.
 
   Default value: Available. You can specify multiple values for this parameter. Separate the values with commas (,).
+* `usable` - Indicates whether the image is available. Valid values:
+  * `true`: The image is available and can be used to create ECS instances.
+  * `false`: The image is unavailable and cannot be used to create ECS instances.
 
 
 ## Timeouts

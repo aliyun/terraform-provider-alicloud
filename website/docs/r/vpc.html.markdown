@@ -120,12 +120,12 @@ The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the VPC.
 * `ipv6_cidr_blocks` - The IPv6 CIDR block information of the VPC.
-    * `ipv6_cidr_block` - The IPv6 CIDR block of the VPC.
-    * `ipv6_isp` - Valid values: **BGP** (default): Alibaba Cloud BGP IPv6.
+  * `ipv6_cidr_block` - The IPv6 CIDR block of the VPC.
+  * `ipv6_isp` - Valid values: **BGP** (default): Alibaba Cloud BGP IPv6.
 * `is_default` - Specifies whether to create the default VPC in the specified region.
 * `region_id` - The ID of the region where the VPC is located.
 * `route_table_id` - The ID of the system route table.
-* `router_id` - The region ID of the VPC to which the route table belongs.
+* `router_id` - The ID of the VRouter.
 * `status` - The status of the VPC.   `Pending`: The VPC is being configured. `Available`: The VPC is available.
 
 ## Timeouts
