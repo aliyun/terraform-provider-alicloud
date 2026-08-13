@@ -51,10 +51,14 @@ func resourceAlicloudCmsMonitorGroupCreate(d *schema.ResourceData, meta interfac
 	var err error
 	request := make(map[string]interface{})
 	if v, exist := d.GetOk("resource_group_id"); exist {
+		rgName, ok := d.GetOk("resource_group_name")
+		if !ok || rgName.(string) == "" {
+			return fmt.Errorf("resource_group_name is required when resource_group_id is set")
+		}
 		action := "CreateMonitorGroupByResourceGroupId"
 		request["RegionId"] = client.RegionId
 		request["ResourceGroupId"] = v.(string)
-		request["ResourceGroupName"] = d.Get("resource_group_name")
+		request["ResourceGroupName"] = rgName
 		for k, v := range d.Get("contact_groups").([]interface{}) {
 			request[fmt.Sprintf("ContactGroupList.%d", k+1)] = v.(string)
 		}
