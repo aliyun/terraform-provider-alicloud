@@ -76,7 +76,6 @@ The following arguments are supported:
 -> **NOTE:** Separate multiple trigger types with commas (,).
 * `description` - (Optional) The description of the rule.
 * `exclude_resource_ids_scope` - (Optional) The rule monitors excluded resource IDs, multiple of which are separated by commas, only applies to rules created based on managed rules, , custom rule this field is empty.
-* `exclude_tags_scope` - (Optional) The rule monitors excluded tags, only applies to rules created based on managed rules. See [`exclude_tags_scope`](#exclude_tags_scope) below for details.
 * `input_parameters` - (Optional) The settings map of the input parameters for the rule.
 * `source_identifier`- (Required, ForceNew) The identifier of the rule. For a managed rule, the value is the identifier of the managed rule. For a custom rule, the value is the ARN of the custom rule. Using managed rules, refer to [List of Managed rules.](https://www.alibabacloud.com/help/en/doc-detail/127404.htm)
 * `source_owner`- (Required, ForceNew) Specifies whether you or Alibaba Cloud owns and manages the rule. Valid values: `CUSTOM_FC`: The rule is a custom rule and you own the rule. `ALIYUN`: The rule is a managed rule and Alibaba Cloud owns the rule.
@@ -88,13 +87,6 @@ The following arguments are supported:
 * `tag_key_scope` - (Optional) The rule monitors the tag key, only applies to rules created based on managed rules.
 * `tag_value_scope` - (Optional) The rule monitors the tag value, use with the `tag_key_scope` options. only applies to rules created based on managed rules.
 * `status` - (Optional, Available since v1.145.0) The rule status. The valid values: `ACTIVE`, `INACTIVE`.
-
-### `exclude_tags_scope`
-
-The exclude_tags_scope supports the following:
-
-* `tag_key` - (Optional) The key of the tag to be excluded.
-* `tag_value` - (Optional) The value of the tag to be excluded.
 
 ## Attributes Reference
 

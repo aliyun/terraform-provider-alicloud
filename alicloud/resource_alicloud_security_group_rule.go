@@ -80,12 +80,6 @@ func resourceAliyunSecurityGroupRule() *schema.Resource {
 				ConflictsWith: []string{"cidr_ip"},
 			},
 			"source_group_owner_account": {
-				Type:       schema.TypeString,
-				Optional:   true,
-				ForceNew:   true,
-				Deprecated: "Use source_group_owner_id instead.",
-			},
-			"source_group_owner_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
@@ -185,14 +179,6 @@ func resourceAliyunSecurityGroupRuleCreate(d *schema.ResourceData, meta interfac
 			permissionsMap["SourceGroupOwnerAccount"] = v
 		} else {
 			permissionsMap["DestGroupOwnerAccount"] = v
-		}
-	}
-
-	if v, ok := d.GetOk("source_group_owner_id"); ok {
-		if direction == string(DirectionIngress) {
-			permissionsMap["SourceGroupOwnerId"] = v
-		} else {
-			permissionsMap["DestGroupOwnerId"] = v
 		}
 	}
 
@@ -340,13 +326,13 @@ func resourceAliyunSecurityGroupRuleRead(d *schema.ResourceData, meta interface{
 		d.Set("cidr_ip", object.SourceCidrIp)
 		d.Set("ipv6_cidr_ip", object.Ipv6SourceCidrIp)
 		d.Set("source_security_group_id", object.SourceGroupId)
-		d.Set("source_group_owner_id", object.SourceGroupOwnerAccount)
+		d.Set("source_group_owner_account", object.SourceGroupOwnerAccount)
 		d.Set("prefix_list_id", object.SourcePrefixListId)
 	} else {
 		d.Set("cidr_ip", object.DestCidrIp)
 		d.Set("ipv6_cidr_ip", object.Ipv6DestCidrIp)
 		d.Set("source_security_group_id", object.DestGroupId)
-		d.Set("source_group_owner_id", object.DestGroupOwnerAccount)
+		d.Set("source_group_owner_account", object.DestGroupOwnerAccount)
 		d.Set("prefix_list_id", object.DestPrefixListId)
 	}
 
@@ -532,14 +518,6 @@ func buildAliyunSGRuleRequest(d *schema.ResourceData, meta interface{}) (*reques
 			request.QueryParams["SourceGroupOwnerAccount"] = v.(string)
 		} else {
 			request.QueryParams["DestGroupOwnerAccount"] = v.(string)
-		}
-	}
-
-	if v, ok := d.GetOk("source_group_owner_id"); ok {
-		if direction == string(DirectionIngress) {
-			request.QueryParams["SourceGroupOwnerId"] = v.(string)
-		} else {
-			request.QueryParams["DestGroupOwnerId"] = v.(string)
 		}
 	}
 

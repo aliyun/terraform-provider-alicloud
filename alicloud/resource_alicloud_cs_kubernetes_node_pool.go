@@ -473,56 +473,6 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 					},
 				},
 			},
-			"containerd_config": {
-				Type:     schema.TypeList,
-				Optional: true,
-				MaxItems: 1,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"max_concurrent_downloads": {
-							Type:         schema.TypeInt,
-							Optional:     true,
-							ValidateFunc: IntBetween(1, 20),
-						},
-						"ignore_image_defined_volume": {
-							Type:         schema.TypeString,
-							Optional:     true,
-							ValidateFunc: ValidateNullableBool,
-						},
-						"limit_core": {
-							Type:         schema.TypeString,
-							Optional:     true,
-							ValidateFunc: ValidateNullableIntBetween(0, 9007199254740991),
-						},
-						"limit_no_file": {
-							Type:         schema.TypeString,
-							Optional:     true,
-							ValidateFunc: ValidateNullableIntBetween(1024, 9007199254740991),
-						},
-						"limit_mem_lock": {
-							Type:         schema.TypeString,
-							Optional:     true,
-							ValidateFunc: ValidateNullableIntBetween(65536, 9007199254740991),
-						},
-						"registry_mirrors": {
-							Type:     schema.TypeList,
-							Optional: true,
-							Elem: &schema.Schema{
-								Type:         schema.TypeString,
-								ValidateFunc: StringLenAtLeast(1),
-							},
-						},
-						"insecure_registries": {
-							Type:     schema.TypeList,
-							Optional: true,
-							Elem: &schema.Schema{
-								Type:         schema.TypeString,
-								ValidateFunc: StringLenAtLeast(1),
-							},
-						},
-					},
-				},
-			},
 			"labels": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -1871,44 +1821,6 @@ func resourceAliCloudAckNodepoolCreate(d *schema.ResourceData, meta interface{})
 		return WrapErrorf(err, IdMsg, d.Id(), jobDetail)
 	}
 
-	// CreateNodePool does not support containerd_config; it can only be set through the
-	// node_config API (ModifyNodePoolNodeConfig). Send it in a follow-up call after the
-	// node pool has been created successfully.
-	if v, ok := d.GetOk("containerd_config"); ok && len(v.([]interface{})) > 0 {
-		containerdConfig, err := expandContainerdConfig(d)
-		if err != nil {
-			return err
-		}
-		if len(containerdConfig) > 0 {
-			nodepoolId := fmt.Sprint(response["nodepool_id"])
-			nodeConfigAction := fmt.Sprintf("/clusters/%s/nodepools/%s/node_config", ClusterId, nodepoolId)
-			nodeConfigBody := map[string]interface{}{
-				"containerd_config": containerdConfig,
-			}
-			var nodeConfigResponse map[string]interface{}
-			nodeConfigWait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-				nodeConfigResponse, err = client.RoaPut("CS", "2015-12-15", nodeConfigAction, query, nil, nodeConfigBody, true)
-				if err != nil {
-					if NeedRetry(err) {
-						nodeConfigWait()
-						return resource.RetryableError(err)
-					}
-					return resource.NonRetryableError(err)
-				}
-				return nil
-			})
-			addDebug(nodeConfigAction, nodeConfigResponse, nodeConfigBody)
-			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), nodeConfigAction, AlibabaCloudSdkGoERROR)
-			}
-			nodeConfigStateConf := BuildStateConf([]string{}, []string{"success"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ackServiceV2.DescribeAsyncAckNodepoolStateRefreshFunc(d, nodeConfigResponse, "$.state", []string{"fail", "failed"}))
-			if jobDetail, err := nodeConfigStateConf.WaitForState(); err != nil {
-				return WrapErrorf(err, IdMsg, d.Id(), jobDetail)
-			}
-		}
-	}
-
 	if v, ok := d.GetOk("instances"); ok && v != nil {
 		if err := attachExistingInstance(d, meta, expandStringList(v.([]interface{}))); err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_node_pool", action, AlibabaCloudSdkGoERROR)
@@ -2244,11 +2156,6 @@ func resourceAliCloudAckNodepoolRead(d *schema.ResourceData, meta interface{}) e
 		kubeletConfigurationMaps = append(kubeletConfigurationMaps, kubeletConfigurationMap)
 	}
 	if err := d.Set("kubelet_configuration", kubeletConfigurationMaps); err != nil {
-		return err
-	}
-	containerd_configRawObj, _ := jsonpath.Get("$.node_config.containerd_config", objectRaw)
-	containerdConfigMaps := flattenContainerdConfig(containerd_configRawObj)
-	if err := d.Set("containerd_config", containerdConfigMaps); err != nil {
 		return err
 	}
 	labelsRaw, _ := jsonpath.Get("$.kubernetes_config.labels", objectRaw)
@@ -3340,15 +3247,6 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 		}
 	}
 
-	if d.HasChange("containerd_config") {
-		update = true
-		containerdConfig, err := expandContainerdConfig(d)
-		if err != nil {
-			return err
-		}
-		request["containerd_config"] = containerdConfig
-	}
-
 	rolling_policy := make(map[string]interface{})
 
 	if v := d.Get("rolling_policy"); v != nil {
@@ -3681,7 +3579,7 @@ func ConvertCsTags(d *schema.ResourceData) ([]cs.Tag, error) {
 
 func flattenTagsConfig(config []cs.Tag) map[string]string {
 	m := make(map[string]string, len(config))
-	if len(config) == 0 {
+	if len(config) < 0 {
 		return m
 	}
 
@@ -3784,170 +3682,6 @@ func diffInstances(old []string, new []string) (attach []string, remove []string
 	}
 
 	return
-}
-
-// flattenContainerdConfig converts the ACK API response's containerd_config object into
-// the Terraform schema format (a list with at most one map element).
-//
-// This is the inverse of expandContainerdConfig: it reads camelCase API field names
-// and converts them to the snake_case schema keys. Only keys explicitly returned by
-// the API are written into the map: a present key means it was explicitly written to
-// the node containerd configuration, while a missing key means "not set" (d.Set fills
-// missing keys with the schema zero value, keeping the per-field nullable semantics).
-// Numeric fields arrive as json.Number from the API response (with a defensive float64
-// fallback) and are rendered as decimal strings for the nullable TypeString fields.
-// When the API returns no keys at all, an empty list is returned so that unconfigured
-// node pools show containerd_config.# = 0 without a diff.
-func flattenContainerdConfig(raw interface{}) []map[string]interface{} {
-	configMaps := make([]map[string]interface{}, 0)
-	if raw == nil {
-		return configMaps
-	}
-	configRaw, ok := raw.(map[string]interface{})
-	if !ok || len(configRaw) == 0 {
-		return configMaps
-	}
-
-	configMap := make(map[string]interface{})
-	if v, ok := configRaw["maxConcurrentDownloads"].(json.Number); ok {
-		if val, err := v.Int64(); err == nil {
-			configMap["max_concurrent_downloads"] = int(val)
-		}
-	} else if v, ok := configRaw["maxConcurrentDownloads"].(float64); ok {
-		configMap["max_concurrent_downloads"] = int(v)
-	}
-	if v, ok := configRaw["ignoreImageDefinedVolume"].(bool); ok {
-		configMap["ignore_image_defined_volume"] = strconv.FormatBool(v)
-	}
-	if v, ok := configRaw["limitCore"].(json.Number); ok {
-		configMap["limit_core"] = v.String()
-	} else if v, ok := configRaw["limitCore"].(float64); ok {
-		configMap["limit_core"] = strconv.FormatInt(int64(v), 10)
-	}
-	if v, ok := configRaw["limitNoFile"].(json.Number); ok {
-		configMap["limit_no_file"] = v.String()
-	} else if v, ok := configRaw["limitNoFile"].(float64); ok {
-		configMap["limit_no_file"] = strconv.FormatInt(int64(v), 10)
-	}
-	if v, ok := configRaw["limitMemLock"].(json.Number); ok {
-		configMap["limit_mem_lock"] = v.String()
-	} else if v, ok := configRaw["limitMemLock"].(float64); ok {
-		configMap["limit_mem_lock"] = strconv.FormatInt(int64(v), 10)
-	}
-	if registryMirrorsRaw, ok := configRaw["registryMirrors"]; ok && registryMirrorsRaw != nil {
-		registryMirrorsArray := convertToInterfaceArray(registryMirrorsRaw)
-		if len(registryMirrorsArray) > 0 {
-			configMap["registry_mirrors"] = registryMirrorsArray
-		}
-	}
-	if insecureRegistriesRaw, ok := configRaw["insecureRegistries"]; ok && insecureRegistriesRaw != nil {
-		insecureRegistriesArray := convertToInterfaceArray(insecureRegistriesRaw)
-		if len(insecureRegistriesArray) > 0 {
-			configMap["insecure_registries"] = insecureRegistriesArray
-		}
-	}
-
-	if len(configMap) > 0 {
-		configMaps = append(configMaps, configMap)
-	}
-	return configMaps
-}
-
-// expandContainerdConfig converts the Terraform containerd_config block into the ACK API request body.
-//
-// This function is only called when d.HasChange("containerd_config") is true (i.e. the block was
-// added, removed, or one of its scalar sub-fields changed). limit_core, limit_no_file,
-// limit_mem_lock and ignore_image_defined_volume are nullable strings (TypeString, no
-// Computed, no Default):
-// "" means "not set" and is skipped, so the corresponding key stays absent from the request
-// and is not written to the cloud-side containerd configuration; explicit values (including
-// "0" / "false") are parsed and sent, writing the key to the cloud-side configuration.
-//
-// When the whole containerd_config block is removed from the configuration, newMap is nil and
-// every field is skipped, so an empty map is sent. Under the API's full-replacement semantics
-// this clears all custom containerd configuration, which is exactly the intended meaning of
-// removing the block.
-func expandContainerdConfig(d *schema.ResourceData) (map[string]interface{}, error) {
-	_, newRaw := d.GetChange("containerd_config")
-	newMap := containerdConfigFirstMap(newRaw)
-
-	result := make(map[string]interface{})
-
-	// max_concurrent_downloads (TypeInt): 0 is invalid, only send when > 0.
-	if v := containerdConfigInt64Value(newMap["max_concurrent_downloads"]); v > 0 {
-		result["maxConcurrentDownloads"] = v
-	}
-
-	// Nullable string fields (limit_core, limit_no_file, limit_mem_lock,
-	// ignore_image_defined_volume): skip "" ("not set") so the key is not written
-	// to the cloud-side containerd configuration; parse and send explicit values,
-	// including "0" / "false".
-	if v, ok := newMap["limit_core"].(string); ok && v != "" {
-		limitCore, err := strconv.ParseInt(v, 10, 64)
-		if err != nil {
-			return nil, WrapError(fmt.Errorf("invalid containerd_config.limit_core value %q: %v", v, err))
-		}
-		result["limitCore"] = limitCore
-	}
-	if v, ok := newMap["limit_no_file"].(string); ok && v != "" {
-		limitNoFile, err := strconv.ParseInt(v, 10, 64)
-		if err != nil {
-			return nil, WrapError(fmt.Errorf("invalid containerd_config.limit_no_file value %q: %v", v, err))
-		}
-		result["limitNoFile"] = limitNoFile
-	}
-	if v, ok := newMap["limit_mem_lock"].(string); ok && v != "" {
-		limitMemLock, err := strconv.ParseInt(v, 10, 64)
-		if err != nil {
-			return nil, WrapError(fmt.Errorf("invalid containerd_config.limit_mem_lock value %q: %v", v, err))
-		}
-		result["limitMemLock"] = limitMemLock
-	}
-	if v, ok := newMap["ignore_image_defined_volume"].(string); ok && v != "" {
-		ignoreImageDefinedVolume, err := strconv.ParseBool(v)
-		if err != nil {
-			return nil, WrapError(fmt.Errorf("invalid containerd_config.ignore_image_defined_volume value %q: %v", v, err))
-		}
-		result["ignoreImageDefinedVolume"] = ignoreImageDefinedVolume
-	}
-
-	// registry_mirrors / insecure_registries: only send non-empty lists. Under the
-	// API's full-replacement semantics an empty list and an omitted key are
-	// equivalent (both clear the cloud-side value), and the SDK's TypeList cannot
-	// distinguish them anyway, so no distinction is needed.
-	if mirrors := convertToInterfaceArray(newMap["registry_mirrors"]); len(mirrors) > 0 {
-		result["registryMirrors"] = mirrors
-	}
-	if insecure := convertToInterfaceArray(newMap["insecure_registries"]); len(insecure) > 0 {
-		result["insecureRegistries"] = insecure
-	}
-
-	return result, nil
-}
-
-// containerdConfigFirstMap extracts the first element from a TypeList value.
-func containerdConfigFirstMap(v interface{}) map[string]interface{} {
-	list, ok := v.([]interface{})
-	if !ok || len(list) == 0 {
-		return nil
-	}
-	m, ok := list[0].(map[string]interface{})
-	if !ok {
-		return nil
-	}
-	return m
-}
-
-// containerdConfigInt64Value safely converts an interface{} value to int64.
-func containerdConfigInt64Value(v interface{}) int64 {
-	if v == nil {
-		return 0
-	}
-	n, err := strconv.ParseInt(fmt.Sprint(v), 10, 64)
-	if err != nil {
-		return 0
-	}
-	return n
 }
 
 // isKubeletValueEmpty reports whether a kubelet_configuration value carries no

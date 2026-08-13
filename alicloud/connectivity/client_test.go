@@ -1,78 +1,17 @@
 package connectivity
 
 import (
-	"encoding/json"
 	"os"
-	"strings"
 	"sync"
 	"testing"
 	"time"
 
-	ossgateway "github.com/alibabacloud-go/alibabacloud-gateway-oss/client"
-	spi "github.com/alibabacloud-go/alibabacloud-gateway-spi/client"
-	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/credentials-go/credentials"
 	"github.com/stretchr/testify/assert"
 )
-
-func TestNormalizeOssOpenAPIResponse_HttpsConfigurationRegression(t *testing.T) {
-	gateway, err := ossgateway.NewClient()
-	if err != nil {
-		t.Fatalf("create OSS gateway client: %v", err)
-	}
-	context := &spi.InterceptorContext{
-		Request: &spi.InterceptorContextRequest{
-			Action:   tea.String("GetBucketHttpsConfig"),
-			BodyType: tea.String("xml"),
-		},
-		Response: &spi.InterceptorContextResponse{
-			StatusCode: tea.Int(200),
-			Headers:    map[string]*string{},
-			Body: strings.NewReader(`<HttpsConfiguration>
-  <TLS><Enable>true</Enable><TLSVersion>TLSv1.2</TLSVersion></TLS>
-</HttpsConfiguration>`),
-		},
-	}
-	if err := gateway.ModifyResponse(context, &spi.AttributeMap{Key: map[string]*string{}}); err != nil {
-		t.Fatalf("parse response through OSS gateway: %v", err)
-	}
-	sdkBody, ok := context.Response.DeserializedBody.(map[string]interface{})
-	if !ok {
-		t.Fatalf("OSS gateway body should be map[string]interface{}, got %T", context.Response.DeserializedBody)
-	}
-
-	response := map[string]interface{}{
-		"statusCode": 200,
-		"body":       sdkBody,
-	}
-	getHttpsConfiguration := func(response map[string]interface{}) map[string]interface{} {
-		body := response["body"].(map[string]interface{})
-		return body["HttpsConfiguration"].(map[string]interface{})
-	}
-
-	assert.Panics(t, func() {
-		getHttpsConfiguration(response)
-	}, "the unnormalized **HttpsConfiguration fixture must reproduce the provider crash")
-
-	normalized, err := normalizeOssOpenAPIResponse(response)
-	if err != nil {
-		t.Fatalf("normalize OSS response: %v", err)
-	}
-	var config map[string]interface{}
-	assert.NotPanics(t, func() {
-		config = getHttpsConfiguration(normalized)
-	}, "the normalized response must be safe for the provider's map assertion")
-	tls := config["TLS"].(map[string]interface{})
-	if tls["Enable"] != true {
-		t.Fatalf("TLS.Enable = %#v, want true", tls["Enable"])
-	}
-	if status, ok := normalized["statusCode"].(json.Number); !ok || status.String() != "200" {
-		t.Fatalf("statusCode should preserve legacy json.Number behavior, got %#v (%T)", normalized["statusCode"], normalized["statusCode"])
-	}
-}
 
 var endpointMap sync.Map
 var signVersion sync.Map

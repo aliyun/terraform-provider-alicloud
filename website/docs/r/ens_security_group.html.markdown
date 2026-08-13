@@ -8,9 +8,7 @@ description: |-
 
 # alicloud_ens_security_group
 
-Provides a ENS Security Group resource.
-
-
+Provides a ENS Security Group resource. 
 
 For information about ENS Security Group and how to use it, see [What is Security Group](https://www.alibabacloud.com/help/en/ens/developer-reference/api-createsnapshot).
 
@@ -19,6 +17,12 @@ For information about ENS Security Group and how to use it, see [What is Securit
 ## Example Usage
 
 Basic Usage
+
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_ens_security_group&exampleId=b5a40fc7-1e42-e096-f7a2-0e286603674b1fd46a98&activeTab=example&spm=docs.r.ens_security_group.0.b5a40fc71e&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
 
 ```terraform
 variable "name" {
@@ -31,36 +35,13 @@ resource "alicloud_ens_security_group" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ens_security_group&spm=docs.r.ens_security_group.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:
-* `description` - (Optional) Security group description information
-It must be 2 to 256 characters in length and must start with a letter or Chinese, but cannot start with http:// or https://
-* `permissions` - (Optional, List, Available since v1.287.0) A collection of rules for a security group instance See [`permissions`](#permissions) below.
-* `security_group_name` - (Optional) Security group name
-The security group name. The length is 2~128 English or Chinese characters. It must start with an uppercase or lowcase letter or a Chinese character and cannot start with http:// or https. Can contain digits, colons (:), underscores (_), or hyphens (-)
-
-### `permissions`
-
-The permissions supports the following:
-* `creation_time` - (Computed, Available since v1.287.0) Creation time, UTC time.
-* `description` - (Optional, Available since v1.287.0) Rule description information
-* `dest_cidr_ip` - (Optional, Available since v1.287.0) Destination IP address segment for outbound authorization
-Example value: 0.0.0.0/0
-* `direction` - (Optional, Available since v1.287.0) Authorized direction
-Example value: ingress
-* `ip_protocol` - (Optional, Computed, Available since v1.287.0) IP protocol
-Example value: TCP
-* `ipv6_dest_cidr_ip` - (Optional, Available since v1.287.0) The target IPv6 address segment.
-* `ipv6_source_cidr_ip` - (Optional, Available since v1.287.0) The source IPv6 address segment.
-* `policy` - (Optional, Computed, Available since v1.287.0) Authorization Policy
-Example value: Accept
-* `port_range` - (Optional, Computed, Available since v1.287.0) Source end port range.
-* `priority` - (Optional, Computed, Int, Available since v1.287.0) Rule Priority
-Example value: 1
-* `source_cidr_ip` - (Optional, Computed, Available since v1.287.0) Source IP address segment, used for inbound authorization
-Example value: 0.0.0.0/0
-* `source_port_range` - (Optional, Computed, Available since v1.287.0) The port range of the source security group.
+* `description` - (Optional) Security group description informationIt must be 2 to 256 characters in length and must start with a letter or Chinese, but cannot start with `http://` or `https://`.
+* `security_group_name` - (Optional) Security group nameThe security group name. The length is 2~128 English or Chinese characters. It must start with an uppercase or lowcase letter or a Chinese character and cannot start with `http://` or `https`. Can contain digits, colons (:), underscores (_), or hyphens (-).
 
 ## Attributes Reference
 
@@ -79,5 +60,5 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 ENS Security Group can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_ens_security_group.example <security_group_id>
+$ terraform import alicloud_ens_security_group.example <id>
 ```

@@ -102,16 +102,6 @@ func resourceAlicloudDtsMigrationJob() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
-			"dest_primary_vswitch_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
-			"dest_secondary_vswitch_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
 			"source_endpoint_instance_type": {
 				Type:         schema.TypeString,
 				Required:     true,
@@ -169,16 +159,6 @@ func resourceAlicloudDtsMigrationJob() *schema.Resource {
 				ForceNew: true,
 			},
 			"source_endpoint_role": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
-			"src_primary_vswitch_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
-			"src_secondary_vswitch_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
@@ -271,12 +251,6 @@ func resourceAlicloudDtsMigrationJobCreate(d *schema.ResourceData, meta interfac
 	if v, ok := d.GetOk("destination_endpoint_oracle_sid"); ok {
 		request["DestinationEndpointOracleSID"] = v
 	}
-	if v, ok := d.GetOk("dest_primary_vswitch_id"); ok {
-		request["DestPrimaryVswId"] = v
-	}
-	if v, ok := d.GetOk("dest_secondary_vswitch_id"); ok {
-		request["DestSecondaryVswId"] = v
-	}
 
 	request["SourceEndpointInstanceType"] = d.Get("source_endpoint_instance_type")
 	request["SourceEndpointEngineName"] = d.Get("source_endpoint_engine_name")
@@ -309,12 +283,6 @@ func resourceAlicloudDtsMigrationJobCreate(d *schema.ResourceData, meta interfac
 	}
 	if v, ok := d.GetOk("source_endpoint_role"); ok {
 		request["SourceEndpointRole"] = v
-	}
-	if v, ok := d.GetOk("src_primary_vswitch_id"); ok {
-		request["SrcPrimaryVswId"] = v
-	}
-	if v, ok := d.GetOk("src_secondary_vswitch_id"); ok {
-		request["SrcSecondaryVswId"] = v
 	}
 
 	request["JobType"] = "MIGRATION"

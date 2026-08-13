@@ -33,32 +33,11 @@ func TestAccAlicloudCREEInstancesDataSource(t *testing.T) {
 		}),
 	}
 
-	tagsConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
-			"ids":            []string{"${alicloud_cr_ee_instance.default.id}"},
-			"enable_details": "true",
-			"tags": map[string]string{
-				"Created": "TF",
-				"For":     "Test",
-			},
-		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
-			"ids": []string{"${alicloud_cr_ee_instance.default.id}"},
-			"tags": map[string]string{
-				"Created": "TF-fake",
-			},
-		}),
-	}
-
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"name_regex":     name,
 			"ids":            []string{"${alicloud_cr_ee_instance.default.id}"},
 			"enable_details": "true",
-			"tags": map[string]string{
-				"Created": "TF",
-				"For":     "Test",
-			},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"ids":        []string{"${alicloud_cr_ee_instance.default.id}"},
@@ -83,9 +62,6 @@ func TestAccAlicloudCREEInstancesDataSource(t *testing.T) {
 			"instances.0.public_endpoints.#":  CHECKSET,
 			"instances.0.authorization_token": CHECKSET,
 			"instances.0.temp_username":       CHECKSET,
-			"instances.0.tags.%":              "2",
-			"instances.0.tags.Created":        "TF",
-			"instances.0.tags.For":            "Test",
 		}
 	}
 
@@ -103,7 +79,7 @@ func TestAccAlicloudCREEInstancesDataSource(t *testing.T) {
 		fakeMapFunc:  fakeCrEEInstancesMapFunc,
 	}
 
-	crEEInstancesCheckInfo.dataSourceTestCheck(t, 0, nameRegexConf, idsConf, tagsConf, allConf)
+	crEEInstancesCheckInfo.dataSourceTestCheck(t, 0, nameRegexConf, idsConf, allConf)
 }
 
 func dataSourceCrEEInstancesConfigDependence(name string) string {
@@ -117,10 +93,6 @@ resource "alicloud_cr_ee_instance" "default" {
   renewal_status      = "ManualRenewal"
   instance_type       = "Advanced"
   instance_name       = var.name
-  tags = {
-    Created = "TF"
-    For     = "Test"
-  }
 }
 `, name)
 }

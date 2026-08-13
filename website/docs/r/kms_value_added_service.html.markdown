@@ -16,8 +16,6 @@ For information about KMS Value Added Service and how to use it, see [What is Va
 
 -> **NOTE:** Available since v1.267.0.
 
--> **NOTE:** A value added service can be purchased only once per region while it is in effect. If the account already holds it, for example because it was purchased in the console, a duplicate order is charged and then refunded automatically and its instance never becomes effective, so creating this resource fails rather than tracking an instance that does not work. Import the existing service instead of creating it.
-
 ## Example Usage
 
 Basic Usage
@@ -67,10 +65,9 @@ The following arguments are supported:
   - AutoRenewal: The instance is automatically renewed.
   - ManualRenewal: The instance is manually renewed.
   - NotRenewal: The instance is not renewed.
-* `value_added_service` - (Optional) The value added service type. Valid values:
-  - `2`: Default key rotation.
+* `value_added_service` - (Optional) value added service type, Instance Backup 1 default key rotation 2 Expert service 3
 
-  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+-> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 
 ## Attributes Reference
@@ -84,9 +81,9 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
-* `create` - (Defaults to 10 mins) Used when create the Value Added Service.
-* `delete` - (Defaults to 10 mins) Used when delete the Value Added Service.
-* `update` - (Defaults to 10 mins) Used when update the Value Added Service.
+* `create` - (Defaults to 5 mins) Used when create the Value Added Service.
+* `delete` - (Defaults to 5 mins) Used when delete the Value Added Service.
+* `update` - (Defaults to 5 mins) Used when update the Value Added Service.
 
 ## Import
 

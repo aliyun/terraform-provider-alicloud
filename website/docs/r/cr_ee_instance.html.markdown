@@ -24,7 +24,7 @@ For information about CR Instance and how to use it, see [What is Instance](http
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_cr_ee_instance&exampleId=7a94e38d-39e7-a9e3-cd8f-db1c63e7641008f432f8&activeTab=example&spm=docs.r.cr_ee_instance.0.7a94e38d39&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_cr_ee_instance&exampleId=25749ea8-d0d9-59b9-d587-cf2975510050df3b0d18&activeTab=example&spm=docs.r.cr_ee_instance.0.25749ea8d0&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
@@ -46,10 +46,6 @@ resource "alicloud_cr_ee_instance" "default" {
   renewal_status = "AutoRenewal"
   instance_type  = "Advanced"
   instance_name  = "${var.name}-${random_integer.default.result}"
-  tags = {
-    Created = "TF"
-    For     = "Test"
-  }
 }
 ```
 
@@ -112,7 +108,6 @@ The following arguments are supported:
 -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `resource_group_id` - (Optional, Computed, Available since v1.235.0) The ID of the resource group
-* `tags` - (Optional, Map, Available since v1.288.0) A mapping of tags to assign to the resource.
 * `vpc_quota` - (Optional, Int, Available since v1.268.0) The number of VPC access controls.
 
 -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.

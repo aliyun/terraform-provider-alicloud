@@ -118,7 +118,7 @@ The following arguments are supported:
 * `paid_type` - (Optional) The billing method of the instance. Default value: `PostPaid`. Valid values: `PostPaid`, `PrePaid`. When modify this value, it only support adjust from `PostPaid` to `PrePaid`.
 * `spec_type` - (Optional) The instance edition. Default value: `normal`. Valid values:
   - If `instance_type` is set to `alikafka`. Valid values: `normal`, `professional`, `professionalForHighRead`.
-  - If `instance_type` is set to `alikafka_serverless`. Valid values: `basic`, `normal`, `professional`. **NOTE:** `basic` is not supported when `paid_type` is set to `PrePaid`.
+  - If `instance_type` is set to `alikafka_serverless`. Valid values: `normal`.
   - If `instance_type` is set to `alikafka_confluent`. Valid values: `professional`, `enterprise`.
 * `vswitch_id` - (Optional, ForceNew) The ID of attaching vswitch to instance.
 * `security_group` - (Optional, ForceNew, Available since v1.93.0) The ID of security group for this instance. If the security group is empty, system will create a default one.
@@ -149,20 +149,20 @@ The following arguments are supported:
 
 -> **NOTE:** Field `io_max`, `disk_size`, `topic_quota`, `eip_max` should follow the following constraints.
 
-| io_max | disk_size(min-max:lag) | topic_quota(min-max:lag) | eip_max(min-max:lag) |
-| ------ | ---------------------- | :----------------------: | :------------------: |
-| 20     | 500-6100:100           |         50-450:1         |       1-160:1        |
-| 30     | 800-6100:100           |         50-450:1         |       1-240:1        |
-| 60     | 1400-6100:100          |         80-450:1         |       1-500:1        |
-| 90     | 2100-6100:100          |        100-450:1         |       1-500:1        |
-| 120    | 2700-6100:100          |        150-450:1         |       1-500:1        |
+| io_max | disk_size(min-max:lag) | topic_quota(min-max:lag) | eip_max(min-max:lag) | 
+|------|-------------|:----:|:-----:|
+|20          |  500-6100:100   |   50-450:1  |    1-160:1  |
+|30          |  800-6100:100   |   50-450:1  |    1-240:1  |
+|60          |  1400-6100:100  |   80-450:1  |    1-500:1  |
+|90          |  2100-6100:100  |   100-450:1 |    1-500:1  |
+|120         |  2700-6100:100  |   150-450:1 |    1-500:1  |
 
 ### `serverless_config`
 
 The serverless_config supports the following:
 
-* `reserved_publish_capacity` - (Optional, Int) The reserved capacity for publishing messages. The minimum value is `60`.
-* `reserved_subscribe_capacity` - (Optional, Int) The reserved capacity for subscribing to message. The minimum value is `20`.
+* `reserved_publish_capacity` - (Optional, Int) The reserved capacity for publishing messages.
+* `reserved_subscribe_capacity` - (Optional, Int) The reserved capacity for subscribing to message.
 
 ### `confluent_config`
 

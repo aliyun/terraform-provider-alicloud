@@ -215,30 +215,19 @@ func resourceAliCloudDRDSInstanceRead(d *schema.ResourceData, meta interface{}) 
 	//other attribute not set,because these attribute from `data` can't  get
 	d.Set("zone_id", data.ZoneId)
 	d.Set("description", data.Description)
-	vpcId, connectionString, port := flattenDrdsInstanceVips(data.Vips.Vip)
-	d.Set("vpc_id", vpcId)
-	d.Set("connection_string", connectionString)
-	d.Set("port", port)
-	d.Set("mysql_version", data.MysqlVersion)
-	return nil
-}
-
-// flattenDrdsInstanceVips extracts the vpc_id, connection_string and port from the
-// DescribeDrdsInstance VIP list. A valid instance can transiently report an empty
-// VIP list, so the first-element access is length-guarded to avoid an out-of-range
-// panic; an empty list yields zero values.
-func flattenDrdsInstanceVips(vips []drds.Vip) (vpcId, connectionString, port string) {
-	if len(vips) > 0 {
-		vpcId = vips[0].VpcId
-	}
-	for _, vip := range vips {
+	d.Set("vpc_id", data.Vips.Vip[0].VpcId)
+	var connectionString, port string
+	for _, vip := range data.Vips.Vip {
 		if vip.Type == "intranet" {
 			connectionString = vip.Dns
 			port = vip.Port
 			break
 		}
 	}
-	return vpcId, connectionString, port
+	d.Set("connection_string", connectionString)
+	d.Set("port", port)
+	d.Set("mysql_version", data.MysqlVersion)
+	return nil
 }
 
 func resourceAliCloudDRDSInstanceDelete(d *schema.ResourceData, meta interface{}) error {

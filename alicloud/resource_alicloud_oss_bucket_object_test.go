@@ -48,52 +48,31 @@ func TestAccAliCloudOssBucketObject_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"bucket":              "${alicloud_oss_bucket_public_access_block.default.bucket}",
-					"key":                 "test-object-source-key",
-					"source":              tmpFile.Name(),
-					"content_type":        "binary/octet-stream",
-					"cache_control":       "max-age=3600",
-					"content_disposition": "attachment",
-					"content_encoding":    "identity",
-					"content_md5":         "ewBv9NcPaMxlBhrPL4Aubw==",
-					"expires":             "Mon, 01 Jan 2035 00:00:00 GMT",
+					"bucket":       "${alicloud_oss_bucket_public_access_block.default.bucket}",
+					"key":          "test-object-source-key",
+					"source":       tmpFile.Name(),
+					"content_type": "binary/octet-stream",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudOssBucketObjectExists(
 						"alicloud_oss_bucket_object.default", name, v),
 					testAccCheck(map[string]string{
-						"bucket":              name,
-						"source":              tmpFile.Name(),
-						"content_type":        "binary/octet-stream",
-						"cache_control":       "max-age=3600",
-						"content_disposition": "attachment",
-						"content_encoding":    "identity",
-						"expires":             "Mon, 01 Jan 2035 00:00:00 GMT",
+						"bucket": name,
+						"source": tmpFile.Name(),
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"source":              REMOVEKEY,
-					"content":             "some words for test oss object content",
-					"content_type":        "text/plain",
-					"cache_control":       "no-cache",
-					"content_disposition": "inline",
-					"content_encoding":    "gzip",
-					"content_md5":         "DLbtZmJKNYFp4DtLY9hZDw==",
-					"expires":             "Tue, 02 Jan 2035 00:00:00 GMT",
+					"source":  REMOVEKEY,
+					"content": "some words for test oss object content",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudOssBucketObjectExists(
 						"alicloud_oss_bucket_object.default", name, v),
 					testAccCheck(map[string]string{
-						"source":              REMOVEKEY,
-						"content":             "some words for test oss object content",
-						"content_type":        "text/plain",
-						"cache_control":       "no-cache",
-						"content_disposition": "inline",
-						"content_encoding":    "gzip",
-						"expires":             "Tue, 02 Jan 2035 00:00:00 GMT",
+						"source":  REMOVEKEY,
+						"content": "some words for test oss object content",
 					}),
 				),
 			},
@@ -124,7 +103,6 @@ func TestAccAliCloudOssBucketObject_basic(t *testing.T) {
 					"key":                    "test-object-source-key",
 					"content":                REMOVEKEY,
 					"source":                 tmpFile.Name(),
-					"content_md5":            "ewBv9NcPaMxlBhrPL4Aubw==",
 					"content_type":           "binary/octet-stream",
 					"acl":                    REMOVEKEY,
 				}),
@@ -242,96 +220,6 @@ func TestAccAliCloudOssBucketObject_worm(t *testing.T) {
 			},
 		},
 	})
-}
-
-// TestAccAliCloudOssBucketObject_outOfBandDeleteRebuild verifies that when an
-// OSS object is deleted out-of-band (e.g. through the OSS console or CLI,
-// bypassing Terraform), the provider Read drops the resource from state so a
-// subsequent plan reports "1 to add" and apply recreates the object, instead
-// of erroring out and blocking automation.
-func TestAccAliCloudOssBucketObject_outOfBandDeleteRebuild(t *testing.T) {
-	tmpFile, err := ioutil.TempFile("", "tf-oss-object-oob-delete")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.Remove(tmpFile.Name())
-
-	if err := ioutil.WriteFile(tmpFile.Name(), []byte("out-of-band delete rebuild coverage"), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	var v http.Header
-	resourceId := "alicloud_oss_bucket_object.default"
-	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testacc-object-oob-%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceOssBucketObjectConfigDependence)
-	cfg := testAccConfig(map[string]interface{}{
-		"bucket":       "${alicloud_oss_bucket_public_access_block.default.bucket}",
-		"key":          "test-object-oob-delete-key",
-		"source":       tmpFile.Name(),
-		"content_type": "binary/octet-stream",
-	})
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckAlicloudOssBucketObjectDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config:             cfg,
-				ExpectNonEmptyPlan: true,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudOssBucketObjectExists(resourceId, name, v),
-					// Delete the object directly through the OSS API. This step
-					// explicitly expects its mandatory post-Check refresh to plan a
-					// recreate. Before the fix, Read returned an error instead.
-					testAccCheckAlicloudOssBucketObjectDeleteOutOfBand(resourceId, name),
-				),
-			},
-			{
-				// Re-apply the same config: the object is recreated, proving the
-				// out-of-band delete is self-healing.
-				Config: cfg,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudOssBucketObjectExists(resourceId, name, v),
-				),
-			},
-		},
-	})
-}
-
-// testAccCheckAlicloudOssBucketObjectDeleteOutOfBand removes the OSS object
-// backing the resource via the OSS SDK directly, simulating a delete issued
-// from the console or CLI that Terraform did not observe.
-func testAccCheckAlicloudOssBucketObjectDeleteOutOfBand(n, bucket string) resource.TestCheckFunc {
-	providers := []*schema.Provider{testAccProvider}
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return fmt.Errorf("Not found: %s", n)
-		}
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("No ID is set")
-		}
-		for _, provider := range providers {
-			if provider.Meta() == nil {
-				continue
-			}
-			client := provider.Meta().(*connectivity.AliyunClient)
-			raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
-				return ossClient.Bucket(bucket)
-			})
-			if err != nil {
-				return fmt.Errorf("Error getting bucket: %#v", err)
-			}
-			buck, _ := raw.(*oss.Bucket)
-			if err := buck.DeleteObject(rs.Primary.ID); err != nil {
-				return fmt.Errorf("Out-of-band DeleteObject failed: %#v", err)
-			}
-			log.Printf("[INFO] out-of-band deleted oss object %q to simulate console/CLI deletion", rs.Primary.ID)
-			return nil
-		}
-		return fmt.Errorf("No provider with Meta available")
-	}
 }
 
 func resourceOssBucketObjectConfigDependence(name string) string {

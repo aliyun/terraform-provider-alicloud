@@ -22,7 +22,6 @@ import (
 	rpc "github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	utilV2 "github.com/alibabacloud-go/tea-utils/v2/service"
-	"github.com/alibabacloud-go/tea/dara"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/endpoints"
@@ -2738,17 +2737,6 @@ func (client *AliyunClient) roaRequest(method string, apiProductCode string, api
 	return response, formatError(response, err)
 }
 
-func normalizeOssOpenAPIResponse(response map[string]interface{}) (map[string]interface{}, error) {
-	if response == nil {
-		return nil, nil
-	}
-	normalized := make(map[string]interface{})
-	if err := dara.Convert(response, &normalized); err != nil {
-		return nil, err
-	}
-	return normalized, nil
-}
-
 // Do invoking API request with SDK v2
 // parameters:
 //
@@ -2815,12 +2803,6 @@ func (client *AliyunClient) Do(apiProductCode string, apiParams *openapi.Params,
 		response, err = openapiClient.CallApi(apiParams, &openapi.OpenApiRequest{Query: query, Body: body, Headers: headers, HostMap: hostMap}, runtime)
 	} else {
 		response, err = openapiClient.Execute(apiParams, &openapi.OpenApiRequest{Query: query, Body: body, Headers: headers, HostMap: hostMap}, runtime)
-	}
-	if apiProductCode == "oss" && response != nil {
-		response, err = normalizeOssOpenAPIResponse(response)
-		if err != nil {
-			return response, err
-		}
 	}
 	if respBody, isExist := response["body"]; isExist && respBody != nil {
 		if v, ok := respBody.(map[string]interface{}); ok {

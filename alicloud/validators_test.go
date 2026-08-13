@@ -243,7 +243,6 @@ func TestValidateOTSTunnelName(t *testing.T) {
 
 func TestValidateIntBetween(t *testing.T) {
 	resourceSchemaValidationSkipped = false
-	defer func() { resourceSchemaValidationSkipped = false }()
 
 	min := 0
 	max := 10
@@ -266,105 +265,6 @@ func TestValidateIntBetween(t *testing.T) {
 	assert.NotNil(t, s)
 	assert.True(t, strings.Contains(s[0], fmt.Sprintf(
 		"expected %s to be in the range (%d - %d), got %d", attribute, min, max, check)))
-}
-
-func TestValidateNullableIntBetween(t *testing.T) {
-	resourceSchemaValidationSkipped = false
-	defer func() { resourceSchemaValidationSkipped = false }()
-
-	attribute := "size"
-	largeRange := ValidateNullableIntBetween(0, 9007199254740991)
-	smallRange := ValidateNullableIntBetween(0, 50)
-
-	// valid values pass regardless of range
-	for _, v := range []string{"", "0", "10", "9007199254740991"} {
-		s, es := largeRange(v, attribute)
-		assert.Nil(t, es, "value %q should be valid", v)
-		assert.Nil(t, s, "value %q should not produce warnings", v)
-	}
-
-	// format errors are hard errors regardless of skip flag
-	hardErrorValues := []string{"abc", "+10", "010", " 10", "1.5", "-0"}
-	for _, skip := range []bool{false, true} {
-		resourceSchemaValidationSkipped = skip
-		for _, v := range hardErrorValues {
-			s, es := largeRange(v, attribute)
-			assert.NotNil(t, es, "value %q should be a hard error (skip=%v)", v, skip)
-			assert.Nil(t, s, "value %q should not produce warnings (skip=%v)", v, skip)
-		}
-	}
-
-	// range violation with skip disabled: hard error carrying the skip hint
-	resourceSchemaValidationSkipped = false
-	for _, v := range []string{"-1", "51"} {
-		s, es := smallRange(v, attribute)
-		assert.NotNil(t, es, "value %q should be a range error", v)
-		assert.Nil(t, s)
-		assert.True(t, strings.Contains(es[0].Error(), skipResourceSchemaValidationWarning))
-		assert.True(t, strings.Contains(es[0].Error(), fmt.Sprintf(
-			"expected %s to be in the range (%d - %d), got %s", attribute, 0, 50, v)))
-	}
-
-	// range violation with skip enabled: downgraded to a warning
-	resourceSchemaValidationSkipped = true
-	for _, v := range []string{"-1", "51"} {
-		s, es := smallRange(v, attribute)
-		assert.Nil(t, es, "value %q should be downgraded to a warning", v)
-		assert.NotNil(t, s)
-		assert.True(t, strings.Contains(s[0], fmt.Sprintf(
-			"expected %s to be in the range (%d - %d), got %s", attribute, 0, 50, v)))
-	}
-
-	// canonical form check is never downgraded even with skip enabled
-	s, es := smallRange("+10", attribute)
-	assert.NotNil(t, es)
-	assert.Nil(t, s)
-	assert.True(t, strings.Contains(es[0].Error(), "canonical decimal integer string"))
-
-	// non-string input is a hard error
-	resourceSchemaValidationSkipped = false
-	s, es = smallRange(10, attribute)
-	assert.NotNil(t, es)
-	assert.Nil(t, s)
-	assert.True(t, strings.Contains(es[0].Error(), fmt.Sprintf("expected type of %s to be string", attribute)))
-}
-
-func TestValidateNullableBool(t *testing.T) {
-	resourceSchemaValidationSkipped = false
-	defer func() { resourceSchemaValidationSkipped = false }()
-
-	attribute := "enabled"
-
-	// valid values
-	for _, v := range []string{"", "true", "false"} {
-		s, es := ValidateNullableBool(v, attribute)
-		assert.Nil(t, es, "value %q should be valid", v)
-		assert.Nil(t, s, "value %q should not produce warnings", v)
-	}
-
-	// invalid values with skip disabled: error carrying the skip hint
-	for _, v := range []string{"True", "FALSE", "1", "0", "yes"} {
-		s, es := ValidateNullableBool(v, attribute)
-		assert.NotNil(t, es, "value %q should be an error", v)
-		assert.Nil(t, s)
-		assert.True(t, strings.Contains(es[0].Error(), skipResourceSchemaValidationWarning))
-		assert.True(t, strings.Contains(es[0].Error(), fmt.Sprintf(
-			"expected %s to be an empty string or lowercase \"true\"/\"false\", got %s", attribute, v)))
-	}
-
-	// invalid value with skip enabled: downgraded to a warning
-	resourceSchemaValidationSkipped = true
-	s, es := ValidateNullableBool("True", attribute)
-	assert.Nil(t, es)
-	assert.NotNil(t, s)
-	assert.True(t, strings.Contains(s[0], fmt.Sprintf(
-		"expected %s to be an empty string or lowercase \"true\"/\"false\", got %s", attribute, "True")))
-
-	// non-string input is a hard error even with skip enabled
-	s, es = ValidateNullableBool(1, attribute)
-	assert.NotNil(t, es)
-	assert.Nil(t, s)
-	assert.True(t, strings.Contains(es[0].Error(), fmt.Sprintf("expected type of %s to be string", attribute)))
 }
 
 func TestValidateIntAtLeast(t *testing.T) {

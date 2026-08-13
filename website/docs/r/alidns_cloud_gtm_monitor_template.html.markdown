@@ -75,7 +75,7 @@ The following arguments are supported:
 * `ip_version` - (Required, ForceNew) The IP version of the probing node. Valid values: `IPv4`, `IPv6`.
 * `interval` - (Required) The interval between consecutive probes, in seconds. Valid values: `15`, `60`, `300`, `900`, `1800`, `3600`. The `15` seconds interval is only available for Flagship Edition instances.
 * `timeout` - (Required) Probe request timeout, in milliseconds. Probe packets that do not return within this duration are treated as timeouts. Valid values: `2000`, `3000`, `5000`, `10000`.
-* `evaluation_count` - (Required, Int) The number of retries after a probe failure. A service is marked abnormal only after this many consecutive failures, preventing transient network fluctuations from triggering false alarms. Valid values: `1`, `2`, `3`.
+* `evaluation_count` - (Required, Int) The number of retries after a probe failure. A service is marked abnormal only after this many consecutive failures, preventing transient network fluctuations from triggering false alarms. Valid values: `0`, `1`, `2`, `3`.
 * `failure_rate` - (Required, Int) The failure-rate threshold (%) among selected probe nodes. If the percentage of failing nodes exceeds this value, the service address is marked as abnormal. Valid values: `0`, `20`, `50`, `80`, `100`.
 * `isp_city_nodes` - (Required, Set) The set of monitoring nodes that this template will probe from. Use the [ListCloudGtmMonitorNodes](https://help.aliyun.com/document_detail/2797349.html) API to look up available `city_code` / `isp_code` combinations. See [`isp_city_nodes`](#isp_city_nodes) below.
 * `extend_info` - (Optional, Computed) A JSON string containing protocol-specific probe configuration. The supported keys depend on `protocol`. See [`extend_info`](#extend_info) below.
@@ -94,13 +94,13 @@ The `extend_info` argument takes a JSON-encoded string. The supported keys depen
 
 Keys for `http` / `https`:
 
-| Key              | Description                                                                                                                                                                                                                            |
-|------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `host`           | The value of the `Host` header carried in the HTTP(S) request. Defaults to the primary domain of the target. Set this when the target site requires a specific Host header.                                                            |
-| `path`           | The URL path to probe. Defaults to `/`.                                                                                                                                                                                                |
+| Key              | Description                                                                                                                                                                                                                         |
+|------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `host`           | The value of the `Host` header carried in the HTTP(S) request. Defaults to the primary domain of the target. Set this when the target site requires a specific Host header.                                                        |
+| `path`           | The URL path to probe. Defaults to `/`.                                                                                                                                                                                             |
 | `code`           | HTTP response-code threshold used to classify the service as abnormal. Valid values: `400` (Bad Request — use when the probe URL includes parameters and you want to detect invalid-request responses), `500` (Server Error, default). |
-| `sni`            | Whether to enable Server Name Indication during the TLS handshake (HTTPS only). Valid values: `true`, `false`.                                                                                                                         |
-| `followRedirect` | Whether to follow HTTP 3XX redirects (`301`, `302`, `303`, `307`, `308`). Valid values: `true`, `false`.                                                                                                                               |
+| `sni`            | Whether to enable Server Name Indication during the TLS handshake (HTTPS only). Valid values: `true`, `false`.                                                                                                                      |
+| `followRedirect` | Whether to follow HTTP 3XX redirects (`301`, `302`, `303`, `307`, `308`). Valid values: `true`, `false`.                                                                                                                             |
 
 Keys for `ping`:
 

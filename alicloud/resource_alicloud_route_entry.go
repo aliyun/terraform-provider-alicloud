@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
@@ -104,10 +103,8 @@ func resourceAliyunRouteEntryCreate(d *schema.ResourceData, meta interface{}) er
 
 	// retry 10 min to create lots of entries concurrently
 	var raw interface{}
-	attempt := 0
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		attempt++
 		if err := vpcService.WaitForAllRouteEntriesAvailable(rtId, DefaultTimeout); err != nil {
 			return resource.NonRetryableError(err)
 		}
@@ -117,12 +114,6 @@ func resourceAliyunRouteEntryCreate(d *schema.ResourceData, meta interface{}) er
 		raw, err = client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.CreateRouteEntry(&args)
 		})
-		// Log every attempt (success or failure) instead of only the outcome of
-		// the final one. Without this, an intermediate attempt that actually
-		// succeeded on the server (e.g. after a retried "TaskConflict") leaves
-		// no trace in TF_LOG, making it impossible to tell from the client side
-		// whether the route was really created before a later step failed.
-		addDebug(fmt.Sprintf("%s (attempt %d)", request.GetActionName(), attempt), raw, args.RpcRequest, args)
 		if err != nil {
 			// Route Entry does not support concurrence when creating or deleting it;
 			// Route Entry does not support creating or deleting within 5 seconds frequently
@@ -135,87 +126,28 @@ func resourceAliyunRouteEntryCreate(d *schema.ResourceData, meta interface{}) er
 		}
 		return nil
 	})
-
-	// Compute the resource id from the request parameters (all known up-front).
-	// The id is recorded into state only after CreateRouteEntry has been
-	// confirmed successful (err == nil below) or a client-side wait timeout
-	// has been recovered by reading the route back. Setting it earlier -
-	// before knowing whether the retry loop succeeded - left partial state
-	// behind on every error path that forgot to reset it.
-	// route_table_id:router_id:destination_cidrblock:nexthop_type:nexthop_id
-	id := buildRouteEntryResourceId(rtId, table.VRouterId, cidr, nt, ni)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	if err != nil {
-		// A client-side wait timeout means the create result is unknown: an
-		// earlier retry attempt may already have been committed on the server
-		// side even though the loop ultimately gave up. Read the route back
-		// before deciding to fail; if it does exist, keep it in state.
-		if isRouteEntryWaitTimeout(err) {
-			if recoverErr := waitAndReadRouteEntry(d, meta, id); recoverErr == nil {
-				return nil
+		if IsExpectedErrors(err, []string{"RouterEntryConflict.Duplicated"}) {
+			en, err := vpcService.DescribeRouteEntry(rtId + ":" + table.VRouterId + ":" + cidr + ":" + nt + ":" + ni)
+			if err != nil {
+				return WrapError(err)
 			}
-		}
-		// CreateRouteEntry returns RouterEntryConflict.Duplicated /
-		// Duplicated.VpcNextHop / InvalidCIDRBlock.Duplicate only when a
-		// matching route already exists on the cloud. buildClientToken is
-		// called exactly once before the retry loop, so every attempt inside
-		// the loop reuses the same ClientToken; with ClientToken idempotency,
-		// an idempotent re-attempt of *this* apply would either succeed
-		// (returning the same RouteEntryId) or keep hitting TaskConflict -
-		// it would never return a duplicate. A duplicate therefore proves the
-		// route was created by a different request (another apply, the console,
-		// or another tool), not by this apply. Surface that as an error with
-		// an import hint instead of silently adopting state we did not create.
-		if IsExpectedErrors(err, []string{"RouterEntryConflict.Duplicated", "Duplicated.VpcNextHop", "InvalidCIDRBlock.Duplicate"}) {
-			return WrapError(Error("The route entry %s already exists on the cloud, but it was not created by this apply (a duplicate error means another request - such as a prior apply, the console, or another tool - created it). "+
-				"Please import it using ID '%s' or specify a new 'destination_cidrblock' and try again.",
-				id, id))
+			return WrapError(Error("The route entry %s has already existed. "+
+				"Please import it using ID '%s:%s:%s:%s:%s' or specify a new 'destination_cidrblock' and try again.",
+				en.DestinationCidrBlock, en.RouteTableId, table.VRouterId, en.DestinationCidrBlock, en.NextHopType, ni))
 		}
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_route_entry", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	// route_table_id:router_id:destination_cidrblock:nexthop_type:nexthop_id
 
-	d.SetId(id)
+	d.SetId(rtId + ":" + table.VRouterId + ":" + cidr + ":" + nt + ":" + ni)
 
 	if err := vpcService.WaitForRouteEntry(d.Id(), Available, DefaultTimeout); err != nil {
-		// CreateRouteEntry has already succeeded at this point, so the route is
-		// known to exist; a timeout merely waiting for it to become Available
-		// must not discard it from state. Fall back to reading it directly.
-		if isRouteEntryWaitTimeout(err) {
-			if recoverErr := resourceAliyunRouteEntryRead(d, meta); recoverErr == nil {
-				return nil
-			}
-		}
 		return WrapError(err)
 	}
 
-	return resourceAliyunRouteEntryRead(d, meta)
-}
-
-func buildRouteEntryResourceId(routeTableId, routerId, cidrBlock, nextHopType, nextHopId string) string {
-	return routeTableId + ":" + routerId + ":" + cidrBlock + ":" + nextHopType + ":" + nextHopId
-}
-
-// isRouteEntryWaitTimeout reports whether err is a client-side timeout from
-// waiting for a state change. Such a timeout says nothing about whether the
-// route entry exists on the server side, so callers may read the route back
-// before treating the operation as failed. Server-side errors - including
-// duplicate errors, which only prove a matching route pre-exists, not that
-// this Create call created it - are deliberately excluded.
-func isRouteEntryWaitTimeout(err error) bool {
-	return err != nil && strings.Contains(err.Error(), "timeout while waiting for state to become")
-}
-
-func waitAndReadRouteEntry(d *schema.ResourceData, meta interface{}, id string) error {
-	client := meta.(*connectivity.AliyunClient)
-	vpcService := VpcService{client}
-
-	if err := vpcService.WaitForRouteEntry(id, Available, DefaultTimeout); err != nil {
-		return WrapError(err)
-	}
-	// The route is confirmed to exist and be Available on the server side, so
-	// it is safe to record the id now. Doing it only here - rather than before
-	// the wait - guarantees a failed wait never leaves a partial id behind.
-	d.SetId(id)
 	return resourceAliyunRouteEntryRead(d, meta)
 }
 

@@ -488,66 +488,55 @@ func resourceAlicloudRdsDdrInstanceCreate(d *schema.ResourceData, meta interface
 	client := meta.(*connectivity.AliyunClient)
 	rdsService := RdsService{client}
 	var err error
-	var response map[string]interface{}
-	// The CheckCreateDdrDBInstance pre-check API does not accept the
-	// DBInstanceStorageType parameter, so it cannot validate cloud disk
-	// (cloud_ssd / cloud_essd / cloud_essd2 / cloud_essd3) cross-region
-	// recovery configurations and aborts with
-	// "Current DB instance type does not support this operation" before
-	// CreateDdrInstance ever runs. Skip the pre-check for cloud disk types
-	// and go straight to CreateDdrInstance, which accepts
-	// DBInstanceStorageType. The pre-check is preserved for the local_ssd
-	// (and unspecified) case to keep the existing behavior.
-	if storageType, ok := d.GetOk("db_instance_storage_type"); !ok || storageType.(string) == "local_ssd" {
-		action := "CheckCreateDdrDBInstance"
-		request := map[string]interface{}{
-			"RegionId":          client.RegionId,
-			"Engine":            Trim(d.Get("engine").(string)),
-			"EngineVersion":     Trim(d.Get("engine_version").(string)),
-			"DBInstanceNetType": Intranet,
-			"DBInstanceClass":   Trim(d.Get("instance_type").(string)),
-			"DBInstanceStorage": d.Get("instance_storage"),
-			"SourceIp":          client.SourceIp,
-		}
-		restoreType := d.Get("restore_type").(string)
-		if restoreType == "BackupSet" {
-			request["RestoreType"] = "0"
-			if v, ok := d.GetOk("backup_set_id"); ok && v.(string) != "" {
-				request["BackupSetId"] = v
-			}
-		}
-		if restoreType == "BackupTime" {
-			request["RestoreType"] = "1"
-			if v, ok := d.GetOk("restore_time"); ok && v.(string) != "" {
-				request["RestoreTime"] = v
-			}
-			if v, ok := d.GetOk("source_region"); ok && v.(string) != "" {
-				request["SourceRegion"] = v
-			}
-			if v, ok := d.GetOk("source_db_instance_name"); ok && v.(string) != "" {
-				request["SourceDBInstanceName"] = v
-			}
-		}
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-			response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
-			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return resource.RetryableError(err)
-				}
-				return resource.NonRetryableError(err)
-			}
-			return nil
-		})
-
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-		}
-		addDebug(action, response, request)
+	action := "CheckCreateDdrDBInstance"
+	request := map[string]interface{}{
+		"RegionId":          client.RegionId,
+		"Engine":            Trim(d.Get("engine").(string)),
+		"EngineVersion":     Trim(d.Get("engine_version").(string)),
+		"DBInstanceNetType": Intranet,
+		"DBInstanceClass":   Trim(d.Get("instance_type").(string)),
+		"DBInstanceStorage": d.Get("instance_storage"),
+		"SourceIp":          client.SourceIp,
 	}
-	action := "CreateDdrInstance"
-	request, err := buildRdsDdrDBInstanceRequest(d, meta)
+	restoreType := d.Get("restore_type").(string)
+	if restoreType == "BackupSet" {
+		request["RestoreType"] = "0"
+		if v, ok := d.GetOk("backup_set_id"); ok && v.(string) != "" {
+			request["BackupSetId"] = v
+		}
+	}
+	if restoreType == "BackupTime" {
+		request["RestoreType"] = "1"
+		if v, ok := d.GetOk("restore_time"); ok && v.(string) != "" {
+			request["RestoreTime"] = v
+		}
+		if v, ok := d.GetOk("source_region"); ok && v.(string) != "" {
+			request["SourceRegion"] = v
+		}
+		if v, ok := d.GetOk("source_db_instance_name"); ok && v.(string) != "" {
+			request["SourceDBInstanceName"] = v
+		}
+	}
+	var response map[string]interface{}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
+		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+	addDebug(action, response, request)
+	action = "CreateDdrInstance"
+	request, err = buildRdsDdrDBInstanceRequest(d, meta)
 	if err != nil {
 		return WrapError(err)
 	}

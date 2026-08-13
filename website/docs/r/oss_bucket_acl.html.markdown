@@ -19,7 +19,7 @@ For information about OSS Bucket Acl and how to use it, see [What is Bucket Acl]
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_oss_bucket_acl&exampleId=b207ac59-e66f-cec7-2876-44fb747aaa60207d4d1a&activeTab=example&spm=docs.r.oss_bucket_acl.0.b207ac59e6&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_oss_bucket_acl&exampleId=c03819bd-4f62-ea6a-f9be-631dffb63da23ea61b1c&activeTab=example&spm=docs.r.oss_bucket_acl.0.c03819bd4f&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
@@ -41,13 +41,6 @@ resource "random_integer" "default" {
 resource "alicloud_oss_bucket" "CreateBucket" {
   storage_class = "Standard"
   bucket        = "${var.name}-${random_integer.default.result}"
-  lifecycle {
-    # When you use `alicloud_oss_bucket_acl`, you must add `ignore_changes` for the `acl` attribute
-    # on `alicloud_oss_bucket` to avoid unexpected diffs caused by both resources managing the same configuration.
-    ignore_changes = [
-      acl,
-    ]
-  }
 }
 
 resource "alicloud_oss_bucket_acl" "default" {

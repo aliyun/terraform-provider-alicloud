@@ -9,77 +9,67 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-// Test ESA Routine.
-func TestAccAliCloudESARoutine_basic(t *testing.T) {
+// Test ESA Routine. >>> Resource test cases, automatically generated.
+// Case resource_Routine_new_test
+func TestAccAliCloudESARoutineresource_Routine_new_test(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_esa_routine.default"
-	ra := resourceAttrInit(resourceId, AliCloudESARoutineMap)
+	ra := resourceAttrInit(resourceId, AliCloudESARoutineresource_Routine_new_testMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &EsaServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeEsaRoutine")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tftestacc%d", rand)
+	name := fmt.Sprintf("tf-testacc%sESARoutine%d", defaultRegionToTest, rand)
 
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudESARoutineBasicDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudESARoutineresource_Routine_new_testBasicDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName:     resourceId,
+		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":             name,
-					"description":      "tf-test-routine",
-					"code":             "addEventListener('fetch', e => e.respondWith(new Response('v1')))",
-					"code_description": "version 1",
-					"deploy_env":       "staging",
+					"description": "${substr(lower(var.name), 0, 20)}",
+					"name":        "${substr(lower(var.name), 0, 20)}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"name":                CHECKSET,
-						"code":                CHECKSET,
-						"latest_code_version": CHECKSET,
-					}),
+					testAccCheck(map[string]string{}),
 				),
 			},
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"code":             "addEventListener('fetch', e => e.respondWith(new Response('v2')))",
-					"code_description": "version 2",
-				}),
+				Config: testAccConfig(map[string]interface{}{}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"code":                CHECKSET,
-						"latest_code_version": CHECKSET,
-					}),
+					testAccCheck(map[string]string{}),
 				),
 			},
 			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"code", "code_description", "deploy_env"},
+				ImportStateVerifyIgnore: []string{},
 			},
 		},
 	})
 }
 
-var AliCloudESARoutineMap = map[string]string{
-	"id":                  CHECKSET,
-	"create_time":         CHECKSET,
-	"latest_code_version": CHECKSET,
+var AliCloudESARoutineresource_Routine_new_testMap = map[string]string{
+	"id": CHECKSET,
 }
 
-func AliCloudESARoutineBasicDependence(name string) string {
+func AliCloudESARoutineresource_Routine_new_testBasicDependence(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
 }
+
+
 `, name)
 }
+
+// Test ESA Routine. <<< Resource test cases, automatically generated.

@@ -22,10 +22,6 @@ func resourceAlicloudEssAlbServerGroupAttachment() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(20 * time.Minute),
-			Delete: schema.DefaultTimeout(20 * time.Minute),
-		},
 		Schema: map[string]*schema.Schema{
 			"scaling_group_id": {
 				Type:     schema.TypeString,
@@ -72,16 +68,16 @@ func resourceAliyunEssAlbServerGroupAttachmentCreate(d *schema.ResourceData, met
 		Weight:           strconv.Itoa(formatInt(d.Get("weight"))),
 	})
 	request.AlbServerGroup = &attachScalingGroupAlbServerGroups
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := incrementalWait(1*time.Second, 2*time.Second)
 
 	var raw interface{}
 	var err error
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err = client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 			return essClient.AttachAlbServerGroups(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"IncorrectScalingGroupStatus", "InvalidOperation.Conflict"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"IncorrectScalingGroupStatus"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -151,7 +147,6 @@ func resourceAliyunEssAlbServerGroupAttachmentDelete(d *schema.ResourceData, met
 		Port:             port,
 	})
 	request.AlbServerGroup = &detachScalingGroupAlbServerGroups
-	wait := incrementalWait(3*time.Second, 5*time.Second)
 
 	activityId := ""
 	err := resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
@@ -159,8 +154,7 @@ func resourceAliyunEssAlbServerGroupAttachmentDelete(d *schema.ResourceData, met
 			return essClient.DetachAlbServerGroups(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"IncorrectScalingGroupStatus", "InvalidOperation.Conflict"}) {
-				wait()
+			if IsExpectedErrors(err, []string{"IncorrectScalingGroupStatus"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)

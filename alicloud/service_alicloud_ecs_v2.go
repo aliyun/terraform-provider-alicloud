@@ -172,10 +172,6 @@ func (s *EcsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 // DescribeEcsImage <<< Encapsulated get interface for Ecs Image.
 
 func (s *EcsServiceV2) DescribeEcsImage(id string) (object map[string]interface{}, err error) {
-	return s.describeEcsImage(id, "ALL")
-}
-
-func (s *EcsServiceV2) describeEcsImage(id, status string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -185,9 +181,6 @@ func (s *EcsServiceV2) describeEcsImage(id, status string) (object map[string]in
 	query = make(map[string]interface{})
 	query["ImageId"] = id
 	query["RegionId"] = client.RegionId
-	if status != "" {
-		query["Status"] = status
-	}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {

@@ -193,13 +193,7 @@ func resourceAliCloudOosSecretParameterRead(d *schema.ResourceData, meta interfa
 	}
 
 	tagsMaps, _ := jsonpath.Get("$.TagResources.TagResource", objectRaw)
-	tagResources := make([]interface{}, 0)
-	for _, tagResource := range convertToInterfaceArray(tagsMaps) {
-		if tagResourceMap, ok := tagResource.(map[string]interface{}); ok && fmt.Sprint(tagResourceMap["ResourceId"]) == d.Id() {
-			tagResources = append(tagResources, tagResource)
-		}
-	}
-	d.Set("tags", tagsToMap(tagResources))
+	d.Set("tags", tagsToMap(tagsMaps))
 
 	d.Set("secret_parameter_name", d.Id())
 
@@ -260,17 +254,6 @@ func resourceAliCloudOosSecretParameterUpdate(d *schema.ResourceData, meta inter
 		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-		}
-	}
-
-	if _, ok := request["Tags"]; ok {
-		oosServiceV2 := OosServiceV2{client}
-		expectedTags := make(map[string]interface{})
-		if v, ok := d.Get("tags").(map[string]interface{}); ok {
-			expectedTags = v
-		}
-		if err := oosServiceV2.WaitForOosSecretParameterTagsConverged(d.Id(), expectedTags, d.Timeout(schema.TimeoutUpdate)); err != nil {
-			return WrapError(err)
 		}
 	}
 

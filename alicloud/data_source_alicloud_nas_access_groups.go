@@ -45,7 +45,7 @@ func dataSourceAlicloudNasAccessGroups() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      "standard",
-				ValidateFunc: validation.StringInSlice([]string{"extreme", "standard", "cpfs"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"extreme", "standard"}, false),
 			},
 			"useutc_date_time": {
 				Type:     schema.TypeBool,

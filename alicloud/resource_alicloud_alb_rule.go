@@ -619,7 +619,7 @@ func resourceAliCloudAlbRuleCreate(d *schema.ResourceData, meta interface{}) err
 		removeHeaderConfigMap := map[string]interface{}{}
 		for _, removeHeaderConfig := range ruleActionsArg["remove_header_config"].(*schema.Set).List() {
 			removeHeaderConfigArg := removeHeaderConfig.(map[string]interface{})
-			removeHeaderConfigMap["Key"] = removeHeaderConfigArg["key"]
+			insertHeaderConfigMap["Key"] = removeHeaderConfigArg["key"]
 			ruleActionsMap["RemoveHeaderConfig"] = removeHeaderConfigMap
 		}
 

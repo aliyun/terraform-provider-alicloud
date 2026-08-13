@@ -155,16 +155,6 @@ func resourceAlicloudDtsSynchronizationJob() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
-			"src_primary_vswitch_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
-			"src_secondary_vswitch_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
 			"source_endpoint_ssl": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -239,16 +229,6 @@ func resourceAlicloudDtsSynchronizationJob() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"0", "1", "3"}, false),
-			},
-			"dest_primary_vswitch_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
-			"dest_secondary_vswitch_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
 			},
 			"dts_bis_label": {
 				Type:     schema.TypeString,
@@ -406,18 +386,6 @@ func resourceAlicloudDtsSynchronizationJobCreate(d *schema.ResourceData, meta in
 	}
 	if v, ok := d.GetOk("source_endpoint_vswitch_id"); ok {
 		request["SourceEndpointVSwitchID"] = v
-	}
-	if v, ok := d.GetOk("src_primary_vswitch_id"); ok {
-		request["SrcPrimaryVswId"] = v
-	}
-	if v, ok := d.GetOk("src_secondary_vswitch_id"); ok {
-		request["SrcSecondaryVswId"] = v
-	}
-	if v, ok := d.GetOk("dest_primary_vswitch_id"); ok {
-		request["DestPrimaryVswId"] = v
-	}
-	if v, ok := d.GetOk("dest_secondary_vswitch_id"); ok {
-		request["DestSecondaryVswId"] = v
 	}
 	if v, ok := d.GetOk("destination_endpoint_owner_id"); ok {
 		request["DestinationEndpointOwnerID"] = v

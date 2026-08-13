@@ -187,9 +187,9 @@ func TestAccAliCloudConfigAggregateConfigRule_basic(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
 		},
 
-		IDRefreshName:     resourceId,
+		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -197,40 +197,36 @@ func TestAccAliCloudConfigAggregateConfigRule_basic(t *testing.T) {
 					"aggregator_id":              "${alicloud_config_aggregator.default.id}",
 					"config_rule_trigger_types":  "ConfigurationItemChangeNotification",
 					"source_owner":               "ALIYUN",
-					"source_identifier":          "required-tags",
+					"source_identifier":          "ecs-cpu-min-count-limit",
 					"risk_level":                 `1`,
-					"resource_types_scope":       []string{"ACS::ECS::Instance", "ACS::ECS::Disk"},
+					"resource_types_scope":       []string{"ACS::ECS::Instance"},
 					"input_parameters": map[string]string{
-						"tag1Key":   "terraform",
-						"tag1Value": "terraform",
+						"cpuCount": "4",
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"aggregate_config_rule_name": name,
 						"risk_level":                 "1",
-						"resource_types_scope.#":     "2",
+						"resource_types_scope.#":     "1",
 						"config_rule_trigger_types":  "ConfigurationItemChangeNotification",
 						"source_owner":               "ALIYUN",
-						"source_identifier":          "required-tags",
-						"input_parameters.%":         "2",
-						"input_parameters.tag1Key":   "terraform",
-						"input_parameters.tag1Value": "terraform",
+						"source_identifier":          "ecs-cpu-min-count-limit",
+						"input_parameters.%":         "1",
+						"input_parameters.cpuCount":  "4",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"input_parameters": map[string]string{
-						"tag1Key":   "terraform",
-						"tag1Value": "update",
+						"cpuCount": "3",
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"input_parameters.%":         "2",
-						"input_parameters.tag1Key":   "terraform",
-						"input_parameters.tag1Value": "update",
+						"input_parameters.%":        "1",
+						"input_parameters.cpuCount": "3",
 					}),
 				),
 			},
@@ -307,8 +303,7 @@ func TestAccAliCloudConfigAggregateConfigRule_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"input_parameters": map[string]string{
-						"tag1Key":   "terraform",
-						"tag1Value": "terraform",
+						"cpuCount": "4",
 					},
 					"description":                name,
 					"risk_level":                 `1`,
@@ -317,41 +312,28 @@ func TestAccAliCloudConfigAggregateConfigRule_basic(t *testing.T) {
 					"resource_group_ids_scope":   "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
 					"tag_key_scope":              "tftest",
 					"tag_value_scope":            "tfTest 123",
-					"resource_types_scope":       []string{"ACS::ECS::Instance", "ACS::ECS::Disk"},
-					"exclude_tags_scope": []map[string]interface{}{
-						{"tag_key": "tftest", "tag_value": "tfTest 123"},
-					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"input_parameters.%":             "2",
-						"input_parameters.tag1Key":       "terraform",
-						"input_parameters.tag1Value":     "terraform",
-						"description":                    name,
-						"risk_level":                     "1",
-						"exclude_resource_ids_scope":     CHECKSET,
-						"region_ids_scope":               "cn-shanghai",
-						"resource_group_ids_scope":       CHECKSET,
-						"tag_key_scope":                  "tftest",
-						"tag_value_scope":                "tfTest 123",
-						"resource_types_scope.#":         "2",
-						"exclude_tags_scope.#":           "1",
-						"exclude_tags_scope.0.tag_key":   "tftest",
-						"exclude_tags_scope.0.tag_value": "tfTest 123",
+						"input_parameters.%":         "1",
+						"input_parameters.cpuCount":  "4",
+						"description":                name,
+						"risk_level":                 "1",
+						"exclude_resource_ids_scope": CHECKSET,
+						"region_ids_scope":           "cn-shanghai",
+						"resource_group_ids_scope":   CHECKSET,
+						"tag_key_scope":              "tftest",
+						"tag_value_scope":            "tfTest 123",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"config_rule_trigger_types":   "ConfigurationItemChangeNotification,ScheduledNotification",
-					"maximum_execution_frequency": "Twelve_Hours",
-					"resource_types_scope":        []string{"ACS::ECS::Instance"},
+					"config_rule_trigger_types": "ConfigurationItemChangeNotification,ScheduledNotification",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"config_rule_trigger_types":   "ConfigurationItemChangeNotification,ScheduledNotification",
-						"maximum_execution_frequency": "Twelve_Hours",
-						"resource_types_scope.#":      "1",
+						"config_rule_trigger_types": "ConfigurationItemChangeNotification,ScheduledNotification",
 					}),
 				),
 			},
@@ -381,9 +363,9 @@ func TestAccAliCloudConfigAggregateConfigRule_status(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
 		},
-		IDRefreshName:     resourceId,
+		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -545,9 +527,9 @@ func SkipTestAccAliCloudConfigAggregateConfigRule_basic1(t *testing.T) {
 			testAccPreCheckEnterpriseAccountEnabled(t)
 		},
 
-		IDRefreshName:     resourceId,
+		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

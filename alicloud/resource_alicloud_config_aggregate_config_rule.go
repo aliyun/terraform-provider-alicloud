@@ -50,22 +50,6 @@ func resourceAliCloudConfigAggregateConfigRule() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"exclude_tags_scope": {
-				Type:     schema.TypeList,
-				Optional: true,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"tag_key": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"tag_value": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-					},
-				},
-			},
 			// lintignore: S006
 			"input_parameters": {
 				Type:     schema.TypeMap,
@@ -146,13 +130,6 @@ func resourceAliCloudConfigAggregateConfigRuleCreate(d *schema.ResourceData, met
 	if v, ok := d.GetOk("exclude_resource_ids_scope"); ok {
 		request["ExcludeResourceIdsScope"] = v
 	}
-	if v, ok := d.GetOk("exclude_tags_scope"); ok {
-		for i, dataLoop := range v.([]interface{}) {
-			dataLoopTmp := dataLoop.(map[string]interface{})
-			request[fmt.Sprintf("ExcludeTagsScope.%d.TagKey", i+1)] = dataLoopTmp["tag_key"]
-			request[fmt.Sprintf("ExcludeTagsScope.%d.TagValue", i+1)] = dataLoopTmp["tag_value"]
-		}
-	}
 	if v, ok := d.GetOk("input_parameters"); ok {
 		if v, err := convertMaptoJsonString(v.(map[string]interface{})); err == nil {
 			request["InputParameters"] = v
@@ -224,19 +201,6 @@ func resourceAliCloudConfigAggregateConfigRuleRead(d *schema.ResourceData, meta 
 	d.Set("config_rule_trigger_types", object["ConfigRuleTriggerTypes"])
 	d.Set("description", object["Description"])
 	d.Set("exclude_resource_ids_scope", object["ExcludeResourceIdsScope"])
-	if v, ok := object["ExcludeTagsScope"].([]interface{}); ok {
-		excludeTagsScopeList := make([]map[string]interface{}, 0)
-		for _, val := range v {
-			item := val.(map[string]interface{})
-			excludeTagsScopeList = append(excludeTagsScopeList, map[string]interface{}{
-				"tag_key":   item["TagKey"],
-				"tag_value": item["TagValue"],
-			})
-		}
-		if err := d.Set("exclude_tags_scope", excludeTagsScopeList); err != nil {
-			return WrapError(err)
-		}
-	}
 	d.Set("input_parameters", object["InputParameters"])
 	d.Set("maximum_execution_frequency", object["MaximumExecutionFrequency"])
 	d.Set("region_ids_scope", object["RegionIdsScope"])
@@ -285,14 +249,6 @@ func resourceAliCloudConfigAggregateConfigRuleUpdate(d *schema.ResourceData, met
 	if !d.IsNewResource() && d.HasChange("exclude_resource_ids_scope") {
 		update = true
 		request["ExcludeResourceIdsScope"] = d.Get("exclude_resource_ids_scope")
-	}
-	if !d.IsNewResource() && d.HasChange("exclude_tags_scope") {
-		update = true
-		for i, dataLoop := range d.Get("exclude_tags_scope").([]interface{}) {
-			dataLoopTmp := dataLoop.(map[string]interface{})
-			request[fmt.Sprintf("ExcludeTagsScope.%d.TagKey", i+1)] = dataLoopTmp["tag_key"]
-			request[fmt.Sprintf("ExcludeTagsScope.%d.TagValue", i+1)] = dataLoopTmp["tag_value"]
-		}
 	}
 	if !d.IsNewResource() && d.HasChange("input_parameters") {
 		update = true

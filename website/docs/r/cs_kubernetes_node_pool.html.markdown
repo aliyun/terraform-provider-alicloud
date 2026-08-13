@@ -51,7 +51,7 @@ For information about Container Service for Kubernetes (ACK) Nodepool and how to
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_cs_kubernetes_node_pool&exampleId=66279bbd-218c-c7d1-b075-cf3d0013a3536bfa116b&activeTab=example&spm=docs.r.cs_kubernetes_node_pool.0.66279bbd21&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_cs_kubernetes_node_pool&exampleId=b9abdd6c-849b-5331-23d3-42c7d815404ab1bc1d14&activeTab=example&spm=docs.r.cs_kubernetes_node_pool.0.b9abdd6c84&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
@@ -298,23 +298,6 @@ resource "alicloud_cs_kubernetes_node_pool" "customized_kubelet" {
     max_pods                = 100
     read_only_port          = 0
     allowed_unsafe_sysctls  = ["net.ipv4.route.min_pmtu"]
-  }
-
-  # containerd configuration parameters
-  containerd_config {
-    max_concurrent_downloads    = 10
-    ignore_image_defined_volume = "true"
-    limit_core                  = "10"
-    limit_no_file               = "1024"
-    limit_mem_lock              = "65536"
-
-    # Each string follows the format: "registry=mirror1[&override_path],mirror2[&override_path],..."
-    registry_mirrors = [
-      "docker.io=https://registry.cn-hangzhou.aliyuncs.com,https://mirror2.example.com&override_path",
-      "gcr.io=https://gcr-mirror.example.com&override_path"
-    ]
-
-    insecure_registries = ["registry.example.com", "192.168.1.1:5000"]
   }
 
   # rolling policy: works when updating
@@ -728,9 +711,6 @@ The following arguments are supported:
 * `internet_max_bandwidth_out` - (Optional, Int) The maximum bandwidth of the public IP address of the node. The unit is Mbps(Mega bit per second). The value range is:\[1,100\]
 * `key_name` - (Optional) The name of the key pair. When the node pool is a managed node pool, only `key_name` is supported.
 * `kubelet_configuration` - (Optional, Set) Kubelet configuration parameters for worker nodes. See [`kubelet_configuration`](#kubelet_configuration) below. More information in [Kubelet Configuration](https://kubernetes.io/docs/reference/config-api/kubelet-config.v1beta1/). See [`kubelet_configuration`](#kubelet_configuration) below.
-* `containerd_config` - (Optional, Set, Available since v1.288.0) Containerd configuration parameters for worker nodes.
-
-  -> **NOTE:** Setting `containerd_config` at creation time takes effect through an extra node_config update call issued after the node pool has been created. Removing the whole `containerd_config` block clears all custom containerd configuration on the cloud side (the API uses full-replacement semantics); an empty block is equivalent to omitting the parameter. See [`containerd_config`](#containerd_config) below.
 * `labels` - (Optional, List) A List of Kubernetes labels to assign to the nodes . Only labels that are applied with the ACK API are managed by this argument. Detailed below. More information in [Labels](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/). See [`labels`](#labels) below.
 * `login_as_non_root` - (Optional, ForceNew) Whether the ECS instance is logged on as a ecs-user user. Valid value: `true` and `false`.
 * `management` - (Optional, Computed, Set) Managed node pool configuration. See [`management`](#management) below.
@@ -845,16 +825,16 @@ The auto_mode supports the following:
 -> **NOTE:** When `auto_mode.enable` is set to `true`, the system will automatically manage the node pool with optimized default configurations. **All parameters except the following can be specified or modified:**
 
 **Parameters That Can Be Specified or Modified:**
-- `scaling_config.max_size`: default `50`, can be specified during creation and modified afterward
-- `scaling_config.min_size`: default `0`, can be specified during creation and modified afterward
-- `instance_types`: can be specified during creation and modified afterward. **Note:** `instance_types` and `instance_patterns` are mutually exclusive - you can only specify one of them.
-- `instance_patterns`: has default instance specification configuration (4-16 CPU cores, 8-32GB memory, etc.), can be specified during creation and modified afterward. **Note:** `instance_patterns` and `instance_types` are mutually exclusive - you can only specify one of them.
-- `data_disks`: can be specified during creation and modified afterward. If not specified during creation, default data disk configuration will be used (120GB size, supports cloud_auto, cloud_essd, cloud_ssd types). When specified, can configure `size`, `category`, `categories`, `performance_level`, `provisioned_iops`, `bursting_enabled`
-- `resource_group_id`: can be specified during creation and modified afterward
-- `vswitch_ids`: can be modified during creation and modified afterward
-- `tags`: can be modified during creation and modified afterward
-- `labels`: can be specified during creation and modified afterward (in Node Kubernetes Config)
-- `taints`: can be specified during creation and modified afterward (in Node Kubernetes Config)
+  - `scaling_config.max_size`: default `50`, can be specified during creation and modified afterward
+  - `scaling_config.min_size`: default `0`, can be specified during creation and modified afterward
+  - `instance_types`: can be specified during creation and modified afterward. **Note:** `instance_types` and `instance_patterns` are mutually exclusive - you can only specify one of them.
+  - `instance_patterns`: has default instance specification configuration (4-16 CPU cores, 8-32GB memory, etc.), can be specified during creation and modified afterward. **Note:** `instance_patterns` and `instance_types` are mutually exclusive - you can only specify one of them.
+  - `data_disks`: can be specified during creation and modified afterward. If not specified during creation, default data disk configuration will be used (120GB size, supports cloud_auto, cloud_essd, cloud_ssd types). When specified, can configure `size`, `category`, `categories`, `performance_level`, `provisioned_iops`, `bursting_enabled`
+  - `resource_group_id`: can be specified during creation and modified afterward
+  - `vswitch_ids`: can be modified during creation and modified afterward
+  - `tags`: can be modified during creation and modified afterward
+  - `labels`: can be specified during creation and modified afterward (in Node Kubernetes Config)
+  - `taints`: can be specified during creation and modified afterward (in Node Kubernetes Config)
 
 **All Other Parameters:**
 
@@ -982,21 +962,6 @@ The kubelet_configuration-reserved_memory supports the following:
 The kubelet_configuration-tracing supports the following:
 * `endpoint` - (Optional, Available since v1.242.0) The endpoint of the collector.
 * `sampling_rate_per_million` - (Optional) Number of samples to be collected per million span.
-
-### `containerd_config`
-
--> **NOTE:** The CreateNodePool API does not support `containerd_config`. When `containerd_config` is set at creation time, it takes effect through an extra node_config update call issued after the node pool has been created.
-
--> **NOTE:** The API uses full-replacement semantics for `containerd_config`: removing the whole `containerd_config` block clears all custom containerd configuration on the cloud side, and an empty block is equivalent to omitting the parameter.
-
-The containerd_config supports the following:
-* `max_concurrent_downloads` - (Optional, Int) The maximum number of concurrent downloads for container images. Valid values: `1` to `20`.
-* `ignore_image_defined_volume` - (Optional, String) Whether to ignore volumes defined in the image. Valid values: lowercase `"true"`, `"false"` or `""`. If not set (or set to `""`), this option is not written to the node containerd configuration. Explicitly setting it (including `"false"`) writes the key to the containerd configuration. Removing this field from the configuration removes the key from the cloud-side containerd configuration.
-* `limit_core` - (Optional, String) The coredump size limit. Valid values: `""` or a canonical decimal integer string from `"0"` to `"9007199254740991"` (e.g. `"0"`, `"1024"`; forms like `"+10"` or `"010"` are not accepted). If not set (or set to `""`), this option is not written to the node containerd configuration. Explicitly setting it (including `"0"`) writes the corresponding value. Removing this field from the configuration removes the key from the cloud-side containerd configuration.
-* `limit_no_file` - (Optional, String) The maximum number of file handles. Valid values: `""` or a canonical decimal integer string from `"1024"` to `"9007199254740991"` (forms like `"+2048"` or `"02048"` are not accepted). If not set (or set to `""`), this option is not written to the node containerd configuration. Removing this field from the configuration removes the key from the cloud-side containerd configuration.
-* `limit_mem_lock` - (Optional, String) The maximum locked memory limit. Valid values: `""` or a canonical decimal integer string from `"65536"` to `"9007199254740991"` (forms like `"+65536"` or `"065536"` are not accepted). If not set (or set to `""`), this option is not written to the node containerd configuration. Removing this field from the configuration removes the key from the cloud-side containerd configuration.
-* `registry_mirrors` - (Optional, List of String) Configure mirror sites for container image registries to accelerate image pulls. Each string follows the format `registry=mirror1[&override_path],mirror2[&override_path],...`. The part before `=` is the container image registry, which must be a domain name or IP address without protocol prefix (optionally including a port number), e.g., `docker.io`, `192.168.1.1:5000`. The part after `=` is one or more mirror sites separated by commas; each mirror must start with `http://` or `https://` followed by an IP address or domain name (optionally including a port number), e.g., `https://registry.cn-hangzhou.aliyuncs.com`. Append `&override_path` to a mirror to enable path override for that mirror.
-* `insecure_registries` - (Optional, List) Allow the container runtime to skip TLS certificate verification when pulling images. Typically used in test environments with self-signed certificate registries. The format is domain name or IP address without protocol prefix (e.g., `registry.example.com`, `192.168.1.1:5000`).
 
 ### `labels`
 

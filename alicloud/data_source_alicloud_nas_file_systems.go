@@ -30,11 +30,6 @@ func dataSourceAlicloudFileSystems() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
 			},
-			"file_system_type": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"standard", "extreme", "cpfs", "cpfsse"}, false),
-			},
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -119,9 +114,6 @@ func dataSourceAlicloudFileSystemsRead(d *schema.ResourceData, meta interface{})
 	request["RegionId"] = client.Region
 	request["PageSize"] = PageSizeLarge
 	request["PageNumber"] = 1
-	if v, ok := d.GetOk("file_system_type"); ok {
-		request["FileSystemType"] = v
-	}
 
 	var objects []map[string]interface{}
 	idsMap := make(map[string]string)

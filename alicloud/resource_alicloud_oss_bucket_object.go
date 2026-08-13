@@ -285,15 +285,8 @@ func resourceAlicloudOssBucketObjectRead(d *schema.ResourceData, meta interface{
 	object, err := bucket.GetObjectDetailedMeta(d.Get("key").(string), options...)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"404 Not Found", "NoSuchKey"}) {
-			// The object was removed out-of-band (e.g. via the OSS console or
-			// CLI) and no longer exists. SetId("") asks Terraform to drop it
-			// from state; return nil so the SDK commits that update during
-			// refresh. A subsequent plan then reports "1 to add" and apply
-			// recreates the object. Returning an error here would discard the
-			// SetId("") change and abort the refresh/plan, leaving the
-			// resource stuck in state and blocking further automation.
 			d.SetId("")
-			return nil
+			return WrapError(Error("To get the Object: %#v but it is not exist in the specified bucket %s.", d.Get("key").(string), d.Get("bucket").(string)))
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetObjectDetailedMeta", AliyunOssGoSdk)
 	}

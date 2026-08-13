@@ -93,80 +93,7 @@ func testSweepDRDSInstances(region string) error {
 	return nil
 }
 
-func TestAccAliCloudDRDSInstance_Vpc(t *testing.T) {
-	var v *drds.DescribeDrdsInstanceResponse
-
-	resourceId := "alicloud_drds_instance.default"
-	ra := resourceAttrInit(resourceId, drdsInstancebasicMap)
-
-	serviceFunc := func() interface{} {
-		return &DrdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-
-	rac := resourceAttrCheckInit(rc, ra)
-
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandInt()
-	name := fmt.Sprintf("tf-testacc%sDrdsdatabase-%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDRDSInstanceConfigDependence)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.DrdsSupportedRegions)
-		},
-		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description":          "${var.name}",
-					"zone_id":              "${data.alicloud_vswitches.default.vswitches.0.zone_id}",
-					"instance_series":      "${var.instance_series}",
-					"instance_charge_type": "PostPaid",
-					"vswitch_id":           "${data.alicloud_vswitches.default.vswitches.0.id}",
-					"specification":        "drds.sn1.4c8g.8C16G",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description":   name,
-						"mysql_version": "5",
-					}),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: false,
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description": "${var.name}_u",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description": name + "_u",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description": "${var.name}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description": name,
-					}),
-				),
-			},
-		},
-	})
-}
-
-func TestAccAliCloudDRDSInstance_Multi(t *testing.T) {
+func TestAccAlicloudDRDSInstance_Multi(t *testing.T) {
 	var v *drds.DescribeDrdsInstanceResponse
 
 	resourceId := "alicloud_drds_instance.default.2"
@@ -216,7 +143,7 @@ func TestAccAliCloudDRDSInstance_Multi(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudDRDSInstance_VpcId(t *testing.T) {
+func TestAccAlicloudDRDSInstance_VpcId(t *testing.T) {
 	var v *drds.DescribeDrdsInstanceResponse
 
 	resourceId := "alicloud_drds_instance.default"
@@ -291,7 +218,7 @@ func TestAccAliCloudDRDSInstance_VpcId(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudDRDSInstance_MySQLVersion(t *testing.T) {
+func TestAccAlicloudDRDSInstance_MySQLVersion(t *testing.T) {
 	var v *drds.DescribeDrdsInstanceResponse
 
 	resourceId := "alicloud_drds_instance.default"
@@ -370,39 +297,4 @@ var drdsInstancebasicMap = map[string]string{
 	"specification":        "drds.sn2.4c16g.8c32g",
 	"connection_string":    CHECKSET,
 	"port":                 CHECKSET,
-}
-
-// TestUnitAliCloudDRDSInstanceFlattenVips guards the DRDS instance Read against a
-// panic when the DescribeDrdsInstance response returns an empty VIP list. A valid
-// instance can transiently report no VIPs, and indexing Vip[0] directly used to
-// crash the provider. The empty case must return zero values; the populated case
-// must surface the first VIP's VpcId plus the intranet connection string/port.
-func TestUnitAliCloudDRDSInstanceFlattenVips(t *testing.T) {
-	// Empty VIP list: must not panic and must yield zero values.
-	vpcId, connectionString, port := flattenDrdsInstanceVips([]drds.Vip{})
-	if vpcId != "" || connectionString != "" || port != "" {
-		t.Fatalf("empty VIP list should yield zero values, got vpcId=%q connectionString=%q port=%q", vpcId, connectionString, port)
-	}
-
-	// Nil VIP list: same guarantee.
-	vpcId, connectionString, port = flattenDrdsInstanceVips(nil)
-	if vpcId != "" || connectionString != "" || port != "" {
-		t.Fatalf("nil VIP list should yield zero values, got vpcId=%q connectionString=%q port=%q", vpcId, connectionString, port)
-	}
-
-	// Populated VIP list: vpc_id from the first VIP, connection_string/port from the intranet VIP.
-	vips := []drds.Vip{
-		{Type: "internet", VpcId: "vpc-external", Dns: "public.example.com", Port: "3306"},
-		{Type: "intranet", VpcId: "vpc-internal", Dns: "intranet.example.com", Port: "3307"},
-	}
-	vpcId, connectionString, port = flattenDrdsInstanceVips(vips)
-	if vpcId != "vpc-external" {
-		t.Fatalf("vpcId should come from the first VIP, got %q", vpcId)
-	}
-	if connectionString != "intranet.example.com" {
-		t.Fatalf("connectionString should come from the intranet VIP, got %q", connectionString)
-	}
-	if port != "3307" {
-		t.Fatalf("port should come from the intranet VIP, got %q", port)
-	}
 }

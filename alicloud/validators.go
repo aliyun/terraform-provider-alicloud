@@ -376,65 +376,6 @@ func IntBetween(min, max int) schema.SchemaValidateFunc {
 	}
 }
 
-// ValidateNullableIntBetween returns a SchemaValidateFunc for a nullable int
-// field declared as TypeString: it accepts "" (meaning "not set") or a
-// canonical decimal integer string (e.g. "10") that parses to an int64
-// between min and max (inclusive). Non-canonical forms like "+10", "010"
-// or "-0" are always rejected because they would be normalized by Read and
-// cause a permanent diff. A range violation is downgraded to a warning when
-// skipResourceSchemaValidation() is true; format errors are never downgraded.
-func ValidateNullableIntBetween(min, max int64) schema.SchemaValidateFunc {
-	return func(i interface{}, k string) (s []string, es []error) {
-		value, ok := i.(string)
-		if !ok {
-			es = append(es, fmt.Errorf("expected type of %s to be string", k))
-			return
-		}
-		if value == "" {
-			return
-		}
-		v, err := strconv.ParseInt(value, 10, 64)
-		if err != nil {
-			es = append(es, fmt.Errorf("expected %s to be empty or an integer string, got %s", k, value))
-			return
-		}
-		if strconv.FormatInt(v, 10) != value {
-			es = append(es, fmt.Errorf("expected %s to be a canonical decimal integer string (e.g. \"10\"), got %s", k, value))
-			return
-		}
-		if v < min || v > max {
-			if skipResourceSchemaValidation() {
-				s = append(s, fmt.Sprintf("expected %s to be in the range (%d - %d), got %d", k, min, max, v))
-			} else {
-				es = append(es, fmt.Errorf("expected %s to be in the range (%d - %d), got %d %s", k, min, max, v, skipResourceSchemaValidationWarning))
-			}
-			return
-		}
-		return
-	}
-}
-
-// ValidateNullableBool is a SchemaValidateFunc for a nullable bool field
-// declared as TypeString: it accepts "" (meaning "not set"), or the lowercase
-// "true" / "false" (case sensitive). An invalid value is downgraded to a
-// warning when skipResourceSchemaValidation() is true; a non-string type is
-// always a hard error.
-func ValidateNullableBool(i interface{}, k string) (s []string, es []error) {
-	value, ok := i.(string)
-	if !ok {
-		es = append(es, fmt.Errorf("expected type of %s to be string", k))
-		return
-	}
-	if value != "" && value != "true" && value != "false" {
-		if skipResourceSchemaValidation() {
-			s = append(s, fmt.Sprintf("expected %s to be an empty string or lowercase \"true\"/\"false\", got %s", k, value))
-		} else {
-			es = append(es, fmt.Errorf("expected %s to be an empty string or lowercase \"true\"/\"false\", got %s %s", k, value, skipResourceSchemaValidationWarning))
-		}
-	}
-	return
-}
-
 // IntAtLeast returns a SchemaValidateFunc which tests if the provided value
 // is of type int and is at least min (inclusive)
 func IntAtLeast(min int) schema.SchemaValidateFunc {
