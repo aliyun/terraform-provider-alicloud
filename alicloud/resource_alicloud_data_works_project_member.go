@@ -298,7 +298,9 @@ func resourceAliCloudDataWorksProjectMemberDelete(d *schema.ResourceData, meta i
 	addDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"100002001", "1101080166"}) || NotFoundError(err) {
+		// A member that does not exist any more leaves the deletion nothing to do, and 400010
+		// means the UserId no longer belongs to the tenant of the workspace.
+		if IsExpectedErrors(err, []string{"100002001", "1101080166", "400010"}) || NotFoundError(err) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)

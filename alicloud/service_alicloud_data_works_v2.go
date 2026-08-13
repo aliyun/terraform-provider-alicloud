@@ -200,7 +200,9 @@ func (s *DataWorksServiceV2) DescribeDataWorksProjectMember(id string) (object m
 	})
 	addDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"1101080166"}) {
+		// 400010 comes back with HTTP 403 once the queried UserId no longer belongs to the
+		// tenant of the workspace, which means the project member does not exist any more.
+		if IsExpectedErrors(err, []string{"1101080166", "400010"}) {
 			return object, WrapErrorf(NotFoundErr("ProjectMember", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
