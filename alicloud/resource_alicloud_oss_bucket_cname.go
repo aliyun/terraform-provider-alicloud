@@ -273,9 +273,18 @@ func resourceAliCloudOssBucketCnameUpdate(d *schema.ResourceData, meta interface
 		cname := make(map[string]interface{})
 		cname["Domain"] = d.Get("domain")
 		certificateConfiguration := make(map[string]interface{})
-		certificateConfiguration["PreviousCertId"] = d.Get("previous_cert_id")
-		certificateConfiguration["Force"] = d.Get("force")
-		certificateConfiguration["DeleteCertificate"] = d.Get("delete_certificate")
+		// OSS rejects a request carrying both DeleteCertificate and Force with
+		// MalformedXML regardless of the Force value, so the two are mutually
+		// exclusive. Force and PreviousCertId are also only meaningful when set:
+		// omitting them lets OSS apply its own default of not forcing.
+		if d.Get("delete_certificate").(bool) {
+			certificateConfiguration["DeleteCertificate"] = true
+		} else if d.Get("force").(bool) {
+			certificateConfiguration["Force"] = true
+		}
+		if v, ok := d.GetOk("previous_cert_id"); ok {
+			certificateConfiguration["PreviousCertId"] = v
+		}
 		certId1, _ := jsonpath.Get("$[0].cert_id", d.Get("certificate"))
 		if certId1 != nil && (d.HasChange("certificate.0.cert_id") || certId1 != "") {
 			certificateConfiguration["CertId"] = certId1

@@ -2817,10 +2817,14 @@ func (client *AliyunClient) Do(apiProductCode string, apiParams *openapi.Params,
 		response, err = openapiClient.Execute(apiParams, &openapi.OpenApiRequest{Query: query, Body: body, Headers: headers, HostMap: hostMap}, runtime)
 	}
 	if apiProductCode == "oss" && response != nil {
-		response, err = normalizeOssOpenAPIResponse(response)
-		if err != nil {
-			return response, err
+		// Normalizing only reshapes the response map, so it must not assign to err:
+		// doing so overwrites an API error reported by the call above with its own nil
+		// and silently turns a failed request into a successful one with empty data.
+		normalized, normalizeErr := normalizeOssOpenAPIResponse(response)
+		if normalizeErr != nil {
+			return nil, normalizeErr
 		}
+		response = normalized
 	}
 	if respBody, isExist := response["body"]; isExist && respBody != nil {
 		if v, ok := respBody.(map[string]interface{}); ok {
