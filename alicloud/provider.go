@@ -2271,37 +2271,58 @@ func providerConfigure(d *schema.ResourceData, p *schema.Provider) (interface{},
 		config.RamRoleSessionExpiration = (int)(expiredSeconds.(float64))
 	}
 
-	assumeRoleList := d.Get("assume_role").(*schema.Set).List()
-	if len(assumeRoleList) == 1 {
-		assumeRole := assumeRoleList[0].(map[string]interface{})
-		if assumeRole["role_arn"].(string) != "" {
-			config.RamRoleArn = assumeRole["role_arn"].(string)
-		}
-		if assumeRole["session_name"].(string) != "" {
-			config.RamRoleSessionName = assumeRole["session_name"].(string)
-		}
-		if config.RamRoleSessionName == "" {
-			config.RamRoleSessionName = "terraform"
-		}
-		config.RamRolePolicy = assumeRole["policy"].(string)
-		if assumeRole["session_expiration"].(int) == 0 {
-			if v := os.Getenv("ALICLOUD_ASSUME_ROLE_SESSION_EXPIRATION"); v != "" {
-				if expiredSeconds, err := strconv.Atoi(v); err == nil {
-					config.RamRoleSessionExpiration = expiredSeconds
+	// `assume_role` is declared as a TypeList so that multiple blocks are
+	// honored in declaration order to form a chained AssumeRole. A single
+	// block keeps the historical single-role semantics. Blocks with an empty
+	// `role_arn` (e.g. relying on an env default that is unset) are skipped.
+	assumeRoleList := d.Get("assume_role").([]interface{})
+	if len(assumeRoleList) > 0 {
+		chain := make([]*connectivity.AssumeRoleConfig, 0, len(assumeRoleList))
+		for _, raw := range assumeRoleList {
+			block := raw.(map[string]interface{})
+			roleArn := block["role_arn"].(string)
+			if roleArn == "" {
+				continue
+			}
+			sessionName := block["session_name"].(string)
+			if sessionName == "" {
+				sessionName = "terraform"
+			}
+			sessionExpiration := block["session_expiration"].(int)
+			if sessionExpiration == 0 {
+				if v := os.Getenv("ALICLOUD_ASSUME_ROLE_SESSION_EXPIRATION"); v != "" {
+					if expiredSeconds, err := strconv.Atoi(v); err == nil {
+						sessionExpiration = expiredSeconds
+					}
+				}
+				if sessionExpiration == 0 {
+					sessionExpiration = 3600
 				}
 			}
-			if config.RamRoleSessionExpiration == 0 {
-				config.RamRoleSessionExpiration = 3600
-			}
-		} else {
-			config.RamRoleSessionExpiration = assumeRole["session_expiration"].(int)
+			chain = append(chain, &connectivity.AssumeRoleConfig{
+				RoleArn:           roleArn,
+				RoleSessionName:   sessionName,
+				Policy:            block["policy"].(string),
+				ExternalId:        block["external_id"].(string),
+				SessionExpiration: sessionExpiration,
+			})
 		}
-		if v := assumeRole["external_id"].(string); v != "" {
-			config.RamRoleExternalId = v
+		if len(chain) > 0 {
+			config.AssumeRoleChain = chain
+			// Keep the scalar RamRole* fields pointing at the final assumed
+			// role so that downstream credential helpers and log lines that
+			// still rely on them reflect the role the provider actually acts
+			// as. The chained resolution itself is performed by the
+			// connectivity package via AssumeRoleChain.
+			last := chain[len(chain)-1]
+			config.RamRoleArn = last.RoleArn
+			config.RamRoleSessionName = last.RoleSessionName
+			config.RamRolePolicy = last.Policy
+			config.RamRoleExternalId = last.ExternalId
+			config.RamRoleSessionExpiration = last.SessionExpiration
+			log.Printf("[INFO] assume_role configuration set: %d block(s) chained, final role (RamRoleArn: %q, RamRoleSessionName: %q, RamRolePolicy: %q, RamRoleSessionExpiration: %d, RamRoleExternalId: %s)",
+				len(chain), config.RamRoleArn, config.RamRoleSessionName, config.RamRolePolicy, config.RamRoleSessionExpiration, config.RamRoleExternalId)
 		}
-
-		log.Printf("[INFO] assume_role configuration set: (RamRoleArn: %q, RamRoleSessionName: %q, RamRolePolicy: %q, RamRoleSessionExpiration: %d, RamRoleExternalId: %s)",
-			config.RamRoleArn, config.RamRoleSessionName, config.RamRolePolicy, config.RamRoleSessionExpiration, config.RamRoleExternalId)
 	}
 
 	if v, ok := d.GetOk("assume_role_with_oidc"); ok && len(v.([]interface{})) == 1 {
@@ -2843,11 +2864,16 @@ func init() {
 }
 
 // lintignore: S018
+// assumeRoleSchema defines the schema for the `assume_role` configuration block.
+// Multiple `assume_role` blocks may be declared in declaration order to form a
+// chained role assumption: the first block is assumed using the caller
+// credential, and each subsequent block is assumed using the temporary
+// credential returned by the previous AssumeRole call. A single block remains
+// fully backward compatible with the historical single-role behavior.
 func assumeRoleSchema() *schema.Schema {
 	return &schema.Schema{
-		Type:     schema.TypeSet,
+		Type:     schema.TypeList,
 		Optional: true,
-		MaxItems: 1,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
 				"role_arn": {

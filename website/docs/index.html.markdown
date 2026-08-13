@@ -1,6 +1,6 @@
 ---
 layout: "alicloud"
-page_title: "Provider: alicloud"
+page_title: "Alicloud: alicloud_index"
 sidebar_current: "docs-alicloud-index"
 description: |-
   The Alicloud provider is used to interact with many resources supported by Alibaba Cloud. The provider needs to be configured with the proper credentials before it can be used.
@@ -21,6 +21,8 @@ with the proper credentials before it can be used.
 Use the navigation on the left to read about the available resources.
 
 -> **Note:** From version 1.50.0, the provider start to support Terraform 0.12.x.
+
+-> **NOTE:** Available since v0.1.0.
 
 
 ## Example Usage
@@ -129,14 +131,17 @@ You can provide your credentials via `ALIBABA_CLOUD_ACCESS_KEY_ID`, `ALIBABA_CLO
 `ALIBABA_CLOUD_SECURITY_TOKEN` environment variables. The Region can be set using the `ALIBABA_CLOUD_REGION` environment variables.
 
 Usage:
+
 ```terraform
 provider "alicloud" {}
 ```
-```shell
-$ export ALIBABA_CLOUD_ACCESS_KEY_ID="<Your-Access-Key-ID>"
-$ export ALIBABA_CLOUD_ACCESS_KEY_SECRET="<Your-Access-Key-Secret>"
-$ export ALIBABA_CLOUD_REGION="cn-beijing"
-$ terraform plan
+
+```terraform
+# Set these environment variables in your shell before running Terraform:
+# export ALIBABA_CLOUD_ACCESS_KEY_ID="<Your-Access-Key-ID>"
+# export ALIBABA_CLOUD_ACCESS_KEY_SECRET="<Your-Access-Key-Secret>"
+# export ALIBABA_CLOUD_REGION="cn-beijing"
+# terraform plan
 ```
 
 ### Shared Credentials File
@@ -200,6 +205,49 @@ provider "alicloud" {
   }
 }
 ```
+
+### Assuming A RAM Role Chain
+
+The `assume_role` block may be declared more than once. When multiple blocks are
+present, they form a chained role assumption that is applied in declaration order:
+the first block is assumed using the supplied caller credentials, and each
+subsequent block is assumed using the temporary credential returned by the previous
+AssumeRole call. This is useful when the target role cannot be assumed directly
+from the caller account and one or more intermediate roles are required, for
+example `operations account -> master account -> functional account`.
+
+The fields of each `assume_role` block are the same as the single-block case.
+`session_name`, `session_expiration`, `policy` and `external_id` may be set
+independently on every block of the chain.
+
+Usage:
+
+```terraform
+provider "alicloud" {
+  access_key = "<CallerAccessKeyId>"
+  secret_key = "<CallerAccessKeySecret>"
+
+  assume_role {
+    role_arn           = "acs:ram::<OPERATIONS_ACCOUNT_ID>:role/ops-role"
+    session_name       = "ops-session"
+    session_expiration = 3600
+  }
+
+  assume_role {
+    role_arn     = "acs:ram::<MASTER_ACCOUNT_ID>:role/master-role"
+    session_name = "master-session"
+  }
+
+  assume_role {
+    role_arn     = "acs:ram::<FUNCTIONAL_ACCOUNT_ID>:role/functional-role"
+    session_name = "functional-session"
+  }
+}
+```
+
+The provider ultimately acts as the role declared in the last `assume_role`
+block. A single `assume_role` block remains fully backward compatible with the
+previous single-role behavior.
 
 ### Assuming A RAM Role With OIDC
 
@@ -268,8 +316,9 @@ provider "alicloud" {
 
 or
 
-```shell
-$ export TF_APPEND_USER_AGENT="ArgoAgent/argo-12345678 NodeID/1234 (Optional Extra Information)"
+```terraform
+# Set TF_APPEND_USER_AGENT in your shell before running Terraform, for example:
+# export TF_APPEND_USER_AGENT="ArgoAgent/argo-12345678 NodeID/1234 (Optional Extra Information)"
 ```
 
 ### Custom Product Sign Version
@@ -295,12 +344,12 @@ In addition to [generic `provider` arguments](https://www.terraform.io/docs/conf
 (e.g. `alias` and `version`), the following arguments are supported in the Alibaba Cloud
  `provider` block:
 
-* `access_key` - Alibaba Cloud access key. It is required for the provider. 
+* `access_key` - Alibaba Cloud access key. It is required for the provider.
   Can also be set with the `ALIBABA_CLOUD_ACCESS_KEY_ID` environment variable since v1.228.0, 
   or via a shared credentials file if profile is specified. See also `secret_key`. 
   Environment variable `ALICLOUD_ACCESS_KEY` and `ALIBABACLOUD_ACCESS_KEY_ID` have been deprecated since v1.228.0.
 
-* `secret_key` - Alibaba Cloud secret key. It is required for the provider. 
+* `secret_key` - Alibaba Cloud secret key. It is required for the provider.
   Can also be set with the `ALIBABA_CLOUD_ACCESS_KEY_SECRET` environment variable since v1.228.0,
   or via a shared credentials file if profile is specified. See also `access_key`.
   Environment variable `ALICLOUD_SECRET_KEY` and `ALIBABACLOUD_ACCESS_KEY_SECRET` have been deprecated since v1.228.0.
@@ -314,7 +363,7 @@ In addition to [generic `provider` arguments](https://www.terraform.io/docs/conf
   Can also be set with the `ALIBABA_CLOUD_ECS_METADATA` environment variable since v1.228.0.
   Environment variable `ALICLOUD_ECS_ROLE_NAME` has been deprecated since v1.228.0.
 
-* `region` - Alibaba Cloud region. Default to `cn-beijing`. 
+* `region` - Alibaba Cloud region. Default to `cn-beijing`.
   Can also be set with the `ALIBABA_CLOUD_REGION` environment variable since v1.228.0.
   Environment variable `ALICLOUD_REGION` has been deprecated since v1.228.0.
 
@@ -337,9 +386,9 @@ In addition to [generic `provider` arguments](https://www.terraform.io/docs/conf
   Can also be set with the `ALIBABA_CLOUD_PROFILE` environment variable since v1.228.0.
   Environment variable `ALICLOUD_PROFILE` has been deprecated since v1.228.0.
 
-* `assume_role` - (Optional) An [`assume_role` Configuration Block](#assume_role-configuration-block) block. Only one `assume_role` block may be in the configuration.
+* `assume_role` - (Optional) One or more [`assume_role`](#assume_role) blocks. When multiple `assume_role` blocks are declared they form a chained role assumption applied in declaration order: the first block is assumed using the caller credential, and each subsequent block is assumed using the temporary credential returned by the previous AssumeRole call. A single block keeps the historical single-role behavior.
 
-* `assume_role_with_oidc` - (Optional, Available since v1.220.0) Configuration block for assuming an RAM role using an OIDC. See the [`assume_role_with_oidc` Configuration Block](#assume_role_with_oidc-configuration-block) section below. Only one `assume_role_with_oidc` block may be in the configuration.
+* `assume_role_with_oidc` - (Optional, Available since v1.220.0) Configuration block for assuming an RAM role using an OIDC. See the [`assume_role_with_oidc`](#assume_role_with_oidc) section below. Only one `assume_role_with_oidc` block may be in the configuration.
 
 * `credentials_uri` - (Optional, Available since v1.141.0) The URI of sidecar credentials service. 
   Can also be set with the `ALIBABA_CLOUD_CREDENTIALS_URI` environment variable since v1.228.0.
@@ -363,9 +412,14 @@ The length should not more than 1024(Before 1.283.0, it should not more than 128
 
 * `max_retry_timeout` - (Optional, Available since v1.183.0) The maximum retry timeout in second of the request. Default to `0`.
 
-### `assume_role` Configuration Block
+### `assume_role`
 
-* `role_arn` - (Required) The ARN of the role to assume. If ARN is set to an empty string, it does not perform role switching. 
+The `assume_role` configuration block supports the following arguments. The
+block may be declared more than once in the provider configuration; when
+multiple blocks are present they are assumed in declaration order as a chained
+role assumption (see [Assuming A RAM Role Chain](#assuming-a-ram-role-chain)).
+
+* `role_arn` - (Required) The ARN of the role to assume. If ARN is set to an empty string, it does not perform role switching.
   Can also be set with the `ALIBABA_CLOUD_ROLE_ARN` environment variable since v1.228.0.
   Environment variable `ALICLOUD_ASSUME_ROLE_ARN` has been deprecated since v1.228.0.
   Terraform executes configuration on account with provided credentials.
@@ -383,7 +437,7 @@ The length should not more than 1024(Before 1.283.0, it should not more than 128
   This parameter is provided by an external party and is used to prevent the confused deputy problem. 
   The value must be 2 to 1,224 characters in length and can contain letters, digits, and the following special characters:`= , . @ : / - _`.
 
-### `assume_role_with_oidc` Configuration Block
+### `assume_role_with_oidc`
 
 The `assume_role_with_oidc` configuration block supports the following arguments:
 
@@ -398,7 +452,7 @@ The `assume_role_with_oidc` configuration block supports the following arguments
 * `session_expiration` - (Optional) The validity period of the STS token. Unit: seconds. Default value: 3600. Minimum value: 900. Maximum value: the value of the MaxSessionDuration parameter when creating a ram role.
 * `policy` - (Optional) The policy that specifies the permissions of the returned STS token. You can use this parameter to grant the STS token fewer permissions than the permissions granted to the RAM role.
 
-### `sign_version` Configuration Block
+### `sign_version`
 
 The `sign_version` configuration block overrides the signature version used by the SDK client of specific cloud products. See [Custom Product Sign Version](#custom-product-sign-version) for an example. The following arguments are supported:
 

@@ -46,51 +46,56 @@ type Config struct {
 	RamRoleExternalId        string
 	RamRoleSessionExpiration int
 	AssumeRoleWithOidc       *AssumeRoleWithOidc
-	Endpoints                *sync.Map
-	SignVersion              *sync.Map
-	RKvstoreEndpoint         string
-	EcsEndpoint              string
-	RdsEndpoint              string
-	SlbEndpoint              string
-	VpcEndpoint              string
-	CenEndpoint              string
-	EssEndpoint              string
-	OssEndpoint              string
-	OnsEndpoint              string
-	AlikafkaEndpoint         string
-	DnsEndpoint              string
-	RamEndpoint              string
-	CsEndpoint               string
-	CrEndpoint               string
-	CdnEndpoint              string
-	KmsEndpoint              string
-	OtsEndpoint              string
-	CmsEndpoint              string
-	PvtzEndpoint             string
-	StsEndpoint              string
-	LogEndpoint              string
-	DrdsEndpoint             string
-	DdsEndpoint              string
-	GpdbEnpoint              string
-	KVStoreEndpoint          string
-	PolarDBEndpoint          string
-	FcEndpoint               string
-	ApigatewayEndpoint       string
-	DatahubEndpoint          string
-	MnsEndpoint              string
-	LocationEndpoint         string
-	ElasticsearchEndpoint    string
-	NasEndpoint              string
-	BssOpenApiEndpoint       string
-	DdoscooEndpoint          string
-	DdosbgpEndpoint          string
-	SagEndpoint              string
-	EmrEndpoint              string
-	CasEndpoint              string
-	MarketEndpoint           string
-	HBaseEndpoint            string
-	AdbEndpoint              string
-	MaxComputeEndpoint       string
+	// AssumeRoleChain holds the ordered `assume_role` blocks declared in the
+	// provider configuration. When non-empty, chained AssumeRole is performed
+	// instead of the single-hop RamRoleArn path. A single-element chain is
+	// equivalent to the historical single assume_role block.
+	AssumeRoleChain       []*AssumeRoleConfig
+	Endpoints             *sync.Map
+	SignVersion           *sync.Map
+	RKvstoreEndpoint      string
+	EcsEndpoint           string
+	RdsEndpoint           string
+	SlbEndpoint           string
+	VpcEndpoint           string
+	CenEndpoint           string
+	EssEndpoint           string
+	OssEndpoint           string
+	OnsEndpoint           string
+	AlikafkaEndpoint      string
+	DnsEndpoint           string
+	RamEndpoint           string
+	CsEndpoint            string
+	CrEndpoint            string
+	CdnEndpoint           string
+	KmsEndpoint           string
+	OtsEndpoint           string
+	CmsEndpoint           string
+	PvtzEndpoint          string
+	StsEndpoint           string
+	LogEndpoint           string
+	DrdsEndpoint          string
+	DdsEndpoint           string
+	GpdbEnpoint           string
+	KVStoreEndpoint       string
+	PolarDBEndpoint       string
+	FcEndpoint            string
+	ApigatewayEndpoint    string
+	DatahubEndpoint       string
+	MnsEndpoint           string
+	LocationEndpoint      string
+	ElasticsearchEndpoint string
+	NasEndpoint           string
+	BssOpenApiEndpoint    string
+	DdoscooEndpoint       string
+	DdosbgpEndpoint       string
+	SagEndpoint           string
+	EmrEndpoint           string
+	CasEndpoint           string
+	MarketEndpoint        string
+	HBaseEndpoint         string
+	AdbEndpoint           string
+	MaxComputeEndpoint    string
 
 	edasEndpoint                string
 	SkipRegionValidation        bool
@@ -202,6 +207,19 @@ type AssumeRoleWithOidc struct {
 	OIDCToken       string
 }
 
+// AssumeRoleConfig holds the configuration of a single `assume_role` block.
+// When Config.AssumeRoleChain contains more than one entry, the entries are
+// applied in order: the first entry uses the caller credential, and each
+// subsequent entry uses the temporary credential returned by the previous
+// AssumeRole call as the caller credential for the next hop.
+type AssumeRoleConfig struct {
+	RoleArn           string
+	RoleSessionName   string
+	Policy            string
+	ExternalId        string
+	SessionExpiration int
+}
+
 func (c *Config) loadAndValidate() error {
 	err := c.validateRegion()
 	if err != nil {
@@ -253,6 +271,9 @@ func (c *Config) getAuthCredential(stsSupported bool) auth.Credential {
 }
 
 func (c *Config) setAuthByAssumeRole() (err error) {
+	if len(c.AssumeRoleChain) > 0 {
+		return c.setAuthByChainedAssumeRole()
+	}
 	if c.AccessKey == "" || c.RamRoleArn == "" {
 		return
 	}
