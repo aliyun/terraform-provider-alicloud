@@ -115,6 +115,7 @@ func resourceAlicloudVpnGatewayVcoRouteRead(d *schema.ResourceData, meta interfa
 }
 func resourceAlicloudVpnGatewayVcoRouteDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	vpcService := VpcService{client}
 	var err error
 	parts, err := ParseResourceId(d.Id(), 4)
 	if err != nil {
@@ -147,5 +148,23 @@ func resourceAlicloudVpnGatewayVcoRouteDelete(d *schema.ResourceData, meta inter
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
+	if err := waitForVpnGatewayVcoRouteDeleted(d.Timeout(schema.TimeoutDelete), 3*time.Second, vpcService.VpnGatewayVcoRouteStateRefreshFunc(d.Id(), []string{})); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
 	return nil
+}
+
+func waitForVpnGatewayVcoRouteDeleted(timeout, pollInterval time.Duration, refresh resource.StateRefreshFunc) error {
+	stableRefresh := func() (interface{}, string, error) {
+		object, _, err := refresh()
+		if err != nil || object == nil {
+			return object, "", err
+		}
+		return object, "present", nil
+	}
+	stateConf := BuildStateConf([]string{"present"}, []string{}, timeout, 0, stableRefresh)
+	stateConf.PollInterval = pollInterval
+	stateConf.ContinuousTargetOccurence = 3
+	_, err := stateConf.WaitForState()
+	return err
 }
