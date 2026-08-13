@@ -266,19 +266,24 @@ resource "alicloud_kms_value_added_service" "duplicate" {
 // from inside the resource.
 func TestAccAliCloudKmsValueAddedService_twoRegions(t *testing.T) {
 	var providers []*schema.Provider
-	//providerFactories := map[string]schema.ResourceProviderFactory{
-	//	"alicloud": func() (terraform.ResourceProvider, error) {
-	//		p := Provider()
-	//		providers = append(providers, p.(*schema.Provider))
-	//		return p, nil
-	//	},
-	//}
+	providerFactories := map[string]func() (*schema.Provider, error){
+		"alicloud": func() (*schema.Provider, error) {
+			p := Provider()
+			providers = append(providers, p)
+			return p, nil
+		},
+		"alicloudshanghai": func() (*schema.Provider, error) {
+			p := Provider()
+			providers = append(providers, p)
+			return p, nil
+		},
+	}
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou", "cn-shanghai"})
 			testAccPreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
+		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckKmsValueAddedServiceDestroyWithProviders(&providers),
 		Steps: []resource.TestStep{
 			{
@@ -297,17 +302,15 @@ func TestAccAliCloudKmsValueAddedService_twoRegions(t *testing.T) {
 func testAccKmsValueAddedServiceTwoRegionsConfig() string {
 	return `
 provider "alicloud" {
-  alias  = "hz"
   region = "cn-hangzhou"
 }
 
-provider "alicloud" {
+provider "alicloudshanghai" {
   alias  = "sh"
   region = "cn-shanghai"
 }
 
 resource "alicloud_kms_value_added_service" "hz" {
-  provider            = alicloud.hz
   value_added_service = "2"
   payment_type        = "Subscription"
   period              = "1"
@@ -316,7 +319,7 @@ resource "alicloud_kms_value_added_service" "hz" {
 }
 
 resource "alicloud_kms_value_added_service" "sh" {
-  provider            = alicloud.sh
+  provider            = alicloudshanghai.sh
   value_added_service = "2"
   payment_type        = "Subscription"
   period              = "1"
@@ -394,10 +397,12 @@ func testAccCheckKmsValueAddedServiceExistsWithProviders(n string, providers *[]
 
 func testAccCheckKmsValueAddedServiceDestroyWithProviders(providers *[]*schema.Provider) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
+		checked := false
 		for _, provider := range *providers {
 			if provider.Meta() == nil {
 				continue
 			}
+			checked = true
 			client := provider.Meta().(*connectivity.AliyunClient)
 			kmsServiceV2 := KmsServiceV2{client}
 			for _, rs := range s.RootModule().Resources {
@@ -413,6 +418,9 @@ func testAccCheckKmsValueAddedServiceDestroyWithProviders(providers *[]*schema.P
 				}
 				return fmt.Errorf("KMS value added service %s still exists", rs.Primary.ID)
 			}
+		}
+		if !checked {
+			return fmt.Errorf("no configured provider to check KMS value added service destroy with")
 		}
 		return nil
 	}
