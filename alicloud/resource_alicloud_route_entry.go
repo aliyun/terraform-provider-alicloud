@@ -3,6 +3,8 @@ package alicloud
 import (
 	"fmt"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
@@ -64,6 +66,21 @@ func resourceAliyunRouteEntry() *schema.Resource {
 	}
 }
 
+// routeEntryTaskLock serializes CreateRouteEntry/DeleteRouteEntry calls made
+// by this provider process. The VPC service handles route entry operations as
+// serialized asynchronous tasks and rejects concurrent submissions with
+// "TaskConflict" ("The operation is too frequent"). Without client-side
+// serialization, a plan that creates several route entries in parallel makes
+// every resource burn its own retry budget on rejections caused by its
+// siblings; when the retry window is short (e.g. the provider-level
+// "max_retry_timeout" is set), the budget runs out while the server is still
+// busy and the apply fails with a spurious TaskConflict. Queueing on this
+// mutex happens before the retry loop starts, so waiting for a sibling
+// operation does not consume the resource's own retry budget. TaskConflict
+// remains in the retryable lists below because other actors (a second
+// Terraform run, the console, other tools) can still trigger it.
+var routeEntryTaskLock sync.Mutex
+
 func resourceAliyunRouteEntryCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
@@ -102,14 +119,35 @@ func resourceAliyunRouteEntryCreate(d *schema.ResourceData, meta interface{}) er
 		request.Description = v.(string)
 	}
 
+	// Serialize with every other route entry create/delete in this process
+	// before the retry clock starts, so sibling operations do not eat into
+	// this resource's retry budget by triggering TaskConflict rejections.
+	routeEntryTaskLock.Lock()
+	defer routeEntryTaskLock.Unlock()
+
 	// retry 10 min to create lots of entries concurrently
 	var raw interface{}
 	attempt := 0
+	var abandoned atomic.Bool
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		attempt++
 		if err := vpcService.WaitForAllRouteEntriesAvailable(rtId, DefaultTimeout); err != nil {
 			return resource.NonRetryableError(err)
+		}
+
+		// resource.Retry does not cancel an in-flight callback when its
+		// deadline expires: it returns the last error to Terraform and leaves
+		// the callback goroutine running. If that goroutine was blocked in
+		// WaitForAllRouteEntriesAvailable above when the deadline fired, it
+		// would - without this guard - still send CreateRouteEntry afterwards
+		// and could succeed on the cloud long after this apply already
+		// reported the resource as failed, leaving a route that exists
+		// server-side with no record in state (the next apply then fails
+		// with Duplicated.VpcNextHop). Skip the call once the loop has been
+		// abandoned so no request is sent whose outcome nobody records.
+		if abandoned.Load() {
+			return resource.NonRetryableError(Error("the retry deadline of creating route entry has expired; skip sending CreateRouteEntry"))
 		}
 
 		args := *request
@@ -135,6 +173,10 @@ func resourceAliyunRouteEntryCreate(d *schema.ResourceData, meta interface{}) er
 		}
 		return nil
 	})
+	// Mark the loop abandoned before acting on its result, so a callback that
+	// outlived the deadline (see the guard above) cannot create the route
+	// after the outcome has been decided here.
+	abandoned.Store(true)
 
 	// Compute the resource id from the request parameters (all known up-front).
 	// The id is recorded into state only after CreateRouteEntry has been
@@ -268,6 +310,11 @@ func resourceAliyunRouteEntryDelete(d *schema.ResourceData, meta interface{}) er
 	}
 
 	request.RegionId = client.RegionId
+
+	// Serialize with every other route entry create/delete in this process
+	// before the retry clock starts; see routeEntryTaskLock.
+	routeEntryTaskLock.Lock()
+	defer routeEntryTaskLock.Unlock()
 
 	var raw interface{}
 	retryTimes := 7
