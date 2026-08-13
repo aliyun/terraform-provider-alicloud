@@ -349,6 +349,12 @@ ACK Cluster with an automatically created private NLB
 
 When `load_balancer_id` is omitted, ACK automatically creates and manages a private NLB for the cluster API server endpoint, so there is no need to create an `alicloud_nlb_load_balancer` resource. The cluster must span at least two zones so that the auto-created NLB gets a valid zone list.
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_cs_managed_kubernetes&exampleId=d7768390-cf8f-03db-c010-4a05267c2a3dbf058138&activeTab=example&spm=docs.r.cs_managed_kubernetes.2.d7768390cf&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 variable "name" {
   default = "tf-example-auto-nlb"

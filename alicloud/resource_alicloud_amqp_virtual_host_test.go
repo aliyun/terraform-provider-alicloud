@@ -206,6 +206,16 @@ func TestUnitAliCloudAmqpVirtualHost(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		},
+		// The transient failure amqp-open returns while a freshly created instance
+		// is still initializing, even though it already reports SERVING.
+		"InstanceNotReadyError": func(errorCode string) (map[string]interface{}, error) {
+			return nil, &tea.SDKError{
+				Code:       String("InvalidParameter"),
+				Data:       String(`{"Code":"InvalidParameter","Message":"the internal error!","RequestId":"MockRequestId"}`),
+				Message:    String("code: 400, the internal error! request id: MockRequestId"),
+				StatusCode: tea.Int(400),
+			}
+		},
 		"CreateNormal": func(errorCode string) (map[string]interface{}, error) {
 			result := ReadMockResponse
 			return result, nil
@@ -270,6 +280,32 @@ func TestUnitAliCloudAmqpVirtualHost(t *testing.T) {
 		err := resourceAliCloudAmqpVirtualHostCreate(dCreate, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
+	})
+	// Creating a virtual host in the same apply as its instance can hit the
+	// instance initialization window; the first attempt must be retried rather
+	// than aborting the apply.
+	t.Run("CreateInstanceNotReadyThenNormal", func(t *testing.T) {
+		dNotReady, _ := schema.InternalMap(p["alicloud_amqp_virtual_host"].Schema).Data(nil, nil)
+		dNotReady.MarkNewResource()
+		for key, value := range map[string]interface{}{
+			"instance_id":       "instance_id",
+			"virtual_host_name": "virtual_host_name",
+		} {
+			err := dNotReady.Set(key, value)
+			assert.Nil(t, err)
+		}
+		notReadyFlag := true
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if notReadyFlag {
+				notReadyFlag = false
+				return responseMock["InstanceNotReadyError"]("")
+			}
+			return responseMock["CreateNormal"]("")
+		})
+		err := resourceAliCloudAmqpVirtualHostCreate(dNotReady, rawClient)
+		patches.Reset()
+		assert.Nil(t, err)
+		assert.False(t, notReadyFlag, "the transient error should have been served and retried")
 	})
 
 	// Set ID for Update and Delete Method
@@ -380,6 +416,58 @@ func TestUnitAliCloudAmqpVirtualHost(t *testing.T) {
 	})
 }
 
+func TestUnitAliCloudAmqpVirtualHostIsInstanceNotReadyError(t *testing.T) {
+	testCases := []struct {
+		name     string
+		err      error
+		expected bool
+	}{
+		{
+			name: "instance still initializing",
+			err: &tea.SDKError{
+				Code:       String("InvalidParameter"),
+				Message:    String("code: 400, the internal error! request id: MockRequestId"),
+				StatusCode: tea.Int(400),
+			},
+			expected: true,
+		},
+		{
+			name: "other InvalidParameter failures still fail fast",
+			err: &tea.SDKError{
+				Code:       String("InvalidParameter"),
+				Message:    String("code: 400, the VirtualHost is invalid. request id: MockRequestId"),
+				StatusCode: tea.Int(400),
+			},
+			expected: false,
+		},
+		{
+			name: "same message under another code is not the readiness signal",
+			err: &tea.SDKError{
+				Code:       String("InvalidInstanceId.NotFound"),
+				Message:    String("code: 400, the internal error! request id: MockRequestId"),
+				StatusCode: tea.Int(400),
+			},
+			expected: false,
+		},
+		{
+			name:     "non sdk error",
+			err:      Error("the internal error!"),
+			expected: false,
+		},
+		{
+			name:     "nil error",
+			err:      nil,
+			expected: false,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			assert.Equal(t, testCase.expected, isAmqpInstanceNotReadyError(testCase.err))
+		})
+	}
+}
+
 // Test Amqp VirtualHost. >>> Resource test cases, automatically generated.
 // Case VirtualHost_测试用例 7216
 func TestAccAliCloudAmqpVirtualHost_basic7216(t *testing.T) {
@@ -399,9 +487,9 @@ func TestAccAliCloudAmqpVirtualHost_basic7216(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -428,21 +516,26 @@ func TestAccAliCloudAmqpVirtualHost_basic7216(t *testing.T) {
 var AliCloudAmqpVirtualHostMap7216 = map[string]string{}
 
 func AliCloudAmqpVirtualHostBasicDependence7216(name string) string {
-		return fmt.Sprintf(`
+	return fmt.Sprintf(`
 		variable "name" {
     	default = "%s"
-		}
-		data "alicloud_vpcs" "default" {
-			name_regex = "^default-NODELETING$"
-		}
-		data "alicloud_vswitches" "default" {
-			vpc_id = data.alicloud_vpcs.default.ids.0
-		}
-		data "alicloud_security_groups" "default" {
-			vpc_id     = data.alicloud_vpcs.default.ids.0
-			name_regex = "^default-NODELETING$"
-		}
-		resource "alicloud_amqp_instance" "default" {
+	}
+
+	data "alicloud_vpcs" "default" {
+  		name_regex = "default-NODELETING"
+	}
+
+	data "alicloud_vswitches" "default" {
+  		vpc_id     = data.alicloud_vpcs.default.ids.0
+  		name_regex = "^default-NODELETING-ACK-switch"
+	}
+
+	data "alicloud_security_groups" "default" {
+  		vpc_id     = data.alicloud_vpcs.default.ids.0
+  		name_regex = "^sae"
+	}
+
+	resource "alicloud_amqp_instance" "default" {
   		instance_name         = var.name
   		instance_type         = "enterprise"
   		max_tps               = 3000
@@ -453,11 +546,11 @@ func AliCloudAmqpVirtualHostBasicDependence7216(name string) string {
   		renewal_duration      = 1
   		renewal_duration_unit = "Year"
   		support_eip           = true
-  		vpc_id                = data.alicloud_vpcs.default.ids.0
+  		vpc_id                = data.alicloud_vswitches.default.vpc_id
   		vswitch_ids           = [data.alicloud_vswitches.default.ids.0, data.alicloud_vswitches.default.ids.1]
   		security_group_id     = data.alicloud_security_groups.default.ids.0
-		}
-		`, name)
+	}
+`, name)
 }
 
 // Test Amqp VirtualHost. <<< Resource test cases, automatically generated.

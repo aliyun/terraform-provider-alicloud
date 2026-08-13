@@ -174,6 +174,7 @@ func resourceAliCloudCrInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"tags": tagsSchema(),
 			"vpc_quota": {
 				Type:     schema.TypeInt,
 				Optional: true,
@@ -338,6 +339,7 @@ func resourceAliCloudCrInstanceRead(d *schema.ResourceData, meta interface{}) er
 		d.Set("instance_type", strings.TrimPrefix(objectRaw["InstanceSpecification"].(string), "Enterprise_"))
 	}
 	d.Set("status", objectRaw["InstanceStatus"])
+	d.Set("tags", tagsToMap(objectRaw["Tags"]))
 
 	objectRaw, err = crServiceV2.DescribeInstanceQueryAvailableInstances(d)
 	if err != nil && !NotFoundError(err) {
@@ -468,6 +470,13 @@ func resourceAliCloudCrInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	if d.HasChange("tags") {
+		crServiceV2 := CrServiceV2{client}
+		if err := crServiceV2.SetResourceTags(d, "Instance"); err != nil {
+			return WrapError(err)
 		}
 	}
 

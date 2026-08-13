@@ -768,6 +768,86 @@ func (s *KmsServiceV2) DescribeKmsValueAddedService(id string) (object map[strin
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
+// ListKmsValueAddedServiceInstancesByPrefix returns the KMS instances in the client's region whose id
+// carries the given prefix. Each value added service mints its instance ids with a prefix of its own,
+// so for a service whose prefix is not shared with another KMS product the prefix is the only way to
+// tell from a read which service an instance belongs to: QueryAvailableInstances reports no service
+// field, and QueryInstanceBill names it only as locale-dependent display text that lags hours behind
+// the purchase.
+//
+// The instances are returned whole rather than as ids because a prefix match alone says nothing about
+// whether the service is in effect. The list also carries instances that hold nothing - a refunded
+// order lingers in Creating for minutes, and an expired one is still listed - so callers that mean
+// "does the account hold this" have to filter on status themselves.
+//
+// Region is deliberately not sent - BssOpenApi resolves it against the account's station and silently
+// returns an empty list when it disagrees, so the region is applied to the response instead. PageSize
+// is capped server-side regardless of what is asked for, hence the paging.
+func (s *KmsServiceV2) ListKmsValueAddedServiceInstancesByPrefix(prefix string) (instances []map[string]interface{}, err error) {
+	client := s.client
+	var response map[string]interface{}
+	var endpoint string
+	action := "QueryAvailableInstances"
+
+	request := map[string]interface{}{
+		"ProductCode": "kms",
+		"PageNum":     1,
+		"PageSize":    PageSizeLarge,
+	}
+
+	for {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+			response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, nil, request, true, endpoint)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
+					endpoint = connectivity.BssOpenAPIEndpointInternational
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return nil, WrapErrorf(err, DefaultErrorMsg, "alicloud_kms_value_added_service", action, AlibabaCloudSdkGoERROR)
+		}
+
+		// BssOpenApi reports business failures in the response body with a 200 status code.
+		if fmt.Sprint(response["Success"]) != "true" {
+			return nil, WrapError(Error("%s failed, response: %v", action, response))
+		}
+
+		v, err := jsonpath.Get("$.Data.InstanceList", response)
+		if err != nil {
+			return nil, WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.InstanceList", response)
+		}
+		result, _ := v.([]interface{})
+		for _, item := range result {
+			instance, ok := item.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			if fmt.Sprint(instance["Region"]) != client.RegionId {
+				continue
+			}
+			if strings.HasPrefix(fmt.Sprint(instance["InstanceID"]), prefix) {
+				instances = append(instances, instance)
+			}
+		}
+		if len(result) < request["PageSize"].(int) {
+			break
+		}
+		request["PageNum"] = request["PageNum"].(int) + 1
+	}
+
+	return instances, nil
+}
+
 func (s *KmsServiceV2) KmsValueAddedServiceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
 	return s.KmsValueAddedServiceStateRefreshFuncWithApi(id, field, failStates, s.DescribeKmsValueAddedService)
 }

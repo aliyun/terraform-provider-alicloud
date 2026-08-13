@@ -11,7 +11,7 @@ description: |-
 
 Provides a MongoDB instance resource supports replica set instances only. the MongoDB provides stable, reliable, and automatic scalable database services.
 It offers a full range of database solutions, such as disaster recovery, backup, recovery, monitoring, and alarms.
-You can see detail product introduction [here](https://www.alibabacloud.com/help/doc-detail/26558.htm)
+You can see detail product introduction [MongoDB documentation](https://www.alibabacloud.com/help/doc-detail/26558.htm)
 
 -> **NOTE:** Available since v1.37.0.
 
@@ -100,6 +100,7 @@ The following arguments are supported:
 * `instance_charge_type` - (Optional) The billing method of the instance. Default value: `PostPaid`. Valid values: `PrePaid`, `PostPaid`. **NOTE:** It can be modified from `PostPaid` to `PrePaid` after version 1.63.0.
 * `period` - (Optional, Int) The duration that you will buy DB instance (in month). It is valid when `instance_charge_type` is `PrePaid`. Default value: `1`. Valid values: [1~9], 12, 24, 36.
 * `security_ip_list` - (Optional, List) List of IP addresses allowed to access all databases of an instance. The list contains up to 1,000 IP addresses, separated by commas. Supported formats include 0.0.0.0/0, 10.23.12.24 (IP), and 10.23.12.24/24 (Classless Inter-Domain Routing (CIDR) mode. /24 represents the length of the prefix in an IP address. The range of the prefix length is [1,32]).
+* `security_ip_groups` - (Optional, Set) The list of named security IP groups. Each element represents a separate IP whitelist group managed independently from `security_ip_list` (which manages the `default` group). See [`security_ip_groups`](#security_ip_groups) below.
 * `account_password` - (Optional, Sensitive) Password of the root account. It is a string of 6 to 32 characters and is composed of letters, numbers, and underlines.
 * `kms_encrypted_password` - (Optional, Available since v1.57.1) An KMS encrypts password used to a instance. If the `account_password` is filled in, this field will be ignored.
 * `kms_encryption_context` - (Optional, MapString, Available since v1.57.1) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating instance with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
@@ -118,15 +119,15 @@ The following arguments are supported:
 * `backup_retention_period` - (Optional, Int, Available since v1.213.1) The retention period of full backups.
 * `backup_retention_policy_on_cluster_deletion` - (Optional, Int, Available since v1.235.0) The backup retention policy configured for the instance. Valid values:
   - `0`: All backup sets are immediately deleted when the instance is released.
-  - `1 `: Automatic backup is performed when the instance is released and the backup set is retained for a long period of time.
-  - `2 `: Automatic backup is performed when the instance is released and all backup sets are retained for a long period of time.
+  - `1`: Automatic backup is performed when the instance is released and the backup set is retained for a long period of time.
+  - `2`: Automatic backup is performed when the instance is released and all backup sets are retained for a long period of time.
 * `enable_backup_log` - (Optional, Int, Available since v1.230.1) Specifies whether to enable the log backup feature. Valid values:
   - `0`: The log backup feature is disabled.
-  - `1 `: The log backup feature is enabled.
+  - `1`: The log backup feature is enabled.
 * `log_backup_retention_period` - (Optional, Int, Available since v1.230.1) The number of days for which log backups are retained. Valid values: `7` to `730`. **NOTE:** `log_backup_retention_period` is valid only when `enable_backup_log` is set to `1`.
 * `snapshot_backup_type` - (Optional, Available since v1.212.0) The snapshot backup type. Default value: `Standard`. Valid values:
   - `Standard`: standard backup.
-  - `Flash `: single-digit second backup.
+  - `Flash`: single-digit second backup.
 * `backup_interval` - (Optional, Available since v1.212.0) The frequency at which high-frequency backups are created. Valid values: `-1`, `15`, `30`, `60`, `120`, `180`, `240`, `360`, `480`, `720`.
 * `ssl_action` - (Optional, Available since v1.78.0) Actions performed on SSL functions. Valid values:
   - `Open`: turn on SSL encryption.
@@ -153,6 +154,14 @@ The following arguments are supported:
 * `parameters` - (Optional, Set, Available since v1.203.0) Set of parameters needs to be set after mongodb instance was launched. See [`parameters`](#parameters) below.
 * `global_security_group_list` - (Optional, List, Available since v1.257.0) The list of Global Security Group Ids.
 * `tags` - (Optional, Available since v1.66.0) A mapping of tags to assign to the resource.
+
+### `security_ip_groups`
+
+The security_ip_groups supports the following:
+
+* `security_ip_group_name` - (Optional) The name of the security IP group. If not specified, the default group name `default` is used. Each named group is managed independently from `security_ip_list` (which manages the `default` group).
+* `security_ip_list` - (Optional) The IP addresses in the security IP group. The list contains up to 1,000 IP addresses, separated by commas. Supported formats include 0.0.0.0/0, 10.23.12.24 (IP), and 10.23.12.24/24 (Classless Inter-Domain Routing (CIDR) mode. /24 represents the length of the prefix in an IP address. The range of the prefix length is [1,32]).
+* `security_ip_group_attribute` - (Optional) The attribute of the security IP group. It must be 1 to 120 characters in length and can contain letters and digits. Do not set this attribute to `hidden`; otherwise the group will be ignored by Read.
 
 ### `parameters`
 

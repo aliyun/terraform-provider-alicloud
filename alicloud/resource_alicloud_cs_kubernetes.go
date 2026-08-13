@@ -1690,7 +1690,7 @@ func fetchWorkerNodes(d *schema.ResourceData, meta interface{}) []map[string]int
 
 func flattenTags(config []*roacs.Tag) map[string]string {
 	m := make(map[string]string, len(config))
-	if len(config) < 0 {
+	if len(config) == 0 {
 		return m
 	}
 

@@ -11,6 +11,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
 func init() {
@@ -120,9 +121,9 @@ func TestAccAliCloudALBRule_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -611,9 +612,9 @@ func TestAccAliCloudALBRule_basic0_twin(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -701,9 +702,9 @@ func TestAccAliCloudALBRule_basic1(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -811,9 +812,9 @@ func TestAccAliCloudALBRule_basic2(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -879,6 +880,146 @@ func TestAccAliCloudALBRule_basic2(t *testing.T) {
 	})
 }
 
+// TestAccAliCloudALBRule_removeHeader covers RemoveHeader on the create path.
+// TestAccAliCloudALBRule_basic0 only adds a RemoveHeader action at an update
+// step, which is why the create path stayed broken. A rule must carry exactly
+// one final action executed last, so RemoveHeader is declared next to a
+// ForwardGroup with a larger order.
+func TestAccAliCloudALBRule_removeHeader(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_alb_rule.default"
+	ra := resourceAttrInit(resourceId, AliCloudALBRuleMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &AlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAlbRule", []string{"direction"}...)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%salbrule%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudALBRuleBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"listener_id": "${alicloud_alb_listener.default.id}",
+					"rule_name":   name,
+					"priority":    "666",
+					"rule_conditions": []map[string]interface{}{
+						{
+							"host_config": []map[string]interface{}{
+								{
+									"values": []string{"www.test.com"},
+								},
+							},
+							"type": "Host",
+						},
+					},
+					"rule_actions": []map[string]interface{}{
+						{
+							"remove_header_config": []map[string]interface{}{
+								{
+									"key": "tf-remove-header",
+								},
+							},
+							"order": "3",
+							"type":  "RemoveHeader",
+						},
+						{
+							"forward_group_config": []map[string]interface{}{
+								{
+									"server_group_tuples": []map[string]interface{}{
+										{
+											"server_group_id": "${alicloud_alb_server_group.default.id}",
+										},
+									},
+								},
+							},
+							"order": "9",
+							"type":  "ForwardGroup",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"listener_id":       CHECKSET,
+						"rule_name":         name,
+						"priority":          "666",
+						"rule_actions.#":    "2",
+						"rule_conditions.#": "1",
+					}),
+					checkAlbRuleRemoveHeaderKey(resourceId, "tf-remove-header"),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rule_actions": []map[string]interface{}{
+						{
+							"remove_header_config": []map[string]interface{}{
+								{
+									"key": "tf-remove-header-update",
+								},
+							},
+							"order": "3",
+							"type":  "RemoveHeader",
+						},
+						{
+							"forward_group_config": []map[string]interface{}{
+								{
+									"server_group_tuples": []map[string]interface{}{
+										{
+											"server_group_id": "${alicloud_alb_server_group.default.id}",
+										},
+									},
+								},
+							},
+							"order": "9",
+							"type":  "ForwardGroup",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rule_actions.#": "2",
+					}),
+					checkAlbRuleRemoveHeaderKey(resourceId, "tf-remove-header-update"),
+				),
+			},
+		},
+	})
+}
+
+// checkAlbRuleRemoveHeaderKey asserts the rule carries exactly one
+// remove_header_config block holding the expected key. rule_actions and
+// remove_header_config are both schema.TypeSet, so their state indexes are
+// hashes and cannot be addressed with resource.TestCheckResourceAttr.
+func checkAlbRuleRemoveHeaderKey(resourceID, expected string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceID]
+		if !ok {
+			return fmt.Errorf("not found: %s", resourceID)
+		}
+
+		got := make([]string, 0)
+		for k, v := range rs.Primary.Attributes {
+			if strings.Contains(k, ".remove_header_config.") && strings.HasSuffix(k, ".key") {
+				got = append(got, v)
+			}
+		}
+
+		if len(got) != 1 || got[0] != expected {
+			return fmt.Errorf("%s: remove_header_config keys expected [%s], got %v", resourceID, expected, got)
+		}
+
+		return nil
+	}
+}
+
 func TestAccAliCloudALBRule_trafficMirror(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_alb_rule.default"
@@ -895,9 +1036,9 @@ func TestAccAliCloudALBRule_trafficMirror(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1035,9 +1176,9 @@ func TestAccAliCloudALBRule_basicStickySession(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

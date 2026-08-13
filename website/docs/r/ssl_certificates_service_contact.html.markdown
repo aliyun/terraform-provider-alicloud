@@ -20,6 +20,12 @@ For information about Certificate Management Service (Original SSL Certificate) 
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_ssl_certificates_service_contact&exampleId=b137e3c7-11b9-8127-c12d-2a6d2acb26d7ebbcfa59&activeTab=example&spm=docs.r.ssl_certificates_service_contact.0.b137e3c711&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -37,6 +43,10 @@ resource "alicloud_ssl_certificates_service_contact" "default" {
   webhook_list = ["https://oapi.dingtalk.com/robot/send?access_token=xxxx"]
 }
 ```
+
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ssl_certificates_service_contact&spm=docs.r.ssl_certificates_service_contact.example&intl_lang=EN_US)
+
 
 ## Argument Reference
 

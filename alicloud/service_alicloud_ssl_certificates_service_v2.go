@@ -461,3 +461,298 @@ func (s *SslCertificatesServiceServiceV2) SslCertificatesServiceContactStateRefr
 }
 
 // DescribeSslCertificatesServiceContact >>> Encapsulated.
+
+// DescribeSslCertificatesServiceInstance <<< Encapsulated get interface for SslCertificatesService Instance.
+func (s *SslCertificatesServiceServiceV2) DescribeSslCertificatesServiceInstance(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["InstanceId"] = id
+
+	action := "GetInstanceDetail"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("cas", "2020-04-07", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"NotFound"}) {
+			return object, WrapErrorf(NotFoundErr("Instance", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+
+func (s *SslCertificatesServiceServiceV2) SslCertificatesServiceInstanceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.SslCertificatesServiceInstanceStateRefreshFuncWithApi(id, field, failStates, s.DescribeSslCertificatesServiceInstance)
+}
+
+func (s *SslCertificatesServiceServiceV2) SslCertificatesServiceInstanceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeSslCertificatesServiceInstance >>> Encapsulated.
+
+// DescribeSslCertificatesServiceCertificateApply <<< Encapsulated get interface for SslCertificatesService CertificateApply.
+func (s *SslCertificatesServiceServiceV2) DescribeSslCertificatesServiceCertificateApply(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["InstanceId"] = id
+
+	action := "GetInstanceDetail"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("cas", "2020-04-07", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"NotFound"}) {
+			return object, WrapErrorf(NotFoundErr("CertificateApply", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+
+func (s *SslCertificatesServiceServiceV2) SslCertificatesServiceCertificateApplyStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.SslCertificatesServiceCertificateApplyStateRefreshFuncWithApi(id, field, failStates, s.DescribeSslCertificatesServiceCertificateApply)
+}
+
+func (s *SslCertificatesServiceServiceV2) SslCertificatesServiceCertificateApplyStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeSslCertificatesServiceCertificateApply >>> Encapsulated.
+
+// certificateApplicationIsOutstanding reports whether the instance still has a certificate
+// application in flight, which is what makes a withdrawal both possible and necessary.
+//
+// An instance that cannot be read counts as still having one. Not knowing is not the same as
+// knowing there is nothing left to withdraw, and reporting a withdrawal that never happened leaves
+// the instance sitting in pending for whatever tries to delete it next — a state in which it can be
+// neither refunded nor deleted. An instance that is genuinely gone is the one exception.
+func (s *SslCertificatesServiceServiceV2) certificateApplicationIsOutstanding(id string) bool {
+	object, err := s.DescribeSslCertificatesServiceInstance(id)
+	if err != nil {
+		return !NotFoundError(err)
+	}
+	return fmt.Sprint(object["Status"]) == "pending"
+}
+
+// DescribeSslCertificatesServiceInstanceCertificate <<< Encapsulated get interface for SslCertificatesService InstanceCertificate.
+func (s *SslCertificatesServiceServiceV2) DescribeSslCertificatesServiceInstanceCertificate(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["CertificateId"] = id
+
+	action := "GetCertificateDetail"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("cas", "2020-04-07", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"NotFound"}) {
+			return object, WrapErrorf(NotFoundErr("InstanceCertificate", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+
+func (s *SslCertificatesServiceServiceV2) SslCertificatesServiceInstanceCertificateStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.SslCertificatesServiceInstanceCertificateStateRefreshFuncWithApi(id, field, failStates, s.DescribeSslCertificatesServiceInstanceCertificate)
+}
+
+func (s *SslCertificatesServiceServiceV2) SslCertificatesServiceInstanceCertificateStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeSslCertificatesServiceInstanceCertificate >>> Encapsulated.
+
+// DescribeSslCertificatesServiceCertificateValidation <<< Encapsulated get interface for SslCertificatesService CertificateValidation.
+func (s *SslCertificatesServiceServiceV2) DescribeSslCertificatesServiceCertificateValidation(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["InstanceId"] = id
+
+	action := "GetInstanceDetail"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("cas", "2020-04-07", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"NotFound"}) {
+			return object, WrapErrorf(NotFoundErr("CertificateValidation", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+
+func (s *SslCertificatesServiceServiceV2) SslCertificatesServiceCertificateValidationStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.SslCertificatesServiceCertificateValidationStateRefreshFuncWithApi(id, field, failStates, s.DescribeSslCertificatesServiceCertificateValidation)
+}
+
+func (s *SslCertificatesServiceServiceV2) SslCertificatesServiceCertificateValidationStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeSslCertificatesServiceCertificateValidation >>> Encapsulated.

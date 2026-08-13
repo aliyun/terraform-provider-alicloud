@@ -408,6 +408,99 @@ func TestAccAliCloudGPDBDBInstance_basic0(t *testing.T) {
 	})
 }
 
+// TestAccAliCloudGPDBDBInstance_minorVersion covers the minor_version attribute.
+// GPDB instances are always provisioned with the latest minor version and
+// UpgradeDBVersion cannot downgrade, so a real upgrade to a higher version cannot
+// be triggered deterministically on a freshly created instance (there is no higher
+// target available). This test instead verifies:
+//   - the current minor version is read back into state after creation;
+//   - minor_version is an in-place updatable attribute (a plan changing it must
+//     not force a replacement); this step is plan-only on purpose: UpgradeDBVersion
+//     accepts any version string and applies it asynchronously without synchronous
+//     validation, so pointing it at an unavailable version in an acceptance test
+//     would start a long-running asynchronous task on the instance instead of
+//     failing fast;
+//   - removing the attribute from the configuration keeps the value read back
+//     from the instance (no spurious diff, no upgrade triggered).
+//
+// The UpgradeDBVersion code path itself (request building, Throttling.User retry,
+// waiting for the instance to report the target version while settled) is covered
+// by TestUnitAliCloudGPDBDBInstance because it cannot be reached deterministically
+// in an acceptance environment.
+func TestAccAliCloudGPDBDBInstance_minorVersion(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_gpdb_instance.default"
+	ra := resourceAttrInit(resourceId, AliCloudGPDBDBInstanceMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &GpdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeGpdbDbInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sgpdbdbinstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGPDBDBInstanceBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_category":  "HighAvailability",
+					"db_instance_class":     "gpdb.group.segsdx1",
+					"db_instance_mode":      "StorageElastic",
+					"engine":                "gpdb",
+					"engine_version":        "6.0",
+					"zone_id":               "${data.alicloud_gpdb_zones.default.ids.0}",
+					"instance_network_type": "VPC",
+					"instance_spec":         "2C16G",
+					"instance_group_count":  "2",
+					"payment_type":          "PayAsYouGo",
+					"seg_storage_type":      "cloud_essd",
+					"seg_node_num":          "4",
+					"storage_size":          "50",
+					"vpc_id":                "${data.alicloud_vpcs.default.ids.0}",
+					"vswitch_id":            "${local.vswitch_id}",
+					"create_sample_data":    "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"minor_version": CHECKSET,
+					}),
+				),
+			},
+			{
+				// Plan-only: verify that changing minor_version is planned as an
+				// in-place update without applying it (see the function comment).
+				Config: testAccConfig(map[string]interface{}{
+					"minor_version": "6.3.11.2",
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"minor_version": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"minor_version": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"period", "used_time", "db_instance_class", "security_ip_list", "instance_group_count", "create_sample_data", "parameters"},
+			},
+		},
+	})
+}
+
 func TestAccAliCloudGPDBDBInstancePrepaid(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_gpdb_instance.default"
@@ -505,12 +598,123 @@ func TestAccAliCloudGPDBDBInstancePrepaid(t *testing.T) {
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"period", "used_time", "db_instance_class", "security_ip_list", "instance_group_count", "create_sample_data", "parameters"},
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type": "PayAsYouGo",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type": "PayAsYouGo",
+					}),
+				),
+			},
+		},
+	})
+}
+
+// TestAccAliCloudGPDBDBInstanceModifyPaymentType verifies modifying the billing
+// method of an existing instance in both directions (PayAsYouGo -> Subscription
+// and Subscription -> PayAsYouGo) via the GPDB ModifyDBInstancePayType API. The
+// instance is pinned to cn-beijing and uses the cheapest Basic StorageElastic
+// form (2C8G, 2 segment nodes, 50GB storage), because the conversion to
+// Subscription produces a real one-month prepaid order that cannot be refunded.
+// The final update returns the instance to PayAsYouGo so Delete can release the
+// real instance and the destroy check can verify cleanup.
+func TestAccAliCloudGPDBDBInstanceModifyPaymentType(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_gpdb_instance.default"
+	testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Region("cn-beijing")})
+	ra := resourceAttrInit(resourceId, AliCloudGPDBDBInstanceMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &GpdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeGpdbDbInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sgpdbdbinstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGPDBDBInstanceBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_category":  "Basic",
+					"db_instance_mode":      "StorageElastic",
+					"description":           name,
+					"engine":                "gpdb",
+					"engine_version":        "6.0",
+					"zone_id":               "${data.alicloud_gpdb_zones.default.ids.0}",
+					"instance_network_type": "VPC",
+					"instance_spec":         "2C8G",
+					"payment_type":          "PayAsYouGo",
+					"seg_storage_type":      "cloud_essd",
+					"seg_node_num":          "2",
+					"storage_size":          "50",
+					"vpc_id":                "${data.alicloud_vpcs.default.ids.0}",
+					"vswitch_id":            "${local.vswitch_id}",
+					"create_sample_data":    "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_category":  "Basic",
+						"db_instance_mode":      "StorageElastic",
+						"description":           name,
+						"engine":                "gpdb",
+						"engine_version":        "6.0",
+						"zone_id":               CHECKSET,
+						"instance_network_type": "VPC",
+						"instance_spec":         "2C8G",
+						"payment_type":          "PayAsYouGo",
+						"seg_storage_type":      "cloud_essd",
+						"seg_node_num":          "2",
+						"storage_size":          "50",
+						"vpc_id":                CHECKSET,
+						"vswitch_id":            CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type": "Subscription",
+					"period":       "Month",
+					"used_time":    "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type": "Subscription",
+					}),
+				),
+			},
+			{
+				// Convert the Subscription instance back to PayAsYouGo. Period and
+				// UsedTime are only required when converting to Subscription, so the
+				// values that remain in the configuration are not sent in this step.
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type": "PayAsYouGo",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type": "PayAsYouGo",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"period", "used_time", "db_instance_class", "security_ip_list", "instance_group_count", "create_sample_data", "parameters"},
+			},
 		},
 	})
 }
 
 // gpdbServerlessTestRegion returns the region for the GPDB serverless acceptance
-// tests. It defaults to cn-beijing, which has serverless inventory, and can be
+// tests. It defaults to cn-hangzhou, which has ServerlessPro inventory, and can be
 // overridden via the GPDB_SERVERLESS_REGION environment variable so the remote
 // ACC run can target another region if the default ever reports
 // OperationDenied.InsufficientResourceCapacity.
@@ -518,18 +722,18 @@ func gpdbServerlessTestRegion() string {
 	if v := os.Getenv("GPDB_SERVERLESS_REGION"); v != "" {
 		return v
 	}
-	return "cn-beijing"
+	return "cn-hangzhou"
 }
 
 // gpdbServerlessTestZone returns the zone for the GPDB serverless acceptance
-// tests, paired with gpdbServerlessTestRegion. Defaults to cn-beijing-h and can
+// tests, paired with gpdbServerlessTestRegion. Defaults to cn-hangzhou-j and can
 // be overridden via the GPDB_SERVERLESS_ZONE environment variable so the instance
 // and its vswitch stay in the same zone.
 func gpdbServerlessTestZone() string {
 	if v := os.Getenv("GPDB_SERVERLESS_ZONE"); v != "" {
 		return v
 	}
-	return "cn-beijing-h"
+	return "cn-hangzhou-j"
 }
 
 func TestAccAliCloudGPDBDBInstance_basic1(t *testing.T) {
@@ -716,6 +920,219 @@ func SkipTestAccAliCloudGPDBDBInstanceServerless(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"data_share_status": "closed",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"period", "used_time", "db_instance_class", "security_ip_list", "instance_group_count", "create_sample_data", "parameters"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudGPDBDBInstanceServerlessPro(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_gpdb_instance.default"
+	testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Region(gpdbServerlessTestRegion())})
+	ra := resourceAttrInit(resourceId, AliCloudGPDBDBInstanceMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &GpdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeGpdbDbInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sgpdbdbinstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGPDBDBInstanceBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_mode":      "ServerlessPro",
+					"description":           name,
+					"engine":                "gpdb",
+					"engine_version":        "7.0",
+					"zone_id":               gpdbServerlessTestZone(),
+					"instance_network_type": "VPC",
+					"payment_type":          "PayAsYouGo",
+					"serverless_resource":   "16",
+					"cache_storage_size":    "800",
+					"vpc_id":                "${data.alicloud_vpcs.default.ids.0}",
+					"vswitch_id":            "${local.vswitch_id}",
+					"create_sample_data":    "false",
+					"ip_whitelist": []map[string]interface{}{
+						{
+							"security_ip_list": "127.0.0.1",
+						},
+					},
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_mode":      "ServerlessPro",
+						"description":           name,
+						"engine":                "gpdb",
+						"engine_version":        "7.0",
+						"zone_id":               CHECKSET,
+						"instance_network_type": "VPC",
+						"payment_type":          "PayAsYouGo",
+						"serverless_resource":   "16",
+						"cache_storage_size":    "800",
+						"vpc_id":                CHECKSET,
+						"vswitch_id":            CHECKSET,
+						"ip_whitelist.#":        "1",
+						"tags.%":                "2",
+						"tags.Created":          "TF",
+						"tags.For":              "acceptance test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"serverless_resource": "32",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"serverless_resource": "32",
+						"cache_storage_size":  "800",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cache_storage_size": "1600",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"serverless_resource": "32",
+						"cache_storage_size":  "1600",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"period", "used_time", "db_instance_class", "security_ip_list", "instance_group_count", "create_sample_data", "parameters"},
+			},
+		},
+	})
+}
+
+// Pausing or resuming an instance is only supported for Serverless instances
+// with kernel version V1.0.2.1 or later, so this case runs against a Serverless
+// instance and drives the whole pause -> resume cycle through status.
+func TestAccAliCloudGPDBDBInstanceServerless_status(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_gpdb_instance.default"
+	testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Region(gpdbServerlessTestRegion())})
+	ra := resourceAttrInit(resourceId, AliCloudGPDBDBInstanceMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &GpdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeGpdbDbInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sgpdbdbinstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGPDBDBInstanceBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_mode":      "Serverless",
+					"description":           name,
+					"engine":                "gpdb",
+					"engine_version":        "6.0",
+					"zone_id":               gpdbServerlessTestZone(),
+					"instance_network_type": "VPC",
+					"instance_spec":         "4C16G",
+					"payment_type":          "PayAsYouGo",
+					"seg_node_num":          "2",
+					"vpc_id":                "${data.alicloud_vpcs.default.ids.0}",
+					"vswitch_id":            "${local.vswitch_id}",
+					"serverless_mode":       "Manual",
+					"status":                "Running",
+					"create_sample_data":    "false",
+					"ip_whitelist": []map[string]interface{}{
+						{
+							"security_ip_list": "127.0.0.1",
+						},
+					},
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_mode": "Serverless",
+						"description":      name,
+						"engine":           "gpdb",
+						"engine_version":   "6.0",
+						"zone_id":          CHECKSET,
+						"status":           "Running",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "Stopped",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "STOPPED",
+					}),
+				),
+			},
+			{
+				// Re-apply the same configuration to make sure a paused instance
+				// does not produce a permanent diff and no extra API call is made.
+				Config: testAccConfig(map[string]interface{}{
+					"status": "Stopped",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "STOPPED",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "Running",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "Running",
+					}),
+				),
+			},
+			{
+				// Removing status from the configuration leaves the instance
+				// unmanaged: no diff is produced and the instance keeps its
+				// current state.
+				Config: testAccConfig(map[string]interface{}{
+					"status": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "Running",
 					}),
 				),
 			},
@@ -1001,6 +1418,9 @@ func TestUnitAliCloudGPDBDBInstance(t *testing.T) {
 	ReadMockResponse := map[string]interface{}{
 		// DescribeDBInstanceAttribute
 		"Items": map[string]interface{}{
+			// DescribeDataShareInstances returns no data-share membership for
+			// the mocked instance; an empty list keeps the Read path error-free.
+			"DBInstance": []interface{}{},
 			"DBInstanceAttribute": []interface{}{
 				map[string]interface{}{
 					"DBInstanceId":          "CreateDBInstanceValue",
@@ -1010,14 +1430,17 @@ func TestUnitAliCloudGPDBDBInstance(t *testing.T) {
 					"Engine":                "CreateDBInstanceValue",
 					"EngineVersion":         "CreateDBInstanceValue",
 					"InstanceNetworkType":   "CreateDBInstanceValue",
+					"InstanceSpec":          "CreateDBInstanceValue",
 					"MaintainEndTime":       "CreateDBInstanceValue",
 					"MaintainStartTime":     "CreateDBInstanceValue",
 					"MasterNodeNum":         1,
+					"ResourceGroupId":       "CreateDBInstanceValue",
 					"SegmentCounts":         0,
 					"PayType":               "Postpaid",
 					"SegNodeNum":            4,
 					"DBInstanceStatus":      "Running",
 					"StorageSize":           50,
+					"StorageType":           "CreateDBInstanceValue",
 					"VSwitchId":             "CreateDBInstanceValue",
 					"VpcId":                 "CreateDBInstanceValue",
 					"ZoneId":                "CreateDBInstanceValue",
@@ -1068,7 +1491,10 @@ func TestUnitAliCloudGPDBDBInstance(t *testing.T) {
 	}
 
 	// Create
-	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewGpdbClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+	// The GPDB instance resource sends every request through AliyunClient.RpcPost,
+	// so the loadEndpoint failure branch is covered by patching that real method
+	// (there is no NewGpdbClient constructor on AliyunClient).
+	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "RpcPost", func(_ *connectivity.AliyunClient, _, _, _ string, _, _ map[string]interface{}, _ bool) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
 			Code:    String("loadEndpoint error"),
 			Data:    String("loadEndpoint error"),
@@ -1119,7 +1545,7 @@ func TestUnitAliCloudGPDBDBInstance(t *testing.T) {
 	}
 
 	// Update
-	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewGpdbClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "RpcPost", func(_ *connectivity.AliyunClient, _, _, _ string, _, _ map[string]interface{}, _ bool) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
 			Code:    String("loadEndpoint error"),
 			Data:    String("loadEndpoint error"),
@@ -1407,6 +1833,60 @@ func TestUnitAliCloudGPDBDBInstance(t *testing.T) {
 		}
 	}
 
+	// UpgradeDBVersion
+	attributesDiff = map[string]interface{}{
+		"minor_version": "6.6.2.21-202606241529",
+	}
+	diff, err = newInstanceDiff("alicloud_gpdb_instance", attributes, attributesDiff, dInit.State())
+	if err != nil {
+		t.Error(err)
+	}
+	dExisted, _ = schema.InternalMap(p["alicloud_gpdb_instance"].Schema).Data(dInit.State(), diff)
+	ReadMockResponseDiff = map[string]interface{}{
+		// DescribeDBInstanceAttribute Response
+		"Items": map[string]interface{}{
+			"DBInstanceAttribute": []interface{}{
+				map[string]interface{}{
+					"MinorVersion": "6.6.2.21-202606241529",
+				},
+			},
+		},
+	}
+	errorCodes = []string{"NonRetryableError", "Throttling.User", "nil"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1
+		gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "UpgradeDBVersion" {
+				switch errorCode {
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if retryIndex >= len(errorCodes)-1 {
+						return successResponseMock(ReadMockResponseDiff)
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := resourceAliCloudGpdbDbInstanceUpdate(dExisted, rawClient)
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		default:
+			assert.Nil(t, err)
+			dCompare, _ := schema.InternalMap(p["alicloud_gpdb_instance"].Schema).Data(dExisted.State(), nil)
+			for key, value := range attributes {
+				_ = dCompare.Set(key, value)
+			}
+			assert.Equal(t, dCompare.State().Attributes, dExisted.State().Attributes)
+		}
+		if retryIndex >= len(errorCodes)-1 {
+			break
+		}
+	}
+
 	// Read
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "{}"}
 	for index, errorCode := range errorCodes {
@@ -1438,7 +1918,7 @@ func TestUnitAliCloudGPDBDBInstance(t *testing.T) {
 	}
 
 	// Delete
-	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewGpdbClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "RpcPost", func(_ *connectivity.AliyunClient, _, _, _ string, _, _ map[string]interface{}, _ bool) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
 			Code:    String("loadEndpoint error"),
 			Data:    String("loadEndpoint error"),

@@ -67,6 +67,10 @@ func TestAccAliCloudDTSSynchronizationJob_basic0(t *testing.T) {
 						"destination_endpoint_region":        CHECKSET,
 						"db_list":                            "{\"test_database\":{\"name\":\"test_database\",\"all\":true,\"state\":\"normal\"}}",
 					}),
+					// The two region attributes are only CHECKSET above because the expected value is
+					// whatever region the provider is configured for; these pairs pin them to it.
+					resource.TestCheckResourceAttrPair(resourceId, "source_endpoint_region", "data.alicloud_regions.default", "regions.0.id"),
+					resource.TestCheckResourceAttrPair(resourceId, "destination_endpoint_region", "data.alicloud_regions.default", "regions.0.id"),
 				),
 			},
 			{
@@ -221,6 +225,8 @@ func TestAccAliCloudDTSSynchronizationJob_basic1(t *testing.T) {
 						"destination_endpoint_region":        CHECKSET,
 						"db_list":                            "{\"tfaccountpri_0\":{\"name\":\"tfaccountpri_0\",\"all\":true,\"state\":\"normal\"}}",
 					}),
+					resource.TestCheckResourceAttrPair(resourceId, "source_endpoint_region", "data.alicloud_regions.default", "regions.0.id"),
+					resource.TestCheckResourceAttrPair(resourceId, "destination_endpoint_region", "data.alicloud_regions.default", "regions.0.id"),
 				),
 			},
 			{
@@ -287,6 +293,8 @@ func TestAccAliCloudDTSSynchronizationJob_basic2(t *testing.T) {
 						"destination_endpoint_region":        CHECKSET,
 						"db_list":                            "{\"test_database\":{\"name\":\"test_database\",\"all\":true,\"state\":\"normal\"}}",
 					}),
+					resource.TestCheckResourceAttrPair(resourceId, "source_endpoint_region", "data.alicloud_regions.default", "regions.0.id"),
+					resource.TestCheckResourceAttrPair(resourceId, "destination_endpoint_region", "data.alicloud_regions.default", "regions.0.id"),
 				),
 			},
 			{
@@ -430,6 +438,190 @@ func TestAccAliCloudDTSSynchronizationJob_ssl(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudDTSSynchronizationJob_vpcNat(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_dts_synchronization_job.default"
+	ra := resourceAttrInit(resourceId, AliCloudDTSSynchronizationJobMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &DtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDtsSynchronizationJob")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testaccdtssyncjobvpcnat%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDTSSynchronizationJobVpcNatDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			// The four VPC NAT vswitch attributes only exist on ConfigureDtsJob, so this step is
+			// what proves the request is accepted with them set — a rejected or misspelled
+			// parameter fails the create outright. The primary and secondary vswitches are in
+			// different zones, which is the arrangement the paired parameters exist for.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"dts_instance_id":                    "${alicloud_dts_synchronization_instance.default.id}",
+					"dts_job_name":                       "tf-testAccCaseVpcNat",
+					"source_endpoint_instance_type":      "RDS",
+					"source_endpoint_instance_id":        "${alicloud_db_instance.source.id}",
+					"source_endpoint_engine_name":        "MySQL",
+					"source_endpoint_region":             "${data.alicloud_regions.default.regions.0.id}",
+					"source_endpoint_database_name":      "test_database",
+					"source_endpoint_user_name":          "${alicloud_rds_account.source_account.account_name}",
+					"source_endpoint_password":           "${alicloud_rds_account.source_account.account_password}",
+					"destination_endpoint_instance_type": "RDS",
+					"destination_endpoint_instance_id":   "${alicloud_db_instance.target.id}",
+					"destination_endpoint_engine_name":   "MySQL",
+					"destination_endpoint_region":        "${data.alicloud_regions.default.regions.0.id}",
+					"destination_endpoint_database_name": "test_database",
+					"destination_endpoint_user_name":     "${alicloud_rds_account.target_account.account_name}",
+					"destination_endpoint_password":      "${alicloud_rds_account.target_account.account_password}",
+					"db_list":                            "{\\\"test_database\\\":{\\\"name\\\":\\\"test_database\\\",\\\"all\\\":true,\\\"state\\\":\\\"normal\\\"}}",
+					"src_primary_vswitch_id":             "${alicloud_vswitch.primary.id}",
+					"src_secondary_vswitch_id":           "${alicloud_vswitch.secondary.id}",
+					"dest_primary_vswitch_id":            "${alicloud_vswitch.primary.id}",
+					"dest_secondary_vswitch_id":          "${alicloud_vswitch.secondary.id}",
+					"structure_initialization":           "true",
+					"data_initialization":                "true",
+					"data_synchronization":               "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"dts_job_name": "tf-testAccCaseVpcNat",
+					}),
+					// Compared against the vswitch resources rather than asserted with CHECKSET,
+					// so that a primary/secondary or src/dest swap in the create request mapping
+					// is caught instead of passing on any non-empty value.
+					resource.TestCheckResourceAttrPair(resourceId, "src_primary_vswitch_id", "alicloud_vswitch.primary", "id"),
+					resource.TestCheckResourceAttrPair(resourceId, "src_secondary_vswitch_id", "alicloud_vswitch.secondary", "id"),
+					resource.TestCheckResourceAttrPair(resourceId, "dest_primary_vswitch_id", "alicloud_vswitch.primary", "id"),
+					resource.TestCheckResourceAttrPair(resourceId, "dest_secondary_vswitch_id", "alicloud_vswitch.secondary", "id"),
+				),
+			},
+			// DTS does not return the vswitch ids on DescribeDtsJobDetail, so Read cannot set them
+			// and an imported job has them empty. They are ignored here for that reason, not
+			// because the values are expected to drift.
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"delay_notice", "error_phone", "delay_rule_time", "error_notice", "delay_phone", "reserve", "destination_endpoint_password", "source_endpoint_password", "src_primary_vswitch_id", "src_secondary_vswitch_id", "dest_primary_vswitch_id", "dest_secondary_vswitch_id"},
+			},
+		},
+	})
+}
+
+func AliCloudDTSSynchronizationJobVpcNatDependence(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+  		default = "%s"
+	}
+
+	data "alicloud_regions" "default" {
+  		current = true
+	}
+
+	data "alicloud_db_zones" "default" {
+  		engine                   = "MySQL"
+  		engine_version           = "8.0"
+  		instance_charge_type     = "PostPaid"
+  		category                 = "HighAvailability"
+  		db_instance_storage_type = "cloud_essd"
+	}
+
+	data "alicloud_db_instance_classes" "default" {
+  		zone_id                  = data.alicloud_db_zones.default.zones.0.id
+  		engine                   = "MySQL"
+  		engine_version           = "8.0"
+  		category                 = "HighAvailability"
+  		db_instance_storage_type = "cloud_essd"
+  		instance_charge_type     = "PostPaid"
+	}
+
+	resource "alicloud_vpc" "default" {
+  		vpc_name   = var.name
+  		cidr_block = "172.16.0.0/16"
+	}
+
+	## The RDS instances live in the primary vswitch; the secondary is created only to be handed
+	## to DTS as the standby side of the VPC NAT link, so it holds no resources of its own.
+	resource "alicloud_vswitch" "primary" {
+  		vpc_id       = alicloud_vpc.default.id
+  		cidr_block   = "172.16.0.0/24"
+  		zone_id      = data.alicloud_db_zones.default.zones.0.id
+  		vswitch_name = "${var.name}-primary"
+	}
+
+	resource "alicloud_vswitch" "secondary" {
+  		vpc_id       = alicloud_vpc.default.id
+  		cidr_block   = "172.16.1.0/24"
+  		zone_id      = data.alicloud_db_zones.default.zones.1.id
+  		vswitch_name = "${var.name}-secondary"
+	}
+
+	## RDS MySQL Source
+	resource "alicloud_db_instance" "source" {
+  		engine                   = "MySQL"
+  		engine_version           = "8.0"
+  		instance_type            = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
+  		instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+  		db_instance_storage_type = "cloud_essd"
+  		vswitch_id               = alicloud_vswitch.primary.id
+  		instance_name            = "${var.name}-source"
+	}
+
+	resource "alicloud_db_database" "source_db" {
+  		instance_id = alicloud_db_instance.source.id
+  		name        = "test_database"
+	}
+
+	resource "alicloud_rds_account" "source_account" {
+  		db_instance_id   = alicloud_db_instance.source.id
+  		account_name     = "test_mysql"
+  		account_password = "N1cetest"
+	}
+
+	resource "alicloud_db_account_privilege" "source_privilege" {
+  		instance_id  = alicloud_db_instance.source.id
+  		account_name = alicloud_rds_account.source_account.name
+  		privilege    = "ReadWrite"
+  		db_names     = alicloud_db_database.source_db.*.name
+	}
+
+	## RDS MySQL Target
+	resource "alicloud_db_instance" "target" {
+  		engine                   = "MySQL"
+  		engine_version           = "8.0"
+  		instance_type            = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
+  		instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+  		db_instance_storage_type = "cloud_essd"
+  		vswitch_id               = alicloud_vswitch.primary.id
+  		instance_name            = "${var.name}-target"
+	}
+
+	resource "alicloud_rds_account" "target_account" {
+  		db_instance_id   = alicloud_db_instance.target.id
+  		account_name     = "test_mysql"
+  		account_password = "N1cetest"
+	}
+
+	## DTS Data Synchronization
+	resource "alicloud_dts_synchronization_instance" "default" {
+  		payment_type                     = "PayAsYouGo"
+  		source_endpoint_engine_name      = "MySQL"
+  		source_endpoint_region           = data.alicloud_regions.default.regions.0.id
+  		destination_endpoint_engine_name = "MySQL"
+  		destination_endpoint_region      = data.alicloud_regions.default.regions.0.id
+  		instance_class                   = "4xlarge"
+  		sync_architecture                = "oneway"
+	}
+`, name)
+}
+
 func AliCloudDTSSynchronizationJobSslDependence(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
@@ -536,9 +728,12 @@ func AliCloudDTSSynchronizationJobBasicDependence0(name string) string {
   		default = "%s"
 	}
 
-data "alicloud_regions" "default" {
-  current = true
-}
+	// The region has to come from the provider rather than from ALICLOUD_REGION: that variable is not
+	// always set, and an empty region_id makes CreateDtsInstance fail with MissingDestinationRegion
+	// before the job under test is ever reached.
+	data "alicloud_regions" "default" {
+  		current = true
+	}
 
 	data "alicloud_db_zones" "default" {
   		engine                   = "MySQL"
@@ -624,13 +819,15 @@ data "alicloud_regions" "default" {
 }
 
 func AliCloudDTSSynchronizationJobBasicDependence1(name string) string {
-	return fmt.Sprintf(` 
+	return fmt.Sprintf(`
 	variable "name" {
   		default = "%s"
 	}
 
-	variable "region_id" {
-  		default = "cn-hangzhou"
+	// Both endpoints below are created in whatever region the provider is configured for, so the DTS
+	// instance has to be told that same region instead of a hardcoded one.
+	data "alicloud_regions" "default" {
+  		current = true
 	}
 
 	data "alicloud_db_zones" "default" {

@@ -132,6 +132,7 @@ You can enter a new alert rule name or use an existing alert rule name in CloudM
 * `status` - (Optional, Computed) The enabled status of the alarm rule. Valid values:
   - true: enabled.
   - false: disabled.
+* `targets` - (Optional, Computed, Set, Available since v1.288.0) The push channels that receive the alert, in addition to the alert contact groups. Up to 5 targets are supported. See [`targets`](#targets) below.
 * `webhook` - (Optional) The URL address specified for callback when an alert is triggered. A POST request is sent to this URL.
 
 ### `composite_expression`
@@ -274,6 +275,18 @@ The prometheus supports the following:
 The prometheus-annotations supports the following:
 * `key` - (Optional) The key of the annotation.
 * `value` - (Optional) The value of the annotation.
+
+### `targets`
+
+The targets supports the following:
+* `target_id` - (Optional) The ID of the alert trigger target. It only needs to be unique within the alert rule. The API rejects a target that omits it.
+* `arn` - (Optional) The Alibaba Cloud Resource Name (ARN) of the resource that receives the alert. The API rejects a target that omits it. Simple Message Queue (formerly MNS) (SMQ), Auto Scaling, Simple Log Service and Function Compute are supported:
+  - SMQ: `acs:mns:{regionId}:{userId}:/{Resource type}/{Resource name}/message`. {regionId}: the region ID of the SMQ queue or topic. {userId}: the ID of the Alibaba Cloud account that owns the resource. {Resource type}: the type of the resource that receives the alert. Valid values: queues, topics. {Resource name}: the queue name if the resource type is queues, or the topic name if the resource type is topics.
+  - Auto Scaling: `acs:ess:{regionId}:{userId}:scalingGroupId/{Scaling group ID}:scalingRuleId/{Scaling rule ID}`
+  - Simple Log Service: `acs:log:{regionId}:{userId}:project/{Project name}/logstore/{Logstore name}`
+  - Function Compute: `acs:fc:{regionId}:{userId}:services/{Service name}/functions/{Function name}`
+* `level` - (Optional, Computed) The level of the alert. Valid values: `INFO`, `WARN`, `CRITICAL`. The value is matched case-insensitively, so `Info`, `Warn` and `Critical` are accepted as well.
+* `json_params` - (Optional) The parameters of the alert callback, in the JSON format.
 
 ## Attributes Reference
 
