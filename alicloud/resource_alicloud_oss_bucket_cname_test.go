@@ -24,6 +24,11 @@ func TestAccAliCloudOssBucketCname_basic8544(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			// Binding a custom domain to a bucket located in a mainland China region
+			// requires the domain to have completed ICP filing, otherwise PutCname
+			// fails with NoSuchCnameInRecord. The test domain is not filed, so run
+			// this case in a region where the ICP requirement does not apply.
+			checkoutSupportedRegions(t, true, []connectivity.Region{connectivity.APSouthEast1})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -32,11 +37,11 @@ func TestAccAliCloudOssBucketCname_basic8544(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"bucket": "${alicloud_oss_bucket.CreateBucket.bucket}",
-					"domain": "${alicloud_alidns_record.defaultnHqm5p.domain_name}",
+					"domain": "${var.name}.${alicloud_alidns_record.defaultnHqm5p.domain_name}",
 					"certificate": []map[string]interface{}{
 						{
-							"certificate": "-----BEGIN CERTIFICATE-----\\nMIIGBTCCBO2gAwIBAgIQBZ8CvYikSGggdmowncLwVTANBgkqhkiG9w0BAQsFADBu\\nMQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3\\nd3cuZGlnaWNlcnQuY29tMS0wKwYDVQQDEyRFbmNyeXB0aW9uIEV2ZXJ5d2hlcmUg\\nRFYgVExTIENBIC0gRzIwHhcNMjQxMTA1MDAwMDAwWhcNMjUwMjAzMjM1OTU5WjAY\\nMRYwFAYDVQQDEw10ZnRlc3RhY2MuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A\\nMIIBCgKCAQEArYwC1TpEMONgxUd6ZdRBmI2G1RzcgUb88bTn//PUWIU7V3kTvzcJ\\ntozkCGhZ3Bl1Kh2srnSqvOTbU8wii1RCRBELCVRAovVBEGa544gQ+UFH92kkRVLs\\nF4lRq+cPjm1fQp3zYzONeLEp8obgoiMYNNgWvB/2Q3/VmSwz0JK1lIaqxDvooFih\\nzQgxgKiYcEYEGDoNW9VcqEIqF3zdWzvBC3eaSH837MSOWiPDvkw3AJBDSsUGBKuc\\n1JQtw+HvXUafBhd+vetbp+5CHM0K8iXm2zJspoBufaDz3CjNVEbi9HKBnyf2b4zb\\nMnlaVX16CPwUIeiQoEKhxdEfNePWlkR7jwIDAQABo4IC8zCCAu8wHwYDVR0jBBgw\\nFoAUeN+RkF/u3qz2xXXr1UxVU+8kSrYwHQYDVR0OBBYEFAU1XHnIPizNK5TKSUQU\\nXJx37hcpMCsGA1UdEQQkMCKCDXRmdGVzdGFjYy5jb22CEXd3dy50ZnRlc3RhY2Mu\\nY29tMD4GA1UdIAQ3MDUwMwYGZ4EMAQIBMCkwJwYIKwYBBQUHAgEWG2h0dHA6Ly93\\nd3cuZGlnaWNlcnQuY29tL0NQUzAOBgNVHQ8BAf8EBAMCBaAwHQYDVR0lBBYwFAYI\\nKwYBBQUHAwEGCCsGAQUFBwMCMIGABggrBgEFBQcBAQR0MHIwJAYIKwYBBQUHMAGG\\nGGh0dHA6Ly9vY3NwLmRpZ2ljZXJ0LmNvbTBKBggrBgEFBQcwAoY+aHR0cDovL2Nh\\nY2VydHMuZGlnaWNlcnQuY29tL0VuY3J5cHRpb25FdmVyeXdoZXJlRFZUTFNDQS1H\\nMi5jcnQwDAYDVR0TAQH/BAIwADCCAX4GCisGAQQB1nkCBAIEggFuBIIBagFoAHYA\\nTnWjJ1yaEMM4W2zU3z9S6x3w4I4bjWnAsfpksWKaOd8AAAGS+gk+7wAABAMARzBF\\nAiAviRYG+a8hzAC0fGZGq0cAP+1Tv5Y4XbwZKTKJi+2opAIhAIVtcUcdyLgaJMeL\\n8Bqf9SgVNqCtgU4QNys9dOj+rVpxAHYA5tIxY0B3jMEQQQbXcbnOwdJA9paEhvu6\\nhzId/R43jlAAAAGS+gk/JgAABAMARzBFAiEAwRlbBYiQC2WuKIqwIZQ+nqI81Z97\\nNpkcuXLqhRCTFisCIE7gzDiq17Mnp1H/CQyhNpNB/26E0xt/Bg4Ti1X1oBpPAHYA\\nzxFW7tUufK/zh1vZaS6b6RpxZ0qwF+ysAdJbd87MOwgAAAGS+gk/JwAABAMARzBF\\nAiA6wPovzGoaWdyg5Fh/S1aBDwAJDWoqHG3F4t1hFPYEcwIhALKv5QACKohe8tDr\\nm2Z9GeSoQ/jiqf8jhxXQVz5GUxNkMA0GCSqGSIb3DQEBCwUAA4IBAQDYIG5tyi0s\\njmcGd8dEtViPzAt4gGvZ2RnRffla1r8u2HqFWQb9C1xXdKkjEPfD0M0amvc5FO+n\\nxS4WJco4A6WpB26FgoSVybdrNh8GnZkfcvLdXKoOvNYFkofPYd+tZH1DZfCfipBp\\n2FnV/RVndI2LH16YG4VhoLWwK3NRh6wdwj+qCqWJ2BhRaHdFOjpcYZb44cvh4huW\\nkr56ZwMlFOINfyWfUEtBKpRWduJH40vNwEq3fdKrB4/jC2YkpmnNpkwl3gHigLZ6\\nJHBTDy4JP+k6nnVX90nPYV2grvpQutX2leOy6K6ebGmpp8i3Bevw66PnfJDGABWe\\nmqhAsFrMDJrv\\n-----END CERTIFICATE-----\\n",
-							"private_key": "-----BEGIN RSA PRIVATE KEY-----\\nMIIEogIBAAKCAQEArYwC1TpEMONgxUd6ZdRBmI2G1RzcgUb88bTn//PUWIU7V3kT\\nvzcJtozkCGhZ3Bl1Kh2srnSqvOTbU8wii1RCRBELCVRAovVBEGa544gQ+UFH92kk\\nRVLsF4lRq+cPjm1fQp3zYzONeLEp8obgoiMYNNgWvB/2Q3/VmSwz0JK1lIaqxDvo\\noFihzQgxgKiYcEYEGDoNW9VcqEIqF3zdWzvBC3eaSH837MSOWiPDvkw3AJBDSsUG\\nBKuc1JQtw+HvXUafBhd+vetbp+5CHM0K8iXm2zJspoBufaDz3CjNVEbi9HKBnyf2\\nb4zbMnlaVX16CPwUIeiQoEKhxdEfNePWlkR7jwIDAQABAoIBAADGzF4eEK5FvsIW\\n/mJErNWMcQslnFH4Z5zRepV7PnWYqP/vPk8HsMmeSUTV8EznPtLbZz3ZDEFV7S1X\\nO2lZzfCfPlAcXiwxNG768tXuipZ0iehsfPoUDvy0/GyNdtsCPqTQIcgLMOMkzxhO\\nqNg0Fiyr9Z141qWbvtiTokaRZVllWnmEVs14xJhPtMowzipYb7+9aW9NTYjT65N9\\niK/aruE2HVQ9yjD6gY09N8Bz6AQSS3jSqtzOIqfoXjKdAFuBq8C00AsdGnBR0qwx\\n6sTseW/rMaIklxDF7KYmOi+JgIaMJTBMFPW8fmYMlpz9LFudVhMMHtP2gqJGJFZL\\nWnsqPFkCgYEA7KjXdISqFvUFUQoK/JzIZ9gbNIv6Kp64S+BxgYo8A3HHKi2Mhnwa\\ngbVL8BrdmXPPOI2k7yfYKZi2RbG/CQzc9WJcsV96c1WBg/D3oHACwlsgYbPR+cFK\\nLzxNNlMHRESMCNeM+uuviksReIOdF3C2KO3T9Z1HS8x9KdYsgBrrnpcCgYEAu7rK\\nChw7NNFz45aV/EkiUX0XxwhN5vn3pyhUIz47tZ68omfz7tZXaifZwqQqxF65Vluu\\n7Kpr9JSGJJwGVT7vDTFr+zZsbh4TOW3AafbgX80gVaBZutNvZF1CxlXYM2W73Xz0\\n37VExz2gC/KMKNNGgOVFg1+5Y3jw2gn1Qfi4ockCgYAcxtcUCwGnsvmHhiIZ33Ka\\n9fMw64hq4Evmpg8HQmjTvmUKYumAfNy4QvRN6OZjP2rGJKsWjZDCVhhr1xY0ooTH\\nrcM5qjN4jMAn7AggUR50xaHlX3k71l4P6lQ1M9lhWrhwZs10wW3h8gjYz6Atdn4f\\n8fNhHVPLCr15ddqJZTybVwKBgAsLoneV0aX57OenJIwDgZFp2sxLIMpGStv683hf\\nYQP+ovqrQx76XYpRbe6V2i5TpHQAUPp7zH5Hft0IkRbS7R3JmqDdQuP3wQnP+1JA\\nxFLertha5uynJBazpgolYuMjSTpu77l54OIYLiKF0tlUFQHge4aPS0kfBIzPqS6I\\ng9SBAoGAOhJIB60Kqu5xIIgAoNi6hCyAB0Ma0snXKUqjNKboyRoeF0KYC8VwHz/h\\nFA2VEYgV+XsLZEM6NdZ4pF0EMLKFt9ZUyD/i1AbZG0twtwNrhSc7R41BRsvOayJE\\nLNAglAQEqlqerZB6N/DzRIf7rpmlt971Ir1O6v3X4atfTj0W09A=\\n-----END RSA PRIVATE KEY-----\\n",
+							"certificate": "-----BEGIN CERTIFICATE-----\\nMIIDQTCCAimgAwIBAgIJAIvaxVoOGHWMMA0GCSqGSIb3DQEBCwUAMCoxCzAJBgNV\\nBAYTAkNOMRswGQYDVQQDDBIqLmFsaXRlcnJhZm9ybS5jb20wHhcNMjYwODEzMDIx\\nMjU5WhcNMzYwODEwMDIxMjU5WjAqMQswCQYDVQQGEwJDTjEbMBkGA1UEAwwSKi5h\\nbGl0ZXJyYWZvcm0uY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA\\nxMpKrFIX/x1iF/i51l2t5KKVWU0YRXX6DM5gSSeT6wVhsV2Y0LiS7+TE+WS/8tPf\\noDuNcPxj/6OxvPovlBADRnpV2LNxj2KkdAA1IBH+tqfdpE6pAtsYxrpxy5DNhriv\\nnSsX3ubnOOJeJN94yRmeZPBudq/EeMdNrBjTqPZgzTKEBnT19IsVyklsmgTVEaJH\\nNf21pAccvWwVxVQ+W9h2+8S1BM9HXZzTlu/toe7ETAB5Rzb++dApA+ioB9wZpbxG\\nlbymu0pYS+VLqa8irvuD2h8sC6WkBa1FUzlgP6AJyHT0SoNuMvUfzZhqiU+GwLBd\\nB7tKd6tdb9fRxULnbqmY5QIDAQABo2owaDAvBgNVHREEKDAmghIqLmFsaXRlcnJh\\nZm9ybS5jb22CEGFsaXRlcnJhZm9ybS5jb20wCQYDVR0TBAIwADALBgNVHQ8EBAMC\\nBaAwHQYDVR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMA0GCSqGSIb3DQEBCwUA\\nA4IBAQBLSn4SUeP2WfcE/k93+SB5hEZ+m7hxaA/sH8GYuJ1Uy/9X0nlmVgX040/I\\nfr7Zc9QG8c66TvvzscaWCAqwyeLAhHH0QzoIyX3S0k603G+XsTUDxfAuFaGN36aq\\n4x4SBhzEzQZI8rJj44mDOhkJRkg2QvemQl2aQAiAMgY6Ex5mayQVfwCPY5/9Aca7\\nXtyFNyT+DMVRS9eOIfkMKmp0kBIUDa3aDaEcxdj5L4nGcd8pyysOTyCBPDwSH4jy\\nmXV6aTGjwDlGxD0K56NXvk+FDL2eebaFbDUWbKF8qlovME3Td9u6ipdiRis+huVs\\n+LX3Ao6dfokhStA4mB8ULe7DP5Gh\\n-----END CERTIFICATE-----\\n",
+							"private_key": "-----BEGIN RSA PRIVATE KEY-----\\nMIIEpAIBAAKCAQEAxMpKrFIX/x1iF/i51l2t5KKVWU0YRXX6DM5gSSeT6wVhsV2Y\\n0LiS7+TE+WS/8tPfoDuNcPxj/6OxvPovlBADRnpV2LNxj2KkdAA1IBH+tqfdpE6p\\nAtsYxrpxy5DNhrivnSsX3ubnOOJeJN94yRmeZPBudq/EeMdNrBjTqPZgzTKEBnT1\\n9IsVyklsmgTVEaJHNf21pAccvWwVxVQ+W9h2+8S1BM9HXZzTlu/toe7ETAB5Rzb+\\n+dApA+ioB9wZpbxGlbymu0pYS+VLqa8irvuD2h8sC6WkBa1FUzlgP6AJyHT0SoNu\\nMvUfzZhqiU+GwLBdB7tKd6tdb9fRxULnbqmY5QIDAQABAoIBAESbQe1RsYv/cnNp\\nA2D4x+ctx2OavRt6RfKxAGCAq9EDz0tGlkAuGQwJdaJ8vW6q7wutt2Hsm/BD4XNA\\nxdWYv4uSmtsxtCWI/kxyxhKoM2T6oQrnYYTdXYXq+kE9+mk9efwRSgEr/vCV+rxg\\nLHvvsoj+SYSXQqfY0/trrF77hkQC+64/ECOW2dfs7GTMQ3ntypoA0fmH7m2vhPth\\nzR2MdeGdO96zaLUz8GW9wyQvlFx7NR8/33EHEtTttoerHa0sf7NzPhncTSOhLGQw\\nqN9xXoU+cNEWAIgbJigLv3I819O2/FySDU8Y98U5cwlVhRE0EQ9rjNvXcTizzSPT\\np/88OAECgYEA75oG1MvteNoSm+slydfWAbfH9DkSjYfm+fnCSNrAATxnaApU5XMT\\nmyGd3t7bOiQZsvm6oOLM3P2MWw+byHibUs357VpbPKCDR80w+K0OyZYqBPMzXqWK\\n1BTAPzx3iVsg9XZZDo/i2qq8RoWaWABL6hWEd5CIoheXsZtksdOIXGkCgYEA0kIu\\nU679uz+8JRnMqlmDy4A7t3Eea3iXL2SXmbl1dqpa0a9fDNhJshNHj3UQCamFDbcF\\nWIW60/Uk9OMUKAe55/LuoNnTa/vlD/3e0w9BXd3Oipi6f9bcXdjOBRGKoTo/vKM9\\n+5crSojaE32EQmVmN2ONRkViZ/tU2w735F0N+R0CgYEAiBB/Kp74J3YntTWPSxVv\\n6Z/VREKY35i6uWB1TWw0Nz93NaUQWxDDpIgtn+AMvPK9SV759d12G1U9PIUboXek\\nNRzVfk2enEpG4yKKWd3lFONaz17Q4EHAGfoCxqZu96ixidOAdX2OhUEKFD5QzQK2\\nGaPIiyGgBfTB51FomHeY62kCgYEAr1Y5Q9feB9SylU3aewSC/6VEJ0nR0FWT3hXI\\nxoz+A6M0cUAJx7BmZHXnax537VbMeg9yCcwbbL41v3HOUUOAKIlRrhl4UciR0LAo\\nrWE/ZYOexb1vaURIKIqv41IphSIKHMkU20XI+DL/iNlW/feJMg92tG8QDR5uOO9W\\nkb139ZECgYA82itIfQWhNQ19tMkg0wBvqu/oRpjXrfkdVrSYS3zxmRuXrSXP2Nl8\\nTl3aGCOuo9GSMP0DLQ5tKdmTc6Phw5uEyUAZqy2OJeroioz+lIRAEks48uFWoaMe\\nAaCmsgSJ6VnVtJxGXsDNxT3wA4vuv6MBHXnU+ME0KuBXKwHfoMkXSQ==\\n-----END RSA PRIVATE KEY-----\\n",
 						},
 					},
 				}),
@@ -49,10 +54,11 @@ func TestAccAliCloudOssBucketCname_basic8544(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"force": "true",
 					"certificate": []map[string]interface{}{
 						{
-							"certificate": "-----BEGIN CERTIFICATE-----\\nMIIF8TCCBNmgAwIBAgIQDEMtbL1pb2R4Y+6G6rzbuDANBgkqhkiG9w0BAQsFADBu\\nMQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3\\nd3cuZGlnaWNlcnQuY29tMS0wKwYDVQQDEyRFbmNyeXB0aW9uIEV2ZXJ5d2hlcmUg\\nRFYgVExTIENBIC0gRzIwHhcNMjQxMDE1MDAwMDAwWhcNMjUwMTEyMjM1OTU5WjAY\\nMRYwFAYDVQQDEw1iai5kaW5hcnkudG9wMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A\\nMIIBCgKCAQEAsDUC/ob21cD3xDekIf8ioL9H4S5X1x+NOQ/+/6YAbo0l0KDbXJJg\\n/+PgTV/ikwJsAqVHzBzd2uIxyYNHxD2XpxRvlOnoXS2gFSBxCI8BPdc1nlepyGB6\\nPFvpuQWfnNrrcuOSkQy7UctVd5ARtDc+OHOj+aADuGHg3ssqbPIvLQtF7shzRwN3\\nbRqZ4nXEqs12tQW3pfi8uMhZdITwPJZ5lHCQB/j+wvBOvJkL0Lpdh2qjdM+iI/0z\\nKPvinMy2rDwifJfTGP93cyl+9iUESfLVDfVPvkClhmeVFbo6mnmfR4DbNUBfIyh3\\ndrX/dyzE0v7KvG6FTPBnDr73wH7GZlSzuwIDAQABo4IC3zCCAtswHwYDVR0jBBgw\\nFoAUeN+RkF/u3qz2xXXr1UxVU+8kSrYwHQYDVR0OBBYEFLimtiPuZwC1es0dRTTg\\n1ihtUmx3MBgGA1UdEQQRMA+CDWJqLmRpbmFyeS50b3AwPgYDVR0gBDcwNTAzBgZn\\ngQwBAgEwKTAnBggrBgEFBQcCARYbaHR0cDovL3d3dy5kaWdpY2VydC5jb20vQ1BT\\nMA4GA1UdDwEB/wQEAwIFoDAdBgNVHSUEFjAUBggrBgEFBQcDAQYIKwYBBQUHAwIw\\ngYAGCCsGAQUFBwEBBHQwcjAkBggrBgEFBQcwAYYYaHR0cDovL29jc3AuZGlnaWNl\\ncnQuY29tMEoGCCsGAQUFBzAChj5odHRwOi8vY2FjZXJ0cy5kaWdpY2VydC5jb20v\\nRW5jcnlwdGlvbkV2ZXJ5d2hlcmVEVlRMU0NBLUcyLmNydDAMBgNVHRMBAf8EAjAA\\nMIIBfQYKKwYBBAHWeQIEAgSCAW0EggFpAWcAdgBOdaMnXJoQwzhbbNTfP1LrHfDg\\njhuNacCx+mSxYpo53wAAAZKOzEEbAAAEAwBHMEUCIHLM0Fq8RCrKyRnSNhC0YZBS\\n4UxjCap1mGydKFj0a40cAiEAg/R3ydG6gIqBTpzv7quAqSyTbiUnqyj/oGW2kvsq\\ndS4AdQDm0jFjQHeMwRBBBtdxuc7B0kD2loSG+7qHMh39HjeOUAAAAZKOzED+AAAE\\nAwBGMEQCIAERiAIyJsQLCL66rIZ9ThhOFYo07f8v5g2EYUE8T0tZAiBLC8FViH2r\\niqrb9Nut9khpywtJ7604XnmCe7QMlT71DQB2AMz7D2qFcQll/pWbU87psnwi6YVc\\nDZeNtql+VMD+TA2wAAABko7MQMUAAAQDAEcwRQIhALnLscXz37q/qBOar6Ws2WWY\\n96uQtd9fpvCITRMs4/U7AiAg6TdZWOSiDNnbRNojFqdsAwKu/ucheTaXO0wbOQfg\\nDzANBgkqhkiG9w0BAQsFAAOCAQEAuLe2m6HknIlhc4hemlVRGmLtcITimFdn89MP\\nZj+t2v15nAmztEIeMsWTp5wFITV1yVMCivk6mr7W5N0fBLkQfxDGwwNjJk93mlQo\\n5uTyvuJQ4OtWbxVYgz9hyJVVFhHpV3+GLse2n4bkxZcMA7MjdrtXEqZDFtJbXFmr\\nEkPNuRBfo/qbKazNZg2EWvjpkWY7OY8QbjhsrijHDpUTc0Ma/+xk1OnUXFjzs04q\\nVxQHPg7xnPaiMKAwxp/B1blLmeMqsTq0cupkg7bjAOEGE9CN7kGRRDt5Z9SO5j7a\\nSrtl9fMxrgGxQ5tubEl+MVcr1IRJM2nIcSSXvPFPoTvlVgqAbg==\\n-----END CERTIFICATE-----",
-							"private_key": "-----BEGIN RSA PRIVATE KEY-----\\nMIIEowIBAAKCAQEAsDUC/ob21cD3xDekIf8ioL9H4S5X1x+NOQ/+/6YAbo0l0KDb\\nXJJg/+PgTV/ikwJsAqVHzBzd2uIxyYNHxD2XpxRvlOnoXS2gFSBxCI8BPdc1nlep\\nyGB6PFvpuQWfnNrrcuOSkQy7UctVd5ARtDc+OHOj+aADuGHg3ssqbPIvLQtF7shz\\nRwN3bRqZ4nXEqs12tQW3pfi8uMhZdITwPJZ5lHCQB/j+wvBOvJkL0Lpdh2qjdM+i\\nI/0zKPvinMy2rDwifJfTGP93cyl+9iUESfLVDfVPvkClhmeVFbo6mnmfR4DbNUBf\\nIyh3drX/dyzE0v7KvG6FTPBnDr73wH7GZlSzuwIDAQABAoIBADwZ4MsTGsce2gO1\\n3MhxvwxoIerHBVQNYXx4ncfyBYyvnRnTe+7PyMEPJzcNAPmWpmOin2IZ6HwbkdLD\\nceuX/I2TFVoMDGMXyFXcamF6cXh32sSG7xS2/4pt6ULgDaiRLSTTRW8vEgdcnOq6\\nm6dF/nV/0Aq5TvuJewtS7cYaNwgcER0LhChtP9Uj1Ui/84TW27ZhwuTcWl09vFJd\\nkyrULzru1E6Wi0VruzcNBL41mLQrxL+FF/zwRpTBAVVsz4ynUMOmTbfl/n2rqIs4\\nZTXuORhuSA7DHtQYpxzyfBNfkWXEd5NQSn7fHtEYdKZtbH2nF3ZF7jB//lmY9riB\\no+NR7V0CgYEA+AR+PkDBzAZhKm+EkeEDo4SEpvCPP1vVReAkwUGV87DqrgHbfnxs\\npHjjmSnVcFdLghq0U6lKksKTrNLdd8PbWusAlZBEyhsZpAHXBr3BW2XqPnnHbuSd\\nBlajzynF3OSkVJ04sUu7gMszOtqsvjOQGJWXkC6MVFqFGZ6h9xsgKrcCgYEAteDY\\njrVaPNGVlDRP9S7IRFAf19iqUCjbfVowAkQR2BBP+s1OvfbCmZM/lSqsKIIQPj+o\\nxvx5A+uqYvDDF20Zz3FOS9GO1rySXR+A63dkDeBrNztDhhX8qMJhBpY36pGQzf2E\\nOEOezsdqxE2vKK/ZMKCS2FhyTHChdkP8hEr2Cx0CgYEAhE1hSrQgrUV577ktbuQp\\nnMDEQolw4MuMKYo4ER97blOh3NEA1ahqDBKw1rOKODNZBD5ak4ZrUX6aaEbT/V9t\\nVEKoPSCIkYeDVgnlOqNe0fK70jgEOxOY8BinqYsPEZamUrzL0Ugk7b93xJ2CKLQ4\\n2eRyxWcPVLA08EW/AKJntmECgYACa4N2IqOYu5Ep76hAsuanQgmqbY+WkXSaLmEF\\nJrK2FUF7LNAnZukf8f2elnrD7zcYHPC59RIHI1OZDWsLHMCDKhbIm3kzEj9ATfMB\\nLw19wcarbXZwikpaVHvGAqmrzVQH6Z+gwAWU6sJY6k+yUuSo6PoLNuIOclEzqaPq\\nfrTXYQKBgG0BlTPZkIFQfPl0VkuY7TEbtt+Yr7M2I9OjkPZjxHCVU7FWIIF8v/4D\\nmieN/8xaKL23hqgAugm8STzAVEJqppfwhET9pt4n8vMlW2be6GqWLMqyFUnPuLSz\\na51yor6QxtSjulPAZ15z15lTskxK0u8XNnVV1b57LSra48MuY9XS\\n-----END RSA PRIVATE KEY-----",
+							"certificate": "-----BEGIN CERTIFICATE-----\\nMIIDQTCCAimgAwIBAgIJAOC5ZWJJiL1xMA0GCSqGSIb3DQEBCwUAMCoxCzAJBgNV\\nBAYTAkNOMRswGQYDVQQDDBIqLmFsaXRlcnJhZm9ybS5jb20wHhcNMjYwODEzMDIx\\nMzAwWhcNMzYwODEwMDIxMzAwWjAqMQswCQYDVQQGEwJDTjEbMBkGA1UEAwwSKi5h\\nbGl0ZXJyYWZvcm0uY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA\\n3X9ntOcOxpCbvyC8zoU2oFqMLBjvc4tjlosgku4FJJ7CG4sq1fkuPwK7Vz+6KO6y\\ntuBiUsS/unqf8VGZgOKAhBQalOxxSbVAfdm9+Ngko7romJHnxGckfQE3rfOcYjXa\\nkV7gzydI2JaIi5E522RjqOuX8w9ytaBxVxoy0klYkv7IaPNOnX4wEF8j0d2ho1CO\\nHvh1cIGv+cATKBp+RkV2s3RkaqbtFLH/qPtZcaOoNdhc1u6LGlmlPN+0cMHN7qzV\\nfBgjjKLRxT7QqYFdS6U56JzIEL1dB64UH3c4Jdzn9QaU/lzvJkWkWUegaV3Xx1rl\\n3nThNtKTnqtLBbZfDeVNRQIDAQABo2owaDAvBgNVHREEKDAmghIqLmFsaXRlcnJh\\nZm9ybS5jb22CEGFsaXRlcnJhZm9ybS5jb20wCQYDVR0TBAIwADALBgNVHQ8EBAMC\\nBaAwHQYDVR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMA0GCSqGSIb3DQEBCwUA\\nA4IBAQBElss9qWStN5sfU/93EgQmBuuqv8rVxr8td99YN8J6Ss6/wgfMx+v88xZh\\n4E2SNIg1upD12MLHbAq3DLjMZ521AUm+r3KYEd+03kv6K9/hw+nA00PP5cvkq3Gj\\n15whGer9RVbIdYi/TZyHrJMmvNhEfWcwGSYTEXdhQAD7CmBt1i+om0ElDQ7TvhPy\\n0ptDhC94faYkMeEgUDJVoEBFcTy7NRla0Tw/yOeDB58T4QyaKwm8K30zalTAvLB2\\nFCrR8235FBvvF0pvU+Cs73H3NdJs8bdfWHULEU1/+L6Z3tBo34nXJf/26V2tDvqd\\nZe74hDbF7Vl//uWV1amR+g1ClQKG\\n-----END CERTIFICATE-----\\n",
+							"private_key": "-----BEGIN RSA PRIVATE KEY-----\\nMIIEpAIBAAKCAQEA3X9ntOcOxpCbvyC8zoU2oFqMLBjvc4tjlosgku4FJJ7CG4sq\\n1fkuPwK7Vz+6KO6ytuBiUsS/unqf8VGZgOKAhBQalOxxSbVAfdm9+Ngko7romJHn\\nxGckfQE3rfOcYjXakV7gzydI2JaIi5E522RjqOuX8w9ytaBxVxoy0klYkv7IaPNO\\nnX4wEF8j0d2ho1COHvh1cIGv+cATKBp+RkV2s3RkaqbtFLH/qPtZcaOoNdhc1u6L\\nGlmlPN+0cMHN7qzVfBgjjKLRxT7QqYFdS6U56JzIEL1dB64UH3c4Jdzn9QaU/lzv\\nJkWkWUegaV3Xx1rl3nThNtKTnqtLBbZfDeVNRQIDAQABAoIBAQCuEeI+mRdTlXHQ\\n0rmO08IKYx6lyTLlazXoqY3/6m7ASMPjQYt4fUuK2WrBNqPmZzCr58tdoKHMu3HX\\nBHnOgDLfma0KPIcLlhYI0YYqejLROaJxxLiP8T8Lvlkzq6/Kvuf2NsoWApmNHUBR\\n7t+5OzvXFM9lhU5wzpZEDaLDAEFLwtgv2tOPH9UvmdxIyk8aQJkHj/znZRU1yMJR\\nZdZf//pHu8oIsfos+r7CZBv+6wFsfBB85XWwWCdPi+fujeE7VzE/czTAp698HlGK\\nH32r3CK0i5eZKwFsz0Cxz/cpZ9zSrx2wkkLW4ViUH3m4iTk+LEH1+bJZtBV+k1Lx\\nlOJ5qCRBAoGBAP8y7CX5e5hhIEYryS2dd05zMQ60SXQ3BGwVx2vjHEKG1j4VEiCi\\nawdty1M6S4dEu8pyZq5oWhCvSwPJ9hxSc5hpBWBIDRtLdYratgNcxD020e9Aqvnf\\nPXhFhhtoxfRn4vYLqoboXZdXHMvkdLJCzm8h8I0RgF0FrwfR8FAFx1FXAoGBAN4x\\nZn7g/bhLNE8fKv/4F4CvJ16B1hzt7TzZ+nBwkc+xPW9l535Gl41wiVeO3pvGauv5\\n2rebQ543mGQDp7+PsiNGRF4Cg9F/C8UCpC9UTr4aTOTgmcVBpZYzFtfmh0sPG5Yz\\nl4KFJH6gYzngl3ZwuAtc3dXrEybWfv+opAAq0WjDAoGBAMFj1ZDxfrf64npKtCnd\\nKoxIvuRlu0RWbQN7faREdyXzCGgDj7krW/BFQ8/OXW4kqCrChw2kBpyeOjqk0dyk\\nnvTgoTJVZ5lHlcuj8kqaAhxhbrXgS7EPe4WpKfebbmfIUjYioRea/1GwsiHQ/p4Y\\nAlg1YBWHLb9Qj1NdxL7foiwBAoGAesLOf1FtvRIH76Mnzc7TpWygks2nb8pg5dsF\\nTHRVi2vAprilwxXbi/DeYPr1sRlaX9Bm8ESfgl3zG2cNmoAZCvY6tbor/GZ2KT5B\\nWkj5TH0ZeOdC7kJL64WEnHqoy2aodj9A+YL4W+HfkM2uwWibtuNzSUqdBTtDZZtW\\nKSV/F6MCgYAhk2E7ubsSwlXTNxO7E60Dv83cYZaRhvdRTkllHHs2MiTyFMgyuU8u\\nX5FOHtoU4pGmiHK6yG60MPlN8FK147wS2+Ja+UjwH3EeEYDoN18ToYQsfI2oXcIW\\n5JbbQD9dT35VNue2agB8NsVdijcSFuczYtP/Jxdp8+31GfOwO8NIvQ==\\n-----END RSA PRIVATE KEY-----\\n",
 						},
 					},
 				}),
@@ -95,15 +101,15 @@ resource "alicloud_oss_bucket" "CreateBucket" {
 
 resource "alicloud_oss_bucket_cname_token" "defaultZaWJfG" {
   bucket = alicloud_oss_bucket.CreateBucket.bucket
-  domain = "songwenpeng.alivetest.asia"
+  domain = "${var.name}.aliterraform.com"
 }
 
 resource "alicloud_alidns_record" "defaultnHqm5p" {
   status      = "ENABLE"
   line        = "default"
-  rr          = "_dnsauth"
+  rr          = "_dnsauth.${var.name}"
   type        = "TXT"
-  domain_name = "songwenpeng.alivetest.asia"
+  domain_name = "aliterraform.com"
   priority    = "1"
   value       = alicloud_oss_bucket_cname_token.defaultZaWJfG.token
   ttl         = "600"
@@ -134,6 +140,11 @@ func TestAccAliCloudOssBucketCname_basic8542(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			// Binding a custom domain to a bucket located in a mainland China region
+			// requires the domain to have completed ICP filing, otherwise PutCname
+			// fails with NoSuchCnameInRecord. The test domain is not filed, so run
+			// this case in a region where the ICP requirement does not apply.
+			checkoutSupportedRegions(t, true, []connectivity.Region{connectivity.APSouthEast1})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -142,10 +153,10 @@ func TestAccAliCloudOssBucketCname_basic8542(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"bucket": "${alicloud_oss_bucket.CreateBucket.bucket}",
-					"domain": "${alicloud_alidns_record.defaultnHqm5p.domain_name}",
+					"domain": "${var.name}.${alicloud_alidns_record.defaultnHqm5p.domain_name}",
 					"certificate": []map[string]interface{}{
 						{
-							"cert_id": "22495571-cn-hangzhou",
+							"cert_id": "${alicloud_ssl_certificates_service_certificate.default.id}-cn-hangzhou",
 						},
 					},
 				}),
@@ -191,17 +202,28 @@ resource "alicloud_oss_bucket" "CreateBucket" {
   storage_class = "Standard"
 }
 
+# The cname is bound by referencing a certificate already hosted in the
+# certificate service, so provision one here rather than pinning an id that only
+# ever exists in a single account. The id OSS expects is suffixed with the region
+# of the certificate service itself, which is cn-hangzhou here and is unrelated to
+# the region the bucket lives in.
+resource "alicloud_ssl_certificates_service_certificate" "default" {
+  certificate_name = var.name
+  cert             = "-----BEGIN CERTIFICATE-----\nMIIDQTCCAimgAwIBAgIJAKOyh837u808MA0GCSqGSIb3DQEBCwUAMCoxCzAJBgNV\nBAYTAkNOMRswGQYDVQQDDBIqLmFsaXRlcnJhZm9ybS5jb20wHhcNMjYwODEzMDcy\nOTM5WhcNMzYwODEwMDcyOTM5WjAqMQswCQYDVQQGEwJDTjEbMBkGA1UEAwwSKi5h\nbGl0ZXJyYWZvcm0uY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA\nw2OvqiujcOzfz0vPPldCqDRJYIkc3jN8zhvvinK4/Am4wXlSvdbNTgoRlVfSnI3g\nW0zuxnmtRLP5hZ+0Pn1H4UYOGI6T6+wtnBtGPlSoO9y2siV5eBOGC2pDGT3yfxlo\ncwnQP7/Jre8QDsGyJyxJ+7+gpW56rnhzqP3cO2YAuiJU/t39bsmrIaTq+9sCiwPA\n0E+w8RasIKzXLgk8tQMtj4r5ffm2tQ9pPmE106v4MTc5gTFjgvgA+IIDjR2PN1RY\nFgEx5MLSDZWrE0OvzuV661XhBAq2Q7DrTdOOPSLUSC0YXb215iD0DVysjKJW8a9A\nYuoHX7QmWSOjrBxphmkgnQIDAQABo2owaDAvBgNVHREEKDAmghIqLmFsaXRlcnJh\nZm9ybS5jb22CEGFsaXRlcnJhZm9ybS5jb20wCQYDVR0TBAIwADALBgNVHQ8EBAMC\nBaAwHQYDVR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMA0GCSqGSIb3DQEBCwUA\nA4IBAQCZ3LOL3v1B3wKarbf+gEGXmUoa2BDmB+Wk6xEO4Z1BvkSPUqNPRMvuHxTr\nWnIg1962YObwtlWJdyi8UHJmXAbSV2D7Tn6ZZWFHPZqIOFXalZ0ZzsRKZsoda+Of\n2UmGzYjfNmBDk1eN7Qj7Lb7IWDVNIS2jFrCP8wEGwOmnUmr4c0ESH72Jdk3iojTR\nez6yZrZ2HndO8zdDoIYh2TgQPJG/tyHlgs3QP6RCy7jGeXZb0cYoecmD2RqT2NZe\ngR8kBTh7IyylTKFaVrAXiA5j46mYL0Sz7wnCTMYonxwl83G+FeJcmzXQgTYAPre5\np+HW1WeYLykCZvcVTv9CaLZHNoVE\n-----END CERTIFICATE-----\n"
+  key              = "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEAw2OvqiujcOzfz0vPPldCqDRJYIkc3jN8zhvvinK4/Am4wXlS\nvdbNTgoRlVfSnI3gW0zuxnmtRLP5hZ+0Pn1H4UYOGI6T6+wtnBtGPlSoO9y2siV5\neBOGC2pDGT3yfxlocwnQP7/Jre8QDsGyJyxJ+7+gpW56rnhzqP3cO2YAuiJU/t39\nbsmrIaTq+9sCiwPA0E+w8RasIKzXLgk8tQMtj4r5ffm2tQ9pPmE106v4MTc5gTFj\ngvgA+IIDjR2PN1RYFgEx5MLSDZWrE0OvzuV661XhBAq2Q7DrTdOOPSLUSC0YXb21\n5iD0DVysjKJW8a9AYuoHX7QmWSOjrBxphmkgnQIDAQABAoIBAFrsK5WTowXspKWR\nUIphDtq5IiAzDeT0rrI227xgcGaQm5Ikw/UlXPpgwxfs+0vw1aOG5GIlwxSCb63X\nyId/wxA4ilyxFHKnv/2xz3k36eWZasbxm1neM/Vh6IF5izvL9gf6XBceR1qSMbW8\nOwvxlyf4X2g8RgikcqYEJBTb/aCfgWN4QxupH+mmdP5AjggvYsT/6+ABF3UbOWD9\nDj9Ynna42cazkiTwQFB9+zFpjsk24FJpprIBidtOF3A9Ol9PEN0MKJJj2+nR2cHQ\nHY9TNe/G/oBldaQJqxTeC7I3SeZ7mlUldgWK9BmLVBESeE7Plmh5pP6RG5wXgIxd\nhJxiTaECgYEA/s8/FVfltpK81kPAeyBBSBj2zK6o+LAa804p1TAQSrte4gyGPHBX\n5q5NZkPguqtBarRVA+eU+j19TD8EnzpwxlRi49RuccGvGv5ccmB8UeACOkg2kdTz\nGv8acWcOxNC0ysQg9wnLRUedoA1fH2jj/esYZwibc7mjMz/YWTQqCYkCgYEAxE1f\neYMqibN6L6inULSTSanASO686ezd0hOtruJPmjLfrKNk4Zsh7An307JfOse/uBMU\nQNHWpmymZEy9hvIj/nHBT+5c3l1DEBSNQjiBNSyPbK8everoKWqkMHwq4AQLZb57\nTSbiaD9+P5KoP0WBo9uZ4ETp48uFM6QhEXjcXXUCgYEAz6vPKTEDGmLLnwGHDZKD\nQiR+eOFc+5pjzKqGs6bBkHbXZPp6KSYSrgKfOFrX/Kt43GNu6ojCxZR52zt9I9z4\nbtv14OOQxAvsD98BL4Ltr7kXd7LFLuPU4srJHWW2BrhmsN9aUpzb23H7yKc9QJc3\nQgpqUAcW0yGYHjvJsyItpKkCgYAFfxEcSuLnBiJ2sSc2KEgzeNBMenrJpfs0BZ8I\nVYfbDm+a2txZQMm7XTAWOllWQP+KPOaFRhrXgBVMm6V24NLHLhI2lbr98uiMy7aE\n0yYzAfNmHKUkti4X8sd0IBXnPdW/3IyBRYRzXMvBJe8WDnEp0F1HnUZbPXiWUJMo\ndRTefQKBgGwgahqoWnHa3reMtxoGfcrJ+WxLSAr4Jt+15sS63+JT9r2grRMo2p8B\nWpsHZDqDIMEP3IqTiqLuaSUnN5Cx9YOXhIFFYgDZOunEeYmei5E5y0BCOn+zBHYS\npM2shXcGhQX8vp8ZIUlUsnPEXoL/gVi66Ao1/h41lGC7eFqEAAAB\n-----END RSA PRIVATE KEY-----\n"
+}
+
 resource "alicloud_oss_bucket_cname_token" "defaultZaWJfG" {
   bucket = alicloud_oss_bucket.CreateBucket.bucket
-  domain = "songwenpeng.alivetest.asia"
+  domain = "${var.name}.aliterraform.com"
 }
 
 resource "alicloud_alidns_record" "defaultnHqm5p" {
   status      = "ENABLE"
   line        = "default"
-  rr          = "_dnsauth"
+  rr          = "_dnsauth.${var.name}"
   type        = "TXT"
-  domain_name = "songwenpeng.alivetest.asia"
+  domain_name = "aliterraform.com"
   priority    = "1"
   value       = alicloud_oss_bucket_cname_token.defaultZaWJfG.token
   ttl         = "600"
@@ -211,7 +233,6 @@ resource "alicloud_alidns_record" "defaultnHqm5p" {
     ]
   }
 }
-
 
 `, name)
 }
@@ -232,6 +253,11 @@ func TestAccAliCloudOssBucketCname_basic8386(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			// Binding a custom domain to a bucket located in a mainland China region
+			// requires the domain to have completed ICP filing, otherwise PutCname
+			// fails with NoSuchCnameInRecord. The test domain is not filed, so run
+			// this case in a region where the ICP requirement does not apply.
+			checkoutSupportedRegions(t, true, []connectivity.Region{connectivity.APSouthEast1})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -240,7 +266,7 @@ func TestAccAliCloudOssBucketCname_basic8386(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"bucket": "${alicloud_oss_bucket.CreateBucket.bucket}",
-					"domain": "songwenpeng.${alicloud_alidns_record.defaultnHqm5p.domain_name}",
+					"domain": "${var.name}.${alicloud_alidns_record.defaultnHqm5p.domain_name}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -254,8 +280,8 @@ func TestAccAliCloudOssBucketCname_basic8386(t *testing.T) {
 					"force": "true",
 					"certificate": []map[string]interface{}{
 						{
-							"certificate": "-----BEGIN CERTIFICATE-----\\nMIIGLDCCBRSgAwIBAgIQC1haGkCG29WLl7YjhfFqfDANBgkqhkiG9w0BAQsFADBu\\nMQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3\\nd3cuZGlnaWNlcnQuY29tMS0wKwYDVQQDEyRFbmNyeXB0aW9uIEV2ZXJ5d2hlcmUg\\nRFYgVExTIENBIC0gRzIwHhcNMjUxMjI5MDAwMDAwWhcNMjYwMzI4MjM1OTU5WjAl\\nMSMwIQYDVQQDExpzb25nd2VucGVuZy5hbGl2ZXRlc3QuYXNpYTCCASIwDQYJKoZI\\nhvcNAQEBBQADggEPADCCAQoCggEBAM34HhxQW2URornO1y5EAG7wBIW/WxFzP81g\\nASejB5qHzQxeDSwu4QlSW7qFU5njf3toQ4HG5f9XxfNSpmirlpiPSlWLOaws7kIa\\nlmc57pLVsLCgA4OIp2SjgUXNlfPjdQ/uq/Z07BGOZ7EUaZo7qOd2MgGkwNlb4hZW\\ntK2LSTJp9lH2hlgs50LU6UOC8qTya9xpyhrzorZKpGX9Oe5F1OjByDsj21cIeeu3\\nzMXzB8XHX9vLvPf1tAUorlezRX4T2BlslNbHYpdbUpeIyRD5yoOb2I4zPw62nXV9\\nirLt33XhKpM+eMGuldG8wI9m5+WVr2vycswQ2zUjDE2uRCXDYPkCAwEAAaOCAw0w\\nggMJMB8GA1UdIwQYMBaAFHjfkZBf7t6s9sV169VMVVPvJEq2MB0GA1UdDgQWBBQt\\nONdtzvXRX4IKV94S99BzLBk4VzBFBgNVHREEPjA8ghpzb25nd2VucGVuZy5hbGl2\\nZXRlc3QuYXNpYYIed3d3LnNvbmd3ZW5wZW5nLmFsaXZldGVzdC5hc2lhMD4GA1Ud\\nIAQ3MDUwMwYGZ4EMAQIBMCkwJwYIKwYBBQUHAgEWG2h0dHA6Ly93d3cuZGlnaWNl\\ncnQuY29tL0NQUzAOBgNVHQ8BAf8EBAMCBaAwHQYDVR0lBBYwFAYIKwYBBQUHAwEG\\nCCsGAQUFBwMCMIGABggrBgEFBQcBAQR0MHIwJAYIKwYBBQUHMAGGGGh0dHA6Ly9v\\nY3NwLmRpZ2ljZXJ0LmNvbTBKBggrBgEFBQcwAoY+aHR0cDovL2NhY2VydHMuZGln\\naWNlcnQuY29tL0VuY3J5cHRpb25FdmVyeXdoZXJlRFZUTFNDQS1HMi5jcnQwDAYD\\nVR0TAQH/BAIwADCCAX4GCisGAQQB1nkCBAIEggFuBIIBagFoAHYAlpdkv1VYl633\\nQ4doNwhCd+nwOtX2pPM2bkakPw/KqcYAAAGbae/bnwAABAMARzBFAiBuc7rbM4gK\\ny87P7A5I0B5WQIvXOfgWhwG7u9ygCuRw2AIhAMGOgxpAYUF4rHc4HvZTDpg06iGq\\nqYLs9fqS9qNizksbAHYAFoMtq/CpJQ8P8DqlRf/Iv8gj0IdL9gQpJ/jnHzMT9foA\\nAAGbae/blwAABAMARzBFAiBzu8OJcdPBhEHdUGWPDllNX6AqPBqj1FQkKHohA2mp\\nBwIhAL1t0T+dSN4ZPBi+CmoWL7Uskcds1wBB8O1IrA+lGjT1AHYAZBHEbKQS7KeJ\\nHKICLgC8q08oB9QeNSer6v7VA8l9zfAAAAGbae/bmwAABAMARzBFAiAW/MJQij/I\\npiwZ3SDBr2/TNtHnNu26iCHLMvGRYmaWCAIhAONH4obDKa+Z7wd1eBZGK0r/Mm7i\\neUHKkAb4s3ETy5uZMA0GCSqGSIb3DQEBCwUAA4IBAQCGpNhlNt4NmMRXikaTpD32\\nlGpUV3EZ+XXhmSIt7p362UfB/T/GDozfX2aH009PJ4IIYHibNvFnZFXDn+pVPn9a\\nYm941Vu2Khzt4GGXx76oA5AML8ZOl7GBMBukPZMg53fCr0BLDqvH0BOyenfBPCYt\\nzpk5kdzWT/YufHpoDBRkaz4qE6mkcEt+wggzJWJLyhukFAVVLQPhj54OWX3dRe5W\\nQIe3TSzZWSuIto9+PGd+s93oN0OXi7PUkOQSoOrYMunwgopxcICi8mewAPZEpLxC\\nhiKCoQ7vBVFTQ6t0J+KGFOd9XpwuQg2BR4LGtnmOwnBSCnoOdZiG+dqomku3ztPQ\\n-----END CERTIFICATE-----",
-							"private_key": "-----BEGIN RSA PRIVATE KEY-----\\nMIIEogIBAAKCAQEAzfgeHFBbZRGiuc7XLkQAbvAEhb9bEXM/zWABJ6MHmofNDF4N\\nLC7hCVJbuoVTmeN/e2hDgcbl/1fF81KmaKuWmI9KVYs5rCzuQhqWZznuktWwsKAD\\ng4inZKOBRc2V8+N1D+6r9nTsEY5nsRRpmjuo53YyAaTA2VviFla0rYtJMmn2UfaG\\nWCznQtTpQ4LypPJr3GnKGvOitkqkZf057kXU6MHIOyPbVwh567fMxfMHxcdf28u8\\n9/W0BSiuV7NFfhPYGWyU1sdil1tSl4jJEPnKg5vYjjM/DraddX2Ksu3fdeEqkz54\\nwa6V0bzAj2bn5ZWva/JyzBDbNSMMTa5EJcNg+QIDAQABAoIBABLFNFVHO3UD/Ozq\\n/TAxsUpq5DaeIDoAY0WfpKtMj7JVAupIHfIzWX3EfCiM4vgIxALmlxRaIHa7NIZ+\\ntzyduo0vrcoK9JgMxi/PBXrlzCikgcQu6PMRPpQM1IicejhuN6paiWBd+m+FJ0z7\\ne747BqMFYfxFW+/TEFER2MhiA6ss0/cvr5k5lK7ejPojIjyiObGaTx61bdIXhKMH\\nTQCf9BvqDm4bJnoorsjJpqGnZcpBtqUkl3VBXuCbuxvJCWjrWnCgRFhWm2ToHM9I\\nS9HiS185UPd4l18/5KBc02mf+hxCgf33vW0oKzjkI6GEIyaq3PAmWxMi1VtuLRER\\n76wfYwMCgYEA9xSujmMNX2x+4bs1qM4giQF2RgpAHlDzWBVin/SQQYv6H+JOaHBR\\nmNJ69omcTbAE5w65Q8tHoBNnT/UyF4M5btJ6mbYYYTtGjv4Gerc1UnsU21+PuH9R\\n8dOx/eDjfuOrz0yOv8+5uw1Qc8dkOIDdag7XYBSuxu5aapRVViFyy9sCgYEA1WeE\\nKFqSjsiAr0/jqFy/T/iBVyTYRWLcoq6a/GRwujk3xdRylNtkQ1eVt43XfXhNRFJC\\nWNy/Y5BCLzwSU8P/n1mPdhjy6XaBhRwWQ+JjheCXnJloiAC7wI9HwW/jgwBiDU8k\\nVgr8BJPi8bDEZdlDl89ztFUEJRxDF4BW3Kee6LsCgYAItITV5W2CMCtkPplMYj7J\\nNPD61L+fkdCRCOfZpN80P/9HAk0q5tIpJTlJ2F1Wa14w2dbzKYVTgXuBWK00IN50\\nJhxFsCG5w0HgJdkKl8vcJRP+CqbgpDO55nB99l9tiA30lsjsvx/XFEgCXEMOrpOe\\neflinDfwMFOlL6a2CyWlQwKBgGSvr4n+mdFmRljwv3/rKpSHsja0epnaODFFYnic\\nxxcF8guT3e/fx2GCjHALK1XWkdYfXZBhrqdCJAf3Nspw2kWL0wUsZkfCkv+Drfmf\\nccdznPTU6J3qgqsqrvdUXCqt3pVa9tDl49whDl1sQm2vYZXZ2kSGLCt6Nyl6cwEu\\n0OoLAoGAPJ4cDDs31nSgh4dTDh09QN51Y1ZxS+erY5jj+CzLhXteO5zLBkQVbOKs\\nBfD8wjvhus828NHNxQ9zsLO8aOZkd0yelOIV12a9kWkKduZpYua6Qjmgjri758GI\\nd4nIOAGBXPL/lvFCvgyGzf8KtRdBeau904i6hK1Pt6D87jFGjt0=\\n-----END RSA PRIVATE KEY-----",
+							"certificate": "-----BEGIN CERTIFICATE-----\\nMIIDQTCCAimgAwIBAgIJAO/c/EfBUd+MMA0GCSqGSIb3DQEBCwUAMCoxCzAJBgNV\\nBAYTAkNOMRswGQYDVQQDDBIqLmFsaXRlcnJhZm9ybS5jb20wHhcNMjYwODEzMDcy\\nOTM5WhcNMzYwODEwMDcyOTM5WjAqMQswCQYDVQQGEwJDTjEbMBkGA1UEAwwSKi5h\\nbGl0ZXJyYWZvcm0uY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA\\n3JV1LxzcQ4wXMiGB+tk5UU9WtDdJQTx0I6QjicMMRr4gkuzmWUl+5riVXGlquoS4\\nbuBYbWA9L/6o9oDVXMcGoXqGTpqnBK1RbD3/dMkuCU32ovBWJt4ybfkhw6x3mJwy\\nHKalAcaFj3OCCzOvaIXGCj6WXxSUniGUxs3M3znVUzaWIUJEwp7q0K3l4QZmddAD\\noGi+12VZYOszQX7r8e/ETDEOXxpO6eEZP/+vE6uX938F3KaYqInyuoxHQnyin3I5\\nFuvUjaod/NDwF6kKyBG3GFWOYmT7dpjftxVrY+lmjRvlY/uyRDhAKZIr5dBFGkhw\\ngZFI1davKmnfkADO9ZIwewIDAQABo2owaDAvBgNVHREEKDAmghIqLmFsaXRlcnJh\\nZm9ybS5jb22CEGFsaXRlcnJhZm9ybS5jb20wCQYDVR0TBAIwADALBgNVHQ8EBAMC\\nBaAwHQYDVR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMA0GCSqGSIb3DQEBCwUA\\nA4IBAQAjl5SrxrXCl7gHM2gOHo219D1yXiUs3xjv0BmxFvNpnXjoUuDWUXvFRYu2\\nxPvRo/8QRrgUY4jWKqYBmmdPBUivmz5/wYBMTkezwMurqs8t1Bqd+aqtxAzUHwi9\\n0IzvEN1gk9uCHe82+a2bg6Nm3ljlhDefT4zuRwxtEdiRZOrPLyCxphZaxNOdD/i8\\n9WtZYe0nyh3jgMUlqesOyUzDRJzA/dRKDsraI5TSwb8rwBTJQCCai5/4UKKDNxhg\\nwL+Y0juEQKrlPhiL9pRqynHJv9iXOlf+brEIU+VE1zYooXNLB3Y/X37JXjlNLstg\\nYb78/x6S8d8XhBvwpn2eIr14bqsK\\n-----END CERTIFICATE-----\\n",
+							"private_key": "-----BEGIN RSA PRIVATE KEY-----\\nMIIEogIBAAKCAQEA3JV1LxzcQ4wXMiGB+tk5UU9WtDdJQTx0I6QjicMMRr4gkuzm\\nWUl+5riVXGlquoS4buBYbWA9L/6o9oDVXMcGoXqGTpqnBK1RbD3/dMkuCU32ovBW\\nJt4ybfkhw6x3mJwyHKalAcaFj3OCCzOvaIXGCj6WXxSUniGUxs3M3znVUzaWIUJE\\nwp7q0K3l4QZmddADoGi+12VZYOszQX7r8e/ETDEOXxpO6eEZP/+vE6uX938F3KaY\\nqInyuoxHQnyin3I5FuvUjaod/NDwF6kKyBG3GFWOYmT7dpjftxVrY+lmjRvlY/uy\\nRDhAKZIr5dBFGkhwgZFI1davKmnfkADO9ZIwewIDAQABAoIBADsw19smkWyGwQqw\\ntyJK+/h3o7qEQ2IACOIvf2HONxMcnb0PWNiIwkbDLUE5AGzAhIUsKk5fTsv8N/a9\\np4NX3M2kBTo+gabdo0W6dTwvZ+0TQKWEfHm9kia0fXz2YLlQ4JmTlh+d1+Ugh7rd\\nyanwi63gEZW9/gtY04VtYBZefIHxWjr2NboEZDt8xvpWlcttufpCTBYggxLjoZMy\\ngLGJHk5R9gJZDKrdnkg2L99xNhOu/7N80k6+Hi8/jDNAOW9hoRr6fo1gK1XqXjFL\\naBsh190LgA/VYo5MR3r1SLmTVrnZya1j+xqGBY4ZjtJIzh4D+n3h7giTQ8/tr8dH\\nyzsJsUECgYEA+HNopUB37x8sIucarCV7V2Nw0oz07LAASuYt7AaHXNNuphwyP/no\\nJdaWP2cm+PDyNJWTFvXCXJyvwEjAXfM8+nrl2dPLUeU1uQ9BkQZ3iVsNeA+4+niK\\nJZ3nXZRDSph4TLXi5RSbrV+jksAfCzHP59iFP5jK2GPDiTovnrrcIJECgYEA40lI\\noAACu4caI0xoRp1B0MbKWr5N76AyJJxbKX5vxbjdXLLVrC8HhTA5mb/GmcWjn21h\\n+NbnbHaxPh7ZhJV0U+IMa6Heq6D4hiQCmqW2M3ZApaHP3eKtmwt0v12FUob1eNdb\\nQwDWidHkoLgcxImOvZAIKkaMMn89gHL+49ndRksCgYBBStsaapnaPp/zwDZTPTpv\\n2dNBkgef2BULmfhBiemy7GGsx8Yw5/UpVH6BxRMJ4xBT32cbZpSgkBDkAHqFdjH1\\nRaz4FN/e8tSugKLjgQaTE1mzzrX3JQxxHFE8V4VjqjQbPMWXHFZZNsQfAdxmrb2M\\nmWtTLk1IltdBTghLt6G38QKBgGkRf5k3aAv4sISQ1cOO/tXcj77TKoQTshpqjVnp\\nMRJeGza3FT+7neZcHMSOeuirDLCuiBPYhLMHS3hEGpnH3TbJ0KQQ+Dau+zRHgUys\\nPkYb7FalLsqL92UtLpMoUHGOIfvy0iVvRb4AYYhKlEHmtS28X4nrgvP1DiFLB7md\\nBUVxAoGAIF4XBdrk7QrV9MU7UR7SONwiCO7dWwh1bHreT7I5XSVNcWJb/zDmOH9w\\nPRhOxmn5ywYByj0W2haKJWaMw/MnBRrs3z307/6dBqx3rksYeEcTq2bh7Njw7GK7\\nCDaVYSPtm/QbUhpY3hk0UWp/omgFuc+KURoBPqMORPfC67davWk=\\n-----END RSA PRIVATE KEY-----\\n",
 						},
 					},
 				}),
@@ -269,7 +295,7 @@ func TestAccAliCloudOssBucketCname_basic8386(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"certificate": []map[string]interface{}{
 						{
-							"cert_id": "22495571-cn-hangzhou",
+							"cert_id": "${alicloud_ssl_certificates_service_certificate.default0.id}-cn-hangzhou",
 						},
 					},
 					"delete_certificate": "false",
@@ -285,15 +311,15 @@ func TestAccAliCloudOssBucketCname_basic8386(t *testing.T) {
 					"force": "false",
 					"certificate": []map[string]interface{}{
 						{
-							"cert_id": "22495586-cn-hangzhou",
+							"cert_id": "${alicloud_ssl_certificates_service_certificate.default1.id}-cn-hangzhou",
 						},
 					},
-					"previous_cert_id": "22495571-cn-hangzhou",
+					"previous_cert_id": "${alicloud_ssl_certificates_service_certificate.default0.id}-cn-hangzhou",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"force":            "false",
-						"previous_cert_id": "22495571-cn-hangzhou",
+						"previous_cert_id": CHECKSET,
 					}),
 				),
 			},
@@ -322,17 +348,34 @@ resource "alicloud_oss_bucket" "CreateBucket" {
   storage_class = "Standard"
 }
 
+# The cname is bound by referencing a certificate already hosted in the
+# certificate service, so provision one here rather than pinning an id that only
+# ever exists in a single account. The id OSS expects is suffixed with the region
+# of the certificate service itself, which is cn-hangzhou here and is unrelated to
+# the region the bucket lives in.
+resource "alicloud_ssl_certificates_service_certificate" "default0" {
+  certificate_name = "${var.name}-0"
+  cert             = "-----BEGIN CERTIFICATE-----\nMIIDQTCCAimgAwIBAgIJALR2yS78+SqiMA0GCSqGSIb3DQEBCwUAMCoxCzAJBgNV\nBAYTAkNOMRswGQYDVQQDDBIqLmFsaXRlcnJhZm9ybS5jb20wHhcNMjYwODEzMDcy\nOTM5WhcNMzYwODEwMDcyOTM5WjAqMQswCQYDVQQGEwJDTjEbMBkGA1UEAwwSKi5h\nbGl0ZXJyYWZvcm0uY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA\nn0La3EtHPbZVmz5gVY0tQKUR415YmKKfCblRzV538GPvdzekLmNIUdcLiTPw6OY5\nMAM9B4iCIBBGmOPXqK5NvoojL1nlWH7Rbu6DbUMTLeDkDNVT0pkz3m08VDgmjEpV\n/95qJNegsElHnz2eJz+kfhe6bV8lRkfINySDPPy0ovM3qSgLikNkR+U0si8eCqHt\ntY5iEsz0zFlsp5iFpvE6QVf7UdIk1FiF3JPt/UoKn1OY88TDvn5B4n+hezrYZzZs\nSCsDztPMXio2NIlGtv51FG6FYRQL31md+ZWWb6yGy4EPSmtWHz2urDxRvujjJnvQ\nHC/CJLX1Idhr1KbfbkP9CQIDAQABo2owaDAvBgNVHREEKDAmghIqLmFsaXRlcnJh\nZm9ybS5jb22CEGFsaXRlcnJhZm9ybS5jb20wCQYDVR0TBAIwADALBgNVHQ8EBAMC\nBaAwHQYDVR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMA0GCSqGSIb3DQEBCwUA\nA4IBAQAR0Ps522+c05JT/JzTA0UMkB9w9knu6ffQjI3FzzeUEKF+dGIeaN22Z/sw\n+jNAEkOzXJvIRbAMoULOWCFqh3XvVEyS+DhEKPRr8Lk+jBeto619DPPQIldFWE0C\nGp2vIYmkKFiBEOLBBOZkEQtOuVuuBGt75x7GUg4v4UYhV5LflylCnIn2unW+Xr32\n+3gWIB4NVI3b90FITMS/TvwXEW7JXLdDcROCVgLkXVIAG1vjwPudftVa7EIkYgNp\n3D/1bTX/b+EqlWLAeDwFTqL18wk3c7LE9pPzj8zYL/ERPV9fPf57O1D6/0reiwK0\nJH0ikZMJ1YrKc95e7b3NFnRMTZD1\n-----END CERTIFICATE-----\n"
+  key              = "-----BEGIN RSA PRIVATE KEY-----\nMIIEpQIBAAKCAQEAn0La3EtHPbZVmz5gVY0tQKUR415YmKKfCblRzV538GPvdzek\nLmNIUdcLiTPw6OY5MAM9B4iCIBBGmOPXqK5NvoojL1nlWH7Rbu6DbUMTLeDkDNVT\n0pkz3m08VDgmjEpV/95qJNegsElHnz2eJz+kfhe6bV8lRkfINySDPPy0ovM3qSgL\nikNkR+U0si8eCqHttY5iEsz0zFlsp5iFpvE6QVf7UdIk1FiF3JPt/UoKn1OY88TD\nvn5B4n+hezrYZzZsSCsDztPMXio2NIlGtv51FG6FYRQL31md+ZWWb6yGy4EPSmtW\nHz2urDxRvujjJnvQHC/CJLX1Idhr1KbfbkP9CQIDAQABAoIBAQCfNIvo8G/VJzLI\nsEBJBYoZN2p8alISs25coB9AN5Gag6xc9whvPtyKw3hKvdu0VoEQmAwoPbQnLV4F\ndK6fdy9MrHaj3S/BmXTvegtz7Dt9/3S5x3+15WTOk1BduIwAbkcuMz7UeaGu2HJ6\no3Q4NAzR6BJ7R0PRz+w8A4oWK2DACuLp0adF+tGMls3OM1Unc9oVeZbDSdmWdjBk\nGP1zPC8E2c9UsLfJ93/XejlIV0CuFcRqYLvmobbx04h42KFprwZQqpq2Frq1UInb\n8Xm9L3jy5uVT1gsswBE7794Djsp1pBNYSUPd6LGEyZX/N2Bhx5hQsHLlmXXaAQRa\nrxuK+rOpAoGBAM6IV8f3zdMrwBjBEakj2eYuf5XRkxqSm1cNq0TSe5VfPo3+KoYF\ngPHlYEXrkXW9+M+MuyxrxXnXWBc6TZsQeuIrrK6X03psqE+GpefUOQB7Qp1okibz\ndKrkuFUQHpezTHjnnPrdderA9XIHISM3nakOnVGjKJHmpCBBb0XygT/jAoGBAMVo\nCdFtBEHX7OS3XVsJxgfRwYtgxfNjl+d3rO3BGFicgp4vWnOyc9mWNUFyVllq6CkN\nHLawDS+4hfYR0BaTFknpSQNBQ8LxLKAtWP1PuZtyIrTzZBVZQxswToMnyFYYoBaj\nd02fb0DiiQSeJixzCYivrZtBLX+KLDaFtPoH+IsjAoGBAIUGxKOENQpjD6PiF2H+\nOYdNQ9hX2IwxCeUUZNA7UmZvpncG0pToTpl/yHbAuDxCVFQ6rQR7lgJYdeDgKMRL\n5RpwTxVVrV0ZR3+RlqKvytdIjSueAyUbgnXgQ+pmK45Camslo7LhmeXOy0ja1rk8\nRUxyoVnH4YW4LNapzuYawK1JAoGAdhjKnt5wSI/L6fyEvhz3ut/SwPZRFk2Dp/ch\nnk8BqKlhPw8nNsYQpqBFFfU4EWByqXRttCFYki76/X4klgzCrc8BXhAiYLJ1txHK\nBik26fb7KnPdcSQokFBy9+XJ5S/wPfrnOanjHdcoj3mpbrgXgQ1Qd+wjMwTPdILD\nBT3VhC8CgYEAo1GBY/YbyhKtx7fsVmqIqH7Nz6IKU/50kSZDv0a4tnM27uYLstqu\nm3eNvh0Esj33yKUokUlADqkLgpZmWMEZEsLfp+l64sphKrvcH4bn4fvQrvsNeIsp\nzFj5DKCcbUZU90NFt21HLP8U4YTFPeajjmABdHHHUkcsWBHNjx0woOE=\n-----END RSA PRIVATE KEY-----\n"
+}
+
+resource "alicloud_ssl_certificates_service_certificate" "default1" {
+  certificate_name = "${var.name}-1"
+  cert             = "-----BEGIN CERTIFICATE-----\nMIIDQTCCAimgAwIBAgIJAM/fKNeEka6PMA0GCSqGSIb3DQEBCwUAMCoxCzAJBgNV\nBAYTAkNOMRswGQYDVQQDDBIqLmFsaXRlcnJhZm9ybS5jb20wHhcNMjYwODEzMDcy\nOTM5WhcNMzYwODEwMDcyOTM5WjAqMQswCQYDVQQGEwJDTjEbMBkGA1UEAwwSKi5h\nbGl0ZXJyYWZvcm0uY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA\n1XPjTUtP49nkD7MwYefLtioD71heZPVN0AibgefBHANatcQqpu1RAX7cfzugbicb\nw0zBnKHtKTqR9c41YH87q05mO8SBzGbvrXqUH3Yb98COle0rQQVuXz4WHz5fIMlV\noAqGXbJoBTq/1vGLk8DMzgIBVNUn/oyG8W8uzcj/AIy6gqFawIFDwbP0z25ayuk0\nh5dmTearBoXlfhyM966+PlPAJqByT0ysHxp9aAFAKdl2F+J9s93DOaMlppCd5Y5A\nTrq9iEqFRSb2Rxnw3vtt9ggcsHf36E9R7+6dntNNwIH/0Ff0i3JmlH0IzNtukxLN\n5JKZ+xwnXjqYqhAhtT4D0QIDAQABo2owaDAvBgNVHREEKDAmghIqLmFsaXRlcnJh\nZm9ybS5jb22CEGFsaXRlcnJhZm9ybS5jb20wCQYDVR0TBAIwADALBgNVHQ8EBAMC\nBaAwHQYDVR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMA0GCSqGSIb3DQEBCwUA\nA4IBAQAwBGi/pGt9+IFCnBAecktii5gY9zsI4NH++DCDy+E49v/nQNjQb339iatX\nrqLhMsoF4x7NQeN7AxtpCKeykRR4A/TARDc8ZLzzTfDpUgnyFOxtXqzS+BmMyEru\nqG/75V9W3C1s5rAzKGMNN1ROZDpbnkCEKZlz18C7YHAMADurRVz9QdAKTtvQ1vTC\n99jeW5FquFpRg8Q7EHmuvxTntHXjhb+g5UdpnxiGaZk9wQo8Oq0qDkfv24cSmoRY\nPGGUi2jQFwZ1shBcLR9MBfOx7zqTTwRPA1u8FGn7pQXUkwzx+1gqGk87LRVL5yEY\nQEHfwPfhmnJjbC+ErkEvh4Y94OHW\n-----END CERTIFICATE-----\n"
+  key              = "-----BEGIN RSA PRIVATE KEY-----\nMIIEogIBAAKCAQEA1XPjTUtP49nkD7MwYefLtioD71heZPVN0AibgefBHANatcQq\npu1RAX7cfzugbicbw0zBnKHtKTqR9c41YH87q05mO8SBzGbvrXqUH3Yb98COle0r\nQQVuXz4WHz5fIMlVoAqGXbJoBTq/1vGLk8DMzgIBVNUn/oyG8W8uzcj/AIy6gqFa\nwIFDwbP0z25ayuk0h5dmTearBoXlfhyM966+PlPAJqByT0ysHxp9aAFAKdl2F+J9\ns93DOaMlppCd5Y5ATrq9iEqFRSb2Rxnw3vtt9ggcsHf36E9R7+6dntNNwIH/0Ff0\ni3JmlH0IzNtukxLN5JKZ+xwnXjqYqhAhtT4D0QIDAQABAoIBAHiBR3cQqJajIYz3\nhb4QRcKe77/FLO1kS7zBz0FEnJH7Fs/9YnMBEbV9cHBoMkddzt+wSrHp/OFEzrht\n5VaIHiC1TyQ46WqDRpay2EL2xA1X6WedEMlRjqE4hPa4mK4C3FNQ/dCR8wXYyAtK\nLJmKxFUdbrD88epUXa6aLVtCOSyOPecMomZehPDZopFr4dLgjImJbJlaavV13Qzt\nGHuor3Uh8lE3YKdFjr5Cf2A2amIF2ukv0Uc977MLJ5VFWcb6ZgqKEdiqv2SukTCv\njFdYtsbl0HOtMLDNOOqWdv9NB0H0bpNC/w+gT7YdejCd7x+Ga6FZ8e7rq25CwMGz\ndi3N4AECgYEA+7YnFejET41jQ0cbl99F/6yyz5k6nQ/rk/DtQmiIIzEzpVAIJvHw\nrTQA6/HhVmnQnJVBEDjf8RPCfzjB1cXXEnGt6HGOJP1KYvSo3UiLM324tWQZ8ZvS\nox2Gy5EDEy1tjJWLDL7E/kuUbxscqXpml0lPhFvZXqtqCVQiXA4y2dECgYEA2Rbe\nPW6t0BH6hudMeidlMAnsH2axkuaiflAKIgBG6sZDmMPOAiDdOUvOekjQGNo1OOrj\nuSsKLAGrvgbtkki3ie+7HzqWJ4/T2C3iCaOCGX8GR6yyktNsjnEZenWuzj/Gp6ov\n6KHmoEOrZhWEkXS2vHcQcQnMDn3zkgmzEjs5CgECgYABUEQH8z0DBUPdWAOm2T1u\nRiJwvuX1Z93c2ccDL7R2Ko2QcUh5m42b+cd/c7WvU8II7yZ1xTY19dpv+4XXbb7f\nk8RKkD0jqEa5GXnAHd7MF/3cxHb2Mc/5le/cJBeWBAisUSN2n5A7m31czxFpOQBM\nDc/iavBJdC+LeOrs/A374QKBgGDCs54YJfrW+J6Gm+zagFyQH6HDaSS8DfNVA58y\nFmnwoxKFO95w/YnbQxX4PGDHae+LqqLPD0KcIAucFOod5UjjBLmfqGvLzLXPha+c\nJJHur0LlM9cDy6AVwzB1IcwmWwpCbgY3m48VemEO+D7JEeYg/8ASiNRwyU7vadSX\ndw4BAoGAJHFvJ9g5JIvHquvXhd/w0clctn6DCM1TrrQFwDbQhl5TV/qr43q9qyAI\nuGe4Lhrlta/eJeUj0ciQf1up8B5dyUgxk2djRhhr87XtEPglWAPSmT/xQfjNs/Hb\nPhj7wwGEujShgkrVtQNCV5QzCZCHxLROVgoAucsJ9LBrj7k/QOo=\n-----END RSA PRIVATE KEY-----\n"
+}
+
 resource "alicloud_oss_bucket_cname_token" "defaultZaWJfG" {
   bucket = alicloud_oss_bucket.CreateBucket.bucket
-  domain = "songwenpeng.alivetest.asia"
+  domain = "${var.name}.aliterraform.com"
 }
 
 resource "alicloud_alidns_record" "defaultnHqm5p" {
   status      = "ENABLE"
   line        = "default"
-  rr          = "_dnsauth.songwenpeng"
+  rr          = "_dnsauth.${var.name}"
   type        = "TXT"
-  domain_name = "alivetest.asia"
+  domain_name = "aliterraform.com"
   priority    = "1"
   value       = alicloud_oss_bucket_cname_token.defaultZaWJfG.token
   ttl         = "600"
