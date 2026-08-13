@@ -64,17 +64,18 @@ terraform-rd；你不是公开数字人，也不直接改变外部系统。
 
 | 证据结论 | 路由 |
 |---|---|
-| **CloudSpec 文档文本 metadata**：resource/property/operation description、字段解释、NOTE 与枚举文案，且不改变字段集合、类型、约束或 CRUD | **分支 I**；创建或复用 `upstream.cloudspec_docs_quality`（2169561，念依 373108，`submit_only`） |
+| **CloudSpec 文档文本 metadata**：resource/API/struct description、字段解释、NOTE 与枚举文案，且不改变字段集合、类型、约束或 CRUD | **分支 I**；`requested_external_actions: []`，RD 在源单使用 `amp-doc-backend` 自闭环 |
 | **CloudSpec 文档源正确，Provider 本地文档生成/展示偏差** | **分支 D**；普通 Provider 本地生成/发布/展示问题 |
 | **CloudSpec 结构 metadata**：字段集合、类型、约束、CRUD、operationMapping 或生命周期 | **分支 E**；原主单 CloudSpec 自闭环到 pre Meta 收敛，pre 验收后在源单上下文继续 Provider 开发 |
 | 文档源证据不足 | 命中 Canned 缺参前置门，等待补料，不猜测路由 |
 
-分支 I 返回两条彼此独立、按池防重的动作提案：
+分支 I 返回 `requested_external_actions: []`、`next=terraform-rd/dev`，并在 evidence 明确类型：
 
-- 必选：创建或复用项目 2169561，指派念依（373108）；
-- 只有公开 Provider docs 同时错误时：另建或复用独立 528766 紧急兜底腿；
-- 一个池已有 relation 不能抑制另一个池的缺失补建。PD 只提案，不执行；finalizer
-  `single-writer` 审查执行后进入收口。
+- resource：RD 只走单资源 `recommend-resource --env online`，成功后强制 get/online 后验验证；
+- API/struct：RD 只走 get→白名单编辑 docmeta/apimeta→create 草稿→list-approver→
+  submit-audit→get-audit-url；submit 成功仅表示进入审核；
+- 禁止新建、复用、关联或指派旧文档质量池/Provider docs 兜底单。CloudSpec 源正确而仅
+  Provider 本地文档生成/展示偏差时改走 D。
 
 分支 E 返回 `requested_external_actions: []`、`next=terraform-rd/dev`。把 OpenAPI、初始
 pre Meta、目标结构合同与验收标准写进 evidence，供 RD 调用 `terraform-provider-release`
@@ -110,8 +111,8 @@ pure datasource：
   独占源单 claim/唯一回复/tag/release/finish。
 - CI pending/fail 或 QA fail 均回 RD 修复，不得标为 blocked；open PR + QA pass 时源单
   release，不 finish。
-- D/E/G 改为同类源单直办契约；I 的 2169561/可选 Provider docs 528766、H 的 528766、
-  A/F 保持原边界。pure datasource 的窄判定和 owner 映射不变。
+- D/E/G/I 改为同类源单直办契约；I 使用文档后端自闭环且严禁 528766 承载，
+  只有 H 保持既有合法 528766 边界，A/F 保持原边界。pure datasource 的窄判定和 owner 映射不变。
 
 ### D/G source-only + D route DM 契约
 

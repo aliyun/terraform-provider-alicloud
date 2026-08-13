@@ -1,0 +1,73 @@
+# Qoder
+.qoder/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn-integrity
+dist/
+build/
+.cache/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
+.venv/
+venv/
+env/
+.env
+
+# Java
+*.class
+*.jar
+*.war
+*.ear
+target/
+.mvn/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Environment & Secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# Logs
+logs/
+*.log
+
+# OS
+*.tmp
+*.bak
+
+
+.agents/
+skills-lock.json
+
+.claude
+
+.qwen
+
+# 忽略所有以 validation-result- 开头、以 .json 结尾的文件
+validation-result-*.json

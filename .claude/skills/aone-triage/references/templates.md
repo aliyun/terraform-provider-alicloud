@@ -46,30 +46,28 @@
 | 证据结论 | 路由 |
 |---|---|
 | **pure datasource**：只涉及 `data.alicloud_xxx` 查询、过滤、分页、输出字段或 Read，不含 resource 变更 | **source-only**：紧急源单新山、非紧急源单过载，由 TerraformRD 在源单直接开发；历史 relation 只读，严禁任何 528766 承载动作 |
-| **CloudSpec 文档文本 metadata**：只改 resource/property/operation description、字段解释、NOTE 或枚举文案，不改变字段集合、类型、约束或 CRUD | **分支 I**，创建或复用 2169561 并指派念依（373108）；Provider 公开 docs 同时错误时独立补 528766 紧急兜底腿 |
+| **CloudSpec 文档文本 metadata**：只改 resource/API/struct description、字段解释、NOTE 或枚举文案，不改变字段集合、类型、约束或 CRUD | **分支 I**，RD 在源单使用 `amp-doc-backend`；resource 推荐后 online 验证，API/struct 只提交审核 |
 | **CloudSpec 文档源正确，Provider 本地文档生成/展示偏差** | **分支 D**，仅处理 Provider 本地生成、发布或展示链路 |
 | **CloudSpec 结构 metadata**：新增/删除字段，或改变类型、约束、枚举集合、CRUD/operation/映射 | **分支 E**，在原主单修到 pre Meta 收敛，pre QA 后在源单上下文继续 Provider dev/CI/远程 ACC/PR |
 | 尚未取得足以判断文档源和结构边界的证据 | 使用上方 canned 骨架等待补料，不得猜测 I/D/E |
 
 ## 分支 I · 文档文本 metadata 路由骨架
 
-I 的 text-only 文档主腿固定走 `upstream.cloudspec_docs_quality`；PD/QA 不外写，
-terraform-rd finalizer 作为 downstream `single-writer` 执行，executor 只负责原主单
-bookend，不解析或重放路由动作：
+I 的 text-only 文档由 RD 在源单使用 `amp-doc-backend`；PD/QA 不外写，terraform-rd finalizer
+作为 downstream `single-writer` 聚合真实状态，executor 只负责原主单 bookend：
 
 ```markdown
 ### CloudSpec 文档文本 metadata
 
-- 边界：<resource/property/operation description、字段解释、NOTE、枚举文案>
+- 边界：<resource/API/struct description、字段解释、NOTE、枚举文案>
 - 结构不变证据：<字段集合、类型、约束、CRUD 均未变化>
-- 2169561：<created/reused、念依（373108）、relation>
-- Provider 公开 docs：<正确 / 同时错误>
-- 独立 528766 紧急兜底腿：<N/A / created/reused、过载（484483）、relation>
-- 分池防重：<2169561 point-read>；<528766 point-read>
+- 类型：<resource / API / struct>
+- resource：<recommend-resource + get/online 后验验证>
+- API/struct：<草稿白名单 diff + submit-audit + 审核 URL>
+- 关联单：N/A（源单自闭环）
 ```
 
-一个池已有 relation 不能抑制另一个池的缺失补建；528766 只能临时兜底公开 docs，不能替代
-2169561 文档源主腿。
+resource 未经 online 后验验证不得宣称发布；API/struct 审核申请不得宣称正式发布。
 
 ## 分支 E · CloudSpec 结构 metadata 原主单自闭环骨架
 

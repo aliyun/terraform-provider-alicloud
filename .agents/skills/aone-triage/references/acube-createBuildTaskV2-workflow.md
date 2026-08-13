@@ -25,5 +25,5 @@ PR，用于审计来源及避免重复代码工作。
 
 ## I/H 边界
 
-I 的 2169561 文档质量主腿、必要的 Provider docs 528766 兜底腿，以及 H 的 528766 路径仍按
-当前 aone-triage active skill 执行。本历史页不是 I/H 的执行入口，也不得据此构造任何动作。
+I 已改为源单 `amp-doc-backend` 自闭环，不得根据历史 relation 恢复旧文档关联池；H 的 528766
+路径仍按当前 aone-triage active skill 执行。本历史页不是 I/H 的执行入口，也不得据此构造动作。

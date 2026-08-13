@@ -90,10 +90,19 @@ class AmpSafeTest(unittest.TestCase):
 
     def test_read_only_commands_skip_authorization_and_append_fixed_flags(self):
         for argv in (("--version",), ("doctor",), ("whoami",),
+                     ("context", "show"),
                      ("branch", "list"),
                      ("branch", "get", "--branch", "main"),
                      ("api", "list"),
-                     ("api", "get", "--api-name", "GetWidget")):
+                     ("api", "get", "--api-name", "GetWidget"),
+                     ("doc", "get", "--type", "api", "--doc-key",
+                      "DescribeWidgets", "--language", "ZH_CN", "--env",
+                      "online", "--project-id", "3065873"),
+                     ("doc", "list-approver", "--project-id", "3065873"),
+                     ("doc", "get-audit-url", "--type", "struct",
+                      "--doc-key", "Widget", "--language", "ZH_CN",
+                      "--project-id", "3065873"),
+                     ("doc", "approver-role", "--project-id", "3065873")):
             with self.subTest(argv=argv):
                 self.clear_events()
                 self.assertEqual(self.run_amp(*argv), 0)
@@ -102,6 +111,8 @@ class AmpSafeTest(unittest.TestCase):
                 self.assert_fixed_flags(events[0])
 
     def test_mutating_commands_use_corresponding_task_authorization(self):
+        doc_meta = json.dumps({"title": "Describe widgets"})
+        api_meta = json.dumps({"paths": {"/widgets": {}}})
         cases = (
             (("init", "--pop-code", "ecs", "--pop-version", "2014-05-26",
               "--branch", "feature/add-tag"), "init"),
@@ -111,6 +122,20 @@ class AmpSafeTest(unittest.TestCase):
             (("branch", "switch", "feature/add-tag"), "branch-switch"),
             (("context", "set", "branch", "feature/add-tag"),
              "context-set-branch"),
+            (("doc", "create", "--type", "api", "--doc-key",
+              "DescribeWidgets", "--doc-meta", doc_meta, "--meta", api_meta,
+              "--language", "ZH_CN", "--project-id", "3065873"),
+             "doc-create"),
+            (("doc", "submit-audit", "--type", "struct", "--doc-key",
+              "Widget", "--auditor-emp-ids", '["123456"]', "--language",
+              "ZH_CN", "--project-id", "3065873"),
+             "doc-submit-audit"),
+            (("doc", "recommend-resource", "--resource-name",
+              "ALIYUN::ECS::Instance", "--env", "online",
+              "--auditor-emp-id", "123456", "--project-id", "3065873"),
+             "doc-recommend-resource"),
+            (("doc", "approver-role", "--reason", "review resource docs",
+              "--project-id", "3065873"), "doc-approver-role"),
         )
         for argv, action in cases:
             with self.subTest(argv=argv):
@@ -126,6 +151,97 @@ class AmpSafeTest(unittest.TestCase):
                     self.assertIn("--project-id", events[1]["argv"])
                     self.assertNotIn("--pop-code", events[1]["argv"])
                     self.assertNotIn("--pop-version", events[1]["argv"])
+
+    def test_doc_mutations_have_narrow_structured_authorization_targets(self):
+        create = amp_safe.parse_amp_argv((
+            "doc", "create", "--type", "api", "--doc-key", "DescribeWidgets",
+            "--doc-meta", '{"title":"Widgets"}',
+            "--meta", '{"paths":{"/widgets":{}}}',
+            "--language", "ZH_CN", "--project-id", "3065873"))
+        create_target = amp_safe._authorization_target(create, self.root.resolve())
+        self.assertEqual(create_target["action"], "doc-create")
+        self.assertEqual(create_target["repoMode"], "model")
+        self.assertEqual(create_target["branch"], "feature/test-safe")
+        self.assertEqual(create_target["project"], {
+            "projectId": "3065873", "popCode": "eventbridge",
+            "popVersion": "2020-04-01"})
+        self.assertEqual(create_target["document"], {
+            "type": "api", "key": "DescribeWidgets", "language": "ZH_CN"})
+
+        recommend = amp_safe.parse_amp_argv((
+            "doc", "recommend-resource", "--resource-name",
+            "ALIYUN::ECS::Instance", "--env", "online", "--project-id",
+            "3065873"))
+        recommend_target = amp_safe._authorization_target(
+            recommend, self.root.resolve())
+        self.assertEqual(recommend_target["document"], {
+            "type": "resource", "key": "ALIYUN::ECS::Instance",
+            "environment": "online"})
+
+    def test_doc_json_and_auditors_are_canonicalized(self):
+        invocation = amp_safe.parse_amp_argv((
+            "doc", "create", "--type", "struct", "--doc-key", "Widget",
+            "--doc-meta", '{ "summary": "widget", "title": "Widget" }',
+            "--meta", '{ "schemas": { "Widget": {"type":"object"} } }',
+            "--project-id", "3065873"))
+        self.assertIn('{"summary":"widget","title":"Widget"}', invocation.argv)
+        self.assertIn('{"schemas":{"Widget":{"type":"object"}}}', invocation.argv)
+
+        submit = amp_safe.parse_amp_argv((
+            "doc", "submit-audit", "--type", "api", "--doc-key",
+            "DescribeWidgets", "--auditor-emp-ids", '["123456", 234567]',
+            "--project-id", "3065873"))
+        self.assertIn('["123456","234567"]', submit.argv)
+
+    def test_doc_contract_rejects_malformed_duplicate_or_unsafe_inputs(self):
+        too_large = json.dumps({"title": "x" * (256 * 1024)})
+        rejected = (
+            ("doc", "get", "--type", "unknown", "--doc-key", "Widget"),
+            ("doc", "get", "--type", "api", "--doc-key", "../Widget"),
+            ("doc", "get", "--type", "api", "--doc-key", "Widget",
+             "--language", "zh_CN"),
+            ("doc", "get", "--type", "api", "--doc-key", "Widget",
+             "--env", "prod"),
+            ("doc", "get", "--type", "api", "--doc-key", "Widget",
+             "--type", "struct"),
+            ("doc", "create", "--type", "resource", "--doc-key", "Widget",
+             "--doc-meta", "{}", "--meta", "{}", "--project-id", "3065873"),
+            ("doc", "create", "--type", "api", "--doc-key", "Widget",
+             "--doc-meta", "[]", "--meta", "{}", "--project-id", "3065873"),
+            ("doc", "create", "--type", "api", "--doc-key", "Widget",
+             "--doc-meta", '{"title":"one","title":"two"}',
+             "--meta", "{}", "--project-id", "3065873"),
+            ("doc", "create", "--type", "api", "--doc-key", "Widget",
+             "--doc-meta", too_large, "--meta", "{}", "--project-id", "3065873"),
+            ("doc", "submit-audit", "--type", "resource", "--doc-key", "Widget",
+             "--auditor-emp-ids", '["123456"]', "--project-id", "3065873"),
+            ("doc", "submit-audit", "--type", "api", "--doc-key", "Widget",
+             "--auditor-emp-ids", "123456", "--project-id", "3065873"),
+            ("doc", "submit-audit", "--type", "api", "--doc-key", "Widget",
+             "--auditor-emp-ids", '["123456","123456"]', "--project-id", "3065873"),
+            ("doc", "recommend-resource", "--resource-name", "Widget",
+             "--env", "pre", "--project-id", "3065873"),
+            ("doc", "recommend-resource", "--type", "resource",
+             "--resource-name", "Widget", "--env", "online",
+             "--project-id", "3065873"),
+            ("doc", "approver-role", "--reason", "x", "--reason", "y",
+             "--project-id", "3065873"),
+            ("doc", "publish", "--type", "api", "--doc-key", "Widget"),
+            ("doc", "publish", "--type", "resource", "--doc-key", "Widget"),
+        )
+        for argv in rejected:
+            with self.subTest(argv=argv), self.assertRaises(amp_safe.AmpSafeError):
+                amp_safe.parse_amp_argv(argv)
+
+    def test_doc_json_recursion_error_is_reported_as_safe_validation_error(self):
+        deeply_nested = '{"value":' * 1200 + "null" + "}" * 1200
+        self.assertLess(len(deeply_nested.encode("utf-8")), 256 * 1024)
+
+        with self.assertRaises(amp_safe.AmpSafeError):
+            amp_safe.parse_amp_argv((
+                "doc", "create", "--type", "api", "--doc-key", "Widget",
+                "--doc-meta", deeply_nested, "--meta", "{}",
+                "--project-id", "3065873"))
 
     def test_real_daily_and_pre_publish_dry_run_once_before_real_call(self):
         for environment in ("daily", "pre"):
@@ -294,6 +410,24 @@ class AmpSafeTest(unittest.TestCase):
         self.assertEqual(argv[argv.index("--project-id") + 1], "3065873")
         self.assertNotIn("--pop-code", argv)
         self.assertNotIn("--pop-version", argv)
+
+    def test_context_branch_mutations_strip_explicit_pop_scope_before_execution(self):
+        cases = (
+            ("branch", "switch", "feature/project-fence", "--pop-code",
+             "eventbridge", "--pop-version", "2020-04-01"),
+            ("context", "set", "branch", "feature/project-fence", "--pop-code",
+             "eventbridge", "--pop-version", "2020-04-01"),
+        )
+        for command in cases:
+            with self.subTest(command=command):
+                self.clear_events()
+                self.assertEqual(self.run_amp(*command), 0)
+                argv = self.events()[1]["argv"]
+                self.assertNotIn("--pop-code", argv)
+                self.assertNotIn("--pop-version", argv)
+                self.assertEqual(argv.count("--project-id"), 1)
+                self.assertEqual(
+                    argv[argv.index("--project-id") + 1], "3065873")
 
     def test_branch_create_can_use_staging_context_only_with_project_id(self):
         staging = self.root / "staging"

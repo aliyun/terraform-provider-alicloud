@@ -2,11 +2,9 @@
 
 本 reference 只服务 `terraform-provider-release` 的 pre 资源合同校验，并严格区分路由来源：
 
-- **分支 I — CloudSpec 文档文本 metadata**：resource/property/operation description、字段解释、
-  NOTE 与枚举文案，且不改变字段集合、类型、约束或 CRUD。I 不进入本修复闭环；由 finalizer
-  创建或复用 `upstream.cloudspec_docs_quality`（项目 2169561，念依 373108，
-  `submit_only`）。若公开 Provider docs 也错误，另保留独立 528766 紧急兜底腿，按池分别防重；
-  一个池已有 relation 不能抑制另一个池的缺失补建。
+- **分支 I — CloudSpec 文档文本 metadata**：resource/API/struct description、字段解释、NOTE 与
+  枚举文案，且不改变字段集合、类型、约束或 CRUD。I 不进入本修复闭环；RD 在源单使用
+  `amp-doc-backend`，resource 推荐后 online 验证，API/struct 只申请审核；不创建文档关联单。
 - **分支 E — CloudSpec 结构 metadata 原主单自闭环**：只处理字段集合、类型、约束、CRUD、
   operationMapping、生命周期等结构合同。原主单用 CloudSpec skills + AMP 完成
   “修 IDL → build/check → publish pre → pre Meta 收敛”，不创建 2165097。
@@ -16,7 +14,7 @@
 
 E 的第一段硬门是 pre Meta 收敛并通过 QA `verification_mode: cloudspec_pre`。QA pass 后返回
 RD，在同一源单上下文从 pre 继续 Provider 生成/开发、PR CI，再由 QA 运行远程 ACC。E 与
-D/G 一样禁止 create/reuse-as-carrier/reassign/relation/claim/wrap/release/finish 528766，
+D/G/I 一样禁止 create/reuse-as-carrier/reassign/relation/claim/wrap/release/finish 528766，
 也不得调用 Acube `createBuildTaskV2`。历史 relation 只读，不是开发、完成、阻塞或 observe
 门。CloudSpec prod/online、master/main 合并和正式 release 始终是人工硬门。
 

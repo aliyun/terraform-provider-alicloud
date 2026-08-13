@@ -12,7 +12,8 @@ developer_instructions = """
 1. 普通 Provider 路径使用 `invoke-terraform-acc-test-remote` 远程执行 AccTest，不占本地资源。
 2. 分支 E 使用 `verification_mode: cloudspec_pre`，只验证 CloudSpec
    build/check/pre Meta 收敛，不运行远程 AccTest。
-3. 对照需求逐项验证，覆盖新增用例与必要回归。
+3. 分支 I 使用 `verification_mode: amp_doc`，只验证受控文档命令、白名单 diff 与真实后端状态。
+4. 对照需求逐项验证，覆盖新增用例与必要回归。
 4. 整理运行 id、日志路径、失败步骤和最小复现证据。
 5. 发现缺陷时形成修复提案并内部退回 terraform-rd；修复后重新验收。
 6. 生成可纳入最终回复的 `reply_fragment`，但不自行发出。
@@ -42,7 +43,7 @@ QA 按 source-only 验收；resource+datasource 混合、G 全局与手写 resou
 - CI pending/fail 或 QA fail 均回 RD 修复，`next=terraform-rd/fix`，不得标为 blocked。
 - open PR + QA pass 时源单 release，不 finish；源单 claim/唯一回复/tag/release 由 bridge
   executor 独占。
-- D/E/G 同样严禁 528766 承载；I/H/pure datasource/A/F 保持原边界。
+- D/E/G/I 同样严禁 528766 承载；I 使用文档后端源单自闭环，H/pure datasource/A/F 保持原边界。
 
 ### D/G source-only 验收契约
 
@@ -73,6 +74,18 @@ D 手写紧急/非紧急/生成发布的源单 owner 分别为新山（521957）
 **不运行远程 AccTest**；发现未收敛时退回 RD 修复。通过后返回
 `next=terraform-rd/dev`，由 RD 在同一源单上下文继续 Provider dev/CI/PR，再回 QA 运行
 远程 AccTest。QA 不调用 `createBuildTaskV2`，不创建/关联/指派 528766。
+
+### `verification_mode: amp_doc`
+
+仅用于分支 I，不运行远程 AccTest。核验 RD 的命令全部经过 Jarvis `amp_safe.py` wrapper：
+
+- resource 只有 `recommend-resource --env online` 写操作，且紧随 `get --type resource --env online`；
+  只有 online 内容/版本/生效时间能证明本次结果生效时判定发布成功。仅有审核记录或无法关联本次
+  变更时，结论必须是待审核/未验证。
+- API/struct 必须有 get、白名单 docmeta/apimeta diff、create 草稿、list-approver、
+  submit-audit 和 get-audit-url 证据；submit 成功只判定“已进入审核”，不能判定正式发布。
+- 任一 resource 手工 create/submit-audit、API/struct 直发命令、raw AMP CLI、旧文档质量池或
+  关联单动作都判 fail 并退回 RD。
 
 最后汇总证据并判断：
 

@@ -424,9 +424,9 @@ def _terraform_visual_evidence_instructions(item_id):
         "`bash bootstrap/html-report-preview.sh upload %s <report.html>`，严禁传 `--comment`。"
         "成功时把返回的 markdown 预览链接写入 AONE_RESULT.reply_body；失败时把截图降级分类"
         "和原因写入 reply_body。两种情况都由 executor 随唯一回复落账；"
-        "**源工单禁止 claim/wrap/release/直接评论**。D/E/G 严禁创建、复用或 bookend "
-        "528766；I 的 Provider public docs 紧急兜底腿与 H 仍按各自边界保留合法 528766，"
-        "仅这些实际 claim 的研发单由 RD finalizer bookend。\n"
+        "**源工单禁止 claim/wrap/release/直接评论**。D/E/G/I 严禁创建、复用或 "
+        "bookend 528766；只有 H 按既有边界保留合法 528766，仅实际 claim 的 H "
+        "研发单由 RD finalizer bookend。\n"
         "- 缺层、截图不存在、manifest 无效或上传失败时，在 reply_body 说明 "
         "`screenshot degraded: <capture_error|missing_capability|manifest_error|upload_error>`；"
         "禁止静默省略报告，但不得仅因此把内部结果标为 blocked/missing_capability。\n"
@@ -467,8 +467,8 @@ def _terraform_pure_datasource_instructions(item_id):
         "open PR + QA pass 时源单 release，不 finish。\n"
         "- 反向保护：D/G source-only runtime hard gate；D/G 同样严禁 "
         "create/reuse-as-carrier/reassign/relation/claim/wrap/release/finish 528766；"
-        "I 仍保留 2169561 文档质量主腿（Provider public docs 同错时独立 528766 紧急腿），"
-        "H 仍保留 528766；A/F 不变。"
+        "I 仍在源单使用 amp-doc-backend 自闭环且严禁 528766 承载，"
+        "只有 H 仍保留合法 528766；A/F 不变。"
         "源工单 #%s 的唯一回复、tag 与最终 release/finish 始终由 bridge executor 托管。"
         % item_id
     )
@@ -510,8 +510,8 @@ def _terraform_d_g_source_only_instructions(item_id):
         "build/test/CI 或 QA fail 只走 RD ↔ QA 修复重验。\n"
         "- 源工单由 bridge executor bookend；open PR + QA pass 时源单 release，不 finish。"
         "prod/online、master/main merge/push 与正式发布仍为人工硬门。\n"
-        "- 反向保护：I 仍保留 2169561 文档质量主腿，公开 Provider docs 同错时独立 528766 "
-        "紧急兜底；H 仍保留 528766 并指派夏节（401498）；pure datasource source-only、A/F "
+        "- 反向保护：I 仍在源单使用 amp-doc-backend 自闭环且不创建文档关联单；"
+        "H 仍保留 528766 并指派夏节（401498）；pure datasource source-only、A/F "
         "保持原边界。源工单 #%s 的 claim/reply/status/tag/release/finish 全由 executor 托管。"
         % (item_id, item_id)
     )
@@ -649,9 +649,9 @@ PD/QA 全程只读或执行内部验证，不得写 Aone、钉钉、MR/CR，不�
    最终 RD，不自行执行。严格结构返回：
    {TERRAFORM_INTERNAL_RESULT_FIELDS}。
    路由硬门：
-   - 分支 I 只指 CloudSpec 文档文本 metadata（description、字段解释、NOTE、枚举文案，不改变
-     字段集合/类型/约束/CRUD）。PD 提案创建或复用 2169561 指派念依；公开 Provider docs 也错时
-     另提独立 528766 紧急兜底腿，分池防重，一个池的 relation 不得抑制另一个池补建。
+   - 分支 I 只指 resource/API/struct 文档文本 metadata（description、字段解释、NOTE、枚举文案，
+     不改变字段集合/类型/约束/CRUD）。PD 返回 requested_external_actions=[]，由 RD 在源单使用
+     amp-doc-backend 自闭环；CloudSpec 源正确、仅 Provider 本地文档生成/展示偏差才走 D。
    - 分支 E 只指 CloudSpec 结构 metadata。原主单用 CloudSpec skills + AMP 修到 pre Meta 收敛，
      通过 cloudspec_pre_verify 后在同一源单上下文继续 Provider dev/CI/远程 ACC/PR；不创建
      2165097，不触发 Acube。
@@ -660,7 +660,10 @@ PD/QA 全程只读或执行内部验证，不得写 Aone、钉钉、MR/CR，不�
    - D/G 全部命中末尾 source-only runtime hard gate：D 按手写紧急/手写非紧急/生成发布选择
      源单 owner，G 源单给新山；都由 Jarvis/TerraformRD 主动开发，严禁 528766 承载。
 3) 把 PD 返回完整交给 Task terraform-rd：
-   - I：no-op，不改 CloudSpec/Provider，不执行外部路由动作；
+   - I：在 task 专属模型 feature 分支调用 amp-doc-backend。resource 唯一写路径是
+     recommend-resource --env online，成功后必须 get --type resource --env online 后验验证；
+     API/struct 走 get→白名单编辑→create 草稿→list-approver→submit-audit→get-audit-url，
+     submit 成功仅表示进入审核，绝不宣称正式发布；禁止创建/复用/关联/指派旧文档质量池。
    - E：只做到 CloudSpec build/check/publish pre 与 pre Meta 收敛；同一编辑批次只 build
      一次，再对变更资源逐个、前台、串行 check，同一模型目录禁止后台或多 Agent 并行 check。
      全部 check 通过后才执行 pre dry-run/publish。随后返回
@@ -676,14 +679,14 @@ PD/QA 全程只读或执行内部验证，不得写 Aone、钉钉、MR/CR，不�
    - E 使用 `verification_mode: cloudspec_pre`，只验 build/check/pre Meta 收敛，不运行远程
      AccTest；pass 返回 `next=terraform-rd/dev`，再由 RD 在同一源单上下文继续 Provider
      dev/CI/PR，之后必须回 QA 运行远程 AccTest；
-   - I 只复核路由证据与分池防重提案，不外写；
+   - I 复核 resource online 后验验证证据，或 API/struct 草稿与审核申请证据；不外写；
    - pure datasource 与 D/G 都运行对应远程 AccTest；CI pending/fail 或 QA
      fail 均回 RD 修复，不得标为 blocked。
    QA fail 时把缺陷草稿与证据内部退回 RD 修复，再重跑 QA。真实 blocked、low_conf 或循环达到
    JARVIS_PERSONA_MAX_ROUNDS 时进入最终 RD 升级收口，不产生阶段回复。
 5) 最后再 Task 起 terraform-rd 作为 finalizer：汇总全部结构化返回，审查允许的
-   requested_external_actions。I 由 finalizer 的 single-writer 创建/复用 2169561，并在需要时
-   独立创建/复用 528766 公开 docs 紧急兜底腿；H 保持 528766→夏节。D/E/G 不执行任何
+   requested_external_actions。I 由 finalizer 的 single-writer 聚合源单结果，不创建/复用/
+   关联/指派旧文档质量池或 Provider docs 兜底单；H 保持 528766→夏节。D/E/G/I 不执行任何
    create/reuse/reassign/relation/claim/wrap/release/finish 528766。D finalizer 必须先幂等同步
    源单 assignee + per-type progress_status，再调用 `python3 -m bridge.terraform_route_notify`
    enqueue 对应 subtype/owner 的 DM，最后才交 AONE_RESULT；G 只同步源单给新山且不发新增

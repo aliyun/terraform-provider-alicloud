@@ -86,7 +86,7 @@ Terraform PD 的三层查证还必须调用 `screenshot-evidence` 生成本地�
 上传命令不传 `--comment`，报告链接只进入本轮唯一聚合回复。三层缺失且无明确 N/A 原因时不得
 静默收尾。
 
-D/E/G 与 pure datasource 都在源单上下文由 Jarvis/TerraformRD 主动开发，不创建或复用
+D/E/G/I 与 pure datasource 都在源单上下文由 Jarvis/TerraformRD 主动开发，不创建或复用
 **terraform-alicloud** 内部研发单（项目 `528766`）。路由动作由最终 RD 审查执行；每个被
 claim 的 Terraform 工单在本轮主处理 run 只于最终聚合时回复一次，不按 PD/RD/QA 阶段同步。
 后续 gate/PR/终态失败的重要事件可按 `loops/persona-collab.md` §五追加 RD-only 幂等更新。
@@ -101,7 +101,8 @@ datasource create/reuse-as-carrier/reassign/relation/claim/wrap/release/finish 5
 已有 PR 防重复。RD route phase 只幂等同步源单 assignee + per-type progress_status；
 bridge executor 独占源单 claim/唯一回复/tag/release/finish。CI pending/fail 或 QA fail 均回
 RD 修复，不得标为 blocked；open PR + QA pass 时源单 release，不 finish。D/E/G 改为同类
-源单直办契约；I 的 2169561/可选 Provider docs 528766、H 的 528766、A/F 保持原边界。
+源单直办契约；I 使用文档后端自闭环且严禁 528766 承载，只有 H 保持既有合法 528766
+边界，A/F 保持原边界。
 
 **D/G source-only + D route DM 契约**：D 手写 resource 紧急源单给新山（521957），非紧急
 给过载（484483），生成/发布腿（含 E pre 收敛后）给临钧（429768）；G 源单给新山（521957）。
@@ -113,13 +114,16 @@ D 由 RD finalizer 先幂等同步源单 assignee + per-type progress_status，�
 event key 固定 `terraform-route:d:<subtype>:owner:<staffId>`；同 ticket/subtype/owner 只一条，
 owner/subtype 变化才是新事件。durable pending 不阻断开发，posted/suppressed 不重发，
 `post_uncertain` 保持同 receipt；ledger 无法持久化不得宣称通知完成。G 不发新增 route DM。
-build/test/CI/QA fail 均回 RD 修复；open PR + QA pass 时源单 release 不 finish。I 仍走
-2169561→念依且 public docs 同错时保留独立 528766→过载；H 仍 528766→夏节；A/F 不变。
+build/test/CI/QA fail 均回 RD 修复；open PR + QA pass 时源单 release 不 finish。I 在源单走
+`amp-doc-backend` 且不发 route DM；H 仍 528766→夏节；A/F 不变。
 
-- 分支 I 只含 resource/property/operation description、字段解释、NOTE、枚举文案等 text-only
-  metadata，且不改变字段集合、类型、约束或 CRUD。finalizer 创建或复用
-  `upstream.cloudspec_docs_quality`（2169561，念依 373108，`submit_only`）；公开 Provider docs
-  同时错误时另保留独立 528766 紧急兜底腿，按池分别防重。
+- 分支 I 只含 resource/API/struct description、字段解释、NOTE、枚举文案等 text-only
+  metadata，且不改变字段集合、类型、约束或 CRUD。PD 返回
+  `requested_external_actions: []`，RD 在源单使用 `amp-doc-backend`：resource 只执行单资源
+  `recommend-resource --env online` 并强制 get/online 后验验证；API/struct 只走 get→白名单编辑
+  →create 草稿→list-approver→submit-audit→get-audit-url。审核申请成功不等于正式发布。
+  禁止为 I 新建、复用、关联或指派旧文档质量池/Provider docs 兜底单；仅 Provider 本地文档
+  生成/展示偏差改走 D。
 - 分支 E 只含字段集合、类型、约束、CRUD、operationMapping 或生命周期等结构 metadata。
   PD 返回 `requested_external_actions: []`，RD 用 `cloudspec-amp-workflow` 与
   IDL/resource/operation/build/norm skills 在原主单修到 pre Meta 收敛，不创建 2165097；
@@ -201,7 +205,7 @@ Jarvis 不会自动触发 release_prod。预发验收通过后，由工程师手
 | `bootstrap/plan.sh` | 出执行计划；supervised 退码 2 等待授权（bridge/serve 流程用） |
 | `bootstrap/log.sh seen` | 去重检查 |
 | `bootstrap/log.sh run_done` | 记录完成 |
-| `bootstrap/wrap.sh sync/done` | Aone 回填与收尾；控制面 Terraform 主处理 run 对源工单禁用（RD finalizer 返回 `AONE_RESULT.reply_body`，由 executor 单次落账）。D/E/G/pure datasource 不得对 528766 使用该工具；I public-docs 紧急腿与 H 的合法 528766 实际 claim 时仍由最终 RD finalizer done 一次。独立非 executor finalizer 才对源工单 done，后续重要事件走 bridge RD-only event publisher |
+| `bootstrap/wrap.sh sync/done` | Aone 回填与收尾；控制面 Terraform 主处理 run 对源工单禁用（RD finalizer 返回 `AONE_RESULT.reply_body`，由 executor 单次落账）。D/E/G/I/pure datasource 不得对 528766 使用该工具；只有 H 的合法 528766 实际 claim 时仍由最终 RD finalizer done 一次。独立非 executor finalizer 才对源工单 done，后续重要事件走 bridge RD-only event publisher |
 | `bootstrap/html-report-preview.sh upload/from-aone` | 非 Terraform 可端到端上传并按需使用 `--comment`；Terraform PD/QA 只返回本地路径，不上传、不回贴，RD finalizer 可统一上传一次但不得传 `--comment`，预览链接只进入唯一聚合回复 |
 | `bootstrap/claim.sh claim <id> <project>` | 认领工作项；退码 1 = 输了跳过，退码 3 = 缺必填字段，需经 `aone-fields.sh` 挑合法值回填后重试；其它 update 失败直接上抛，不误报 lost race。认领成功还会把 Aone status 从起始态推进到该池进行中状态，best-effort 非阻断 |
 | `bootstrap/aone-fields.sh missing <id>` | 列出当前为空的必填自定义字段；field-list options 为空时补查 field options API，输出合法候选，不自动选值 |

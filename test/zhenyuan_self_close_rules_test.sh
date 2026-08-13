@@ -108,9 +108,7 @@ done < <(grep -Fn '2165097' "${active_paths[@]}" || true)
 
 jq -e '
   (.upstream.cloudspec_gap? == null)
-  and (.upstream.cloudspec_docs_quality.project == 2169561)
-  and (.upstream.cloudspec_docs_quality.assignee == 373108)
-  and (.upstream.cloudspec_docs_quality.access == "submit_only")
+  and (.upstream.cloudspec_docs_quality? == null)
 ' "$repo_root/config/pools.json" >/dev/null
 
 jq -e '
@@ -148,27 +146,25 @@ release_loop_codex="$repo_root/.agents/skills/terraform-provider-release/referen
 acube="$repo_root/.claude/skills/aone-triage/references/acube-createBuildTaskV2-workflow.md"
 acube_mirror="$repo_root/.agents/skills/aone-triage/references/acube-createBuildTaskV2-workflow.md"
 
-# Branch I remains text-only, submit-only, and independently deduplicated.
+# Branch I remains text-only and is now source-ticket document-backend self-close.
 for file in "$routing" "$route_mirror" "$team_roster" "$team_roster_mirror"; do
   require_terms "$file" \
     'CloudSpec 文档文本 metadata' \
-    'resource/property/operation description' \
+    'resource/API/struct description' \
     '字段解释、NOTE' \
     '枚举文案' \
     '不改变字段集合' \
     '类型' \
     '约束' \
     'CRUD' \
-    '2169561' \
-    '念依' \
-    '373108' \
-    'submit_only' \
-    '分池防重' \
-    '独立' \
-    '528766'
+    'amp-doc-backend' \
+    'recommend-resource' \
+    'submit-audit' \
+    '不创建'
 done
 require_terms "$routing" \
-  '一个池已有 relation 不能抑制另一个池的缺失补建' \
+  'get --type resource --env online' \
+  'submit 成功只表示进入审核' \
   'CloudSpec 文档源正确，Provider 本地文档生成/展示偏差' \
   '分支 D'
 
@@ -189,7 +185,7 @@ grep -Eq 'CloudSpec 文档文本 metadata.*分支 I' "$templates"
 grep -Eq 'CloudSpec 文档源正确，Provider 本地文档生成/展示偏差.*分支 D' "$templates"
 grep -Eq 'CloudSpec 结构 metadata.*分支 E' "$templates"
 
-# Team roster keeps I/H owners and rejects the old mixed-owner schema.
+# Team roster keeps source-ticket I and H ownership boundaries.
 require_terms "$team_roster" \
   '| 场景 | 路由/承接关系 | 工号/项目 |' \
   'Provider 侧全局改造 G' \
@@ -197,7 +193,8 @@ require_terms "$team_roster" \
   'pure datasource source-only（紧急）' \
   'pure datasource source-only（非紧急）' \
   'CloudSpec 文档文本 metadata（I）' \
-  '念依（2169561 submit_only）' \
+  'TerraformRD 源单使用 amp-doc-backend' \
+  '不建关联单、不发 route DM' \
   'CloudSpec 结构 metadata（E）' \
   'pre QA 后源单继续 Provider dev/CI/远程 ACC/PR' \
   'D 生成/发布腿（含 E pre 收敛后）' \

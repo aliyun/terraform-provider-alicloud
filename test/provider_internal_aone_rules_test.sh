@@ -67,10 +67,8 @@ for skill in "${provider_skills[@]}"; do
     'prod/online' \
     'master/main merge/push' \
     '正式发布仍是人工硬门' \
-    '2169561' \
-    '念依（373108）' \
-    '独立 528766 兜底腿' \
-    '过载（484483）' \
+    'amp-doc-backend' \
+    '不创建旧文档质量池或 Provider docs 兜底关联单' \
     'H 仍进入 528766 并指派夏节' \
     'PD/QA 不外写' \
     'bridge executor'
@@ -114,8 +112,8 @@ for verification in "${verification_refs[@]}"; do
     '远程 ACC' \
     'createBuildTaskV2' \
     'open PR + QA pass 时 release 源单、不 finish' \
-    '2169561/念依' \
-    '独立 528766' \
+    'amp-doc-backend' \
+    '不创建文档关联单' \
     'H 仍进入 528766/夏节' \
     'A/F 保持原路由' \
     'amp publish prod' \
@@ -144,11 +142,10 @@ for rd_agent in \
     'role: terraform-rd | terraform-qa | terraform-rd-finalizer' \
     'action: fix | acc_verify | cloudspec_pre_verify | finalize' \
     'CloudSpec 文档文本 metadata' \
-    '2169561' \
-    'submit_only' \
-    '两腿分池' \
-    '一个池已有 relation 不能抑制另一个池的缺失补建' \
-    '独立 528766 紧急兜底腿' \
+    'amp-doc-backend' \
+    'recommend-resource --env online' \
+    'submit-audit→get-audit-url' \
+    'QA 使用 `verification_mode: amp_doc`' \
     'CloudSpec 结构 metadata 原主单自闭环' \
     'task 专属 feature 分支' \
     'AMP 返回的 SSH URL' \
