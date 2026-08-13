@@ -1409,3 +1409,67 @@ func AliCloudCmsAlarmBasicDependence0(name string) string {
 	}
 `, name)
 }
+
+// TestUnitExpandCmsAlarmTargetsRequiresIdAndArn locks the regression for the
+// PutMetricRuleTargets required-Id/Arn alignment. The API marks Targets[].Id
+// and Targets[].Arn as required, but the provider schema keeps target_id and
+// arn Optional to avoid a breaking change (the BreakingChange CI gate blocks
+// Optional->Required promotion). Previously, when a targets block omitted
+// target_id or arn, the expand path silently sent an empty Id/Arn that the
+// API rejected at apply time with an opaque error. expandCmsAlarmTargets now
+// validates non-empty values and returns a clear error before the API call.
+// This test fails on the old silent-expand behavior and passes after the fix.
+func TestUnitExpandCmsAlarmTargetsRequiresIdAndArn(t *testing.T) {
+	// Case 1: empty target_id -> error (the regression being locked)
+	_, err := expandCmsAlarmTargets([]interface{}{
+		map[string]interface{}{"target_id": "", "arn": "acs:mns:cn-hangzhou:123:/queues/q/message"},
+	})
+	if err == nil {
+		t.Fatal("expected error when target_id is empty, got nil — expand must reject empty Id before the API call")
+	}
+
+	// Case 2: empty arn -> error
+	_, err = expandCmsAlarmTargets([]interface{}{
+		map[string]interface{}{"target_id": "1", "arn": ""},
+	})
+	if err == nil {
+		t.Fatal("expected error when arn is empty, got nil — expand must reject empty Arn before the API call")
+	}
+
+	// Case 3: both fields set -> ok, Id/Arn/JsonParams/Level populated
+	maps, err := expandCmsAlarmTargets([]interface{}{
+		map[string]interface{}{
+			"target_id":   "1",
+			"arn":         "acs:mns:cn-hangzhou:123:/queues/q/message",
+			"json_params": `{"key":"value"}`,
+			"level":       "Critical",
+		},
+	})
+	if err != nil {
+		t.Fatalf("expected no error when both target_id and arn are set, got %v", err)
+	}
+	if len(maps) != 1 {
+		t.Fatalf("expected 1 target map, got %d", len(maps))
+	}
+	if maps[0]["Id"] != "1" {
+		t.Fatalf("expected Id=1, got %v", maps[0]["Id"])
+	}
+	if maps[0]["Arn"] != "acs:mns:cn-hangzhou:123:/queues/q/message" {
+		t.Fatalf("expected Arn set, got %v", maps[0]["Arn"])
+	}
+	if maps[0]["JsonParams"] != `{"key":"value"}` {
+		t.Fatalf("expected JsonParams set, got %v", maps[0]["JsonParams"])
+	}
+	if maps[0]["Level"] != "Critical" {
+		t.Fatalf("expected Level=Critical, got %v", maps[0]["Level"])
+	}
+
+	// Case 4: empty list -> empty maps, no error (preserve no-targets behavior)
+	maps, err = expandCmsAlarmTargets([]interface{}{})
+	if err != nil {
+		t.Fatalf("expected no error for empty targets list, got %v", err)
+	}
+	if len(maps) != 0 {
+		t.Fatalf("expected empty maps for empty targets list, got %d", len(maps))
+	}
+}
