@@ -117,11 +117,13 @@ means the endpoint is not deployed; a `409` means the snapshot changed and must
 be reviewed again.
 
 The typed confirmation authorizes one atomic transition: the old Session is
-fenced and canceled, generation advances once, and the pending desired revision
-is re-published at `READY`. CLI success is based on the stable receipt
-(`releasedSessionId`, previous/new generation and fence, revisions, and
-`publishedStatus`), not the attached Task view: a successor may already have
-leased the Task by the time an idempotent response is replayed.
+fenced and canceled, generation advances once, and the desired revision is
+published at public `READY`. This may be a newer pending revision or an explicit
+replay of the current desired revision. An interactive Worker that does not pull
+the public queue may then claim that exact Task. CLI success is based on the
+stable receipt (`releasedSessionId`, previous/new generation and fence,
+revisions, and `publishedStatus`), not the attached Task view: a successor may
+already have leased the Task by the time an idempotent response is replayed.
 
 This is a logical control-plane termination, not proof that the remote OS process
 has exited. The old fence makes all later mutations from that process stale. If

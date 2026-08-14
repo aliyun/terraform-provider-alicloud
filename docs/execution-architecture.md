@@ -74,7 +74,9 @@ preemption. The `force-handoff` machine API accepts only a freshly read, full
 Task/Session/Worker CAS snapshot for a Task in `LEASED`, `RUNNING`, or
 `FINALIZING`, plus the typed `FORCE_HANDOFF` confirmation and an audit reason.
 In one transaction the control plane fences and cancels the old Session,
-advances generation, and re-publishes the pending desired revision at `READY`.
+advances generation, and publishes the desired revision at public `READY`. If
+there is no newer pending revision, it explicitly replays the current desired
+revision in the fresh generation; an exact Task claim can then take ownership.
 Its stable outcome receipt is authoritative even if the returned Task view has
 already advanced because a successor leased it.
 

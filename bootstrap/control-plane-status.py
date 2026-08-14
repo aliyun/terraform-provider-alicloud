@@ -623,10 +623,19 @@ def cmd_force_handoff(client, task_id, session_id, reason, yes):
             published_status,
             current_status,
         ))
+    previous_processing = result.get("previousProcessingRevision")
+    desired_revision = result.get("desiredRevision")
+    if (has_stable_outcome and previous_processing is not None
+            and previous_processing == desired_revision):
+        publication = "current desired revision was queued for replay at READY"
+    elif has_stable_outcome:
+        publication = "pending desired revision was re-published at READY"
+    else:
+        publication = "desired revision was published at READY"
     print(
-        "  outcome=%s; pending desired revision was re-published at READY; "
-        "currentStatus may already have advanced"
-        % ("stable receipt" if has_stable_outcome else "TaskView fallback"))
+        "  outcome=%s; %s; currentStatus may already have advanced"
+        % ("stable receipt" if has_stable_outcome else "TaskView fallback",
+           publication))
     if has_stable_outcome:
         print(
             "  previousFence=%s newFence=%s previousProcessingRevision=%s "
