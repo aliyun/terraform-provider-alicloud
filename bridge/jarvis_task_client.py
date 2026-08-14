@@ -280,6 +280,7 @@ class ControlPlaneClient:
     TASK_TIMELINE_PATH = "tasks/{task_id}/timeline"
     DISCARD_RESUME_CONTEXT_PATH = "tasks/{task_id}/discard-resume-context"
     FORCE_RELEASE_TASK_PATH = "tasks/{task_id}/force-release"
+    FORCE_HANDOFF_TASK_PATH = "tasks/{task_id}/force-handoff"
     FORCE_REDISPATCH_TASK_PATH = "tasks/{task_id}/force-redispatch"
     TARGETED_LEASE_PATH = "workers/{worker_key}/targeted-lease"
     READY_TASK_DIAGNOSTICS_PATH = "tasks/ready-diagnostics"
@@ -917,6 +918,66 @@ class ControlPlaneClient:
                 default=str,
             ).encode("utf-8")
             rid = "jarvis-force-release-%s" % hashlib.sha256(material).hexdigest()[:32]
+        return self._post(path, payload, request_id=rid)
+
+    def force_handoff_task(
+            self, task_id: str, *,
+            expected_session_id: int,
+            expected_session_status: str,
+            expected_generation: int,
+            expected_state_version: int,
+            expected_fence_token: int,
+            expected_retry_count: int,
+            expected_task_status: str,
+            expected_desired_revision: Optional[str],
+            expected_processing_revision: Optional[str],
+            expected_worker_key: Optional[str],
+            expected_worker_id: Optional[int],
+            expected_worker_process_uuid: Optional[str],
+            reason: str,
+            request_id: Optional[str] = None) -> Dict[str, Any]:
+        """Atomically preempt one active ownership snapshot after operator ACK.
+
+        The deterministic request id makes transport retries of the same reviewed
+        timeline snapshot idempotent.  The server remains authoritative for the
+        compare-and-set, old-Session cancellation, and generation advance.
+        """
+        path = self.FORCE_HANDOFF_TASK_PATH.format(
+            task_id=self._path_segment(task_id, "task_id"))
+        if expected_worker_id is None:
+            raise ValueError("expected_worker_id must not be empty")
+        payload = {
+            "expectedSessionId": int(expected_session_id),
+            "expectedSessionStatus": _nonblank(
+                expected_session_status, "expected_session_status"),
+            "expectedGeneration": int(expected_generation),
+            "expectedStateVersion": int(expected_state_version),
+            "expectedFenceToken": int(expected_fence_token),
+            "expectedRetryCount": int(expected_retry_count),
+            "expectedTaskStatus": _nonblank(
+                expected_task_status, "expected_task_status"),
+            "expectedDesiredRevision": _nonblank(
+                expected_desired_revision, "expected_desired_revision"),
+            "expectedProcessingRevision": _nonblank(
+                expected_processing_revision, "expected_processing_revision"),
+            "expectedWorkerKey": _nonblank(
+                expected_worker_key, "expected_worker_key"),
+            "expectedWorkerId": int(expected_worker_id),
+            "expectedWorkerProcessUuid": _nonblank(
+                expected_worker_process_uuid,
+                "expected_worker_process_uuid"),
+            "confirmationToken": "FORCE_HANDOFF",
+            "reason": _nonblank(reason, "reason"),
+        }
+        rid = request_id
+        if rid is None:
+            material = json.dumps(
+                {"taskId": str(task_id), "payload": payload},
+                ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+                default=str,
+            ).encode("utf-8")
+            rid = "jarvis-force-handoff-%s" % (
+                hashlib.sha256(material).hexdigest()[:32])
         return self._post(path, payload, request_id=rid)
 
     def force_redispatch_task(

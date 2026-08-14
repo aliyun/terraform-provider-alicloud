@@ -98,6 +98,44 @@ No periodic job is allowed to have a second legacy loop.
 
 ## Cross-host redispatch
 
+### Acknowledged handoff of active work
+
+Use the acknowledged handoff command when the Task is still actively owned
+(`LEASED`, `RUNNING`, or `FINALIZING`) and its control-plane ownership must be
+revoked before another Worker may continue it:
+
+```bash
+bootstrap/control-plane-status.sh force-handoff TASK_ID [SESSION_ID] \
+  --reason "move active work after operator review" --yes
+```
+
+The command does no timeline read before explicit `--yes`. After confirmation it
+fresh-reads the Task timeline and submits the exact Task status, Session/status,
+generation, state version, fence, retry count, desired/processing revisions, and
+historical Worker identity as one CAS with a stable idempotency key. A `404`
+means the endpoint is not deployed; a `409` means the snapshot changed and must
+be reviewed again.
+
+The typed confirmation authorizes one atomic transition: the old Session is
+fenced and canceled, generation advances once, and the pending desired revision
+is re-published at `READY`. CLI success is based on the stable receipt
+(`releasedSessionId`, previous/new generation and fence, revisions, and
+`publishedStatus`), not the attached Task view: a successor may already have
+leased the Task by the time an idempotent response is replayed.
+
+This is a logical control-plane termination, not proof that the remote OS process
+has exited. The old fence makes all later mutations from that process stale. If
+physical process termination must be acknowledged before replacement work is
+published, use the older two-phase Worker directive/ACK protocol instead.
+
+This operator endpoint is separate from the older Worker directive/ACK protocol.
+For those directives, a tracked Session stops locally before ACK; after Worker
+restart, an untracked old Session is ACKed with its `oldFenceToken`. Transport
+failure remains fail-closed and retries the same stable ACK key, while concurrent
+directives are single-flight.
+
+### Suspended/replay-safe redispatch
+
 An operator can move a reviewed, replay-safe suspended Task away from its
 current host without opening a public-queue race:
 

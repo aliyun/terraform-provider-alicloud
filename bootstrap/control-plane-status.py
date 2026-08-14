@@ -13,8 +13,8 @@ JARVIS_CONTROL_PLANE_TOKEN（可由 JARVIS_HTML_REPORT_TOKEN 回填）；
 ``unresolvable-source-cleanup`` 只使用独立的
 JARVIS_CONTROL_PLANE_ADMIN_TOKEN。``legacy-cleanup`` 是零网络墓碑命令。
 控制面地址可显式覆盖，默认指向生产控制面。
-本文件只读环境变量、不读 env 文件。``discard-resume``、``force-release`` 和
-``force-redispatch`` 是写操作，且必须显式 ``--yes``；
+本文件只读环境变量、不读 env 文件。``discard-resume``、``force-release``、
+``force-handoff`` 和 ``force-redispatch`` 是写操作，且必须显式 ``--yes``；
 ``unresolvable-source-cleanup`` 只有带 ``--yes`` 时才写，并额外要求非空 reason。
 
 退出码：0=成功；1=控制面无该工单任务；2=参数/凭证问题；3=控制面请求失败；
@@ -485,6 +485,163 @@ def cmd_force_release(client, task_id, session_id, reason, yes):
     return 0
 
 
+def _force_handoff_snapshot(timeline, task_id, session_id):
+    snapshot = _force_release_snapshot(timeline, task_id, session_id)
+    if snapshot["expected_task_status"] not in {
+            "LEASED", "RUNNING", "FINALIZING"}:
+        raise ValueError(
+            "force-handoff requires an active Task status "
+            "(LEASED, RUNNING, or FINALIZING), got %s"
+            % snapshot["expected_task_status"])
+    task = timeline["task"]
+    current_session_id = task.get("currentSessionId")
+    if current_session_id is None:
+        raise ValueError("active task timeline has no currentSessionId")
+    if str(snapshot["expected_session_id"]) != str(current_session_id):
+        raise ValueError(
+            "session %s is not the active task.currentSessionId %s"
+            % (snapshot["expected_session_id"], current_session_id))
+    if snapshot["expected_fence_token"] is None:
+        raise ValueError("active session timeline has no fenceToken")
+    selected_session = next((
+        candidate for candidate in (timeline.get("sessions") or [])
+        if isinstance(candidate, dict)
+        and str(candidate.get("id")) == str(current_session_id)
+    ), {})
+    current_worker = (
+        timeline.get("currentWorker")
+        if isinstance(timeline.get("currentWorker"), dict) else {})
+    worker_key = (
+        snapshot["expected_worker_key"]
+        or selected_session.get("currentWorkerKey")
+        or current_worker.get("workerKey"))
+    worker_id = (
+        snapshot["expected_worker_id"]
+        or selected_session.get("currentWorkerId")
+        or current_worker.get("id"))
+    worker_process_uuid = (
+        snapshot["expected_worker_process_uuid"]
+        or selected_session.get("currentWorkerProcessUuid")
+        or current_worker.get("processUuid"))
+    missing_worker = [
+        name for name, value in (
+            ("workerKey", worker_key),
+            ("workerId", worker_id),
+            ("workerProcessUuid", worker_process_uuid),
+        ) if value is None or str(value).strip() == ""
+    ]
+    if missing_worker:
+        raise ValueError(
+            "active timeline is missing force-handoff Worker CAS field(s): %s"
+            % ", ".join(missing_worker))
+    return {
+        "expected_session_id": snapshot["expected_session_id"],
+        "expected_session_status": snapshot["expected_session_status"],
+        "expected_generation": snapshot["expected_generation"],
+        "expected_state_version": snapshot["expected_state_version"],
+        "expected_fence_token": snapshot["expected_fence_token"],
+        "expected_retry_count": snapshot["expected_retry_count"],
+        "expected_task_status": snapshot["expected_task_status"],
+        "expected_desired_revision": snapshot["expected_desired_revision"],
+        "expected_processing_revision": snapshot["expected_processing_revision"],
+        "expected_worker_key": worker_key,
+        "expected_worker_id": worker_id,
+        "expected_worker_process_uuid": worker_process_uuid,
+    }
+
+
+def cmd_force_handoff(client, task_id, session_id, reason, yes):
+    if not yes:
+        sys.stderr.write(
+            "error: force-handoff atomically preempts the exact active "
+            "Session; pass --yes to fetch a fresh CAS snapshot and continue\n")
+        return 2
+    if not str(reason or "").strip():
+        sys.stderr.write(
+            "error: force-handoff requires a nonblank --reason TEXT\n")
+        return 2
+    try:
+        timeline = client.get_task_timeline(str(task_id))
+        snapshot = _force_handoff_snapshot(timeline, task_id, session_id)
+        result = client.force_handoff_task(
+            str(task_id), reason=reason, **snapshot)
+    except ControlPlaneError as exc:
+        status = getattr(exc, "status", None)
+        if status == 404:
+            sys.stderr.write(
+                "error: force-handoff endpoint is unavailable (HTTP 404); "
+                "the control-plane server version has not been deployed\n")
+            return 3
+        if status == 409:
+            sys.stderr.write(
+                "error: force-handoff CAS rejected (HTTP 409); refresh the "
+                "timeline before retrying: %s\n" % exc)
+            return 3
+        raise
+    except (TypeError, ValueError) as exc:
+        sys.stderr.write("error: cannot build force-handoff CAS: %s\n" % exc)
+        return 3
+
+    task = result.get("task") if isinstance(result.get("task"), dict) else {}
+    has_stable_outcome = (
+        result.get("newGeneration") is not None
+        or result.get("publishedStatus") is not None)
+    old_generation = result.get(
+        "previousGeneration", snapshot["expected_generation"])
+    new_generation = result.get(
+        "newGeneration", task.get("generation", result.get("generation", "?")))
+    old_session = result.get(
+        "releasedSessionId",
+        result.get("oldSessionId", snapshot["expected_session_id"]))
+    published_status = result.get(
+        "publishedStatus", task.get("status", result.get("status", "?")))
+    current_status = task.get("status", "-")
+    action = str(result.get("action") or "").strip()
+    try:
+        generation_advanced = (
+            int(old_generation) == int(snapshot["expected_generation"])
+            and int(new_generation) == int(old_generation) + 1)
+    except (TypeError, ValueError):
+        generation_advanced = False
+    if (not action or not generation_advanced
+            or str(published_status).upper() != "READY"
+            or str(old_session) != str(snapshot["expected_session_id"])):
+        sys.stderr.write(
+            "error: force-handoff returned an inconsistent success DTO; do not "
+            "claim completion—refresh the Task timeline (oldGeneration=%s, "
+            "newGeneration=%s, oldSession=%s, publishedStatus=%s)\n"
+            % (old_generation, new_generation, old_session, published_status))
+        return 3
+    print(
+        "acknowledged force handoff: action=%s oldGeneration=%s "
+        "newGeneration=%s oldSession=%s publishedStatus=%s currentStatus=%s"
+        % (
+            action,
+            old_generation,
+            new_generation,
+            old_session,
+            published_status,
+            current_status,
+        ))
+    print(
+        "  outcome=%s; pending desired revision was re-published at READY; "
+        "currentStatus may already have advanced"
+        % ("stable receipt" if has_stable_outcome else "TaskView fallback"))
+    if has_stable_outcome:
+        print(
+            "  previousFence=%s newFence=%s previousProcessingRevision=%s "
+            "desiredRevision=%s"
+            % (
+                result.get("previousFenceToken", "-"),
+                result.get("newFenceToken", "-"),
+                result.get("previousProcessingRevision", "-"),
+                result.get("desiredRevision", "-"),
+            ))
+    if result.get("message"):
+        print("  message=%s" % result.get("message"))
+    return 0
+
+
 def cmd_force_redispatch(
         client, task_id, session_id, reason, yes, target_worker_key,
         target_host_id, target_runtime):
@@ -674,6 +831,17 @@ def main(argv=None):
         help="expected Session id (default: fresh task.currentSessionId)")
     p_release.add_argument("--reason", required=True, help="auditable release reason")
     p_release.add_argument("--yes", action="store_true", help="confirm ownership release")
+    p_handoff = sub.add_parser(
+        "force-handoff",
+        help="atomically preempt one exact active Session after operator confirmation")
+    p_handoff.add_argument("task_id", type=int, help="control-plane Task id")
+    p_handoff.add_argument(
+        "session_id", type=int, nargs="?",
+        help="expected active Session id (default: fresh task.currentSessionId)")
+    p_handoff.add_argument(
+        "--reason", required=True, help="auditable handoff reason")
+    p_handoff.add_argument(
+        "--yes", action="store_true", help="confirm acknowledged force handoff")
     p_redispatch = sub.add_parser(
         "force-redispatch",
         help="release one ownership snapshot and target an online worker on another host")
@@ -739,6 +907,9 @@ def main(argv=None):
                 client, args.task_ids, args.reason, args.yes)
         if args.cmd == "force-release":
             return cmd_force_release(
+                client, args.task_id, args.session_id, args.reason, args.yes)
+        if args.cmd == "force-handoff":
+            return cmd_force_handoff(
                 client, args.task_id, args.session_id, args.reason, args.yes)
         if args.cmd == "force-redispatch":
             return cmd_force_redispatch(
