@@ -11,12 +11,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAliCloudEnsEip() *schema.Resource {
+func resourceAliCloudEnsNatGatewaySnatEntry() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudEnsEipCreate,
-		Read:   resourceAliCloudEnsEipRead,
-		Update: resourceAliCloudEnsEipUpdate,
-		Delete: resourceAliCloudEnsEipDelete,
+		Create: resourceAliCloudEnsNatGatewaySnatEntryCreate,
+		Read:   resourceAliCloudEnsNatGatewaySnatEntryRead,
+		Update: resourceAliCloudEnsNatGatewaySnatEntryUpdate,
+		Delete: resourceAliCloudEnsNatGatewaySnatEntryDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -26,49 +26,37 @@ func resourceAliCloudEnsEip() *schema.Resource {
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
-			"bandwidth": {
-				Type:     schema.TypeInt,
-				Optional: true,
-				Computed: true,
-			},
-			"create_time": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"description": {
-				Type:     schema.TypeString,
+			"eip_affinity": {
+				Type:     schema.TypeBool,
 				Optional: true,
 			},
-			"eip_name": {
-				Type:     schema.TypeString,
+			"idle_timeout": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: IntBetween(0, 86400),
+			},
+			"isp_affinity": {
+				Type:     schema.TypeBool,
 				Optional: true,
 			},
-			"ens_region_id": {
+			"nat_gateway_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"internet_charge_type": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"95BandwidthByMonth"}, false),
-			},
-			"ip_address": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"isp": {
+			"snat_entry_name": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Computed: true,
-				ForceNew: true,
 			},
-			"payment_type": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"PayAsYouGo"}, false),
+			"snat_ip": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"source_cidr": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -78,33 +66,33 @@ func resourceAliCloudEnsEip() *schema.Resource {
 	}
 }
 
-func resourceAliCloudEnsEipCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudEnsNatGatewaySnatEntryCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
-	action := "CreateEipInstance"
+	action := "CreateSnatEntry"
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
 
-	request["ClientToken"] = buildClientToken(action)
-
-	request["EnsRegionId"] = d.Get("ens_region_id")
-	if v, ok := d.GetOkExists("bandwidth"); ok {
-		request["Bandwidth"] = v
+	request["NatGatewayId"] = d.Get("nat_gateway_id")
+	request["SnatIp"] = d.Get("snat_ip")
+	if v, ok := d.GetOk("snat_entry_name"); ok {
+		request["SnatEntryName"] = v
 	}
-	request["InternetChargeType"] = d.Get("internet_charge_type")
-	if v, ok := d.GetOk("isp"); ok {
-		request["Isp"] = v
+	if v, ok := d.GetOk("source_cidr"); ok {
+		request["SourceCIDR"] = v
 	}
-	request["InstanceChargeType"] = convertEnsInstanceInstanceChargeTypeRequest(d.Get("payment_type").(string))
-	if v, ok := d.GetOk("eip_name"); ok {
-		request["Name"] = v
+	if v, ok := d.GetOkExists("idle_timeout"); ok {
+		request["IdleTimeout"] = v
 	}
-	if v, ok := d.GetOk("description"); ok {
-		request["Description"] = v
+	if v, ok := d.GetOkExists("isp_affinity"); ok {
+		request["IspAffinity"] = v
+	}
+	if v, ok := d.GetOkExists("eip_affinity"); ok {
+		request["EipAffinity"] = v
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
@@ -121,49 +109,47 @@ func resourceAliCloudEnsEipCreate(d *schema.ResourceData, meta interface{}) erro
 	addDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ens_eip", action, AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ens_nat_gateway_snat_entry", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprint(response["AllocationId"]))
+	d.SetId(fmt.Sprint(response["SnatEntryId"]))
 
 	ensServiceV2 := EnsServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 30*time.Second, ensServiceV2.EnsEipStateRefreshFunc(d.Id(), "Status", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ensServiceV2.EnsNatGatewaySnatEntryStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAliCloudEnsEipRead(d, meta)
+	return resourceAliCloudEnsNatGatewaySnatEntryRead(d, meta)
 }
 
-func resourceAliCloudEnsEipRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudEnsNatGatewaySnatEntryRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ensServiceV2 := EnsServiceV2{client}
 
-	objectRaw, err := ensServiceV2.DescribeEnsEip(d.Id())
+	objectRaw, err := ensServiceV2.DescribeEnsNatGatewaySnatEntry(d.Id())
 	if err != nil {
 		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_ens_eip DescribeEnsEip Failed!!! %s", err)
+			log.Printf("[DEBUG] Resource alicloud_ens_nat_gateway_snat_entry DescribeEnsNatGatewaySnatEntry Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
 
-	d.Set("bandwidth", objectRaw["Bandwidth"])
-	d.Set("create_time", objectRaw["AllocationTime"])
-	d.Set("description", objectRaw["Description"])
-	d.Set("eip_name", objectRaw["Name"])
-	d.Set("ens_region_id", objectRaw["EnsRegionId"])
-	d.Set("internet_charge_type", objectRaw["InternetChargeType"])
-	d.Set("ip_address", objectRaw["IpAddress"])
-	d.Set("isp", objectRaw["Isp"])
-	d.Set("payment_type", convertEnsEipAddressesEipAddressChargeTypeResponse(objectRaw["ChargeType"]))
+	d.Set("eip_affinity", objectRaw["EipAffinity"])
+	d.Set("idle_timeout", formatInt(objectRaw["IdleTimeout"]))
+	d.Set("isp_affinity", objectRaw["IspAffinity"])
+	d.Set("nat_gateway_id", objectRaw["NatGatewayId"])
+	d.Set("snat_entry_name", objectRaw["SnatEntryName"])
+	d.Set("snat_ip", objectRaw["SnatIp"])
+	d.Set("source_cidr", objectRaw["SourceCIDR"])
 	d.Set("status", objectRaw["Status"])
 
 	return nil
 }
 
-func resourceAliCloudEnsEipUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudEnsNatGatewaySnatEntryUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -171,30 +157,30 @@ func resourceAliCloudEnsEipUpdate(d *schema.ResourceData, meta interface{}) erro
 	update := false
 
 	var err error
-	action := "ModifyEnsEipAddressAttribute"
+	action := "ModifySnatEntry"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	request["AllocationId"] = d.Id()
+	request["SnatEntryId"] = d.Id()
 
-	if d.HasChange("eip_name") {
+	if d.HasChange("snat_entry_name") {
 		update = true
+		request["SnatEntryName"] = d.Get("snat_entry_name")
 	}
-	if v, ok := d.GetOk("eip_name"); ok {
-		request["Name"] = v
-	}
-	if d.HasChange("bandwidth") {
-		update = true
 
-		if v, ok := d.GetOkExists("bandwidth"); ok {
-			request["Bandwidth"] = v
-		}
+	if d.HasChange("isp_affinity") {
+		update = true
+		request["IspAffinity"] = d.Get("isp_affinity")
 	}
-	if d.HasChange("description") {
+
+	if d.HasChange("eip_affinity") {
+		update = true
+		request["EipAffinity"] = d.Get("eip_affinity")
+	}
+
+	if d.HasChange("snat_ip") {
 		update = true
 	}
-	if v, ok := d.GetOk("description"); ok {
-		request["Description"] = v
-	}
+	request["SnatIp"] = d.Get("snat_ip")
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
@@ -212,26 +198,30 @@ func resourceAliCloudEnsEipUpdate(d *schema.ResourceData, meta interface{}) erro
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
+		ensServiceV2 := EnsServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ensServiceV2.EnsNatGatewaySnatEntryStateRefreshFunc(d.Id(), "Status", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
 	}
 
-	return resourceAliCloudEnsEipRead(d, meta)
+	return resourceAliCloudEnsNatGatewaySnatEntryRead(d, meta)
 }
 
-func resourceAliCloudEnsEipDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudEnsNatGatewaySnatEntryDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
-	action := "DeleteEip"
+	action := "DeleteSnatEntry"
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
-	request["InstanceId"] = d.Id()
+	request["SnatEntryId"] = d.Id()
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -244,25 +234,17 @@ func resourceAliCloudEnsEipDelete(d *schema.ResourceData, meta interface{}) erro
 	addDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if IsExpectedErrors(err, []string{"InvalidParameter.SnatNotFound"}) || NotFoundError(err) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
 	ensServiceV2 := EnsServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 30*time.Second, ensServiceV2.EnsEipStateRefreshFunc(d.Id(), "$.AllocationId", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 5*time.Second, ensServiceV2.EnsNatGatewaySnatEntryStateRefreshFunc(d.Id(), "$.SnatEntryId", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
 	return nil
-}
-
-func convertEnsEipAddressesEipAddressChargeTypeResponse(source interface{}) interface{} {
-	switch source {
-	case "PostPaid":
-		return "PayAsYouGo"
-	}
-	return source
 }
