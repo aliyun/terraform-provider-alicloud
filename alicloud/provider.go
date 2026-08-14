@@ -954,6 +954,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_ipam_ipams":                                   dataSourceAliCloudVpcIpamIpams(),
 			"alicloud_das_sql_log_configs":                              dataSourceAliCloudDasSqlLogConfigs(),
 			"alicloud_apig_plugin_classes":                              dataSourceAliCloudApigPluginClasses(),
+			"alicloud_app_streaming_apps":                               dataSourceAliCloudAppStreamingApps(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_redis_global_security_ip_group":                       resourceAliCloudRedisGlobalSecurityIpGroup(),
