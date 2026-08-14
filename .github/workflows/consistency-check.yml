@@ -32,7 +32,7 @@ jobs:
     steps:
       - name: Select runner
         id: select
-        uses: aliyun/terraform-provider-alicloud/.github/actions/terraform-ci-select-policy@eaf310539de91ddbb455d3f5bcfd5de39037b432
+        uses: aliyun/terraform-provider-alicloud/.github/actions/terraform-ci-select-policy@6e2693809815ff4933acf087c5e3543349efc911
 
   consistency:
     name: Consistency

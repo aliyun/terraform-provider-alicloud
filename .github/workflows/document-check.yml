@@ -35,7 +35,7 @@ jobs:
     steps:
       - name: Select runner
         id: select
-        uses: aliyun/terraform-provider-alicloud/.github/actions/terraform-ci-select-policy@1c4bb6762031f53732611700cad5d71d1ec84dfe
+        uses: aliyun/terraform-provider-alicloud/.github/actions/terraform-ci-select-policy@6e2693809815ff4933acf087c5e3543349efc911
 
   markdown-link:
     needs: route
@@ -50,7 +50,7 @@ jobs:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
       - name: Set up Node.js
-        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version: '20'
       - name: Check Markdown links
@@ -82,7 +82,7 @@ jobs:
           CI_BASE_REF: ${{ github.ref_name }}
         run: scripts/ci/resolve-change-range.sh >> "$GITHUB_OUTPUT"
       - name: Set up Node.js
-        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version: '20'
       - name: Lint changed Markdown files
