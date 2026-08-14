@@ -620,8 +620,8 @@ has "publishedStatus=READY" "$out" "force-handoff prints published status"
 has "currentStatus=RUNNING" "$out" \
   "force-handoff tolerates TaskView advancing after stable receipt"
 has "stable receipt" "$out" "force-handoff identifies stable outcome"
-has "pending desired revision was re-published" "$out" \
-  "force-handoff reports pending revision handoff"
+has "current desired revision was queued for replay" "$out" \
+  "force-handoff reports same-revision replay"
 has "currentStatus may already have advanced" "$out" \
   "force-handoff distinguishes receipt from current TaskView"
 
@@ -632,6 +632,8 @@ out="$(STUB_HANDOFF_STATUS=RUNNING STUB_HANDOFF_LEGACY=1 \
   no "force-handoff TaskView fallback rc=$rc: $out"
 has "outcome=TaskView fallback" "$out" \
   "force-handoff supports transitional TaskView-only response"
+has "desired revision was published at READY" "$out" \
+  "force-handoff fallback avoids inventing revision mode"
 
 out="$(STUB_HANDOFF_STATUS=RUNNING STUB_MODE=handoff_inconsistent \
   run_cli force-handoff 11 \
