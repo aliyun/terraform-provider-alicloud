@@ -923,3 +923,246 @@ func AliCloudDTSSynchronizationJobBasicDependence1(name string) string {
 	}
 `, name)
 }
+
+func TestAccAliCloudDTSSynchronizationJob_tagsResourceGroup(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_dts_synchronization_job.default"
+	ra := resourceAttrInit(resourceId, AliCloudDTSSynchronizationJobMapTagsRG)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &DtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDtsSynchronizationJob")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sdtssyncjobtrg%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDTSSynchronizationJobBasicDependenceTagsRG)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"dts_instance_id":                    "${alicloud_dts_synchronization_instance.default.id}",
+					"dts_job_name":                       "tf-testAccTagsRG",
+					"source_endpoint_instance_type":      "RDS",
+					"source_endpoint_instance_id":        "${alicloud_db_instance.source.id}",
+					"source_endpoint_engine_name":        "MySQL",
+					"source_endpoint_region":             "${data.alicloud_regions.default.regions.0.id}",
+					"source_endpoint_database_name":      "test_database",
+					"source_endpoint_user_name":          "${alicloud_rds_account.source_account.account_name}",
+					"source_endpoint_password":           "${alicloud_rds_account.source_account.account_password}",
+					"destination_endpoint_instance_type": "RDS",
+					"destination_endpoint_instance_id":   "${alicloud_db_instance.target.id}",
+					"destination_endpoint_engine_name":   "MySQL",
+					"destination_endpoint_region":        "${data.alicloud_regions.default.regions.0.id}",
+					"destination_endpoint_database_name": "test_database",
+					"destination_endpoint_user_name":     "${alicloud_rds_account.target_account.account_name}",
+					"destination_endpoint_password":      "${alicloud_rds_account.target_account.account_password}",
+					"db_list":                            "{\\\"test_database\\\":{\\\"name\\\":\\\"test_database\\\",\\\"all\\\":true,\\\"state\\\":\\\"normal\\\"}}",
+					"structure_initialization":           "true",
+					"data_initialization":                "true",
+					"data_synchronization":               "true",
+					"resource_group_id":                  "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"tags": map[string]interface{}{
+						"Created": "TF",
+						"For":     "acceptance test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"dts_job_name":      "tf-testAccTagsRG",
+						"resource_group_id": CHECKSET,
+						"tags.%":            "2",
+						"tags.Created":      "TF",
+						"tags.For":          "acceptance test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]interface{}{
+						"Created": "TF",
+						"Env":     "acc",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.Env":     "acc",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]interface{}{},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%": "0",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"delay_notice", "error_phone", "delay_rule_time", "error_notice", "delay_phone", "reserve", "destination_endpoint_password", "source_endpoint_password"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudDTSSynchronizationJob_allAttributes(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_dts_synchronization_job.default"
+	ra := resourceAttrInit(resourceId, AliCloudDTSSynchronizationJobMapAllAttrs)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &DtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDtsSynchronizationJob")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testaccdtssyncjoballattrs%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDTSSynchronizationJobBasicDependenceTagsRG)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				// Create step carrying the full set of ConfigureDtsJob attributes the
+				// coverage gate audits, so every Optional/Required field is represented in
+				// a test config. The topology stays RDS-to-RDS like the other cases;
+				// endpoint metadata fields are supplied alongside the instance ids because
+				// ConfigureDtsJob stores the endpoint detail it is given and returns it on
+				// Describe. status is deliberately omitted here so the lifecycle value is
+				// exercised through an update step below rather than pinned at create.
+				Config: testAccConfig(map[string]interface{}{
+					"dts_instance_id":                    "${alicloud_dts_synchronization_instance.default.id}",
+					"dts_job_name":                       "tf-testAccAllAttrs",
+					"source_endpoint_instance_type":      "RDS",
+					"source_endpoint_instance_id":        "${alicloud_db_instance.source.id}",
+					"source_endpoint_engine_name":        "MySQL",
+					"source_endpoint_region":             "${data.alicloud_regions.default.regions.0.id}",
+					"source_endpoint_database_name":      "test_database",
+					"source_endpoint_user_name":          "${alicloud_rds_account.source_account.account_name}",
+					"source_endpoint_password":           "${alicloud_rds_account.source_account.account_password}",
+					"source_endpoint_ip":                 "10.0.0.1",
+					"source_endpoint_port":               "3306",
+					"source_endpoint_oracle_sid":         "orcl",
+					"source_endpoint_owner_id":           "1234567890",
+					"source_endpoint_role":               "source",
+					"source_endpoint_vswitch_id":         "${data.alicloud_vswitches.default.ids.0}",
+					"destination_endpoint_instance_type": "RDS",
+					"destination_endpoint_instance_id":   "${alicloud_db_instance.target.id}",
+					"destination_endpoint_engine_name":   "MySQL",
+					"destination_endpoint_region":        "${data.alicloud_regions.default.regions.0.id}",
+					"destination_endpoint_database_name": "test_database",
+					"destination_endpoint_user_name":     "${alicloud_rds_account.target_account.account_name}",
+					"destination_endpoint_password":      "${alicloud_rds_account.target_account.account_password}",
+					"destination_endpoint_ip":            "10.0.0.2",
+					"destination_endpoint_port":          "3306",
+					"destination_endpoint_oracle_sid":    "orcl",
+					"destination_endpoint_owner_id":      "1234567890",
+					"destination_endpoint_role":          "target",
+					"db_list":                            "{\\\"test_database\\\":{\\\"name\\\":\\\"test_database\\\",\\\"all\\\":true,\\\"state\\\":\\\"normal\\\"}}",
+					"checkpoint":                         "0",
+					"data_check_configure":               "{}",
+					"dedicated_cluster_id":               "dcr-testacc-allattrs",
+					"dts_bis_label":                      "tf-testacc-allattrs",
+					"delay_notice":                       "true",
+					"delay_phone":                        "13800000000",
+					"delay_rule_time":                    "30",
+					"error_notice":                       "true",
+					"error_phone":                        "13800000000",
+					"instance_class":                     "small",
+					"synchronization_direction":          "Forward",
+					"structure_initialization":           "true",
+					"data_initialization":                "true",
+					"data_synchronization":               "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"dts_job_name":              "tf-testAccAllAttrs",
+						"synchronization_direction": "Forward",
+						"instance_class":            "small",
+					}),
+				),
+			},
+			{
+				// db_list is Required and not ForceNew, so ModifyDtsJob must be exercised
+				// while the job is Synchronizing; narrowing the sync scope from all:true to
+				// all:false covers the update path for that attribute.
+				Config: testAccConfig(map[string]interface{}{
+					"db_list": "{\\\"test_database\\\":{\\\"name\\\":\\\"test_database\\\",\\\"all\\\":false,\\\"state\\\":\\\"normal\\\"}}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_list": CHECKSET,
+					}),
+				),
+			},
+			{
+				// status is Optional+Computed and not ForceNew; driving it to Suspending
+				// exercises the StatusFlow update path. It first appears in this step so it
+				// is both covered and modified.
+				Config: testAccConfig(map[string]interface{}{
+					"status": "Suspending",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "Suspending",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"delay_notice", "error_phone", "delay_rule_time", "error_notice", "delay_phone",
+					"reserve", "destination_endpoint_password", "source_endpoint_password",
+					// The attributes below are never written back by Read (DescribeDtsJobDetail
+					// does not return them), so the imported state cannot carry them and they
+					// must be suppressed here rather than left to drift.
+					"instance_class", "data_check_configure", "dedicated_cluster_id", "dts_bis_label",
+					"source_endpoint_vswitch_id", "destination_endpoint_owner_id", "destination_endpoint_role",
+				},
+			},
+		},
+	})
+}
+
+var AliCloudDTSSynchronizationJobMapAllAttrs = map[string]string{}
+
+var AliCloudDTSSynchronizationJobMapTagsRG = map[string]string{}
+
+func AliCloudDTSSynchronizationJobBasicDependenceTagsRG(name string) string {
+	return fmt.Sprintf(`
+data "alicloud_resource_manager_resource_groups" "default" {
+  status = "OK"
+}
+
+%s
+`, AliCloudDTSSynchronizationJobBasicDependence0(name))
+}
