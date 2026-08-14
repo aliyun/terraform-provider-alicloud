@@ -11,8 +11,10 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/features"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
 func init() {
@@ -4828,6 +4830,307 @@ func AliCloudEcsInstancePrivatePool(name string) string {
   		vpc_id = alicloud_vpc.vpc.id
 	}
 `, name)
+}
+
+// TestAccAliCloudECSInstanceImageUpdateReplace covers
+// features.ecs_instance.replace_on_image_update enabled: an image_id change replaces the instance.
+func TestAccAliCloudECSInstanceImageUpdateReplace(t *testing.T) {
+	var v ecs.Instance
+	resourceId := "alicloud_instance.default"
+	ra := resourceAttrInit(resourceId, testAccInstanceImageUpdateCheckMap)
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEcsInstanceImageUpdateReplace%d", acctest.RandIntRange(1000, 9999))
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, func(name string) string {
+		return resourceInstanceImageUpdateDependence(name, true)
+	})
+	recordInstanceId, _, assertInstanceReplaced := instanceIdTracker(resourceId)
+	// The only test that lets the replacement path run, so the only one that has to clean up after it.
+	defer restoreInstanceImageIdForceNew()()
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id":             "${data.alicloud_images.default.images.0.id}",
+					"security_groups":      []string{"${alicloud_security_group.default.id}"},
+					"instance_type":        "${data.alicloud_instance_types.default.instance_types.0.id}",
+					"availability_zone":    "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}",
+					"system_disk_category": "cloud_essd",
+					"system_disk_size":     "40",
+					"instance_name":        "${var.name}",
+					"vswitch_id":           "${alicloud_vswitch.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_name": name,
+					}),
+					recordInstanceId,
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id": "${data.alicloud_images.default.images.1.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+					assertInstanceReplaced,
+				),
+			},
+		},
+	})
+}
+
+// TestAccAliCloudECSInstanceImageUpdateInPlace guards the default: with the toggle unset, an
+// image_id change still goes through ReplaceSystemDisk and the instance survives.
+func TestAccAliCloudECSInstanceImageUpdateInPlace(t *testing.T) {
+	var v ecs.Instance
+	resourceId := "alicloud_instance.default"
+	ra := resourceAttrInit(resourceId, testAccInstanceImageUpdateCheckMap)
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEcsInstanceImageUpdateInPlace%d", acctest.RandIntRange(1000, 9999))
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, func(name string) string {
+		return resourceInstanceImageUpdateDependence(name, false)
+	})
+	recordInstanceId, assertInstanceKept, _ := instanceIdTracker(resourceId)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id":             "${data.alicloud_images.default.images.0.id}",
+					"security_groups":      []string{"${alicloud_security_group.default.id}"},
+					"instance_type":        "${data.alicloud_instance_types.default.instance_types.0.id}",
+					"availability_zone":    "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}",
+					"system_disk_category": "cloud_essd",
+					"system_disk_size":     "40",
+					"instance_name":        "${var.name}",
+					"vswitch_id":           "${alicloud_vswitch.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_name": name,
+					}),
+					recordInstanceId,
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id": "${data.alicloud_images.default.images.1.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+					assertInstanceKept,
+				),
+			},
+		},
+	})
+}
+
+// restoreInstanceImageIdForceNew restores the ForceNew flag of the shared alicloud_instance
+// image_id schema, which ResourceDiff.ForceNew sets and nothing unsets. Without it every later
+// alicloud_instance test in the same binary would plan an image_id change as a replacement too.
+func restoreInstanceImageIdForceNew() func() {
+	imageIdSchema := testAccProvider.ResourcesMap["alicloud_instance"].Schema["image_id"]
+	forceNew := imageIdSchema.ForceNew
+	return func() {
+		imageIdSchema.ForceNew = forceNew
+	}
+}
+
+// instanceIdTracker returns a check that records the instance id of resourceId, plus two checks
+// asserting that a later step kept or replaced it. The id is the evidence of what the plan decided:
+// ReplaceSystemDisk keeps it, a destroy and create hands out a new one.
+func instanceIdTracker(resourceId string) (record, assertKept, assertReplaced resource.TestCheckFunc) {
+	instanceId := ""
+	readId := func(s *terraform.State) (string, error) {
+		rs, ok := s.RootModule().Resources[resourceId]
+		if !ok {
+			return "", fmt.Errorf("not found: %s", resourceId)
+		}
+		return rs.Primary.ID, nil
+	}
+	record = func(s *terraform.State) error {
+		id, err := readId(s)
+		if err != nil {
+			return err
+		}
+		instanceId = id
+		return nil
+	}
+	assertKept = func(s *terraform.State) error {
+		id, err := readId(s)
+		if err != nil {
+			return err
+		}
+		if id != instanceId {
+			return fmt.Errorf("the instance was replaced, but with features.ecs_instance.replace_on_image_update disabled an image_id change should have replaced its system disk in place")
+		}
+		return nil
+	}
+	assertReplaced = func(s *terraform.State) error {
+		id, err := readId(s)
+		if err != nil {
+			return err
+		}
+		if id == instanceId {
+			return fmt.Errorf("the instance was updated in place, but with features.ecs_instance.replace_on_image_update enabled an image_id change should have replaced it")
+		}
+		return nil
+	}
+	return record, assertKept, assertReplaced
+}
+
+// resourceInstanceImageUpdateDependence sets the toggle in a provider block, the only place it can
+// be set. Credentials keep coming from the provider's own DefaultFuncs.
+func resourceInstanceImageUpdateDependence(name string, replaceOnImageUpdate bool) string {
+	return fmt.Sprintf(`
+provider "alicloud" {
+  features {
+    ecs_instance {
+      replace_on_image_update = %t
+    }
+  }
+}
+
+variable "name" {
+  default = "%s"
+}
+
+# Two images out of one query. The regex has to exclude the GPU driver and 100G variants: as the
+# second image, one of those is rejected by the instance type and outgrows the system disk.
+data "alicloud_images" "default" {
+  name_regex = "^ubuntu_2[0-9]_[0-9]+_x64_20G_alibase"
+  owners     = "system"
+}
+
+# Filtered by disk category on purpose: filtering by image alone hands back a first generation type,
+# and only the modern categories can restore the natively encrypted snapshot behind a Ubuntu image.
+data "alicloud_instance_types" "default" {
+  image_id             = data.alicloud_images.default.images.0.id
+  system_disk_category = "cloud_essd"
+  cpu_core_count       = 2
+  memory_size          = 4
+}
+
+resource "alicloud_vpc" "default" {
+  cidr_block = "192.168.0.0/16"
+  vpc_name   = var.name
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 2)
+  zone_id      = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+  vswitch_name = var.name
+}
+
+resource "alicloud_security_group" "default" {
+  security_group_name = var.name
+  vpc_id              = alicloud_vpc.default.id
+}
+`, replaceOnImageUpdate, name)
+}
+
+// testAccInstanceImageUpdateCheckMap leaves image_id to the instance id checks: both positions of
+// the toggle leave the same image_id in state.
+var testAccInstanceImageUpdateCheckMap = map[string]string{
+	"image_id":             CHECKSET,
+	"instance_type":        CHECKSET,
+	"availability_zone":    CHECKSET,
+	"security_groups.#":    "1",
+	"system_disk_category": "cloud_essd",
+	"system_disk_size":     "40",
+	"vswitch_id":           CHECKSET,
+	"status":               "Running",
+}
+
+// TestUnitAliCloudInstanceImageUpdateForcesNew exercises the diff decision without the API.
+func TestUnitAliCloudInstanceImageUpdateForcesNew(t *testing.T) {
+	testCases := []struct {
+		name            string
+		replaceEnabled  bool
+		stateImageId    string
+		configImageId   string
+		wantRequiresNew bool
+	}{
+		{
+			name:            "enabled forces a replacement",
+			replaceEnabled:  true,
+			stateImageId:    "image-before",
+			configImageId:   "image-after",
+			wantRequiresNew: true,
+		},
+		{
+			name:            "disabled keeps the update in place",
+			replaceEnabled:  false,
+			stateImageId:    "image-before",
+			configImageId:   "image-after",
+			wantRequiresNew: false,
+		},
+		{
+			// An instance created from a launch template has no image_id of its own, so there is no
+			// user chosen image being replaced.
+			name:            "an image_id that was empty in state is left alone",
+			replaceEnabled:  true,
+			stateImageId:    "",
+			configImageId:   "image-after",
+			wantRequiresNew: false,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			// A fresh resource per case: ForceNew is recorded on the schema, so cases would
+			// otherwise leak into each other through a shared schema map.
+			instanceResource := resourceAliCloudInstance()
+			state := &terraform.InstanceState{
+				ID:         "i-unit-test",
+				Attributes: map[string]string{"image_id": testCase.stateImageId},
+			}
+			config := terraform.NewResourceConfigRaw(map[string]interface{}{
+				"image_id": testCase.configImageId,
+			})
+			client := &connectivity.AliyunClient{
+				Features: features.Features{
+					EcsInstance: features.EcsInstance{ReplaceOnImageUpdate: testCase.replaceEnabled},
+				},
+			}
+
+			diff, err := instanceResource.Diff(state, config, client)
+			if err != nil {
+				t.Fatalf("diff: %s", err)
+			}
+			attribute, ok := diff.Attributes["image_id"]
+			if !ok {
+				t.Fatalf("expected image_id to be part of the diff, got %#v", diff.Attributes)
+			}
+			if attribute.RequiresNew != testCase.wantRequiresNew {
+				t.Fatalf("image_id RequiresNew = %t, want %t", attribute.RequiresNew, testCase.wantRequiresNew)
+			}
+		})
+	}
 }
 
 var tags0 = map[string]string{

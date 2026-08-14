@@ -74,6 +74,7 @@ import (
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
 	otsTunnel "github.com/aliyun/aliyun-tablestore-go-sdk/tunnel"
 	"github.com/aliyun/fc-go-sdk"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/features"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awscredentials "github.com/aws/aws-sdk-go-v2/credentials"
 	awsdynamodb "github.com/aws/aws-sdk-go-v2/service/dynamodb"
@@ -159,6 +160,8 @@ type AliyunClient struct {
 	cmsConn                      *cms.Client
 	r_kvstoreConn                *r_kvstore.Client
 	maxcomputeConn               *maxcompute.Client
+
+	Features features.Features
 }
 
 type ApiVersion string
@@ -267,6 +270,7 @@ func (c *Config) Client() (*AliyunClient, error) {
 		otsTunnelConnByInstanceName:  make(map[string]otsTunnel.TunnelClient),
 		csprojectconnByKey:           make(map[string]*cs.ProjectClient),
 		skipRegionValidation:         c.SkipRegionValidation,
+		Features:                     c.Features,
 	}
 	if c.AccountType == "" {
 		c.AccountType = client.getAccountType()
