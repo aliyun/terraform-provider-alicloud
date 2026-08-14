@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudECDPolicyGroup_basic0(t *testing.T) {
+func TestAccAliCloudECDPolicyGroup_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecd_policy_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudECDPolicyGroupMap0)
@@ -142,11 +142,19 @@ func TestAccAlicloudECDPolicyGroup_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"watermark": "on",
+					"watermark":          "on",
+					"html_access":        "on",
+					"html_file_transfer": "upload",
+					"client_types": []map[string]interface{}{
+						{"client_type": "windows", "status": "ON"},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"watermark": "on",
+						"watermark":          "on",
+						"html_access":        "on",
+						"html_file_transfer": "upload",
+						"client_types.#":     "1",
 					}),
 				),
 			},
@@ -330,6 +338,11 @@ func TestAccAlicloudECDPolicyGroup_basic0(t *testing.T) {
 					"domain_list":            "[white:],alicloud-provider.cn",
 					"watermark_transparency": "LIGHT",
 					"visual_quality":         "medium",
+					"html_access":            "off",
+					"html_file_transfer":     "download",
+					"client_types": []map[string]interface{}{
+						{"client_type": "linux", "status": "OFF"},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -344,6 +357,9 @@ func TestAccAlicloudECDPolicyGroup_basic0(t *testing.T) {
 						"domain_list":                       "[white:],alicloud-provider.cn",
 						"watermark_transparency":            "LIGHT",
 						"visual_quality":                    "medium",
+						"html_access":                       "off",
+						"html_file_transfer":                "download",
+						"client_types.#":                    "1",
 					}),
 				),
 			},
@@ -356,7 +372,7 @@ func TestAccAlicloudECDPolicyGroup_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudECDPolicyGroup_basic1(t *testing.T) {
+func TestAccAliCloudECDPolicyGroup_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecd_policy_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudECDPolicyGroupMap0)
@@ -455,7 +471,7 @@ func TestAccAlicloudECDPolicyGroup_basic1(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudECDPolicyGroup_basic2(t *testing.T) {
+func TestAccAliCloudECDPolicyGroup_basic2(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecd_policy_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudECDPolicyGroupMap0)
