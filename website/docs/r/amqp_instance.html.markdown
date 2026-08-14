@@ -83,6 +83,82 @@ resource "alicloud_amqp_instance" "default" {
 }
 ```
 
+Create a RabbitMQ (AMQP) serverless instance with the provisioned (reserved + elastic) billing type.
+
+```terraform
+variable "name" {
+  default = "terraform-example"
+}
+
+data "alicloud_vpcs" "default" {
+  name_regex = "default-NODELETING"
+}
+
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+}
+
+data "alicloud_security_groups" "default" {
+  vpc_id     = data.alicloud_vpcs.default.ids.0
+  name_regex = "default-NODELETING"
+}
+
+resource "alicloud_amqp_instance" "default" {
+  instance_name          = var.name
+  payment_type           = "PayAsYouGo"
+  vpc_id                 = data.alicloud_vswitches.default.vpc_id
+  vswitch_ids            = [data.alicloud_vswitches.default.ids.0, data.alicloud_vswitches.default.ids.1]
+  security_group_id      = data.alicloud_security_groups.default.ids.0
+  serverless_charge_type = "provisioned"
+  edition                = "dedicated"
+  provisioned_capacity   = "20000"
+}
+```
+
+Create a RabbitMQ (AMQP) serverless instance with the provisioned (reserved + elastic, shared architecture) billing type.
+
+```terraform
+variable "name" {
+  default = "terraform-example"
+}
+
+data "alicloud_vpcs" "default" {
+  name_regex = "default-NODELETING"
+}
+
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+}
+
+data "alicloud_security_groups" "default" {
+  vpc_id     = data.alicloud_vpcs.default.ids.0
+  name_regex = "default-NODELETING"
+}
+
+resource "alicloud_amqp_instance" "default" {
+  instance_name          = var.name
+  payment_type           = "PayAsYouGo"
+  vpc_id                 = data.alicloud_vswitches.default.vpc_id
+  vswitch_ids            = [data.alicloud_vswitches.default.ids.0, data.alicloud_vswitches.default.ids.1]
+  security_group_id      = data.alicloud_security_groups.default.ids.0
+  serverless_charge_type = "provisioned"
+  edition                = "shared"
+  provisioned_capacity   = "20000"
+}
+```
+
+### Serverless billing modes and parameter combinations
+
+A Serverless instance (`payment_type = "PayAsYouGo"`) supports the following billing modes. The combination of `serverless_charge_type` and `edition` determines the deployment architecture and how `provisioned_capacity` is consumed:
+
+| Billing mode | `serverless_charge_type` | `edition` | `provisioned_capacity` | Description |
+| --- | --- | --- | --- | --- |
+| Pay-as-you-go (cumulative) | `onDemand` | not required | not applicable | Billed by actual traffic usage on a shared architecture. |
+| Reserved + elastic (shared) | `provisioned` | `shared` | set the reserved TPS capacity | Reserved baseline TPS with elastic burst on a shared architecture. |
+| Reserved + elastic (dedicated) | `provisioned` | `dedicated` | set the reserved TPS capacity | Reserved baseline TPS with elastic burst on a dedicated (isolated) architecture. |
+
+-> **NOTE:** For `provisioned` instances, `edition` distinguishes the deployment architecture. Modifying `edition` triggers instance cluster migration; submit a ticket before changing it. Storage encryption (`encrypted_instance = true`) is only supported on the `provisioned` + `dedicated` combination.
+
 ### Deleting `alicloud_amqp_instance` or removing it from your configuration
 
 The `alicloud_amqp_instance` resource allows you to manage  `payment_type = "PayAsYouGo"`  instance, but Terraform cannot destroy it.
