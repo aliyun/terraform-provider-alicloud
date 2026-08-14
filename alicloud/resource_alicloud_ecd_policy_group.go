@@ -73,11 +73,30 @@ func resourceAlicloudEcdPolicyGroup() *schema.Resource {
 					},
 				},
 			},
+			"client_types": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"client_type": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringInSlice([]string{"windows", "linux", "macos", "android", "html5"}, false),
+						},
+						"status": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringInSlice([]string{"ON", "OFF"}, false),
+						},
+					},
+				},
+			},
 			"clipboard": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"off", "read", "readwrite"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"off", "read", "readwrite", "write"}, false),
 			},
 			"domain_list": {
 				Type:     schema.TypeString,
@@ -125,7 +144,7 @@ func resourceAlicloudEcdPolicyGroup() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"off", "on"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"blind", "off", "on"}, false),
 			},
 			"watermark_transparency": {
 				Type:         schema.TypeString,
@@ -210,6 +229,13 @@ func resourceAlicloudEcdPolicyGroupCreate(d *schema.ResourceData, meta interface
 			request["AuthorizeSecurityPolicyRule."+fmt.Sprint(authorizeSecurityPolicyRulesPtr+1)+".PortRange"] = authorizeSecurityPolicyRulesArg["port_range"]
 			request["AuthorizeSecurityPolicyRule."+fmt.Sprint(authorizeSecurityPolicyRulesPtr+1)+".Priority"] = authorizeSecurityPolicyRulesArg["priority"]
 			request["AuthorizeSecurityPolicyRule."+fmt.Sprint(authorizeSecurityPolicyRulesPtr+1)+".Type"] = authorizeSecurityPolicyRulesArg["type"]
+		}
+	}
+	if v, ok := d.GetOk("client_types"); ok {
+		for clientTypesPtr, clientTypes := range v.(*schema.Set).List() {
+			clientTypesArg := clientTypes.(map[string]interface{})
+			request["ClientType."+fmt.Sprint(clientTypesPtr+1)+".ClientType"] = clientTypesArg["client_type"]
+			request["ClientType."+fmt.Sprint(clientTypesPtr+1)+".Status"] = clientTypesArg["status"]
 		}
 	}
 	if v, ok := d.GetOk("clipboard"); ok {
@@ -329,6 +355,21 @@ func resourceAlicloudEcdPolicyGroupRead(d *schema.ResourceData, meta interface{}
 			return WrapError(err)
 		}
 	}
+	if clientTypesList, ok := object["ClientTypes"].([]interface{}); ok {
+		clientTypesMaps := make([]map[string]interface{}, 0)
+		for _, clientTypesListItem := range clientTypesList {
+			if clientTypesListItemMap, ok := clientTypesListItem.(map[string]interface{}); ok {
+				clientTypesMap := map[string]interface{}{
+					"client_type": clientTypesListItemMap["ClientType"],
+					"status":      clientTypesListItemMap["Status"],
+				}
+				clientTypesMaps = append(clientTypesMaps, clientTypesMap)
+			}
+		}
+		if err := d.Set("client_types", clientTypesMaps); err != nil {
+			return WrapError(err)
+		}
+	}
 	d.Set("clipboard", object["Clipboard"])
 	d.Set("domain_list", object["DomainList"])
 	d.Set("html_access", object["Html5Access"])
@@ -413,6 +454,16 @@ func resourceAlicloudEcdPolicyGroupUpdate(d *schema.ResourceData, meta interface
 		update = true
 		if v, ok := d.GetOk("type"); ok {
 			request["AuthorizeSecurityPolicyRule.*.Type"] = v
+		}
+	}
+	if d.HasChange("client_types") {
+		update = true
+		if v, ok := d.GetOk("client_types"); ok {
+			for clientTypesPtr, clientTypes := range v.(*schema.Set).List() {
+				clientTypesArg := clientTypes.(map[string]interface{})
+				request["ClientType."+fmt.Sprint(clientTypesPtr+1)+".ClientType"] = clientTypesArg["client_type"]
+				request["ClientType."+fmt.Sprint(clientTypesPtr+1)+".Status"] = clientTypesArg["status"]
+			}
 		}
 	}
 	if d.HasChange("clipboard") {
