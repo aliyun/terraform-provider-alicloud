@@ -19,7 +19,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudECDSimpleOfficeSite_basic0(t *testing.T) {
+func TestAccAliCloudECDSimpleOfficeSite_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecd_simple_office_site.default"
 	ra := resourceAttrInit(resourceId, AlicloudECDSimpleOfficeSiteMap0)
@@ -47,6 +47,7 @@ func TestAccAlicloudECDSimpleOfficeSite_basic0(t *testing.T) {
 					"enable_internet_access": "false",
 					"enable_admin_access":    "true",
 					"office_site_name":       name,
+					"cloud_box_office_site":  "false",
 					// TODO: there is an api bug that the api does not return cen_id. It will be reopen after the bug is gone.
 					//"cen_id": "${alicloud_cen_instance.default.id}",
 				}),
@@ -56,6 +57,7 @@ func TestAccAlicloudECDSimpleOfficeSite_basic0(t *testing.T) {
 						"enable_admin_access":    "true",
 						"enable_internet_access": "false",
 						"office_site_name":       name,
+						"cloud_box_office_site":  "false",
 					}),
 				),
 			},
@@ -99,6 +101,18 @@ func TestAccAlicloudECDSimpleOfficeSite_basic0(t *testing.T) {
 					}),
 				),
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"need_verify_login_risk":  "true",
+					"need_verify_zero_device": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"need_verify_login_risk":  "true",
+						"need_verify_zero_device": "true",
+					}),
+				),
+			},
 			// TODO: Any or Vpc access type need a cen id and this needs fixing above api bug at first.
 			//{
 			//	Config: testAccConfig(map[string]interface{}{
@@ -127,6 +141,8 @@ func TestAccAlicloudECDSimpleOfficeSite_basic0(t *testing.T) {
 					"enable_cross_desktop_access": "true",
 					"desktop_access_type":         "Internet",
 					"office_site_name":            name,
+					"need_verify_login_risk":      "false",
+					"need_verify_zero_device":     "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -135,13 +151,65 @@ func TestAccAlicloudECDSimpleOfficeSite_basic0(t *testing.T) {
 						"enable_cross_desktop_access": "true",
 						"desktop_access_type":         "Internet",
 						"office_site_name":            name,
+						"need_verify_login_risk":      "false",
+						"need_verify_zero_device":     "false",
 					}),
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"cen_owner_id"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudECDSimpleOfficeSite_attrs(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ecd_simple_office_site.default"
+	ra := resourceAttrInit(resourceId, AlicloudECDSimpleOfficeSiteMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EcdService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEcdSimpleOfficeSite")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%secdattrs%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudECDSimpleOfficeSiteBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.EcdSupportRegions)
+		},
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cidr_block":             "172.16.0.0/12",
+					"enable_internet_access": "false",
+					"enable_admin_access":    "true",
+					"office_site_name":       name,
+					"cloud_box_office_site":  "false",
+					"vpc_type":               "standard",
+					"verify_code":            "tf-acc-verify-code",
+					"cen_id":                 "${alicloud_cen_instance.default.id}",
+					"cen_owner_id":           "${data.alicloud_account.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cidr_block":             "172.16.0.0/12",
+						"enable_admin_access":    "true",
+						"enable_internet_access": "false",
+						"office_site_name":       name,
+						"cloud_box_office_site":  "false",
+						"vpc_type":               "standard",
+						"verify_code":            "tf-acc-verify-code",
+						"cen_id":                 CHECKSET,
+					}),
+				),
 			},
 		},
 	})
@@ -152,10 +220,11 @@ var AlicloudECDSimpleOfficeSiteMap0 = map[string]string{
 }
 
 func AlicloudECDSimpleOfficeSiteBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
+	return fmt.Sprintf(`
 variable "name" {
   default = "%s"
 }
+data "alicloud_account" "default" {}
 resource "alicloud_cen_instance" "default" {
   cen_instance_name = var.name
   description       = var.name
@@ -170,13 +239,17 @@ func TestUnitAlicloudECDSimpleOfficeSite(t *testing.T) {
 	dCreate, _ := schema.InternalMap(p["alicloud_ecd_simple_office_site"].Schema).Data(nil, nil)
 	dCreate.MarkNewResource()
 	for key, value := range map[string]interface{}{
-		"enable_admin_access":    true,
-		"cen_owner_id":           "cen_owner_id",
-		"cen_id":                 "cen_id",
-		"office_site_name":       "office_site_name",
-		"enable_internet_access": true,
-		"bandwidth":              10,
-		"desktop_access_type":    "Internet",
+		"enable_admin_access":     true,
+		"cen_owner_id":            "cen_owner_id",
+		"cen_id":                  "cen_id",
+		"office_site_name":        "office_site_name",
+		"enable_internet_access":  true,
+		"bandwidth":               10,
+		"desktop_access_type":     "Internet",
+		"cloud_box_office_site":   false,
+		"need_verify_zero_device": true,
+		"vpc_type":                "standard",
+		"verify_code":             "verify_code",
 	} {
 		err := dCreate.Set(key, value)
 		assert.Nil(t, err)
@@ -204,6 +277,10 @@ func TestUnitAlicloudECDSimpleOfficeSite(t *testing.T) {
 				"MfaEnabled":               true,
 				"EnableInternetAccess":     true,
 				"SsoEnabled":               true,
+				"NeedVerifyLoginRisk":      true,
+				"CloudBoxOfficeSite":       false,
+				"NeedVerifyZeroDevice":     true,
+				"VpcType":                  "standard",
 				"Status":                   "REGISTERED",
 			},
 		},
@@ -526,7 +603,7 @@ func TestUnitAlicloudECDSimpleOfficeSite(t *testing.T) {
 
 	t.Run("UpdateModifyOfficeSiteAttributeAbnormal", func(t *testing.T) {
 		diff := terraform.NewInstanceDiff()
-		for _, key := range []string{"desktop_access_type", "office_site_name"} {
+		for _, key := range []string{"desktop_access_type", "office_site_name", "need_verify_login_risk", "need_verify_zero_device"} {
 			switch p["alicloud_ecd_simple_office_site"].Schema[key].Type {
 			case schema.TypeString:
 				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
@@ -561,7 +638,7 @@ func TestUnitAlicloudECDSimpleOfficeSite(t *testing.T) {
 
 	t.Run("UpdateModifyOfficeSiteAttributeNormal", func(t *testing.T) {
 		diff := terraform.NewInstanceDiff()
-		for _, key := range []string{"desktop_access_type", "office_site_name"} {
+		for _, key := range []string{"desktop_access_type", "office_site_name", "need_verify_login_risk", "need_verify_zero_device"} {
 			switch p["alicloud_ecd_simple_office_site"].Schema[key].Type {
 			case schema.TypeString:
 				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
