@@ -23,6 +23,7 @@ func resourceAlicloudEcdAdConnectorOfficeSite() *schema.Resource {
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
 			Delete: schema.DefaultTimeout(1 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
@@ -85,6 +86,11 @@ func resourceAlicloudEcdAdConnectorOfficeSite() *schema.Resource {
 				ForceNew: true,
 				Computed: true,
 			},
+			"enable_cross_desktop_access": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
 			"enable_internet_access": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -104,6 +110,11 @@ func resourceAlicloudEcdAdConnectorOfficeSite() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				ValidateFunc: validation.IntInSlice([]int{1, 2}),
+			},
+			"sso_enabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -229,15 +240,82 @@ func resourceAlicloudEcdAdConnectorOfficeSiteRead(d *schema.ResourceData, meta i
 	d.Set("domain_name", object["DomainName"])
 	d.Set("domain_user_name", object["DomainUserName"])
 	d.Set("enable_admin_access", object["EnableAdminAccess"])
+	d.Set("enable_cross_desktop_access", object["EnableCrossDesktopAccess"])
 	d.Set("enable_internet_access", object["EnableInternetAccess"])
 	d.Set("mfa_enabled", object["MfaEnabled"])
+	d.Set("sso_enabled", object["SsoEnabled"])
 	d.Set("status", object["Status"])
 	d.Set("sub_domain_dns_address", object["SubDnsAddress"])
 	d.Set("sub_domain_name", object["SubDomainName"])
 	return nil
 }
 func resourceAlicloudEcdAdConnectorOfficeSiteUpdate(d *schema.ResourceData, meta interface{}) error {
-	log.Println(fmt.Sprintf("[WARNING] The resouce has not update operation."))
+	client := meta.(*connectivity.AliyunClient)
+	var err error
+	var response map[string]interface{}
+
+	update := false
+	request := map[string]interface{}{
+		"OfficeSiteId": d.Id(),
+	}
+	if d.HasChange("enable_cross_desktop_access") {
+		update = true
+		if v, ok := d.GetOkExists("enable_cross_desktop_access"); ok {
+			request["EnableCrossDesktopAccess"] = v
+		}
+	}
+	if update {
+		request["RegionId"] = client.RegionId
+		action := "ModifyOfficeSiteCrossDesktopAccess"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, false)
+			if err != nil {
+				if NeedRetry(err) || IsExpectedErrors(err, []string{"DirectoryNotReady"}) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	update = false
+	request = map[string]interface{}{
+		"OfficeSiteId": d.Id(),
+	}
+	if d.HasChange("sso_enabled") {
+		update = true
+		request["RegionId"] = client.RegionId
+		if v, ok := d.GetOkExists("sso_enabled"); ok {
+			request["EnableSso"] = v
+		}
+	}
+	if update {
+		action := "SetOfficeSiteSsoStatus"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, false)
+			if err != nil {
+				if NeedRetry(err) || IsExpectedErrors(err, []string{"DirectoryNotReady"}) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+
 	return resourceAlicloudEcdAdConnectorOfficeSiteRead(d, meta)
 }
 func resourceAlicloudEcdAdConnectorOfficeSiteDelete(d *schema.ResourceData, meta interface{}) error {
