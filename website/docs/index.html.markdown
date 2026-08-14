@@ -129,9 +129,11 @@ You can provide your credentials via `ALIBABA_CLOUD_ACCESS_KEY_ID`, `ALIBABA_CLO
 `ALIBABA_CLOUD_SECURITY_TOKEN` environment variables. The Region can be set using the `ALIBABA_CLOUD_REGION` environment variables.
 
 Usage:
+
 ```terraform
 provider "alicloud" {}
 ```
+
 ```shell
 $ export ALIBABA_CLOUD_ACCESS_KEY_ID="<Your-Access-Key-ID>"
 $ export ALIBABA_CLOUD_ACCESS_KEY_SECRET="<Your-Access-Key-Secret>"
@@ -295,12 +297,12 @@ In addition to [generic `provider` arguments](https://www.terraform.io/docs/conf
 (e.g. `alias` and `version`), the following arguments are supported in the Alibaba Cloud
  `provider` block:
 
-* `access_key` - Alibaba Cloud access key. It is required for the provider. 
+* `access_key` - Alibaba Cloud access key. It is required for the provider.
   Can also be set with the `ALIBABA_CLOUD_ACCESS_KEY_ID` environment variable since v1.228.0, 
   or via a shared credentials file if profile is specified. See also `secret_key`. 
   Environment variable `ALICLOUD_ACCESS_KEY` and `ALIBABACLOUD_ACCESS_KEY_ID` have been deprecated since v1.228.0.
 
-* `secret_key` - Alibaba Cloud secret key. It is required for the provider. 
+* `secret_key` - Alibaba Cloud secret key. It is required for the provider.
   Can also be set with the `ALIBABA_CLOUD_ACCESS_KEY_SECRET` environment variable since v1.228.0,
   or via a shared credentials file if profile is specified. See also `access_key`.
   Environment variable `ALICLOUD_SECRET_KEY` and `ALIBABACLOUD_ACCESS_KEY_SECRET` have been deprecated since v1.228.0.
@@ -314,7 +316,7 @@ In addition to [generic `provider` arguments](https://www.terraform.io/docs/conf
   Can also be set with the `ALIBABA_CLOUD_ECS_METADATA` environment variable since v1.228.0.
   Environment variable `ALICLOUD_ECS_ROLE_NAME` has been deprecated since v1.228.0.
 
-* `region` - Alibaba Cloud region. Default to `cn-beijing`. 
+* `region` - Alibaba Cloud region. Default to `cn-beijing`.
   Can also be set with the `ALIBABA_CLOUD_REGION` environment variable since v1.228.0.
   Environment variable `ALICLOUD_REGION` has been deprecated since v1.228.0.
 
@@ -323,7 +325,7 @@ In addition to [generic `provider` arguments](https://www.terraform.io/docs/conf
   Can also be set with the `ALIBABA_CLOUD_ACCOUNT_ID` environment variable since v1.228.0.
   Environment variable `ALICLOUD_ACCOUNT_ID` has been deprecated since v1.228.0.
 
-* `account_type` - (Optional, Available since v1.240.0) Alibaba Cloud [Account Type](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/guides/getting-account). 
+* `account_type` - (Optional, Available since v1.240.0) Alibaba Cloud [Account Type](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/guides/getting-account).
   It used to indicate caller identity's account type. Can also be set with the `ALIBABA_CLOUD_ACCOUNT_TYPE` environment variable. Valid values:
   - `Domestic`(Default): China-Site Account.
   - `International`: International-Site Account.
@@ -337,11 +339,11 @@ In addition to [generic `provider` arguments](https://www.terraform.io/docs/conf
   Can also be set with the `ALIBABA_CLOUD_PROFILE` environment variable since v1.228.0.
   Environment variable `ALICLOUD_PROFILE` has been deprecated since v1.228.0.
 
-* `assume_role` - (Optional) An [`assume_role` Configuration Block](#assume_role-configuration-block) block. Only one `assume_role` block may be in the configuration.
+* `assume_role` - (Optional) An [`assume_role`](#assume_role) block. Only one `assume_role` block may be in the configuration.
 
-* `assume_role_with_oidc` - (Optional, Available since v1.220.0) Configuration block for assuming an RAM role using an OIDC. See the [`assume_role_with_oidc` Configuration Block](#assume_role_with_oidc-configuration-block) section below. Only one `assume_role_with_oidc` block may be in the configuration.
+* `assume_role_with_oidc` - (Optional, Available since v1.220.0) Configuration block for assuming an RAM role using an OIDC. See the [`assume_role_with_oidc`](#assume_role_with_oidc) section below. Only one `assume_role_with_oidc` block may be in the configuration.
 
-* `credentials_uri` - (Optional, Available since v1.141.0) The URI of sidecar credentials service. 
+* `credentials_uri` - (Optional, Available since v1.141.0) The URI of sidecar credentials service.
   Can also be set with the `ALIBABA_CLOUD_CREDENTIALS_URI` environment variable since v1.228.0.
   Environment variable `ALICLOUD_CREDENTIALS_URI` has been deprecated since v1.228.0.
 
@@ -352,10 +354,12 @@ In addition to [generic `provider` arguments](https://www.terraform.io/docs/conf
 * `skip_region_validation` - (Optional, Available since v1.52.0) Skip static validation of region ID. Used by users of alternative AlibabaCloud-like APIs or users w/ access to regions that are not public (yet).
   Can also be set with the `ALICLOUD_SKIP_REGION_VALIDATION` environment variable since v1.287.0.
 
+* `features` - (Optional, Available since v1.289.0) A [`features`](#features) block that changes how certain resources behave. Only one `features` block may be in the configuration.
+
 * `configuration_source` - (Optional, Available since v1.56.0) Use a string to mark a configuration file source, like `terraform-alicloud-modules/terraform-alicloud-ecs-instance` or `terraform-provider-alicloud/examples/vpc`.
 The length should not more than 1024(Before 1.283.0, it should not more than 128. Before 1.207.2, it should not more than 64). Since the version 1.145.0, it supports to be set by environment variable `TF_APPEND_USER_AGENT`. See `Custom User-Agent Information`.
 
-* `protocol` - (Optional, Available since v1.72.0) The Protocol of used by API request. Valid values: `HTTP` and `HTTPS`. Default to `HTTPS`. 
+* `protocol` - (Optional, Available since v1.72.0) The Protocol of used by API request. Valid values: `HTTP` and `HTTPS`. Default to `HTTPS`.
 
 * `client_read_timeout` - (Optional, Available since v1.125.0) The maximum timeout in millisecond second of the client read request. Default to 60000.
 
@@ -363,9 +367,9 @@ The length should not more than 1024(Before 1.283.0, it should not more than 128
 
 * `max_retry_timeout` - (Optional, Available since v1.183.0) The maximum retry timeout in second of the request. Default to `0`.
 
-### `assume_role` Configuration Block
+### `assume_role`
 
-* `role_arn` - (Required) The ARN of the role to assume. If ARN is set to an empty string, it does not perform role switching. 
+* `role_arn` - (Required) The ARN of the role to assume. If ARN is set to an empty string, it does not perform role switching.
   Can also be set with the `ALIBABA_CLOUD_ROLE_ARN` environment variable since v1.228.0.
   Environment variable `ALICLOUD_ASSUME_ROLE_ARN` has been deprecated since v1.228.0.
   Terraform executes configuration on account with provided credentials.
@@ -373,17 +377,17 @@ The length should not more than 1024(Before 1.283.0, it should not more than 128
 * `policy` - (Optional) A more restrictive policy to apply to the temporary credentials. This gives you a way to further restrict the permissions for the resulting temporary
   security credentials. You cannot use the passed policy to grant permissions that are in excess of those allowed by the access policy of the role that is being assumed.
 
-* `session_name` - (Optional) The session name to use when assuming the role. If omitted, 'terraform' is passed to the AssumeRole call as session name. 
+* `session_name` - (Optional) The session name to use when assuming the role. If omitted, 'terraform' is passed to the AssumeRole call as session name.
   Can also be set with the `ALIBABA_CLOUD_ROLE_SESSION_NAME` environment variable since v1.228.0.
   Environment variable `ALICLOUD_ASSUME_ROLE_SESSION_NAME` has been deprecated since v1.228.0.
 
 * `session_expiration` - (Optional) The time after which the established session for assuming role expires. Valid value range: [900-43200] seconds. Default to 3600 (in this case Alicloud use own default value). It supports environment variable `ALICLOUD_ASSUME_ROLE_SESSION_EXPIRATION`.
 
-* `external_id` - (Optional, Available since v1.207.1) The external ID of the RAM role. 
+* `external_id` - (Optional, Available since v1.207.1) The external ID of the RAM role.
   This parameter is provided by an external party and is used to prevent the confused deputy problem. 
   The value must be 2 to 1,224 characters in length and can contain letters, digits, and the following special characters:`= , . @ : / - _`.
 
-### `assume_role_with_oidc` Configuration Block
+### `assume_role_with_oidc`
 
 The `assume_role_with_oidc` configuration block supports the following arguments:
 
@@ -393,20 +397,50 @@ The `assume_role_with_oidc` configuration block supports the following arguments
   Can also be set with the `ALIBABA_CLOUD_OIDC_TOKEN` environment variable.
 * `oidc_token_file` - (Optional) File containing a RRSA security token from an OIDC. One of `oidc_token_file` or `oidc_token` is required.
   Can also be set with the `ALIBABA_CLOUD_OIDC_TOKEN_FILE` environment variable.
-* `role_session_name` - (Optional) The session name to use when assuming the role. If omitted, 'terraform' is passed to the AssumeRoleWithOIDC call as session name. 
+* `role_session_name` - (Optional) The session name to use when assuming the role. If omitted, 'terraform' is passed to the AssumeRoleWithOIDC call as session name.
   Can also be set with the `ALIBABA_CLOUD_ROLE_SESSION_NAME` environment variable.
 * `session_expiration` - (Optional) The validity period of the STS token. Unit: seconds. Default value: 3600. Minimum value: 900. Maximum value: the value of the MaxSessionDuration parameter when creating a ram role.
 * `policy` - (Optional) The policy that specifies the permissions of the returned STS token. You can use this parameter to grant the STS token fewer permissions than the permissions granted to the RAM role.
 
-### `sign_version` Configuration Block
+### `sign_version`
 
 The `sign_version` configuration block overrides the signature version used by the SDK client of specific cloud products. See [Custom Product Sign Version](#custom-product-sign-version) for an example. The following arguments are supported:
 
-* `oss` - (Optional) The signature version used by the OSS SDK client. Valid values: `v1`, `v4`. Starting from v1.278.0, the default value is changed from `v1` to `v4`; in earlier versions the default was `v1`. Set this field to `v1` explicitly if you need to keep using the legacy signature. 
+* `oss` - (Optional) The signature version used by the OSS SDK client. Valid values: `v1`, `v4`. Starting from v1.278.0, the default value is changed from `v1` to `v4`; in earlier versions the default was `v1`. Set this field to `v1` explicitly if you need to keep using the legacy signature.
 
  ->**NOTE:** `v2` is no longer accepted starting from v1.278.0; the value will be treated as the default and the client will fall back to `v4`.
 
 * `sls` - (Optional) The signature version used by the SLS (Log Service) SDK client. Valid values: `v1`, `v4`. Defaults to `v1`. Full v4 signature support across all `alicloud_sls_*` / `alicloud_log_*` resources is available since v1.276.0.
+
+### `features`
+
+The `features` configuration block groups the arguments that change how a resource behaves, as opposed to which account, region or endpoint the provider talks to. Every argument in it is optional, so leaving the block out keeps the provider's default behaviour. The arguments of this block have no environment variable equivalent, and can only be set in the `provider` block.
+
+```terraform
+provider "alicloud" {
+  features {
+    ecs_instance {
+      replace_on_image_update = true
+    }
+  }
+}
+```
+
+The following arguments are supported:
+
+* `ecs_instance` - (Optional) An [`ecs_instance`](#features-ecs_instance) block that changes how the [alicloud_instance](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/instance) resource behaves. Only one `ecs_instance` block may be in the configuration.
+
+### `features-ecs_instance`
+
+The `ecs_instance` configuration block applies to the [alicloud_instance](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/instance) resource only. The following arguments are supported:
+
+* `replace_on_image_update` - (Optional) Whether a change to `image_id` is planned as a replacement of the instance instead of an in-place update. Default value: `false`. Valid values:
+  - `false`: The instance is stopped if it is running, its system disk is replaced with a new one created from the new image, and the instance is started again. It keeps its ID, its private IP address and its data disks, and `terraform plan` reports an in-place update.
+  - `true`: The existing instance is destroyed and a new one is created from the new image, and `terraform plan` reports `forces replacement`.
+
+  -> **NOTE:** The system disk is created anew from the image either way, so its data never survives an `image_id` change. Setting this argument to `true` gives up the instance ID, the private IP address and the data disks as well, and requires the instance to be destroyable: a `prevent_destroy` lifecycle rule turns the planned replacement into an error, the provider refuses to destroy an instance whose `instance_charge_type` is `PrePaid` unless `force_delete` is `true`, and ECS rejects the deletion itself while `deletion_protection` is `true`.
+
+  -> **NOTE:** A new `image_id` that is not known until apply time, because it is read from a resource or a data source that has yet to be created, is applied in place: `terraform plan` cannot report a replacement for a value it does not have. Run `terraform apply` again after the new image exists to get the replacement.
 
 ### `endpoints`
 

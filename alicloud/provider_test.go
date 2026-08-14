@@ -20,6 +20,7 @@ import (
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/features"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -71,6 +72,61 @@ func TestProviderSkipRegionValidation(t *testing.T) {
 			d := schema.TestResourceDataRaw(t, Provider().(*schema.Provider).Schema, testCase.raw)
 			if got := d.Get("skip_region_validation").(bool); got != testCase.expected {
 				t.Fatalf("skip_region_validation: expected %v, got %v", testCase.expected, got)
+			}
+		})
+	}
+}
+
+// TestProviderFeatures covers expandFeatures over the shapes the features block can take: every
+// level of it is optional, so a missing block or field has to fall back to features.Default.
+func TestProviderFeatures(t *testing.T) {
+	testCases := []struct {
+		name     string
+		features []interface{}
+		expected features.Features
+	}{
+		{
+			name:     "no features block at all",
+			features: []interface{}{},
+			expected: features.Default(),
+		},
+		{
+			name:     "a features block that is null",
+			features: []interface{}{nil},
+			expected: features.Default(),
+		},
+		{
+			name:     "a features block without the ecs_instance block",
+			features: []interface{}{map[string]interface{}{}},
+			expected: features.Default(),
+		},
+		{
+			name:     "an empty ecs_instance block",
+			features: []interface{}{map[string]interface{}{"ecs_instance": []interface{}{}}},
+			expected: features.Default(),
+		},
+		{
+			name: "replace_on_image_update enabled",
+			features: []interface{}{map[string]interface{}{
+				"ecs_instance": []interface{}{map[string]interface{}{"replace_on_image_update": true}},
+			}},
+			expected: features.Features{
+				EcsInstance: features.EcsInstance{ReplaceOnImageUpdate: true},
+			},
+		},
+		{
+			name: "replace_on_image_update disabled explicitly",
+			features: []interface{}{map[string]interface{}{
+				"ecs_instance": []interface{}{map[string]interface{}{"replace_on_image_update": false}},
+			}},
+			expected: features.Default(),
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			if got := expandFeatures(testCase.features); got != testCase.expected {
+				t.Fatalf("expandFeatures: expected %+v, got %+v", testCase.expected, got)
 			}
 		})
 	}
