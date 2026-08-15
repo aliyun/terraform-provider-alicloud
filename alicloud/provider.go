@@ -580,6 +580,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_amqp_instances":                                   dataSourceAliCloudAmqpInstances(),
 			"alicloud_hbr_vaults":                                       dataSourceAlicloudHbrVaults(),
 			"alicloud_ssl_certificates_service_certificates":            dataSourceAliCloudSslCertificatesServiceCertificates(),
+			"alicloud_ssl_certificates_service_pca_certificates":        dataSourceAliCloudSslCertificatesServicePcaCertificates(),
 			"alicloud_arms_alert_contacts":                              dataSourceAlicloudArmsAlertContacts(),
 			"alicloud_arms_alert_robots":                                dataSourceAlicloudArmsAlertRobots(),
 			"alicloud_event_bridge_rules":                               dataSourceAlicloudEventBridgeRules(),
