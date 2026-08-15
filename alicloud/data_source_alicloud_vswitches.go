@@ -76,6 +76,14 @@ func dataSourceAlicloudVswitches() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"page_number": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"page_size": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
 			"vswitches": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -197,8 +205,19 @@ func dataSourceAlicloudVswitchesRead(d *schema.ResourceData, meta interface{}) e
 	if v, ok := d.GetOk("zone_id"); ok {
 		request["ZoneId"] = v
 	}
-	request["PageSize"] = PageSizeLarge
-	request["PageNumber"] = 1
+	pageSize := PageSizeLarge
+	if v, ok := d.GetOk("page_size"); ok && v.(int) > 0 {
+		pageSize = v.(int)
+	}
+	if pageSize > PageSizeLarge {
+		pageSize = PageSizeLarge
+	}
+	if v, ok := d.GetOk("page_number"); ok && v.(int) > 0 {
+		request["PageNumber"] = v.(int)
+	} else {
+		request["PageNumber"] = 1
+	}
+	request["PageSize"] = pageSize
 	var objects []map[string]interface{}
 	var vSwitchNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
@@ -253,7 +272,10 @@ func dataSourceAlicloudVswitchesRead(d *schema.ResourceData, meta interface{}) e
 			}
 			objects = append(objects, item)
 		}
-		if len(result) < PageSizeLarge {
+		if isPagingRequest(d) {
+			break
+		}
+		if len(result) < pageSize {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
