@@ -1190,3 +1190,103 @@ resource "alicloud_hbr_vault" "defaultL7kwwD" {
 }
 
 // Test Hbr Policy. <<< Resource test cases, automatically generated.
+
+// Case immutable backup lock for UDM_ECS_ONLY policy
+func TestAccAliCloudHbrPolicy_immutable(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_hbr_policy.default"
+	ra := resourceAttrInit(resourceId, AlicloudHbrPolicyMapImmutable)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &HbrServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeHbrPolicy")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfacchbr%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudHbrPolicyBasicDependenceImmutable)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"policy_description": "policy creation",
+					"policy_name":        name,
+					"rules": []map[string]interface{}{
+						{
+							"rule_type":             "BACKUP",
+							"backup_type":           "COMPLETE",
+							"schedule":              "I|1631685600|P1D",
+							"keep_latest_snapshots": "1",
+							"archive_days":          "30",
+							"retention":             "1",
+							"immutable":             "true",
+						},
+					},
+					"policy_type": "UDM_ECS_ONLY",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"policy_description": "policy creation",
+						"policy_name":        name,
+						"rules.#":            "1",
+						"policy_type":        "UDM_ECS_ONLY",
+						"rules.0.immutable":  "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"policy_description": "policy update",
+					"policy_name":        name + "_update",
+					"rules": []map[string]interface{}{
+						{
+							"rule_type":             "BACKUP",
+							"backup_type":           "COMPLETE",
+							"schedule":              "I|1631685600|P1D",
+							"keep_latest_snapshots": "1",
+							"archive_days":          "30",
+							"retention":             "1",
+							"immutable":             "false",
+						},
+					},
+					"policy_type": "UDM_ECS_ONLY",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"policy_description": "policy update",
+						"policy_name":        name + "_update",
+						"rules.#":            "1",
+						"policy_type":        "UDM_ECS_ONLY",
+						"rules.0.immutable":  "false",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudHbrPolicyMapImmutable = map[string]string{
+	"create_time": CHECKSET,
+}
+
+func AlicloudHbrPolicyBasicDependenceImmutable(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+`, name)
+}
