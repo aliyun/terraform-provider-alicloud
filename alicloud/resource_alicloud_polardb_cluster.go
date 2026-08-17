@@ -217,6 +217,18 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"enable_automatic_rotation": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"automatic_rotation": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"rotation_interval": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"security_group_ids": {
 				Type:     schema.TypeSet,
 				Elem:     &schema.Schema{Type: schema.TypeString},
@@ -954,7 +966,7 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 
-	if d.HasChanges("tde_status", "encrypt_new_tables", "encryption_key", "role_arn") {
+	if d.HasChanges("tde_status", "encrypt_new_tables", "encryption_key", "role_arn", "enable_automatic_rotation") {
 		if v, ok := d.GetOk("tde_status"); ok && v.(string) != "Disabled" {
 			action := "ModifyDBClusterTDE"
 			request := map[string]interface{}{
@@ -969,6 +981,9 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 			}
 			if v, ok := d.GetOk("role_arn"); ok && v.(string) != "" {
 				request["RoleArn"] = v.(string)
+			}
+			if v, ok := d.GetOkExists("enable_automatic_rotation"); ok {
+				request["EnableAutomaticRotation"] = v
 			}
 			//retry
 			wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -1777,6 +1792,8 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 	d.Set("encrypt_new_tables", clusterTDEStatus["EncryptNewTables"])
 	d.Set("encryption_key", clusterTDEStatus["EncryptionKey"])
 	d.Set("tde_region", clusterTDEStatus["TDERegion"])
+	d.Set("automatic_rotation", clusterTDEStatus["AutomaticRotation"])
+	d.Set("rotation_interval", clusterTDEStatus["RotationInterval"])
 	tdeRegion := ""
 	if v, ok := clusterTDEStatus["TDERegion"]; ok {
 		tdeRegion = fmt.Sprint(v)

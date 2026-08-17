@@ -136,8 +136,11 @@ func (c *CrService) ListCrEEInstanceEndpoint(instanceId string) (*cr_ee.ListInst
 		addDebug(action, raw, request.RpcRequest, request)
 		response, _ = raw.(*cr_ee.ListInstanceEndpointResponse)
 		if !response.ListInstanceEndpointIsSuccess && response.Code == "INSTANCE_STATUS_NOT_SUPPORT" {
-			wait()
-			return resource.RetryableError(WrapErrorf(fmt.Errorf("%v", response), NotFoundMsg, AlibabaCloudSdkGoERROR))
+			// INSTANCE_STATUS_NOT_SUPPORT is not a transient condition — the instance does
+			// not support managed public/VPC endpoints (e.g. retired instances). Stop
+			// retrying immediately so data.alicloud_cr_ee_instances can skip this instance
+			// instead of exhausting the 5-minute retry budget and failing the whole read.
+			return resource.NonRetryableError(fmt.Errorf("INSTANCE_STATUS_NOT_SUPPORT"))
 		}
 		return nil
 	})

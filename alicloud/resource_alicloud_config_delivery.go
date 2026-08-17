@@ -38,6 +38,10 @@ func resourceAliCloudConfigDelivery() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"delivery_channel_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"delivery_channel_name": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -150,6 +154,7 @@ func resourceAliCloudConfigDeliveryRead(d *schema.ResourceData, meta interface{}
 	if objectRaw["ConfigurationItemChangeNotification"] != nil {
 		d.Set("configuration_item_change_notification", objectRaw["ConfigurationItemChangeNotification"])
 	}
+	d.Set("delivery_channel_id", d.Id())
 	if objectRaw["ConfigurationSnapshot"] != nil {
 		d.Set("configuration_snapshot", objectRaw["ConfigurationSnapshot"])
 	}

@@ -71,6 +71,20 @@ func resourceAlicloudCrEndpointAclPolicyCreate(d *schema.ResourceData, meta inte
 		request["ModuleName"] = v
 	}
 	request["RegionId"] = client.RegionId
+
+	// The internet endpoint must reach RUNNING before it accepts ACL policy
+	// creation. When the endpoint is enabled in the same apply (via the
+	// alicloud_cr_endpoint_acl_service data source or the
+	// alicloud_cr_internet_endpoint resource), CreateInstanceEndpointAclPolicy
+	// issued while the endpoint is still CREATING is silently dropped by the
+	// server and the ACL entry never propagates into GetInstanceEndpoint's
+	// AclEntries. Poll GetInstanceEndpoint until Status=RUNNING before issuing
+	// the ACL creation so the entry reliably propagates.
+	crService := CrService{client}
+	if err = crService.WaitCrEndpointRunning(d.Get("instance_id").(string), d.Get("endpoint_type").(string), d.Timeout(schema.TimeoutCreate)); err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cr_instance_endpoint_acl_policy", "GetInstanceEndpoint", AlibabaCloudSdkGoERROR)
+	}
+
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("cr", "2018-12-01", action, nil, request, false)
@@ -93,6 +107,19 @@ func resourceAlicloudCrEndpointAclPolicyCreate(d *schema.ResourceData, meta inte
 	}
 
 	d.SetId(fmt.Sprint(request["InstanceId"], ":", request["EndpointType"], ":", request["Entry"]))
+
+	// CreateInstanceEndpointAclPolicy propagates the ACL entry asynchronously;
+	// now that the endpoint is RUNNING (gated above), poll GetInstanceEndpoint
+	// until the new entry (matched by its value) appears in AclEntries. This
+	// prevents the subsequent Read from racing the propagation and misreading
+	// the just-created resource as absent.
+	parts, err := ParseResourceId(d.Id(), 3)
+	if err != nil {
+		return WrapError(err)
+	}
+	if err = crService.WaitCrEndpointAclEntryPropagate(parts[0], parts[1], parts[2], d.Timeout(schema.TimeoutCreate)); err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetInstanceEndpoint", AlibabaCloudSdkGoERROR)
+	}
 
 	return resourceAlicloudCrEndpointAclPolicyRead(d, meta)
 }

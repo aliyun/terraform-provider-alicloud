@@ -36,9 +36,9 @@ func TestAccAliCloudConfigDelivery_OSS(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -168,9 +168,9 @@ func TestAccAliCloudConfigDelivery_MNS(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -302,9 +302,9 @@ func TestAccAliCloudConfigDelivery_SLS(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -401,18 +401,38 @@ var AlicloudConfigDeliveryMap0 = map[string]string{
 	"configuration_item_change_notification": CHECKSET,
 }
 
-// Because the bucket cannot be deleted after being used by the delivery channel.
-// Use pre-created Oss bucket in this test.
+// The delivery channel requires an existing OSS bucket as its target. The
+// original case assumed a pre-created static bucket, which is absent from the
+// CI test account, so the Update step failed with DeliveryOSSBucketNotExists.
+// Create the two buckets dynamically with the default provider (the same
+// region the delivery channel itself runs in). The Config delivery channel
+// accepts an OSS target in any region, so keeping the bucket in the default
+// provider region avoids a cross-region provider alias: the OSS bucket Read
+// (GetBucketCORS etc.) derives its endpoint from the default provider region
+// and therefore always matches the bucket region, and the empty destroy config
+// no longer misses a removed provider.alicloud.sh block. The target ARN region
+// is derived from the bucket location so it follows ALICLOUD_REGION
+// automatically instead of being hard-coded. force_destroy clears the
+// configuration snapshot objects the channel writes into the bucket on destroy.
 func AlicloudConfigDeliveryBasicDependenceOSS(name string) string {
-	return fmt.Sprintf(` 
+	return fmt.Sprintf(`
 variable "name" {
   default = "%s"
 }
 data "alicloud_account" "this" {}
 locals {
-  uid          	   = data.alicloud_account.this.id
-  bucket	       = format("acs:oss:cn-shanghai:%%s:tf-test-bucket-for-config",local.uid)
-  bucket_change	   = format("acs:oss:cn-shanghai:%%s:tf-test-bucket-for-config-update",local.uid)
+  uid           = data.alicloud_account.this.id
+  region        = replace(alicloud_oss_bucket.default.location, "oss-", "")
+  bucket        = format("acs:oss:%%s:%%s:%%s", local.region, local.uid, alicloud_oss_bucket.default.id)
+  bucket_change = format("acs:oss:%%s:%%s:%%s", local.region, local.uid, alicloud_oss_bucket.change.id)
+}
+resource "alicloud_oss_bucket" "default" {
+  bucket        = "${var.name}"
+  force_destroy = true
+}
+resource "alicloud_oss_bucket" "change" {
+  bucket        = "${var.name}-change"
+  force_destroy = true
 }
 `, name)
 }
@@ -766,9 +786,9 @@ func TestAccAliCloudConfigDelivery_basic7096(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1031,9 +1051,9 @@ func TestAccAliCloudConfigDelivery_basic7096_twin(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1090,9 +1110,9 @@ func TestAccAliCloudConfigDelivery_basic7096_raw(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

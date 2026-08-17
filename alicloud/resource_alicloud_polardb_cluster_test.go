@@ -198,10 +198,11 @@ func TestAccAliCloudPolarDBCluster_Update(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tde_status":         "Enabled",
-					"encrypt_new_tables": "ON",
-					"encryption_key":     "${alicloud_kms_key.default.id}",
-					"role_arn":           "acs:ram::${data.alicloud_account.current.id}:role/aliyunrdsinstanceencryptiondefaultrole",
+					"tde_status":                "Enabled",
+					"encrypt_new_tables":        "ON",
+					"encryption_key":            "${alicloud_kms_key.default.id}",
+					"role_arn":                  "acs:ram::${data.alicloud_account.current.id}:role/aliyunrdsinstanceencryptiondefaultrole",
+					"enable_automatic_rotation": true,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -209,6 +210,8 @@ func TestAccAliCloudPolarDBCluster_Update(t *testing.T) {
 						"encrypt_new_tables": "ON",
 						"encryption_key":     CHECKSET,
 						"role_arn":           CHECKSET,
+						"automatic_rotation": CHECKSET,
+						"rotation_interval":  CHECKSET,
 					}),
 				),
 			},

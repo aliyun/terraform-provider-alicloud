@@ -40,6 +40,11 @@ func resourceAliCloudApiGatewayVpcAccess() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"vpc_target_host_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"vpc_access_id": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -56,6 +61,7 @@ func resourceAliCloudApiGatewayVpcAccessCreate(d *schema.ResourceData, meta inte
 	request.VpcId = d.Get("vpc_id").(string)
 	request.InstanceId = d.Get("instance_id").(string)
 	request.Port = requests.NewInteger(d.Get("port").(int))
+	request.VpcTargetHostName = d.Get("vpc_target_host_name").(string)
 
 	var raw interface{}
 	var err error
@@ -101,6 +107,7 @@ func resourceAliCloudApiGatewayVpcAccessRead(d *schema.ResourceData, meta interf
 	d.Set("vpc_id", object["VpcId"])
 	d.Set("instance_id", object["InstanceId"])
 	d.Set("port", object["Port"])
+	d.Set("vpc_target_host_name", object["VpcTargetHostName"])
 	if v, ok := object["VpcAccessId"]; ok {
 		d.Set("vpc_access_id", v)
 	}

@@ -104,7 +104,12 @@ to create several ECS instances one-click.
 
 The following arguments are supported:
 
-* `image_id` - (Optional) The Image to use for the instance. ECS instance's image can be replaced via changing `image_id`. When it is changed, the instance will reboot to make the change take effect. If you do not use `launch_template_id` or `launch_template_name` to specify a launch template, you must specify `image_id`.
+* `image_id` - (Optional) The Image to use for the instance. ECS instance's image can be replaced via changing `image_id`. If you do not use `launch_template_id` or `launch_template_name` to specify a launch template, you must specify `image_id`. How the change is applied is controlled by the provider argument `features.ecs_instance.replace_on_image_update`:
+  - `false` (default): The instance is stopped if it is running, its system disk is replaced with a new one created from the new image, and the instance is started again. It keeps its ID, its private IP address and its data disks, `system_disk_id` changes, and any key pair is attached again afterwards.
+  - `true`: The change is planned as `forces replacement`, so the existing instance is destroyed and a new one is created from the new image.
+
+  -> **NOTE:** The system disk is created anew from the image either way, so its data never survives an `image_id` change. Setting `replace_on_image_update` to `true` gives up the instance ID, the private IP address and the data disks as well, and requires the instance to be destroyable: a `prevent_destroy` lifecycle rule turns the planned replacement into an error, the provider refuses to destroy an instance whose `instance_charge_type` is `PrePaid` unless `force_delete` is `true`, and ECS rejects the deletion itself while `deletion_protection` is `true`. See the [`features.ecs_instance`](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs#features-ecs_instance) documentation for the cases in which a change cannot be planned as a replacement.
+
 * `instance_type` - (Optional) The type of instance to start. When it is changed, the instance will reboot to make the change take effect. If you do not use `launch_template_id` or `launch_template_name` to specify a launch template, you must specify `instance_type`.
 * `is_outdated` - (Optional) Whether to use outdated instance type.
 * `network_interface_id` - (Optional, ForceNew, Available since v1.284.0) The ID of the Primary ENI.

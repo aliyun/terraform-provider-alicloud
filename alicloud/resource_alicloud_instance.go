@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"log"
@@ -31,6 +32,7 @@ func resourceAliCloudInstance() *schema.Resource {
 			Update: schema.DefaultTimeout(10 * time.Minute),
 			Delete: schema.DefaultTimeout(20 * time.Minute),
 		},
+		CustomizeDiff: resourceAliCloudInstanceCustomizeDiff,
 		Schema: map[string]*schema.Schema{
 			"availability_zone": {
 				Type:     schema.TypeString,
@@ -2016,13 +2018,27 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 			request.Duration = requests.NewInteger(d.Get("auto_renew_period").(int))
 		}
 
-		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.ModifyInstanceAutoRenewAttribute(request)
+		// The instance charge type may not have fully taken effect on the billing/renewal
+		// subsystem right after ModifyInstanceChargeType returns, so the auto renew call
+		// can transiently fail; retry until the change is accepted.
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+				return ecsClient.ModifyInstanceAutoRenewAttribute(request)
+			})
+			if err != nil {
+				if NeedRetry(err) || IsExpectedErrors(err, []string{"ChargeTypeViolation", "IncorrectInstanceStatus"}) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			return nil
 		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 
 	if d.HasChange("secondary_private_ips") {
@@ -2632,6 +2648,36 @@ func resourceAliCloudInstanceDelete(d *schema.ResourceData, meta interface{}) er
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 	return nil
+}
+
+// resourceAliCloudInstanceCustomizeDiff turns an image_id change into a replacement when the
+// provider is configured with features.ecs_instance.replace_on_image_update. Without it, such a
+// change is applied in place by modifyInstanceImage, which the plan can only describe as an update.
+func resourceAliCloudInstanceCustomizeDiff(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
+	client, ok := meta.(*connectivity.AliyunClient)
+	if !ok || client == nil || !client.Features.EcsInstance.ReplaceOnImageUpdate {
+		return nil
+	}
+	// Nothing to force on create. This also terminates the second, state-less diff pass that
+	// ForceNew triggers, where Id() is empty and RequiresNew has already been carried over.
+	if diff.Id() == "" {
+		return nil
+	}
+	// ForceNew reports an error when the key it is given is not changing. A new image_id that is only
+	// known at apply time cannot be compared either, so it is left to the in place path: a plan
+	// cannot report a replacement for a value it does not have yet.
+	if !diff.HasChange("image_id") || !diff.NewValueKnown("image_id") {
+		return nil
+	}
+	oldRaw, newRaw := diff.GetChange("image_id")
+	oldImageId, _ := oldRaw.(string)
+	newImageId, _ := newRaw.(string)
+	// image_id is Optional+Computed, so an empty side is a value the API filled in - for an instance
+	// created from a launch template, for example - rather than user intent.
+	if oldImageId == "" || newImageId == "" || oldImageId == newImageId {
+		return nil
+	}
+	return diff.ForceNew("image_id")
 }
 
 func modifyInstanceChargeType(d *schema.ResourceData, meta interface{}, forceDelete bool) error {

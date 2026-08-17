@@ -17,6 +17,7 @@ import (
 	"github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/credentials-go/credentials/providers"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/features"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -113,6 +114,7 @@ func Provider() *schema.Provider {
 				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_SKIP_REGION_VALIDATION", false),
 				Description: descriptions["skip_region_validation"],
 			},
+			"features": featuresSchema(),
 			"configuration_source": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -676,6 +678,7 @@ func Provider() *schema.Provider {
 			"alicloud_cloud_firewall_instances":                         dataSourceAlicloudCloudFirewallInstances(),
 			"alicloud_cr_endpoint_acl_policies":                         dataSourceAlicloudCrEndpointAclPolicies(),
 			"alicloud_cr_endpoint_acl_service":                          dataSourceAlicloudCrEndpointAclService(),
+			"alicloud_cr_internet_endpoint":                             dataSourceAlicloudCrInternetEndpoint(),
 			"alicloud_actiontrail_history_delivery_jobs":                dataSourceAlicloudActiontrailHistoryDeliveryJobs(),
 			"alicloud_sae_instance_specifications":                      dataSourceAlicloudSaeInstanceSpecifications(),
 			"alicloud_cen_transit_router_service":                       dataSourceAlicloudCenTransitRouterService(),
@@ -957,6 +960,7 @@ func Provider() *schema.Provider {
 			"alicloud_redis_global_security_ip_group":                       resourceAliCloudRedisGlobalSecurityIpGroup(),
 			"alicloud_cr_artifact_subscription_rule":                        resourceAliCloudCrArtifactSubscriptionRule(),
 			"alicloud_cms_event_notify_policy":                              resourceAliCloudCmsEventNotifyPolicy(),
+			"alicloud_cr_internet_endpoint":                                 resourceAlicloudCrInternetEndpoint(),
 			"alicloud_message_service_account_logging":                      resourceAliCloudMessageServiceAccountLogging(),
 			"alicloud_apig_ai_model_provider":                               resourceAliCloudApigAiModelProvider(),
 			"alicloud_apig_service":                                         resourceAliCloudApigService(),
@@ -2271,6 +2275,7 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData, p *schema.Pr
 		TerraformTraceId:     strings.Trim(uuid.New().String(), "-"),
 		TerraformVersion:     p.TerraformVersion,
 	}
+	config.Features = expandFeatures(d.Get("features").([]interface{}))
 	if credential != nil {
 		config.Credential = credential
 	}
@@ -2609,6 +2614,8 @@ func init() {
 		"assume_role_session_expiration": "The time after which the established session for assuming role expires. Valid value range: [900-3600] seconds. Default to 0 (in this case Alicloud use own default value).",
 
 		"skip_region_validation": "Skip static validation of region ID. Used by users of alternative AlibabaCloud-like APIs or users w/ access to regions that are not public (yet). It can also be sourced from the `ALICLOUD_SKIP_REGION_VALIDATION` environment variable.",
+
+		"features": "Customize the behaviour of certain resources. Every toggle it holds is optional, and leaving the block out keeps the provider's default behaviour.",
 
 		"configuration_source": "Use this to mark a terraform configuration file source.",
 
@@ -3000,6 +3007,55 @@ func signVersionSchema() *schema.Schema {
 			},
 		},
 	}
+}
+
+// featuresSchema returns the provider's features block. Grouping the behaviour toggles keeps the
+// next one from becoming another top level provider argument, at the cost of an environment
+// variable: a DefaultFunc on a nested field only runs when its block is present.
+func featuresSchema() *schema.Schema {
+	return &schema.Schema{
+		Type:     schema.TypeList,
+		Optional: true,
+		MaxItems: 1,
+		Elem: &schema.Resource{
+			Schema: map[string]*schema.Schema{
+				"ecs_instance": {
+					Type:     schema.TypeList,
+					Optional: true,
+					MaxItems: 1,
+					Elem: &schema.Resource{
+						Schema: map[string]*schema.Schema{
+							"replace_on_image_update": {
+								Type:        schema.TypeBool,
+								Optional:    true,
+								Default:     false,
+								Description: "Whether a change to `image_id` on an `alicloud_instance` is planned as a replacement of the instance instead of an in-place replacement of its system disk.",
+							},
+						},
+					},
+					Description: "The behaviour toggles of the `alicloud_instance` resource.",
+				},
+			},
+		},
+		Description: descriptions["features"],
+	}
+}
+
+// expandFeatures reads the features block into the struct the client carries, starting from the
+// defaults because every level of the block is optional.
+func expandFeatures(featuresList []interface{}) features.Features {
+	expanded := features.Default()
+	if len(featuresList) == 0 || featuresList[0] == nil {
+		return expanded
+	}
+	featuresMap := featuresList[0].(map[string]interface{})
+	if ecsInstanceList, ok := featuresMap["ecs_instance"].([]interface{}); ok && len(ecsInstanceList) > 0 && ecsInstanceList[0] != nil {
+		ecsInstance := ecsInstanceList[0].(map[string]interface{})
+		if v, ok := ecsInstance["replace_on_image_update"].(bool); ok {
+			expanded.EcsInstance.ReplaceOnImageUpdate = v
+		}
+	}
+	return expanded
 }
 
 func endpointsSchema() *schema.Schema {

@@ -1336,6 +1336,20 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 	}
 	if v, ok := d.GetOk("instance_class"); ok {
 		modifyInstanceSpecReq["InstanceClass"] = v
+		// Local-disk (classic architecture) instances require MajorVersion to be
+		// carried alongside InstanceClass when changing the spec via
+		// ModifyInstanceSpec; cloud-disk architecture (.ce/.ee/tair.*) specs do
+		// not require it. MajorVersion must match the instance's engine_version;
+		// when the state value is empty it is read from DescribeKvstoreInstance.
+		if !isCloudDiskSpec(fmt.Sprint(v)) {
+			majorVersion, err := resolveMajorVersionForSpecChange(d.Get("engine_version").(string), r_kvstoreService.DescribeKvstoreInstance, d.Id())
+			if err != nil {
+				return WrapError(err)
+			}
+			if majorVersion != "" {
+				modifyInstanceSpecReq["MajorVersion"] = majorVersion
+			}
+		}
 	}
 
 	// read_only_count and slave_read_only_count may be changed after other attributes changed, like secondary_zone_id
@@ -1878,9 +1892,29 @@ func convertModifyInstanceTDERequest(source interface{}) interface{} {
 }
 
 func isCloudDiskSpec(instanceClass string) bool {
-	if strings.HasSuffix(instanceClass, ".ce") || strings.HasSuffix(instanceClass, ".ee") {
+	if strings.HasSuffix(instanceClass, ".ce") || strings.HasSuffix(instanceClass, ".ee") || strings.HasPrefix(instanceClass, "tair.") {
 		return true
 	}
 
 	return false
+}
+
+// resolveMajorVersionForSpecChange resolves the MajorVersion value to carry
+// alongside InstanceClass when changing the spec of a local-disk (classic
+// architecture) instance via ModifyInstanceSpec. The R-kvstore
+// ModifyInstanceSpec API requires MajorVersion (valid values: 2.8/4.0/5.0,
+// identical to the instance's engine_version) to be sent together with
+// InstanceClass for classic instances; cloud-disk architecture specs do not
+// require it. This helper prefers the engine_version stored in Terraform
+// state; when that value is empty it falls back to DescribeKvstoreInstance,
+// whose EngineVersion reflects the instance's current major version.
+func resolveMajorVersionForSpecChange(engineVersion string, describeFunc func(id string) (map[string]interface{}, error), instanceId string) (string, error) {
+	if engineVersion != "" {
+		return engineVersion, nil
+	}
+	object, err := describeFunc(instanceId)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprint(object["EngineVersion"]), nil
 }

@@ -284,10 +284,20 @@ func (s *CrService) DescribeCrEndpointAclPolicy(id string) (object map[string]in
 			}
 			return resource.NonRetryableError(err)
 		}
+		// ACL entry propagation after CreateInstanceEndpointAclPolicy is awaited
+		// in the Create path (WaitCrEndpointRunning then
+		// WaitCrEndpointAclEntryPropagate), not here. This Read only retries
+		// transient API errors and lets steady-state absence (empty AclEntries or
+		// a missing entry) fall through to the NotFound paths below.
 		return nil
 	})
 	addDebug(action, response, request)
 	if err != nil {
+		// The ACL policy cannot exist after its parent CR EE instance has
+		// been released; treat the parent-not-found response as not-found.
+		if IsExpectedErrors(err, []string{"INSTANCE_NOT_EXIST"}) {
+			return object, WrapErrorf(NotFoundErr("CR", id), NotFoundWithResponse, response)
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 	v, err := jsonpath.Get("$.AclEntries", response)
@@ -307,6 +317,92 @@ func (s *CrService) DescribeCrEndpointAclPolicy(id string) (object map[string]in
 		return object, WrapErrorf(NotFoundErr("CR", id), NotFoundWithResponse, response)
 	}
 	return object, nil
+}
+
+// WaitCrEndpointAclEntryPropagate polls GetInstanceEndpoint until the ACL entry
+// created by CreateInstanceEndpointAclPolicy appears in AclEntries. The CR
+// service propagates ACL entries asynchronously, so a Read issued right after
+// Create can race the propagation and see an empty AclEntries, misreading the
+// just-created resource as absent ("was present, but now absent"). The ACL
+// creation is gated on the endpoint reaching RUNNING first
+// (WaitCrEndpointRunning) so the entry is reliably accepted; this wait then
+// confirms propagation by matching the entry by its value. Steady-state
+// absence (entry deleted but endpoint remains) is handled by the Read path's
+// NotFound logic, not by this propagation wait.
+func (s *CrService) WaitCrEndpointAclEntryPropagate(instanceId, endpointType, entry string, timeout time.Duration) error {
+	client := s.client
+	action := "GetInstanceEndpoint"
+	request := map[string]interface{}{
+		"EndpointType": endpointType,
+		"InstanceId":   instanceId,
+	}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	return resource.Retry(timeout, func() *resource.RetryError {
+		response, err := client.RpcPost("cr", "2018-12-01", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		rawEntries, jerr := jsonpath.Get("$.AclEntries", response)
+		if jerr != nil {
+			return resource.NonRetryableError(WrapErrorf(jerr, FailedGetAttributeMsg, fmt.Sprint(instanceId, ":", endpointType), "$.AclEntries", response))
+		}
+		entries, ok := rawEntries.([]interface{})
+		if !ok || len(entries) < 1 {
+			wait()
+			return resource.RetryableError(fmt.Errorf("waiting for CR endpoint ACL entry %q to propagate", entry))
+		}
+		for _, e := range entries {
+			if em, ok := e.(map[string]interface{}); ok && fmt.Sprint(em["Entry"]) == entry {
+				return nil
+			}
+		}
+		wait()
+		return resource.RetryableError(fmt.Errorf("waiting for CR endpoint ACL entry %q to propagate", entry))
+	})
+}
+
+// WaitCrEndpointRunning polls GetInstanceEndpoint until the internet endpoint
+// reaches RUNNING. The endpoint transitions CREATING -> RUNNING after being
+// enabled; CreateInstanceEndpointAclPolicy issued while the endpoint is still
+// CREATING is silently dropped by the server (the ACL entry never propagates
+// into AclEntries), so ACL creation must wait for RUNNING first. This
+// complements WaitCrEndpointAclEntryPropagate, which waits for the entry to
+// appear after the (now reliably accepted) create. A missing or non-RUNNING
+// Status (including the brief window before the endpoint is enabled, where
+// GetInstanceEndpoint returns no Status) keeps retrying; transient API errors
+// are retried via NeedRetry. The ACL policy resource depends on the CR EE
+// instance, so by the time this runs the instance already exists and
+// GetInstanceEndpoint returns CREATING/RUNNING rather than INSTANCE_NOT_EXIST.
+func (s *CrService) WaitCrEndpointRunning(instanceId, endpointType string, timeout time.Duration) error {
+	client := s.client
+	action := "GetInstanceEndpoint"
+	request := map[string]interface{}{
+		"EndpointType": endpointType,
+		"InstanceId":   instanceId,
+	}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	return resource.Retry(timeout, func() *resource.RetryError {
+		response, err := client.RpcPost("cr", "2018-12-01", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		status := fmt.Sprint(response["Status"])
+		if status == "RUNNING" {
+			return nil
+		}
+		wait()
+		return resource.RetryableError(fmt.Errorf("waiting for CR internet endpoint to reach RUNNING (current: %s)", status))
+	})
 }
 
 func (s *CrService) DescribeCrEndpointAclService(id string) (object map[string]interface{}, err error) {
@@ -336,6 +432,11 @@ func (s *CrService) DescribeCrEndpointAclService(id string) (object map[string]i
 	})
 	addDebug(action, response, request)
 	if err != nil {
+		// The endpoint service cannot exist after its parent CR EE instance
+		// has been released; treat the parent-not-found response as not-found.
+		if IsExpectedErrors(err, []string{"INSTANCE_NOT_EXIST"}) {
+			return object, WrapErrorf(NotFoundErr("CR", id), NotFoundWithResponse, response)
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 	v, err := jsonpath.Get("$", response)
@@ -363,6 +464,96 @@ func (s *CrService) CrEndpointAclServiceStateRefreshFunc(id string, failStates [
 			}
 		}
 		return object, fmt.Sprint(object["Status"]), nil
+	}
+}
+
+func (s *CrService) DescribeCrInternetEndpoint(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	client := s.client
+	action := "GetInstanceEndpoint"
+	request := map[string]interface{}{
+		"InstanceId":   id,
+		"RegionId":     client.RegionId,
+		"ModuleName":   "Registry",
+		"EndpointType": "Internet",
+	}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("cr", "2018-12-01", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		// The endpoint cannot exist after its parent CR EE instance has been
+		// released (INSTANCE_NOT_EXIST), or when the parent instance is in a
+		// status that does not support endpoint operations
+		// (INSTANCE_STATUS_NOT_SUPPORT) — which happens during destroy teardown
+		// once the instance starts transitioning away from RUNNING. Terraform
+		// acceptance tests run CheckDestroy after all resources have been
+		// removed, so treat both parent-not-found and status-not-support
+		// responses as the endpoint's not-found state so Read/SetId(""),
+		// the Delete stateRefresh and CheckDestroy all converge.
+		if IsExpectedErrors(err, []string{"INSTANCE_NOT_EXIST", "INSTANCE_STATUS_NOT_SUPPORT"}) {
+			return object, WrapErrorf(NotFoundErr("CR", id), NotFoundWithResponse, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+	}
+	object = v.(map[string]interface{})
+	// The Internet endpoint has no DeleteInstanceEndpoint API; Delete disables
+	// it via UpdateInstanceEndpointStatus(Enable=false). A disabled endpoint
+	// (Enable=false) is the "destroyed" state from Terraform's perspective, so
+	// return NotFound here so that Read/SetId(""), the Delete stateConf and the
+	// test CheckDestroy all converge correctly.
+	if enable, ok := object["Enable"]; ok {
+		if b, ok := enable.(bool); ok && !b {
+			return object, WrapErrorf(NotFoundErr("CR", id), NotFoundWithResponse, response)
+		}
+	}
+	return object, nil
+}
+
+func (s *CrService) CrInternetEndpointStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeCrInternetEndpoint(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// DescribeCrInternetEndpoint returns NotFound once the endpoint is
+				// disabled (Enable=false, i.e. the Delete path). The Delete stateConf
+				// targets [""], so return an empty (non-nil) object with status "" to
+				// converge — returning nil here makes the SDK treat it as
+				// "couldn't find resource" and retry until timeout.
+				return map[string]interface{}{}, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		// After UpdateInstanceEndpointStatus disables the Internet endpoint (the
+		// Delete path), GetInstanceEndpoint returns no Status field. Without this
+		// guard fmt.Sprint(object["Status"]) yields "<nil>", which never matches
+		// the Delete stateConf target [""], causing a 5-minute timeout. Treat a
+		// missing or nil Status as "" so the Delete path converges; the Create
+		// path still returns the real Status (CREATING/RUNNING).
+		status := ""
+		if v, ok := object["Status"]; ok && v != nil {
+			status = fmt.Sprint(v)
+		}
+		for _, failState := range failStates {
+			if status == failState {
+				return object, status, WrapError(Error(FailedToReachTargetStatus, status))
+			}
+		}
+		return object, status, nil
 	}
 }
 

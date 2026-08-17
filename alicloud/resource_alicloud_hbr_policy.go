@@ -91,6 +91,11 @@ func resourceAliCloudHbrPolicy() *schema.Resource {
 							Optional: true,
 							Computed: true,
 						},
+						"immutable": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Computed: true,
+						},
 						"rule_type": {
 							Type:         schema.TypeString,
 							Required:     true,
@@ -197,6 +202,7 @@ func resourceAliCloudHbrPolicyCreate(d *schema.ResourceData, meta interface{}) e
 			dataLoopMap["Schedule"] = dataLoopTmp["schedule"]
 			dataLoopMap["Retention"] = dataLoopTmp["retention"]
 			dataLoopMap["ReplicationRegionId"] = dataLoopTmp["replication_region_id"]
+			dataLoopMap["Immutable"] = dataLoopTmp["immutable"]
 			if backupType, ok := dataLoopTmp["backup_type"]; ok && backupType != "" {
 				dataLoopMap["BackupType"] = dataLoopTmp["backup_type"]
 			}
@@ -268,6 +274,7 @@ func resourceAliCloudHbrPolicyRead(d *schema.ResourceData, meta interface{}) err
 			rulesChildRaw := rulesChildRaw.(map[string]interface{})
 			rulesMap["archive_days"] = rulesChildRaw["ArchiveDays"]
 			rulesMap["backup_type"] = rulesChildRaw["BackupType"]
+			rulesMap["immutable"] = rulesChildRaw["Immutable"]
 			rulesMap["keep_latest_snapshots"] = rulesChildRaw["KeepLatestSnapshots"]
 			rulesMap["replication_region_id"] = rulesChildRaw["ReplicationRegionId"]
 			rulesMap["retention"] = rulesChildRaw["Retention"]
@@ -382,6 +389,7 @@ func resourceAliCloudHbrPolicyUpdate(d *schema.ResourceData, meta interface{}) e
 				dataLoopMap["Schedule"] = dataLoopTmp["schedule"]
 				dataLoopMap["Retention"] = dataLoopTmp["retention"]
 				dataLoopMap["ReplicationRegionId"] = dataLoopTmp["replication_region_id"]
+				dataLoopMap["Immutable"] = dataLoopTmp["immutable"]
 				if backupType, ok := dataLoopTmp["backup_type"]; ok && backupType != "" {
 					dataLoopMap["BackupType"] = dataLoopTmp["backup_type"]
 				}
@@ -455,6 +463,32 @@ func resourceAliCloudHbrPolicyDelete(d *schema.ResourceData, meta interface{}) e
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+	// UDM_ECS_ONLY policies are removed asynchronously by the HBR server;
+	// poll DescribePoliciesV2 until the policy is gone, otherwise
+	// CheckDestroy may race ahead and report the policy as not deleted.
+	hbrServiceV2 := HbrServiceV2{client}
+	wait = incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		_, e := hbrServiceV2.DescribeHbrPolicy(d.Id())
+		if e != nil {
+			if NotFoundError(e) {
+				return nil
+			}
+			if NeedRetry(e) {
+				wait()
+				return resource.RetryableError(e)
+			}
+			return resource.NonRetryableError(e)
+		}
+		wait()
+		return resource.RetryableError(fmt.Errorf("the HBR policy %s has not been deleted yet", d.Id()))
+	})
+	addDebug("WaitHbrPolicyGone", nil, request)
+	if err != nil {
+		// best-effort: DeletePolicyV2 has already been accepted; a transient
+		// listing for UDM_ECS_ONLY policies does not indicate failure.
+		log.Printf("[DEBUG] Resource alicloud_hbr_policy delete wait-for-gone timeout: %s", err)
 	}
 	return nil
 }

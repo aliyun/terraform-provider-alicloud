@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"sort"
+	"strings"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cr_ee"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -198,24 +199,34 @@ func dataSourceAlicloudCrEEInstancesRead(d *schema.ResourceData, meta interface{
 		}
 		endpointResp, err := crService.ListCrEEInstanceEndpoint(instance.InstanceId)
 		if err != nil {
-			return WrapError(err)
+			// INSTANCE_STATUS_NOT_SUPPORT (the instance does not support managed public/VPC
+			// endpoints, e.g. retired instances) and INSTANCE_NOT_EXIST are per-instance
+			// conditions: the instance was enumerated by ListInstance, so it exists; the
+			// managed-endpoint feature is simply unavailable for it. Keep the instance in
+			// state with empty endpoint fields instead of dropping it or failing the read.
+			if !(IsExpectedErrors(err, []string{"INSTANCE_NOT_EXIST"}) || strings.Contains(err.Error(), "INSTANCE_STATUS_NOT_SUPPORT")) {
+				return WrapError(err)
+			}
+			endpointResp = nil
 		}
 
 		var (
 			publicDomains []string
 			vpcDomains    []string
 		)
-		for _, endpoint := range endpointResp.Endpoints {
-			if !endpoint.Enable {
-				continue
-			}
-			if endpoint.EndpointType == "internet" {
-				for _, d := range endpoint.Domains {
-					publicDomains = append(publicDomains, d.Domain)
+		if endpointResp != nil {
+			for _, endpoint := range endpointResp.Endpoints {
+				if !endpoint.Enable {
+					continue
 				}
-			} else if endpoint.EndpointType == "vpc" {
-				for _, d := range endpoint.Domains {
-					vpcDomains = append(vpcDomains, d.Domain)
+				if endpoint.EndpointType == "internet" {
+					for _, d := range endpoint.Domains {
+						publicDomains = append(publicDomains, d.Domain)
+					}
+				} else if endpoint.EndpointType == "vpc" {
+					for _, d := range endpoint.Domains {
+						vpcDomains = append(vpcDomains, d.Domain)
+					}
 				}
 			}
 		}

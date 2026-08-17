@@ -2,11 +2,14 @@ package alicloud
 
 import (
 	"fmt"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestAccAliCloudVPNGatewayVcoRoute_basic0(t *testing.T) {
@@ -82,53 +85,66 @@ resource "alicloud_cen_transit_router_cidr" "default" {
   publish_cidr_route       = true
 }
 
-data "alicloud_cen_transit_router_available_resources" "default" {}
 resource "alicloud_vpn_customer_gateway" "default" {
   name        = "${var.name}"
-  ip_address  = "42.104.22.210"
+  ip_address  = "43.${100 + tonumber(substr(var.name, -5, 2)) %% 100}.${100 + tonumber(substr(var.name, -3, 2)) %% 100}.${100 + tonumber(substr(var.name, -1, 1)) %% 10}"
   asn         = "45014"
   description = "testAccVpnConnectionDesc"
 }
 resource "alicloud_vpn_gateway_vpn_attachment" "default" {
-  customer_gateway_id = alicloud_vpn_customer_gateway.default.id
-  network_type        = "public"
-  local_subnet        = "0.0.0.0/0"
-  remote_subnet       = "0.0.0.0/0"
-  effect_immediately  = false
-  ike_config {
-    ike_auth_alg = "md5"
-    ike_enc_alg  = "des"
-    ike_version  = "ikev2"
-    ike_mode     = "main"
-    ike_lifetime = 86400
-    psk          = "tf-testvpn2"
-    ike_pfs      = "group1"
-    remote_id    = "testbob2"
-    local_id     = "testalice2"
+  network_type       = "public"
+  local_subnet       = "0.0.0.0/0"
+  remote_subnet      = "0.0.0.0/0"
+  effect_immediately = false
+  tunnel_options_specification {
+    customer_gateway_id  = alicloud_vpn_customer_gateway.default.id
+    role                 = "master"
+    tunnel_index         = 1
+    enable_dpd           = true
+    enable_nat_traversal = true
+    tunnel_ike_config {
+      ike_auth_alg = "md5"
+      ike_enc_alg  = "des"
+      ike_version  = "ikev2"
+      ike_mode     = "main"
+      ike_lifetime = 86400
+      psk          = "tf-testvpn-master"
+      ike_pfs      = "group1"
+      remote_id    = "testbob-master"
+      local_id     = "testalice-master"
+    }
+    tunnel_ipsec_config {
+      ipsec_pfs      = "group5"
+      ipsec_enc_alg  = "des"
+      ipsec_auth_alg = "md5"
+      ipsec_lifetime = 86400
+    }
   }
-  ipsec_config {
-    ipsec_pfs      = "group5"
-    ipsec_enc_alg  = "des"
-    ipsec_auth_alg = "md5"
-    ipsec_lifetime = 86400
+  tunnel_options_specification {
+    customer_gateway_id  = alicloud_vpn_customer_gateway.default.id
+    role                 = "slave"
+    tunnel_index         = 2
+    enable_dpd           = true
+    enable_nat_traversal = true
+    tunnel_ike_config {
+      ike_auth_alg = "md5"
+      ike_enc_alg  = "des"
+      ike_version  = "ikev2"
+      ike_mode     = "main"
+      ike_lifetime = 86400
+      psk          = "tf-testvpn-slave"
+      ike_pfs      = "group1"
+      remote_id    = "testbob-slave"
+      local_id     = "testalice-slave"
+    }
+    tunnel_ipsec_config {
+      ipsec_pfs      = "group5"
+      ipsec_enc_alg  = "des"
+      ipsec_auth_alg = "md5"
+      ipsec_lifetime = 86400
+    }
   }
-  bgp_config {
-    enable       = true
-    local_asn    = 45014
-    tunnel_cidr  = "169.254.11.0/30"
-    local_bgp_ip = "169.254.11.1"
-  }
-  health_check_config {
-    enable   = true
-    sip      = "192.168.1.1"
-    dip      = "10.0.0.1"
-    interval = 10
-    retry    = 10
-    policy   = "revoke_route"
-  }
-  enable_dpd           = true
-  enable_nat_traversal = true
-  vpn_attachment_name  = var.name
+  vpn_attachment_name = var.name
 }
 resource "alicloud_cen_transit_router_vpn_attachment" "default" {
 	auto_publish_route_enabled = false
@@ -137,11 +153,51 @@ resource "alicloud_cen_transit_router_vpn_attachment" "default" {
 	cen_id = alicloud_cen_transit_router.default.cen_id
 	transit_router_id = alicloud_cen_transit_router_cidr.default.transit_router_id
 	vpn_id = alicloud_vpn_gateway_vpn_attachment.default.id
-	zone {
-		zone_id = data.alicloud_cen_transit_router_available_resources.default.resources.0.master_zones.0
-	}
 }
 `, name)
+}
+
+func TestUnitAlicloudVPNGatewayVcoRouteBasicDependenceUsesUniqueIP(t *testing.T) {
+	config := AlicloudVPNGatewayVcoRouteBasicDependence0("tf-testaccvpngatewayvcoroute12345")
+	if strings.Contains(config, "42.104.22.210") {
+		t.Fatal("generated configuration must not contain the fixed customer gateway IP")
+	}
+	if !strings.Contains(config, "tonumber(substr(var.name") {
+		t.Fatal("customer gateway IP must derive from var.name")
+	}
+	for _, legacy := range []string{"\n  customer_gateway_id =", "\n  ike_config {", "\n  ipsec_config {", "\n  bgp_config {"} {
+		if strings.Contains(config, legacy) {
+			t.Fatalf("generated configuration must not contain legacy single-tunnel setting %q", strings.TrimSpace(legacy))
+		}
+	}
+	if got := strings.Count(config, "tunnel_options_specification {"); got != 2 {
+		t.Fatalf("expected two tunnel options specifications, got %d", got)
+	}
+	for _, expected := range []string{"tunnel_index         = 1", "tunnel_index         = 2", `role                 = "master"`, `role                 = "slave"`} {
+		if !strings.Contains(config, expected) {
+			t.Fatalf("generated configuration must contain %q", expected)
+		}
+	}
+	if strings.Contains(config, "zone {") {
+		t.Fatal("transit router VPN attachment must not configure a zone for dual-tunnel VCO")
+	}
+}
+
+func TestUnitWaitForVpnGatewayVcoRouteDeleted(t *testing.T) {
+	exists := []bool{true, false, true, false, false, false}
+	refreshCalls := 0
+	refresh := func() (interface{}, string, error) {
+		if exists[refreshCalls] {
+			refreshCalls++
+			return map[string]interface{}{"State": "published"}, "published", nil
+		}
+		refreshCalls++
+		return nil, "", nil
+	}
+
+	err := waitForVpnGatewayVcoRouteDeleted(time.Second, time.Millisecond, refresh)
+	assert.NoError(t, err)
+	assert.Equal(t, len(exists), refreshCalls, "delete must require three consecutive not-found responses")
 }
 
 // lintignore: R001

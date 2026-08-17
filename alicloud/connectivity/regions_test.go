@@ -42,3 +42,13 @@ func TestUnitCommonRegionDefinitions(t *testing.T) {
 		}
 	})
 }
+
+func TestUnitVpnGatewayVpnAttachmentSupportRegions(t *testing.T) {
+	if len(VpnGatewayVpnAttachmentSupportRegions) != 1 {
+		t.Fatalf("expected exactly one supported region, got %d", len(VpnGatewayVpnAttachmentSupportRegions))
+	}
+
+	if got := VpnGatewayVpnAttachmentSupportRegions[0]; got != EUCentral1 {
+		t.Fatalf("expected supported region %q, got %q", EUCentral1, got)
+	}
+}

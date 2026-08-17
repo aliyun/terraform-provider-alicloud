@@ -13,6 +13,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/stretchr/testify/assert"
 )
 
 func init() {
@@ -1957,6 +1958,184 @@ func TestAccAliCloudKvstoreInstance_memcache_vpctest(t *testing.T) {
 			},
 		},
 	})
+}
+
+// TestAccAliCloudKVStoreRedisInstance_classic_cluster_instance_class isolates the local-disk
+// (classic architecture) cluster instance_class change path. Changing the spec of a local-disk
+// instance via ModifyInstanceSpec requires MajorVersion to be carried alongside InstanceClass;
+// cloud-disk (.ce/.ee/tair.*) specs do not. This case creates a local-disk cluster, reimports,
+// then modifies instance_class both up and back down to exercise that path in isolation.
+func TestAccAliCloudKVStoreRedisInstance_classic_cluster_instance_class(t *testing.T) {
+	var v r_kvstore.DBInstanceAttribute
+	checkoutSupportedRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
+	resourceId := "alicloud_kvstore_instance.default"
+	ra := resourceAttrInit(resourceId, AliCloudKVStoreMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &R_kvstoreService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeKvstoreInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccKvstoreRedisClassicClusterSpec%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudKVStoreRedisInstanceVpcBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_class":   "redis.amber.logic.sharding.1g.2db.0rodb.6proxy.multithread",
+					"db_instance_name": name,
+					"instance_type":    "Redis",
+					"engine_version":   "5.0",
+					"zone_id":          "${data.alicloud_kvstore_zones.default.zones.0.id}",
+					"vswitch_id":       "${data.alicloud_vswitches.default.ids.0}",
+					"shard_count":      "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_class":   "redis.amber.logic.sharding.1g.2db.0rodb.6proxy.multithread",
+						"db_instance_name": name,
+						"instance_type":    "Redis",
+						"engine_version":   "5.0",
+						"zone_id":          CHECKSET,
+						"vswitch_id":       CHECKSET,
+						"shard_count":      "2",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run", "business_info", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_class": "redis.amber.logic.sharding.2g.2db.0rodb.6proxy.multithread",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_class": "redis.amber.logic.sharding.2g.2db.0rodb.6proxy.multithread",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_class": "redis.amber.logic.sharding.1g.2db.0rodb.6proxy.multithread",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_class": "redis.amber.logic.sharding.1g.2db.0rodb.6proxy.multithread",
+					}),
+				),
+			},
+		},
+	})
+}
+
+// TestUnitKvstoreIsCloudDiskSpec verifies the architecture classification helper
+// that decides whether MajorVersion must accompany InstanceClass on a
+// ModifyInstanceSpec call. Cloud-disk specs (.ce/.ee suffixes and the tair.*
+// prefix) do not require MajorVersion; everything else is treated as a
+// local-disk (classic) spec and does require it.
+func TestUnitKvstoreIsCloudDiskSpec(t *testing.T) {
+	tests := []struct {
+		name          string
+		instanceClass string
+		expected      bool
+	}{
+		{"cloud-disk ce suffix", "redis.master.small.ce", true},
+		{"cloud-disk ee suffix", "redis.master.large.ee", true},
+		{"tair prefix", "tair.rdb.1g", true},
+		{"tair prefix mixed case", "tair.Redis.2g", true},
+		{"local-disk classic amber sharding", "redis.amber.logic.sharding.1g.2db.0rodb.6proxy.multithread", false},
+		{"local-disk classic master", "redis.master.small.default", false},
+		{"empty string", "", false},
+		{"tair substring not at prefix must not match", "redis.tair.1g", false},
+		{"ce substring not at suffix must not match", "redis.ce.master", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, isCloudDiskSpec(tt.instanceClass))
+		})
+	}
+}
+
+// TestUnitKvstoreResolveMajorVersionForSpecChange verifies MajorVersion
+// resolution for the local-disk ModifyInstanceSpec path: the engine_version
+// stored in state is preferred, and when it is empty the helper falls back to
+// DescribeKvstoreInstance (whose EngineVersion reflects the instance's current
+// major version).
+func TestUnitKvstoreResolveMajorVersionForSpecChange(t *testing.T) {
+	tests := []struct {
+		name               string
+		engineVersion      string
+		instanceId         string
+		describeFunc       func(id string) (map[string]interface{}, error)
+		expectedVersion    string
+		expectErr          bool
+		expectFallbackCall bool
+	}{
+		{
+			name:          "state engine_version present, no fallback query",
+			engineVersion: "5.0",
+			instanceId:    "r-xxx",
+			describeFunc: func(id string) (map[string]interface{}, error) {
+				t.Fatalf("fallback should not be called when engine_version is in state")
+				return nil, nil
+			},
+			expectedVersion:    "5.0",
+			expectFallbackCall: false,
+		},
+		{
+			name:          "empty state engine_version falls back to DescribeKvstoreInstance",
+			engineVersion: "",
+			instanceId:    "r-abc",
+			describeFunc: func(id string) (map[string]interface{}, error) {
+				assert.Equal(t, "r-abc", id)
+				return map[string]interface{}{"EngineVersion": "4.0"}, nil
+			},
+			expectedVersion:    "4.0",
+			expectFallbackCall: true,
+		},
+		{
+			name:          "fallback query error propagates",
+			engineVersion: "",
+			instanceId:    "r-err",
+			describeFunc: func(id string) (map[string]interface{}, error) {
+				return nil, fmt.Errorf("NotFound")
+			},
+			expectedVersion:    "",
+			expectErr:          true,
+			expectFallbackCall: true,
+		},
+		{
+			name:          "fallback returns empty when EngineVersion missing from response",
+			engineVersion: "",
+			instanceId:    "r-missing",
+			describeFunc: func(id string) (map[string]interface{}, error) {
+				return map[string]interface{}{}, nil
+			},
+			expectedVersion:    "",
+			expectFallbackCall: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := resolveMajorVersionForSpecChange(tt.engineVersion, tt.describeFunc, tt.instanceId)
+			if tt.expectErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Equal(t, tt.expectedVersion, result)
+		})
+	}
 }
 
 var AliCloudKVStoreMap0 = map[string]string{

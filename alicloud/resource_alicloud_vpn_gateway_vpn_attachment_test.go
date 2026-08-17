@@ -130,9 +130,9 @@ func TestAccAliCloudVPNGatewayVpnAttachment_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -242,19 +242,41 @@ variable "name" {
 
 resource "alicloud_vpn_customer_gateway" "default" {
 	name = "${var.name}"
-	ip_address = "42.104.22.210"
+	ip_address = "42.${100 + tonumber(substr(var.name, -5, 2)) %% 100}.${100 + tonumber(substr(var.name, -3, 2)) %% 100}.${100 + tonumber(substr(var.name, -1, 1)) %% 10}"
 	asn = "45014"
 	description = "testAccVpnConnectionDesc"
 }
 
 resource "alicloud_vpn_customer_gateway" "defaultone" {
   name        = "${var.name}"
-  ip_address  = "41.104.22.229"
+  ip_address  = "41.${100 + tonumber(substr(var.name, -5, 2)) %% 100}.${100 + tonumber(substr(var.name, -3, 2)) %% 100}.${100 + tonumber(substr(var.name, -1, 1)) %% 10}"
   asn = "45014"
   description = "${var.name}"
 }
 
 `, name)
+}
+
+func TestUnitAlicloudVPNGatewayVpnAttachmentBasicDependenceUsesUniqueIPs(t *testing.T) {
+	config := AlicloudVPNGatewayVpnAttachmentBasicDependence0("tf-testaccvpnattachment12345")
+	for _, fixedIP := range []string{"42.104.22.210", "41.104.22.229"} {
+		if strings.Contains(config, fixedIP) {
+			t.Fatalf("generated configuration must not contain fixed customer gateway IP %q", fixedIP)
+		}
+	}
+
+	matches := regexp.MustCompile(`ip_address\s*=\s*"([^"]+)"`).FindAllStringSubmatch(config, -1)
+	if len(matches) != 2 {
+		t.Fatalf("expected two customer gateway IP expressions, got %d", len(matches))
+	}
+	if matches[0][1] == matches[1][1] {
+		t.Fatalf("customer gateway IP expressions must differ, got %q", matches[0][1])
+	}
+	for _, match := range matches {
+		if !strings.Contains(match[1], "tonumber(substr(var.name") {
+			t.Fatalf("customer gateway IP must derive from var.name, got %q", match[1])
+		}
+	}
 }
 
 func TestAccAliCloudVPNGatewayVpnAttachment_basic1(t *testing.T) {
@@ -274,9 +296,9 @@ func TestAccAliCloudVPNGatewayVpnAttachment_basic1(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -789,9 +811,9 @@ func TestAccAliCloudVpnGatewayVpnAttachment_basic10338(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-huhehaote"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1152,9 +1174,9 @@ func TestAccAliCloudVpnGatewayVpnAttachment_basic10363(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-huhehaote"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1368,9 +1390,9 @@ func TestAccAliCloudVpnGatewayVpnAttachment_basic5629(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1571,9 +1593,9 @@ func TestAccAliCloudVpnGatewayVpnAttachment_basic5358(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1815,9 +1837,9 @@ func TestAccAliCloudVpnGatewayVpnAttachment_role(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2023,7 +2045,7 @@ func TestAccAliCloudVpnGatewayVpnAttachment_legacyFields(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2178,9 +2200,9 @@ func TestAccAliCloudVpnGatewayVpnAttachment_roleSwitch(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2352,3 +2374,149 @@ resource "alicloud_vpn_customer_gateway" "default" {
 }
 
 // Test VpnGateway VpnAttachment. <<< Resource test cases, automatically generated.
+
+// Case VpnAttachment tunnel_bandwidth 覆盖 Large/Standard 两值并回读 import
+func TestAccAliCloudVpnGatewayVpnAttachment_tunnelBandwidth(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_vpn_gateway_vpn_attachment.default"
+	ra := resourceAttrInit(resourceId, AlicloudVpnGatewayVpnAttachmentMapTunnelBandwidth)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VPNGatewayServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeVpnGatewayVpnAttachment")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccvpngateway%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpnGatewayVpnAttachmentBasicDependenceTunnelBandwidth)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"ap-southeast-1"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"network_type":        "public",
+					"local_subnet":        "0.0.0.0/0",
+					"remote_subnet":       "0.0.0.0/0",
+					"tunnel_bandwidth":    "Large",
+					"vpn_attachment_name": name,
+					"tunnel_options_specification": []map[string]interface{}{
+						{
+							"customer_gateway_id":  "${alicloud_vpn_customer_gateway.cgw1.id}",
+							"role":                 "master",
+							"tunnel_index":         "1",
+							"enable_dpd":           "true",
+							"enable_nat_traversal": "true",
+							"tunnel_ike_config": []map[string]interface{}{
+								{
+									"ike_auth_alg": "md5",
+									"ike_enc_alg":  "aes",
+									"ike_version":  "ikev2",
+									"ike_mode":     "main",
+									"ike_lifetime": "86400",
+									"psk":          "tf-tunnelbw-psk-1",
+									"ike_pfs":      "group2",
+									"remote_id":    "tbw-remote-1",
+									"local_id":     "tbw-local-1",
+								},
+							},
+							"tunnel_ipsec_config": []map[string]interface{}{
+								{
+									"ipsec_pfs":      "group5",
+									"ipsec_enc_alg":  "aes",
+									"ipsec_auth_alg": "md5",
+									"ipsec_lifetime": "86400",
+								},
+							},
+						},
+						{
+							"customer_gateway_id":  "${alicloud_vpn_customer_gateway.cgw2.id}",
+							"role":                 "slave",
+							"tunnel_index":         "2",
+							"enable_dpd":           "true",
+							"enable_nat_traversal": "true",
+							"tunnel_ike_config": []map[string]interface{}{
+								{
+									"ike_auth_alg": "md5",
+									"ike_enc_alg":  "aes",
+									"ike_version":  "ikev2",
+									"ike_mode":     "main",
+									"ike_lifetime": "86400",
+									"psk":          "tf-tunnelbw-psk-2",
+									"ike_pfs":      "group2",
+									"remote_id":    "tbw-remote-2",
+									"local_id":     "tbw-local-2",
+								},
+							},
+							"tunnel_ipsec_config": []map[string]interface{}{
+								{
+									"ipsec_pfs":      "group5",
+									"ipsec_enc_alg":  "aes",
+									"ipsec_auth_alg": "md5",
+									"ipsec_lifetime": "86400",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"network_type":                   "public",
+						"local_subnet":                   "0.0.0.0/0",
+						"remote_subnet":                  "0.0.0.0/0",
+						"tunnel_bandwidth":               "Large",
+						"vpn_attachment_name":            name,
+						"tunnel_options_specification.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tunnel_bandwidth": "Standard",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tunnel_bandwidth":               "Standard",
+						"tunnel_options_specification.#": "2",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudVpnGatewayVpnAttachmentMapTunnelBandwidth = map[string]string{
+	"status":      CHECKSET,
+	"create_time": CHECKSET,
+}
+
+func AlicloudVpnGatewayVpnAttachmentBasicDependenceTunnelBandwidth(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+resource "alicloud_vpn_customer_gateway" "cgw1" {
+  ip_address            = "7.7.7.${100 + tonumber(substr(var.name, -2, 2)) %% 50}"
+  asn                   = "65001"
+  customer_gateway_name = "${var.name}-tbw-1"
+}
+
+resource "alicloud_vpn_customer_gateway" "cgw2" {
+  ip_address            = "7.7.8.${100 + tonumber(substr(var.name, -2, 2)) %% 50}"
+  asn                   = "65002"
+  customer_gateway_name = "${var.name}-tbw-2"
+}
+
+`, name)
+}

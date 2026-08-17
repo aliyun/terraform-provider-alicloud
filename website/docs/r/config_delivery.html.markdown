@@ -97,6 +97,7 @@ The following arguments are supported:
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.
+* `delivery_channel_id` - The ID of the delivery channel. It is the same as the resource `id`.
 
 ## Timeouts
 

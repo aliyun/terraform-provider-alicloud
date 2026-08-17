@@ -18,6 +18,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/credentials"
 	credential "github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/features"
 )
 
 var securityCredURL = "http://100.100.100.200/latest/meta-data/ram/security-credentials/"
@@ -191,6 +192,9 @@ type Config struct {
 	OceanbaseEndpoint           string
 	BeebotEndpoint              string
 	ComputeNestEndpoint         string
+
+	// Features carries the provider's behaviour toggles. See the features package.
+	Features features.Features
 }
 
 type AssumeRoleWithOidc struct {
