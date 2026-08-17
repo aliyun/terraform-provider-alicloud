@@ -1,10 +1,20 @@
-## 2.0.0-beta3 (Unreleased)
+## 2.0.0-beta3 (August 17, 2026)
+
+This beta rolls up every change merged from the 1.x line since v2.0.0-beta2 — see the `1.288.0` and `1.289.0` sections of [CHANGELOG.md](CHANGELOG.md) — plus the v2-only changes below.
 
 FEATURES:
 
 - **Terraform Plugin Framework:** the provider binary now serves a `terraform-plugin-framework` provider alongside the existing `terraform-plugin-sdk/v2` one, muxed behind `tf5muxserver`. Protocol version, provider address and provider schema are unchanged; new resources and data sources can be authored framework-native, and the framework-only concept types (ephemeral resources, provider functions, list resources, actions) become available for the first time.
 - **New Data Source:** `alicloud_ims_default_domain` — the default domain of the Alibaba Cloud account, backed by the Ims `GetDefaultDomain` API. Served by the framework provider.
 - **New Function:** `arn_build` — builds an Alibaba Cloud Resource Name (ARN) of the form `acs:<ram_code>:<region>:<account_id>:<relative_id>` from its constituent parts, invoked as `provider::alicloud::arn_build(ram_code, region, account_id, relative_id)`. Mirrors the AWS provider's `arn_build` function. Requires Terraform 1.8+ with the provider declared in `required_providers`.
+
+ENHANCEMENTS:
+
+- deps: bump `golang.org/x/crypto` to 0.52.0 and `google.golang.org/grpc` to 1.82.1.
+
+BUG FIXES:
+
+- provider: close the partial-state window before the success return in resource/alicloud_reserved_instance and resource/alicloud_cs_kubernetes_node_pool. SDK v2 deleted the `d.SetPartial` whitelist that `d.Partial(true)` filtered against, inverting the flag's meaning from "persist only these keys" to "persist nothing", so a window still open at a successful return wrote prior state instead of what `d.Set` staged: an `alicloud_reserved_instance` attribute update was discarded, and an `alicloud_cs_kubernetes_node_pool` scale-down reported success while leaving the old `node_count` in state and re-planning the same diff. Eleven `Partial` calls that cannot affect any outcome have also been removed. ([#10210](https://github.com/aliyun/terraform-provider-alicloud/issues/10210))
 
 ## 2.0.0-beta2 (August 4, 2026)
 

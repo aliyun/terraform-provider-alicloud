@@ -12,6 +12,8 @@ Builds an ARN from its constituent parts.
 
 See the [Alibaba Cloud documentation](https://www.alibabacloud.com/help/en/ram/policy-elements) for additional information on Alibaba Cloud Resource Names (ARNs).
 
+-> **NOTE:** Available since v2.0.0-beta3.
+
 ## Example Usage
 
 ```terraform
