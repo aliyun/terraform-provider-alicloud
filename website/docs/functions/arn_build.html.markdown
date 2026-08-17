@@ -44,12 +44,12 @@ output "bucket_arn" {
 ## Signature
 
 ```text
-arn_build(ram_code string, region string, account_id string, relative_id string) string
+arn_build(service string, region string, account_id string, resource string) string
 ```
 
 ## Arguments
 
-1. `ram_code` (String) RAM code of the Alibaba Cloud service, such as `ecs`, `oss`, `ram`, `fc`, `mns`, `fnf`, or `kms`.
-1. `region` (String) Region of the resource, such as `cn-hangzhou`. Use `*` to match every region, or an empty string for services that carry no region component, such as `ram`.
-1. `account_id` (String) ID of the Alibaba Cloud account.
-1. `relative_id` (String) Service-specific resource path, typically composed of a resource type and identifier, such as `instance/i-bp1234567890abcdef`.
+* `service` (String) RAM code of the Alibaba Cloud service, such as `ecs`, `oss`, `ram`, `fc`, `mns`, `fnf`, or `kms`.
+* `region` (String) Region of the resource, such as `cn-hangzhou`. Use `*` to match every region, or an empty string for services that carry no region component, such as `ram`.
+* `account_id` (String) ID of the Alibaba Cloud account.
+* `resource` (String) Service-specific resource path, typically composed of a resource type and identifier, such as `instance/i-bp1234567890abcdef`.
