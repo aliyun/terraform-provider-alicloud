@@ -3,6 +3,7 @@ package framework
 import (
 	"context"
 
+	tffunction "github.com/aliyun/terraform-provider-alicloud/alicloud/function"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ims"
 	"github.com/hashicorp/terraform-plugin-framework/action"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -73,7 +74,9 @@ func (p *alicloudProvider) EphemeralResources(ctx context.Context) []func() ephe
 }
 
 func (p *alicloudProvider) Functions(ctx context.Context) []func() function.Function {
-	return []func() function.Function{}
+	return []func() function.Function{
+		tffunction.NewARNBuildFunction,
+	}
 }
 
 func (p *alicloudProvider) ListResources(ctx context.Context) []func() list.ListResource {
