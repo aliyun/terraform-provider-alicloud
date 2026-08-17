@@ -76,6 +76,7 @@ func (p *alicloudProvider) EphemeralResources(ctx context.Context) []func() ephe
 func (p *alicloudProvider) Functions(ctx context.Context) []func() function.Function {
 	return []func() function.Function{
 		tffunction.NewARNBuildFunction,
+		tffunction.NewARNParseFunction,
 	}
 }
 

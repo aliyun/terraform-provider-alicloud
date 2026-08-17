@@ -80,7 +80,7 @@ import (
 	awsdynamodb "github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/denverdino/aliyungo/cdn"
 	"github.com/denverdino/aliyungo/cs"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type AliyunClient struct {
@@ -1734,13 +1734,13 @@ func (client *AliyunClient) getAccountType() string {
 		accountType = "International"
 	}
 	wait := incrementalWait(1*time.Second, 0*time.Second)
-	resource.Retry(30*time.Second, func() *resource.RetryError {
+	retry.Retry(30*time.Second, func() *retry.RetryError {
 		_, err := client.RpcPost("BssOpenApi", "2017-12-14", "QueryAvailableInstances", nil, request, true)
 		log.Printf("[WARN] checking caller identity's account type by invoking BssOpenApi QueryAvailableInstances failed. Error: %v", err)
 		if err != nil {
 			if needRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 			if isExpectedErrors(err, []string{"NotApplicable", "not found article by given param"}) {
 				if request["ProductType"] == "vipcloudfw" {

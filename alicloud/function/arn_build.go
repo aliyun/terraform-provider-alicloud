@@ -2,8 +2,8 @@ package function
 
 import (
 	"context"
-	"fmt"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/arn"
 	"github.com/hashicorp/terraform-plugin-framework/function"
 )
 
@@ -24,10 +24,10 @@ func (f *arnBuildFunction) Metadata(ctx context.Context, req function.MetadataRe
 func (f *arnBuildFunction) Definition(ctx context.Context, req function.DefinitionRequest, resp *function.DefinitionResponse) {
 	resp.Definition = function.Definition{
 		Summary:             "Build an Alibaba Cloud Resource Name (ARN) from its constituent parts.",
-		MarkdownDescription: "Builds an ARN of the form `acs:<ram_code>:<region>:<account_id>:<relative_id>`. The relative ID may itself contain colons.",
+		MarkdownDescription: "Builds an ARN of the form `acs:<service>:<region>:<account_id>:<resource>`. The resource may itself contain colons.",
 		Parameters: []function.Parameter{
 			function.StringParameter{
-				Name:                "ram_code",
+				Name:                "service",
 				MarkdownDescription: "RAM code of the Alibaba Cloud service, such as `ecs`, `oss`, `ram`, `fc`, `mns`, `fnf`, or `kms`.",
 			},
 			function.StringParameter{
@@ -39,7 +39,7 @@ func (f *arnBuildFunction) Definition(ctx context.Context, req function.Definiti
 				MarkdownDescription: "ID of the Alibaba Cloud account.",
 			},
 			function.StringParameter{
-				Name:                "relative_id",
+				Name:                "resource",
 				MarkdownDescription: "Service-specific resource path, typically composed of a resource type and identifier, such as `instance/i-bp1234567890abcdef`.",
 			},
 		},
@@ -48,14 +48,23 @@ func (f *arnBuildFunction) Definition(ctx context.Context, req function.Definiti
 }
 
 func (f *arnBuildFunction) Run(ctx context.Context, req function.RunRequest, resp *function.RunResponse) {
-	var ramCode, region, accountID, relativeID string
+	var service, region, accountID, resource string
 
-	resp.Error = function.ConcatFuncErrors(req.Arguments.Get(ctx, &ramCode, &region, &accountID, &relativeID))
+	resp.Error = function.ConcatFuncErrors(req.Arguments.Get(ctx, &service, &region, &accountID, &resource))
 	if resp.Error != nil {
 		return
 	}
 
-	result := fmt.Sprintf("acs:%s:%s:%s:%s", ramCode, region, accountID, relativeID)
+	// String does not validate, so a caller passing an empty or colon-bearing component
+	// still gets a malformed ARN back rather than an error — the documented behaviour of
+	// this function, and the reason it can share the grammar with arn.Parse rather than
+	// restating it.
+	result := arn.ARN{
+		Service:   service,
+		Region:    region,
+		AccountID: accountID,
+		Resource:  resource,
+	}
 
-	resp.Error = function.ConcatFuncErrors(resp.Result.Set(ctx, result))
+	resp.Error = function.ConcatFuncErrors(resp.Result.Set(ctx, result.String()))
 }

@@ -11,6 +11,17 @@ import (
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 )
 
+// ProtoV5ProviderFactories serves the real muxed provider — the SDK v2 half and the
+// framework half behind one server — under the name given, defaulting to "alicloud".
+//
+// It cannot be called from a test that uses terraform-plugin-testing. This package
+// imports package alicloud for Provider(), and package alicloud imports
+// terraform-plugin-sdk/v2/helper/resource, which registers a -sweep flag in its init just
+// as terraform-plugin-testing/helper/resource does. A test binary linking both dies at
+// startup with "flag redefined: sweep" before any test runs. Until package alicloud moves
+// its ~1900 non-test files off helper/resource onto helper/retry, a test on the current
+// testing framework has to build its own factory; see protoV5ProviderFactories in
+// alicloud/function/arn_build_test.go for a framework-only one.
 func ProtoV5ProviderFactories(names ...string) map[string]func() (tfprotov5.ProviderServer, error) {
 	if len(names) == 0 {
 		names = []string{"alicloud"}

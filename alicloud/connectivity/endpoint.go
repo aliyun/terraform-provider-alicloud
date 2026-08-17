@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/location"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 // ServiceCode Load endpoints from endpoints.xml or environment variables to meet specified application scenario, like private cloud.
@@ -672,16 +672,16 @@ func (client *AliyunClient) describeEndpointForService(productCode string) (stri
 	defer locationClient.Shutdown()
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	var endpointResult string
-	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(2*time.Minute, func() *retry.RetryError {
 		endpointsResponse, err := locationClient.DescribeEndpoints(args)
 		if err != nil {
 			re := regexp.MustCompile("^Post [\"]*https://.*")
 			if err.Error() != "" && re.MatchString(err.Error()) {
 				wait()
 				args.Domain = "location-readonly.aliyuncs.com"
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		if endpointsResponse != nil && len(endpointsResponse.Endpoints.Endpoint) > 0 {
 			for _, e := range endpointsResponse.Endpoints.Endpoint {
