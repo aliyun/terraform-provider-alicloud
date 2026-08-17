@@ -35,6 +35,10 @@ func resourceAliCloudDasSqlLogConfig() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"enable_audit": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 			"hot_retention": {
 				Type:     schema.TypeInt,
 				Optional: true,
@@ -95,6 +99,9 @@ func resourceAliCloudDasSqlLogConfigCreate(d *schema.ResourceData, meta interfac
 	}
 	if v, ok := d.GetOkExists("hot_retention"); ok {
 		request["HotRetention"] = v
+	}
+	if v, ok := d.GetOkExists("enable_audit"); ok {
+		request["EnableAudit"] = v
 	}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -176,6 +183,9 @@ func resourceAliCloudDasSqlLogConfigUpdate(d *schema.ResourceData, meta interfac
 	if d.HasChange("hot_retention") {
 		update = true
 	}
+	if d.HasChange("enable_audit") {
+		update = true
+	}
 
 	if update {
 		if v, ok := d.GetOkExists("enable"); ok {
@@ -189,6 +199,9 @@ func resourceAliCloudDasSqlLogConfigUpdate(d *schema.ResourceData, meta interfac
 		}
 		if v, ok := d.GetOkExists("hot_retention"); ok {
 			request["HotRetention"] = v
+		}
+		if v, ok := d.GetOkExists("enable_audit"); ok {
+			request["EnableAudit"] = v
 		}
 
 		wait := incrementalWait(3*time.Second, 5*time.Second)
