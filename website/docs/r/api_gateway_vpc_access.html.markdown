@@ -84,10 +84,11 @@ resource "alicloud_instance" "default" {
 }
 
 resource "alicloud_api_gateway_vpc_access" "default" {
-  name        = var.name
-  vpc_id      = alicloud_vpc.default.id
-  instance_id = alicloud_instance.default.id
-  port        = 8080
+  name                 = var.name
+  vpc_id               = alicloud_vpc.default.id
+  instance_id          = alicloud_instance.default.id
+  port                 = 8080
+  vpc_target_host_name = "www.example.com"
 }
 ```
 
@@ -101,6 +102,7 @@ The following arguments are supported:
 * `vpc_id` - (Required, ForceNew) The ID of the VPC. The VPC must be an available one that belongs to the same account as the API.
 * `instance_id` - (Required, ForceNew) The ID of an ECS or SLB instance in the VPC.
 * `port` - (Required, ForceNew) The port number that corresponds to the instance.
+* `vpc_target_host_name` - (Optional, ForceNew) The host of the backend service.
 
 ## Attributes Reference
 

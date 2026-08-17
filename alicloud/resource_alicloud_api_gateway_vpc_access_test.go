@@ -104,17 +104,19 @@ func TestAccAliCloudApiGatewayVpcAccess_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":        name,
-					"vpc_id":      "${alicloud_vpc.default.id}",
-					"instance_id": "${alicloud_instance.default.id}",
-					"port":        "8080",
+					"name":                 name,
+					"vpc_id":               "${alicloud_vpc.default.id}",
+					"instance_id":          "${alicloud_instance.default.id}",
+					"port":                 "8080",
+					"vpc_target_host_name": "www.example.com",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":        name,
-						"vpc_id":      CHECKSET,
-						"instance_id": CHECKSET,
-						"port":        "8080",
+						"name":                 name,
+						"vpc_id":               CHECKSET,
+						"instance_id":          CHECKSET,
+						"port":                 "8080",
+						"vpc_target_host_name": "www.example.com",
 					}),
 				),
 			},
