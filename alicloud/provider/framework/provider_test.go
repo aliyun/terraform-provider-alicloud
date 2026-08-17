@@ -6,13 +6,6 @@ import (
 	"slices"
 	"testing"
 
-	// Importing package alicloud pulls in terraform-plugin-sdk/v2/helper/resource, which
-	// registers a -sweep flag in its init just as terraform-plugin-testing/helper/resource
-	// does. A test binary linking both dies at startup with "flag redefined: sweep" before
-	// any test runs, so no test in this package can use terraform-plugin-testing until
-	// package alicloud moves its non-test files off helper/resource onto helper/retry.
-	// Build a framework-only factory instead; see protoV5ProviderFactories in
-	// alicloud/function/arn_build_test.go.
 	"github.com/aliyun/terraform-provider-alicloud/alicloud"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/framework"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
