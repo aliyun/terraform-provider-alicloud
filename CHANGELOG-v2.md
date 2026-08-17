@@ -4,6 +4,7 @@ FEATURES:
 
 - **Terraform Plugin Framework:** the provider binary now serves a `terraform-plugin-framework` provider alongside the existing `terraform-plugin-sdk/v2` one, muxed behind `tf5muxserver`. Protocol version, provider address and provider schema are unchanged; new resources and data sources can be authored framework-native, and the framework-only concept types (ephemeral resources, provider functions, list resources, actions) become available for the first time.
 - **New Data Source:** `alicloud_ims_default_domain` — the default domain of the Alibaba Cloud account, backed by the Ims `GetDefaultDomain` API. Served by the framework provider.
+- **New Function:** `arn_build` — builds an Alibaba Cloud Resource Name (ARN) of the form `acs:<ram_code>:<region>:<account_id>:<relative_id>` from its constituent parts, invoked as `provider::alicloud::arn_build(ram_code, region, account_id, relative_id)`. Mirrors the AWS provider's `arn_build` function. Requires Terraform 1.8+ with the provider declared in `required_providers`.
 
 ## 2.0.0-beta2 (August 4, 2026)
 
