@@ -11,6 +11,7 @@ on:
       - ready_for_review
     branches:
       - master
+      - release/v2
     paths:
       - .github/markdownlint/website-docs.json
       - .github/workflows/document-check.yml
@@ -35,7 +36,7 @@ jobs:
     steps:
       - name: Select runner
         id: select
-        uses: aliyun/terraform-provider-alicloud/.github/actions/terraform-ci-select-policy@1c4bb6762031f53732611700cad5d71d1ec84dfe
+        uses: aliyun/terraform-provider-alicloud/.github/actions/terraform-ci-select-policy@a5ba492fefd8a566da45892dd8abba28c631270c
 
   markdown-link:
     needs: route

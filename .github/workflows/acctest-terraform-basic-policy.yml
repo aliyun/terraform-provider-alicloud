@@ -118,7 +118,7 @@ jobs:
               relevant =
                 protectedPathChanged ||
                 changedFiles.some(({ filename }) =>
-                  /^alicloud\/[^/]+\.go$/.test(filename)
+                  /^alicloud\/.+\.go$/.test(filename)
                 );
 
               const allowlistedAutomation =
