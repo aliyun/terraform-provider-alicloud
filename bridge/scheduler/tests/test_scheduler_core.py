@@ -74,6 +74,16 @@ class SchedulerCoreTests(unittest.TestCase):
         self.assertEqual(keepalive_job.revision, 1)
         self.assertEqual(keepalive_job.schedule, IntervalSchedule(600, True))
         self.assertIs(keepalive_job.misfire, MisfirePolicy.COALESCE)
+        self.assertEqual(keepalive_job.retry_delay_seconds, 600)
+        failed_at = at(1)
+        self.assertEqual(
+            TriggerPlanner().retry_due(
+                keepalive_job,
+                slot_due_at=failed_at,
+                failed_at=failed_at,
+            ),
+            failed_at + timedelta(seconds=600),
+        )
         scan_job = next(item for item in jobs.JOBS if item.id == "aone.scan")
         self.assertEqual(scan_job.revision, 2)
         self.assertEqual(scan_job.schedule, IntervalSchedule(300, True))
