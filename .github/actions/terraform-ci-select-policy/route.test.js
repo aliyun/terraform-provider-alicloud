@@ -14,7 +14,7 @@ const CHECK_ID = 123456789;
 const CHECK_URL =
   `https://github.com/${OWNER}/${REPO}/runs/${CHECK_ID}`;
 
-function pullRequest() {
+function pullRequest(overrides = {}) {
   return {
     number: 100,
     head: {
@@ -23,7 +23,7 @@ function pullRequest() {
     },
     base: {
       repo: { full_name: `${OWNER}/${REPO}` },
-      ref: "master",
+      ref: overrides.baseRef ?? "master",
     },
   };
 }
@@ -32,7 +32,7 @@ function pullRequestContext(overrides = {}) {
   const eventName = overrides.eventName ?? "pull_request";
   const payload = {
     action: overrides.action ?? "synchronize",
-    pull_request: pullRequest(),
+    pull_request: pullRequest(overrides),
   };
   if (eventName === "pull_request_review") {
     payload.action = overrides.action ?? "submitted";
@@ -239,6 +239,20 @@ test("push to the repository master branch is trusted and relevant", async () =>
   assert.equal(result.calls.length, 0);
 });
 
+test("push to a supported release branch is trusted and relevant", async () => {
+  const result = await execute(
+    pushContext({ ref: "refs/heads/release/v2" }),
+    []
+  );
+  assert.deepEqual(result.outputs, {
+    classification: "trusted",
+    relevant: "true",
+    runner: JSON.stringify("terraform-ci-trusted"),
+    heavy_runner: JSON.stringify("terraform-ci-heavy"),
+  });
+  assert.equal(result.calls.length, 0);
+});
+
 test("push rejects another repository", async () => {
   await assert.rejects(
     execute(pushContext({ repository: "someone/else" }), []),
@@ -400,6 +414,33 @@ test("a completed non-success Check Run fails closed", async () => {
       [[checkRun({ conclusion: "failure" })]]
     ),
     /rejected/i
+  );
+});
+
+test("pull_request targeting a supported release branch is routed", async () => {
+  const result = await execute(
+    pullRequestContext({ baseRef: "release/v2" }),
+    [[checkRun()]]
+  );
+
+  assert.deepEqual(result.outputs, {
+    classification: "trusted",
+    relevant: "true",
+    runner: JSON.stringify("terraform-ci-trusted"),
+    heavy_runner: JSON.stringify("terraform-ci-heavy"),
+  });
+});
+
+test("pull_request targeting an unsupported base branch fails closed", async () => {
+  await assert.rejects(
+    execute(pullRequestContext({ baseRef: "feature" }), [[checkRun()]]),
+    /pull request metadata/i
+  );
+  await assert.rejects(
+    execute(pullRequestContext({ baseRef: "refs/heads/master" }), [
+      [checkRun()],
+    ]),
+    /pull request metadata/i
   );
 });
 
