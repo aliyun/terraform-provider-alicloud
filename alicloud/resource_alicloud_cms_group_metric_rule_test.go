@@ -252,6 +252,26 @@ func TestAccAliCloudCmsGroupMetricRule_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"interval": "60",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"interval": "60",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"interval": "90",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"interval": "90",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"targets": []map[string]interface{}{
 						{
 							"id":          "1",
