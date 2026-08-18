@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"encoding/json"
+	"log"
 	"sort"
 	"strconv"
 	"strings"
@@ -720,6 +721,93 @@ func alikafkaInstanceConfigDiffSuppressFunc(k, old, new string, d *schema.Resour
 	}
 
 	return true
+}
+
+// alikafkaTopicConfigsDiffSuppressFunc suppresses the diff on the configs attribute of
+// alicloud_alikafka_topic as long as every key declared in the configuration already matches
+// the value reported by the server.
+//
+// Subset semantics are required because the server answers with the full effective topic
+// config, which contains keys the user never declared: a serverless instance always reports
+// cloud.native.topic.type and replication-factor, so state is a strict superset of the
+// configuration and a whole-document equality check can never converge.
+//
+// The instance-level comparator is deliberately not reused here: it unmarshals both sides into
+// map[string]string, so a single non-string JSON value makes the unmarshal fail and the diff is
+// then silently not suppressed. Topic configs hit that case routinely, from both directions --
+// the server may report a number (for example {"replication-factor":3}) and jsonencode of a
+// numeric attribute value is a valid configuration too. Decoding with UseNumber keeps every
+// scalar comparable through its literal text, so 3 and "3" are treated as the same value and
+// large integers are never reformatted into scientific notation.
+//
+// Known limitation: removing a key that was previously declared is not reported as a diff,
+// because the update API merges the submitted keys and offers no way to delete or reset a
+// single key. A key that state does not contain yet is still reported as a diff so that it gets
+// applied.
+func alikafkaTopicConfigsDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if new == "" {
+		return true
+	}
+	if old == "" {
+		return false
+	}
+
+	oldMap, err := decodeJsonObjectKeepingNumbers(old)
+	if err != nil {
+		log.Printf("[DEBUG] %s: the reported configuration is not a JSON object, keeping the diff: %s", k, err)
+		return false
+	}
+	newMap, err := decodeJsonObjectKeepingNumbers(new)
+	if err != nil {
+		log.Printf("[DEBUG] %s: the declared configuration is not a JSON object, keeping the diff: %s", k, err)
+		return false
+	}
+
+	for key, newValue := range newMap {
+		oldValue, ok := oldMap[key]
+		if !ok {
+			log.Printf("[DEBUG] %s: the reported configuration does not contain the declared key %q, keeping the diff", k, key)
+			return false
+		}
+		if formatJsonConfigValue(oldValue) != formatJsonConfigValue(newValue) {
+			log.Printf("[DEBUG] %s: the declared key %q is %q while the service reports %q, keeping the diff",
+				k, key, formatJsonConfigValue(newValue), formatJsonConfigValue(oldValue))
+			return false
+		}
+	}
+
+	return true
+}
+
+// decodeJsonObjectKeepingNumbers decodes a JSON object without converting numbers to float64,
+// which keeps their literal text available for comparison.
+func decodeJsonObjectKeepingNumbers(s string) (map[string]interface{}, error) {
+	decoder := json.NewDecoder(strings.NewReader(s))
+	decoder.UseNumber()
+
+	object := make(map[string]interface{})
+	if err := decoder.Decode(&object); err != nil {
+		return nil, err
+	}
+	return object, nil
+}
+
+// formatJsonConfigValue renders a decoded JSON value as the text an API would carry it in, so
+// that values only differing in their JSON type compare equal.
+func formatJsonConfigValue(value interface{}) string {
+	switch v := value.(type) {
+	case nil:
+		return ""
+	case string:
+		return v
+	case json.Number:
+		return v.String()
+	case bool:
+		return strconv.FormatBool(v)
+	default:
+		encoded, _ := json.Marshal(v)
+		return string(encoded)
+	}
 }
 
 func payTypePostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
