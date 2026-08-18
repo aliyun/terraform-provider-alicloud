@@ -13,11 +13,12 @@ if (__package__ or "").startswith("bridge."):
 else:
     from headless_runtime import HeadlessRuntime, jarvis_transcript_exists, run_jarvis_attempt
 
-from . import (aone_priority_inbox, aone_workitem_ownership, claim_health,
-               daily_nudge, daily_probe, owner_health, pr_watch, recovery, reply, scan,
-               weekly_comment_participation)
+from . import (amp_keepalive, aone_priority_inbox, aone_workitem_ownership,
+               claim_health, daily_nudge, daily_probe, owner_health, pr_watch,
+               recovery, reply, scan, weekly_comment_participation)
 
 HANDLER_KEYS = frozenset({
+    amp_keepalive.RUNNER_KEY,
     scan.RUNNER_KEY,
     claim_health.RUNNER_KEY,
     owner_health.RUNNER_KEY,
@@ -41,6 +42,8 @@ def build_runners(
         run_jarvis_attempt, transcript_exists=jarvis_transcript_exists, logger=logger)
     root = summary_root or (Path(__file__).resolve().parents[3] / "runs" / "probe")
     return {
+        amp_keepalive.RUNNER_KEY: amp_keepalive.AmpKeepaliveRunner(
+            logger=logger, repo_root=repo_root),
         scan.RUNNER_KEY: scan.build(logger=logger, task_client=task_client, repo_root=repo_root),
         claim_health.RUNNER_KEY: claim_health.build(
             logger=logger, task_client=task_client, repo_root=repo_root),

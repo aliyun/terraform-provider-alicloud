@@ -10,6 +10,15 @@ jobs:
     retry_delay_seconds: 300
     enabled: true
 
+  - key: amp.keepalive
+    runner: amp_keepalive
+    revision: 1
+    description: 通过受控只读业务查询维持 Scheduler 主机的 AMP 登录会话
+    schedule: {kind: interval, interval_seconds: 600, run_immediately: true}
+    misfire: COALESCE
+    retry_delay_seconds: 60
+    enabled: true
+
   - key: aone.scan
     runner: scan
     revision: 2
