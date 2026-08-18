@@ -166,7 +166,13 @@ func resourceAliCloudAlikafkaTopicRead(d *schema.ResourceData, meta interface{})
 	d.Set("create_time", objectRaw["CreateTime"])
 	d.Set("local_topic", objectRaw["LocalTopic"])
 	d.Set("partition_num", objectRaw["PartitionNum"])
-	d.Set("region_id", objectRaw["RegionId"])
+	// Fallback to client.RegionId when the topic response omits RegionId (e.g. serverless topics),
+	// so that the computed region_id stays consistent with the documented readable attribute.
+	if objectRaw["RegionId"] == nil || objectRaw["RegionId"] == "" {
+		d.Set("region_id", client.RegionId)
+	} else {
+		d.Set("region_id", objectRaw["RegionId"])
+	}
 	d.Set("remark", objectRaw["Remark"])
 	d.Set("status", objectRaw["Status"])
 	d.Set("instance_id", objectRaw["InstanceId"])
