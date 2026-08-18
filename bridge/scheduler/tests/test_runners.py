@@ -14,7 +14,7 @@ from bridge.scheduler.model import (
 )
 from bridge.scheduler.runners import build_runners
 from bridge.scheduler.runners import (
-    aone_workitem_ownership, claim_health, daily_nudge, scan,
+    amp_keepalive, aone_workitem_ownership, claim_health, daily_nudge, scan,
 )
 from bridge.scheduler.runners import pr_watch as pr
 from bridge.scheduler.runners import weekly_comment_participation
@@ -48,6 +48,8 @@ class SchedulerRunnerTests(unittest.TestCase):
             repo_root=Path("/repo"),
         )
 
+        self.assertIsInstance(
+            runners["amp_keepalive"], amp_keepalive.AmpKeepaliveRunner)
         self.assertIsInstance(runners["scan"], scan.ScanRunner)
         self.assertIsInstance(
             runners["claim_health"], claim_health.ClaimHealthRunner)

@@ -48,7 +48,7 @@ class SchedulerCoreTests(unittest.TestCase):
 
     def test_registry_contains_all_migrated_jobs(self):
         self.assertEqual(tuple(item.id for item in jobs.JOBS),
-                         ("daily.probe", "aone.scan", "aone.claim-health",
+                         ("daily.probe", "amp.keepalive", "aone.scan", "aone.claim-health",
                           "task.owner-health", "daily.nudge",
                           "aone.weekly-comment-participation",
                           "aone.workitem-ownership",
@@ -56,7 +56,7 @@ class SchedulerCoreTests(unittest.TestCase):
                           "aone.reply", "pr.watch", "external.recovery"))
         self.assertEqual(jobs.RUNNER_KEYS, IMPLEMENTED_RUNNER_KEYS)
         self.assertEqual(
-            ("daily_probe", "scan", "claim_health", "owner_health", "daily_nudge",
+            ("daily_probe", "amp_keepalive", "scan", "claim_health", "owner_health", "daily_nudge",
              "weekly_comment_participation", "aone_workitem_ownership",
              "aone_priority_inbox",
              "reply", "pr_watch", "recovery"),
@@ -70,6 +70,20 @@ class SchedulerCoreTests(unittest.TestCase):
             "id", "revision", "description", "schedule", "runner", "misfire",
             "retry_delay_seconds", "enabled",
         })
+        keepalive_job = next(item for item in jobs.JOBS if item.id == "amp.keepalive")
+        self.assertEqual(keepalive_job.revision, 1)
+        self.assertEqual(keepalive_job.schedule, IntervalSchedule(600, True))
+        self.assertIs(keepalive_job.misfire, MisfirePolicy.COALESCE)
+        self.assertEqual(keepalive_job.retry_delay_seconds, 600)
+        failed_at = at(1)
+        self.assertEqual(
+            TriggerPlanner().retry_due(
+                keepalive_job,
+                slot_due_at=failed_at,
+                failed_at=failed_at,
+            ),
+            failed_at + timedelta(seconds=600),
+        )
         scan_job = next(item for item in jobs.JOBS if item.id == "aone.scan")
         self.assertEqual(scan_job.revision, 2)
         self.assertEqual(scan_job.schedule, IntervalSchedule(300, True))
