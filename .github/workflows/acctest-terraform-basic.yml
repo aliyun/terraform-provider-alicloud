@@ -10,6 +10,7 @@ on:
       - ready_for_review
     branches:
       - master
+      - release/v2
 
 permissions: {}
 
@@ -41,6 +42,7 @@ jobs:
               "synchronize",
               "ready_for_review",
             ]);
+            const supportedBaseRefs = new Set(["master", "release/v2"]);
             const actionsApp = {
               id: 15368,
               slug: "github-actions",
@@ -65,7 +67,8 @@ jobs:
               !repositoryPattern.test(headRepository) ||
               !/^[0-9a-f]{40}$/.test(headSha ?? "") ||
               baseRepository !== expectedBaseRepository ||
-              baseRef !== "master" ||
+              typeof baseRef !== "string" ||
+              !supportedBaseRefs.has(baseRef) ||
               !Number.isSafeInteger(pullNumber) ||
               pullNumber <= 0
             ) {

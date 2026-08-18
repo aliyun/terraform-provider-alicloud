@@ -16,6 +16,10 @@ const PULL_REQUEST_ACTIONS = new Set([
   "synchronize",
   "ready_for_review",
 ]);
+const SUPPORTED_BASE_REFS = new Set(["master", "release/v2"]);
+const SUPPORTED_PUSH_REFS = new Set(
+  Array.from(SUPPORTED_BASE_REFS, (branch) => `refs/heads/${branch}`)
+);
 const ACTIONS_APP = Object.freeze({
   id: 15368,
   slug: "github-actions",
@@ -91,7 +95,8 @@ function pullRequestMetadata(context, repository) {
     !REPOSITORY_PATTERN.test(headRepository) ||
     !isCommitSha(headSha) ||
     baseRepository !== repository.fullName ||
-    baseRef !== "master"
+    typeof baseRef !== "string" ||
+    !SUPPORTED_BASE_REFS.has(baseRef)
   ) {
     throw new Error("Pull request metadata is invalid.");
   }
@@ -102,13 +107,14 @@ function pullRequestMetadata(context, repository) {
 function eventMetadata(context, repository) {
   if (context?.eventName === "push") {
     const payload = context.payload;
-    const ref = "refs/heads/master";
+    const ref = context.ref;
     if (
       !isRecord(payload) ||
+      typeof ref !== "string" ||
+      !SUPPORTED_PUSH_REFS.has(ref) ||
       payload.action !== undefined ||
       payload.repository?.full_name !== repository.fullName ||
       payload.ref !== ref ||
-      context.ref !== ref ||
       payload.deleted !== false ||
       !isCommitSha(context.sha) ||
       payload.after !== context.sha
