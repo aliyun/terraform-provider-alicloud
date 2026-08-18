@@ -1019,6 +1019,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cloud_monitor_service_agent_config":                   resourceAliCloudCloudMonitorServiceAgentConfig(),
 			"alicloud_alikafka_scheduled_scaling_rule":                      resourceAliCloudAlikafkaScheduledScalingRule(),
 			"alicloud_event_bridge_event_source_v2":                         resourceAliCloudEventBridgeEventSourceV2(),
+			"alicloud_event_bridge_event_streaming":                         resourceAliCloudEventBridgeEventStreaming(),
 			"alicloud_cloud_firewall_vpc_firewall_acl_engine_mode":          resourceAliCloudCloudFirewallVpcFirewallAclEngineMode(),
 			"alicloud_cloud_firewall_instance_v2":                           resourceAliCloudCloudFirewallInstanceV2(),
 			"alicloud_cloud_firewall_vpc_firewall_ips_config":               resourceAliCloudCloudFirewallVpcFirewallIpsConfig(),
