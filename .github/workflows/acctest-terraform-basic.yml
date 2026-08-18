@@ -182,6 +182,34 @@ jobs:
 
             throw new Error("Timed out waiting for a unique Basic Policy result.");
 
+  V2RetryGuard:
+    needs: route
+    # Only release/v2 carries the helper/retry migration; new SDK v2
+    # helper/resource retry usage must not be merged into it.
+    if: ${{ needs.route.outputs.relevant == 'true' && github.event.pull_request.base.ref == 'release/v2' }}
+    permissions:
+      contents: read
+    runs-on: ${{ fromJSON(needs.route.outputs.runner) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Resolve change range
+        id: change-range
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          CI_BASE_REPOSITORY_URL: https://github.com/${{ github.repository }}.git
+        run: scripts/ci/resolve-change-range.sh >> "$GITHUB_OUTPUT"
+      - name: Reject new SDK v2 helper/resource retry usage
+        env:
+          DIFF_BASE: ${{ steps.change-range.outputs.diff_base }}
+          DIFF_HEAD: ${{ steps.change-range.outputs.diff_head }}
+        run: bash scripts/ci/v2-retry-guard.sh
+
   BreakingChange:
     needs: route
     if: ${{ needs.route.outputs.relevant == 'true' }}
