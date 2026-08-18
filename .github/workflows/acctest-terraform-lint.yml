@@ -49,7 +49,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
       - name: errcheck
-        uses: reviewdog/action-golangci-lint@4c4340f3ef9498ffe9a0dd3e589bc00e12e2d77c # v2.9.0
+        uses: reviewdog/action-golangci-lint@c76cceaaab89abe74e649d2e34c6c9adc26662d2 # v2.10.0
         with:
           go_version_file: .go-version
           cache: false
