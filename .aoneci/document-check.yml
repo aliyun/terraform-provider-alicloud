@@ -35,6 +35,21 @@ jobs:
           go-version: '1.24.0'
       - run: BASIC_CHECK_AUTO_RANGE=true bash scripts/basic-check.sh
 
+  V2RetryGuard:
+    steps:
+      - uses: checkout
+      - name: Reject new SDK v2 helper/resource retry usage on release/v2
+        run: |
+          targetBranch='${{git.merge_request.targetBranch ?: ""}}'
+          if [[ "$targetBranch" != "release/v2" ]]; then
+            echo "target branch is ${targetBranch:-<empty>}, skipping the v2 retry guard"
+            exit 0
+          fi
+          git fetch --no-tags origin release/v2:refs/remotes/origin/release/v2
+          DIFF_BASE="$(git merge-base origin/release/v2 HEAD)" \
+          DIFF_HEAD="$(git rev-parse HEAD)" \
+            bash scripts/ci/v2-retry-guard.sh
+
   Content:
     steps:
       - uses: checkout

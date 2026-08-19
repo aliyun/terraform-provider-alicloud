@@ -8,6 +8,7 @@ on:
       - ready_for_review
     branches:
       - master
+      - release/v2
     paths:
       - .github/workflows/acctest-terraform-lint.yml
       - alicloud/*.go
@@ -32,7 +33,7 @@ jobs:
     steps:
       - name: Select runner
         id: select
-        uses: aliyun/terraform-provider-alicloud/.github/actions/terraform-ci-select-policy@eaf310539de91ddbb455d3f5bcfd5de39037b432
+        uses: aliyun/terraform-provider-alicloud/.github/actions/terraform-ci-select-policy@a5ba492fefd8a566da45892dd8abba28c631270c
 
   errcheck:
     name: runner / errcheck

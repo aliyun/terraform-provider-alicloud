@@ -102,5 +102,17 @@ if [[ "$error" == "true" ]]; then
 	exit 1
 fi
 
+# release/v2 guard: reject new SDK v2 helper/resource retry usage so the
+# helper/retry migration cannot regress (see scripts/ci/v2-retry-guard.sh).
+v2_guard_base_ref="${V2_RETRY_GUARD_BASE_REF:-${GITHUB_BASE_REF:-}}"
+if [[ "$v2_guard_base_ref" == "release/v2" && -n "${diff_base:-}" && -n "${diff_head:-}" ]]; then
+	echo "==> Checking for new SDK v2 helper/resource retry usage (release/v2)..."
+	DIFF_BASE="$diff_base" DIFF_HEAD="$diff_head" \
+		bash "$(dirname "${BASH_SOURCE[0]}")/ci/v2-retry-guard.sh" || {
+		echo -e "\033[31mbasic-check: release/v2 must not introduce terraform-plugin-sdk helper/resource retry helpers; use helper/retry instead.\033[0m" >&2
+		exit 1
+	}
+fi
+
 echo "==> All basic checks passed!"
 exit 0

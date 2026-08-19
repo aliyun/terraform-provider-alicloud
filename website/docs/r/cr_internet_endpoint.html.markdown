@@ -19,6 +19,12 @@ For information about CR Internet Endpoint and how to use it, see [GetInstanceEn
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_cr_internet_endpoint&exampleId=19b28f6b-a102-6ef2-76fa-5fcefb86fcb6c02047f3&activeTab=example&spm=docs.r.cr_internet_endpoint.0.19b28f6ba1&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 variable "name" {
   default = "tf-example"
@@ -46,6 +52,10 @@ resource "alicloud_cr_internet_endpoint" "default" {
   }
 }
 ```
+
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cr_internet_endpoint&spm=docs.r.cr_internet_endpoint.example&intl_lang=EN_US)
+
 
 ## Argument Reference
 

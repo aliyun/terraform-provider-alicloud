@@ -11,6 +11,7 @@ on:
       - ready_for_review
     branches:
       - master
+      - release/v2
     paths:
       - .github/markdownlint/website-docs.json
       - .github/workflows/document-check.yml
@@ -35,7 +36,7 @@ jobs:
     steps:
       - name: Select runner
         id: select
-        uses: aliyun/terraform-provider-alicloud/.github/actions/terraform-ci-select-policy@1c4bb6762031f53732611700cad5d71d1ec84dfe
+        uses: aliyun/terraform-provider-alicloud/.github/actions/terraform-ci-select-policy@a5ba492fefd8a566da45892dd8abba28c631270c
 
   markdown-link:
     needs: route
@@ -185,6 +186,9 @@ jobs:
         env:
           DIFF_BASE: ${{ steps.change-range.outputs.diff_base }}
           DIFF_HEAD: ${{ steps.change-range.outputs.diff_head }}
+          # release/v2 retry guard: the PR base ref for pull requests, the
+          # pushed branch otherwise; the guard no-ops on every other branch.
+          V2_RETRY_GUARD_BASE_REF: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.ref || github.ref_name }}
         run: bash scripts/basic-check.sh
 
   Content:
