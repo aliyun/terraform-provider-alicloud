@@ -757,6 +757,51 @@ func (s *MongoDBService) ModifyMongoDBBackupPolicy(d *schema.ResourceData) error
 		request["BackupInterval"] = v
 	}
 
+	if v, ok := d.GetOk("cross_backup_period"); ok {
+		crossPeriodList := expandStringList(v.(*schema.Set).List())
+		request["CrossBackupPeriod"] = strings.Join(crossPeriodList[:], COMMA_SEPARATED)
+	}
+
+	if v, ok := d.GetOkExists("cross_backup_type"); ok {
+		request["CrossBackupType"] = v
+	}
+
+	if v, ok := d.GetOkExists("cross_retention_type"); ok {
+		request["CrossRetentionType"] = v
+	}
+
+	if v, ok := d.GetOkExists("cross_retention_value"); ok {
+		request["CrossRetentionValue"] = v
+	}
+
+	if v, ok := d.GetOkExists("cross_log_retention_type"); ok {
+		request["CrossLogRetentionType"] = v
+	}
+
+	if v, ok := d.GetOkExists("cross_log_retention_value"); ok {
+		request["CrossLogRetentionValue"] = v
+	}
+
+	if v, ok := d.GetOk("dest_region"); ok {
+		request["DestRegion"] = v
+	}
+
+	if v, ok := d.GetOkExists("enable_cross_log_backup"); ok {
+		request["EnableCrossLogBackup"] = v
+	}
+
+	if v, ok := d.GetOkExists("high_frequency_backup_retention"); ok {
+		request["HighFrequencyBackupRetention"] = v
+	}
+
+	if v, ok := d.GetOkExists("preserve_one_each_hour"); ok {
+		request["PreserveOneEachHour"] = v
+	}
+
+	if v, ok := d.GetOk("src_region"); ok {
+		request["SrcRegion"] = v
+	}
+
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, true)
