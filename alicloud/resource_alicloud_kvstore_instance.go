@@ -31,6 +31,11 @@ func resourceAliCloudKvstoreInstance() *schema.Resource {
 			Delete: schema.DefaultTimeout(20 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
+			"auto_pay": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  true,
+			},
 			"auto_renew": {
 				Type:             schema.TypeBool,
 				Optional:         true,
@@ -84,6 +89,11 @@ func resourceAliCloudKvstoreInstance() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 				Computed: true,
+			},
+			"cluster_backup_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
 			},
 			// lintignore: S006
 			"config": {
@@ -139,6 +149,11 @@ func resourceAliCloudKvstoreInstance() *schema.Resource {
 				ValidateFunc: StringInSlice([]string{"2.8", "4.0", "5.0", "6.0", "7.0"}, false),
 				Computed:     true,
 			},
+			"force_trans": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
 			"force_upgrade": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -178,6 +193,11 @@ func resourceAliCloudKvstoreInstance() *schema.Resource {
 				Computed: true,
 			},
 			"maintain_start_time": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"minor_version": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
@@ -465,6 +485,10 @@ func resourceAliCloudKvstoreInstanceCreate(d *schema.ResourceData, meta interfac
 
 	if v, ok := d.GetOk("backup_id"); ok {
 		request["BackupId"] = v
+	}
+
+	if v, ok := d.GetOk("cluster_backup_id"); ok {
+		request["ClusterBackupId"] = v
 	}
 
 	if v, ok := d.GetOk("business_info"); ok {
@@ -805,6 +829,7 @@ func resourceAliCloudKvstoreInstanceRead(d *schema.ResourceData, meta interface{
 	}
 
 	d.Set("is_auto_upgrade_open", engineVersionObject["IsAutoUpgradeOpen"])
+	d.Set("minor_version", engineVersionObject["MinorVersion"])
 
 	return nil
 }
@@ -882,7 +907,7 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 
 	update := false
 	transformInstanceChargeTypeReq := map[string]interface{}{
-		"AutoPay":    true,
+		"AutoPay":    d.Get("auto_pay").(bool),
 		"InstanceId": d.Id(),
 	}
 
@@ -1361,7 +1386,7 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 	update = false
 	modifyInstanceSpecReq := map[string]interface{}{
 		"RegionId":   client.RegionId,
-		"AutoPay":    true,
+		"AutoPay":    d.Get("auto_pay").(bool),
 		"InstanceId": d.Id(),
 	}
 
@@ -1426,6 +1451,10 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 
 	if v, ok := d.GetOkExists("force_upgrade"); ok {
 		modifyInstanceSpecReq["ForceUpgrade"] = v
+	}
+
+	if v, ok := d.GetOkExists("force_trans"); ok {
+		modifyInstanceSpecReq["ForceTrans"] = v
 	}
 
 	if v, ok := d.GetOk("order_type"); ok {
@@ -1539,6 +1568,51 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		}
 		d.SetPartial("engine_version")
 	}
+
+	update = false
+	modifyInstanceMinorVersionReq := map[string]interface{}{
+		"InstanceId": d.Id(),
+	}
+
+	if !d.IsNewResource() && d.HasChange("minor_version") {
+		if v, ok := d.GetOk("minor_version"); ok && fmt.Sprint(v) != "" {
+			update = true
+			modifyInstanceMinorVersionReq["Minorversion"] = v
+		}
+	}
+
+	if v, ok := d.GetOk("effective_time"); ok {
+		modifyInstanceMinorVersionReq["EffectiveTime"] = v
+	}
+
+	if update {
+		action := "ModifyInstanceMinorVersion"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = client.RpcPost("R-kvstore", "2015-01-01", action, nil, modifyInstanceMinorVersionReq, false)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, modifyInstanceMinorVersionReq)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		stateConf := BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutUpdate), 300*time.Second, r_kvstoreService.KvstoreInstanceStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
+		d.SetPartial("minor_version")
+	}
+
 	if d.HasChange("parameters") {
 		request := r_kvstore.CreateModifyInstanceConfigRequest()
 		request.InstanceId = d.Id()

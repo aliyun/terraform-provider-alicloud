@@ -45,10 +45,12 @@ func TestAccAliCloudKVStoreRedisInstance_coverage(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"auto_pay":                    "false",
 					"auto_use_coupon":             "false",
 					"backup_id":                   "backup-id",
 					"business_info":               "business-info",
 					"capacity":                    "1",
+					"cluster_backup_id":           "cb-id",
 					"coupon_no":                   "coupon-no",
 					"dedicated_host_group_id":     "dhg-id",
 					"effective_time":              "Immediately",
@@ -56,6 +58,7 @@ func TestAccAliCloudKVStoreRedisInstance_coverage(t *testing.T) {
 					"encryption_key":              "key",
 					"encryption_name":             "AES-CTR-256",
 					"engine_version":              "6.0",
+					"force_trans":                 "true",
 					"force_upgrade":               "true",
 					"global_instance":             "false",
 					"global_instance_id":          "global-instance-id",
@@ -76,17 +79,127 @@ func TestAccAliCloudKVStoreRedisInstance_coverage(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"auto_pay":               "true",
 					"encryption_key":         "key-update",
 					"encryption_name":        "AES-CTR-256-update",
 					"engine_version":         "7.0",
+					"force_trans":            "false",
 					"kms_encrypted_password": "kms-password-update",
 					"kms_encryption_context": map[string]string{"name": "value-update"},
+					"minor_version":          "redis-minor-version-update",
 					"port":                   "6380",
 					"resource_group_id":      "rg-id-update",
 					"role_arn":               "acs:ram::1234567890123456:role/example-update",
 					"security_group_id":      "sg-id-update",
 				}),
 				ExpectError: regexp.MustCompile(".+"),
+			},
+		},
+	})
+}
+
+// TestAccAliCloudKVStoreRedisInstance_autoPayForceTransMinorVersion covers the
+// auto_pay, force_trans and minor_version attributes.
+//
+// Instances are provisioned with the latest minor version and
+// ModifyInstanceMinorVersion cannot downgrade, so a real upgrade to a higher
+// version cannot be triggered deterministically on a freshly created instance
+// (there is no higher target available). This test instead verifies:
+//   - the current minor version is read back into state after creation;
+//   - minor_version is an in-place updatable attribute (a plan changing it must
+//     not force a replacement); this step is plan-only on purpose because no
+//     higher version is available for a freshly created instance;
+//   - removing the attribute from the configuration keeps the value read back
+//     from the instance (no spurious diff, no upgrade triggered);
+//   - force_trans is carried alongside an instance_class change through
+//     ModifyInstanceSpec; auto_pay controls order payment for subscription
+//     instances and is a no-op for PostPaid spec changes.
+func TestAccAliCloudKVStoreRedisInstance_autoPayForceTransMinorVersion(t *testing.T) {
+	var v r_kvstore.DBInstanceAttribute
+	resourceId := "alicloud_kvstore_instance.default"
+	ra := resourceAttrInit(resourceId, AliCloudKVStoreMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &R_kvstoreService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeKvstoreInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccKvstoreRedisInstanceMinorVersion%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudKVStoreRedisInstanceVpcBasicDependence0)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_class":   "redis.shard.with.proxy.small.ce",
+					"db_instance_name": name,
+					"instance_type":    "Redis",
+					"engine_version":   "6.0",
+					"shard_count":      "2",
+					"payment_type":     "PostPaid",
+					"auto_pay":         "true",
+					"force_trans":      "false",
+					"zone_id":          "${data.alicloud_kvstore_zones.default.zones.0.id}",
+					"vswitch_id":       "${data.alicloud_vswitches.default.ids.0}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_class":   "redis.shard.with.proxy.small.ce",
+						"db_instance_name": name,
+						"instance_type":    "Redis",
+						"engine_version":   "6.0",
+						"shard_count":      "2",
+						"payment_type":     "PostPaid",
+						"auto_pay":         "true",
+						"force_trans":      "false",
+						"minor_version":    CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_class": "redis.shard.with.proxy.mid.ce",
+					"force_trans":    "true",
+					"auto_pay":       "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_class": "redis.shard.with.proxy.mid.ce",
+						"force_trans":    "true",
+						"auto_pay":       "true",
+					}),
+				),
+			},
+			{
+				// Plan-only: verify that changing minor_version is planned as an
+				// in-place update without applying it (see the function comment).
+				Config: testAccConfig(map[string]interface{}{
+					"minor_version": "redis-target-minor-version",
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"minor_version": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"minor_version": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auto_pay", "dry_run", "business_info", "coupon_no", "effective_time", "force_trans", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
 			},
 		},
 	})
@@ -250,7 +363,7 @@ func SkipTestAccAliCloudKVStoreRedisInstance_vpctest(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run", "business_info", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
+				ImportStateVerifyIgnore: []string{"auto_pay", "dry_run", "business_info", "coupon_no", "effective_time", "force_trans", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -599,7 +712,7 @@ func TestAccAliCloudKVStoreRedisInstance_6_0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run", "business_info", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
+				ImportStateVerifyIgnore: []string{"auto_pay", "dry_run", "business_info", "coupon_no", "effective_time", "force_trans", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -928,7 +1041,7 @@ func TestAccAliCloudKVStoreRedisInstance_7_0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run", "business_info", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
+				ImportStateVerifyIgnore: []string{"auto_pay", "dry_run", "business_info", "coupon_no", "effective_time", "force_trans", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1230,7 +1343,7 @@ func TestAccAliCloudKVStoreRedisInstance_7_0_with_proxy_class(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run", "business_info", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
+				ImportStateVerifyIgnore: []string{"auto_pay", "dry_run", "business_info", "coupon_no", "effective_time", "force_trans", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1563,7 +1676,7 @@ func SkipTestAccAliCloudKVStoreRedisInstance_prepaid(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run", "business_info", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
+				ImportStateVerifyIgnore: []string{"auto_pay", "dry_run", "business_info", "coupon_no", "effective_time", "force_trans", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1900,7 +2013,7 @@ func TestAccAliCloudKVStoreRedisInstance_7_0_with_proxy_class_replica(t *testing
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run", "business_info", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
+				ImportStateVerifyIgnore: []string{"auto_pay", "dry_run", "business_info", "coupon_no", "effective_time", "force_trans", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2013,7 +2126,7 @@ func TestAccAliCloudKVStoreRedisInstance_5_0_memory_classic_standard(t *testing.
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run", "business_info", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
+				ImportStateVerifyIgnore: []string{"auto_pay", "dry_run", "business_info", "coupon_no", "effective_time", "force_trans", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2371,7 +2484,7 @@ func TestAccAliCloudKVStoreRedisInstance_5_0_memory_classic_cluster(t *testing.T
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run", "business_info", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
+				ImportStateVerifyIgnore: []string{"auto_pay", "dry_run", "business_info", "coupon_no", "effective_time", "force_trans", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2682,7 +2795,7 @@ func TestAccAliCloudKVStoreMemcacheInstance_vpctest(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run", "business_info", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
+				ImportStateVerifyIgnore: []string{"auto_pay", "dry_run", "business_info", "coupon_no", "effective_time", "force_trans", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2879,7 +2992,7 @@ func TestAccAliCloudKVStoreRedisInstance_classic_cluster_instance_class(t *testi
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run", "business_info", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
+				ImportStateVerifyIgnore: []string{"auto_pay", "dry_run", "business_info", "coupon_no", "effective_time", "force_trans", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
