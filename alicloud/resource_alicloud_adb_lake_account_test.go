@@ -419,6 +419,50 @@ func TestAccAliCloudAdbLakeAccount_basic5220_twin(t *testing.T) {
 	})
 }
 
+// engine is dispatched at creation but is not returned by DescribeAccounts for
+// default-engine accounts, so it cannot be verified through import. Cover it with
+// a create-only case that has no import step.
+func TestAccAliCloudAdbLakeAccount_basic0_engine(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_adb_lake_account.default"
+	ra := resourceAttrInit(resourceId, AliCloudAdbLakeAccountMap5218)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &AdbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAdbLakeAccount")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccadb%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAdbLakeAccountBasicDependence5218)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_cluster_id":    "${alicloud_adb_db_cluster_lake_version.default.id}",
+					"account_type":     "Super",
+					"account_name":     "tf_account_name_engine",
+					"account_password": "YourPassword123!",
+					"engine":           "AnalyticDB",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_cluster_id": CHECKSET,
+						"account_type":  "Super",
+						"account_name":  "tf_account_name_engine",
+					}),
+				),
+			},
+		},
+	})
+}
+
 var AliCloudAdbLakeAccountMap5218 = map[string]string{
 	"status": CHECKSET,
 }

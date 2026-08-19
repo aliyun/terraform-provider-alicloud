@@ -94,6 +94,13 @@ func resourceAliCloudAdbLakeAccount() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"engine": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"AnalyticDB", "Clickhouse"}, false),
+			},
 			"ram_user_list": {
 				Type:     schema.TypeSet,
 				Optional: true,
@@ -137,6 +144,9 @@ func resourceAliCloudAdbLakeAccountCreate(d *schema.ResourceData, meta interface
 
 	if v, ok := d.GetOk("account_description"); ok {
 		request["AccountDescription"] = v
+	}
+	if v, ok := d.GetOk("engine"); ok {
+		request["Engine"] = v
 	}
 	request["AccountPassword"] = d.Get("account_password")
 	request["AccountType"] = d.Get("account_type")
@@ -225,6 +235,7 @@ func resourceAliCloudAdbLakeAccountRead(d *schema.ResourceData, meta interface{}
 	d.Set("account_type", objectRaw["AccountType"])
 	d.Set("status", objectRaw["AccountStatus"])
 	d.Set("account_name", objectRaw["AccountName"])
+	d.Set("engine", objectRaw["Engine"])
 
 	ramUserListRaw, _ := jsonpath.Get("$.RamUserList.RamUserList", objectRaw)
 	d.Set("ram_user_list", ramUserListRaw)
