@@ -119,28 +119,44 @@ func TestAccAliCloudADBDbCluster_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_cluster_version":  "3.0",
-					"modify_type":         "PayAsYouGo",
-					"switch_mode":         "1",
-					"db_cluster_category": "Cluster",
-					"db_node_class":       "C8",
-					"description":         name,
-					"db_node_count":       "1",
-					"db_node_storage":     "100",
-					"mode":                "reserver",
-					"zone_id":             "${data.alicloud_adb_zones.default.ids.0}",
-					"vswitch_id":          "${local.vswitch_id}",
+					"db_cluster_version":            "3.0",
+					"modify_type":                   "PayAsYouGo",
+					"switch_mode":                   "1",
+					"db_cluster_category":           "Cluster",
+					"db_node_class":                 "C8",
+					"description":                   name,
+					"db_node_count":                 "1",
+					"db_node_storage":               "100",
+					"mode":                          "reserver",
+					"zone_id":                       "${data.alicloud_adb_zones.default.ids.0}",
+					"vswitch_id":                    "${local.vswitch_id}",
+					"backup_set_id":                 "",
+					"restore_type":                  "",
+					"source_db_instance_name":       "",
+					"restore_time":                  "",
+					"storage_type":                  "",
+					"db_cluster_name":               "",
+					"db_cluster_network_type":       "",
+					"used_time":                     "",
+					"storage_resource":              "",
+					"executor_count":                "",
+					"period_unit":                   "",
+					"db_cluster_ip_array_name":      "",
+					"db_cluster_ip_array_attribute": "",
+					"modify_mode":                   "",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"db_cluster_category": "Cluster",
-						"db_node_class":       "C8",
-						"description":         name,
-						"db_node_count":       "1",
-						"db_node_storage":     "100",
-						"mode":                "reserver",
-						"vswitch_id":          CHECKSET,
-						"kernel_version":      CHECKSET,
+						"db_cluster_category":     "Cluster",
+						"db_node_class":           "C8",
+						"description":             name,
+						"db_cluster_name":         name,
+						"db_cluster_network_type": CHECKSET,
+						"db_node_count":           "1",
+						"db_node_storage":         "100",
+						"mode":                    "reserver",
+						"vswitch_id":              CHECKSET,
+						"kernel_version":          CHECKSET,
 					}),
 				),
 			},
@@ -186,7 +202,8 @@ func TestAccAliCloudADBDbCluster_basic0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description": name + "update",
+						"description":     name + "update",
+						"db_cluster_name": name + "update",
 					}),
 				),
 			},
@@ -237,10 +254,25 @@ func TestAccAliCloudADBDbCluster_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"executor_count":                "1",
+					"storage_resource":              "8Core32GB",
+					"db_cluster_ip_array_name":      "default",
+					"db_cluster_ip_array_attribute": "hidden",
+					"modify_mode":                   "Cover",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_ips.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"payment_type":      "Subscription",
 					"period":            "1",
 					"renewal_status":    "AutoRenewal",
 					"auto_renew_period": "2",
+					"period_unit":       "Month",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -281,6 +313,7 @@ func TestAccAliCloudADBDbCluster_basic0(t *testing.T) {
 						"db_node_count":   "1",
 						"db_node_storage": "100",
 						"description":     name,
+						"db_cluster_name": name,
 						"maintain_time":   "01:00Z-02:00Z",
 						"security_ips.#":  "1",
 						"tags.%":          "2",
@@ -303,7 +336,7 @@ func TestAccAliCloudADBDbCluster_basic0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"auto_renew_period", "modify_type", "period", "renewal_status"},
+				ImportStateVerifyIgnore: []string{"auto_renew_period", "modify_type", "period", "renewal_status", "executor_count", "storage_resource", "db_cluster_ip_array_name", "period_unit", "compute_resource", "elastic_io_resource", "kernel_version", "switch_mode", "mode", "db_cluster_name", "db_cluster_category", "backup_set_id", "restore_type", "source_db_instance_name", "restore_time", "storage_type", "used_time"},
 			},
 		},
 	})
@@ -677,6 +710,16 @@ func TestAccAliCloudADBDbCluster_basic1(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"elastic_io_resource_size": "12Core96GB",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"disk_performance_level": "PL2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"disk_performance_level": "PL2",
 					}),
 				),
 			},
