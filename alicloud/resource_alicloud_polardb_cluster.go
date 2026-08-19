@@ -753,7 +753,7 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 				return polardbClient.ModifyAutoRenewAttribute(request)
 			})
 			if err != nil {
-				if IsExpectedErrors(err, []string{"-999"}) || NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"-999", "-1002"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -762,7 +762,6 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			return nil
 		})
-
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
