@@ -34,6 +34,11 @@ func resourceAlicloudPolarDBGlobalDatabaseNetwork() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -54,6 +59,10 @@ func resourceAlicloudPolarDBGlobalDatabaseNetworkCreate(d *schema.ResourceData, 
 
 	if v, ok := d.GetOk("description"); ok {
 		request["GDNDescription"] = v
+	}
+
+	if v, ok := d.GetOk("resource_group_id"); ok && v.(string) != "" {
+		request["ResourceGroupId"] = v.(string)
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -96,6 +105,7 @@ func resourceAlicloudPolarDBGlobalDatabaseNetworkRead(d *schema.ResourceData, me
 	dBClusterId := object["DBClusters"].([]interface{})[0].(map[string]interface{})["DBClusterId"]
 	d.Set("db_cluster_id", dBClusterId)
 	d.Set("description", object["GDNDescription"])
+	d.Set("resource_group_id", object["ResourceGroupId"])
 	d.Set("status", object["GDNStatus"])
 
 	return nil
@@ -115,6 +125,13 @@ func resourceAlicloudPolarDBGlobalDatabaseNetworkUpdate(d *schema.ResourceData, 
 	}
 	if v, ok := d.GetOk("description"); ok {
 		request["GDNDescription"] = v
+	}
+
+	if d.HasChange("resource_group_id") {
+		update = true
+		if v, ok := d.GetOk("resource_group_id"); ok && v.(string) != "" {
+			request["ResourceGroupId"] = v.(string)
+		}
 	}
 
 	if update {

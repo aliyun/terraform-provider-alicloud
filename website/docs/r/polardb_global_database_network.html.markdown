@@ -55,8 +55,9 @@ resource "alicloud_polardb_cluster" "default" {
 }
 
 resource "alicloud_polardb_global_database_network" "default" {
-  db_cluster_id = alicloud_polardb_cluster.default.id
-  description   = "terraform-example"
+  db_cluster_id     = alicloud_polardb_cluster.default.id
+  description       = "terraform-example"
+  resource_group_id = "rg-xxxxxxxxxx"
 }
 ```
 
@@ -69,6 +70,7 @@ The following arguments are supported:
 * `db_cluster_id` - (Required, ForceNew) The ID of the primary cluster.
 * `status` - (Computed) The status of the Global Database Network.
 * `description` - (Optional, Computed) The description of the Global Database Network.
+* `resource_group_id` - (Optional, Computed) The ID of the resource group.
 
 ## Attributes Reference
 
@@ -76,6 +78,7 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of Global Database Network.
 * `status` - The status of the Global Database Network.
+* `resource_group_id` - The ID of the resource group.
 
 ## Timeouts
 
