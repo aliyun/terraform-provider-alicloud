@@ -217,11 +217,6 @@ jobs:
       contents: read
     runs-on: ${{ fromJSON(needs.route.outputs.runner) }}
     steps:
-      - name: Setup Go
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version: '1.25.x'
-          cache: false
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ${{ github.event.pull_request.head.repo.full_name }}
@@ -229,6 +224,11 @@ jobs:
           persist-credentials: false
           # Checkout as many commits as needed for the diff
           fetch-depth: 2
+      - name: Setup Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: .go-version
+          cache: false
       - name: Attribute Breaking Change Check
         run: |
           git diff HEAD^ HEAD > diff.out
@@ -251,7 +251,7 @@ jobs:
       - name: Set up Go Version
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: '1.25.x'
+          go-version-file: .go-version
           cache: false
 
       - name: Get dependencies
@@ -307,7 +307,7 @@ jobs:
       - name: Set up Go Version
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: '1.25.x'
+          go-version-file: .go-version
           cache: false
       - name: vet
         run: |
