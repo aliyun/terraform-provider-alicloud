@@ -841,6 +841,26 @@ The following arguments are supported:
   - true
   - false
 
+* `auto_create_proxy` - (Optional, Available since v1.290.0) Specifies whether to automatically create a database proxy when you create an instance. Valid values:
+  - true
+  - false
+  -> **NOTE:** This is a write-only parameter. It can only be specified when creating the instance and cannot be modified or queried afterward.
+* `auto_pay` - (Optional, Available since v1.290.0) Specifies whether to enable automatic payment for the instance. Valid values:
+  - true
+  - false
+  -> **NOTE:** This is a write-only parameter. It can only be specified when creating the instance and cannot be modified or queried afterward.
+* `business_info` - (Optional, Available since v1.290.0) The additional business information about the instance.
+  -> **NOTE:** This is a write-only parameter. It can only be specified when creating the instance and cannot be modified or queried afterward.
+* `connection_mode` - (Optional, ForceNew, Available since v1.290.0) The connection mode of the instance. Valid values: `Standard`, `Safe`.
+* `io_acceleration_enabled` - (Optional, Available since v1.290.0) Specifies whether to enable Buffer Pool Extension (BPE) of Premium ESSDs. Valid values:
+  - `1`: enables BPE.
+  - `0`: disables BPE.
+* `promotion_code` - (Optional, Available since v1.290.0) The coupon code.
+  -> **NOTE:** This is a write-only parameter. It can only be specified when creating the instance and cannot be modified or queried afterward.
+* `user_backup_id` - (Optional, Available since v1.290.0) The ID of the full backup file used to create the instance.
+  -> **NOTE:** This is a write-only parameter. It can only be specified when creating the instance and cannot be modified or queried afterward.
+* `compression_mode` - (Optional, Available since v1.290.0) Specifies whether to enable the storage compression feature for the ApsaraDB RDS for MySQL instance. Valid values: `on`, `off`.
+
 * `node_id` - (Optional, Available since v1.213.1) The globally unique identifier (GUID) of the secondary instance. You can call the DescribeDBInstanceHAConfig operation to query the GUID of the secondary instance.
 * `force` - (Optional, ForceNew, Available since v1.213.1) Specifies whether to enable forcible switching. Valid values:
   - Yes
