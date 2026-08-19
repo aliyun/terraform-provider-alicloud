@@ -1611,7 +1611,7 @@ func compareCmsHybridMonitorFcTaskYamlConfigAreEquivalent(tem1, tem2 string) (bo
 	var P1 Products
 	err := yaml.Unmarshal([]byte(tem1), &P1)
 	if err != nil {
-		fmt.Println(false)
+		return false, err
 	}
 
 	y1 := make([]string, 0)
@@ -1623,7 +1623,7 @@ func compareCmsHybridMonitorFcTaskYamlConfigAreEquivalent(tem1, tem2 string) (bo
 	var P2 Products
 	err = yaml.Unmarshal([]byte(tem2), &P2)
 	if err != nil {
-		fmt.Println(false)
+		return false, err
 	}
 
 	y2 := make([]string, 0)
