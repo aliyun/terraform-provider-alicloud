@@ -36,7 +36,7 @@ func resourceAliCloudAmqpInstance() *schema.Resource {
 				Optional: true,
 			},
 			"create_time": {
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Computed: true,
 			},
 			"edition": {
@@ -410,7 +410,7 @@ func resourceAliCloudAmqpInstanceRead(d *schema.ResourceData, meta interface{}) 
 
 	if v, ok := objectRaw["CreateTime"].(string); ok {
 		if t, err := time.Parse(time.RFC3339, v); err == nil {
-			d.Set("create_time", t.UnixMilli())
+			d.Set("create_time", fmt.Sprint(t.UnixMilli()))
 		}
 	}
 	d.Set("payment_type", objectRaw["SubscriptionType"])

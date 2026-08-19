@@ -245,7 +245,7 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The ID of the resource supplied above.
-* `create_time` - OrderCreateTime.
+* `create_time` - The time when the order was created. Unix timestamp, to millisecond level.
 * `status` - The status of the resource.
 
 ## Timeouts

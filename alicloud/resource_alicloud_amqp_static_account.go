@@ -57,7 +57,7 @@ func resourceAliCloudAmqpStaticAccount() *schema.Resource {
 				Computed: true,
 			},
 			"create_time": {
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Computed: true,
 			},
 		},

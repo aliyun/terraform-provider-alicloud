@@ -1,4 +1,12 @@
-## 2.0.0-beta3 (August 17, 2026)
+## 2.0.0-beta4 (Unreleased)
+
+BREAKING CHANGES:
+
+- resource/alicloud_amqp_exchange: `create_time` changed from `TypeInt` to `TypeString`, fixing a provider panic on 32-bit builds. No configuration or state migration is needed; expressions that consumed it as a number now need `tonumber`. ([#10254](https://github.com/aliyun/terraform-provider-alicloud/issues/10254))
+- resource/alicloud_amqp_instance: `create_time` changed from `TypeInt` to `TypeString`, fixing a provider panic on 32-bit builds. No configuration or state migration is needed; expressions that consumed it as a number now need `tonumber`. ([#10254](https://github.com/aliyun/terraform-provider-alicloud/issues/10254))
+- resource/alicloud_amqp_static_account: `create_time` changed from `TypeInt` to `TypeString`, fixing a provider panic on 32-bit builds. No configuration or state migration is needed; expressions that consumed it as a number now need `tonumber`. ([#10254](https://github.com/aliyun/terraform-provider-alicloud/issues/10254))
+
+## 2.0.0-beta3 (August 19, 2026)
 
 This beta rolls up every change merged from the 1.x line since v2.0.0-beta2 — see the `1.288.0` and `1.289.0` sections of [CHANGELOG.md](CHANGELOG.md) — plus the v2-only changes below.
 
