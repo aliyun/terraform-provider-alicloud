@@ -6,7 +6,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type ActiontrailService struct {
@@ -42,7 +42,7 @@ func (s *ActiontrailService) DescribeActiontrailTrail(id string) (object map[str
 	return object, nil
 }
 
-func (s *ActiontrailService) ActiontrailTrailStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *ActiontrailService) ActiontrailTrailStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeActiontrailTrail(id)
 		if err != nil {
@@ -70,14 +70,14 @@ func (s *ActiontrailService) DescribeActiontrailHistoryDeliveryJob(id string) (o
 		"JobId": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Actiontrail", "2020-07-06", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -96,7 +96,7 @@ func (s *ActiontrailService) DescribeActiontrailHistoryDeliveryJob(id string) (o
 	return object, nil
 }
 
-func (s *ActiontrailService) ActiontrailHistoryDeliveryJobStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *ActiontrailService) ActiontrailHistoryDeliveryJobStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeActiontrailHistoryDeliveryJob(id)
 		if err != nil {

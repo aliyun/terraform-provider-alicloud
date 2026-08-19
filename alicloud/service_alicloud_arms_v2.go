@@ -7,7 +7,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -36,15 +36,15 @@ func (s *ArmsServiceV2) DescribeArmsPrometheusMonitoring(id string) (object map[
 	request["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ARMS", "2019-08-08", action, query, request, false)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -63,7 +63,7 @@ func (s *ArmsServiceV2) DescribeArmsPrometheusMonitoring(id string) (object map[
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ArmsServiceV2) ArmsPrometheusMonitoringStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ArmsServiceV2) ArmsPrometheusMonitoringStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeArmsPrometheusMonitoring(id)
 		if err != nil {
@@ -104,15 +104,15 @@ func (s *ArmsServiceV2) DescribeArmsRemoteWrite(id string) (object map[string]in
 	request["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ARMS", "2019-08-08", action, query, request, false)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -131,7 +131,7 @@ func (s *ArmsServiceV2) DescribeArmsRemoteWrite(id string) (object map[string]in
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ArmsServiceV2) ArmsRemoteWriteStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ArmsServiceV2) ArmsRemoteWriteStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeArmsRemoteWrite(id)
 		if err != nil {
@@ -167,15 +167,15 @@ func (s *ArmsServiceV2) DescribeArmsEnvironment(id string) (object map[string]in
 	query["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ARMS", "2019-08-08", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -194,7 +194,7 @@ func (s *ArmsServiceV2) DescribeArmsEnvironment(id string) (object map[string]in
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ArmsServiceV2) ArmsEnvironmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ArmsServiceV2) ArmsEnvironmentStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeArmsEnvironment(id)
 		if err != nil {
@@ -251,14 +251,14 @@ func (s *ArmsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 			}
 
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("ARMS", "2019-08-08", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -284,14 +284,14 @@ func (s *ArmsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("ARMS", "2019-08-08", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -321,15 +321,15 @@ func (s *ArmsServiceV2) DescribeArmsPrometheus(id string) (object map[string]int
 	request["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ARMS", "2019-08-08", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -348,7 +348,7 @@ func (s *ArmsServiceV2) DescribeArmsPrometheus(id string) (object map[string]int
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ArmsServiceV2) ArmsPrometheusStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ArmsServiceV2) ArmsPrometheusStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeArmsPrometheus(id)
 		if err != nil {
@@ -390,15 +390,15 @@ func (s *ArmsServiceV2) DescribeArmsEnvFeature(id string) (object map[string]int
 	request["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ARMS", "2019-08-08", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -417,7 +417,7 @@ func (s *ArmsServiceV2) DescribeArmsEnvFeature(id string) (object map[string]int
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ArmsServiceV2) ArmsEnvFeatureStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ArmsServiceV2) ArmsEnvFeatureStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeArmsEnvFeature(id)
 		if err != nil {
@@ -459,15 +459,15 @@ func (s *ArmsServiceV2) DescribeArmsAddonRelease(id string) (object map[string]i
 	request["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ARMS", "2019-08-08", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -486,7 +486,7 @@ func (s *ArmsServiceV2) DescribeArmsAddonRelease(id string) (object map[string]i
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ArmsServiceV2) ArmsAddonReleaseStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ArmsServiceV2) ArmsAddonReleaseStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeArmsAddonRelease(id)
 		if err != nil {
@@ -529,15 +529,15 @@ func (s *ArmsServiceV2) DescribeArmsEnvPodMonitor(id string) (object map[string]
 	request["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ARMS", "2019-08-08", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -556,7 +556,7 @@ func (s *ArmsServiceV2) DescribeArmsEnvPodMonitor(id string) (object map[string]
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ArmsServiceV2) ArmsEnvPodMonitorStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ArmsServiceV2) ArmsEnvPodMonitorStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeArmsEnvPodMonitor(id)
 		if err != nil {
@@ -599,15 +599,15 @@ func (s *ArmsServiceV2) DescribeArmsEnvServiceMonitor(id string) (object map[str
 	request["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ARMS", "2019-08-08", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -626,7 +626,7 @@ func (s *ArmsServiceV2) DescribeArmsEnvServiceMonitor(id string) (object map[str
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ArmsServiceV2) ArmsEnvServiceMonitorStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ArmsServiceV2) ArmsEnvServiceMonitorStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeArmsEnvServiceMonitor(id)
 		if err != nil {
@@ -668,15 +668,15 @@ func (s *ArmsServiceV2) DescribeArmsEnvCustomJob(id string) (object map[string]i
 	request["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ARMS", "2019-08-08", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -695,7 +695,7 @@ func (s *ArmsServiceV2) DescribeArmsEnvCustomJob(id string) (object map[string]i
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ArmsServiceV2) ArmsEnvCustomJobStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ArmsServiceV2) ArmsEnvCustomJobStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeArmsEnvCustomJob(id)
 		if err != nil {
@@ -732,15 +732,15 @@ func (s *ArmsServiceV2) DescribeArmsSyntheticTask(id string) (object map[string]
 	query["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ARMS", "2019-08-08", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -762,7 +762,7 @@ func (s *ArmsServiceV2) DescribeArmsSyntheticTask(id string) (object map[string]
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ArmsServiceV2) ArmsSyntheticTaskStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ArmsServiceV2) ArmsSyntheticTaskStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeArmsSyntheticTask(id)
 		if err != nil {
@@ -800,15 +800,15 @@ func (s *ArmsServiceV2) DescribeArmsGrafanaWorkspace(id string) (object map[stri
 	action := "GetGrafanaWorkspace"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ARMS", "2019-08-08", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -830,7 +830,7 @@ func (s *ArmsServiceV2) DescribeArmsGrafanaWorkspace(id string) (object map[stri
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ArmsServiceV2) ArmsGrafanaWorkspaceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ArmsServiceV2) ArmsGrafanaWorkspaceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeArmsGrafanaWorkspace(id)
 		if err != nil {

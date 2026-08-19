@@ -7,7 +7,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -27,15 +27,15 @@ func (s *DdosBgpServiceV2) DescribeDdosBgpPolicy(id string) (object map[string]i
 	query = make(map[string]interface{})
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ddosbgp", "2018-07-20", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -65,7 +65,7 @@ func (s *DdosBgpServiceV2) DescribeDdosBgpPolicy(id string) (object map[string]i
 	return object, WrapErrorf(NotFoundErr("Policy", id), NotFoundMsg, response)
 }
 
-func (s *DdosBgpServiceV2) DdosBgpPolicyStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *DdosBgpServiceV2) DdosBgpPolicyStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeDdosBgpPolicy(id)
 		if err != nil {
@@ -105,15 +105,15 @@ func (s *DdosBgpServiceV2) DescribeDdosBgpInstance(id string) (object map[string
 	request["PageSize"] = "10"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ddosbgp", "2018-07-20", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -150,15 +150,15 @@ func (s *DdosBgpServiceV2) DescribeInstanceListTagResources(id string) (object m
 	action := "ListTagResources"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ddosbgp", "2018-07-20", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -183,15 +183,15 @@ func (s *DdosBgpServiceV2) DescribeInstanceDescribeInstanceSpecs(id string) (obj
 	action := "DescribeInstanceSpecs"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ddosbgp", "2018-07-20", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -208,7 +208,7 @@ func (s *DdosBgpServiceV2) DescribeInstanceDescribeInstanceSpecs(id string) (obj
 	return v.(map[string]interface{}), nil
 }
 
-func (s *DdosBgpServiceV2) DdosBgpInstanceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *DdosBgpServiceV2) DdosBgpInstanceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeDdosBgpInstance(id)
 		if err != nil {
@@ -268,14 +268,14 @@ func (s *DdosBgpServiceV2) SetResourceTags(d *schema.ResourceData, resourceType 
 
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("ddosbgp", "2018-07-20", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -301,14 +301,14 @@ func (s *DdosBgpServiceV2) SetResourceTags(d *schema.ResourceData, resourceType 
 
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("ddosbgp", "2018-07-20", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -348,15 +348,15 @@ func (s *DdosBgpServiceV2) DescribeDdosBgpIp(id string) (object map[string]inter
 	request["PageSize"] = "10"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ddosbgp", "2018-07-20", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -377,7 +377,7 @@ func (s *DdosBgpServiceV2) DescribeDdosBgpIp(id string) (object map[string]inter
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *DdosBgpServiceV2) DdosBgpIpStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *DdosBgpServiceV2) DdosBgpIpStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeDdosBgpIp(id)
 		if err != nil {

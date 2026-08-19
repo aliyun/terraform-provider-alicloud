@@ -6,7 +6,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type DbfsService struct {
@@ -27,14 +27,14 @@ func (s *DbfsService) DescribeDbfsInstance(id string) (object map[string]interfa
 	idExist := false
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("DBFS", "2020-04-18", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -104,7 +104,7 @@ func (s *DbfsService) DescribeDbfsInstanceAttachment(id string) (object map[stri
 	return object, nil
 }
 
-func (s *DbfsService) DbfsInstanceStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *DbfsService) DbfsInstanceStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeDbfsInstance(id)
 		if err != nil {
@@ -139,14 +139,14 @@ func (s *DbfsService) DescribeDbfsSnapshot(id string) (object map[string]interfa
 	idExist := false
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("DBFS", "2020-04-18", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -186,7 +186,7 @@ func (s *DbfsService) DescribeDbfsSnapshot(id string) (object map[string]interfa
 	return object, nil
 }
 
-func (s *DbfsService) DbfsSnapshotStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *DbfsService) DbfsSnapshotStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeDbfsSnapshot(id)
 		if err != nil {
@@ -213,14 +213,14 @@ func (s *DbfsService) DescribeDbfsServiceLinkedRole(id string) (object map[strin
 	action := "GetServiceLinkedRole"
 	request := map[string]interface{}{}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("DBFS", "2020-04-18", action, request, nil, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -236,7 +236,7 @@ func (s *DbfsService) DescribeDbfsServiceLinkedRole(id string) (object map[strin
 	return object, nil
 }
 
-func (s *DbfsService) DbfsServiceLinkedRoleStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *DbfsService) DbfsServiceLinkedRoleStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeDbfsServiceLinkedRole(id)
 		if err != nil {
@@ -266,14 +266,14 @@ func (s *DbfsService) DescribeDbfsAutoSnapShotPolicy(id string) (object map[stri
 	var response map[string]interface{}
 	action := "GetAutoSnapshotPolicy"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err := client.RpcPost("DBFS", "2020-04-18", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		response = resp
 		addDebug(action, response, request)

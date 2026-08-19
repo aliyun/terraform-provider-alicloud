@@ -15,7 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/aws/smithy-go"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -322,14 +322,14 @@ func resourceAlicloudPolarDBDynamoTableCreate(d *schema.ResourceData, meta inter
 	// DNS registration of a freshly created public endpoint address can take well
 	// over ten minutes, so drive the retry loop by the resource's create timeout
 	// instead of a short hard-coded window.
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		output, err = dynamoClient.CreateTable(context.Background(), input)
 		if err != nil {
 			if isDynamoRetryableError(err) {
 				log.Printf("[DEBUG] CreateTable %s failed with retryable error, will retry: %s", tableName, err)
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug("CreateTable", output, nil, input)
 		return nil
@@ -391,16 +391,16 @@ func resourceAlicloudPolarDBDynamoTableRead(d *schema.ResourceData, meta interfa
 	dynamoClient := conn.client
 
 	var output *dynamodb.DescribeTableOutput
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		output, err = dynamoClient.DescribeTable(context.Background(), &dynamodb.DescribeTableInput{TableName: aws.String(tableName)})
 		if err != nil {
 			if isDynamoNotFoundError(err) {
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			if isDynamoRetryableError(err) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug("DescribeTable", output, nil, nil)
 		return nil
@@ -554,13 +554,13 @@ func resourceAlicloudPolarDBDynamoTableUpdate(d *schema.ResourceData, meta inter
 		}
 		updateInput.ProvisionedThroughput = pt
 
-		err = resource.Retry(8*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(8*time.Minute, func() *retry.RetryError {
 			_, err = dynamoClient.UpdateTable(context.Background(), updateInput)
 			if err != nil {
 				if isDynamoRetryableError(err) {
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -699,16 +699,16 @@ func resourceAlicloudPolarDBDynamoTableDelete(d *schema.ResourceData, meta inter
 	}
 	dynamoClient := conn.client
 
-	err = resource.Retry(8*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(8*time.Minute, func() *retry.RetryError {
 		_, err = dynamoClient.DeleteTable(context.Background(), &dynamodb.DeleteTableInput{TableName: aws.String(tableName)})
 		if err != nil {
 			if isDynamoNotFoundError(err) {
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			if isDynamoRetryableError(err) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug("DeleteTable", nil, nil, nil)
 		return nil

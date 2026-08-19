@@ -7,7 +7,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -29,15 +29,15 @@ func (s *VpcIpamServiceV2) DescribeVpcIpamIpam(id string) (object map[string]int
 	action := "ListIpams"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("VpcIpam", "2023-02-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -63,7 +63,7 @@ func (s *VpcIpamServiceV2) DescribeVpcIpamIpam(id string) (object map[string]int
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *VpcIpamServiceV2) VpcIpamIpamStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *VpcIpamServiceV2) VpcIpamIpamStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeVpcIpamIpam(id)
 		if err != nil {
@@ -123,14 +123,14 @@ func (s *VpcIpamServiceV2) SetResourceTags(d *schema.ResourceData, resourceType 
 
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("VpcIpam", "2023-02-28", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -156,14 +156,14 @@ func (s *VpcIpamServiceV2) SetResourceTags(d *schema.ResourceData, resourceType 
 
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("VpcIpam", "2023-02-28", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -194,15 +194,15 @@ func (s *VpcIpamServiceV2) DescribeVpcIpamIpamScope(id string) (object map[strin
 	action := "ListIpamScopes"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("VpcIpam", "2023-02-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -228,7 +228,7 @@ func (s *VpcIpamServiceV2) DescribeVpcIpamIpamScope(id string) (object map[strin
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *VpcIpamServiceV2) VpcIpamIpamScopeStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *VpcIpamServiceV2) VpcIpamIpamScopeStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeVpcIpamIpamScope(id)
 		if err != nil {
@@ -273,15 +273,15 @@ func (s *VpcIpamServiceV2) DescribeVpcIpamIpamPool(id string) (object map[string
 	action := "ListIpamPools"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("VpcIpam", "2023-02-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -307,11 +307,11 @@ func (s *VpcIpamServiceV2) DescribeVpcIpamIpamPool(id string) (object map[string
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *VpcIpamServiceV2) VpcIpamIpamPoolStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *VpcIpamServiceV2) VpcIpamIpamPoolStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.VpcIpamIpamPoolStateRefreshFuncWithApi(id, field, failStates, s.DescribeVpcIpamIpamPool)
 }
 
-func (s *VpcIpamServiceV2) VpcIpamIpamPoolStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *VpcIpamServiceV2) VpcIpamIpamPoolStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -361,15 +361,15 @@ func (s *VpcIpamServiceV2) DescribeVpcIpamIpamPoolCidr(id string) (object map[st
 	action := "ListIpamPoolCidrs"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("VpcIpam", "2023-02-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -390,11 +390,11 @@ func (s *VpcIpamServiceV2) DescribeVpcIpamIpamPoolCidr(id string) (object map[st
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *VpcIpamServiceV2) VpcIpamIpamPoolCidrStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *VpcIpamServiceV2) VpcIpamIpamPoolCidrStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.VpcIpamIpamPoolCidrStateRefreshFuncWithApi(id, field, failStates, s.DescribeVpcIpamIpamPoolCidr)
 }
 
-func (s *VpcIpamServiceV2) VpcIpamIpamPoolCidrStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *VpcIpamServiceV2) VpcIpamIpamPoolCidrStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -438,15 +438,15 @@ func (s *VpcIpamServiceV2) DescribeVpcIpamIpamPoolAllocation(id string) (object 
 	query["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("VpcIpam", "2023-02-28", action, query, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -461,7 +461,7 @@ func (s *VpcIpamServiceV2) DescribeVpcIpamIpamPoolAllocation(id string) (object 
 	return response, nil
 }
 
-func (s *VpcIpamServiceV2) VpcIpamIpamPoolAllocationStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *VpcIpamServiceV2) VpcIpamIpamPoolAllocationStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeVpcIpamIpamPoolAllocation(id)
 		if err != nil {
@@ -506,16 +506,16 @@ func (s *VpcIpamServiceV2) DescribeVpcIpamService(id string) (object map[string]
 	request["ClientToken"] = buildClientToken(action)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("VpcIpam", "2023-02-28", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -527,7 +527,7 @@ func (s *VpcIpamServiceV2) DescribeVpcIpamService(id string) (object map[string]
 	return response, nil
 }
 
-func (s *VpcIpamServiceV2) VpcIpamServiceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *VpcIpamServiceV2) VpcIpamServiceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeVpcIpamService(id)
 		if err != nil {
@@ -572,15 +572,15 @@ func (s *VpcIpamServiceV2) DescribeVpcIpamIpamResourceDiscovery(id string) (obje
 	action := "ListIpamResourceDiscoveries"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("VpcIpam", "2023-02-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -606,7 +606,7 @@ func (s *VpcIpamServiceV2) DescribeVpcIpamIpamResourceDiscovery(id string) (obje
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *VpcIpamServiceV2) VpcIpamIpamResourceDiscoveryStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *VpcIpamServiceV2) VpcIpamIpamResourceDiscoveryStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeVpcIpamIpamResourceDiscovery(id)
 		if err != nil {

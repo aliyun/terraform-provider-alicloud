@@ -9,7 +9,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/tidwall/sjson"
 )
@@ -34,15 +34,15 @@ func (s *ElasticsearchServiceV2) DescribeElasticsearchInstance(id string) (objec
 	action := fmt.Sprintf("/openapi/instances/%s", InstanceId)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("elasticsearch", "2017-06-13", action, query, header, nil)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ServiceUnavailable"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -81,21 +81,21 @@ func (s *ElasticsearchServiceV2) DescribeInstanceQueryAvailableInstances(d *sche
 	action := "QueryAvailableInstances"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
 				request["ProductCode"] = "elasticsearch"
 				request["ProductType"] = "elasticsearchpre_intl"
 				endpoint = connectivity.BssOpenAPIEndpointInternational
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -129,15 +129,15 @@ func (s *ElasticsearchServiceV2) DescribeInstanceListKibanaPvlNetwork(id string)
 	action := fmt.Sprintf("/openapi/instances/%s/actions/get-kibana-private", InstanceId)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("elasticsearch", "2017-06-13", action, query, header, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -161,11 +161,11 @@ func (s *ElasticsearchServiceV2) DescribeInstanceListKibanaPvlNetwork(id string)
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *ElasticsearchServiceV2) ElasticsearchInstanceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ElasticsearchServiceV2) ElasticsearchInstanceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.ElasticsearchInstanceStateRefreshFuncWithApi(id, field, failStates, s.DescribeElasticsearchInstance)
 }
 
-func (s *ElasticsearchServiceV2) ElasticsearchInstanceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *ElasticsearchServiceV2) ElasticsearchInstanceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -226,14 +226,14 @@ func (s *ElasticsearchServiceV2) SetResourceTags(d *schema.ResourceData, resourc
 			query["ResourceType"] = StringPointer(resourceType)
 			body = request
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RoaDelete("elasticsearch", "2017-06-13", action, query, header, nil, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -268,14 +268,14 @@ func (s *ElasticsearchServiceV2) SetResourceTags(d *schema.ResourceData, resourc
 
 			body = request
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RoaPost("elasticsearch", "2017-06-13", action, query, header, body, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})

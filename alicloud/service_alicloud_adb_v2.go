@@ -7,7 +7,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type AdbServiceV2 struct {
@@ -34,15 +34,15 @@ func (s *AdbServiceV2) DescribeAdbLakeAccount(id string) (object map[string]inte
 	action := "DescribeAccountAllPrivileges"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("adb", "2021-12-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -75,15 +75,15 @@ func (s *AdbServiceV2) DescribeLakeAccountDescribeAccounts(id string) (object ma
 	action := "DescribeAccounts"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("adb", "2021-12-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -104,11 +104,11 @@ func (s *AdbServiceV2) DescribeLakeAccountDescribeAccounts(id string) (object ma
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *AdbServiceV2) AdbLakeAccountStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *AdbServiceV2) AdbLakeAccountStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.AdbLakeAccountStateRefreshFuncWithApi(id, field, failStates, s.DescribeAdbLakeAccount)
 }
 
-func (s *AdbServiceV2) AdbLakeAccountStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *AdbServiceV2) AdbLakeAccountStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -157,15 +157,15 @@ func (s *AdbServiceV2) DescribeAdbResourceGroup(id string) (object map[string]in
 	action := "DescribeDBResourceGroup"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("adb", "2019-03-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -189,7 +189,7 @@ func (s *AdbServiceV2) DescribeAdbResourceGroup(id string) (object map[string]in
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *AdbServiceV2) AdbResourceGroupStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *AdbServiceV2) AdbResourceGroupStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAdbResourceGroup(id)
 		if err != nil {
@@ -240,15 +240,15 @@ func (s *AdbServiceV2) DescribeAdbAccount(id string) (object map[string]interfac
 	action := "DescribeAccounts"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("adb", "2019-03-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -271,11 +271,11 @@ func (s *AdbServiceV2) DescribeAdbAccount(id string) (object map[string]interfac
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *AdbServiceV2) AdbAccountStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *AdbServiceV2) AdbAccountStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.AdbAccountStateRefreshFuncWithApi(id, field, failStates, s.DescribeAdbAccount)
 }
 
-func (s *AdbServiceV2) AdbAccountStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *AdbServiceV2) AdbAccountStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {

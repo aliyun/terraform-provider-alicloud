@@ -7,7 +7,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -29,15 +29,15 @@ func (s *AmqpServiceV2) DescribeAmqpInstance(id string) (object map[string]inter
 	action := "GetInstance"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("amqp-open", "2019-12-12", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -77,19 +77,19 @@ func (s *AmqpServiceV2) DescribeInstanceQueryAvailableInstances(id string) (obje
 	action := "QueryAvailableInstances"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
 				request["ProductType"] = "ons_onsproxy_public_intl"
 				endpoint = connectivity.BssOpenAPIEndpointInternational
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -110,7 +110,7 @@ func (s *AmqpServiceV2) DescribeInstanceQueryAvailableInstances(id string) (obje
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *AmqpServiceV2) AmqpInstanceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *AmqpServiceV2) AmqpInstanceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAmqpInstance(id)
 		if err != nil {
@@ -163,15 +163,15 @@ func (s *AmqpServiceV2) DescribeAmqpExchange(id string) (object map[string]inter
 	for {
 
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcGet("amqp-open", "2019-12-12", action, query, request)
 
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -208,7 +208,7 @@ func (s *AmqpServiceV2) DescribeAmqpExchange(id string) (object map[string]inter
 	return object, WrapErrorf(NotFoundErr("Exchange", id), NotFoundMsg, response)
 }
 
-func (s *AmqpServiceV2) AmqpExchangeStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *AmqpServiceV2) AmqpExchangeStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAmqpExchange(id)
 		if err != nil {
@@ -258,15 +258,15 @@ func (s *AmqpServiceV2) DescribeAmqpVirtualHost(id string) (object map[string]in
 	idExist := false
 	for {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcGet("amqp-open", "2019-12-12", action, request, nil)
 
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -308,7 +308,7 @@ func (s *AmqpServiceV2) DescribeAmqpVirtualHost(id string) (object map[string]in
 	return object, nil
 }
 
-func (s *AmqpServiceV2) AmqpVirtualHostStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *AmqpServiceV2) AmqpVirtualHostStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAmqpVirtualHost(id)
 		if err != nil {
@@ -359,15 +359,15 @@ func (s *AmqpServiceV2) DescribeAmqpOpenSourcePermission(id string) (object map[
 	action := "ListOpenSourcePermissions"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("amqp-open", "2019-12-12", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -399,11 +399,11 @@ func (s *AmqpServiceV2) DescribeAmqpOpenSourcePermission(id string) (object map[
 	return object, WrapErrorf(NotFoundErr("OpenSourcePermission", id), NotFoundMsg, response)
 }
 
-func (s *AmqpServiceV2) AmqpOpenSourcePermissionStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *AmqpServiceV2) AmqpOpenSourcePermissionStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.AmqpOpenSourcePermissionStateRefreshFuncWithApi(id, field, failStates, s.DescribeAmqpOpenSourcePermission)
 }
 
-func (s *AmqpServiceV2) AmqpOpenSourcePermissionStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *AmqpServiceV2) AmqpOpenSourcePermissionStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -451,15 +451,15 @@ func (s *AmqpServiceV2) DescribeAmqpOpenSourceAccount(id string) (object map[str
 	action := "ListOpenSourceAccounts"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("amqp-open", "2019-12-12", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -491,11 +491,11 @@ func (s *AmqpServiceV2) DescribeAmqpOpenSourceAccount(id string) (object map[str
 	return object, WrapErrorf(NotFoundErr("OpenSourceAccount", id), NotFoundMsg, response)
 }
 
-func (s *AmqpServiceV2) AmqpOpenSourceAccountStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *AmqpServiceV2) AmqpOpenSourceAccountStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.AmqpOpenSourceAccountStateRefreshFuncWithApi(id, field, failStates, s.DescribeAmqpOpenSourceAccount)
 }
 
-func (s *AmqpServiceV2) AmqpOpenSourceAccountStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *AmqpServiceV2) AmqpOpenSourceAccountStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -539,14 +539,14 @@ func (s *AmqpServiceV2) DescribeInstanceListTagResources(id string) (object map[
 	action := "ListTagResources"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("amqp-open", "2019-12-12", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -590,14 +590,14 @@ func (s *AmqpServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("amqp-open", "2019-12-12", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -622,14 +622,14 @@ func (s *AmqpServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("amqp-open", "2019-12-12", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})

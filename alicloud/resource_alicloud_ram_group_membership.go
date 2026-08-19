@@ -5,7 +5,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -137,16 +137,16 @@ func addUsersToGroup(d *schema.ResourceData, client *connectivity.AliyunClient, 
 
 		var err error
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(timeout)), func() *resource.RetryError {
+		err = retry.Retry(client.GetRetryTimeout(d.Timeout(timeout)), func() *retry.RetryError {
 			raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 				return ramClient.AddUserToGroup(request)
 			})
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			return nil
@@ -174,16 +174,16 @@ func removeUsersFromGroup(d *schema.ResourceData, client *connectivity.AliyunCli
 
 		var err error
 		wait := incrementalWait(3*time.Second, 20*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(timeout)), func() *resource.RetryError {
+		err = retry.Retry(client.GetRetryTimeout(d.Timeout(timeout)), func() *retry.RetryError {
 			raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 				return ramClient.RemoveUserFromGroup(request)
 			})
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			return nil

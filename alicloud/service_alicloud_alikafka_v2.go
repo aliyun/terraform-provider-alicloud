@@ -8,7 +8,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -35,15 +35,15 @@ func (s *AlikafkaServiceV2) DescribeAlikafkaTopic(id string) (object map[string]
 	action := "GetTopicList"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("alikafka", "2019-09-16", action, query, request, true)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ONS_SYSTEM_FLOW_CONTROL"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -69,7 +69,7 @@ func (s *AlikafkaServiceV2) DescribeAlikafkaTopic(id string) (object map[string]
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *AlikafkaServiceV2) AlikafkaTopicStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *AlikafkaServiceV2) AlikafkaTopicStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAlikafkaTopic(id)
 		if err != nil {
@@ -142,14 +142,14 @@ func (s *AlikafkaServiceV2) SetResourceTags(d *schema.ResourceData, resourceType
 			}
 
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("alikafka", "2019-09-16", action, query, request, true)
 				if err != nil {
 					if IsExpectedErrors(err, []string{"ONS_SYSTEM_FLOW_CONTROL"}) || NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -185,14 +185,14 @@ func (s *AlikafkaServiceV2) SetResourceTags(d *schema.ResourceData, resourceType
 
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("alikafka", "2019-09-16", action, query, request, true)
 				if err != nil {
 					if IsExpectedErrors(err, []string{"ONS_SYSTEM_FLOW_CONTROL"}) || NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -228,15 +228,15 @@ func (s *AlikafkaServiceV2) DescribeAliKafkaSaslUser(id string) (object map[stri
 	action := "DescribeSaslUsers"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("alikafka", "2019-09-16", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -268,11 +268,11 @@ func (s *AlikafkaServiceV2) DescribeAliKafkaSaslUser(id string) (object map[stri
 	return object, WrapErrorf(NotFoundErr("SaslUser", id), NotFoundMsg, response)
 }
 
-func (s *AlikafkaServiceV2) AliKafkaSaslUserStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *AlikafkaServiceV2) AliKafkaSaslUserStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.AliKafkaSaslUserStateRefreshFuncWithApi(id, field, failStates, s.DescribeAliKafkaSaslUser)
 }
 
-func (s *AlikafkaServiceV2) AliKafkaSaslUserStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *AlikafkaServiceV2) AliKafkaSaslUserStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -322,15 +322,15 @@ func (s *AlikafkaServiceV2) DescribeAliKafkaConsumerGroup(id string) (object map
 	action := "GetConsumerList"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("alikafka", "2019-09-16", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -356,11 +356,11 @@ func (s *AlikafkaServiceV2) DescribeAliKafkaConsumerGroup(id string) (object map
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *AlikafkaServiceV2) AliKafkaConsumerGroupStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *AlikafkaServiceV2) AliKafkaConsumerGroupStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.AliKafkaConsumerGroupStateRefreshFuncWithApi(id, field, failStates, s.DescribeAliKafkaConsumerGroup)
 }
 
-func (s *AlikafkaServiceV2) AliKafkaConsumerGroupStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *AlikafkaServiceV2) AliKafkaConsumerGroupStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -409,15 +409,15 @@ func (s *AlikafkaServiceV2) DescribeAlikafkaScheduledScalingRule(id string) (obj
 	action := "GetAutoScalingConfiguration"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("alikafka", "2019-09-16", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -449,11 +449,11 @@ func (s *AlikafkaServiceV2) DescribeAlikafkaScheduledScalingRule(id string) (obj
 	return object, WrapErrorf(NotFoundErr("ScheduledScalingRule", id), NotFoundMsg, response)
 }
 
-func (s *AlikafkaServiceV2) AlikafkaScheduledScalingRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *AlikafkaServiceV2) AlikafkaScheduledScalingRuleStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.AlikafkaScheduledScalingRuleStateRefreshFuncWithApi(id, field, failStates, s.DescribeAlikafkaScheduledScalingRule)
 }
 
-func (s *AlikafkaServiceV2) AlikafkaScheduledScalingRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *AlikafkaServiceV2) AlikafkaScheduledScalingRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -507,15 +507,15 @@ func (s *AlikafkaServiceV2) DescribeAlikafkaSaslAcl(id string) (object map[strin
 	action := "DescribeAcls"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("alikafka", "2019-09-16", action, query, request, true)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ONS_SYSTEM_FLOW_CONTROL"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -539,11 +539,11 @@ func (s *AlikafkaServiceV2) DescribeAlikafkaSaslAcl(id string) (object map[strin
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *AlikafkaServiceV2) AlikafkaSaslAclStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *AlikafkaServiceV2) AlikafkaSaslAclStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.AlikafkaSaslAclStateRefreshFuncWithApi(id, field, failStates, s.DescribeAlikafkaSaslAcl)
 }
 
-func (s *AlikafkaServiceV2) AlikafkaSaslAclStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *AlikafkaServiceV2) AlikafkaSaslAclStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {

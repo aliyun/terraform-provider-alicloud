@@ -6,7 +6,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -24,14 +24,14 @@ func (s *CasService) DescribeSslCertificatesServiceCertificate(id string) (objec
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cas", "2018-07-13", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -55,7 +55,7 @@ func (s *CasService) DescribeSslCertificatesServiceCertificate(id string) (objec
 	return object, nil
 }
 
-func (s *CasService) SslCertificatesServiceCertificateStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+func (s *CasService) SslCertificatesServiceCertificateStateRefreshFunc(d *schema.ResourceData, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeSslCertificatesServiceCertificate(d.Id())
 		if err != nil {

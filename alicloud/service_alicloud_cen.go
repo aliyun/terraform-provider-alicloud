@@ -9,7 +9,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type CenService struct {
@@ -37,16 +37,16 @@ func (s *CenService) DescribeCenInstanceAttachment(id string) (*cbn.ChildInstanc
 		request.PageNumber = requests.NewInteger(pageNum)
 		var raw interface{}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			raw, err = s.client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
 				return cbnClient.DescribeCenAttachedChildInstances(request)
 			})
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			return nil
@@ -110,16 +110,16 @@ func (s *CenService) DescribeCenBandwidthPackage(id string) (c cbn.CenBandwidthP
 
 	var raw interface{}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(10*time.Minute, func() *retry.RetryError {
 		raw, err = s.client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.DescribeCenBandwidthPackages(request)
 		})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
@@ -244,16 +244,16 @@ func (s *CenService) DescribeCenBandwidthLimit(id string) (c cbn.CenInterRegionB
 		request.PageSize = requests.NewInteger(PageSizeLarge)
 		var raw interface{}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(10*time.Minute, func() *retry.RetryError {
 			raw, err = s.client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
 				return cbnClient.DescribeCenInterRegionBandwidthLimits(request)
 			})
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -281,7 +281,7 @@ func (s *CenService) DescribeCenBandwidthLimit(id string) (c cbn.CenInterRegionB
 	}
 }
 
-func (s *CenService) CenBandwidthLimitStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *CenService) CenBandwidthLimitStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCenBandwidthLimit(id)
 		if err != nil {
@@ -345,16 +345,16 @@ func (s *CenService) DescribeCenRouteEntry(id string) (c cbn.PublishedRouteEntry
 
 	var raw interface{}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = s.client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.DescribePublishedRouteEntries(request)
 		})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
@@ -423,7 +423,7 @@ func (s *CenService) GetCenAndRegionIds(id string) (retString []string, err erro
 	return parts, nil
 }
 
-func (s *CenService) CenInstanceAttachmentStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *CenService) CenInstanceAttachmentStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCenInstanceAttachment(id)
 		if err != nil {

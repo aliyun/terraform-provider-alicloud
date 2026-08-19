@@ -13,7 +13,7 @@ import (
 	cs "github.com/alibabacloud-go/cs-20151215/v8/client"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -107,14 +107,14 @@ func resourceAliCloudCSKubernetesPolicyInstanceCreate(d *schema.ResourceData, me
 	var response *cs.DeployPolicyInstanceResponse
 	var err error
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.DeployPolicyInstance(tea.String(cluster_id), tea.String(policy_name), createReq)
 		if err != nil {
 			if NeedRetry(err) || strings.Contains(err.Error(), "the object has been modified") {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -315,14 +315,14 @@ func resourceAliCloudCSKubernetesPolicyInstanceUpdate(d *schema.ResourceData, me
 	var response *cs.ModifyPolicyInstanceResponse
 	var err error
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 		response, err = client.ModifyPolicyInstance(tea.String(cluster_id), tea.String(policy_name), updateReq)
 		if err != nil {
 			if NeedRetry(err) || strings.Contains(err.Error(), "the object has been modified") {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -362,14 +362,14 @@ func resourceAliCloudCSKubernetesPolicyInstanceDelete(d *schema.ResourceData, me
 	var response *cs.DeletePolicyInstanceResponse
 	var err error
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.DeletePolicyInstance(tea.String(cluster_id), tea.String(policy_name), deleteReq)
 		if err != nil {
 			if NeedRetry(err) || strings.Contains(err.Error(), "the object has been modified") {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

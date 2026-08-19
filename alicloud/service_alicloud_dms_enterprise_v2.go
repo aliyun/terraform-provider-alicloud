@@ -7,7 +7,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type DMSEnterpriseServiceV2 struct {
@@ -32,15 +32,15 @@ func (s *DMSEnterpriseServiceV2) DescribeDMSEnterpriseAuthorityTemplate(id strin
 	query["Tid"] = parts[0]
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("dms-enterprise", "2018-11-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -57,7 +57,7 @@ func (s *DMSEnterpriseServiceV2) DescribeDMSEnterpriseAuthorityTemplate(id strin
 	return response, nil
 }
 
-func (s *DMSEnterpriseServiceV2) DMSEnterpriseAuthorityTemplateStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *DMSEnterpriseServiceV2) DMSEnterpriseAuthorityTemplateStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeDMSEnterpriseAuthorityTemplate(id)
 		if err != nil {
@@ -94,15 +94,15 @@ func (s *DMSEnterpriseServiceV2) DescribeDmsEnterpriseWorkspace(id string) (obje
 	action := "GetWorkspace"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("dms-enterprise", "2018-11-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -122,7 +122,7 @@ func (s *DMSEnterpriseServiceV2) DescribeDmsEnterpriseWorkspace(id string) (obje
 	return v.(map[string]interface{}), nil
 }
 
-func (s *DMSEnterpriseServiceV2) DmsEnterpriseWorkspaceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *DMSEnterpriseServiceV2) DmsEnterpriseWorkspaceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeDmsEnterpriseWorkspace(id)
 		if err != nil {

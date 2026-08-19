@@ -7,7 +7,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -288,19 +288,19 @@ func resourceAliCloudSslCertificatesServiceInstanceCreate(d *schema.ResourceData
 		request["ProductType"] = "cas"
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
 				request["ProductType"] = "cas_intl"
 				endpoint = connectivity.BssOpenAPIEndpointInternational
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -502,14 +502,14 @@ func resourceAliCloudSslCertificatesServiceInstanceUpdate(d *schema.ResourceData
 
 	if update {
 		wait := incrementalWait(5*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("cas", "2020-04-07", action, query, request, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"InvalidStatus.UpdateProtection"}) || NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -571,16 +571,16 @@ func resourceAliCloudSslCertificatesServiceInstanceDelete(d *schema.ResourceData
 		"ClientToken": buildClientToken("RefundInstance"),
 	}
 	refundWait := incrementalWait(3*time.Second, 5*time.Second)
-	refundErr := resource.Retry(1*time.Minute, func() *resource.RetryError {
+	refundErr := retry.Retry(1*time.Minute, func() *retry.RetryError {
 		_, err := client.RpcPost("cas", "2020-04-07", "RefundInstance", make(map[string]interface{}), refundRequest, true)
 		if err == nil {
 			return nil
 		}
 		if NeedRetry(err) || IsExpectedErrors(err, []string{"CouldNotRefund.NotSupport"}) {
 			refundWait()
-			return resource.RetryableError(err)
+			return retry.RetryableError(err)
 		}
-		return resource.NonRetryableError(err)
+		return retry.NonRetryableError(err)
 	})
 	if refundErr != nil {
 		if !NotFoundError(refundErr) && !IsExpectedErrors(refundErr, []string{"CouldNotRefund.NotSupport", "OperationDenied.StatusNotSupport"}) {
@@ -594,7 +594,7 @@ func resourceAliCloudSslCertificatesServiceInstanceDelete(d *schema.ResourceData
 	}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("cas", "2020-04-07", action, query, request, true)
 		if err != nil {
 			// The refund issued above is processed asynchronously, and until it lands the instance
@@ -602,9 +602,9 @@ func resourceAliCloudSslCertificatesServiceInstanceDelete(d *schema.ResourceData
 			// says to retry later, so that is what happens here.
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"InvalidStatus.DeleteProtection"}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

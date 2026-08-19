@@ -8,7 +8,7 @@ import (
 
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -167,16 +167,16 @@ func resourceAliyunDatahubSubscriptionDelete(d *schema.ResourceData, meta interf
 
 	var requestInfo *datahub.DataHub
 
-	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(3*time.Minute, func() *retry.RetryError {
 		raw, err := client.WithDataHubClient(func(dataHubClient datahub.DataHubApi) (interface{}, error) {
 			requestInfo = dataHubClient.(*datahub.DataHub)
 			return dataHubClient.DeleteSubscription(projectName, topicName, subId)
 		})
 		if err != nil {
 			if isRetryableDatahubError(err) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		if debugOn() {
 			requestMap := make(map[string]string)

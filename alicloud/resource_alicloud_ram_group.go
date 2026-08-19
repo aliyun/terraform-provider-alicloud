@@ -8,7 +8,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -76,14 +76,14 @@ func resourceAliCloudRamGroupCreate(d *schema.ResourceData, meta interface{}) er
 		request["Comments"] = v
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Ram", "2015-05-01", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -143,14 +143,14 @@ func resourceAliCloudRamGroupUpdate(d *schema.ResourceData, meta interface{}) er
 
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Ram", "2015-05-01", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -181,14 +181,14 @@ func resourceAliCloudRamGroupDelete(d *schema.ResourceData, meta interface{}) er
 
 		for {
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 				response, err = client.RpcPost("Ram", "2015-05-01", action, query, listUsersForGroupReq, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -225,15 +225,15 @@ func resourceAliCloudRamGroupDelete(d *schema.ResourceData, meta interface{}) er
 				}
 
 				wait := incrementalWait(3*time.Second, 5*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+				err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 					response, err = client.RpcPost("Ram", "2015-05-01", action, query, removeUserFromGroupReq, true)
 
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					return nil
 				})
@@ -252,14 +252,14 @@ func resourceAliCloudRamGroupDelete(d *schema.ResourceData, meta interface{}) er
 		}
 
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 			response, err = client.RpcPost("Ram", "2015-05-01", action, query, listPoliciesForGroupReq, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -285,15 +285,15 @@ func resourceAliCloudRamGroupDelete(d *schema.ResourceData, meta interface{}) er
 					"PolicyType": v.(map[string]interface{})["PolicyType"],
 				}
 
-				err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+				err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 					response, err = client.RpcPost("Ram", "2015-05-01", action, query, detachPolicyFromGroupReq, true)
 
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					return nil
 				})
@@ -311,15 +311,15 @@ func resourceAliCloudRamGroupDelete(d *schema.ResourceData, meta interface{}) er
 	request["GroupName"] = d.Id()
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("Ram", "2015-05-01", action, query, request, true)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"DeleteConflict.Group.User", "DeleteConflict.Group.Policy"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

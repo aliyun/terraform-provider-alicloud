@@ -9,7 +9,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/tidwall/sjson"
 )
@@ -450,12 +450,12 @@ func resourceAliCloudEfloNodeCreate(d *schema.ResourceData, meta interface{}) er
 			request["SubscriptionType"] = "Subscription"
 		}
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 			response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"CSS_CHECK_ORDER_ERROR", "InternalError", "SYSTEM.CONCURRENT_OPERATE"}) || NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
 				if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
 					request["ProductCode"] = "bccluster"
@@ -468,13 +468,13 @@ func resourceAliCloudEfloNodeCreate(d *schema.ResourceData, meta interface{}) er
 						request["ProductCode"] = "bccluster"
 						request["ProductType"] = "bccluster_computinginstance_public_intl"
 						if installPai {
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
 					}
 					endpoint = connectivity.BssOpenAPIEndpointInternational
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -633,14 +633,14 @@ func resourceAliCloudEfloNodeCreate(d *schema.ResourceData, meta interface{}) er
 		}
 
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 			response, err = client.RpcPost("eflo-controller", "2022-12-15", action, query, request, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"InternalDependencyError.RequestLimitExceeded"}) || NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -816,14 +816,14 @@ func resourceAliCloudEfloNodeUpdate(d *schema.ResourceData, meta interface{}) er
 
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("eflo-controller", "2022-12-15", action, query, request, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"ResourceNotFound"}) || NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -911,12 +911,12 @@ func resourceAliCloudEfloNodeUpdate(d *schema.ResourceData, meta interface{}) er
 	}
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
 				if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
 					request["ProductCode"] = "bccluster"
@@ -929,13 +929,13 @@ func resourceAliCloudEfloNodeUpdate(d *schema.ResourceData, meta interface{}) er
 						request["ProductCode"] = "bccluster"
 						request["ProductType"] = "bccluster_computinginstance_public_intl"
 						if installPai {
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
 					}
 					endpoint = connectivity.BssOpenAPIEndpointInternational
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -960,14 +960,14 @@ func resourceAliCloudEfloNodeUpdate(d *schema.ResourceData, meta interface{}) er
 
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("eflo-controller", "2022-12-15", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -1019,14 +1019,14 @@ func resourceAliCloudEfloNodeUpdate(d *schema.ResourceData, meta interface{}) er
 			request["NodeGroups"] = convertObjectToJsonString(request["NodeGroups"])
 
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("eflo-controller", "2022-12-15", action, query, request, true)
 				if err != nil {
 					if IsExpectedErrors(err, []string{"InternalDependencyError.RequestLimitExceeded"}) || NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -1172,14 +1172,14 @@ func resourceAliCloudEfloNodeUpdate(d *schema.ResourceData, meta interface{}) er
 			_ = json.Unmarshal([]byte(jsonString), &request)
 			request["NodeGroups"] = convertObjectToJsonString(request["NodeGroups"])
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("eflo-controller", "2022-12-15", action, query, request, true)
 				if err != nil {
 					if IsExpectedErrors(err, []string{"InternalDependencyError.RequestLimitExceeded"}) || NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -1264,12 +1264,12 @@ func resourceAliCloudEfloNodeDelete(d *schema.ResourceData, meta interface{}) er
 			}
 		}
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 			response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
 				if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
 					request["ProductCode"] = "bccluster"
@@ -1282,13 +1282,13 @@ func resourceAliCloudEfloNodeDelete(d *schema.ResourceData, meta interface{}) er
 						request["ProductCode"] = "bccluster"
 						request["ProductType"] = "bccluster_computinginstance_public_intl"
 						if installPai {
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
 					}
 					endpoint = connectivity.BssOpenAPIEndpointInternational
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -1326,14 +1326,14 @@ func resourceAliCloudEfloNodeDelete(d *schema.ResourceData, meta interface{}) er
 		request["RegionId"] = client.RegionId
 
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 			response, err = client.RpcPost("eflo-controller", "2022-12-15", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -1362,7 +1362,7 @@ func getProductCodeAndType(instanceID string, timeout time.Duration, client *con
 	request := map[string]interface{}{"InstanceIDs": instanceID}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 
-	err := resource.Retry(timeout, func() *resource.RetryError {
+	err := retry.Retry(timeout, func() *retry.RetryError {
 		response, err := client.RpcPostWithEndpoint(
 			"BssOpenApi", "2017-12-14", "QueryAvailableInstances",
 			map[string]interface{}{}, request, true, "",
@@ -1370,19 +1370,19 @@ func getProductCodeAndType(instanceID string, timeout time.Duration, client *con
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 
 		instances, ok := getInstanceList(response)
 		if !ok || len(instances) == 0 {
-			return resource.NonRetryableError(WrapErrorf(NotFoundErr("Node", instanceID), NotFoundMsg, response))
+			return retry.NonRetryableError(WrapErrorf(NotFoundErr("Node", instanceID), NotFoundMsg, response))
 		}
 
 		instance, ok := instances[0].(map[string]interface{})
 		if !ok {
-			return resource.NonRetryableError(fmt.Errorf("unexpected instance format for id %s", instanceID))
+			return retry.NonRetryableError(fmt.Errorf("unexpected instance format for id %s", instanceID))
 		}
 		productCode, _ = instance["ProductCode"].(string)
 		productType, _ = instance["ProductType"].(string)

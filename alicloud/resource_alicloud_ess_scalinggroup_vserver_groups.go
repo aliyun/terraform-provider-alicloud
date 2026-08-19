@@ -10,7 +10,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -256,15 +256,15 @@ func attachVserverGroups(d *schema.ResourceData, client *connectivity.AliyunClie
 		action := "AttachVServerGroups"
 		var err error
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			request["ClientToken"] = buildClientToken(action)
 			response, err = client.RpcPost("Ess", "2014-08-28", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) || IsExpectedErrors(err, []string{"VServerGroupProcessing", "BackendServer.configuring"}) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -308,15 +308,15 @@ func detachVserverGroups(d *schema.ResourceData, client *connectivity.AliyunClie
 		action := "DetachVServerGroups"
 		var err error
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			request["ClientToken"] = buildClientToken(action)
 			response, err = client.RpcPost("Ess", "2014-08-28", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})

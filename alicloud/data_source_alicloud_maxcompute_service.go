@@ -5,7 +5,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -46,14 +46,14 @@ func dataSourceAlicloudMaxcomputeServiceRead(d *schema.ResourceData, meta interf
 	action := "/api/v1/quotas"
 	var response map[string]interface{}
 	query := make(map[string]*string)
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err := client.RoaGet("MaxCompute", "2022-01-04", action, query, nil, nil)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"QPS Limit Exceeded"}) || NeedRetry(err) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 			addDebug(action, resp, nil)
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		response = resp
 		addDebug(action, resp, nil)

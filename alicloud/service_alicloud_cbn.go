@@ -8,7 +8,7 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -23,16 +23,16 @@ func (s *CbnService) DescribeCenFlowlog(id string) (object cbn.FlowLog, err erro
 	request.FlowLogId = id
 	var raw interface{}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = s.client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.DescribeFlowlogs(request)
 		})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
@@ -98,14 +98,14 @@ func (s *CbnService) DescribeCenInstance(id string) (object map[string]interface
 	idExist := false
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -145,7 +145,7 @@ func (s *CbnService) DescribeCenInstance(id string) (object map[string]interface
 	return object, nil
 }
 
-func (s *CbnService) CenInstanceStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+func (s *CbnService) CenInstanceStateRefreshFunc(d *schema.ResourceData, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCenInstance(d.Id())
 		if err != nil {
@@ -222,16 +222,16 @@ func (s *CbnService) DescribeCenRouteMap(id string) (object cbn.RouteMap, err er
 
 	var raw interface{}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = s.client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.DescribeCenRouteMaps(request)
 		})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
@@ -250,7 +250,7 @@ func (s *CbnService) DescribeCenRouteMap(id string) (object cbn.RouteMap, err er
 	return response.RouteMaps.RouteMap[0], nil
 }
 
-func (s *CbnService) CenRouteMapStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *CbnService) CenRouteMapStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCenRouteMap(id)
 		if err != nil {
@@ -282,16 +282,16 @@ func (s *CbnService) DescribeCenPrivateZone(id string) (object cbn.PrivateZoneIn
 
 	var raw interface{}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = s.client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.DescribeCenPrivateZoneRoutes(request)
 		})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -314,7 +314,7 @@ func (s *CbnService) DescribeCenPrivateZone(id string) (object cbn.PrivateZoneIn
 	return response.PrivateZoneInfos.PrivateZoneInfo[0], nil
 }
 
-func (s *CbnService) CenPrivateZoneStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *CbnService) CenPrivateZoneStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCenPrivateZone(id)
 		if err != nil {
@@ -347,16 +347,16 @@ func (s *CbnService) DescribeCenVbrHealthCheck(id string) (object cbn.VbrHealthC
 
 	var raw interface{}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = s.client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.DescribeCenVbrHealthCheck(request)
 		})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
@@ -390,16 +390,16 @@ func (s *CbnService) DescribeCenInstanceAttachment(id string) (object cbn.Descri
 
 	var raw interface{}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = s.client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.DescribeCenAttachedChildInstanceAttribute(request)
 		})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
@@ -417,7 +417,7 @@ func (s *CbnService) DescribeCenInstanceAttachment(id string) (object cbn.Descri
 	return *response, nil
 }
 
-func (s *CbnService) CenInstanceAttachmentStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *CbnService) CenInstanceAttachmentStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCenInstanceAttachment(id)
 		if err != nil {
@@ -448,28 +448,28 @@ func (s *CbnService) DescribeCenBandwidthPackage(id string) (object cbn.CenBandw
 	request.Filter = &filters
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(11*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(11*time.Minute, func() *retry.RetryError {
 		raw, err := s.client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.DescribeCenBandwidthPackages(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"AliyunGoClientFailure", "ServiceUnavailable", "Throttling", "Throttling.User"}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 			if IsExpectedErrors(err, []string{"ParameterCenInstanceId"}) {
 				err = WrapErrorf(NotFoundErr("CenBandwidthPackage", id), NotFoundMsg, ProviderERROR)
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*cbn.DescribeCenBandwidthPackagesResponse)
 
 		if len(response.CenBandwidthPackages.CenBandwidthPackage) < 1 {
 			err = WrapErrorf(NotFoundErr("CenBandwidthPackage", id), NotFoundMsg, ProviderERROR, response.RequestId)
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		object = response.CenBandwidthPackages.CenBandwidthPackage[0]
 		return nil
@@ -477,7 +477,7 @@ func (s *CbnService) DescribeCenBandwidthPackage(id string) (object cbn.CenBandw
 	return object, WrapError(err)
 }
 
-func (s *CbnService) CenBandwidthPackageStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *CbnService) CenBandwidthPackageStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCenBandwidthPackage(id)
 		if err != nil {
@@ -524,19 +524,19 @@ func (s *CbnService) ListTagResources(id string, resourceType string) (object in
 
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err := client.RpcPost("Cbn", "2017-09-12", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(action, response, request)
 			v, err := jsonpath.Get("$.TagResources.TagResource", response)
 			if err != nil {
-				return resource.NonRetryableError(WrapErrorf(err, FailedGetAttributeMsg, id, "$.TagResources.TagResource", response))
+				return retry.NonRetryableError(WrapErrorf(err, FailedGetAttributeMsg, id, "$.TagResources.TagResource", response))
 			}
 
 			if v != nil {
@@ -595,15 +595,15 @@ func (s *CbnService) SetResourceTags(d *schema.ResourceData, resourceType string
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
 			wait := incrementalWait(2*time.Second, 1*time.Second)
-			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+			err := retry.Retry(10*time.Minute, func() *retry.RetryError {
 				response, err := client.RpcPost("Cbn", "2017-09-12", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(action, response, request)
 				return nil
@@ -638,15 +638,15 @@ func (s *CbnService) SetResourceTags(d *schema.ResourceData, resourceType string
 			}
 
 			wait := incrementalWait(2*time.Second, 1*time.Second)
-			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+			err := retry.Retry(10*time.Minute, func() *retry.RetryError {
 				response, err := client.RpcPost("Cbn", "2017-09-12", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(action, response, request)
 				return nil
@@ -674,16 +674,16 @@ func (s *CbnService) DescribeCenRouteService(id string) (object cbn.RouteService
 
 	var raw interface{}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = s.client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.DescribeRouteServicesInCen(request)
 		})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
@@ -703,7 +703,7 @@ func (s *CbnService) DescribeCenRouteService(id string) (object cbn.RouteService
 	return response.RouteServiceEntries.RouteServiceEntry[0], nil
 }
 
-func (s *CbnService) CenRouteServiceStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *CbnService) CenRouteServiceStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCenRouteService(id)
 		if err != nil {
@@ -737,14 +737,14 @@ func (s *CbnService) DescribeCenTransitRouter(id string) (object map[string]inte
 		"TransitRouterId": parts[1],
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -770,7 +770,7 @@ func (s *CbnService) DescribeCenTransitRouter(id string) (object map[string]inte
 	return object, nil
 }
 
-func (s *CbnService) CenTransitRouterStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *CbnService) CenTransitRouterStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 
 		object, err := s.DescribeCenTransitRouter(id)
@@ -805,14 +805,14 @@ func (s *CbnService) DescribeCenTransitRouterPeerAttachment(id string) (object m
 		"TransitRouterAttachmentId": parts[1],
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -838,7 +838,7 @@ func (s *CbnService) DescribeCenTransitRouterPeerAttachment(id string) (object m
 	return object, nil
 }
 
-func (s *CbnService) CenTransitRouterPeerAttachmentStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *CbnService) CenTransitRouterPeerAttachmentStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCenTransitRouterPeerAttachment(id)
 		if err != nil {
@@ -878,14 +878,14 @@ func (s *CbnService) DescribeCenTransitRouterVbrAttachment(id string) (object ma
 	idExist := false
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -928,7 +928,7 @@ func (s *CbnService) DescribeCenTransitRouterVbrAttachment(id string) (object ma
 	return object, nil
 }
 
-func (s *CbnService) CenTransitRouterVbrAttachmentStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *CbnService) CenTransitRouterVbrAttachmentStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCenTransitRouterVbrAttachment(id)
 		if err != nil {
@@ -969,14 +969,14 @@ func (s *CbnService) DescribeCenTransitRouterVpcAttachment(id string) (object ma
 	idExist := false
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -1019,7 +1019,7 @@ func (s *CbnService) DescribeCenTransitRouterVpcAttachment(id string) (object ma
 	return object, nil
 }
 
-func (s *CbnService) CenTransitRouterVpcAttachmentStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *CbnService) CenTransitRouterVpcAttachmentStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCenTransitRouterVpcAttachment(id)
 		if err != nil {
@@ -1053,14 +1053,14 @@ func (s *CbnService) DescribeCenTransitRouterRouteEntry(id string) (object map[s
 		"TransitRouterRouteEntryIds": []string{parts[1]},
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1089,7 +1089,7 @@ func (s *CbnService) DescribeCenTransitRouterRouteEntry(id string) (object map[s
 	return object, nil
 }
 
-func (s *CbnService) CenTransitRouterRouteEntryStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *CbnService) CenTransitRouterRouteEntryStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCenTransitRouterRouteEntry(id)
 		if err != nil {
@@ -1123,14 +1123,14 @@ func (s *CbnService) DescribeCenTransitRouterRouteTable(id string) (object map[s
 		"TransitRouterRouteTableIds": []string{parts[1]},
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1157,7 +1157,7 @@ func (s *CbnService) DescribeCenTransitRouterRouteTable(id string) (object map[s
 	return object, nil
 }
 
-func (s *CbnService) CenTransitRouterRouteTableStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *CbnService) CenTransitRouterRouteTableStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCenTransitRouterRouteTable(id)
 		if err != nil {
@@ -1191,14 +1191,14 @@ func (s *CbnService) DescribeCenTransitRouterRouteTableAssociation(id string) (o
 		"TransitRouterRouteTableId": parts[1],
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1224,7 +1224,7 @@ func (s *CbnService) DescribeCenTransitRouterRouteTableAssociation(id string) (o
 	return object, nil
 }
 
-func (s *CbnService) CenTransitRouterRouteTableAssociationStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *CbnService) CenTransitRouterRouteTableAssociationStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCenTransitRouterRouteTableAssociation(id)
 		if err != nil {
@@ -1258,14 +1258,14 @@ func (s *CbnService) DescribeCenTransitRouterRouteTablePropagation(id string) (o
 		"TransitRouterRouteTableId": parts[1],
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1291,7 +1291,7 @@ func (s *CbnService) DescribeCenTransitRouterRouteTablePropagation(id string) (o
 	return object, nil
 }
 
-func (s *CbnService) CenTransitRouterRouteTablePropagationStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *CbnService) CenTransitRouterRouteTablePropagationStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCenTransitRouterRouteTablePropagation(id)
 		if err != nil {
@@ -1325,14 +1325,14 @@ func (s *CbnService) DescribeCenTrafficMarkingPolicy(id string) (object map[stri
 		"TrafficMarkingPolicyId": parts[1],
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1355,7 +1355,7 @@ func (s *CbnService) DescribeCenTrafficMarkingPolicy(id string) (object map[stri
 	return object, nil
 }
 
-func (s *CbnService) CenTrafficMarkingPolicyStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *CbnService) CenTrafficMarkingPolicyStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCenTrafficMarkingPolicy(id)
 		if err != nil {
@@ -1384,14 +1384,14 @@ func (s *CbnService) DescribeCenTransitRouterVpnAttachment(id string) (object ma
 		"TransitRouterAttachmentId": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1413,7 +1413,7 @@ func (s *CbnService) DescribeCenTransitRouterVpnAttachment(id string) (object ma
 	return object, nil
 }
 
-func (s *CbnService) CenTransitRouterVpnAttachmentStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *CbnService) CenTransitRouterVpnAttachmentStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCenTransitRouterVpnAttachment(id)
 		if err != nil {
@@ -1452,14 +1452,14 @@ func (s *CbnService) DescribeCenTransitRouterGrantAttachment(id string) (object 
 	var response map[string]interface{}
 	action := "DescribeGrantRulesToResource"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err := client.RpcPost("Cbn", "2017-09-12", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		response = resp
 		addDebug(action, response, request)
@@ -1503,14 +1503,14 @@ func (s *CbnService) DescribeCenTransitRouterPrefixListAssociation(id string) (o
 
 	idExist := false
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1542,7 +1542,7 @@ func (s *CbnService) DescribeCenTransitRouterPrefixListAssociation(id string) (o
 	return object, nil
 }
 
-func (s *CbnService) CenTransitRouterPrefixListAssociationStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+func (s *CbnService) CenTransitRouterPrefixListAssociationStateRefreshFunc(d *schema.ResourceData, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCenTransitRouterPrefixListAssociation(d.Id())
 		if err != nil {
@@ -1580,14 +1580,14 @@ func (s *CbnService) DescribeCenTransitRouterCidr(id string) (object map[string]
 
 	idExist := false
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1639,14 +1639,14 @@ func (s *CbnService) DescribeCenTransitRouterMulticastDomainSource(id string) (o
 	var response map[string]interface{}
 	action := "ListTransitRouterMulticastGroups"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err := client.RpcPost("Cbn", "2017-09-12", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		response = resp
 		addDebug(action, response, request)
@@ -1669,7 +1669,7 @@ func (s *CbnService) DescribeCenTransitRouterMulticastDomainSource(id string) (o
 	return resp[0].(map[string]interface{}), nil
 }
 
-func (s *CbnService) CenTransitRouterMulticastDomainSourceStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+func (s *CbnService) CenTransitRouterMulticastDomainSourceStateRefreshFunc(d *schema.ResourceData, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCenTransitRouterMulticastDomainSource(d.Id())
 		if err != nil {
@@ -1700,14 +1700,14 @@ func (s *CbnService) DescribeCenTransitRouterMulticastDomain(id string) (object 
 
 	idExist := false
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1740,7 +1740,7 @@ func (s *CbnService) DescribeCenTransitRouterMulticastDomain(id string) (object 
 	return object, nil
 }
 
-func (s *CbnService) CenTransitRouterMulticastDomainStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *CbnService) CenTransitRouterMulticastDomainStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCenTransitRouterMulticastDomain(id)
 		if err != nil {
@@ -1773,14 +1773,14 @@ func (s *CbnService) DescribeCenInterRegionTrafficQosQueue(id string) (object ma
 	var response map[string]interface{}
 	action := "ListCenInterRegionTrafficQosQueues"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err := client.RpcPost("Cbn", "2017-09-12", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		response = resp
 		addDebug(action, response, request)
@@ -1800,7 +1800,7 @@ func (s *CbnService) DescribeCenInterRegionTrafficQosQueue(id string) (object ma
 	return resp[0].(map[string]interface{}), nil
 }
 
-func (s *CbnService) CenInterRegionTrafficQosQueueStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+func (s *CbnService) CenInterRegionTrafficQosQueueStateRefreshFunc(d *schema.ResourceData, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCenInterRegionTrafficQosQueue(d.Id())
 		if err != nil {
@@ -1829,14 +1829,14 @@ func (s *CbnService) DescribeCenInterRegionTrafficQosPolicy(id string) (object m
 
 	idExist := false
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1869,7 +1869,7 @@ func (s *CbnService) DescribeCenInterRegionTrafficQosPolicy(id string) (object m
 	return object, nil
 }
 
-func (s *CbnService) CenInterRegionTrafficQosPolicyStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *CbnService) CenInterRegionTrafficQosPolicyStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCenInterRegionTrafficQosPolicy(id)
 		if err != nil {
@@ -1909,14 +1909,14 @@ func (s *CbnService) DescribeCenTransitRouterMulticastDomainPeerMember(id string
 	var response map[string]interface{}
 	action := "ListTransitRouterMulticastGroups"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err := client.RpcPost("Cbn", "2017-09-12", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		response = resp
 		addDebug(action, response, request)
@@ -1939,7 +1939,7 @@ func (s *CbnService) DescribeCenTransitRouterMulticastDomainPeerMember(id string
 	return v.(map[string]interface{}), nil
 }
 
-func (s *CbnService) CenTransitRouterMulticastDomainPeerMemberStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+func (s *CbnService) CenTransitRouterMulticastDomainPeerMemberStateRefreshFunc(d *schema.ResourceData, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCenTransitRouterMulticastDomainPeerMember(d.Id())
 		if err != nil {
@@ -1982,14 +1982,14 @@ func (s *CbnService) DescribeCenTransitRouterMulticastDomainMember(id string) (o
 	idExist := false
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -2041,7 +2041,7 @@ func (s *CbnService) DescribeCenTransitRouterMulticastDomainMember(id string) (o
 	return object, nil
 }
 
-func (s *CbnService) CenTransitRouterMulticastDomainMemberStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+func (s *CbnService) CenTransitRouterMulticastDomainMemberStateRefreshFunc(d *schema.ResourceData, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCenTransitRouterMulticastDomainMember(d.Id())
 		if err != nil {
@@ -2082,14 +2082,14 @@ func (s *CbnService) DescribeCenChildInstanceRouteEntryToAttachment(id string) (
 	var response map[string]interface{}
 	action := "ListCenChildInstanceRouteEntriesToAttachment"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err := client.RpcPost("Cbn", "2017-09-12", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		response = resp
 		addDebug(action, response, request)
@@ -2116,7 +2116,7 @@ func (s *CbnService) DescribeCenChildInstanceRouteEntryToAttachment(id string) (
 	return v.(map[string]interface{}), nil
 }
 
-func (s *CbnService) CenChildInstanceRouteEntryToAttachmentStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+func (s *CbnService) CenChildInstanceRouteEntryToAttachmentStateRefreshFunc(d *schema.ResourceData, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCenChildInstanceRouteEntryToAttachment(d.Id())
 		if err != nil {
@@ -2152,14 +2152,14 @@ func (s *CbnService) DescribeCenTransitRouterMulticastDomainAssociation(id strin
 
 	idExist := false
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -2192,7 +2192,7 @@ func (s *CbnService) DescribeCenTransitRouterMulticastDomainAssociation(id strin
 	return object, nil
 }
 
-func (s *CbnService) CenTransitRouterMulticastDomainAssociationStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *CbnService) CenTransitRouterMulticastDomainAssociationStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCenTransitRouterMulticastDomainAssociation(id)
 		if err != nil {
@@ -2235,14 +2235,14 @@ func (s *CbnService) DescribeCenTransitRouteTableAggregation(id string) (object 
 
 	idExist := false
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Operation.Blocking"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -2278,7 +2278,7 @@ func (s *CbnService) DescribeCenTransitRouteTableAggregation(id string) (object 
 	return object, nil
 }
 
-func (s *CbnService) CenTransitRouteTableAggregationStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+func (s *CbnService) CenTransitRouteTableAggregationStateRefreshFunc(d *schema.ResourceData, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCenTransitRouteTableAggregation(d.Id())
 		if err != nil {

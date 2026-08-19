@@ -12,7 +12,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/google/uuid"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -594,14 +594,14 @@ func buildEcsInstanceSetRunInstanceRequest(d *schema.ResourceData, meta interfac
 
 	request["ClientToken"] = buildClientToken(action)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -621,7 +621,7 @@ func buildEcsInstanceSetRunInstanceRequest(d *schema.ResourceData, meta interfac
 	}
 
 	ecsService := EcsService{client}
-	var instanceHealthCheckFunc resource.StateRefreshFunc
+	var instanceHealthCheckFunc retry.StateRefreshFunc
 	//Not check OK. GetOk will take "value" in judgement!
 	if v, _ := d.GetOk("boot_check_os_with_assistant"); v != nil && v.(bool) == true {
 		instanceHealthCheckFunc = ecsService.EcsInstanceSetStateRefreshFunc(encodeToBase64String(instanceIds), []string{"Stopping"})
@@ -708,13 +708,13 @@ func resourceAliCloudEcsInstanceSetRead(d *schema.ResourceData, meta interface{}
 	}
 
 	var disk ecs.Disk
-	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(2*time.Minute, func() *retry.RetryError {
 		disk, err = ecsService.DescribeInstanceSystemDisk(fmt.Sprint(instance["InstanceId"]), fmt.Sprint(instance["ResourceGroupId"]), "")
 		if err != nil {
 			if NotFoundError(err) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -890,14 +890,14 @@ func buildEcsInstanceSetDeleteInstancesRequest(d *schema.ResourceData, meta inte
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = fmt.Sprint(strings.Trim(uuid.New().String(), "-"))[1:30]
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"IncorrectInstanceStatus", "DependencyViolation.RouteEntry", "IncorrectInstanceStatus.Initializing"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -923,14 +923,14 @@ func modifyEcsInstanceRequest(d *schema.ResourceData, meta interface{}, instance
 	request["InstanceName"] = instanceName
 	request["RegionId"] = client.RegionId
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

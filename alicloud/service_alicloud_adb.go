@@ -12,7 +12,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/adb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -510,7 +510,7 @@ func (s *AdbService) ModifyAdbBackupPolicy(clusterId, backupTime, backupPeriod s
 	return nil
 }
 
-func (s *AdbService) AdbClusterStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *AdbService) AdbClusterStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAdbClusterAttribute(id)
 		if err != nil {
@@ -538,17 +538,17 @@ func (s *AdbService) DescribeTask(id, taskId string) (*adb.DescribeTaskInfoRespo
 
 	var response *adb.DescribeTaskInfoResponse
 	wait := incrementalWait(2*time.Second, 1*time.Second)
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err := s.client.WithAdbClient(func(adbClient *adb.Client) (interface{}, error) {
 			return adbClient.DescribeTaskInfo(request)
 		})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ = raw.(*adb.DescribeTaskInfoResponse)
@@ -564,7 +564,7 @@ func (s *AdbService) DescribeTask(id, taskId string) (*adb.DescribeTaskInfoRespo
 	return response, nil
 }
 
-func (s *AdbService) AdbTaskStateRefreshFunc(id, taskId string) resource.StateRefreshFunc {
+func (s *AdbService) AdbTaskStateRefreshFunc(id, taskId string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeTask(id, taskId)
 		if err != nil {
@@ -671,15 +671,15 @@ func (s *AdbService) SetResourceTags(d *schema.ResourceData, resourceType string
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
 			wait := incrementalWait(2*time.Second, 1*time.Second)
-			err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+			err = retry.Retry(10*time.Minute, func() *retry.RetryError {
 				response, err = s.client.RpcPost("adb", "2019-03-15", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(action, response, request)
 				return nil
@@ -703,15 +703,15 @@ func (s *AdbService) SetResourceTags(d *schema.ResourceData, resourceType string
 			}
 
 			wait := incrementalWait(2*time.Second, 1*time.Second)
-			err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+			err = retry.Retry(10*time.Minute, func() *retry.RetryError {
 				response, err = s.client.RpcPost("adb", "2019-03-15", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(action, response, request)
 				return nil
@@ -784,7 +784,7 @@ func (s *AdbService) DescribeDBClusters(id string) (object map[string]interface{
 	return object, nil
 }
 
-func (s *AdbService) AdbDbClusterStateRefreshFunc(id string, stateField string, failStates []string) resource.StateRefreshFunc {
+func (s *AdbService) AdbDbClusterStateRefreshFunc(id string, stateField string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAdbDbCluster(id)
 		if err != nil {
@@ -816,14 +816,14 @@ func (s *AdbService) DescribeAdbDbClusterLakeVersion(id string) (object map[stri
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = s.client.RpcPost("adb", "2021-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -859,7 +859,7 @@ func (s *AdbService) DescribeAdbDbClusterLakeVersion(id string) (object map[stri
 	return object, nil
 }
 
-func (s *AdbService) AdbDbClusterLakeVersionStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+func (s *AdbService) AdbDbClusterLakeVersionStateRefreshFunc(d *schema.ResourceData, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAdbDbClusterLakeVersion(d.Id())
 		if err != nil {
@@ -890,14 +890,14 @@ func (s *AdbService) DescribeClusterAccessWhiteList(id string) (object map[strin
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = s.client.RpcPost("adb", "2021-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -942,14 +942,14 @@ func (s *AdbService) DescribeAdbResourceGroup(id string) (object map[string]inte
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = s.client.RpcPost("adb", "2019-03-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -994,14 +994,14 @@ func (s *AdbService) DescribeAdbDbClusterSSL(id string) (object map[string]inter
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(10*time.Minute, func() *retry.RetryError {
 		response, err = s.client.RpcPost("adb", "2019-03-15", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ADBVersionNotSupport"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1030,14 +1030,14 @@ func (s *AdbService) DescribeAdbDbClusterKernelVersion(id string) (object map[st
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(10*time.Minute, func() *retry.RetryError {
 		response, err = s.client.RpcPost("adb", "2019-03-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1066,14 +1066,14 @@ func (s *AdbService) DescribeAdbDbClusterLakeVersionDBClusterSSL(id string) (obj
 	}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = s.client.RpcPost("adb", "2021-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1096,7 +1096,7 @@ func (s *AdbService) DescribeAdbDbClusterLakeVersionDBClusterSSL(id string) (obj
 	return object, nil
 }
 
-func (s *AdbService) AdbDbClusterLakeVersionDBClusterSSLStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+func (s *AdbService) AdbDbClusterLakeVersionDBClusterSSLStateRefreshFunc(d *schema.ResourceData, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAdbDbClusterLakeVersionDBClusterSSL(d.Id())
 		if err != nil {

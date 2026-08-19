@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -166,14 +166,14 @@ func resourceAliCloudCenTransitRouterVpnAttachmentCreate(d *schema.ResourceData,
 		request["TransitRouterAttachmentDescription"] = v
 	}
 	wait := incrementalWait(5*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Cbn", "2017-09-12", action, query, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"OperationFailed.AllocateCidrFailed", "IncorrectStatus.Status", "Operation.Blocking", "Throttling.user"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -283,14 +283,14 @@ func resourceAliCloudCenTransitRouterVpnAttachmentUpdate(d *schema.ResourceData,
 
 	if update {
 		wait := incrementalWait(5*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Cbn", "2017-09-12", action, query, request, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"IncorrectStatus.Status", "Operation.Blocking", "Throttling.user"}) || NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -328,14 +328,14 @@ func resourceAliCloudCenTransitRouterVpnAttachmentDelete(d *schema.ResourceData,
 	request["ClientToken"] = buildClientToken(action)
 
 	wait := incrementalWait(5*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("Cbn", "2017-09-12", action, query, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Operation.Blocking", "IncorrectStatus.Status", "Throttling.user"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

@@ -7,7 +7,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -195,16 +195,16 @@ func resourceAlicloudAlidnsDomainDelete(d *schema.ResourceData, meta interface{}
 		request.Lang = v.(string)
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err := resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err := retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		raw, err := client.WithAlidnsClient(func(alidnsClient *alidns.Client) (interface{}, error) {
 			return alidnsClient.DeleteDomain(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"RecordForbidden.DNSChange", "DnsSystemBusyness", "InternalError"}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw)
 		return nil

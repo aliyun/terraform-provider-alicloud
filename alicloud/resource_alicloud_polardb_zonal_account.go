@@ -7,7 +7,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/polardb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -84,13 +84,13 @@ func resourceAlicloudPolarDBZonalAccountCreate(d *schema.ResourceData, meta inte
 		request.AccountDescription = v.(string)
 	}
 
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 		err := polarDBServiceV2.CreateAccount(request)
 		if err != nil {
 			if NeedRetry(err) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -146,13 +146,13 @@ func resourceAlicloudPolarDBZonalAccountUpdate(d *schema.ResourceData, meta inte
 		}
 		accountDescription := d.Get("account_description").(string)
 
-		err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 			err := polarDBService.modifyAccountDescription(instanceId, accountName, accountDescription)
 			if err != nil {
 				if NeedRetry(err) {
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug("modifyAccountDescription", err, parts[1])
 			return nil
@@ -174,13 +174,13 @@ func resourceAlicloudPolarDBZonalAccountUpdate(d *schema.ResourceData, meta inte
 
 		passwordfinal := password
 
-		err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 			err := polarDBService.modifyAccountPassword(instanceId, accountName, passwordfinal)
 			if err != nil {
 				if NeedRetry(err) {
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug("modifyAccountPassword", err, accountName)
 			return nil
@@ -202,13 +202,13 @@ func resourceAlicloudPolarDBZonalAccountDelete(d *schema.ResourceData, meta inte
 		return WrapError(err)
 	}
 
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		err := polarDBService.DeleteAccount(parts[0], parts[1])
 		if err != nil {
 			if NeedRetry(err) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug("DeleteAccount", err, parts[1])
 		return nil

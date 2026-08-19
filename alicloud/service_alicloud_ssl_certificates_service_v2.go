@@ -8,7 +8,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -30,15 +30,15 @@ func (s *SslCertificatesServiceServiceV2) DescribeSslCertificatesServicePcaCerti
 	action := "DescribeCACertificate"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cas", "2020-06-30", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -58,11 +58,11 @@ func (s *SslCertificatesServiceServiceV2) DescribeSslCertificatesServicePcaCerti
 	return v.(map[string]interface{}), nil
 }
 
-func (s *SslCertificatesServiceServiceV2) SslCertificatesServicePcaCertificateStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *SslCertificatesServiceServiceV2) SslCertificatesServicePcaCertificateStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.SslCertificatesServicePcaCertificateStateRefreshFuncWithApi(id, field, failStates, s.DescribeSslCertificatesServicePcaCertificate)
 }
 
-func (s *SslCertificatesServiceServiceV2) SslCertificatesServicePcaCertificateStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *SslCertificatesServiceServiceV2) SslCertificatesServicePcaCertificateStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -106,15 +106,15 @@ func (s *SslCertificatesServiceServiceV2) DescribeSslCertificatesServiceCertific
 	action := "GetUserCertificateDetail"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cas", "2020-04-07", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -129,7 +129,7 @@ func (s *SslCertificatesServiceServiceV2) DescribeSslCertificatesServiceCertific
 	return response, nil
 }
 
-func (s *SslCertificatesServiceServiceV2) SslCertificatesServiceCertificateStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *SslCertificatesServiceServiceV2) SslCertificatesServiceCertificateStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeSslCertificatesServiceCertificate(id)
 		if err != nil {
@@ -189,14 +189,14 @@ func (s *SslCertificatesServiceServiceV2) SetResourceTags(d *schema.ResourceData
 
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("cas", "2020-06-30", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -222,14 +222,14 @@ func (s *SslCertificatesServiceServiceV2) SetResourceTags(d *schema.ResourceData
 
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("cas", "2020-06-30", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -258,15 +258,15 @@ func (s *SslCertificatesServiceServiceV2) DescribeSslCertificatesServicePcaCert(
 	action := "DescribeClientCertificate"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cas", "2020-06-30", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -286,11 +286,11 @@ func (s *SslCertificatesServiceServiceV2) DescribeSslCertificatesServicePcaCert(
 	return v.(map[string]interface{}), nil
 }
 
-func (s *SslCertificatesServiceServiceV2) SslCertificatesServicePcaCertStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *SslCertificatesServiceServiceV2) SslCertificatesServicePcaCertStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.SslCertificatesServicePcaCertStateRefreshFuncWithApi(id, field, failStates, s.DescribeSslCertificatesServicePcaCert)
 }
 
-func (s *SslCertificatesServiceServiceV2) SslCertificatesServicePcaCertStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *SslCertificatesServiceServiceV2) SslCertificatesServicePcaCertStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -334,15 +334,15 @@ func (s *SslCertificatesServiceServiceV2) DescribeSslCertificatesServiceCompany(
 	action := "GetCompany"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cas", "2020-04-07", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -357,11 +357,11 @@ func (s *SslCertificatesServiceServiceV2) DescribeSslCertificatesServiceCompany(
 	return response, nil
 }
 
-func (s *SslCertificatesServiceServiceV2) SslCertificatesServiceCompanyStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *SslCertificatesServiceServiceV2) SslCertificatesServiceCompanyStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.SslCertificatesServiceCompanyStateRefreshFuncWithApi(id, field, failStates, s.DescribeSslCertificatesServiceCompany)
 }
 
-func (s *SslCertificatesServiceServiceV2) SslCertificatesServiceCompanyStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *SslCertificatesServiceServiceV2) SslCertificatesServiceCompanyStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -405,15 +405,15 @@ func (s *SslCertificatesServiceServiceV2) DescribeSslCertificatesServiceContact(
 	action := "GetContact"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cas", "2020-04-07", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -428,11 +428,11 @@ func (s *SslCertificatesServiceServiceV2) DescribeSslCertificatesServiceContact(
 	return response, nil
 }
 
-func (s *SslCertificatesServiceServiceV2) SslCertificatesServiceContactStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *SslCertificatesServiceServiceV2) SslCertificatesServiceContactStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.SslCertificatesServiceContactStateRefreshFuncWithApi(id, field, failStates, s.DescribeSslCertificatesServiceContact)
 }
 
-func (s *SslCertificatesServiceServiceV2) SslCertificatesServiceContactStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *SslCertificatesServiceServiceV2) SslCertificatesServiceContactStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -475,15 +475,15 @@ func (s *SslCertificatesServiceServiceV2) DescribeSslCertificatesServiceInstance
 	action := "GetInstanceDetail"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cas", "2020-04-07", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -498,11 +498,11 @@ func (s *SslCertificatesServiceServiceV2) DescribeSslCertificatesServiceInstance
 	return response, nil
 }
 
-func (s *SslCertificatesServiceServiceV2) SslCertificatesServiceInstanceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *SslCertificatesServiceServiceV2) SslCertificatesServiceInstanceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.SslCertificatesServiceInstanceStateRefreshFuncWithApi(id, field, failStates, s.DescribeSslCertificatesServiceInstance)
 }
 
-func (s *SslCertificatesServiceServiceV2) SslCertificatesServiceInstanceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *SslCertificatesServiceServiceV2) SslCertificatesServiceInstanceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -545,15 +545,15 @@ func (s *SslCertificatesServiceServiceV2) DescribeSslCertificatesServiceCertific
 	action := "GetInstanceDetail"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cas", "2020-04-07", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -568,11 +568,11 @@ func (s *SslCertificatesServiceServiceV2) DescribeSslCertificatesServiceCertific
 	return response, nil
 }
 
-func (s *SslCertificatesServiceServiceV2) SslCertificatesServiceCertificateApplyStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *SslCertificatesServiceServiceV2) SslCertificatesServiceCertificateApplyStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.SslCertificatesServiceCertificateApplyStateRefreshFuncWithApi(id, field, failStates, s.DescribeSslCertificatesServiceCertificateApply)
 }
 
-func (s *SslCertificatesServiceServiceV2) SslCertificatesServiceCertificateApplyStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *SslCertificatesServiceServiceV2) SslCertificatesServiceCertificateApplyStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -630,15 +630,15 @@ func (s *SslCertificatesServiceServiceV2) DescribeSslCertificatesServiceInstance
 	action := "GetCertificateDetail"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cas", "2020-04-07", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -653,11 +653,11 @@ func (s *SslCertificatesServiceServiceV2) DescribeSslCertificatesServiceInstance
 	return response, nil
 }
 
-func (s *SslCertificatesServiceServiceV2) SslCertificatesServiceInstanceCertificateStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *SslCertificatesServiceServiceV2) SslCertificatesServiceInstanceCertificateStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.SslCertificatesServiceInstanceCertificateStateRefreshFuncWithApi(id, field, failStates, s.DescribeSslCertificatesServiceInstanceCertificate)
 }
 
-func (s *SslCertificatesServiceServiceV2) SslCertificatesServiceInstanceCertificateStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *SslCertificatesServiceServiceV2) SslCertificatesServiceInstanceCertificateStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -700,15 +700,15 @@ func (s *SslCertificatesServiceServiceV2) DescribeSslCertificatesServiceCertific
 	action := "GetInstanceDetail"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cas", "2020-04-07", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -723,11 +723,11 @@ func (s *SslCertificatesServiceServiceV2) DescribeSslCertificatesServiceCertific
 	return response, nil
 }
 
-func (s *SslCertificatesServiceServiceV2) SslCertificatesServiceCertificateValidationStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *SslCertificatesServiceServiceV2) SslCertificatesServiceCertificateValidationStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.SslCertificatesServiceCertificateValidationStateRefreshFuncWithApi(id, field, failStates, s.DescribeSslCertificatesServiceCertificateValidation)
 }
 
-func (s *SslCertificatesServiceServiceV2) SslCertificatesServiceCertificateValidationStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *SslCertificatesServiceServiceV2) SslCertificatesServiceCertificateValidationStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {

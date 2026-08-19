@@ -8,7 +8,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/polardb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -80,16 +80,16 @@ func resourceAlicloudPolarDBEndpointAddressCreate(d *schema.ResourceData, meta i
 	}
 	var raw interface{}
 	var err error
-	err = resource.Retry(8*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(8*time.Minute, func() *retry.RetryError {
 		raw, err = client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
 			return polarDBClient.CreateDBEndpointAddress(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, OperationDeniedDBStatus) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
@@ -164,15 +164,15 @@ func resourceAlicloudPolarDBEndpointAddressUpdate(d *schema.ResourceData, meta i
 		request.Port = d.Get("port").(string)
 		request.NetType = d.Get("net_type").(string)
 		if request.Port != object.Port {
-			if err := resource.Retry(8*time.Minute, func() *resource.RetryError {
+			if err := retry.Retry(8*time.Minute, func() *retry.RetryError {
 				raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
 					return polarDBClient.ModifyDBEndpointAddress(request)
 				})
 				if err != nil {
 					if IsExpectedErrors(err, []string{"EndpointStatus.NotSupport", "OperationDenied.DBClusterStatus"}) {
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 				return nil
@@ -205,15 +205,15 @@ func resourceAlicloudPolarDBEndpointAddressUpdate(d *schema.ResourceData, meta i
 		request.ConnectionStringPrefix = d.Get("connection_prefix").(string)
 		request.Port = d.Get("port").(string)
 		request.NetType = d.Get("net_type").(string)
-		if err := resource.Retry(8*time.Minute, func() *resource.RetryError {
+		if err := retry.Retry(8*time.Minute, func() *retry.RetryError {
 			raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
 				return polarDBClient.ModifyDBEndpointAddress(request)
 			})
 			if err != nil {
 				if IsExpectedErrors(err, []string{"EndpointStatus.NotSupport", "OperationDenied.DBClusterStatus"}) {
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			return nil
@@ -242,10 +242,10 @@ func resourceAlicloudPolarDBEndpointAddressDelete(d *schema.ResourceData, meta i
 	request.DBClusterId = parts[0]
 	request.DBEndpointId = parts[1]
 
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 		object, err := polarDBService.DescribePolarDBConnectionV2(d.Id(), d.Get("net_type").(string))
 		if err != nil {
-			return resource.NonRetryableError(WrapError(err))
+			return retry.NonRetryableError(WrapError(err))
 		}
 		request.NetType = object.NetType
 		var raw interface{}
@@ -254,9 +254,9 @@ func resourceAlicloudPolarDBEndpointAddressDelete(d *schema.ResourceData, meta i
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"OperationDenied.DBClusterStatus", "EndpointStatus.NotSupport"}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil

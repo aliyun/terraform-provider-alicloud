@@ -7,7 +7,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -193,16 +193,16 @@ func dataSourceAlicloudCenBandwidthPackagesRead(d *schema.ResourceData, meta int
 	var response *cbn.DescribeCenBandwidthPackagesResponse
 	for {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err := resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		err := retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 			raw, err := client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
 				return cbnClient.DescribeCenBandwidthPackages(request)
 			})
 			if err != nil {
 				if IsExpectedErrors(err, []string{"AliyunGoClientFailure", "ServiceUnavailable", "Throttling", "Throttling.User"}) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(request.GetActionName(), raw)
 			response, _ = raw.(*cbn.DescribeCenBandwidthPackagesResponse)

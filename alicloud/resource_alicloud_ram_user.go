@@ -7,7 +7,7 @@ import (
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -82,16 +82,16 @@ func resourceAlicloudRamUserCreate(d *schema.ResourceData, meta interface{}) err
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	var err error
 	var raw interface{}
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
+	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *retry.RetryError {
 		raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 			return ramClient.CreateUser(request)
 		})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -173,14 +173,14 @@ func resourceAlicloudRamUserUpdate(d *schema.ResourceData, meta interface{}) err
 	if update {
 		action := "UpdateUser"
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 			response, err = client.RpcPost("Ram", "2015-05-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -240,16 +240,16 @@ func resourceAlicloudRamUserDelete(d *schema.ResourceData, meta interface{}) err
 	if d.Get("force").(bool) {
 		// list and delete access keys for this user
 		wait = incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
+		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *retry.RetryError {
 			raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 				return ramClient.ListAccessKeys(request)
 			})
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -269,16 +269,16 @@ func resourceAlicloudRamUserDelete(d *schema.ResourceData, meta interface{}) err
 				runtime := util.RuntimeOptions{}
 				runtime.SetAutoretry(true)
 				wait = incrementalWait(3*time.Second, 3*time.Second)
-				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
+				err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *retry.RetryError {
 					raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 						return ramClient.DeleteAccessKey(request)
 					})
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					return nil
 				})
@@ -296,16 +296,16 @@ func resourceAlicloudRamUserDelete(d *schema.ResourceData, meta interface{}) err
 		request.UserName = userName
 
 		wait = incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
+		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *retry.RetryError {
 			raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 				return ramClient.ListPoliciesForUser(request)
 			})
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -324,16 +324,16 @@ func resourceAlicloudRamUserDelete(d *schema.ResourceData, meta interface{}) err
 				request.UserName = userName
 
 				wait = incrementalWait(3*time.Second, 3*time.Second)
-				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
+				err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *retry.RetryError {
 					raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 						return ramClient.DetachPolicyFromUser(request)
 					})
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					return nil
 				})
@@ -351,16 +351,16 @@ func resourceAlicloudRamUserDelete(d *schema.ResourceData, meta interface{}) err
 		listGroupsForUserRequest.UserName = userName
 
 		wait = incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
+		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *retry.RetryError {
 			raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 				return ramClient.ListGroupsForUser(listGroupsForUserRequest)
 			})
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -378,16 +378,16 @@ func resourceAlicloudRamUserDelete(d *schema.ResourceData, meta interface{}) err
 				request.GroupName = v.GroupName
 
 				wait = incrementalWait(3*time.Second, 3*time.Second)
-				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
+				err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *retry.RetryError {
 					raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 						return ramClient.RemoveUserFromGroup(request)
 					})
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					return nil
 				})
@@ -404,16 +404,16 @@ func resourceAlicloudRamUserDelete(d *schema.ResourceData, meta interface{}) err
 		deleteLoginProfileRequest.UserName = userName
 
 		wait = incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
+		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *retry.RetryError {
 			raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 				return ramClient.DeleteLoginProfile(deleteLoginProfileRequest)
 			})
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -426,16 +426,16 @@ func resourceAlicloudRamUserDelete(d *schema.ResourceData, meta interface{}) err
 		unbindMFADeviceRequest.UserName = userName
 
 		wait = incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
+		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *retry.RetryError {
 			raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 				return ramClient.UnbindMFADevice(unbindMFADeviceRequest)
 			})
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -449,7 +449,7 @@ func resourceAlicloudRamUserDelete(d *schema.ResourceData, meta interface{}) err
 	deleteUserRequest.RegionId = client.RegionId
 
 	wait = incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
+	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *retry.RetryError {
 		raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 			deleteUserRequest.UserName = userName
 			return ramClient.DeleteUser(deleteUserRequest)
@@ -457,9 +457,9 @@ func resourceAlicloudRamUserDelete(d *schema.ResourceData, meta interface{}) err
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

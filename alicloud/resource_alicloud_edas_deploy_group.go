@@ -5,7 +5,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/edas"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -50,16 +50,16 @@ func resourceAlicloudEdasDeployGroupCreate(d *schema.ResourceData, meta interfac
 	request.GroupName = groupName
 
 	wait := incrementalWait(1*time.Second, 2*time.Second)
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err := edasService.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
 			return edasClient.InsertDeployGroup(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{ThrottlingUser}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		response := raw.(*edas.InsertDeployGroupResponse)
 		deployGroup := response.DeployGroupEntity
@@ -112,16 +112,16 @@ func resourceAlicloudEdasDeployGroupDelete(d *schema.ResourceData, meta interfac
 	request.GroupName = d.Get("group_name").(string)
 
 	wait := incrementalWait(1*time.Second, 2*time.Second)
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err := edasService.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
 			return edasClient.DeleteDeployGroup(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{ThrottlingUser}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 		return nil

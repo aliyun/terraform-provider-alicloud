@@ -3,7 +3,7 @@ package alicloud
 import (
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type PrivatelinkService struct {
@@ -60,7 +60,7 @@ func (s *PrivatelinkService) DescribePrivatelinkVpcEndpointService(id string) (o
 	return object, nil
 }
 
-func (s *PrivatelinkService) PrivatelinkVpcEndpointServiceStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *PrivatelinkService) PrivatelinkVpcEndpointServiceStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribePrivatelinkVpcEndpointService(id)
 		if err != nil {
@@ -114,7 +114,7 @@ func (s *PrivatelinkService) DescribePrivatelinkVpcEndpointConnection(id string)
 	return object, nil
 }
 
-func (s *PrivatelinkService) PrivatelinkVpcEndpointConnectionStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *PrivatelinkService) PrivatelinkVpcEndpointConnectionStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribePrivatelinkVpcEndpointConnection(id)
 		if err != nil {
@@ -210,7 +210,7 @@ func (s *PrivatelinkService) DescribePrivatelinkVpcEndpoint(id string) (object m
 	return object, nil
 }
 
-func (s *PrivatelinkService) PrivatelinkVpcEndpointStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *PrivatelinkService) PrivatelinkVpcEndpointStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribePrivatelinkVpcEndpoint(id)
 		if err != nil {
@@ -356,7 +356,7 @@ func (s *PrivatelinkService) DescribePrivatelinkVpcEndpointZone(id string) (obje
 	return
 }
 
-func (s *PrivatelinkService) PrivatelinkVpcEndpointZoneStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *PrivatelinkService) PrivatelinkVpcEndpointZoneStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribePrivatelinkVpcEndpointZone(id)
 		if err != nil {

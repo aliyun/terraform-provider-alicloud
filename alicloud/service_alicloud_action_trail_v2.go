@@ -8,7 +8,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type ActionTrailServiceV2 struct {
@@ -29,15 +29,15 @@ func (s *ActionTrailServiceV2) DescribeActionTrailTrail(id string) (object map[s
 	action := "DescribeTrails"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Actiontrail", "2020-07-06", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -69,15 +69,15 @@ func (s *ActionTrailServiceV2) DescribeTrailGetDataEventSelector(id string) (obj
 	action := "GetDataEventSelector"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Actiontrail", "2020-07-06", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -92,11 +92,11 @@ func (s *ActionTrailServiceV2) DescribeTrailGetDataEventSelector(id string) (obj
 	return response, nil
 }
 
-func (s *ActionTrailServiceV2) ActionTrailTrailStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ActionTrailServiceV2) ActionTrailTrailStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.ActionTrailTrailStateRefreshFuncWithApi(id, field, failStates, s.DescribeActionTrailTrail)
 }
 
-func (s *ActionTrailServiceV2) ActionTrailTrailStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *ActionTrailServiceV2) ActionTrailTrailStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -139,15 +139,15 @@ func (s *ActionTrailServiceV2) DescribeActionTrailHistoryDeliveryJob(id string) 
 	action := "GetDeliveryHistoryJob"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Actiontrail", "2020-07-06", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -162,11 +162,11 @@ func (s *ActionTrailServiceV2) DescribeActionTrailHistoryDeliveryJob(id string) 
 	return response, nil
 }
 
-func (s *ActionTrailServiceV2) ActionTrailHistoryDeliveryJobStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ActionTrailServiceV2) ActionTrailHistoryDeliveryJobStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.ActionTrailHistoryDeliveryJobStateRefreshFuncWithApi(id, field, failStates, s.DescribeActionTrailHistoryDeliveryJob)
 }
 
-func (s *ActionTrailServiceV2) ActionTrailHistoryDeliveryJobStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *ActionTrailServiceV2) ActionTrailHistoryDeliveryJobStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {

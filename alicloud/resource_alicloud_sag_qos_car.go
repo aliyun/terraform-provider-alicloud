@@ -7,7 +7,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/smartag"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -95,16 +95,16 @@ func resourceAlicloudSagQosCarCreate(d *schema.ResourceData, meta interface{}) e
 		request.PercentSourceType = d.Get("percent_source_type").(string)
 	}
 	var response *smartag.CreateQosCarResponse
-	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+	err := retry.Retry(3*time.Minute, func() *retry.RetryError {
 		raw, err := client.WithSagClient(func(sagClient *smartag.Client) (interface{}, error) {
 			return sagClient.CreateQosCar(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ResourceInOperating"}) {
 				time.Sleep(2 * time.Second)
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ = raw.(*smartag.CreateQosCarResponse)
@@ -216,16 +216,16 @@ func resourceAlicloudSagQosCarDelete(d *schema.ResourceData, meta interface{}) e
 	request.QosId = parts[0]
 	request.QosCarId = parts[1]
 
-	if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+	if err := retry.Retry(3*time.Minute, func() *retry.RetryError {
 		raw, err := client.WithSagClient(func(sagClient *smartag.Client) (interface{}, error) {
 			return sagClient.DeleteQosCar(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ResourceInOperating"}) {
 				time.Sleep(2 * time.Second)
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil

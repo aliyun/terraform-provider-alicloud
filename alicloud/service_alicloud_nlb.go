@@ -6,7 +6,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -37,15 +37,15 @@ func (s *NlbService) SetResourceTags(d *schema.ResourceData, resourceType string
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
 			wait := incrementalWait(2*time.Second, 1*time.Second)
-			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+			err := retry.Retry(10*time.Minute, func() *retry.RetryError {
 				response, err := client.RpcPost("Nlb", "2022-04-30", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(action, response, request)
 				return nil
@@ -69,15 +69,15 @@ func (s *NlbService) SetResourceTags(d *schema.ResourceData, resourceType string
 			}
 
 			wait := incrementalWait(2*time.Second, 1*time.Second)
-			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+			err := retry.Retry(10*time.Minute, func() *retry.RetryError {
 				response, err := client.RpcPost("Nlb", "2022-04-30", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(action, response, request)
 				return nil
@@ -100,14 +100,14 @@ func (s *NlbService) DescribeNlbServerGroup(id string) (object map[string]interf
 	}
 	idExist := false
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Nlb", "2022-04-30", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -150,19 +150,19 @@ func (s *NlbService) ListTagResources(id string, resourceType string) (object in
 
 	for {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err := client.RpcPost("Nlb", "2022-04-30", action, nil, request, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{Throttling}) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(action, response, request)
 			v, err := jsonpath.Get("$.TagResources", response)
 			if formatInt(response["TotalCount"]) != 0 && err != nil {
-				return resource.NonRetryableError(WrapErrorf(err, FailedGetAttributeMsg, id, "$.TagResources", response))
+				return retry.NonRetryableError(WrapErrorf(err, FailedGetAttributeMsg, id, "$.TagResources", response))
 			}
 			if v != nil {
 				tags = append(tags, v.([]interface{})...)
@@ -182,7 +182,7 @@ func (s *NlbService) ListTagResources(id string, resourceType string) (object in
 	return tags, nil
 }
 
-func (s *NlbService) NlbServerGroupStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *NlbService) NlbServerGroupStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeNlbServerGroup(id)
 		if err != nil {
@@ -212,14 +212,14 @@ func (s *NlbService) DescribeNlbSecurityPolicy(id string) (object map[string]int
 	}
 	idExist := false
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Nlb", "2022-04-30", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -249,7 +249,7 @@ func (s *NlbService) DescribeNlbSecurityPolicy(id string) (object map[string]int
 	return object, nil
 }
 
-func (s *NlbService) NlbSecurityPolicyStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *NlbService) NlbSecurityPolicyStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeNlbSecurityPolicy(id)
 		if err != nil {
@@ -279,14 +279,14 @@ func (s *NlbService) DescribeNlbLoadBalancer(id string) (object map[string]inter
 	var response map[string]interface{}
 	action := "GetLoadBalancerAttribute"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err := client.RpcPost("Nlb", "2022-04-30", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		response = resp
 		addDebug(action, response, request)
@@ -305,7 +305,7 @@ func (s *NlbService) DescribeNlbLoadBalancer(id string) (object map[string]inter
 	return v.(map[string]interface{}), nil
 }
 
-func (s *NlbService) NlbLoadBalancerStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+func (s *NlbService) NlbLoadBalancerStateRefreshFunc(d *schema.ResourceData, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeNlbLoadBalancer(d.Id())
 		if err != nil {
@@ -333,14 +333,14 @@ func (s *NlbService) DescribeNlbListener(id string) (object map[string]interface
 	var response map[string]interface{}
 	action := "GetListenerAttribute"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err := client.RpcPost("Nlb", "2022-04-30", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		response = resp
 		addDebug(action, response, request)
@@ -360,7 +360,7 @@ func (s *NlbService) DescribeNlbListener(id string) (object map[string]interface
 	return object, nil
 }
 
-func (s *NlbService) NlbListenerStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+func (s *NlbService) NlbListenerStateRefreshFunc(d *schema.ResourceData, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeNlbListener(d.Id())
 		if err != nil {
@@ -394,14 +394,14 @@ func (s *NlbService) DescribeNlbServerGroupServerAttachment(id string) (object m
 	action := "ListServerGroupServers"
 	idExist := false
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err := client.RpcPost("Nlb", "2022-04-30", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		response = resp
 		addDebug(action, response, request)
@@ -429,7 +429,7 @@ func (s *NlbService) DescribeNlbServerGroupServerAttachment(id string) (object m
 	return object, nil
 }
 
-func (s *NlbService) NlbServerGroupServerAttachmentStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+func (s *NlbService) NlbServerGroupServerAttachmentStateRefreshFunc(d *schema.ResourceData, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeNlbServerGroupServerAttachment(d.Id())
 		if err != nil {
@@ -464,14 +464,14 @@ func (s *NlbService) DescribeNlbLoadBalancerSecurityGroupAttachment(id string) (
 	var response map[string]interface{}
 	action := "GetLoadBalancerAttribute"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Nlb", "2022-04-30", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -510,14 +510,14 @@ func (s *NlbService) GetJobStatus(id string) (object map[string]interface{}, err
 	var response map[string]interface{}
 	action := "GetJobStatus"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err := client.RpcPost("Nlb", "2022-04-30", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		response = resp
 		addDebug(action, response, request)
@@ -533,7 +533,7 @@ func (s *NlbService) GetJobStatus(id string) (object map[string]interface{}, err
 	return v.(map[string]interface{}), nil
 }
 
-func (s *NlbService) NlbLoadBalancerSecurityGroupAttachmentStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *NlbService) NlbLoadBalancerSecurityGroupAttachmentStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.GetJobStatus(id)
 		if err != nil {

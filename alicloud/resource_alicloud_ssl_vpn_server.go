@@ -6,7 +6,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -104,16 +104,16 @@ func resourceAliyunSslVpnServerCreate(d *schema.ResourceData, meta interface{}) 
 	request.ClientToken = buildClientToken(request.GetActionName())
 
 	var response *vpc.CreateSslVpnServerResponse
-	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+	err := retry.Retry(3*time.Minute, func() *retry.RetryError {
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.CreateSslVpnServer(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"VpnGateway.Configuring"}) {
 				time.Sleep(10 * time.Second)
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ = raw.(*vpc.CreateSslVpnServerResponse)
@@ -190,7 +190,7 @@ func resourceAliyunSslVpnServerUpdate(d *schema.ResourceData, meta interface{}) 
 		request.Compress = requests.NewBoolean(d.Get("compress").(bool))
 	}
 
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.ModifySslVpnServer(request)
 		})
@@ -198,9 +198,9 @@ func resourceAliyunSslVpnServerUpdate(d *schema.ResourceData, meta interface{}) 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"VpnGateway.Configuring"}) {
 				time.Sleep(10 * time.Second)
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
@@ -220,7 +220,7 @@ func resourceAliyunSslVpnServerDelete(d *schema.ResourceData, meta interface{}) 
 	request.RegionId = client.RegionId
 	request.SslVpnServerId = d.Id()
 
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.DeleteSslVpnServer(request)
 		})
@@ -228,9 +228,9 @@ func resourceAliyunSslVpnServerDelete(d *schema.ResourceData, meta interface{}) 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"VpnGateway.Configuring"}) {
 				time.Sleep(10 * time.Second)
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil

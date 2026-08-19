@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -83,13 +83,13 @@ func resourceAlicloudDBConnectionCreate(d *schema.ResourceData, meta interface{}
 	}
 
 	var err error
-	err = resource.Retry(8*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(8*time.Minute, func() *retry.RetryError {
 		response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, OperationDeniedDBStatus) || NeedRetry(err) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -175,13 +175,13 @@ func resourceAlicloudDBConnectionUpdate(d *schema.ResourceData, meta interface{}
 		if v, ok := d.GetOk("babelfish_port"); ok {
 			request["BabelfishPort"] = v
 		}
-		if err := resource.Retry(8*time.Minute, func() *resource.RetryError {
+		if err := retry.Retry(8*time.Minute, func() *retry.RetryError {
 			response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 			if err != nil {
 				if IsExpectedErrors(err, OperationDeniedDBStatus) || NeedRetry(err) {
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(action, response, request)
 			return nil
@@ -214,18 +214,18 @@ func resourceAlicloudDBConnectionDelete(d *schema.ResourceData, meta interface{}
 		"SourceIp":     client.SourceIp,
 	}
 	var err error
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		object, err := rdsService.DescribeDBConnection(d.Id())
 		if err != nil {
-			return resource.NonRetryableError(WrapError(err))
+			return retry.NonRetryableError(WrapError(err))
 		}
 		request["CurrentConnectionString"] = object["ConnectionString"]
 		response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"OperationDenied.DBInstanceStatus"}) || NeedRetry(err) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil

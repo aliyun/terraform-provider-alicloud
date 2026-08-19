@@ -8,7 +8,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type HbrService struct {
@@ -56,14 +56,14 @@ func (s *HbrService) DescribeHbrVault(id string) (object map[string]interface{},
 
 	idExist := false
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("hbr", "2017-09-08", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -100,7 +100,7 @@ func (s *HbrService) DescribeHbrVault(id string) (object map[string]interface{},
 	return object, nil
 }
 
-func (s *HbrService) HbrVaultStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *HbrService) HbrVaultStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeHbrVault(id)
 		if err != nil {
@@ -134,14 +134,14 @@ func (s *HbrService) DescribeHbrEcsBackupPlan(id string) (object map[string]inte
 	})
 	request["Filters"] = filtersMapList
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("hbr", "2017-09-08", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -181,14 +181,14 @@ func (s *HbrService) DescribeHbrNasBackupPlan(id string) (object map[string]inte
 	})
 	request["Filters"] = filtersMapList
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("hbr", "2017-09-08", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -228,14 +228,14 @@ func (s *HbrService) DescribeHbrOssBackupPlan(id string) (object map[string]inte
 	idExist := false
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("hbr", "2017-09-08", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -282,14 +282,14 @@ func (s *HbrService) DescribeHbrOtsBackupPlan(id string) (object map[string]inte
 	idExist := false
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("hbr", "2017-09-08", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -339,14 +339,14 @@ func (s *HbrService) DescribeHbrTask(id string) (object map[string]interface{}, 
 		"TaskId": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("hbr", "2017-09-08", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -386,7 +386,7 @@ func (s *HbrService) DescribeHbrTask(id string) (object map[string]interface{}, 
 	return object, nil
 }
 
-func (s *HbrService) HbrTaskRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *HbrService) HbrTaskRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeHbrTask(id)
 		if err != nil {
@@ -415,14 +415,14 @@ func (s *HbrService) DescribeHbrEcsBackupClient(id string) (object map[string]in
 		"ClientType": "ECS_CLIENT",
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("hbr", "2017-09-08", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -448,7 +448,7 @@ func (s *HbrService) DescribeHbrEcsBackupClient(id string) (object map[string]in
 	return object, nil
 }
 
-func (s *HbrService) HbrEcsBackupClientStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *HbrService) HbrEcsBackupClientStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeHbrEcsBackupClient(id)
 		if err != nil {
@@ -487,14 +487,14 @@ func (s *HbrService) DescribeHbrRestoreJob(id string) (object map[string]interfa
 	idExist := false
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("hbr", "2017-09-08", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -529,7 +529,7 @@ func (s *HbrService) DescribeHbrRestoreJob(id string) (object map[string]interfa
 	return
 }
 
-func (s *HbrService) HbrRestoreJobStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *HbrService) HbrRestoreJobStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeHbrRestoreJob(id)
 		if err != nil {
@@ -561,14 +561,14 @@ func (s *HbrService) DescribeHbrServerBackupPlan(id string) (object map[string]i
 	idExist := false
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("hbr", "2017-09-08", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -614,14 +614,14 @@ func (s *HbrService) DescribeHbrReplicationVault(id string) (object map[string]i
 	idExist := false
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("hbr", "2017-09-08", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -670,14 +670,14 @@ func (s *HbrService) DescribeHbrHanaInstance(id string) (object map[string]inter
 		"VaultId":   parts[0],
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("hbr", "2017-09-08", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -721,14 +721,14 @@ func (s *HbrService) DescribeHbrHanaBackupPlan(id string) (object map[string]int
 	idExist := false
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("hbr", "2017-09-08", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -780,14 +780,14 @@ func (s *HbrService) DescribeHbrHanaBackupClient(id string) (object map[string]i
 
 	idExist := false
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("hbr", "2017-09-08", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -823,7 +823,7 @@ func (s *HbrService) DescribeHbrHanaBackupClient(id string) (object map[string]i
 	return object, nil
 }
 
-func (s *HbrService) HbrHanaBackupClientStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *HbrService) HbrHanaBackupClientStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeHbrHanaBackupClient(id)
 		if err != nil {

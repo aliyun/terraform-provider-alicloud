@@ -7,7 +7,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -183,14 +183,14 @@ func dataSourceAliCloudDBInstanceClassesRead(d *schema.ResourceData, meta interf
 		}
 		var response map[string]interface{}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -289,14 +289,14 @@ func dataSourceAliCloudDBInstanceClassesRead(d *schema.ResourceData, meta interf
 		for _, engine := range engines {
 			request["Engine"] = engine
 			wait := incrementalWait(3*time.Second, 3*time.Second)
-			err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 				response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -383,14 +383,14 @@ func dataSourceAliCloudDBInstanceClassesRead(d *schema.ResourceData, meta interf
 							}
 							var response map[string]interface{}
 							wait := incrementalWait(3*time.Second, 3*time.Second)
-							err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+							err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 								response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 								if err != nil {
 									if NeedRetry(err) {
 										wait()
-										return resource.RetryableError(err)
+										return retry.RetryableError(err)
 									}
-									return resource.NonRetryableError(err)
+									return retry.NonRetryableError(err)
 								}
 								return nil
 							})

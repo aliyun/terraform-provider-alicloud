@@ -14,7 +14,7 @@ import (
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/denverdino/aliyungo/cs"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -208,14 +208,14 @@ func (s *CsClient) DescribeClusterDetail(id string) (*client.DescribeClusterDeta
 	var err error
 	var response *client.DescribeClusterDetailResponse
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = s.client.DescribeClusterDetail(tea.String(id))
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -248,14 +248,14 @@ func (s *CsClient) DescribeClusterKubeConfigWithExpiration(clusterId string, tem
 	var err error
 	var kubeConfig *client.DescribeClusterUserKubeconfigResponse
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		kubeConfig, err = s.client.DescribeClusterUserKubeconfig(tea.String(clusterId), request)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -283,14 +283,14 @@ func (s *CsClient) ListAddons(clusterId string) (map[string]*client.ListAddonsRe
 	var err error
 	var resp *client.ListAddonsResponse
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err = s.client.ListAddons(request)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -317,16 +317,16 @@ func (s *CsClient) DescribeCsKubernetesAddonStatus(clusterId string, addonName s
 	var err error
 	var resp *client.DescribeClusterAddonsUpgradeStatusResponse
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err = s.client.DescribeClusterAddonsUpgradeStatus(&clusterId, &client.DescribeClusterAddonsUpgradeStatusRequest{
 			ComponentIds: []*string{tea.String(addonName)},
 		})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -374,14 +374,14 @@ func (s *CsClient) GetCsKubernetesAddonInstance(clusterId string, addonName stri
 	var err error
 	var resp *client.GetClusterAddonInstanceResponse
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err = s.client.GetClusterAddonInstance(&clusterId, tea.String(addonName))
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -483,14 +483,14 @@ func (s *CsClient) DescribeAddon(clusterId, name, version string) (*client.Descr
 	}
 	var resp *client.DescribeAddonResponse
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err = s.client.DescribeAddon(&name, req)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -593,7 +593,7 @@ func versionCompare(oldVersion, newVersion string) (int, error) {
 	return newSemver.Compare(oldSemver), nil
 }
 
-func (s *CsClient) CsKubernetesAddonTaskRefreshFunc(clusterId string, addonName string, failStates []string) resource.StateRefreshFunc {
+func (s *CsClient) CsKubernetesAddonTaskRefreshFunc(clusterId string, addonName string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCsKubernetesAddonStatus(clusterId, addonName)
 		if err != nil {
@@ -611,7 +611,7 @@ func (s *CsClient) CsKubernetesAddonTaskRefreshFunc(clusterId string, addonName 
 	}
 }
 
-func (s *CsClient) CsKubernetesAddonStateRefreshFunc(clusterId string, addonName string, failStates []string) resource.StateRefreshFunc {
+func (s *CsClient) CsKubernetesAddonStateRefreshFunc(clusterId string, addonName string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.GetCsKubernetesAddonInstance(clusterId, addonName)
 		if err != nil {
@@ -651,14 +651,14 @@ func (s *CsClient) installAddon(d *schema.ResourceData) error {
 	var resp *client.InstallClusterAddonsResponse
 	var err error
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err = s.client.InstallClusterAddons(&clusterId, creationArgs)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -707,14 +707,14 @@ func (s *CsClient) upgradeAddon(d *schema.ResourceData, updateVersion, updateCon
 	var resp *client.UpgradeClusterAddonsResponse
 	var err error
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err = s.client.UpgradeClusterAddons(&clusterId, upgradeArgs)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -758,14 +758,14 @@ func (s *CsClient) uninstallAddon(d *schema.ResourceData) error {
 
 	var resp *client.UnInstallClusterAddonsResponse
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err = s.client.UnInstallClusterAddons(&clusterId, uninstallArgs)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -797,14 +797,14 @@ func (s *CsClient) updateAddonConfig(d *schema.ResourceData) error {
 
 	var err error
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		_, err = s.client.ModifyClusterAddon(&clusterId, &ComponentName, upgradeArgs)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -911,7 +911,7 @@ func (s *CsService) DescribeCsManagedKubernetes(id string) (cluster *cs.Kubernet
 
 }
 
-func (s *CsService) CsKubernetesInstanceStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *CsService) CsKubernetesInstanceStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCsKubernetes(id)
 		if err != nil {
@@ -931,7 +931,7 @@ func (s *CsService) CsKubernetesInstanceStateRefreshFunc(id string, failStates [
 	}
 }
 
-func (s *CsService) CsKubernetesNodePoolStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *CsService) CsKubernetesNodePoolStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCsKubernetesNodePool(id)
 		if err != nil {
@@ -951,7 +951,7 @@ func (s *CsService) CsKubernetesNodePoolStateRefreshFunc(id string, failStates [
 	}
 }
 
-func (s *CsService) CsServerlessKubernetesInstanceStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *CsService) CsServerlessKubernetesInstanceStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCsServerlessKubernetes(id)
 		if err != nil {
@@ -1117,19 +1117,19 @@ func (s *CsService) GetUserData(clusterId string, labels string, taints string) 
 	return base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf(ATTACH_SCRIPT_WITH_VERSION+extra_options_in_line, region, region, version, token))), nil
 }
 
-func (s *CsClient) DescribeTaskRefreshFunc(d *schema.ResourceData, taskId string, failStates []string) resource.StateRefreshFunc {
+func (s *CsClient) DescribeTaskRefreshFunc(d *schema.ResourceData, taskId string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		var err error
 		var taskInfo *client.DescribeTaskInfoResponse
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			taskInfo, err = s.client.DescribeTaskInfo(tea.String(taskId))
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})

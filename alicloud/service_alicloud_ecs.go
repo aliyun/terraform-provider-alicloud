@@ -14,7 +14,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -120,17 +120,17 @@ func (s *EcsService) DescribeInstance(id string) (instance ecs.Instance, err err
 
 	var response *ecs.DescribeInstancesResponse
 	wait := incrementalWait(1*time.Second, 1*time.Second)
-	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(10*time.Minute, func() *retry.RetryError {
 		raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 			return ecsClient.DescribeInstances(request)
 		})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ = raw.(*ecs.DescribeInstancesResponse)
@@ -182,17 +182,17 @@ func (s *EcsService) DescribeInstanceSystemDisk(instanceId, rg, diskId string) (
 	request.RegionId = s.client.RegionId
 	var response *ecs.DescribeDisksResponse
 	wait := incrementalWait(1*time.Second, 1*time.Second)
-	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(10*time.Minute, func() *retry.RetryError {
 		raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 			return ecsClient.DescribeDisks(request)
 		})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ = raw.(*ecs.DescribeDisksResponse)
@@ -297,14 +297,14 @@ func (s *EcsService) DescribeSecurityGroupAttribute(id string) (object map[strin
 		"SecurityGroupId": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -352,16 +352,16 @@ func (s *EcsService) DescribeSecurityGroupRule(id string) (rule ecs.Permission, 
 
 	var raw interface{}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 			return ecsClient.DescribeSecurityGroupAttribute(request)
 		})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -462,16 +462,16 @@ func (s *EcsService) DescribeAvailableResources(d *schema.ResourceData, meta int
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	var response *ecs.DescribeAvailableResourceResponse
-	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	if err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 			return ecsClient.DescribeAvailableResource(request)
 		})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ = raw.(*ecs.DescribeAvailableResourceResponse)
@@ -634,14 +634,14 @@ func (s *EcsService) DescribeEcsKeyPairAttachment(id string) (object map[string]
 	instanceIds := make([]interface{}, 0)
 	for {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -935,14 +935,14 @@ func (s *EcsService) DescribeEcsNetworkInterfaceAttachment(id string) (object ma
 	idExist := false
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -1022,7 +1022,7 @@ func (s *EcsService) WaitForEcsInstance(instanceId string, status Status, timeou
 }
 
 // WaitForInstance waits for instance to given status
-func (s *EcsService) InstanceStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *EcsService) InstanceStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeInstance(id)
 		if err != nil {
@@ -1253,15 +1253,15 @@ func (s *EcsService) AttachKeyPair(keyName string, instanceIds []interface{}) er
 	request.RegionId = s.client.RegionId
 	request.KeyPairName = keyName
 	request.InstanceIds = convertListToJsonString(instanceIds)
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 			return ecsClient.AttachKeyPair(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ServiceUnavailable"}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
@@ -1272,7 +1272,7 @@ func (s *EcsService) AttachKeyPair(keyName string, instanceIds []interface{}) er
 	return nil
 }
 
-func (s *EcsService) SnapshotStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *EcsService) SnapshotStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeSnapshot(id)
 		if err != nil {
@@ -1292,7 +1292,7 @@ func (s *EcsService) SnapshotStateRefreshFunc(id string, failStates []string) re
 	}
 }
 
-func (s *EcsService) ImageStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *EcsService) ImageStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeImageById(id)
 		if err != nil {
@@ -1312,7 +1312,7 @@ func (s *EcsService) ImageStateRefreshFunc(id string, failStates []string) resou
 	}
 }
 
-func (s *EcsService) TaskStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *EcsService) TaskStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeTaskById(id)
 		if err != nil {
@@ -1551,19 +1551,19 @@ func (s *EcsService) ListTagResources(id string, resourceType string) (object in
 
 	for {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err := client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(action, response, request)
 			v, err := jsonpath.Get("$.TagResources.TagResource", response)
 			if err != nil {
-				return resource.NonRetryableError(WrapErrorf(err, FailedGetAttributeMsg, id, "$.TagResources.TagResource", response))
+				return retry.NonRetryableError(WrapErrorf(err, FailedGetAttributeMsg, id, "$.TagResources.TagResource", response))
 			}
 			if v != nil {
 				tags = append(tags, v.([]interface{})...)
@@ -1630,15 +1630,15 @@ func (s *EcsService) SetResourceTags(d *schema.ResourceData, resourceType string
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
 			wait := incrementalWait(2*time.Second, 1*time.Second)
-			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+			err := retry.Retry(10*time.Minute, func() *retry.RetryError {
 				response, err := client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(action, response, request)
 				return nil
@@ -1662,15 +1662,15 @@ func (s *EcsService) SetResourceTags(d *schema.ResourceData, resourceType string
 			}
 
 			wait := incrementalWait(2*time.Second, 1*time.Second)
-			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+			err := retry.Retry(10*time.Minute, func() *retry.RetryError {
 				response, err := client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(action, response, request)
 				return nil
@@ -1692,14 +1692,14 @@ func (s *EcsService) DescribeEcsDedicatedHost(id string) (object map[string]inte
 		"DedicatedHostIds": convertListToJsonString([]interface{}{id}),
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -1725,7 +1725,7 @@ func (s *EcsService) DescribeEcsDedicatedHost(id string) (object map[string]inte
 	return object, nil
 }
 
-func (s *EcsService) EcsDedicatedHostStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *EcsService) EcsDedicatedHostStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEcsDedicatedHost(id)
 		if err != nil {
@@ -1844,14 +1844,14 @@ func (s *EcsService) DescribeEcsAutoSnapshotPolicy(id string) (object map[string
 		"AutoSnapshotPolicyId": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -1874,7 +1874,7 @@ func (s *EcsService) DescribeEcsAutoSnapshotPolicy(id string) (object map[string
 	return object, nil
 }
 
-func (s *EcsService) EcsAutoSnapshotPolicyStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *EcsService) EcsAutoSnapshotPolicyStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEcsAutoSnapshotPolicy(id)
 		if err != nil {
@@ -1951,15 +1951,15 @@ func (s *EcsService) SetResourceTemplateTags(d *schema.ResourceData, resourceTyp
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
 			wait := incrementalWait(2*time.Second, 1*time.Second)
-			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+			err := retry.Retry(10*time.Minute, func() *retry.RetryError {
 				response, err := client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(action, response, request)
 				return nil
@@ -1983,15 +1983,15 @@ func (s *EcsService) SetResourceTemplateTags(d *schema.ResourceData, resourceTyp
 			}
 
 			wait := incrementalWait(2*time.Second, 1*time.Second)
-			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+			err := retry.Retry(10*time.Minute, func() *retry.RetryError {
 				response, err := client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(action, response, request)
 				return nil
@@ -2054,14 +2054,14 @@ func (s *EcsService) DescribeEcsSnapshot(id string) (object map[string]interface
 	idExist := false
 	for {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -2104,7 +2104,7 @@ func (s *EcsService) DescribeEcsSnapshot(id string) (object map[string]interface
 	return object, nil
 }
 
-func (s *EcsService) EcsSnapshotStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *EcsService) EcsSnapshotStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEcsSnapshot(id)
 		if err != nil {
@@ -2172,14 +2172,14 @@ func (s *EcsService) DescribeEcsAutoSnapshotPolicyAttachment(id string) (object 
 		"autoSnapshotPolicyId": parts[0],
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -2208,14 +2208,14 @@ func (s *EcsService) DescribeEcsDisk(id string) (object map[string]interface{}, 
 		"DiskIds":  convertListToJsonString([]interface{}{id}),
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -2241,7 +2241,7 @@ func (s *EcsService) DescribeEcsDisk(id string) (object map[string]interface{}, 
 	return object, nil
 }
 
-func (s *EcsService) EcsDiskStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *EcsService) EcsDiskStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEcsDisk(id)
 		if err != nil {
@@ -2261,7 +2261,7 @@ func (s *EcsService) EcsDiskStateRefreshFunc(id string, failStates []string) res
 	}
 }
 
-func (s *EcsService) EcsDiskPropertyRefreshFunc(id, property string) resource.StateRefreshFunc {
+func (s *EcsService) EcsDiskPropertyRefreshFunc(id, property string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEcsDisk(id)
 		if err != nil {
@@ -2284,14 +2284,14 @@ func (s *EcsService) DescribeEcsNetworkInterface(id string) (object map[string]i
 		"NetworkInterfaceId": []string{id},
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -2317,7 +2317,7 @@ func (s *EcsService) DescribeEcsNetworkInterface(id string) (object map[string]i
 	return object, nil
 }
 
-func (s *EcsService) EcsNetworkInterfaceStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *EcsService) EcsNetworkInterfaceStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEcsNetworkInterface(id)
 		if err != nil {
@@ -2349,14 +2349,14 @@ func (s *EcsService) DescribeEcsDeploymentSet(id string) (object map[string]inte
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -2396,14 +2396,14 @@ func (s *EcsService) DescribeEcsDedicatedHostCluster(id string) (object map[stri
 	idExist := false
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -2446,14 +2446,14 @@ func (s *EcsService) DescribeEcsSessionManagerStatus(id string) (object map[stri
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -2473,7 +2473,7 @@ func (s *EcsService) DescribeEcsSessionManagerStatus(id string) (object map[stri
 	return object, nil
 }
 
-func (s *EcsService) EcsSessionManagerStatusStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *EcsService) EcsSessionManagerStatusStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEcsSessionManagerStatus(id)
 		if err != nil {
@@ -2503,14 +2503,14 @@ func (s *EcsService) DescribeEcsPrefixList(id string) (object map[string]interfa
 		"PrefixListId": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -2538,14 +2538,14 @@ func (s *EcsService) DescribeEcsStorageCapacityUnit(id string) (object map[strin
 		"StorageCapacityUnitId": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -2568,7 +2568,7 @@ func (s *EcsService) DescribeEcsStorageCapacityUnit(id string) (object map[strin
 	return object, nil
 }
 
-func (s *EcsService) EcsStorageCapacityUnitStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *EcsService) EcsStorageCapacityUnitStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEcsStorageCapacityUnit(id)
 		if err != nil {
@@ -2597,14 +2597,14 @@ func (s *EcsService) DescribeEcsImageComponent(id string) (object map[string]int
 		"ImageComponentId": []string{id},
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -2638,14 +2638,14 @@ func (s *EcsService) DescribeEcsSnapshotGroup(id string) (object map[string]inte
 	idExist := false
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -2679,7 +2679,7 @@ func (s *EcsService) DescribeEcsSnapshotGroup(id string) (object map[string]inte
 	return
 }
 
-func (s *EcsService) EcsSnapshotGroupStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *EcsService) EcsSnapshotGroupStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEcsSnapshotGroup(id)
 		if err != nil {
@@ -2709,14 +2709,14 @@ func (s *EcsService) DescribeEcsImagePipeline(id string) (object map[string]inte
 		"ImagePipelineId": []string{id},
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -2744,14 +2744,14 @@ func (s *EcsService) DescribeEcsNetworkInterfacePermission(id string) (object ma
 		"NetworkInterfacePermissionId": []string{id},
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -2774,7 +2774,7 @@ func (s *EcsService) DescribeEcsNetworkInterfacePermission(id string) (object ma
 	return object, nil
 }
 
-func (s *EcsService) EcsNetworkInterfacePermissionStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *EcsService) EcsNetworkInterfacePermissionStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEcsNetworkInterfacePermission(id)
 		if err != nil {
@@ -2803,14 +2803,14 @@ func (s *EcsService) DescribeEcsInvocation(id string) (object map[string]interfa
 		"InvokeId": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -2833,7 +2833,7 @@ func (s *EcsService) DescribeEcsInvocation(id string) (object map[string]interfa
 	return object, nil
 }
 
-func (s *EcsService) EcsInvocationStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *EcsService) EcsInvocationStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEcsInvocation(id)
 		if err != nil {
@@ -2863,14 +2863,14 @@ func (s *EcsService) DescribeEcsSystemDisk(id string) (object map[string]interfa
 		"DiskType":   "system",
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -2927,15 +2927,15 @@ func (s *EcsService) SetInstanceSetResourceTags(d *schema.ResourceData, resource
 					request[fmt.Sprintf("TagKey.%d", i+1)] = key
 				}
 				wait := incrementalWait(2*time.Second, 1*time.Second)
-				err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+				err := retry.Retry(10*time.Minute, func() *retry.RetryError {
 					response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					return nil
 				})
@@ -2962,15 +2962,15 @@ func (s *EcsService) SetInstanceSetResourceTags(d *schema.ResourceData, resource
 				}
 
 				wait := incrementalWait(2*time.Second, 1*time.Second)
-				err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+				err := retry.Retry(10*time.Minute, func() *retry.RetryError {
 					response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					return nil
 				})
@@ -3002,14 +3002,14 @@ func (s *EcsService) DescribeEcsInstanceSet(id string) (objects []map[string]int
 		"PageSize":    PageSizeXLarge,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -3037,7 +3037,7 @@ func (s *EcsService) DescribeEcsInstanceSet(id string) (objects []map[string]int
 	return objects, nil
 }
 
-func (s *EcsService) EcsInstanceSetStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *EcsService) EcsInstanceSetStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		objects, err := s.DescribeEcsInstanceSetCloudAssistantStatus(id)
 		if err != nil {
@@ -3084,14 +3084,14 @@ func (s *EcsService) DescribeEcsInstanceSetCloudAssistantStatus(id string) (obje
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -3119,7 +3119,7 @@ func (s *EcsService) DescribeEcsInstanceSetCloudAssistantStatus(id string) (obje
 	return objects, nil
 }
 
-func (s *EcsService) EcsInstanceVmSetStateRefreshFuncWithoutOsCheck(id string, failStates []string) resource.StateRefreshFunc {
+func (s *EcsService) EcsInstanceVmSetStateRefreshFuncWithoutOsCheck(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		objects, err := s.DescribeEcsInstanceVmSetStatus(id)
 		if err != nil {
@@ -3165,14 +3165,14 @@ func (s *EcsService) DescribeEcsInstanceVmSetStatus(id string) (objects []map[st
 	request["InstanceIds"] = string(instanceIdsStr)
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -3209,14 +3209,14 @@ func (s *EcsService) DescribeEcsActivation(id string) (object map[string]interfa
 		"ActivationId": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -3248,14 +3248,14 @@ func (s *EcsService) DescribeInstanceMaintenanceAttribute(id string) (object map
 		"InstanceId": []string{id},
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -3296,14 +3296,14 @@ func (s *EcsService) DescribeSystemFailureDeleteEventInstanceIds(instanceIds []s
 
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -3343,14 +3343,14 @@ func (s *EcsService) DescribeReservedInstanceAutoRenewAttribute(id string) (obje
 	var response map[string]interface{}
 	action := "DescribeReservedInstanceAutoRenewAttribute"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err := client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		response = resp
 		addDebug(action, response, request)
@@ -3382,14 +3382,14 @@ func (s *EcsService) DescribeEcsReservedInstance(id string) (object map[string]i
 	var response map[string]interface{}
 	action := "DescribeReservedInstances"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err := client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		response = resp
 		addDebug(action, response, request)
@@ -3407,7 +3407,7 @@ func (s *EcsService) DescribeEcsReservedInstance(id string) (object map[string]i
 	}
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
-func (s *EcsService) EcsReservedInstanceStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+func (s *EcsService) EcsReservedInstanceStateRefreshFunc(d *schema.ResourceData, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEcsReservedInstance(d.Id())
 		if err != nil {
@@ -3582,14 +3582,14 @@ func (s *EcsService) DescribeEcsCapacityReservation(id string) (object map[strin
 	var response map[string]interface{}
 	action := "DescribeCapacityReservations"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err := client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		response = resp
 		addDebug(action, response, request)
@@ -3611,7 +3611,7 @@ func (s *EcsService) DescribeEcsCapacityReservation(id string) (object map[strin
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *EcsService) EcsCapacityReservationStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+func (s *EcsService) EcsCapacityReservationStateRefreshFunc(d *schema.ResourceData, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEcsCapacityReservation(d.Id())
 		if err != nil {
@@ -3643,14 +3643,14 @@ func (s *EcsService) DescribeEcsElasticityAssurance(id string) (object map[strin
 	var response map[string]interface{}
 	action := "DescribeElasticityAssurances"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err := client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		response = resp
 		addDebug(action, response, request)
@@ -3672,7 +3672,7 @@ func (s *EcsService) DescribeEcsElasticityAssurance(id string) (object map[strin
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *EcsService) EcsElasticityAssuranceStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+func (s *EcsService) EcsElasticityAssuranceStateRefreshFunc(d *schema.ResourceData, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEcsElasticityAssurance(d.Id())
 		if err != nil {
@@ -3702,15 +3702,15 @@ func (s *EcsService) DescribeInstanceAttachmentAttribute(id string) (object map[
 	action := "DescribeInstanceAttachmentAttributes"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -3741,14 +3741,14 @@ func (s *EcsService) isSupportedNetworkCardIndex(instanceType string) (bool, err
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -3792,15 +3792,15 @@ func (s *EcsService) DescribeEcsInstance(id string) (object map[string]interface
 	action := "DescribeInstances"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(10*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -3833,15 +3833,15 @@ func (s *EcsService) StartEcsInstance(id string) (err error) {
 	action := "StartInstance"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(10*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"IncorrectInstanceStatus", "InvalidOperation.Conflict"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -3866,15 +3866,15 @@ func (s *EcsService) RebootEcsInstance(id string) (err error) {
 	action := "RebootInstance"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(10*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -3899,15 +3899,15 @@ func (s *EcsService) RebootEcsInstances(id []interface{}) (err error) {
 	action := "RebootInstances"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(10*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

@@ -7,7 +7,7 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/smartag"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type SagService struct {
@@ -20,16 +20,16 @@ func (s *SagService) DescribeCloudConnectNetwork(id string) (c smartag.CloudConn
 	request.CcnId = id
 
 	var raw interface{}
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = s.client.WithSagClient(func(ccnClient *smartag.Client) (interface{}, error) {
 			return ccnClient.DescribeCloudConnectNetworks(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
 				time.Sleep(DefaultIntervalShort * time.Second)
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
@@ -60,16 +60,16 @@ func (s *SagService) DescribeCloudConnectNetworkGrant(id string) (c smartag.Gran
 	request.AssociatedCcnId = parts[0]
 
 	var raw interface{}
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = s.client.WithSagClient(func(ccnClient *smartag.Client) (interface{}, error) {
 			return ccnClient.DescribeGrantRules(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
 				time.Sleep(DefaultIntervalShort * time.Second)
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
@@ -102,16 +102,16 @@ func (s *SagService) DescribeCloudConnectNetworkAttachment(id string) (c smartag
 	request.SmartAGId = sagId
 
 	var raw interface{}
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = s.client.WithSagClient(func(ccnClient *smartag.Client) (interface{}, error) {
 			return ccnClient.DescribeSmartAccessGateways(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
 				time.Sleep(DefaultIntervalShort * time.Second)
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
@@ -137,16 +137,16 @@ func (s *SagService) DescribeSagAcl(id string) (c smartag.Acl, err error) {
 	request.AclIds = id
 
 	var raw interface{}
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = s.client.WithSagClient(func(sagClient *smartag.Client) (interface{}, error) {
 			return sagClient.DescribeACLs(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
 				time.Sleep(DefaultIntervalShort * time.Second)
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
@@ -177,16 +177,16 @@ func (s *SagService) DescribeSagAclRule(id string) (c smartag.Acr, err error) {
 	request.AclId = parts[0]
 
 	var raw interface{}
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = s.client.WithSagClient(func(sagClient *smartag.Client) (interface{}, error) {
 			return sagClient.DescribeACLAttribute(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
 				time.Sleep(DefaultIntervalShort * time.Second)
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
@@ -218,16 +218,16 @@ func (s *SagService) DescribeSagClientUser(id string) (c smartag.User, err error
 	request.SmartAGId = parts[0]
 
 	var raw interface{}
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = s.client.WithSagClient(func(sagClient *smartag.Client) (interface{}, error) {
 			return sagClient.DescribeSmartAccessGatewayClientUsers(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
 				time.Sleep(DefaultIntervalShort * time.Second)
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
@@ -259,16 +259,16 @@ func (s *SagService) DescribeSagSnatEntry(id string) (c smartag.SnatEntry, err e
 	request.SmartAGId = parts[0]
 
 	var raw interface{}
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = s.client.WithSagClient(func(sagClient *smartag.Client) (interface{}, error) {
 			return sagClient.DescribeSnatEntries(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
 				time.Sleep(DefaultIntervalShort * time.Second)
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
@@ -300,16 +300,16 @@ func (s *SagService) DescribeSagDnatEntry(id string) (c smartag.DnatEntry, err e
 	request.SagId = parts[0]
 
 	var raw interface{}
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = s.client.WithSagClient(func(sagClient *smartag.Client) (interface{}, error) {
 			return sagClient.DescribeDnatEntries(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
 				time.Sleep(DefaultIntervalShort * time.Second)
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
@@ -336,16 +336,16 @@ func (s *SagService) DescribeSagQos(id string) (c smartag.Qos, err error) {
 	request.QosIds = id
 
 	var raw interface{}
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = s.client.WithSagClient(func(sagClient *smartag.Client) (interface{}, error) {
 			return sagClient.DescribeQoses(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
 				time.Sleep(DefaultIntervalShort * time.Second)
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
@@ -377,16 +377,16 @@ func (s *SagService) DescribeSagQosPolicy(id string) (c smartag.QosPolicy, err e
 	request.QosPolicyId = parts[1]
 
 	var raw interface{}
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = s.client.WithSagClient(func(sagClient *smartag.Client) (interface{}, error) {
 			return sagClient.DescribeQosPolicies(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
 				time.Sleep(DefaultIntervalShort * time.Second)
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
@@ -418,16 +418,16 @@ func (s *SagService) DescribeSagQosCar(id string) (c smartag.QosCar, err error) 
 	request.QosCarId = parts[1]
 
 	var raw interface{}
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = s.client.WithSagClient(func(sagClient *smartag.Client) (interface{}, error) {
 			return sagClient.DescribeQosCars(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
 				time.Sleep(DefaultIntervalShort * time.Second)
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
@@ -745,14 +745,14 @@ func (s *SagService) DescribeSmartagFlowLog(id string) (object map[string]interf
 		"FlowLogId": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Smartag", "2018-03-13", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -775,7 +775,7 @@ func (s *SagService) DescribeSmartagFlowLog(id string) (object map[string]interf
 	return object, nil
 }
 
-func (s *SagService) SmartagFlowLogStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *SagService) SmartagFlowLogStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeSmartagFlowLog(id)
 		if err != nil {

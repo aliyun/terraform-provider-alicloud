@@ -8,7 +8,7 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/blues/jsonata-go"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -29,15 +29,15 @@ func (s *EnsServiceV2) DescribeEnsInstance(id string) (object map[string]interfa
 	query["InstanceId"] = id
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -70,15 +70,15 @@ func (s *EnsServiceV2) DescribeListTagResources(id string) (object map[string]in
 
 	request["ResourceType"] = "instance"
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -91,7 +91,7 @@ func (s *EnsServiceV2) DescribeListTagResources(id string) (object map[string]in
 	return response, nil
 }
 
-func (s *EnsServiceV2) EnsInstanceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EnsServiceV2) EnsInstanceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEnsInstance(id)
 		if err != nil {
@@ -138,15 +138,15 @@ func (s *EnsServiceV2) DescribeEnsDisk(id string) (object map[string]interface{}
 	action := "DescribeDisks"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -180,15 +180,15 @@ func (s *EnsServiceV2) DescribeDiskListTagResources(id string) (object map[strin
 	action := "ListTagResources"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -200,7 +200,7 @@ func (s *EnsServiceV2) DescribeDiskListTagResources(id string) (object map[strin
 	return response, nil
 }
 
-func (s *EnsServiceV2) EnsDiskStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EnsServiceV2) EnsDiskStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEnsDisk(id)
 		if err != nil {
@@ -249,15 +249,15 @@ func (s *EnsServiceV2) DescribeEnsSnapshot(id string) (object map[string]interfa
 	query["SnapshotId"] = id
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -279,7 +279,7 @@ func (s *EnsServiceV2) DescribeEnsSnapshot(id string) (object map[string]interfa
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *EnsServiceV2) EnsSnapshotStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EnsServiceV2) EnsSnapshotStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEnsSnapshot(id)
 		if err != nil {
@@ -316,15 +316,15 @@ func (s *EnsServiceV2) DescribeEnsNetwork(id string) (object map[string]interfac
 	query["NetworkId"] = id
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -346,7 +346,7 @@ func (s *EnsServiceV2) DescribeEnsNetwork(id string) (object map[string]interfac
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *EnsServiceV2) EnsNetworkStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EnsServiceV2) EnsNetworkStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEnsNetwork(id)
 		if err != nil {
@@ -384,15 +384,15 @@ func (s *EnsServiceV2) DescribeEnsEip(id string) (object map[string]interface{},
 	action := "DescribeEnsEipAddresses"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -413,7 +413,7 @@ func (s *EnsServiceV2) DescribeEnsEip(id string) (object map[string]interface{},
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *EnsServiceV2) EnsEipStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EnsServiceV2) EnsEipStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEnsEip(id)
 		if err != nil {
@@ -458,15 +458,15 @@ func (s *EnsServiceV2) DescribeEnsLoadBalancer(id string) (object map[string]int
 	action := "DescribeLoadBalancerAttribute"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -483,11 +483,11 @@ func (s *EnsServiceV2) DescribeEnsLoadBalancer(id string) (object map[string]int
 	return response, nil
 }
 
-func (s *EnsServiceV2) EnsLoadBalancerStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EnsServiceV2) EnsLoadBalancerStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EnsLoadBalancerStateRefreshFuncWithApi(id, field, failStates, s.DescribeEnsLoadBalancer)
 }
 
-func (s *EnsServiceV2) EnsLoadBalancerStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *EnsServiceV2) EnsLoadBalancerStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -532,15 +532,15 @@ func (s *EnsServiceV2) DescribeEnsVswitch(id string) (object map[string]interfac
 	action := "DescribeVSwitchAttributes"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -555,7 +555,7 @@ func (s *EnsServiceV2) DescribeEnsVswitch(id string) (object map[string]interfac
 	return response, nil
 }
 
-func (s *EnsServiceV2) EnsVswitchStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EnsServiceV2) EnsVswitchStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEnsVswitch(id)
 		if err != nil {
@@ -599,15 +599,15 @@ func (s *EnsServiceV2) DescribeEnsSecurityGroup(id string) (object map[string]in
 	query["SecurityGroupId"] = id
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -623,7 +623,7 @@ func (s *EnsServiceV2) DescribeEnsSecurityGroup(id string) (object map[string]in
 	return response, nil
 }
 
-func (s *EnsServiceV2) EnsSecurityGroupStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EnsServiceV2) EnsSecurityGroupStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEnsSecurityGroup(id)
 		if err != nil {
@@ -661,15 +661,15 @@ func (s *EnsServiceV2) DescribeEnsImage(id string) (object map[string]interface{
 	action := "DescribeSelfImages"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -690,7 +690,7 @@ func (s *EnsServiceV2) DescribeEnsImage(id string) (object map[string]interface{
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *EnsServiceV2) EnsImageStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EnsServiceV2) EnsImageStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEnsImage(id)
 		if err != nil {
@@ -738,15 +738,15 @@ func (s *EnsServiceV2) DescribeEnsDiskInstanceAttachment(id string) (object map[
 	query["InstanceId"] = parts[1]
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -769,7 +769,7 @@ func (s *EnsServiceV2) DescribeEnsDiskInstanceAttachment(id string) (object map[
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *EnsServiceV2) EnsDiskInstanceAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EnsServiceV2) EnsDiskInstanceAttachmentStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEnsDiskInstanceAttachment(id)
 		if err != nil {
@@ -810,15 +810,15 @@ func (s *EnsServiceV2) DescribeEnsInstanceSecurityGroupAttachment(id string) (ob
 	query["SecurityGroupId"] = parts[1]
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -841,7 +841,7 @@ func (s *EnsServiceV2) DescribeEnsInstanceSecurityGroupAttachment(id string) (ob
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *EnsServiceV2) EnsInstanceSecurityGroupAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EnsServiceV2) EnsInstanceSecurityGroupAttachmentStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEnsInstanceSecurityGroupAttachment(id)
 		if err != nil {
@@ -882,15 +882,15 @@ func (s *EnsServiceV2) DescribeEnsEipInstanceAttachment(id string) (object map[s
 	query["AssociatedInstanceId"] = parts[1]
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -926,7 +926,7 @@ func (s *EnsServiceV2) DescribeEnsEipInstanceAttachment(id string) (object map[s
 	return object, WrapErrorf(NotFoundErr("EipInstanceAttachment", id), NotFoundMsg, response)
 }
 
-func (s *EnsServiceV2) EnsEipInstanceAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EnsServiceV2) EnsEipInstanceAttachmentStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEnsEipInstanceAttachment(id)
 		if err != nil {
@@ -963,15 +963,15 @@ func (s *EnsServiceV2) DescribeEnsNatGateway(id string) (object map[string]inter
 	query["NatGatewayId"] = id
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("Ens", "2017-11-10", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -993,7 +993,7 @@ func (s *EnsServiceV2) DescribeEnsNatGateway(id string) (object map[string]inter
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *EnsServiceV2) EnsNatGatewayStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EnsServiceV2) EnsNatGatewayStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEnsNatGateway(id)
 		if err != nil {
@@ -1029,15 +1029,15 @@ func (s *EnsServiceV2) DescribeEnsKeyPair(id string) (object map[string]interfac
 	query["KeyPairId"] = id
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -1059,7 +1059,7 @@ func (s *EnsServiceV2) DescribeEnsKeyPair(id string) (object map[string]interfac
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *EnsServiceV2) EnsKeyPairStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EnsServiceV2) EnsKeyPairStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEnsKeyPair(id)
 		if err != nil {
@@ -1112,14 +1112,14 @@ func (s *EnsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			}
 
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -1145,14 +1145,14 @@ func (s *EnsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			}
 
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})

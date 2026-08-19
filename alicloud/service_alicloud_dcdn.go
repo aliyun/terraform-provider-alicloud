@@ -8,7 +8,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -90,7 +90,7 @@ func (s *DcdnService) DescribeDcdnDomain(id string) (object map[string]interface
 	return object, nil
 }
 
-func (s *DcdnService) DcdnDomainStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *DcdnService) DcdnDomainStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeDcdnDomain(id)
 		if err != nil {
@@ -127,14 +127,14 @@ func (s *DcdnService) DescribeDcdnDomainConfig(id string) (object map[string]int
 
 	idExist := false
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("dcdn", "2018-01-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -169,7 +169,7 @@ func (s *DcdnService) DescribeDcdnDomainConfig(id string) (object map[string]int
 	return object, nil
 }
 
-func (s *DcdnService) DcdnDomainConfigStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *DcdnService) DcdnDomainConfigStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeDcdnDomainConfig(id)
 		if err != nil {
@@ -197,14 +197,14 @@ func (s *DcdnService) DescribeDcdnIpaDomain(id string) (object map[string]interf
 		"DomainName": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("dcdn", "2018-01-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -224,7 +224,7 @@ func (s *DcdnService) DescribeDcdnIpaDomain(id string) (object map[string]interf
 	return object, nil
 }
 
-func (s *DcdnService) DcdnIpaDomainStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *DcdnService) DcdnIpaDomainStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeDcdnIpaDomain(id)
 		if err != nil {
@@ -254,14 +254,14 @@ func (s *DcdnService) DescribeDcdnWafPolicy(id string) (object map[string]interf
 		"PageSize":   PageSizeLarge,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("dcdn", "2018-01-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -292,14 +292,14 @@ func (s *DcdnService) DescribeDcdnWafDomain(id string) (object map[string]interf
 
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("dcdn", "2018-01-15", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -335,14 +335,14 @@ func (s *DcdnService) DescribeDcdnWafDomainDefenseScenes(id string) (object map[
 		"DomainName": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("dcdn", "2018-01-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -371,14 +371,14 @@ func (s *DcdnService) DescribeDcdnWafPolicyDomainAttachment(id string) (object m
 	}
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("dcdn", "2018-01-15", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -421,14 +421,14 @@ func (s *DcdnService) DescribeDcdnKv(id string) (object map[string]interface{}, 
 	var response map[string]interface{}
 	action := "GetDcdnKv"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("dcdn", "2018-01-15", action, request, nil, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -456,14 +456,14 @@ func (s *DcdnService) DescribeDcdnKvNamespace(id string) (object map[string]inte
 	var response map[string]interface{}
 	action := "DescribeDcdnKvNamespace"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("dcdn", "2018-01-15", action, request, nil, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -481,7 +481,7 @@ func (s *DcdnService) DescribeDcdnKvNamespace(id string) (object map[string]inte
 	return v.(map[string]interface{}), nil
 }
 
-func (s *DcdnService) DcdnKvNamespaceStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *DcdnService) DcdnKvNamespaceStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeDcdnKvNamespace(id)
 		if err != nil {
@@ -506,14 +506,14 @@ func (s *DcdnService) DescribeDcdnKvAccountStatus() (object map[string]interface
 	request := map[string]interface{}{}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("dcdn", "2018-01-15", action, request, nil, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -539,14 +539,14 @@ func (s *DcdnService) DescribeDcdnWafRule(id string) (object map[string]interfac
 	var response map[string]interface{}
 	action := "DescribeDcdnWafRule"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("dcdn", "2018-01-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"InternalError"}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -577,14 +577,14 @@ func (s *DcdnService) DescribeDcdnEr(id string) (object map[string]interface{}, 
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("dcdn", "2018-01-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -630,19 +630,19 @@ func (s *DcdnService) ListTagResources(id string, resourceType string) (object i
 	tags := make([]interface{}, 0)
 	var response map[string]interface{}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("dcdn", "2018-01-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		resp, err := jsonpath.Get("$.TagResources", response)
 		if err != nil {
-			return resource.NonRetryableError(WrapErrorf(err, FailedGetAttributeMsg, id, "$.TagResources", response))
+			return retry.NonRetryableError(WrapErrorf(err, FailedGetAttributeMsg, id, "$.TagResources", response))
 		}
 
 		if v, ok := resp.([]interface{}); ok && len(v) > 0 {
@@ -696,15 +696,15 @@ func (s *DcdnService) SetResourceTags(d *schema.ResourceData, resourceType strin
 			}
 
 			wait := incrementalWait(2*time.Second, 1*time.Second)
-			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+			err := retry.Retry(10*time.Minute, func() *retry.RetryError {
 				response, err = client.RpcPost("dcdn", "2018-01-15", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(action, response, request)
 				return nil
@@ -738,15 +738,15 @@ func (s *DcdnService) SetResourceTags(d *schema.ResourceData, resourceType strin
 			}
 
 			wait := incrementalWait(2*time.Second, 1*time.Second)
-			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+			err := retry.Retry(10*time.Minute, func() *retry.RetryError {
 				response, err = client.RpcPost("dcdn", "2018-01-15", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(action, response, request)
 				return nil

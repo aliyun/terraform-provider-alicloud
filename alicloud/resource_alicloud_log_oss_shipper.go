@@ -7,7 +7,7 @@ import (
 
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -137,7 +137,7 @@ func resourceAlicloudLogOssShipperCreate(d *schema.ResourceData, meta interface{
 	logstoreName := d.Get("logstore_name").(string)
 	shipperName := d.Get("shipper_name").(string)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	if err := resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	if err := retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			requestInfo = slsClient
 			project, _ := sls.NewLogProject(projectName, slsClient.Endpoint, slsClient.AccessKeyID, slsClient.AccessKeySecret)
@@ -148,9 +148,9 @@ func resourceAlicloudLogOssShipperCreate(d *schema.ResourceData, meta interface{
 		if err != nil {
 			if IsExpectedErrors(err, []string{LogClientTimeout}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug("CreateLogShipper", raw, requestInfo, map[string]string{
 			"project_name":  projectName,
@@ -230,7 +230,7 @@ func resourceAlicloudLogOssShipperUpdate(d *schema.ResourceData, meta interface{
 		return WrapError(err)
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	if err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+	if err := retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 		_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			project, _ := sls.NewLogProject(parts[0], slsClient.Endpoint, slsClient.AccessKeyID, slsClient.AccessKeySecret)
 			project, _ = project.WithToken(slsClient.SecurityToken)
@@ -240,9 +240,9 @@ func resourceAlicloudLogOssShipperUpdate(d *schema.ResourceData, meta interface{
 		if err != nil {
 			if IsExpectedErrors(err, []string{LogClientTimeout}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	}); err != nil {
@@ -261,7 +261,7 @@ func resourceAlicloudLogOssShipperDelete(d *schema.ResourceData, meta interface{
 	}
 	var requestInfo *sls.Client
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			project, _ := sls.NewLogProject(parts[0], slsClient.Endpoint, slsClient.AccessKeyID, slsClient.AccessKeySecret)
 			project, _ = project.WithToken(slsClient.SecurityToken)
@@ -271,9 +271,9 @@ func resourceAlicloudLogOssShipperDelete(d *schema.ResourceData, meta interface{
 		if err != nil {
 			if IsExpectedErrors(err, []string{LogClientTimeout}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		if debugOn() {
 			addDebug("DeleteLogOssShipper", raw, requestInfo, map[string]interface{}{

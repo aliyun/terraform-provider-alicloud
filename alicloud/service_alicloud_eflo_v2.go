@@ -7,7 +7,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -29,15 +29,15 @@ func (s *EfloServiceV2) DescribeEfloNode(id string) (object map[string]interface
 	action := "DescribeNode"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("eflo-controller", "2022-12-15", action, query, request, true)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InternalDependencyError.RequestLimitExceeded"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -65,15 +65,15 @@ func (s *EfloServiceV2) DescribeNodeListTagResources(id string) (object map[stri
 	action := "ListTagResources"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("eflo-controller", "2022-12-15", action, query, request, true)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"SystemError"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -132,13 +132,13 @@ func (s *EfloServiceV2) DescribeNodeQueryAvailableInstances(d *schema.ResourceDa
 	action := "QueryAvailableInstances"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
 				request["ProductCode"] = "bccluster"
@@ -151,13 +151,13 @@ func (s *EfloServiceV2) DescribeNodeQueryAvailableInstances(d *schema.ResourceDa
 					request["ProductCode"] = "bccluster"
 					request["ProductType"] = "bccluster_computinginstance_public_intl"
 					if installPai {
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
 				}
 				endpoint = connectivity.BssOpenAPIEndpointInternational
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -194,15 +194,15 @@ func (s *EfloServiceV2) DescribeNodeListClusterNodes(d *schema.ResourceData) (ob
 
 	for {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("eflo-controller", "2022-12-15", action, query, request, true)
 
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -233,11 +233,11 @@ func (s *EfloServiceV2) DescribeNodeListClusterNodes(d *schema.ResourceData) (ob
 	return object, WrapErrorf(NotFoundErr("Node", id), NotFoundMsg, response)
 }
 
-func (s *EfloServiceV2) EfloNodeStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EfloServiceV2) EfloNodeStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EfloNodeStateRefreshFuncWithApi(id, field, failStates, s.DescribeEfloNode)
 }
 
-func (s *EfloServiceV2) EfloNodeStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *EfloServiceV2) EfloNodeStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -281,15 +281,15 @@ func (s *EfloServiceV2) DescribeEfloCluster(id string) (object map[string]interf
 	action := "DescribeCluster"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("eflo-controller", "2022-12-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -319,15 +319,15 @@ func (s *EfloServiceV2) DescribeClusterListTagResources(id string) (object map[s
 	action := "ListTagResources"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("eflo-controller", "2022-12-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -339,7 +339,7 @@ func (s *EfloServiceV2) DescribeClusterListTagResources(id string) (object map[s
 	return response, nil
 }
 
-func (s *EfloServiceV2) EfloClusterStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EfloServiceV2) EfloClusterStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEfloCluster(id)
 		if err != nil {
@@ -399,14 +399,14 @@ func (s *EfloServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("eflo-controller", "2022-12-15", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -432,14 +432,14 @@ func (s *EfloServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("eflo-controller", "2022-12-15", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -475,15 +475,15 @@ func (s *EfloServiceV2) DescribeEfloNodeGroup(id string) (object map[string]inte
 	action := "ListNodeGroups"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("eflo-controller", "2022-12-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -526,15 +526,15 @@ func (s *EfloServiceV2) DescribeNodeGroupListClusterNodes(id string) (object map
 	action := "ListClusterNodes"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("eflo-controller", "2022-12-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -546,7 +546,7 @@ func (s *EfloServiceV2) DescribeNodeGroupListClusterNodes(id string) (object map
 	return response, nil
 }
 
-func (s *EfloServiceV2) EfloNodeGroupStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EfloServiceV2) EfloNodeGroupStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEfloNodeGroup(id)
 		if err != nil {
@@ -575,7 +575,7 @@ func (s *EfloServiceV2) EfloNodeGroupStateRefreshFunc(id string, field string, f
 	}
 }
 
-func (s *EfloServiceV2) DescribeAsyncEfloNodeGroupStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EfloServiceV2) DescribeAsyncEfloNodeGroupStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAsyncDescribeTask(d, res)
 		if err != nil {
@@ -626,15 +626,15 @@ func (s *EfloServiceV2) DescribeAsyncDescribeTask(d *schema.ResourceData, res ma
 	action := "DescribeTask"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("eflo-controller", "2022-12-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -655,7 +655,7 @@ func (s *EfloServiceV2) DescribeNodeIdByTaskId(taskId string, timeout time.Durat
 	var response map[string]interface{}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(timeout, func() *resource.RetryError {
+	err = retry.Retry(timeout, func() *retry.RetryError {
 		request := map[string]interface{}{
 			"RegionId": client.RegionId,
 		}
@@ -667,16 +667,16 @@ func (s *EfloServiceV2) DescribeNodeIdByTaskId(taskId string, timeout time.Durat
 		if e != nil {
 			if IsExpectedErrors(e, []string{"InternalDependencyError.RequestLimitExceeded"}) || NeedRetry(e) {
 				wait()
-				return resource.RetryableError(e)
+				return retry.RetryableError(e)
 			}
-			return resource.NonRetryableError(e)
+			return retry.NonRetryableError(e)
 		}
 		nodeIdsRaw, _ := jsonpath.Get("$.NodeIds", response)
 		if nodeIds, ok := nodeIdsRaw.([]interface{}); ok && len(nodeIds) > 0 {
 			return nil
 		}
 		wait()
-		return resource.RetryableError(fmt.Errorf("task %s: waiting for NodeIds", taskId))
+		return retry.RetryableError(fmt.Errorf("task %s: waiting for NodeIds", taskId))
 	})
 	addDebug(action, response, nil)
 	if err != nil {
@@ -707,15 +707,15 @@ func (s *EfloServiceV2) DescribeEfloInvocation(id string) (object map[string]int
 	action := "DescribeInvocations"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("eflo-controller", "2022-12-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -736,7 +736,7 @@ func (s *EfloServiceV2) DescribeEfloInvocation(id string) (object map[string]int
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *EfloServiceV2) EfloInvocationStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EfloServiceV2) EfloInvocationStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEfloInvocation(id)
 		if err != nil {
@@ -781,15 +781,15 @@ func (s *EfloServiceV2) DescribeEfloExperimentPlanTemplate(id string) (object ma
 	action := "GetExperimentPlanTemplate"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("eflo-cnp", "2023-08-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -809,7 +809,7 @@ func (s *EfloServiceV2) DescribeEfloExperimentPlanTemplate(id string) (object ma
 	return v.(map[string]interface{}), nil
 }
 
-func (s *EfloServiceV2) EfloExperimentPlanTemplateStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EfloServiceV2) EfloExperimentPlanTemplateStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEfloExperimentPlanTemplate(id)
 		if err != nil {
@@ -854,15 +854,15 @@ func (s *EfloServiceV2) DescribeEfloResource(id string) (object map[string]inter
 	action := "GetResource"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("eflo-cnp", "2023-08-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -882,7 +882,7 @@ func (s *EfloServiceV2) DescribeEfloResource(id string) (object map[string]inter
 	return v.(map[string]interface{}), nil
 }
 
-func (s *EfloServiceV2) EfloResourceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EfloServiceV2) EfloResourceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEfloResource(id)
 		if err != nil {
@@ -927,15 +927,15 @@ func (s *EfloServiceV2) DescribeEfloExperimentPlan(id string) (object map[string
 	action := "GetExperimentPlan"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("eflo-cnp", "2023-08-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -955,7 +955,7 @@ func (s *EfloServiceV2) DescribeEfloExperimentPlan(id string) (object map[string
 	return v.(map[string]interface{}), nil
 }
 
-func (s *EfloServiceV2) EfloExperimentPlanStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EfloServiceV2) EfloExperimentPlanStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEfloExperimentPlan(id)
 		if err != nil {
@@ -1000,15 +1000,15 @@ func (s *EfloServiceV2) DescribeEfloVsc(id string) (object map[string]interface{
 	action := "DescribeVsc"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("eflo-controller", "2022-12-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1041,15 +1041,15 @@ func (s *EfloServiceV2) DescribeVscListTagResources(id string) (object map[strin
 	action := "ListTagResources"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("eflo-controller", "2022-12-15", action, query, request, true)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"SystemError"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1061,7 +1061,7 @@ func (s *EfloServiceV2) DescribeVscListTagResources(id string) (object map[strin
 	return response, nil
 }
 
-func (s *EfloServiceV2) EfloVscStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EfloServiceV2) EfloVscStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEfloVsc(id)
 		if err != nil {
@@ -1113,15 +1113,15 @@ func (s *EfloServiceV2) DescribeEfloNodeGroupAttachment(id string) (object map[s
 
 	for {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("eflo-controller", "2022-12-15", action, query, request, true)
 
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -1151,7 +1151,7 @@ func (s *EfloServiceV2) DescribeEfloNodeGroupAttachment(id string) (object map[s
 	return object, WrapErrorf(NotFoundErr("NodeGroupAttachment", id), NotFoundMsg, response)
 }
 
-func (s *EfloServiceV2) EfloNodeGroupAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EfloServiceV2) EfloNodeGroupAttachmentStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEfloNodeGroupAttachment(id)
 		if err != nil {
@@ -1180,7 +1180,7 @@ func (s *EfloServiceV2) EfloNodeGroupAttachmentStateRefreshFunc(id string, field
 	}
 }
 
-func (s *EfloServiceV2) DescribeAsyncEfloNodeGroupAttachmentStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EfloServiceV2) DescribeAsyncEfloNodeGroupAttachmentStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAsyncDescribeTask(d, res)
 		if err != nil {
@@ -1226,15 +1226,15 @@ func (s *EfloServiceV2) DescribeEfloEr(id string) (object map[string]interface{}
 	action := "GetEr"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("eflo", "2022-05-30", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1254,7 +1254,7 @@ func (s *EfloServiceV2) DescribeEfloEr(id string) (object map[string]interface{}
 	return v.(map[string]interface{}), nil
 }
 
-func (s *EfloServiceV2) EfloErStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EfloServiceV2) EfloErStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEfloEr(id)
 		if err != nil {
@@ -1299,15 +1299,15 @@ func (s *EfloServiceV2) DescribeEfloVpd(id string) (object map[string]interface{
 	action := "GetVpd"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("eflo", "2022-05-30", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1327,11 +1327,11 @@ func (s *EfloServiceV2) DescribeEfloVpd(id string) (object map[string]interface{
 	return v.(map[string]interface{}), nil
 }
 
-func (s *EfloServiceV2) EfloVpdStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EfloServiceV2) EfloVpdStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EfloVpdStateRefreshFuncWithApi(id, field, failStates, s.DescribeEfloVpd)
 }
 
-func (s *EfloServiceV2) EfloVpdStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *EfloServiceV2) EfloVpdStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -1375,15 +1375,15 @@ func (s *EfloServiceV2) DescribeEfloVpdGrantRule(id string) (object map[string]i
 	action := "GetVpdGrantRule"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("eflo", "2022-05-30", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1403,11 +1403,11 @@ func (s *EfloServiceV2) DescribeEfloVpdGrantRule(id string) (object map[string]i
 	return v.(map[string]interface{}), nil
 }
 
-func (s *EfloServiceV2) EfloVpdGrantRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EfloServiceV2) EfloVpdGrantRuleStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EfloVpdGrantRuleStateRefreshFuncWithApi(id, field, failStates, s.DescribeEfloVpdGrantRule)
 }
 
-func (s *EfloServiceV2) EfloVpdGrantRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *EfloServiceV2) EfloVpdGrantRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -1451,15 +1451,15 @@ func (s *EfloServiceV2) DescribeEfloHyperNode(id string) (object map[string]inte
 	action := "DescribeHyperNode"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("eflo-controller", "2022-12-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1501,13 +1501,13 @@ func (s *EfloServiceV2) DescribeHyperNodeQueryAvailableInstances(d *schema.Resou
 	action := "QueryAvailableInstances"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
 				request["ProductCode"] = "bccluster"
@@ -1517,9 +1517,9 @@ func (s *EfloServiceV2) DescribeHyperNodeQueryAvailableInstances(d *schema.Resou
 					request["ProductType"] = "bccluster_computinginstance_public_intl"
 				}
 				endpoint = connectivity.BssOpenAPIEndpointInternational
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1552,15 +1552,15 @@ func (s *EfloServiceV2) DescribeHyperNodeListTagResources(id string) (object map
 	action := "ListTagResources"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("eflo-controller", "2022-12-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1583,15 +1583,15 @@ func (s *EfloServiceV2) DescribeHyperNodeListClusterHyperNodes(clusterId, id str
 	action := "ListClusterHyperNodes"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("eflo-controller", "2022-12-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1620,11 +1620,11 @@ func (s *EfloServiceV2) DescribeHyperNodeListClusterHyperNodes(clusterId, id str
 	return object, WrapErrorf(NotFoundErr("HyperNode", id), NotFoundMsg, response)
 }
 
-func (s *EfloServiceV2) EfloHyperNodeStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EfloServiceV2) EfloHyperNodeStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EfloHyperNodeStateRefreshFuncWithApi(id, field, failStates, s.DescribeEfloHyperNode)
 }
 
-func (s *EfloServiceV2) EfloHyperNodeStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *EfloServiceV2) EfloHyperNodeStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {

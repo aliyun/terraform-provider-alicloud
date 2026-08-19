@@ -8,7 +8,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type PolardbServiceV2 struct {
@@ -28,15 +28,15 @@ func (s *PolardbServiceV2) DescribePolardbGlobalSecurityIpGroup(id string) (obje
 	action := "DescribeGlobalSecurityIPGroup"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("polardb", "2017-08-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -65,11 +65,11 @@ func (s *PolardbServiceV2) DescribePolardbGlobalSecurityIpGroup(id string) (obje
 	return object, WrapErrorf(NotFoundErr("GlobalSecurityIpGroup", id), NotFoundMsg, response)
 }
 
-func (s *PolardbServiceV2) PolardbGlobalSecurityIpGroupStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *PolardbServiceV2) PolardbGlobalSecurityIpGroupStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.PolardbGlobalSecurityIpGroupStateRefreshFuncWithApi(id, field, failStates, s.DescribePolardbGlobalSecurityIpGroup)
 }
 
-func (s *PolardbServiceV2) PolardbGlobalSecurityIpGroupStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *PolardbServiceV2) PolardbGlobalSecurityIpGroupStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {

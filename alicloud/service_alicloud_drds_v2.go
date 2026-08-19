@@ -7,7 +7,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -30,15 +30,15 @@ func (s *DrdsServiceV2) DrdsPolardbxInstanceAsynJobs(d *schema.ResourceData, res
 	request["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("polardbx", "2020-02-02", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -58,7 +58,7 @@ func (s *DrdsServiceV2) DrdsPolardbxInstanceAsynJobs(d *schema.ResourceData, res
 	return v.(map[string]interface{}), nil
 }
 
-func (s *DrdsServiceV2) DrdsPolardbxInstanceJobStateRefreshFunc(d *schema.ResourceData, response map[string]interface{}, failStates []string) resource.StateRefreshFunc {
+func (s *DrdsServiceV2) DrdsPolardbxInstanceJobStateRefreshFunc(d *schema.ResourceData, response map[string]interface{}, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DrdsPolardbxInstanceAsynJobs(d, response)
 		if err != nil {
@@ -95,15 +95,15 @@ func (s *DrdsServiceV2) DrdsPolardbxInstanceAsynDeleteJobs(d *schema.ResourceDat
 	request["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("polardbx", "2020-02-02", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -123,7 +123,7 @@ func (s *DrdsServiceV2) DrdsPolardbxInstanceAsynDeleteJobs(d *schema.ResourceDat
 	return v.(map[string]interface{}), nil
 }
 
-func (s *DrdsServiceV2) DrdsPolardbxInstanceDeleteJobStateRefreshFunc(d *schema.ResourceData, response map[string]interface{}, failStates []string) resource.StateRefreshFunc {
+func (s *DrdsServiceV2) DrdsPolardbxInstanceDeleteJobStateRefreshFunc(d *schema.ResourceData, response map[string]interface{}, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DrdsPolardbxInstanceAsynDeleteJobs(d, response)
 		if err != nil {
@@ -157,15 +157,15 @@ func (s *DrdsServiceV2) DescribeDrdsPolardbxInstance(id string) (object map[stri
 	action := "DescribeDBInstanceAttribute"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("polardbx", "2020-02-02", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -185,11 +185,11 @@ func (s *DrdsServiceV2) DescribeDrdsPolardbxInstance(id string) (object map[stri
 	return v.(map[string]interface{}), nil
 }
 
-func (s *DrdsServiceV2) DrdsPolardbxInstanceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *DrdsServiceV2) DrdsPolardbxInstanceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.DrdsPolardbxInstanceStateRefreshFuncWithApi(id, field, failStates, s.DescribeDrdsPolardbxInstance)
 }
 
-func (s *DrdsServiceV2) DrdsPolardbxInstanceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *DrdsServiceV2) DrdsPolardbxInstanceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -218,7 +218,7 @@ func (s *DrdsServiceV2) DrdsPolardbxInstanceStateRefreshFuncWithApi(id string, f
 	}
 }
 
-func (s *DrdsServiceV2) DescribeAsyncDrdsPolardbxInstanceStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) resource.StateRefreshFunc {
+func (s *DrdsServiceV2) DescribeAsyncDrdsPolardbxInstanceStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAsyncDescribeTasks(d, res)
 		if err != nil {
@@ -267,15 +267,15 @@ func (s *DrdsServiceV2) DescribeAsyncDescribeTasks(d *schema.ResourceData, res m
 	action := "DescribeTasks"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("polardbx", "2020-02-02", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

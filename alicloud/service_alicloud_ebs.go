@@ -6,7 +6,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -25,14 +25,14 @@ func (s *EbsService) DescribeEbsDiskReplicaGroup(id string) (object map[string]i
 	var response map[string]interface{}
 	action := "DescribeDiskReplicaGroups"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err := client.RpcPost("ebs", "2021-07-30", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		response = resp
 		addDebug(action, response, request)
@@ -54,7 +54,7 @@ func (s *EbsService) DescribeEbsDiskReplicaGroup(id string) (object map[string]i
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *EbsService) EbsDiskReplicaGroupStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+func (s *EbsService) EbsDiskReplicaGroupStateRefreshFunc(d *schema.ResourceData, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEbsDiskReplicaGroup(d.Id())
 		if err != nil {
@@ -83,14 +83,14 @@ func (s *EbsService) DescribeEbsDedicatedBlockStorageCluster(id string) (object 
 	var response map[string]interface{}
 	action := "DescribeDedicatedBlockStorageClusters"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err := client.RpcPost("ebs", "2021-07-30", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		response = resp
 		addDebug(action, response, request)
@@ -109,7 +109,7 @@ func (s *EbsService) DescribeEbsDedicatedBlockStorageCluster(id string) (object 
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *EbsService) EbsDedicatedBlockStorageClusterStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+func (s *EbsService) EbsDedicatedBlockStorageClusterStateRefreshFunc(d *schema.ResourceData, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEbsDedicatedBlockStorageCluster(d.Id())
 		if err != nil {
@@ -138,14 +138,14 @@ func (s *EbsService) DescribeEbsDiskReplicaPair(id string) (object map[string]in
 	var response map[string]interface{}
 	action := "DescribeDiskReplicaPairs"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err := client.RpcPost("ebs", "2021-07-30", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		response = resp
 		addDebug(action, response, request)
@@ -164,7 +164,7 @@ func (s *EbsService) DescribeEbsDiskReplicaPair(id string) (object map[string]in
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *EbsService) EbsDiskReplicaPairStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+func (s *EbsService) EbsDiskReplicaPairStateRefreshFunc(d *schema.ResourceData, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEbsDiskReplicaPair(d.Id())
 		if err != nil {

@@ -9,7 +9,7 @@ import (
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -707,11 +707,11 @@ func resourceAlicloudOssBucketReplicationDelete(d *schema.ResourceData, meta int
 	})
 
 	// wait until the replication configuration is closed
-	_ = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	_ = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		raw, _ := isReplicationRuleExist(client, bucket, ruleId)
 		if raw {
 			time.Sleep(time.Duration(10) * time.Second)
-			return resource.RetryableError(Error("in closing status"))
+			return retry.RetryableError(Error("in closing status"))
 		}
 		return nil
 	})

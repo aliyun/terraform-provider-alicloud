@@ -7,7 +7,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/smartag"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -51,15 +51,15 @@ func resourceAlicloudCloudConnectNetworkGrantCreate(d *schema.ResourceData, meta
 
 	var err error
 	var raw interface{}
-	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(3*time.Minute, func() *retry.RetryError {
 		raw, err = client.WithSagClient(func(sagClient *smartag.Client) (interface{}, error) {
 			return sagClient.GrantInstanceToCbn(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Operation.Blocking", "UnknownError"}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 
 		return nil
@@ -108,16 +108,16 @@ func resourceAlicloudCloudConnectNetworkGrantDelete(d *schema.ResourceData, meta
 	request.CenInstanceId = parts[1]
 
 	var raw interface{}
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = client.WithSagClient(func(sagClient *smartag.Client) (interface{}, error) {
 			return sagClient.RevokeInstanceFromCbn(request)
 		})
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"IncorrectStatus", "TaskConflict"}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 
 		return nil

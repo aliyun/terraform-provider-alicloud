@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -95,13 +95,13 @@ func resourceAlicloudDBReadWriteSplittingConnectionCreate(d *schema.ResourceData
 			request["Weight"] = string(serial)
 		}
 	}
-	if err := resource.Retry(60*time.Minute, func() *resource.RetryError {
+	if err := retry.Retry(60*time.Minute, func() *retry.RetryError {
 		response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, DBReadInstanceNotReadyStatus) || NeedRetry(err) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -226,13 +226,13 @@ func resourceAlicloudDBReadWriteSplittingConnectionUpdate(d *schema.ResourceData
 		if err := rdsService.WaitForDBInstance(request["DBInstanceId"].(string), Running, 60*60); err != nil {
 			return WrapError(err)
 		}
-		if err := resource.Retry(30*time.Minute, func() *resource.RetryError {
+		if err := retry.Retry(30*time.Minute, func() *retry.RetryError {
 			response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 			if err != nil {
 				if IsExpectedErrors(err, OperationDeniedDBStatus) || IsExpectedErrors(err, DBReadInstanceNotReadyStatus) || NeedRetry(err) {
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(action, response, request)
 			return nil
@@ -258,16 +258,16 @@ func resourceAlicloudDBReadWriteSplittingConnectionDelete(d *schema.ResourceData
 		"DBInstanceId": d.Id(),
 		"SourceIp":     client.SourceIp,
 	}
-	if err := resource.Retry(30*time.Minute, func() *resource.RetryError {
+	if err := retry.Retry(30*time.Minute, func() *retry.RetryError {
 		response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, OperationDeniedDBStatus) || NeedRetry(err) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 			if NotFoundError(err) || IsExpectedErrors(err, []string{"InvalidRwSplitNetType.NotFound"}) {
 				return nil
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil

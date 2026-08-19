@@ -10,7 +10,7 @@ import (
 	slsPop "github.com/aliyun/alibaba-cloud-sdk-go/services/sls"
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -59,7 +59,7 @@ func resourcelicloudLogAlertResourceCreate(d *schema.ResourceData, meta interfac
 	resourceType := d.Get("type").(string)
 	lang, _ := d.Get("lang").(string)
 	project, _ := d.Get("project").(string)
-	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+	if err := retry.Retry(2*time.Minute, func() *retry.RetryError {
 		_, err := client.WithLogPopClient(func(slsPopClient *slsPop.Client) (interface{}, error) {
 			switch resourceType {
 			case "user":
@@ -92,9 +92,9 @@ func resourcelicloudLogAlertResourceCreate(d *schema.ResourceData, meta interfac
 		if err != nil {
 			if IsExpectedErrors(err, []string{LogClientTimeout}) {
 				time.Sleep(5 * time.Second)
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	}); err != nil {
@@ -115,7 +115,7 @@ func resourcelicloudLogAlertResourceRead(d *schema.ResourceData, meta interface{
 		return WrapError(err)
 	}
 	resourceType := parts[1]
-	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+	if err := retry.Retry(2*time.Minute, func() *retry.RetryError {
 		_, err := client.WithLogPopClient(func(slsPopClient *slsPop.Client) (interface{}, error) {
 			switch resourceType {
 			case "user":
@@ -184,9 +184,9 @@ func resourcelicloudLogAlertResourceRead(d *schema.ResourceData, meta interface{
 		if err != nil {
 			if IsExpectedErrors(err, []string{LogClientTimeout}) {
 				time.Sleep(5 * time.Second)
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	}); err != nil {

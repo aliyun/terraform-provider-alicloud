@@ -6,7 +6,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -25,14 +25,14 @@ func (s *ThreatDetectionService) DescribeThreatDetectionBackupPolicy(id string) 
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Sas", "2018-12-03", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -55,7 +55,7 @@ func (s *ThreatDetectionService) DescribeThreatDetectionBackupPolicy(id string) 
 	return object, nil
 }
 
-func (s *ThreatDetectionService) ThreatDetectionBackupPolicyStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *ThreatDetectionService) ThreatDetectionBackupPolicyStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeThreatDetectionBackupPolicy(id)
 		if err != nil {
@@ -84,14 +84,14 @@ func (s *ThreatDetectionService) DescribeThreatDetectionVulWhitelist(id string) 
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Sas", "2018-12-03", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -127,14 +127,14 @@ func (s *ThreatDetectionService) DescribeThreatDetectionHoneypotNode(id string) 
 	var response map[string]interface{}
 	action := "GetHoneypotNode"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err := client.RpcPost("Sas", "2018-12-03", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		response = resp
 		addDebug(action, response, request)
@@ -158,7 +158,7 @@ func (s *ThreatDetectionService) DescribeThreatDetectionHoneypotNode(id string) 
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ThreatDetectionService) ThreatDetectionHoneypotNodeStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+func (s *ThreatDetectionService) ThreatDetectionHoneypotNodeStateRefreshFunc(d *schema.ResourceData, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeThreatDetectionHoneypotNode(d.Id())
 		if err != nil {
@@ -187,14 +187,14 @@ func (s *ThreatDetectionService) DescribeThreatDetectionLogShipper(id string) (o
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Sas", "2018-12-03", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -224,14 +224,14 @@ func (s *ThreatDetectionService) DescribeThreatDetectionHoneypotPreset(id string
 	var response map[string]interface{}
 	action := "GetHoneypotPreset"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err := client.RpcPost("Sas", "2018-12-03", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		response = resp
 		addDebug(action, response, request)

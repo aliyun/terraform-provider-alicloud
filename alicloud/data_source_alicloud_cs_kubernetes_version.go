@@ -7,7 +7,7 @@ import (
 	cs "github.com/alibabacloud-go/cs-20151215/v8/client"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -68,14 +68,14 @@ func dataSourceAlicloudCSKubernetesVersionRead(d *schema.ResourceData, meta inte
 	var resp []*cs.DescribeKubernetesVersionMetadataResponseBody
 	var err error
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err = describeKubernetesVersionMetadata(d, client)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -118,14 +118,14 @@ func describeKubernetesVersionMetadata(d *schema.ResourceData, client *connectiv
 	request.KubernetesVersion = tea.String(d.Get("kubernetes_version").(string))
 	var resp *cs.DescribeKubernetesVersionMetadataResponse
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err = csClient.DescribeKubernetesVersionMetadata(request)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

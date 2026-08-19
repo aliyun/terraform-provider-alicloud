@@ -6,7 +6,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type DcdnServiceV2 struct {
@@ -26,15 +26,15 @@ func (s *DcdnServiceV2) DescribeDcdnDomain(id string) (object map[string]interfa
 	query["DomainName"] = id
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("dcdn", "2018-01-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -65,15 +65,15 @@ func (s *DcdnServiceV2) DescribeDescribeDcdnDomainCertificateInfo(id string) (ob
 	query["DomainName"] = id
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("dcdn", "2018-01-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -109,15 +109,15 @@ func (s *DcdnServiceV2) DescribeDescribeDcdnTagResources(id string) (object map[
 
 	request["ResourceType"] = "DOMAIN"
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("dcdn", "2018-01-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -138,7 +138,7 @@ func (s *DcdnServiceV2) DescribeDescribeDcdnTagResources(id string) (object map[
 	return v.(map[string]interface{}), nil
 }
 
-func (s *DcdnServiceV2) DcdnDomainStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *DcdnServiceV2) DcdnDomainStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeDcdnDomain(id)
 		if err != nil {

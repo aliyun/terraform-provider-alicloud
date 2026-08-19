@@ -7,7 +7,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cloudapi"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -100,15 +100,15 @@ func resourceAliyunApigatewayGroupCreate(d *schema.ResourceData, meta interface{
 	if v, ok := d.GetOk("instance_id"); ok {
 		request.InstanceId = v.(string)
 	}
-	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	if err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err := client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
 			return cloudApiClient.CreateApiGroup(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"RepeatedCommit"}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*cloudapi.CreateApiGroupResponse)

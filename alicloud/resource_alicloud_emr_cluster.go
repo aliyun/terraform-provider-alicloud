@@ -9,7 +9,7 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -645,14 +645,14 @@ func resourceAlicloudEmrClusterCreate(d *schema.ResourceData, meta interface{}) 
 	request["BootstrapAction"] = bootstrapActions
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Emr", "2016-04-08", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -745,14 +745,14 @@ func resourceAlicloudEmrClusterUpdate(d *schema.ResourceData, meta interface{}) 
 	if update {
 		action := "ModifyClusterName"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Emr", "2016-04-08", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(action, response, request)
 			return nil
@@ -799,14 +799,14 @@ func resourceAlicloudEmrClusterUpdate(d *schema.ResourceData, meta interface{}) 
 				}
 				action := "ListClusterHostGroup"
 				wait := incrementalWait(3*time.Second, 5*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcPost("Emr", "2016-04-08", action, nil, listHostGroupRequest, true)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					return nil
 				})
@@ -877,14 +877,14 @@ func resourceAlicloudEmrClusterUpdate(d *schema.ResourceData, meta interface{}) 
 
 					action := "ReleaseClusterHostGroup"
 					wait := incrementalWait(3*time.Second, 5*time.Second)
-					err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+					err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 						response, err = client.RpcPost("Emr", "2016-04-08", action, nil, releaseRequest, false)
 						if err != nil {
 							if NeedRetry(err) {
 								wait()
-								return resource.RetryableError(err)
+								return retry.RetryableError(err)
 							}
-							return resource.NonRetryableError(err)
+							return retry.NonRetryableError(err)
 						}
 						return nil
 					})
@@ -903,14 +903,14 @@ func resourceAlicloudEmrClusterUpdate(d *schema.ResourceData, meta interface{}) 
 
 				action := "CreateClusterHostGroup"
 				wait := incrementalWait(3*time.Second, 5*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcPost("Emr", "2016-04-08", action, nil, clusterHostGroupRequest, false)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					return nil
 				})
@@ -926,14 +926,14 @@ func resourceAlicloudEmrClusterUpdate(d *schema.ResourceData, meta interface{}) 
 				}
 				action = "ListClusterHostGroup"
 				wait = incrementalWait(3*time.Second, 5*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcPost("Emr", "2016-04-08", action, nil, listHostGroupRequest, false)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					return nil
 				})
@@ -978,14 +978,14 @@ func resourceAlicloudEmrClusterUpdate(d *schema.ResourceData, meta interface{}) 
 			resizeRequest["HostGroup"] = resizeHostGroups
 			action := "ResizeClusterV2"
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("Emr", "2016-04-08", action, nil, resizeRequest, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -1025,14 +1025,14 @@ func resourceAlicloudEmrClusterUpdate(d *schema.ResourceData, meta interface{}) 
 			}
 			modifyConfigRequest["RefreshHostConfig"] = modifyConfig["refresh_host_config"]
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("Emr", "2016-04-08", action, nil, modifyConfigRequest, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -1061,14 +1061,14 @@ func resourceAlicloudEmrClusterDelete(d *schema.ResourceData, meta interface{}) 
 	}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("Emr", "2016-04-08", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

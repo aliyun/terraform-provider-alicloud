@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -68,12 +68,12 @@ func resourceAlicloudDBAccountPrivilegeCreate(d *schema.ResourceData, meta inter
 
 	if len(dbList) > 0 {
 		for _, db := range dbList {
-			if err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+			if err := retry.Retry(10*time.Minute, func() *retry.RetryError {
 				if err := rdsService.GrantAccountPrivilege(d.Id(), db.(string)); err != nil {
 					if IsExpectedErrors(err, OperationDeniedDBStatus) || NeedRetry(err) {
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			}); err != nil {
@@ -133,13 +133,13 @@ func resourceAlicloudDBAccountPrivilegeRead(d *schema.ResourceData, meta interfa
 			"DBInstanceId": object["DBInstanceId"],
 			"SourceIp":     client.SourceIp,
 		}
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"InternalError", "OperationDenied.DBInstanceStatus"}) {
-					return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, object["DBInstanceId"], action, AlibabaCloudSdkGoERROR))
+					return retry.RetryableError(WrapErrorf(err, DefaultErrorMsg, object["DBInstanceId"], action, AlibabaCloudSdkGoERROR))
 				}
-				return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, object["DBInstanceId"], action, AlibabaCloudSdkGoERROR))
+				return retry.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, object["DBInstanceId"], action, AlibabaCloudSdkGoERROR))
 			}
 			addDebug(action, response, request)
 			dataBases := response["Databases"].(map[string]interface{})["Database"].([]interface{})

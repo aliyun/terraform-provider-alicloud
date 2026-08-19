@@ -19,7 +19,8 @@ import (
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/cs"
 	aliyungoecs "github.com/denverdino/aliyungo/ecs"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/id"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"gopkg.in/yaml.v2"
@@ -1055,16 +1056,16 @@ func resourceAlicloudCSKubernetesDelete(d *schema.ResourceData, meta interface{}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	var resp *roacs.DeleteClusterResponse
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		resp, err = client.DeleteCluster(tea.String(d.Id()), args)
 		if err != nil {
 			// dependent resources (SLB/ENI/SG) created by the cluster may
 			// still be detaching shortly after the test steps finish
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"DependencyViolation.Resource"}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1118,7 +1119,7 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 	if v, ok := d.GetOk("name"); ok {
 		clusterName = v.(string)
 	} else {
-		clusterName = resource.PrefixedUniqueId(d.Get("name_prefix").(string))
+		clusterName = id.PrefixedUniqueId(d.Get("name_prefix").(string))
 	}
 
 	addons := make([]cs.Addon, 0)
@@ -1438,15 +1439,15 @@ func getApiServerSlbID(d *schema.ResourceData, meta interface{}) (string, error)
 	}
 	var clusterResources *roacs.DescribeClusterResourcesResponse
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		request := &roacs.DescribeClusterResourcesRequest{}
 		clusterResources, err = rosClient.DescribeClusterResources(tea.String(d.Id()), request)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1543,14 +1544,14 @@ func fetchMasterNodes(d *schema.ResourceData, meta interface{}) []map[string]int
 		}
 		var response *roacs.DescribeClusterNodesResponse
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = csClient.DescribeClusterNodes(tea.String(d.Id()), request)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -1592,14 +1593,14 @@ func fetchWorkerNodes(d *schema.ResourceData, meta interface{}) []map[string]int
 	}
 	var response *roacs.DescribeClusterNodePoolsResponse
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = csClient.DescribeClusterNodePools(tea.String(d.Id()), &roacs.DescribeClusterNodePoolsRequest{})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1642,14 +1643,14 @@ func fetchWorkerNodes(d *schema.ResourceData, meta interface{}) []map[string]int
 		}
 		var response *roacs.DescribeClusterNodesResponse
 		wait = incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = csClient.DescribeClusterNodes(tea.String(d.Id()), request)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})

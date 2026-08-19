@@ -8,7 +8,7 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/blues/jsonata-go"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -30,15 +30,15 @@ func (s *VPNGatewayServiceV2) DescribeVPNGatewayVPNGateway(id string) (object ma
 	query["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -54,7 +54,7 @@ func (s *VPNGatewayServiceV2) DescribeVPNGatewayVPNGateway(id string) (object ma
 	return response, nil
 }
 
-func (s *VPNGatewayServiceV2) VPNGatewayVPNGatewayStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *VPNGatewayServiceV2) VPNGatewayVPNGatewayStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeVPNGatewayVPNGateway(id)
 		if err != nil {
@@ -98,15 +98,15 @@ func (s *VPNGatewayServiceV2) DescribeVPNGatewayCustomerGateway(id string) (obje
 	request["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -122,7 +122,7 @@ func (s *VPNGatewayServiceV2) DescribeVPNGatewayCustomerGateway(id string) (obje
 	return response, nil
 }
 
-func (s *VPNGatewayServiceV2) VPNGatewayCustomerGatewayStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *VPNGatewayServiceV2) VPNGatewayCustomerGatewayStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeVPNGatewayCustomerGateway(id)
 		if err != nil {
@@ -158,15 +158,15 @@ func (s *VPNGatewayServiceV2) DescribeVPNGatewayVpnConnection(id string) (object
 	query["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -182,7 +182,7 @@ func (s *VPNGatewayServiceV2) DescribeVPNGatewayVpnConnection(id string) (object
 	return response, nil
 }
 
-func (s *VPNGatewayServiceV2) VPNGatewayVpnConnectionStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *VPNGatewayServiceV2) VPNGatewayVpnConnectionStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeVPNGatewayVpnConnection(id)
 		if err != nil {
@@ -228,15 +228,15 @@ func (s *VPNGatewayServiceV2) DescribeVPNGatewayZone(id string) (object map[stri
 	query["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("Vpc", "2016-04-28", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -250,7 +250,7 @@ func (s *VPNGatewayServiceV2) DescribeVPNGatewayZone(id string) (object map[stri
 	return response, nil
 }
 
-func (s *VPNGatewayServiceV2) VPNGatewayZoneStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *VPNGatewayServiceV2) VPNGatewayZoneStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeVPNGatewayZone(id)
 		if err != nil {
@@ -288,15 +288,15 @@ func (s *VPNGatewayServiceV2) DescribeVpnGatewayVpnAttachment(id string) (object
 	action := "DescribeVpnConnection"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -311,7 +311,7 @@ func (s *VPNGatewayServiceV2) DescribeVpnGatewayVpnAttachment(id string) (object
 	return response, nil
 }
 
-func (s *VPNGatewayServiceV2) VpnGatewayVpnAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *VPNGatewayServiceV2) VpnGatewayVpnAttachmentStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeVpnGatewayVpnAttachment(id)
 		if err != nil {
@@ -371,14 +371,14 @@ func (s *VPNGatewayServiceV2) SetResourceTags(d *schema.ResourceData, resourceTy
 
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -403,14 +403,14 @@ func (s *VPNGatewayServiceV2) SetResourceTags(d *schema.ResourceData, resourceTy
 
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -440,15 +440,15 @@ func (s *VPNGatewayServiceV2) DescribeVpnGatewayEnhancedVpnGateway(id string) (o
 	action := "DescribeVpnGateway"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -475,15 +475,15 @@ func (s *VPNGatewayServiceV2) DescribeEnhancedVpnGatewayListTagResources(id stri
 	action := "ListTagResources"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -495,11 +495,11 @@ func (s *VPNGatewayServiceV2) DescribeEnhancedVpnGatewayListTagResources(id stri
 	return response, nil
 }
 
-func (s *VPNGatewayServiceV2) VpnGatewayEnhancedVpnGatewayStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *VPNGatewayServiceV2) VpnGatewayEnhancedVpnGatewayStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.VpnGatewayEnhancedVpnGatewayStateRefreshFuncWithApi(id, field, failStates, s.DescribeVpnGatewayEnhancedVpnGateway)
 }
 
-func (s *VPNGatewayServiceV2) VpnGatewayEnhancedVpnGatewayStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *VPNGatewayServiceV2) VpnGatewayEnhancedVpnGatewayStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -527,7 +527,7 @@ func (s *VPNGatewayServiceV2) VpnGatewayEnhancedVpnGatewayStateRefreshFuncWithAp
 	}
 }
 
-func (s *VPNGatewayServiceV2) DescribeAsyncVpnGatewayEnhancedVpnGatewayStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) resource.StateRefreshFunc {
+func (s *VPNGatewayServiceV2) DescribeAsyncVpnGatewayEnhancedVpnGatewayStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAsyncDescribeVpnGateways(d, res)
 		if err != nil {
@@ -573,15 +573,15 @@ func (s *VPNGatewayServiceV2) DescribeAsyncDescribeVpnGateways(d *schema.Resourc
 	action := "DescribeVpnGateways"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

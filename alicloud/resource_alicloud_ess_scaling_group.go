@@ -10,7 +10,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -291,13 +291,13 @@ func resourceAliyunEssScalingGroupCreate(d *schema.ResourceData, meta interface{
 	if err != nil {
 		return WrapError(err)
 	}
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ess", "2014-08-28", "CreateScalingGroup", nil, request, true)
 		if err != nil {
 			if NeedRetry(err) || IsExpectedErrors(err, []string{Throttling, "IncorrectLoadBalancerHealthCheck", "IncorrectLoadBalancerStatus"}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -316,15 +316,15 @@ func resourceAliyunEssScalingGroupCreate(d *schema.ResourceData, meta interface{
 		enableGroupRequest := ess.CreateEnableScalingGroupRequest()
 		enableGroupRequest.ScalingGroupId = d.Id()
 
-		err := resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+		err := retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 			raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 				return essClient.EnableScalingGroup(enableGroupRequest)
 			})
 			if err != nil {
 				if IsExpectedErrors(err, []string{"IncorrectScalingGroupStatus"}) {
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(enableGroupRequest.GetActionName(), raw, enableGroupRequest.RpcRequest, enableGroupRequest)
 			return nil
@@ -746,7 +746,7 @@ func resourceAliyunEssScalingGroupDelete(d *schema.ResourceData, meta interface{
 	request.RegionId = client.RegionId
 	request.ScalingGroupId = d.Id()
 	request.ForceDelete = requests.NewBoolean(true)
-	err := resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
+	err := retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *retry.RetryError {
 		raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 			return essClient.DeleteScalingGroup(request)
 		})
@@ -755,9 +755,9 @@ func resourceAliyunEssScalingGroupDelete(d *schema.ResourceData, meta interface{
 				return nil
 			}
 			if IsExpectedErrors(err, []string{"InternalError"}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
@@ -1056,13 +1056,13 @@ func attachOrDetachAlbServerGroups(d *schema.ResourceData, client *connectivity.
 				albServerGroupsMaps = append(albServerGroupsMaps, albServerGroupsMap)
 			}
 			albRequest["AlbServerGroup"] = albServerGroupsMaps
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("Ess", "2014-08-28", action, nil, albRequest, true)
 				if err != nil {
 					if IsExpectedErrors(err, []string{"IncorrectScalingGroupStatus"}) || NeedRetry(err) {
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -1094,13 +1094,13 @@ func attachOrDetachAlbServerGroups(d *schema.ResourceData, client *connectivity.
 				albServerGroupsMaps = append(albServerGroupsMaps, albServerGroupsMap)
 			}
 			albRequest["AlbServerGroup"] = albServerGroupsMaps
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("Ess", "2014-08-28", action, nil, albRequest, true)
 				if err != nil {
 					if IsExpectedErrors(err, []string{"IncorrectScalingGroupStatus"}) || NeedRetry(err) {
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})

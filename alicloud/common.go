@@ -34,7 +34,7 @@ import (
 	"github.com/denverdino/aliyungo/cs"
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/mitchellh/go-homedir"
@@ -1049,8 +1049,8 @@ func GetCenChildInstanceType(id string) (c string, e error) {
 	}
 }
 
-func BuildStateConf(pending, target []string, timeout, delay time.Duration, f resource.StateRefreshFunc) *resource.StateChangeConf {
-	return &resource.StateChangeConf{
+func BuildStateConf(pending, target []string, timeout, delay time.Duration, f retry.StateRefreshFunc) *retry.StateChangeConf {
+	return &retry.StateChangeConf{
 		Pending:    pending,
 		Target:     target,
 		Refresh:    f,

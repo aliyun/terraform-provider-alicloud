@@ -11,7 +11,7 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -510,15 +510,15 @@ func resourceAliCloudFcv2FunctionCreate(d *schema.ResourceData, meta interface{}
 	b, err := json.Marshal(body)
 	headerParams["content-md5"] = tea.String(MD5(b))
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RoaPost("FC-Open", "2021-04-06", action, query, headerParams, body, false)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ConcurrentUpdateError"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -982,15 +982,15 @@ func resourceAliCloudFcv2FunctionUpdate(d *schema.ResourceData, meta interface{}
 	headerParams["content-md5"] = tea.String(MD5(b))
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPut("FC-Open", "2021-04-06", action, query, headerParams, body, false)
 
 			if err != nil {
 				if IsExpectedErrors(err, []string{"ConcurrentUpdateError"}) || NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(action, response, request)
 			return nil
@@ -1017,15 +1017,15 @@ func resourceAliCloudFcv2FunctionDelete(d *schema.ResourceData, meta interface{}
 	request = make(map[string]interface{})
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RoaDelete("FC-Open", "2021-04-06", action, query, nil, nil, false)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ConcurrentUpdateError"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil

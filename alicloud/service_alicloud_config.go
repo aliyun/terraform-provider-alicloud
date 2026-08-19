@@ -7,7 +7,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -24,14 +24,14 @@ func (s *ConfigService) DescribeConfigRule(id string) (object map[string]interfa
 		"ConfigRuleId": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("Config", "2020-09-07", action, request, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -108,7 +108,7 @@ func (s *ConfigService) DescribeConfigConfigurationRecorder(id string) (object m
 	return object, nil
 }
 
-func (s *ConfigService) ConfigConfigurationRecorderStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *ConfigService) ConfigConfigurationRecorderStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeConfigConfigurationRecorder(id)
 		if err != nil {
@@ -154,14 +154,14 @@ func (s *ConfigService) DescribeConfigAggregator(id string) (object map[string]i
 	var response map[string]interface{}
 	action := "GetAggregator"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("Config", "2020-09-07", action, request, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -179,7 +179,7 @@ func (s *ConfigService) DescribeConfigAggregator(id string) (object map[string]i
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ConfigService) ConfigAggregatorStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+func (s *ConfigService) ConfigAggregatorStateRefreshFunc(d *schema.ResourceData, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeConfigAggregator(d.Id())
 		if err != nil {
@@ -212,14 +212,14 @@ func (s *ConfigService) DescribeConfigAggregateConfigRule(id string) (object map
 		"ConfigRuleId": parts[1],
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("Config", "2020-09-07", action, request, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -255,14 +255,14 @@ func (s *ConfigService) DescribeConfigAggregateCompliancePack(id string) (object
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("Config", "2020-09-07", action, request, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -285,7 +285,7 @@ func (s *ConfigService) DescribeConfigAggregateCompliancePack(id string) (object
 	return object, nil
 }
 
-func (s *ConfigService) ConfigAggregateCompliancePackStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *ConfigService) ConfigAggregateCompliancePackStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeConfigAggregateCompliancePack(id)
 		if err != nil {
@@ -315,14 +315,14 @@ func (s *ConfigService) DescribeConfigCompliancePack(id string) (object map[stri
 		"CompliancePackId": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("Config", "2020-09-07", action, request, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -341,7 +341,7 @@ func (s *ConfigService) DescribeConfigCompliancePack(id string) (object map[stri
 	return object, nil
 }
 
-func (s *ConfigService) ConfigCompliancePackStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *ConfigService) ConfigCompliancePackStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeConfigCompliancePack(id)
 		if err != nil {
@@ -361,7 +361,7 @@ func (s *ConfigService) ConfigCompliancePackStateRefreshFunc(id string, failStat
 	}
 }
 
-func (s *ConfigService) ConfigAggregateConfigRuleStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *ConfigService) ConfigAggregateConfigRuleStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeConfigAggregateConfigRule(id)
 		if err != nil {
@@ -381,7 +381,7 @@ func (s *ConfigService) ConfigAggregateConfigRuleStateRefreshFunc(id string, fai
 	}
 }
 
-func (s *ConfigService) ConfigRuleStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *ConfigService) ConfigRuleStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeConfigRule(id)
 		if err != nil {
@@ -409,14 +409,14 @@ func (s *ConfigService) StopConfigRule(id string) (err error) {
 		"ConfigRuleIds": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("Config", "2019-01-08", action, request, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -434,14 +434,14 @@ func (s *ConfigService) ActiveConfigRule(id string) (err error) {
 		"ConfigRuleIds": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("Config", "2019-01-08", action, request, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -461,14 +461,14 @@ func (s *ConfigService) ActiveAggregateConfigRules(id, aggregatorId string) (err
 		"AggregatorId":  aggregatorId,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("Config", "2020-09-07", action, request, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -488,14 +488,14 @@ func (s *ConfigService) DeactiveAggregateConfigRules(id, aggregatorId string) (e
 		"AggregatorId":  aggregatorId,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("Config", "2020-09-07", action, request, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -514,14 +514,14 @@ func (s *ConfigService) DescribeConfigDelivery(id string) (object map[string]int
 		"DeliveryChannelId": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Config", "2020-09-07", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -555,14 +555,14 @@ func (s *ConfigService) DescribeConfigAggregateDelivery(id string) (object map[s
 		"DeliveryChannelId": parts[1],
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Config", "2020-09-07", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

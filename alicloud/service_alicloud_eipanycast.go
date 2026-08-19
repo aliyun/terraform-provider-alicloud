@@ -5,7 +5,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type EipanycastService struct {
@@ -34,7 +34,7 @@ func (s *EipanycastService) DescribeEipanycastAnycastEipAddress(id string) (obje
 	return object, nil
 }
 
-func (s *EipanycastService) EipanycastAnycastEipAddressStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *EipanycastService) EipanycastAnycastEipAddressStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEipanycastAnycastEipAddress(id)
 		if err != nil {
@@ -89,7 +89,7 @@ func (s *EipanycastService) DescribeEipanycastAnycastEipAddressAttachment(id str
 	return object, nil
 }
 
-func (s *EipanycastService) EipanycastAnycastEipAddressAttachmentStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *EipanycastService) EipanycastAnycastEipAddressAttachmentStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEipanycastAnycastEipAddressAttachment(id)
 		if err != nil {

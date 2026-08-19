@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -313,12 +313,12 @@ func resourceAliCloudCloudFirewallInstanceCreate(d *schema.ResourceData, meta in
 
 	request["Parameter"] = parameterMapList
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, nil, request, true, endpoint)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 			if IsExpectedErrors(err, []string{"NotApplicable", NotFoundArticle}) {
 				request["ProductCode"] = "cfw"
@@ -339,9 +339,9 @@ func resourceAliCloudCloudFirewallInstanceCreate(d *schema.ResourceData, meta in
 				request["Parameter"] = parameterMapList
 
 				endpoint = connectivity.BssOpenAPIEndpointInternational
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -465,21 +465,21 @@ func resourceAliCloudCloudFirewallInstanceUpdate(d *schema.ResourceData, meta in
 		var err error
 		action := "SetRenewal"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, nil, setRenewalReq, true, endpoint)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
 				if IsExpectedErrors(err, []string{"NotApplicable"}) {
 					endpoint = connectivity.BssOpenAPIEndpointInternational
 					setRenewalReq["ProductCode"] = "cfw"
 					setRenewalReq["ProductType"] = "cfw_pre_intl"
 
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -612,12 +612,12 @@ func resourceAliCloudCloudFirewallInstanceUpdate(d *schema.ResourceData, meta in
 		action := "ModifyInstance"
 		modifyInstanceRequest["ClientToken"] = buildClientToken(action)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, nil, modifyInstanceRequest, true, endpoint)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
 				if IsExpectedErrors(err, []string{"NotApplicable"}) {
 					modifyInstanceRequest["ProductCode"] = "cfw"
@@ -638,14 +638,14 @@ func resourceAliCloudCloudFirewallInstanceUpdate(d *schema.ResourceData, meta in
 					modifyInstanceRequest["Parameter"] = parameterMapList
 
 					endpoint = connectivity.BssOpenAPIEndpointInternational
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 
 			if fmt.Sprint(response["Code"]) == "SYSTEM.CONCURRENT_OPERATE" {
 				wait()
-				return resource.RetryableError(fmt.Errorf("%s", response))
+				return retry.RetryableError(fmt.Errorf("%s", response))
 			}
 
 			return nil
@@ -680,14 +680,14 @@ func resourceAliCloudCloudFirewallInstanceUpdate(d *schema.ResourceData, meta in
 		var err error
 		action := "SetAutoProtectNewAssets"
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Cloudfw", "2017-12-07", action, setAutoProtectNewAssetsQuery, setAutoProtectNewAssetsRequest, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -723,17 +723,17 @@ func resourceAliCloudCloudFirewallInstanceUpdate(d *schema.ResourceData, meta in
 		var err error
 		var endpoint string
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 			response, err = client.RpcPostWithEndpoint("Cloudfw", "2017-12-07", action, nil, nil, false, endpoint)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				} else if IsExpectedErrors(err, []string{"not buy user"}) {
 					endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 
 			return nil
@@ -768,17 +768,17 @@ func resourceAliCloudCloudFirewallInstanceDelete(d *schema.ResourceData, meta in
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
+	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *retry.RetryError {
 		response, err = client.RpcPostWithEndpoint("Cloudfw", "2017-12-07", action, nil, request, false, endpoint)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			} else if IsExpectedErrors(err, []string{"not buy user"}) {
 				endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 
 		return nil
@@ -798,7 +798,7 @@ func resourceAliCloudCloudFirewallInstanceDelete(d *schema.ResourceData, meta in
 
 	bssOpenApiService := BssOpenApiService{client}
 	wait = incrementalWait(10*time.Second, 10*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
+	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *retry.RetryError {
 		_, err = bssOpenApiService.QueryAvailableInstance(d.Id())
 		if err != nil {
 			if NotFoundError(err) {
@@ -806,12 +806,12 @@ func resourceAliCloudCloudFirewallInstanceDelete(d *schema.ResourceData, meta in
 			}
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		wait()
-		return resource.RetryableError(fmt.Errorf("Cloud Firewall instance %s still exists", d.Id()))
+		return retry.RetryableError(fmt.Errorf("Cloud Firewall instance %s still exists", d.Id()))
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "WaitForReleasePostInstance", AlibabaCloudSdkGoERROR)

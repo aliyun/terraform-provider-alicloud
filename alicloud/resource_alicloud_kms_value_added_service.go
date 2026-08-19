@@ -8,7 +8,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -170,12 +170,12 @@ func resourceAliCloudKmsValueAddedServiceCreate(d *schema.ResourceData, meta int
 	}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
 				request["ProductType"] = "kms_ddi_public_intl"
@@ -183,9 +183,9 @@ func resourceAliCloudKmsValueAddedServiceCreate(d *schema.ResourceData, meta int
 					request["ProductType"] = "kms_ppi_public_intl"
 				}
 				endpoint = connectivity.BssOpenAPIEndpointInternational
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -292,12 +292,12 @@ func resourceAliCloudKmsValueAddedServiceUpdate(d *schema.ResourceData, meta int
 	}
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
 				if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
 					request["ProductType"] = "kms_ddi_public_intl"
@@ -305,9 +305,9 @@ func resourceAliCloudKmsValueAddedServiceUpdate(d *schema.ResourceData, meta int
 						request["ProductType"] = "kms_ppi_public_intl"
 					}
 					endpoint = connectivity.BssOpenAPIEndpointInternational
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -347,12 +347,12 @@ func resourceAliCloudKmsValueAddedServiceDelete(d *schema.ResourceData, meta int
 		}
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
 				request["ProductType"] = "kms_ddi_public_intl"
@@ -360,9 +360,9 @@ func resourceAliCloudKmsValueAddedServiceDelete(d *schema.ResourceData, meta int
 					request["ProductType"] = "kms_ppi_public_intl"
 				}
 				endpoint = connectivity.BssOpenAPIEndpointInternational
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -421,7 +421,7 @@ func kmsValueAddedServiceInEffect(instance map[string]interface{}, now time.Time
 	return end.After(now)
 }
 
-func kmsValueAddedServiceRefundedRefreshFunc(refresh resource.StateRefreshFunc) resource.StateRefreshFunc {
+func kmsValueAddedServiceRefundedRefreshFunc(refresh retry.StateRefreshFunc) retry.StateRefreshFunc {
 	listed := false
 	return func() (interface{}, string, error) {
 		object, state, err := refresh()

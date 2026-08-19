@@ -8,7 +8,7 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/blues/jsonata-go"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -34,15 +34,15 @@ func (s *NasServiceV2) DescribeNasAccessRule(id string) (object map[string]inter
 	}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("NAS", "2017-06-26", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -68,7 +68,7 @@ func (s *NasServiceV2) DescribeNasAccessRule(id string) (object map[string]inter
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *NasServiceV2) NasAccessRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *NasServiceV2) NasAccessRuleStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeNasAccessRule(id)
 		if err != nil {
@@ -112,15 +112,15 @@ func (s *NasServiceV2) DescribeNasAccessGroup(id string) (object map[string]inte
 	action := "DescribeAccessGroups"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("NAS", "2017-06-26", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -144,11 +144,11 @@ func (s *NasServiceV2) DescribeNasAccessGroup(id string) (object map[string]inte
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *NasServiceV2) NasAccessGroupStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *NasServiceV2) NasAccessGroupStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.NasAccessGroupStateRefreshFuncWithApi(id, field, failStates, s.DescribeNasAccessGroup)
 }
 
-func (s *NasServiceV2) NasAccessGroupStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *NasServiceV2) NasAccessGroupStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -192,15 +192,15 @@ func (s *NasServiceV2) DescribeNasFileSystem(id string) (object map[string]inter
 	action := "DescribeFileSystems"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("NAS", "2017-06-26", action, query, request, true)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InvalidFileSystemStatus.Ordering"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -235,15 +235,15 @@ func (s *NasServiceV2) DescribeFileSystemDescribeSmbAcl(id string) (object map[s
 	action := "DescribeSmbAcl"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("NAS", "2017-06-26", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -271,15 +271,15 @@ func (s *NasServiceV2) DescribeFileSystemGetRecycleBinAttribute(id string) (obje
 	action := "GetRecycleBinAttribute"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("NAS", "2017-06-26", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -311,15 +311,15 @@ func (s *NasServiceV2) DescribeFileSystemListTagResources(id string) (object map
 	action := "ListTagResources"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("NAS", "2017-06-26", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -345,15 +345,15 @@ func (s *NasServiceV2) DescribeFileSystemDescribeNfsAcl(id string) (object map[s
 	action := "DescribeNfsAcl"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("NAS", "2017-06-26", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -370,11 +370,11 @@ func (s *NasServiceV2) DescribeFileSystemDescribeNfsAcl(id string) (object map[s
 	return v.(map[string]interface{}), nil
 }
 
-func (s *NasServiceV2) NasFileSystemStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *NasServiceV2) NasFileSystemStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.NasFileSystemStateRefreshFuncWithApi(id, field, failStates, s.DescribeNasFileSystem)
 }
 
-func (s *NasServiceV2) NasFileSystemStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *NasServiceV2) NasFileSystemStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -402,7 +402,7 @@ func (s *NasServiceV2) NasFileSystemStateRefreshFuncWithApi(id string, field str
 	}
 }
 
-func (s *NasServiceV2) DescribeAsyncNasFileSystemStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) resource.StateRefreshFunc {
+func (s *NasServiceV2) DescribeAsyncNasFileSystemStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAsyncDescribeFileSystems(d, res)
 		if err != nil {
@@ -463,14 +463,14 @@ func (s *NasServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("NAS", "2017-06-26", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -496,14 +496,14 @@ func (s *NasServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("NAS", "2017-06-26", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -531,15 +531,15 @@ func (s *NasServiceV2) DescribeNasAutoSnapshotPolicy(id string) (object map[stri
 	query["AutoSnapshotPolicyId"] = id
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("NAS", "2017-06-26", action, query, nil, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, query)
 		return nil
@@ -564,7 +564,7 @@ func (s *NasServiceV2) DescribeNasAutoSnapshotPolicy(id string) (object map[stri
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *NasServiceV2) NasAutoSnapshotPolicyStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *NasServiceV2) NasAutoSnapshotPolicyStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeNasAutoSnapshotPolicy(id)
 		if err != nil {
@@ -617,15 +617,15 @@ func (s *NasServiceV2) DescribeNasAccessPoint(id string) (object map[string]inte
 	action := "DescribeAccessPoint"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("NAS", "2017-06-26", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -645,7 +645,7 @@ func (s *NasServiceV2) DescribeNasAccessPoint(id string) (object map[string]inte
 	return v.(map[string]interface{}), nil
 }
 
-func (s *NasServiceV2) NasAccessPointStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *NasServiceV2) NasAccessPointStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeNasAccessPoint(id)
 		if err != nil {
@@ -688,15 +688,15 @@ func (s *NasServiceV2) DescribeNasMountTarget(id string) (object map[string]inte
 	action := "DescribeMountTargets"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("NAS", "2017-06-26", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -720,7 +720,7 @@ func (s *NasServiceV2) DescribeNasMountTarget(id string) (object map[string]inte
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *NasServiceV2) NasMountTargetStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *NasServiceV2) NasMountTargetStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeNasMountTarget(id)
 		if err != nil {
@@ -749,7 +749,7 @@ func (s *NasServiceV2) NasMountTargetStateRefreshFunc(id string, field string, f
 	}
 }
 
-func (s *NasServiceV2) DescribeAsyncNasMountTargetStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) resource.StateRefreshFunc {
+func (s *NasServiceV2) DescribeAsyncNasMountTargetStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAsyncDescribeMountTargets(d, res)
 
@@ -801,15 +801,15 @@ func (s *NasServiceV2) DescribeAsyncDescribeMountTargets(d *schema.ResourceData,
 	action := "DescribeMountTargets"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("NAS", "2017-06-26", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -837,15 +837,15 @@ func (s *NasServiceV2) DescribeAsyncDescribeFileSystems(d *schema.ResourceData, 
 	action := "DescribeFileSystems"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("NAS", "2017-06-26", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -880,16 +880,16 @@ func (s *NasServiceV2) DescribeNasProtocolService(id string) (object map[string]
 	request["ClientToken"] = buildClientToken(action)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("NAS", "2017-06-26", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -913,11 +913,11 @@ func (s *NasServiceV2) DescribeNasProtocolService(id string) (object map[string]
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *NasServiceV2) NasProtocolServiceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *NasServiceV2) NasProtocolServiceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.NasProtocolServiceStateRefreshFuncWithApi(id, field, failStates, s.DescribeNasProtocolService)
 }
 
-func (s *NasServiceV2) NasProtocolServiceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *NasServiceV2) NasProtocolServiceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -968,16 +968,16 @@ func (s *NasServiceV2) DescribeNasProtocolMountTarget(id string) (object map[str
 	request["ClientToken"] = buildClientToken(action)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("NAS", "2017-06-26", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -997,11 +997,11 @@ func (s *NasServiceV2) DescribeNasProtocolMountTarget(id string) (object map[str
 	return v.(map[string]interface{}), nil
 }
 
-func (s *NasServiceV2) NasProtocolMountTargetStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *NasServiceV2) NasProtocolMountTargetStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.NasProtocolMountTargetStateRefreshFuncWithApi(id, field, failStates, s.DescribeNasProtocolMountTarget)
 }
 
-func (s *NasServiceV2) NasProtocolMountTargetStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *NasServiceV2) NasProtocolMountTargetStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -1051,15 +1051,15 @@ func (s *NasServiceV2) DescribeNasFileset(id string) (object map[string]interfac
 	action := "GetFileset"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("NAS", "2017-06-26", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1079,11 +1079,11 @@ func (s *NasServiceV2) DescribeNasFileset(id string) (object map[string]interfac
 	return v.(map[string]interface{}), nil
 }
 
-func (s *NasServiceV2) NasFilesetStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *NasServiceV2) NasFilesetStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.NasFilesetStateRefreshFuncWithApi(id, field, failStates, s.DescribeNasFileset)
 }
 
-func (s *NasServiceV2) NasFilesetStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *NasServiceV2) NasFilesetStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -1111,7 +1111,7 @@ func (s *NasServiceV2) NasFilesetStateRefreshFuncWithApi(id string, field string
 	}
 }
 
-func (s *NasServiceV2) DescribeAsyncNasFilesetStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) resource.StateRefreshFunc {
+func (s *NasServiceV2) DescribeAsyncNasFilesetStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAsyncGetFileset(d, res)
 		if err != nil {
@@ -1163,15 +1163,15 @@ func (s *NasServiceV2) DescribeAsyncGetFileset(d *schema.ResourceData, res map[s
 	action := "GetFileset"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("NAS", "2017-06-26", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1198,15 +1198,15 @@ func (s *NasServiceV2) DescribeNasLogAnalysis(id string) (object map[string]inte
 	action := "DescribeLogAnalysis"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("NAS", "2017-06-26", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1235,11 +1235,11 @@ func (s *NasServiceV2) DescribeNasLogAnalysis(id string) (object map[string]inte
 	return object, WrapErrorf(NotFoundErr("LogAnalysis", id), NotFoundMsg, response)
 }
 
-func (s *NasServiceV2) NasLogAnalysisStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *NasServiceV2) NasLogAnalysisStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.NasLogAnalysisStateRefreshFuncWithApi(id, field, failStates, s.DescribeNasLogAnalysis)
 }
 
-func (s *NasServiceV2) NasLogAnalysisStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *NasServiceV2) NasLogAnalysisStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {

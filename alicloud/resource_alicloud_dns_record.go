@@ -7,7 +7,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -95,15 +95,15 @@ func resourceAlicloudDnsRecordCreate(d *schema.ResourceData, meta interface{}) e
 		request.Line = routing
 	}
 
-	if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+	if err := retry.Retry(3*time.Minute, func() *retry.RetryError {
 		raw, err := client.WithDnsClient(func(dnsClient *alidns.Client) (interface{}, error) {
 			return dnsClient.AddDomainRecord(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InternalError", "LastOperationNotFinished"}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*alidns.AddDomainRecordResponse)
@@ -132,15 +132,15 @@ func resourceAlicloudDnsRecordUpdate(d *schema.ResourceData, meta interface{}) e
 
 	request.Value = d.Get("value").(string)
 
-	if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+	if err := retry.Retry(3*time.Minute, func() *retry.RetryError {
 		raw, err := client.WithDnsClient(func(dnsClient *alidns.Client) (interface{}, error) {
 			return dnsClient.UpdateDomainRecord(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"LastOperationNotFinished"}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
@@ -182,7 +182,7 @@ func resourceAlicloudDnsRecordDelete(d *schema.ResourceData, meta interface{}) e
 	request := alidns.CreateDeleteDomainRecordRequest()
 	request.RegionId = client.RegionId
 	request.RecordId = d.Id()
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
+	return retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err := client.WithDnsClient(func(dnsClient *alidns.Client) (interface{}, error) {
 			return dnsClient.DeleteDomainRecord(request)
 		})
@@ -191,9 +191,9 @@ func resourceAlicloudDnsRecordDelete(d *schema.ResourceData, meta interface{}) e
 				return nil
 			}
 			if IsExpectedErrors(err, []string{"RecordForbidden.DNSChange", "InternalError", "LastOperationNotFinished"}) {
-				return resource.RetryableError(WrapErrorf(err, DefaultTimeoutMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
+				return retry.RetryableError(WrapErrorf(err, DefaultTimeoutMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 			}
-			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
+			return retry.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		_, err = dnsService.DescribeDnsRecord(d.Id())
@@ -201,8 +201,8 @@ func resourceAlicloudDnsRecordDelete(d *schema.ResourceData, meta interface{}) e
 			if NotFoundError(err) {
 				return nil
 			}
-			return resource.NonRetryableError(WrapError(err))
+			return retry.NonRetryableError(WrapError(err))
 		}
-		return resource.RetryableError(WrapErrorf(err, DefaultTimeoutMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
+		return retry.RetryableError(WrapErrorf(err, DefaultTimeoutMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 	})
 }

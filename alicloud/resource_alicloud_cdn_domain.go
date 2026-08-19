@@ -9,7 +9,7 @@ import (
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/denverdino/aliyungo/cdn"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -592,15 +592,15 @@ func resourceAlicloudCdnDomainDelete(d *schema.ResourceData, meta interface{}) e
 	args := cdn.DescribeDomainRequest{
 		DomainName: d.Id(),
 	}
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
+	return retry.Retry(5*time.Minute, func() *retry.RetryError {
 		_, err := client.WithCdnClient(func(cdnClient *cdn.CdnClient) (interface{}, error) {
 			return cdnClient.DeleteCdnDomain(args)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ServiceBusy"}) {
-				return resource.RetryableError(fmt.Errorf("The specified Domain is configuring, please retry later."))
+				return retry.RetryableError(fmt.Errorf("The specified Domain is configuring, please retry later."))
 			}
-			return resource.NonRetryableError(fmt.Errorf("Error deleting cdn domain %s: %#v.", d.Id(), err))
+			return retry.NonRetryableError(fmt.Errorf("Error deleting cdn domain %s: %#v.", d.Id(), err))
 		}
 		return nil
 	})

@@ -9,7 +9,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -101,16 +101,16 @@ func resourceAliyunEssServerGroupAttachmentCreate(d *schema.ResourceData, meta i
 
 	var raw interface{}
 	var err error
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
+	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *retry.RetryError {
 		raw, err = client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 			return essClient.AttachServerGroups(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"IncorrectScalingGroupStatus", "InvalidOperation.Conflict", "ScalingActivityInProgress"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -197,15 +197,15 @@ func resourceAliyunEssServerGroupAttachmentDelete(d *schema.ResourceData, meta i
 	request.ServerGroup = &detachScalingGroupServerGroups
 
 	activityId := ""
-	err := resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
+	err := retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *retry.RetryError {
 		raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 			return essClient.DetachServerGroups(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"IncorrectScalingGroupStatus", "InvalidOperation.Conflict", "ScalingActivityInProgress"}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		response, _ := raw.(*ess.DetachServerGroupsResponse)
 		activityId = response.ScalingActivityId

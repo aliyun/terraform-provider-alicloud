@@ -8,7 +8,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -94,16 +94,16 @@ func resourceAlicloudCenVbrHealthCheckCreate(d *schema.ResourceData, meta interf
 
 	request.VbrInstanceRegionId = d.Get("vbr_instance_region_id").(string)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err := resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err := retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		raw, err := client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.EnableCenVbrHealthCheck(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InstanceStatus.NotSupport", "Operation.Blocking", "InvalidOperation.CenInstanceStatus", "InvalidOperation.VbrNotAttachedToCen", "OperationFailed.StatusNotSupport"}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw)
 		d.SetId(fmt.Sprintf("%v:%v", request.VbrInstanceId, request.VbrInstanceRegionId))
@@ -173,16 +173,16 @@ func resourceAlicloudCenVbrHealthCheckUpdate(d *schema.ResourceData, meta interf
 	}
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err := retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			raw, err := client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
 				return cbnClient.EnableCenVbrHealthCheck(request)
 			})
 			if err != nil {
 				if IsExpectedErrors(err, []string{"Operation.Blocking", "InvalidOperation.CenInstanceStatus", "InstanceStatus.NotSupport"}) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(request.GetActionName(), raw)
 			return nil
@@ -207,16 +207,16 @@ func resourceAlicloudCenVbrHealthCheckDelete(d *schema.ResourceData, meta interf
 		request.VbrInstanceOwnerId = requests.NewInteger(v.(int))
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		raw, err := client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.DisableCenVbrHealthCheck(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Operation.Blocking", "InstanceStatus.NotSupport"}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw)
 		return nil

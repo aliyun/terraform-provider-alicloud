@@ -8,7 +8,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -64,16 +64,16 @@ func (s *AlidnsService) DescribeAlidnsRecord(id string) (object alidns.DescribeD
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	var raw interface{}
-	err = resource.Retry(s.client.GetRetryTimeout(5*time.Minute), func() *resource.RetryError {
+	err = retry.Retry(s.client.GetRetryTimeout(5*time.Minute), func() *retry.RetryError {
 		raw, err = s.client.WithAlidnsClient(func(alidnsClient *alidns.Client) (interface{}, error) {
 			return alidnsClient.DescribeDomainRecordInfo(request)
 		})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -184,14 +184,14 @@ func (s *AlidnsService) DescribeAlidnsInstance(id string) (object map[string]int
 		"InstanceId": id,
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(11*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(11*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Alidns", "2015-01-09", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -218,14 +218,14 @@ func (s *AlidnsService) DescribeAlidnsCustomLine(id string) (object map[string]i
 		"LineId": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Alidns", "2015-01-09", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -252,14 +252,14 @@ func (s *AlidnsService) DescribeCustomLine(id string) (object map[string]interfa
 		"LineId": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Alidns", "2015-01-09", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -286,14 +286,14 @@ func (s *AlidnsService) DescribeAlidnsGtmInstance(id string) (object map[string]
 		"InstanceId": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Alidns", "2015-01-09", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -320,14 +320,14 @@ func (s *AlidnsService) DescribeAlidnsAddressPool(id string) (object map[string]
 		"AddrPoolId": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Alidns", "2015-01-09", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -354,14 +354,14 @@ func (s *AlidnsService) DescribeAlidnsAccessStrategy(id string) (object map[stri
 		"StrategyId": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Alidns", "2015-01-09", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -388,14 +388,14 @@ func (s *AlidnsService) DescribeAlidnsMonitorConfig(id string) (object map[strin
 		"MonitorConfigId": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Alidns", "2015-01-09", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

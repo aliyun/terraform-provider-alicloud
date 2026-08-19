@@ -8,7 +8,7 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -27,16 +27,16 @@ func (s *R_kvstoreService) DescribeInstanceSSL(id string) (object r_kvstore.Desc
 
 	var raw interface{}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = s.client.WithRKvstoreClient(func(r_kvstoreClient *r_kvstore.Client) (interface{}, error) {
 			return r_kvstoreClient.DescribeInstanceSSL(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"LockTimeout"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -62,16 +62,16 @@ func (s *R_kvstoreService) DescribeSecurityIps(id, securityIpGroupName string) (
 
 	var raw interface{}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = s.client.WithRKvstoreClient(func(r_kvstoreClient *r_kvstore.Client) (interface{}, error) {
 			return r_kvstoreClient.DescribeSecurityIps(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"LockTimeout"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -171,16 +171,16 @@ func (s *R_kvstoreService) DescribeInstanceAutoRenewalAttribute(id string) (obje
 
 	var raw interface{}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = s.client.WithRKvstoreClient(func(r_kvstoreClient *r_kvstore.Client) (interface{}, error) {
 			return r_kvstoreClient.DescribeInstanceAutoRenewalAttribute(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"LockTimeout"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -211,16 +211,16 @@ func (s *R_kvstoreService) DescribeSecurityGroupConfiguration(id string) (object
 
 	var raw interface{}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = s.client.WithRKvstoreClient(func(r_kvstoreClient *r_kvstore.Client) (interface{}, error) {
 			return r_kvstoreClient.DescribeSecurityGroupConfiguration(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"LockTimeout"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -251,14 +251,14 @@ func (s *R_kvstoreService) DescribeKvstoreInstance(id string) (object map[string
 		"InstanceId": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = s.client.RpcPost("R-kvstore", "2015-01-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -281,7 +281,7 @@ func (s *R_kvstoreService) DescribeKvstoreInstance(id string) (object map[string
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *R_kvstoreService) KvstoreInstanceStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *R_kvstoreService) KvstoreInstanceStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeKvstoreInstance(id)
 		if err != nil {
@@ -301,7 +301,7 @@ func (s *R_kvstoreService) KvstoreInstanceStateRefreshFunc(id string, failStates
 	}
 }
 
-func (s *R_kvstoreService) KvstoreInstanceAttributeRefreshFunc(id, attribute string) resource.StateRefreshFunc {
+func (s *R_kvstoreService) KvstoreInstanceAttributeRefreshFunc(id, attribute string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeKvstoreInstance(id)
 		if err != nil {
@@ -323,14 +323,14 @@ func (s *R_kvstoreService) DescribeKvstoreInstances(id string) (object map[strin
 		"InstanceIds": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = s.client.RpcPost("R-kvstore", "2015-01-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -353,7 +353,7 @@ func (s *R_kvstoreService) DescribeKvstoreInstances(id string) (object map[strin
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *R_kvstoreService) KvstoreInstancesStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *R_kvstoreService) KvstoreInstancesStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeKvstoreInstances(id)
 		if err != nil {
@@ -382,14 +382,14 @@ func (s *R_kvstoreService) DescribeKvstoreInstanceDeleted(id string) (object map
 		"Expired":     true,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = s.client.RpcPost("R-kvstore", "2015-01-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -412,7 +412,7 @@ func (s *R_kvstoreService) DescribeKvstoreInstanceDeleted(id string) (object map
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *R_kvstoreService) KvstoreInstanceDeletedStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *R_kvstoreService) KvstoreInstanceDeletedStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeKvstoreInstanceDeleted(id)
 		if err != nil {
@@ -439,16 +439,16 @@ func (s *R_kvstoreService) DescribeKvstoreConnection(id string) (object []r_kvst
 
 	var raw interface{}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = s.client.WithRKvstoreClient(func(r_kvstoreClient *r_kvstore.Client) (interface{}, error) {
 			return r_kvstoreClient.DescribeDBInstanceNetInfo(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"LockTimeout"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -485,16 +485,16 @@ func (s *R_kvstoreService) DescribeKvstoreAccount(id string) (object r_kvstore.A
 
 	var raw interface{}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = s.client.WithRKvstoreClient(func(r_kvstoreClient *r_kvstore.Client) (interface{}, error) {
 			return r_kvstoreClient.DescribeAccounts(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"LockTimeout"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -518,7 +518,7 @@ func (s *R_kvstoreService) DescribeKvstoreAccount(id string) (object r_kvstore.A
 	return response.Accounts.Account[0], nil
 }
 
-func (s *R_kvstoreService) KvstoreAccountStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *R_kvstoreService) KvstoreAccountStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeKvstoreAccount(id)
 		if err != nil {
@@ -545,16 +545,16 @@ func (s *R_kvstoreService) DescribeBackupPolicy(id string) (object r_kvstore.Des
 
 	var raw interface{}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = s.client.WithRKvstoreClient(func(r_kvstoreClient *r_kvstore.Client) (interface{}, error) {
 			return r_kvstoreClient.DescribeBackupPolicy(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"LockTimeout"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -581,14 +581,14 @@ func (s *RKvstoreService) DescribeKvstoreAuditLogConfig(id string) (object map[s
 		"InstanceId": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = s.client.RpcPost("R-kvstore", "2015-01-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -616,14 +616,14 @@ func (s *RKvstoreService) DescribeInstanceAttribute(id string) (object map[strin
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = s.client.RpcPost("R-kvstore", "2015-01-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -649,7 +649,7 @@ func (s *RKvstoreService) DescribeInstanceAttribute(id string) (object map[strin
 	return object, nil
 }
 
-func (s *RKvstoreService) KvstoreAuditLogConfigStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *RKvstoreService) KvstoreAuditLogConfigStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeInstanceAttribute(id)
 		if err != nil {
@@ -677,14 +677,14 @@ func (s *RKvstoreService) DescribeInstanceAutoRenewalAttribute(id string) (objec
 		"RegionId":     s.client.RegionId,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = s.client.RpcPost("R-kvstore", "2015-01-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -718,14 +718,14 @@ func (s *RKvstoreService) DescribeInstanceSSL(id string) (object map[string]inte
 		"RegionId":   s.client.RegionId,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = s.client.RpcPost("R-kvstore", "2015-01-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -747,14 +747,14 @@ func (s *RKvstoreService) DescribeSecurityGroupConfiguration(id string) (object 
 		"RegionId":   s.client.RegionId,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = s.client.RpcPost("R-kvstore", "2015-01-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -782,14 +782,14 @@ func (s *RKvstoreService) DescribeSecurityIps(id string) (object map[string]inte
 		"RegionId":   s.client.RegionId,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = s.client.RpcPost("R-kvstore", "2015-01-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -821,14 +821,14 @@ func (s *RKvstoreService) DescribeInstanceTDEStatus(id string) (object map[strin
 		"InstanceId": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = s.client.RpcPost("R-kvstore", "2015-01-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -857,14 +857,14 @@ func (s *RKvstoreService) DescribeEncryptionKey(id string) (object map[string]in
 		"InstanceId": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = s.client.RpcPost("R-kvstore", "2015-01-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -888,14 +888,14 @@ func (s *R_kvstoreService) DescribeKvStoreInstanceNetInfo(id string) (objects []
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = s.client.RpcPost("R-kvstore", "2015-01-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -926,14 +926,14 @@ func (s *R_kvstoreService) DescribeKvStoreEngineVersion(id string) (object map[s
 		"InstanceId": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = s.client.RpcPost("R-kvstore", "2015-01-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

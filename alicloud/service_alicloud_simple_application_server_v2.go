@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 type SimpleApplicationServerServiceV2 struct {
@@ -30,15 +30,15 @@ func (s *SimpleApplicationServerServiceV2) DescribeSimpleApplicationServerDisk(i
 	action := "ListDisks"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -64,11 +64,11 @@ func (s *SimpleApplicationServerServiceV2) DescribeSimpleApplicationServerDisk(i
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *SimpleApplicationServerServiceV2) SimpleApplicationServerDiskStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *SimpleApplicationServerServiceV2) SimpleApplicationServerDiskStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.SimpleApplicationServerDiskStateRefreshFuncWithApi(id, field, failStates, s.DescribeSimpleApplicationServerDisk)
 }
 
-func (s *SimpleApplicationServerServiceV2) SimpleApplicationServerDiskStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *SimpleApplicationServerServiceV2) SimpleApplicationServerDiskStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {

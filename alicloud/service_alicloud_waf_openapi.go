@@ -7,7 +7,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type WafOpenapiService struct {
@@ -45,14 +45,14 @@ func (s *WafOpenapiService) DescribeWafDomain(id string) (object map[string]inte
 		"InstanceId": parts[0],
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("waf-openapi", "2019-09-10", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -113,14 +113,14 @@ func (s *WafOpenapiService) DescribeWafCertificate(id string) (object map[string
 	}
 	idExist := false
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("waf-openapi", "2019-09-10", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -162,15 +162,15 @@ func (s *WafOpenapiService) DescribeProtectionModuleStatus(id string) (object ma
 		"InstanceId":  parts[0],
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 
 		response, err = client.RpcPost("waf-openapi", "2019-09-10", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -201,15 +201,15 @@ func (s *WafOpenapiService) DescribeWafProtectionModule(id string) (object map[s
 		"InstanceId":  parts[0],
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 
 		response, err = client.RpcPost("waf-openapi", "2019-09-10", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -234,14 +234,14 @@ func (s *WafOpenapiService) DescribeWafv3Instance(id string) (object map[string]
 	var response map[string]interface{}
 	action := "DescribeInstance"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("waf-openapi", "2021-10-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -261,7 +261,7 @@ func (s *WafOpenapiService) DescribeWafv3Instance(id string) (object map[string]
 	return v.(map[string]interface{}), nil
 }
 
-func (s *WafOpenapiService) Wafv3InstanceStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *WafOpenapiService) Wafv3InstanceStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeWafv3Instance(id)
 		if err != nil {
@@ -297,14 +297,14 @@ func (s *WafOpenapiService) DescribeWafv3Domain(id string) (object map[string]in
 	var response map[string]interface{}
 	action := "DescribeDomainDetail"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("waf-openapi", "2021-10-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -328,7 +328,7 @@ func (s *WafOpenapiService) DescribeWafv3Domain(id string) (object map[string]in
 	return v.(map[string]interface{}), nil
 }
 
-func (s *WafOpenapiService) Wafv3DomainStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *WafOpenapiService) Wafv3DomainStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeWafv3Domain(id)
 		if err != nil {

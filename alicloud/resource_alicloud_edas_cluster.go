@@ -7,7 +7,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/edas"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -135,7 +135,7 @@ func resourceAlicloudEdasClusterDelete(d *schema.ResourceData, meta interface{})
 	request.ClusterId = clusterId
 
 	wait := incrementalWait(1*time.Second, 2*time.Second)
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err := edasService.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
 			return edasClient.DeleteCluster(request)
 		})
@@ -143,15 +143,15 @@ func resourceAlicloudEdasClusterDelete(d *schema.ResourceData, meta interface{})
 		if err != nil {
 			if IsExpectedErrors(err, []string{ThrottlingUser}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		if response.Code != 200 {
 			if strings.Contains(response.Message, "there are still instances in it") {
-				return resource.RetryableError(Error("delete cluster failed for %s", response.Message))
+				return retry.RetryableError(Error("delete cluster failed for %s", response.Message))
 			}
-			return resource.NonRetryableError(Error("delete cluster failed for %s", response.Message))
+			return retry.NonRetryableError(Error("delete cluster failed for %s", response.Message))
 		}
 
 		addDebug(request.GetActionName(), raw, request.RoaRequest, request)

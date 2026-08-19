@@ -8,7 +8,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/edas"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -226,16 +226,16 @@ func resourceAlicloudEdasApplicationRead(d *schema.ResourceData, meta interface{
 	request.AppId = appId
 
 	wait := incrementalWait(1*time.Second, 2*time.Second)
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err := edasService.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
 			return edasClient.GetApplication(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{ThrottlingUser}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 		response, _ := raw.(*edas.GetApplicationResponse)
@@ -293,29 +293,29 @@ func resourceAlicloudEdasApplicationDelete(d *schema.ResourceData, meta interfac
 	req.AppId = d.Id()
 
 	wait := incrementalWait(1*time.Second, 2*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err := edasService.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
 			return edasClient.DeleteApplication(req)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{ThrottlingUser}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(req.GetActionName(), raw, req.RoaRequest, req)
 		rsp := raw.(*edas.DeleteApplicationResponse)
 		if rsp.Code == 601 && strings.Contains(rsp.Message, "Operation cannot be processed because there are running instances.") {
 			err = Error("Operation cannot be processed because there are running instances.")
-			return resource.RetryableError(err)
+			return retry.RetryableError(err)
 		}
 		changeOrderId := response.ChangeOrderId
 
 		if len(changeOrderId) > 0 {
 			stateConf := BuildStateConf([]string{"0", "1"}, []string{"2"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, edasService.EdasChangeOrderStatusRefreshFunc(changeOrderId, []string{"3", "6", "10"}))
 			if _, err := stateConf.WaitForState(); err != nil {
-				return resource.NonRetryableError(WrapErrorf(err, IdMsg, d.Id()))
+				return retry.NonRetryableError(WrapErrorf(err, IdMsg, d.Id()))
 			}
 		}
 		return nil

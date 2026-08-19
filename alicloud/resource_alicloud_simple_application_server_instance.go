@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -102,14 +102,14 @@ func resourceAlicloudSimpleApplicationServerInstanceCreate(d *schema.ResourceDat
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken("CreateInstances")
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -167,14 +167,14 @@ func resourceAlicloudSimpleApplicationServerInstanceUpdate(d *schema.ResourceDat
 		action := "ResetSystem"
 		request["ClientToken"] = buildClientToken("ResetSystem")
 		wait := incrementalWait(3*time.Second, 10*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, request, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"IncorrectInstanceStatus"}) || NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -200,14 +200,14 @@ func resourceAlicloudSimpleApplicationServerInstanceUpdate(d *schema.ResourceDat
 		action := "UpgradeInstance"
 		request["ClientToken"] = buildClientToken("UpgradeInstance")
 		wait := incrementalWait(3*time.Second, 10*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, upgradeInstanceReq, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"IncorrectInstanceStatus"}) || NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -241,14 +241,14 @@ func resourceAlicloudSimpleApplicationServerInstanceUpdate(d *schema.ResourceDat
 		action := "UpdateInstanceAttribute"
 		request["ClientToken"] = buildClientToken("UpdateInstanceAttribute")
 		wait := incrementalWait(3*time.Second, 10*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, updateInstanceAttributeReq, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"IncorrectInstanceStatus"}) || NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -276,14 +276,14 @@ func resourceAlicloudSimpleApplicationServerInstanceUpdate(d *schema.ResourceDat
 				action := "RebootInstance"
 				request["ClientToken"] = buildClientToken("RebootInstance")
 				wait := incrementalWait(3*time.Second, 10*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, request, true)
 					if err != nil {
 						if IsExpectedErrors(err, []string{"IncorrectInstanceStatus"}) || NeedRetry(err) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					return nil
 				})
@@ -304,14 +304,14 @@ func resourceAlicloudSimpleApplicationServerInstanceUpdate(d *schema.ResourceDat
 				action := "StartInstance"
 				request["ClientToken"] = buildClientToken("StartInstance")
 				wait := incrementalWait(3*time.Second, 10*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, request, true)
 					if err != nil {
 						if IsExpectedErrors(err, []string{"IncorrectInstanceStatus"}) || NeedRetry(err) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					return nil
 				})
@@ -332,14 +332,14 @@ func resourceAlicloudSimpleApplicationServerInstanceUpdate(d *schema.ResourceDat
 				action := "StopInstance"
 				request["ClientToken"] = buildClientToken("StopInstance")
 				wait := incrementalWait(3*time.Second, 10*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, request, true)
 					if err != nil {
 						if IsExpectedErrors(err, []string{"IncorrectInstanceStatus", "Throttling.User"}) || NeedRetry(err) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					return nil
 				})

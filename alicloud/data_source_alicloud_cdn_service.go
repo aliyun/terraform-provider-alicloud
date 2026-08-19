@@ -7,7 +7,7 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -122,18 +122,18 @@ func dataSourceAliCloudCdnServiceRead(d *schema.ResourceData, meta interface{}) 
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(4*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(4*time.Minute, func() *retry.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), nil, nil, &runtime)
 			if err != nil {
 				if NeedRetry(err) || IsExpectedErrors(err, []string{"CdnServiceNotFound"}) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
 				if IsExpectedErrors(err, []string{"OperationDenied"}) {
 					log.Printf("[DEBUG] Datasource alicloud_cdn_service DescribeCdnService Failed!!! %s", err)
 					return nil
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})

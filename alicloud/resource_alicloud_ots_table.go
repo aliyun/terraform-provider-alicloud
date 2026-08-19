@@ -8,7 +8,7 @@ import (
 
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -134,13 +134,13 @@ func resourceAliyunOtsTableCreate(d *schema.ResourceData, meta interface{}) erro
 	tableMeta.TableName = tableName
 	client := meta.(*connectivity.AliyunClient)
 	otsService := OtsService{client}
-	if err := resource.Retry(1*time.Minute, func() *resource.RetryError {
+	if err := retry.Retry(1*time.Minute, func() *retry.RetryError {
 		_, e := otsService.DescribeOtsInstance(instanceName)
 		if e != nil {
 			if NotFoundError(e) {
-				return resource.RetryableError(e)
+				return retry.RetryableError(e)
 			}
-			return resource.NonRetryableError(e)
+			return retry.NonRetryableError(e)
 		}
 		return nil
 	}); err != nil {
@@ -208,16 +208,16 @@ func resourceAliyunOtsTableCreate(d *schema.ResourceData, meta interface{}) erro
 	}
 
 	var requestinfo *tablestore.TableStoreClient
-	if err := resource.Retry(6*time.Minute, func() *resource.RetryError {
+	if err := retry.Retry(6*time.Minute, func() *retry.RetryError {
 		raw, err := client.WithTableStoreClient(instanceName, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
 			requestinfo = tableStoreClient
 			return tableStoreClient.CreateTable(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, OtsTableIsTemporarilyUnavailable) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug("CreateTable", raw, requestinfo, request)
 		return nil
@@ -316,16 +316,16 @@ func resourceAliyunOtsTableUpdate(d *schema.ResourceData, meta interface{}) erro
 
 		request.TableOption = tableOption
 		var requestinfo *tablestore.TableStoreClient
-		if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+		if err := retry.Retry(3*time.Minute, func() *retry.RetryError {
 			raw, err := client.WithTableStoreClient(instanceName, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
 				requestinfo = tableStoreClient
 				return tableStoreClient.UpdateTable(request)
 			})
 			if err != nil {
 				if IsExpectedErrors(err, OtsTableIsTemporarilyUnavailable) {
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug("UpdateTable", raw, requestinfo, request)
 			return nil
@@ -410,7 +410,7 @@ func fetchNeedAddColumns(declareColumns []*tablestore.DefinedColumnSchema, state
 func updateDefinedColumns(client *connectivity.AliyunClient, instance string, req interface{}, columns []*tablestore.DefinedColumnSchema) error {
 	var clientInfo *tablestore.TableStoreClient
 
-	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+	if err := retry.Retry(2*time.Minute, func() *retry.RetryError {
 		raw, err := client.WithTableStoreClient(instance, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
 			clientInfo = tableStoreClient
 
@@ -431,9 +431,9 @@ func updateDefinedColumns(client *connectivity.AliyunClient, instance string, re
 		})
 		if err != nil {
 			if IsExpectedErrors(err, OtsTableIsTemporarilyUnavailable) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug("UpdateTableDefineColumn", raw, clientInfo, req)
 		return nil
@@ -455,16 +455,16 @@ func resourceAliyunOtsTableDelete(d *schema.ResourceData, meta interface{}) erro
 	req := new(tablestore.DeleteTableRequest)
 	req.TableName = tableName
 	var requestCli *tablestore.TableStoreClient
-	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(2*time.Minute, func() *retry.RetryError {
 		raw, err := client.WithTableStoreClient(instanceName, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
 			requestCli = tableStoreClient
 			return tableStoreClient.DeleteTable(req)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, OtsTableIsTemporarilyUnavailable) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug("DeleteTable", raw, requestCli, req)
 		return nil

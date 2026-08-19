@@ -6,7 +6,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/smartag"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -43,15 +43,15 @@ func resourceAlicloudCloudConnectNetworkAttachmentCreate(d *schema.ResourceData,
 	request.SmartAGId = d.Get("sag_id").(string)
 	var err error
 	var raw interface{}
-	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(3*time.Minute, func() *retry.RetryError {
 		raw, err = client.WithSagClient(func(sagClient *smartag.Client) (interface{}, error) {
 			return sagClient.BindSmartAccessGateway(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Operation.Blocking", "UnknownError"}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 
 		return nil
@@ -101,16 +101,16 @@ func resourceAlicloudCloudConnectNetworkAttachmentDelete(d *schema.ResourceData,
 	request.SmartAGId = sagId
 
 	var raw interface{}
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = client.WithSagClient(func(sagClient *smartag.Client) (interface{}, error) {
 			return sagClient.UnbindSmartAccessGateway(request)
 		})
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"IncorrectStatus", "TaskConflict"}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 
 		return nil

@@ -11,7 +11,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/polardb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -578,14 +578,14 @@ func resourceAlicloudPolarDBClusterCreate(d *schema.ResourceData, meta interface
 	var response map[string]interface{}
 	action := "CreateDBCluster"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
+	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *retry.RetryError {
 		response, err = client.RpcPost("polardb", "2017-08-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -633,14 +633,14 @@ func resourceAlicloudPolarDBClusterCreate(d *schema.ResourceData, meta interface
 				"GlobalSecurityGroupId": strings.Join(ids, COMMA_SEPARATED),
 			}
 			wait := incrementalWait(3*time.Second, 3*time.Second)
-			err := resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+			err := retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 				response, err := client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(action, response, request)
 				return nil
@@ -702,14 +702,14 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		}
 
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err := client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(action, response, request)
 			return nil
@@ -743,16 +743,16 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 			return WrapError(err)
 		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			raw, err := client.WithPolarDBClient(func(polardbClient *polardb.Client) (interface{}, error) {
 				return polardbClient.ModifyAutoRenewAttribute(request)
 			})
 			if err != nil {
 				if IsExpectedErrors(err, []string{"-999"}) || NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			return nil
@@ -805,14 +805,14 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 			request["TargetDBRevisionVersionCode"] = v
 		}
 		wait := incrementalWait(3*time.Minute, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err := client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"TaskExists"}) || NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(action, response, request)
 			return nil
@@ -884,16 +884,16 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 				}
 
 				wait := incrementalWait(3*time.Second, 3*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
 						return polarDBClient.CreateDBNodes(request)
 					})
 					if err != nil {
 						if IsExpectedErrors(err, []string{"OperationDenied.OrderProcessing"}) || NeedRetry(err) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 					return nil
@@ -924,16 +924,16 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 				}
 
 				wait := incrementalWait(3*time.Second, 3*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
 						return polarDBClient.DeleteDBNodes(request)
 					})
 					if err != nil {
 						if IsExpectedErrors(err, []string{"OperationDenied.OrderProcessing"}) || NeedRetry(err) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 					return nil
@@ -987,14 +987,14 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 			}
 			//retry
 			wait := incrementalWait(3*time.Second, 3*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err := client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(action, response, request)
 				return nil
@@ -1041,12 +1041,12 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 			"Protection":  protection == 1,
 		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err := retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err := client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
 				addDebug(action, response, request)
 			}
@@ -1108,14 +1108,14 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 
 			//retry
 			wait := incrementalWait(3*time.Second, 3*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err := client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) || IsExpectedErrors(err, []string{"TaskExists", "OperationDenied.DBClusterStatus"}) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(action, response, request)
 				return nil
@@ -1144,14 +1144,14 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 				}
 				//retry
 				wait := incrementalWait(3*time.Second, 3*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err := client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					addDebug(action, response, request)
 					return nil
@@ -1176,12 +1176,12 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 			"CompressStorage": compressStorage,
 		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err := retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err := client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
 				addDebug(action, response, request)
 			}
@@ -1262,14 +1262,14 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		}
 		//retry
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err := client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(action, response, request)
 			return nil
@@ -1294,15 +1294,15 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 			}
 			request := map[string]interface{}{"DBClusterId": d.Id()}
 			wait := incrementalWait(3*time.Second, 3*time.Second)
-			err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err := retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err := client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
 				if err != nil {
 					if IsExpectedErrors(err, []string{"OperationDenied.DBClusterStatus"}) || NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
 					addDebug(action, response, request)
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -1337,7 +1337,7 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 				return WrapError(err)
 			}
 			wait := incrementalWait(3*time.Second, 3*time.Second)
-			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 				raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
 					return polarDBClient.ModifyDBNodeClass(request)
 				})
@@ -1345,9 +1345,9 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 				if err != nil {
 					if NeedRetry(err) || IsExpectedErrors(err, []string{"InternalError"}) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -1387,12 +1387,12 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 			"ModifyType":  modifyType,
 		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err := retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err := client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
 				addDebug(action, response, request)
 			}
@@ -1419,12 +1419,12 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 			request["ProvisionedIops"] = v
 		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err := retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err := client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
 				addDebug(action, response, request)
 			}
@@ -1457,12 +1457,12 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 			request["SubCategory"] = convertPolarDBSubCategoryUpdateRequest(v.(string))
 		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err := retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err := client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
 				addDebug(action, response, request)
 			}
@@ -1508,14 +1508,14 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 			}
 			//retry
 			wait := incrementalWait(3*time.Second, 3*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err := client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(action, response, request)
 				return nil
@@ -1541,12 +1541,12 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		}
 
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err := retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err := client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
 				addDebug(action, response, request)
 			}
@@ -1571,12 +1571,12 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		}
 
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err := retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err := client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
 				addDebug(action, response, request)
 			}
@@ -1597,12 +1597,12 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 			"GlobalSecurityGroupId": globalSecurityGroupIdStr,
 		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err := retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err := client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
 				addDebug(action, response, request)
 			}
@@ -1937,16 +1937,16 @@ func resourceAlicloudPolarDBClusterDelete(d *schema.ResourceData, meta interface
 	if v, ok := d.GetOk("backup_retention_policy_on_cluster_deletion"); ok && v.(string) != "" {
 		request.BackupRetentionPolicyOnClusterDeletion = v.(string)
 	}
-	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(10*time.Minute, func() *retry.RetryError {
 		raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
 			return polarDBClient.DeleteDBCluster(request)
 		})
 
 		if err != nil && !NotFoundError(err) {
 			if IsExpectedErrors(err, []string{"OperationDenied.DBClusterStatus", "OperationDenied.PolarDBClusterStatus", "OperationDenied.ReadPolarDBClusterStatus"}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 

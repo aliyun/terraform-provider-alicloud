@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 type DasServiceV2 struct {
@@ -30,15 +30,15 @@ func (s *DasServiceV2) DescribeDasSqlLogConfig(id string) (object map[string]int
 	action := "DescribeSqlLogConfig"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("DAS", "2020-01-16", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -51,11 +51,11 @@ func (s *DasServiceV2) DescribeDasSqlLogConfig(id string) (object map[string]int
 	return response, nil
 }
 
-func (s *DasServiceV2) DasSqlLogConfigStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *DasServiceV2) DasSqlLogConfigStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.DasSqlLogConfigStateRefreshFuncWithApi(id, field, failStates, s.DescribeDasSqlLogConfig)
 }
 
-func (s *DasServiceV2) DasSqlLogConfigStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *DasServiceV2) DasSqlLogConfigStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {

@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -78,20 +78,20 @@ func ramAccessKeyPolicyWaitConsistent(client *connectivity.AliyunClient, id, exp
 	}
 	ramServiceV2 := RamServiceV2{client}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	return resource.Retry(timeout, func() *resource.RetryError {
+	return retry.Retry(timeout, func() *retry.RetryError {
 		objectRaw, err := ramServiceV2.DescribeRamAccessKeyPolicy(id)
 		if err != nil {
 			if NotFoundError(err) {
 				wait()
-				return resource.RetryableError(fmt.Errorf("access key policy %s not converged yet (still empty)", id))
+				return retry.RetryableError(fmt.Errorf("access key policy %s not converged yet (still empty)", id))
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		if accessKeyPolicyEquivalent(fmt.Sprint(objectRaw["AccessKeyPolicy"]), expected) {
 			return nil
 		}
 		wait()
-		return resource.RetryableError(fmt.Errorf("access key policy %s not converged yet", id))
+		return retry.RetryableError(fmt.Errorf("access key policy %s not converged yet", id))
 	})
 }
 
@@ -166,14 +166,14 @@ func resourceAliCloudRamAccessKeyPolicyCreate(d *schema.ResourceData, meta inter
 	}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Ims", "2019-08-15", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -247,14 +247,14 @@ func resourceAliCloudRamAccessKeyPolicyUpdate(d *schema.ResourceData, meta inter
 
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Ims", "2019-08-15", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -295,15 +295,15 @@ func resourceAliCloudRamAccessKeyPolicyDelete(d *schema.ResourceData, meta inter
 	}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("Ims", "2019-08-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

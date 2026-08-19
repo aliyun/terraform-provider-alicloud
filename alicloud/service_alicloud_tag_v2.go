@@ -7,7 +7,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type TagServiceV2 struct {
@@ -28,15 +28,15 @@ func (s *TagServiceV2) DescribeTagPolicy(id string) (object map[string]interface
 	action := "GetPolicy"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Tag", "2018-08-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -56,7 +56,7 @@ func (s *TagServiceV2) DescribeTagPolicy(id string) (object map[string]interface
 	return v.(map[string]interface{}), nil
 }
 
-func (s *TagServiceV2) TagPolicyStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *TagServiceV2) TagPolicyStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeTagPolicy(id)
 		if err != nil {
@@ -101,15 +101,15 @@ func (s *TagServiceV2) DescribeTagAssociatedRule(id string) (object map[string]i
 	action := "ListAssociatedResourceRules"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Tag", "2018-08-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -130,7 +130,7 @@ func (s *TagServiceV2) DescribeTagAssociatedRule(id string) (object map[string]i
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *TagServiceV2) TagAssociatedRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *TagServiceV2) TagAssociatedRuleStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeTagAssociatedRule(id)
 		if err != nil {

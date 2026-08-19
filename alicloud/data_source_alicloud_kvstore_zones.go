@@ -8,7 +8,7 @@ import (
 
 	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -84,16 +84,16 @@ func dataSourceAlicloudKVStoreZoneRead(d *schema.ResourceData, meta interface{})
 
 	var response *r_kvstore.DescribeAvailableResourceResponse
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err := client.WithRKvstoreClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
 			return rkvClient.DescribeAvailableResource(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InternalError"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ = raw.(*r_kvstore.DescribeAvailableResourceResponse)

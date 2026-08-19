@@ -7,7 +7,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -136,15 +136,15 @@ func resourceAliyunSlbAttachmentUpdate(d *schema.ResourceData, meta interface{})
 			request.RegionId = client.RegionId
 			request.LoadBalancerId = d.Id()
 			request.BackendServers = expandBackendServersToString(ns.Difference(os).List(), weight, serverType.(string))
-			if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+			if err := retry.Retry(2*time.Minute, func() *retry.RetryError {
 				raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 					return slbClient.AddBackendServers(request)
 				})
 				if err != nil {
 					if IsExpectedErrors(err, SlbIsBusy) {
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 				return nil
@@ -157,15 +157,15 @@ func resourceAliyunSlbAttachmentUpdate(d *schema.ResourceData, meta interface{})
 			request.RegionId = client.RegionId
 			request.LoadBalancerId = d.Id()
 			request.BackendServers = expandBackendServersToString(os.Difference(ns).List(), weight, oldServerType.(string))
-			if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+			if err := retry.Retry(2*time.Minute, func() *retry.RetryError {
 				raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 					return slbClient.RemoveBackendServers(request)
 				})
 				if err != nil {
 					if IsExpectedErrors(err, SlbIsBusy) {
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 				return nil
@@ -184,15 +184,15 @@ func resourceAliyunSlbAttachmentUpdate(d *schema.ResourceData, meta interface{})
 		request.RegionId = client.RegionId
 		request.LoadBalancerId = d.Id()
 		request.BackendServers = expandBackendServersToString(d.Get("instance_ids").(*schema.Set).List(), weight, serverType.(string))
-		if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+		if err := retry.Retry(2*time.Minute, func() *retry.RetryError {
 			raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 				return slbClient.SetBackendServers(request)
 			})
 			if err != nil {
 				if IsExpectedErrors(err, SlbIsBusy) {
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			return nil
@@ -230,15 +230,15 @@ func resourceAliyunSlbAttachmentDelete(d *schema.ResourceData, meta interface{})
 		request.RegionId = client.RegionId
 		request.LoadBalancerId = d.Id()
 		request.BackendServers = expandBackendServersToString(d.Get("instance_ids").(*schema.Set).List(), weight, serverType)
-		if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+		if err := retry.Retry(3*time.Minute, func() *retry.RetryError {
 			raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 				return slbClient.RemoveBackendServers(request)
 			})
 			if err != nil {
 				if IsExpectedErrors(err, SlbIsBusy) {
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			return nil

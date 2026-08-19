@@ -8,7 +8,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/tidwall/sjson"
 )
@@ -31,15 +31,15 @@ func (s *ApigServiceV2) DescribeApigHttpApi(id string) (object map[string]interf
 	action := fmt.Sprintf("/v1/http-apis/%s", httpApiId)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("APIG", "2024-03-27", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -63,11 +63,11 @@ func (s *ApigServiceV2) DescribeApigHttpApi(id string) (object map[string]interf
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ApigServiceV2) ApigHttpApiStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ApigServiceV2) ApigHttpApiStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.ApigHttpApiStateRefreshFuncWithApi(id, field, failStates, s.DescribeApigHttpApi)
 }
 
-func (s *ApigServiceV2) ApigHttpApiStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *ApigServiceV2) ApigHttpApiStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -111,15 +111,15 @@ func (s *ApigServiceV2) DescribeApigDomain(id string) (object map[string]interfa
 	action := fmt.Sprintf("/v1/domains/%s", domainId)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("APIG", "2024-03-27", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -140,11 +140,11 @@ func (s *ApigServiceV2) DescribeApigDomain(id string) (object map[string]interfa
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ApigServiceV2) ApigDomainStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ApigServiceV2) ApigDomainStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.ApigDomainStateRefreshFuncWithApi(id, field, failStates, s.DescribeApigDomain)
 }
 
-func (s *ApigServiceV2) ApigDomainStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *ApigServiceV2) ApigDomainStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -188,15 +188,15 @@ func (s *ApigServiceV2) DescribeApigGateway(id string) (object map[string]interf
 	action := fmt.Sprintf("/v1/gateways/%s", gatewayId)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("APIG", "2024-03-27", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -217,11 +217,11 @@ func (s *ApigServiceV2) DescribeApigGateway(id string) (object map[string]interf
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ApigServiceV2) ApigGatewayStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ApigServiceV2) ApigGatewayStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.ApigGatewayStateRefreshFuncWithApi(id, field, failStates, s.DescribeApigGateway)
 }
 
-func (s *ApigServiceV2) ApigGatewayStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *ApigServiceV2) ApigGatewayStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -281,14 +281,14 @@ func (s *ApigServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 			query["ResourceType"] = StringPointer(resourceType)
 			body = request
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RoaDelete("APIG", "2024-03-27", action, query, nil, nil, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -323,14 +323,14 @@ func (s *ApigServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 
 			body = request
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RoaPost("APIG", "2024-03-27", action, query, nil, body, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -361,15 +361,15 @@ func (s *ApigServiceV2) DescribeApigEnvironment(id string) (object map[string]in
 	request["environmentId"] = id
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("APIG", "2024-03-27", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -389,7 +389,7 @@ func (s *ApigServiceV2) DescribeApigEnvironment(id string) (object map[string]in
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ApigServiceV2) ApigEnvironmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ApigServiceV2) ApigEnvironmentStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeApigEnvironment(id)
 		if err != nil {
@@ -434,15 +434,15 @@ func (s *ApigServiceV2) DescribeApigService(id string) (object map[string]interf
 	action := fmt.Sprintf("/v1/services/%s", serviceId)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("APIG", "2024-03-27", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -469,11 +469,11 @@ func (s *ApigServiceV2) DescribeApigService(id string) (object map[string]interf
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ApigServiceV2) ApigServiceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ApigServiceV2) ApigServiceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.ApigServiceStateRefreshFuncWithApi(id, field, failStates, s.DescribeApigService)
 }
 
-func (s *ApigServiceV2) ApigServiceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *ApigServiceV2) ApigServiceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -521,15 +521,15 @@ func (s *ApigServiceV2) DescribeApigPlugin(id string) (object map[string]interfa
 
 	for {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 			response, err = client.RoaGet("APIG", "2024-03-27", action, query, nil, nil)
 
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -568,11 +568,11 @@ func (s *ApigServiceV2) DescribeApigPlugin(id string) (object map[string]interfa
 	return object, WrapErrorf(NotFoundErr("Plugin", id), NotFoundMsg, response)
 }
 
-func (s *ApigServiceV2) ApigPluginStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ApigServiceV2) ApigPluginStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.ApigPluginStateRefreshFuncWithApi(id, field, failStates, s.DescribeApigPlugin)
 }
 
-func (s *ApigServiceV2) ApigPluginStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *ApigServiceV2) ApigPluginStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -615,15 +615,15 @@ func (s *ApigServiceV2) DescribeApigPluginClass(id string) (object map[string]in
 	request["pluginClassId"] = id
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("APIG", "2024-03-27", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -643,7 +643,7 @@ func (s *ApigServiceV2) DescribeApigPluginClass(id string) (object map[string]in
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ApigServiceV2) ApigPluginClassStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ApigServiceV2) ApigPluginClassStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeApigPluginClass(id)
 		if err != nil {
@@ -691,15 +691,15 @@ func (s *ApigServiceV2) DescribeApigOperation(id string) (object map[string]inte
 	query = make(map[string]*string)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("APIG", "2024-03-27", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -719,7 +719,7 @@ func (s *ApigServiceV2) DescribeApigOperation(id string) (object map[string]inte
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ApigServiceV2) ApigOperationStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ApigServiceV2) ApigOperationStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeApigOperation(id)
 		if err != nil {
@@ -768,15 +768,15 @@ func (s *ApigServiceV2) DescribeApigApiAttachment(id string) (object map[string]
 	query["routeId"] = StringPointer(parts[1])
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("APIG", "2024-03-27", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -801,7 +801,7 @@ func (s *ApigServiceV2) DescribeApigApiAttachment(id string) (object map[string]
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ApigServiceV2) ApigApiAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ApigServiceV2) ApigApiAttachmentStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeApigApiAttachment(id)
 		if err != nil {
@@ -852,15 +852,15 @@ func (s *ApigServiceV2) DescribeApigRoute(id string) (object map[string]interfac
 	action := fmt.Sprintf("/v1/http-apis/%s/routes/%s", httpApiId, routeId)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("APIG", "2024-03-27", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -883,11 +883,11 @@ func (s *ApigServiceV2) DescribeApigRoute(id string) (object map[string]interfac
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ApigServiceV2) ApigRouteStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ApigServiceV2) ApigRouteStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.ApigRouteStateRefreshFuncWithApi(id, field, failStates, s.DescribeApigRoute)
 }
 
-func (s *ApigServiceV2) ApigRouteStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *ApigServiceV2) ApigRouteStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -931,15 +931,15 @@ func (s *ApigServiceV2) DescribeApigAiModelProvider(id string) (object map[strin
 	action := fmt.Sprintf("/v1/ai-model-providers/%s", modelProviderId)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("APIG", "2024-03-27", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -959,11 +959,11 @@ func (s *ApigServiceV2) DescribeApigAiModelProvider(id string) (object map[strin
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ApigServiceV2) ApigAiModelProviderStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ApigServiceV2) ApigAiModelProviderStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.ApigAiModelProviderStateRefreshFuncWithApi(id, field, failStates, s.DescribeApigAiModelProvider)
 }
 
-func (s *ApigServiceV2) ApigAiModelProviderStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *ApigServiceV2) ApigAiModelProviderStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {

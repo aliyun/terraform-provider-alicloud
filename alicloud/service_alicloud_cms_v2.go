@@ -9,7 +9,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/tidwall/sjson"
 )
 
@@ -31,15 +31,15 @@ func (s *CmsServiceV2) DescribeCmsWorkspace(id string) (object map[string]interf
 	action := fmt.Sprintf("/workspace/%s", workspaceName)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("Cms", "2024-03-30", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -54,11 +54,11 @@ func (s *CmsServiceV2) DescribeCmsWorkspace(id string) (object map[string]interf
 	return response, nil
 }
 
-func (s *CmsServiceV2) CmsWorkspaceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *CmsServiceV2) CmsWorkspaceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.CmsWorkspaceStateRefreshFuncWithApi(id, field, failStates, s.DescribeCmsWorkspace)
 }
 
-func (s *CmsServiceV2) CmsWorkspaceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *CmsServiceV2) CmsWorkspaceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -102,15 +102,15 @@ func (s *CmsServiceV2) DescribeCmsIntegrationPolicy(id string) (object map[strin
 	action := fmt.Sprintf("/integration-policies/%s", policyId)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("Cms", "2024-03-30", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -125,11 +125,11 @@ func (s *CmsServiceV2) DescribeCmsIntegrationPolicy(id string) (object map[strin
 	return response, nil
 }
 
-func (s *CmsServiceV2) CmsIntegrationPolicyStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *CmsServiceV2) CmsIntegrationPolicyStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.CmsIntegrationPolicyStateRefreshFuncWithApi(id, field, failStates, s.DescribeCmsIntegrationPolicy)
 }
 
-func (s *CmsServiceV2) CmsIntegrationPolicyStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *CmsServiceV2) CmsIntegrationPolicyStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -173,15 +173,15 @@ func (s *CmsServiceV2) DescribeCmsPrometheusInstance(id string) (object map[stri
 	action := fmt.Sprintf("/prometheus-instances/%s", prometheusInstanceId)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("Cms", "2024-03-30", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -201,11 +201,11 @@ func (s *CmsServiceV2) DescribeCmsPrometheusInstance(id string) (object map[stri
 	return v.(map[string]interface{}), nil
 }
 
-func (s *CmsServiceV2) CmsPrometheusInstanceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *CmsServiceV2) CmsPrometheusInstanceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.CmsPrometheusInstanceStateRefreshFuncWithApi(id, field, failStates, s.DescribeCmsPrometheusInstance)
 }
 
-func (s *CmsServiceV2) CmsPrometheusInstanceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *CmsServiceV2) CmsPrometheusInstanceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -249,15 +249,15 @@ func (s *CmsServiceV2) DescribeCmsPrometheusView(id string) (object map[string]i
 	action := fmt.Sprintf("/prometheus-views/%s", prometheusViewId)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("Cms", "2024-03-30", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -277,11 +277,11 @@ func (s *CmsServiceV2) DescribeCmsPrometheusView(id string) (object map[string]i
 	return v.(map[string]interface{}), nil
 }
 
-func (s *CmsServiceV2) CmsPrometheusViewStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *CmsServiceV2) CmsPrometheusViewStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.CmsPrometheusViewStateRefreshFuncWithApi(id, field, failStates, s.DescribeCmsPrometheusView)
 }
 
-func (s *CmsServiceV2) CmsPrometheusViewStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *CmsServiceV2) CmsPrometheusViewStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -331,15 +331,15 @@ func (s *CmsServiceV2) DescribeCmsAddonRelease(id string) (object map[string]int
 	action := fmt.Sprintf("/integration-policies/%s/addon-releases/%s", policyId, releaseName)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("Cms", "2024-03-30", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -359,11 +359,11 @@ func (s *CmsServiceV2) DescribeCmsAddonRelease(id string) (object map[string]int
 	return v.(map[string]interface{}), nil
 }
 
-func (s *CmsServiceV2) CmsAddonReleaseStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *CmsServiceV2) CmsAddonReleaseStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.CmsAddonReleaseStateRefreshFuncWithApi(id, field, failStates, s.DescribeCmsAddonRelease)
 }
 
-func (s *CmsServiceV2) CmsAddonReleaseStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *CmsServiceV2) CmsAddonReleaseStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -413,15 +413,15 @@ func (s *CmsServiceV2) DescribeCmsAggTaskGroup(id string) (object map[string]int
 	action := fmt.Sprintf("/prometheus-instances/%s/agg-task-groups/%s", instanceId, groupId)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("Cms", "2024-03-30", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -441,11 +441,11 @@ func (s *CmsServiceV2) DescribeCmsAggTaskGroup(id string) (object map[string]int
 	return v.(map[string]interface{}), nil
 }
 
-func (s *CmsServiceV2) CmsAggTaskGroupStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *CmsServiceV2) CmsAggTaskGroupStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.CmsAggTaskGroupStateRefreshFuncWithApi(id, field, failStates, s.DescribeCmsAggTaskGroup)
 }
 
-func (s *CmsServiceV2) CmsAggTaskGroupStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *CmsServiceV2) CmsAggTaskGroupStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -492,15 +492,15 @@ func (s *CmsServiceV2) DescribeCmsAlertRuleV2(id string) (object map[string]inte
 	action := fmt.Sprintf("/queryAlertRules")
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaPost("Cms", "2024-03-30", action, query, nil, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -524,11 +524,11 @@ func (s *CmsServiceV2) DescribeCmsAlertRuleV2(id string) (object map[string]inte
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *CmsServiceV2) CmsAlertRuleV2StateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *CmsServiceV2) CmsAlertRuleV2StateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.CmsAlertRuleV2StateRefreshFuncWithApi(id, field, failStates, s.DescribeCmsAlertRuleV2)
 }
 
-func (s *CmsServiceV2) CmsAlertRuleV2StateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *CmsServiceV2) CmsAlertRuleV2StateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -577,15 +577,15 @@ func (s *CmsServiceV2) DescribeCmsEventNotifyPolicy(id string) (object map[strin
 	action := fmt.Sprintf("/api/eventbase/notify-policy")
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("Cms", "2024-03-30", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -605,11 +605,11 @@ func (s *CmsServiceV2) DescribeCmsEventNotifyPolicy(id string) (object map[strin
 	return v.(map[string]interface{}), nil
 }
 
-func (s *CmsServiceV2) CmsEventNotifyPolicyStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *CmsServiceV2) CmsEventNotifyPolicyStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.CmsEventNotifyPolicyStateRefreshFuncWithApi(id, field, failStates, s.DescribeCmsEventNotifyPolicy)
 }
 
-func (s *CmsServiceV2) CmsEventNotifyPolicyStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *CmsServiceV2) CmsEventNotifyPolicyStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {

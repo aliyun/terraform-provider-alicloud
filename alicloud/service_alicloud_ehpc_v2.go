@@ -8,7 +8,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type EhpcServiceV2 struct {
@@ -29,15 +29,15 @@ func (s *EhpcServiceV2) DescribeEhpcClusterV2(id string) (object map[string]inte
 	action := "GetCluster"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("EHPC", "2024-07-30", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -63,15 +63,15 @@ func (s *EhpcServiceV2) DescribeClusterV2ListSharedStorages(id string) (object m
 	action := "ListSharedStorages"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("EHPC", "2024-07-30", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -86,11 +86,11 @@ func (s *EhpcServiceV2) DescribeClusterV2ListSharedStorages(id string) (object m
 	return response, nil
 }
 
-func (s *EhpcServiceV2) EhpcClusterV2StateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EhpcServiceV2) EhpcClusterV2StateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EhpcClusterV2StateRefreshFuncWithApi(id, field, failStates, s.DescribeEhpcClusterV2)
 }
 
-func (s *EhpcServiceV2) EhpcClusterV2StateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *EhpcServiceV2) EhpcClusterV2StateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -144,15 +144,15 @@ func (s *EhpcServiceV2) DescribeEhpcQueue(id string) (object map[string]interfac
 	action := "GetQueue"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("EHPC", "2024-07-30", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -172,11 +172,11 @@ func (s *EhpcServiceV2) DescribeEhpcQueue(id string) (object map[string]interfac
 	return v.(map[string]interface{}), nil
 }
 
-func (s *EhpcServiceV2) EhpcQueueStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EhpcServiceV2) EhpcQueueStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EhpcQueueStateRefreshFuncWithApi(id, field, failStates, s.DescribeEhpcQueue)
 }
 
-func (s *EhpcServiceV2) EhpcQueueStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *EhpcServiceV2) EhpcQueueStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {

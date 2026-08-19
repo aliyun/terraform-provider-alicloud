@@ -12,7 +12,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/cs"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -565,7 +565,7 @@ func csKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clusterTyp
 			pagination, _ = response.([]interface{})[1].(*cs.PaginationResult)
 
 			if pageNumber == 1 && (len(result) == 0 || result[0].InstanceId == "") {
-				err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+				err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 					if err := invoker.Run(func() error {
 						raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
 							requestInfo = csClient
@@ -575,7 +575,7 @@ func csKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clusterTyp
 						response = raw
 						return err
 					}); err != nil {
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					tmp, _ := response.([]cs.KubernetesNodeType)
 					if len(tmp) > 0 && tmp[0].InstanceId != "" {
@@ -595,7 +595,7 @@ func csKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clusterTyp
 						}
 					}
 					time.Sleep(5 * time.Second)
-					return resource.RetryableError(Error("[ERROR] There is no any nodes in kubernetes cluster %s.", d.Id()))
+					return retry.RetryableError(Error("[ERROR] There is no any nodes in kubernetes cluster %s.", d.Id()))
 				})
 				if err != nil {
 					return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_kubernetes_clusters", "GetKubernetesClusterNodes", DenverdinoAliyungo)

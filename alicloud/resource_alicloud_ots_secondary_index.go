@@ -7,7 +7,7 @@ import (
 
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -134,7 +134,7 @@ func resourceAliyunOtsSecondaryIndexCreate(d *schema.ResourceData, meta interfac
 	}
 
 	var reqClient *tablestore.TableStoreClient
-	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+	if err := retry.Retry(2*time.Minute, func() *retry.RetryError {
 		raw, err := client.WithTableStoreClient(args.instanceName, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
 			reqClient = tableStoreClient
 			return tableStoreClient.CreateIndex(req)
@@ -145,9 +145,9 @@ func resourceAliyunOtsSecondaryIndexCreate(d *schema.ResourceData, meta interfac
 
 		if err != nil {
 			if IsExpectedErrors(err, OtsSecondaryIndexIsTemporarilyUnavailable) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	}); err != nil {
@@ -263,7 +263,7 @@ func resourceAliyunOtsSecondaryIndexDelete(d *schema.ResourceData, meta interfac
 		IndexName:     indexName,
 	}
 
-	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(2*time.Minute, func() *retry.RetryError {
 		var requestInfo *tablestore.TableStoreClient
 		raw, err := client.WithTableStoreClient(instanceName, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
 			requestInfo = tableStoreClient
@@ -275,9 +275,9 @@ func resourceAliyunOtsSecondaryIndexDelete(d *schema.ResourceData, meta interfac
 
 		if err != nil {
 			if IsExpectedErrors(err, OtsTableIsTemporarilyUnavailable) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

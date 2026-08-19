@@ -7,7 +7,7 @@ import (
 
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -165,19 +165,19 @@ func resourceAlicloudLogStoreIndexCreate(d *schema.ResourceData, meta interface{
 		return WrapError(err)
 	}
 
-	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+	if err := retry.Retry(2*time.Minute, func() *retry.RetryError {
 		raw, err := store.GetIndex()
 		if err != nil {
 			if IsExpectedErrors(err, []string{LogClientTimeout}) {
 				time.Sleep(5 * time.Second)
-				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, "alicloud_log_store", "GetIndex", AliyunLogGoSdkERROR))
+				return retry.RetryableError(WrapErrorf(err, DefaultErrorMsg, "alicloud_log_store", "GetIndex", AliyunLogGoSdkERROR))
 			}
 			if !IsExpectedErrors(err, []string{"IndexConfigNotExist"}) {
-				return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, "alicloud_log_store", "GetIndex", AliyunLogGoSdkERROR))
+				return retry.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, "alicloud_log_store", "GetIndex", AliyunLogGoSdkERROR))
 			}
 		}
 		if raw != nil {
-			return resource.NonRetryableError(WrapError(Error("There is aleady existing an index in the store %s. Please import it using id '%s%s%s'.",
+			return retry.NonRetryableError(WrapError(Error("There is aleady existing an index in the store %s. Please import it using id '%s%s%s'.",
 				store.Name, project, COLON_SEPARATED, store.Name)))
 		}
 		addDebug("GetIndex", raw)
@@ -214,13 +214,13 @@ func resourceAlicloudLogStoreIndexCreate(d *schema.ResourceData, meta interface{
 		index.MaxTextLen = uint32(v.(int))
 	}
 
-	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+	if err := retry.Retry(2*time.Minute, func() *retry.RetryError {
 
 		if e := store.CreateIndex(index); e != nil {
 			if IsExpectedErrors(e, []string{"InternalServerError", LogClientTimeout}) {
-				return resource.RetryableError(e)
+				return retry.RetryableError(e)
 			}
-			return resource.NonRetryableError(e)
+			return retry.NonRetryableError(e)
 		}
 		addDebug("CreateIndex", nil)
 		return nil
@@ -349,7 +349,7 @@ func resourceAlicloudLogStoreIndexUpdate(d *schema.ResourceData, meta interface{
 
 	if update {
 		var requestInfo *sls.Client
-		if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+		if err := retry.Retry(2*time.Minute, func() *retry.RetryError {
 			raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 				requestInfo = slsClient
 				return nil, slsClient.UpdateIndex(parts[0], parts[1], *index)
@@ -357,9 +357,9 @@ func resourceAlicloudLogStoreIndexUpdate(d *schema.ResourceData, meta interface{
 			if err != nil {
 				if IsExpectedErrors(err, []string{LogClientTimeout}) {
 					time.Sleep(5 * time.Second)
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			if debugOn() {
 				addDebug("UpdateIndex", raw, requestInfo, map[string]interface{}{
@@ -393,7 +393,7 @@ func resourceAlicloudLogStoreIndexDelete(d *schema.ResourceData, meta interface{
 		return WrapError(err)
 	}
 	var requestInfo *sls.Client
-	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+	if err := retry.Retry(2*time.Minute, func() *retry.RetryError {
 		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			requestInfo = slsClient
 			return nil, slsClient.DeleteIndex(parts[0], parts[1])
@@ -401,9 +401,9 @@ func resourceAlicloudLogStoreIndexDelete(d *schema.ResourceData, meta interface{
 		if err != nil {
 			if IsExpectedErrors(err, []string{LogClientTimeout}) {
 				time.Sleep(5 * time.Second)
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		if debugOn() {
 			addDebug("DeleteIndex", raw, requestInfo, map[string]interface{}{

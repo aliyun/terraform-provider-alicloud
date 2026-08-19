@@ -7,7 +7,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -293,16 +293,16 @@ func resourceAlicloudCenRouteMapCreate(d *schema.ResourceData, meta interface{})
 	}
 	request.TransmitDirection = d.Get("transmit_direction").(string)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err := resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err := retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		raw, err := client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.CreateCenRouteMap(request)
 		})
 		if err != nil {
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"Operation.Blocking", "InternalError"}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw)
 		response, _ := raw.(*cbn.CreateCenRouteMapResponse)
@@ -514,15 +514,15 @@ func resourceAlicloudCenRouteMapDelete(d *schema.ResourceData, meta interface{})
 	request.CenId = parts[0]
 	request.RouteMapId = parts[1]
 	request.CenRegionId = d.Get("cen_region_id").(string)
-	err = resource.Retry(300*time.Second, func() *resource.RetryError {
+	err = retry.Retry(300*time.Second, func() *retry.RetryError {
 		raw, err := client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.DeleteCenRouteMap(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Operation.Blocking", "IncorrectStatus.RouteMap", "Throttling.User"}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw)
 		return nil

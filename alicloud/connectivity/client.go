@@ -443,7 +443,7 @@ func (client *AliyunClient) NewPolarDBDynamoClient(endpoint, accessKey, secretKe
 		Credentials: awscredentials.NewStaticCredentialsProvider(ak, sk, stsToken),
 		// Keep SDK-level retries and per-request timeouts small so that a single API
 		// call fails fast (e.g. when the public endpoint is unreachable), letting the
-		// outer resource.Retry loop drive retries and surface the real error instead
+		// outer retry.Retry loop drive retries and surface the real error instead
 		// of one call blocking for the whole retry window.
 		RetryMaxAttempts: 3,
 		HTTPClient: &http.Client{

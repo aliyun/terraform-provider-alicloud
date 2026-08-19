@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -37,13 +37,13 @@ func dataSourceAlicloudHbrServiceRead(d *schema.ResourceData, meta interface{}) 
 	}
 
 	client := meta.(*connectivity.AliyunClient)
-	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+	err := retry.Retry(3*time.Minute, func() *retry.RetryError {
 		response, err := client.RpcPostWithEndpoint("hbr", "2017-09-08", action, nil, request, false, connectivity.OpenHbrService)
 		if err != nil {
 			if NeedRetry(err) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, nil)
 		return nil

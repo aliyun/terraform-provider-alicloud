@@ -6,7 +6,8 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/id"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -119,7 +120,7 @@ func resourceAliyunNetworkAclEntries() *schema.Resource {
 
 func resourceAliyunNetworkAclEntriesCreate(d *schema.ResourceData, meta interface{}) error {
 
-	d.SetId(d.Get("network_acl_id").(string) + COLON_SEPARATED + resource.UniqueId())
+	d.SetId(d.Get("network_acl_id").(string) + COLON_SEPARATED + id.UniqueId())
 
 	return resourceAliyunNetworkAclEntriesUpdate(d, meta)
 }
@@ -233,14 +234,14 @@ func resourceAliyunNetworkAclEntriesUpdate(d *schema.ResourceData, meta interfac
 	if err := vpcService.WaitForNetworkAcl(networkAclId, Available, DefaultTimeout); err != nil {
 		return WrapError(err)
 	}
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.UpdateNetworkAclEntries(request)
 		})
 		//Waiting for deleting the network acl entries
 		if err != nil {
 			if IsExpectedErrors(err, []string{"TaskConflict"}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
@@ -274,14 +275,14 @@ func resourceAliyunNetworkAclEntriesDelete(d *schema.ResourceData, meta interfac
 	if err := vpcService.WaitForNetworkAcl(networkAclId, Available, DefaultTimeout); err != nil {
 		return WrapError(err)
 	}
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.UpdateNetworkAclEntries(request)
 		})
 		//Waiting for deleting the network acl entries
 		if err != nil {
 			if IsExpectedErrors(err, []string{"TaskConflict"}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)

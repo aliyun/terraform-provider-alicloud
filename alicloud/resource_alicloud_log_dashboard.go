@@ -9,7 +9,7 @@ import (
 
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -88,16 +88,16 @@ func resourceAlicloudLogDashboardCreate(d *schema.ResourceData, meta interface{}
 	}
 	dashboardStr := string(dashboardBytes)
 
-	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+	if err := retry.Retry(2*time.Minute, func() *retry.RetryError {
 		_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			return nil, slsClient.CreateDashboardString(d.Get("project_name").(string), dashboardStr)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{LogClientTimeout}) {
 				time.Sleep(5 * time.Second)
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug("CreateDashboard", dashboard, requestInfo, map[string]interface{}{
 			"dashBoard": dashboard,
@@ -217,16 +217,16 @@ func resourceAlicloudLogDashboardDelete(d *schema.ResourceData, meta interface{}
 		return WrapError(err)
 	}
 	var requestInfo *sls.Client
-	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(3*time.Minute, func() *retry.RetryError {
 		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			requestInfo = slsClient
 			return nil, slsClient.DeleteDashboard(parts[0], parts[1])
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{LogClientTimeout, "RequestTimeout"}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug("DeleteDashboard", raw, requestInfo, map[string]interface{}{
 			"project_name": parts[0],

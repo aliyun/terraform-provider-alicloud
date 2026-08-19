@@ -15,7 +15,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -202,17 +202,17 @@ func setVolumeTags(client *connectivity.AliyunClient, resourceType TagResourceTy
 		request.InstanceId = d.Id()
 		var response *ecs.DescribeDisksResponse
 		wait := incrementalWait(1*time.Second, 1*time.Second)
-		err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+		err := retry.Retry(10*time.Minute, func() *retry.RetryError {
 			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 				return ecsClient.DescribeDisks(request)
 			})
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			response, _ = raw.(*ecs.DescribeDisksResponse)
@@ -272,17 +272,17 @@ func updateTags(client *connectivity.AliyunClient, ids []string, resourceType Ta
 				request.TagKey = &tagsKey
 
 				wait := incrementalWait(1*time.Second, 1*time.Second)
-				err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+				err := retry.Retry(10*time.Minute, func() *retry.RetryError {
 					raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 						return ecsClient.UntagResources(request)
 					})
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 					return nil
@@ -299,17 +299,17 @@ func updateTags(client *connectivity.AliyunClient, ids []string, resourceType Ta
 				request.TagKey = &tagsKey
 
 				wait := incrementalWait(1*time.Second, 1*time.Second)
-				err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+				err := retry.Retry(10*time.Minute, func() *retry.RetryError {
 					raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 						return ecsClient.UntagResources(request)
 					})
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 					return nil
@@ -342,17 +342,17 @@ func updateTags(client *connectivity.AliyunClient, ids []string, resourceType Ta
 				request.Tag = &tags
 
 				wait := incrementalWait(1*time.Second, 1*time.Second)
-				err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+				err := retry.Retry(10*time.Minute, func() *retry.RetryError {
 					raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 						return ecsClient.TagResources(request)
 					})
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 					return nil
@@ -372,17 +372,17 @@ func updateTags(client *connectivity.AliyunClient, ids []string, resourceType Ta
 				request.Tag = &tags
 
 				wait := incrementalWait(1*time.Second, 1*time.Second)
-				err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+				err := retry.Retry(10*time.Minute, func() *retry.RetryError {
 					raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 						return ecsClient.TagResources(request)
 					})
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 					return nil

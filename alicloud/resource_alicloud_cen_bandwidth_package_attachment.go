@@ -5,7 +5,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -47,15 +47,15 @@ func resourceAlicloudCenBandwidthPackageAttachmentCreate(d *schema.ResourceData,
 	request.CenId = cenId
 	request.CenBandwidthPackageId = cenBwpId
 
-	err := resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
+	err := retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *retry.RetryError {
 		raw, err := client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.AssociateCenBandwidthPackage(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InvalidOperation.BwpInstanceStatus", "InvalidOperation.BwpBusinessStatus", "InvalidOperation.CenInstanceStatus", "Operation.Blocking"}) || NeedRetry(err) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
@@ -103,17 +103,17 @@ func resourceAlicloudCenBandwidthPackageAttachmentDelete(d *schema.ResourceData,
 	request.CenId = cenId
 	request.CenBandwidthPackageId = cenBwpId
 
-	err := resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
+	err := retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *retry.RetryError {
 		raw, err := client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.UnassociateCenBandwidthPackage(request)
 		})
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InvalidOperation.BwpInstanceStatus", "InvalidOperation.BwpBusinessStatus", "InvalidOperation.CenInstanceStatus", "InvalidOperation.CenBandwidthLimitsNotZero", "Operation.Blocking"}) || NeedRetry(err) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)

@@ -6,7 +6,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type ResourcesharingService struct {
@@ -27,14 +27,14 @@ func (s *ResourcesharingService) DescribeResourceManagerResourceShare(id string)
 	idExist := false
 	for {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("ResourceSharing", "2020-01-10", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -74,7 +74,7 @@ func (s *ResourcesharingService) DescribeResourceManagerResourceShare(id string)
 	return object, nil
 }
 
-func (s *ResourcesharingService) ResourceManagerResourceShareStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *ResourcesharingService) ResourceManagerResourceShareStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeResourceManagerResourceShare(id)
 		if err != nil {
@@ -115,14 +115,14 @@ func (s *ResourcesharingService) DescribeResourceManagerSharedResource(id string
 	idExist := false
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("ResourceSharing", "2020-01-10", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -162,7 +162,7 @@ func (s *ResourcesharingService) DescribeResourceManagerSharedResource(id string
 	return object, nil
 }
 
-func (s *ResourcesharingService) ResourceManagerSharedResourceStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *ResourcesharingService) ResourceManagerSharedResourceStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeResourceManagerSharedResource(id)
 		if err != nil {
@@ -202,14 +202,14 @@ func (s *ResourcesharingService) DescribeResourceManagerSharedTarget(id string) 
 	idExist := false
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("ResourceSharing", "2020-01-10", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -249,7 +249,7 @@ func (s *ResourcesharingService) DescribeResourceManagerSharedTarget(id string) 
 	return object, nil
 }
 
-func (s *ResourcesharingService) ResourceManagerSharedTargetStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *ResourcesharingService) ResourceManagerSharedTargetStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeResourceManagerSharedTarget(id)
 		if err != nil {

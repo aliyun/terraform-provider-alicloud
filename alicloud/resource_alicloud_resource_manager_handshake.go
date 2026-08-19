@@ -8,7 +8,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -93,14 +93,14 @@ func resourceAliCloudResourceManagerHandshakeCreate(d *schema.ResourceData, meta
 	}
 	request["TargetEntity"] = d.Get("target_entity")
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = resourceManagerHandshakeRpcPost(client, "ResourceManager", "2020-03-31", action, query, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ConcurrentCallNotSupported", "LimitExceeded.InvitationRate", "LimitExceeded.SameTargetInvitationRate"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -156,15 +156,15 @@ func resourceAliCloudResourceManagerHandshakeDelete(d *schema.ResourceData, meta
 	request["HandshakeId"] = d.Id()
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = resourceManagerHandshakeRpcPost(client, "ResourceManager", "2020-03-31", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -201,18 +201,18 @@ func resourceAliCloudResourceManagerHandshakeRemoveAcceptedAccount(d *schema.Res
 	var err error
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = resourceManagerHandshakeRpcPost(client, "ResourceManager", "2020-03-31", action, query, request, true)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ConcurrentCallNotSupported"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 			if IsExpectedErrors(err, []string{"EntityNotExists.Account", "EntityNotExists.ResourceDirectory"}) || NotFoundError(err) {
 				return nil
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -228,7 +228,7 @@ func resourceAliCloudResourceManagerHandshakeRemoveAcceptedAccount(d *schema.Res
 	}
 	response = nil
 	wait = incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = resourceManagerHandshakeRpcPost(client, "ResourceManager", "2020-03-31", action, query, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"EntityNotExists.Account", "EntityNotExists.ResourceDirectory"}) || NotFoundError(err) {
@@ -236,12 +236,12 @@ func resourceAliCloudResourceManagerHandshakeRemoveAcceptedAccount(d *schema.Res
 			}
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		wait()
-		return resource.RetryableError(fmt.Errorf("Resource Manager member account %s is still attached", accountId))
+		return retry.RetryableError(fmt.Errorf("Resource Manager member account %s is still attached", accountId))
 	})
 	addDebug(action, response, request)
 	if err != nil {

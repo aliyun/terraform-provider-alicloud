@@ -7,7 +7,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -29,15 +29,15 @@ func (s *HbrServiceV2) DescribeHbrPolicy(id string) (object map[string]interface
 	action := "DescribePoliciesV2"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("hbr", "2017-09-08", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -58,11 +58,11 @@ func (s *HbrServiceV2) DescribeHbrPolicy(id string) (object map[string]interface
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *HbrServiceV2) HbrPolicyStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *HbrServiceV2) HbrPolicyStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.HbrPolicyStateRefreshFuncWithApi(id, field, failStates, s.DescribeHbrPolicy)
 }
 
-func (s *HbrServiceV2) HbrPolicyStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *HbrServiceV2) HbrPolicyStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -113,15 +113,15 @@ func (s *HbrServiceV2) DescribeHbrPolicyBinding(id string) (object map[string]in
 	action := "DescribePolicyBindings"
 	for {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("hbr", "2017-09-08", action, query, request, true)
 
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -163,11 +163,11 @@ func (s *HbrServiceV2) DescribeHbrPolicyBinding(id string) (object map[string]in
 	return object, WrapErrorf(NotFoundErr("PolicyBinding", id), NotFoundMsg, response)
 }
 
-func (s *HbrServiceV2) HbrPolicyBindingStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *HbrServiceV2) HbrPolicyBindingStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.HbrPolicyBindingStateRefreshFuncWithApi(id, field, failStates, s.DescribeHbrPolicyBinding)
 }
 
-func (s *HbrServiceV2) HbrPolicyBindingStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *HbrServiceV2) HbrPolicyBindingStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -212,15 +212,15 @@ func (s *HbrServiceV2) DescribeHbrCrossAccount(id string) (object map[string]int
 	query = make(map[string]interface{})
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("hbr", "2017-09-08", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -252,7 +252,7 @@ func (s *HbrServiceV2) DescribeHbrCrossAccount(id string) (object map[string]int
 	return object, WrapErrorf(NotFoundErr("CrossAccount", id), NotFoundMsg, response)
 }
 
-func (s *HbrServiceV2) HbrCrossAccountStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *HbrServiceV2) HbrCrossAccountStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeHbrCrossAccount(id)
 		if err != nil {
@@ -297,15 +297,15 @@ func (s *HbrServiceV2) DescribeHbrVault(id string) (object map[string]interface{
 	action := "DescribeVaults"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("hbr", "2017-09-08", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -329,7 +329,7 @@ func (s *HbrServiceV2) DescribeHbrVault(id string) (object map[string]interface{
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *HbrServiceV2) HbrVaultStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *HbrServiceV2) HbrVaultStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeHbrVault(id)
 		if err != nil {
@@ -389,14 +389,14 @@ func (s *HbrServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("hbr", "2017-09-08", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -422,14 +422,14 @@ func (s *HbrServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("hbr", "2017-09-08", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -460,15 +460,15 @@ func (s *HbrServiceV2) DescribeHbrReplicationVault(id string) (object map[string
 	action := "DescribeVaults"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("hbr", "2017-09-08", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -489,7 +489,7 @@ func (s *HbrServiceV2) DescribeHbrReplicationVault(id string) (object map[string
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *HbrServiceV2) HbrReplicationVaultStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *HbrServiceV2) HbrReplicationVaultStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeHbrReplicationVault(id)
 		if err != nil {
@@ -534,15 +534,15 @@ func (s *HbrServiceV2) DescribeHbrUdmSnapshot(id string) (object map[string]inte
 	action := "DescribeUdmSnapshots"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("hbr", "2017-09-08", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -563,7 +563,7 @@ func (s *HbrServiceV2) DescribeHbrUdmSnapshot(id string) (object map[string]inte
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *HbrServiceV2) HbrUdmSnapshotStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *HbrServiceV2) HbrUdmSnapshotStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeHbrUdmSnapshot(id)
 		if err != nil {

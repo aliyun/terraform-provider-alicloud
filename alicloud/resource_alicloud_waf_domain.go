@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -219,14 +219,14 @@ func resourceAlicloudWafDomainCreate(d *schema.ResourceData, meta interface{}) e
 	}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(3*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("waf-openapi", "2019-09-10", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -306,14 +306,14 @@ func resourceAlicloudWafDomainUpdate(d *schema.ResourceData, meta interface{}) e
 		request["ClusterType"] = convertClusterTypeRequest(d.Get("cluster_type").(string))
 		action := "ModifyDomainClusterType"
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(3*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(3*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("waf-openapi", "2019-09-10", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(action, response, request)
 			return nil
@@ -382,14 +382,14 @@ func resourceAlicloudWafDomainUpdate(d *schema.ResourceData, meta interface{}) e
 	if update {
 		action := "ModifyDomain"
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(3*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(3*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("waf-openapi", "2019-09-10", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(action, response, request)
 			return nil
@@ -415,14 +415,14 @@ func resourceAlicloudWafDomainDelete(d *schema.ResourceData, meta interface{}) e
 	}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(3*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("waf-openapi", "2019-09-10", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil

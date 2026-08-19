@@ -15,7 +15,7 @@ import (
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore/search"
 	otsTunnel "github.com/aliyun/aliyun-tablestore-go-sdk/tunnel"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type OtsService struct {
@@ -58,16 +58,16 @@ func (s *OtsService) ListOtsTable(instanceName string) (table *tablestore.ListTa
 	}
 	var raw interface{}
 	var requestInfo *tablestore.TableStoreClient
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = s.client.WithTableStoreClient(instanceName, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
 			requestInfo = tableStoreClient
 			return tableStoreClient.ListTable()
 		})
 		if err != nil {
 			if strings.HasSuffix(err.Error(), "no such host") {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug("ListTable", raw, requestInfo)
 		return nil
@@ -100,16 +100,16 @@ func (s *OtsService) DescribeOtsTable(id string) (*tablestore.DescribeTableRespo
 	}
 	var raw interface{}
 	var requestInfo *tablestore.TableStoreClient
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = s.client.WithTableStoreClient(instanceName, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
 			requestInfo = tableStoreClient
 			return tableStoreClient.DescribeTable(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, OtsTableIsTemporarilyUnavailable) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug("DescribeTable", raw, requestInfo, request)
 		return nil
@@ -441,20 +441,20 @@ func (s *OtsService) DescribeOtsTunnel(id string) (resp *otsTunnel.DescribeTunne
 	request.TunnelName = tunnelName
 	var raw interface{}
 	var requestInfo otsTunnel.TunnelClient
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = s.client.WithTableStoreTunnelClient(instanceName, func(tunnelClient otsTunnel.TunnelClient) (interface{}, error) {
 			requestInfo = tunnelClient
 			return tunnelClient.DescribeTunnel(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, OtsTunnelIsTemporarilyUnavailable) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		resp, _ := raw.(*otsTunnel.DescribeTunnelResponse)
 		if resp != nil && resp.Tunnel != nil && resp.Tunnel.Stage == "InitBaseDataAndStreamShard" {
-			return resource.RetryableError(WrapError(Error("ots tunnel is initial")))
+			return retry.RetryableError(WrapError(Error("ots tunnel is initial")))
 		}
 		addDebug("DescribeTunnel", raw, requestInfo, request)
 		return nil
@@ -483,16 +483,16 @@ func (s *OtsService) ListOtsTunnels(instanceName string, tableName string) (resp
 	var requestInfo otsTunnel.TunnelClient
 	request := new(otsTunnel.ListTunnelRequest)
 	request.TableName = tableName
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = s.client.WithTableStoreTunnelClient(instanceName, func(tunnelClient otsTunnel.TunnelClient) (interface{}, error) {
 			requestInfo = tunnelClient
 			return tunnelClient.ListTunnel(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, OtsTunnelIsTemporarilyUnavailable) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug("ListTunnel", raw, requestInfo, request)
 		return nil
@@ -660,13 +660,13 @@ func (ds *InputDataSource) doFilters() []interface{} {
 }
 
 func (s *OtsService) LoopWaitTable(instanceName string, tableName string) (table *tablestore.DescribeTableResponse, err error) {
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		t, e := s.DescribeOtsTable(ID(instanceName, tableName))
 		if e != nil {
 			if NotFoundError(e) {
-				return resource.RetryableError(e)
+				return retry.RetryableError(e)
 			}
-			return resource.NonRetryableError(e)
+			return retry.NonRetryableError(e)
 		}
 
 		table = t
@@ -732,16 +732,16 @@ func (s *OtsService) ListOtsSearchIndex(instanceName string, tableName string) (
 	}
 	var raw interface{}
 	var reqClient *tablestore.TableStoreClient
-	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(2*time.Minute, func() *retry.RetryError {
 		raw, err = s.client.WithTableStoreClient(instanceName, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
 			reqClient = tableStoreClient
 			return tableStoreClient.ListSearchIndex(req)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, OtsSearchIndexIsTemporarilyUnavailable) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug("ListSearchIndex", raw, reqClient, req)
 		return nil
@@ -782,7 +782,7 @@ func (s *OtsService) DescribeOtsSearchIndex(id string) (indexResp *tablestore.De
 
 	var raw interface{}
 	var reqClient *tablestore.TableStoreClient
-	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(2*time.Minute, func() *retry.RetryError {
 		raw, err = s.client.WithTableStoreClient(instanceName, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
 			reqClient = tableStoreClient
 			return tableStoreClient.DescribeSearchIndex(req)
@@ -793,9 +793,9 @@ func (s *OtsService) DescribeOtsSearchIndex(id string) (indexResp *tablestore.De
 
 		if err != nil {
 			if IsExpectedErrors(err, OtsSearchIndexIsTemporarilyUnavailable) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 
 		return nil
@@ -931,7 +931,7 @@ func (s *OtsService) DeleteSearchIndex(instanceName string, tableName string, in
 		TableName: tableName,
 		IndexName: indexName,
 	}
-	err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+	err := retry.Retry(2*time.Minute, func() *retry.RetryError {
 		var requestCli *tablestore.TableStoreClient
 		raw, err := s.client.WithTableStoreClient(instanceName, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
 			requestCli = tableStoreClient
@@ -944,9 +944,9 @@ func (s *OtsService) DeleteSearchIndex(instanceName string, tableName string, in
 
 		if err != nil {
 			if IsExpectedErrors(err, OtsTableIsTemporarilyUnavailable) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -976,7 +976,7 @@ func invokeOtsRestApiWithRetry(client *connectivity.AliyunClient, product string
 		return nil, WrapError(err)
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(20*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(20*time.Minute, func() *retry.RetryError {
 		response, err = otsClient.DoRequest(StringPointer(version), nil, StringPointer(httpMethod), StringPointer("AK"), StringPointer(actionPath), urlQuery, headers, requestBody, &util.RuntimeOptions{})
 		if err != nil {
 			if IsExpectedErrors(err, OtsTableIsTemporarilyUnavailable) ||
@@ -985,9 +985,9 @@ func invokeOtsRestApiWithRetry(client *connectivity.AliyunClient, product string
 				IsExpectedErrors(err, OtsSearchIndexIsTemporarilyUnavailable) ||
 				NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(actionPath, response, requestBody)
 		return nil

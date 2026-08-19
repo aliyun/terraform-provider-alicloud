@@ -7,7 +7,7 @@ import (
 
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -82,16 +82,16 @@ func resourceAlicloudFCAliasCreate(d *schema.ResourceData, meta interface{}) err
 
 	var response *fc.CreateAliasOutput
 	var requestInfo *fc.Client
-	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+	if err := retry.Retry(2*time.Minute, func() *retry.RetryError {
 		raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
 			requestInfo = fcClient
 			return fcClient.CreateAlias(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"AccessDenied"}) {
-				return resource.RetryableError(WrapError(err))
+				return retry.RetryableError(WrapError(err))
 			}
-			return resource.NonRetryableError(WrapError(err))
+			return retry.NonRetryableError(WrapError(err))
 		}
 		addDebug("CreateAlias", raw, requestInfo, request)
 		response, _ = raw.(*fc.CreateAliasOutput)

@@ -6,7 +6,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type EhpcService struct {
@@ -24,14 +24,14 @@ func (s *EhpcService) DescribeEhpcJobTemplate(id string) (object map[string]inte
 	idExist := false
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcGet("EHPC", "2018-04-12", action, request, nil)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -71,14 +71,14 @@ func (s *EhpcService) DescribeEhpcCluster(id string) (object map[string]interfac
 		"ClusterId": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("EHPC", "2018-04-12", action, request, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -97,7 +97,7 @@ func (s *EhpcService) DescribeEhpcCluster(id string) (object map[string]interfac
 	return object, nil
 }
 
-func (s *EhpcService) EhpcClusterStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *EhpcService) EhpcClusterStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEhpcCluster(id)
 		if err != nil {

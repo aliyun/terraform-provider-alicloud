@@ -7,7 +7,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -78,16 +78,16 @@ func resourceAlicloudCenRouteServiceCreate(d *schema.ResourceData, meta interfac
 	request.HostRegionId = d.Get("host_region_id").(string)
 	request.HostVpcId = d.Get("host_vpc_id").(string)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err := resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err := retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		raw, err := client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.ResolveAndRouteServiceInCen(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Operation.Blocking"}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw)
 		d.SetId(fmt.Sprintf("%v:%v:%v:%v", request.CenId, request.HostRegionId, request.Host, accessRegionId))
@@ -141,16 +141,16 @@ func resourceAlicloudCenRouteServiceDelete(d *schema.ResourceData, meta interfac
 	request.HostRegionId = parts[1]
 	request.HostVpcId = d.Get("host_vpc_id").(string)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		raw, err := client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.DeleteRouteServiceInCen(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Operation.Blocking", "InvalidOperation.CenInstanceStatus", "InvalidOperation.CloudRouteStatusNotAllow"}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw)
 		return nil

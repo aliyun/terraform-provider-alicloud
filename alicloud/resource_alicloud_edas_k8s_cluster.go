@@ -6,7 +6,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/edas"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -88,7 +88,7 @@ func resourceAlicloudEdasK8sClusterCreate(d *schema.ResourceData, meta interface
 	req := edas.CreateGetClusterRequest()
 	req.ClusterId = response.Data
 	wait := incrementalWait(1*time.Second, 2*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		raw, err := edasService.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
 			return edasClient.GetCluster(req)
 		})
@@ -96,23 +96,23 @@ func resourceAlicloudEdasK8sClusterCreate(d *schema.ResourceData, meta interface
 		if err != nil {
 			if IsExpectedErrors(err, []string{ThrottlingUser}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		if response.Code != 200 {
-			return resource.NonRetryableError(Error("Get cluster failed for %s", response.Message))
+			return retry.NonRetryableError(Error("Get cluster failed for %s", response.Message))
 		}
 
 		addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 		if response.Cluster.ClusterImportStatus == 3 {
-			return resource.RetryableError(Error("cluster is importing"))
+			return retry.RetryableError(Error("cluster is importing"))
 		}
 		if response.Cluster.ClusterImportStatus == 1 {
 			return nil
 		}
 
-		return resource.NonRetryableError(Error("cluster status abnormal"))
+		return retry.NonRetryableError(Error("cluster status abnormal"))
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -157,7 +157,7 @@ func resourceAlicloudEdasK8sClusterDelete(d *schema.ResourceData, meta interface
 	request.ClusterId = clusterId
 
 	wait := incrementalWait(1*time.Second, 2*time.Second)
-	err := resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err := retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		raw, err := edasService.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
 			return edasClient.DeleteCluster(request)
 		})
@@ -165,12 +165,12 @@ func resourceAlicloudEdasK8sClusterDelete(d *schema.ResourceData, meta interface
 		if err != nil {
 			if IsExpectedErrors(err, []string{ThrottlingUser}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		if response.Code != 200 {
-			return resource.NonRetryableError(Error("Delete EDAS K8s cluster failed for %s", response.Message))
+			return retry.NonRetryableError(Error("Delete EDAS K8s cluster failed for %s", response.Message))
 		}
 
 		addDebug(request.GetActionName(), raw, request.RoaRequest, request)
@@ -183,7 +183,7 @@ func resourceAlicloudEdasK8sClusterDelete(d *schema.ResourceData, meta interface
 	reqGet := edas.CreateGetClusterRequest()
 	reqGet.RegionId = regionId
 	reqGet.ClusterId = clusterId
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		raw, err := edasService.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
 			return edasClient.GetCluster(reqGet)
 		})
@@ -191,9 +191,9 @@ func resourceAlicloudEdasK8sClusterDelete(d *schema.ResourceData, meta interface
 		if err != nil {
 			if IsExpectedErrors(err, []string{ThrottlingUser}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 
@@ -204,11 +204,11 @@ func resourceAlicloudEdasK8sClusterDelete(d *schema.ResourceData, meta interface
 			if response.Cluster.ClusterImportStatus == 4 {
 				return nil
 			}
-			return resource.RetryableError(Error("cluster deleting"))
+			return retry.RetryableError(Error("cluster deleting"))
 		} else if response.Code == 601 && strings.Contains(response.Message, "does not exist") {
 			return nil
 		} else {
-			return resource.NonRetryableError(Error("check cluster status failed for %s", response.Message))
+			return retry.NonRetryableError(Error("check cluster status failed for %s", response.Message))
 		}
 	})
 	if err != nil {

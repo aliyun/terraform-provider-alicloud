@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type Fcv2ServiceV2 struct {
@@ -32,14 +32,14 @@ func (s *Fcv2ServiceV2) DescribeFcv2Function(id string) (object map[string]inter
 	query = make(map[string]*string)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("FC-Open", "2021-04-06", action, query, nil, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -55,7 +55,7 @@ func (s *Fcv2ServiceV2) DescribeFcv2Function(id string) (object map[string]inter
 	return response, nil
 }
 
-func (s *Fcv2ServiceV2) Fcv2FunctionStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *Fcv2ServiceV2) Fcv2FunctionStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeFcv2Function(id)
 		if err != nil {

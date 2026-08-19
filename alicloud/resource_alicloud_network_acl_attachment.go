@@ -5,7 +5,8 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/id"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -48,7 +49,7 @@ func resourceAliyunNetworkAclAttachment() *schema.Resource {
 }
 
 func resourceAliyunNetworkAclAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
-	d.SetId(d.Get("network_acl_id").(string) + COLON_SEPARATED + resource.UniqueId())
+	d.SetId(d.Get("network_acl_id").(string) + COLON_SEPARATED + id.UniqueId())
 
 	return resourceAliyunNetworkAclAttachmentUpdate(d, meta)
 }
@@ -217,14 +218,14 @@ func resourceAliyunNetworkAclAttachmentDelete(d *schema.ResourceData, meta inter
 		})
 	}
 	request.Resource = &resources
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.UnassociateNetworkAcl(request)
 		})
 		//Waiting for unassociate the network acl
 		if err != nil {
 			if IsExpectedErrors(err, []string{"TaskConflict"}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)

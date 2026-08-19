@@ -7,7 +7,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type NATGatewayServiceV2 struct {
@@ -33,15 +33,15 @@ func (s *NATGatewayServiceV2) DescribeNATGatewaySnatEntry(id string) (object map
 	request["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -65,7 +65,7 @@ func (s *NATGatewayServiceV2) DescribeNATGatewaySnatEntry(id string) (object map
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *NATGatewayServiceV2) NATGatewaySnatEntryStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *NATGatewayServiceV2) NATGatewaySnatEntryStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeNATGatewaySnatEntry(id)
 		if err != nil {
@@ -117,16 +117,16 @@ func (s *NATGatewayServiceV2) DescribeNatGatewayNatIpCidr(id string) (object map
 	request["ClientToken"] = buildClientToken(action)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -147,11 +147,11 @@ func (s *NATGatewayServiceV2) DescribeNatGatewayNatIpCidr(id string) (object map
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *NATGatewayServiceV2) NatGatewayNatIpCidrStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *NATGatewayServiceV2) NatGatewayNatIpCidrStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.NatGatewayNatIpCidrStateRefreshFuncWithApi(id, field, failStates, s.DescribeNatGatewayNatIpCidr)
 }
 
-func (s *NATGatewayServiceV2) NatGatewayNatIpCidrStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *NATGatewayServiceV2) NatGatewayNatIpCidrStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -202,16 +202,16 @@ func (s *NATGatewayServiceV2) DescribeNatGatewayNatIp(id string) (object map[str
 	request["ClientToken"] = buildClientToken(action)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -232,11 +232,11 @@ func (s *NATGatewayServiceV2) DescribeNatGatewayNatIp(id string) (object map[str
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *NATGatewayServiceV2) NatGatewayNatIpStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *NATGatewayServiceV2) NatGatewayNatIpStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.NatGatewayNatIpStateRefreshFuncWithApi(id, field, failStates, s.DescribeNatGatewayNatIp)
 }
 
-func (s *NATGatewayServiceV2) NatGatewayNatIpStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *NATGatewayServiceV2) NatGatewayNatIpStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -286,15 +286,15 @@ func (s *NATGatewayServiceV2) DescribeNatGatewayForwardEntry(id string) (object 
 	action := "DescribeForwardTableEntries"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"TaskConflict"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -318,11 +318,11 @@ func (s *NATGatewayServiceV2) DescribeNatGatewayForwardEntry(id string) (object 
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *NATGatewayServiceV2) NatGatewayForwardEntryStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *NATGatewayServiceV2) NatGatewayForwardEntryStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.NatGatewayForwardEntryStateRefreshFuncWithApi(id, field, failStates, s.DescribeNatGatewayForwardEntry)
 }
 
-func (s *NATGatewayServiceV2) NatGatewayForwardEntryStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *NATGatewayServiceV2) NatGatewayForwardEntryStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {

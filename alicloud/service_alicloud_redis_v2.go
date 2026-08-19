@@ -8,7 +8,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -30,15 +30,15 @@ func (s *RedisServiceV2) DescribeRedisTairInstance(id string) (object map[string
 	request["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("R-kvstore", "2015-01-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -73,15 +73,15 @@ func (s *RedisServiceV2) DescribeTairInstanceDescribeInstanceConfig(id string) (
 	request["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("R-kvstore", "2015-01-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -107,15 +107,15 @@ func (s *RedisServiceV2) DescribeDescribeSecurityIps(id, securityIpGroupName str
 	request["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("R-kvstore", "2015-01-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -161,15 +161,15 @@ func (s *RedisServiceV2) DescribeTairInstanceDescribeSecurityGroupConfiguration(
 	request["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("R-kvstore", "2015-01-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -228,15 +228,15 @@ func (s *RedisServiceV2) DescribeTairInstanceDescribeInstanceTDEStatus(id string
 	action := "DescribeInstanceTDEStatus"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("R-kvstore", "2015-01-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -268,15 +268,15 @@ func (s *RedisServiceV2) DescribeTairInstanceDescribeInstanceSSL(id string) (obj
 	request["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("R-kvstore", "2015-01-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -302,15 +302,15 @@ func (s *RedisServiceV2) DescribeTairInstanceDescribeIntranetAttribute(id string
 	request["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("R-kvstore", "2015-01-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -325,7 +325,7 @@ func (s *RedisServiceV2) DescribeTairInstanceDescribeIntranetAttribute(id string
 	return response, nil
 }
 
-func (s *RedisServiceV2) RedisTairInstanceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *RedisServiceV2) RedisTairInstanceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeRedisTairInstance(id)
 		if err != nil {
@@ -385,14 +385,14 @@ func (s *RedisServiceV2) SetResourceTags(d *schema.ResourceData, resourceType st
 			}
 
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("R-kvstore", "2015-01-01", action, query, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -418,14 +418,14 @@ func (s *RedisServiceV2) SetResourceTags(d *schema.ResourceData, resourceType st
 
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("R-kvstore", "2015-01-01", action, query, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -461,15 +461,15 @@ func (s *RedisServiceV2) DescribeRedisAccount(id string) (object map[string]inte
 	action := "DescribeAccounts"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("R-kvstore", "2015-01-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -493,7 +493,7 @@ func (s *RedisServiceV2) DescribeRedisAccount(id string) (object map[string]inte
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *RedisServiceV2) RedisAccountStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *RedisServiceV2) RedisAccountStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeRedisAccount(id)
 		if err != nil {
@@ -545,15 +545,15 @@ func (s *RedisServiceV2) DescribeRedisBackup(id string) (object map[string]inter
 	action := "DescribeBackups"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("R-kvstore", "2015-01-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -581,11 +581,11 @@ func (s *RedisServiceV2) DescribeRedisBackup(id string) (object map[string]inter
 	return backup, nil
 }
 
-func (s *RedisServiceV2) RedisBackupStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *RedisServiceV2) RedisBackupStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.RedisBackupStateRefreshFuncWithApi(id, field, failStates, s.DescribeRedisBackup)
 }
 
-func (s *RedisServiceV2) RedisBackupStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *RedisServiceV2) RedisBackupStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -613,7 +613,7 @@ func (s *RedisServiceV2) RedisBackupStateRefreshFuncWithApi(id string, field str
 	}
 }
 
-func (s *RedisServiceV2) DescribeAsyncRedisBackupStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) resource.StateRefreshFunc {
+func (s *RedisServiceV2) DescribeAsyncRedisBackupStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAsyncDescribeBackups(d, res)
 		if err != nil {
@@ -684,15 +684,15 @@ func (s *RedisServiceV2) DescribeAsyncDescribeBackups(d *schema.ResourceData, re
 		request["PageNumber"] = pageNumber
 
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("R-kvstore", "2015-01-01", action, query, request, true)
 
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -767,15 +767,15 @@ func (s *RedisServiceV2) DescribeRedisGlobalSecurityIpGroup(id string) (object m
 	action := "DescribeGlobalSecurityIPGroup"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("R-kvstore", "2015-01-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -799,11 +799,11 @@ func (s *RedisServiceV2) DescribeRedisGlobalSecurityIpGroup(id string) (object m
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *RedisServiceV2) RedisGlobalSecurityIpGroupStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *RedisServiceV2) RedisGlobalSecurityIpGroupStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.RedisGlobalSecurityIpGroupStateRefreshFuncWithApi(id, field, failStates, s.DescribeRedisGlobalSecurityIpGroup)
 }
 
-func (s *RedisServiceV2) RedisGlobalSecurityIpGroupStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *RedisServiceV2) RedisGlobalSecurityIpGroupStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {

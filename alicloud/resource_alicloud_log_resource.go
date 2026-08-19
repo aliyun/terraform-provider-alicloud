@@ -5,7 +5,7 @@ import (
 
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -71,16 +71,16 @@ func resourceAlicloudLogResourceCreate(d *schema.ResourceData, meta interface{})
 		Description: description,
 		ExtInfo:     extInfo,
 	}
-	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+	if err := retry.Retry(2*time.Minute, func() *retry.RetryError {
 		_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			return nil, slsClient.CreateResource(record)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{LogClientTimeout}) {
 				time.Sleep(5 * time.Second)
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	}); err != nil {
@@ -123,16 +123,16 @@ func resourceAlicloudLogResourceUpdate(d *schema.ResourceData, meta interface{})
 		Description: d.Get("description").(string),
 	}
 
-	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+	if err := retry.Retry(2*time.Minute, func() *retry.RetryError {
 		_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			return nil, slsClient.UpdateResource(params)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{LogClientTimeout}) {
 				time.Sleep(5 * time.Second)
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	}); err != nil {
@@ -146,7 +146,7 @@ func resourceAlicloudLogResourceDelete(d *schema.ResourceData, meta interface{})
 	client := meta.(*connectivity.AliyunClient)
 	logService := LogService{client}
 	var requestInfo *sls.Client
-	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+	err := retry.Retry(3*time.Minute, func() *retry.RetryError {
 		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			requestInfo = slsClient
 			return nil, slsClient.DeleteResource(d.Id())
@@ -154,9 +154,9 @@ func resourceAlicloudLogResourceDelete(d *schema.ResourceData, meta interface{})
 		if err != nil {
 			if IsExpectedErrors(err, []string{LogClientTimeout}) {
 				time.Sleep(5 * time.Second)
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		if debugOn() {
 			addDebug("DeleteResource", raw, requestInfo, map[string]interface{}{

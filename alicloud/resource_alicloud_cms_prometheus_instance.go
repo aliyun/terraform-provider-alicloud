@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -112,14 +112,14 @@ func resourceAliCloudCmsPrometheusInstanceCreate(d *schema.ResourceData, meta in
 	}
 	body = request
 	wait := incrementalWait(5*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RoaPost("Cms", "2024-03-30", action, query, nil, body, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"400", "500"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -221,14 +221,14 @@ func resourceAliCloudCmsPrometheusInstanceUpdate(d *schema.ResourceData, meta in
 	body = request
 	if update {
 		wait := incrementalWait(10*time.Second, 10*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPut("Cms", "2024-03-30", action, query, nil, body, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"500"}) || NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -253,14 +253,14 @@ func resourceAliCloudCmsPrometheusInstanceDelete(d *schema.ResourceData, meta in
 	request = make(map[string]interface{})
 
 	wait := incrementalWait(10*time.Second, 10*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RoaDelete("Cms", "2024-03-30", action, query, nil, nil, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"500"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

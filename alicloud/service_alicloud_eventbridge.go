@@ -6,7 +6,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type EventbridgeService struct {
@@ -22,14 +22,14 @@ func (s *EventbridgeService) DescribeEventBridgeEventBus(id string) (object map[
 		"EventBusName": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("eventbridge", "2020-04-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -64,14 +64,14 @@ func (s *EventbridgeService) DescribeEventBridgeRule(id string) (object map[stri
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("eventbridge", "2020-04-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -94,7 +94,7 @@ func (s *EventbridgeService) DescribeEventBridgeRule(id string) (object map[stri
 	return object, nil
 }
 
-func (s *EventbridgeService) EventBridgeRuleStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *EventbridgeService) EventBridgeRuleStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEventBridgeRule(id)
 		if err != nil {
@@ -125,14 +125,14 @@ func (s *EventbridgeService) DescribeEventBridgeServiceLinkedRole(id string) (ob
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("eventbridge", "2020-04-01", action, request, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -152,7 +152,7 @@ func (s *EventbridgeService) DescribeEventBridgeServiceLinkedRole(id string) (ob
 	return object, nil
 }
 
-func (s *EventbridgeService) CheckRoleForProductRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *EventbridgeService) CheckRoleForProductRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEventBridgeServiceLinkedRole(id)
 		if err != nil {
@@ -184,14 +184,14 @@ func (s *EventbridgeService) DescribeEventBridgeEventSource(id string) (object m
 	idExist := false
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("eventbridge", "2020-04-01", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})

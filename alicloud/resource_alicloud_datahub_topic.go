@@ -8,7 +8,7 @@ import (
 
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -198,14 +198,14 @@ func resourceAliyunDatahubTopicUpdate(d *schema.ResourceData, meta interface{}) 
 			requestMap["TopicComment"] = topicComment
 			addDebug("UpdateTopic", raw, requestInfo, requestMap)
 		}
-		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 			datahubService := DatahubService{client}
 			object, err := datahubService.DescribeDatahubTopic(d.Id())
 			if err != nil {
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			if object.Comment != topicComment || object.LifeCycle != lifeCycle {
-				return resource.RetryableError(fmt.Errorf("waiting for updating topic %s comment and lifecycle finished timwout. "+
+				return retry.RetryableError(fmt.Errorf("waiting for updating topic %s comment and lifecycle finished timwout. "+
 					"current comment is %s and lifecycle is %d", d.Id(), object.Comment, object.LifeCycle))
 			}
 			return nil
@@ -229,16 +229,16 @@ func resourceAliyunDatahubTopicDelete(d *schema.ResourceData, meta interface{}) 
 	datahubService := DatahubService{client}
 	var requestInfo *datahub.DataHub
 
-	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(3*time.Minute, func() *retry.RetryError {
 		raw, err := client.WithDataHubClient(func(dataHubClient datahub.DataHubApi) (interface{}, error) {
 			requestInfo = dataHubClient.(*datahub.DataHub)
 			return dataHubClient.DeleteTopic(projectName, topicName)
 		})
 		if err != nil {
 			if isRetryableDatahubError(err) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		if debugOn() {
 			requestMap := make(map[string]string)
