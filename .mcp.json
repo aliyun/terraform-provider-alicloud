@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "autowonder": {
+      "type": "http",
+      "url": "https://auto-wonder.alibaba.net/api/mcp",
+      "headers": {
+        "Authorization": "Bearer ${AUTOWONDER_MCP_TOKEN:-}"
+      }
+    }
+  }
+}

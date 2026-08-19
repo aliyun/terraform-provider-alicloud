@@ -50,7 +50,8 @@ jarvis_load_runtime_config() {
   saved_file="$(mktemp "${TMPDIR:-/tmp}/jarvis-runtime-env.XXXXXX")" || return 2
   # Preserve caller-supplied values. The file contains declarations, never values
   # printed to stdout/stderr, and is removed before returning.
-  for name in $(env | sed -n 's/^\(JARVIS_[A-Za-z0-9_]*\)=.*/\1/p'); do
+  for name in $(env | sed -nE \
+      's/^((JARVIS|AUTOWONDER)_[A-Za-z0-9_]*)=.*/\1/p'); do
     [ -n "${!name}" ] || continue
     printf 'export %s=%q\n' "$name" "${!name}" >>"$saved_file"
   done

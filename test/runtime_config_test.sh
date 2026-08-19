@@ -39,6 +39,19 @@ out="$(JARVIS_CONTROL_PLANE_BASE_URL=https://explicit.example \
 grep -q 'control_plane_base=https://explicit.example' <<<"$out"
 ! grep -q 'explicit-secret\|machine-secret-value\|machine-admin-secret-value' <<<"$out"
 
+# Caller-supplied AutoWonder credentials have the same highest precedence as
+# JARVIS_* values. A blank/stale env file must not overwrite the launch token.
+printf '%s\n' \
+  'JARVIS_CONTROL_PLANE_BASE_URL=https://machine.example' \
+  'AUTOWONDER_MCP_TOKEN=machine-mcp-secret' >"$RUNTIME"
+AUTOWONDER_MCP_TOKEN=explicit-mcp-secret \
+  JARVIS_INTERACTIVE_BOOTSTRAP_ENV="$TMP/missing-bootstrap.env" \
+  JARVIS_INTERACTIVE_BRIDGE_ENV="$TMP/missing-bridge.env" \
+  XDG_CONFIG_HOME="$TMP/config" HOME="$TMP" \
+  bash -c 'source "$1"; jarvis_load_runtime_config; \
+    test "$AUTOWONDER_MCP_TOKEN" = explicit-mcp-secret' \
+  _ "$ROOT/bootstrap/runtime-config.sh"
+
 chmod 644 "$RUNTIME"
 if env -u JARVIS_CONTROL_PLANE_TOKEN -u JARVIS_CONTROL_PLANE_ADMIN_TOKEN \
     XDG_CONFIG_HOME="$TMP/config" HOME="$TMP" \

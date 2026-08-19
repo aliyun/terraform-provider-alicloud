@@ -18,6 +18,28 @@ CloudSpec IDL 机器人能力由仓库内锁定快照提供；首次执行 Terra
 
 钉钉数字员工还需 `cp bridge/jarvis.env.example bridge/jarvis.env`，填钉钉 appKey/appSecret/卡片模板 id。
 
+### AutoWonder MCP
+
+Jarvis 的 Claude 与 Codex 项目配置都已声明 AutoWonder Streamable HTTP MCP。令牌不入库：
+在 AutoWonder 的个人设置中创建长期 MCP Token，把它写入 gitignored 的
+`bootstrap/.env`：
+
+```bash
+AUTOWONDER_MCP_TOKEN=awmcp_xxx
+```
+
+`bridge/run.sh` 会自动加载并导出该文件，因此常驻 Jarvis 无需反复提供登录
+`accessToken`。当面启动 Claude/Codex 时，应先把同一变量导出到启动进程环境；例如：
+
+```bash
+set -a; source bootstrap/.env; set +a
+claude                 # 或 codex
+```
+
+Claude 只批准仓库声明的 `autowonder` server；Codex 从项目级 `.codex/config.toml`
+读取同名 server。两者都只在请求时从 `AUTOWONDER_MCP_TOKEN` 读取 Bearer token；
+未配置时仅该 MCP 连接不可用，不阻断 Jarvis 的其他能力。
+
 ## 启动
 
 **当面用** —— 进目录起会话，CLAUDE.md 接管（preflight → 等任务，单条工单/即时任务按 loops 处理）：
