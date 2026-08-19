@@ -1,4 +1,7 @@
 {
+  "enabledMcpjsonServers": [
+    "autowonder"
+  ],
   "hooks": {
     "SessionStart": [
       {

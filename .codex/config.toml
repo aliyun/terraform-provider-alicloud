@@ -1,0 +1,4 @@
+[mcp_servers.autowonder]
+url = "https://auto-wonder.alibaba.net/api/mcp"
+bearer_token_env_var = "AUTOWONDER_MCP_TOKEN"
+enabled = true
