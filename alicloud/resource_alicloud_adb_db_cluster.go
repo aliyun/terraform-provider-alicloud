@@ -202,6 +202,65 @@ func resourceAliCloudAdbDbCluster() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
+			"backup_set_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"restore_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"source_db_instance_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"restore_time": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"storage_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"db_cluster_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"storage_resource": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"executor_count": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"period_unit": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"Year", "Month"}, false),
+			},
+			"db_cluster_ip_array_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"db_cluster_ip_array_attribute": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"modify_mode": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"tags": tagsSchema(),
 			"connection_string": {
 				Type:     schema.TypeString,
@@ -328,6 +387,28 @@ func resourceAliCloudAdbDbClusterCreate(d *schema.ResourceData, meta interface{}
 		request["EnableSSL"] = v
 	}
 
+	if v, ok := d.GetOk("backup_set_id"); ok && v.(string) != "" {
+		request["BackupSetID"] = v
+	}
+	if v, ok := d.GetOk("storage_type"); ok && v.(string) != "" {
+		request["StorageType"] = v
+	}
+	if v, ok := d.GetOk("restore_type"); ok && v.(string) != "" {
+		request["RestoreType"] = v
+	}
+	if v, ok := d.GetOk("source_db_instance_name"); ok && v.(string) != "" {
+		request["SourceDBInstanceName"] = v
+	}
+	if v, ok := d.GetOk("storage_resource"); ok && v.(string) != "" {
+		request["StorageResource"] = v
+	}
+	if v, ok := d.GetOk("executor_count"); ok && v.(string) != "" {
+		request["ExecutorCount"] = v
+	}
+	if v, ok := d.GetOk("restore_time"); ok && v.(string) != "" {
+		request["RestoreTime"] = v
+	}
+
 	request["ClientToken"] = buildClientToken("CreateDBCluster")
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
@@ -394,6 +475,9 @@ func resourceAliCloudAdbDbClusterRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("db_cluster_version", object["DBVersion"])
 	d.Set("disk_encryption", object["DiskEncryption"])
 	d.Set("kms_id", object["KmsId"])
+	d.Set("db_cluster_name", object["DBClusterName"])
+	d.Set("executor_count", object["ExecutorCount"])
+	d.Set("storage_resource", object["StorageResource"])
 
 	if object["PayType"].(string) == string(Prepaid) {
 		describeAutoRenewAttributeObject, err := adbService.DescribeAutoRenewAttribute(d.Id())
@@ -414,6 +498,7 @@ func resourceAliCloudAdbDbClusterRead(d *schema.ResourceData, meta interface{}) 
 		//}
 		//d.Set("period", period)
 		d.Set("renewal_status", describeAutoRenewAttributeObject["RenewalStatus"])
+		d.Set("period_unit", describeAutoRenewAttributeObject["PeriodUnit"])
 	}
 
 	describeDBClusterAccessWhiteListObject, err := adbService.DescribeDBClusterAccessWhiteList(d.Id())
@@ -422,6 +507,7 @@ func resourceAliCloudAdbDbClusterRead(d *schema.ResourceData, meta interface{}) 
 	}
 
 	d.Set("security_ips", strings.Split(describeDBClusterAccessWhiteListObject["SecurityIPList"].(string), ","))
+	d.Set("db_cluster_ip_array_name", describeDBClusterAccessWhiteListObject["DBClusterIPArrayName"])
 
 	sslObject, err := adbService.DescribeAdbDbClusterSSL(d.Id())
 	if err != nil {
@@ -594,7 +680,7 @@ func resourceAliCloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}
 		"DBClusterId": d.Id(),
 	}
 	request["RegionId"] = client.RegionId
-	if (d.Get("pay_type").(string) == string(PrePaid) || d.Get("payment_type").(string) == "Subscription") && d.HasChange("auto_renew_period") {
+	if (d.Get("pay_type").(string) == string(PrePaid) || d.Get("payment_type").(string) == "Subscription") && (d.HasChange("auto_renew_period") || d.HasChange("period_unit")) {
 		update = true
 		if d.Get("renewal_status").(string) == string(RenewAutoRenewal) {
 			period := d.Get("auto_renew_period").(int)
@@ -603,6 +689,14 @@ func resourceAliCloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}
 			if period > 9 {
 				request["Duration"] = strconv.Itoa(period / 12)
 				request["PeriodUnit"] = string(Year)
+			}
+			if v, ok := d.GetOk("period_unit"); ok && v.(string) != "" {
+				request["PeriodUnit"] = v
+				if v.(string) == string(Year) {
+					request["Duration"] = strconv.Itoa(period / 12)
+				} else {
+					request["Duration"] = strconv.Itoa(period)
+				}
 			}
 		}
 	}
@@ -637,16 +731,26 @@ func resourceAliCloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}
 
 		d.SetPartial("auto_renew_period")
 		d.SetPartial("renewal_status")
+		d.SetPartial("period_unit")
 	}
 
 	update = false
 	modifyDBClusterAccessWhiteListReq := map[string]interface{}{
 		"DBClusterId": d.Id(),
 	}
-	if d.HasChange("security_ips") {
+	if d.HasChange("security_ips") || d.HasChange("db_cluster_ip_array_name") || d.HasChange("db_cluster_ip_array_attribute") || d.HasChange("modify_mode") {
 		update = true
 	}
 	modifyDBClusterAccessWhiteListReq["SecurityIps"] = convertListToCommaSeparate(d.Get("security_ips").(*schema.Set).List())
+	if v, ok := d.GetOk("db_cluster_ip_array_name"); ok && v.(string) != "" {
+		modifyDBClusterAccessWhiteListReq["DBClusterIPArrayName"] = v
+	}
+	if v, ok := d.GetOk("db_cluster_ip_array_attribute"); ok && v.(string) != "" {
+		modifyDBClusterAccessWhiteListReq["DBClusterIPArrayAttribute"] = v
+	}
+	if v, ok := d.GetOk("modify_mode"); ok && v.(string) != "" {
+		modifyDBClusterAccessWhiteListReq["ModifyMode"] = v
+	}
 	if update {
 		action := "ModifyDBClusterAccessWhiteList"
 		if modifyDBClusterAccessWhiteListReq["SecurityIps"].(string) == "" {
@@ -672,6 +776,9 @@ func resourceAliCloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}
 		}
 
 		d.SetPartial("security_ips")
+		d.SetPartial("db_cluster_ip_array_name")
+		d.SetPartial("db_cluster_ip_array_attribute")
+		d.SetPartial("modify_mode")
 	}
 
 	update = false
@@ -697,6 +804,14 @@ func resourceAliCloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}
 	if !d.IsNewResource() && d.HasChange("elastic_io_resource") {
 		update = true
 		modifyDBClusterReq["ElasticIOResource"] = d.Get("elastic_io_resource")
+	}
+	if !d.IsNewResource() && d.HasChange("executor_count") {
+		update = true
+		modifyDBClusterReq["ExecutorCount"] = d.Get("executor_count")
+	}
+	if !d.IsNewResource() && d.HasChange("storage_resource") {
+		update = true
+		modifyDBClusterReq["StorageResource"] = d.Get("storage_resource")
 	}
 
 	object, err := adbService.DescribeAdbDbCluster(d.Id())
@@ -757,6 +872,8 @@ func resourceAliCloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}
 		d.SetPartial("db_node_count")
 		d.SetPartial("elastic_io_resource")
 		d.SetPartial("elastic_io_resource_size")
+		d.SetPartial("executor_count")
+		d.SetPartial("storage_resource")
 	}
 
 	update = false
