@@ -1005,7 +1005,7 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 				response, err := client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
 				if err != nil {
-					if NeedRetry(err) {
+					if NeedRetry(err) || IsExpectedErrors(err, []string{"TaskExists", "OperationDenied.DBClusterStatus"}) {
 						wait()
 						return resource.RetryableError(err)
 					}
