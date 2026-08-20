@@ -125,7 +125,7 @@ func TestAccAliCloudRealtimeComputeVvpInstance_basic4636(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"duration", "pricing_cycle", "zone_id"},
+				ImportStateVerifyIgnore: []string{"auto_renew_duration", "duration", "pricing_cycle", "renew_status", "renewal_duration_unit", "zone_id"},
 			},
 		},
 	})
@@ -210,10 +210,13 @@ func TestAccAliCloudRealtimeComputeVvpInstance_basic4594(t *testing.T) {
 					"vpc_id":            "${data.alicloud_vpcs.default.ids.0}",
 					"vswitch_ids": []string{
 						"${data.alicloud_vswitches.default.ids.0}"},
-					"zone_id":       "cn-hangzhou-i",
-					"payment_type":  "Subscription",
-					"pricing_cycle": "Month",
-					"duration":      "1",
+					"zone_id":               "cn-hangzhou-i",
+					"payment_type":          "Subscription",
+					"pricing_cycle":         "Month",
+					"duration":              "1",
+					"renew_status":          "AutoRenewal",
+					"auto_renew_duration":   1,
+					"renewal_duration_unit": "M",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -234,6 +237,7 @@ func TestAccAliCloudRealtimeComputeVvpInstance_basic4594(t *testing.T) {
 							"memory_gb": "16",
 						},
 					},
+					"auto_renew_duration": 2,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{}),
@@ -243,7 +247,7 @@ func TestAccAliCloudRealtimeComputeVvpInstance_basic4594(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"duration", "pricing_cycle", "zone_id"},
+				ImportStateVerifyIgnore: []string{"auto_renew_duration", "duration", "pricing_cycle", "renew_status", "renewal_duration_unit", "zone_id"},
 			},
 		},
 	})
@@ -334,7 +338,7 @@ func TestAccAliCloudRealtimeComputeVvpInstance_basic4636_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"duration", "pricing_cycle", "zone_id"},
+				ImportStateVerifyIgnore: []string{"auto_renew_duration", "duration", "pricing_cycle", "renew_status", "renewal_duration_unit", "zone_id"},
 			},
 		},
 	})
@@ -405,7 +409,7 @@ func TestAccAliCloudRealtimeComputeVvpInstance_basic4594_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"duration", "pricing_cycle", "zone_id"},
+				ImportStateVerifyIgnore: []string{"auto_renew_duration", "duration", "pricing_cycle", "renew_status", "renewal_duration_unit", "zone_id"},
 			},
 		},
 	})
