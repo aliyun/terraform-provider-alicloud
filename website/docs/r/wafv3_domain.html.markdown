@@ -232,7 +232,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-WAFV3 Domain can be imported using the id, e.g.
+WAFV3 Domain can be imported using the id, which consists of instance_id and domain, e.g.
 
 ```shell
 $ terraform import alicloud_wafv3_domain.example <instance_id>:<domain>

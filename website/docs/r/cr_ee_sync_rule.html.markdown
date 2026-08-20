@@ -146,7 +146,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Container Registry Sync Rule can be imported using the id, e.g.
+Container Registry Sync Rule can be imported using the id, which consists of instance_id, namespace_name and repo_sync_rule_id, e.g.
 
 ```shell
 $ terraform import alicloud_cr_ee_sync_rule.example <instance_id>:<namespace_name>:<repo_sync_rule_id>

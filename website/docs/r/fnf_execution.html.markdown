@@ -102,7 +102,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Serverless Workflow Execution can be imported using the id, e.g.
+Serverless Workflow Execution can be imported using the id, which consists of flow_name and execution_name, e.g.
 
 ```shell
 $ terraform import alicloud_fnf_execution.example <flow_name>:<execution_name>

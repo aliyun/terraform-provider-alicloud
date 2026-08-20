@@ -161,7 +161,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-ESA Origin Pool can be imported using the id, e.g.
+ESA Origin Pool can be imported using the id, which consists of site_id and origin_pool_id, e.g.
 
 ```shell
 $ terraform import alicloud_esa_origin_pool.example <site_id>:<origin_pool_id>

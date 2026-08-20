@@ -71,7 +71,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-OSS Bucket Cname Token can be imported using the id, e.g.
+OSS Bucket Cname Token can be imported using the id, which consists of bucket and domain, e.g.
 
 ```shell
 $ terraform import alicloud_oss_bucket_cname_token.example <bucket>:<domain>

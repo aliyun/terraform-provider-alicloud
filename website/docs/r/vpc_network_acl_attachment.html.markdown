@@ -77,7 +77,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-VPC Network Acl Attachment can be imported using the id, e.g.
+VPC Network Acl Attachment can be imported using the id, which consists of network_acl_id and resource_id, e.g.
 
 ```shell
 $ terraform import alicloud_vpc_network_acl_attachment.example <network_acl_id>:<resource_id>

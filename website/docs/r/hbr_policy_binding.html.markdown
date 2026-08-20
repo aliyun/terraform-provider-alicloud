@@ -136,7 +136,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Hybrid Backup Recovery (HBR) Policy Binding can be imported using the id, e.g.
+Hybrid Backup Recovery (HBR) Policy Binding can be imported using the id, which consists of policy_id, source_type and data_source_id, e.g.
 
 ```shell
 $ terraform import alicloud_hbr_policy_binding.example <policy_id>:<source_type>:<data_source_id>

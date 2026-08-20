@@ -75,7 +75,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Max Compute Tenant Role User Attachment can be imported using the id, e.g.
+Max Compute Tenant Role User Attachment can be imported using the id, which consists of account_id and tenant_role, e.g.
 
 ```shell
 $ terraform import alicloud_max_compute_tenant_role_user_attachment.example <account_id>:<tenant_role>

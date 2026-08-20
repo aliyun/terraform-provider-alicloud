@@ -95,7 +95,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-File Storage (NAS) Fileset can be imported using the id, e.g.
+File Storage (NAS) Fileset can be imported using the id, which consists of file_system_id and fileset_id, e.g.
 
 ```shell
 $ terraform import alicloud_nas_fileset.example <file_system_id>:<fileset_id>

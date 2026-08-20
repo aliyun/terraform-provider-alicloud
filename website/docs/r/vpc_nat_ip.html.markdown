@@ -103,7 +103,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Nat Gateway Nat Ip can be imported using the id, e.g.
+Nat Gateway Nat Ip can be imported using the id, which consists of nat_gateway_id and nat_ip_id, e.g.
 
 ```shell
 $ terraform import alicloud_vpc_nat_ip.example <nat_gateway_id>:<nat_ip_id>

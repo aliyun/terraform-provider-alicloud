@@ -114,7 +114,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-VPC Route Entry can be imported using the id, e.g.
+VPC Route Entry can be imported using the id, which consists of route_table_id and destination_cidr_block, e.g.
 
 ```shell
 $ terraform import alicloud_vpc_route_entry.example <route_table_id>:<destination_cidr_block>

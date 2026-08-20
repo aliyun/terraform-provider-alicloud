@@ -152,7 +152,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-ADB Lake Account can be imported using the id, e.g.
+ADB Lake Account can be imported using the id, which consists of db_cluster_id and account_name, e.g.
 
 ```shell
 $ terraform import alicloud_adb_lake_account.example <db_cluster_id>:<account_name>

@@ -107,7 +107,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Cloud SSO Access Assignment can be imported using the id, e.g.
+Cloud SSO Access Assignment can be imported using the id, which consists of directory_id, access_configuration_id, target_type, target_id, principal_type and principal_id, e.g.
 
 ```shell
 $ terraform import alicloud_cloud_sso_access_assignment.example <directory_id>:<access_configuration_id>:<target_type>:<target_id>:<principal_type>:<principal_id>

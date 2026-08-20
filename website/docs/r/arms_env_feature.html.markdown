@@ -137,7 +137,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-ARMS Env Feature can be imported using the id, e.g.
+ARMS Env Feature can be imported using the id, which consists of environment_id and env_feature_name, e.g.
 
 ```shell
 $ terraform import alicloud_arms_env_feature.example <environment_id>:<env_feature_name>

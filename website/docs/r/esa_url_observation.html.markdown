@@ -75,7 +75,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-ESA Url Observation can be imported using the id, e.g.
+ESA Url Observation can be imported using the id, which consists of site_id and config_id, e.g.
 
 ```shell
 $ terraform import alicloud_esa_url_observation.example <site_id>:<config_id>

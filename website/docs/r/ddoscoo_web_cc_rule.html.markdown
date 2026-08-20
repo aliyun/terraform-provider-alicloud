@@ -184,7 +184,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-DdosCoo Web Cc Rule can be imported using the id, e.g.
+DdosCoo Web Cc Rule can be imported using the id, which consists of domain and name, e.g.
 
 ```shell
 $ terraform import alicloud_ddoscoo_web_cc_rule.example <domain>:<name>

@@ -79,7 +79,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-ESA Origin Client Certificate can be imported using the id, e.g.
+ESA Origin Client Certificate can be imported using the id, which consists of site_id and origin_client_certificate_id, e.g.
 
 ```shell
 $ terraform import alicloud_esa_origin_client_certificate.example <site_id>:<origin_client_certificate_id>

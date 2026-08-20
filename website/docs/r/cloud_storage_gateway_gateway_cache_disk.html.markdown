@@ -92,7 +92,7 @@ The following attributes are exported:
 
 ## Import
 
-Cloud Storage Gateway Gateway Cache Disk can be imported using the id, e.g.
+Cloud Storage Gateway Gateway Cache Disk can be imported using the id, which consists of gateway_id, cache_id and local_file_path, e.g.
 
 ```shell
 $ terraform import alicloud_cloud_storage_gateway_gateway_cache_disk.example <gateway_id>:<cache_id>:<local_file_path>

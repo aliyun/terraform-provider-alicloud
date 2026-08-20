@@ -95,7 +95,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-CR Scan Rule can be imported using the id, e.g.
+CR Scan Rule can be imported using the id, which consists of instance_id and scan_rule_id, e.g.
 
 ```shell
 $ terraform import alicloud_cr_scan_rule.example <instance_id>:<scan_rule_id>

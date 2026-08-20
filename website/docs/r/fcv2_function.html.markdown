@@ -422,7 +422,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-FCV2 Function can be imported using the id, e.g.
+FCV2 Function can be imported using the id, which consists of service_name and function_name, e.g.
 
 ```shell
 $ terraform import alicloud_fcv2_function.example <service_name>:<function_name>

@@ -118,7 +118,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-ESA Http Request Header Modification Rule can be imported using the id, e.g.
+ESA Http Request Header Modification Rule can be imported using the id, which consists of site_id and config_id, e.g.
 
 ```shell
 $ terraform import alicloud_esa_http_request_header_modification_rule.example <site_id>:<config_id>

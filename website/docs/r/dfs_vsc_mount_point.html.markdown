@@ -86,7 +86,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Apsara File Storage for HDFS (DFS) Vsc Mount Point can be imported using the id, e.g.
+Apsara File Storage for HDFS (DFS) Vsc Mount Point can be imported using the id, which consists of file_system_id and mount_point_id, e.g.
 
 ```shell
 $ terraform import alicloud_dfs_vsc_mount_point.example <file_system_id>:<mount_point_id>

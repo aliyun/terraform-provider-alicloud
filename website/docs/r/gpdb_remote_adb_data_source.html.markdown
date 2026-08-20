@@ -146,7 +146,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-GPDB Remote ADB Data Source can be imported using the id, e.g.
+GPDB Remote ADB Data Source can be imported using the id, which consists of local_db_instance_id and remote_adb_data_source_id, e.g.
 
 ```shell
 $ terraform import alicloud_gpdb_remote_adb_data_source.example <local_db_instance_id>:<remote_adb_data_source_id>

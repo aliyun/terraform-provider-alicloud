@@ -83,7 +83,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Global Accelerator (GA) Accelerator Spare Ip Attachment can be imported using the id, e.g.
+Global Accelerator (GA) Accelerator Spare Ip Attachment can be imported using the id, which consists of accelerator_id and spare_ip, e.g.
 
 ```shell
 $ terraform import alicloud_ga_accelerator_spare_ip_attachment.example <accelerator_id>:<spare_ip>

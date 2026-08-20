@@ -101,7 +101,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-ESA Network Optimization can be imported using the id, e.g.
+ESA Network Optimization can be imported using the id, which consists of site_id and config_id, e.g.
 
 ```shell
 $ terraform import alicloud_esa_network_optimization.example <site_id>:<config_id>

@@ -127,7 +127,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Cloud Monitor Service Group Monitoring Agent Process can be imported using the id, e.g.
+Cloud Monitor Service Group Monitoring Agent Process can be imported using the id, which consists of group_id and group_monitoring_agent_process_id, e.g.
 
 ```shell
 $ terraform import alicloud_cloud_monitor_service_group_monitoring_agent_process.example <group_id>:<group_monitoring_agent_process_id>

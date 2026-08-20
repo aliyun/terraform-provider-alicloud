@@ -229,7 +229,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-CDDC Dedicated Propre Host can be imported using the id, e.g.
+CDDC Dedicated Propre Host can be imported using the id, which consists of dedicated_host_group_id and ecs_instance_id, e.g.
 
 ```shell
 $ terraform import alicloud_cddc_dedicated_propre_host.example <dedicated_host_group_id>:<ecs_instance_id>

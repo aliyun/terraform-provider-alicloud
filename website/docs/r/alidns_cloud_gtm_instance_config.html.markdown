@@ -98,7 +98,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Alidns Cloud Gtm Instance Config can be imported using the id, e.g.
+Alidns Cloud Gtm Instance Config can be imported using the id, which consists of config_id and instance_id, e.g.
 
 ```shell
 $ terraform import alicloud_alidns_cloud_gtm_instance_config.example <config_id>:<instance_id>

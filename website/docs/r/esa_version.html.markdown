@@ -76,7 +76,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-ESA Site Version can be imported using the id, e.g.
+ESA Site Version can be imported using the id, which consists of site_id and site_version, e.g.
 
 ```shell
 $ terraform import alicloud_esa_version.example <site_id>:<site_version>

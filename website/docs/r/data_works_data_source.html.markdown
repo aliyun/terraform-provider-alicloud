@@ -95,7 +95,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Data Works Data Source can be imported using the id, e.g.
+Data Works Data Source can be imported using the id, which consists of project_id and data_source_id, e.g.
 
 ```shell
 $ terraform import alicloud_data_works_data_source.example <project_id>:<data_source_id>

@@ -68,7 +68,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Global Accelerator (GA) Acl Entry Attachment can be imported using the id, e.g.
+Global Accelerator (GA) Acl Entry Attachment can be imported using the id, which consists of acl_id and entry, e.g.
 
 ```shell
 $ terraform import alicloud_ga_acl_entry_attachment.example <acl_id>:<entry>

@@ -75,7 +75,7 @@ The following attributes are exported:
 
 ## Import
 
-Container Registry Enterprise Edition Namespace can be imported using the id, e.g.
+Container Registry Enterprise Edition Namespace can be imported using the id, which consists of instance_id and name, e.g.
 
 ```shell
 $ terraform import alicloud_cr_ee_namespace.example <instance_id>:<name>

@@ -99,7 +99,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Schedulerx App Group can be imported using the id, e.g.
+Schedulerx App Group can be imported using the id, which consists of namespace and group_id, e.g.
 
 ```shell
 $ terraform import alicloud_schedulerx_app_group.example <namespace>:<group_id>

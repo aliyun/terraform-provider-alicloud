@@ -1114,7 +1114,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Container Service for Kubernetes (ACK) Nodepool can be imported using the id, e.g.
+Container Service for Kubernetes (ACK) Nodepool can be imported using the id, which consists of cluster_id and node_pool_id, e.g.
 
 ```shell
 $ terraform import alicloud_cs_kubernetes_node_pool.example <cluster_id>:<node_pool_id>

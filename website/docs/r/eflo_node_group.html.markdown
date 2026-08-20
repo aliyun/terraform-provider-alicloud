@@ -283,7 +283,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Eflo Node Group can be imported using the id, e.g.
+Eflo Node Group can be imported using the id, which consists of cluster_id and node_group_id, e.g.
 
 ```shell
 $ terraform import alicloud_eflo_node_group.example <cluster_id>:<node_group_id>

@@ -134,7 +134,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Log Service (SLS) Logtail Pipeline Config can be imported using the id, e.g.
+Log Service (SLS) Logtail Pipeline Config can be imported using the id, which consists of project and config_name, e.g.
 
 ```shell
 $ terraform import alicloud_sls_logtail_pipeline_config.example <project>:<config_name>

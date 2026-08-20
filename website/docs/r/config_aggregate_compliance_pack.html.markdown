@@ -130,7 +130,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Cloud Config Aggregate Compliance Pack can be imported using the id, e.g.
+Cloud Config Aggregate Compliance Pack can be imported using the id, which consists of aggregator_id and aggregator_compliance_pack_id, e.g.
 
 ```shell
 $ terraform import alicloud_config_aggregate_compliance_pack.example <aggregator_id>:<aggregator_compliance_pack_id>

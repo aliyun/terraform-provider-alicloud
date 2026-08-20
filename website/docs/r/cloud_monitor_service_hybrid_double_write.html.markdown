@@ -74,7 +74,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Cloud Monitor Service Hybrid Double Write can be imported using the id, e.g.
+Cloud Monitor Service Hybrid Double Write can be imported using the id, which consists of source_namespace and source_user_id, e.g.
 
 ```shell
 $ terraform import alicloud_cloud_monitor_service_hybrid_double_write.example <source_namespace>:<source_user_id>

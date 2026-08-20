@@ -81,7 +81,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Max Compute Role can be imported using the id, e.g.
+Max Compute Role can be imported using the id, which consists of project_name and role_name, e.g.
 
 ```shell
 $ terraform import alicloud_max_compute_role.example <project_name>:<role_name>

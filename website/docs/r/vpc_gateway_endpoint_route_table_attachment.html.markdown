@@ -89,7 +89,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-VPC Gateway Endpoint Route Table Attachment can be imported using the id, e.g.
+VPC Gateway Endpoint Route Table Attachment can be imported using the id, which consists of gateway_endpoint_id and route_table_id, e.g.
 
 ```shell
 $ terraform import alicloud_vpc_gateway_endpoint_route_table_attachment.example <gateway_endpoint_id>:<route_table_id>

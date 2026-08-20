@@ -94,7 +94,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Cloud Enterprise Network (CEN) Private Zone can be imported using the id, e.g.
+Cloud Enterprise Network (CEN) Private Zone can be imported using the id, which consists of cen_id and access_region_id, e.g.
 
 ```shell
 $ terraform import alicloud_cen_private_zone.example <cen_id>:<access_region_id>

@@ -97,7 +97,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Express Connect Traffic Qos Queue can be imported using the id, e.g.
+Express Connect Traffic Qos Queue can be imported using the id, which consists of qos_id and queue_id, e.g.
 
 ```shell
 $ terraform import alicloud_express_connect_traffic_qos_queue.example <qos_id>:<queue_id>

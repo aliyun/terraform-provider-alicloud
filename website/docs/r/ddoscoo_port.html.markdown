@@ -93,7 +93,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Ddos Coo Port can be imported using the id, e.g.
+Ddos Coo Port can be imported using the id, which consists of instance_id, frontend_port and frontend_protocol, e.g.
 
 ```shell
 $ terraform import alicloud_ddoscoo_port.example <instance_id>:<frontend_port>:<frontend_protocol>

@@ -100,7 +100,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-AnalyticDB for PostgreSQL (GPDB) Db Resource Group can be imported using the id, e.g.
+AnalyticDB for PostgreSQL (GPDB) Db Resource Group can be imported using the id, which consists of db_instance_id and resource_group_name, e.g.
 
 ```shell
 $ terraform import alicloud_gpdb_db_resource_group.example <db_instance_id>:<resource_group_name>

@@ -172,7 +172,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Global Accelerator (GA) Additional Certificate can be imported using the id, e.g.
+Global Accelerator (GA) Additional Certificate can be imported using the id, which consists of accelerator_id, listener_id and domain, e.g.
 
 ```shell
 $ terraform import alicloud_ga_additional_certificate.example <accelerator_id>:<listener_id>:<domain>

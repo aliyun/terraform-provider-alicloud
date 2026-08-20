@@ -86,7 +86,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-ENS Instance Security Group Attachment can be imported using the id, e.g.
+ENS Instance Security Group Attachment can be imported using the id, which consists of instance_id and security_group_id, e.g.
 
 ```shell
 $ terraform import alicloud_ens_instance_security_group_attachment.example <instance_id>:<security_group_id>

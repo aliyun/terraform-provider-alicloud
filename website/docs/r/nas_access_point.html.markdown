@@ -142,7 +142,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-File Storage (NAS) Access Point can be imported using the id, e.g.
+File Storage (NAS) Access Point can be imported using the id, which consists of file_system_id and access_point_id, e.g.
 
 ```shell
 $ terraform import alicloud_nas_access_point.example <file_system_id>:<access_point_id>

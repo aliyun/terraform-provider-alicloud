@@ -96,7 +96,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Data Works Data Source Shared Rule can be imported using the id, e.g.
+Data Works Data Source Shared Rule can be imported using the id, which consists of data_source_id and data_source_shared_rule_id, e.g.
 
 ```shell
 $ terraform import alicloud_data_works_data_source_shared_rule.example <data_source_id>:<data_source_shared_rule_id>
