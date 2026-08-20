@@ -121,6 +121,7 @@ The following arguments are supported:
 * `account_privileges` - (Optional) List of permissions granted. See [`account_privileges`](#account_privileges) below.
 * `account_type` - (Optional, ForceNew) The type of the account.
 * `db_cluster_id` - (Required, ForceNew) The DBCluster ID.
+* `engine` - (Optional, ForceNew) The engine type of the account. Valid values: `AnalyticDB` (default): the AnalyticDB MySQL engine. `Clickhouse`: the wide-table engine. This attribute can be configured at creation but is not returned by the remote API for default-engine accounts, so it may not be read back during import.
 * `ram_user_list` - (Optional, List, Available since v1.274.0) List of Alibaba Cloud RAM user IDs to bind.
 
 ### `account_privileges`
