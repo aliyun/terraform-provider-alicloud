@@ -5,7 +5,9 @@ before:
     # this is just an example and not a requirement for provider building/publishing
     - go mod tidy
 builds:
-  - env:
+  # ───────── Terraform Provider binary (original) ─────────
+  - id: provider
+    env:
       # goreleaser does not work with CGO, it could also complicate
       # usage by users in CI/CD systems like Terraform Cloud where
       # they are unable to install libraries.
@@ -33,11 +35,79 @@ builds:
       - goarch: arm64
         goos: windows
     binary: '{{ .ProjectName }}_v{{ .Version }}'
+
+  # ───────── estimate-cost: terraform wrapper ─────────
+  # Once installed, users get cost-estimation output simply by running
+  # `terraform plan --estimate-cost`.
+  - id: terraform-wrapper
+    main: ./estimate-cost/cmd/terraform-wrapper/
+    env:
+      - CGO_ENABLED=0
+    mod_timestamp: '{{ .CommitTimestamp }}'
+    flags:
+      - -trimpath
+    ldflags:
+      - '-s -w -X main.version={{.Version}}'
+    goos:
+      - windows
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goarch: arm64
+        goos: windows
+    binary: terraform-wrapper
+
+  # ───────── estimate-cost: pricing engine ─────────
+  # Pricing engine; invoked by the wrapper via exec. Bundles the full
+  # mapping set via go:embed.
+  - id: estimate-cost
+    main: ./estimate-cost/cmd/estimate-cost/
+    env:
+      - CGO_ENABLED=0
+    mod_timestamp: '{{ .CommitTimestamp }}'
+    flags:
+      - -trimpath
+    ldflags:
+      - '-s -w -X main.version={{.Version}}'
+    goos:
+      - windows
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goarch: arm64
+        goos: windows
+    binary: estimate-cost
+
 archives:
-  - files:
+  # ───────── Provider archive (original, unchanged) ─────────
+  - id: provider
+    builds: [provider]
+    files:
       - none*
     format: zip
     name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
+
+  # ───────── estimate-cost archive (new) ─────────
+  # A single archive bundles both binaries — the wrapper and the engine.
+  # Users extract them and drop them into a directory that comes before the
+  # real `terraform` in PATH to enable the --estimate-cost flag.
+  - id: estimate-cost
+    builds: [terraform-wrapper, estimate-cost]
+    files:
+      - estimate-cost/README.md
+      - LICENSE
+    format: tar.gz
+    format_overrides:
+      - goos: windows
+        format: zip
+    name_template: 'alicloud-tf-estimate-cost_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
+
 checksum:
   name_template: '{{ .ProjectName }}_{{ .Version }}_SHA256SUMS'
   algorithm: sha256
