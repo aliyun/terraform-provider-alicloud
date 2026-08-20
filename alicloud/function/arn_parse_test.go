@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	tffunction "github.com/aliyun/terraform-provider-alicloud/alicloud/function"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/function"
@@ -204,7 +205,7 @@ func TestARNParseFunction_HCL(t *testing.T) {
 		TerraformVersionChecks: []tfversion.TerraformVersionCheck{
 			tfversion.SkipBelow(tfversion.Version1_8_0),
 		},
-		ProtoV5ProviderFactories: protoV5ProviderFactories(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config: arnParseHCLConfig,

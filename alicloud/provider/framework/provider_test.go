@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/framework"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 )
@@ -16,15 +16,14 @@ import (
 // provider-defined functions over the wire, through the same muxed server main.go
 // builds. Each function's own unit tests exercise its implementation directly, so none
 // of them notices if the registration in alicloudProvider.Functions is dropped. The HCL
-// tests in alicloud/function do, but they need a terraform binary on PATH and they serve
-// the framework provider on its own rather than the muxed pair. This test needs neither,
-// and it is the only one that pins down the wire signature — parameter names, their
+// tests in alicloud/function do, but they need a terraform binary on PATH. This test does
+// not, and it is the only one that pins down the wire signature — parameter names, their
 // order, and the return type — which a configuration calling the function positionally
 // depends on.
 func TestUnitFrameworkProviderFunctions(t *testing.T) {
 	ctx := context.Background()
 
-	serverFactory, err := framework.ProtoV5ProviderServerFactory(ctx, alicloud.Provider())
+	serverFactory, err := provider.ProtoV5ProviderServerFactory(ctx, alicloud.Provider())
 	if err != nil {
 		t.Fatalf("muxing the SDK v2 and framework providers: %s", err)
 	}

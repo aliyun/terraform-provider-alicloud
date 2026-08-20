@@ -6,7 +6,7 @@ import (
 	"log"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/framework"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5/tf5server"
 )
 
@@ -19,7 +19,7 @@ func main() {
 
 	ctx := context.Background()
 
-	serverFactory, err := framework.ProtoV5ProviderServerFactory(ctx, alicloud.Provider())
+	serverFactory, err := provider.ProtoV5ProviderServerFactory(ctx, alicloud.Provider())
 	if err != nil {
 		log.Fatal(err)
 	}
