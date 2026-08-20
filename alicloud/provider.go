@@ -1335,6 +1335,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_drds_polardbx_instance":                               resourceAliCloudDrdsPolardbxInstance(),
 			"alicloud_gpdb_backup_policy":                                   resourceAliCloudGpdbBackupPolicy(),
 			"alicloud_threat_detection_file_upload_limit":                   resourceAliCloudThreatDetectionFileUploadLimit(),
+			"alicloud_threat_detection_rd_default_sync_list":                resourceAliCloudThreatDetectionRdDefaultSyncList(),
 			"alicloud_threat_detection_client_file_protect":                 resourceAliCloudThreatDetectionClientFileProtect(),
 			"alicloud_rocketmq_topic":                                       resourceAliCloudRocketmqTopic(),
 			"alicloud_rocketmq_consumer_group":                              resourceAliCloudRocketmqConsumerGroup(),
