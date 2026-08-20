@@ -261,7 +261,10 @@ func resourceAliCloudSlsOssExportSinkCreate(d *schema.ResourceData, meta interfa
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.Do("Sls", roaParam("POST", "2020-12-30", "CreateOSSExport", action), query, body, nil, hostMap, false)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"403"}) || NeedRetry(err) {
+			// The SLS project referenced by host may be created asynchronously by
+			// another resource and not be ready yet; retry on 404/ProjectNotExist
+			// so Create waits for the project to become available instead of failing.
+			if IsExpectedErrors(err, []string{"403", "404", "ProjectNotExist"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
