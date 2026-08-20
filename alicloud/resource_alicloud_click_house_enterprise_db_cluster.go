@@ -197,15 +197,67 @@ func resourceAliCloudClickHouseEnterpriseDbCluster() *schema.Resource {
 			"vswitch_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 				ForceNew: true,
 			},
 			"zone_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 				ForceNew: true,
 			},
 		},
 	}
+}
+
+// reorderMultiZonesPrimaryFirst ensures the multi-zone entry whose ZoneId equals
+// the cluster's primary ZoneId is placed at index 0 before the array is
+// serialized as the MultiZone request parameter.
+//
+// For multi-zone deployments the top-level zone_id is NOT forwarded to
+// CreateDBInstance (the multi-zone information is carried entirely by the
+// MultiZone parameter), so the API no longer enforces MultiZone[0] == zone_id.
+// However, ClickHouse still treats MultiZone[0] as the primary zone, so when
+// the user sets the top-level zone_id we normalize the entry matching it to
+// index 0; this keeps the server-selected primary zone aligned with the
+// configuration and avoids a state drift / ForceNew replacement loop on the
+// next plan. multi_zones is modeled as a schema.TypeSet, whose iteration order
+// (Set.List) is hash-based and does not preserve the HCL declaration order, so
+// without this normalization a non-primary zone can be sorted to index 0.
+//
+// When primaryZoneId is empty, the top-level zone_id is not set; the array is
+// returned unchanged so the user-given (Set) order is used as-is and the API
+// performs its own multi-zone handling. When primaryZoneId is set but no
+// multi_zones entry matches it, an error is returned so the user is told to
+// add a multi_zones block whose zone_id matches the top-level zone_id
+// (otherwise the primary zone cannot be aligned with the configuration and the
+// state would drift on every plan).
+func reorderMultiZonesPrimaryFirst(multiZoneMaps []interface{}, primaryZoneId string) ([]interface{}, error) {
+	if primaryZoneId == "" || len(multiZoneMaps) == 0 {
+		return multiZoneMaps, nil
+	}
+	primaryIdx := -1
+	for i, item := range multiZoneMaps {
+		m, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		if zone, _ := m["ZoneId"].(string); zone == primaryZoneId {
+			primaryIdx = i
+			break
+		}
+	}
+	if primaryIdx < 0 {
+		return nil, fmt.Errorf("the top-level zone_id %q is set but is not present in multi_zones; for multi-zone deployments the top-level zone_id is optional and is not sent to the API, but when set it must match one of the multi_zones entries so the primary zone can be normalized to MultiZone[0] and the state stays stable across plans", primaryZoneId)
+	}
+	if primaryIdx == 0 {
+		return multiZoneMaps, nil
+	}
+	reordered := make([]interface{}, 0, len(multiZoneMaps))
+	reordered = append(reordered, multiZoneMaps[primaryIdx])
+	reordered = append(reordered, multiZoneMaps[:primaryIdx]...)
+	reordered = append(reordered, multiZoneMaps[primaryIdx+1:]...)
+	return reordered, nil
 }
 
 func resourceAliCloudClickHouseEnterpriseDbClusterCreate(d *schema.ResourceData, meta interface{}) error {
@@ -247,6 +299,24 @@ func resourceAliCloudClickHouseEnterpriseDbClusterCreate(d *schema.ResourceData,
 			dataLoop1Map["ZoneId"] = dataLoop1Tmp["zone_id"]
 			multiZoneMapsArray = append(multiZoneMapsArray, dataLoop1Map)
 		}
+		// Ensure the primary zone (top-level zone_id, when set) is the first
+		// MultiZone entry. The top-level zone_id is not forwarded to
+		// CreateDBInstance for multi-zone deployments (see below), but
+		// ClickHouse still treats MultiZone[0] as the primary zone, so we
+		// normalize the entry matching the top-level zone_id to index 0 to
+		// keep the server-selected primary zone aligned with the
+		// configuration and avoid state drift. multi_zones is a
+		// schema.TypeSet, whose iteration order is hash-based and does not
+		// preserve the HCL declaration order, so without this normalization a
+		// non-primary zone can end up at index 0.
+		var primaryZoneId string
+		if pz, ok := d.GetOk("zone_id"); ok {
+			primaryZoneId = pz.(string)
+		}
+		multiZoneMapsArray, err = reorderMultiZonesPrimaryFirst(multiZoneMapsArray, primaryZoneId)
+		if err != nil {
+			return WrapError(err)
+		}
 		multiZoneMapsJson, err := json.Marshal(multiZoneMapsArray)
 		if err != nil {
 			return WrapError(err)
@@ -263,11 +333,22 @@ func resourceAliCloudClickHouseEnterpriseDbClusterCreate(d *schema.ResourceData,
 	if v, ok := d.GetOk("vpc_id"); ok {
 		request["VpcId"] = v
 	}
-	if v, ok := d.GetOk("vswitch_id"); ok {
-		request["VswitchId"] = v
-	}
-	if v, ok := d.GetOk("zone_id"); ok {
-		request["ZoneId"] = v
+	// For multi-zone deployments (multi_zones is set), the top-level
+	// vswitch_id and zone_id are NOT sent to CreateDBInstance: the multi-zone
+	// information is carried entirely by the MultiZone parameter. Forwarding
+	// the top-level zone_id alongside MultiZone triggers
+	// InvalidZoneId.InconsistentWithMultiZone because the server requires
+	// MultiZone[0].zone_id to equal the top-level ZoneId, and the
+	// schema.TypeSet iteration order cannot guarantee that ordering. For
+	// single-zone deployments the top-level vswitch_id and zone_id are
+	// forwarded as before.
+	if _, ok := d.GetOk("multi_zones"); !ok {
+		if v, ok := d.GetOk("vswitch_id"); ok {
+			request["VswitchId"] = v
+		}
+		if v, ok := d.GetOk("zone_id"); ok {
+			request["ZoneId"] = v
+		}
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
