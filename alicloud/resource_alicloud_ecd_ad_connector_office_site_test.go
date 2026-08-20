@@ -125,6 +125,7 @@ func TestAccAliCloudECDAdConnectorOfficeSite_basic0(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.CenTRSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -143,7 +144,7 @@ func TestAccAliCloudECDAdConnectorOfficeSite_basic0(t *testing.T) {
 					"enable_admin_access":           "true",
 					"mfa_enabled":                   "true",
 					"domain_password":               "YourPassword1234",
-					"cen_id":                        "${data.alicloud_cen_instances.default.instances.0.id}",
+					"cen_id":                        "${alicloud_cen_instance.default.id}",
 					"desktop_access_type":           "INTERNET",
 					"domain_user_name":              "Administrator",
 				}),
@@ -192,6 +193,7 @@ func TestAccAliCloudECDAdConnectorOfficeSite_basic1(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.CenTRSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -202,7 +204,7 @@ func TestAccAliCloudECDAdConnectorOfficeSite_basic1(t *testing.T) {
 					"ad_connector_office_site_name": name,
 					"cidr_block":                    "10.0.0.0/12",
 					"domain_name":                   "example1234.com",
-					"cen_id":                        "${data.alicloud_cen_instances.default.instances.0.id}",
+					"cen_id":                        "${alicloud_cen_instance.default.id}",
 					"dns_address":                   []string{"127.0.0.2"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -220,6 +222,80 @@ func TestAccAliCloudECDAdConnectorOfficeSite_basic1(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"protocol_type", "verify_code", "specification", "ad_hostname", "cen_owner_id"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudECDAdConnectorOfficeSite_basic2(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ecd_ad_connector_office_site.default"
+	checkoutSupportedRegions(t, true, connectivity.EcdSupportRegions)
+	ra := resourceAttrInit(resourceId, AliCloudECDAdConnectorOfficeSiteMap2)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EcdService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEcdAdConnectorOfficeSite")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%secdadconnectorofficesite%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudECDAdConnectorOfficeSiteBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.CenTRSupportRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ad_connector_office_site_name": name,
+					"cidr_block":                    "10.0.0.0/12",
+					"domain_name":                   "example1234.com",
+					"cen_id":                        "${alicloud_cen_instance.default.id}",
+					"dns_address":                   []string{"127.0.0.2"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ad_connector_office_site_name": name,
+						"cidr_block":                    "10.0.0.0/12",
+						"domain_name":                   "example1234.com",
+						"cen_id":                        CHECKSET,
+						"dns_address.#":                 "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"sso_enabled":                 "true",
+					"enable_cross_desktop_access": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"sso_enabled":                 "true",
+						"enable_cross_desktop_access": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"sso_enabled":                 "false",
+					"enable_cross_desktop_access": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"sso_enabled":                 "false",
+						"enable_cross_desktop_access": "false",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"domain_password", "protocol_type", "verify_code", "specification", "ad_hostname", "cen_owner_id", "ad_connector_office_site_name", "desktop_access_type", "dns_address", "domain_name", "domain_user_name", "mfa_enabled", "sub_domain_dns_address", "sub_domain_name"},
 			},
 		},
 	})
@@ -245,14 +321,32 @@ var AliCloudECDAdConnectorOfficeSiteMap1 = map[string]string{
 	"ad_hostname":         NOSET,
 }
 
+var AliCloudECDAdConnectorOfficeSiteMap2 = map[string]string{
+	"dns_address.#":               CHECKSET,
+	"desktop_access_type":         CHECKSET,
+	"protocol_type":               NOSET,
+	"verify_code":                 NOSET,
+	"status":                      CHECKSET,
+	"ad_hostname":                 NOSET,
+	"cen_owner_id":                NOSET,
+	"sso_enabled":                 CHECKSET,
+	"enable_cross_desktop_access": CHECKSET,
+}
+
 func AliCloudECDAdConnectorOfficeSiteBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
 	variable "name" {
   		default = "%s"
 	}
 
-	data "alicloud_cen_instances" "default" {
-  		name_regex = "no-deleting-cen"
+	resource "alicloud_cen_instance" "default" {
+  		cen_instance_name = var.name
+  		description       = var.name
+	}
+
+	resource "alicloud_cen_transit_router" "default" {
+  		cen_id              = alicloud_cen_instance.default.id
+  		transit_router_name = var.name
 	}
 `, name)
 }
@@ -273,6 +367,7 @@ func TestUnitAliCloudECDAdConnectorOfficeSite(t *testing.T) {
 		"enable_internet_access":        true,
 		"domain_name":                   "CreateEcdAdConnectorOfficeSiteValue",
 		"enable_admin_access":           true,
+		"enable_cross_desktop_access":   true,
 		"mfa_enabled":                   false,
 		"domain_password":               "CreateEcdAdConnectorOfficeSiteValue",
 		"cen_id":                        "CreateEcdAdConnectorOfficeSiteValue",
@@ -282,6 +377,7 @@ func TestUnitAliCloudECDAdConnectorOfficeSite(t *testing.T) {
 		"cen_owner_id":                  "CreateEcdAdConnectorOfficeSiteValue",
 		"protocol_type":                 "CreateEcdAdConnectorOfficeSiteValue",
 		"specification":                 1,
+		"sso_enabled":                   true,
 		"verify_code":                   "CreateEcdAdConnectorOfficeSiteValue",
 	}
 	for key, value := range attributes {
