@@ -18,6 +18,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/stretchr/testify/assert"
@@ -90,14 +91,14 @@ func testSweepGaAccelerator(region string) error {
 				action := "ListIpSets"
 				var resp interface{}
 				wait := incrementalWait(3*time.Second, 3*time.Second)
-				err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+				err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 					response, err := client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 					if err != nil {
 						if NeedRetry(err) || IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.IpSet"}) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					resp, _ = jsonpath.Get("$.IpSets", response)
 					return nil
@@ -110,15 +111,15 @@ func testSweepGaAccelerator(region string) error {
 					}
 					action := "DeleteIpSets"
 					wait := incrementalWait(3*time.Second, 3*time.Second)
-					err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+					err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 						request["ClientToken"] = buildClientToken("DeleteIpSet")
 						response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 						if err != nil {
 							if NeedRetry(err) || IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.IpSet"}) {
 								wait()
-								return resource.RetryableError(err)
+								return retry.RetryableError(err)
 							}
-							return resource.NonRetryableError(err)
+							return retry.NonRetryableError(err)
 						}
 						addDebug(action, resp, request)
 						return nil
@@ -134,14 +135,14 @@ func testSweepGaAccelerator(region string) error {
 				action := "ListEndpointGroups"
 				var resp interface{}
 				wait := incrementalWait(3*time.Second, 3*time.Second)
-				err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+				err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 					response, err := client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 					if err != nil {
 						if NeedRetry(err) || IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.IpSet"}) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					resp, _ = jsonpath.Get("$.EndpointGroups", response)
 					return nil
@@ -154,14 +155,14 @@ func testSweepGaAccelerator(region string) error {
 					}
 					action := "DeleteEndpointGroup"
 					wait := incrementalWait(3*time.Second, 3*time.Second)
-					err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+					err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 						response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 						if err != nil {
 							if NeedRetry(err) || IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.EndPointGroup"}) {
 								wait()
-								return resource.RetryableError(err)
+								return retry.RetryableError(err)
 							}
-							return resource.NonRetryableError(err)
+							return retry.NonRetryableError(err)
 						}
 						addDebug(action, resp, request)
 						return nil
@@ -188,14 +189,14 @@ func testSweepGaAccelerator(region string) error {
 					"RegionId":           client.RegionId,
 				}
 				wait := incrementalWait(3*time.Second, 3*time.Second)
-				err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+				err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 					response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 					if err != nil {
 						if IsExpectedErrors(err, []string{"StateError.BandwidthPackage", "StateError.Accelerator"}) || NeedRetry(err) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					addDebug(action, response, request)
 					return nil
@@ -245,9 +246,9 @@ func TestAccAliCloudGaAccelerator_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -363,9 +364,9 @@ func TestAccAliCloudGaAccelerator_basic0_twin(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -431,9 +432,9 @@ func TestAccAliCloudGaAccelerator_basic1(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -539,9 +540,9 @@ func TestAccAliCloudGaAccelerator_basic1_twin(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

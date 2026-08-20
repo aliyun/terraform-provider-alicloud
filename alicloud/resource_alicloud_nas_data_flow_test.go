@@ -14,6 +14,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/stretchr/testify/assert"
@@ -569,7 +570,7 @@ func TestUnitAlicloudNASDataFlow(t *testing.T) {
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 			return responseMock["UpdateNormal"]("")
 		})
-		patchDescribeNasDataFlow := gomonkey.ApplyMethod(reflect.TypeOf(&NasService{}), "NasDataFlowStateRefreshFunc", func(*NasService, string, []string) resource.StateRefreshFunc {
+		patchDescribeNasDataFlow := gomonkey.ApplyMethod(reflect.TypeOf(&NasService{}), "NasDataFlowStateRefreshFunc", func(*NasService, string, []string) retry.StateRefreshFunc {
 			return func() (interface{}, string, error) {
 				object := map[string]interface{}{
 					"DataFlowId":   "MockDataFlowId",
@@ -594,7 +595,7 @@ func TestUnitAlicloudNASDataFlow(t *testing.T) {
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 			return responseMock["UpdateStatusNormal"]("")
 		})
-		patchDescribeNasDataFlow := gomonkey.ApplyMethod(reflect.TypeOf(&NasService{}), "NasDataFlowStateRefreshFunc", func(*NasService, string, []string) resource.StateRefreshFunc {
+		patchDescribeNasDataFlow := gomonkey.ApplyMethod(reflect.TypeOf(&NasService{}), "NasDataFlowStateRefreshFunc", func(*NasService, string, []string) retry.StateRefreshFunc {
 			return func() (interface{}, string, error) {
 				object := map[string]interface{}{
 					"DataFlowId":   "MockDataFlowId",

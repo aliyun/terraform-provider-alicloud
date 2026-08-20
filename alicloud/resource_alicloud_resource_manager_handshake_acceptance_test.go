@@ -12,6 +12,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
@@ -214,17 +215,17 @@ func testAccPreCheckResourceManagerHandshakeAccountDetached(t *testing.T, accoun
 	}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		_, err = testAccPreCheckHandshakeAcceptanceResourceManagerRequest(client, "RemoveCloudAccount", map[string]string{"AccountId": accountId})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ConcurrentCallNotSupported"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 			if IsExpectedErrors(err, []string{"EntityNotExists.Account"}) || NotFoundError(err) {
 				return nil
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -232,7 +233,7 @@ func testAccPreCheckResourceManagerHandshakeAccountDetached(t *testing.T, accoun
 		t.Fatalf("failed to remove Resource Manager member account %s before handshake acceptance test: %s", accountId, err)
 	}
 
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		_, err = testAccPreCheckHandshakeAcceptanceResourceManagerRequest(client, "GetAccount", map[string]string{"AccountId": accountId})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"EntityNotExists.Account"}) || NotFoundError(err) {
@@ -240,12 +241,12 @@ func testAccPreCheckResourceManagerHandshakeAccountDetached(t *testing.T, accoun
 			}
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		wait()
-		return resource.RetryableError(fmt.Errorf("Resource Manager member account %s is still attached", accountId))
+		return retry.RetryableError(fmt.Errorf("Resource Manager member account %s is still attached", accountId))
 	})
 	if err != nil {
 		t.Fatalf("failed waiting for Resource Manager member account %s to detach: %s", accountId, err)
@@ -281,7 +282,7 @@ func testAccPreCheckHandshakeAcceptancePendingHandshakesCanceled(t *testing.T, c
 			if handshakeId == "" || handshakeId == "<nil>" {
 				continue
 			}
-			err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 				_, err := testAccPreCheckHandshakeAcceptanceResourceManagerRequest(client, "CancelHandshake", map[string]string{"HandshakeId": handshakeId})
 				if err != nil {
 					if IsExpectedErrors(err, []string{"EntityNotExists.Handshake"}) || NotFoundError(err) {
@@ -289,9 +290,9 @@ func testAccPreCheckHandshakeAcceptancePendingHandshakesCanceled(t *testing.T, c
 					}
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -390,7 +391,7 @@ func testAccCheckResourceManagerHandshakeAcceptanceDestroy(s *terraform.State) e
 
 	accountId := testAccResourceManagerHandshakeInvitedAccountId()
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
+	return retry.Retry(5*time.Minute, func() *retry.RetryError {
 		_, err := testAccPreCheckHandshakeAcceptanceResourceManagerRequest(client, "GetAccount", map[string]string{"AccountId": accountId})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"EntityNotExists.Account"}) || NotFoundError(err) {
@@ -398,11 +399,11 @@ func testAccCheckResourceManagerHandshakeAcceptanceDestroy(s *terraform.State) e
 			}
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		wait()
-		return resource.RetryableError(fmt.Errorf("Resource Manager member account %s is still attached", accountId))
+		return retry.RetryableError(fmt.Errorf("Resource Manager member account %s is still attached", accountId))
 	})
 }

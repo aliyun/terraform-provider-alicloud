@@ -8,6 +8,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
@@ -35,7 +36,7 @@ func TestAccAliCloudEssInstanceRefresh_image(t *testing.T) {
 		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: testAccCheckEssInstanceRefreshDestroy,
+		CheckDestroy:      testAccCheckEssInstanceRefreshDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -109,7 +110,7 @@ func TestAccAliCloudEssInstanceRefresh_template(t *testing.T) {
 		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: testAccCheckEssInstanceRefreshDestroy,
+		CheckDestroy:      testAccCheckEssInstanceRefreshDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -182,7 +183,7 @@ func TestAccAliCloudEssInstanceRefresh_container(t *testing.T) {
 		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: testAccCheckEssInstanceRefreshDestroy,
+		CheckDestroy:      testAccCheckEssInstanceRefreshDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -261,15 +262,15 @@ func testAccCheckEssInstanceRefreshDestroy(s *terraform.State) error {
 
 		var raw map[string]interface{}
 		var err error
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			raw, err = essService.DescribeEssInstanceRefresh(rs.Primary.ID)
 			if err != nil {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 			if raw["Status"] != "cancel" && raw["Status"] != "suspend" && raw["Status"] != "resume" && raw["Status"] != "rollback" {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 			return nil
 		})

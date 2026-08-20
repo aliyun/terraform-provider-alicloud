@@ -10,6 +10,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -2423,7 +2424,7 @@ func TestUnitRedisTairInstanceCreateRetryLogic(t *testing.T) {
 	// without actually sleeping.
 	buildRetryFunc := func(results []callResult, waitFn func()) (callCount int, finalErr error) {
 		internalErrRetryCount := 0
-		resource.Retry(1*time.Minute, func() *resource.RetryError {
+		retry.Retry(1*time.Minute, func() *retry.RetryError {
 			if callCount >= len(results) {
 				return nil
 			}
@@ -2446,10 +2447,10 @@ func TestUnitRedisTairInstanceCreateRetryLogic(t *testing.T) {
 			if (NeedRetry(err) || IsExpectedErrors(err, []string{"InternalError"})) && internalErrRetryCount < 2 {
 				waitFn()
 				internalErrRetryCount++
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 			finalErr = err
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		})
 		return
 	}

@@ -12,6 +12,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 func init() {
@@ -69,7 +70,7 @@ func testSweepCRNamespace(region string) error {
 	}
 
 	for _, n := range ns {
-		err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 			req := cr.CreateDeleteNamespaceRequest()
 			req.Namespace = n
 
@@ -80,7 +81,7 @@ func testSweepCRNamespace(region string) error {
 				if IsExpectedErrors(err, []string{"NAMESPACE_NOT_EXIST"}) {
 					return nil
 				}
-				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, n, req.GetActionName(), AlibabaCloudSdkGoERROR))
+				return retry.RetryableError(WrapErrorf(err, DefaultErrorMsg, n, req.GetActionName(), AlibabaCloudSdkGoERROR))
 			}
 
 			crService := CrService{client}
@@ -90,11 +91,11 @@ func testSweepCRNamespace(region string) error {
 				if NotFoundError(err) {
 					return nil
 				}
-				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, n, req.GetActionName(), AlibabaCloudSdkGoERROR))
+				return retry.RetryableError(WrapErrorf(err, DefaultErrorMsg, n, req.GetActionName(), AlibabaCloudSdkGoERROR))
 			}
 
 			time.Sleep(15 * time.Second)
-			return resource.RetryableError(WrapError(Error("DeleteNamespace timeout")))
+			return retry.RetryableError(WrapError(Error("DeleteNamespace timeout")))
 		})
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete Namespace: %s", n)
@@ -122,9 +123,9 @@ func TestAccAlicloudCRNamespace_Basic(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, false, connectivity.CRNoSupportedRegions)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

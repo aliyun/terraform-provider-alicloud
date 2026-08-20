@@ -12,6 +12,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 func testSweepSaeConfigMap(region string) error {
@@ -75,15 +76,15 @@ func testSweepSaeConfigMap(region string) error {
 				"ConfigMapId": StringPointer(fmt.Sprint(item["ConfigMapId"])),
 			}
 			wait := incrementalWait(3*time.Second, 3*time.Second)
-			err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+			err = retry.Retry(10*time.Minute, func() *retry.RetryError {
 				response, err = client.RoaDelete("sae", "2019-05-06", action, request, nil, nil, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
 
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -110,9 +111,9 @@ func TestAccAlicloudSAEConfigMap_basic0(t *testing.T) {
 	name := fmt.Sprintf("tf-testacc%ssaeconfigmap%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSAEConfigMapBasicDependence0)
 	resource.Test(t, resource.TestCase{
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
