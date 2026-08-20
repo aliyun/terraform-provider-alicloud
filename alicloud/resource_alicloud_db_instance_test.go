@@ -216,6 +216,17 @@ func TestAccAliCloudRdsDBInstance_Mysql_8_0(t *testing.T) {
 					"db_instance_storage_type": "cloud_ssd",
 					"resource_group_id":        "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"db_is_ignore_case":        "false",
+					"auto_create_proxy":        "false",
+					"auto_pay":                 "false",
+					"business_info":            "",
+					"connection_mode":          "Standard",
+					"io_acceleration_enabled":  "0",
+					"compression_mode":         "off",
+					"promotion_code":           "",
+					"user_backup_id":           "",
+					"force":                    "No",
+					"sql_collector_status":     "Disabled",
+					"node_id":                  "",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -227,12 +238,17 @@ func TestAccAliCloudRdsDBInstance_Mysql_8_0(t *testing.T) {
 						"auto_upgrade_minor_version": "Auto",
 						"db_instance_storage_type":   "cloud_ssd",
 						"resource_group_id":          CHECKSET,
+						"business_info":              "",
+						"connection_mode":            "Standard",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"db_instance_storage_type": "cloud_essd",
+					"node_id":                  REMOVEKEY,
+					"server_cert":              "",
+					"server_key":               "",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -264,7 +280,7 @@ func TestAccAliCloudRdsDBInstance_Mysql_8_0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_restart", "db_is_ignore_case"},
+				ImportStateVerifyIgnore: []string{"force_restart", "force", "db_is_ignore_case", "auto_create_proxy", "auto_pay", "business_info", "io_acceleration_enabled", "compression_mode", "promotion_code", "user_backup_id", "node_id", "sql_collector_status", "db_param_group_id", "ssl_connection_string"},
 			},
 			// test default port and there should not changes
 			{
@@ -493,7 +509,7 @@ func TestAccAliCloudRdsDBInstance_Mysql_8_0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_restart", "db_is_ignore_case", "parameters", "encryption_key", "security_group_id", "storage_auto_scale", "storage_threshold", "storage_upper_bound"},
+				ImportStateVerifyIgnore: []string{"force_restart", "force", "db_is_ignore_case", "auto_create_proxy", "auto_pay", "business_info", "promotion_code", "user_backup_id", "parameters", "encryption_key", "security_group_id", "storage_auto_scale", "storage_threshold", "storage_upper_bound"},
 			},
 		},
 	})
@@ -546,7 +562,7 @@ data "alicloud_resource_manager_resource_groups" "default" {
 }
 
 resource "alicloud_security_group" "default" {
-	name   = var.name
+	security_group_name   = var.name
 	vpc_id = data.alicloud_vpcs.default.ids.0
 }
 
@@ -837,7 +853,7 @@ data "alicloud_ram_roles" "default" {
   name_regex = "${alicloud_ram_role_policy_attachment.default.policy_name}"
 }
 resource "alicloud_security_group" "default" {
-	name   = var.name
+	security_group_name   = var.name
 	vpc_id = data.alicloud_vpcs.default.ids.0
 }
 
@@ -975,7 +991,7 @@ data "alicloud_resource_manager_resource_groups" "default" {
 }
 
 resource "alicloud_security_group" "default" {
-	name   = var.name
+	security_group_name   = var.name
 	vpc_id = data.alicloud_vpcs.default.ids.0
 }
 `, name)
@@ -1270,7 +1286,7 @@ locals {
 
 resource "alicloud_security_group" "default" {
 	count = 2
-	name   = var.name
+	security_group_name   = var.name
 	vpc_id = data.alicloud_vpcs.default.ids.0
 }
 `, name)
@@ -1531,7 +1547,7 @@ locals {
 
 resource "alicloud_security_group" "default" {
 	count = 2
-	name   = var.name
+	security_group_name   = var.name
 	vpc_id = data.alicloud_vpcs.default.ids.0
 }
 
@@ -1867,7 +1883,7 @@ locals {
 }
 resource "alicloud_security_group" "default" {
 	count = 2
-	name   = var.name
+	security_group_name   = var.name
 	vpc_id = data.alicloud_vpcs.default.ids.0
 }
 `, name)
@@ -2197,7 +2213,7 @@ locals {
 
 resource "alicloud_security_group" "default" {
 	count = 2
-	name   = var.name
+	security_group_name   = var.name
 	vpc_id = data.alicloud_vpcs.default.ids.0
 }
 
@@ -2422,7 +2438,7 @@ locals {
 }
 
 resource "alicloud_security_group" "default" {
-	name   = var.name
+	security_group_name   = var.name
 	vpc_id = data.alicloud_vpcs.default.ids.0
 }
 
@@ -2905,7 +2921,7 @@ data "alicloud_vswitches" "default" {
 }
 
 resource "alicloud_security_group" "default" {
-	name   = var.name
+	security_group_name   = var.name
 	vpc_id = data.alicloud_vpcs.default.ids.0
 }
 
@@ -3115,7 +3131,7 @@ data "alicloud_vswitches" "default" {
 }
 
 resource "alicloud_security_group" "default" {
-	name   = var.name
+	security_group_name   = var.name
 	vpc_id = data.alicloud_vpcs.default.ids.0
 }
 
@@ -3276,7 +3292,7 @@ data "alicloud_vswitches" "vswitche2" {
 }
 
 resource "alicloud_security_group" "default" {
-	name   = var.name
+	security_group_name   = var.name
 	vpc_id = data.alicloud_vpcs.default.ids.0
 }
 
@@ -3838,7 +3854,7 @@ data "alicloud_vswitches" "vswitche2" {
 }
 
 resource "alicloud_security_group" "default" {
-	name   = var.name
+	security_group_name   = var.name
 	vpc_id = data.alicloud_vpcs.default.ids.0
 }
 
@@ -3952,7 +3968,7 @@ data "alicloud_resource_manager_resource_groups" "default" {
 }
 
 resource "alicloud_security_group" "default" {
-   name   = var.name
+   security_group_name   = var.name
    vpc_id = data.alicloud_vpcs.default.ids.0
 }
 
@@ -4003,7 +4019,7 @@ locals {
 }
 
 resource "alicloud_security_group" "default" {
-	name   = var.name
+	security_group_name   = var.name
 	vpc_id = data.alicloud_vpcs.default.ids.0
 }
 
