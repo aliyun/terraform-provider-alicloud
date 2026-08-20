@@ -91,11 +91,9 @@ resource "alicloud_vswitch" "defaultRNbPh8" {
 
 
 resource "alicloud_click_house_enterprise_db_cluster" "default" {
-  zone_id    = var.zone_id_i
-  vpc_id     = alicloud_vpc.defaultktKLuM.id
-  scale_min  = "8"
-  scale_max  = "16"
-  vswitch_id = alicloud_vswitch.defaultTQWN3k.id
+  vpc_id    = alicloud_vpc.defaultktKLuM.id
+  scale_min = "8"
+  scale_max = "16"
   multi_zones {
     vswitch_ids = ["${alicloud_vswitch.defaultTQWN3k.id}"]
     zone_id     = var.zone_id_i
@@ -111,6 +109,8 @@ resource "alicloud_click_house_enterprise_db_cluster" "default" {
 }
 ```
 
+-> **NOTE:** For multi-zone deployments, the top-level `zone_id` and `vswitch_id` are not sent to the API; the multi-zone configuration is carried entirely by the `multi_zones` block. `multi_zones` is an ordered list, so the first block is the primary zone (`MultiZone[0]`); declare the primary zone first. The top-level `zone_id` and `vswitch_id` may be omitted for multi-zone deployments to avoid the `InvalidZoneId.InconsistentWithMultiZone` error.
+
 
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_click_house_enterprise_db_cluster&spm=docs.r.click_house_enterprise_db_cluster.example&intl_lang=EN_US)
 
@@ -118,7 +118,7 @@ resource "alicloud_click_house_enterprise_db_cluster" "default" {
 
 The following arguments are supported:
 * `description` - (Optional, Computed, Available since v1.270.0) Cluster description.
-* `multi_zones` - (Optional, ForceNew, Computed, List) The multi-zone configuration. See [`multi_zones`](#multi_zones) below.
+* `multi_zones` - (Optional, ForceNew, Computed, List) The multi-zone configuration. The list is ordered: the first block is the primary zone. See [`multi_zones`](#multi_zones) below.
 * `node_count` - (Optional, Computed, Int, Available since v1.270.0) The number of nodes. Valid values: 2 to 16. This parameter is required when NodeScaleMin and NodeScaleMax are configured to define the auto-scaling range.
 * `node_scale_max` - (Optional, Computed, Int, Available since v1.270.0) Maximum value for serverless node auto scaling. Valid values range from 4 to 32 and must be greater than the minimum value.  
 * `node_scale_min` - (Optional, Computed, Int, Available since v1.270.0) The minimum value for serverless node auto-scaling. Valid values: 4–32.
@@ -127,12 +127,15 @@ The following arguments are supported:
 * `scale_min` - (Optional, Computed) The minimum value for serverless auto scaling. This parameter is not recommended. We recommend that you use NodeCount, NodeScaleMin, and NodeScaleMax to configure auto scaling capabilities.
 * `tags` - (Optional, Map, Available since v1.270.0) Tag information.  
 * `vpc_id` - (Optional, ForceNew) The VPC ID.
-* `vswitch_id` - (Optional, ForceNew) vSwitch ID.
-* `zone_id` - (Optional, ForceNew) The zone ID.
+* `vswitch_id` - (Optional, ForceNew, Computed) vSwitch ID. For multi-zone deployments this is not sent to the API; the multi-zone information is carried by `multi_zones`.
+* `zone_id` - (Optional, ForceNew, Computed) The zone ID. For multi-zone deployments this is not sent to the API; the primary zone is determined by the order of the `multi_zones` block (the first block is the primary zone).
 
 ### `multi_zones`
 
 The multi_zones supports the following:
+
+-> **NOTE:** `multi_zones` is an ordered list. The first block is the primary zone (`MultiZone[0]`). Reordering the blocks is a destructive change (ForceNew).
+
 * `vswitch_ids` - (Optional, ForceNew, List) List of vSwitch IDs.
 * `zone_id` - (Optional, ForceNew) Zone ID.
 
