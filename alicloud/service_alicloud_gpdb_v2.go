@@ -8,7 +8,7 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/blues/jsonata-go"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type GpdbServiceV2 struct {
@@ -33,15 +33,15 @@ func (s *GpdbServiceV2) DescribeGpdbLogBackup(id string) (object map[string]inte
 	query["DBInstanceId"] = parts[0]
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("gpdb", "2016-05-03", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -77,7 +77,7 @@ func (s *GpdbServiceV2) DescribeGpdbLogBackup(id string) (object map[string]inte
 	return object, WrapErrorf(NotFoundErr("LogBackup", id), NotFoundMsg, response)
 }
 
-func (s *GpdbServiceV2) GpdbLogBackupStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *GpdbServiceV2) GpdbLogBackupStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeGpdbLogBackup(id)
 		if err != nil {
@@ -113,15 +113,15 @@ func (s *GpdbServiceV2) DescribeGpdbBackupPolicy(id string) (object map[string]i
 	query["DBInstanceId"] = id
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("gpdb", "2016-05-03", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -137,7 +137,7 @@ func (s *GpdbServiceV2) DescribeGpdbBackupPolicy(id string) (object map[string]i
 	return response, nil
 }
 
-func (s *GpdbServiceV2) GpdbBackupPolicyStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *GpdbServiceV2) GpdbBackupPolicyStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeGpdbBackupPolicy(id)
 		if err != nil {
@@ -178,15 +178,15 @@ func (s *GpdbServiceV2) DescribeGpdbDbResourceGroup(id string) (object map[strin
 	query["ResourceGroupName"] = parts[1]
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("gpdb", "2016-05-03", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -208,7 +208,7 @@ func (s *GpdbServiceV2) DescribeGpdbDbResourceGroup(id string) (object map[strin
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *GpdbServiceV2) GpdbDbResourceGroupStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *GpdbServiceV2) GpdbDbResourceGroupStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeGpdbDbResourceGroup(id)
 		if err != nil {
@@ -254,15 +254,15 @@ func (s *GpdbServiceV2) DescribeGpdbRemoteADBDataSource(id string) (object map[s
 	query["DataSourceId"] = parts[1]
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("gpdb", "2016-05-03", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -289,7 +289,7 @@ func (s *GpdbServiceV2) DescribeGpdbRemoteADBDataSource(id string) (object map[s
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *GpdbServiceV2) GpdbRemoteADBDataSourceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *GpdbServiceV2) GpdbRemoteADBDataSourceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeGpdbRemoteADBDataSource(id)
 		if err != nil {
@@ -331,15 +331,15 @@ func (s *GpdbServiceV2) DescribeGpdbExternalDataService(id string) (object map[s
 	query["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("gpdb", "2016-05-03", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -355,7 +355,7 @@ func (s *GpdbServiceV2) DescribeGpdbExternalDataService(id string) (object map[s
 	return response, nil
 }
 
-func (s *GpdbServiceV2) GpdbExternalDataServiceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *GpdbServiceV2) GpdbExternalDataServiceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeGpdbExternalDataService(id)
 		if err != nil {
@@ -399,15 +399,15 @@ func (s *GpdbServiceV2) DescribeGpdbStreamingDataService(id string) (object map[
 	action := "DescribeStreamingDataService"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("gpdb", "2016-05-03", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -422,11 +422,11 @@ func (s *GpdbServiceV2) DescribeGpdbStreamingDataService(id string) (object map[
 	return response, nil
 }
 
-func (s *GpdbServiceV2) GpdbStreamingDataServiceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *GpdbServiceV2) GpdbStreamingDataServiceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.GpdbStreamingDataServiceStateRefreshFuncWithApi(id, field, failStates, s.DescribeGpdbStreamingDataService)
 }
 
-func (s *GpdbServiceV2) GpdbStreamingDataServiceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *GpdbServiceV2) GpdbStreamingDataServiceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -474,15 +474,15 @@ func (s *GpdbServiceV2) DescribeGpdbStreamingDataSource(id string) (object map[s
 	query["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("gpdb", "2016-05-03", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -498,7 +498,7 @@ func (s *GpdbServiceV2) DescribeGpdbStreamingDataSource(id string) (object map[s
 	return response, nil
 }
 
-func (s *GpdbServiceV2) GpdbStreamingDataSourceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *GpdbServiceV2) GpdbStreamingDataSourceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeGpdbStreamingDataSource(id)
 		if err != nil {
@@ -539,15 +539,15 @@ func (s *GpdbServiceV2) DescribeGpdbAccount(id string) (object map[string]interf
 	query["DBInstanceId"] = parts[0]
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("gpdb", "2016-05-03", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -563,7 +563,7 @@ func (s *GpdbServiceV2) DescribeGpdbAccount(id string) (object map[string]interf
 	return response, nil
 }
 
-func (s *GpdbServiceV2) GpdbAccountStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *GpdbServiceV2) GpdbAccountStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeGpdbAccount(id)
 		if err != nil {
@@ -606,15 +606,15 @@ func (s *GpdbServiceV2) DescribeGpdbJdbcDataSource(id string) (object map[string
 	action := "DescribeJDBCDataSource"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("gpdb", "2016-05-03", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -626,11 +626,11 @@ func (s *GpdbServiceV2) DescribeGpdbJdbcDataSource(id string) (object map[string
 	return response, nil
 }
 
-func (s *GpdbServiceV2) GpdbJdbcDataSourceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *GpdbServiceV2) GpdbJdbcDataSourceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.GpdbJdbcDataSourceStateRefreshFuncWithApi(id, field, failStates, s.DescribeGpdbJdbcDataSource)
 }
 
-func (s *GpdbServiceV2) GpdbJdbcDataSourceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *GpdbServiceV2) GpdbJdbcDataSourceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -678,15 +678,15 @@ func (s *GpdbServiceV2) DescribeGpdbHadoopDataSource(id string) (object map[stri
 	query["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("gpdb", "2016-05-03", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -699,7 +699,7 @@ func (s *GpdbServiceV2) DescribeGpdbHadoopDataSource(id string) (object map[stri
 	return response, nil
 }
 
-func (s *GpdbServiceV2) GpdbHadoopDataSourceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *GpdbServiceV2) GpdbHadoopDataSourceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeGpdbHadoopDataSource(id)
 		if err != nil {
@@ -742,15 +742,15 @@ func (s *GpdbServiceV2) DescribeGpdbStreamingJob(id string) (object map[string]i
 	query["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("gpdb", "2016-05-03", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -766,7 +766,7 @@ func (s *GpdbServiceV2) DescribeGpdbStreamingJob(id string) (object map[string]i
 	return response, nil
 }
 
-func (s *GpdbServiceV2) GpdbStreamingJobStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *GpdbServiceV2) GpdbStreamingJobStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeGpdbStreamingJob(id)
 		if err != nil {
@@ -807,15 +807,15 @@ func (s *GpdbServiceV2) DescribeGpdbDBInstanceIPArray(id string) (object map[str
 	query["DBInstanceId"] = parts[0]
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("gpdb", "2016-05-03", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -837,7 +837,7 @@ func (s *GpdbServiceV2) DescribeGpdbDBInstanceIPArray(id string) (object map[str
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *GpdbServiceV2) GpdbDBInstanceIPArrayStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *GpdbServiceV2) GpdbDBInstanceIPArrayStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeGpdbDBInstanceIPArray(id)
 		if err != nil {
@@ -884,15 +884,15 @@ func (s *GpdbServiceV2) DescribeGpdbDatabase(id string) (object map[string]inter
 	query["DBInstanceId"] = parts[0]
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("gpdb", "2016-05-03", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -907,7 +907,7 @@ func (s *GpdbServiceV2) DescribeGpdbDatabase(id string) (object map[string]inter
 	return response, nil
 }
 
-func (s *GpdbServiceV2) GpdbDatabaseStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *GpdbServiceV2) GpdbDatabaseStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeGpdbDatabase(id)
 		if err != nil {
@@ -945,15 +945,15 @@ func (s *GpdbServiceV2) DescribeGpdbSupabaseProject(id string) (object map[strin
 	action := "GetSupabaseProject"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("gpdb", "2016-05-03", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -972,11 +972,11 @@ func (s *GpdbServiceV2) DescribeGpdbSupabaseProject(id string) (object map[strin
 	return response, nil
 }
 
-func (s *GpdbServiceV2) GpdbSupabaseProjectStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *GpdbServiceV2) GpdbSupabaseProjectStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.GpdbSupabaseProjectStateRefreshFuncWithApi(id, field, failStates, s.DescribeGpdbSupabaseProject)
 }
 
-func (s *GpdbServiceV2) GpdbSupabaseProjectStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *GpdbServiceV2) GpdbSupabaseProjectStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -1024,15 +1024,15 @@ func (s *GpdbServiceV2) DescribeGpdbApiKey(id string) (object map[string]interfa
 	action := "GetApiKey"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("gpdb", "2016-05-03", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1047,11 +1047,11 @@ func (s *GpdbServiceV2) DescribeGpdbApiKey(id string) (object map[string]interfa
 	return response, nil
 }
 
-func (s *GpdbServiceV2) GpdbApiKeyStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *GpdbServiceV2) GpdbApiKeyStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.GpdbApiKeyStateRefreshFuncWithApi(id, field, failStates, s.DescribeGpdbApiKey)
 }
 
-func (s *GpdbServiceV2) GpdbApiKeyStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *GpdbServiceV2) GpdbApiKeyStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {

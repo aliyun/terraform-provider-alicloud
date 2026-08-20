@@ -8,7 +8,7 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/eci"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type EciService struct {
@@ -38,7 +38,7 @@ func (s *EciService) DescribeEciImageCache(id string) (object eci.DescribeImageC
 	return response.ImageCaches[0], nil
 }
 
-func (s *EciService) EciImageCacheStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *EciService) EciImageCacheStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEciImageCache(id)
 		if err != nil {
@@ -95,7 +95,7 @@ func (s *EciService) DescribeEciContainerGroup(id string) (object map[string]int
 	return object, nil
 }
 
-func (s *EciService) EciContainerGroupStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *EciService) EciContainerGroupStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEciContainerGroup(id)
 		if err != nil {
@@ -125,14 +125,14 @@ func (s *EciService) DescribeEciVirtualNode(id string) (object map[string]interf
 	idExist := false
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Eci", "2018-08-08", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -166,7 +166,7 @@ func (s *EciService) DescribeEciVirtualNode(id string) (object map[string]interf
 	return
 }
 
-func (s *EciService) EciVirtualNodeStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *EciService) EciVirtualNodeStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEciVirtualNode(id)
 		if err != nil {

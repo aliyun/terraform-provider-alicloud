@@ -10,7 +10,7 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/blues/jsonata-go"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/tidwall/sjson"
 )
@@ -38,15 +38,15 @@ func (s *DdosCooServiceV2) DescribeDdosCooPort(id string) (object map[string]int
 	query["InstanceId"] = parts[0]
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, true)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"anycast_controller3006"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -91,15 +91,15 @@ func (s *DdosCooServiceV2) DescribeDescribeNetworkRuleAttributes(id string) (obj
 	request["NetworkRules"] = convertObjectToJsonString(request["NetworkRules"])
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, true)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"anycast_controller3006"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -121,7 +121,7 @@ func (s *DdosCooServiceV2) DescribeDescribeNetworkRuleAttributes(id string) (obj
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *DdosCooServiceV2) DdosCooPortStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *DdosCooServiceV2) DdosCooPortStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeDdosCooPort(id)
 		if err != nil {
@@ -158,15 +158,15 @@ func (s *DdosCooServiceV2) DescribeDdosCooDomainResource(id string) (object map[
 	action := "DescribeDomainResource"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -197,15 +197,15 @@ func (s *DdosCooServiceV2) DescribeDomainResourceDescribeWebRules(id string) (ob
 	action := "DescribeWebRules"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -237,15 +237,15 @@ func (s *DdosCooServiceV2) DescribeDomainResourceDescribeDomainCcProtectSwitch(i
 	action := "DescribeDomainCcProtectSwitch"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -280,15 +280,15 @@ func (s *DdosCooServiceV2) DescribeDomainResourceDescribeHeaders(id string) (obj
 	action := "DescribeHeaders"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -308,11 +308,11 @@ func (s *DdosCooServiceV2) DescribeDomainResourceDescribeHeaders(id string) (obj
 	return v.(map[string]interface{}), nil
 }
 
-func (s *DdosCooServiceV2) DdosCooDomainResourceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *DdosCooServiceV2) DdosCooDomainResourceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.DdosCooDomainResourceStateRefreshFuncWithApi(id, field, failStates, s.DescribeDdosCooDomainResource)
 }
 
-func (s *DdosCooServiceV2) DdosCooDomainResourceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *DdosCooServiceV2) DdosCooDomainResourceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -358,15 +358,15 @@ func (s *DdosCooServiceV2) DescribeDdosCooInstance(id string) (object map[string
 	action := "DescribeInstances"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -401,15 +401,15 @@ func (s *DdosCooServiceV2) DescribeInstanceDescribeInstanceSpecs(id string) (obj
 	action := "DescribeInstanceSpecs"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, true)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InvalidInstanceId"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -445,15 +445,15 @@ func (s *DdosCooServiceV2) DescribeInstanceDescribeInstanceExt(id string) (objec
 	action := "DescribeInstanceExt"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -487,15 +487,15 @@ func (s *DdosCooServiceV2) DescribeInstanceDescribeTagResources(id string) (obje
 	action := "DescribeTagResources"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -537,14 +537,14 @@ func (s *DdosCooServiceV2) ModifyDdosCooInstance(schemaName string, specName str
 	}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -556,7 +556,7 @@ func (s *DdosCooServiceV2) ModifyDdosCooInstance(schemaName string, specName str
 	return nil
 }
 
-func (s *DdosCooServiceV2) DdosCooInstanceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *DdosCooServiceV2) DdosCooInstanceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeDdosCooInstance(id)
 		if err != nil {
@@ -616,14 +616,14 @@ func (s *DdosCooServiceV2) SetResourceTags(d *schema.ResourceData, resourceType 
 			}
 
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -649,14 +649,14 @@ func (s *DdosCooServiceV2) SetResourceTags(d *schema.ResourceData, resourceType 
 			}
 
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -693,15 +693,15 @@ func (s *DdosCooServiceV2) DescribeDdosCooDomainPreciseAccessRule(id string) (ob
 	action := "DescribeWebPreciseAccessRule"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -733,11 +733,11 @@ func (s *DdosCooServiceV2) DescribeDdosCooDomainPreciseAccessRule(id string) (ob
 	return object, WrapErrorf(NotFoundErr("DomainPreciseAccessRule", id), NotFoundMsg, response)
 }
 
-func (s *DdosCooServiceV2) DdosCooDomainPreciseAccessRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *DdosCooServiceV2) DdosCooDomainPreciseAccessRuleStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.DdosCooDomainPreciseAccessRuleStateRefreshFuncWithApi(id, field, failStates, s.DescribeDdosCooDomainPreciseAccessRule)
 }
 
-func (s *DdosCooServiceV2) DdosCooDomainPreciseAccessRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *DdosCooServiceV2) DdosCooDomainPreciseAccessRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -812,15 +812,15 @@ func (s *DdosCooServiceV2) DescribeDdosCooWebCcRule(id string) (object map[strin
 	action := "DescribeWebCCRulesV2"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -855,11 +855,11 @@ func (s *DdosCooServiceV2) DescribeDdosCooWebCcRule(id string) (object map[strin
 	return object, WrapErrorf(NotFoundErr("WebCcRule", id), NotFoundMsg, response)
 }
 
-func (s *DdosCooServiceV2) DdosCooWebCcRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *DdosCooServiceV2) DdosCooWebCcRuleStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.DdosCooWebCcRuleStateRefreshFuncWithApi(id, field, failStates, s.DescribeDdosCooWebCcRule)
 }
 
-func (s *DdosCooServiceV2) DdosCooWebCcRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *DdosCooServiceV2) DdosCooWebCcRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {

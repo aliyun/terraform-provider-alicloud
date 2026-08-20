@@ -6,7 +6,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -27,15 +27,15 @@ func (s *ApiGatewayServiceV2) DescribeApiGatewayInstance(id string) (object map[
 	query["InstanceId"] = id
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("CloudAPI", "2016-07-14", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -58,7 +58,7 @@ func (s *ApiGatewayServiceV2) DescribeApiGatewayInstance(id string) (object map[
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *ApiGatewayServiceV2) ApiGatewayInstanceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ApiGatewayServiceV2) ApiGatewayInstanceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeApiGatewayInstance(id)
 		if err != nil {
@@ -95,15 +95,15 @@ func (s *ApiGatewayServiceV2) DescribeApiGatewayPlugin(id string) (object map[st
 	query["PluginId"] = id
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("CloudAPI", "2016-07-14", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -125,7 +125,7 @@ func (s *ApiGatewayServiceV2) DescribeApiGatewayPlugin(id string) (object map[st
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *ApiGatewayServiceV2) ApiGatewayPluginStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ApiGatewayServiceV2) ApiGatewayPluginStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeApiGatewayPlugin(id)
 		if err != nil {
@@ -177,14 +177,14 @@ func (s *ApiGatewayServiceV2) SetResourceTags(d *schema.ResourceData, resourceTy
 
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("CloudAPI", "2016-07-14", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(action, response, request)
 				return nil
@@ -209,14 +209,14 @@ func (s *ApiGatewayServiceV2) SetResourceTags(d *schema.ResourceData, resourceTy
 
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("CloudAPI", "2016-07-14", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(action, response, request)
 				return nil
@@ -246,15 +246,15 @@ func (s *ApiGatewayServiceV2) DescribeApiGatewayAccessControlList(id string) (ob
 	query["AclId"] = id
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("CloudAPI", "2016-07-14", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -284,15 +284,15 @@ func (s *ApiGatewayServiceV2) DescribeApiGatewayAclEntryAttachmentAttribute(id s
 	}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("CloudAPI", "2016-07-14", action, nil, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -335,14 +335,14 @@ func (s *ApiGatewayServiceV2) DescribeApiGatewayGroupPluginAttachment(id string)
 	request["StageName"] = parts[2]
 	request["PageSize"] = 100
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(1*time.Minute), func() *resource.RetryError {
+	err = retry.Retry(client.GetRetryTimeout(1*time.Minute), func() *retry.RetryError {
 		response, err = client.RpcPost("CloudAPI", "2016-07-14", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -404,7 +404,7 @@ func (s *ApiGatewayServiceV2) DescribeApiGatewayInstanceAclAttachmentAttribute(i
 	return response, nil
 }
 
-func (s *ApiGatewayServiceV2) ApiGatewayAccessControlListStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ApiGatewayServiceV2) ApiGatewayAccessControlListStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeApiGatewayAccessControlList(id)
 		if err != nil {
@@ -443,15 +443,15 @@ func (s *ApiGatewayServiceV2) DescribeApiGatewayApi(id string) (object map[strin
 	query["GroupId"] = parts[0]
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("CloudAPI", "2016-07-14", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil

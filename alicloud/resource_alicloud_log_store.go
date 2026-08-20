@@ -11,7 +11,7 @@ import (
 	"github.com/alibabacloud-go/tea/tea"
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -219,16 +219,16 @@ func resourceAliCloudSlsLogStoreCreate(d *schema.ResourceData, meta interface{})
 
 		logstore := buildLogStore(d)
 		var requestinfo *sls.Client
-		err := resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		err := retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 			raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 				return nil, slsClient.CreateMetricStore(projectName, logstore)
 			})
 			if err != nil {
 				if IsExpectedErrors(err, []string{"InternalServerError", LogClientTimeout}) {
 					time.Sleep(10 * time.Second)
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug("CreateMetricStore", raw, requestinfo, map[string]interface{}{
 				"project":  projectName,
@@ -333,14 +333,14 @@ func resourceAliCloudSlsLogStoreCreate(d *schema.ResourceData, meta interface{})
 
 	body = request
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.Do("Sls", roaParam("POST", "2020-12-30", "CreateLogStore", action), query, body, nil, hostMap, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -463,14 +463,14 @@ func resourceAliCloudSlsLogStoreRead(d *schema.ResourceData, meta interface{}) e
 		return err
 	}
 	var shards []*sls.Shard
-	err = resource.Retry(d.Timeout(schema.TimeoutRead), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutRead), func() *retry.RetryError {
 		shards, err = object.ListShards()
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InternalServerError"}) {
 				time.Sleep(10 * time.Second)
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug("ListShards", shards)
 		return nil
@@ -610,16 +610,16 @@ func resourceAliCloudSlsLogStoreUpdate(d *schema.ResourceData, meta interface{})
 
 		logstore := buildLogStore(d)
 		var requestinfo *sls.Client
-		err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 			raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 				return nil, slsClient.UpdateMetricStore(projectName, logstore)
 			})
 			if err != nil {
 				if IsExpectedErrors(err, []string{"InternalServerError", LogClientTimeout}) {
 					time.Sleep(10 * time.Second)
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug("UpdateMetricStore", raw, requestinfo, map[string]interface{}{
 				"project":  projectName,
@@ -636,14 +636,14 @@ func resourceAliCloudSlsLogStoreUpdate(d *schema.ResourceData, meta interface{})
 	body = request
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.Do("Sls", roaParam("PUT", "2020-12-30", "UpdateLogStore", action), query, body, nil, hostMap, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(action, response, request)
 			return nil
@@ -672,14 +672,14 @@ func resourceAliCloudSlsLogStoreUpdate(d *schema.ResourceData, meta interface{})
 	body = request
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.Do("Sls", roaParam("PUT", "2020-12-30", "UpdateLogStoreMeteringMode", action), query, body, nil, hostMap, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(action, response, request)
 			return nil
@@ -708,14 +708,14 @@ func resourceAliCloudSlsLogStoreDelete(d *schema.ResourceData, meta interface{})
 	hostMap["project"] = StringPointer(parts[0])
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.Do("Sls", roaParam("DELETE", "2020-12-30", "DeleteLogStore", action), query, nil, nil, hostMap, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil

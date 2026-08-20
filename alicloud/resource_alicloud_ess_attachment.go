@@ -7,7 +7,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -107,7 +107,7 @@ func resourceAliyunEssAttachmentUpdate(d *schema.ResourceData, meta interface{})
 				request.LifecycleHook = requests.NewBoolean(v.(bool))
 			}
 
-			err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+			err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 				raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 					return essClient.AttachInstances(request)
 				})
@@ -115,7 +115,7 @@ func resourceAliyunEssAttachmentUpdate(d *schema.ResourceData, meta interface{})
 					if IsExpectedErrors(err, []string{"IncorrectCapacity.MaxSize"}) {
 						instances, err := essService.DescribeEssAttachment(d.Id(), make([]string, 0))
 						if !NotFoundError(err) {
-							return resource.NonRetryableError(err)
+							return retry.NonRetryableError(err)
 						}
 						var autoAdded, attached []string
 						if len(instances) > 0 {
@@ -128,33 +128,33 @@ func resourceAliyunEssAttachmentUpdate(d *schema.ResourceData, meta interface{})
 							}
 						}
 						if len(add) > object.MaxSize {
-							return resource.NonRetryableError(WrapError(Error("To attach %d instances, the total capacity will be greater than the scaling group max size %d. "+
+							return retry.NonRetryableError(WrapError(Error("To attach %d instances, the total capacity will be greater than the scaling group max size %d. "+
 								"Please enlarge scaling group max size.", len(add), object.MaxSize)))
 						}
 
 						if len(autoAdded) > 0 {
 							if d.Get("force").(bool) {
 								if err := essService.EssRemoveInstances(client, d, d.Id(), autoAdded); err != nil {
-									return resource.NonRetryableError(WrapError(err))
+									return retry.NonRetryableError(WrapError(err))
 								}
 								time.Sleep(5)
-								return resource.RetryableError(WrapError(err))
+								return retry.RetryableError(WrapError(err))
 							} else {
-								return resource.NonRetryableError(WrapError(Error("To attach the instances, the total capacity will be greater than the scaling group max size %d."+
+								return retry.NonRetryableError(WrapError(Error("To attach the instances, the total capacity will be greater than the scaling group max size %d."+
 									"Please enlarge scaling group max size or set 'force' to true to remove autocreated instances: %#v.", object.MaxSize, autoAdded)))
 							}
 						}
 
 						if len(attached) > 0 {
-							return resource.NonRetryableError(WrapError(Error("To attach the instances, the total capacity will be greater than the scaling group max size %d. "+
+							return retry.NonRetryableError(WrapError(Error("To attach the instances, the total capacity will be greater than the scaling group max size %d. "+
 								"Please enlarge scaling group max size or remove already attached instances: %#v.", object.MaxSize, attached)))
 						}
 					}
 					if IsExpectedErrors(err, []string{"ScalingActivityInProgress"}) {
 						time.Sleep(5)
-						return resource.RetryableError(WrapError(err))
+						return retry.RetryableError(WrapError(err))
 					}
-					return resource.NonRetryableError(WrapError(err))
+					return retry.NonRetryableError(WrapError(err))
 				}
 				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 				return nil
@@ -163,19 +163,19 @@ func resourceAliyunEssAttachmentUpdate(d *schema.ResourceData, meta interface{})
 				return WrapError(err)
 			}
 
-			err = resource.Retry(3*time.Minute, func() *resource.RetryError {
+			err = retry.Retry(3*time.Minute, func() *retry.RetryError {
 
 				instances, err := essService.DescribeEssAttachment(d.Id(), add)
 				if err != nil {
-					return resource.NonRetryableError(WrapError(err))
+					return retry.NonRetryableError(WrapError(err))
 				}
 				if len(instances) < 1 {
-					return resource.RetryableError(WrapError(Error("There are no ECS instances have been attached.")))
+					return retry.RetryableError(WrapError(Error("There are no ECS instances have been attached.")))
 				}
 
 				for _, inst := range instances {
 					if inst.LifecycleState != string(InService) {
-						return resource.RetryableError(WrapError(Error("There are still ECS instances are not %s.", string(InService))))
+						return retry.RetryableError(WrapError(Error("There are still ECS instances are not %s.", string(InService))))
 					}
 				}
 				return nil
@@ -187,13 +187,13 @@ func resourceAliyunEssAttachmentUpdate(d *schema.ResourceData, meta interface{})
 
 		if len(remove) > 0 {
 
-			err := resource.Retry(1*time.Minute, func() *resource.RetryError {
+			err := retry.Retry(1*time.Minute, func() *retry.RetryError {
 				if err := essService.EssRemoveInstances(client, d, d.Id(), convertArrayInterfaceToArrayString(remove)); err != nil {
 					if IsExpectedErrors(err, []string{"InvalidOperation.Conflict", "ScalingActivityInProgress", "IncorrectScalingGroupStatus"}) {
 						time.Sleep(5 * time.Second)
-						return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), "DetachInstances", AlibabaCloudSdkGoERROR))
+						return retry.RetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), "DetachInstances", AlibabaCloudSdkGoERROR))
 					}
-					return resource.NonRetryableError(WrapError(err))
+					return retry.NonRetryableError(WrapError(err))
 				}
 
 				return nil
@@ -259,7 +259,7 @@ func resourceAliyunEssAttachmentDelete(d *schema.ResourceData, meta interface{})
 		return WrapError(err)
 	}
 
-	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	if err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 		request := ess.CreateRemoveInstancesRequest()
 		request.RegionId = client.RegionId
 		request.ScalingGroupId = d.Id()
@@ -277,20 +277,20 @@ func resourceAliyunEssAttachmentDelete(d *schema.ResourceData, meta interface{})
 				instances, err := essService.DescribeEssAttachment(d.Id(), removed)
 				if len(instances) > 0 {
 					if object.MinSize == 0 {
-						return resource.RetryableError(WrapError(err))
+						return retry.RetryableError(WrapError(err))
 					}
-					return resource.NonRetryableError(WrapError(Error("To remove %d instances, the total capacity will be lesser than the scaling group min size %d. "+
+					return retry.NonRetryableError(WrapError(Error("To remove %d instances, the total capacity will be lesser than the scaling group min size %d. "+
 						"Please shorten scaling group min size and try again.", len(removed), object.MinSize)))
 				}
 			}
 			if IsExpectedErrors(err, []string{"InvalidOperation.Conflict", "ScalingActivityInProgress", "IncorrectScalingGroupStatus"}) {
 				time.Sleep(5 * time.Second)
-				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
+				return retry.RetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 			}
 			if IsExpectedErrors(err, []string{"InvalidScalingGroupId.NotFound", "InvalidInstanceId.NotFound", "IncorrectInstanceStatus"}) {
 				return nil
 			}
-			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
+			return retry.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		time.Sleep(3 * time.Second)
@@ -299,14 +299,14 @@ func resourceAliyunEssAttachmentDelete(d *schema.ResourceData, meta interface{})
 			if NotFoundError(err) {
 				return nil
 			}
-			return resource.NonRetryableError(WrapError(err))
+			return retry.NonRetryableError(WrapError(err))
 		}
 
 		response, _ := raw.(*ess.RemoveInstancesResponse)
 		essService := EssService{client}
 		stateConf := BuildStateConf([]string{}, []string{"Successful"}, d.Timeout(schema.TimeoutCreate), 1*time.Minute, essService.ActivityStateRefreshFunc(response.ScalingActivityId, []string{"Failed", "Rejected"}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return resource.NonRetryableError(WrapError(err))
+			return retry.NonRetryableError(WrapError(err))
 		}
 
 		if len(instances) > 0 {
@@ -314,7 +314,7 @@ func resourceAliyunEssAttachmentDelete(d *schema.ResourceData, meta interface{})
 			for _, inst := range instances {
 				removed = append(removed, inst.InstanceId)
 			}
-			return resource.RetryableError(WrapError(Error("There are still ECS instances in the scaling group.")))
+			return retry.RetryableError(WrapError(Error("There are still ECS instances in the scaling group.")))
 		}
 
 		return nil

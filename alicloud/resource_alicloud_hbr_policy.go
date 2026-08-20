@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -225,14 +225,14 @@ func resourceAliCloudHbrPolicyCreate(d *schema.ResourceData, meta interface{}) e
 		request["PolicyName"] = v
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("hbr", "2017-09-08", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -415,14 +415,14 @@ func resourceAliCloudHbrPolicyUpdate(d *schema.ResourceData, meta interface{}) e
 
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("hbr", "2017-09-08", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -445,14 +445,14 @@ func resourceAliCloudHbrPolicyDelete(d *schema.ResourceData, meta interface{}) e
 	request["PolicyId"] = d.Id()
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("hbr", "2017-09-08", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -469,7 +469,7 @@ func resourceAliCloudHbrPolicyDelete(d *schema.ResourceData, meta interface{}) e
 	// CheckDestroy may race ahead and report the policy as not deleted.
 	hbrServiceV2 := HbrServiceV2{client}
 	wait = incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		_, e := hbrServiceV2.DescribeHbrPolicy(d.Id())
 		if e != nil {
 			if NotFoundError(e) {
@@ -477,12 +477,12 @@ func resourceAliCloudHbrPolicyDelete(d *schema.ResourceData, meta interface{}) e
 			}
 			if NeedRetry(e) {
 				wait()
-				return resource.RetryableError(e)
+				return retry.RetryableError(e)
 			}
-			return resource.NonRetryableError(e)
+			return retry.NonRetryableError(e)
 		}
 		wait()
-		return resource.RetryableError(fmt.Errorf("the HBR policy %s has not been deleted yet", d.Id()))
+		return retry.RetryableError(fmt.Errorf("the HBR policy %s has not been deleted yet", d.Id()))
 	})
 	addDebug("WaitHbrPolicyGone", nil, request)
 	if err != nil {

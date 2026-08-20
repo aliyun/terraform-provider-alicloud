@@ -9,7 +9,7 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alikafka"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -25,16 +25,16 @@ func (s *AlikafkaService) DescribeAlikafkaInstance(instanceId string) (*alikafka
 	wait := incrementalWait(2*time.Second, 1*time.Second)
 	var raw interface{}
 	var err error
-	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(10*time.Minute, func() *retry.RetryError {
 		raw, err = s.client.WithAlikafkaClient(func(client *alikafka.Client) (interface{}, error) {
 			return client.GetInstanceList(instanceListReq)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(instanceListReq.GetActionName(), raw, instanceListReq.RpcRequest, instanceListReq)
 		return nil
@@ -69,16 +69,16 @@ func (s *AlikafkaService) DescribeAlikafkaInstanceByOrderId(orderId string, time
 		wait := incrementalWait(2*time.Second, 1*time.Second)
 		var raw interface{}
 		var err error
-		err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(10*time.Minute, func() *retry.RetryError {
 			raw, err = s.client.WithAlikafkaClient(func(client *alikafka.Client) (interface{}, error) {
 				return client.GetInstanceList(instanceListReq)
 			})
 			if err != nil {
 				if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(instanceListReq.GetActionName(), raw, instanceListReq.RpcRequest, instanceListReq)
 			return nil
@@ -116,16 +116,16 @@ func (s *AlikafkaService) DescribeAlikafkaConsumerGroup(id string) (*alikafka.Co
 
 	wait := incrementalWait(2*time.Second, 1*time.Second)
 	var raw interface{}
-	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(10*time.Minute, func() *retry.RetryError {
 		raw, err = s.client.WithAlikafkaClient(func(client *alikafka.Client) (interface{}, error) {
 			return client.GetConsumerList(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
@@ -163,16 +163,16 @@ func (s *AlikafkaService) DescribeAlikafkaTopicStatus(id string) (*alikafka.Topi
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	var raw interface{}
 
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = s.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
 			return alikafkaClient.GetTopicStatus(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
@@ -209,16 +209,16 @@ func (s *AlikafkaService) DescribeAlikafkaTopic(id string) (*alikafka.TopicVO, e
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	var raw interface{}
 
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = s.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
 			return alikafkaClient.GetTopicList(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
@@ -255,16 +255,16 @@ func (s *AlikafkaService) DescribeAlikafkaSaslUser(id string) (*alikafka.SaslUse
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	var raw interface{}
 
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = s.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
 			return alikafkaClient.DescribeSaslUsers(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
@@ -308,16 +308,16 @@ func (s *AlikafkaService) DescribeAlikafkaSaslAcl(id string) (*alikafka.KafkaAcl
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	var raw interface{}
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = s.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
 			return alikafkaClient.DescribeAcls(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
@@ -429,7 +429,7 @@ func (s *AlikafkaService) WaitForAlikafkaConsumerGroup(id string, status Status,
 	}
 }
 
-func (s *AlikafkaService) KafkaTopicStatusRefreshFunc(id string) resource.StateRefreshFunc {
+func (s *AlikafkaService) KafkaTopicStatusRefreshFunc(id string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAlikafkaTopicStatus(id)
 		if err != nil {
@@ -551,16 +551,16 @@ func (s *AlikafkaService) DescribeTags(resourceId string, resourceTags map[strin
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	var raw interface{}
 
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = s.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
 			return alikafkaClient.ListTagResources(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{Throttling, ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
@@ -593,17 +593,17 @@ func (s *AlikafkaService) setInstanceTags(d *schema.ResourceData, resourceType T
 			request.RegionId = s.client.RegionId
 
 			wait := incrementalWait(2*time.Second, 1*time.Second)
-			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+			err := retry.Retry(10*time.Minute, func() *retry.RetryError {
 				raw, err := s.client.WithAlikafkaClient(func(client *alikafka.Client) (interface{}, error) {
 					return client.UntagResources(request)
 				})
 				if err != nil {
 					if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 				return nil
@@ -621,17 +621,17 @@ func (s *AlikafkaService) setInstanceTags(d *schema.ResourceData, resourceType T
 			request.RegionId = s.client.RegionId
 
 			wait := incrementalWait(2*time.Second, 1*time.Second)
-			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+			err := retry.Retry(10*time.Minute, func() *retry.RetryError {
 				raw, err := s.client.WithAlikafkaClient(func(client *alikafka.Client) (interface{}, error) {
 					return client.TagResources(request)
 				})
 				if err != nil {
 					if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 				return nil
@@ -733,14 +733,14 @@ func (s *AlikafkaService) GetAllowedIpList(id string) (object map[string]interfa
 		"InstanceId": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("alikafka", "2019-09-16", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -775,15 +775,15 @@ func (s *AlikafkaService) SetResourceTags(d *schema.ResourceData, resourceType s
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
 			wait := incrementalWait(2*time.Second, 1*time.Second)
-			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+			err := retry.Retry(10*time.Minute, func() *retry.RetryError {
 				response, err := client.RpcPost("alikafka", "2019-09-16", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) || IsExpectedErrors(err, []string{"ONS_SYSTEM_FLOW_CONTROL"}) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(action, response, request)
 				return nil
@@ -807,15 +807,15 @@ func (s *AlikafkaService) SetResourceTags(d *schema.ResourceData, resourceType s
 			}
 
 			wait := incrementalWait(2*time.Second, 1*time.Second)
-			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+			err := retry.Retry(10*time.Minute, func() *retry.RetryError {
 				response, err := client.RpcPost("alikafka", "2019-09-16", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) || IsExpectedErrors(err, []string{"ONS_SYSTEM_FLOW_CONTROL"}) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(action, response, request)
 				return nil
@@ -843,14 +843,14 @@ func (s *AlikafkaService) DescribeAliKafkaConsumerGroup(id string) (object map[s
 	}
 	idExist := false
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("alikafka", "2019-09-16", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -893,14 +893,14 @@ func (s *AlikafkaService) DescribeAliKafkaSaslUser(id string) (object map[string
 
 	idExist := false
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("alikafka", "2019-09-16", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -955,14 +955,14 @@ func (s *AlikafkaService) DescribeAliKafkaInstanceAllowedIpAttachment(id string)
 
 	idExist := false
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("alikafka", "2019-09-16", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1027,14 +1027,14 @@ func (s *AlikafkaService) DescribeAliKafkaInstance(id string) (object map[string
 
 	idExist := false
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(10*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("alikafka", "2019-09-16", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1076,14 +1076,14 @@ func (s *AlikafkaService) GetQuotaTip(instanceId string) (object map[string]inte
 		"InstanceId": instanceId,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(10*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("alikafka", "2019-09-16", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1110,14 +1110,14 @@ func (s *AlikafkaService) DescribeAliKafkaInstanceByOrderId(orderId string, time
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(10*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("alikafka", "2019-09-16", action, nil, request, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) || NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -1138,7 +1138,7 @@ func (s *AlikafkaService) DescribeAliKafkaInstanceByOrderId(orderId string, time
 	}
 }
 
-func (s *AlikafkaService) AliKafkaInstanceStateRefreshFunc(id, attribute string, failStates []string) resource.StateRefreshFunc {
+func (s *AlikafkaService) AliKafkaInstanceStateRefreshFunc(id, attribute string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAliKafkaInstance(id)
 		if err != nil {
@@ -1159,7 +1159,7 @@ func (s *AlikafkaService) AliKafkaInstanceStateRefreshFunc(id, attribute string,
 	}
 }
 
-func (s *AlikafkaService) AliKafkaConsumerStateRefreshFunc(id, attribute string, failStates []string) resource.StateRefreshFunc {
+func (s *AlikafkaService) AliKafkaConsumerStateRefreshFunc(id, attribute string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAliKafkaConsumerGroup(id)
 		if err != nil {
@@ -1180,7 +1180,7 @@ func (s *AlikafkaService) AliKafkaConsumerStateRefreshFunc(id, attribute string,
 	}
 }
 
-func (s *AlikafkaService) AliKafkaTopicStateRefreshFunc(id, attribute string, failStates []string) resource.StateRefreshFunc {
+func (s *AlikafkaService) AliKafkaTopicStateRefreshFunc(id, attribute string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAlikafkaTopic(id)
 		if err != nil {

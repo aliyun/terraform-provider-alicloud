@@ -6,7 +6,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/gpdb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -73,15 +73,15 @@ func resourceAlicloudGpdbConnectionCreate(d *schema.ResourceData, meta interface
 	request.ConnectionStringPrefix = prefix
 	request.Port = d.Get("port").(string)
 
-	err := resource.Retry(8*time.Minute, func() *resource.RetryError {
+	err := retry.Retry(8*time.Minute, func() *retry.RetryError {
 		raw, err := client.WithGpdbClient(func(gpdbClient *gpdb.Client) (interface{}, error) {
 			return gpdbClient.AllocateInstancePublicConnection(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, OperationDeniedDBStatus) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
@@ -148,15 +148,15 @@ func resourceAlicloudGpdbConnectionUpdate(d *schema.ResourceData, meta interface
 		request.ConnectionStringPrefix = parts[1]
 		request.Port = d.Get("port").(string)
 
-		if err := resource.Retry(8*time.Minute, func() *resource.RetryError {
+		if err := retry.Retry(8*time.Minute, func() *retry.RetryError {
 			raw, err := client.WithGpdbClient(func(gpdbClient *gpdb.Client) (interface{}, error) {
 				return gpdbClient.ModifyDBInstanceConnectionString(request)
 			})
 			if err != nil {
 				if IsExpectedErrors(err, OperationDeniedDBStatus) {
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			return nil
@@ -186,10 +186,10 @@ func resourceAlicloudGpdbConnectionDelete(d *schema.ResourceData, meta interface
 	client := meta.(*connectivity.AliyunClient)
 	gpdbService := GpdbService{client}
 	request.RegionId = client.RegionId
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		object, err := gpdbService.DescribeGpdbConnection(d.Id())
 		if err != nil {
-			return resource.NonRetryableError(WrapError(err))
+			return retry.NonRetryableError(WrapError(err))
 		}
 		request.CurrentConnectionString = object.ConnectionString
 
@@ -199,9 +199,9 @@ func resourceAlicloudGpdbConnectionDelete(d *schema.ResourceData, meta interface
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"OperationDenied.DBInstanceStatus"}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil

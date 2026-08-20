@@ -7,7 +7,7 @@ import (
 
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -227,7 +227,7 @@ func resourceAlicloudLogETLCreate(d *schema.ResourceData, meta interface{}) erro
 
 	project := d.Get("project").(string)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 
 		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			requestinfo = slsClient
@@ -236,9 +236,9 @@ func resourceAlicloudLogETLCreate(d *schema.ResourceData, meta interface{}) erro
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InternalServerError", LogClientTimeout}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		if debugOn() {
 			addDebug("CreateETL", raw, requestinfo, map[string]interface{}{
@@ -324,16 +324,16 @@ func resourceAlicloudLogETLUpdate(d *schema.ResourceData, meta interface{}) erro
 	if d.HasChange("status") {
 		status := d.Get("status").(string)
 		if status == "STARTING" || status == "RUNNING" {
-			if err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			if err := retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 					return nil, slsClient.StartETL(parts[0], d.Get("etl_name").(string))
 				})
 				if err != nil {
 					if IsExpectedErrors(err, []string{LogClientTimeout}) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			}); err != nil {
@@ -344,16 +344,16 @@ func resourceAlicloudLogETLUpdate(d *schema.ResourceData, meta interface{}) erro
 				return WrapErrorf(err, IdMsg, d.Id())
 			}
 		} else if status == "STOPPING" || status == "STOPPED" {
-			if err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			if err := retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 					return nil, slsClient.StopETL(parts[0], d.Get("etl_name").(string))
 				})
 				if err != nil {
 					if IsExpectedErrors(err, []string{LogClientTimeout}) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			}); err != nil {
@@ -368,7 +368,7 @@ func resourceAlicloudLogETLUpdate(d *schema.ResourceData, meta interface{}) erro
 		return resourceAlicloudLogETLRead(d, meta)
 	}
 
-	if err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+	if err := retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 		_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			etl, err := getETLJob(d, meta)
 			if err != nil {
@@ -390,9 +390,9 @@ func resourceAlicloudLogETLUpdate(d *schema.ResourceData, meta interface{}) erro
 		if err != nil {
 			if IsExpectedErrors(err, []string{LogClientTimeout}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	}); err != nil {
@@ -410,7 +410,7 @@ func resourceAlicloudLogETLDelete(d *schema.ResourceData, meta interface{}) erro
 	}
 	var requestInfo *sls.Client
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			requestInfo = slsClient
 			return nil, slsClient.DeleteETL(parts[0], parts[1])
@@ -418,9 +418,9 @@ func resourceAlicloudLogETLDelete(d *schema.ResourceData, meta interface{}) erro
 		if err != nil {
 			if IsExpectedErrors(err, []string{LogClientTimeout}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		if debugOn() {
 			addDebug("DeleteLogETL", raw, requestInfo, map[string]interface{}{

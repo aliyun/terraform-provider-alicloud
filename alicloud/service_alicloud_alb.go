@@ -6,7 +6,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -24,14 +24,14 @@ func (s *AlbService) ListAclEntries(id string) (objects []map[string]interface{}
 	}
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Alb", "2020-06-16", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -74,19 +74,19 @@ func (s *AlbService) ListTagResources(id string, resourceType string) (object in
 
 	for {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err := client.RpcPost("Alb", "2020-06-16", action, nil, request, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{Throttling}) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(action, response, request)
 			v, err := jsonpath.Get("$.TagResources", response)
 			if err != nil {
-				return resource.NonRetryableError(WrapErrorf(err, FailedGetAttributeMsg, id, "$.TagResources", response))
+				return retry.NonRetryableError(WrapErrorf(err, FailedGetAttributeMsg, id, "$.TagResources", response))
 			}
 			if v != nil {
 				tags = append(tags, v.([]interface{})...)
@@ -129,15 +129,15 @@ func (s *AlbService) SetResourceTags(d *schema.ResourceData, resourceType string
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
 			wait := incrementalWait(2*time.Second, 1*time.Second)
-			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+			err := retry.Retry(10*time.Minute, func() *retry.RetryError {
 				response, err := client.RpcPost("Alb", "2020-06-16", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(action, response, request)
 				return nil
@@ -161,15 +161,15 @@ func (s *AlbService) SetResourceTags(d *schema.ResourceData, resourceType string
 			}
 
 			wait := incrementalWait(2*time.Second, 1*time.Second)
-			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+			err := retry.Retry(10*time.Minute, func() *retry.RetryError {
 				response, err := client.RpcPost("Alb", "2020-06-16", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(action, response, request)
 				return nil
@@ -192,14 +192,14 @@ func (s *AlbService) DescribeAlbAcl(id string) (object map[string]interface{}, e
 	idExist := false
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Alb", "2020-06-16", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -253,14 +253,14 @@ func (s *AlbService) DescribeAlbSecurityPolicy(id string) (object map[string]int
 	idExist := false
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Alb", "2020-06-16", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -304,14 +304,14 @@ func (s *AlbService) ListSystemSecurityPolicies(id string) (object map[string]in
 	request := map[string]interface{}{}
 	idExist := false
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Alb", "2020-06-16", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -341,7 +341,7 @@ func (s *AlbService) ListSystemSecurityPolicies(id string) (object map[string]in
 	return object, nil
 }
 
-func (s *AlbService) AlbSecurityPolicyStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *AlbService) AlbSecurityPolicyStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAlbSecurityPolicy(id)
 		if err != nil {
@@ -374,14 +374,14 @@ func (s *AlbService) ListServerGroupServers(id string) (object []interface{}, er
 	idExist := false
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Alb", "2020-06-16", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -438,14 +438,14 @@ func (s *AlbService) DescribeAlbServerGroup(id string) (object map[string]interf
 	idExist := false
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Alb", "2020-06-16", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -485,7 +485,7 @@ func (s *AlbService) DescribeAlbServerGroup(id string) (object map[string]interf
 	return object, nil
 }
 
-func (s *AlbService) AlbServerGroupStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *AlbService) AlbServerGroupStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAlbServerGroup(id)
 		if err != nil {
@@ -514,14 +514,14 @@ func (s *AlbService) DescribeAlbLoadBalancer(id string) (object map[string]inter
 		"LoadBalancerId": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Alb", "2020-06-16", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -548,14 +548,14 @@ func (s *AlbService) GetLoadBalancerAttribute(id string) (object map[string]inte
 		"LoadBalancerId": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Alb", "2020-06-16", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -574,7 +574,7 @@ func (s *AlbService) GetLoadBalancerAttribute(id string) (object map[string]inte
 	return object, nil
 }
 
-func (s *AlbService) AlbLoadBalancerStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *AlbService) AlbLoadBalancerStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAlbLoadBalancer(id)
 		if err != nil {
@@ -594,7 +594,7 @@ func (s *AlbService) AlbLoadBalancerStateRefreshFunc(id string, failStates []str
 	}
 }
 
-func (s *AlbService) AlbLoadBalancerEditionRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+func (s *AlbService) AlbLoadBalancerEditionRefreshFunc(d *schema.ResourceData, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAlbLoadBalancer(d.Id())
 		if err != nil {
@@ -614,7 +614,7 @@ func (s *AlbService) AlbLoadBalancerEditionRefreshFunc(d *schema.ResourceData, f
 	}
 }
 
-func (s *AlbService) AlbAclStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *AlbService) AlbAclStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAlbAcl(id)
 		if err != nil {
@@ -635,7 +635,7 @@ func (s *AlbService) AlbAclStateRefreshFunc(id string, failStates []string) reso
 	}
 }
 
-func (s *AlbService) AlbListenerStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *AlbService) AlbListenerStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAlbListener(id)
 		if err != nil {
@@ -663,14 +663,14 @@ func (s *AlbService) DescribeAlbListener(id string) (object map[string]interface
 		"ListenerId": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Alb", "2020-06-16", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -705,14 +705,14 @@ func (s *AlbService) DescribeAlbRule(id, direction string) (object map[string]in
 	idExist := false
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Alb", "2020-06-16", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -746,7 +746,7 @@ func (s *AlbService) DescribeAlbRule(id, direction string) (object map[string]in
 	return
 }
 
-func (s *AlbService) AlbRuleStateRefreshFunc(id, direction string, failStates []string) resource.StateRefreshFunc {
+func (s *AlbService) AlbRuleStateRefreshFunc(id, direction string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAlbRule(id, direction)
 		if err != nil {
@@ -777,14 +777,14 @@ func (s *AlbService) DescribeAlbHealthCheckTemplate(id string) (object map[strin
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Alb", "2020-06-16", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -824,14 +824,14 @@ func (s *AlbService) DescribeAlbListenerAdditionalCertificateAttachment(id strin
 	idExist := false
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Alb", "2020-06-16", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -865,7 +865,7 @@ func (s *AlbService) DescribeAlbListenerAdditionalCertificateAttachment(id strin
 	return
 }
 
-func (s *AlbService) AlbListenerAdditionalCertificateAttachmentStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *AlbService) AlbListenerAdditionalCertificateAttachmentStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAlbListenerAdditionalCertificateAttachment(id)
 		if err != nil {
@@ -897,14 +897,14 @@ func (s *AlbService) DescribeAlbListenerAclAttachment(id string) (object map[str
 		"ListenerId": parts[0],
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Alb", "2020-06-16", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -966,14 +966,14 @@ func (s *AlbService) DescribeAlbAclEntryAttachment(id string) (object map[string
 	idExist := false
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Alb", "2020-06-16", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -1010,7 +1010,7 @@ func (s *AlbService) DescribeAlbAclEntryAttachment(id string) (object map[string
 	return object, nil
 }
 
-func (s *AlbService) AlbAclEntryAttachmentStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *AlbService) AlbAclEntryAttachmentStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAlbAclEntryAttachment(id)
 		if err != nil {
@@ -1041,14 +1041,14 @@ func (s *AlbService) DescribeAlbAscript(id string) (object map[string]interface{
 	var response map[string]interface{}
 	action := "ListAScripts"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err := client.RpcPost("Alb", "2020-06-16", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		response = resp
 		addDebug(action, response, request)
@@ -1072,7 +1072,7 @@ func (s *AlbService) DescribeAlbAscript(id string) (object map[string]interface{
 	return resp[0].(map[string]interface{}), nil
 }
 
-func (s *AlbService) AlbAscriptStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+func (s *AlbService) AlbAscriptStateRefreshFunc(d *schema.ResourceData, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAlbAscript(d.Id())
 		if err != nil {
@@ -1104,14 +1104,14 @@ func (s *AlbService) DescribeAlbLoadBalancerCommonBandwidthPackageAttachment(id 
 	var response map[string]interface{}
 	action := "GetLoadBalancerAttribute"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err := client.RpcPost("Alb", "2020-06-16", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		response = resp
 		addDebug(action, response, request)
@@ -1127,7 +1127,7 @@ func (s *AlbService) DescribeAlbLoadBalancerCommonBandwidthPackageAttachment(id 
 	return v.(map[string]interface{}), nil
 }
 
-func (s *AlbService) AlbLoadBalancerCommonBandwidthPackageAttachmentStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *AlbService) AlbLoadBalancerCommonBandwidthPackageAttachmentStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAlbLoadBalancerCommonBandwidthPackageAttachment(id)
 		if err != nil {

@@ -7,7 +7,7 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/blues/jsonata-go"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type AligreenServiceV2 struct {
@@ -26,15 +26,15 @@ func (s *AligreenServiceV2) DescribeAligreenAuditCallback(id string) (object map
 	query = make(map[string]interface{})
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Green", "2017-08-23", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -64,7 +64,7 @@ func (s *AligreenServiceV2) DescribeAligreenAuditCallback(id string) (object map
 	return object, WrapErrorf(NotFoundErr("AuditCallback", id), NotFoundMsg, response)
 }
 
-func (s *AligreenServiceV2) AligreenAuditCallbackStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *AligreenServiceV2) AligreenAuditCallbackStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAligreenAuditCallback(id)
 		if err != nil {
@@ -100,15 +100,15 @@ func (s *AligreenServiceV2) DescribeAligreenCallback(id string) (object map[stri
 	query = make(map[string]interface{})
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Green", "2017-08-23", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -138,7 +138,7 @@ func (s *AligreenServiceV2) DescribeAligreenCallback(id string) (object map[stri
 	return object, WrapErrorf(NotFoundErr("Callback", id), NotFoundMsg, response)
 }
 
-func (s *AligreenServiceV2) AligreenCallbackStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *AligreenServiceV2) AligreenCallbackStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAligreenCallback(id)
 		if err != nil {
@@ -173,15 +173,15 @@ func (s *AligreenServiceV2) DescribeAligreenBizType(id string) (object map[strin
 	query = make(map[string]interface{})
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Green", "2017-08-23", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -211,7 +211,7 @@ func (s *AligreenServiceV2) DescribeAligreenBizType(id string) (object map[strin
 	return object, WrapErrorf(NotFoundErr("BizType", id), NotFoundMsg, response)
 }
 
-func (s *AligreenServiceV2) AligreenBizTypeStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *AligreenServiceV2) AligreenBizTypeStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAligreenBizType(id)
 		if err != nil {
@@ -248,15 +248,15 @@ func (s *AligreenServiceV2) DescribeAligreenImageLib(id string) (object map[stri
 
 	request["ServiceModule"] = "open_api"
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Green", "2017-08-23", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -289,7 +289,7 @@ func (s *AligreenServiceV2) DescribeAligreenImageLib(id string) (object map[stri
 	return object, WrapErrorf(NotFoundErr("ImageLib", id), NotFoundMsg, response)
 }
 
-func (s *AligreenServiceV2) AligreenImageLibStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *AligreenServiceV2) AligreenImageLibStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAligreenImageLib(id)
 		if err != nil {
@@ -325,15 +325,15 @@ func (s *AligreenServiceV2) DescribeAligreenKeywordLib(id string) (object map[st
 
 	request["ServiceModule"] = "open_api"
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Green", "2017-08-23", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -366,7 +366,7 @@ func (s *AligreenServiceV2) DescribeAligreenKeywordLib(id string) (object map[st
 	return object, WrapErrorf(NotFoundErr("KeywordLib", id), NotFoundMsg, response)
 }
 
-func (s *AligreenServiceV2) AligreenKeywordLibStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *AligreenServiceV2) AligreenKeywordLibStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAligreenKeywordLib(id)
 		if err != nil {
@@ -403,15 +403,15 @@ func (s *AligreenServiceV2) DescribeAligreenOssStockTask(id string) (object map[
 	query["Id"] = id
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Green", "2017-08-23", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -424,7 +424,7 @@ func (s *AligreenServiceV2) DescribeAligreenOssStockTask(id string) (object map[
 	return response, nil
 }
 
-func (s *AligreenServiceV2) AligreenOssStockTaskStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *AligreenServiceV2) AligreenOssStockTaskStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAligreenOssStockTask(id)
 		if err != nil {

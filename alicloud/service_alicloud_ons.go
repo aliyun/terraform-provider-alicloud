@@ -6,7 +6,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -79,7 +79,7 @@ func (s *OnsService) DescribeOnsTopic(id string) (object map[string]interface{},
 	return object, nil
 }
 
-func (s *OnsService) OceanOnsTopicStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *OnsService) OceanOnsTopicStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeOnsTopic(id)
 		if err != nil {
@@ -192,15 +192,15 @@ func (s *OnsService) SetResourceTags(d *schema.ResourceData, resourceType string
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
 			wait := incrementalWait(2*time.Second, 1*time.Second)
-			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+			err := retry.Retry(10*time.Minute, func() *retry.RetryError {
 				response, err := client.RpcPost("Ons", "2019-02-14", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(action, response, request)
 				return nil
@@ -230,15 +230,15 @@ func (s *OnsService) SetResourceTags(d *schema.ResourceData, resourceType string
 			}
 
 			wait := incrementalWait(2*time.Second, 1*time.Second)
-			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+			err := retry.Retry(10*time.Minute, func() *retry.RetryError {
 				response, err := client.RpcPost("Ons", "2019-02-14", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(action, response, request)
 				return nil
@@ -266,24 +266,24 @@ func (s *OnsService) OnsTopicStatus(id string) (object map[string]interface{}, e
 		"Topic":      parts[1],
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(11*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(11*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ons", "2019-02-14", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 			if IsExpectedErrors(err, []string{"AUTH_RESOURCE_OWNER_ERROR", "INSTANCE_NOT_FOUND"}) {
 				err = WrapErrorf(NotFoundErr("OnsTopic", id), NotFoundMsg, ProviderERROR)
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		v, err := jsonpath.Get("$.Data", response)
 		if err != nil {
-			return resource.NonRetryableError(WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data", response))
+			return retry.NonRetryableError(WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data", response))
 		}
 		object = v.(map[string]interface{})
 		return nil
@@ -304,19 +304,19 @@ func (s *OnsService) ListTagResources(id string, resourceType string) (object in
 
 	for {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err := client.RpcPost("Ons", "2019-02-14", action, nil, request, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{Throttling}) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(action, response, request)
 			v, err := jsonpath.Get("$.TagResources", response)
 			if err != nil {
-				return resource.NonRetryableError(WrapErrorf(err, FailedGetAttributeMsg, id, "$.TagResources.TagResource", response))
+				return retry.NonRetryableError(WrapErrorf(err, FailedGetAttributeMsg, id, "$.TagResources.TagResource", response))
 			}
 			if v != nil {
 				if v != nil {

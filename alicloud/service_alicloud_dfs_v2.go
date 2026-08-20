@@ -8,7 +8,7 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/blues/jsonata-go"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type DfsServiceV2 struct {
@@ -29,15 +29,15 @@ func (s *DfsServiceV2) DescribeDfsAccessGroup(id string) (object map[string]inte
 	request["InputRegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -59,7 +59,7 @@ func (s *DfsServiceV2) DescribeDfsAccessGroup(id string) (object map[string]inte
 	return v.(map[string]interface{}), nil
 }
 
-func (s *DfsServiceV2) DfsAccessGroupStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *DfsServiceV2) DfsAccessGroupStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeDfsAccessGroup(id)
 		if err != nil {
@@ -101,15 +101,15 @@ func (s *DfsServiceV2) DescribeDfsAccessRule(id string) (object map[string]inter
 	query["InputRegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -131,7 +131,7 @@ func (s *DfsServiceV2) DescribeDfsAccessRule(id string) (object map[string]inter
 	return v.(map[string]interface{}), nil
 }
 
-func (s *DfsServiceV2) DfsAccessRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *DfsServiceV2) DfsAccessRuleStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeDfsAccessRule(id)
 		if err != nil {
@@ -169,15 +169,15 @@ func (s *DfsServiceV2) DescribeDfsFileSystem(id string) (object map[string]inter
 	action := "GetFileSystem"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -197,7 +197,7 @@ func (s *DfsServiceV2) DescribeDfsFileSystem(id string) (object map[string]inter
 	return v.(map[string]interface{}), nil
 }
 
-func (s *DfsServiceV2) DfsFileSystemStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *DfsServiceV2) DfsFileSystemStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeDfsFileSystem(id)
 		if err != nil {
@@ -247,15 +247,15 @@ func (s *DfsServiceV2) DescribeDfsMountPoint(id string) (object map[string]inter
 	action := "GetMountPoint"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -275,7 +275,7 @@ func (s *DfsServiceV2) DescribeDfsMountPoint(id string) (object map[string]inter
 	return v.(map[string]interface{}), nil
 }
 
-func (s *DfsServiceV2) DfsMountPointStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *DfsServiceV2) DfsMountPointStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeDfsMountPoint(id)
 		if err != nil {
@@ -329,15 +329,15 @@ func (s *DfsServiceV2) DescribeDfsVscMountPoint(id string) (object map[string]in
 	action := "DescribeVscMountPoints"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -369,7 +369,7 @@ func (s *DfsServiceV2) DescribeDfsVscMountPoint(id string) (object map[string]in
 	return object, WrapErrorf(NotFoundErr("VscMountPoint", id), NotFoundMsg, response)
 }
 
-func (s *DfsServiceV2) DfsVscMountPointStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *DfsServiceV2) DfsVscMountPointStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeDfsVscMountPoint(id)
 		if err != nil {

@@ -7,7 +7,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type CloudPhoneServiceV2 struct {
@@ -28,15 +28,15 @@ func (s *CloudPhoneServiceV2) DescribeCloudPhonePolicy(id string) (object map[st
 	action := "ListPolicyGroups"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("eds-aic", "2023-09-30", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -57,7 +57,7 @@ func (s *CloudPhoneServiceV2) DescribeCloudPhonePolicy(id string) (object map[st
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *CloudPhoneServiceV2) CloudPhonePolicyStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *CloudPhoneServiceV2) CloudPhonePolicyStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCloudPhonePolicy(id)
 		if err != nil {
@@ -102,15 +102,15 @@ func (s *CloudPhoneServiceV2) DescribeCloudPhoneInstanceGroup(id string) (object
 	action := "DescribeAndroidInstanceGroups"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("eds-aic", "2023-09-30", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -131,7 +131,7 @@ func (s *CloudPhoneServiceV2) DescribeCloudPhoneInstanceGroup(id string) (object
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *CloudPhoneServiceV2) CloudPhoneInstanceGroupStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *CloudPhoneServiceV2) CloudPhoneInstanceGroupStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCloudPhoneInstanceGroup(id)
 		if err != nil {
@@ -175,15 +175,15 @@ func (s *CloudPhoneServiceV2) DescribeCloudPhoneInstance(id string) (object map[
 	action := "DescribeAndroidInstances"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("eds-aic", "2023-09-30", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -204,7 +204,7 @@ func (s *CloudPhoneServiceV2) DescribeCloudPhoneInstance(id string) (object map[
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *CloudPhoneServiceV2) CloudPhoneInstanceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *CloudPhoneServiceV2) CloudPhoneInstanceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCloudPhoneInstance(id)
 		if err != nil {
@@ -248,15 +248,15 @@ func (s *CloudPhoneServiceV2) DescribeCloudPhoneKeyPair(id string) (object map[s
 	action := "DescribeKeyPairs"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("eds-aic", "2023-09-30", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -277,7 +277,7 @@ func (s *CloudPhoneServiceV2) DescribeCloudPhoneKeyPair(id string) (object map[s
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *CloudPhoneServiceV2) CloudPhoneKeyPairStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *CloudPhoneServiceV2) CloudPhoneKeyPairStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCloudPhoneKeyPair(id)
 		if err != nil {
@@ -322,15 +322,15 @@ func (s *CloudPhoneServiceV2) DescribeCloudPhoneImage(id string) (object map[str
 	action := "GetImageInfo"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("eds-aic", "2023-09-30", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -347,7 +347,7 @@ func (s *CloudPhoneServiceV2) DescribeCloudPhoneImage(id string) (object map[str
 	return v.(map[string]interface{}), nil
 }
 
-func (s *CloudPhoneServiceV2) CloudPhoneImageStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *CloudPhoneServiceV2) CloudPhoneImageStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCloudPhoneImage(id)
 		if err != nil {

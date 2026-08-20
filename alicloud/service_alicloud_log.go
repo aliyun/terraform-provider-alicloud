@@ -10,7 +10,7 @@ import (
 	slsPop "github.com/aliyun/alibaba-cloud-sdk-go/services/sls"
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 var SlsClientTimeoutCatcher = Catcher{LogClientTimeout, 15, 5}
@@ -22,7 +22,7 @@ type LogService struct {
 func (s *LogService) DescribeLogProject(id string) (*sls.LogProject, error) {
 	project := &sls.LogProject{}
 	var requestInfo *sls.Client
-	err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+	err := retry.Retry(2*time.Minute, func() *retry.RetryError {
 		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			requestInfo = slsClient
 			return slsClient.GetProject(id)
@@ -30,9 +30,9 @@ func (s *LogService) DescribeLogProject(id string) (*sls.LogProject, error) {
 		if err != nil {
 			if IsExpectedErrors(err, []string{LogClientTimeout, "ProjectForbidden"}) {
 				time.Sleep(5 * time.Second)
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		if debugOn() {
 			addDebug("GetProject", raw, requestInfo, map[string]string{"name": id})
@@ -82,16 +82,16 @@ func (s *LogService) DescribeLogStore(id string) (*sls.LogStore, error) {
 	}
 	projectName, name := parts[0], parts[1]
 	var requestInfo *sls.Client
-	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(2*time.Minute, func() *retry.RetryError {
 		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			requestInfo = slsClient
 			return slsClient.GetLogStore(projectName, name)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InternalServerError", LogClientTimeout}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		if debugOn() {
 			addDebug("GetLogStore", raw, requestInfo, map[string]string{
@@ -149,16 +149,16 @@ func (s *LogService) DescribeLogStoreIndex(id string) (*sls.Index, error) {
 	}
 	projectName, name := parts[0], parts[1]
 	var requestInfo *sls.Client
-	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(2*time.Minute, func() *retry.RetryError {
 		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			requestInfo = slsClient
 			return slsClient.GetIndex(projectName, name)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InternalServerError", LogClientTimeout}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		if debugOn() {
 			addDebug("GetIndex", raw, requestInfo, map[string]string{
@@ -191,16 +191,16 @@ func (s *LogService) DescribeLogMachineGroup(id string) (*sls.MachineGroup, erro
 	}
 	projectName, groupName := parts[0], parts[1]
 	var requestInfo *sls.Client
-	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(2*time.Minute, func() *retry.RetryError {
 		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			requestInfo = slsClient
 			return slsClient.GetMachineGroup(projectName, groupName)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InternalServerError", LogClientTimeout}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		if debugOn() {
 			addDebug("GetMachineGroup", raw, requestInfo, map[string]string{
@@ -260,7 +260,7 @@ func (s *LogService) DescribeLogtailConfig(id string) (*sls.LogConfig, error) {
 	}
 	projectName, configName := parts[0], parts[2]
 	var requestInfo *sls.Client
-	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(2*time.Minute, func() *retry.RetryError {
 		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			requestInfo = slsClient
 			slsClient.RetryTimeOut = 30 * time.Second
@@ -268,12 +268,12 @@ func (s *LogService) DescribeLogtailConfig(id string) (*sls.LogConfig, error) {
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"unconvertable", "Unconvertable"}) {
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			if IsExpectedErrors(err, []string{"InternalServerError"}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		if debugOn() {
 			addDebug("GetConfig", raw, requestInfo, map[string]string{
@@ -331,7 +331,7 @@ func (s *LogService) DescribeLogtailAttachment(id string) (groupName string, err
 	projectName, configName, name := parts[0], parts[1], parts[2]
 	var groupNames []string
 	var requestInfo *sls.Client
-	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(2*time.Minute, func() *retry.RetryError {
 
 		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			requestInfo = slsClient
@@ -339,9 +339,9 @@ func (s *LogService) DescribeLogtailAttachment(id string) (groupName string, err
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InternalServerError"}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		if debugOn() {
 			addDebug("GetAppliedMachineGroups", raw, requestInfo, map[string]string{
@@ -403,7 +403,7 @@ func (s *LogService) DescribeLogAlertResource(id string) (map[string]string, err
 		return result, WrapError(err)
 	}
 	resourceType := parts[1]
-	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+	if err := retry.Retry(2*time.Minute, func() *retry.RetryError {
 		_, err := s.client.WithLogPopClient(func(slsPopClient *slsPop.Client) (interface{}, error) {
 			switch resourceType {
 			case "user":
@@ -470,9 +470,9 @@ func (s *LogService) DescribeLogAlertResource(id string) (map[string]string, err
 		if err != nil {
 			if IsExpectedErrors(err, []string{LogClientTimeout}) {
 				time.Sleep(5 * time.Second)
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	}); err != nil {
@@ -489,16 +489,16 @@ func (s *LogService) DescribeLogAlert(id string) (*sls.Alert, error) {
 	}
 	projectName, alertName := parts[0], parts[1]
 	var requestInfo *sls.Client
-	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(2*time.Minute, func() *retry.RetryError {
 		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			requestInfo = slsClient
 			return slsClient.GetAlert(projectName, alertName)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InternalServerError", LogClientTimeout}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		if debugOn() {
 			addDebug("GetLogstoreAlert", raw, requestInfo, map[string]string{
@@ -555,18 +555,18 @@ func (s *LogService) CreateLogDashboard(project, name string) error {
 		DashboardName: name,
 		ChartList:     []sls.Chart{},
 	}
-	err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+	err := retry.Retry(2*time.Minute, func() *retry.RetryError {
 		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			return nil, slsClient.CreateDashboard(project, dashboard)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InternalServerError", LogClientTimeout}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 			if err.(*sls.Error).Message == "specified dashboard already exists" {
 				return nil
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		if debugOn() {
 			addDebug("CreateLogDashboard", raw, map[string]string{
@@ -588,14 +588,14 @@ func CreateDashboard(project, name string, client *sls.Client) error {
 		DashboardName: name,
 		ChartList:     []sls.Chart{},
 	}
-	err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+	err := retry.Retry(2*time.Minute, func() *retry.RetryError {
 		err := client.CreateDashboard(project, dashboard)
 		if err != nil {
 			if err.(*sls.Error).Message == "specified dashboard already exists" {
 				return nil
 			}
 			if IsExpectedErrors(err, []string{"InternalServerError", LogClientTimeout}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 
 		}
@@ -653,16 +653,16 @@ func (s *LogService) DescribeLogDashboard(id string) (string, error) {
 	}
 	projectName, dashboardName := parts[0], parts[1]
 	var requestInfo *sls.Client
-	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(2*time.Minute, func() *retry.RetryError {
 		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			requestInfo = slsClient
 			return slsClient.GetDashboardString(projectName, dashboardName)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InternalServerError", LogClientTimeout}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		if debugOn() {
 			addDebug("GetLogstoreDashboard", raw, requestInfo, map[string]string{
@@ -718,16 +718,16 @@ func (s *LogService) DescribeLogProjectPolicy(id string) (string, error) {
 	policy := ""
 	projectName := id
 	var requestInfo *sls.Client
-	err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+	err := retry.Retry(2*time.Minute, func() *retry.RetryError {
 		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			requestInfo = slsClient
 			return slsClient.GetProjectPolicy(projectName)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InternalServerError", LogClientTimeout}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		if debugOn() {
 			addDebug("GetLogProjectPolicy", raw, requestInfo, map[string]string{
@@ -752,7 +752,7 @@ func (s *LogService) DescribeLogProjectTags(project_name string) ([]*sls.Resourc
 	var requestInfo *sls.Client
 	var respTags []*sls.ResourceTagResponse
 
-	err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+	err := retry.Retry(2*time.Minute, func() *retry.RetryError {
 		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			requestInfo = slsClient
 			raw, _, err := slsClient.ListTagResources(project_name, "project", []string{project_name}, []sls.ResourceFilterTag{}, "")
@@ -762,9 +762,9 @@ func (s *LogService) DescribeLogProjectTags(project_name string) ([]*sls.Resourc
 		if err != nil {
 			if IsExpectedErrors(err, []string{LogClientTimeout}) {
 				time.Sleep(5 * time.Second)
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		if debugOn() {
 			addDebug("GetProjectTags", raw, requestInfo, map[string]string{"project_name": project_name})
@@ -789,16 +789,16 @@ func (s *LogService) DescribeLogEtl(id string) (*sls.ETL, error) {
 	}
 	projectName, etlName := parts[0], parts[1]
 	var requestInfo *sls.Client
-	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(2*time.Minute, func() *retry.RetryError {
 		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			requestInfo = slsClient
 			return slsClient.GetETL(projectName, etlName)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InternalServerError", LogClientTimeout}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		if debugOn() {
 			addDebug("GetLogETL", raw, requestInfo, map[string]string{
@@ -845,7 +845,7 @@ func (s *LogService) WaitForLogETL(id string, status Status, timeout int) error 
 	}
 }
 
-func (s *LogService) LogETLStateRefreshFunc(id string, failStates []string, slsClient *sls.Client) resource.StateRefreshFunc {
+func (s *LogService) LogETLStateRefreshFunc(id string, failStates []string, slsClient *sls.Client) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		parts, err := ParseResourceId(id, 2)
 		if err != nil {
@@ -870,7 +870,7 @@ func (s *LogService) LogETLStateRefreshFunc(id string, failStates []string, slsC
 	}
 }
 
-func (s *LogService) LogOssShipperStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *LogService) LogOssShipperStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeLogEtl(id)
 		if err != nil {
@@ -899,7 +899,7 @@ func (s *LogService) DescribeLogOssShipper(id string) (*sls.Shipper, error) {
 	}
 	projectName, logstoreName, shipperName := parts[0], parts[1], parts[2]
 	var requestInfo *sls.Client
-	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(2*time.Minute, func() *retry.RetryError {
 		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			requestInfo = slsClient
 			project, _ := sls.NewLogProject(projectName, slsClient.Endpoint, slsClient.AccessKeyID, slsClient.AccessKeySecret)
@@ -909,9 +909,9 @@ func (s *LogService) DescribeLogOssShipper(id string) (*sls.Shipper, error) {
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InternalServerError", LogClientTimeout}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		if debugOn() {
 			addDebug("GetLogOssShipper", raw, requestInfo, map[string]string{
@@ -965,7 +965,7 @@ func (s *LogService) WaitForLogOssShipper(id string, status Status, timeout int)
 	}
 }
 
-func (s *LogService) LogProjectStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *LogService) LogProjectStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeLogProject(id)
 		if err != nil {
@@ -993,16 +993,16 @@ func (s *LogService) DescribeLogIngestion(id string) (*sls.Ingestion, error) {
 	}
 	projectName, logstoreName, ingestionName := parts[0], parts[1], parts[2]
 	var requestInfo *sls.Client
-	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(2*time.Minute, func() *retry.RetryError {
 		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			requestInfo = slsClient
 			return slsClient.GetIngestion(projectName, ingestionName)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InternalServerError", LogClientTimeout}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		if debugOn() {
 			addDebug("GetIngestion", raw, requestInfo, map[string]string{
@@ -1061,16 +1061,16 @@ func (s *LogService) describeLogExport(id string) (*sls.Export, error) {
 	}
 	projectName, logstoreName, exportName := parts[0], parts[1], parts[2]
 	var requestInfo *sls.Client
-	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(2*time.Minute, func() *retry.RetryError {
 		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			requestInfo = slsClient
 			return slsClient.GetExport(projectName, exportName)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InternalServerError", LogClientTimeout}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		if debugOn() {
 			addDebug("GetExport", raw, requestInfo, map[string]string{
@@ -1126,16 +1126,16 @@ func (s *LogService) DescribeLogResource(id string) (*sls.Resource, error) {
 	res := &sls.Resource{}
 	resourceName := id
 	var requestInfo *sls.Client
-	err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+	err := retry.Retry(2*time.Minute, func() *retry.RetryError {
 		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			requestInfo = slsClient
 			return slsClient.GetResource(resourceName)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InternalServerError", LogClientTimeout}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		if debugOn() {
 			addDebug("GetResource", raw, requestInfo, map[string]string{
@@ -1190,16 +1190,16 @@ func (s *LogService) DescribeLogResourceRecord(id string) (*sls.ResourceRecord, 
 	}
 	resourceName, recordId := parts[0], parts[1]
 	var requestInfo *sls.Client
-	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(2*time.Minute, func() *retry.RetryError {
 		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			requestInfo = slsClient
 			return slsClient.GetResourceRecord(resourceName, recordId)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InternalServerError", LogClientTimeout}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		if debugOn() {
 			addDebug("GetResourceRecord", raw, requestInfo, map[string]string{

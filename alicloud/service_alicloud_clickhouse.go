@@ -6,7 +6,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type ClickhouseService struct {
@@ -21,14 +21,14 @@ func (s *ClickhouseService) DescribeClickHouseDbCluster(id string) (object map[s
 		"DBClusterId": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("clickhouse", "2019-11-11", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -47,7 +47,7 @@ func (s *ClickhouseService) DescribeClickHouseDbCluster(id string) (object map[s
 	return object, nil
 }
 
-func (s *ClickhouseService) ClickHouseDbClusterStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *ClickhouseService) ClickHouseDbClusterStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeClickHouseDbCluster(id)
 		if err != nil {
@@ -67,7 +67,7 @@ func (s *ClickhouseService) ClickHouseDbClusterStateRefreshFunc(id string, failS
 	}
 }
 
-func (s *ClickhouseService) ClickHouseDbClusterResourceGroupIdRefreshFunc(id string) resource.StateRefreshFunc {
+func (s *ClickhouseService) ClickHouseDbClusterResourceGroupIdRefreshFunc(id string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeClickHouseDbCluster(id)
 		if err != nil {
@@ -94,14 +94,14 @@ func (s *ClickhouseService) DescribeClickHouseAccount(id string) (object map[str
 		"DBClusterId": parts[0],
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("clickhouse", "2019-11-11", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"IncorrectAccountStatus", "IncorrectDBInstanceState"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -142,14 +142,14 @@ func (s *ClickhouseService) DescribeClickHouseAccountAuthority(id string) (objec
 		"RegionId":    s.client.RegionId,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("clickhouse", "2019-11-11", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"IncorrectAccountStatus", "IncorrectDBInstanceState"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -168,7 +168,7 @@ func (s *ClickhouseService) DescribeClickHouseAccountAuthority(id string) (objec
 	return object, nil
 }
 
-func (s *ClickhouseService) ClickhouseStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *ClickhouseService) ClickhouseStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeClickHouseAccount(id)
 		if err != nil {
@@ -200,14 +200,14 @@ func (s *ClickhouseService) DescribeDBClusterAccessWhiteList(id string) (object 
 		"DBClusterId": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("clickhouse", "2019-11-11", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -232,14 +232,14 @@ func (s *ClickhouseService) DescribeClickHouseBackupPolicy(id string) (object ma
 		"DBClusterId": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("clickhouse", "2019-11-11", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -258,7 +258,7 @@ func (s *ClickhouseService) DescribeClickHouseBackupPolicy(id string) (object ma
 	return object, nil
 }
 
-func (s *ClickhouseService) ClickHouseBackupPolicyStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *ClickhouseService) ClickHouseBackupPolicyStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeClickHouseBackupPolicy(id)
 		if err != nil {
@@ -287,14 +287,14 @@ func (s *ClickhouseService) DescribeClickHouseAutoRenewStatus(id string) (object
 		"RegionId":     client.RegionId,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("clickhouse", "2019-11-11", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -316,7 +316,7 @@ func (s *ClickhouseService) DescribeClickHouseAutoRenewStatus(id string) (object
 	return object, nil
 }
 
-func (s *ClickhouseService) ClickHouseAutoRenewStatusRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *ClickhouseService) ClickHouseAutoRenewStatusRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeClickHouseAutoRenewStatus(id)
 		if err != nil {
@@ -345,14 +345,14 @@ func (s *ClickhouseService) DescribeClickHouseOSSStorage(id string) (object map[
 		"RegionId":    client.RegionId,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("clickhouse", "2019-11-11", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -371,7 +371,7 @@ func (s *ClickhouseService) DescribeClickHouseOSSStorage(id string) (object map[
 	return object, nil
 }
 
-func (s *ClickhouseService) ClickHouseOSSStorageStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *ClickhouseService) ClickHouseOSSStorageStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeClickHouseOSSStorage(id)
 		if err != nil {

@@ -8,7 +8,7 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -95,19 +95,19 @@ func (s *VpcService) ListTagResources(id string, resourceType string) (object in
 
 	for {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err := client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(action, response, request)
 			v, err := jsonpath.Get("$.TagResources.TagResource", response)
 			if err != nil {
-				return resource.NonRetryableError(WrapErrorf(err, FailedGetAttributeMsg, id, "$.TagResources.TagResource", response))
+				return retry.NonRetryableError(WrapErrorf(err, FailedGetAttributeMsg, id, "$.TagResources.TagResource", response))
 			}
 			if v != nil {
 				tags = append(tags, v.([]interface{})...)
@@ -220,22 +220,22 @@ func (s *VpcService) QueryRouteTableById(routeTableId string) (rt vpc.RouteTable
 	request.RegionId = s.client.RegionId
 	request.RouteTableId = routeTableId
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.DescribeRouteTables(request)
 		})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*vpc.DescribeRouteTablesResponse)
 		if len(response.RouteTables.RouteTable) == 0 ||
 			response.RouteTables.RouteTable[0].RouteTableId != routeTableId {
-			return resource.NonRetryableError(WrapErrorf(NotFoundErr("RouteTable", routeTableId), NotFoundMsg, ProviderERROR))
+			return retry.NonRetryableError(WrapErrorf(NotFoundErr("RouteTable", routeTableId), NotFoundMsg, ProviderERROR))
 		}
 		rt = response.RouteTables.RouteTable[0]
 		return nil
@@ -263,16 +263,16 @@ func (s *VpcService) DescribeRouteEntry(id string) (*vpc.RouteEntry, error) {
 	for {
 		var raw interface{}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			raw, err = s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 				return vpcClient.DescribeRouteTables(request)
 			})
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -618,14 +618,14 @@ func (s *VpcService) DescribeNetworkAcl(id string) (object map[string]interface{
 		"NetworkAclId": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -749,14 +749,14 @@ func (s *VpcService) DescribeRouteTableList(id string) (object map[string]interf
 	}
 	for {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(action, response, request)
 			return nil
@@ -813,7 +813,7 @@ func (s *VpcService) DescribeVswitch(id string) (object map[string]interface{}, 
 	return object, nil
 }
 
-func (s *VpcService) ForwardEntryStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *VpcService) ForwardEntryStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeForwardEntry(id)
 		if err != nil {
@@ -874,7 +874,7 @@ func (s *VpcService) DescribeHavip(id string) (object map[string]interface{}, er
 	return object, WrapErrorf(NotFoundErr("VPC", id), NotFoundWithResponse, response)
 }
 
-func (s *VpcService) HavipStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *VpcService) HavipStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeHavip(id)
 		if err != nil {
@@ -894,7 +894,7 @@ func (s *VpcService) HavipStateRefreshFunc(id string, failStates []string) resou
 	}
 }
 
-func (s *VpcService) NatGatewayStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *VpcService) NatGatewayStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeNatGateway(id)
 		if err != nil {
@@ -914,7 +914,7 @@ func (s *VpcService) NatGatewayStateRefreshFunc(id string, failStates []string) 
 	}
 }
 
-func (s *VpcService) NetworkAclStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *VpcService) NetworkAclStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeNetworkAcl(id)
 		if err != nil {
@@ -973,14 +973,14 @@ func (s *VpcService) DeleteAclResources(id string) (object map[string]interface{
 	client := s.client
 	request["ClientToken"] = buildClientToken("UnassociateNetworkAcl")
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(10*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"IncorrectStatus.Vpc", "OperationConflict", "IncorrectStatus", "ServiceUnavailable", "LastTokenProcessing", "SystemBusy", "ResourceStatus.Error"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1020,14 +1020,14 @@ func (s *VpcService) DescribeExpressConnectPhysicalConnection(id string) (object
 	idExist := false
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -1067,7 +1067,7 @@ func (s *VpcService) DescribeExpressConnectPhysicalConnection(id string) (object
 	return object, nil
 }
 
-func (s *VpcService) ExpressConnectPhysicalConnectionStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *VpcService) ExpressConnectPhysicalConnectionStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeExpressConnectPhysicalConnection(id)
 		if err != nil {
@@ -1101,14 +1101,14 @@ func (s *VpcService) DescribeExpressConnectVirtualBorderRouter(id string, includ
 	idExist := false
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -1140,7 +1140,7 @@ func (s *VpcService) DescribeExpressConnectVirtualBorderRouter(id string, includ
 	return
 }
 
-func (s *VpcService) ExpressConnectVirtualBorderRouterStateRefreshFunc(id string, includeCrossAccountVbr bool, failStates []string) resource.StateRefreshFunc {
+func (s *VpcService) ExpressConnectVirtualBorderRouterStateRefreshFunc(id string, includeCrossAccountVbr bool, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeExpressConnectVirtualBorderRouter(id, includeCrossAccountVbr)
 		if err != nil {
@@ -1169,14 +1169,14 @@ func (s *VpcService) DescribeVpcDhcpOptionsSet(id string) (object map[string]int
 		"DhcpOptionsSetId": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1199,7 +1199,7 @@ func (s *VpcService) DescribeVpcDhcpOptionsSet(id string) (object map[string]int
 	return object, nil
 }
 
-func (s *VpcService) VpcDhcpOptionsSetStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *VpcService) VpcDhcpOptionsSetStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeVpcDhcpOptionsSet(id)
 		if err != nil {
@@ -1231,7 +1231,7 @@ func (s *VpcService) DescribeVpcDhcpOptionsSetAttachment(id string) (object map[
 	return object, nil
 }
 
-func (s *VpcService) DescribeVpcDhcpOptionsSetAttachmentStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *VpcService) DescribeVpcDhcpOptionsSetAttachmentStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		parts, err := ParseResourceId(id, 2)
 		if err != nil {
@@ -1282,15 +1282,15 @@ func (s *VpcService) DescribeVpcNatIpCidr(id string) (object map[string]interfac
 		"NatIpCidr":    parts[1],
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		request["ClientToken"] = buildClientToken("ListNatIpCidrs")
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1328,15 +1328,15 @@ func (s *VpcService) DescribeVpcNatIp(id string) (object map[string]interface{},
 		"NatIpIds":     []string{parts[1]},
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		request["ClientToken"] = buildClientToken("ListNatIps")
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1359,7 +1359,7 @@ func (s *VpcService) DescribeVpcNatIp(id string) (object map[string]interface{},
 	return object, nil
 }
 
-func (s *VpcService) VpcNatIpStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *VpcService) VpcNatIpStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeVpcNatIp(id)
 		if err != nil {
@@ -1387,14 +1387,14 @@ func (s *VpcService) DescribeVpcBgpGroup(id string) (object map[string]interface
 		"BgpGroupId": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1417,7 +1417,7 @@ func (s *VpcService) DescribeVpcBgpGroup(id string) (object map[string]interface
 	return object, nil
 }
 
-func (s *VpcService) VpcBgpGroupStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *VpcService) VpcBgpGroupStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeVpcBgpGroup(id)
 		if err != nil {
@@ -1446,15 +1446,15 @@ func (s *VpcService) DescribeVpcVbrHa(id string) (object map[string]interface{},
 		"VbrHaId":  id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		request["ClientToken"] = buildClientToken("DescribeVbrHa")
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1473,7 +1473,7 @@ func (s *VpcService) DescribeVpcVbrHa(id string) (object map[string]interface{},
 	return object, nil
 }
 
-func (s *VpcService) VpcVbrHaStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *VpcService) VpcVbrHaStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeVpcVbrHa(id)
 		if err != nil {
@@ -1511,14 +1511,14 @@ func (s *VpcService) DescribeVpcBgpNetwork(id string) (object map[string]interfa
 	idExist := false
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -1550,7 +1550,7 @@ func (s *VpcService) DescribeVpcBgpNetwork(id string) (object map[string]interfa
 	return
 }
 
-func (s *VpcService) VpcBgpNetworkStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *VpcService) VpcBgpNetworkStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeVpcBgpNetwork(id)
 		if err != nil {
@@ -1587,14 +1587,14 @@ func (s *VpcService) DescribeVpnRouteEntry(id string) (object map[string]interfa
 	idExist := false
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -1626,7 +1626,7 @@ func (s *VpcService) DescribeVpnRouteEntry(id string) (object map[string]interfa
 	return
 }
 
-func (s *VpcService) VpnRouteEntryStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *VpcService) VpnRouteEntryStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeVpnRouteEntry(id)
 		if err != nil {
@@ -1655,14 +1655,14 @@ func (s *VpcService) DescribeVpnIpsecServer(id string) (object map[string]interf
 		"IpsecServerId": []string{id},
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1702,14 +1702,14 @@ func (s *VpcService) DescribeVpnPbrRouteEntry(id string) (object map[string]inte
 	idExist := false
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -1741,7 +1741,7 @@ func (s *VpcService) DescribeVpnPbrRouteEntry(id string) (object map[string]inte
 	return
 }
 
-func (s *VpcService) VpnPbrRouteEntryStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *VpcService) VpnPbrRouteEntryStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeVpnPbrRouteEntry(id)
 		if err != nil {
@@ -1770,14 +1770,14 @@ func (s *VpcService) DescribeVpnGatewayVpnAttachment(id string) (object map[stri
 		"VpnConnectionId": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1796,7 +1796,7 @@ func (s *VpcService) DescribeVpnGatewayVpnAttachment(id string) (object map[stri
 	return object, nil
 }
 
-func (s *VpcService) VpnGatewayVpnAttachmentStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *VpcService) VpnGatewayVpnAttachmentStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeVpnGatewayVpnAttachment(id)
 		if err != nil {
@@ -1826,14 +1826,14 @@ func (s *VpcService) GetVpcPrefixListEntries(id string) (objects []map[string]in
 	}
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -1881,14 +1881,14 @@ func (s *VpcService) DescribeVpnGatewayVcoRoute(id string) (object map[string]in
 	idExist := false
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -1924,7 +1924,7 @@ func (s *VpcService) DescribeVpnGatewayVcoRoute(id string) (object map[string]in
 	return object, nil
 }
 
-func (s *VpcService) VpnGatewayVcoRouteStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *VpcService) VpnGatewayVcoRouteStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeVpnGatewayVcoRoute(id)
 		if err != nil {
@@ -1964,14 +1964,14 @@ func (s *VpcService) DescribeExpressConnectGrantRuleToCen(id string) (object map
 
 	idExist := false
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -2016,14 +2016,14 @@ func (s *VpcService) DescribeExpressConnectRouterInterface(id string) (object ma
 	var response map[string]interface{}
 	action := "DescribeRouterInterfaces"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err := client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		response = resp
 		addDebug(action, response, request)
@@ -2057,14 +2057,14 @@ func (s *VpcService) ModifyExpressConnectPhysicalConnectionStatus(d *schema.Reso
 		}
 
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(20*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(20*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, confirmedReq, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -2098,14 +2098,14 @@ func (s *VpcService) ModifyExpressConnectPhysicalConnectionStatus(d *schema.Reso
 		}
 
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(20*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(20*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, createPhysicalConnectionOccupancyOrderReq, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -2136,14 +2136,14 @@ func (s *VpcService) ModifyExpressConnectPhysicalConnectionStatus(d *schema.Reso
 		}
 
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(20*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(20*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, canceledReq, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -2167,14 +2167,14 @@ func (s *VpcService) ModifyExpressConnectPhysicalConnectionStatus(d *schema.Reso
 		}
 
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(20*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(20*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, terminatedReq, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})

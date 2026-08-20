@@ -6,7 +6,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/edas"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -78,22 +78,22 @@ func resourceAlicloudEdasInstanceClusterAttachmentCreate(d *schema.ResourceData,
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err := resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err := retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		raw, err := edasService.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
 			return edasClient.InstallAgent(request)
 		})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 		response, _ := raw.(*edas.InstallAgentResponse)
 
 		if response.Code != 200 {
-			return resource.NonRetryableError(Error("insert instances to cluster failed for %s", response.Message))
+			return retry.NonRetryableError(Error("insert instances to cluster failed for %s", response.Message))
 		}
 
 		var instanceIdFailed []string
@@ -105,7 +105,7 @@ func resourceAlicloudEdasInstanceClusterAttachmentCreate(d *schema.ResourceData,
 		if len(instanceIdFailed) > 0 {
 			err = Error("instances still import failed, try again")
 			request.InstanceIds = strings.Join(instanceIdFailed, ",")
-			return resource.RetryableError(err)
+			return retry.RetryableError(err)
 		}
 
 		d.SetId(clusterId + ":" + strings.Join(aString, ","))
@@ -177,7 +177,7 @@ func resourceAlicloudEdasInstanceClusterAttachmentDelete(d *schema.ResourceData,
 		request.ClusterMemberId = memberId.(string)
 
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err := resource.Retry(1*time.Minute, func() *resource.RetryError {
+		err := retry.Retry(1*time.Minute, func() *retry.RetryError {
 			raw, err := edasService.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
 				return edasClient.DeleteClusterMember(request)
 
@@ -185,17 +185,17 @@ func resourceAlicloudEdasInstanceClusterAttachmentDelete(d *schema.ResourceData,
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 			response, _ := raw.(*edas.DeleteClusterMemberResponse)
 			if strings.Contains(response.Message, "there are still applications deployed in this cluster") {
 				err = Error("there are still applications deployed in this cluster")
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			} else if response.Code != 200 {
-				return resource.NonRetryableError(Error("delete instance %s from cluster failed for %s", instanceId, response.Message))
+				return retry.NonRetryableError(Error("delete instance %s from cluster failed for %s", instanceId, response.Message))
 			}
 
 			return nil

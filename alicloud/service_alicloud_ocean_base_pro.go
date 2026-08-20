@@ -6,7 +6,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type OceanBaseProService struct {
@@ -23,14 +23,14 @@ func (s *OceanBaseProService) DescribeOceanBaseInstance(id string) (object map[s
 	var response map[string]interface{}
 	action := "DescribeInstance"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err := client.RpcPost("OceanBasePro", "2019-09-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		response = resp
 		addDebug(action, response, request)
@@ -49,7 +49,7 @@ func (s *OceanBaseProService) DescribeOceanBaseInstance(id string) (object map[s
 	return v.(map[string]interface{}), nil
 }
 
-func (s *OceanBaseProService) OceanBaseInstanceStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *OceanBaseProService) OceanBaseInstanceStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeOceanBaseInstance(id)
 		if err != nil {
@@ -77,14 +77,14 @@ func (s *OceanBaseProService) DescribeInstances(id string) (object map[string]in
 	var response map[string]interface{}
 	action := "DescribeInstances"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err := client.RpcPost("OceanBasePro", "2019-09-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		response = resp
 		addDebug(action, response, request)

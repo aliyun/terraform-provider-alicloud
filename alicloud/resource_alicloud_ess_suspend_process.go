@@ -6,7 +6,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -47,15 +47,15 @@ func resourceAliyunEssSuspendCreate(d *schema.ResourceData, meta interface{}) er
 	request.RegionId = client.RegionId
 	request.Process = &process
 	request.ScalingGroupId = d.Get("scaling_group_id").(string)
-	if err := resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	if err := retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 			return essClient.SuspendProcesses(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"IncorrectScalingGroupStatus"}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
+			return retry.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
@@ -98,15 +98,15 @@ func resourceAliyunEssSuspendDelete(d *schema.ResourceData, meta interface{}) er
 	request.RegionId = client.RegionId
 	request.ScalingGroupId = scalingGroupId
 	request.Process = &process
-	if err := resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	if err := retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		raw, err := essService.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 			return essClient.ResumeProcesses(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"IncorrectScalingGroupStatus"}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
+			return retry.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil

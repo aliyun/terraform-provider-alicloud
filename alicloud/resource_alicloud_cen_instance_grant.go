@@ -7,7 +7,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -60,15 +60,15 @@ func resourceAlicloudCenInstanceGrantCreate(d *schema.ResourceData, meta interfa
 	request.ClientToken = buildClientToken(request.GetActionName())
 
 	var raw interface{}
-	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(3*time.Minute, func() *retry.RetryError {
 		raw, err = client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.GrantInstanceToCen(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Operation.Blocking", "UnknownError", "TaskConflict"}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 
 		return nil
@@ -132,7 +132,7 @@ func resourceAlicloudCenInstanceGrantDelete(d *schema.ResourceData, meta interfa
 	request.CenOwnerId = requests.Integer(ownerId)
 
 	var raw interface{}
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.RevokeInstanceFromCen(request)
 		})
@@ -141,9 +141,9 @@ func resourceAlicloudCenInstanceGrantDelete(d *schema.ResourceData, meta interfa
 			if IsExpectedErrors(err, []string{"InvalidInstanceId.NotFound"}) {
 				return nil
 			} else if IsExpectedErrors(err, []string{"IncorrectStatus", "TaskConflict"}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 
 		return nil

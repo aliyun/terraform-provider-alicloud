@@ -17,7 +17,8 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/denverdino/aliyungo/cs"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/id"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -592,7 +593,7 @@ func resourceAlicloudCSManagedKubernetesCreate(d *schema.ResourceData, meta inte
 	if v, ok := d.GetOk("name"); ok {
 		clusterName = v.(string)
 	} else {
-		clusterName = resource.PrefixedUniqueId(d.Get("name_prefix").(string))
+		clusterName = id.PrefixedUniqueId(d.Get("name_prefix").(string))
 	}
 
 	tags := make([]*roacs.Tag, 0)
@@ -830,14 +831,14 @@ func resourceAlicloudCSManagedKubernetesCreate(d *schema.ResourceData, meta inte
 	var err error
 	var resp *roacs.CreateClusterResponse
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err = csClient.client.CreateCluster(request)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1204,13 +1205,13 @@ func UpgradeAlicloudKubernetesCluster(d *schema.ResourceData, meta interface{}) 
 	}
 	// upgrade cluster
 	var resp *roacs.UpgradeClusterResponse
-	err = resource.Retry(UpgradeClusterTimeout, func() *resource.RetryError {
+	err = retry.Retry(UpgradeClusterTimeout, func() *retry.RetryError {
 		resp, err = rosCsClient.UpgradeCluster(tea.String(clusterId), args)
 		if NeedRetry(err) || resp == nil {
-			return resource.RetryableError(err)
+			return retry.RetryableError(err)
 		}
 		if err != nil {
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1229,12 +1230,12 @@ func UpgradeAlicloudKubernetesCluster(d *schema.ResourceData, meta interface{}) 
 	if jobDetail, err := stateConf.WaitForState(); err != nil {
 		// try to cancel task
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		_ = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		_ = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			_, _err := rosCsClient.CancelTask(tea.String(taskId))
 			if _err != nil {
 				if NeedRetry(_err) {
 					wait()
-					return resource.RetryableError(_err)
+					return retry.RetryableError(_err)
 				}
 				log.Printf("[WARN] %s ACK Cluster cancel upgrade error: %#v", clusterId, err)
 			}
@@ -1267,14 +1268,14 @@ func migrateAlicloudManagedKubernetesCluster(d *schema.ResourceData, meta interf
 		return WrapError(err)
 	}
 
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err := conn.DoRequestWithAction(StringPointer(action), StringPointer("2015-12-15"), nil, StringPointer("POST"), StringPointer("AK"), String(fmt.Sprintf("/clusters/%s/migrate", d.Id())), nil, nil, migrateClusterRequest, &util.RuntimeOptions{})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"QPS Limit Exceeded"}) || NeedRetry(err) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 			addDebug(action, response, nil)
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, nil)
 		return nil
@@ -1301,14 +1302,14 @@ func updateKubernetesClusterTag(d *schema.ResourceData, meta interface{}) error 
 	if err != nil {
 		return WrapError(err)
 	}
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err := conn.DoRequestWithAction(StringPointer(action), StringPointer("2015-12-15"), nil, StringPointer("POST"), StringPointer("AK"), String(fmt.Sprintf("/clusters/%s/tags", d.Id())), nil, nil, modifyClusterTagsRequest, &util.RuntimeOptions{})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"QPS Limit Exceeded"}) || NeedRetry(err) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 			addDebug(action, response, nil)
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, nil)
 		return nil
@@ -1356,14 +1357,14 @@ func updateControlPlaneLog(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		_, err = csClient.UpdateControlPlaneLog(tea.String(d.Id()), request)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1389,14 +1390,14 @@ func checkControlPlaneLogEnable(d *schema.ResourceData, meta interface{}) error 
 	}
 	var response *roacs.CheckControlPlaneLogEnableResponse
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.CheckControlPlaneLogEnable(tea.String(d.Id()))
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1444,14 +1445,14 @@ func updateClusterAuditConfig(d *schema.ResourceData, meta interface{}) error {
 	csService := CsService{client}
 	var response *roacs.UpdateClusterAuditLogConfigResponse
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = csClient.UpdateClusterAuditLogConfig(tea.String(d.Id()), request)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1484,14 +1485,14 @@ func getClusterAuditProject(d *schema.ResourceData, meta interface{}) error {
 	}
 	var response *roacs.GetClusterAuditProjectResponse
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.GetClusterAuditProject(tea.String(d.Id()))
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1539,14 +1540,14 @@ func updateClusterKMSEncryption(d *schema.ResourceData, meta interface{}) error 
 	csService := CsService{client}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		_, err = csClient.UpdateKMSEncryption(tea.String(clusterId), request)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

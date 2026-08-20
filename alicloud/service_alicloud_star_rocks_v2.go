@@ -9,7 +9,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/tidwall/sjson"
 )
@@ -34,15 +34,15 @@ func (s *StarRocksServiceV2) DescribeStarRocksInstance(id string) (object map[st
 
 	body = request
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaPost("starrocks", "2022-10-19", action, query, nil, body, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -68,7 +68,7 @@ func (s *StarRocksServiceV2) DescribeStarRocksInstance(id string) (object map[st
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *StarRocksServiceV2) StarRocksInstanceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *StarRocksServiceV2) StarRocksInstanceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeStarRocksInstance(id)
 		if err != nil {
@@ -128,14 +128,14 @@ func (s *StarRocksServiceV2) SetResourceTags(d *schema.ResourceData, resourceTyp
 			query["TagKey"] = StringPointer(convertListToJsonString(convertListStringToListInterface(removedTagKeys)))
 			body = request
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RoaDelete("starrocks", "2022-10-19", action, query, nil, nil, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -171,14 +171,14 @@ func (s *StarRocksServiceV2) SetResourceTags(d *schema.ResourceData, resourceTyp
 
 			body = request
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RoaPost("starrocks", "2022-10-19", action, query, nil, body, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -218,15 +218,15 @@ func (s *StarRocksServiceV2) DescribeStarRocksNodeGroup(id string) (object map[s
 	action := fmt.Sprintf("/webapi/nodegroup/describeNodeGroups")
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaPost("starrocks", "2022-10-19", action, query, nil, body, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -252,11 +252,11 @@ func (s *StarRocksServiceV2) DescribeStarRocksNodeGroup(id string) (object map[s
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *StarRocksServiceV2) StarRocksNodeGroupStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *StarRocksServiceV2) StarRocksNodeGroupStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.StarRocksNodeGroupStateRefreshFuncWithApi(id, field, failStates, s.DescribeStarRocksNodeGroup)
 }
 
-func (s *StarRocksServiceV2) StarRocksNodeGroupStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *StarRocksServiceV2) StarRocksNodeGroupStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {

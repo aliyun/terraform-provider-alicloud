@@ -7,7 +7,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -29,15 +29,15 @@ func (s *OosServiceV2) DescribeOosPatchBaseline(id string) (object map[string]in
 	action := "GetPatchBaseline"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("oos", "2019-06-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -57,11 +57,11 @@ func (s *OosServiceV2) DescribeOosPatchBaseline(id string) (object map[string]in
 	return v.(map[string]interface{}), nil
 }
 
-func (s *OosServiceV2) OosPatchBaselineStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *OosServiceV2) OosPatchBaselineStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.OosPatchBaselineStateRefreshFuncWithApi(id, field, failStates, s.DescribeOosPatchBaseline)
 }
 
-func (s *OosServiceV2) OosPatchBaselineStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *OosServiceV2) OosPatchBaselineStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -119,15 +119,15 @@ func (s *OosServiceV2) SetOssResourceTags(d *schema.ResourceData, resourceType s
 			}
 			request["TagKeys"] = convertListToJsonString(convertListStringToListInterface(removedTagKeys))
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("oos", "2019-06-01", action, query, request, false)
 
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -148,14 +148,14 @@ func (s *OosServiceV2) SetOssResourceTags(d *schema.ResourceData, resourceType s
 			request["Tags"] = tagsString
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("oos", "2019-06-01", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -184,15 +184,15 @@ func (s *OosServiceV2) DescribeOosSecretParameter(id string) (object map[string]
 	request["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("oos", "2019-06-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -224,15 +224,15 @@ func (s *OosServiceV2) DescribeSecretParameterListTagResources(id string) (objec
 
 	request["ResourceType"] = "secretparameter"
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("oos", "2019-06-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -253,14 +253,14 @@ func (s *OosServiceV2) DescribeSecretParameterListTagResources(id string) (objec
 // storage behind ListTagResources, so an immediate read may miss them.
 func (s *OosServiceV2) WaitForOosSecretParameterTagsConverged(id string, expectedTags map[string]interface{}, timeout time.Duration) error {
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err := resource.Retry(timeout, func() *resource.RetryError {
+	err := retry.Retry(timeout, func() *retry.RetryError {
 		object, err := s.DescribeSecretParameterListTagResources(id)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 
 		tagsMaps, _ := jsonpath.Get("$.TagResources.TagResource", object)
@@ -273,12 +273,12 @@ func (s *OosServiceV2) WaitForOosSecretParameterTagsConverged(id string, expecte
 		currentTags := tagsToMap(tagResources)
 		if len(currentTags) != len(expectedTags) {
 			wait()
-			return resource.RetryableError(Error("The tags of OOS secret parameter %s have not been propagated yet, current: %v, expected: %v.", id, currentTags, expectedTags))
+			return retry.RetryableError(Error("The tags of OOS secret parameter %s have not been propagated yet, current: %v, expected: %v.", id, currentTags, expectedTags))
 		}
 		for key, value := range expectedTags {
 			if fmt.Sprint(currentTags[key]) != fmt.Sprint(value) {
 				wait()
-				return resource.RetryableError(Error("The tags of OOS secret parameter %s have not been propagated yet, current: %v, expected: %v.", id, currentTags, expectedTags))
+				return retry.RetryableError(Error("The tags of OOS secret parameter %s have not been propagated yet, current: %v, expected: %v.", id, currentTags, expectedTags))
 			}
 		}
 		return nil
@@ -289,7 +289,7 @@ func (s *OosServiceV2) WaitForOosSecretParameterTagsConverged(id string, expecte
 	return nil
 }
 
-func (s *OosServiceV2) OosSecretParameterStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *OosServiceV2) OosSecretParameterStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeOosSecretParameter(id)
 		if err != nil {
@@ -351,14 +351,14 @@ func (s *OosServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			}
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("oos", "2019-06-01", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -382,14 +382,14 @@ func (s *OosServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("oos", "2019-06-01", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})

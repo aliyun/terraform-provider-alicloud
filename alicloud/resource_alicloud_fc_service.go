@@ -9,7 +9,8 @@ import (
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/id"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -184,9 +185,9 @@ func resourceAlicloudFCServiceCreate(d *schema.ResourceData, meta interface{}) e
 	if v, ok := d.GetOk("name"); ok {
 		name = v.(string)
 	} else if v, ok := d.GetOk("name_prefix"); ok {
-		name = resource.PrefixedUniqueId(v.(string))
+		name = id.PrefixedUniqueId(v.(string))
 	} else {
-		name = resource.UniqueId()
+		name = id.UniqueId()
 	}
 
 	project, logstore, enable_request_metrics, enable_instance_metrics, err := parseLogConfig(d, meta)
@@ -222,22 +223,22 @@ func resourceAlicloudFCServiceCreate(d *schema.ResourceData, meta interface{}) e
 	request.TracingConfig = tracingConfig
 	var requestInfo *fc.Client
 	var response *fc.CreateServiceOutput
-	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+	if err := retry.Retry(2*time.Minute, func() *retry.RetryError {
 		raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
 			requestInfo = fcClient
 			return fcClient.CreateService(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"AccessDenied", "does not exist"}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 			// Work around the "log project doest not exist" error since SLS log project CRUD is not strong consistency.
 			if e, ok := err.(*fc.ServiceError); ok {
 				if r := regexp.MustCompile("project.*does not exist"); e.ErrorCode == "InvalidArgument" && r.MatchString(e.ErrorMessage) {
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug("CreateService", raw, requestInfo, request)
 		response, _ = raw.(*fc.CreateServiceOutput)
@@ -256,16 +257,16 @@ func resourceAlicloudFCServiceCreate(d *schema.ResourceData, meta interface{}) e
 			IfMatch:     &etag,
 		}
 		input.Description = response.Description
-		if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+		if err := retry.Retry(2*time.Minute, func() *retry.RetryError {
 			raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
 				requestInfo = fcClient
 				return fcClient.PublishServiceVersion(input)
 			})
 			if err != nil {
 				if IsExpectedErrors(err, []string{"AccessDenied", "ServiceNotFound"}) {
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug("PublishServiceVersion", raw, requestInfo, request)
 			return nil
@@ -372,7 +373,7 @@ func resourceAlicloudFCServiceRead(d *schema.ResourceData, meta interface{}) err
 		Limit:       Int32Pointer(1),
 		Direction:   StringPointer("BACKWARD"),
 	}
-	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+	if err := retry.Retry(2*time.Minute, func() *retry.RetryError {
 		var requestInfo *fc.Client
 		raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
 			requestInfo = fcClient
@@ -380,9 +381,9 @@ func resourceAlicloudFCServiceRead(d *schema.ResourceData, meta interface{}) err
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"AccessDenied", "ServiceNotFound"}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug("ListServiceVersions", raw, requestInfo, input)
 		output, _ := raw.(*fc.ListServiceVersionsOutput)
@@ -466,7 +467,7 @@ func resourceAlicloudFCServiceUpdate(d *schema.ResourceData, meta interface{}) e
 		request.ServiceName = StringPointer(d.Id())
 		var requestInfo *fc.Client
 		var response *fc.UpdateServiceOutput
-		if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+		if err := retry.Retry(2*time.Minute, func() *retry.RetryError {
 			raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
 				requestInfo = fcClient
 				return fcClient.UpdateService(request)
@@ -475,10 +476,10 @@ func resourceAlicloudFCServiceUpdate(d *schema.ResourceData, meta interface{}) e
 				// Work around the "log project doest not exist" error since SLS log project CRUD is not strong consistency.
 				if e, ok := err.(*fc.ServiceError); ok {
 					if r := regexp.MustCompile("project.*does not exist"); e.ErrorCode == "InvalidArgument" && r.MatchString(e.ErrorMessage) {
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug("UpdateService", raw, requestInfo, request)
 			response, _ = raw.(*fc.UpdateServiceOutput)
@@ -494,16 +495,16 @@ func resourceAlicloudFCServiceUpdate(d *schema.ResourceData, meta interface{}) e
 				IfMatch:     &etag,
 			}
 			input.Description = response.Description
-			if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+			if err := retry.Retry(2*time.Minute, func() *retry.RetryError {
 				raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
 					requestInfo = fcClient
 					return fcClient.PublishServiceVersion(input)
 				})
 				if err != nil {
 					if IsExpectedErrors(err, []string{"AccessDenied", "ServiceNotFound"}) {
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug("PublishServiceVersion", raw, requestInfo, request)
 				return nil
@@ -629,16 +630,16 @@ func parseLogConfig(d *schema.ResourceData, meta interface{}) (project, logstore
 	}
 	if project != "" {
 		var requestInfo *sls.Client
-		err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(2*time.Minute, func() *retry.RetryError {
 			raw, e := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 				requestInfo = slsClient
 				return slsClient.CheckProjectExist(project)
 			})
 			if e != nil {
 				if NotFoundError(e) {
-					return resource.RetryableError(e)
+					return retry.RetryableError(e)
 				}
-				return resource.NonRetryableError(e)
+				return retry.NonRetryableError(e)
 			}
 			addDebug("CheckProjectExist", raw, requestInfo, project)
 			return nil
@@ -651,15 +652,15 @@ func parseLogConfig(d *schema.ResourceData, meta interface{}) (project, logstore
 	}
 
 	if logstore != "" {
-		err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(2*time.Minute, func() *retry.RetryError {
 			raw, e := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 				return slsClient.CheckLogstoreExist(project, logstore)
 			})
 			if e != nil {
 				if NotFoundError(e) {
-					return resource.RetryableError(e)
+					return retry.RetryableError(e)
 				}
-				return resource.NonRetryableError(e)
+				return retry.NonRetryableError(e)
 			}
 			addDebug("CheckLogstoreExist", raw)
 			return nil

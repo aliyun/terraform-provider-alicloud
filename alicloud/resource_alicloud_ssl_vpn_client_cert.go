@@ -5,7 +5,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -72,16 +72,16 @@ func resourceAliyunSslVpnClientCertCreate(d *schema.ResourceData, meta interface
 	request.ClientToken = buildClientToken(request.GetActionName())
 
 	var response *vpc.CreateSslVpnClientCertResponse
-	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+	err := retry.Retry(3*time.Minute, func() *retry.RetryError {
 		args := *request
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.CreateSslVpnClientCert(&args)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"VpnGateway.Configuring"}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ = raw.(*vpc.CreateSslVpnClientCertResponse)
@@ -153,16 +153,16 @@ func resourceAliyunSslVpnClientCertDelete(d *schema.ResourceData, meta interface
 	request.RegionId = client.RegionId
 	request.SslVpnClientCertId = d.Id()
 
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.DeleteSslVpnClientCert(request)
 		})
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"VpnGateway.Configuring"}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			} else {
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)

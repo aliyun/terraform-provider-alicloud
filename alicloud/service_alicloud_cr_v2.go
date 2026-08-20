@@ -7,7 +7,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -29,15 +29,15 @@ func (s *CrServiceV2) DescribeCrInstance(id string) (object map[string]interface
 	action := "GetInstance"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cr", "2018-12-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"InvalidAction.NotFound"}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -68,21 +68,21 @@ func (s *CrServiceV2) DescribeInstanceQueryAvailableInstances(d *schema.Resource
 	action := "QueryAvailableInstances"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
 				request["ProductCode"] = "acr"
 				request["ProductType"] = "acr_ee_public_intl"
 				endpoint = connectivity.BssOpenAPIEndpointInternational
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -114,15 +114,15 @@ func (s *CrServiceV2) DescribeInstanceListInstanceEndpoint(id string) (object ma
 	action := "ListInstanceEndpoint"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cr", "2018-12-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -134,11 +134,11 @@ func (s *CrServiceV2) DescribeInstanceListInstanceEndpoint(id string) (object ma
 	return response, nil
 }
 
-func (s *CrServiceV2) CrInstanceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *CrServiceV2) CrInstanceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.CrInstanceStateRefreshFuncWithApi(id, field, failStates, s.DescribeCrInstance)
 }
 
-func (s *CrServiceV2) CrInstanceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *CrServiceV2) CrInstanceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -166,7 +166,7 @@ func (s *CrServiceV2) CrInstanceStateRefreshFuncWithApi(id string, field string,
 	}
 }
 
-func (s *CrServiceV2) DescribeAsyncCrInstanceStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) resource.StateRefreshFunc {
+func (s *CrServiceV2) DescribeAsyncCrInstanceStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAsyncGetInstance(d, res)
 		if err != nil {
@@ -222,15 +222,15 @@ func (s *CrServiceV2) DescribeCrRepoSyncRule(id string) (object map[string]inter
 	idExist := false
 	for {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("cr", "2018-12-01", action, query, request, true)
 
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -288,15 +288,15 @@ func (s *CrServiceV2) DescribeAsyncGetInstance(d *schema.ResourceData, res map[s
 	action := "GetInstance"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cr", "2018-12-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -330,15 +330,15 @@ func (s *CrServiceV2) DescribeCrScanRule(id string) (object map[string]interface
 	action := "GetScanRule"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cr", "2018-12-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -358,11 +358,11 @@ func (s *CrServiceV2) DescribeCrScanRule(id string) (object map[string]interface
 	return v.(map[string]interface{}), nil
 }
 
-func (s *CrServiceV2) CrScanRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *CrServiceV2) CrScanRuleStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.CrScanRuleStateRefreshFuncWithApi(id, field, failStates, s.DescribeCrScanRule)
 }
 
-func (s *CrServiceV2) CrScanRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *CrServiceV2) CrScanRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -412,15 +412,15 @@ func (s *CrServiceV2) DescribeCrStorageDomainRoutingRule(id string) (object map[
 	action := "GetStorageDomainRoutingRule"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cr", "2018-12-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -440,11 +440,11 @@ func (s *CrServiceV2) DescribeCrStorageDomainRoutingRule(id string) (object map[
 	return response, nil
 }
 
-func (s *CrServiceV2) CrStorageDomainRoutingRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *CrServiceV2) CrStorageDomainRoutingRuleStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.CrStorageDomainRoutingRuleStateRefreshFuncWithApi(id, field, failStates, s.DescribeCrStorageDomainRoutingRule)
 }
 
-func (s *CrServiceV2) CrStorageDomainRoutingRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *CrServiceV2) CrStorageDomainRoutingRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -494,14 +494,14 @@ func (s *CrServiceV2) DescribeCrEERepo(id string) (object map[string]interface{}
 	var response map[string]interface{}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cr", "2018-12-01", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -547,15 +547,15 @@ func (s *CrServiceV2) DescribeCrArtifactLifecycleRule(id string) (object map[str
 	action := "GetArtifactLifecycleRule"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("cr", "2018-12-01", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -570,11 +570,11 @@ func (s *CrServiceV2) DescribeCrArtifactLifecycleRule(id string) (object map[str
 	return response, nil
 }
 
-func (s *CrServiceV2) CrArtifactLifecycleRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *CrServiceV2) CrArtifactLifecycleRuleStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.CrArtifactLifecycleRuleStateRefreshFuncWithApi(id, field, failStates, s.DescribeCrArtifactLifecycleRule)
 }
 
-func (s *CrServiceV2) CrArtifactLifecycleRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *CrServiceV2) CrArtifactLifecycleRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -624,14 +624,14 @@ func (s *CrServiceV2) ListCrInstanceTags(id string) (tags map[string]interface{}
 		}
 
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("cr", "2018-12-01", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -689,14 +689,14 @@ func (s *CrServiceV2) SetResourceTags(d *schema.ResourceData, resourceType strin
 
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("cr", "2018-12-01", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -722,14 +722,14 @@ func (s *CrServiceV2) SetResourceTags(d *schema.ResourceData, resourceType strin
 
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("cr", "2018-12-01", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -765,15 +765,15 @@ func (s *CrServiceV2) DescribeCrArtifactSubscriptionRule(id string) (object map[
 	action := "GetArtifactSubscriptionRule"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("cr", "2018-12-01", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -788,11 +788,11 @@ func (s *CrServiceV2) DescribeCrArtifactSubscriptionRule(id string) (object map[
 	return response, nil
 }
 
-func (s *CrServiceV2) CrArtifactSubscriptionRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *CrServiceV2) CrArtifactSubscriptionRuleStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.CrArtifactSubscriptionRuleStateRefreshFuncWithApi(id, field, failStates, s.DescribeCrArtifactSubscriptionRule)
 }
 
-func (s *CrServiceV2) CrArtifactSubscriptionRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *CrServiceV2) CrArtifactSubscriptionRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {

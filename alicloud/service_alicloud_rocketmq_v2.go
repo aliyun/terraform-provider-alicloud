@@ -7,7 +7,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -30,15 +30,15 @@ func (s *RocketmqServiceV2) DescribeRocketmqInstance(id string) (object map[stri
 	action := fmt.Sprintf("/instances/%s", instanceId)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("RocketMQ", "2022-08-01", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -75,15 +75,15 @@ func (s *RocketmqServiceV2) DescribeGetInstanceAccount(id string) (object map[st
 	request["instanceId"] = id
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("RocketMQ", "2022-08-01", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -101,7 +101,7 @@ func (s *RocketmqServiceV2) DescribeGetInstanceAccount(id string) (object map[st
 	return v.(map[string]interface{}), nil
 }
 
-func (s *RocketmqServiceV2) RocketmqInstanceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *RocketmqServiceV2) RocketmqInstanceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeRocketmqInstance(id)
 		if err != nil {
@@ -143,15 +143,15 @@ func (s *RocketmqServiceV2) DescribeInstanceGetInstanceIpWhitelist(id string) (o
 	action := fmt.Sprintf("/instances/%s/ip/whitelists", instanceId)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("RocketMQ", "2022-08-01", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -204,14 +204,14 @@ func (s *RocketmqServiceV2) SetResourceTags(d *schema.ResourceData, resourceType
 			query["resourceType"] = StringPointer("instance")
 			body = request
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RoaDelete("RocketMQ", "2022-08-01", action, query, nil, body, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(action, response, request)
 				return nil
@@ -245,14 +245,14 @@ func (s *RocketmqServiceV2) SetResourceTags(d *schema.ResourceData, resourceType
 
 			body = request
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RoaPost("RocketMQ", "2022-08-01", action, query, nil, body, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(action, response, request)
 				return nil
@@ -288,15 +288,15 @@ func (s *RocketmqServiceV2) DescribeRocketmqConsumerGroup(id string) (object map
 	action := fmt.Sprintf("/instances/%s/consumerGroups/%s", instanceId, consumerGroupId)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("RocketMQ", "2022-08-01", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -316,7 +316,7 @@ func (s *RocketmqServiceV2) DescribeRocketmqConsumerGroup(id string) (object map
 	return v.(map[string]interface{}), nil
 }
 
-func (s *RocketmqServiceV2) RocketmqConsumerGroupStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *RocketmqServiceV2) RocketmqConsumerGroupStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeRocketmqConsumerGroup(id)
 		if err != nil {
@@ -366,15 +366,15 @@ func (s *RocketmqServiceV2) DescribeRocketmqTopic(id string) (object map[string]
 	action := fmt.Sprintf("/instances/%s/topics/%s", instanceId, topicName)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("RocketMQ", "2022-08-01", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -394,7 +394,7 @@ func (s *RocketmqServiceV2) DescribeRocketmqTopic(id string) (object map[string]
 	return v.(map[string]interface{}), nil
 }
 
-func (s *RocketmqServiceV2) RocketmqTopicStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *RocketmqServiceV2) RocketmqTopicStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeRocketmqTopic(id)
 		if err != nil {
@@ -444,15 +444,15 @@ func (s *RocketmqServiceV2) DescribeRocketmqAccount(id string) (object map[strin
 	action := fmt.Sprintf("/instances/%s/account", instanceId)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("RocketMQ", "2022-08-01", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -472,7 +472,7 @@ func (s *RocketmqServiceV2) DescribeRocketmqAccount(id string) (object map[strin
 	return v.(map[string]interface{}), nil
 }
 
-func (s *RocketmqServiceV2) RocketmqAccountStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *RocketmqServiceV2) RocketmqAccountStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeRocketmqAccount(id)
 		if err != nil {
@@ -524,15 +524,15 @@ func (s *RocketmqServiceV2) DescribeRocketmqAcl(id string) (object map[string]in
 	action := fmt.Sprintf("/instances/%s/acl/account/%s", instanceId, username)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("RocketMQ", "2022-08-01", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -552,7 +552,7 @@ func (s *RocketmqServiceV2) DescribeRocketmqAcl(id string) (object map[string]in
 	return v.(map[string]interface{}), nil
 }
 
-func (s *RocketmqServiceV2) RocketmqAclStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *RocketmqServiceV2) RocketmqAclStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeRocketmqAcl(id)
 		if err != nil {

@@ -7,7 +7,8 @@ import (
 
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/id"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -138,9 +139,9 @@ func resourceAlicloudFCTriggerCreate(d *schema.ResourceData, meta interface{}) e
 	if v, ok := d.GetOk("name"); ok {
 		name = v.(string)
 	} else if v, ok := d.GetOk("name_prefix"); ok {
-		name = resource.PrefixedUniqueId(v.(string))
+		name = id.PrefixedUniqueId(v.(string))
 	} else {
-		name = resource.UniqueId()
+		name = id.UniqueId()
 	}
 
 	var config interface{}
@@ -175,16 +176,16 @@ func resourceAlicloudFCTriggerCreate(d *schema.ResourceData, meta interface{}) e
 	}
 	var response *fc.CreateTriggerOutput
 	var requestInfo *fc.Client
-	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+	if err := retry.Retry(2*time.Minute, func() *retry.RetryError {
 		raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
 			requestInfo = fcClient
 			return fcClient.CreateTrigger(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"AccessDenied"}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug("CreateTrigger", raw, requestInfo, request)
 		response, _ = raw.(*fc.CreateTriggerOutput)

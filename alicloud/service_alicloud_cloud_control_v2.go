@@ -7,7 +7,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type CloudControlServiceV2 struct {
@@ -31,15 +31,15 @@ func (s *CloudControlServiceV2) DescribeCloudControlResource(id string) (object 
 	query["regionId"] = StringPointer(client.RegionId)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("cloudcontrol", "2022-08-30", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -59,7 +59,7 @@ func (s *CloudControlServiceV2) DescribeCloudControlResource(id string) (object 
 	return v.(map[string]interface{}), nil
 }
 
-func (s *CloudControlServiceV2) CloudControlResourceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *CloudControlServiceV2) CloudControlResourceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCloudControlResource(id)
 		if err != nil {
@@ -107,15 +107,15 @@ func (s *CloudControlServiceV2) DescribeCloudControlPrice(id string) (object map
 	query["regionId"] = StringPointer(client.RegionId)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("cloudcontrol", "2022-08-30", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -132,7 +132,7 @@ func (s *CloudControlServiceV2) DescribeCloudControlPrice(id string) (object map
 	return v.(map[string]interface{}), nil
 }
 
-func (s *CloudControlServiceV2) CloudControlPriceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *CloudControlServiceV2) CloudControlPriceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCloudControlPrice(id)
 		if err != nil {
@@ -176,15 +176,15 @@ func (s *CloudControlServiceV2) DescribeCloudControlProduct(id string) (object m
 
 	request["provider"] = "aliyun"
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("cloudcontrol", "2022-08-30", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -213,7 +213,7 @@ func (s *CloudControlServiceV2) DescribeCloudControlProduct(id string) (object m
 	return object, WrapErrorf(NotFoundErr("Product", id), NotFoundMsg, response)
 }
 
-func (s *CloudControlServiceV2) CloudControlProductStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *CloudControlServiceV2) CloudControlProductStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCloudControlProduct(id)
 		if err != nil {
@@ -258,15 +258,15 @@ func (s *CloudControlServiceV2) DescribeCloudControlResourceType(id string) (obj
 
 	request["provider"] = "aliyun"
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("cloudcontrol", "2022-08-30", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -287,7 +287,7 @@ func (s *CloudControlServiceV2) DescribeCloudControlResourceType(id string) (obj
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *CloudControlServiceV2) CloudControlResourceTypeStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *CloudControlServiceV2) CloudControlResourceTypeStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCloudControlResourceType(id)
 		if err != nil {

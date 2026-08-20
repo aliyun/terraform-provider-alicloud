@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -250,15 +250,15 @@ func resourceAlicloudRosStackInstancesCreate(d *schema.ResourceData, meta interf
 
 	var response map[string]interface{}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err := resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err := retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		var err error
 		response, err = client.RpcPost("ROS", "2019-09-10", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"StackGroupOperationInProgress"}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -325,15 +325,15 @@ func resourceAlicloudRosStackInstancesRead(d *schema.ResourceData, meta interfac
 		}
 		var response map[string]interface{}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 			var err error
 			response, err = client.RpcPost("ROS", "2019-09-10", action, nil, req, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -501,15 +501,15 @@ func resourceAlicloudRosStackInstancesUpdate(d *schema.ResourceData, meta interf
 
 	var response map[string]interface{}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+	err := retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 		var err error
 		response, err = client.RpcPost("ROS", "2019-09-10", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"StackGroupOperationInProgress"}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -591,7 +591,7 @@ func resourceAlicloudRosStackInstancesDelete(d *schema.ResourceData, meta interf
 
 	var response map[string]interface{}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err := resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err := retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		var err error
 		response, err = client.RpcPost("ROS", "2019-09-10", action, nil, request, true)
 		if err != nil {
@@ -600,9 +600,9 @@ func resourceAlicloudRosStackInstancesDelete(d *schema.ResourceData, meta interf
 			}
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"StackGroupOperationInProgress"}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -700,15 +700,15 @@ func waitForRosStackGroupOperationAndCheckResults(client *connectivity.AliyunCli
 	}
 	var response map[string]interface{}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 		var err error
 		response, err = client.RpcPost("ROS", "2019-09-10", action, nil, req, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -733,7 +733,7 @@ func waitForRosStackGroupOperationAndCheckResults(client *connectivity.AliyunCli
 
 func waitForRosStackGroupOperation(client *connectivity.AliyunClient, operationId string, timeout time.Duration) error {
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	return resource.Retry(timeout, func() *resource.RetryError {
+	return retry.Retry(timeout, func() *retry.RetryError {
 		req := map[string]interface{}{"RegionId": client.RegionId, "OperationId": operationId}
 		var response map[string]interface{}
 		var err error
@@ -741,16 +741,16 @@ func waitForRosStackGroupOperation(client *connectivity.AliyunClient, operationI
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug("GetStackGroupOperation", response, req)
 
 		opRaw, ok := response["StackGroupOperation"]
 		if !ok || opRaw == nil {
 			wait()
-			return resource.RetryableError(fmt.Errorf("operation not available"))
+			return retry.RetryableError(fmt.Errorf("operation not available"))
 		}
 		op, _ := opRaw.(map[string]interface{})
 		status := fmt.Sprint(op["Status"])
@@ -758,10 +758,10 @@ func waitForRosStackGroupOperation(client *connectivity.AliyunClient, operationI
 		case "SUCCEEDED":
 			return nil
 		case "FAILED", "CANCELLED":
-			return resource.NonRetryableError(fmt.Errorf("operation ended: %s, Reason: %v", status, op["Reason"]))
+			return retry.NonRetryableError(fmt.Errorf("operation ended: %s, Reason: %v", status, op["Reason"]))
 		default:
 			wait()
-			return resource.RetryableError(fmt.Errorf("operation status: %s", status))
+			return retry.RetryableError(fmt.Errorf("operation status: %s", status))
 		}
 	})
 }

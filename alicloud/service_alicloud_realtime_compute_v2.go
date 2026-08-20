@@ -7,7 +7,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -29,15 +29,15 @@ func (s *RealtimeComputeServiceV2) DescribeRealtimeComputeVvpInstance(id string)
 	query["DescribeInstancesRequest.Region"] = s.client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("foasconsole", "2019-06-01", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -59,7 +59,7 @@ func (s *RealtimeComputeServiceV2) DescribeRealtimeComputeVvpInstance(id string)
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *RealtimeComputeServiceV2) RealtimeComputeVvpInstanceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *RealtimeComputeServiceV2) RealtimeComputeVvpInstanceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeRealtimeComputeVvpInstance(id)
 		if err != nil {
@@ -112,15 +112,15 @@ func (s *RealtimeComputeServiceV2) SetResourceTags(d *schema.ResourceData, resou
 
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("foasconsole", "2019-06-01", action, query, request, true)
 
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(action, response, request)
 				return nil
@@ -146,15 +146,15 @@ func (s *RealtimeComputeServiceV2) SetResourceTags(d *schema.ResourceData, resou
 
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("foasconsole", "2019-06-01", action, query, request, true)
 
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(action, response, request)
 				return nil
@@ -194,15 +194,15 @@ func (s *RealtimeComputeServiceV2) DescribeRealtimeComputeDeployment(id string) 
 	action := fmt.Sprintf("/api/v2/namespaces/%s/deployments/%s", namespace, deploymentId)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("ververica", "2022-07-18", action, query, header, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -222,11 +222,11 @@ func (s *RealtimeComputeServiceV2) DescribeRealtimeComputeDeployment(id string) 
 	return v.(map[string]interface{}), nil
 }
 
-func (s *RealtimeComputeServiceV2) RealtimeComputeDeploymentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *RealtimeComputeServiceV2) RealtimeComputeDeploymentStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.RealtimeComputeDeploymentStateRefreshFuncWithApi(id, field, failStates, s.DescribeRealtimeComputeDeployment)
 }
 
-func (s *RealtimeComputeServiceV2) RealtimeComputeDeploymentStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *RealtimeComputeServiceV2) RealtimeComputeDeploymentStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -279,15 +279,15 @@ func (s *RealtimeComputeServiceV2) DescribeRealtimeComputeJob(id string) (object
 	action := fmt.Sprintf("/api/v2/namespaces/%s/jobs/%s", namespace, jobId)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("ververica", "2022-07-18", action, query, header, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -307,11 +307,11 @@ func (s *RealtimeComputeServiceV2) DescribeRealtimeComputeJob(id string) (object
 	return v.(map[string]interface{}), nil
 }
 
-func (s *RealtimeComputeServiceV2) RealtimeComputeJobStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *RealtimeComputeServiceV2) RealtimeComputeJobStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.RealtimeComputeJobStateRefreshFuncWithApi(id, field, failStates, s.DescribeRealtimeComputeJob)
 }
 
-func (s *RealtimeComputeServiceV2) RealtimeComputeJobStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *RealtimeComputeServiceV2) RealtimeComputeJobStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {

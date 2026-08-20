@@ -7,7 +7,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -30,14 +30,14 @@ func (s *SlsServiceV2) DescribeSlsProject(id string) (object map[string]interfac
 	hostMap["project"] = StringPointer(id)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.Do("Sls", roaParam("GET", "2020-12-30", "GetProject", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -66,14 +66,14 @@ func (s *SlsServiceV2) DescribeListTagResources(id string) (object map[string]in
 	query["resourceId"] = StringPointer(convertListToJsonString(convertListStringToListInterface([]string{id})))
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.Do("Sls", roaParam("GET", "2020-12-30", "ListTagResources", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -89,7 +89,7 @@ func (s *SlsServiceV2) DescribeListTagResources(id string) (object map[string]in
 	return response, nil
 }
 
-func (s *SlsServiceV2) SlsProjectStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *SlsServiceV2) SlsProjectStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeSlsProject(id)
 		if err != nil {
@@ -144,14 +144,14 @@ func (s *SlsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 
 			body = request
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.Do("Sls", roaParam("POST", "2020-12-30", "UntagResources", action), query, body, nil, hostMap, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(action, response, request)
 				return nil
@@ -184,14 +184,14 @@ func (s *SlsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 
 			body = request
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.Do("Sls", roaParam("POST", "2020-12-30", "TagResources", action), query, body, nil, hostMap, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(action, response, request)
 				return nil
@@ -227,14 +227,14 @@ func (s *SlsServiceV2) DescribeSlsLogStore(id string) (object map[string]interfa
 	hostMap["project"] = StringPointer(parts[0])
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.Do("Sls", roaParam("GET", "2020-12-30", "GetLogStore", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -266,14 +266,14 @@ func (s *SlsServiceV2) DescribeGetLogStoreMeteringMode(id string) (object map[st
 	hostMap["project"] = StringPointer(parts[0])
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(3*time.Minute, func() *retry.RetryError {
 		response, err = client.Do("Sls", roaParam("GET", "2020-12-30", "GetLogStoreMeteringMode", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -289,7 +289,7 @@ func (s *SlsServiceV2) DescribeGetLogStoreMeteringMode(id string) (object map[st
 	return response, nil
 }
 
-func (s *SlsServiceV2) SlsLogStoreStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *SlsServiceV2) SlsLogStoreStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeSlsLogStore(id)
 		if err != nil {
@@ -333,15 +333,15 @@ func (s *SlsServiceV2) DescribeSlsAlert(id string) (object map[string]interface{
 	action := fmt.Sprintf("/alerts/%s", alertName)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.Do("Sls", roaParam("GET", "2020-12-30", "GetAlert", action), query, nil, nil, hostMap, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -356,7 +356,7 @@ func (s *SlsServiceV2) DescribeSlsAlert(id string) (object map[string]interface{
 	return response, nil
 }
 
-func (s *SlsServiceV2) SlsAlertStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *SlsServiceV2) SlsAlertStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeSlsAlert(id)
 		if err != nil {
@@ -406,14 +406,14 @@ func (s *SlsServiceV2) DescribeSlsScheduledSQL(id string) (object map[string]int
 	hostMap["project"] = StringPointer(parts[0])
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.Do("Sls", roaParam("GET", "2020-12-30", "GetScheduledSQL", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -429,7 +429,7 @@ func (s *SlsServiceV2) DescribeSlsScheduledSQL(id string) (object map[string]int
 	return response, nil
 }
 
-func (s *SlsServiceV2) SlsScheduledSQLStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *SlsServiceV2) SlsScheduledSQLStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeSlsScheduledSQL(id)
 		if err != nil {
@@ -468,14 +468,14 @@ func (s *SlsServiceV2) DescribeSlsCollectionPolicy(id string) (object map[string
 	request["policyName"] = id
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.Do("Sls", roaParam("GET", "2020-12-30", "GetCollectionPolicy", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -496,7 +496,7 @@ func (s *SlsServiceV2) DescribeSlsCollectionPolicy(id string) (object map[string
 	return v.(map[string]interface{}), nil
 }
 
-func (s *SlsServiceV2) SlsCollectionPolicyStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *SlsServiceV2) SlsCollectionPolicyStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeSlsCollectionPolicy(id)
 		if err != nil {
@@ -545,14 +545,14 @@ func (s *SlsServiceV2) DescribeSlsOssExportSink(id string) (object map[string]in
 	hostMap["project"] = StringPointer(parts[0])
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.Do("Sls", roaParam("GET", "2020-12-30", "GetOSSExport", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -567,7 +567,7 @@ func (s *SlsServiceV2) DescribeSlsOssExportSink(id string) (object map[string]in
 	return response, nil
 }
 
-func (s *SlsServiceV2) SlsOssExportSinkStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *SlsServiceV2) SlsOssExportSinkStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeSlsOssExportSink(id)
 		if err != nil {
@@ -618,15 +618,15 @@ func (s *SlsServiceV2) DescribeSlsEtl(id string) (object map[string]interface{},
 	action := fmt.Sprintf("/etls/%s", etlName)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.Do("Sls", roaParam("GET", "2020-12-30", "GetETL", action), query, nil, nil, hostMap, false)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -641,7 +641,7 @@ func (s *SlsServiceV2) DescribeSlsEtl(id string) (object map[string]interface{},
 	return response, nil
 }
 
-func (s *SlsServiceV2) SlsEtlStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *SlsServiceV2) SlsEtlStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeSlsEtl(id)
 		if err != nil {
@@ -692,15 +692,15 @@ func (s *SlsServiceV2) DescribeSlsLogtailConfig(id string) (object map[string]in
 	action := fmt.Sprintf("/configs/%s", configName)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.Do("Sls", roaParam("GET", "2020-12-30", "GetConfig", action), query, nil, nil, hostMap, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -715,7 +715,7 @@ func (s *SlsServiceV2) DescribeSlsLogtailConfig(id string) (object map[string]in
 	return response, nil
 }
 
-func (s *SlsServiceV2) SlsLogtailConfigStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *SlsServiceV2) SlsLogtailConfigStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeSlsLogtailConfig(id)
 		if err != nil {
@@ -766,15 +766,15 @@ func (s *SlsServiceV2) DescribeSlsMachineGroup(id string) (object map[string]int
 	action := fmt.Sprintf("/machinegroups/%s", machineGroup)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.Do("Sls", roaParam("GET", "2020-12-30", "GetMachineGroup", action), query, nil, nil, hostMap, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -789,7 +789,7 @@ func (s *SlsServiceV2) DescribeSlsMachineGroup(id string) (object map[string]int
 	return response, nil
 }
 
-func (s *SlsServiceV2) SlsMachineGroupStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *SlsServiceV2) SlsMachineGroupStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeSlsMachineGroup(id)
 		if err != nil {
@@ -840,15 +840,15 @@ func (s *SlsServiceV2) DescribeSlsIndex(id string) (object map[string]interface{
 	action := fmt.Sprintf("/logstores/%s/index", logstore)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.Do("Sls", roaParam("GET", "2020-12-30", "GetIndex", action), query, nil, nil, hostMap, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -863,11 +863,11 @@ func (s *SlsServiceV2) DescribeSlsIndex(id string) (object map[string]interface{
 	return response, nil
 }
 
-func (s *SlsServiceV2) SlsIndexStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *SlsServiceV2) SlsIndexStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.SlsIndexStateRefreshFuncWithApi(id, field, failStates, s.DescribeSlsIndex)
 }
 
-func (s *SlsServiceV2) SlsIndexStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *SlsServiceV2) SlsIndexStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -917,15 +917,15 @@ func (s *SlsServiceV2) DescribeSlsScheduledSql(id string) (object map[string]int
 	action := fmt.Sprintf("/scheduledsqls/%s", scheduledSQLName)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.Do("Sls", roaParam("GET", "2020-12-30", "GetScheduledSQL", action), query, nil, nil, hostMap, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -940,11 +940,11 @@ func (s *SlsServiceV2) DescribeSlsScheduledSql(id string) (object map[string]int
 	return response, nil
 }
 
-func (s *SlsServiceV2) SlsScheduledSqlStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *SlsServiceV2) SlsScheduledSqlStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.SlsScheduledSqlStateRefreshFuncWithApi(id, field, failStates, s.DescribeSlsScheduledSql)
 }
 
-func (s *SlsServiceV2) SlsScheduledSqlStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *SlsServiceV2) SlsScheduledSqlStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -995,15 +995,15 @@ func (s *SlsServiceV2) DescribeSlsLogtailPipelineConfig(id string) (object map[s
 	action := fmt.Sprintf("/pipelineconfigs/%s", configName)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.Do("Sls", roaParam("GET", "2020-12-30", "GetLogtailPipelineConfig", action), query, nil, nil, hostMap, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1018,11 +1018,11 @@ func (s *SlsServiceV2) DescribeSlsLogtailPipelineConfig(id string) (object map[s
 	return response, nil
 }
 
-func (s *SlsServiceV2) SlsLogtailPipelineConfigStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *SlsServiceV2) SlsLogtailPipelineConfigStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.SlsLogtailPipelineConfigStateRefreshFuncWithApi(id, field, failStates, s.DescribeSlsLogtailPipelineConfig)
 }
 
-func (s *SlsServiceV2) SlsLogtailPipelineConfigStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *SlsServiceV2) SlsLogtailPipelineConfigStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {

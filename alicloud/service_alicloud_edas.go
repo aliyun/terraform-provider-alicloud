@@ -13,7 +13,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/edas"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -154,7 +154,7 @@ func (e *EdasService) GetDeployGroup(appId, groupId string) (groupInfo *edas.Dep
 	return groupInfo, nil
 }
 
-func (e *EdasService) EdasChangeOrderStatusRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (e *EdasService) EdasChangeOrderStatusRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := e.GetChangeOrderStatus(id)
 		if err != nil {
@@ -175,7 +175,7 @@ func (e *EdasService) EdasChangeOrderStatusRefreshFunc(id string, failStates []s
 	}
 }
 
-func (e *EdasService) EdasChangeOrderStatusRefreshFuncV2(id string, failStates []string) resource.StateRefreshFunc {
+func (e *EdasService) EdasChangeOrderStatusRefreshFuncV2(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		status, err := e.GetChangeOrderStatusV2(id)
 		if err != nil {
@@ -217,7 +217,7 @@ func (e *EdasService) WaitForChangeOrderFinished(resourceId string, changeOrderI
 	return nil
 }
 
-func (e *EdasService) WaitForChangeOrderFinishedNonRetryable(resourceId string, changeOrderId string, timeout time.Duration) *resource.RetryError {
+func (e *EdasService) WaitForChangeOrderFinishedNonRetryable(resourceId string, changeOrderId string, timeout time.Duration) *retry.RetryError {
 	if len(changeOrderId) > 0 {
 		stateConf := BuildStateConf(
 			[]string{ChangeOrderStatusReadyStr, ChangeOrderStatusRunningStr},
@@ -230,7 +230,7 @@ func (e *EdasService) WaitForChangeOrderFinishedNonRetryable(resourceId string, 
 					ChangeOrderStatusAbortStr,
 					ChangeOrderStatusSystemFailStr}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return resource.NonRetryableError(WrapErrorf(err, "change order failed, app id %s", resourceId))
+			return retry.NonRetryableError(WrapErrorf(err, "change order failed, app id %s", resourceId))
 		}
 	}
 	return nil
@@ -447,7 +447,7 @@ func (e *EdasService) doPopRequest(requestConfig map[string]string, params map[s
 
 	var err error
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		switch httpMethod {
 		case "POST":
 			response, err = client.RoaPost("Edas", "2017-08-01", action, request, nil, nil, false)
@@ -463,9 +463,9 @@ func (e *EdasService) doPopRequest(requestConfig map[string]string, params map[s
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -819,14 +819,14 @@ func (s *EdasService) DescribeEdasNamespace(id string) (object map[string]interf
 	request := map[string]*string{}
 	idExist := false
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaPost("Edas", "2017-08-01", action, request, nil, nil, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -852,9 +852,9 @@ func (s *EdasService) DescribeEdasNamespace(id string) (object map[string]interf
 	}
 	return object, nil
 }
-func (e *EdasService) BindK8sSlb(appId string, slbConfig *map[string]interface{}, timeout time.Duration) *resource.RetryError {
+func (e *EdasService) BindK8sSlb(appId string, slbConfig *map[string]interface{}, timeout time.Duration) *retry.RetryError {
 	if e.HasOngoingTasks(appId) {
-		return resource.RetryableError(Error("there is an ongoing task"))
+		return retry.RetryableError(Error("there is an ongoing task"))
 	}
 	portMappings := (*slbConfig)["port_mappings"].(*schema.Set).List()
 	var requestServicePortInfos []map[string]interface{}
@@ -876,7 +876,7 @@ func (e *EdasService) BindK8sSlb(appId string, slbConfig *map[string]interface{}
 	}
 	portInfoBytes, err := json.Marshal(requestServicePortInfos)
 	if err != nil {
-		return resource.NonRetryableError(WrapErrorf(err, "marshal port mappings failed, value %v", requestServicePortInfos))
+		return retry.NonRetryableError(WrapErrorf(err, "marshal port mappings failed, value %v", requestServicePortInfos))
 	}
 	params := map[string]string{
 		"AppId":            appId,
@@ -891,13 +891,13 @@ func (e *EdasService) BindK8sSlb(appId string, slbConfig *map[string]interface{}
 		"httpMethod": "POST",
 		"id":         appId,
 	}, params); err != nil {
-		return resource.NonRetryableError(err)
+		return retry.NonRetryableError(err)
 	} else {
 		return e.WaitForChangeOrderFinishedNonRetryable(appId, response["ChangeOrderId"].(string), timeout)
 	}
 }
 
-func (e *EdasService) UpdateK8sAppSlbInfos(appId string, oldInfos, newInfos *[]interface{}, timeout time.Duration) *resource.RetryError {
+func (e *EdasService) UpdateK8sAppSlbInfos(appId string, oldInfos, newInfos *[]interface{}, timeout time.Duration) *retry.RetryError {
 	buildMap := func(infos *[]interface{}) *map[string]interface{} {
 		m := map[string]interface{}{}
 		if len(*infos) > 0 {
@@ -955,9 +955,9 @@ func (e *EdasService) UpdateK8sAppSlbInfos(appId string, oldInfos, newInfos *[]i
 	return nil
 }
 
-func (e *EdasService) updateK8sSlb(appId string, slbConfig *map[string]interface{}, timeout time.Duration) *resource.RetryError {
+func (e *EdasService) updateK8sSlb(appId string, slbConfig *map[string]interface{}, timeout time.Duration) *retry.RetryError {
 	if e.HasOngoingTasks(appId) {
-		return resource.RetryableError(Error("there is an ongoing task"))
+		return retry.RetryableError(Error("there is an ongoing task"))
 	}
 	portMappings := (*slbConfig)["port_mappings"].(*schema.Set).List()
 	var requestServicePortInfos []map[string]interface{}
@@ -979,7 +979,7 @@ func (e *EdasService) updateK8sSlb(appId string, slbConfig *map[string]interface
 	}
 	portInfoBytes, err := json.Marshal(requestServicePortInfos)
 	if err != nil {
-		return resource.NonRetryableError(WrapErrorf(err, "marshal port mappings failed, value %v", requestServicePortInfos))
+		return retry.NonRetryableError(WrapErrorf(err, "marshal port mappings failed, value %v", requestServicePortInfos))
 	}
 	params := map[string]string{
 		"AppId":            appId,
@@ -995,15 +995,15 @@ func (e *EdasService) updateK8sSlb(appId string, slbConfig *map[string]interface
 		"httpMethod": "PUT",
 		"id":         appId,
 	}, params); err != nil {
-		return resource.NonRetryableError(err)
+		return retry.NonRetryableError(err)
 	} else {
 		return e.WaitForChangeOrderFinishedNonRetryable(appId, response["ChangeOrderId"].(string), timeout)
 	}
 }
 
-func (e *EdasService) UnbindK8sSlb(appId, slbType, slbName string, timeout time.Duration) *resource.RetryError {
+func (e *EdasService) UnbindK8sSlb(appId, slbType, slbName string, timeout time.Duration) *retry.RetryError {
 	if e.HasOngoingTasks(appId) {
-		return resource.RetryableError(Error("there is an ongoing task"))
+		return retry.RetryableError(Error("there is an ongoing task"))
 	}
 	if response, err := e.doPopRequest(map[string]string{
 		"action":     "/pop/v5/k8s/acs/k8s_slb_binding",
@@ -1014,7 +1014,7 @@ func (e *EdasService) UnbindK8sSlb(appId, slbType, slbName string, timeout time.
 		"Type":    slbType,
 		"SlbName": slbName,
 	}); err != nil {
-		return resource.NonRetryableError(err)
+		return retry.NonRetryableError(err)
 	} else {
 		return e.WaitForChangeOrderFinishedNonRetryable(appId, response["ChangeOrderId"].(string), timeout)
 	}

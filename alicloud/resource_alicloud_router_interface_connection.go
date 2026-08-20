@@ -6,7 +6,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -147,15 +147,15 @@ func resourceAlicloudRouterInterfaceConnectionCreate(d *schema.ResourceData, met
 		connectRequest := vpc.CreateConnectRouterInterfaceRequest()
 		connectRequest.RegionId = client.RegionId
 		connectRequest.RouterInterfaceId = interfaceId
-		if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+		if err := retry.Retry(2*time.Minute, func() *retry.RetryError {
 			raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 				return vpcClient.ConnectRouterInterface(connectRequest)
 			})
 			if err != nil {
 				if IsExpectedErrors(err, []string{"IncorrectOppositeInterfaceInfo.NotSet"}) {
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(connectRequest.GetActionName(), raw, connectRequest.RpcRequest, connectRequest)
 			return nil

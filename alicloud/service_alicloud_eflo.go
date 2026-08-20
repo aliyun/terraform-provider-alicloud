@@ -6,7 +6,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type EfloService struct {
@@ -24,14 +24,14 @@ func (s *EfloService) DescribeEfloVpd(id string) (object map[string]interface{},
 	var response map[string]interface{}
 	action := "GetVpd"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err := client.RpcPost("eflo", "2022-05-30", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		response = resp
 		addDebug(action, response, request)
@@ -50,7 +50,7 @@ func (s *EfloService) DescribeEfloVpd(id string) (object map[string]interface{},
 	return v.(map[string]interface{}), nil
 }
 
-func (s *EfloService) EfloVpdStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *EfloService) EfloVpdStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEfloVpd(id)
 		if err != nil {
@@ -85,14 +85,14 @@ func (s *EfloService) DescribeEfloSubnet(id string) (object map[string]interface
 	var response map[string]interface{}
 	action := "GetSubnet"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err := client.RpcPost("eflo", "2022-05-30", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		response = resp
 		addDebug(action, response, request)
@@ -111,7 +111,7 @@ func (s *EfloService) DescribeEfloSubnet(id string) (object map[string]interface
 	return v.(map[string]interface{}), nil
 }
 
-func (s *EfloService) EfloSubnetStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *EfloService) EfloSubnetStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEfloSubnet(id)
 		if err != nil {

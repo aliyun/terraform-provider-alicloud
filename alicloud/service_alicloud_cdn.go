@@ -9,7 +9,7 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cdn"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type CdnService struct {
@@ -77,14 +77,14 @@ func (s *CdnService) DescribeCdnDomainConfig(id string) (object interface{}, err
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Cdn", "2018-05-10", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -194,7 +194,7 @@ func (c *CdnService) DescribeTags(resourceId string, resourceType TagResourceTyp
 	return
 }
 
-func (c *CdnService) CdnDomainConfigRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (c *CdnService) CdnDomainConfigRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		v, err := c.DescribeCdnDomainConfig(id)
 		if err != nil {
@@ -223,14 +223,14 @@ func (s *CdnService) DescribeCdnRealTimeLogDelivery(id string) (object map[strin
 		"Domain": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("Cdn", "2018-05-10", action, request, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -249,7 +249,7 @@ func (s *CdnService) DescribeCdnRealTimeLogDelivery(id string) (object map[strin
 	return object, nil
 }
 
-func (s *CdnService) CdnRealTimeLogDeliveryStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *CdnService) CdnRealTimeLogDeliveryStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCdnRealTimeLogDelivery(id)
 		if err != nil {
@@ -277,14 +277,14 @@ func (s *CdnService) DescribeCdnFcTrigger(id string) (object map[string]interfac
 		"TriggerARN": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("Cdn", "2018-05-10", action, request, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

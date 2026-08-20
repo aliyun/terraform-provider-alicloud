@@ -8,7 +8,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type SelectDBService struct {
@@ -19,7 +19,7 @@ func (s *SelectDBService) RequestProcessForSelectDB(request map[string]interface
 	client := s.client
 	var response map[string]interface{}
 	wait := incrementalWait(5*time.Second, 20*time.Second)
-	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(10*time.Minute, func() *retry.RetryError {
 		if method == "GET" {
 			response, err = client.RpcGet("selectdb", "2023-05-22", action, request, nil)
 		} else {
@@ -31,9 +31,9 @@ func (s *SelectDBService) RequestProcessForSelectDB(request map[string]interface
 				IsExpectedErrors(err, []string{"OperationDenied.OrderProcessing"}) ||
 				NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -61,7 +61,7 @@ func (s *SelectDBService) RequestProcessPageableForSelectDB(request map[string]i
 
 	for {
 		wait := incrementalWait(5*time.Second, 20*time.Second)
-		err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(10*time.Minute, func() *retry.RetryError {
 			if method == "GET" {
 				response, err = client.RpcGet("selectdb", "2023-05-22", action, request, nil)
 			} else {
@@ -73,9 +73,9 @@ func (s *SelectDBService) RequestProcessPageableForSelectDB(request map[string]i
 					IsExpectedErrors(err, []string{"OperationDenied.OrderProcessing"}) ||
 					NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -133,7 +133,7 @@ func (s *SelectDBService) DescribeSelectDBDbCluster(id string) (object map[strin
 	return clusterInfo, nil
 }
 
-func (s *SelectDBService) SelectDBDbClusterStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *SelectDBService) SelectDBDbClusterStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeSelectDBDbCluster(id)
 		if err != nil {
@@ -166,7 +166,7 @@ func (s *SelectDBService) DescribeSelectDBDbInstance(id string) (object map[stri
 
 }
 
-func (s *SelectDBService) SelectDBDbInstanceStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *SelectDBService) SelectDBDbInstanceStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeSelectDBDbInstance(id)
 		if err != nil {

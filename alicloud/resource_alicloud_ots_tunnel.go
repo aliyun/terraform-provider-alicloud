@@ -6,7 +6,7 @@ import (
 
 	otsTunnel "github.com/aliyun/aliyun-tablestore-go-sdk/tunnel"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -116,13 +116,13 @@ func resourceAliyunOtsTunnelCreate(d *schema.ResourceData, meta interface{}) err
 	client := meta.(*connectivity.AliyunClient)
 	otsService := OtsService{client}
 	// check table exists
-	if err := resource.Retry(1*time.Minute, func() *resource.RetryError {
+	if err := retry.Retry(1*time.Minute, func() *retry.RetryError {
 		_, e := otsService.DescribeOtsTable(fmt.Sprintf("%s%s%s", instanceName, COLON_SEPARATED, tableName))
 		if e != nil {
 			if NotFoundError(e) {
-				return resource.RetryableError(e)
+				return retry.RetryableError(e)
 			}
-			return resource.NonRetryableError(e)
+			return retry.NonRetryableError(e)
 		}
 		return nil
 	}); err != nil {
@@ -135,16 +135,16 @@ func resourceAliyunOtsTunnelCreate(d *schema.ResourceData, meta interface{}) err
 	request.Type = tunnelType
 
 	var requestInfo otsTunnel.TunnelClient
-	if err := resource.Retry(1*time.Minute, func() *resource.RetryError {
+	if err := retry.Retry(1*time.Minute, func() *retry.RetryError {
 		raw, err := client.WithTableStoreTunnelClient(instanceName, func(tunnelClient otsTunnel.TunnelClient) (interface{}, error) {
 			requestInfo = tunnelClient
 			return tunnelClient.CreateTunnel(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, OtsTunnelIsTemporarilyUnavailable) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug("CreateTunnel", raw, requestInfo, request)
 		return nil
@@ -208,16 +208,16 @@ func resourceAliyunOtsTunnelDelete(d *schema.ResourceData, meta interface{}) err
 		TunnelName: parts[2],
 	}
 	var requestInfo otsTunnel.TunnelClient
-	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(2*time.Minute, func() *retry.RetryError {
 		raw, err := client.WithTableStoreTunnelClient(parts[0], func(tunnelClient otsTunnel.TunnelClient) (interface{}, error) {
 			requestInfo = tunnelClient
 			return tunnelClient.DeleteTunnel(req)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, OtsTunnelIsTemporarilyUnavailable) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug("DeleteTunnel", raw, requestInfo, req)
 		return nil

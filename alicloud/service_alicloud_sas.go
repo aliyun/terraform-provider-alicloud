@@ -7,7 +7,7 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -22,14 +22,14 @@ func (s *SasService) DescribeAllGroups(id string) (object map[string]interface{}
 	request := map[string]interface{}{}
 	idExist := false
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Sas", "2018-12-03", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -62,14 +62,14 @@ func (s *SasService) DescribeSecurityCenterServiceLinkedRole(id string) (object 
 	action := "DescribeServiceLinkedRoleStatus"
 	request := map[string]interface{}{}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("Sas", "2018-12-03", action, request, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -85,7 +85,7 @@ func (s *SasService) DescribeSecurityCenterServiceLinkedRole(id string) (object 
 	return object, nil
 }
 
-func (s *SasService) SecurityCenterServiceLinkedRoleStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *SasService) SecurityCenterServiceLinkedRoleStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeSecurityCenterServiceLinkedRole(id)
 		if err != nil {
@@ -115,14 +115,14 @@ func (s *SasService) DescribeThreatDetectionWebLockConfig(id string) (object map
 	var response map[string]interface{}
 	action := "DescribeWebLockConfigList"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err := client.RpcPost("Sas", "2018-12-03", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		response = resp
 		addDebug(action, response, request)
@@ -154,10 +154,10 @@ func (s *SasService) DescribeThreatDetectionBaselineStrategy(id string) (object 
 	action := "DescribeStrategyDetail"
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err := client.RpcPost("Sas", "2018-12-03", action, nil, request, true)
 		if NeedRetry(err) {
-			return resource.RetryableError(err)
+			return retry.RetryableError(err)
 		}
 		response = resp
 		addDebug(action, response, request)
@@ -193,10 +193,10 @@ func (s *SasService) DescribeStrategy(id string) (object map[string]interface{},
 	action := "DescribeStrategy"
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err := client.RpcPost("Sas", "2018-12-03", action, nil, request, true)
 		if NeedRetry(err) {
-			return resource.RetryableError(err)
+			return retry.RetryableError(err)
 		}
 		response = resp
 		addDebug(action, response, request)
@@ -215,7 +215,7 @@ func (s *SasService) DescribeStrategy(id string) (object map[string]interface{},
 	return v.(map[string]interface{}), nil
 }
 
-func (s *SasService) ThreatDetectionBaselineStrategyStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+func (s *SasService) ThreatDetectionBaselineStrategyStateRefreshFunc(d *schema.ResourceData, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeThreatDetectionBaselineStrategy(d.Id())
 		if err != nil {
@@ -243,14 +243,14 @@ func (s *SasService) DescribeThreatDetectionAntiBruteForceRule(id string) (objec
 	var response map[string]interface{}
 	action := "DescribeAntiBruteForceRules"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err := client.RpcPost("Sas", "2018-12-03", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		response = resp
 		addDebug(action, response, request)
@@ -273,7 +273,7 @@ func (s *SasService) DescribeThreatDetectionAntiBruteForceRule(id string) (objec
 	return v.(map[string]interface{}), nil
 }
 
-func (s *SasService) ThreatDetectionAntiBruteForceRuleStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+func (s *SasService) ThreatDetectionAntiBruteForceRuleStateRefreshFunc(d *schema.ResourceData, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeThreatDetectionAntiBruteForceRule(d.Id())
 		if err != nil {
@@ -301,14 +301,14 @@ func (s *SasService) DescribeThreatDetectionHoneyPot(id string) (object map[stri
 	var response map[string]interface{}
 	action := "ListHoneypot"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err := client.RpcPost("Sas", "2018-12-03", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		response = resp
 		addDebug(action, response, request)
@@ -331,7 +331,7 @@ func (s *SasService) DescribeThreatDetectionHoneyPot(id string) (object map[stri
 	return v.(map[string]interface{}), nil
 }
 
-func (s *SasService) ThreatDetectionHoneyPotStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+func (s *SasService) ThreatDetectionHoneyPotStateRefreshFunc(d *schema.ResourceData, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeThreatDetectionHoneyPot(d.Id())
 		if err != nil {
@@ -363,14 +363,14 @@ func (s *SasService) DescribeThreatDetectionHoneypotProbe(id string) (object map
 	var response map[string]interface{}
 	action := "GetHoneypotProbe"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err := client.RpcPost("Sas", "2018-12-03", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"HoneypotProbeNotReady"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		response = resp
 		addDebug(action, response, request)
@@ -393,7 +393,7 @@ func (s *SasService) DescribeThreatDetectionHoneypotProbe(id string) (object map
 	return v.(map[string]interface{}), nil
 }
 
-func (s *SasService) ThreatDetectionHoneypotProbeStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+func (s *SasService) ThreatDetectionHoneypotProbeStateRefreshFunc(d *schema.ResourceData, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeThreatDetectionHoneypotProbe(d.Id())
 		if err != nil {

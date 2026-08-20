@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 type AlidnsServiceV2 struct {
@@ -31,16 +31,16 @@ func (s *AlidnsServiceV2) DescribeAlidnsCloudGtmAddressPool(id string) (object m
 	request["ClientToken"] = buildClientToken(action)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Alidns", "2015-01-09", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -57,11 +57,11 @@ func (s *AlidnsServiceV2) DescribeAlidnsCloudGtmAddressPool(id string) (object m
 	return response, nil
 }
 
-func (s *AlidnsServiceV2) AlidnsCloudGtmAddressPoolStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *AlidnsServiceV2) AlidnsCloudGtmAddressPoolStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.AlidnsCloudGtmAddressPoolStateRefreshFuncWithApi(id, field, failStates, s.DescribeAlidnsCloudGtmAddressPool)
 }
 
-func (s *AlidnsServiceV2) AlidnsCloudGtmAddressPoolStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *AlidnsServiceV2) AlidnsCloudGtmAddressPoolStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -112,16 +112,16 @@ func (s *AlidnsServiceV2) DescribeAlidnsCloudGtmInstanceConfig(id string) (objec
 	request["ClientToken"] = buildClientToken(action)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Alidns", "2015-01-09", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -138,11 +138,11 @@ func (s *AlidnsServiceV2) DescribeAlidnsCloudGtmInstanceConfig(id string) (objec
 	return response, nil
 }
 
-func (s *AlidnsServiceV2) AlidnsCloudGtmInstanceConfigStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *AlidnsServiceV2) AlidnsCloudGtmInstanceConfigStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.AlidnsCloudGtmInstanceConfigStateRefreshFuncWithApi(id, field, failStates, s.DescribeAlidnsCloudGtmInstanceConfig)
 }
 
-func (s *AlidnsServiceV2) AlidnsCloudGtmInstanceConfigStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *AlidnsServiceV2) AlidnsCloudGtmInstanceConfigStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -186,15 +186,15 @@ func (s *AlidnsServiceV2) DescribeAlidnsCloudGtmMonitorTemplate(id string) (obje
 	action := "DescribeCloudGtmMonitorTemplate"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Alidns", "2015-01-09", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -211,11 +211,11 @@ func (s *AlidnsServiceV2) DescribeAlidnsCloudGtmMonitorTemplate(id string) (obje
 	return response, nil
 }
 
-func (s *AlidnsServiceV2) AlidnsCloudGtmMonitorTemplateStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *AlidnsServiceV2) AlidnsCloudGtmMonitorTemplateStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.AlidnsCloudGtmMonitorTemplateStateRefreshFuncWithApi(id, field, failStates, s.DescribeAlidnsCloudGtmMonitorTemplate)
 }
 
-func (s *AlidnsServiceV2) AlidnsCloudGtmMonitorTemplateStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *AlidnsServiceV2) AlidnsCloudGtmMonitorTemplateStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -260,16 +260,16 @@ func (s *AlidnsServiceV2) DescribeAlidnsCloudGtmAddress(id string) (object map[s
 	request["ClientToken"] = buildClientToken(action)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Alidns", "2015-01-09", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -286,11 +286,11 @@ func (s *AlidnsServiceV2) DescribeAlidnsCloudGtmAddress(id string) (object map[s
 	return response, nil
 }
 
-func (s *AlidnsServiceV2) AlidnsCloudGtmAddressStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *AlidnsServiceV2) AlidnsCloudGtmAddressStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.AlidnsCloudGtmAddressStateRefreshFuncWithApi(id, field, failStates, s.DescribeAlidnsCloudGtmAddress)
 }
 
-func (s *AlidnsServiceV2) AlidnsCloudGtmAddressStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *AlidnsServiceV2) AlidnsCloudGtmAddressStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {

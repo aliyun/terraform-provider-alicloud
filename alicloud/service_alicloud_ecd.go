@@ -6,7 +6,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -23,14 +23,14 @@ func (s *EcdService) DescribeEcdPolicyGroup(id string) (object map[string]interf
 		"PolicyGroupId": []string{id},
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -77,14 +77,14 @@ func (s *EcdService) setAuthAccessPolicyRules(d *schema.ResourceData, request ma
 				req["RevokeAccessPolicyRule."+fmt.Sprint(authorizeAccessPolicyRulesPtr+1)+".Description"] = authorizeAccessPolicyRulesArg["description"]
 			}
 			wait := incrementalWait(3*time.Second, 3*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("ecd", "2020-09-30", action, nil, req, false)
 				if err != nil {
 					if NeedRetry(err) || IsExpectedErrors(err, []string{"InvalidPolicyStatus.Modification"}) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -126,14 +126,14 @@ func (s *EcdService) setAuthSecurityPolicyRules(d *schema.ResourceData, request 
 				req["RevokeSecurityPolicyRule."+fmt.Sprint(authorizeSecurityPolicyRulesPtr+1)+".Type"] = authorizeSecurityPolicyRulesArg["type"]
 			}
 			wait := incrementalWait(3*time.Second, 3*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("ecd", "2020-09-30", action, nil, req, false)
 				if err != nil {
 					if NeedRetry(err) || IsExpectedErrors(err, []string{"InvalidPolicyStatus.Modification"}) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -167,14 +167,14 @@ func (s *EcdService) DescribeEcdSimpleOfficeSite(id string) (object map[string]i
 		"OfficeSiteId": []string{id},
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -197,7 +197,7 @@ func (s *EcdService) DescribeEcdSimpleOfficeSite(id string) (object map[string]i
 	return object, nil
 }
 
-func (s *EcdService) EcdSimpleOfficeSiteStateRefreshFunc(id string) resource.StateRefreshFunc {
+func (s *EcdService) EcdSimpleOfficeSiteStateRefreshFunc(id string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEcdSimpleOfficeSite(id)
 		if err != nil {
@@ -221,14 +221,14 @@ func (s *EcdService) DescribeEcdNasFileSystem(id string) (object map[string]inte
 		"FileSystemId": []string{id},
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -260,14 +260,14 @@ func (s *EcdService) DescribeEcdNetworkPackage(id string) (object map[string]int
 		"NetworkPackageId": []string{id},
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -291,7 +291,7 @@ func (s *EcdService) DescribeEcdNetworkPackage(id string) (object map[string]int
 	return object, nil
 }
 
-func (s *EcdService) EcdNasFileSystemStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *EcdService) EcdNasFileSystemStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEcdNasFileSystem(id)
 		if err != nil {
@@ -310,7 +310,7 @@ func (s *EcdService) EcdNasFileSystemStateRefreshFunc(id string, failStates []st
 	}
 }
 
-func (s *EcdService) EcdNetworkPackageRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *EcdService) EcdNetworkPackageRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEcdNetworkPackage(id)
 		if err != nil {
@@ -353,15 +353,15 @@ func (s *EcdService) SetResourceTags(d *schema.ResourceData, resourceType string
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
 			wait := incrementalWait(2*time.Second, 1*time.Second)
-			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+			err := retry.Retry(10*time.Minute, func() *retry.RetryError {
 				response, err := client.RpcPost("ecd", "2020-09-30", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(action, response, request)
 				return nil
@@ -385,15 +385,15 @@ func (s *EcdService) SetResourceTags(d *schema.ResourceData, resourceType string
 			}
 
 			wait := incrementalWait(2*time.Second, 1*time.Second)
-			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+			err := retry.Retry(10*time.Minute, func() *retry.RetryError {
 				response, err := client.RpcPost("ecd", "2020-09-30", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(action, response, request)
 				return nil
@@ -415,14 +415,14 @@ func (s *EcdService) DescribeEcdDesktop(id string) (object map[string]interface{
 		"DesktopId.1": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -445,7 +445,7 @@ func (s *EcdService) DescribeEcdDesktop(id string) (object map[string]interface{
 	return object, nil
 }
 
-func (s *EcdService) EcdDesktopStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *EcdService) EcdDesktopStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEcdDesktop(id)
 		if err != nil {
@@ -466,7 +466,7 @@ func (s *EcdService) EcdDesktopStateRefreshFunc(id string, failStates []string) 
 	}
 }
 
-func (s *EcdService) EcdDesktopDesktopTypeRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *EcdService) EcdDesktopDesktopTypeRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEcdDesktop(id)
 		if err != nil {
@@ -487,7 +487,7 @@ func (s *EcdService) EcdDesktopDesktopTypeRefreshFunc(id string, failStates []st
 	}
 }
 
-func (s *EcdService) EcdDesktopChargeTypeFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *EcdService) EcdDesktopChargeTypeFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEcdDesktop(id)
 		if err != nil {
@@ -517,14 +517,14 @@ func (s *EcdService) DescribeEcdImage(id string) (object map[string]interface{},
 		"ImageId":  []string{id},
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -547,7 +547,7 @@ func (s *EcdService) DescribeEcdImage(id string) (object map[string]interface{},
 	return object, nil
 }
 
-func (s *EcdService) EcdImageStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *EcdService) EcdImageStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEcdImage(id)
 		if err != nil {
@@ -577,14 +577,14 @@ func (s *EcdService) DescribeEcdCommand(id string) (object map[string]interface{
 		"InvokeId": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -609,7 +609,7 @@ func (s *EcdService) DescribeEcdCommand(id string) (object map[string]interface{
 	return object, nil
 }
 
-func (s *EcdService) EcdCommandStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *EcdService) EcdCommandStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEcdCommand(id)
 		if err != nil {
@@ -639,14 +639,14 @@ func (s *EcdService) DescribeEcdSnapshot(id string) (object map[string]interface
 	var response map[string]interface{}
 	action := "DescribeSnapshots"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err := client.RpcPost("ecd", "2020-09-30", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		response = resp
 		addDebug(action, resp, request)
@@ -678,14 +678,14 @@ func (s *EcdService) DescribeEcdBundle(id string) (object map[string]interface{}
 
 	idExist := false
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -727,14 +727,14 @@ func (s *EcdService) DescribeEcdRamDirectory(id string) (object map[string]inter
 		"DirectoryId": []string{id},
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -766,14 +766,14 @@ func (s *EcdService) DescribeEcdAdConnectorDirectory(id string) (object map[stri
 		"DirectoryId": []string{id},
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -805,14 +805,14 @@ func (s *EcdService) DescribeEcdAdConnectorOfficeSite(id string) (object map[str
 		"OfficeSiteId": []string{id},
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -835,7 +835,7 @@ func (s *EcdService) DescribeEcdAdConnectorOfficeSite(id string) (object map[str
 	return object, nil
 }
 
-func (s *EcdService) EcdAdConnectorOfficeSiteStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *EcdService) EcdAdConnectorOfficeSiteStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEcdAdConnectorOfficeSite(id)
 		if err != nil {

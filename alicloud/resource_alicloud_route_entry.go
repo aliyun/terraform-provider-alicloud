@@ -9,7 +9,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -130,13 +130,13 @@ func resourceAliyunRouteEntryCreate(d *schema.ResourceData, meta interface{}) er
 	attempt := 0
 	var abandoned atomic.Bool
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
+	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *retry.RetryError {
 		attempt++
 		if err := vpcService.WaitForAllRouteEntriesAvailable(rtId, DefaultTimeout); err != nil {
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 
-		// resource.Retry does not cancel an in-flight callback when its
+		// retry.Retry does not cancel an in-flight callback when its
 		// deadline expires: it returns the last error to Terraform and leaves
 		// the callback goroutine running. If that goroutine was blocked in
 		// WaitForAllRouteEntriesAvailable above when the deadline fired, it
@@ -147,7 +147,7 @@ func resourceAliyunRouteEntryCreate(d *schema.ResourceData, meta interface{}) er
 		// with Duplicated.VpcNextHop). Skip the call once the loop has been
 		// abandoned so no request is sent whose outcome nobody records.
 		if abandoned.Load() {
-			return resource.NonRetryableError(Error("the retry deadline of creating route entry has expired; skip sending CreateRouteEntry"))
+			return retry.NonRetryableError(Error("the retry deadline of creating route entry has expired; skip sending CreateRouteEntry"))
 		}
 
 		args := *request
@@ -167,9 +167,9 @@ func resourceAliyunRouteEntryCreate(d *schema.ResourceData, meta interface{}) er
 			// It must ensure all the route entries, vpc, vswitches' status must be available before creating or deleting route entry.
 			if IsExpectedErrors(err, []string{"TaskConflict", "OperationConflict", "IncorrectRouteEntryStatus", "IncorrectVpcStatus", "IncorrectVSwitchStatus", "IncorrectHaVipStatus", "IncorrectInstanceStatus", "InvalidVBRStatus", "IncorrectStatus.Ipv4Gateway", "IncorrectStatus.Ipv6Address", "LastTokenProcessing", "IncorrectStatus.VpcPeer", "IncorrectStatus.MultiScopeRiRouteEntry", "IncorrectStatus.RouteTableStatus", "OperationFailed.DistibuteLock", "ServiceUnavailable", "SystemBusy", "UnknownError", "IncorrectStatus.RouterInterface", "IncorrectStatus.PrefixList"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -318,7 +318,7 @@ func resourceAliyunRouteEntryDelete(d *schema.ResourceData, meta interface{}) er
 
 	var raw interface{}
 	retryTimes := 7
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
+	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *retry.RetryError {
 		raw, err = client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.DeleteRouteEntry(request)
 		})
@@ -326,9 +326,9 @@ func resourceAliyunRouteEntryDelete(d *schema.ResourceData, meta interface{}) er
 			if IsExpectedErrors(err, []string{"IncorrectVpcStatus", "TaskConflict", "OperationConflict", "SystemBusy", "IncorrectRouteEntryStatus", "IncorrectInstanceStatus", "Forbbiden", "UnknownError", "InvalidVBRStatus", "LastTokenProcessing", "IncorrectStatus.Ipv6Address", "OperationFailed.DistibuteLock", "ServiceUnavailable", "IncorrectStatus.RouteTableStatus", "IncorrectStatus.MultiScopeRiRouteEntry", "IncorrectHaVipStatus", "IncorrectStatus.Ipv4Gateway", "IncorrectStatus.VpcPeer", "IncorrectStatus.PrefixList"}) || NeedRetry(err) {
 				// Route Entry does not support creating or deleting within 5 seconds frequently
 				time.Sleep(time.Duration(retryTimes) * time.Second)
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

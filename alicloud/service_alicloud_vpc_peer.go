@@ -6,7 +6,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -22,14 +22,14 @@ func (s *VpcPeerService) DescribeVpcPeerConnection(id string) (object map[string
 		"InstanceId": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("VpcPeer", "2022-01-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -48,7 +48,7 @@ func (s *VpcPeerService) DescribeVpcPeerConnection(id string) (object map[string
 	return object, nil
 }
 
-func (s *VpcPeerService) VpcPeerConnectionStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *VpcPeerService) VpcPeerConnectionStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeVpcPeerConnection(id)
 		if err != nil {
@@ -75,14 +75,14 @@ func (s *VpcPeerService) DescribeVpcPeerConnectionAccepter(id string) (object ma
 		"InstanceId": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("VpcPeer", "2022-01-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -100,7 +100,7 @@ func (s *VpcPeerService) DescribeVpcPeerConnectionAccepter(id string) (object ma
 	object = v.(map[string]interface{})
 	return object, nil
 }
-func (s *VpcPeerService) VpcPeerConnectionAccepterStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+func (s *VpcPeerService) VpcPeerConnectionAccepterStateRefreshFunc(d *schema.ResourceData, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeVpcPeerConnectionAccepter(d.Id())
 		if err != nil {

@@ -8,7 +8,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type LindormServiceV2 struct {
@@ -29,15 +29,15 @@ func (s *LindormServiceV2) DescribeLindormPublicNetwork(id string) (object map[s
 	action := "GetLindormInstance"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("hitsdb", "2020-06-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -63,15 +63,15 @@ func (s *LindormServiceV2) DescribePublicNetworkGetLindormInstanceEngineList(id 
 	action := "GetLindormInstanceEngineList"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("hitsdb", "2020-06-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -86,7 +86,7 @@ func (s *LindormServiceV2) DescribePublicNetworkGetLindormInstanceEngineList(id 
 	return response, nil
 }
 
-func (s *LindormServiceV2) LindormPublicNetworkStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *LindormServiceV2) LindormPublicNetworkStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeLindormPublicNetwork(id)
 		if err != nil {
@@ -131,15 +131,15 @@ func (s *LindormServiceV2) DescribeLindormInstanceV2(id string) (object map[stri
 	action := "GetLindormV2InstanceDetails"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("hitsdb", "2020-06-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -154,11 +154,11 @@ func (s *LindormServiceV2) DescribeLindormInstanceV2(id string) (object map[stri
 	return response, nil
 }
 
-func (s *LindormServiceV2) LindormInstanceV2StateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *LindormServiceV2) LindormInstanceV2StateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.LindormInstanceV2StateRefreshFuncWithApi(id, field, failStates, s.DescribeLindormInstanceV2)
 }
 
-func (s *LindormServiceV2) LindormInstanceV2StateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *LindormServiceV2) LindormInstanceV2StateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {

@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -41,14 +41,14 @@ func dataSourceAlicloudCenTransitRouterServiceRead(d *schema.ResourceData, meta 
 	action := "CheckTransitRouterService"
 	request["ClientToken"] = buildClientToken(action)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(3*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -57,14 +57,14 @@ func dataSourceAlicloudCenTransitRouterServiceRead(d *schema.ResourceData, meta 
 		if IsExpectedErrors(err, []string{"USER_NOT_OPEN_TR_SERVICE", "Forbbiden.TransitRouterServiceNotOpen"}) {
 			action = "OpenTransitRouterService"
 			request["ClientToken"] = buildClientToken(action)
-			err = resource.Retry(3*time.Minute, func() *resource.RetryError {
+			err = retry.Retry(3*time.Minute, func() *retry.RetryError {
 				response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})

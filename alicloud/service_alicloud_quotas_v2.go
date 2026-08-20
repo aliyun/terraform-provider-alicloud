@@ -8,7 +8,7 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/blues/jsonata-go"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type QuotasServiceV2 struct {
@@ -28,15 +28,15 @@ func (s *QuotasServiceV2) DescribeQuotasTemplateQuota(id string) (object map[str
 	request["Id"] = id
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.Do("quotas", rpcParam("POST", "2020-05-10", action), nil, request, nil, nil, false)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -60,7 +60,7 @@ func (s *QuotasServiceV2) DescribeQuotasTemplateQuota(id string) (object map[str
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *QuotasServiceV2) QuotasTemplateQuotaStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *QuotasServiceV2) QuotasTemplateQuotaStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeQuotasTemplateQuota(id)
 		if err != nil {
@@ -95,15 +95,15 @@ func (s *QuotasServiceV2) DescribeQuotasQuotaApplication(id string) (object map[
 	request["ApplicationId"] = id
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.Do("quotas", rpcParam("POST", "2020-05-10", action), nil, request, nil, nil, false)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -122,7 +122,7 @@ func (s *QuotasServiceV2) DescribeQuotasQuotaApplication(id string) (object map[
 	return v.(map[string]interface{}), nil
 }
 
-func (s *QuotasServiceV2) QuotasQuotaApplicationStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *QuotasServiceV2) QuotasQuotaApplicationStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeQuotasQuotaApplication(id)
 		if err != nil {
@@ -156,15 +156,15 @@ func (s *QuotasServiceV2) DescribeQuotasQuotaAlarm(id string) (object map[string
 	request["AlarmId"] = id
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.Do("quotas", rpcParam("POST", "2020-05-10", action), nil, request, nil, nil, false)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -184,7 +184,7 @@ func (s *QuotasServiceV2) DescribeQuotasQuotaAlarm(id string) (object map[string
 	return v.(map[string]interface{}), nil
 }
 
-func (s *QuotasServiceV2) QuotasQuotaAlarmStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *QuotasServiceV2) QuotasQuotaAlarmStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeQuotasQuotaAlarm(id)
 		if err != nil {
@@ -217,15 +217,15 @@ func (s *QuotasServiceV2) DescribeQuotasTemplateApplications(id string) (object 
 	request["BatchQuotaApplicationId"] = id
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.Do("quotas", rpcParam("POST", "2020-05-10", action), nil, request, nil, nil, false)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -257,15 +257,15 @@ func (s *QuotasServiceV2) DescribeListQuotaApplicationsDetailForTemplate(id stri
 	request["BatchQuotaApplicationId"] = id
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("quotas", "2020-05-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -278,7 +278,7 @@ func (s *QuotasServiceV2) DescribeListQuotaApplicationsDetailForTemplate(id stri
 	return response, nil
 }
 
-func (s *QuotasServiceV2) QuotasTemplateApplicationsStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *QuotasServiceV2) QuotasTemplateApplicationsStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeQuotasTemplateApplications(id)
 		if err != nil {
@@ -322,15 +322,15 @@ func (s *QuotasServiceV2) DescribeQuotasTemplateService(id string) (object map[s
 	query = make(map[string]interface{})
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("quotas", "2020-05-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -348,7 +348,7 @@ func (s *QuotasServiceV2) DescribeQuotasTemplateService(id string) (object map[s
 	return v.(map[string]interface{}), nil
 }
 
-func (s *QuotasServiceV2) QuotasTemplateServiceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *QuotasServiceV2) QuotasTemplateServiceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeQuotasTemplateService(id)
 		if err != nil {

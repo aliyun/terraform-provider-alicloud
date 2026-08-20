@@ -7,7 +7,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -29,15 +29,15 @@ func (s *MongodbServiceV2) DescribeMongodbPrivateSrvNetworkAddress(id string) (o
 	action := "DescribeAllNetworkAddress"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Dds", "2015-12-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -54,11 +54,11 @@ func (s *MongodbServiceV2) DescribeMongodbPrivateSrvNetworkAddress(id string) (o
 	return response, nil
 }
 
-func (s *MongodbServiceV2) MongodbPrivateSrvNetworkAddressStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *MongodbServiceV2) MongodbPrivateSrvNetworkAddressStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.MongodbPrivateSrvNetworkAddressStateRefreshFuncWithApi(id, field, failStates, s.DescribeMongodbPrivateSrvNetworkAddress)
 }
 
-func (s *MongodbServiceV2) MongodbPrivateSrvNetworkAddressStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *MongodbServiceV2) MongodbPrivateSrvNetworkAddressStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -107,15 +107,15 @@ func (s *MongodbServiceV2) DescribeMongodbAccount(id string) (object map[string]
 	action := "DescribeAccounts"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Dds", "2015-12-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -136,11 +136,11 @@ func (s *MongodbServiceV2) DescribeMongodbAccount(id string) (object map[string]
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *MongodbServiceV2) MongodbAccountStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *MongodbServiceV2) MongodbAccountStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.MongodbAccountStateRefreshFuncWithApi(id, field, failStates, s.DescribeMongodbAccount)
 }
 
-func (s *MongodbServiceV2) MongodbAccountStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *MongodbServiceV2) MongodbAccountStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -182,15 +182,15 @@ func (s *MongodbServiceV2) DescribeMongodbGlobalSecurityIPGroup(id string) (obje
 	action := "DescribeGlobalSecurityIPGroup"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("Dds", "2015-12-01", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -211,7 +211,7 @@ func (s *MongodbServiceV2) DescribeMongodbGlobalSecurityIPGroup(id string) (obje
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *MongodbServiceV2) MongodbGlobalSecurityIPGroupStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *MongodbServiceV2) MongodbGlobalSecurityIPGroupStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeMongodbGlobalSecurityIPGroup(id)
 		if err != nil {
@@ -256,15 +256,15 @@ func (s *MongodbServiceV2) DescribeMongodbAuditPolicy(id string) (object map[str
 	action := "DescribeMongoDBLogConfig"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Dds", "2015-12-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -287,15 +287,15 @@ func (s *MongodbServiceV2) DescribeAuditPolicyDescribeAuditPolicy(id string) (ob
 	action := "DescribeAuditPolicy"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Dds", "2015-12-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -319,15 +319,15 @@ func (s *MongodbServiceV2) DescribeAuditPolicyDescribeAuditLogFilter(id string) 
 	action := "DescribeAuditLogFilter"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Dds", "2015-12-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -339,11 +339,11 @@ func (s *MongodbServiceV2) DescribeAuditPolicyDescribeAuditLogFilter(id string) 
 	return response, nil
 }
 
-func (s *MongodbServiceV2) MongodbAuditPolicyStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *MongodbServiceV2) MongodbAuditPolicyStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.MongodbAuditPolicyStateRefreshFuncWithApi(id, field, failStates, s.DescribeMongodbAuditPolicy)
 }
 
-func (s *MongodbServiceV2) MongodbAuditPolicyStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *MongodbServiceV2) MongodbAuditPolicyStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -371,7 +371,7 @@ func (s *MongodbServiceV2) MongodbAuditPolicyStateRefreshFuncWithApi(id string, 
 	}
 }
 
-func (s *MongodbServiceV2) DescribeAsyncMongodbAuditPolicyStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) resource.StateRefreshFunc {
+func (s *MongodbServiceV2) DescribeAsyncMongodbAuditPolicyStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAsyncDescribeDBInstanceAttribute(d, res)
 		if err != nil {
@@ -417,15 +417,15 @@ func (s *MongodbServiceV2) DescribeAsyncDescribeDBInstanceAttribute(d *schema.Re
 	action := "DescribeDBInstanceAttribute"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Dds", "2015-12-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -459,15 +459,15 @@ func (s *MongodbServiceV2) DescribeMongodbNode(id string) (object map[string]int
 	action := "DescribeShardingNodeAttribute"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Dds", "2015-12-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -482,11 +482,11 @@ func (s *MongodbServiceV2) DescribeMongodbNode(id string) (object map[string]int
 	return response, nil
 }
 
-func (s *MongodbServiceV2) MongodbNodeStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *MongodbServiceV2) MongodbNodeStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.MongodbNodeStateRefreshFuncWithApi(id, field, failStates, s.DescribeMongodbNode)
 }
 
-func (s *MongodbServiceV2) MongodbNodeStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *MongodbServiceV2) MongodbNodeStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {

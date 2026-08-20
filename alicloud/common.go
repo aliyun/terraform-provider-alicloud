@@ -34,7 +34,7 @@ import (
 	"github.com/denverdino/aliyungo/cs"
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/mitchellh/go-homedir"
@@ -1049,8 +1049,8 @@ func GetCenChildInstanceType(id string) (c string, e error) {
 	}
 }
 
-func BuildStateConf(pending, target []string, timeout, delay time.Duration, f resource.StateRefreshFunc) *resource.StateChangeConf {
-	return &resource.StateChangeConf{
+func BuildStateConf(pending, target []string, timeout, delay time.Duration, f retry.StateRefreshFunc) *retry.StateChangeConf {
+	return &retry.StateChangeConf{
 		Pending:    pending,
 		Target:     target,
 		Refresh:    f,
@@ -1611,7 +1611,7 @@ func compareCmsHybridMonitorFcTaskYamlConfigAreEquivalent(tem1, tem2 string) (bo
 	var P1 Products
 	err := yaml.Unmarshal([]byte(tem1), &P1)
 	if err != nil {
-		fmt.Println(false)
+		return false, err
 	}
 
 	y1 := make([]string, 0)
@@ -1623,7 +1623,7 @@ func compareCmsHybridMonitorFcTaskYamlConfigAreEquivalent(tem1, tem2 string) (bo
 	var P2 Products
 	err = yaml.Unmarshal([]byte(tem2), &P2)
 	if err != nil {
-		fmt.Println(false)
+		return false, err
 	}
 
 	y2 := make([]string, 0)

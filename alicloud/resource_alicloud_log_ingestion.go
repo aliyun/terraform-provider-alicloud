@@ -9,7 +9,7 @@ import (
 
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -84,7 +84,7 @@ func resourceAlicloudLogIngestionCreate(d *schema.ResourceData, meta interface{}
 	ingestion := getIngestion(d)
 	project := d.Get("project").(string)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err := resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err := retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			requestinfo = slsClient
 			return nil, slsClient.CreateIngestion(project, ingestion)
@@ -92,9 +92,9 @@ func resourceAlicloudLogIngestionCreate(d *schema.ResourceData, meta interface{}
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InternalServerError", LogClientTimeout}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		if debugOn() {
 			addDebug("CreateIngestion", raw, requestinfo, map[string]interface{}{
@@ -149,7 +149,7 @@ func resourceAlicloudLogIngestionUpdate(d *schema.ResourceData, meta interface{}
 	ingestion := getIngestion(d)
 	project := d.Get("project").(string)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err := resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err := retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			requestinfo = slsClient
 			return nil, slsClient.UpdateIngestion(project, ingestion)
@@ -157,9 +157,9 @@ func resourceAlicloudLogIngestionUpdate(d *schema.ResourceData, meta interface{}
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InternalServerError", LogClientTimeout}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		if debugOn() {
 			addDebug("UpdateIngestion", raw, requestinfo, map[string]interface{}{
@@ -184,7 +184,7 @@ func resourceAlicloudLogIngestionDelete(d *schema.ResourceData, meta interface{}
 		return WrapError(err)
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			requestinfo = slsClient
 			return nil, slsClient.DeleteIngestion(parts[0], parts[2])
@@ -192,9 +192,9 @@ func resourceAlicloudLogIngestionDelete(d *schema.ResourceData, meta interface{}
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InternalServerError", LogClientTimeout}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		if debugOn() {
 			addDebug("DeleteIngestion", raw, requestinfo, map[string]interface{}{

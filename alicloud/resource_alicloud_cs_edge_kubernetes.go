@@ -17,7 +17,8 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/cs"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/id"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -480,14 +481,14 @@ func resourceAlicloudCSEdgeKubernetesCreate(d *schema.ResourceData, meta interfa
 	csClient := CsClient{client: roaClient}
 	var response *roacs.CreateClusterResponse
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = csClient.client.CreateCluster(request)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -866,21 +867,21 @@ func edgeNodePoolDiagnostic(nodepool *roacs.DescribeClusterNodePoolsResponseBody
 }
 
 func waitForEdgeDefaultNodePool(client *roacs.Client, clusterId, expectedNodepoolId string, expectedSize int, timeout time.Duration) error {
-	return resource.Retry(timeout, func() *resource.RetryError {
+	return retry.Retry(timeout, func() *retry.RetryError {
 		nodepool, err := findEdgeDefaultNodePool(client, clusterId)
 		if err != nil {
-			return resource.RetryableError(err)
+			return retry.RetryableError(err)
 		}
 		actualNodepoolId := tea.StringValue(nodepool.NodepoolInfo.NodepoolId)
 		if expectedNodepoolId != "" && actualNodepoolId != expectedNodepoolId {
-			return resource.RetryableError(Error("Edge cluster %s default ESS node pool ID is %s, expected %s", clusterId, actualNodepoolId, expectedNodepoolId))
+			return retry.RetryableError(Error("Edge cluster %s default ESS node pool ID is %s, expected %s", clusterId, actualNodepoolId, expectedNodepoolId))
 		}
 		if nodepool.ScalingGroup == nil {
-			return resource.RetryableError(Error("Edge cluster %s default ESS node pool %s has no scaling group", clusterId, expectedNodepoolId))
+			return retry.RetryableError(Error("Edge cluster %s default ESS node pool %s has no scaling group", clusterId, expectedNodepoolId))
 		}
 		actualSize := int(tea.Int64Value(nodepool.ScalingGroup.DesiredSize))
 		if actualSize != expectedSize {
-			return resource.RetryableError(Error("Edge cluster %s default ESS node pool %s desired size is %d, expected %d", clusterId, expectedNodepoolId, actualSize, expectedSize))
+			return retry.RetryableError(Error("Edge cluster %s default ESS node pool %s desired size is %d, expected %d", clusterId, expectedNodepoolId, actualSize, expectedSize))
 		}
 		// The ACK task and desired size are the resource-level completion
 		// contract. Node readiness can remain non-active because of account
@@ -894,14 +895,14 @@ func findEdgeDefaultNodePool(csClient *roacs.Client, clusterId string) (*roacs.D
 	var response *roacs.DescribeClusterNodePoolsResponse
 	var err error
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = csClient.DescribeClusterNodePools(tea.String(clusterId), &roacs.DescribeClusterNodePoolsRequest{})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -953,14 +954,14 @@ func describeEdgeNodePoolDetail(csClient *roacs.Client, clusterId, nodepoolId st
 	var response *roacs.DescribeClusterNodePoolDetailResponse
 	var err error
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = csClient.DescribeClusterNodePoolDetail(tea.String(clusterId), tea.String(nodepoolId))
 		if err != nil {
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"ErrorNodePoolNotFound"}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1069,14 +1070,14 @@ func scaleOutEdgeKubernetesNodePool(d *schema.ResourceData, meta interface{}, de
 	action := fmt.Sprintf("/clusters/%s/nodepools/%s", d.Id(), nodepoolId)
 	var response *roacs.ModifyClusterNodePoolResponse
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 		response, err = csClient.client.ModifyClusterNodePool(tea.String(d.Id()), tea.String(nodepoolId), request)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1138,7 +1139,7 @@ func resourceAlicloudCSEdgeKubernetesUpdate(d *schema.ResourceData, meta interfa
 		if v, ok := d.GetOk("name"); ok {
 			clusterName = v.(string)
 		} else {
-			clusterName = resource.PrefixedUniqueId(d.Get("name_prefix").(string))
+			clusterName = id.PrefixedUniqueId(d.Get("name_prefix").(string))
 		}
 		var requestInfo *cs.Client
 		var response interface{}
@@ -1222,7 +1223,7 @@ func buildEdgeKubernetesRequest(d *schema.ResourceData, meta interface{}) (*roac
 	if v, ok := d.GetOk("name"); ok {
 		clusterName = v.(string)
 	} else {
-		clusterName = resource.PrefixedUniqueId(d.Get("name_prefix").(string))
+		clusterName = id.PrefixedUniqueId(d.Get("name_prefix").(string))
 	}
 
 	tags := make([]*roacs.Tag, 0)
@@ -1425,14 +1426,14 @@ func resolveEdgeKubernetesRuntime(client *connectivity.AliyunClient, kubernetesV
 
 	var response *roacs.DescribeKubernetesVersionMetadataResponse
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = roaClient.DescribeKubernetesVersionMetadata(request)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

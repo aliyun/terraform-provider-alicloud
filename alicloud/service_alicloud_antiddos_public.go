@@ -6,7 +6,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type AntiddosPublicService struct {
@@ -29,14 +29,14 @@ func (s *AntiddosPublicService) DescribeDdosBasicAntiddos(id string) (object map
 	}
 	request["DdosType"] = parts[2]
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("antiddos-public", "2017-05-18", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -59,7 +59,7 @@ func (s *AntiddosPublicService) DescribeDdosBasicAntiddos(id string) (object map
 	return object, nil
 }
 
-func (s *AntiddosPublicService) DdosBasicAntiDdosStateRefreshFunc(id string) resource.StateRefreshFunc {
+func (s *AntiddosPublicService) DdosBasicAntiDdosStateRefreshFunc(id string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeDdosBasicAntiddos(id)
 		if err != nil {
@@ -91,14 +91,14 @@ func (s *AntiddosPublicService) DescribeDdosBasicThreshold(id string) (object ma
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("antiddos-public", "2017-05-18", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

@@ -6,7 +6,7 @@ import (
 
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -63,7 +63,7 @@ func resourceAlicloudLogMachineGroupCreate(d *schema.ResourceData, meta interfac
 		},
 	}
 	var requestInfo *sls.Client
-	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+	if err := retry.Retry(2*time.Minute, func() *retry.RetryError {
 		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			requestInfo = slsClient
 			return nil, slsClient.CreateMachineGroup(d.Get("project").(string), params)
@@ -71,9 +71,9 @@ func resourceAlicloudLogMachineGroupCreate(d *schema.ResourceData, meta interfac
 		if err != nil {
 			if IsExpectedErrors(err, []string{LogClientTimeout}) {
 				time.Sleep(5 * time.Second)
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		if debugOn() {
 			addDebug("CreateMachineGroup", raw, requestInfo, map[string]interface{}{
@@ -133,7 +133,7 @@ func resourceAlicloudLogMachineGroupUpdate(d *schema.ResourceData, meta interfac
 				TopicName: d.Get("topic").(string),
 			},
 		}
-		if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+		if err := retry.Retry(2*time.Minute, func() *retry.RetryError {
 			raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 				requestInfo = slsClient
 				return nil, slsClient.UpdateMachineGroup(parts[0], params)
@@ -141,9 +141,9 @@ func resourceAlicloudLogMachineGroupUpdate(d *schema.ResourceData, meta interfac
 			if err != nil {
 				if IsExpectedErrors(err, []string{LogClientTimeout}) {
 					time.Sleep(5 * time.Second)
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			if debugOn() {
 				addDebug("UpdateMachineGroup", raw, requestInfo, map[string]interface{}{
@@ -168,7 +168,7 @@ func resourceAlicloudLogMachineGroupDelete(d *schema.ResourceData, meta interfac
 		return WrapError(err)
 	}
 	var requestInfo *sls.Client
-	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(3*time.Minute, func() *retry.RetryError {
 		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			requestInfo = slsClient
 			return nil, slsClient.DeleteMachineGroup(parts[0], parts[1])
@@ -176,9 +176,9 @@ func resourceAlicloudLogMachineGroupDelete(d *schema.ResourceData, meta interfac
 		if err != nil {
 			if IsExpectedErrors(err, []string{LogClientTimeout}) {
 				time.Sleep(5 * time.Second)
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		if debugOn() {
 			addDebug("DeleteMachineGroup", raw, requestInfo, map[string]interface{}{

@@ -7,7 +7,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -170,14 +170,14 @@ func resourceAliyunEssInstanceRefreshCreate(d *schema.ResourceData, meta interfa
 
 	var raw map[string]interface{}
 	var err error
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = client.RpcPost("Ess", "2014-08-28", "StartInstanceRefresh", nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InvalidInstance.NoInstanceNeedBeRefreshed"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -352,15 +352,15 @@ func resourceAliyunEssInstanceRefreshUpdate(d *schema.ResourceData, meta interfa
 			{
 				action = "CancelInstanceRefresh"
 				raw, operatorErr = client.RpcPost("Ess", "2014-08-28", action, nil, request, true)
-				err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+				err = retry.Retry(10*time.Minute, func() *retry.RetryError {
 					object, errQuery := essService.DescribeEssInstanceRefresh(d.Id())
 					if errQuery != nil {
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					if object["Status"].(string) == "Cancelling" {
 						cancellingErr := errors.New(d.Id() + " is " + object["Status"].(string) + ",Please wait it")
 						wait()
-						return resource.RetryableError(cancellingErr)
+						return retry.RetryableError(cancellingErr)
 					}
 					return nil
 				})
@@ -369,19 +369,19 @@ func resourceAliyunEssInstanceRefreshUpdate(d *schema.ResourceData, meta interfa
 			{
 				action = "RollbackInstanceRefresh"
 				raw, operatorErr = client.RpcPost("Ess", "2014-08-28", action, nil, request, true)
-				err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+				err = retry.Retry(10*time.Minute, func() *retry.RetryError {
 					object, errQuery := essService.DescribeEssInstanceRefresh(d.Id())
 					if errQuery != nil {
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					if object["Status"].(string) == "RollbackInProgress" {
 						rollbackInProgressErr := errors.New(d.Id() + " is " + object["Status"].(string) + ",Please wait it")
 						wait()
-						return resource.RetryableError(rollbackInProgressErr)
+						return retry.RetryableError(rollbackInProgressErr)
 					}
 					if object["Status"].(string) == "RollbackFailed" {
 						rollbackInProgressErr := errors.New(d.Id() + " is RollbackFailed")
-						return resource.NonRetryableError(rollbackInProgressErr)
+						return retry.NonRetryableError(rollbackInProgressErr)
 					}
 					return nil
 				})

@@ -7,7 +7,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type AckOneServiceV2 struct {
@@ -28,15 +28,15 @@ func (s *AckOneServiceV2) DescribeAckOneCluster(id string) (object map[string]in
 	query["ClusterId"] = id
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("adcp", "2022-01-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -57,7 +57,7 @@ func (s *AckOneServiceV2) DescribeAckOneCluster(id string) (object map[string]in
 	return v.(map[string]interface{}), nil
 }
 
-func (s *AckOneServiceV2) AckOneClusterStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *AckOneServiceV2) AckOneClusterStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAckOneCluster(id)
 		if err != nil {
@@ -92,19 +92,19 @@ func (s *AckOneServiceV2) DescribeAckOneMembershipAttachment(id string) (object 
 	query["ClusterId"] = clusterId
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(15*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(15*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("adcp", "2022-01-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		clusters := response["Clusters"].([]interface{})
 		if len(clusters) == 0 {
-			return resource.RetryableError(fmt.Errorf("No managed cluster found"))
+			return retry.RetryableError(fmt.Errorf("No managed cluster found"))
 		}
 		return nil
 	})

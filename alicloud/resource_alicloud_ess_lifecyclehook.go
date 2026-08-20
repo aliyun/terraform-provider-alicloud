@@ -6,7 +6,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -69,15 +69,15 @@ func resourceAliyunEssLifeCycleHookCreate(d *schema.ResourceData, meta interface
 	request := buildAlicloudEssLifeCycleHookArgs(d)
 	client := meta.(*connectivity.AliyunClient)
 	request.RegionId = client.RegionId
-	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	if err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 			return essClient.CreateLifecycleHook(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{Throttling}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*ess.CreateLifecycleHookResponse)

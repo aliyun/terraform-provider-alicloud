@@ -7,7 +7,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cloudapi"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -47,15 +47,15 @@ func resourceAliyunApigatewayAppCreate(d *schema.ResourceData, meta interface{})
 	}
 	request.Description = d.Get("description").(string)
 
-	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	if err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err := client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
 			return cloudApiClient.CreateApp(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"RepeatedCommit"}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*cloudapi.CreateAppResponse)
@@ -72,14 +72,14 @@ func resourceAliyunApigatewayAppRead(d *schema.ResourceData, meta interface{}) e
 	cloudApiService := CloudApiService{client}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	if err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 		tags, err := cloudApiService.DescribeTags(d.Id(), nil, TagResourceApp)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"NotFoundResourceId"}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		d.Set("tags", cloudApiService.tagsToMap(tags))
 		return nil
@@ -87,13 +87,13 @@ func resourceAliyunApigatewayAppRead(d *schema.ResourceData, meta interface{}) e
 		return WrapError(err)
 	}
 
-	if err := resource.Retry(3*time.Second, func() *resource.RetryError {
+	if err := retry.Retry(3*time.Second, func() *retry.RetryError {
 		object, err := cloudApiService.DescribeApiGatewayApp(d.Id())
 		if err != nil {
 			if NotFoundError(err) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 
 		d.Set("name", object.AppName)

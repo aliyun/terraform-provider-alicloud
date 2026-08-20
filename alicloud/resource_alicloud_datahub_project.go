@@ -8,7 +8,7 @@ import (
 
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -125,14 +125,14 @@ func resourceAliyunDatahubProjectUpdate(d *schema.ResourceData, meta interface{}
 			requestMap["ProjectComment"] = projectComment
 			addDebug("UpdateProject", raw, requestInfo, requestMap)
 		}
-		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 			datahubService := DatahubService{client}
 			object, err := datahubService.DescribeDatahubProject(d.Id())
 			if err != nil {
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			if object.Comment != projectComment {
-				return resource.RetryableError(fmt.Errorf("waiting for updating project %s comment finished timwout. "+
+				return retry.RetryableError(fmt.Errorf("waiting for updating project %s comment finished timwout. "+
 					"current comment is %s ", d.Id(), object.Comment))
 			}
 			return nil
@@ -153,16 +153,16 @@ func resourceAliyunDatahubProjectDelete(d *schema.ResourceData, meta interface{}
 
 	var requestInfo *datahub.DataHub
 
-	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+	err := retry.Retry(3*time.Minute, func() *retry.RetryError {
 		raw, err := client.WithDataHubClient(func(dataHubClient datahub.DataHubApi) (interface{}, error) {
 			requestInfo = dataHubClient.(*datahub.DataHub)
 			return dataHubClient.DeleteProject(projectName)
 		})
 		if err != nil {
 			if isRetryableDatahubError(err) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		if debugOn() {
 			requestMap := make(map[string]string)

@@ -7,7 +7,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -29,15 +29,15 @@ func (s *CloudSSOServiceV2) DescribeCloudSSODirectory(id string) (object map[str
 	action := "GetDirectorySAMLServiceProviderInfo"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cloudsso", "2021-05-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -68,15 +68,15 @@ func (s *CloudSSOServiceV2) DescribeDirectoryGetPasswordPolicy(id string) (objec
 	action := "GetPasswordPolicy"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cloudsso", "2021-05-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -107,15 +107,15 @@ func (s *CloudSSOServiceV2) DescribeDirectoryGetExternalSAMLIdentityProvider(id 
 	action := "GetExternalSAMLIdentityProvider"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cloudsso", "2021-05-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -146,15 +146,15 @@ func (s *CloudSSOServiceV2) DescribeDirectoryGetDirectory(id string) (object map
 	action := "GetDirectory"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cloudsso", "2021-05-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -185,15 +185,15 @@ func (s *CloudSSOServiceV2) DescribeDirectoryGetUserProvisioningConfiguration(id
 	action := "GetUserProvisioningConfiguration"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cloudsso", "2021-05-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -224,15 +224,15 @@ func (s *CloudSSOServiceV2) DescribeDirectoryGetMFAAuthenticationSettingInfo(id 
 	action := "GetMFAAuthenticationSettingInfo"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cloudsso", "2021-05-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -263,15 +263,15 @@ func (s *CloudSSOServiceV2) DescribeDirectoryGetLoginPreference(id string) (obje
 	action := "GetLoginPreference"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cloudsso", "2021-05-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -302,15 +302,15 @@ func (s *CloudSSOServiceV2) DescribeDirectoryGetSCIMSynchronizationStatus(id str
 	action := "GetSCIMSynchronizationStatus"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cloudsso", "2021-05-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -336,15 +336,15 @@ func (s *CloudSSOServiceV2) DescribeDirectoryGetMFAAuthenticationStatus(id strin
 	action := "GetMFAAuthenticationStatus"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cloudsso", "2021-05-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -370,15 +370,15 @@ func (s *CloudSSOServiceV2) DescribeDirectoryGetDirectoryGlobalAccessStatus(id s
 	action := "GetDirectoryGlobalAccessStatus"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cloudsso", "2021-05-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -393,7 +393,7 @@ func (s *CloudSSOServiceV2) DescribeDirectoryGetDirectoryGlobalAccessStatus(id s
 	return response, nil
 }
 
-func (s *CloudSSOServiceV2) CloudSSODirectoryStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *CloudSSOServiceV2) CloudSSODirectoryStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCloudSSODirectory(id)
 		if err != nil {
@@ -446,15 +446,15 @@ func (s *CloudSSOServiceV2) DescribeCloudSSOUserAttachment(id string) (object ma
 	idExist := false
 	for {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("cloudsso", "2021-05-15", action, query, request, true)
 
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -493,7 +493,7 @@ func (s *CloudSSOServiceV2) DescribeCloudSSOUserAttachment(id string) (object ma
 	return object, nil
 }
 
-func (s *CloudSSOServiceV2) CloudSSOUserAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *CloudSSOServiceV2) CloudSSOUserAttachmentStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCloudSSOUserAttachment(id)
 		if err != nil {
@@ -547,15 +547,15 @@ func (s *CloudSSOServiceV2) DescribeCloudSSOAccessAssignment(id string) (object 
 	action := "ListAccessAssignments"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cloudsso", "2021-05-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -581,7 +581,7 @@ func (s *CloudSSOServiceV2) DescribeCloudSSOAccessAssignment(id string) (object 
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *CloudSSOServiceV2) CloudSSOAccessAssignmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *CloudSSOServiceV2) CloudSSOAccessAssignmentStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCloudSSOAccessAssignment(id)
 		if err != nil {
@@ -610,7 +610,7 @@ func (s *CloudSSOServiceV2) CloudSSOAccessAssignmentStateRefreshFunc(id string, 
 	}
 }
 
-func (s *CloudSSOServiceV2) DescribeAsyncCloudSSOAccessAssignmentStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) resource.StateRefreshFunc {
+func (s *CloudSSOServiceV2) DescribeAsyncCloudSSOAccessAssignmentStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAsyncGetTaskStatus(d, res)
 		if err != nil {
@@ -662,15 +662,15 @@ func (s *CloudSSOServiceV2) DescribeAsyncGetTaskStatus(d *schema.ResourceData, r
 	action := "GetTaskStatus"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cloudsso", "2021-05-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -697,15 +697,15 @@ func (s *CloudSSOServiceV2) DescribeCloudSSODelegateAccount(id string) (object m
 	action := "GetDelegateAccount"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cloudsso", "2021-05-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -727,7 +727,7 @@ func (s *CloudSSOServiceV2) DescribeCloudSSODelegateAccount(id string) (object m
 	return v.(map[string]interface{}), nil
 }
 
-func (s *CloudSSOServiceV2) CloudSSODelegateAccountStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *CloudSSOServiceV2) CloudSSODelegateAccountStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCloudSSODelegateAccount(id)
 		if err != nil {
@@ -777,15 +777,15 @@ func (s *CloudSSOServiceV2) DescribeCloudSSOUserProvisioning(id string) (object 
 	action := "GetUserProvisioning"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cloudsso", "2021-05-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -822,15 +822,15 @@ func (s *CloudSSOServiceV2) DescribeUserProvisioningGetUserProvisioningStatistic
 	action := "GetUserProvisioningStatistics"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cloudsso", "2021-05-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -850,7 +850,7 @@ func (s *CloudSSOServiceV2) DescribeUserProvisioningGetUserProvisioningStatistic
 	return v.(map[string]interface{}), nil
 }
 
-func (s *CloudSSOServiceV2) CloudSSOUserProvisioningStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *CloudSSOServiceV2) CloudSSOUserProvisioningStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCloudSSOUserProvisioning(id)
 		if err != nil {
@@ -899,15 +899,15 @@ func (s *CloudSSOServiceV2) DescribeCloudSsoUserProvisioningEvent(id string) (ob
 	action := "GetUserProvisioningEvent"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cloudsso", "2021-05-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -924,11 +924,11 @@ func (s *CloudSSOServiceV2) DescribeCloudSsoUserProvisioningEvent(id string) (ob
 	return v.(map[string]interface{}), nil
 }
 
-func (s *CloudSSOServiceV2) CloudSsoUserProvisioningEventStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *CloudSSOServiceV2) CloudSsoUserProvisioningEventStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.CloudSsoUserProvisioningEventStateRefreshFuncWithApi(id, field, failStates, s.DescribeCloudSsoUserProvisioningEvent)
 }
 
-func (s *CloudSSOServiceV2) CloudSsoUserProvisioningEventStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *CloudSSOServiceV2) CloudSsoUserProvisioningEventStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -977,15 +977,15 @@ func (s *CloudSSOServiceV2) DescribeCloudSsoUser(id string) (object map[string]i
 	action := "GetUser"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cloudsso", "2021-05-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1022,15 +1022,15 @@ func (s *CloudSSOServiceV2) DescribeUserGetUserMFAAuthenticationSettings(id stri
 	action := "GetUserMFAAuthenticationSettings"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cloudsso", "2021-05-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1045,11 +1045,11 @@ func (s *CloudSSOServiceV2) DescribeUserGetUserMFAAuthenticationSettings(id stri
 	return response, nil
 }
 
-func (s *CloudSSOServiceV2) CloudSsoUserStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *CloudSSOServiceV2) CloudSsoUserStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.CloudSsoUserStateRefreshFuncWithApi(id, field, failStates, s.DescribeCloudSsoUser)
 }
 
-func (s *CloudSSOServiceV2) CloudSsoUserStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *CloudSSOServiceV2) CloudSsoUserStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -1110,14 +1110,14 @@ func (s *CloudSSOServiceV2) SetResourceTags(d *schema.ResourceData, resourceType
 
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("cloudsso", "2021-05-15", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -1145,14 +1145,14 @@ func (s *CloudSSOServiceV2) SetResourceTags(d *schema.ResourceData, resourceType
 
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("cloudsso", "2021-05-15", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})

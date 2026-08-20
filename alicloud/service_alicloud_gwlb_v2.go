@@ -6,7 +6,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -28,15 +28,15 @@ func (s *GwlbServiceV2) DescribeGwlbLoadBalancer(id string) (object map[string]i
 	request["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Gwlb", "2024-04-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -51,7 +51,7 @@ func (s *GwlbServiceV2) DescribeGwlbLoadBalancer(id string) (object map[string]i
 	return response, nil
 }
 
-func (s *GwlbServiceV2) GwlbLoadBalancerStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *GwlbServiceV2) GwlbLoadBalancerStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeGwlbLoadBalancer(id)
 		if err != nil {
@@ -108,14 +108,14 @@ func (s *GwlbServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 			}
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("Gwlb", "2024-04-15", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -145,14 +145,14 @@ func (s *GwlbServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 			}
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("Gwlb", "2024-04-15", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -183,15 +183,15 @@ func (s *GwlbServiceV2) DescribeGwlbListener(id string) (object map[string]inter
 	request["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Gwlb", "2024-04-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -206,7 +206,7 @@ func (s *GwlbServiceV2) DescribeGwlbListener(id string) (object map[string]inter
 	return response, nil
 }
 
-func (s *GwlbServiceV2) GwlbListenerStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *GwlbServiceV2) GwlbListenerStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeGwlbListener(id)
 		if err != nil {
@@ -244,15 +244,15 @@ func (s *GwlbServiceV2) DescribeGwlbServerGroup(id string) (object map[string]in
 	request["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Gwlb", "2024-04-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -289,15 +289,15 @@ func (s *GwlbServiceV2) DescribeListServerGroupServers(id string) (object map[st
 	request["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Gwlb", "2024-04-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -309,7 +309,7 @@ func (s *GwlbServiceV2) DescribeListServerGroupServers(id string) (object map[st
 	return response, nil
 }
 
-func (s *GwlbServiceV2) GwlbServerGroupStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *GwlbServiceV2) GwlbServerGroupStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeGwlbServerGroup(id)
 		if err != nil {
@@ -344,15 +344,15 @@ func (s *GwlbServiceV2) DescribeAsyncServerGroupListServerGroupServers(d *schema
 	request["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Gwlb", "2024-04-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -364,7 +364,7 @@ func (s *GwlbServiceV2) DescribeAsyncServerGroupListServerGroupServers(d *schema
 	return response, nil
 }
 
-func (s *GwlbServiceV2) DescribeAsyncGwlbServerGroupStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) resource.StateRefreshFunc {
+func (s *GwlbServiceV2) DescribeAsyncGwlbServerGroupStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAsyncServerGroupListServerGroupServers(d, res)
 		if err != nil {

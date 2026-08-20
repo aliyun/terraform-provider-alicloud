@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -125,7 +125,7 @@ func resourceAlicloudEdasK8sSlbAttachmentCreate(d *schema.ResourceData, meta int
 			for _, c := range slbConfigs {
 				config := c.(map[string]interface{})
 				wait := incrementalWait(3*time.Second, 10*time.Second)
-				err := resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+				err := retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 					if err := edasService.BindK8sSlb(appId, &config, d.Timeout(schema.TimeoutCreate)); err != nil {
 						if err.Retryable {
 							wait()
@@ -233,7 +233,7 @@ func resourceAlicloudEdasK8sSlbAttachmentUpdate(d *schema.ResourceData, meta int
 		oldConfigs := o.(*schema.Set).List()
 		newConfigs := n.(*schema.Set).List()
 		wait := incrementalWait(3*time.Second, 10*time.Second)
-		err := resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		err := retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 			if err := edasService.UpdateK8sAppSlbInfos(d.Id(), &oldConfigs, &newConfigs, d.Timeout(schema.TimeoutUpdate)); err != nil {
 				if err.Retryable {
 					wait()
@@ -262,7 +262,7 @@ func resourceAlicloudEdasK8sSlbAttachmentDelete(d *schema.ResourceData, meta int
 				slbType := config["type"].(string)
 				slbName := config["name"].(string)
 				wait := incrementalWait(3*time.Second, 10*time.Second)
-				err := resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+				err := retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 					if err := edasService.UnbindK8sSlb(d.Id(), slbType, slbName, d.Timeout(schema.TimeoutDelete)); err != nil {
 						if err.Retryable {
 							wait()

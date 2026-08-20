@@ -8,7 +8,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type OpenApiExplorerServiceV2 struct {
@@ -31,15 +31,15 @@ func (s *OpenApiExplorerServiceV2) DescribeOpenApiExplorerApiMcpServer(id string
 	action := fmt.Sprintf("/apimcpserver")
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("OpenAPIExplorer", "2024-11-30", action, query, header, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -54,11 +54,11 @@ func (s *OpenApiExplorerServiceV2) DescribeOpenApiExplorerApiMcpServer(id string
 	return response, nil
 }
 
-func (s *OpenApiExplorerServiceV2) OpenApiExplorerApiMcpServerStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *OpenApiExplorerServiceV2) OpenApiExplorerApiMcpServerStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.OpenApiExplorerApiMcpServerStateRefreshFuncWithApi(id, field, failStates, s.DescribeOpenApiExplorerApiMcpServer)
 }
 
-func (s *OpenApiExplorerServiceV2) OpenApiExplorerApiMcpServerStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *OpenApiExplorerServiceV2) OpenApiExplorerApiMcpServerStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {

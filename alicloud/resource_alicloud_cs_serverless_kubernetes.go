@@ -10,7 +10,8 @@ import (
 	roacs "github.com/alibabacloud-go/cs-20151215/v8/client"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/id"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -339,7 +340,7 @@ func resourceAlicloudCSServerlessKubernetesCreate(d *schema.ResourceData, meta i
 	if v, ok := d.GetOk("name"); ok {
 		clusterName = v.(string)
 	} else {
-		clusterName = resource.PrefixedUniqueId(d.Get("name_prefix").(string))
+		clusterName = id.PrefixedUniqueId(d.Get("name_prefix").(string))
 	}
 
 	tags := make([]*roacs.Tag, 0)
@@ -501,14 +502,14 @@ func resourceAlicloudCSServerlessKubernetesCreate(d *schema.ResourceData, meta i
 	var err error
 	var resp *roacs.CreateClusterResponse
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err = csClient.client.CreateCluster(request)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

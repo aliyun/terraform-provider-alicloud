@@ -8,7 +8,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -24,14 +24,14 @@ func (s *SaeService) DescribeSaeNamespace(id string) (object map[string]interfac
 		"NamespaceId": StringPointer(id),
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("sae", "2019-05-06", action, request, nil, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -58,14 +58,14 @@ func (s *SaeService) DescribeSaeConfigMap(id string) (object map[string]interfac
 		"ConfigMapId": StringPointer(id),
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("sae", "2019-05-06", action, request, nil, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -93,14 +93,14 @@ func (s *SaeService) DescribeApplicationStatus(id string) (object map[string]int
 		"AppId": StringPointer(id),
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("sae", "2019-05-06", action, request, nil, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -124,14 +124,14 @@ func (s *SaeService) DescribeSaeApplication(id string) (object map[string]interf
 		"AppId": StringPointer(id),
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("sae", "2019-05-06", action, request, nil, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -162,14 +162,14 @@ func (s *SaeService) DescribeSaeApplicationChangeOrder(orderId string) (object m
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("sae", "2019-05-06", action, request, nil, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -188,7 +188,7 @@ func (s *SaeService) DescribeSaeApplicationChangeOrder(orderId string) (object m
 	return object, nil
 }
 
-func (s *SaeService) SaeApplicationChangeOrderStateRefreshFunc(orderId string, failStates []string) resource.StateRefreshFunc {
+func (s *SaeService) SaeApplicationChangeOrderStateRefreshFunc(orderId string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeSaeApplicationChangeOrder(orderId)
 		if err != nil {
@@ -216,14 +216,14 @@ func (s *SaeService) DescribeSaeIngress(id string) (object map[string]interface{
 		"IngressId": StringPointer(id),
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("sae", "2019-05-06", action, request, nil, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -251,14 +251,14 @@ func (s *SaeService) DescribeApplicationImage(id, imageUrl string) (object map[s
 		"ImageUrl": StringPointer(imageUrl),
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("sae", "2019-05-06", action, request, nil, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -283,14 +283,14 @@ func (s *SaeService) DescribeIngress(id string) (object map[string]interface{}, 
 		"IngressId": StringPointer(id),
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("sae", "2019-05-06", action, request, nil, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -314,14 +314,14 @@ func (s *SaeService) DescribeApplicationSlb(id string) (object map[string]interf
 		"AppId": StringPointer(id),
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("sae", "2019-05-06", action, request, nil, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -367,14 +367,14 @@ func (s *SaeService) UpdateSlb(d *schema.ResourceData) error {
 			action := "/pop/v1/sam/app/slb"
 			wait := incrementalWait(3*time.Second, 3*time.Second)
 			var response map[string]interface{}
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RoaDelete("sae", "2019-05-06", action, request, nil, nil, false)
 				if err != nil {
 					if IsExpectedErrors(err, []string{"Application.InvalidStatus", "Application.ChangerOrderRunning"}) || NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -447,14 +447,14 @@ func (s *SaeService) UpdateSlb(d *schema.ResourceData) error {
 			action := "/pop/v1/sam/app/slb"
 			wait := incrementalWait(3*time.Second, 3*time.Second)
 			var response map[string]interface{}
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RoaPost("sae", "2019-05-06", action, request, nil, nil, false)
 				if err != nil {
 					if IsExpectedErrors(err, []string{"Application.InvalidStatus", "Application.ChangerOrderRunning"}) || NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -467,7 +467,7 @@ func (s *SaeService) UpdateSlb(d *schema.ResourceData) error {
 	return nil
 }
 
-func (s *SaeService) SaeApplicationStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *SaeService) SaeApplicationStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeApplicationStatus(id)
 		if err != nil {
@@ -507,14 +507,14 @@ func (s *SaeService) DescribeSaeApplicationScalingRule(id string) (object map[st
 	}
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RoaGet("sae", "2019-05-06", action, request, nil, nil)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -563,14 +563,14 @@ func (s *SaeService) DescribeSaeGreyTagRoute(id string) (object map[string]inter
 		"GreyTagRouteId": StringPointer(id),
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("sae", "2019-05-06", action, request, nil, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -606,14 +606,14 @@ func (s *SaeService) ListTagResources(id string, resourceType string) (object in
 
 	for {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RoaGet("sae", "2019-05-06", action, request, nil, nil)
 			if err != nil {
 				if IsExpectedErrors(err, []string{Throttling}) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -664,15 +664,15 @@ func (s *SaeService) SetResourceTags(d *schema.ResourceData, resourceType string
 			}
 
 			wait := incrementalWait(2*time.Second, 1*time.Second)
-			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+			err := retry.Retry(10*time.Minute, func() *retry.RetryError {
 				response, err := client.RoaDelete("sae", "2019-05-06", action, request, nil, nil, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(action, response, request)
 				return nil
@@ -702,15 +702,15 @@ func (s *SaeService) SetResourceTags(d *schema.ResourceData, resourceType string
 			request["Tags"] = StringPointer(jsonString)
 
 			wait := incrementalWait(2*time.Second, 1*time.Second)
-			err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+			err = retry.Retry(10*time.Minute, func() *retry.RetryError {
 				response, err := client.RoaPost("sae", "2019-05-06", action, request, nil, nil, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(action, response, request)
 				return nil

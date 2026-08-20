@@ -14,7 +14,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type Effect string
@@ -464,14 +464,14 @@ func (s *RamService) DescribeRamAccountAlias(id string) (object map[string]inter
 	action := "GetAccountAlias"
 	var response map[string]interface{}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(5*time.Minute), func() *resource.RetryError {
+	err = retry.Retry(client.GetRetryTimeout(5*time.Minute), func() *retry.RetryError {
 		response, err = client.RpcPost("Ram", "2015-05-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -570,15 +570,15 @@ func (s *RamService) DescribeRamRoleAttachment(id string) (*ecs.DescribeInstance
 	request.RegionId = s.client.RegionId
 	request.InstanceIds = parts[1]
 	var raw interface{}
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 			return ecsClient.DescribeInstanceRamRole(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"unexpected end of JSON input"}) {
-				return resource.RetryableError(WrapError(err))
+				return retry.RetryableError(WrapError(err))
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -636,16 +636,16 @@ func (s *RamService) DescribeRamRole(id string) (*ram.GetRoleResponse, error) {
 	request := ram.CreateGetRoleRequest()
 	request.RegionId = s.client.RegionId
 	request.RoleName = id
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err := s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 			return ramClient.GetRole(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{ThrottlingUser}) {
 				time.Sleep(2 * time.Second)
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ = raw.(*ram.GetRoleResponse)
@@ -692,16 +692,16 @@ func (s *RamService) DescribeRamUserPolicyAttachment(id string) (*ram.Policy, er
 	}
 	request.UserName = parts[3]
 	var listPoliciesForUserResponse *ram.ListPoliciesForUserResponse
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err := s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 			return ramClient.ListPoliciesForUser(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{ThrottlingUser}) {
 				time.Sleep(2 * time.Second)
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		listPoliciesForUserResponse, _ = raw.(*ram.ListPoliciesForUserResponse)
@@ -761,16 +761,16 @@ func (s *RamService) DescribeRamRolePolicyAttachment(id string) (*ram.Policy, er
 	}
 	request.RoleName = parts[3]
 	var listPoliciesForRoleResponse *ram.ListPoliciesForRoleResponse
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err := s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 			return ramClient.ListPoliciesForRole(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{ThrottlingUser}) {
 				time.Sleep(2 * time.Second)
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
@@ -888,14 +888,14 @@ func (s *RamService) DescribeRamSecurityPreference(id string) (object map[string
 	action := "GetSecurityPreference"
 	request := map[string]interface{}{}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ims", "2019-08-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -922,16 +922,16 @@ func (s *RamService) DescribeRamServiceLinkedRole(id string) (*ram.GetRoleRespon
 	request := ram.CreateGetRoleRequest()
 	request.RegionId = s.client.RegionId
 	request.RoleName = id
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err := s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 			return ramClient.GetRole(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{ThrottlingUser}) {
 				time.Sleep(2 * time.Second)
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ = raw.(*ram.GetRoleResponse)

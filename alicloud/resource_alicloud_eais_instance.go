@@ -8,16 +8,16 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudEaisInstance() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudEaisInstanceCreate,
-		Read:   resourceAliCloudEaisInstanceRead,
-		Update: resourceAliCloudEaisInstanceUpdate,
-		Delete: resourceAliCloudEaisInstanceDelete,
+		Create:             resourceAliCloudEaisInstanceCreate,
+		Read:               resourceAliCloudEaisInstanceRead,
+		Update:             resourceAliCloudEaisInstanceUpdate,
+		Delete:             resourceAliCloudEaisInstanceDelete,
 		DeprecationMessage: "This resource has been deprecated since v1.278.0.",
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
@@ -134,14 +134,14 @@ func resourceAliCloudEaisInstanceCreate(d *schema.ResourceData, meta interface{}
 			request["Image"] = v
 		}
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 			response, err = client.RpcPost("eais", "2019-06-24", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -202,14 +202,14 @@ func resourceAliCloudEaisInstanceCreate(d *schema.ResourceData, meta interface{}
 
 		request["EaisType"] = d.Get("instance_type")
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 			response, err = client.RpcPost("eais", "2019-06-24", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -254,14 +254,14 @@ func resourceAliCloudEaisInstanceCreate(d *schema.ResourceData, meta interface{}
 		request["VSwitchId"] = d.Get("vswitch_id")
 		request["SecurityGroupId"] = d.Get("security_group_id")
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 			response, err = client.RpcPost("eais", "2019-06-24", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -340,14 +340,14 @@ func resourceAliCloudEaisInstanceUpdate(d *schema.ResourceData, meta interface{}
 				request["InstanceId"] = d.Id()
 				request["RegionId"] = client.RegionId
 				wait := incrementalWait(3*time.Second, 5*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcPost("eais", "2019-06-24", action, query, request, true)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					return nil
 				})
@@ -369,14 +369,14 @@ func resourceAliCloudEaisInstanceUpdate(d *schema.ResourceData, meta interface{}
 				request["InstanceId"] = d.Id()
 				request["RegionId"] = client.RegionId
 				wait := incrementalWait(3*time.Second, 5*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcPost("eais", "2019-06-24", action, query, request, true)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					return nil
 				})
@@ -406,14 +406,14 @@ func resourceAliCloudEaisInstanceUpdate(d *schema.ResourceData, meta interface{}
 	request["ResourceGroupId"] = d.Get("resource_group_id")
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("eais", "2019-06-24", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -453,15 +453,15 @@ func resourceAliCloudEaisInstanceDelete(d *schema.ResourceData, meta interface{}
 		request["RegionId"] = client.RegionId
 
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 			response, err = client.RpcPost("eais", "2019-06-24", action, query, request, true)
 
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -494,15 +494,15 @@ func resourceAliCloudEaisInstanceDelete(d *schema.ResourceData, meta interface{}
 		request["RegionId"] = client.RegionId
 
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 			response, err = client.RpcPost("eais", "2019-06-24", action, query, request, true)
 
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})

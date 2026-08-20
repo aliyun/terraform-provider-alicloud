@@ -7,7 +7,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -277,14 +277,14 @@ func resourceAliCloudEcsNetworkInterfaceCreate(d *schema.ResourceData, meta inte
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"IncorrectVSwitchStatus"}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -431,14 +431,14 @@ func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 	if update {
 		action := "ModifyNetworkInterfaceAttribute"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -468,14 +468,14 @@ func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 			unassignprivateipaddressesrequest["RegionId"] = client.RegionId
 			action := "UnassignPrivateIpAddresses"
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, unassignprivateipaddressesrequest, false)
 				if err != nil {
 					if IsExpectedErrors(err, []string{"InternalError", "InvalidOperation.InvalidEcsState", "InvalidOperation.InvalidEniState", "OperationConflict", "ServiceUnavailable"}) || NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -493,14 +493,14 @@ func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 			assignprivateipaddressesrequest["RegionId"] = client.RegionId
 			action := "AssignPrivateIpAddresses"
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, assignprivateipaddressesrequest, false)
 				if err != nil {
 					if IsExpectedErrors(err, []string{"InternalError", "InvalidOperation.InvalidEcsState", "InvalidOperation.InvalidEniState", "OperationConflict", "ServiceUnavailable"}) || NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -529,14 +529,14 @@ func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 			unassignprivateipaddressesrequest["RegionId"] = client.RegionId
 			action := "UnassignPrivateIpAddresses"
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, unassignprivateipaddressesrequest, false)
 				if err != nil {
 					if IsExpectedErrors(err, []string{"InternalError", "InvalidOperation.InvalidEcsState", "InvalidOperation.InvalidEniState", "OperationConflict", "ServiceUnavailable"}) || NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -554,14 +554,14 @@ func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 			assignprivateipaddressesrequest["RegionId"] = client.RegionId
 			action := "AssignPrivateIpAddresses"
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, assignprivateipaddressesrequest, false)
 				if err != nil {
 					if IsExpectedErrors(err, []string{"InternalError", "InvalidOperation.InvalidEcsState", "InvalidOperation.InvalidEniState", "OperationConflict", "ServiceUnavailable"}) || NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -588,14 +588,14 @@ func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 				assignPrivateIpsCountrequest["SecondaryPrivateIpAddressCount"] = requests.NewInteger(diff)
 				action := "AssignPrivateIpAddresses"
 				wait := incrementalWait(3*time.Second, 5*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, assignPrivateIpsCountrequest, false)
 					if err != nil {
 						if IsExpectedErrors(err, []string{"InternalError", "InvalidOperation.InvalidEcsState", "InvalidOperation.InvalidEniState", "OperationConflict", "ServiceUnavailable"}) || NeedRetry(err) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					return nil
 				})
@@ -616,15 +616,15 @@ func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 				unAssignPrivateIpsCountRequest["PrivateIpAddress"] = &unAssignIps
 				action := "UnassignPrivateIpAddresses"
 				wait := incrementalWait(3*time.Second, 5*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 
 					response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, unAssignPrivateIpsCountRequest, false)
 					if err != nil {
 						if IsExpectedErrors(err, []string{"InternalError", "InvalidOperation.InvalidEcsState", "InvalidOperation.InvalidEniState", "OperationConflict", "ServiceUnavailable"}) || NeedRetry(err) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					return nil
 				})
@@ -653,14 +653,14 @@ func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 				assignSecondaryPrivateIpAddressCountrequest["SecondaryPrivateIpAddressCount"] = requests.NewInteger(diff)
 				action := "AssignPrivateIpAddresses"
 				wait := incrementalWait(3*time.Second, 5*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, assignSecondaryPrivateIpAddressCountrequest, false)
 					if err != nil {
 						if IsExpectedErrors(err, []string{"InternalError", "InvalidOperation.InvalidEcsState", "InvalidOperation.InvalidEniState", "OperationConflict", "ServiceUnavailable"}) || NeedRetry(err) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					return nil
 				})
@@ -681,14 +681,14 @@ func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 				unassignSecondaryPrivateIpAddressCountrequest["PrivateIpAddress"] = &unAssignIps
 				action := "UnassignPrivateIpAddresses"
 				wait := incrementalWait(3*time.Second, 5*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, unassignSecondaryPrivateIpAddressCountrequest, false)
 					if err != nil {
 						if IsExpectedErrors(err, []string{"InternalError", "InvalidOperation.InvalidEcsState", "InvalidOperation.InvalidEniState", "OperationConflict", "ServiceUnavailable"}) || NeedRetry(err) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					return nil
 				})
@@ -719,14 +719,14 @@ func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 					"Ipv6AddressCount":   diff,
 				}
 				wait := incrementalWait(3*time.Second, 3*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+				err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 					response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 					if err != nil {
 						if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationConflict"}) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					return nil
 				})
@@ -747,14 +747,14 @@ func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 					request[fmt.Sprintf("Ipv6Address.%d", index+1)] = val
 				}
 				wait := incrementalWait(3*time.Second, 3*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+				err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 					response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 					if err != nil {
 						if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationConflict"}) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					return nil
 				})
@@ -785,14 +785,14 @@ func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 				request[fmt.Sprintf("Ipv6Address.%d", index+1)] = val
 			}
 			wait := incrementalWait(3*time.Second, 3*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 				response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationConflict"}) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -812,14 +812,14 @@ func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 				request[fmt.Sprintf("Ipv6Address.%d", index+1)] = val
 			}
 			wait := incrementalWait(3*time.Second, 3*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 				response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationConflict"}) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -849,14 +849,14 @@ func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 					"Ipv4PrefixCount":    diff,
 				}
 				wait := incrementalWait(3*time.Second, 3*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+				err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 					response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 					if err != nil {
 						if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationConflict"}) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					return nil
 				})
@@ -877,14 +877,14 @@ func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 					request[fmt.Sprintf("Ipv4Prefix.%d", index+1)] = val
 				}
 				wait := incrementalWait(3*time.Second, 3*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+				err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 					response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 					if err != nil {
 						if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationConflict"}) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					return nil
 				})
@@ -915,14 +915,14 @@ func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 				request[fmt.Sprintf("Ipv4Prefix.%d", index+1)] = val
 			}
 			wait := incrementalWait(3*time.Second, 3*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 				response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationConflict"}) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -942,14 +942,14 @@ func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 				request[fmt.Sprintf("Ipv4Prefix.%d", index+1)] = val
 			}
 			wait := incrementalWait(3*time.Second, 3*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 				response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationConflict"}) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -979,14 +979,14 @@ func resourceAliCloudEcsNetworkInterfaceDelete(d *schema.ResourceData, meta inte
 
 	request["RegionId"] = client.RegionId
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InvalidOperation.Conflict", "InternalError", "InvalidOperation.InvalidEcsState", "InvalidOperation.InvalidEniState", "InvalidOperation.InvalidEniType", "OperationConflict", "ServiceUnavailable"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

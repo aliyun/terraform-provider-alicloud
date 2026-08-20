@@ -8,7 +8,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/tidwall/sjson"
 )
@@ -31,15 +31,15 @@ func (s *EsaServiceV2) DescribeEsaSite(id string) (object map[string]interface{}
 	action := "GetSite"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -71,15 +71,15 @@ func (s *EsaServiceV2) DescribeSiteListTagResources(id string) (object map[strin
 	action := "ListTagResources"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -105,15 +105,15 @@ func (s *EsaServiceV2) DescribeSiteGetManagedTransform(id string) (object map[st
 	action := "GetManagedTransform"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -139,15 +139,15 @@ func (s *EsaServiceV2) DescribeSiteGetCacheTag(id string) (object map[string]int
 	action := "GetCacheTag"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -173,15 +173,15 @@ func (s *EsaServiceV2) DescribeSiteGetIPv6(id string) (object map[string]interfa
 	action := "GetIPv6"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -207,15 +207,15 @@ func (s *EsaServiceV2) DescribeSiteGetCacheReserve(id string) (object map[string
 	action := "GetCacheReserve"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -241,15 +241,15 @@ func (s *EsaServiceV2) DescribeSiteDescribeHttpDDoSAttackIntelligentProtection(i
 	action := "DescribeHttpDDoSAttackIntelligentProtection"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -275,15 +275,15 @@ func (s *EsaServiceV2) DescribeSiteGetTieredCache(id string) (object map[string]
 	action := "GetTieredCache"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -309,15 +309,15 @@ func (s *EsaServiceV2) DescribeSiteGetCrossBorderOptimization(id string) (object
 	action := "GetCrossBorderOptimization"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -343,15 +343,15 @@ func (s *EsaServiceV2) DescribeSiteGetSiteNameExclusive(id string) (object map[s
 	action := "GetSiteNameExclusive"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -377,15 +377,15 @@ func (s *EsaServiceV2) DescribeSiteGetCnameFlattening(id string) (object map[str
 	action := "GetCnameFlattening"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -411,15 +411,15 @@ func (s *EsaServiceV2) DescribeSiteGetSeoBypass(id string) (object map[string]in
 	action := "GetSeoBypass"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -445,15 +445,15 @@ func (s *EsaServiceV2) DescribeSiteGetDevelopmentMode(id string) (object map[str
 	action := "GetDevelopmentMode"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -479,15 +479,15 @@ func (s *EsaServiceV2) DescribeSiteGetSitePause(id string) (object map[string]in
 	action := "GetSitePause"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -513,15 +513,15 @@ func (s *EsaServiceV2) DescribeSiteDescribeHttpDDoSAttackProtection(id string) (
 	action := "DescribeHttpDDoSAttackProtection"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -547,15 +547,15 @@ func (s *EsaServiceV2) DescribeSiteGetPerformanceDataCollection(id string) (obje
 	action := "GetPerformanceDataCollection"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -581,15 +581,15 @@ func (s *EsaServiceV2) DescribeSiteGetSiteWafSettings(id string) (object map[str
 	action := "GetSiteWafSettings"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -620,15 +620,15 @@ func (s *EsaServiceV2) DescribeSiteGetAutomaticFrequencyControlConfig(id string)
 	action := "GetAutomaticFrequencyControlConfig"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -643,11 +643,11 @@ func (s *EsaServiceV2) DescribeSiteGetAutomaticFrequencyControlConfig(id string)
 	return response, nil
 }
 
-func (s *EsaServiceV2) EsaSiteStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaSiteStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EsaSiteStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaSite)
 }
 
-func (s *EsaServiceV2) EsaSiteStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaSiteStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -675,7 +675,7 @@ func (s *EsaServiceV2) EsaSiteStateRefreshFuncWithApi(id string, field string, f
 	}
 }
 
-func (s *EsaServiceV2) DescribeAsyncEsaSiteStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) DescribeAsyncEsaSiteStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAsyncGetSite(d, res)
 		if err != nil {
@@ -739,14 +739,14 @@ func (s *EsaServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			_ = json.Unmarshal([]byte(jsonString), &request)
 
 			wait := incrementalWait(3*time.Second, 3*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -775,14 +775,14 @@ func (s *EsaServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			_ = json.Unmarshal([]byte(jsonString), &request)
 
 			wait := incrementalWait(3*time.Second, 3*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -813,15 +813,15 @@ func (s *EsaServiceV2) DescribeEsaRatePlanInstance(id string) (object map[string
 	action := "ListUserRatePlanInstances"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -859,15 +859,15 @@ func (s *EsaServiceV2) DescribeRatePlanInstanceDescribeRatePlanInstanceStatus(id
 	action := "DescribeRatePlanInstanceStatus"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -879,11 +879,11 @@ func (s *EsaServiceV2) DescribeRatePlanInstanceDescribeRatePlanInstanceStatus(id
 	return response, nil
 }
 
-func (s *EsaServiceV2) EsaRatePlanInstanceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaRatePlanInstanceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EsaRatePlanInstanceStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaRatePlanInstance)
 }
 
-func (s *EsaServiceV2) EsaRatePlanInstanceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaRatePlanInstanceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -928,15 +928,15 @@ func (s *EsaServiceV2) DescribeEsaRecord(id string) (object map[string]interface
 	action := "GetRecord"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -953,11 +953,11 @@ func (s *EsaServiceV2) DescribeEsaRecord(id string) (object map[string]interface
 	return v.(map[string]interface{}), nil
 }
 
-func (s *EsaServiceV2) EsaRecordStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaRecordStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EsaRecordStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaRecord)
 }
 
-func (s *EsaServiceV2) EsaRecordStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaRecordStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -1000,15 +1000,15 @@ func (s *EsaServiceV2) DescribeEsaList(id string) (object map[string]interface{}
 	action := "GetList"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1025,7 +1025,7 @@ func (s *EsaServiceV2) DescribeEsaList(id string) (object map[string]interface{}
 	return response, nil
 }
 
-func (s *EsaServiceV2) EsaListStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaListStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEsaList(id)
 		if err != nil {
@@ -1069,15 +1069,15 @@ func (s *EsaServiceV2) DescribeEsaPage(id string) (object map[string]interface{}
 	action := "GetPage"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1094,7 +1094,7 @@ func (s *EsaServiceV2) DescribeEsaPage(id string) (object map[string]interface{}
 	return response, nil
 }
 
-func (s *EsaServiceV2) EsaPageStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaPageStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEsaPage(id)
 		if err != nil {
@@ -1145,15 +1145,15 @@ func (s *EsaServiceV2) DescribeEsaHttpRequestHeaderModificationRule(id string) (
 	action := "GetHttpRequestHeaderModificationRule"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1169,11 +1169,11 @@ func (s *EsaServiceV2) DescribeEsaHttpRequestHeaderModificationRule(id string) (
 	return response, nil
 }
 
-func (s *EsaServiceV2) EsaHttpRequestHeaderModificationRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaHttpRequestHeaderModificationRuleStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EsaHttpRequestHeaderModificationRuleStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaHttpRequestHeaderModificationRule)
 }
 
-func (s *EsaServiceV2) EsaHttpRequestHeaderModificationRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaHttpRequestHeaderModificationRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -1223,15 +1223,15 @@ func (s *EsaServiceV2) DescribeEsaRewriteUrlRule(id string) (object map[string]i
 	action := "GetRewriteUrlRule"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests", "InternalException"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1251,11 +1251,11 @@ func (s *EsaServiceV2) DescribeEsaRewriteUrlRule(id string) (object map[string]i
 	return response, nil
 }
 
-func (s *EsaServiceV2) EsaRewriteUrlRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaRewriteUrlRuleStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EsaRewriteUrlRuleStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaRewriteUrlRule)
 }
 
-func (s *EsaServiceV2) EsaRewriteUrlRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaRewriteUrlRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -1305,15 +1305,15 @@ func (s *EsaServiceV2) DescribeEsaRedirectRule(id string) (object map[string]int
 	action := "GetRedirectRule"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1325,11 +1325,11 @@ func (s *EsaServiceV2) DescribeEsaRedirectRule(id string) (object map[string]int
 	return response, nil
 }
 
-func (s *EsaServiceV2) EsaRedirectRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaRedirectRuleStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EsaRedirectRuleStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaRedirectRule)
 }
 
-func (s *EsaServiceV2) EsaRedirectRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaRedirectRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -1379,15 +1379,15 @@ func (s *EsaServiceV2) DescribeEsaHttpResponseHeaderModificationRule(id string) 
 	action := "GetHttpResponseHeaderModificationRule"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1402,11 +1402,11 @@ func (s *EsaServiceV2) DescribeEsaHttpResponseHeaderModificationRule(id string) 
 	return response, nil
 }
 
-func (s *EsaServiceV2) EsaHttpResponseHeaderModificationRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaHttpResponseHeaderModificationRuleStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EsaHttpResponseHeaderModificationRuleStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaHttpResponseHeaderModificationRule)
 }
 
-func (s *EsaServiceV2) EsaHttpResponseHeaderModificationRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaHttpResponseHeaderModificationRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -1456,15 +1456,15 @@ func (s *EsaServiceV2) DescribeEsaHttpsBasicConfiguration(id string) (object map
 	action := "GetHttpsBasicConfiguration"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1480,11 +1480,11 @@ func (s *EsaServiceV2) DescribeEsaHttpsBasicConfiguration(id string) (object map
 	return response, nil
 }
 
-func (s *EsaServiceV2) EsaHttpsBasicConfigurationStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaHttpsBasicConfigurationStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EsaHttpsBasicConfigurationStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaHttpsBasicConfiguration)
 }
 
-func (s *EsaServiceV2) EsaHttpsBasicConfigurationStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaHttpsBasicConfigurationStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -1528,15 +1528,15 @@ func (s *EsaServiceV2) DescribeAsyncGetSite(d *schema.ResourceData, res map[stri
 	action := "GetSite"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1570,15 +1570,15 @@ func (s *EsaServiceV2) DescribeEsaCompressionRule(id string) (object map[string]
 	action := "GetCompressionRule"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1590,11 +1590,11 @@ func (s *EsaServiceV2) DescribeEsaCompressionRule(id string) (object map[string]
 	return response, nil
 }
 
-func (s *EsaServiceV2) EsaCompressionRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaCompressionRuleStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EsaCompressionRuleStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaCompressionRule)
 }
 
-func (s *EsaServiceV2) EsaCompressionRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaCompressionRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -1644,15 +1644,15 @@ func (s *EsaServiceV2) DescribeEsaHttpsApplicationConfiguration(id string) (obje
 	action := "GetHttpsApplicationConfiguration"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"TooManyRequests", "undefined"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1668,11 +1668,11 @@ func (s *EsaServiceV2) DescribeEsaHttpsApplicationConfiguration(id string) (obje
 	return response, nil
 }
 
-func (s *EsaServiceV2) EsaHttpsApplicationConfigurationStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaHttpsApplicationConfigurationStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EsaHttpsApplicationConfigurationStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaHttpsApplicationConfiguration)
 }
 
-func (s *EsaServiceV2) EsaHttpsApplicationConfigurationStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaHttpsApplicationConfigurationStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -1722,15 +1722,15 @@ func (s *EsaServiceV2) DescribeEsaNetworkOptimization(id string) (object map[str
 	action := "GetNetworkOptimization"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1742,11 +1742,11 @@ func (s *EsaServiceV2) DescribeEsaNetworkOptimization(id string) (object map[str
 	return response, nil
 }
 
-func (s *EsaServiceV2) EsaNetworkOptimizationStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaNetworkOptimizationStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EsaNetworkOptimizationStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaNetworkOptimization)
 }
 
-func (s *EsaServiceV2) EsaNetworkOptimizationStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaNetworkOptimizationStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -1796,15 +1796,15 @@ func (s *EsaServiceV2) DescribeEsaCacheRule(id string) (object map[string]interf
 	action := "GetCacheRule"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests", "LockFailed"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1821,11 +1821,11 @@ func (s *EsaServiceV2) DescribeEsaCacheRule(id string) (object map[string]interf
 	return response, nil
 }
 
-func (s *EsaServiceV2) EsaCacheRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaCacheRuleStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EsaCacheRuleStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaCacheRule)
 }
 
-func (s *EsaServiceV2) EsaCacheRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaCacheRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -1875,15 +1875,15 @@ func (s *EsaServiceV2) DescribeEsaOriginRule(id string) (object map[string]inter
 	action := "GetOriginRule"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1899,11 +1899,11 @@ func (s *EsaServiceV2) DescribeEsaOriginRule(id string) (object map[string]inter
 	return response, nil
 }
 
-func (s *EsaServiceV2) EsaOriginRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaOriginRuleStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EsaOriginRuleStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaOriginRule)
 }
 
-func (s *EsaServiceV2) EsaOriginRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaOriginRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -1953,15 +1953,15 @@ func (s *EsaServiceV2) DescribeEsaImageTransform(id string) (object map[string]i
 	action := "GetImageTransform"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1973,11 +1973,11 @@ func (s *EsaServiceV2) DescribeEsaImageTransform(id string) (object map[string]i
 	return response, nil
 }
 
-func (s *EsaServiceV2) EsaImageTransformStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaImageTransformStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EsaImageTransformStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaImageTransform)
 }
 
-func (s *EsaServiceV2) EsaImageTransformStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaImageTransformStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -2027,15 +2027,15 @@ func (s *EsaServiceV2) DescribeEsaWaitingRoom(id string) (object map[string]inte
 	action := "ListWaitingRooms"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -2056,11 +2056,11 @@ func (s *EsaServiceV2) DescribeEsaWaitingRoom(id string) (object map[string]inte
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *EsaServiceV2) EsaWaitingRoomStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaWaitingRoomStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EsaWaitingRoomStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaWaitingRoom)
 }
 
-func (s *EsaServiceV2) EsaWaitingRoomStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaWaitingRoomStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -2109,15 +2109,15 @@ func (s *EsaServiceV2) DescribeEsaOriginPool(id string) (object map[string]inter
 	action := "GetOriginPool"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -2132,11 +2132,11 @@ func (s *EsaServiceV2) DescribeEsaOriginPool(id string) (object map[string]inter
 	return response, nil
 }
 
-func (s *EsaServiceV2) EsaOriginPoolStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaOriginPoolStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EsaOriginPoolStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaOriginPool)
 }
 
-func (s *EsaServiceV2) EsaOriginPoolStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaOriginPoolStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -2187,15 +2187,15 @@ func (s *EsaServiceV2) DescribeEsaWaitingRoomEvent(id string) (object map[string
 	action := "ListWaitingRoomEvents"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -2216,11 +2216,11 @@ func (s *EsaServiceV2) DescribeEsaWaitingRoomEvent(id string) (object map[string
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *EsaServiceV2) EsaWaitingRoomEventStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaWaitingRoomEventStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EsaWaitingRoomEventStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaWaitingRoomEvent)
 }
 
-func (s *EsaServiceV2) EsaWaitingRoomEventStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaWaitingRoomEventStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -2271,15 +2271,15 @@ func (s *EsaServiceV2) DescribeEsaWaitingRoomRule(id string) (object map[string]
 	action := "ListWaitingRoomRules"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -2300,11 +2300,11 @@ func (s *EsaServiceV2) DescribeEsaWaitingRoomRule(id string) (object map[string]
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *EsaServiceV2) EsaWaitingRoomRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaWaitingRoomRuleStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EsaWaitingRoomRuleStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaWaitingRoomRule)
 }
 
-func (s *EsaServiceV2) EsaWaitingRoomRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaWaitingRoomRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -2354,15 +2354,15 @@ func (s *EsaServiceV2) DescribeEsaCertificate(id string) (object map[string]inte
 	action := "GetCertificate"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -2374,11 +2374,11 @@ func (s *EsaServiceV2) DescribeEsaCertificate(id string) (object map[string]inte
 	return response, nil
 }
 
-func (s *EsaServiceV2) EsaCertificateStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaCertificateStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EsaCertificateStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaCertificate)
 }
 
-func (s *EsaServiceV2) EsaCertificateStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaCertificateStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -2428,15 +2428,15 @@ func (s *EsaServiceV2) DescribeEsaClientCertificate(id string) (object map[strin
 	action := "GetClientCertificate"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -2448,11 +2448,11 @@ func (s *EsaServiceV2) DescribeEsaClientCertificate(id string) (object map[strin
 	return response, nil
 }
 
-func (s *EsaServiceV2) EsaClientCertificateStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaClientCertificateStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EsaClientCertificateStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaClientCertificate)
 }
 
-func (s *EsaServiceV2) EsaClientCertificateStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaClientCertificateStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -2502,15 +2502,15 @@ func (s *EsaServiceV2) DescribeEsaClientCaCertificate(id string) (object map[str
 	action := "GetClientCaCertificate"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -2540,15 +2540,15 @@ func (s *EsaServiceV2) DescribeClientCaCertificateGetClientCaCertificateHostname
 	action := "GetClientCaCertificateHostnames"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -2563,11 +2563,11 @@ func (s *EsaServiceV2) DescribeClientCaCertificateGetClientCaCertificateHostname
 	return response, nil
 }
 
-func (s *EsaServiceV2) EsaClientCaCertificateStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaClientCaCertificateStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EsaClientCaCertificateStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaClientCaCertificate)
 }
 
-func (s *EsaServiceV2) EsaClientCaCertificateStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaClientCaCertificateStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -2610,15 +2610,15 @@ func (s *EsaServiceV2) DescribeEsaKvNamespace(id string) (object map[string]inte
 	action := "GetKvNamespace"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -2630,7 +2630,7 @@ func (s *EsaServiceV2) DescribeEsaKvNamespace(id string) (object map[string]inte
 	return response, nil
 }
 
-func (s *EsaServiceV2) EsaKvNamespaceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaKvNamespaceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEsaKvNamespace(id)
 		if err != nil {
@@ -2675,15 +2675,15 @@ func (s *EsaServiceV2) DescribeEsaCacheReserveInstance(id string) (object map[st
 	action := "ListCacheReserveInstances"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -2709,7 +2709,7 @@ func (s *EsaServiceV2) DescribeEsaCacheReserveInstance(id string) (object map[st
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *EsaServiceV2) EsaCacheReserveInstanceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaCacheReserveInstanceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEsaCacheReserveInstance(id)
 		if err != nil {
@@ -2760,15 +2760,15 @@ func (s *EsaServiceV2) DescribeEsaSiteDeliveryTask(id string) (object map[string
 	action := "GetSiteDeliveryTask"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -2780,11 +2780,11 @@ func (s *EsaServiceV2) DescribeEsaSiteDeliveryTask(id string) (object map[string
 	return response, nil
 }
 
-func (s *EsaServiceV2) EsaSiteDeliveryTaskStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaSiteDeliveryTaskStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EsaSiteDeliveryTaskStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaSiteDeliveryTask)
 }
 
-func (s *EsaServiceV2) EsaSiteDeliveryTaskStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaSiteDeliveryTaskStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -2827,15 +2827,15 @@ func (s *EsaServiceV2) DescribeEsaEdgeContainerApp(id string) (object map[string
 	action := "GetEdgeContainerApp"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -2852,7 +2852,7 @@ func (s *EsaServiceV2) DescribeEsaEdgeContainerApp(id string) (object map[string
 	return response, nil
 }
 
-func (s *EsaServiceV2) EsaEdgeContainerAppStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaEdgeContainerAppStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEsaEdgeContainerApp(id)
 		if err != nil {
@@ -2902,15 +2902,15 @@ func (s *EsaServiceV2) DescribeEsaEdgeContainerAppRecord(id string) (object map[
 	action := "ListEdgeContainerAppRecords"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -2942,11 +2942,11 @@ func (s *EsaServiceV2) DescribeEsaEdgeContainerAppRecord(id string) (object map[
 	return object, WrapErrorf(NotFoundErr("EdgeContainerAppRecord", id), NotFoundMsg, response)
 }
 
-func (s *EsaServiceV2) EsaEdgeContainerAppRecordStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaEdgeContainerAppRecordStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EsaEdgeContainerAppRecordStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaEdgeContainerAppRecord)
 }
 
-func (s *EsaServiceV2) EsaEdgeContainerAppRecordStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaEdgeContainerAppRecordStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -2995,15 +2995,15 @@ func (s *EsaServiceV2) DescribeEsaScheduledPreloadJob(id string) (object map[str
 	action := "GetScheduledPreloadJob"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -3015,11 +3015,11 @@ func (s *EsaServiceV2) DescribeEsaScheduledPreloadJob(id string) (object map[str
 	return response, nil
 }
 
-func (s *EsaServiceV2) EsaScheduledPreloadJobStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaScheduledPreloadJobStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EsaScheduledPreloadJobStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaScheduledPreloadJob)
 }
 
-func (s *EsaServiceV2) EsaScheduledPreloadJobStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaScheduledPreloadJobStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -3066,15 +3066,15 @@ func (s *EsaServiceV2) DescribeEsaScheduledPreloadExecution(id string) (object m
 	action := "ListScheduledPreloadExecutions"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -3103,7 +3103,7 @@ func (s *EsaServiceV2) DescribeEsaScheduledPreloadExecution(id string) (object m
 	return object, WrapErrorf(NotFoundErr("ScheduledPreloadExecution", id), NotFoundMsg, response)
 }
 
-func (s *EsaServiceV2) EsaScheduledPreloadExecutionStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaScheduledPreloadExecutionStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEsaScheduledPreloadExecution(id)
 		if err != nil {
@@ -3153,15 +3153,15 @@ func (s *EsaServiceV2) DescribeEsaKv(id string) (object map[string]interface{}, 
 	action := "GetKv"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -3173,7 +3173,7 @@ func (s *EsaServiceV2) DescribeEsaKv(id string) (object map[string]interface{}, 
 	return response, nil
 }
 
-func (s *EsaServiceV2) EsaKvStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaKvStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEsaKv(id)
 		if err != nil {
@@ -3224,15 +3224,15 @@ func (s *EsaServiceV2) DescribeEsaVideoProcessing(id string) (object map[string]
 	action := "GetVideoProcessing"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -3244,11 +3244,11 @@ func (s *EsaServiceV2) DescribeEsaVideoProcessing(id string) (object map[string]
 	return response, nil
 }
 
-func (s *EsaServiceV2) EsaVideoProcessingStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaVideoProcessingStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EsaVideoProcessingStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaVideoProcessing)
 }
 
-func (s *EsaServiceV2) EsaVideoProcessingStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaVideoProcessingStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -3291,15 +3291,15 @@ func (s *EsaServiceV2) DescribeEsaRoutine(id string) (object map[string]interfac
 	action := "GetRoutine"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -3314,7 +3314,7 @@ func (s *EsaServiceV2) DescribeEsaRoutine(id string) (object map[string]interfac
 	return response, nil
 }
 
-func (s *EsaServiceV2) EsaRoutineStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaRoutineStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEsaRoutine(id)
 		if err != nil {
@@ -3356,14 +3356,14 @@ func (s *EsaServiceV2) DescribeEsaRoutineLatestCodeVersion(name string) (string,
 	var response map[string]interface{}
 	var err error
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -3461,15 +3461,15 @@ func (s *EsaServiceV2) DescribeEsaRoutineRoute(id string) (object map[string]int
 	action := "GetRoutineRoute"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests", "LockFailed"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -3487,11 +3487,11 @@ func (s *EsaServiceV2) DescribeEsaRoutineRoute(id string) (object map[string]int
 	return item, nil
 }
 
-func (s *EsaServiceV2) EsaRoutineRouteStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaRoutineRouteStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EsaRoutineRouteStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaRoutineRoute)
 }
 
-func (s *EsaServiceV2) EsaRoutineRouteStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaRoutineRouteStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -3540,15 +3540,15 @@ func (s *EsaServiceV2) DescribeEsaVersion(id string) (object map[string]interfac
 	action := "ListVersions"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -3577,11 +3577,11 @@ func (s *EsaServiceV2) DescribeEsaVersion(id string) (object map[string]interfac
 	return object, WrapErrorf(NotFoundErr("Version", id), NotFoundMsg, response)
 }
 
-func (s *EsaServiceV2) EsaVersionStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaVersionStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EsaVersionStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaVersion)
 }
 
-func (s *EsaServiceV2) EsaVersionStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaVersionStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -3625,15 +3625,15 @@ func (s *EsaServiceV2) DescribeEsaCustomScenePolicy(id string) (object map[strin
 	action := "DescribeCustomScenePolicies"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -3654,11 +3654,11 @@ func (s *EsaServiceV2) DescribeEsaCustomScenePolicy(id string) (object map[strin
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *EsaServiceV2) EsaCustomScenePolicyStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaCustomScenePolicyStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EsaCustomScenePolicyStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaCustomScenePolicy)
 }
 
-func (s *EsaServiceV2) EsaCustomScenePolicyStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaCustomScenePolicyStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -3708,15 +3708,15 @@ func (s *EsaServiceV2) DescribeEsaOriginClientCertificate(id string) (object map
 	action := "GetOriginClientCertificate"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -3728,11 +3728,11 @@ func (s *EsaServiceV2) DescribeEsaOriginClientCertificate(id string) (object map
 	return response, nil
 }
 
-func (s *EsaServiceV2) EsaOriginClientCertificateStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaOriginClientCertificateStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EsaOriginClientCertificateStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaOriginClientCertificate)
 }
 
-func (s *EsaServiceV2) EsaOriginClientCertificateStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaOriginClientCertificateStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -3782,15 +3782,15 @@ func (s *EsaServiceV2) DescribeEsaSiteOriginClientCertificate(id string) (object
 	action := "GetSiteOriginClientCertificate"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -3802,11 +3802,11 @@ func (s *EsaServiceV2) DescribeEsaSiteOriginClientCertificate(id string) (object
 	return response, nil
 }
 
-func (s *EsaServiceV2) EsaSiteOriginClientCertificateStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaSiteOriginClientCertificateStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EsaSiteOriginClientCertificateStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaSiteOriginClientCertificate)
 }
 
-func (s *EsaServiceV2) EsaSiteOriginClientCertificateStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaSiteOriginClientCertificateStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -3854,15 +3854,15 @@ func (s *EsaServiceV2) DescribeEsaOriginCaCertificate(id string) (object map[str
 	action := "GetOriginCaCertificate"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -3874,7 +3874,7 @@ func (s *EsaServiceV2) DescribeEsaOriginCaCertificate(id string) (object map[str
 	return response, nil
 }
 
-func (s *EsaServiceV2) EsaOriginCaCertificateStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaOriginCaCertificateStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEsaOriginCaCertificate(id)
 		if err != nil {
@@ -3919,15 +3919,15 @@ func (s *EsaServiceV2) DescribeEsaOriginProtection(id string) (object map[string
 	action := "GetOriginProtection"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -3939,11 +3939,11 @@ func (s *EsaServiceV2) DescribeEsaOriginProtection(id string) (object map[string
 	return response, nil
 }
 
-func (s *EsaServiceV2) EsaOriginProtectionStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaOriginProtectionStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EsaOriginProtectionStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaOriginProtection)
 }
 
-func (s *EsaServiceV2) EsaOriginProtectionStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaOriginProtectionStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -3992,15 +3992,15 @@ func (s *EsaServiceV2) DescribeEsaRoutineRelatedRecord(id string) (object map[st
 	action := "ListRoutineRelatedRecords"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -4032,11 +4032,11 @@ func (s *EsaServiceV2) DescribeEsaRoutineRelatedRecord(id string) (object map[st
 	return object, WrapErrorf(NotFoundErr("RoutineRelatedRecord", id), NotFoundMsg, response)
 }
 
-func (s *EsaServiceV2) EsaRoutineRelatedRecordStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaRoutineRelatedRecordStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EsaRoutineRelatedRecordStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaRoutineRelatedRecord)
 }
 
-func (s *EsaServiceV2) EsaRoutineRelatedRecordStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaRoutineRelatedRecordStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -4086,15 +4086,15 @@ func (s *EsaServiceV2) DescribeEsaUrlObservation(id string) (object map[string]i
 	action := "ListUrlObservations"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -4115,11 +4115,11 @@ func (s *EsaServiceV2) DescribeEsaUrlObservation(id string) (object map[string]i
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *EsaServiceV2) EsaUrlObservationStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaUrlObservationStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EsaUrlObservationStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaUrlObservation)
 }
 
-func (s *EsaServiceV2) EsaUrlObservationStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaUrlObservationStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -4161,15 +4161,15 @@ func (s *EsaServiceV2) DescribeEsaKvAccount(id string) (object map[string]interf
 	action := "GetKvAccount"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -4184,7 +4184,7 @@ func (s *EsaServiceV2) DescribeEsaKvAccount(id string) (object map[string]interf
 	return response, nil
 }
 
-func (s *EsaServiceV2) EsaKvAccountStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaKvAccountStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEsaKvAccount(id)
 		if err != nil {
@@ -4235,15 +4235,15 @@ func (s *EsaServiceV2) DescribeEsaWafRuleset(id string) (object map[string]inter
 	action := "GetWafRuleset"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -4260,11 +4260,11 @@ func (s *EsaServiceV2) DescribeEsaWafRuleset(id string) (object map[string]inter
 	return response, nil
 }
 
-func (s *EsaServiceV2) EsaWafRulesetStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaWafRulesetStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EsaWafRulesetStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaWafRuleset)
 }
 
-func (s *EsaServiceV2) EsaWafRulesetStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaWafRulesetStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -4314,15 +4314,15 @@ func (s *EsaServiceV2) DescribeEsaWafRule(id string) (object map[string]interfac
 	action := "GetWafRule"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -4339,11 +4339,11 @@ func (s *EsaServiceV2) DescribeEsaWafRule(id string) (object map[string]interfac
 	return response, nil
 }
 
-func (s *EsaServiceV2) EsaWafRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaWafRuleStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EsaWafRuleStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaWafRule)
 }
 
-func (s *EsaServiceV2) EsaWafRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaWafRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -4393,15 +4393,15 @@ func (s *EsaServiceV2) DescribeEsaTransportLayerApplication(id string) (object m
 	action := "GetTransportLayerApplication"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -4416,11 +4416,11 @@ func (s *EsaServiceV2) DescribeEsaTransportLayerApplication(id string) (object m
 	return response, nil
 }
 
-func (s *EsaServiceV2) EsaTransportLayerApplicationStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaTransportLayerApplicationStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EsaTransportLayerApplicationStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaTransportLayerApplication)
 }
 
-func (s *EsaServiceV2) EsaTransportLayerApplicationStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaTransportLayerApplicationStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -4470,15 +4470,15 @@ func (s *EsaServiceV2) DescribeEsaLoadBalancer(id string) (object map[string]int
 	action := "GetLoadBalancer"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -4490,11 +4490,11 @@ func (s *EsaServiceV2) DescribeEsaLoadBalancer(id string) (object map[string]int
 	return response, nil
 }
 
-func (s *EsaServiceV2) EsaLoadBalancerStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaLoadBalancerStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EsaLoadBalancerStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaLoadBalancer)
 }
 
-func (s *EsaServiceV2) EsaLoadBalancerStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaLoadBalancerStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -4544,15 +4544,15 @@ func (s *EsaServiceV2) DescribeEsaHttpIncomingRequestHeaderModificationRule(id s
 	action := "GetHttpIncomingRequestHeaderModificationRule"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -4564,11 +4564,11 @@ func (s *EsaServiceV2) DescribeEsaHttpIncomingRequestHeaderModificationRule(id s
 	return response, nil
 }
 
-func (s *EsaServiceV2) EsaHttpIncomingRequestHeaderModificationRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaHttpIncomingRequestHeaderModificationRuleStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EsaHttpIncomingRequestHeaderModificationRuleStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaHttpIncomingRequestHeaderModificationRule)
 }
 
-func (s *EsaServiceV2) EsaHttpIncomingRequestHeaderModificationRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaHttpIncomingRequestHeaderModificationRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -4618,15 +4618,15 @@ func (s *EsaServiceV2) DescribeEsaHttpIncomingResponseHeaderModificationRule(id 
 	action := "GetHttpIncomingResponseHeaderModificationRule"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -4638,11 +4638,11 @@ func (s *EsaServiceV2) DescribeEsaHttpIncomingResponseHeaderModificationRule(id 
 	return response, nil
 }
 
-func (s *EsaServiceV2) EsaHttpIncomingResponseHeaderModificationRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaHttpIncomingResponseHeaderModificationRuleStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EsaHttpIncomingResponseHeaderModificationRuleStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaHttpIncomingResponseHeaderModificationRule)
 }
 
-func (s *EsaServiceV2) EsaHttpIncomingResponseHeaderModificationRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaHttpIncomingResponseHeaderModificationRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -4692,15 +4692,15 @@ func (s *EsaServiceV2) DescribeEsaCustomResponseCodeRule(id string) (object map[
 	action := "GetCustomResponseCodeRule"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -4720,11 +4720,11 @@ func (s *EsaServiceV2) DescribeEsaCustomResponseCodeRule(id string) (object map[
 	return response, nil
 }
 
-func (s *EsaServiceV2) EsaCustomResponseCodeRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaCustomResponseCodeRuleStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EsaCustomResponseCodeRuleStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaCustomResponseCodeRule)
 }
 
-func (s *EsaServiceV2) EsaCustomResponseCodeRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *EsaServiceV2) EsaCustomResponseCodeRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {

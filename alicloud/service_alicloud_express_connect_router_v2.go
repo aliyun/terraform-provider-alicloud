@@ -7,7 +7,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -30,16 +30,16 @@ func (s *ExpressConnectRouterServiceV2) DescribeExpressConnectRouterExpressConne
 	request["ClientToken"] = buildClientToken(action)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -78,16 +78,16 @@ func (s *ExpressConnectRouterServiceV2) DescribeDescribeInstanceGrantedToExpress
 	request["ClientToken"] = buildClientToken(action)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -112,16 +112,16 @@ func (s *ExpressConnectRouterServiceV2) DescribeDescribeExpressConnectRouterRout
 	request["ClientToken"] = buildClientToken(action)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -146,16 +146,16 @@ func (s *ExpressConnectRouterServiceV2) DescribeDescribeDisabledExpressConnectRo
 	request["ClientToken"] = buildClientToken(action)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -180,16 +180,16 @@ func (s *ExpressConnectRouterServiceV2) DescribeDescribeExpressConnectRouterInte
 	request["ClientToken"] = buildClientToken(action)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -214,16 +214,16 @@ func (s *ExpressConnectRouterServiceV2) DescribeDescribeExpressConnectRouterRegi
 	request["ClientToken"] = buildClientToken(action)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -236,7 +236,7 @@ func (s *ExpressConnectRouterServiceV2) DescribeDescribeExpressConnectRouterRegi
 	return response, nil
 }
 
-func (s *ExpressConnectRouterServiceV2) ExpressConnectRouterExpressConnectRouterStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ExpressConnectRouterServiceV2) ExpressConnectRouterExpressConnectRouterStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeExpressConnectRouterExpressConnectRouter(id)
 		if err != nil {
@@ -272,16 +272,16 @@ func (s *ExpressConnectRouterServiceV2) DescribeAsyncDescribeInstanceGrantedToEx
 	request["ClientToken"] = buildClientToken(action)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -297,7 +297,7 @@ func (s *ExpressConnectRouterServiceV2) DescribeAsyncDescribeInstanceGrantedToEx
 	return response, nil
 }
 
-func (s *ExpressConnectRouterServiceV2) DescribeAsyncExpressConnectRouterExpressConnectRouterStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ExpressConnectRouterServiceV2) DescribeAsyncExpressConnectRouterExpressConnectRouterStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAsyncDescribeInstanceGrantedToExpressConnectRouter(d, res)
 		if err != nil {
@@ -335,16 +335,16 @@ func (s *ExpressConnectRouterServiceV2) DescribeAsyncGetExpressConnectRouter(d *
 	request["ClientToken"] = buildClientToken(action)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -388,14 +388,14 @@ func (s *ExpressConnectRouterServiceV2) SetResourceTags(d *schema.ResourceData, 
 			}
 
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(action, response, request)
 				return nil
@@ -421,14 +421,14 @@ func (s *ExpressConnectRouterServiceV2) SetResourceTags(d *schema.ResourceData, 
 			}
 
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(action, response, request)
 				return nil
@@ -466,16 +466,16 @@ func (s *ExpressConnectRouterServiceV2) DescribeExpressConnectRouterExpressConne
 	request["ClientToken"] = buildClientToken(action)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -516,7 +516,7 @@ func (s *ExpressConnectRouterServiceV2) DescribeExpressConnectRouterExpressConne
 	return object, WrapErrorf(NotFoundErr("ExpressConnectRouterVbrChildInstance", id), NotFoundMsg, response)
 }
 
-func (s *ExpressConnectRouterServiceV2) ExpressConnectRouterExpressConnectRouterVbrChildInstanceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ExpressConnectRouterServiceV2) ExpressConnectRouterExpressConnectRouterVbrChildInstanceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeExpressConnectRouterExpressConnectRouterVbrChildInstance(id)
 		if err != nil {
@@ -564,16 +564,16 @@ func (s *ExpressConnectRouterServiceV2) DescribeAsyncExpressConnectRouterVbrChil
 	request["ClientToken"] = buildClientToken(action)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -585,7 +585,7 @@ func (s *ExpressConnectRouterServiceV2) DescribeAsyncExpressConnectRouterVbrChil
 	return response, nil
 }
 
-func (s *ExpressConnectRouterServiceV2) DescribeAsyncExpressConnectRouterExpressConnectRouterVbrChildInstanceStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ExpressConnectRouterServiceV2) DescribeAsyncExpressConnectRouterExpressConnectRouterVbrChildInstanceStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAsyncExpressConnectRouterVbrChildInstanceDescribeExpressConnectRouterChildInstance(d, res)
 		if err != nil {
@@ -639,16 +639,16 @@ func (s *ExpressConnectRouterServiceV2) DescribeExpressConnectRouterExpressConne
 
 	request["AssociationNodeType"] = "TR"
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -687,7 +687,7 @@ func (s *ExpressConnectRouterServiceV2) DescribeExpressConnectRouterExpressConne
 	return object, WrapErrorf(NotFoundErr("ExpressConnectRouterTrAssociation", id), NotFoundMsg, response)
 }
 
-func (s *ExpressConnectRouterServiceV2) ExpressConnectRouterExpressConnectRouterTrAssociationStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ExpressConnectRouterServiceV2) ExpressConnectRouterExpressConnectRouterTrAssociationStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeExpressConnectRouterExpressConnectRouterTrAssociation(id)
 		if err != nil {
@@ -732,16 +732,16 @@ func (s *ExpressConnectRouterServiceV2) DescribeExpressConnectRouterExpressConne
 
 	request["AssociationNodeType"] = "VPC"
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -798,16 +798,16 @@ func (s *ExpressConnectRouterServiceV2) DescribeDescribeExpressConnectRouterAllo
 
 	request["InstanceType"] = "VPC"
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -828,7 +828,7 @@ func (s *ExpressConnectRouterServiceV2) DescribeDescribeExpressConnectRouterAllo
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ExpressConnectRouterServiceV2) ExpressConnectRouterExpressConnectRouterVpcAssociationStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ExpressConnectRouterServiceV2) ExpressConnectRouterExpressConnectRouterVpcAssociationStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeExpressConnectRouterExpressConnectRouterVpcAssociation(id)
 		if err != nil {
@@ -875,16 +875,16 @@ func (s *ExpressConnectRouterServiceV2) DescribeExpressConnectRouterGrantAssocia
 
 	request["CallerType"] = "OTHER"
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -925,7 +925,7 @@ func (s *ExpressConnectRouterServiceV2) DescribeExpressConnectRouterGrantAssocia
 	return object, WrapErrorf(NotFoundErr("GrantAssociation", id), NotFoundMsg, response)
 }
 
-func (s *ExpressConnectRouterServiceV2) ExpressConnectRouterGrantAssociationStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ExpressConnectRouterServiceV2) ExpressConnectRouterGrantAssociationStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeExpressConnectRouterGrantAssociation(id)
 		if err != nil {

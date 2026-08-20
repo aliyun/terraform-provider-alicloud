@@ -9,7 +9,7 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/blues/jsonata-go"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -36,15 +36,15 @@ func (s *RamServiceV2) DescribeRamUserGroupAttachment(id string) (object map[str
 
 	for {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Ram", "2015-05-01", action, query, request, true)
 
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -81,7 +81,7 @@ func (s *RamServiceV2) DescribeRamUserGroupAttachment(id string) (object map[str
 	return object, WrapErrorf(NotFoundErr("UserGroupAttachment", id), NotFoundMsg, response)
 }
 
-func (s *RamServiceV2) RamUserGroupAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *RamServiceV2) RamUserGroupAttachmentStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeRamUserGroupAttachment(id)
 		if err != nil {
@@ -126,15 +126,15 @@ func (s *RamServiceV2) DescribeRamGroup(id string) (object map[string]interface{
 	action := "GetGroup"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ram", "2015-05-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -154,7 +154,7 @@ func (s *RamServiceV2) DescribeRamGroup(id string) (object map[string]interface{
 	return v.(map[string]interface{}), nil
 }
 
-func (s *RamServiceV2) RamGroupStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *RamServiceV2) RamGroupStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeRamGroup(id)
 		if err != nil {
@@ -198,15 +198,15 @@ func (s *RamServiceV2) DescribeRamLoginProfile(id string) (object map[string]int
 	action := "GetLoginProfile"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ram", "2015-05-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -226,7 +226,7 @@ func (s *RamServiceV2) DescribeRamLoginProfile(id string) (object map[string]int
 	return v.(map[string]interface{}), nil
 }
 
-func (s *RamServiceV2) RamLoginProfileStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *RamServiceV2) RamLoginProfileStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeRamLoginProfile(id)
 		if err != nil {
@@ -271,15 +271,15 @@ func (s *RamServiceV2) DescribeRamSamlProvider(id string) (object map[string]int
 	action := "GetSAMLProvider"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ims", "2019-08-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -299,7 +299,7 @@ func (s *RamServiceV2) DescribeRamSamlProvider(id string) (object map[string]int
 	return v.(map[string]interface{}), nil
 }
 
-func (s *RamServiceV2) RamSamlProviderStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *RamServiceV2) RamSamlProviderStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeRamSamlProvider(id)
 		if err != nil {
@@ -353,15 +353,15 @@ func (s *RamServiceV2) DescribeRamRolePolicyAttachment(id string) (object map[st
 	action := "ListPoliciesForRole"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ram", "2015-05-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -396,7 +396,7 @@ func (s *RamServiceV2) DescribeRamRolePolicyAttachment(id string) (object map[st
 	return object, WrapErrorf(NotFoundErr("RolePolicyAttachment", id), NotFoundMsg, response)
 }
 
-func (s *RamServiceV2) RamRolePolicyAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *RamServiceV2) RamRolePolicyAttachmentStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeRamRolePolicyAttachment(id)
 		if err != nil {
@@ -441,15 +441,15 @@ func (s *RamServiceV2) DescribeRamSystemPolicy(id string) (object map[string]int
 	action := "GetPolicy"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ram", "2015-05-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -464,7 +464,7 @@ func (s *RamServiceV2) DescribeRamSystemPolicy(id string) (object map[string]int
 	return response, nil
 }
 
-func (s *RamServiceV2) RamSystemPolicyStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *RamServiceV2) RamSystemPolicyStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeRamSystemPolicy(id)
 		if err != nil {
@@ -510,15 +510,15 @@ func (s *RamServiceV2) DescribeRamPolicy(id string) (object map[string]interface
 	action := "GetPolicy"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ram", "2015-05-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -547,15 +547,15 @@ func (s *RamServiceV2) DescribePolicyListTagResources(id string) (object map[str
 	action := "ListTagResources"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ram", "2015-05-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -567,7 +567,7 @@ func (s *RamServiceV2) DescribePolicyListTagResources(id string) (object map[str
 	return response, nil
 }
 
-func (s *RamServiceV2) RamPolicyStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *RamServiceV2) RamPolicyStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeRamPolicy(id)
 		if err != nil {
@@ -685,14 +685,14 @@ func (s *RamServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			}
 			request["TagKeys"] = convertListToJsonString(convertListStringToListInterface(removedTagKeys))
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("Ram", "2015-05-01", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -722,14 +722,14 @@ func (s *RamServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			}
 			request["Tag"] = tagMapsJSON
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("Ram", "2015-05-01", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -760,15 +760,15 @@ func (s *RamServiceV2) DescribeRamAccessKey(id, userName string) (object map[str
 	action := "ListAccessKeys"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ram", "2015-05-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -820,15 +820,15 @@ func (s *RamServiceV2) DescribeRamUserPolicyAttachment(id string) (object map[st
 	action := "ListPoliciesForUser"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ram", "2015-05-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -863,7 +863,7 @@ func (s *RamServiceV2) DescribeRamUserPolicyAttachment(id string) (object map[st
 	return object, WrapErrorf(NotFoundErr("UserPolicyAttachment", id), NotFoundMsg, response)
 }
 
-func (s *RamServiceV2) RamUserPolicyAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *RamServiceV2) RamUserPolicyAttachmentStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeRamUserPolicyAttachment(id)
 		if err != nil {
@@ -911,15 +911,15 @@ func (s *RamServiceV2) DescribeRamGroupPolicyAttachment(id string) (object map[s
 	action := "ListPoliciesForGroup"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ram", "2015-05-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -954,7 +954,7 @@ func (s *RamServiceV2) DescribeRamGroupPolicyAttachment(id string) (object map[s
 	return object, WrapErrorf(NotFoundErr("GroupPolicyAttachment", id), NotFoundMsg, response)
 }
 
-func (s *RamServiceV2) RamGroupPolicyAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *RamServiceV2) RamGroupPolicyAttachmentStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeRamGroupPolicyAttachment(id)
 		if err != nil {
@@ -998,15 +998,15 @@ func (s *RamServiceV2) DescribeRamAccountAlias(id string) (object map[string]int
 	action := "GetAccountAlias"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ram", "2015-05-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1018,7 +1018,7 @@ func (s *RamServiceV2) DescribeRamAccountAlias(id string) (object map[string]int
 	return response, nil
 }
 
-func (s *RamServiceV2) RamAccountAliasStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *RamServiceV2) RamAccountAliasStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeRamAccountAlias(id)
 		if err != nil {
@@ -1062,15 +1062,15 @@ func (s *RamServiceV2) DescribeRamPasswordPolicy(id string) (object map[string]i
 	action := "GetPasswordPolicy"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ims", "2019-08-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1087,7 +1087,7 @@ func (s *RamServiceV2) DescribeRamPasswordPolicy(id string) (object map[string]i
 	return v.(map[string]interface{}), nil
 }
 
-func (s *RamServiceV2) RamPasswordPolicyStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *RamServiceV2) RamPasswordPolicyStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeRamPasswordPolicy(id)
 		if err != nil {
@@ -1131,15 +1131,15 @@ func (s *RamServiceV2) DescribeRamSecurityPreference(id string) (object map[stri
 	action := "GetSecurityPreference"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ims", "2019-08-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1156,11 +1156,11 @@ func (s *RamServiceV2) DescribeRamSecurityPreference(id string) (object map[stri
 	return v.(map[string]interface{}), nil
 }
 
-func (s *RamServiceV2) RamSecurityPreferenceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *RamServiceV2) RamSecurityPreferenceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.RamSecurityPreferenceStateRefreshFuncWithApi(id, field, failStates, s.DescribeRamSecurityPreference)
 }
 
-func (s *RamServiceV2) RamSecurityPreferenceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *RamServiceV2) RamSecurityPreferenceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -1204,15 +1204,15 @@ func (s *RamServiceV2) DescribeRamRole(id string) (object map[string]interface{}
 	action := "GetRole"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ram", "2015-05-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1246,15 +1246,15 @@ func (s *RamServiceV2) DescribeRoleListTagResources(id string) (object map[strin
 	action := "ListTagResources"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ram", "2015-05-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1266,7 +1266,7 @@ func (s *RamServiceV2) DescribeRoleListTagResources(id string) (object map[strin
 	return response, nil
 }
 
-func (s *RamServiceV2) RamRoleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *RamServiceV2) RamRoleStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeRamRole(id)
 		if err != nil {
@@ -1355,15 +1355,15 @@ func (s *RamServiceV2) DescribeRamAccessKeyPolicy(id string) (object map[string]
 	action := "GetAccessKeyPolicy"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ims", "2019-08-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

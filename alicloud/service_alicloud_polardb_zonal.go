@@ -13,7 +13,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/polardb"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -113,15 +113,15 @@ func (s *PolarDbServiceV2) DescribePolarDbZonalCluster(id string) (object *Descr
 	action := "DescribeDbClusterAttributeZonal"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("polardb", "2017-08-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -153,15 +153,15 @@ func (s *PolarDbServiceV2) DescribeZonalClusterDescribeDBClusterVersionZonal(id 
 	action := "DescribeDBClusterVersionZonal"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("polardb", "2017-08-01", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -188,15 +188,15 @@ func (s *PolarDbServiceV2) DescribeZonalClusterDescribeAutoRenewAttribute(id str
 	action := "DescribeAutoRenewAttribute"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("polardb", "2017-08-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -217,7 +217,7 @@ func (s *PolarDbServiceV2) DescribeZonalClusterDescribeAutoRenewAttribute(id str
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *PolarDbServiceV2) PolarDbZonalClusterStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *PolarDbServiceV2) PolarDbZonalClusterStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribePolarDbZonalCluster(id)
 		if err != nil {
@@ -271,15 +271,15 @@ func (s *PolarDbServiceV2) ModifyDBNodesClass(regionId, DBClusterId, modifyType 
 	action := "ModifyDBNodesClass"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("polardb", "2017-08-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -308,15 +308,15 @@ func (s *PolarDbServiceV2) DeleteDBNodes(regionId, DBClusterId string, nodeId []
 	action := "DeleteDBNodes"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("polardb", "2017-08-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -346,15 +346,15 @@ func (s *PolarDbServiceV2) CreateDBNodes(regionId, DBClusterId, ImciSwitch strin
 	action := "CreateDBNodes"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("polardb", "2017-08-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -385,15 +385,15 @@ func (s *PolarDbServiceV2) ModifyAutoRenewAttribute(regionId, DBClusterId, renew
 	action := "ModifyAutoRenewAttribute"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("polardb", "2017-08-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -471,16 +471,16 @@ func (s *PolarDbServiceV2) DescribeDBClusterEndpointsZonal(id string) (object *D
 	action := "DescribeDBClusterEndpointsZonal"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("polardb", "2017-08-01", action, query, request, true)
 		addDebug(action, response, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -516,15 +516,15 @@ func (s *PolarDbServiceV2) DescribeDBClusterEndpointsZonalList(regionId, DBClust
 	action := "DescribeDBClusterEndpointsZonal"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("polardb", "2017-08-01", action, query, request, true)
 		addDebug(action, response, request)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -569,19 +569,19 @@ func (s *PolarDbServiceV2) CreateDBClusterEndpointZonal(requestObj *CreateDBClus
 	}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		_, err = client.RpcPost("polardb", "2017-08-01", action, query, request, true)
 		addDebug(action, err, request)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 			if IsExpectedErrorsMessage(err, "Current DB instance state does not support this operation") {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -605,19 +605,19 @@ func (s *PolarDbServiceV2) ModifyDBClusterEndpointZonal(requestObj *polardb.Modi
 	}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err := client.RpcPost("polardb", "2017-08-01", action, query, request, true)
 		log.Printf("ModifyDBClusterEndpointZonal response %s %v %v", requestObj.DBEndpointId, request, response)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 			if IsExpectedErrorsMessage(err, "Current endpoint status does not support this operation") {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -640,16 +640,16 @@ func (s *PolarDbServiceV2) DeleteDBClusterEndpointZonal(regionId, DBClusterId, e
 	action := "DeleteDBClusterEndpointZonal"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		_, err = client.RpcPost("polardb", "2017-08-01", action, query, request, true)
 		addDebug(action, err, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -729,20 +729,20 @@ func (s *PolarDbServiceV2) CreateAccount(requestObj *polardb.CreateAccountReques
 	}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		_, err = client.RpcPost("polardb", "2017-08-01", action, query, request, true)
 		addDebug(action, err, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 			if IsExpectedErrorsMessage(err, "Current DB instance state does not support this operation") {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -771,19 +771,19 @@ func (s *PolarDbServiceV2) DescribePolarDBAccount(id string) (ds *polardb.DBAcco
 	action := "DescribeAccountsZonal"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("polardb", "2017-08-01", action, query, request, true)
 		addDebug(action, response, request)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 			if IsExpectedErrorsMessage(err, "Current DB instance state does not support this operation") {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -848,20 +848,20 @@ func (s *PolarDbServiceV2) DeleteAccount(dbClusterId, accountName string) (err e
 	request["AccountName"] = accountName
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		_, err = client.RpcPost("polardb", "2017-08-01", action, query, request, true)
 		addDebug(action, err, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 			if IsExpectedErrorsMessage(err, "Current DB instance state does not support this operation") {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -886,16 +886,16 @@ func (s *PolarDbServiceV2) modifyAccountDescription(dbClusterId, accountName, ac
 	request["AccountDescription"] = accountDescription
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		_, err = client.RpcPost("polardb", "2017-08-01", action, query, request, true)
 		addDebug(action, err, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -920,16 +920,16 @@ func (s *PolarDbServiceV2) modifyAccountPassword(dbClusterId, accountName, newAc
 	request["NewAccountPassword"] = newAccountPassword
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		_, err = client.RpcPost("polardb", "2017-08-01", action, query, request, true)
 		addDebug(action, err, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -960,16 +960,16 @@ func (s *PolarDbServiceV2) GrantPolarDBAccountPrivilege(id, dbName string) error
 	action := "GrantAccountPrivilegeZonal"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		_, err = client.RpcPost("polardb", "2017-08-01", action, query, request, true)
 		addDebug(action, err, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1003,16 +1003,16 @@ func (s *PolarDbServiceV2) RevokePolarDBAccountPrivilege(id, dbName string) erro
 	action := "RevokeAccountPrivilegeZonal"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		_, err = client.RpcPost("polardb", "2017-08-01", action, query, request, true)
 		addDebug(action, err, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1158,16 +1158,16 @@ func (s *PolarDbServiceV2) DescribePolarDBDatabase(id string) (ds *Database, err
 
 	var raw interface{}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		raw, err = client.RpcPost("polardb", "2017-08-01", action, query, request, true)
 		addDebug(action, raw, err, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1234,20 +1234,20 @@ func (s *PolarDbServiceV2) CreateDatabaseZonal(requestObj *polardb.CreateDatabas
 	action := "CreateDatabaseZonal"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err := resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err := retry.Retry(1*time.Minute, func() *retry.RetryError {
 		_, err := client.RpcPost("polardb", "2017-08-01", action, query, request, true)
 		addDebug(action, err, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 			if IsExpectedErrorsMessage(err, "Current DB instance state does not support this operation") {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1272,16 +1272,16 @@ func (s *PolarDbServiceV2) ModifyDBDescriptionZonal(dbClusterId, dbName, dbDescr
 	action := "ModifyDBDescriptionZonal"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err := resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err := retry.Retry(1*time.Minute, func() *retry.RetryError {
 		_, err := client.RpcPost("polardb", "2017-08-01", action, query, request, true)
 		addDebug(action, err, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1305,20 +1305,20 @@ func (s *PolarDbServiceV2) DeleteDatabaseZonal(dbClusterId, dbName string) error
 	action := "DeleteDatabaseZonal"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err := resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err := retry.Retry(1*time.Minute, func() *retry.RetryError {
 		_, err := client.RpcPost("polardb", "2017-08-01", action, query, request, true)
 		addDebug(action, err, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 			if IsExpectedErrorsMessage(err, "Current DB instance state does not support this operation") {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1342,20 +1342,20 @@ func (s *PolarDbServiceV2) FailoverDBClusterZonal(dbClusterId, dbnodeId string) 
 	action := "FailoverDBClusterZonal"
 
 	wait := incrementalWait(3*time.Second, 30*time.Second)
-	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+	err := retry.Retry(3*time.Minute, func() *retry.RetryError {
 		_, err := client.RpcPost("polardb", "2017-08-01", action, query, request, true)
 		addDebug(action, err, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 			if IsExpectedErrorsMessage(err, "Current DB instance HA status") {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1379,16 +1379,16 @@ func (s *PolarDbServiceV2) ModifyDBClusterDescriptionZonal(dbClusterId, descript
 	action := "ModifyDBClusterDescriptionZonal"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err := resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err := retry.Retry(1*time.Minute, func() *retry.RetryError {
 		_, err := client.RpcPost("polardb", "2017-08-01", action, query, request, true)
 		addDebug(action, err, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1413,16 +1413,16 @@ func (s *PolarDbServiceV2) UpgradeDBClusterVersionZonal(dbClusterId string) erro
 	action := "UpgradeDBClusterVersionZonal"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err := resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err := retry.Retry(1*time.Minute, func() *retry.RetryError {
 		_, err := client.RpcPost("polardb", "2017-08-01", action, query, request, true)
 		addDebug(action, err, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

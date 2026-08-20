@@ -7,7 +7,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -29,15 +29,15 @@ func (s *EipanycastServiceV2) DescribeEipanycastAnycastEipAddress(id string) (ob
 	action := "DescribeAnycastEipAddress"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Eipanycast", "2020-03-09", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -57,11 +57,11 @@ func (s *EipanycastServiceV2) DescribeEipanycastAnycastEipAddress(id string) (ob
 	return response, nil
 }
 
-func (s *EipanycastServiceV2) EipanycastAnycastEipAddressStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EipanycastServiceV2) EipanycastAnycastEipAddressStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EipanycastAnycastEipAddressStateRefreshFuncWithApi(id, field, failStates, s.DescribeEipanycastAnycastEipAddress)
 }
 
-func (s *EipanycastServiceV2) EipanycastAnycastEipAddressStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *EipanycastServiceV2) EipanycastAnycastEipAddressStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -121,14 +121,14 @@ func (s *EipanycastServiceV2) SetResourceTags(d *schema.ResourceData, resourceTy
 
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("Eipanycast", "2020-03-09", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -154,14 +154,14 @@ func (s *EipanycastServiceV2) SetResourceTags(d *schema.ResourceData, resourceTy
 
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("Eipanycast", "2020-03-09", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -198,15 +198,15 @@ func (s *EipanycastServiceV2) DescribeEipanycastAnycastEipAddressAttachment(id s
 	request["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Eipanycast", "2020-03-09", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -238,7 +238,7 @@ func (s *EipanycastServiceV2) DescribeEipanycastAnycastEipAddressAttachment(id s
 	return object, WrapErrorf(NotFoundErr("EipanycastAnycastEipAddressAttachment", id), NotFoundWithResponse, response)
 }
 
-func (s *EipanycastServiceV2) EipanycastAnycastEipAddressAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EipanycastServiceV2) EipanycastAnycastEipAddressAttachmentStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEipanycastAnycastEipAddressAttachment(id)
 		if err != nil {

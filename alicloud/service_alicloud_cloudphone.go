@@ -6,7 +6,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -23,14 +23,14 @@ func (s *CloudphoneService) DescribeEcpKeyPair(id string) (object map[string]int
 		"KeyPairName": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cloudphone", "2020-12-30", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -68,14 +68,14 @@ func (s *CloudphoneService) DescribeEcpInstance(id string) (object map[string]in
 	idExist := false
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("cloudphone", "2020-12-30", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -115,7 +115,7 @@ func (s *CloudphoneService) DescribeEcpInstance(id string) (object map[string]in
 	return object, nil
 }
 
-func (s *CloudphoneService) EcpInstanceStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *CloudphoneService) EcpInstanceStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEcpInstance(id)
 		if err != nil {
@@ -149,14 +149,14 @@ func (s *CloudphoneService) ModifyEcpInstanceStatus(d *schema.ResourceData, stat
 			"InstanceId": []string{d.Id()},
 		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(20*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(20*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("cloudphone", "2020-12-30", action, nil, startInstanceReq, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -183,14 +183,14 @@ func (s *CloudphoneService) ModifyEcpInstanceStatus(d *schema.ResourceData, stat
 		}
 
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(20*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(20*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("cloudphone", "2020-12-30", action, nil, stopInstanceReq, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -218,14 +218,14 @@ func (s *CloudphoneService) ListInstanceVncUrl(id string) (object map[string]int
 		"InstanceId": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cloudphone", "2020-12-30", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

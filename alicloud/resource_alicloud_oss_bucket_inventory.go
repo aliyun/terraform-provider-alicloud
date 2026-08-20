@@ -9,7 +9,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -374,14 +374,14 @@ func resourceAliCloudOssBucketInventoryCreate(d *schema.ResourceData, meta inter
 
 	body = request
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.Do("Oss", xmlParam("PUT", "2019-05-17", "PutBucketInventory", action), query, body, nil, hostMap, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -768,14 +768,14 @@ func resourceAliCloudOssBucketInventoryUpdate(d *schema.ResourceData, meta inter
 		// rule first, then re-create with the new configuration.
 		deleteAction := fmt.Sprintf("/?inventory&inventoryId=%s", parts[1])
 		waitDel := incrementalWait(3*time.Second, 5*time.Second)
-		errDel := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		errDel := retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			_, err = client.Do("Oss", xmlParam("DELETE", "2019-05-17", "DeleteBucketInventory", deleteAction), query, nil, nil, hostMap, false)
 			if err != nil {
 				if NeedRetry(err) {
 					waitDel()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -784,14 +784,14 @@ func resourceAliCloudOssBucketInventoryUpdate(d *schema.ResourceData, meta inter
 		}
 
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.Do("Oss", xmlParam("PUT", "2019-05-17", "PutBucketInventory", action), query, body, nil, hostMap, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -819,14 +819,14 @@ func resourceAliCloudOssBucketInventoryDelete(d *schema.ResourceData, meta inter
 	query["inventoryId"] = StringPointer(parts[1])
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.Do("Oss", xmlParam("DELETE", "2019-05-17", "DeleteBucketInventory", action), query, nil, nil, hostMap, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

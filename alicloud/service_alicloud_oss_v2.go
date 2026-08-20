@@ -8,7 +8,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/tidwall/sjson"
 )
 
@@ -53,14 +53,14 @@ func (s *OssServiceV2) DescribeOssBucketAcl(id string) (object map[string]interf
 	hostMap["bucket"] = StringPointer(id)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetBucketAcl", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -84,7 +84,7 @@ func (s *OssServiceV2) DescribeOssBucketAcl(id string) (object map[string]interf
 	return v, nil
 }
 
-func (s *OssServiceV2) OssBucketAclStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *OssServiceV2) OssBucketAclStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeOssBucketAcl(id)
 		if err != nil {
@@ -123,15 +123,15 @@ func (s *OssServiceV2) DescribeOssBucketReferer(id string) (object map[string]in
 	action := fmt.Sprintf("/?referer")
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetBucketReferer", action), query, nil, nil, hostMap, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -154,7 +154,7 @@ func (s *OssServiceV2) DescribeOssBucketReferer(id string) (object map[string]in
 	return v.(map[string]interface{}), nil
 }
 
-func (s *OssServiceV2) OssBucketRefererStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *OssServiceV2) OssBucketRefererStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeOssBucketReferer(id)
 		if err != nil {
@@ -200,15 +200,15 @@ func (s *OssServiceV2) DescribeOssBucketHttpsConfig(id string) (object map[strin
 	action := fmt.Sprintf("/?httpsConfig")
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetBucketHttpsConfig", action), query, nil, nil, hostMap, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -231,7 +231,7 @@ func (s *OssServiceV2) DescribeOssBucketHttpsConfig(id string) (object map[strin
 	return v.(map[string]interface{}), nil
 }
 
-func (s *OssServiceV2) OssBucketHttpsConfigStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *OssServiceV2) OssBucketHttpsConfigStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeOssBucketHttpsConfig(id)
 		if err != nil {
@@ -277,15 +277,15 @@ func (s *OssServiceV2) DescribeOssBucketCors(id string) (object map[string]inter
 	action := fmt.Sprintf("/?cors")
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetBucketCors", action), query, nil, nil, hostMap, false)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -310,7 +310,7 @@ func (s *OssServiceV2) DescribeOssBucketCors(id string) (object map[string]inter
 	return v.(map[string]interface{}), nil
 }
 
-func (s *OssServiceV2) OssBucketCorsStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *OssServiceV2) OssBucketCorsStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeOssBucketCors(id)
 		if err != nil {
@@ -354,14 +354,14 @@ func (s *OssServiceV2) DescribeOssBucketPolicy(id string) (object map[string]int
 	hostMap["bucket"] = StringPointer(id)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.Do("Oss", xmlJsonParam("GET", "2019-05-17", "GetBucketPolicy", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -377,7 +377,7 @@ func (s *OssServiceV2) DescribeOssBucketPolicy(id string) (object map[string]int
 	return response, nil
 }
 
-func (s *OssServiceV2) OssBucketPolicyStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *OssServiceV2) OssBucketPolicyStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeOssBucketPolicy(id)
 		if err != nil {
@@ -415,14 +415,14 @@ func (s *OssServiceV2) DescribeOssBucketVersioning(id string) (object map[string
 	hostMap["bucket"] = StringPointer(id)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetBucketVersioning", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -448,7 +448,7 @@ func (s *OssServiceV2) DescribeOssBucketVersioning(id string) (object map[string
 	return v.(map[string]interface{}), nil
 }
 
-func (s *OssServiceV2) OssBucketVersioningStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *OssServiceV2) OssBucketVersioningStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeOssBucketVersioning(id)
 		if err != nil {
@@ -485,14 +485,14 @@ func (s *OssServiceV2) DescribeOssBucketRequestPayment(id string) (object map[st
 	hostMap["bucket"] = StringPointer(id)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetBucketRequestPayment", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -513,7 +513,7 @@ func (s *OssServiceV2) DescribeOssBucketRequestPayment(id string) (object map[st
 	return v.(map[string]interface{}), nil
 }
 
-func (s *OssServiceV2) OssBucketRequestPaymentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *OssServiceV2) OssBucketRequestPaymentStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeOssBucketRequestPayment(id)
 		if err != nil {
@@ -550,14 +550,14 @@ func (s *OssServiceV2) DescribeOssBucketTransferAcceleration(id string) (object 
 	hostMap["bucket"] = StringPointer(id)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetBucketTransferAcceleration", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -581,7 +581,7 @@ func (s *OssServiceV2) DescribeOssBucketTransferAcceleration(id string) (object 
 	return v.(map[string]interface{}), nil
 }
 
-func (s *OssServiceV2) OssBucketTransferAccelerationStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *OssServiceV2) OssBucketTransferAccelerationStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeOssBucketTransferAcceleration(id)
 		if err != nil {
@@ -618,14 +618,14 @@ func (s *OssServiceV2) DescribeOssBucketAccessMonitor(id string) (object map[str
 	hostMap["bucket"] = StringPointer(id)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetBucketAccessMonitor", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -648,7 +648,7 @@ func (s *OssServiceV2) DescribeOssBucketAccessMonitor(id string) (object map[str
 	return v.(map[string]interface{}), nil
 }
 
-func (s *OssServiceV2) OssBucketAccessMonitorStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *OssServiceV2) OssBucketAccessMonitorStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeOssBucketAccessMonitor(id)
 		if err != nil {
@@ -686,15 +686,15 @@ func (s *OssServiceV2) DescribeOssBucketServerSideEncryption(id string) (object 
 	action := fmt.Sprintf("/?encryption")
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetBucketEncryption", action), query, nil, nil, hostMap, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -717,7 +717,7 @@ func (s *OssServiceV2) DescribeOssBucketServerSideEncryption(id string) (object 
 	return v.(map[string]interface{}), nil
 }
 
-func (s *OssServiceV2) OssBucketServerSideEncryptionStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *OssServiceV2) OssBucketServerSideEncryptionStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeOssBucketServerSideEncryption(id)
 		if err != nil {
@@ -761,14 +761,14 @@ func (s *OssServiceV2) DescribeOssBucketUserDefinedLogFields(id string) (object 
 	hostMap["bucket"] = StringPointer(id)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetBucketUserDefinedLogFieldsConfig", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -787,7 +787,7 @@ func (s *OssServiceV2) DescribeOssBucketUserDefinedLogFields(id string) (object 
 	return response, nil
 }
 
-func (s *OssServiceV2) OssBucketUserDefinedLogFieldsStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *OssServiceV2) OssBucketUserDefinedLogFieldsStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeOssBucketUserDefinedLogFields(id)
 		if err != nil {
@@ -824,14 +824,14 @@ func (s *OssServiceV2) DescribeOssBucketMetaQuery(id string) (object map[string]
 	hostMap["bucket"] = StringPointer(id)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetBucketMetaQueryStatus", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -855,7 +855,7 @@ func (s *OssServiceV2) DescribeOssBucketMetaQuery(id string) (object map[string]
 	return v.(map[string]interface{}), nil
 }
 
-func (s *OssServiceV2) OssBucketMetaQueryStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *OssServiceV2) OssBucketMetaQueryStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeOssBucketMetaQuery(id)
 		if err != nil {
@@ -897,14 +897,14 @@ func (s *OssServiceV2) DescribeOssBucketDataRedundancyTransition(id string) (obj
 	query["x-oss-redundancy-transition-taskid"] = StringPointer(parts[1])
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetBucketDataRedundancyTransition", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -923,7 +923,7 @@ func (s *OssServiceV2) DescribeOssBucketDataRedundancyTransition(id string) (obj
 	return response, nil
 }
 
-func (s *OssServiceV2) OssBucketDataRedundancyTransitionStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *OssServiceV2) OssBucketDataRedundancyTransitionStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeOssBucketDataRedundancyTransition(id)
 		if err != nil {
@@ -963,14 +963,14 @@ func (s *OssServiceV2) DescribeOssAccountPublicAccessBlock(id string) (object ma
 	hostMap := make(map[string]*string)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetPublicAccessBlock", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -994,7 +994,7 @@ func (s *OssServiceV2) DescribeOssAccountPublicAccessBlock(id string) (object ma
 	return v.(map[string]interface{}), nil
 }
 
-func (s *OssServiceV2) OssAccountPublicAccessBlockStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *OssServiceV2) OssAccountPublicAccessBlockStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeOssAccountPublicAccessBlock(id)
 		if err != nil {
@@ -1031,14 +1031,14 @@ func (s *OssServiceV2) DescribeOssBucketPublicAccessBlock(id string) (object map
 	hostMap["bucket"] = StringPointer(id)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetBucketPublicAccessBlock", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -1059,7 +1059,7 @@ func (s *OssServiceV2) DescribeOssBucketPublicAccessBlock(id string) (object map
 	return response, nil
 }
 
-func (s *OssServiceV2) OssBucketPublicAccessBlockStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *OssServiceV2) OssBucketPublicAccessBlockStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeOssBucketPublicAccessBlock(id)
 		if err != nil {
@@ -1100,14 +1100,14 @@ func (s *OssServiceV2) DescribeOssBucketCname(id string) (object map[string]inte
 	hostMap["bucket"] = StringPointer(parts[0])
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "ListCname", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1141,7 +1141,7 @@ func (s *OssServiceV2) DescribeOssBucketCname(id string) (object map[string]inte
 	return object, WrapErrorf(NotFoundErr("BucketCname", id), NotFoundMsg, response)
 }
 
-func (s *OssServiceV2) OssBucketCnameStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *OssServiceV2) OssBucketCnameStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeOssBucketCname(id)
 		if err != nil {
@@ -1190,14 +1190,14 @@ func (s *OssServiceV2) DescribeOssBucketCnameToken(id string) (object map[string
 	body := request
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.Do("Oss", xmlParam("POST", "2019-05-17", "CreateCnameToken", action), query, body, nil, hostMap, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1220,7 +1220,7 @@ func (s *OssServiceV2) DescribeOssBucketCnameToken(id string) (object map[string
 	return v.(map[string]interface{}), nil
 }
 
-func (s *OssServiceV2) OssBucketCnameTokenStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *OssServiceV2) OssBucketCnameTokenStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeOssBucketCnameToken(id)
 		if err != nil {
@@ -1257,14 +1257,14 @@ func (s *OssServiceV2) DescribeOssBucketWebsite(id string) (object map[string]in
 	hostMap["bucket"] = StringPointer(id)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetBucketWebsite", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1287,7 +1287,7 @@ func (s *OssServiceV2) DescribeOssBucketWebsite(id string) (object map[string]in
 	return v.(map[string]interface{}), nil
 }
 
-func (s *OssServiceV2) OssBucketWebsiteStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *OssServiceV2) OssBucketWebsiteStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeOssBucketWebsite(id)
 		if err != nil {
@@ -1335,14 +1335,14 @@ func (s *OssServiceV2) DescribeOssAccessPoint(id string) (object map[string]inte
 	query["x-oss-access-point-name"] = StringPointer(parts[1])
 	hostMap["bucket"] = StringPointer(parts[0])
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetAccessPoint", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1366,7 +1366,7 @@ func (s *OssServiceV2) DescribeOssAccessPoint(id string) (object map[string]inte
 	return v.(map[string]interface{}), nil
 }
 
-func (s *OssServiceV2) OssAccessPointStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *OssServiceV2) OssAccessPointStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeOssAccessPoint(id)
 		if err != nil {
@@ -1410,14 +1410,14 @@ func (s *OssServiceV2) DescribeOssBucketLifecycle(id string) (object map[string]
 	hostMap["bucket"] = StringPointer(id)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetBucketLifecycle", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1440,7 +1440,7 @@ func (s *OssServiceV2) DescribeOssBucketLifecycle(id string) (object map[string]
 	return v.(map[string]interface{}), nil
 }
 
-func (s *OssServiceV2) OssBucketLifecycleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *OssServiceV2) OssBucketLifecycleStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeOssBucketLifecycle(id)
 		if err != nil {
@@ -1488,14 +1488,14 @@ func (s *OssServiceV2) DescribeOssBucketWorm(id string) (object map[string]inter
 	hostMap["bucket"] = StringPointer(parts[0])
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetBucketWorm", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1518,7 +1518,7 @@ func (s *OssServiceV2) DescribeOssBucketWorm(id string) (object map[string]inter
 	return v.(map[string]interface{}), nil
 }
 
-func (s *OssServiceV2) OssBucketWormStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *OssServiceV2) OssBucketWormStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeOssBucketWorm(id)
 		if err != nil {
@@ -1569,15 +1569,15 @@ func (s *OssServiceV2) DescribeOssBucketStyle(id string) (object map[string]inte
 	action := fmt.Sprintf("/?style")
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetStyle", action), query, nil, nil, hostMap, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1597,7 +1597,7 @@ func (s *OssServiceV2) DescribeOssBucketStyle(id string) (object map[string]inte
 	return v.(map[string]interface{}), nil
 }
 
-func (s *OssServiceV2) OssBucketStyleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *OssServiceV2) OssBucketStyleStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeOssBucketStyle(id)
 		if err != nil {
@@ -1643,15 +1643,15 @@ func (s *OssServiceV2) DescribeOssBucketLogging(id string) (object map[string]in
 	action := fmt.Sprintf("/?logging")
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetBucketLogging", action), query, nil, nil, hostMap, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1673,11 +1673,11 @@ func (s *OssServiceV2) DescribeOssBucketLogging(id string) (object map[string]in
 	return v.(map[string]interface{}), nil
 }
 
-func (s *OssServiceV2) OssBucketLoggingStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *OssServiceV2) OssBucketLoggingStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.OssBucketLoggingStateRefreshFuncWithApi(id, field, failStates, s.DescribeOssBucketLogging)
 }
 
-func (s *OssServiceV2) OssBucketLoggingStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *OssServiceV2) OssBucketLoggingStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -1721,15 +1721,15 @@ func (s *OssServiceV2) DescribeOssBucketArchiveDirectRead(id string) (object map
 	action := fmt.Sprintf("/?bucketArchiveDirectRead")
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetBucketArchiveDirectRead", action), query, nil, nil, hostMap, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1749,11 +1749,11 @@ func (s *OssServiceV2) DescribeOssBucketArchiveDirectRead(id string) (object map
 	return v.(map[string]interface{}), nil
 }
 
-func (s *OssServiceV2) OssBucketArchiveDirectReadStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *OssServiceV2) OssBucketArchiveDirectReadStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.OssBucketArchiveDirectReadStateRefreshFuncWithApi(id, field, failStates, s.DescribeOssBucketArchiveDirectRead)
 }
 
-func (s *OssServiceV2) OssBucketArchiveDirectReadStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *OssServiceV2) OssBucketArchiveDirectReadStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -1797,15 +1797,15 @@ func (s *OssServiceV2) DescribeOssBucketOverwriteConfig(id string) (object map[s
 	action := fmt.Sprintf("/?overwriteConfig")
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetBucketOverwriteConfig", action), query, nil, nil, hostMap, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1825,11 +1825,11 @@ func (s *OssServiceV2) DescribeOssBucketOverwriteConfig(id string) (object map[s
 	return v.(map[string]interface{}), nil
 }
 
-func (s *OssServiceV2) OssBucketOverwriteConfigStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *OssServiceV2) OssBucketOverwriteConfigStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.OssBucketOverwriteConfigStateRefreshFuncWithApi(id, field, failStates, s.DescribeOssBucketOverwriteConfig)
 }
 
-func (s *OssServiceV2) OssBucketOverwriteConfigStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *OssServiceV2) OssBucketOverwriteConfigStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -1873,15 +1873,15 @@ func (s *OssServiceV2) DescribeOssBucketResponseHeader(id string) (object map[st
 	action := fmt.Sprintf("/?responseHeader")
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetBucketResponseHeader", action), query, nil, nil, hostMap, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1901,11 +1901,11 @@ func (s *OssServiceV2) DescribeOssBucketResponseHeader(id string) (object map[st
 	return v.(map[string]interface{}), nil
 }
 
-func (s *OssServiceV2) OssBucketResponseHeaderStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *OssServiceV2) OssBucketResponseHeaderStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.OssBucketResponseHeaderStateRefreshFuncWithApi(id, field, failStates, s.DescribeOssBucketResponseHeader)
 }
 
-func (s *OssServiceV2) OssBucketResponseHeaderStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *OssServiceV2) OssBucketResponseHeaderStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -1949,15 +1949,15 @@ func (s *OssServiceV2) DescribeOssBucketObjectWormConfiguration(id string) (obje
 	action := fmt.Sprintf("/?objectWorm")
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetBucketObjectWormConfiguration", action), query, nil, nil, hostMap, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1974,11 +1974,11 @@ func (s *OssServiceV2) DescribeOssBucketObjectWormConfiguration(id string) (obje
 	return v.(map[string]interface{}), nil
 }
 
-func (s *OssServiceV2) OssBucketObjectWormConfigurationStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *OssServiceV2) OssBucketObjectWormConfigurationStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.OssBucketObjectWormConfigurationStateRefreshFuncWithApi(id, field, failStates, s.DescribeOssBucketObjectWormConfiguration)
 }
 
-func (s *OssServiceV2) OssBucketObjectWormConfigurationStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *OssServiceV2) OssBucketObjectWormConfigurationStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -2028,15 +2028,15 @@ func (s *OssServiceV2) DescribeOssBucketInventory(id string) (object map[string]
 	action := fmt.Sprintf("/?inventory&inventoryId=%s", parts[1])
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetBucketInventory", action), query, nil, nil, hostMap, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -2056,11 +2056,11 @@ func (s *OssServiceV2) DescribeOssBucketInventory(id string) (object map[string]
 	return v.(map[string]interface{}), nil
 }
 
-func (s *OssServiceV2) OssBucketInventoryStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *OssServiceV2) OssBucketInventoryStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.OssBucketInventoryStateRefreshFuncWithApi(id, field, failStates, s.DescribeOssBucketInventory)
 }
 
-func (s *OssServiceV2) OssBucketInventoryStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *OssServiceV2) OssBucketInventoryStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {

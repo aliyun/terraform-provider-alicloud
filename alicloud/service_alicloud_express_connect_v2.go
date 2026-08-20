@@ -8,7 +8,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/tidwall/sjson"
 )
@@ -32,16 +32,16 @@ func (s *ExpressConnectServiceV2) DescribeExpressConnectEcFailoverTestJob(id str
 	request["ClientToken"] = buildClientToken(action)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -62,7 +62,7 @@ func (s *ExpressConnectServiceV2) DescribeExpressConnectEcFailoverTestJob(id str
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ExpressConnectServiceV2) ExpressConnectEcFailoverTestJobStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ExpressConnectServiceV2) ExpressConnectEcFailoverTestJobStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeExpressConnectEcFailoverTestJob(id)
 		if err != nil {
@@ -99,15 +99,15 @@ func (s *ExpressConnectServiceV2) DescribeExpressConnectBgpPeer(id string) (obje
 	query["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -129,7 +129,7 @@ func (s *ExpressConnectServiceV2) DescribeExpressConnectBgpPeer(id string) (obje
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *ExpressConnectServiceV2) ExpressConnectBgpPeerStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ExpressConnectServiceV2) ExpressConnectBgpPeerStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeExpressConnectBgpPeer(id)
 		if err != nil {
@@ -168,16 +168,16 @@ func (s *ExpressConnectServiceV2) DescribeExpressConnectTrafficQos(id string) (o
 	request["ClientToken"] = buildClientToken(action)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -198,7 +198,7 @@ func (s *ExpressConnectServiceV2) DescribeExpressConnectTrafficQos(id string) (o
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *ExpressConnectServiceV2) ExpressConnectTrafficQosStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ExpressConnectServiceV2) ExpressConnectTrafficQosStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeExpressConnectTrafficQos(id)
 		if err != nil {
@@ -248,16 +248,16 @@ func (s *ExpressConnectServiceV2) DescribeExpressConnectTrafficQosAssociation(id
 	request["ClientToken"] = buildClientToken(action)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -290,7 +290,7 @@ func (s *ExpressConnectServiceV2) DescribeExpressConnectTrafficQosAssociation(id
 	return object, WrapErrorf(NotFoundErr("TrafficQosAssociation", id), NotFoundMsg, response)
 }
 
-func (s *ExpressConnectServiceV2) ExpressConnectTrafficQosAssociationStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ExpressConnectServiceV2) ExpressConnectTrafficQosAssociationStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeExpressConnectTrafficQosAssociation(id)
 		if err != nil {
@@ -329,16 +329,16 @@ func (s *ExpressConnectServiceV2) DescribeAsyncTrafficQosAssociationDescribeExpr
 	request["ClientToken"] = buildClientToken(action)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -351,7 +351,7 @@ func (s *ExpressConnectServiceV2) DescribeAsyncTrafficQosAssociationDescribeExpr
 	return response, nil
 }
 
-func (s *ExpressConnectServiceV2) DescribeAsyncExpressConnectTrafficQosAssociationStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ExpressConnectServiceV2) DescribeAsyncExpressConnectTrafficQosAssociationStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAsyncTrafficQosAssociationDescribeExpressConnectTrafficQos(d, res)
 		if err != nil {
@@ -398,16 +398,16 @@ func (s *ExpressConnectServiceV2) DescribeExpressConnectTrafficQosQueue(id strin
 	request["ClientToken"] = buildClientToken(action)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -429,7 +429,7 @@ func (s *ExpressConnectServiceV2) DescribeExpressConnectTrafficQosQueue(id strin
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *ExpressConnectServiceV2) ExpressConnectTrafficQosQueueStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ExpressConnectServiceV2) ExpressConnectTrafficQosQueueStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeExpressConnectTrafficQosQueue(id)
 		if err != nil {
@@ -468,16 +468,16 @@ func (s *ExpressConnectServiceV2) DescribeAsyncTrafficQosQueueDescribeExpressCon
 	request["ClientToken"] = buildClientToken(action)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -490,7 +490,7 @@ func (s *ExpressConnectServiceV2) DescribeAsyncTrafficQosQueueDescribeExpressCon
 	return response, nil
 }
 
-func (s *ExpressConnectServiceV2) DescribeAsyncExpressConnectTrafficQosQueueStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ExpressConnectServiceV2) DescribeAsyncExpressConnectTrafficQosQueueStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAsyncTrafficQosQueueDescribeExpressConnectTrafficQos(d, res)
 		if err != nil {
@@ -538,16 +538,16 @@ func (s *ExpressConnectServiceV2) DescribeExpressConnectTrafficQosRule(id string
 	request["ClientToken"] = buildClientToken(action)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -569,7 +569,7 @@ func (s *ExpressConnectServiceV2) DescribeExpressConnectTrafficQosRule(id string
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *ExpressConnectServiceV2) ExpressConnectTrafficQosRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ExpressConnectServiceV2) ExpressConnectTrafficQosRuleStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeExpressConnectTrafficQosRule(id)
 		if err != nil {
@@ -608,16 +608,16 @@ func (s *ExpressConnectServiceV2) DescribeAsyncTrafficQosRuleDescribeExpressConn
 	request["ClientToken"] = buildClientToken(action)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -630,7 +630,7 @@ func (s *ExpressConnectServiceV2) DescribeAsyncTrafficQosRuleDescribeExpressConn
 	return response, nil
 }
 
-func (s *ExpressConnectServiceV2) DescribeAsyncExpressConnectTrafficQosRuleStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ExpressConnectServiceV2) DescribeAsyncExpressConnectTrafficQosRuleStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAsyncTrafficQosRuleDescribeExpressConnectTrafficQos(d, res)
 		if err != nil {
@@ -682,15 +682,15 @@ func (s *ExpressConnectServiceV2) DescribeExpressConnectVbrPconnAssociation(id s
 	action := "DescribeVirtualBorderRouters"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -719,11 +719,11 @@ func (s *ExpressConnectServiceV2) DescribeExpressConnectVbrPconnAssociation(id s
 	return object, WrapErrorf(NotFoundErr("VbrPconnAssociation", id), NotFoundMsg, response)
 }
 
-func (s *ExpressConnectServiceV2) ExpressConnectVbrPconnAssociationStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ExpressConnectServiceV2) ExpressConnectVbrPconnAssociationStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.ExpressConnectVbrPconnAssociationStateRefreshFuncWithApi(id, field, failStates, s.DescribeExpressConnectVbrPconnAssociation)
 }
 
-func (s *ExpressConnectServiceV2) ExpressConnectVbrPconnAssociationStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *ExpressConnectServiceV2) ExpressConnectVbrPconnAssociationStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -775,15 +775,15 @@ func (s *ExpressConnectServiceV2) DescribeExpressConnectBgpNetwork(id string) (o
 	idExist := false
 	for {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -826,7 +826,7 @@ func (s *ExpressConnectServiceV2) DescribeExpressConnectBgpNetwork(id string) (o
 	return object, nil
 }
 
-func (s *ExpressConnectServiceV2) ExpressConnectBgpNetworkStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ExpressConnectServiceV2) ExpressConnectBgpNetworkStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeExpressConnectBgpNetwork(id)
 		if err != nil {
@@ -886,14 +886,14 @@ func (s *ExpressConnectServiceV2) SetResourceTags(d *schema.ResourceData, resour
 
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -919,14 +919,14 @@ func (s *ExpressConnectServiceV2) SetResourceTags(d *schema.ResourceData, resour
 
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -957,15 +957,15 @@ func (s *ExpressConnectServiceV2) DescribeExpressConnectBgpGroup(id string) (obj
 	action := "DescribeBgpGroups"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -986,11 +986,11 @@ func (s *ExpressConnectServiceV2) DescribeExpressConnectBgpGroup(id string) (obj
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *ExpressConnectServiceV2) ExpressConnectBgpGroupStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ExpressConnectServiceV2) ExpressConnectBgpGroupStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.ExpressConnectBgpGroupStateRefreshFuncWithApi(id, field, failStates, s.DescribeExpressConnectBgpGroup)
 }
 
-func (s *ExpressConnectServiceV2) ExpressConnectBgpGroupStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *ExpressConnectServiceV2) ExpressConnectBgpGroupStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -1034,16 +1034,16 @@ func (s *ExpressConnectServiceV2) DescribeExpressConnectVbrHa(id string) (object
 	request["ClientToken"] = buildClientToken(action)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1064,11 +1064,11 @@ func (s *ExpressConnectServiceV2) DescribeExpressConnectVbrHa(id string) (object
 	return response, nil
 }
 
-func (s *ExpressConnectServiceV2) ExpressConnectVbrHaStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ExpressConnectServiceV2) ExpressConnectVbrHaStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.ExpressConnectVbrHaStateRefreshFuncWithApi(id, field, failStates, s.DescribeExpressConnectVbrHa)
 }
 
-func (s *ExpressConnectServiceV2) ExpressConnectVbrHaStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *ExpressConnectServiceV2) ExpressConnectVbrHaStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -1112,15 +1112,15 @@ func (s *ExpressConnectServiceV2) DescribeExpressConnectRouterInterface(id strin
 	action := "DescribeRouterInterfaceAttribute"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1137,11 +1137,11 @@ func (s *ExpressConnectServiceV2) DescribeExpressConnectRouterInterface(id strin
 	return response, nil
 }
 
-func (s *ExpressConnectServiceV2) ExpressConnectRouterInterfaceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ExpressConnectServiceV2) ExpressConnectRouterInterfaceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.ExpressConnectRouterInterfaceStateRefreshFuncWithApi(id, field, failStates, s.DescribeExpressConnectRouterInterface)
 }
 
-func (s *ExpressConnectServiceV2) ExpressConnectRouterInterfaceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *ExpressConnectServiceV2) ExpressConnectRouterInterfaceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -1192,16 +1192,16 @@ func (s *ExpressConnectServiceV2) DescribeExpressConnectGrantRuleToCen(id string
 	request["ClientToken"] = buildClientToken(action)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1233,11 +1233,11 @@ func (s *ExpressConnectServiceV2) DescribeExpressConnectGrantRuleToCen(id string
 	return object, WrapErrorf(NotFoundErr("GrantRuleToCen", id), NotFoundMsg, response)
 }
 
-func (s *ExpressConnectServiceV2) ExpressConnectGrantRuleToCenStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ExpressConnectServiceV2) ExpressConnectGrantRuleToCenStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.ExpressConnectGrantRuleToCenStateRefreshFuncWithApi(id, field, failStates, s.DescribeExpressConnectGrantRuleToCen)
 }
 
-func (s *ExpressConnectServiceV2) ExpressConnectGrantRuleToCenStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *ExpressConnectServiceV2) ExpressConnectGrantRuleToCenStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -1286,15 +1286,15 @@ func (s *ExpressConnectServiceV2) DescribeExpressConnectVirtualBorderRouter(id s
 	action := "DescribeVirtualBorderRouters"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1320,11 +1320,11 @@ func (s *ExpressConnectServiceV2) DescribeExpressConnectVirtualBorderRouter(id s
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *ExpressConnectServiceV2) ExpressConnectVirtualBorderRouterStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ExpressConnectServiceV2) ExpressConnectVirtualBorderRouterStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.ExpressConnectVirtualBorderRouterStateRefreshFuncWithApi(id, field, failStates, s.DescribeExpressConnectVirtualBorderRouter)
 }
 
-func (s *ExpressConnectServiceV2) ExpressConnectVirtualBorderRouterStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *ExpressConnectServiceV2) ExpressConnectVirtualBorderRouterStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {

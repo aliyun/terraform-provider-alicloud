@@ -6,7 +6,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type SwasOpenService struct {
@@ -22,14 +22,14 @@ func (s *SwasOpenService) DescribeSimpleApplicationServerInstance(id string) (ob
 		"InstanceIds": "[\"" + id + "\"]",
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -55,7 +55,7 @@ func (s *SwasOpenService) DescribeSimpleApplicationServerInstance(id string) (ob
 	return object, nil
 }
 
-func (s *SwasOpenService) SimpleApplicationServerInstanceStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *SwasOpenService) SimpleApplicationServerInstanceStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeSimpleApplicationServerInstance(id)
 		if err != nil {
@@ -92,14 +92,14 @@ func (s *SwasOpenService) DescribeSimpleApplicationServerFirewallRule(id string)
 	idExist := false
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -131,7 +131,7 @@ func (s *SwasOpenService) DescribeSimpleApplicationServerFirewallRule(id string)
 	return
 }
 
-func (s *SwasOpenService) SimpleApplicationServerFirewallRuleStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *SwasOpenService) SimpleApplicationServerFirewallRuleStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeSimpleApplicationServerFirewallRule(id)
 		if err != nil {
@@ -154,14 +154,14 @@ func (s *SwasOpenService) DescribeSimpleApplicationServerSnapshot(id string) (ob
 		"SnapshotIds": fmt.Sprintf(`["%s"]`, id),
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -187,7 +187,7 @@ func (s *SwasOpenService) DescribeSimpleApplicationServerSnapshot(id string) (ob
 	return object, nil
 }
 
-func (s *SwasOpenService) SimpleApplicationServerSnapshotStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *SwasOpenService) SimpleApplicationServerSnapshotStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeSimpleApplicationServerSnapshot(id)
 		if err != nil {
@@ -217,14 +217,14 @@ func (s *SwasOpenService) DescribeSimpleApplicationServerCustomImage(id string) 
 		"ImageType": "custom",
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -247,7 +247,7 @@ func (s *SwasOpenService) DescribeSimpleApplicationServerCustomImage(id string) 
 	return object, nil
 }
 
-func (s *SwasOpenService) SimpleApplicationServerCustomImageStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *SwasOpenService) SimpleApplicationServerCustomImageStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeSimpleApplicationServerCustomImage(id)
 		if err != nil {

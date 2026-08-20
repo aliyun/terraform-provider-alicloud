@@ -9,7 +9,7 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/blues/jsonata-go"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -36,15 +36,15 @@ func (s *Wafv3ServiceV2) DescribeWafv3DefenseTemplate(id string) (object map[str
 	action := "DescribeDefenseTemplate"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -83,15 +83,15 @@ func (s *Wafv3ServiceV2) DescribeDefenseTemplateDescribeTemplateResources(id str
 	action := "DescribeTemplateResources"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -106,11 +106,11 @@ func (s *Wafv3ServiceV2) DescribeDefenseTemplateDescribeTemplateResources(id str
 	return response, nil
 }
 
-func (s *Wafv3ServiceV2) Wafv3DefenseTemplateStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *Wafv3ServiceV2) Wafv3DefenseTemplateStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.Wafv3DefenseTemplateStateRefreshFuncWithApi(id, field, failStates, s.DescribeWafv3DefenseTemplate)
 }
 
-func (s *Wafv3ServiceV2) Wafv3DefenseTemplateStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *Wafv3ServiceV2) Wafv3DefenseTemplateStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -160,15 +160,15 @@ func (s *Wafv3ServiceV2) DescribeWafv3Domain(id string) (object map[string]inter
 	action := "DescribeDomainDetail"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -205,15 +205,15 @@ func (s *Wafv3ServiceV2) DescribeDomainListTagResources(id string) (object map[s
 	action := "ListTagResources"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -225,11 +225,11 @@ func (s *Wafv3ServiceV2) DescribeDomainListTagResources(id string) (object map[s
 	return response, nil
 }
 
-func (s *Wafv3ServiceV2) Wafv3DomainStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *Wafv3ServiceV2) Wafv3DomainStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.Wafv3DomainStateRefreshFuncWithApi(id, field, failStates, s.DescribeWafv3Domain)
 }
 
-func (s *Wafv3ServiceV2) Wafv3DomainStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *Wafv3ServiceV2) Wafv3DomainStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -289,14 +289,14 @@ func (s *Wafv3ServiceV2) SetResourceTags(d *schema.ResourceData, resourceType st
 
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -323,14 +323,14 @@ func (s *Wafv3ServiceV2) SetResourceTags(d *schema.ResourceData, resourceType st
 
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -368,15 +368,15 @@ func (s *Wafv3ServiceV2) DescribeWafv3DefenseRule(id string) (object map[string]
 	action := "DescribeDefenseRule"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -396,11 +396,11 @@ func (s *Wafv3ServiceV2) DescribeWafv3DefenseRule(id string) (object map[string]
 	return v.(map[string]interface{}), nil
 }
 
-func (s *Wafv3ServiceV2) Wafv3DefenseRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *Wafv3ServiceV2) Wafv3DefenseRuleStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.Wafv3DefenseRuleStateRefreshFuncWithApi(id, field, failStates, s.DescribeWafv3DefenseRule)
 }
 
-func (s *Wafv3ServiceV2) Wafv3DefenseRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *Wafv3ServiceV2) Wafv3DefenseRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -449,15 +449,15 @@ func (s *Wafv3ServiceV2) DescribeWafv3DefenseResourceGroup(id string) (object ma
 	action := "DescribeDefenseResourceGroup"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -479,11 +479,11 @@ func (s *Wafv3ServiceV2) DescribeWafv3DefenseResourceGroup(id string) (object ma
 	return v.(map[string]interface{}), nil
 }
 
-func (s *Wafv3ServiceV2) Wafv3DefenseResourceGroupStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *Wafv3ServiceV2) Wafv3DefenseResourceGroupStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.Wafv3DefenseResourceGroupStateRefreshFuncWithApi(id, field, failStates, s.DescribeWafv3DefenseResourceGroup)
 }
 
-func (s *Wafv3ServiceV2) Wafv3DefenseResourceGroupStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *Wafv3ServiceV2) Wafv3DefenseResourceGroupStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -539,15 +539,15 @@ func (s *Wafv3ServiceV2) DescribeWafv3AddressBook(id string) (object map[string]
 	action := "DescribeDefenseRule"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -599,14 +599,14 @@ func (s *Wafv3ServiceV2) DescribeWafv3AddressBookAddresses(id string) (object ma
 
 		var response map[string]interface{}
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})

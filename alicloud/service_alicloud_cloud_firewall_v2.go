@@ -7,7 +7,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type CloudFirewallServiceV2 struct {
@@ -34,17 +34,17 @@ func (s *CloudFirewallServiceV2) DescribeCloudFirewallNatFirewallControlPolicy(i
 	query["NatGatewayId"] = parts[1]
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPostWithEndpoint("Cloudfw", "2017-12-07", action, query, request, true, endpoint)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			} else if IsExpectedErrors(err, []string{"not buy user"}) {
 				endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 
 		addDebug(action, response, request)
@@ -67,7 +67,7 @@ func (s *CloudFirewallServiceV2) DescribeCloudFirewallNatFirewallControlPolicy(i
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *CloudFirewallServiceV2) CloudFirewallNatFirewallControlPolicyStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *CloudFirewallServiceV2) CloudFirewallNatFirewallControlPolicyStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCloudFirewallNatFirewallControlPolicy(id)
 		if err != nil {
@@ -105,15 +105,15 @@ func (s *CloudFirewallServiceV2) DescribeCloudFirewallNatFirewall(id string) (ob
 	action := "DescribeNatFirewallList"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Cloudfw", "2017-12-07", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -134,7 +134,7 @@ func (s *CloudFirewallServiceV2) DescribeCloudFirewallNatFirewall(id string) (ob
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *CloudFirewallServiceV2) CloudFirewallNatFirewallStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *CloudFirewallServiceV2) CloudFirewallNatFirewallStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCloudFirewallNatFirewall(id)
 		if err != nil {
@@ -179,15 +179,15 @@ func (s *CloudFirewallServiceV2) DescribeCloudFirewallVpcCenTrFirewall(id string
 	action := "DescribeTrFirewallsV2Detail"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Cloudfw", "2017-12-07", action, query, request, true)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ErrorTrResourceNotReady"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -202,11 +202,11 @@ func (s *CloudFirewallServiceV2) DescribeCloudFirewallVpcCenTrFirewall(id string
 	return response, nil
 }
 
-func (s *CloudFirewallServiceV2) CloudFirewallVpcCenTrFirewallStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *CloudFirewallServiceV2) CloudFirewallVpcCenTrFirewallStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.CloudFirewallVpcCenTrFirewallStateRefreshFuncWithApi(id, field, failStates, s.DescribeCloudFirewallVpcCenTrFirewall)
 }
 
-func (s *CloudFirewallServiceV2) CloudFirewallVpcCenTrFirewallStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *CloudFirewallServiceV2) CloudFirewallVpcCenTrFirewallStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -257,17 +257,17 @@ func (s *CloudFirewallServiceV2) DescribeCloudFirewallControlPolicy(id string) (
 	idExist := false
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPostWithEndpoint("Cloudfw", "2017-12-07", action, nil, request, true, endpoint)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				} else if IsExpectedErrors(err, []string{"not buy user"}) {
 					endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 
 			return nil
@@ -326,15 +326,15 @@ func (s *CloudFirewallServiceV2) DescribeCloudFirewallIPSConfig(id string) (obje
 	action := "DescribeDefaultIPSConfig"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Cloudfw", "2017-12-07", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -346,7 +346,7 @@ func (s *CloudFirewallServiceV2) DescribeCloudFirewallIPSConfig(id string) (obje
 	return response, nil
 }
 
-func (s *CloudFirewallServiceV2) CloudFirewallIPSConfigStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *CloudFirewallServiceV2) CloudFirewallIPSConfigStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCloudFirewallIPSConfig(id)
 		if err != nil {
@@ -389,15 +389,15 @@ func (s *CloudFirewallServiceV2) DescribeCloudFirewallPolicyAdvancedConfig(id st
 	action := "DescribePolicyAdvancedConfig"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Cloudfw", "2017-12-07", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -409,7 +409,7 @@ func (s *CloudFirewallServiceV2) DescribeCloudFirewallPolicyAdvancedConfig(id st
 	return response, nil
 }
 
-func (s *CloudFirewallServiceV2) CloudFirewallPolicyAdvancedConfigStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *CloudFirewallServiceV2) CloudFirewallPolicyAdvancedConfigStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCloudFirewallPolicyAdvancedConfig(id)
 		if err != nil {
@@ -452,15 +452,15 @@ func (s *CloudFirewallServiceV2) DescribeCloudFirewallThreatIntelligenceSwitch(i
 	action := "DescribeThreatIntelligenceSwitch"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Cloudfw", "2017-12-07", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -489,7 +489,7 @@ func (s *CloudFirewallServiceV2) DescribeCloudFirewallThreatIntelligenceSwitch(i
 	return object, WrapErrorf(NotFoundErr("ThreatIntelligenceSwitch", id), NotFoundMsg, response)
 }
 
-func (s *CloudFirewallServiceV2) CloudFirewallThreatIntelligenceSwitchStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *CloudFirewallServiceV2) CloudFirewallThreatIntelligenceSwitchStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCloudFirewallThreatIntelligenceSwitch(id)
 		if err != nil {
@@ -533,15 +533,15 @@ func (s *CloudFirewallServiceV2) DescribeCloudFirewallTlsInspectCaCertificate(id
 	action := "GetTlsInspectCertificateDownloadUrl"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Cloudfw", "2017-12-07", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -556,11 +556,11 @@ func (s *CloudFirewallServiceV2) DescribeCloudFirewallTlsInspectCaCertificate(id
 	return response, nil
 }
 
-func (s *CloudFirewallServiceV2) CloudFirewallTlsInspectCaCertificateStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *CloudFirewallServiceV2) CloudFirewallTlsInspectCaCertificateStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.CloudFirewallTlsInspectCaCertificateStateRefreshFuncWithApi(id, field, failStates, s.DescribeCloudFirewallTlsInspectCaCertificate)
 }
 
-func (s *CloudFirewallServiceV2) CloudFirewallTlsInspectCaCertificateStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *CloudFirewallServiceV2) CloudFirewallTlsInspectCaCertificateStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -602,15 +602,15 @@ func (s *CloudFirewallServiceV2) DescribeCloudFirewallAiTrafficAnalysisStatus(id
 	action := "DescribeAITrafficAnalysisStatus"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Cloudfw", "2017-12-07", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -622,11 +622,11 @@ func (s *CloudFirewallServiceV2) DescribeCloudFirewallAiTrafficAnalysisStatus(id
 	return response, nil
 }
 
-func (s *CloudFirewallServiceV2) CloudFirewallAiTrafficAnalysisStatusStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *CloudFirewallServiceV2) CloudFirewallAiTrafficAnalysisStatusStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.CloudFirewallAiTrafficAnalysisStatusStateRefreshFuncWithApi(id, field, failStates, s.DescribeCloudFirewallAiTrafficAnalysisStatus)
 }
 
-func (s *CloudFirewallServiceV2) CloudFirewallAiTrafficAnalysisStatusStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *CloudFirewallServiceV2) CloudFirewallAiTrafficAnalysisStatusStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -677,15 +677,15 @@ func (s *CloudFirewallServiceV2) DescribeCloudFirewallPrivateDns(id string) (obj
 	action := "DescribePrivateDnsEndpointDetail"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("Cloudfw", "2017-12-07", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -717,15 +717,15 @@ func (s *CloudFirewallServiceV2) DescribePrivateDnsDescribePrivateDnsDomainNameL
 	action := "DescribePrivateDnsDomainNameList"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("Cloudfw", "2017-12-07", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -737,11 +737,11 @@ func (s *CloudFirewallServiceV2) DescribePrivateDnsDescribePrivateDnsDomainNameL
 	return response, nil
 }
 
-func (s *CloudFirewallServiceV2) CloudFirewallPrivateDnsStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *CloudFirewallServiceV2) CloudFirewallPrivateDnsStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.CloudFirewallPrivateDnsStateRefreshFuncWithApi(id, field, failStates, s.DescribeCloudFirewallPrivateDns)
 }
 
-func (s *CloudFirewallServiceV2) CloudFirewallPrivateDnsStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *CloudFirewallServiceV2) CloudFirewallPrivateDnsStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -794,18 +794,18 @@ func (s *CloudFirewallServiceV2) DescribeCloudFirewallVpcFirewallControlPolicy(i
 	action := "DescribeVpcFirewallControlPolicy"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPostWithEndpoint("Cloudfw", "2017-12-07", action, query, request, true, endpoint)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			} else if IsExpectedErrors(err, []string{"not buy user"}) {
 				endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -826,11 +826,11 @@ func (s *CloudFirewallServiceV2) DescribeCloudFirewallVpcFirewallControlPolicy(i
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *CloudFirewallServiceV2) CloudFirewallVpcFirewallControlPolicyStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *CloudFirewallServiceV2) CloudFirewallVpcFirewallControlPolicyStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.CloudFirewallVpcFirewallControlPolicyStateRefreshFuncWithApi(id, field, failStates, s.DescribeCloudFirewallVpcFirewallControlPolicy)
 }
 
-func (s *CloudFirewallServiceV2) CloudFirewallVpcFirewallControlPolicyStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *CloudFirewallServiceV2) CloudFirewallVpcFirewallControlPolicyStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -873,15 +873,15 @@ func (s *CloudFirewallServiceV2) DescribeCloudFirewallVpcFirewallAclEngineMode(i
 	action := "DescribeVpcFirewallAclGroupList"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Cloudfw", "2017-12-07", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -905,11 +905,11 @@ func (s *CloudFirewallServiceV2) DescribeCloudFirewallVpcFirewallAclEngineMode(i
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *CloudFirewallServiceV2) CloudFirewallVpcFirewallAclEngineModeStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *CloudFirewallServiceV2) CloudFirewallVpcFirewallAclEngineModeStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.CloudFirewallVpcFirewallAclEngineModeStateRefreshFuncWithApi(id, field, failStates, s.DescribeCloudFirewallVpcFirewallAclEngineMode)
 }
 
-func (s *CloudFirewallServiceV2) CloudFirewallVpcFirewallAclEngineModeStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *CloudFirewallServiceV2) CloudFirewallVpcFirewallAclEngineModeStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -956,15 +956,15 @@ func (s *CloudFirewallServiceV2) DescribeCloudFirewallVpcFirewallIpsConfig(id st
 	action := "DescribeVpcFirewallDefaultIPSConfig"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Cloudfw", "2017-12-07", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -976,13 +976,13 @@ func (s *CloudFirewallServiceV2) DescribeCloudFirewallVpcFirewallIpsConfig(id st
 	return response, nil
 }
 
-func (s *CloudFirewallServiceV2) CloudFirewallVpcFirewallIpsConfigStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *CloudFirewallServiceV2) CloudFirewallVpcFirewallIpsConfigStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.CloudFirewallVpcFirewallIpsConfigStateRefreshFuncWithApi(id, field, failStates, func(id string) (map[string]interface{}, error) {
 		return s.DescribeCloudFirewallVpcFirewallIpsConfig(id, "")
 	})
 }
 
-func (s *CloudFirewallServiceV2) CloudFirewallVpcFirewallIpsConfigStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *CloudFirewallServiceV2) CloudFirewallVpcFirewallIpsConfigStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -1028,14 +1028,14 @@ func (s *CloudFirewallServiceV2) DescribeCloudFirewallInstance(id string) (objec
 	action := "QueryAvailableInstances"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1074,17 +1074,17 @@ func (s *CloudFirewallServiceV2) DescribeInstanceDescribeUserBuyVersion(id strin
 	action := "DescribeUserBuyVersion"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPostWithEndpoint("Cloudfw", "2017-12-07", action, query, request, true, endpoint)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			} else if IsExpectedErrors(err, []string{"not valid instanceId"}) {
 				endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1107,15 +1107,15 @@ func (s *CloudFirewallServiceV2) DescribeInstanceDescribeAssetStatistic(id strin
 	action := "DescribeAssetStatistic"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Cloudfw", "2017-12-07", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1130,11 +1130,11 @@ func (s *CloudFirewallServiceV2) DescribeInstanceDescribeAssetStatistic(id strin
 	return response, nil
 }
 
-func (s *CloudFirewallServiceV2) CloudFirewallInstanceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *CloudFirewallServiceV2) CloudFirewallInstanceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.CloudFirewallInstanceStateRefreshFuncWithApi(id, field, failStates, s.DescribeCloudFirewallInstance)
 }
 
-func (s *CloudFirewallServiceV2) CloudFirewallInstanceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *CloudFirewallServiceV2) CloudFirewallInstanceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -1176,15 +1176,15 @@ func (s *CloudFirewallServiceV2) DescribeCloudFirewallUserAlarmConfig(id string)
 	action := "DescribeUserAlarmConfig"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Cloudfw", "2017-12-07", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1199,11 +1199,11 @@ func (s *CloudFirewallServiceV2) DescribeCloudFirewallUserAlarmConfig(id string)
 	return response, nil
 }
 
-func (s *CloudFirewallServiceV2) CloudFirewallUserAlarmConfigStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *CloudFirewallServiceV2) CloudFirewallUserAlarmConfigStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.CloudFirewallUserAlarmConfigStateRefreshFuncWithApi(id, field, failStates, s.DescribeCloudFirewallUserAlarmConfig)
 }
 
-func (s *CloudFirewallServiceV2) CloudFirewallUserAlarmConfigStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *CloudFirewallServiceV2) CloudFirewallUserAlarmConfigStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -1254,15 +1254,15 @@ func (s *CloudFirewallServiceV2) DescribeCloudFirewallVpcFirewallControlPolicyOr
 	action := "DescribeVpcFirewallControlPolicy"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Cloudfw", "2017-12-07", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1286,11 +1286,11 @@ func (s *CloudFirewallServiceV2) DescribeCloudFirewallVpcFirewallControlPolicyOr
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *CloudFirewallServiceV2) CloudFirewallVpcFirewallControlPolicyOrderStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *CloudFirewallServiceV2) CloudFirewallVpcFirewallControlPolicyOrderStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.CloudFirewallVpcFirewallControlPolicyOrderStateRefreshFuncWithApi(id, field, failStates, s.DescribeCloudFirewallVpcFirewallControlPolicyOrder)
 }
 
-func (s *CloudFirewallServiceV2) CloudFirewallVpcFirewallControlPolicyOrderStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *CloudFirewallServiceV2) CloudFirewallVpcFirewallControlPolicyOrderStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -1341,15 +1341,15 @@ func (s *CloudFirewallServiceV2) DescribeCloudFirewallNatFirewallControlPolicyOr
 	action := "DescribeNatFirewallControlPolicy"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Cloudfw", "2017-12-07", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1373,11 +1373,11 @@ func (s *CloudFirewallServiceV2) DescribeCloudFirewallNatFirewallControlPolicyOr
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *CloudFirewallServiceV2) CloudFirewallNatFirewallControlPolicyOrderStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *CloudFirewallServiceV2) CloudFirewallNatFirewallControlPolicyOrderStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.CloudFirewallNatFirewallControlPolicyOrderStateRefreshFuncWithApi(id, field, failStates, s.DescribeCloudFirewallNatFirewallControlPolicyOrder)
 }
 
-func (s *CloudFirewallServiceV2) CloudFirewallNatFirewallControlPolicyOrderStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *CloudFirewallServiceV2) CloudFirewallNatFirewallControlPolicyOrderStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {

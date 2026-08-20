@@ -7,7 +7,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -28,14 +28,14 @@ func (s *ResourceManagerServiceV2) DescribeResourceManagerSavedQuery(id string) 
 	query["QueryId"] = id
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ResourceCenter", "2022-12-01", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -56,7 +56,7 @@ func (s *ResourceManagerServiceV2) DescribeResourceManagerSavedQuery(id string) 
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ResourceManagerServiceV2) ResourceManagerSavedQueryStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ResourceManagerServiceV2) ResourceManagerSavedQueryStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeResourceManagerSavedQuery(id)
 		if err != nil {
@@ -94,15 +94,15 @@ func (s *ResourceManagerServiceV2) DescribeResourceManagerAutoGroupingRule(id st
 	action := "GetAutoGroupingRule"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -122,7 +122,7 @@ func (s *ResourceManagerServiceV2) DescribeResourceManagerAutoGroupingRule(id st
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ResourceManagerServiceV2) ResourceManagerAutoGroupingRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ResourceManagerServiceV2) ResourceManagerAutoGroupingRuleStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeResourceManagerAutoGroupingRule(id)
 		if err != nil {
@@ -167,15 +167,15 @@ func (s *ResourceManagerServiceV2) DescribeResourceManagerAccount(id string) (ob
 	action := "GetAccount"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -195,7 +195,7 @@ func (s *ResourceManagerServiceV2) DescribeResourceManagerAccount(id string) (ob
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ResourceManagerServiceV2) ResourceManagerAccountStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ResourceManagerServiceV2) ResourceManagerAccountStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeResourceManagerAccount(id)
 		if err != nil {
@@ -224,7 +224,7 @@ func (s *ResourceManagerServiceV2) ResourceManagerAccountStateRefreshFunc(id str
 	}
 }
 
-func (s *ResourceManagerServiceV2) DescribeAsyncResourceManagerAccountStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ResourceManagerServiceV2) DescribeAsyncResourceManagerAccountStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAsyncGetAccountDeletionStatus(d, res)
 		if err != nil {
@@ -286,14 +286,14 @@ func (s *ResourceManagerServiceV2) SetResourceTags(d *schema.ResourceData, resou
 
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("ResourceDirectoryMaster", "2022-04-19", action, query, request, true)
 				if err != nil {
 					if IsExpectedErrors(err, []string{"ConcurrentCallNotSupported"}) || NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -319,14 +319,14 @@ func (s *ResourceManagerServiceV2) SetResourceTags(d *schema.ResourceData, resou
 
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("ResourceDirectoryMaster", "2022-04-19", action, query, request, true)
 				if err != nil {
 					if IsExpectedErrors(err, []string{"ConcurrentCallNotSupported"}) || NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -357,15 +357,15 @@ func (s *ResourceManagerServiceV2) DescribeAsyncGetAccountDeletionStatus(d *sche
 	action := "GetAccountDeletionStatus"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -392,15 +392,15 @@ func (s *ResourceManagerServiceV2) DescribeResourceManagerResourceDirectory(id s
 	action := "GetResourceDirectory"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ResourceDirectoryMaster", "2022-04-19", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -420,7 +420,7 @@ func (s *ResourceManagerServiceV2) DescribeResourceManagerResourceDirectory(id s
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ResourceManagerServiceV2) ResourceManagerResourceDirectoryStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ResourceManagerServiceV2) ResourceManagerResourceDirectoryStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeResourceManagerResourceDirectory(id)
 		if err != nil {
@@ -465,15 +465,15 @@ func (s *ResourceManagerServiceV2) DescribeResourceManagerFolder(id string) (obj
 	action := "GetFolder"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -509,20 +509,20 @@ func (s *ResourceManagerServiceV2) DescribeFolderListTagResources(id string) (ob
 
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			var err error
 			response, err = client.RpcPost("ResourceDirectoryMaster", "2022-04-19", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(action, response, request)
 			v, err := jsonpath.Get("$.TagResources", response)
 			if err != nil {
-				return resource.NonRetryableError(WrapErrorf(err, FailedGetAttributeMsg, id, "$.TagResources", response))
+				return retry.NonRetryableError(WrapErrorf(err, FailedGetAttributeMsg, id, "$.TagResources", response))
 			}
 			if v != nil {
 				tags = append(tags, v.([]interface{})...)
@@ -542,7 +542,7 @@ func (s *ResourceManagerServiceV2) DescribeFolderListTagResources(id string) (ob
 	return tags, nil
 }
 
-func (s *ResourceManagerServiceV2) ResourceManagerFolderStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ResourceManagerServiceV2) ResourceManagerFolderStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeResourceManagerFolder(id)
 		if err != nil {
@@ -595,15 +595,15 @@ func (s *ResourceManagerServiceV2) DescribeResourceManagerDelegatedAdministrator
 	idExist := false
 	for {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("ResourceManager", "2020-03-31", action, query, request, true)
 
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -642,7 +642,7 @@ func (s *ResourceManagerServiceV2) DescribeResourceManagerDelegatedAdministrator
 	return object, nil
 }
 
-func (s *ResourceManagerServiceV2) ResourceManagerDelegatedAdministratorStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ResourceManagerServiceV2) ResourceManagerDelegatedAdministratorStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeResourceManagerDelegatedAdministrator(id)
 		if err != nil {
@@ -697,15 +697,15 @@ func (s *ResourceManagerServiceV2) DescribeResourceManagerSharedTarget(id string
 	idExist := false
 	for {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("ResourceSharing", "2020-01-10", action, query, request, true)
 
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -744,7 +744,7 @@ func (s *ResourceManagerServiceV2) DescribeResourceManagerSharedTarget(id string
 	return object, nil
 }
 
-func (s *ResourceManagerServiceV2) ResourceManagerSharedTargetStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ResourceManagerServiceV2) ResourceManagerSharedTargetStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeResourceManagerSharedTarget(id)
 		if err != nil {
@@ -800,15 +800,15 @@ func (s *ResourceManagerServiceV2) DescribeResourceManagerSharedResource(id stri
 	idExist := false
 	for {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("ResourceSharing", "2020-01-10", action, query, request, true)
 
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -847,11 +847,11 @@ func (s *ResourceManagerServiceV2) DescribeResourceManagerSharedResource(id stri
 	return object, nil
 }
 
-func (s *ResourceManagerServiceV2) ResourceManagerSharedResourceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ResourceManagerServiceV2) ResourceManagerSharedResourceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.ResourceManagerSharedResourceStateRefreshFuncWithApi(id, field, failStates, s.DescribeResourceManagerSharedResource)
 }
 
-func (s *ResourceManagerServiceV2) ResourceManagerSharedResourceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *ResourceManagerServiceV2) ResourceManagerSharedResourceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -898,15 +898,15 @@ func (s *ResourceManagerServiceV2) DescribeResourceManagerControlPolicyAttachmen
 	action := "ListControlPolicyAttachmentsForTarget"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -935,7 +935,7 @@ func (s *ResourceManagerServiceV2) DescribeResourceManagerControlPolicyAttachmen
 	return object, WrapErrorf(NotFoundErr("ControlPolicyAttachment", id), NotFoundMsg, response)
 }
 
-func (s *ResourceManagerServiceV2) ResourceManagerControlPolicyAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ResourceManagerServiceV2) ResourceManagerControlPolicyAttachmentStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeResourceManagerControlPolicyAttachment(id)
 		if err != nil {
@@ -979,15 +979,15 @@ func (s *ResourceManagerServiceV2) DescribeResourceManagerMessageContact(id stri
 	action := "GetMessageContact"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ResourceDirectoryMaster", "2022-04-19", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1007,7 +1007,7 @@ func (s *ResourceManagerServiceV2) DescribeResourceManagerMessageContact(id stri
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ResourceManagerServiceV2) ResourceManagerMessageContactStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ResourceManagerServiceV2) ResourceManagerMessageContactStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeResourceManagerMessageContact(id)
 		if err != nil {
@@ -1051,15 +1051,15 @@ func (s *ResourceManagerServiceV2) DescribeResourceManagerHandshake(id string) (
 	action := "GetHandshake"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1091,7 +1091,7 @@ func (s *ResourceManagerServiceV2) DescribeResourceManagerHandshake(id string) (
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ResourceManagerServiceV2) ResourceManagerHandshakeStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ResourceManagerServiceV2) ResourceManagerHandshakeStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeResourceManagerHandshake(id)
 		if err != nil {
@@ -1135,15 +1135,15 @@ func (s *ResourceManagerServiceV2) DescribeResourceManagerHandshakeAcceptance(id
 	action := "GetHandshake"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1175,11 +1175,11 @@ func (s *ResourceManagerServiceV2) DescribeResourceManagerHandshakeAcceptance(id
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ResourceManagerServiceV2) ResourceManagerHandshakeAcceptanceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ResourceManagerServiceV2) ResourceManagerHandshakeAcceptanceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.ResourceManagerHandshakeAcceptanceStateRefreshFuncWithApi(id, field, failStates, s.DescribeResourceManagerHandshakeAcceptance)
 }
 
-func (s *ResourceManagerServiceV2) ResourceManagerHandshakeAcceptanceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *ResourceManagerServiceV2) ResourceManagerHandshakeAcceptanceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -1222,15 +1222,15 @@ func (s *ResourceManagerServiceV2) DescribeResourceManagerControlPolicy(id strin
 	action := "GetControlPolicy"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1262,15 +1262,15 @@ func (s *ResourceManagerServiceV2) DescribeControlPolicyListTagResources(id stri
 	action := "ListTagResources"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ResourceDirectoryMaster", "2022-04-19", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1282,7 +1282,7 @@ func (s *ResourceManagerServiceV2) DescribeControlPolicyListTagResources(id stri
 	return response, nil
 }
 
-func (s *ResourceManagerServiceV2) ResourceManagerControlPolicyStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ResourceManagerServiceV2) ResourceManagerControlPolicyStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeResourceManagerControlPolicy(id)
 		if err != nil {
@@ -1326,15 +1326,15 @@ func (s *ResourceManagerServiceV2) DescribeResourceManagerMultiAccountDeliveryCh
 	action := "GetMultiAccountDeliveryChannel"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ResourceCenter", "2022-12-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1349,11 +1349,11 @@ func (s *ResourceManagerServiceV2) DescribeResourceManagerMultiAccountDeliveryCh
 	return response, nil
 }
 
-func (s *ResourceManagerServiceV2) ResourceManagerMultiAccountDeliveryChannelStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ResourceManagerServiceV2) ResourceManagerMultiAccountDeliveryChannelStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.ResourceManagerMultiAccountDeliveryChannelStateRefreshFuncWithApi(id, field, failStates, s.DescribeResourceManagerMultiAccountDeliveryChannel)
 }
 
-func (s *ResourceManagerServiceV2) ResourceManagerMultiAccountDeliveryChannelStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *ResourceManagerServiceV2) ResourceManagerMultiAccountDeliveryChannelStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -1398,15 +1398,15 @@ func (s *ResourceManagerServiceV2) DescribeResourceManagerResourceShare(id strin
 	action := "ListResourceShares"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ResourceSharing", "2020-01-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1432,11 +1432,11 @@ func (s *ResourceManagerServiceV2) DescribeResourceManagerResourceShare(id strin
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *ResourceManagerServiceV2) ResourceManagerResourceShareStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ResourceManagerServiceV2) ResourceManagerResourceShareStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.ResourceManagerResourceShareStateRefreshFuncWithApi(id, field, failStates, s.DescribeResourceManagerResourceShare)
 }
 
-func (s *ResourceManagerServiceV2) ResourceManagerResourceShareStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *ResourceManagerServiceV2) ResourceManagerResourceShareStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -1494,14 +1494,14 @@ func (s *ResourceManagerServiceV2) SetResourceTagsForResourceSharing(d *schema.R
 
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("ResourceSharing", "2020-01-10", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -1527,14 +1527,14 @@ func (s *ResourceManagerServiceV2) SetResourceTagsForResourceSharing(d *schema.R
 
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("ResourceSharing", "2020-01-10", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -1563,15 +1563,15 @@ func (s *ResourceManagerServiceV2) DescribeResourceManagerDeliveryChannel(id str
 	action := "GetDeliveryChannel"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ResourceCenter", "2022-12-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1586,11 +1586,11 @@ func (s *ResourceManagerServiceV2) DescribeResourceManagerDeliveryChannel(id str
 	return response, nil
 }
 
-func (s *ResourceManagerServiceV2) ResourceManagerDeliveryChannelStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ResourceManagerServiceV2) ResourceManagerDeliveryChannelStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.ResourceManagerDeliveryChannelStateRefreshFuncWithApi(id, field, failStates, s.DescribeResourceManagerDeliveryChannel)
 }
 
-func (s *ResourceManagerServiceV2) ResourceManagerDeliveryChannelStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *ResourceManagerServiceV2) ResourceManagerDeliveryChannelStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -1632,15 +1632,15 @@ func (s *ResourceManagerServiceV2) DescribeResourceManagerResourceDirectoryShari
 	action := "CheckSharingWithResourceDirectoryStatus"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ResourceSharing", "2020-01-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1657,11 +1657,11 @@ func (s *ResourceManagerServiceV2) DescribeResourceManagerResourceDirectoryShari
 	return response, nil
 }
 
-func (s *ResourceManagerServiceV2) ResourceManagerResourceDirectorySharingStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ResourceManagerServiceV2) ResourceManagerResourceDirectorySharingStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.ResourceManagerResourceDirectorySharingStateRefreshFuncWithApi(id, field, failStates, s.DescribeResourceManagerResourceDirectorySharing)
 }
 
-func (s *ResourceManagerServiceV2) ResourceManagerResourceDirectorySharingStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *ResourceManagerServiceV2) ResourceManagerResourceDirectorySharingStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -1704,15 +1704,15 @@ func (s *ResourceManagerServiceV2) DescribeResourceManagerResourceGroupSettings(
 	action := "GetResourceGroupNotificationSetting"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1735,15 +1735,15 @@ func (s *ResourceManagerServiceV2) DescribeResourceGroupSettingsGetResourceGroup
 	action := "GetResourceGroupAdminSetting"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1755,11 +1755,11 @@ func (s *ResourceManagerServiceV2) DescribeResourceGroupSettingsGetResourceGroup
 	return response, nil
 }
 
-func (s *ResourceManagerServiceV2) ResourceManagerResourceGroupSettingsStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ResourceManagerServiceV2) ResourceManagerResourceGroupSettingsStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.ResourceManagerResourceGroupSettingsStateRefreshFuncWithApi(id, field, failStates, s.DescribeResourceManagerResourceGroupSettings)
 }
 
-func (s *ResourceManagerServiceV2) ResourceManagerResourceGroupSettingsStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *ResourceManagerServiceV2) ResourceManagerResourceGroupSettingsStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {

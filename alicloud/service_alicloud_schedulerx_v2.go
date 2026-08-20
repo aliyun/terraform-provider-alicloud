@@ -7,7 +7,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type SchedulerxServiceV2 struct {
@@ -34,15 +34,15 @@ func (s *SchedulerxServiceV2) DescribeSchedulerxJob(id string) (object map[strin
 	query["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("schedulerx2", "2019-04-30", action, query, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -62,7 +62,7 @@ func (s *SchedulerxServiceV2) DescribeSchedulerxJob(id string) (object map[strin
 	return v.(map[string]interface{}), nil
 }
 
-func (s *SchedulerxServiceV2) SchedulerxJobStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *SchedulerxServiceV2) SchedulerxJobStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeSchedulerxJob(id)
 		if err != nil {
@@ -107,15 +107,15 @@ func (s *SchedulerxServiceV2) DescribeSchedulerxNamespace(id string) (object map
 	action := "ListNamespaces"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("schedulerx2", "2019-04-30", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -136,11 +136,11 @@ func (s *SchedulerxServiceV2) DescribeSchedulerxNamespace(id string) (object map
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *SchedulerxServiceV2) SchedulerxNamespaceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *SchedulerxServiceV2) SchedulerxNamespaceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.SchedulerxNamespaceStateRefreshFuncWithApi(id, field, failStates, s.DescribeSchedulerxNamespace)
 }
 
-func (s *SchedulerxServiceV2) SchedulerxNamespaceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *SchedulerxServiceV2) SchedulerxNamespaceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -190,15 +190,15 @@ func (s *SchedulerxServiceV2) DescribeSchedulerxAppGroup(id string) (object map[
 	action := "GetAppGroup"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("schedulerx2", "2019-04-30", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -218,11 +218,11 @@ func (s *SchedulerxServiceV2) DescribeSchedulerxAppGroup(id string) (object map[
 	return v.(map[string]interface{}), nil
 }
 
-func (s *SchedulerxServiceV2) SchedulerxAppGroupStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *SchedulerxServiceV2) SchedulerxAppGroupStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.SchedulerxAppGroupStateRefreshFuncWithApi(id, field, failStates, s.DescribeSchedulerxAppGroup)
 }
 
-func (s *SchedulerxServiceV2) SchedulerxAppGroupStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *SchedulerxServiceV2) SchedulerxAppGroupStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {

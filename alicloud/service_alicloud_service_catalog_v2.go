@@ -7,7 +7,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type ServiceCatalogServiceV2 struct {
@@ -27,15 +27,15 @@ func (s *ServiceCatalogServiceV2) DescribeServiceCatalogProduct(id string) (obje
 	query["ProductId"] = id
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("servicecatalog", "2021-09-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -56,7 +56,7 @@ func (s *ServiceCatalogServiceV2) DescribeServiceCatalogProduct(id string) (obje
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ServiceCatalogServiceV2) ServiceCatalogProductStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ServiceCatalogServiceV2) ServiceCatalogProductStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeServiceCatalogProduct(id)
 		if err != nil {
@@ -97,15 +97,15 @@ func (s *ServiceCatalogServiceV2) DescribeServiceCatalogProductPortfolioAssociat
 	query["PortfolioId"] = parts[1]
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("servicecatalog", "2021-09-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -135,7 +135,7 @@ func (s *ServiceCatalogServiceV2) DescribeServiceCatalogProductPortfolioAssociat
 	return object, WrapErrorf(NotFoundErr("ProductPortfolioAssociation", id), NotFoundMsg, response)
 }
 
-func (s *ServiceCatalogServiceV2) ServiceCatalogProductPortfolioAssociationStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ServiceCatalogServiceV2) ServiceCatalogProductPortfolioAssociationStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeServiceCatalogProductPortfolioAssociation(id)
 		if err != nil {
@@ -172,15 +172,15 @@ func (s *ServiceCatalogServiceV2) DescribeServiceCatalogProductVersion(id string
 	query["ProductVersionId"] = id
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("servicecatalog", "2021-09-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -201,7 +201,7 @@ func (s *ServiceCatalogServiceV2) DescribeServiceCatalogProductVersion(id string
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ServiceCatalogServiceV2) ServiceCatalogProductVersionStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ServiceCatalogServiceV2) ServiceCatalogProductVersionStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeServiceCatalogProductVersion(id)
 		if err != nil {
@@ -242,15 +242,15 @@ func (s *ServiceCatalogServiceV2) DescribeServiceCatalogPrincipalPortfolioAssoci
 	query["PortfolioId"] = parts[2]
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("servicecatalog", "2021-09-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -283,7 +283,7 @@ func (s *ServiceCatalogServiceV2) DescribeServiceCatalogPrincipalPortfolioAssoci
 	return object, WrapErrorf(NotFoundErr("PrincipalPortfolioAssociation", id), NotFoundMsg, response)
 }
 
-func (s *ServiceCatalogServiceV2) ServiceCatalogPrincipalPortfolioAssociationStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ServiceCatalogServiceV2) ServiceCatalogPrincipalPortfolioAssociationStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeServiceCatalogPrincipalPortfolioAssociation(id)
 		if err != nil {
@@ -320,15 +320,15 @@ func (s *ServiceCatalogServiceV2) DescribeServiceCatalogPortfolio(id string) (ob
 	query["PortfolioId"] = id
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("servicecatalog", "2021-09-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -349,7 +349,7 @@ func (s *ServiceCatalogServiceV2) DescribeServiceCatalogPortfolio(id string) (ob
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ServiceCatalogServiceV2) ServiceCatalogPortfolioStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ServiceCatalogServiceV2) ServiceCatalogPortfolioStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeServiceCatalogPortfolio(id)
 		if err != nil {

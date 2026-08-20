@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -235,14 +235,14 @@ func resourceAlicloudPolarDBApplicationUpdate(d *schema.ResourceData, meta inter
 		request := map[string]interface{}{
 			"ApplicationId": d.Id(),
 		}
-		err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err := retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err := client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
 				addDebug(action, response, request)
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})

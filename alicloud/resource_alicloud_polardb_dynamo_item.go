@@ -13,7 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -292,7 +292,7 @@ func resourceAlicloudPolarDBDynamoItemCreate(d *schema.ResourceData, meta interf
 		dynamoItem[k] = jsonToAttributeValue(v)
 	}
 
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		_, err = dynamoClient.PutItem(context.Background(), &dynamodb.PutItemInput{
 			TableName:                aws.String(tableName),
 			Item:                     dynamoItem,
@@ -301,9 +301,9 @@ func resourceAlicloudPolarDBDynamoItemCreate(d *schema.ResourceData, meta interf
 		})
 		if err != nil {
 			if isDynamoRetryableError(err) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug("PutItem", nil, nil, nil)
 		return nil
@@ -411,7 +411,7 @@ func resourceAlicloudPolarDBDynamoItemRead(d *schema.ResourceData, meta interfac
 	}
 
 	var output *dynamodb.GetItemOutput
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		output, err = dynamoClient.GetItem(context.Background(), &dynamodb.GetItemInput{
 			TableName:      aws.String(tableName),
 			Key:            key,
@@ -419,12 +419,12 @@ func resourceAlicloudPolarDBDynamoItemRead(d *schema.ResourceData, meta interfac
 		})
 		if err != nil {
 			if isDynamoNotFoundError(err) {
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			if isDynamoRetryableError(err) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug("GetItem", output, nil, nil)
 		return nil
@@ -499,16 +499,16 @@ func resourceAlicloudPolarDBDynamoItemUpdate(d *schema.ResourceData, meta interf
 		dynamoItem[k] = jsonToAttributeValue(v)
 	}
 
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		_, err = dynamoClient.PutItem(context.Background(), &dynamodb.PutItemInput{
 			TableName: aws.String(tableName),
 			Item:      dynamoItem,
 		})
 		if err != nil {
 			if isDynamoRetryableError(err) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -532,19 +532,19 @@ func resourceAlicloudPolarDBDynamoItemUpdate(d *schema.ResourceData, meta interf
 		if rangeKey != "" {
 			deleteKey[rangeKey] = jsonToAttributeValue(oldAttrs[rangeKey])
 		}
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			_, err = dynamoClient.DeleteItem(context.Background(), &dynamodb.DeleteItemInput{
 				TableName: aws.String(tableName),
 				Key:       deleteKey,
 			})
 			if err != nil {
 				if isDynamoNotFoundError(err) {
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				if isDynamoRetryableError(err) {
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug("DeleteItem", nil, nil, nil)
 			return nil
@@ -585,19 +585,19 @@ func resourceAlicloudPolarDBDynamoItemDelete(d *schema.ResourceData, meta interf
 		key[rangeKey] = jsonToAttributeValue(itemAttrs[rangeKey])
 	}
 
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		_, err = dynamoClient.DeleteItem(context.Background(), &dynamodb.DeleteItemInput{
 			TableName: aws.String(tableName),
 			Key:       key,
 		})
 		if err != nil {
 			if isDynamoNotFoundError(err) {
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			if isDynamoRetryableError(err) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug("DeleteItem", nil, nil, nil)
 		return nil

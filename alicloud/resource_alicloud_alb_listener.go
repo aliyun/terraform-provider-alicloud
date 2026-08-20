@@ -9,7 +9,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -615,14 +615,14 @@ func resourceAliCloudAlbListenerCreate(d *schema.ResourceData, meta interface{})
 		request["XForwardedForConfig"] = xforwardedForConfigMap
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Alb", "2020-06-16", action, query, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"SystemBusy", "IdempotenceProcessing", "IncorrectBusinessStatus.LoadBalancer", "-21020"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -906,14 +906,14 @@ func resourceAliCloudAlbListenerUpdate(d *schema.ResourceData, meta interface{})
 				}
 
 				wait := incrementalWait(3*time.Second, 5*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcPost("Alb", "2020-06-16", action, query, request, true)
 					if err != nil {
 						if IsExpectedErrors(err, []string{"IncorrectBusinessStatus.LoadBalancer", "SystemBusy", "IdempotenceProcessing", "IncorrectStatus.Listener", "VipStatusNotSupport", "-22001"}) || NeedRetry(err) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					return nil
 				})
@@ -940,14 +940,14 @@ func resourceAliCloudAlbListenerUpdate(d *schema.ResourceData, meta interface{})
 				}
 
 				wait := incrementalWait(3*time.Second, 5*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcPost("Alb", "2020-06-16", action, query, request, true)
 					if err != nil {
 						if IsExpectedErrors(err, []string{"IncorrectBusinessStatus.LoadBalancer", "SystemBusy", "IdempotenceProcessing", "IncorrectStatus.Listener", "-22001", "VipStatusNotSupport"}) || NeedRetry(err) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					return nil
 				})
@@ -1197,14 +1197,14 @@ func resourceAliCloudAlbListenerUpdate(d *schema.ResourceData, meta interface{})
 	}
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Alb", "2020-06-16", action, query, request, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"IncorrectBusinessStatus.LoadBalancer", "SystemBusy", "IdempotenceProcessing", "IncorrectStatus.Listener", "VipStatusNotSupport", "-22001"}) || NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -1258,14 +1258,14 @@ func resourceAliCloudAlbListenerUpdate(d *schema.ResourceData, meta interface{})
 
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Alb", "2020-06-16", action, query, request, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"IncorrectBusinessStatus.LoadBalancer", "SystemBusy", "IdempotenceProcessing", "IncorrectStatus.Listener", "-22001", "VipStatusNotSupport"}) || NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -1311,14 +1311,14 @@ func resourceAliCloudAlbListenerUpdate(d *schema.ResourceData, meta interface{})
 			}
 			dissociateAclsFromListenerReq["AclIds"] = associateAclIds
 			wait := incrementalWait(3*time.Second, 3*time.Second)
-			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 				response, err = client.RpcPost("Alb", "2020-06-16", action, nil, dissociateAclsFromListenerReq, true)
 				if err != nil {
 					if IsExpectedErrors(err, []string{"VipStatusNotSupport"}) || NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -1356,14 +1356,14 @@ func resourceAliCloudAlbListenerUpdate(d *schema.ResourceData, meta interface{})
 			}
 			associateAclsWithListenerReq["AclIds"] = associateAclIds
 			wait := incrementalWait(3*time.Second, 3*time.Second)
-			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 				response, err = client.RpcPost("Alb", "2020-06-16", action, nil, associateAclsWithListenerReq, true)
 				if err != nil {
 					if IsExpectedErrors(err, []string{"VipStatusNotSupport"}) || NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -1402,16 +1402,16 @@ func resourceAliCloudAlbListenerDelete(d *schema.ResourceData, meta interface{})
 	request["ClientToken"] = buildClientToken(action)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("Alb", "2020-06-16", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"IncorrectBusinessStatus.LoadBalancer", "SystemBusy", "IdempotenceProcessing", "ResourceInConfiguring.Listener", "IncorrectStatus.LoadBalancer", "-22031"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

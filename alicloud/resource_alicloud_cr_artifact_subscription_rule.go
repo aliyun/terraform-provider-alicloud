@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -127,14 +127,14 @@ func resourceAliCloudCrArtifactSubscriptionRuleCreate(d *schema.ResourceData, me
 		request["Platform"] = v
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("cr", "2018-12-01", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -248,14 +248,14 @@ func resourceAliCloudCrArtifactSubscriptionRuleUpdate(d *schema.ResourceData, me
 
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("cr", "2018-12-01", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -273,18 +273,18 @@ func resourceAliCloudCrArtifactSubscriptionRuleUpdate(d *schema.ResourceData, me
 		// values.
 		crServiceV2 := CrServiceV2{client}
 		waitField := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			object, e := crServiceV2.DescribeCrArtifactSubscriptionRule(d.Id())
 			if e != nil {
 				if NotFoundError(e) {
-					return resource.NonRetryableError(WrapError(e))
+					return retry.NonRetryableError(WrapError(e))
 				}
 				waitField()
-				return resource.RetryableError(e)
+				return retry.RetryableError(e)
 			}
 			if !crArtifactSubscriptionRuleFieldsConverged(d, object) {
 				waitField()
-				return resource.RetryableError(fmt.Errorf("waiting for cr artifact subscription rule to converge"))
+				return retry.RetryableError(fmt.Errorf("waiting for cr artifact subscription rule to converge"))
 			}
 			return nil
 		})
@@ -311,14 +311,14 @@ func resourceAliCloudCrArtifactSubscriptionRuleDelete(d *schema.ResourceData, me
 	request["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("cr", "2018-12-01", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

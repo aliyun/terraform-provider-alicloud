@@ -9,7 +9,7 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/blues/jsonata-go"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/tidwall/sjson"
 )
@@ -32,15 +32,15 @@ func (s *MessageServiceServiceV2) DescribeMessageServiceQueue(id string) (object
 	action := "GetQueueAttributes"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Mns-open", "2022-01-19", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -75,15 +75,15 @@ func (s *MessageServiceServiceV2) DescribeMessageServiceTopic(id string) (object
 	request["TopicName"] = id
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Mns-open", "2022-01-19", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -140,14 +140,14 @@ func (s *MessageServiceServiceV2) SetResourceTags(d *schema.ResourceData, resour
 			}
 
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("Mns-open", "2022-01-19", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -179,14 +179,14 @@ func (s *MessageServiceServiceV2) SetResourceTags(d *schema.ResourceData, resour
 			}
 
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("Mns-open", "2022-01-19", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -217,15 +217,15 @@ func (s *MessageServiceServiceV2) DescribeMessageServiceEndpoint(id string) (obj
 	action := "GetEndpointAttribute"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Mns-open", "2022-01-19", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -242,7 +242,7 @@ func (s *MessageServiceServiceV2) DescribeMessageServiceEndpoint(id string) (obj
 	return v.(map[string]interface{}), nil
 }
 
-func (s *MessageServiceServiceV2) MessageServiceEndpointStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *MessageServiceServiceV2) MessageServiceEndpointStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeMessageServiceEndpoint(id)
 		if err != nil {
@@ -293,15 +293,15 @@ func (s *MessageServiceServiceV2) DescribeMessageServiceEndpointAcl(id string) (
 
 	idExist := false
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Mns-open", "2022-01-19", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -334,7 +334,7 @@ func (s *MessageServiceServiceV2) DescribeMessageServiceEndpointAcl(id string) (
 	return object, nil
 }
 
-func (s *MessageServiceServiceV2) MessageServiceEndpointAclStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *MessageServiceServiceV2) MessageServiceEndpointAclStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeMessageServiceEndpointAcl(id)
 		if err != nil {
@@ -384,15 +384,15 @@ func (s *MessageServiceServiceV2) DescribeMessageServiceSubscription(id string) 
 	action := "GetSubscriptionAttributes"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Mns-open", "2022-01-19", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -412,7 +412,7 @@ func (s *MessageServiceServiceV2) DescribeMessageServiceSubscription(id string) 
 	return v.(map[string]interface{}), nil
 }
 
-func (s *MessageServiceServiceV2) MessageServiceSubscriptionStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *MessageServiceServiceV2) MessageServiceSubscriptionStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeMessageServiceSubscription(id)
 		if err != nil {
@@ -463,21 +463,21 @@ func (s *MessageServiceServiceV2) DescribeMessageServiceService(id string) (obje
 	action := "QueryAvailableInstances"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
 				request["ProductCode"] = "mns"
 				request["ProductType"] = ""
 				endpoint = connectivity.BssOpenAPIEndpointInternational
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -492,7 +492,7 @@ func (s *MessageServiceServiceV2) DescribeMessageServiceService(id string) (obje
 	return response, nil
 }
 
-func (s *MessageServiceServiceV2) MessageServiceServiceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *MessageServiceServiceV2) MessageServiceServiceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeMessageServiceService(id)
 		if err != nil {
@@ -538,15 +538,15 @@ func (s *MessageServiceServiceV2) DescribeMessageServiceEventRule(id string) (ob
 	action := "GetEventRule"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Mns-open", "2022-01-19", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -566,7 +566,7 @@ func (s *MessageServiceServiceV2) DescribeMessageServiceEventRule(id string) (ob
 	return v.(map[string]interface{}), nil
 }
 
-func (s *MessageServiceServiceV2) MessageServiceEventRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *MessageServiceServiceV2) MessageServiceEventRuleStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeMessageServiceEventRule(id)
 		if err != nil {
@@ -615,15 +615,15 @@ func (s *MessageServiceServiceV2) DescribeMessageServiceAccountLogging(id string
 	action := "GetAccountAttributes"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Mns-open", "2022-01-19", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

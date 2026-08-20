@@ -8,7 +8,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -187,16 +187,16 @@ func resourceAlicloudCenBandwidthPackageCreate(d *schema.ResourceData, meta inte
 	}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err := resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err := retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		raw, err := client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.CreateCenBandwidthPackage(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Operation.Blocking"}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw)
 		response, _ := raw.(*cbn.CreateCenBandwidthPackageResponse)
@@ -258,16 +258,16 @@ func resourceAlicloudCenBandwidthPackageUpdate(d *schema.ResourceData, meta inte
 		request.CenBandwidthPackageId = d.Id()
 		request.Bandwidth = requests.NewInteger(d.Get("bandwidth").(int))
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err := retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			raw, err := client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
 				return cbnClient.ModifyCenBandwidthPackageSpec(request)
 			})
 			if err != nil {
 				if IsExpectedErrors(err, []string{"InvalidStatus.Resource", "Operation.Blocking"}) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(request.GetActionName(), raw)
 			return nil
@@ -296,16 +296,16 @@ func resourceAlicloudCenBandwidthPackageUpdate(d *schema.ResourceData, meta inte
 	}
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err := retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			raw, err := client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
 				return cbnClient.ModifyCenBandwidthPackageAttribute(request)
 			})
 			if err != nil {
 				if IsExpectedErrors(err, []string{"InvalidStatus.Resource", "Operation.Blocking"}) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(request.GetActionName(), raw)
 			return nil
@@ -326,16 +326,16 @@ func resourceAlicloudCenBandwidthPackageDelete(d *schema.ResourceData, meta inte
 	request := cbn.CreateDeleteCenBandwidthPackageRequest()
 	request.CenBandwidthPackageId = d.Id()
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err := resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err := retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		raw, err := client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.DeleteCenBandwidthPackage(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InvalidOperation.CenBandwidthLimitsNotZero", "ParameterBwpInstanceId", "Forbidden.Release"}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw)
 		return nil

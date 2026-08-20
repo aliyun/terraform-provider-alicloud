@@ -9,7 +9,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/polardb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -151,17 +151,17 @@ func resourceAlicloudPolarDBEndpointCreate(d *schema.ResourceData, meta interfac
 	oldEndpointIds := schema.NewSet(schema.HashString, oldEndpoints)
 
 	var raw interface{}
-	err = resource.Retry(8*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(8*time.Minute, func() *retry.RetryError {
 		raw, err = client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
 			return polarDBClient.CreateDBClusterEndpoint(request)
 		})
 		if err != nil {
 			OperationDeniedDBStatus = append(OperationDeniedDBStatus, "ClusterEndpoint.StatusNotValid")
 			if IsExpectedErrors(err, OperationDeniedDBStatus) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
@@ -320,15 +320,15 @@ func resourceAlicloudPolarDBEndpointUpdate(d *schema.ResourceData, meta interfac
 			modifyEndpointRequest.DBEndpointDescription = d.Get("db_endpoint_description").(string)
 			configItem["DBEndpointDescription"] = d.Get("db_endpoint_description").(string)
 		}
-		if err := resource.Retry(8*time.Minute, func() *resource.RetryError {
+		if err := retry.Retry(8*time.Minute, func() *retry.RetryError {
 			raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
 				return polarDBClient.ModifyDBClusterEndpoint(modifyEndpointRequest)
 			})
 			if err != nil {
 				if IsExpectedErrors(err, []string{"EndpointStatus.NotSupport", "OperationDenied.DBClusterStatus", "MaxscaleCheckResult.Code"}) {
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(modifyEndpointRequest.GetActionName(), raw, modifyEndpointRequest.RpcRequest, modifyEndpointRequest)
 			return nil
@@ -358,15 +358,15 @@ func resourceAlicloudPolarDBEndpointUpdate(d *schema.ResourceData, meta interfac
 		request.Port = d.Get("port").(string)
 		prefix := strings.Split(object.ConnectionString, ".")
 		if (request.Port != "" && request.Port != object.Port) || (request.ConnectionStringPrefix != "" && request.ConnectionStringPrefix != prefix[0]) {
-			if err := resource.Retry(8*time.Minute, func() *resource.RetryError {
+			if err := retry.Retry(8*time.Minute, func() *retry.RetryError {
 				raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
 					return polarDBClient.ModifyDBEndpointAddress(request)
 				})
 				if err != nil {
 					if IsExpectedErrors(err, []string{"EndpointStatus.NotSupport", "OperationDenied.DBClusterStatus", "MaxscaleCheckResult.Code"}) {
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 				return nil
@@ -391,15 +391,15 @@ func resourceAlicloudPolarDBEndpointUpdate(d *schema.ResourceData, meta interfac
 		modifySSLRequest.DBClusterId = dbClusterId
 		modifySSLRequest.DBEndpointId = dbEndpointId
 		modifySSLRequest.SSLAutoRotate = d.Get("ssl_auto_rotate").(string)
-		if err := resource.Retry(8*time.Minute, func() *resource.RetryError {
+		if err := retry.Retry(8*time.Minute, func() *retry.RetryError {
 			raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
 				return polarDBClient.ModifyDBClusterSSL(modifySSLRequest)
 			})
 			if err != nil {
 				if IsExpectedErrors(err, []string{"EndpointStatus.NotSupport", "OperationDenied.DBClusterStatus", "MaxscaleCheckResult.Code"}) {
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(modifySSLRequest.GetActionName(), raw, modifySSLRequest.RpcRequest, modifySSLRequest)
 			return nil
@@ -445,15 +445,15 @@ func resourceAlicloudPolarDBEndpointDelete(d *schema.ResourceData, meta interfac
 	request.DBClusterId = parts[0]
 	request.DBEndpointId = parts[1]
 
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
 			return polarDBClient.DeleteDBClusterEndpoint(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"OperationDenied.DBClusterStatus", "EndpointStatus.NotSupport", "ClusterEndpoint.StatusNotValid", "MaxscaleCheckResult.Code"}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil

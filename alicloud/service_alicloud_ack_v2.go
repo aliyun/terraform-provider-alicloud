@@ -10,7 +10,7 @@ import (
 	cs "github.com/alibabacloud-go/cs-20151215/v8/client"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -40,15 +40,15 @@ func (s *AckServiceV2) DescribeAckNodepool(id string) (object map[string]interfa
 	action := fmt.Sprintf("/clusters/%s/nodepools/%s", ClusterId, NodepoolId)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("CS", "2015-12-15", action, query, header, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -63,11 +63,11 @@ func (s *AckServiceV2) DescribeAckNodepool(id string) (object map[string]interfa
 	return response, nil
 }
 
-func (s *AckServiceV2) AckNodepoolStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *AckServiceV2) AckNodepoolStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.AckNodepoolStateRefreshFuncWithApi(id, field, failStates, s.DescribeAckNodepool)
 }
 
-func (s *AckServiceV2) AckNodepoolStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *AckServiceV2) AckNodepoolStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -95,7 +95,7 @@ func (s *AckServiceV2) AckNodepoolStateRefreshFuncWithApi(id string, field strin
 	}
 }
 
-func (s *AckServiceV2) DescribeAsyncAckNodepoolStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) resource.StateRefreshFunc {
+func (s *AckServiceV2) DescribeAsyncAckNodepoolStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAsyncDescribeTaskInfo(d, res)
 		if err != nil {
@@ -148,15 +148,15 @@ func (s *AckServiceV2) DescribeAsyncDescribeTaskInfo(d *schema.ResourceData, res
 	action := fmt.Sprintf("/tasks/%s", task_id)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("CS", "2015-12-15", action, query, header, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -195,7 +195,7 @@ func (s *AckServiceV2) DescribeAckPolicyInstance(id string) (object map[string]i
 	var rawResponse interface{}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		// Call the official DescribePolicyInstances method
 		var resp *cs.DescribePolicyInstancesResponse
 		resp, err = csClient.DescribePolicyInstances(tea.String(cluster_id), describeReq)
@@ -203,9 +203,9 @@ func (s *AckServiceV2) DescribeAckPolicyInstance(id string) (object map[string]i
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 
 		// Convert response to map[string]interface{} for compatibility
@@ -300,15 +300,15 @@ func (s *AckServiceV2) DescribeAckCluster(id string) (object map[string]interfac
 	action := fmt.Sprintf("/clusters/%s", ClusterId)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("CS", "2015-12-15", action, query, header, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -323,11 +323,11 @@ func (s *AckServiceV2) DescribeAckCluster(id string) (object map[string]interfac
 	return response, nil
 }
 
-func (s *AckServiceV2) AckClusterStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *AckServiceV2) AckClusterStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.AckClusterStateRefreshFuncWithApi(id, field, failStates, s.DescribeAckCluster)
 }
 
-func (s *AckServiceV2) AckClusterStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *AckServiceV2) AckClusterStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -355,7 +355,7 @@ func (s *AckServiceV2) AckClusterStateRefreshFuncWithApi(id string, field string
 	}
 }
 
-func (s *AckServiceV2) DescribeAsyncAckClusterStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) resource.StateRefreshFunc {
+func (s *AckServiceV2) DescribeAsyncAckClusterStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAsyncDescribeTaskInfo(d, res)
 		if err != nil {

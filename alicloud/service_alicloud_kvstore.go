@@ -8,7 +8,7 @@ import (
 
 	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -50,16 +50,16 @@ func (s *KvstoreService) DescribeKVstoreBackupPolicy(id string) (*r_kvstore.Desc
 	var raw interface{}
 	var err error
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = s.client.WithRKvstoreClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
 			return rkvClient.DescribeBackupPolicy(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"LockTimeout"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -100,7 +100,7 @@ func (s *KvstoreService) WaitForKVstoreInstance(id string, status Status, timeou
 	return nil
 }
 
-func (s *KvstoreService) RdsKvstoreInstanceStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *KvstoreService) RdsKvstoreInstanceStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeKVstoreInstance(id)
 		if err != nil {

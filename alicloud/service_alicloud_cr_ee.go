@@ -7,7 +7,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cr_ee"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 func (c *CrService) ListCrEEInstances(pageNo int, pageSize int) (*cr_ee.ListInstanceResponse, error) {
@@ -40,16 +40,16 @@ func (c *CrService) DescribeCrEEInstance(instanceId string) (*cr_ee.GetInstanceR
 	request.InstanceId = instanceId
 	action := request.GetActionName()
 
-	err := resource.Retry(6*time.Second, func() *resource.RetryError {
+	err := retry.Retry(6*time.Second, func() *retry.RetryError {
 		raw, err := c.client.WithCrEEClient(func(creeClient *cr_ee.Client) (interface{}, error) {
 			return creeClient.GetInstance(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"INSTANCE_NOT_EXIST"}) {
 				time.Sleep(time.Second)
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, raw, request.RpcRequest, request)
 		response, _ = raw.(*cr_ee.GetInstanceResponse)
@@ -78,22 +78,22 @@ func (c *CrService) GetCrEEInstanceUsage(instanceId string) (*cr_ee.GetInstanceU
 	action := request.GetActionName()
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err := c.client.WithCrEEClient(func(creeClient *cr_ee.Client) (interface{}, error) {
 			return creeClient.GetInstanceUsage(request)
 		})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, raw, request.RpcRequest, request)
 		response, _ = raw.(*cr_ee.GetInstanceUsageResponse)
 		if !response.GetInstanceUsageIsSuccess && response.Code == "INSTANCE_STATUS_NOT_SUPPORT" {
 			wait()
-			return resource.RetryableError(WrapErrorf(fmt.Errorf("%v", response), NotFoundMsg, AlibabaCloudSdkGoERROR))
+			return retry.RetryableError(WrapErrorf(fmt.Errorf("%v", response), NotFoundMsg, AlibabaCloudSdkGoERROR))
 		}
 		return nil
 	})
@@ -122,16 +122,16 @@ func (c *CrService) ListCrEEInstanceEndpoint(instanceId string) (*cr_ee.ListInst
 	action := request.GetActionName()
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err := c.client.WithCrEEClient(func(creeClient *cr_ee.Client) (interface{}, error) {
 			return creeClient.ListInstanceEndpoint(request)
 		})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, raw, request.RpcRequest, request)
 		response, _ = raw.(*cr_ee.ListInstanceEndpointResponse)
@@ -140,7 +140,7 @@ func (c *CrService) ListCrEEInstanceEndpoint(instanceId string) (*cr_ee.ListInst
 			// not support managed public/VPC endpoints (e.g. retired instances). Stop
 			// retrying immediately so data.alicloud_cr_ee_instances can skip this instance
 			// instead of exhausting the 5-minute retry budget and failing the whole read.
-			return resource.NonRetryableError(fmt.Errorf("INSTANCE_STATUS_NOT_SUPPORT"))
+			return retry.NonRetryableError(fmt.Errorf("INSTANCE_STATUS_NOT_SUPPORT"))
 		}
 		return nil
 	})
@@ -171,16 +171,16 @@ func (c *CrService) ListCrEENamespaces(instanceId string, pageNo int, pageSize i
 	var raw interface{}
 	var err error
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = c.client.WithCrEEClient(func(creeClient *cr_ee.Client) (interface{}, error) {
 			return creeClient.ListNamespace(request)
 		})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -213,16 +213,16 @@ func (c *CrService) DescribeCrEENamespace(id string) (*cr_ee.GetNamespaceRespons
 
 	var raw interface{}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = c.client.WithCrEEClient(func(creeClient *cr_ee.Client) (interface{}, error) {
 			return creeClient.GetNamespace(request)
 		})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -323,16 +323,16 @@ func (c *CrService) ListCrEERepos(instanceId string, namespace string, pageNo in
 	var raw interface{}
 	var err error
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = c.client.WithCrEEClient(func(creeClient *cr_ee.Client) (interface{}, error) {
 			return creeClient.ListRepository(request)
 		})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -366,16 +366,16 @@ func (c *CrService) DescribeCrEERepo(id string) (*cr_ee.GetRepositoryResponse, e
 
 	var raw interface{}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = c.client.WithCrEEClient(func(creeClient *cr_ee.Client) (interface{}, error) {
 			return creeClient.GetRepository(request)
 		})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -473,16 +473,16 @@ func (c *CrService) ListCrEERepoTags(instanceId string, repoId string, pageNo in
 	var raw interface{}
 	var err error
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = c.client.WithCrEEClient(func(creeClient *cr_ee.Client) (interface{}, error) {
 			return creeClient.ListRepoTag(request)
 		})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -519,16 +519,16 @@ func (c *CrService) DescribeCrEESyncRule(id string) (*cr_ee.SyncRulesItem, error
 	for {
 		var raw interface{}
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			raw, err = c.client.WithCrEEClient(func(creeClient *cr_ee.Client) (interface{}, error) {
 				return creeClient.ListRepoSyncRule(request)
 			})
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})

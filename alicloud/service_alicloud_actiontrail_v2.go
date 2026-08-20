@@ -8,7 +8,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type ActiontrailServiceV2 struct {
@@ -29,15 +29,15 @@ func (s *ActiontrailServiceV2) DescribeActiontrailAdvancedQueryTemplate(id strin
 	action := "GetAdvancedQueryTemplate"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Actiontrail", "2020-07-06", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -53,7 +53,7 @@ func (s *ActiontrailServiceV2) DescribeActiontrailAdvancedQueryTemplate(id strin
 	return response, nil
 }
 
-func (s *ActiontrailServiceV2) ActiontrailAdvancedQueryTemplateStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ActiontrailServiceV2) ActiontrailAdvancedQueryTemplateStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeActiontrailAdvancedQueryTemplate(id)
 		if err != nil {
@@ -98,15 +98,15 @@ func (s *ActiontrailServiceV2) DescribeActiontrailTrail(id string) (object map[s
 	action := "DescribeTrails"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Actiontrail", "2020-07-06", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -139,15 +139,15 @@ func (s *ActiontrailServiceV2) DescribeTrailGetDataEventSelector(id string) (obj
 	action := "GetDataEventSelector"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Actiontrail", "2020-07-06", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -162,11 +162,11 @@ func (s *ActiontrailServiceV2) DescribeTrailGetDataEventSelector(id string) (obj
 	return response, nil
 }
 
-func (s *ActiontrailServiceV2) ActiontrailTrailStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ActiontrailServiceV2) ActiontrailTrailStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.ActiontrailTrailStateRefreshFuncWithApi(id, field, failStates, s.DescribeActiontrailTrail)
 }
 
-func (s *ActiontrailServiceV2) ActiontrailTrailStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *ActiontrailServiceV2) ActiontrailTrailStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
