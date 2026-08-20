@@ -74,6 +74,73 @@ resource "alicloud_hbr_policy_binding" "default" {
 ```
 
 
+ECS Instance Backup With App-Consistent Snapshot Group
+
+This example migrates an `alicloud_hbr_server_backup_plan` configuration (deprecated since v1.249.0) to `alicloud_hbr_policy_binding` using `alicloud_hbr_policy` + `advanced_options.udm_detail` with `app_consistent` and `snapshot_group`.
+
+```terraform
+variable "name" {
+  default = "terraform-example"
+}
+
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
+resource "random_integer" "default" {
+  max = 99999
+  min = 10000
+}
+
+resource "alicloud_hbr_vault" "default" {
+  vault_type = "STANDARD"
+  vault_name = "example-value-${random_integer.default.result}"
+}
+
+resource "alicloud_hbr_policy" "default" {
+  policy_name = "example-value-${random_integer.default.result}"
+  rules {
+    rule_type    = "BACKUP"
+    backup_type  = "COMPLETE"
+    schedule     = "I|1631685600|P1D"
+    retention    = "7"
+    archive_days = "0"
+    vault_id     = alicloud_hbr_vault.default.id
+  }
+  policy_description = "policy example"
+}
+
+resource "alicloud_instance" "default" {
+  instance_name = "example-value-${random_integer.default.result}"
+  instance_type = "ecs.g7.large"
+  image_id      = "aliyun_2_1903_x64_7h_cor_4.0.40_alibase"
+  system_disk {
+    category = "cloud_essd"
+    size     = "40"
+  }
+}
+
+resource "alicloud_hbr_policy_binding" "default" {
+  source_type    = "UDM_ECS"
+  policy_id      = alicloud_hbr_policy.default.id
+  data_source_id = alicloud_instance.default.id
+  disabled       = "false"
+  advanced_options {
+    udm_detail {
+      app_consistent     = true
+      snapshot_group     = true
+      ram_role_name      = "AliyunECSBackupRole"
+      pre_script_path    = "/opt/prescript.sh"
+      post_script_path   = "/opt/postscript.sh"
+      enable_fs_freeze   = true
+      timeout_in_seconds = 60
+      enable_writers     = true
+    }
+  }
+}
+```
+
+
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_hbr_policy_binding&spm=docs.r.hbr_policy_binding.example&intl_lang=EN_US)
 
 ## Argument Reference
@@ -117,9 +184,21 @@ The advanced_options-oss_detail supports the following:
 ### `advanced_options-udm_detail`
 
 The advanced_options-udm_detail supports the following:
+* `app_consistent` - (Optional) Whether to enable application-consistent backup. When enabled, the system uses a snapshot group together with pre/post scripts to guarantee application data consistency. Only supported when all cloud disk types of the instance are ESSD.
 * `destination_kms_key_id` - (Optional) Custom KMS key ID of encrypted copy
 * `disk_id_list` - (Optional, List) The list of backup disks. If it is empty, all disks are backed up.
+* `enable_fs_freeze` - (Optional) Whether to enable file system freeze before taking a snapshot.
+* `enable_writers` - (Optional) Whether to enable VSS writers.
 * `exclude_disk_id_list` - (Optional, List) List of cloud disk IDs that are not backed up
+* `post_script_path` - (Optional) The path of the post-backup script, executed after the snapshot is taken. Required when `app_consistent` is `true`.
+* `pre_script_path` - (Optional) The path of the pre-backup script, executed before the snapshot is taken. Required when `app_consistent` is `true`.
+* `ram_role_name` - (Optional) The RAM role name used by ECS to run the pre/post scripts. Required when `app_consistent` is `true`.
+* `snapshot_group` - (Optional) Whether to use a snapshot group. Valid when `app_consistent` is `true`.
+* `timeout_in_seconds` - (Optional) The timeout in seconds for the pre/post script execution.
+
+-> **NOTE:** `app_consistent`, `snapshot_group`, `ram_role_name`, `pre_script_path`, `post_script_path`, `enable_fs_freeze`, `timeout_in_seconds` and `enable_writers` are only supported when `source_type` is `UDM_ECS`. When `app_consistent` is set to `true`, `ram_role_name`, `pre_script_path` and `post_script_path` are required by the API. This set of options supersedes the deprecated `alicloud_hbr_server_backup_plan` `detail` block.
+
+-> **NOTE:** When creating a binding whose `advanced_options.0.udm_detail.0.snapshot_group` is `true`, the `CreatePolicyBindings` API currently does not persist that field (it is coerced to `false`), while `UpdatePolicyBinding` persists it correctly. To make `snapshot_group` (and the rest of `udm_detail`) take effect on create, the provider automatically re-applies the configured `advanced_options` via `UpdatePolicyBinding` once after create when it detects the backend dropped a configured `true` boolean. This create-then-update re-apply can be removed once `CreatePolicyBindings` persists `snapshot_group`.
 
 ## Attributes Reference
 

@@ -360,6 +360,14 @@ func TestAccAliCloudHbrPolicyBinding_basic6295(t *testing.T) {
 									"destination_kms_key_id": "snxs-******-******-llam",
 									"exclude_disk_id_list": []string{
 										"d-****************mopl", "d-****************aqlp"},
+									"app_consistent":     true,
+									"snapshot_group":     true,
+									"ram_role_name":      "AliyunECSBackupRole",
+									"pre_script_path":    "/opt/prescript.sh",
+									"post_script_path":   "/opt/postscript.sh",
+									"enable_fs_freeze":   true,
+									"timeout_in_seconds": 60,
+									"enable_writers":     true,
 								},
 							},
 						},
@@ -1334,6 +1342,14 @@ func TestAccAliCloudHbrPolicyBinding_basic6295_raw(t *testing.T) {
 									"destination_kms_key_id": "snxs-******-******-llam",
 									"exclude_disk_id_list": []string{
 										"d-****************mopl", "d-****************aqlp"},
+									"app_consistent":     true,
+									"snapshot_group":     true,
+									"ram_role_name":      "AliyunECSBackupRole",
+									"pre_script_path":    "/opt/prescript.sh",
+									"post_script_path":   "/opt/postscript.sh",
+									"enable_fs_freeze":   true,
+									"timeout_in_seconds": 60,
+									"enable_writers":     true,
 								},
 							},
 						},
@@ -1347,6 +1363,13 @@ func TestAccAliCloudHbrPolicyBinding_basic6295_raw(t *testing.T) {
 						"data_source_id":             CHECKSET,
 						"policy_binding_description": "policy binding example",
 					}),
+					// app_consistent/snapshot_group are asserted via standalone checks below
+					// instead of the accumulating testAccCheck map: the create-then-update
+					// re-apply fallback makes them converge to true at create, but later
+					// steps intentionally drop them from advanced_options, so carrying the
+					// "true" expectation forward through updateCheckMapPair would fail.
+					resource.TestCheckResourceAttr(resourceId, "advanced_options.0.udm_detail.0.snapshot_group", "true"),
+					resource.TestCheckResourceAttr(resourceId, "advanced_options.0.udm_detail.0.app_consistent", "true"),
 				),
 			},
 			{
