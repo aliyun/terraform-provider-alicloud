@@ -2094,6 +2094,84 @@ func TestAccAliCloudPolarDBCluster_EnableDynamoDB(t *testing.T) {
 	})
 }
 
+// TestAccAliCloudPolarDBCluster_TDEAutomaticRotation_PG covers TDE automatic
+// key rotation on a PostgreSQL-compatible (syntax-compatible) PolarDB cluster.
+// EnableAutomaticRotation is only supported when the database engine is
+// PostgreSQL-compatible or Oracle syntax-compatible, so the pre-existing
+// MySQL-based TDE step in TestAccAliCloudPolarDBCluster_Update never exercised
+// this parameter on an engine that actually honors it.
+func TestAccAliCloudPolarDBCluster_TDEAutomaticRotation_PG(t *testing.T) {
+	var v *polardb.DescribeDBClusterAttributeResponse
+	name := "tf-testAccPolarDBClusterTDEAutoRotationPG"
+	resourceId := "alicloud_polardb_cluster.default"
+	var basicMap = map[string]string{
+		"description":        CHECKSET,
+		"db_node_class":      CHECKSET,
+		"db_type":            CHECKSET,
+		"db_version":         CHECKSET,
+		"tde_status":         "Enabled",
+		"encryption_key":     CHECKSET,
+		"role_arn":           CHECKSET,
+		"automatic_rotation": CHECKSET,
+		"rotation_interval":  CHECKSET,
+	}
+	ra := resourceAttrInit(resourceId, basicMap)
+	serviceFunc := func() interface{} {
+		return &PolarDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribePolarDBClusterAttribute")
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourcePolarDBClusterTDEPGConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_type":                   "PostgreSQL",
+					"db_version":                "14",
+					"pay_type":                  "PostPaid",
+					"db_node_count":             "2",
+					"db_node_class":             "polar.pg.x4.medium",
+					"vswitch_id":                "${local.vswitch_id}",
+					"description":               "${var.name}",
+					"resource_group_id":         "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"tde_status":                "Enabled",
+					"encryption_key":            "${alicloud_kms_key.default.id}",
+					"role_arn":                  "${data.alicloud_ram_roles.default.roles.0.arn}",
+					"enable_automatic_rotation": true,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tde_status":         "Enabled",
+						"encryption_key":     CHECKSET,
+						"role_arn":           CHECKSET,
+						"automatic_rotation": CHECKSET,
+						"rotation_interval":  CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"modify_type", "imci_switch", "sub_category", "enable_automatic_rotation"},
+			},
+		},
+	})
+}
+
 func TestAccAliCloudPolarDBCluster_TargetMinorVersion(t *testing.T) {
 	var v *polardb.DescribeDBClusterAttributeResponse
 	name := "tf-testAccPolarDBClusterTargetMinorVersion"
@@ -2484,6 +2562,78 @@ func resourcePolarDBClusterTDEConfigDependence(name string) string {
 	    principal_type    = "ServiceRole"
 	    resource_group_id = "${data.alicloud_account.current.id}"
 		depends_on = [alicloud_ram_role.default]
+    }`, name)
+}
+
+// resourcePolarDBClusterTDEPGConfigDependence is the PostgreSQL-compatible
+// counterpart of resourcePolarDBClusterTDEConfigDependence: the node class
+// data source is filtered by db_version=14 (with pay_type=PostPaid and
+// category=Normal) so that the returned zone_id and classes match a
+// PostgreSQL-compatible cluster. db_type is intentionally omitted: the data
+// source matches db_type against the API engine string (e.g. "pg14") by
+// substring, and "PostgreSQL" is not a substring of "pg14", whereas
+// db_version=14 is, so this returns the pg14 Normal category that carries
+// polar.pg.x4.medium in cn-hangzhou. Unlike the MySQL counterpart, the
+// AliyunRDSInstanceEncryptionDefaultRole service role is looked up via the
+// alicloud_ram_roles data source instead of being created with a fixed name:
+// the role is pre-provisioned in the shared test account (with the
+// AliyunRDSInstanceEncryptionRolePolicy already attached), so creating it
+// would 409 with EntityAlreadyExists.Role. The resource_manager_policy_attachment
+// is therefore omitted as well, and the cluster role_arn references
+// data.alicloud_ram_roles.default.roles.0.arn instead of a literal ARN.
+func resourcePolarDBClusterTDEPGConfigDependence(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+		default = "%s"
+	}
+
+	data "alicloud_vpcs" "default" {
+		name_regex = "^default-NODELETING$"
+	}
+
+    data "alicloud_polardb_node_classes" "this" {
+	  db_version = "14"
+      pay_type   = "PostPaid"
+	  category   = "Normal"
+	}
+
+	resource "alicloud_vpc" "default" {
+    	vpc_name = var.name
+	}
+
+	resource "alicloud_vswitch" "default" {
+		zone_id = data.alicloud_polardb_node_classes.this.classes.0.zone_id
+		vpc_id = alicloud_vpc.default.id
+		cidr_block = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 4)
+	}
+
+	locals {
+		vpc_id = alicloud_vpc.default.id
+		vswitch_id = concat(alicloud_vswitch.default.*.id, [""])[0]
+	}
+
+	data "alicloud_resource_manager_resource_groups" "default" {
+		status = "OK"
+	}
+
+	resource "alicloud_security_group" "default" {
+		count = 2
+		security_group_name   = var.name
+		vpc_id = alicloud_vpc.default.id
+	}
+
+    resource "alicloud_kms_key" "default" {
+        description             =  var.name
+        pending_window_in_days =  7
+        status                  = "Enabled"
+    }
+    // AliyunRDSInstanceEncryptionDefaultRole is a pre-provisioned system service
+    // role in the shared test account; look it up instead of creating a fixed-name
+    // role that would 409 (EntityAlreadyExists.Role). The system policy
+    // AliyunRDSInstanceEncryptionRolePolicy is already attached to this role, so no
+    // resource_manager_policy_attachment is needed here.
+    data "alicloud_ram_roles" "default" {
+      name_regex = "^AliyunRDSInstanceEncryptionDefaultRole$"
     }`, name)
 }
 
