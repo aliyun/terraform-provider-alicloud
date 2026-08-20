@@ -18,6 +18,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/stretchr/testify/assert"
@@ -470,7 +471,7 @@ func TestUnitAliCloudActiontrailTrail(t *testing.T) {
 		patcheDescribeActiontrailTrail := gomonkey.ApplyMethod(reflect.TypeOf(&ActiontrailService{}), "DescribeActiontrailTrail", func(*ActiontrailService, string) (map[string]interface{}, error) {
 			return responseMock["UpdateStopLoggingNormal"]("")
 		})
-		patchActiontrailTrailStateRefreshFunc := gomonkey.ApplyMethod(reflect.TypeOf(&ActiontrailService{}), "ActiontrailTrailStateRefreshFunc", func(*ActiontrailService, string, []string) resource.StateRefreshFunc {
+		patchActiontrailTrailStateRefreshFunc := gomonkey.ApplyMethod(reflect.TypeOf(&ActiontrailService{}), "ActiontrailTrailStateRefreshFunc", func(*ActiontrailService, string, []string) retry.StateRefreshFunc {
 			return func() (interface{}, string, error) {
 				object := map[string]interface{}{
 					"EventRW":             "event_rw",
@@ -566,7 +567,7 @@ func TestUnitAliCloudActiontrailTrail(t *testing.T) {
 		patcheDescribeActiontrailTrail := gomonkey.ApplyMethod(reflect.TypeOf(&ActiontrailService{}), "DescribeActiontrailTrail", func(*ActiontrailService, string) (map[string]interface{}, error) {
 			return responseMock["UpdateStartLoggingNormal"]("")
 		})
-		patchActiontrailTrailStateRefreshFunc := gomonkey.ApplyMethod(reflect.TypeOf(&ActiontrailService{}), "ActiontrailTrailStateRefreshFunc", func(*ActiontrailService, string, []string) resource.StateRefreshFunc {
+		patchActiontrailTrailStateRefreshFunc := gomonkey.ApplyMethod(reflect.TypeOf(&ActiontrailService{}), "ActiontrailTrailStateRefreshFunc", func(*ActiontrailService, string, []string) retry.StateRefreshFunc {
 			return func() (interface{}, string, error) {
 				object := map[string]interface{}{
 					"EventRW":             "event_rw",
@@ -825,11 +826,11 @@ func TestAccAliCloudActiontrailTrail_basic11012(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"trail_region":               "cn-hangzhou",
+					"trail_region": "cn-hangzhou",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"trail_region":               "cn-hangzhou",
+						"trail_region": "cn-hangzhou",
 					}),
 				),
 			},
@@ -1117,11 +1118,11 @@ func TestAccAliCloudActiontrailTrail_basic11016(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"trail_region":               "cn-hangzhou",
+					"trail_region": "cn-hangzhou",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"trail_region":               "cn-hangzhou",
+						"trail_region": "cn-hangzhou",
 					}),
 				),
 			},

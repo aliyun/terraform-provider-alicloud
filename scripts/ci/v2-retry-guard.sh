@@ -4,10 +4,10 @@
 #
 # Background: helper/resource and terraform-plugin-testing both register a
 # -sweep flag in init(), so a test binary linking both dies at startup with
-# "flag redefined: sweep". The Route 1 migration (see the helper-retry
-# migration design doc) moves the retry helpers of non-test files in package
-# alicloud to terraform-plugin-sdk/v2/helper/retry so framework-hosted tests
-# can coexist. This guard stops new usages from creeping back in.
+# "flag redefined: sweep". Package alicloud's non-test files were therefore
+# moved off helper/resource's retry helpers onto
+# terraform-plugin-sdk/v2/helper/retry, so framework-hosted tests can coexist.
+# This guard stops new usages from creeping back in.
 #
 # The check inspects only lines ADDED by the change range, so files that have
 # not been migrated yet can still be edited. It covers:
@@ -27,7 +27,7 @@
 #
 # When DIFF_BASE/DIFF_HEAD are unset and V2_RETRY_GUARD_AUTO_RANGE=true, the
 # range is resolved against origin/${GITHUB_BASE_REF:-master} the same way
-# scripts/basic-check.sh does for the retained Aone workflow.
+# scripts/basic-check.sh does.
 
 set -euo pipefail
 
@@ -157,7 +157,7 @@ fi
 if ((violations > 0)); then
         echo "v2-retry-guard: ${violations} deprecated helper/resource usage(s) introduced."
         echo "        release/v2 requires terraform-plugin-sdk/v2/helper/retry; apply the replacements above."
-        echo "        See the helper-retry migration design doc."
+        echo "        The rewrite is mechanical: scripts/migration/retry_rewrite.sh applies it."
         exit 1
 fi
 

@@ -15,6 +15,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
@@ -33,9 +34,9 @@ func TestAccAliCloudECSSecurityGroupRuleBasic(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  testAccCheckSecurityGroupRuleDestroy,
+		CheckDestroy:      testAccCheckSecurityGroupRuleDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: hclSecurityGroupRuleBasic(name),
@@ -104,9 +105,9 @@ func TestAccAliCloudECSSecurityGroupRuleEgress(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  testAccCheckSecurityGroupRuleDestroy,
+		CheckDestroy:      testAccCheckSecurityGroupRuleDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: hclSecurityGroupEgressRule(name),
@@ -149,9 +150,9 @@ func TestAccAliCloudECSSecurityGroupRuleMulti(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  testAccCheckSecurityGroupRuleDestroy,
+		CheckDestroy:      testAccCheckSecurityGroupRuleDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: hclSecurityGroupRuleMulti(name),
@@ -183,9 +184,9 @@ func TestAccAliCloudECSSecurityGroupRulePrefixList(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  testAccCheckSecurityGroupRuleDestroy,
+		CheckDestroy:      testAccCheckSecurityGroupRuleDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: hclSecurityGroupRulePrefix(name),
@@ -229,9 +230,9 @@ func TestAccAliCloudECSSecurityGroupRuleEgressIpv6(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  testAccCheckSecurityGroupRuleDestroy,
+		CheckDestroy:      testAccCheckSecurityGroupRuleDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: hclSecurityGroupEgressRuleIpv6(name),
@@ -267,9 +268,9 @@ func TestAccAliCloudECSSecurityGroupRuleIngressIpv6(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  testAccCheckSecurityGroupRuleDestroy,
+		CheckDestroy:      testAccCheckSecurityGroupRuleDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: hclSecurityGroupIngressRuleIpv6(name),
@@ -312,9 +313,9 @@ func TestAccAliCloudECSSecurityGroupRuleEgressOtherIpv6(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  testAccCheckSecurityGroupRuleDestroy,
+		CheckDestroy:      testAccCheckSecurityGroupRuleDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: hclSecurityGroupEgressRuleOtherIpv6(name),
@@ -351,9 +352,9 @@ func TestAccAliCloudECSSecurityGroupRuleIngressOtherIpv6(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  testAccCheckSecurityGroupRuleDestroy,
+		CheckDestroy:      testAccCheckSecurityGroupRuleDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: hclSecurityGroupIngressRuleOtherIpv6(name),
@@ -396,9 +397,9 @@ func TestAccAliCloudECSSecurityGroupRuleEgressICMPv6(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  testAccCheckSecurityGroupRuleDestroy,
+		CheckDestroy:      testAccCheckSecurityGroupRuleDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: hclSecurityGroupEgressRuleICMPv6(name),
@@ -583,20 +584,20 @@ func testAccPrepareSecurityGroupRuleCrossAccountPeer(t *testing.T, name string) 
 }
 
 func testAccWaitSecurityGroupRulePeerVpcAvailable(client *vpc.Client, vpcID string) error {
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
+	return retry.Retry(5*time.Minute, func() *retry.RetryError {
 		request := vpc.CreateDescribeVpcsRequest()
 		request.VpcId = vpcID
 		response, err := client.DescribeVpcs(request)
 		if err != nil {
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		if len(response.Vpcs.Vpc) == 0 {
-			return resource.NonRetryableError(fmt.Errorf("VPC %s was not found", vpcID))
+			return retry.NonRetryableError(fmt.Errorf("VPC %s was not found", vpcID))
 		}
 		if response.Vpcs.Vpc[0].Status == "Available" {
 			return nil
 		}
-		return resource.RetryableError(fmt.Errorf("VPC %s is in status %s", vpcID, response.Vpcs.Vpc[0].Status))
+		return retry.RetryableError(fmt.Errorf("VPC %s is in status %s", vpcID, response.Vpcs.Vpc[0].Status))
 	})
 }
 
@@ -609,7 +610,7 @@ func testAccCleanupSecurityGroupRulePeerSecurityGroup(client *ecs.Client, securi
 		}
 	}
 
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
+	return retry.Retry(5*time.Minute, func() *retry.RetryError {
 		request := ecs.CreateDescribeSecurityGroupsRequest()
 		request.SecurityGroupId = securityGroupID
 		response, err := client.DescribeSecurityGroups(request)
@@ -617,17 +618,17 @@ func testAccCleanupSecurityGroupRulePeerSecurityGroup(client *ecs.Client, securi
 			if NotFoundError(err) || IsExpectedErrors(err, []string{"InvalidSecurityGroupId.NotFound"}) {
 				return nil
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		if len(response.SecurityGroups.SecurityGroup) == 0 {
 			return nil
 		}
-		return resource.RetryableError(fmt.Errorf("security group %s still exists", securityGroupID))
+		return retry.RetryableError(fmt.Errorf("security group %s still exists", securityGroupID))
 	})
 }
 
 func testAccCleanupSecurityGroupRulePeerVpc(client *vpc.Client, vpcID string) error {
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 		request := vpc.CreateDeleteVpcRequest()
 		request.VpcId = vpcID
 		_, err := client.DeleteVpc(request)
@@ -635,15 +636,15 @@ func testAccCleanupSecurityGroupRulePeerVpc(client *vpc.Client, vpcID string) er
 			return nil
 		}
 		if IsExpectedErrors(err, []string{"IncorrectVpcStatus"}) {
-			return resource.RetryableError(err)
+			return retry.RetryableError(err)
 		}
-		return resource.NonRetryableError(err)
+		return retry.NonRetryableError(err)
 	})
 	if err != nil {
 		return err
 	}
 
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
+	return retry.Retry(5*time.Minute, func() *retry.RetryError {
 		request := vpc.CreateDescribeVpcsRequest()
 		request.VpcId = vpcID
 		response, err := client.DescribeVpcs(request)
@@ -651,12 +652,12 @@ func testAccCleanupSecurityGroupRulePeerVpc(client *vpc.Client, vpcID string) er
 			if NotFoundError(err) || IsExpectedErrors(err, []string{"InvalidResource.NotFound", "InvalidVpcID.NotFound"}) {
 				return nil
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		if len(response.Vpcs.Vpc) == 0 {
 			return nil
 		}
-		return resource.RetryableError(fmt.Errorf("VPC %s still exists", vpcID))
+		return retry.RetryableError(fmt.Errorf("VPC %s still exists", vpcID))
 	})
 }
 

@@ -11,6 +11,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
@@ -76,22 +77,22 @@ func testSweepEdasCluster(region string) error {
 		deleteClusterRq.RegionId = region
 		deleteClusterRq.ClusterId = v.ClusterId
 
-		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 			raw, err := edasService.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
 				return edasClient.DeleteCluster(deleteClusterRq)
 			})
 			if err != nil {
 				if IsExpectedErrors(err, []string{ThrottlingUser}) {
 					time.Sleep(5 * time.Second)
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(deleteClusterRq.GetActionName(), raw, deleteClusterRq.RoaRequest, deleteClusterRq)
 			rsp := raw.(*edas.DeleteClusterResponse)
 			if rsp.Code == 601 && strings.Contains(rsp.Message, "Operation cannot be processed because there are running instances.") {
 				err = Error("Operation cannot be processed because there are running instances.")
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 			return nil
 		})
@@ -124,9 +125,9 @@ func TestAccAlicloudEdasCluster_basic(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  testAccCheckEdasClusterDestroy,
+		CheckDestroy:      testAccCheckEdasClusterDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -192,9 +193,9 @@ func TestAccAlicloudEdasCluster_multi(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  testAccCheckEdasClusterDestroy,
+		CheckDestroy:      testAccCheckEdasClusterDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

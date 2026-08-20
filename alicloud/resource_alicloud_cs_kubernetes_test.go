@@ -15,6 +15,7 @@ import (
 	"github.com/denverdino/aliyungo/cs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 // # Generate a CA cert pair.
@@ -112,14 +113,14 @@ func testSweepCSKubernetes(region string) error {
 		log.Printf("[INFO] Deleting CS Clusters: %s (%s)", name, id)
 		sweepOtherResourceSuffixes = append(sweepOtherResourceSuffixes, id)
 
-		err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 			if err := invoker.Run(func() error {
 				_, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
 					return nil, csClient.DeleteKubernetesCluster(id)
 				})
 				return err
 			}); err != nil {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 			return nil
 		})

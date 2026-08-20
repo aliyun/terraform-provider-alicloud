@@ -15,6 +15,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/stretchr/testify/assert"
@@ -1215,12 +1216,12 @@ func testAccEnsureAmqpEncryptionServiceLinkedRole(t *testing.T) {
 		t.Fatalf("failed to create AMQP encryption service-linked role: %s", err)
 	}
 
-	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(2*time.Minute, func() *retry.RetryError {
 		if _, describeErr := ramService.DescribeRamServiceLinkedRole(roleID); describeErr != nil {
 			if NotFoundError(describeErr) || IsExpectedErrors(describeErr, []string{"EntityNotExist.Role"}) {
-				return resource.RetryableError(describeErr)
+				return retry.RetryableError(describeErr)
 			}
-			return resource.NonRetryableError(describeErr)
+			return retry.NonRetryableError(describeErr)
 		}
 		return nil
 	})

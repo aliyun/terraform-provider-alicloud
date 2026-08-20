@@ -10,6 +10,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 func init() {
@@ -91,14 +92,14 @@ func testSweepVpcIpamIpamPoolCidr(region string) error {
 					"RegionId":   client.RegionId,
 				}
 				wait := incrementalWait(3*time.Second, 3*time.Second)
-				err = resource.Retry(time.Minute*10, func() *resource.RetryError {
+				err = retry.Retry(time.Minute*10, func() *retry.RetryError {
 					response, err = client.RpcPost("VpcIpam", "2023-02-28", deleteAction, nil, deleteRequest, false)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					return nil
 				})

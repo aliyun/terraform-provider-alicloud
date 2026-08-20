@@ -17,6 +17,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/stretchr/testify/assert"
@@ -51,14 +52,14 @@ func testSweepGPDBDBInstance(region string) error {
 	var response map[string]interface{}
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 			response, err = aliyunClient.RpcPost("gpdb", "2016-05-03", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -2135,14 +2136,14 @@ func gpdbFindInstanceIdByDescription(t *testing.T, client *connectivity.AliyunCl
 		var response map[string]interface{}
 		var err error
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("gpdb", "2016-05-03", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -2199,14 +2200,14 @@ func gpdbTriggerBackup(t *testing.T, client *connectivity.AliyunClient, instance
 	}
 	var response map[string]interface{}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+	err := retry.Retry(10*time.Minute, func() *retry.RetryError {
 		resp, err := client.RpcPost("gpdb", "2016-05-03", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		response = resp
 		return nil
@@ -2235,17 +2236,17 @@ func gpdbWaitBackupJobFinished(t *testing.T, client *connectivity.AliyunClient, 
 		"BackupJobId":  backupJobId,
 	}
 	var backupId string
-	err := resource.Retry(30*time.Minute, func() *resource.RetryError {
+	err := retry.Retry(30*time.Minute, func() *retry.RetryError {
 		response, err := client.RpcPost("gpdb", "2016-05-03", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		status, _ := jsonpath.Get("$.BackupStatus", response)
 		if fmt.Sprint(status) != "finish" {
-			return resource.RetryableError(fmt.Errorf("backup job %v on instance %s not finished, current status: %v", backupJobId, instanceId, status))
+			return retry.RetryableError(fmt.Errorf("backup job %v on instance %s not finished, current status: %v", backupJobId, instanceId, status))
 		}
 		if id, e := jsonpath.Get("$.BackupId", response); e == nil && id != nil {
 			backupId = fmt.Sprint(id)

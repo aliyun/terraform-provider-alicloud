@@ -18,9 +18,6 @@
 #
 # Requires: grep, perl, goimports. Verify afterwards:
 #   go build ./... . && go vet ./alicloud/...
-#
-# Design: "设计：将 package alicloud 从 helper/resource 迁移走（Route 1）" in the vault
-# (tf provider/design/release v2/2026-08-17-helper-retry-migration-design.md).
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 

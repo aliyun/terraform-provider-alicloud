@@ -17,6 +17,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/stretchr/testify/assert"
@@ -95,21 +96,21 @@ func testSweepEDASK8sSlbAttachment(region string) error {
 		request.AppId = appId
 
 		wait := incrementalWait(1*time.Second, 2*time.Second)
-		err := resource.Retry(time.Minute*2, func() *resource.RetryError {
+		err := retry.Retry(time.Minute*2, func() *retry.RetryError {
 			raw, err := edasService.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
 				return edasClient.DeleteK8sApplication(request)
 			})
 			if err != nil {
 				if IsExpectedErrors(err, []string{ThrottlingUser}) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 			response := raw.(*edas.DeleteK8sApplicationResponse)
 			if response.Code != 200 {
-				return resource.NonRetryableError(Error("[ERROR] Delete k8s application failed for %s", response.Message))
+				return retry.NonRetryableError(Error("[ERROR] Delete k8s application failed for %s", response.Message))
 			}
 			return edasService.WaitForChangeOrderFinishedNonRetryable(appId, response.ChangeOrderId, 3*time.Minute)
 		})
@@ -482,9 +483,9 @@ func TestAccAlicloudEDASK8sSlbAttachment_basic(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  testAccCheckEdasSlbAttachmentDestroy,
+		CheckDestroy:      testAccCheckEdasSlbAttachmentDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
