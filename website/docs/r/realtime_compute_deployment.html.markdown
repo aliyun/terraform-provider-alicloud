@@ -250,7 +250,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Realtime Compute Deployment can be imported using the id, e.g.
+Realtime Compute Deployment can be imported using the id, which consists of resource_id, namespace and deployment_id, e.g.
 
 ```shell
 $ terraform import alicloud_realtime_compute_deployment.example <resource_id>:<namespace>:<deployment_id>

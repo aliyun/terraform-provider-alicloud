@@ -91,7 +91,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-OSS Access Point can be imported using the id, e.g.
+OSS Access Point can be imported using the id, which consists of bucket and access_point_name, e.g.
 
 ```shell
 $ terraform import alicloud_oss_access_point.example <bucket>:<access_point_name>

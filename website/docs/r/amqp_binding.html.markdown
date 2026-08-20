@@ -101,7 +101,7 @@ The following attributes are exported:
 
 ## Import
 
-RabbitMQ (AMQP) Binding can be imported using the id, e.g.
+RabbitMQ (AMQP) Binding can be imported using the id, which consists of instance_id, virtual_host_name, source_exchange and destination_name, e.g.
 
 ```shell
 $ terraform import alicloud_amqp_binding.example <instance_id>:<virtual_host_name>:<source_exchange>:<destination_name>

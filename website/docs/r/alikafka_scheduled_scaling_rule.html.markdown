@@ -125,7 +125,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Alikafka Scheduled Scaling Rule can be imported using the id, e.g.
+Alikafka Scheduled Scaling Rule can be imported using the id, which consists of instance_id and rule_name, e.g.
 
 ```shell
 $ terraform import alicloud_alikafka_scheduled_scaling_rule.example <instance_id>:<rule_name>

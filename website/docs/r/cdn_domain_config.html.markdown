@@ -84,7 +84,7 @@ The following attributes are exported:
 
 ## Import
 
-CDN domain config can be imported using the id, e.g.
+CDN domain config can be imported using the id, which consists of domain_name, function_name and config_id, e.g.
 
 ```shell
 terraform import alicloud_cdn_domain_config.example <domain_name>:<function_name>:<config_id>

@@ -139,7 +139,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-RDS database endpoint feature can be imported using the id, e.g.
+RDS database endpoint feature can be imported using the id, which consists of db_instance_id and db_instance_endpoint_id, e.g.
 
 ```shell
 $ terraform import alicloud_rds_db_instance_endpoint.example <db_instance_id>:<db_instance_endpoint_id>

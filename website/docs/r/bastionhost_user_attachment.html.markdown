@@ -95,7 +95,7 @@ The following attributes are exported:
 
 ## Import
 
-Bastion Host User Attachment can be imported using the id, e.g.
+Bastion Host User Attachment can be imported using the id, which consists of instance_id, user_group_id and user_id, e.g.
 
 ```shell
 $ terraform import alicloud_bastionhost_user_attachment.example <instance_id>:<user_group_id>:<user_id>

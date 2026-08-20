@@ -78,7 +78,7 @@ The following attributes are exported:
 
 ## Import
 
-The Sag Qos Car can be imported using the id, e.g.
+The Sag Qos Car can be imported using the id, which consists of qos_id and qos_car_id, e.g.
 
 ```shell
 $ terraform import alicloud_sag_qos_car.example <qos_id>:<qos_car_id>

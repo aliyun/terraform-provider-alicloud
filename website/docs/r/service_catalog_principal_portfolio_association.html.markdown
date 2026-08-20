@@ -94,7 +94,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Service Catalog Principal Portfolio Association can be imported using the id, e.g.
+Service Catalog Principal Portfolio Association can be imported using the id, which consists of principal_id, principal_type and portfolio_id, e.g.
 
 ```shell
 $ terraform import alicloud_service_catalog_principal_portfolio_association.example <principal_id>:<principal_type>:<portfolio_id>

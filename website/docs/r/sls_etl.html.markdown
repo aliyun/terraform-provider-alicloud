@@ -126,7 +126,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Log Service (SLS) Etl can be imported using the id, e.g.
+Log Service (SLS) Etl can be imported using the id, which consists of project and job_name, e.g.
 
 ```shell
 $ terraform import alicloud_sls_etl.example <project>:<job_name>

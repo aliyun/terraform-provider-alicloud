@@ -84,7 +84,7 @@ The following attributes are exported:
 
 ## Import
 
-OOS Application Group can be imported using the id, e.g.
+OOS Application Group can be imported using the id, which consists of application_name and application_group_name, e.g.
 
 ```shell
 $ terraform import alicloud_oos_application_group.example <application_name>:<application_group_name>

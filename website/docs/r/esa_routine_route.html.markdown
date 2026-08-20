@@ -95,7 +95,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-ESA Routine Route can be imported using the id, e.g.
+ESA Routine Route can be imported using the id, which consists of site_id, routine_name and config_id, e.g.
 
 ```shell
 $ terraform import alicloud_esa_routine_route.example <site_id>:<routine_name>:<config_id>

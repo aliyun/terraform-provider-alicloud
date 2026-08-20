@@ -148,7 +148,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-EAIS Client Instance Attachment can be imported using the id, e.g.
+EAIS Client Instance Attachment can be imported using the id, which consists of instance_id and client_instance_id, e.g.
 
 ```shell
 $ terraform import alicloud_eais_client_instance_attachment.example <instance_id>:<client_instance_id>

@@ -75,7 +75,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-VPC Traffic Mirror Filter Egress Rule can be imported using the id, e.g.
+VPC Traffic Mirror Filter Egress Rule can be imported using the id, which consists of traffic_mirror_filter_id and traffic_mirror_filter_egress_rule_id, e.g.
 
 ```shell
 $ terraform import alicloud_vpc_traffic_mirror_filter_egress_rule.example <traffic_mirror_filter_id>:<traffic_mirror_filter_egress_rule_id>

@@ -127,7 +127,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Config Aggregate Delivery can be imported using the id, e.g.
+Config Aggregate Delivery can be imported using the id, which consists of aggregator_id and delivery_channel_id, e.g.
 
 ```shell
 $ terraform import alicloud_config_aggregate_delivery.example <aggregator_id>:<delivery_channel_id>

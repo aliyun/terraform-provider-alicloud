@@ -131,7 +131,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-RabbitMQ (AMQP) Open Source Permission can be imported using the id, e.g.
+RabbitMQ (AMQP) Open Source Permission can be imported using the id, which consists of user_name, vhost and instance_id, e.g.
 
 ```shell
 $ terraform import alicloud_amqp_open_source_permission.example <user_name>:<vhost>:<instance_id>

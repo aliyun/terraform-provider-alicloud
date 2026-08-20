@@ -171,7 +171,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-FCV3 Trigger can be imported using the id, e.g.
+FCV3 Trigger can be imported using the id, which consists of function_name and trigger_name, e.g.
 
 ```shell
 $ terraform import alicloud_fcv3_trigger.example <function_name>:<trigger_name>

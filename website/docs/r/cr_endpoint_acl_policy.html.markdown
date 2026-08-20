@@ -86,7 +86,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-CR Endpoint Acl Policy can be imported using the id, e.g.
+CR Endpoint Acl Policy can be imported using the id, which consists of instance_id, endpoint_type and entry, e.g.
 
 ```shell
 $ terraform import alicloud_cr_endpoint_acl_policy.example <instance_id>:<endpoint_type>:<entry>

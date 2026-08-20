@@ -67,7 +67,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Api Gateway Acl Entry Attachment can be imported using the id, e.g.
+Api Gateway Acl Entry Attachment can be imported using the id, which consists of acl_id and entry, e.g.
 
 ```shell
 $ terraform import alicloud_api_gateway_acl_entry_attachment.example <acl_id>:<entry>

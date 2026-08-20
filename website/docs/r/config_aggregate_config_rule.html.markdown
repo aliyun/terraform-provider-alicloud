@@ -112,7 +112,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Cloud Config Aggregate Config Rule can be imported using the id, e.g.
+Cloud Config Aggregate Config Rule can be imported using the id, which consists of aggregator_id and config_rule_id, e.g.
 
 ```shell
 $ terraform import alicloud_config_aggregate_config_rule.example "<aggregator_id>:<config_rule_id>"

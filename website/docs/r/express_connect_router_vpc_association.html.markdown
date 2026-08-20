@@ -87,7 +87,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Express Connect Router Express Connect Router Vpc Association can be imported using the id, e.g.
+Express Connect Router Express Connect Router Vpc Association can be imported using the id, which consists of ecr_id, association_id and vpc_id, e.g.
 
 ```shell
 $ terraform import alicloud_express_connect_router_vpc_association.example <ecr_id>:<association_id>:<vpc_id>

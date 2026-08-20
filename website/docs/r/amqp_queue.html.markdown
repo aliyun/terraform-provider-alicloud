@@ -88,7 +88,7 @@ The following attributes are exported:
 
 ## Import
 
-RabbitMQ (AMQP) Queue can be imported using the id, e.g.
+RabbitMQ (AMQP) Queue can be imported using the id, which consists of instance_id, virtual_host_name and queue_name, e.g.
 
 ```shell
 $ terraform import alicloud_amqp_queue.example <instance_id>:<virtual_host_name>:<queue_name>

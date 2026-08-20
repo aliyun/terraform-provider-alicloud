@@ -116,7 +116,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Adb Resource Group can be imported using the id, e.g.
+Adb Resource Group can be imported using the id, which consists of db_cluster_id and group_name, e.g.
 
 ```shell
 $ terraform import alicloud_adb_resource_group.example <db_cluster_id>:<group_name>

@@ -82,7 +82,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-FCV3 Vpc Binding can be imported using the id, e.g.
+FCV3 Vpc Binding can be imported using the id, which consists of function_name and vpc_id, e.g.
 
 ```shell
 $ terraform import alicloud_fcv3_vpc_binding.example <function_name>:<vpc_id>

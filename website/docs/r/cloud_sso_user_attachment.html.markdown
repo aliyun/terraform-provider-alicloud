@@ -87,7 +87,7 @@ The following attributes are exported:
 
 ## Import
 
-Cloud SSO User Attachment can be imported using the id, e.g.
+Cloud SSO User Attachment can be imported using the id, which consists of directory_id, group_id and user_id, e.g.
 
 ```shell
 $ terraform import alicloud_cloud_sso_user_attachment.example <directory_id>:<group_id>:<user_id>

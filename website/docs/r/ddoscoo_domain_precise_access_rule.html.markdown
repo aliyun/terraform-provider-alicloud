@@ -108,7 +108,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-DdosCoo Domain Precise Access Rule can be imported using the id, e.g.
+DdosCoo Domain Precise Access Rule can be imported using the id, which consists of domain and name, e.g.
 
 ```shell
 $ terraform import alicloud_ddoscoo_domain_precise_access_rule.example <domain>:<name>

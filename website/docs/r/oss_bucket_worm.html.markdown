@@ -80,7 +80,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-OSS Bucket Worm can be imported using the id, e.g.
+OSS Bucket Worm can be imported using the id, which consists of bucket and worm_id, e.g.
 
 ```shell
 $ terraform import alicloud_oss_bucket_worm.example <bucket>:<worm_id>

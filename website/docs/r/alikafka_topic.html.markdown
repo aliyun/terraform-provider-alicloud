@@ -129,7 +129,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Alikafka Topic can be imported using the id, e.g.
+Alikafka Topic can be imported using the id, which consists of instance_id and topic, e.g.
 
 ```shell
 $ terraform import alicloud_alikafka_topic.example <instance_id>:<topic>

@@ -77,7 +77,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-ECS Auto Snapshot Policy Attachment can be imported using the id, e.g.
+ECS Auto Snapshot Policy Attachment can be imported using the id, which consists of auto_snapshot_policy_id and disk_id, e.g.
 
 ```shell
 $ terraform import alicloud_ecs_auto_snapshot_policy_attachment.example <auto_snapshot_policy_id>:<disk_id>

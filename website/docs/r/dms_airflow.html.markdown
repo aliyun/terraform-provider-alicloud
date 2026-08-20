@@ -115,7 +115,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Dms Airflow can be imported using the id, e.g.
+Dms Airflow can be imported using the id, which consists of workspace_id and airflow_id, e.g.
 
 ```shell
 $ terraform import alicloud_dms_airflow.example <workspace_id>:<airflow_id>

@@ -118,7 +118,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Nat Gateway Forward Entry can be imported using the id, e.g.
+Nat Gateway Forward Entry can be imported using the id, which consists of forward_table_id and forward_entry_id, e.g.
 
 ```shell
 $ terraform import alicloud_forward_entry.example <forward_table_id>:<forward_entry_id>

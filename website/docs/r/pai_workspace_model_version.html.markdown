@@ -159,7 +159,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ## Import
 
-PAI Workspace Model Version can be imported using the id, e.g.
+PAI Workspace Model Version can be imported using the id, which consists of model_id and version_name, e.g.
 
 ```shell
 $ terraform import alicloud_pai_workspace_model_version.example <model_id>:<version_name>

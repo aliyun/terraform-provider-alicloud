@@ -111,7 +111,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Express Connect Router Express Connect Router Tr Association can be imported using the id, e.g.
+Express Connect Router Express Connect Router Tr Association can be imported using the id, which consists of ecr_id, association_id and transit_router_id, e.g.
 
 ```shell
 $ terraform import alicloud_express_connect_router_tr_association.example <ecr_id>:<association_id>:<transit_router_id>

@@ -224,7 +224,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Schedulerx Job can be imported using the id, e.g.
+Schedulerx Job can be imported using the id, which consists of namespace, group_id and job_id, e.g.
 
 ```shell
 $ terraform import alicloud_schedulerx_job.example <namespace>:<group_id>:<job_id>

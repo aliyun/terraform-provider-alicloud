@@ -84,7 +84,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-ESA Routine Code Deployment can be imported using the id, e.g.
+ESA Routine Code Deployment can be imported using the id, which consists of routine_name and env, e.g.
 
 ```shell
 $ terraform import alicloud_esa_routine_code_deployment.example <routine_name>:<env>

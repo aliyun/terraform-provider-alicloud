@@ -76,7 +76,7 @@ The following attributes are exported:
 
 ## Import
 
-CR Chart Repository can be imported using the id, e.g.
+CR Chart Repository can be imported using the id, which consists of instance_id, repo_namespace_name and repo_name, e.g.
 
 ```shell
 $ terraform import alicloud_cr_chart_repository.example <instance_id>:<repo_namespace_name>:<repo_name>

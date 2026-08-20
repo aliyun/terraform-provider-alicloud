@@ -101,7 +101,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Click House Enterprise Db Cluster Public Endpoint can be imported using the id, e.g.
+Click House Enterprise Db Cluster Public Endpoint can be imported using the id, which consists of db_instance_id and net_type, e.g.
 
 ```shell
 $ terraform import alicloud_click_house_enterprise_db_cluster_public_endpoint.example <db_instance_id>:<net_type>

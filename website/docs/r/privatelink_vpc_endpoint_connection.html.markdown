@@ -113,7 +113,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Private Link Vpc Endpoint Connection can be imported using the id, e.g.
+Private Link Vpc Endpoint Connection can be imported using the id, which consists of service_id and endpoint_id, e.g.
 
 ```shell
 $ terraform import alicloud_privatelink_vpc_endpoint_connection.example <service_id>:<endpoint_id>

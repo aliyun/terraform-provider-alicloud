@@ -136,7 +136,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Global Accelerator (GA) Basic Endpoint can be imported using the id, e.g.
+Global Accelerator (GA) Basic Endpoint can be imported using the id, which consists of endpoint_group_id and endpoint_id, e.g.
 
 ```shell
 $ terraform import alicloud_ga_basic_endpoint.example <endpoint_group_id>:<endpoint_id>

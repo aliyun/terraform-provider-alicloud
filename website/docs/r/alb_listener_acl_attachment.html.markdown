@@ -149,7 +149,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-ALB Listener Acl Attachment can be imported using the id, e.g.
+ALB Listener Acl Attachment can be imported using the id, which consists of listener_id and acl_id, e.g.
 
 ```shell
 $ terraform import alicloud_alb_listener_acl_attachment.example <listener_id>:<acl_id>

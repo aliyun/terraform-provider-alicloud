@@ -125,7 +125,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Load Balancer Virtual Backend Server Group Server Attachment can be imported using the id, e.g.
+Load Balancer Virtual Backend Server Group Server Attachment can be imported using the id, which consists of server_group_id, server_id and port, e.g.
 
 ```shell
 $ terraform import alicloud_slb_server_group_server_attachment.example <server_group_id>:<server_id>:<port>

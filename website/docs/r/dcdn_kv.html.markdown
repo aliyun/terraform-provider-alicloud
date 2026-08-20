@@ -72,7 +72,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Dcdn Kv can be imported using the id, e.g.
+Dcdn Kv can be imported using the id, which consists of namespace and key, e.g.
 
 ```shell
 $ terraform import alicloud_dcdn_kv.example <namespace>:<key>

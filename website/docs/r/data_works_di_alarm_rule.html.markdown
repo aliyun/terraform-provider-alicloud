@@ -217,7 +217,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Data Works Di Alarm Rule can be imported using the id, e.g.
+Data Works Di Alarm Rule can be imported using the id, which consists of di_job_id and di_alarm_rule_id, e.g.
 
 ```shell
 $ terraform import alicloud_data_works_di_alarm_rule.example <di_job_id>:<di_alarm_rule_id>

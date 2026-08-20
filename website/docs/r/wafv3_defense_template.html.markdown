@@ -95,7 +95,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-WAFV3 Defense Template can be imported using the id, e.g.
+WAFV3 Defense Template can be imported using the id, which consists of instance_id and defense_template_id, e.g.
 
 ```shell
 $ terraform import alicloud_wafv3_defense_template.example <instance_id>:<defense_template_id>

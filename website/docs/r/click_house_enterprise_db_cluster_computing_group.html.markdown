@@ -129,7 +129,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Click House Enterprise Db Cluster Computing Group can be imported using the id, e.g.
+Click House Enterprise Db Cluster Computing Group can be imported using the id, which consists of db_instance_id and computing_group_id, e.g.
 
 ```shell
 $ terraform import alicloud_click_house_enterprise_db_cluster_computing_group.example <db_instance_id>:<computing_group_id>

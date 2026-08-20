@@ -137,7 +137,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Global Accelerator (GA) Access Log can be imported using the id, e.g.
+Global Accelerator (GA) Access Log can be imported using the id, which consists of accelerator_id, listener_id and endpoint_group_id, e.g.
 
 ```shell
 $ terraform import alicloud_ga_access_log.example <accelerator_id>:<listener_id>:<endpoint_group_id>

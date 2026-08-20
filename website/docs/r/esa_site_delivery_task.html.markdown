@@ -200,7 +200,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-ESA Site Delivery Task can be imported using the id, e.g.
+ESA Site Delivery Task can be imported using the id, which consists of site_id and task_name, e.g.
 
 ```shell
 $ terraform import alicloud_esa_site_delivery_task.example <site_id>:<task_name>

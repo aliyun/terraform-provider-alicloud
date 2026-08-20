@@ -104,7 +104,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-cr Artifact Subscription Rule can be imported using the id, e.g.
+cr Artifact Subscription Rule can be imported using the id, which consists of instance_id and artifact_subscription_rule_id, e.g.
 
 ```shell
 $ terraform import alicloud_cr_artifact_subscription_rule.example <instance_id>:<artifact_subscription_rule_id>
