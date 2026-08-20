@@ -36,7 +36,7 @@ func resourceAliCloudAmqpExchange() *schema.Resource {
 				ForceNew: true,
 			},
 			"create_time": {
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Computed: true,
 			},
 			"exchange_name": {

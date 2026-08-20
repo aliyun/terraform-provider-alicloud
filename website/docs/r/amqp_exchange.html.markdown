@@ -103,7 +103,7 @@ The following arguments are supported:
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<instance_id>:<virtual_host_name>:<exchange_name>`.
-* `create_time` - CreateTime
+* `create_time` - The time when the exchange was created. Unix timestamp, to millisecond level.
 
 ## Timeouts
 

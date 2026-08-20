@@ -70,7 +70,7 @@ The following attributes are exported:
 * `user_name` - The static username.
 * `password` - The static password.
 * `master_uid` - The ID of the user's primary account.
-* `create_time` - The timestamp that indicates when the pair of static username and password was created.
+* `create_time` - The time when the pair of static username and password was created. Unix timestamp, to millisecond level.
 
 ## Timeouts
 
