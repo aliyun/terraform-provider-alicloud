@@ -4,14 +4,11 @@ import (
 	"context"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	tffunction "github.com/aliyun/terraform-provider-alicloud/alicloud/function"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/framework"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/function"
-	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
-	sdkschema "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/tfversion"
 )
@@ -137,7 +134,7 @@ func TestARNBuildFunction_HCL(t *testing.T) {
 		TerraformVersionChecks: []tfversion.TerraformVersionCheck{
 			tfversion.SkipBelow(tfversion.Version1_8_0),
 		},
-		ProtoV5ProviderFactories: protoV5ProviderFactories(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config: arnBuildHCLConfig,
@@ -151,12 +148,6 @@ func TestARNBuildFunction_HCL(t *testing.T) {
 			},
 		},
 	})
-}
-
-func protoV5ProviderFactories() map[string]func() (tfprotov5.ProviderServer, error) {
-	return map[string]func() (tfprotov5.ProviderServer, error){
-		"alicloud": providerserver.NewProtocol5WithError(framework.NewProvider(&sdkschema.Provider{})),
-	}
 }
 
 const arnBuildHCLConfig = `

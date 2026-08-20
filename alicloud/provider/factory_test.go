@@ -1,11 +1,11 @@
-package framework_test
+package provider_test
 
 import (
 	"context"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/framework"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 )
 
@@ -14,7 +14,7 @@ import (
 func TestUnitFrameworkProviderSchemaMatchesSDK(t *testing.T) {
 	ctx := context.Background()
 
-	serverFactory, err := framework.ProtoV5ProviderServerFactory(ctx, alicloud.Provider())
+	serverFactory, err := provider.ProtoV5ProviderServerFactory(ctx, alicloud.Provider())
 	if err != nil {
 		t.Fatalf("muxing the SDK v2 and framework providers: %s", err)
 	}
