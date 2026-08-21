@@ -157,11 +157,17 @@ func dataSourceAlicloudPolarDBInstanceClassesRead(d *schema.ResourceData, meta i
 			if len(supportedEngine.AvailableResources) == 0 {
 				continue
 			}
-			if dbTypeGot && !strings.Contains(strings.ToLower(supportedEngine.Engine), strings.ToLower(dbType.(string))) {
-				continue
+			if dbTypeGot {
+				engineType, _ := polarDBEngineInfo(supportedEngine.Engine)
+				if normalizePolarDBEngineType(engineType) != normalizePolarDBEngineType(dbType.(string)) {
+					continue
+				}
 			}
-			if dbVersionGot && !strings.Contains(strings.ToLower(supportedEngine.Engine), strings.ToLower(dbVersion.(string))) {
-				continue
+			if dbVersionGot {
+				_, version := polarDBEngineInfo(supportedEngine.Engine)
+				if version != strings.ToLower(dbVersion.(string)) {
+					continue
+				}
 			}
 			var dbNodeClasses []map[string]string
 			for _, availableResource := range supportedEngine.AvailableResources {
@@ -221,4 +227,38 @@ func dataSourceAlicloudPolarDBInstanceClassesRead(d *schema.ResourceData, meta i
 		}
 	}
 	return nil
+}
+
+// polarDBEngineInfo splits a PolarDB engine identifier returned by the
+// DescribeDBClusterAvailableResources API into its engine prefix and the
+// remaining version suffix. The API returns the engine as the full DB type
+// name followed by the version (e.g. "PostgreSQL11", "MySQL5.6", "Oracle");
+// some responses may also use compact forms (e.g. "pg14", "mysql8"). Splitting
+// at the first digit preserves version suffixes that contain dots.
+func polarDBEngineInfo(engine string) (engineType string, version string) {
+	e := strings.ToLower(engine)
+	i := 0
+	for i < len(e) && (e[i] < '0' || e[i] > '9') {
+		i++
+	}
+	return e[:i], e[i:]
+}
+
+// normalizePolarDBEngineType maps a DB type to the canonical engine prefix,
+// applied to both the API-returned engine prefix (from polarDBEngineInfo) and
+// the user-specified db_type argument so the two are comparable. It handles
+// full-name forms ("PostgreSQL", "MySQL", "Oracle") and compact forms ("pg")
+// alike, mapping them to "pg", "mysql", "oracle". Unrecognized values are
+// lower-cased as-is.
+func normalizePolarDBEngineType(dbType string) string {
+	switch strings.ToLower(dbType) {
+	case "postgresql", "pg":
+		return "pg"
+	case "mysql":
+		return "mysql"
+	case "oracle":
+		return "oracle"
+	default:
+		return strings.ToLower(dbType)
+	}
 }
