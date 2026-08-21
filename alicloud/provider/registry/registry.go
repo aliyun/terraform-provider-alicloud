@@ -18,6 +18,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ims"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/kms"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/oos"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/polardb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ram"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/sts"
 )
@@ -45,6 +46,7 @@ var servicePackages = []conns.ServicePackage{
 	cr.ServicePackage(),
 	ram.ServicePackage(),
 	sts.ServicePackage(),
+	polardb.ServicePackage(),
 }
 
 var validateOnce sync.Once
