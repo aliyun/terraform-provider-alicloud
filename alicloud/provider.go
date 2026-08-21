@@ -1612,6 +1612,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_polardb_application_endpoint":                          resourceAlicloudPolarDBApplicationEndpoint(),
 			"alicloud_polardb_batch_task":                                    resourceAlicloudPolarDBBatchTask(),
 			"alicloud_polardb_aicluster":                                     resourceAlicloudPolarDBAICluster(),
+			"alicloud_polardb_gateway":                                       resourceAlicloudPolarDBGateway(),
 			"alicloud_hbase_instance":                                        resourceAlicloudHBaseInstance(),
 			"alicloud_market_order":                                          resourceAlicloudMarketOrder(),
 			"alicloud_adb_cluster":                                           resourceAliCloudAdbDbCluster(),
