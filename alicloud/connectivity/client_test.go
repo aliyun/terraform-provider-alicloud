@@ -114,6 +114,24 @@ func NewTestClient(t *testing.T) *AliyunClient {
 	return client
 }
 
+func TestGetTableStoreConfigProxy(t *testing.T) {
+	const proxyURL = "http://proxy.example.com:8080"
+	t.Setenv("HTTPS_PROXY", proxyURL)
+	t.Setenv("https_proxy", "")
+	t.Setenv("NO_PROXY", "")
+	t.Setenv("no_proxy", "")
+
+	client := &AliyunClient{config: &Config{Protocol: "HTTPS"}}
+	config, err := client.getTableStoreConfig("https://instance.cn-hangzhou.ots.aliyuncs.com")
+	assert.NoError(t, err)
+	assert.Equal(t, proxyURL, config.ProxyHost)
+
+	t.Setenv("NO_PROXY", "instance.cn-hangzhou.ots.aliyuncs.com")
+	config, err = client.getTableStoreConfig("https://instance.cn-hangzhou.ots.aliyuncs.com")
+	assert.NoError(t, err)
+	assert.Empty(t, config.ProxyHost)
+}
+
 func TestUnitCommonWithEcsClient_UsingHttpMock(t *testing.T) {
 	client := NewTestClient(t)
 
