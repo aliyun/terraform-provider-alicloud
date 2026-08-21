@@ -2297,6 +2297,60 @@ func (s *PolarDBService) DescribePolarDBAIClusterAttribute(id string) (object ma
 	return object, nil
 }
 
+var polarDBGatewayNotFoundCodes = []string{"InvalidGwClusterId.NotFound", "InvalidGatewayId.NotFound", "ResourceNotFound", "Gateway.NotFound"}
+
+func (s *PolarDBService) DescribePolarDBGatewayAttribute(id string) (object map[string]interface{}, err error) {
+	return s.DescribePolarDBGatewayAttributeWithRegion(id, s.client.RegionId)
+}
+
+func (s *PolarDBService) DescribePolarDBGatewayAttributeWithRegion(id, regionId string) (object map[string]interface{}, err error) {
+	action := "DescribeGatewayAttribute"
+	request := map[string]interface{}{"GwClusterId": id}
+	if regionId != "" {
+		request["RegionId"] = regionId
+	}
+	var response map[string]interface{}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = s.client.RpcPost("polardb", "2017-08-01", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, polarDBGatewayNotFoundCodes) {
+			return object, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	return response, nil
+}
+
+func (s *PolarDBService) PolarDBGatewayStateRefreshFunc(id, regionId string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribePolarDBGatewayAttributeWithRegion(id, regionId)
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		status := fmt.Sprint(object["Status"])
+		for _, failState := range failStates {
+			if status == failState {
+				return object, status, WrapError(Error(FailedToReachTargetStatus, status))
+			}
+		}
+		return object, status, nil
+	}
+}
+
 func (s *PolarDBService) PolarDBAIClusterStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribePolarDBAIClusterAttribute(id)
