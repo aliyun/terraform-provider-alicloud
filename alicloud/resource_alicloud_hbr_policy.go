@@ -99,7 +99,7 @@ func resourceAliCloudHbrPolicy() *schema.Resource {
 						"rule_type": {
 							Type:         schema.TypeString,
 							Required:     true,
-							ValidateFunc: StringInSlice([]string{"BACKUP", "TRANSITION", "REPLICATION", "TAG"}, false),
+							ValidateFunc: StringInSlice([]string{"BACKUP", "TRANSITION", "REPLICATION", "TAG", "SECURITY"}, false),
 						},
 						"data_source_filters": {
 							Type:     schema.TypeList,
