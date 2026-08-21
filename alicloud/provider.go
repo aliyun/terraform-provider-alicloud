@@ -622,6 +622,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ens_key_pairs":                                    dataSourceAlicloudEnsKeyPairs(),
 			"alicloud_ens_security_groups":                              dataSourceAliCloudEnsSecurityGroups(),
 			"alicloud_sae_applications":                                 dataSourceAlicloudSaeApplications(),
+			"alicloud_sae_application_instances":                        dataSourceAlicloudSaeApplicationInstances(),
 			"alicloud_alb_rules":                                        dataSourceAliCloudAlbRules(),
 			"alicloud_cms_metric_rule_templates":                        dataSourceAlicloudCmsMetricRuleTemplates(),
 			"alicloud_iot_device_groups":                                dataSourceAlicloudIotDeviceGroups(),
