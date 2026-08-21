@@ -914,6 +914,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_transit_router_multicast_domain_sources":      dataSourceAlicloudCenTransitRouterMulticastDomainSources(),
 			"alicloud_bss_open_api_products":                            dataSourceAlicloudBssOpenApiProducts(),
 			"alicloud_bss_open_api_pricing_modules":                     dataSourceAlicloudBssOpenApiPricingModules(),
+			"alicloud_bss_open_api_budgets":                             dataSourceAlicloudBssOpenApiBudgets(),
 			"alicloud_service_catalog_provisioned_products":             dataSourceAlicloudServiceCatalogProvisionedProducts(),
 			"alicloud_service_catalog_product_as_end_users":             dataSourceAlicloudServiceCatalogProductAsEndUsers(),
 			"alicloud_service_catalog_product_versions":                 dataSourceAlicloudServiceCatalogProductVersions(),
@@ -967,6 +968,7 @@ func Provider() terraform.ResourceProvider {
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_ehpc_user":                                            resourceAliCloudEhpcUser(),
+			"alicloud_bss_open_api_budget":                                  resourceAliCloudBssOpenApiBudget(),
 			"alicloud_ens_load_balancer_udp_listener":                       resourceAliCloudEnsLoadBalancerUdpListener(),
 			"alicloud_gpdb_db_extension":                                    resourceAliCloudGpdbDbExtension(),
 			"alicloud_ecd_desktop_group":                                    resourceAliCloudEcdDesktopGroup(),
