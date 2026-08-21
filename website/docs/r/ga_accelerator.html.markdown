@@ -49,6 +49,7 @@ The following arguments are supported:
 * `bandwidth_billing_type` - (Optional, ForceNew, Available since v1.205.0) The bandwidth billing method. Default value: `BandwidthPackage`. Valid values:
   - `BandwidthPackage`: billed based on bandwidth plans.
   - `CDT`: billed based on data transfer.
+* `bandwidth` - (Optional, Int, Available since v1.287.0) The bandwidth of the GA instance. Unit: Mbps. Valid values: `200` to `5000`. **NOTE:** This parameter is required only when `access_mode` in `ip_set_config` is set to `Anycast`.
 * `payment_type` - (Optional, ForceNew, Available since v1.208.1) The payment type. Default value: `Subscription`. Valid values: `PayAsYouGo`, `Subscription`.
 * `cross_border_status` - (Optional, Bool, Available since v1.208.1) Indicates whether cross-border acceleration is enabled. Default value: `false`. Valid values:
   - `true`: Enable.
@@ -73,7 +74,16 @@ The following arguments are supported:
 * `resource_group_id` - (Optional, Available since v1.226.0) The ID of the resource group. **Note:** Once you set a value of this property, you cannot set it to an empty string anymore.
 * `accelerator_name` - (Optional) The Name of the GA instance.
 * `description` - (Optional) Descriptive information of the global acceleration instance.
+* `ip_set_config` - (Optional, ForceNew, Available since v1.287.0) The configurations of the acceleration area. See [`ip_set_config`](#ip_set_config) below.
 * `tags` - (Optional, Available since v1.207.1) A mapping of tags to assign to the resource.
+
+### `ip_set_config`
+
+The ip_set_config supports the following:
+
+* `access_mode` - (Optional, ForceNew) The access mode of the acceleration area. Valid values:
+  - `UserDefine`: Custom nearby access mode. Select acceleration areas and regions as needed. Global Accelerator provides a separate elastic IP address (EIP) for each acceleration region.
+  - `Anycast`: Automatic nearby access mode. You do not need to configure an acceleration area. Global Accelerator provides an Anycast EIP for multiple regions. Users connect to the nearest access point of the Alibaba Cloud network using the Anycast EIP.
 
 ## Attributes Reference
 
@@ -86,7 +96,7 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
-* `create` - (Defaults to 1 mins) Used when creating the Ga Accelerator.
+* `create` - (Defaults to 3 mins) Used when creating the Ga Accelerator.
 * `update` - (Defaults to 6 mins) Used when updating the Ga Accelerator.
 * `delete` - (Defaults to 3 mins) Used when deleting the Ga Accelerator.
 

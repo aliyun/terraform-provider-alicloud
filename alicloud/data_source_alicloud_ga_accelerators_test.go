@@ -81,6 +81,51 @@ func TestAccAlicloudGaAcceleratorsDataSource(t *testing.T) {
 	CheckInfo.dataSourceTestCheck(t, rand, idsConf, nameRegexConf, allConf)
 }
 
+func TestAccAlicloudGaAcceleratorsDataSource_withAnycast(t *testing.T) {
+	rand := acctest.RandInt()
+	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
+	resourceId := "data.alicloud_ga_accelerators.default"
+	name := fmt.Sprintf("tf-testAccelerators-anycast-%d", rand)
+	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceGaAcceleratorsConfigDependenceWithAnycast)
+
+	idsConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"ids": []string{"${alicloud_ga_accelerator.default.id}"},
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"ids": []string{"${alicloud_ga_accelerator.default.id}_fake"},
+		}),
+	}
+
+	var existMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"ids.#":                                  "1",
+			"accelerators.#":                         CHECKSET,
+			"accelerators.0.id":                      CHECKSET,
+			"accelerators.0.payment_type":            "POSTPAY",
+			"accelerators.0.bandwidth_billing_type":  "CDT",
+			"accelerators.0.bandwidth":               "200",
+			"accelerators.0.ip_set_config.#":         "1",
+			"accelerators.0.ip_set_config.0.access_mode": "Anycast",
+		}
+	}
+
+	var fakeMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"accelerators.#": "0",
+			"ids.#":          "0",
+		}
+	}
+
+	var CheckInfo = dataSourceAttr{
+		resourceId:   resourceId,
+		existMapFunc: existMapFunc,
+		fakeMapFunc:  fakeMapFunc,
+	}
+
+	CheckInfo.dataSourceTestCheck(t, rand, idsConf)
+}
+
 func dataSourceGaAcceleratorsConfigDependence(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
@@ -92,6 +137,22 @@ resource "alicloud_ga_accelerator" "default" {
   accelerator_name = var.name
   auto_use_coupon  = true
   description      = var.name
+}
+`, name)
+}
+
+func dataSourceGaAcceleratorsConfigDependenceWithAnycast(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+resource "alicloud_ga_accelerator" "default" {
+  bandwidth_billing_type = "CDT"
+  payment_type           = "PayAsYouGo"
+  bandwidth              = 200
+  ip_set_config {
+    access_mode = "Anycast"
+  }
 }
 `, name)
 }
