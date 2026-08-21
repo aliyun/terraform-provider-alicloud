@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -50,8 +51,47 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Computed:     true,
 			},
 			"db_node_class": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ExactlyOneOf: []string{"db_node_class", "cn_node_class"},
+			},
+			"cn_node_class": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				RequiredWith: []string{"dn_node_class"},
+				ExactlyOneOf: []string{"db_node_class", "cn_node_class"},
+			},
+			"cn_node_num": {
+				Type:          schema.TypeInt,
+				Optional:      true,
+				Computed:      true,
+				ValidateFunc:  IntAtLeast(1),
+				ConflictsWith: []string{"db_node_class"},
+			},
+			"cn_node_ids": {
+				Type:     schema.TypeSet,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"dn_node_class": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				ConflictsWith: []string{"db_node_class"},
+				RequiredWith:  []string{"cn_node_class"},
+			},
+			"dn_node_num": {
+				Type:          schema.TypeInt,
+				Optional:      true,
+				Computed:      true,
+				ValidateFunc:  IntAtLeast(2),
+				ConflictsWith: []string{"db_node_class"},
+			},
+			"dn_node_ids": {
+				Type:     schema.TypeSet,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"modify_type": {
 				Type:         schema.TypeString,
@@ -60,10 +100,11 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Default:      "Upgrade",
 			},
 			"db_node_count": {
-				Type:         schema.TypeInt,
-				Optional:     true,
-				ValidateFunc: IntBetween(1, 16),
-				Computed:     true,
+				Type:          schema.TypeInt,
+				Optional:      true,
+				ValidateFunc:  IntBetween(1, 16),
+				Computed:      true,
+				ConflictsWith: []string{"cn_node_num", "dn_node_num"},
 			},
 			"zone_id": {
 				Type:     schema.TypeString,
@@ -1361,7 +1402,7 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 	}
 
 	if v, ok := d.GetOk("creation_category"); !ok || v.(string) != "Basic" {
-		if d.HasChange("db_node_class") {
+		if d.HasChange("db_node_class") && d.Get("db_node_class").(string) != "" {
 			request := polardb.CreateModifyDBNodeClassRequest()
 			request.RegionId = client.RegionId
 			request.DBClusterId = d.Id()
@@ -1398,6 +1439,12 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 				return WrapErrorf(err, IdMsg, d.Id())
 			}
 			d.SetPartial("db_node_class")
+		}
+	}
+
+	if d.HasChanges("cn_node_class", "dn_node_class", "cn_node_num", "dn_node_num") {
+		if err := reconcilePolarDBDistributedNodes(d, client, &polarDBService); err != nil {
+			return err
 		}
 	}
 
@@ -1774,7 +1821,6 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 	if len(clusterAttribute.DBNodes) > 0 {
 		d.Set("zone_id", clusterAttribute.DBNodes[0].ZoneId)
 	}
-	d.Set("db_node_class", cluster.DBNodeClass)
 	// db_node_count normal nodes, excluding backend generated sensitive nodes
 	dbNodeCount := len(clusterAttribute.DBNodes)
 	if clusterAttribute.ServerlessType == "SteadyServerless" {
@@ -1864,6 +1910,95 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 	clusterInfo, err := polarDBService.DescribeDBClusterAttribute(d.Id())
 	if err != nil {
 		return WrapError(err)
+	}
+	_, hasCnNodeClass := d.GetOk("cn_node_class")
+	_, hasDnNodeClass := d.GetOk("dn_node_class")
+	isDistributed := hasCnNodeClass || hasDnNodeClass
+	// On import, cn_node_class/dn_node_class are absent from state, so detect
+	// distributed clusters from the API response instead
+	if !isDistributed {
+		if v, ok := clusterInfo["CnNodeCount"]; ok && v != nil && formatInt(v) > 0 {
+			isDistributed = true
+		} else if v, ok := clusterInfo["DnNodeCount"]; ok && v != nil && formatInt(v) > 0 {
+			isDistributed = true
+		}
+	}
+	if isDistributed {
+		// db_node_count represents ordinary cluster nodes and has no meaningful
+		// desired-state value for a distributed CN/DN topology.
+		d.Set("db_node_count", nil)
+		if dbNodes, ok := clusterInfo["DBNodes"].([]interface{}); ok && len(dbNodes) > 0 {
+			cnNodeIds := make([]string, 0)
+			dnNodeIds := make([]string, 0)
+			cnSubGroups := map[string]struct{}{}
+			dnSubGroups := map[string]struct{}{}
+			cnNodeClass := ""
+			dnNodeClass := ""
+			topologyValid := true
+			for _, node := range dbNodes {
+				nodeMap, ok := node.(map[string]interface{})
+				if !ok {
+					topologyValid = false
+					break
+				}
+				nodeType, err := classifyPolarDBDistributedNode(nodeMap)
+				if err != nil {
+					topologyValid = false
+					break
+				}
+				nodeClass, _ := nodeMap["DBNodeClass"].(string)
+				nodeId, _ := nodeMap["DBNodeId"].(string)
+				subGroupName, _ := nodeMap["SubGroupName"].(string)
+				if subGroupName == "" {
+					topologyValid = false
+					break
+				}
+				if nodeType == "cn" {
+					cnSubGroups[subGroupName] = struct{}{}
+					if cnNodeClass == "" && nodeClass != "" {
+						cnNodeClass = nodeClass
+					}
+					if nodeId != "" {
+						cnNodeIds = append(cnNodeIds, nodeId)
+					}
+				} else {
+					dnSubGroups[subGroupName] = struct{}{}
+					if dnNodeClass == "" && nodeClass != "" {
+						dnNodeClass = nodeClass
+					}
+					if nodeId != "" {
+						dnNodeIds = append(dnNodeIds, nodeId)
+					}
+				}
+			}
+			if _, cnCountOk := clusterInfo["CnNodeCount"]; cnCountOk {
+				if _, dnCountOk := clusterInfo["DnNodeCount"]; dnCountOk && validatePolarDBDistributedNodeCounts(clusterInfo, len(cnSubGroups), len(dnSubGroups)) != nil {
+					topologyValid = false
+				}
+			}
+			// These distributed response fields are newer than the published
+			// OpenAPI model. An incomplete response must not break refresh;
+			// retain the existing state and retry flattening on the next Read.
+			if topologyValid {
+				if cnNodeClass != "" {
+					d.Set("cn_node_class", cnNodeClass)
+				}
+				if dnNodeClass != "" {
+					d.Set("dn_node_class", dnNodeClass)
+				}
+				d.Set("cn_node_ids", cnNodeIds)
+				d.Set("dn_node_ids", dnNodeIds)
+			}
+		}
+		if v, ok := clusterInfo["CnNodeCount"]; ok && v != nil {
+			d.Set("cn_node_num", formatInt(v))
+		}
+		if v, ok := clusterInfo["DnNodeCount"]; ok && v != nil {
+			d.Set("dn_node_num", formatInt(v))
+		}
+	} else {
+		// Only set db_node_class for non-distributed clusters
+		d.Set("db_node_class", cluster.DBNodeClass)
 	}
 	if clusterInfo["StorageType"] != nil {
 		d.Set("storage_type", convertPolarDBStorageTypeDescribeRequest(clusterInfo["StorageType"].(string)))
@@ -2020,11 +2155,26 @@ func buildPolarDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[st
 		"RegionId":             client.RegionId,
 		"DBType":               Trim(d.Get("db_type").(string)),
 		"DBVersion":            Trim(d.Get("db_version").(string)),
-		"DBNodeClass":          d.Get("db_node_class").(string),
 		"DBClusterDescription": d.Get("description").(string),
 		"ClientToken":          buildClientToken("CreateDBCluster"),
 		"CreationCategory":     d.Get("creation_category").(string),
 		"CloneDataPoint":       d.Get("clone_data_point").(string),
+	}
+
+	if v, ok := d.GetOk("db_node_class"); ok && v.(string) != "" {
+		request["DBNodeClass"] = v.(string)
+	}
+	if v, ok := d.GetOk("cn_node_class"); ok && v.(string) != "" {
+		request["CnNodeClass"] = v.(string)
+	}
+	if v, ok := d.GetOk("dn_node_class"); ok && v.(string) != "" {
+		request["DnNodeClass"] = v.(string)
+	}
+	if v, ok := d.GetOk("cn_node_num"); ok {
+		request["CnNodeNum"] = v.(int)
+	}
+	if v, ok := d.GetOk("dn_node_num"); ok {
+		request["DnNodeNum"] = v.(int)
 	}
 
 	v, exist := d.GetOk("creation_option")
@@ -2348,4 +2498,336 @@ func convertPolarDBEnableDynamoDBReadResponse(source string) bool {
 		return false
 	}
 	return false
+}
+
+func classifyPolarDBDistributedNode(node map[string]interface{}) (string, error) {
+	for _, key := range []string{"SubGroupType", "DBNodeType"} {
+		value, ok := node[key]
+		if !ok || value == nil {
+			continue
+		}
+		switch strings.ToLower(fmt.Sprint(value)) {
+		case "cn", "compute", "coordinator":
+			return "cn", nil
+		case "dn", "data", "storage":
+			return "dn", nil
+		}
+	}
+	// In legacy distributed responses IsPrimaryCN is present on every CN
+	// (true for the primary and false for other CNs) and absent on DNs. Check
+	// it before DBNodeRole because that field commonly contains Writer/Reader,
+	// which describes replication role rather than CN/DN topology.
+	if _, ok := node["IsPrimaryCN"]; ok {
+		return "cn", nil
+	}
+	if value, ok := node["DBNodeRole"]; ok && value != nil && fmt.Sprint(value) != "" {
+		switch strings.ToLower(fmt.Sprint(value)) {
+		case "cn", "compute", "coordinator":
+			return "cn", nil
+		case "dn", "data", "storage":
+			return "dn", nil
+		default:
+			return "", fmt.Errorf("unable to determine distributed node type for DBNodeId %q from DBNodeRole %q", fmt.Sprint(node["DBNodeId"]), fmt.Sprint(value))
+		}
+	}
+	// Older DescribeDBClusterAttribute responses do not expose DBNodeType or
+	// DBNodeRole. In that response shape, a node without IsPrimaryCN is a DN.
+	nodeId, hasNodeId := node["DBNodeId"]
+	nodeClass, hasNodeClass := node["DBNodeClass"]
+	if hasNodeId && nodeId != nil && fmt.Sprint(nodeId) != "" && hasNodeClass && nodeClass != nil && fmt.Sprint(nodeClass) != "" {
+		return "dn", nil
+	}
+	return "", fmt.Errorf("unable to determine distributed node type for DBNodeId %q: SubGroupType, DBNodeType, or DBNodeRole is required", fmt.Sprint(node["DBNodeId"]))
+}
+
+func validatePolarDBDistributedNodeCounts(clusterInfo map[string]interface{}, cnSubGroupCount, dnSubGroupCount int) error {
+	expectedCnCount := formatInt(clusterInfo["CnNodeCount"])
+	expectedDnCount := formatInt(clusterInfo["DnNodeCount"])
+	if expectedCnCount != cnSubGroupCount || expectedDnCount != dnSubGroupCount {
+		return fmt.Errorf("distributed node classification mismatch: API reports %d logical CN and %d logical DN nodes, classified %d CN and %d DN subgroups", expectedCnCount, expectedDnCount, cnSubGroupCount, dnSubGroupCount)
+	}
+	return nil
+}
+
+func countPolarDBDistributedSubGroups(nodes []map[string]interface{}) (int, error) {
+	subGroups := map[string]struct{}{}
+	for _, node := range nodes {
+		rawSubGroupName, ok := node["SubGroupName"]
+		if !ok || rawSubGroupName == nil || fmt.Sprint(rawSubGroupName) == "" {
+			return 0, fmt.Errorf("SubGroupName is missing for DBNodeId %q", fmt.Sprint(node["DBNodeId"]))
+		}
+		subGroups[fmt.Sprint(rawSubGroupName)] = struct{}{}
+	}
+	return len(subGroups), nil
+}
+
+func reconcilePolarDBDistributedNodes(d *schema.ResourceData, client *connectivity.AliyunClient, service *PolarDBService) error {
+	clusterInfo, err := service.DescribeDBClusterAttribute(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	countKeys := map[string]string{"cn": "CnNodeCount", "dn": "DnNodeCount"}
+	needsTopology := d.HasChanges("cn_node_class", "dn_node_class")
+	for _, nodeType := range []string{"cn", "dn"} {
+		if !d.HasChange(nodeType + "_node_num") {
+			continue
+		}
+		countKey := countKeys[nodeType]
+		if _, ok := clusterInfo[countKey]; !ok {
+			return WrapError(fmt.Errorf("%s is missing from distributed cluster %s response", countKey, d.Id()))
+		}
+		if d.Get(nodeType+"_node_num").(int) < formatInt(clusterInfo[countKey]) {
+			needsTopology = true
+		}
+	}
+
+	nodesByType := map[string][]map[string]interface{}{"cn": {}, "dn": {}}
+	classesByType := map[string]string{}
+	if needsTopology {
+		nodesByType, classesByType, err = collectPolarDBDistributedNodes(clusterInfo, d.Id())
+		if err != nil {
+			return WrapError(fmt.Errorf("cannot safely update distributed cluster topology: %s", err))
+		}
+		cnSubGroupCount, err := countPolarDBDistributedSubGroups(nodesByType["cn"])
+		if err != nil {
+			return WrapError(err)
+		}
+		dnSubGroupCount, err := countPolarDBDistributedSubGroups(nodesByType["dn"])
+		if err != nil {
+			return WrapError(err)
+		}
+		if err := validatePolarDBDistributedNodeCounts(clusterInfo, cnSubGroupCount, dnSubGroupCount); err != nil {
+			return WrapError(err)
+		}
+	}
+
+	classChanged := false
+	for _, nodeType := range []string{"cn", "dn"} {
+		classKey := nodeType + "_node_class"
+		targetClass := d.Get(classKey).(string)
+		if d.HasChange(classKey) && targetClass != "" && targetClass != classesByType[nodeType] {
+			if err := modifyPolarDBDistributedNodeClass(d, client, service, targetClass, nodesByType[nodeType]); err != nil {
+				return err
+			}
+			classChanged = true
+		}
+	}
+
+	// A class change and a resize may be requested in one apply. Refresh the
+	// topology after the first phase so resize decisions never use stale state.
+	if classChanged {
+		clusterInfo, err = service.DescribeDBClusterAttribute(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+		nodesByType, _, err = collectPolarDBDistributedNodes(clusterInfo, d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+	}
+
+	for _, nodeType := range []string{"cn", "dn"} {
+		countKey := nodeType + "_node_num"
+		if !d.HasChange(countKey) {
+			continue
+		}
+		targetCount := d.Get(countKey).(int)
+		currentCount := formatInt(clusterInfo[countKeys[nodeType]])
+		if targetCount == currentCount {
+			continue
+		}
+		if err := resizePolarDBDistributedNodes(d, client, service, nodeType, targetCount-currentCount, nodesByType[nodeType]); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func collectPolarDBDistributedNodes(clusterInfo map[string]interface{}, clusterId string) (map[string][]map[string]interface{}, map[string]string, error) {
+	dbNodes, ok := clusterInfo["DBNodes"].([]interface{})
+	if !ok {
+		return nil, nil, fmt.Errorf("DBNodes is missing from distributed cluster %s", clusterId)
+	}
+	nodesByType := map[string][]map[string]interface{}{"cn": {}, "dn": {}}
+	classesByType := map[string]string{}
+	for _, item := range dbNodes {
+		node, ok := item.(map[string]interface{})
+		if !ok {
+			return nil, nil, fmt.Errorf("invalid DBNodes item for distributed cluster %s", clusterId)
+		}
+		nodeType, err := classifyPolarDBDistributedNode(node)
+		if err != nil {
+			return nil, nil, err
+		}
+		nodesByType[nodeType] = append(nodesByType[nodeType], node)
+		if classesByType[nodeType] == "" {
+			classesByType[nodeType] = fmt.Sprint(node["DBNodeClass"])
+		}
+	}
+	return nodesByType, classesByType, nil
+}
+
+func modifyPolarDBDistributedNodeClass(d *schema.ResourceData, client *connectivity.AliyunClient, service *PolarDBService, targetClass string, nodes []map[string]interface{}) error {
+	action := "ModifyDBNodesClass"
+	targetNodes := make([]map[string]interface{}, 0, len(nodes))
+	seenSubGroups := map[string]struct{}{}
+	for _, node := range nodes {
+		rawSubGroupName, ok := node["SubGroupName"]
+		if !ok || rawSubGroupName == nil || fmt.Sprint(rawSubGroupName) == "" {
+			return WrapError(fmt.Errorf("SubGroupName is missing while modifying distributed cluster %s node class", d.Id()))
+		}
+		subGroupName := fmt.Sprint(rawSubGroupName)
+		if _, ok := seenSubGroups[subGroupName]; ok {
+			continue
+		}
+		seenSubGroups[subGroupName] = struct{}{}
+		targetNodes = append(targetNodes, map[string]interface{}{
+			"DBNodeId":    subGroupName,
+			"TargetClass": targetClass,
+		})
+	}
+	request := map[string]interface{}{
+		"RegionId":    client.RegionId,
+		"DBClusterId": d.Id(),
+		"DBNode":      targetNodes,
+		"ModifyType":  d.Get("modify_type").(string),
+	}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err := resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+		response, err := client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
+		if err != nil {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"InternalError", "OperationDenied.OrderProcessing"}) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+	stateConf := BuildStateConf([]string{"ClassChanging", "ClassChanged"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, service.PolarDBClusterStateRefreshFunc(d.Id(), []string{"Deleting"}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+	return nil
+}
+
+func resizePolarDBDistributedNodes(d *schema.ResourceData, client *connectivity.AliyunClient, service *PolarDBService, nodeType string, delta int, nodes []map[string]interface{}) error {
+	dbNodeType := convertPolarDBNodeTypeToDBNodeType(nodeType)
+	pendingState := "DBNodeCreating"
+	if delta > 0 {
+		request := polardb.CreateCreateDBNodesRequest()
+		request.RegionId = client.RegionId
+		request.DBClusterId = d.Id()
+		request.DBNodeType = dbNodeType
+		targetClass := d.Get(nodeType + "_node_class").(string)
+		newNodes := make([]polardb.CreateDBNodesDBNode, delta)
+		for i := range newNodes {
+			newNodes[i].TargetClass = targetClass
+		}
+		request.DBNode = &newNodes
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			raw, err := client.WithPolarDBClient(func(polardbClient *polardb.Client) (interface{}, error) {
+				return polardbClient.CreateDBNodes(request)
+			})
+			if err != nil {
+				if IsExpectedErrors(err, []string{"OperationDenied.OrderProcessing"}) || NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+	} else {
+		deleteCount := -delta
+		deleteSubGroupNames := selectPolarDBDistributedSubGroupsForDeletion(nodes, nodeType, d.Id(), deleteCount)
+		if len(deleteSubGroupNames) != deleteCount {
+			return WrapError(fmt.Errorf("cannot select %d removable %s nodes from distributed cluster %s", deleteCount, strings.ToUpper(nodeType), d.Id()))
+		}
+		request := polardb.CreateDeleteDBNodesRequest()
+		request.RegionId = client.RegionId
+		request.DBClusterId = d.Id()
+		request.DBNodeType = dbNodeType
+		request.DBNodeId = &deleteSubGroupNames
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			raw, err := client.WithPolarDBClient(func(polardbClient *polardb.Client) (interface{}, error) {
+				return polardbClient.DeleteDBNodes(request)
+			})
+			if err != nil {
+				if IsExpectedErrors(err, []string{"OperationDenied.OrderProcessing"}) || NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		pendingState = "DBNodeDeleting"
+	}
+	stateConf := BuildStateConf([]string{pendingState}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, service.PolarDBClusterStateRefreshFunc(d.Id(), []string{"Deleting"}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+	return nil
+}
+
+func selectPolarDBDistributedSubGroupsForDeletion(nodes []map[string]interface{}, _ string, clusterId string, count int) []string {
+	type candidate struct {
+		name         string
+		creationTime string
+	}
+	candidates := map[string]candidate{}
+	for _, node := range nodes {
+		subGroupName, _ := node["SubGroupName"].(string)
+		// The cluster-ID subgroup is the primary logical node for both CN and DN.
+		if subGroupName == "" || subGroupName == clusterId {
+			continue
+		}
+		creationTime := fmt.Sprint(node["CreationTime"])
+		if existing, ok := candidates[subGroupName]; !ok || creationTime > existing.creationTime {
+			candidates[subGroupName] = candidate{name: subGroupName, creationTime: creationTime}
+		}
+	}
+	ordered := make([]candidate, 0, len(candidates))
+	for _, item := range candidates {
+		ordered = append(ordered, item)
+	}
+	sort.Slice(ordered, func(i, j int) bool {
+		if ordered[i].creationTime == ordered[j].creationTime {
+			return ordered[i].name > ordered[j].name
+		}
+		return ordered[i].creationTime > ordered[j].creationTime
+	})
+	if count > len(ordered) {
+		count = len(ordered)
+	}
+	result := make([]string, 0, count)
+	for _, item := range ordered[:count] {
+		result = append(result, item.name)
+	}
+	return result
+}
+
+func convertPolarDBNodeTypeToDBNodeType(source string) string {
+	switch source {
+	case "cn":
+		return "Compute"
+	case "dn":
+		return "Data"
+	}
+	return source
 }

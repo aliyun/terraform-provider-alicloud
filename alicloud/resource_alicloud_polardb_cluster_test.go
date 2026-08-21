@@ -26,6 +26,238 @@ func init() {
 	})
 }
 
+func TestUnitPolarDBDistributedNodeSchema(t *testing.T) {
+	clusterSchema := resourceAlicloudPolarDBCluster().Schema
+	for _, key := range []string{"cn_node_class", "dn_node_class", "cn_node_num", "dn_node_num"} {
+		field := clusterSchema[key]
+		if !field.Optional || !field.Computed || field.ForceNew {
+			t.Fatalf("%s must be Optional and Computed without ForceNew", key)
+		}
+	}
+	for _, key := range []string{"cn_node_num", "dn_node_num"} {
+		if clusterSchema[key].Type != schema.TypeInt {
+			t.Fatalf("%s must use TypeInt", key)
+		}
+	}
+	if len(clusterSchema["db_node_count"].ConflictsWith) != 2 {
+		t.Fatal("db_node_count must conflict with distributed node count fields")
+	}
+	for _, key := range []string{"modify_dist_nodes", "delete_sub_groups", "restart_cluster"} {
+		if _, ok := clusterSchema[key]; ok {
+			t.Fatalf("command-style field %s must not be part of desired state", key)
+		}
+	}
+}
+
+func TestUnitClassifyPolarDBDistributedNode(t *testing.T) {
+	tests := []struct {
+		name     string
+		node     map[string]interface{}
+		expected string
+		wantErr  bool
+	}{
+		{name: "compute type", node: map[string]interface{}{"DBNodeId": "cn-1", "DBNodeType": "Compute"}, expected: "cn"},
+		{name: "data type", node: map[string]interface{}{"DBNodeId": "dn-1", "DBNodeType": "Data"}, expected: "dn"},
+		{name: "compute subgroup", node: map[string]interface{}{"DBNodeId": "cn-0", "SubGroupType": "Compute"}, expected: "cn"},
+		{name: "data subgroup", node: map[string]interface{}{"DBNodeId": "dn-0", "SubGroupType": "Data"}, expected: "dn"},
+		{name: "CN role", node: map[string]interface{}{"DBNodeId": "cn-2", "DBNodeRole": "CN"}, expected: "cn"},
+		{name: "DN role", node: map[string]interface{}{"DBNodeId": "dn-2", "DBNodeRole": "DN"}, expected: "dn"},
+		{name: "legacy CN", node: map[string]interface{}{"DBNodeId": "cn-3", "DBNodeClass": "polar.pg.x4.medium", "IsPrimaryCN": false}, expected: "cn"},
+		{name: "legacy CN reader", node: map[string]interface{}{"DBNodeId": "cn-4", "DBNodeClass": "polar.pg.x4.medium", "DBNodeRole": "Reader", "IsPrimaryCN": false}, expected: "cn"},
+		{name: "legacy DN", node: map[string]interface{}{"DBNodeId": "dn-3", "DBNodeClass": "polar.pg.x4.medium"}, expected: "dn"},
+		{name: "unknown role", node: map[string]interface{}{"DBNodeId": "node-1", "DBNodeClass": "polar.pg.x4.medium", "DBNodeRole": "Reader"}, wantErr: true},
+		{name: "missing role", node: map[string]interface{}{"DBNodeId": "node-2"}, wantErr: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual, err := classifyPolarDBDistributedNode(tt.node)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("expected classification error, got %q", actual)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected classification error: %s", err)
+			}
+			if actual != tt.expected {
+				t.Fatalf("expected %q, got %q", tt.expected, actual)
+			}
+		})
+	}
+}
+
+func TestUnitValidatePolarDBDistributedNodeCounts(t *testing.T) {
+	clusterInfo := map[string]interface{}{"CnNodeCount": 1, "DnNodeCount": 2}
+	if err := validatePolarDBDistributedNodeCounts(clusterInfo, 1, 2); err != nil {
+		t.Fatalf("expected subgroup counts to match logical counts: %s", err)
+	}
+	if err := validatePolarDBDistributedNodeCounts(clusterInfo, 3, 0); err == nil {
+		t.Fatal("expected silently misclassified nodes to be rejected")
+	}
+}
+
+func TestUnitSelectPolarDBDistributedSubGroupsForDeletion(t *testing.T) {
+	nodes := []map[string]interface{}{
+		{"DBNodeId": "pi-primary-writer", "SubGroupName": "pc-test", "CreationTime": "2026-01-01T00:00:00Z"},
+		{"DBNodeId": "pi-primary-reader", "SubGroupName": "pc-test", "CreationTime": "2026-01-01T00:00:00Z"},
+		{"DBNodeId": "pi-extra-writer", "SubGroupName": "extra-cn", "CreationTime": "2026-01-02T00:00:00Z"},
+		{"DBNodeId": "pi-extra-reader", "SubGroupName": "extra-cn", "CreationTime": "2026-01-02T00:00:00Z"},
+		{"DBNodeId": "pi-newest", "SubGroupName": "newest-cn", "CreationTime": "2026-01-03T00:00:00Z"},
+		{"DBNodeId": "pi-missing-subgroup"},
+	}
+	selected := selectPolarDBDistributedSubGroupsForDeletion(nodes, "cn", "pc-test", 1)
+	if len(selected) != 1 || selected[0] != "newest-cn" {
+		t.Fatalf("expected the newest non-primary logical subgroup, got %#v", selected)
+	}
+	selected = selectPolarDBDistributedSubGroupsForDeletion(nodes, "dn", "pc-test", 2)
+	if len(selected) != 2 || selected[0] != "newest-cn" || selected[1] != "extra-cn" {
+		t.Fatalf("expected deterministic DN selection without the primary or missing subgroup, got %#v", selected)
+	}
+}
+
+func TestAccAliCloudPolarDBCluster_Distributed(t *testing.T) {
+	var v *polardb.DescribeDBClusterAttributeResponse
+	name := "tf-testAccPolarDBClusterDistributed"
+	resourceId := "alicloud_polardb_cluster.default"
+	var basicMap = map[string]string{
+		"description":   CHECKSET,
+		"cn_node_class": CHECKSET,
+		"cn_node_num":   CHECKSET,
+		"cn_node_ids.#": CHECKSET,
+		"dn_node_class": CHECKSET,
+		"dn_node_num":   CHECKSET,
+		"dn_node_ids.#": CHECKSET,
+		"vswitch_id":    CHECKSET,
+		"db_type":       "PostgreSQL",
+		"db_version":    "16",
+		"status":        CHECKSET,
+		"create_time":   CHECKSET,
+	}
+	ra := resourceAttrInit(resourceId, basicMap)
+	serviceFunc := func() interface{} {
+		return &PolarDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribePolarDBClusterAttribute")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourcePolarDBClusterDistributedConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_type":       "PostgreSQL",
+					"db_version":    "16",
+					"pay_type":      "PostPaid",
+					"cn_node_class": "${local.base_node_class}",
+					"dn_node_class": "${local.base_node_class}",
+					"cn_node_num":   1,
+					"dn_node_num":   3,
+					"vswitch_id":    "${local.vswitch_id}",
+					"vpc_id":        "${local.vpc_id}",
+					"description":   "${var.name}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cn_node_class": "polar.pg.x4.medium",
+						"cn_node_num":   "1",
+						"dn_node_class": "polar.pg.x4.medium",
+						"dn_node_num":   "3",
+					}),
+				),
+			},
+			{
+				// Declaratively add one CN and remove one DN node.
+				Config: testAccConfig(map[string]interface{}{
+					"db_type":       "PostgreSQL",
+					"db_version":    "16",
+					"pay_type":      "PostPaid",
+					"cn_node_class": "${local.base_node_class}",
+					"dn_node_class": "${local.base_node_class}",
+					"cn_node_num":   2,
+					"dn_node_num":   2,
+					"vswitch_id":    "${local.vswitch_id}",
+					"vpc_id":        "${local.vpc_id}",
+					"description":   "${var.name}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cn_node_num":   "2",
+						"dn_node_num":   "2",
+						"cn_node_class": "polar.pg.x4.medium",
+						"dn_node_class": "polar.pg.x4.medium",
+					}),
+				),
+			},
+			{
+				// Upgrade both node types and declaratively remove the added nodes.
+				Config: testAccConfig(map[string]interface{}{
+					"cn_node_class": "${local.target_node_class}",
+					"dn_node_class": "${local.target_node_class}",
+					"cn_node_num":   1,
+					"dn_node_num":   2,
+					"modify_type":   "Upgrade",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cn_node_class": "polar.pg.x4.large",
+						"dn_node_class": "polar.pg.x4.large",
+						"cn_node_num":   "1",
+						"dn_node_num":   "2",
+					}),
+				),
+			},
+			{
+				// Downgrade both node types back to the original class.
+				Config: testAccConfig(map[string]interface{}{
+					"cn_node_class": "${local.base_node_class}",
+					"dn_node_class": "${local.base_node_class}",
+					"modify_type":   "Downgrade",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cn_node_class": "polar.pg.x4.medium",
+						"dn_node_class": "polar.pg.x4.medium",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"modify_type"},
+			},
+		},
+	})
+}
+
+func resourcePolarDBClusterDistributedConfigDependence(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+		default = "%s"
+	}
+
+	data "alicloud_vswitches" "default" {
+		status  = "Available"
+	}
+
+	locals {
+		vpc_id           = data.alicloud_vswitches.default.vswitches.0.vpc_id
+		vswitch_id       = data.alicloud_vswitches.default.vswitches.0.id
+		base_node_class   = "polar.pg.x4.medium"
+		target_node_class = "polar.pg.x4.large"
+	}
+`, name)
+}
+
 func testSweepPolarDBClusters(region string) error {
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
