@@ -2,9 +2,12 @@ package alicloud
 
 import (
 	"fmt"
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
@@ -1747,3 +1750,280 @@ variable "function_name2" {
 }
 
 // Test Fcv3 CustomDomain. <<< Resource test cases, automatically generated.
+
+// AlicloudFc3CustomDomainCertIdDependence provisions two SSL Certificates
+// Service (CAS) certificates that the custom domain references by id via the
+// certificate_id attribute. CAS rejects weak/expired PEM material, so a valid
+// SHA256 certificate is uploaded and referenced by id; the FC custom domain
+// resolves it server-side. The same PEM is uploaded twice (distinct names =>
+// distinct cert ids) so the rotation step can switch certificate_id and
+// exercise the Update resolution path.
+func AlicloudFc3CustomDomainCertIdDependence(name string) string {
+	rand := acctest.RandIntRange(10000, 99999)
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+variable "cert" {
+  default = <<EOF
+-----BEGIN CERTIFICATE-----
+MIIDKzCCAhOgAwIBAgIUbaaUpvCrN/OA9lOzmG/dBgRi9WwwDQYJKoZIhvcNAQEL
+BQAwJTEjMCEGA1UEAwwaZmN2My1jZXJ0LXRlc3QuZXhhbXBsZS5jb20wHhcNMjYw
+ODIwMDQyMTAwWhcNMzEwODE5MDQyMTAwWjAlMSMwIQYDVQQDDBpmY3YzLWNlcnQt
+dGVzdC5leGFtcGxlLmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEB
+ALbhV0VYRoa1b8GRXAkTc4xthulq0tVOHKix8FpSrcomFJ8SX50ZdeJbJF0gTmSy
+N7ZhMvFQMqnnG+17+tSnBEUnttH3Dxp8cWp8HLqPmxuJCXhc8Fn9OV+NTDRdT7jd
+cj+bjbTNvUEP+aIdRM7o05RgfLN4PU8W13PnJgMjKuOSJxtsespdP+19X62UMMQB
+ENzLW0eS0s6A9uZDgVBSjmDKn9ZjFq1MHZr/i7dQO++tsPZqz91ko/5NfFez2tUr
+X3jX/5c+oEr7jPro0j2YbX/tEF2XgBBLW59TygHOR5O8QGtIAhTm/xktUq/9tl6x
+kAo1yhJBJ/t9haBik9RxjlkCAwEAAaNTMFEwHQYDVR0OBBYEFCdI+A4BSpsEWLR6
+8VbLgmbgkLjFMB8GA1UdIwQYMBaAFCdI+A4BSpsEWLR68VbLgmbgkLjFMA8GA1Ud
+EwEB/wQFMAMBAf8wDQYJKoZIhvcNAQELBQADggEBAGBlLUZnH/I1uLgK60+Lg4K+
+OhNAv9Uk1lEH79+Ja/rSKiI4aU7oY2GkVNv1XlGEbp/GDULsFGfjdOd1VrYSHkpS
+Dux8LDychsEncBRLuR+rungqy1VVKSsodcmc5yVEHNp3ABCOFca9btcHWP7Zd+8E
+N6m9oGWe3o7SXNJe2Sk3LymejWdafl3wRVxL7V9t3iq6vSAYlFAAkwwZ6MDV0wHy
+fxmglJrFuaSD5vKB0hoFtZ9XaCxHQ63tC7l7QFuxvb5VkiinOhncJ7No9sxc4ZU1
+7U0LXhTSpNb2BasuwHWQ2F4EhWswSOBkswoXx6j7BUEd9GCQa9GCESDYTPzK7aM=
+-----END CERTIFICATE-----
+EOF
+}
+
+variable "key" {
+  default = <<EOF
+-----BEGIN RSA PRIVATE KEY-----
+MIIEowIBAAKCAQEAtuFXRVhGhrVvwZFcCRNzjG2G6WrS1U4cqLHwWlKtyiYUnxJf
+nRl14lskXSBOZLI3tmEy8VAyqecb7Xv61KcERSe20fcPGnxxanwcuo+bG4kJeFzw
+Wf05X41MNF1PuN1yP5uNtM29QQ/5oh1EzujTlGB8s3g9TxbXc+cmAyMq45InG2x6
+yl0/7X1frZQwxAEQ3MtbR5LSzoD25kOBUFKOYMqf1mMWrUwdmv+Lt1A7762w9mrP
+3WSj/k18V7Pa1StfeNf/lz6gSvuM+ujSPZhtf+0QXZeAEEtbn1PKAc5Hk7xAa0gC
+FOb/GS1Sr/22XrGQCjXKEkEn+32FoGKT1HGOWQIDAQABAoIBAA1p8+PDONESp9LT
+3aNQyO3o7rdaPYKlyxZYjt+hJtwn9OVCDL9SKcJjmwQ1pWpfZBS9hmYK0tyBdhvy
+NxC3+2kzI4a9D1+K9yqvVdAdTmwznf01G/AN0dJ/Y7KHkZxmqcWenENBv/rwuAe7
+C9v9Wd+NQDhNvnl5nG4E61XZk4DDjKt+H4JolWuv7p9KJtj6KKYyu6nPu1EwtMKs
+SOjO/M6yVtSBVod64gSHH8ASxYzb+UAbOGUAutpxMIoxoENvLFq15M0K9Mm8Kr6+
+ZSaiDDErU5lrU2e06irsdwYKx7/AsV8xm47WV3vud9ECp3UyabOfSMfsSkriIiF5
+wozCJu0CgYEA8Q540XNsnpgDaJjixjRAdkvqwDaPhNBQI2sbMOJpubDHHMNf1kz3
+lfgVY2sZKrwmPxMeJKnLFrA54zQBgJdmKPlDVlhNRMZre+C/bAu+CQMH08cuKFks
+Ud+aCrr9bx4bNbEAFpzUBqCyFaJEk1BmOzVdzEMJphUqovooyIBk4McCgYEAwjee
+4NthwRz0EF2PDx1b3St1TYzq9cCgPVVKUEO8iuRbMi/r7HR9/U8+EtM+Yh3F2swb
+szs1cGDEWs9UtGZhlTFxAX5vvgEGDkjOZBAhthBi02vPmlYgKcOh/3nYXZ+fz3XL
+lL6/7YnmB483RlGraPXPSg9+HOrvMKLuApSBN98CgYAKZP9cuMd0R0XOWtlchqBI
++ZkT1MZ3iawK+vFfOEQq166eVOZrDUKX2uzBLrsVFqvniGGCXzf8sHiujW2LJ/wl
+xCndLU2Xq56y5swaUp9NMC5EOZCJ+N5qYWP5FnsbMYcm140TbIvQBVnoiOjAGXVv
+FCwJRNLDsKH4CSV9D9xJvQKBgDAr2YVOBJYAV2zDt9r43jMiN0sP26sups/vmqoD
+0vzkHNZ62lpgnms4v12t9XgiiFN3cptm4R9JcQpRCGJiTmvRwoSrVo3a9SSP3Fkn
+QyVENS7ZO7m9COcy9bhHAWpfUCUFw4PWOAZzwJE5bW1MjmZPKaXl59LGVqNKlhwf
+t1kjAoGBAInlAYLLCc0ClWVcpS556r4hNm1WHrmI5vexbe0T+i5UUe8CZKhxRQpM
+EiaLEPl0n98Zpv8Xh9g90XQt5DCsILcosnJIuqvEd3nMn12Jwfjyp7rSqjzvTGOB
+IvYbw8WYWf+vDri6qqGO5LnkX0XOiwegJyZZx7F7Wqa1bqfVgWhc
+-----END RSA PRIVATE KEY-----
+EOF
+}
+
+resource "alicloud_ssl_certificates_service_certificate" "default" {
+  certificate_name = "cert-tf-testacc-fcv3cd-c1-%d"
+  cert             = var.cert
+  key              = var.key
+}
+
+resource "alicloud_ssl_certificates_service_certificate" "alt" {
+  certificate_name = "cert-tf-testacc-fcv3cd-c2-%d"
+  cert             = var.cert
+  key              = var.key
+}
+`, name, rand, rand)
+}
+
+// TestAccAliCloudFcv3CustomDomain_certificateId_basic covers the
+// certificate_id virtual attribute: the custom domain is created with an HTTPS
+// certificate referenced by its SSL Certificates Service (CAS) certificate id,
+// then rotated to a second certificate, exercising both the Create and Update
+// resolution paths. cert_config (Computed, populated from FC) and
+// certificate_id (not reverse-resolvable from FC) are ignored on import.
+func TestAccAliCloudFcv3CustomDomain_certificateId_basic(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_fcv3_custom_domain.default"
+	ra := resourceAttrInit(resourceId, AlicloudFc3CustomDomainMap6974)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &Fcv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeFcv3CustomDomain")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := "flask-07ap.fcv3.1511928242963727.cn-shanghai.fc.devsapp.net"
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudFc3CustomDomainCertIdDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"custom_domain_name": name,
+					"route_config": []map[string]interface{}{
+						{},
+					},
+					"waf_config": []map[string]interface{}{
+						{
+							"enable_waf": false,
+						},
+					},
+					"protocol":       "HTTP,HTTPS",
+					"certificate_id": "${alicloud_ssl_certificates_service_certificate.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"custom_domain_name": name,
+						"protocol":           "HTTP,HTTPS",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"certificate_id": "${alicloud_ssl_certificates_service_certificate.alt.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"custom_domain_name": name,
+						"protocol":           "HTTP,HTTPS",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"cert_config", "certificate_id"},
+			},
+		},
+	})
+}
+
+// TestAccAliCloudFcv3CustomDomain_certificateId_intlAccount verifies the
+// certificate_id resolution path (SSL Certificates Service / CAS
+// GetUserCertificateDetail) under a second, international account. CAS
+// certificates are account-scoped, so the international account provisions its
+// own alicloud_ssl_certificates_service_certificate resources and references them
+// by id; the FC custom domain is created in an international region and rotated
+// to a second certificate, exercising both the Create and Update resolution
+// paths for that account. The credentials are pinned via an explicit provider
+// block (plus ALICLOUD_ACCESS_KEY/SECRET_KEY/REGION override) so the default
+// account cannot shadow the international one, mirroring
+// resource_alicloud_nat_gateway_test.go AvailabilityModeSingleAZ. cert_config
+// (Computed, populated from FC) and certificate_id (not reverse-resolvable from
+// FC) are ignored on import, matching the single-account basic case.
+func TestAccAliCloudFcv3CustomDomain_certificateId_intlAccount(t *testing.T) {
+	ak1 := strings.TrimSpace(os.Getenv("ALICLOUD_ACCESS_KEY_1"))
+	sk1 := strings.TrimSpace(os.Getenv("ALICLOUD_SECRET_KEY_1"))
+	if ak1 == "" || sk1 == "" {
+		t.Skipf("Skipping: set ALICLOUD_ACCESS_KEY_1/SECRET_KEY_1 to run the international account certificate_id case")
+	}
+
+	// Pin the international account credentials (and region) so every SDK
+	// client init path — testAccPreCheck, CAS GetUserCertificateDetail and the
+	// FC custom domain API — uses the international account, mirroring the
+	// single-zone NAT entitlement test.
+	origAK := os.Getenv("ALICLOUD_ACCESS_KEY")
+	origSK := os.Getenv("ALICLOUD_SECRET_KEY")
+	origRegion := os.Getenv("ALICLOUD_REGION")
+	const intlRegion = "us-west-1"
+	os.Setenv("ALICLOUD_ACCESS_KEY", ak1)
+	os.Setenv("ALICLOUD_SECRET_KEY", sk1)
+	os.Setenv("ALICLOUD_REGION", intlRegion)
+	defer func() {
+		os.Setenv("ALICLOUD_ACCESS_KEY", origAK)
+		os.Setenv("ALICLOUD_SECRET_KEY", origSK)
+		os.Setenv("ALICLOUD_REGION", origRegion)
+	}()
+
+	// Resolve the international account id at runtime so the FC managed
+	// subdomain matches the account that owns the CAS certificates.
+	rawClient, err := sharedClientForRegion(intlRegion)
+	if err != nil {
+		t.Fatalf("error getting AliCloud client for region %s: %s", intlRegion, err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+	accountID, err := client.AccountId()
+	if err != nil {
+		t.Fatalf("error getting account id: %s", err)
+	}
+	name := fmt.Sprintf("flask-intl.fcv3.%s.%s.fc.devsapp.net", accountID, intlRegion)
+
+	var v map[string]interface{}
+	resourceId := "alicloud_fcv3_custom_domain.default"
+	ra := resourceAttrInit(resourceId, AlicloudFc3CustomDomainMap6974)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &Fcv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeFcv3CustomDomain")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	// Explicit provider credentials (and region) so the default
+	// ALICLOUD_ACCESS_KEY cannot override the international account pinned by
+	// ALICLOUD_ACCESS_KEY_1, and the custom domain lands in the international
+	// region paired with the FC managed subdomain.
+	intlCertIdDependence := func(n string) string {
+		return fmt.Sprintf(`
+provider "alicloud" {
+  access_key = "%s"
+  secret_key = "%s"
+  region     = "%s"
+}
+
+%s
+`, ak1, sk1, intlRegion, AlicloudFc3CustomDomainCertIdDependence(n))
+	}
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, intlCertIdDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Region(intlRegion)})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"custom_domain_name": name,
+					"route_config": []map[string]interface{}{
+						{},
+					},
+					"waf_config": []map[string]interface{}{
+						{
+							"enable_waf": false,
+						},
+					},
+					"protocol":       "HTTP,HTTPS",
+					"certificate_id": "${alicloud_ssl_certificates_service_certificate.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"custom_domain_name": name,
+						"protocol":           "HTTP,HTTPS",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"certificate_id": "${alicloud_ssl_certificates_service_certificate.alt.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"custom_domain_name": name,
+						"protocol":           "HTTP,HTTPS",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"cert_config", "certificate_id"},
+			},
+		},
+	})
+}
