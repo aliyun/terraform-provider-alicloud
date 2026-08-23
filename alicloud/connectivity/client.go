@@ -1592,11 +1592,18 @@ func (client *AliyunClient) WithTableStoreClient(instanceName string, do func(*t
 	if client.config.SourceIp != "" {
 		externalHeaders["x-ots-sourceip"] = client.config.SourceIp
 	}
+	tableStoreConfig := getTableStoreConfig()
 	accessKey, secretKey, token := client.config.GetRefreshCredential()
-	tableStoreClient = tablestore.NewClientWithExternalHeader(endpoint, instanceName, accessKey, secretKey, token, tablestore.NewDefaultTableStoreConfig(), externalHeaders)
+	tableStoreClient = tablestore.NewClientWithExternalHeader(endpoint, instanceName, accessKey, secretKey, token, tableStoreConfig, externalHeaders)
 	client.tablestoreconnByInstanceName[instanceName] = tableStoreClient
 
 	return do(tableStoreClient)
+}
+
+func getTableStoreConfig() *tablestore.TableStoreConfig {
+	config := tablestore.NewDefaultTableStoreConfig()
+	config.ProxyFromEnvironment = true
+	return config
 }
 
 func (client *AliyunClient) WithTableStoreTunnelClient(instanceName string, do func(otsTunnel.TunnelClient) (interface{}, error)) (interface{}, error) {
