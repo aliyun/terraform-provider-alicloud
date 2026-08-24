@@ -25,7 +25,7 @@ require (
 	github.com/aliyun/aliyun-log-go-sdk v0.1.127
 	github.com/aliyun/aliyun-mns-go-sdk v0.0.0-20210305050620-d1b5875bda58
 	github.com/aliyun/aliyun-oss-go-sdk v2.2.9+incompatible
-	github.com/aliyun/aliyun-tablestore-go-sdk v1.7.16
+	github.com/aliyun/aliyun-tablestore-go-sdk v1.9.3
 	github.com/aliyun/credentials-go v1.4.12
 	github.com/aliyun/fc-go-sdk v0.0.0-20220622030011-bc7ded2a9050
 	github.com/aws/aws-sdk-go-v2 v1.43.0
