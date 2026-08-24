@@ -59,6 +59,13 @@ func TestAccAliCloudKmsInstance_basic4048(t *testing.T) {
 				),
 			},
 			{
+				// Reordering zone_ids must not plan a replacement.
+				Config: testAccConfig(map[string]interface{}{
+					"zone_ids": []string{"cn-hangzhou-j", "cn-hangzhou-k"},
+				}),
+				PlanOnly: true,
+			},
+			{
 				Config: testAccConfig(map[string]interface{}{
 					"vpc_num": "7",
 				}),

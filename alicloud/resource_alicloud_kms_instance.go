@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -198,16 +199,18 @@ func resourceAliCloudKmsInstance() *schema.Resource {
 				},
 			},
 			"vswitch_ids": {
-				Type:     schema.TypeSet,
-				Required: true,
-				ForceNew: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
+				Type:             schema.TypeList,
+				Required:         true,
+				ForceNew:         true,
+				Elem:             &schema.Schema{Type: schema.TypeString},
+				DiffSuppressFunc: kmsInstanceIdsOrderDiffSuppressFunc,
 			},
 			"zone_ids": {
-				Type:     schema.TypeSet,
-				Required: true,
-				ForceNew: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
+				Type:             schema.TypeList,
+				Required:         true,
+				ForceNew:         true,
+				Elem:             &schema.Schema{Type: schema.TypeString},
+				DiffSuppressFunc: kmsInstanceIdsOrderDiffSuppressFunc,
 			},
 		},
 	}
@@ -923,6 +926,35 @@ func resourceAliCloudKmsInstanceDelete(d *schema.ResourceData, meta interface{})
 
 	}
 	return nil
+}
+
+// kmsInstanceIdsOrderDiffSuppressFunc suppresses order-only changes to vswitch_ids and
+// zone_ids. The API does not report their order back, and both fields are ForceNew, so
+// without this an order-only difference would destroy and recreate a live instance.
+func kmsInstanceIdsOrderDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	oldValue, newValue := d.GetChange(strings.SplitN(k, ".", 2)[0])
+	return kmsInstanceEqualIgnoringOrder(oldValue, newValue)
+}
+
+func kmsInstanceEqualIgnoringOrder(old, new interface{}) bool {
+	oldList := convertToInterfaceArray(old)
+	newList := convertToInterfaceArray(new)
+	if len(oldList) != len(newList) {
+		return false
+	}
+
+	counter := make(map[string]int, len(oldList))
+	for _, item := range oldList {
+		counter[fmt.Sprint(item)]++
+	}
+	for _, item := range newList {
+		key := fmt.Sprint(item)
+		counter[key]--
+		if counter[key] < 0 {
+			return false
+		}
+	}
+	return true
 }
 
 func convertKmsInstanceKmsInstanceChargeTypeResponse(source interface{}) interface{} {
