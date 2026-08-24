@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -725,3 +726,115 @@ func (s *DataWorksServiceV2) DataWorksDwResourceGroupStateRefreshFunc(id string,
 }
 
 // DescribeDataWorksDwResourceGroup >>> Encapsulated.
+// DescribeDataWorksCertificate <<< Encapsulated get interface for DataWorks Certificate.
+
+func (s *DataWorksServiceV2) DescribeDataWorksCertificate(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length 2, got %d", id, len(parts)))
+		return
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["Id"] = parts[1]
+	query["ProjectId"] = parts[0]
+	query["RegionId"] = client.RegionId
+	action := "GetCertificate"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcGet("dataworks-public", "2024-05-18", action, query, request)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.Certificate", response)
+	if err != nil {
+		return object, WrapErrorf(NotFoundErr("Certificate", id), NotFoundMsg, response)
+	}
+
+	currentStatus := v.(map[string]interface{})["Id"]
+	if currentStatus == nil {
+		return object, WrapErrorf(NotFoundErr("Certificate", id), NotFoundMsg, response)
+	}
+
+	return v.(map[string]interface{}), nil
+}
+
+func (s *DataWorksServiceV2) DataWorksCertificateStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.DataWorksCertificateStateRefreshFuncWithApi(id, field, failStates, s.DescribeDataWorksCertificate)
+}
+
+func (s *DataWorksServiceV2) DataWorksCertificateStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeDataWorksCertificate >>> Encapsulated.
+
+// dataWorksCertificateCreateTimeFormat converts the millisecond timestamp returned by the
+// DataWorks API into an RFC3339 (ISO8601) string. Hand-fix: generator v4 does not honour the
+// @format("iso8601") annotation on CreateTime, so a raw int64 ms value would otherwise be
+// stored verbatim in state and cause perpetual plan drift.
+func dataWorksCertificateCreateTimeFormat(raw interface{}) string {
+	if raw == nil {
+		return ""
+	}
+	var ms int64
+	switch v := raw.(type) {
+	case float64:
+		ms = int64(v)
+	case int64:
+		ms = v
+	case int:
+		ms = int64(v)
+	default:
+		if s, err := strconv.ParseInt(fmt.Sprint(raw), 10, 64); err == nil {
+			ms = s
+		} else {
+			return fmt.Sprint(raw)
+		}
+	}
+	if ms <= 0 {
+		return ""
+	}
+	return time.UnixMilli(ms).UTC().Format(time.RFC3339)
+}
