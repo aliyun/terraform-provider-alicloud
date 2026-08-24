@@ -31,10 +31,11 @@ MAX_ITEMS = 4000
 MAX_PAYLOAD_BYTES = 512 * 1024
 ITEMS_PER_PAGE = 300
 MAX_SNAPSHOT_PAGES = 20
+# 已发布待需求方验收 = 工单已发布、仅等需求方验收，开发侧已完结，不应再进入待梳理收件箱。
 GLOBAL_TERMINAL_STATUSES = frozenset({
     "Closed", "Fixed", "Invalid", "Won'tfix", "ByDesign", "Duplicate",
-    "External", "Worksforme", "已合入主线", "已发布", "已取消", "已完成",
-    "已拒绝", "验收通过", "需求撤回", "方案功能已存在",
+    "External", "Worksforme", "已合入主线", "已发布", "已发布待需求方验收",
+    "已取消", "已完成", "已拒绝", "验收通过", "需求撤回", "方案功能已存在",
 })
 
 

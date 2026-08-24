@@ -96,6 +96,35 @@ class AonePriorityInboxTest(unittest.TestCase):
         self.assertFalse(item["participant"])
         self.assertNotIn("taskId", item)
 
+    def test_filters_published_pending_acceptance_status(self):
+        # 已发布待需求方验收 = 开发侧已完结，不应进入待梳理收件箱。
+        def response(command, **_kwargs):
+            expression = command[command.index("--filter") + 1]
+            field = expression.split("=", 1)[0]
+            if field == "assignedTo":
+                return _Result([{
+                    "identifier": "85394027", "subject": "优先级梳理",
+                    "status": "问题解决中", "priority": "高",
+                    "assignedTo": "辰羿", "gmtCreate": "2026-08-12 19:23",
+                    "gmtModified": "2026-08-12 20:20", "workitemType": "需求问题",
+                }, {
+                    "identifier": "85000001", "subject": "已发布待验收单",
+                    "status": "已发布待需求方验收", "priority": "中",
+                    "assignedTo": "辰羿", "gmtCreate": "2026-08-01 10:00",
+                    "gmtModified": "2026-08-02 10:00", "workitemType": "需求问题",
+                }])
+            return _Result([])
+
+        with patch.object(inbox, "run_process_group", side_effect=response):
+            result = self.runner.run(self.definition, datetime.now(timezone.utc))
+
+        self.assertEqual(result.status, JobResultStatus.SUCCEEDED)
+        _page_key, page = self.client.calls[0]
+        items = page["items"]
+        self.assertEqual(len(items), 1)
+        self.assertEqual(items[0]["aoneId"], "85394027")
+        self.assertNotIn("已发布待需求方验收", [item["status"] for item in items])
+
 
 if __name__ == "__main__":
     unittest.main()
