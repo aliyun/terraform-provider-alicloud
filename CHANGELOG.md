@@ -1,4 +1,21 @@
-## 1.290.0 (Unreleased)
+## 1.291.0 (Unreleased)
+## 1.290.0 (August 25, 2026)
+
+- **New Resource:** `alicloud_mongodb_sharding_audit_filter` ([#10259](https://github.com/aliyun/terraform-provider-alicloud/issues/10259))
+- **New Data Source:** `alicloud_mongodb_sharding_audit_filters` ([#10259](https://github.com/aliyun/terraform-provider-alicloud/issues/10259))
+
+ENHANCEMENTS:
+
+- resource/alicloud_ots_instance: support HTTP proxy for tablestore client; testcase: verify proxy routing. ([#10224](https://github.com/aliyun/terraform-provider-alicloud/issues/10224))
+- resource/alicloud_ecs_disk: defer BurstingEnabled until cloud_auto on ESSD->AutoPL. ([#10235](https://github.com/aliyun/terraform-provider-alicloud/issues/10235))
+- resource/alicloud_log_store: use UpdateMetricStoreV2 for metric updates. ([#10248](https://github.com/aliyun/terraform-provider-alicloud/issues/10248))
+- resource/alicloud_hbr_policy: support SECURITY rule_type for immutable backup. ([#10249](https://github.com/aliyun/terraform-provider-alicloud/issues/10249))
+
+BUG FIXES:
+
+- resource/alicloud_polardb_cluster: fix auto renew attribute error code. ([#10261](https://github.com/aliyun/terraform-provider-alicloud/issues/10261))
+- resource/alicloud_kms_instance: pair vswitch_ids with zone_ids by position. ([#10283](https://github.com/aliyun/terraform-provider-alicloud/issues/10283))
+
 ## 1.289.0 (August 17, 2026)
 
 - **New Resource:** `alicloud_redis_global_security_ip_group` ([#10094](https://github.com/aliyun/terraform-provider-alicloud/issues/10094))
