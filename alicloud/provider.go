@@ -172,6 +172,7 @@ func Provider() terraform.ResourceProvider {
 			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
+			"alicloud_express_connect_router_express_connect_routers": dataSourceAliCloudExpressConnectRouterExpressConnectRouters(),
 			"alicloud_redis_global_security_ip_groups":                dataSourceAliCloudRedisGlobalSecurityIpGroups(),
 			"alicloud_cr_artifact_subscription_rules":                 dataSourceAliCloudCrArtifactSubscriptionRules(),
 			"alicloud_cms_event_notify_policies":                      dataSourceAliCloudCmsEventNotifyPolicies(),
