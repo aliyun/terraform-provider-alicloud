@@ -11,25 +11,23 @@ import (
 type fakeDiags []string
 
 func fakeToError(d fakeDiags) error {
+	var msgs []string
 	for _, e := range d {
 		if strings.HasPrefix(e, "E:") {
-			return errors.New(strings.TrimPrefix(e, "E:"))
+			msgs = append(msgs, strings.TrimPrefix(e, "E:"))
 		}
 	}
-	return nil
+	if len(msgs) == 0 {
+		return nil
+	}
+	return errors.New(strings.Join(msgs, "; "))
 }
 
 func fakeWithError(d fakeDiags, err error) fakeDiags {
-	out := make(fakeDiags, 0, len(d)+1)
-	for _, e := range d {
-		if !strings.HasPrefix(e, "E:") {
-			out = append(out, e)
-		}
+	if err == nil {
+		return d
 	}
-	if err != nil {
-		out = append(out, "E:"+err.Error())
-	}
-	return out
+	return append(d, "E:"+err.Error())
 }
 
 var fakeBridge = DiagBridge[fakeDiags]{ToError: fakeToError, WithError: fakeWithError}
@@ -69,19 +67,21 @@ func TestAroundPassesDiagnosticsThroughVerbatim(t *testing.T) {
 	}
 }
 
-func TestAroundAfterSwallowsError(t *testing.T) {
+// Execute restores the error it returned nil for, which makes it identical to
+// inner's, so the diagnostics come back verbatim rather than through the bridge.
+func TestAroundAfterCannotSwallowError(t *testing.T) {
 	it := &funcInterceptor{after: func(error) error { return nil }}
-	got := around(t, it, fakeDiags{"W:careful", "E:the API said no"})
-	want := fakeDiags{"W:careful"}
-	if fmt.Sprint(got) != fmt.Sprint(want) {
-		t.Fatalf("got %v, want %v", got, want)
+	inner := fakeDiags{"W:careful", "E:the API said no"}
+	got := around(t, it, inner)
+	if fmt.Sprint(got) != fmt.Sprint(inner) {
+		t.Fatalf("got %v, want %v", got, inner)
 	}
 }
 
 func TestAroundAfterRewritesError(t *testing.T) {
 	it := &funcInterceptor{after: func(error) error { return errors.New("normalised") }}
 	got := around(t, it, fakeDiags{"W:careful", "E:the API said no"})
-	want := fakeDiags{"W:careful", "E:normalised"}
+	want := fakeDiags{"W:careful", "E:the API said no", "E:normalised"}
 	if fmt.Sprint(got) != fmt.Sprint(want) {
 		t.Fatalf("got %v, want %v", got, want)
 	}

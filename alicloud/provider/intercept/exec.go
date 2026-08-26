@@ -2,12 +2,12 @@ package intercept
 
 import (
 	"context"
+	"log"
 	"slices"
 )
 
-// Before hooks run in forward order and a non-nil return aborts the operation,
-// inner never executing. After hooks always run, in reverse order, and may rewrite
-// the error.
+// Execute runs the chain around inner and restores any error an After hook
+// dropped, so a failed operation is never reported as success.
 func Execute(ctx context.Context, chain []Interceptor, call Call, inner func() error) error {
 	if len(chain) == 0 {
 		return inner()
@@ -25,7 +25,11 @@ func Execute(ctx context.Context, chain []Interceptor, call Call, inner func() e
 		err = inner()
 	}
 	for _, o := range slices.Backward(chain) {
-		err = o.After(ctx, call, err)
+		prev := err
+		if err = o.After(ctx, call, err); err == nil && prev != nil {
+			log.Printf("[ERROR] intercept: %T dropped %s %s error, restoring it: %s", o, call.Op, call.Name, prev)
+			err = prev
+		}
 	}
 	return err
 }

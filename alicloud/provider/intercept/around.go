@@ -6,10 +6,10 @@ import "context"
 // contract speaks. Supplied by the adapter, the two stacks having incompatible
 // diagnostics types.
 type DiagBridge[D any] struct {
-	// The first error-severity entry of d, or nil.
+	// The error-severity entries of d as one error, or nil if there are none.
 	ToError func(d D) error
-	// d with its error-severity entries replaced by one describing err, or dropped
-	// if err is nil. Warnings must survive in their original order.
+	// d with err folded in on top. Nothing already in d may be dropped: a hook can
+	// add to what the inner call reported, never hide it.
 	WithError func(d D, err error) D
 }
 

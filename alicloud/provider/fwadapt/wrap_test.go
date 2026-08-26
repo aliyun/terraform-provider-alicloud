@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/intercept"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/intercept"
 )
 
 type stubResource struct {
@@ -62,6 +62,18 @@ func (s *stubResource) Delete(_ context.Context, _ resource.DeleteRequest, resp 
 	}
 }
 
+// diagsResource reports diagnostics the AddError helpers cannot build, such as one
+// carrying an attribute path.
+type diagsResource struct {
+	stubResource
+	diags diag.Diagnostics
+}
+
+func (s *diagsResource) Create(_ context.Context, _ resource.CreateRequest, resp *resource.CreateResponse) {
+	s.createCalled = true
+	resp.Diagnostics.Append(s.diags...)
+}
+
 type stubDataSource struct {
 	readCalled bool
 	readErr    string
@@ -87,6 +99,7 @@ type recordInterceptor struct {
 	beforeErr  error
 	afterErr   error
 	rewriteErr error
+	wrapMsg    string
 	swallow    bool
 	metaSeen   interface{}
 }
@@ -104,6 +117,9 @@ func (r *recordInterceptor) After(ctx context.Context, call intercept.Call, err 
 	}
 	if r.rewriteErr != nil {
 		return r.rewriteErr
+	}
+	if r.wrapMsg != "" && err != nil {
+		return fmt.Errorf("%s: %w", r.wrapMsg, err)
 	}
 	return err
 }
@@ -264,15 +280,18 @@ func TestWrapResourceAfterRewritesError(t *testing.T) {
 	var resp resource.CreateResponse
 	wr.Create(context.Background(), resource.CreateRequest{}, &resp)
 
-	if got, want := len(resp.Diagnostics), 1; got != want {
+	if got, want := len(resp.Diagnostics), 2; got != want {
 		t.Fatalf("len(diagnostics) = %d, want %d: %v", got, want, resp.Diagnostics)
 	}
-	if got := resp.Diagnostics[0].Summary(); got != "rewritten" {
+	if got := resp.Diagnostics[0].Summary(); got != "inner error" {
+		t.Fatalf("the inner error was replaced, summary = %q", got)
+	}
+	if got := resp.Diagnostics[1].Summary(); got != "rewritten" {
 		t.Fatalf("summary = %q, want %q", got, "rewritten")
 	}
 }
 
-func TestWrapResourceAfterSwallowsError(t *testing.T) {
+func TestWrapResourceAfterCannotSwallowError(t *testing.T) {
 	rec := &recordInterceptor{name: "rec", swallow: true}
 	r := &stubResource{readErr: "resource not found"}
 	got := WrapResource("test", r, []intercept.Interceptor{rec})
@@ -281,8 +300,14 @@ func TestWrapResourceAfterSwallowsError(t *testing.T) {
 	var resp resource.ReadResponse
 	wr.Read(context.Background(), resource.ReadRequest{}, &resp)
 
-	if resp.Diagnostics.HasError() {
-		t.Fatalf("After returned nil, so the error must be gone: %v", resp.Diagnostics)
+	if !resp.Diagnostics.HasError() {
+		t.Fatal("After returned nil, but a failure must not be reported as success")
+	}
+	if got, want := len(resp.Diagnostics), 1; got != want {
+		t.Fatalf("len(diagnostics) = %d, want %d: %v", got, want, resp.Diagnostics)
+	}
+	if got := resp.Diagnostics[0].Summary(); got != "resource not found" {
+		t.Fatalf("summary = %q, want the inner one restored verbatim", got)
 	}
 	if !r.readCalled {
 		t.Fatal("inner Read not called")
@@ -290,7 +315,7 @@ func TestWrapResourceAfterSwallowsError(t *testing.T) {
 }
 
 func TestWrapResourceWarningsSurviveRewrite(t *testing.T) {
-	rec := &recordInterceptor{name: "rec", swallow: true}
+	rec := &recordInterceptor{name: "rec", rewriteErr: errors.New("rewritten")}
 	r := &stubResource{readErr: "resource not found"}
 	got := WrapResource("test", r, []intercept.Interceptor{rec})
 	wr := got.(*wrappedResource)
@@ -299,11 +324,42 @@ func TestWrapResourceWarningsSurviveRewrite(t *testing.T) {
 	resp.Diagnostics.AddWarning("deprecated field", "use the other one")
 	wr.Read(context.Background(), resource.ReadRequest{}, &resp)
 
-	if got, want := len(resp.Diagnostics), 1; got != want {
+	if got := resp.Diagnostics[0].Summary(); got != "deprecated field" {
+		t.Fatalf("the warning must come first and unchanged, diagnostics = %v", resp.Diagnostics)
+	}
+}
+
+// The bridge hands the chain a plain error, so a hook that only wraps it must not
+// cost the attribute path and detail that error came from.
+func TestWrapResourceWrapKeepsEveryInnerErrorIntact(t *testing.T) {
+	rec := &recordInterceptor{name: "rec", wrapMsg: "retry gave up"}
+	r := &diagsResource{diags: diag.Diagnostics{
+		diag.NewAttributeErrorDiagnostic(path.Root("cidr_block"), "invalid CIDR", "must be a /16 or narrower"),
+		diag.NewErrorDiagnostic("second failure", "with a detail"),
+	}}
+	got := WrapResource("test", r, []intercept.Interceptor{rec})
+	wr := got.(*wrappedResource)
+
+	var resp resource.CreateResponse
+	wr.Create(context.Background(), resource.CreateRequest{}, &resp)
+
+	if got, want := len(resp.Diagnostics), 3; got != want {
 		t.Fatalf("len(diagnostics) = %d, want %d: %v", got, want, resp.Diagnostics)
 	}
-	if got := resp.Diagnostics[0].Summary(); got != "deprecated field" {
-		t.Fatalf("the warning was dropped, diagnostics = %v", resp.Diagnostics)
+	first, ok := resp.Diagnostics[0].(diag.DiagnosticWithPath)
+	if !ok {
+		t.Fatalf("the attribute path was lost: %#v", resp.Diagnostics[0])
+	}
+	if got := first.Path().String(); got != "cidr_block" {
+		t.Fatalf("path = %q, want %q", got, "cidr_block")
+	}
+	if got := resp.Diagnostics[1].Detail(); got != "with a detail" {
+		t.Fatalf("detail = %q, want it preserved", got)
+	}
+	// The hook's own wording arrives on top, carrying both messages it saw.
+	want := "retry gave up: invalid CIDR: must be a /16 or narrower; second failure: with a detail"
+	if got := resp.Diagnostics[2].Summary(); got != want {
+		t.Fatalf("summary = %q, want %q", got, want)
 	}
 }
 

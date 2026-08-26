@@ -11,6 +11,7 @@ package fwadapt
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/intercept"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -248,30 +249,48 @@ func runIntercepted(ctx context.Context, name string, op intercept.Op, chain []i
 
 var bridge = intercept.DiagBridge[diag.Diagnostics]{
 	ToError:   diagToErr,
-	WithError: replaceDiagErrors,
+	WithError: appendDiagError,
 }
 
 func diagToErr(diags diag.Diagnostics) error {
+	var errs diag.Diagnostics
 	for _, d := range diags {
 		if d.Severity() == diag.SeverityError {
-			if d.Detail() != "" {
-				return errors.New(d.Summary() + ": " + d.Detail())
-			}
-			return errors.New(d.Summary())
+			errs = append(errs, d)
 		}
 	}
-	return nil
+	if len(errs) == 0 {
+		return nil
+	}
+	return &diagsErr{diags: errs}
 }
 
-func replaceDiagErrors(diags diag.Diagnostics, err error) diag.Diagnostics {
-	out := make(diag.Diagnostics, 0, len(diags)+1)
-	for _, d := range diags {
-		if d.Severity() != diag.SeverityError {
-			out = append(out, d)
+func appendDiagError(diags diag.Diagnostics, err error) diag.Diagnostics {
+	if err == nil {
+		return diags
+	}
+	// A hook that only carried the originals forward has nothing of its own to say.
+	var de *diagsErr
+	if errors.As(err, &de) && err.Error() == de.Error() {
+		return diags
+	}
+	return append(diags, diag.NewErrorDiagnostic(err.Error(), ""))
+}
+
+// diagsErr carries every error-severity diagnostic across the hop through the
+// interceptor contract's single error.
+type diagsErr struct {
+	diags diag.Diagnostics
+}
+
+func (e *diagsErr) Error() string {
+	msgs := make([]string, 0, len(e.diags))
+	for _, d := range e.diags {
+		if d.Detail() != "" {
+			msgs = append(msgs, d.Summary()+": "+d.Detail())
+			continue
 		}
+		msgs = append(msgs, d.Summary())
 	}
-	if err != nil {
-		out = append(out, diag.NewErrorDiagnostic(err.Error(), ""))
-	}
-	return out
+	return strings.Join(msgs, "; ")
 }

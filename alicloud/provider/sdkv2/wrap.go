@@ -1,8 +1,8 @@
 // Package sdkv2 adapts the interceptor chain to SDK v2 resources and data sources.
 //
-// The three CRUD forms are wrapped in the SDK's own dispatch order —
-// *WithoutTimeout, *Context, plain — and only the highest-priority one that is
-// set, since the SDK never reaches the others. A plain form is never promoted to
+// The three CRUD forms are wrapped in the SDK's own dispatch order — plain,
+// *WithoutTimeout, *Context — and only the highest-priority one that is set,
+// since the SDK never reaches the others. A plain form is never promoted to
 // *Context: that would silently change timeout semantics.
 //
 // Everything outside CRUD reaches the SDK unchanged because the wrapper starts
@@ -11,6 +11,8 @@ package sdkv2
 
 import (
 	"context"
+	"errors"
+	"strings"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/intercept"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -39,42 +41,42 @@ func WrapDataSource(name string, ds *schema.Resource, chain []intercept.Intercep
 }
 
 func wrapCreate(r *schema.Resource, name string, chain []intercept.Interceptor) {
-	if r.CreateWithoutTimeout != nil {
+	if r.Create != nil {
+		r.Create = wrapOp(name, intercept.OpCreate, chain, r.Create)
+	} else if r.CreateWithoutTimeout != nil {
 		r.CreateWithoutTimeout = wrapOpContext(name, intercept.OpCreate, chain, r.CreateWithoutTimeout)
 	} else if r.CreateContext != nil {
 		r.CreateContext = wrapOpContext(name, intercept.OpCreate, chain, r.CreateContext)
-	} else if r.Create != nil {
-		r.Create = wrapOp(name, intercept.OpCreate, chain, r.Create)
 	}
 }
 
 func wrapRead(r *schema.Resource, name string, chain []intercept.Interceptor) {
-	if r.ReadWithoutTimeout != nil {
+	if r.Read != nil {
+		r.Read = wrapOp(name, intercept.OpRead, chain, r.Read)
+	} else if r.ReadWithoutTimeout != nil {
 		r.ReadWithoutTimeout = wrapOpContext(name, intercept.OpRead, chain, r.ReadWithoutTimeout)
 	} else if r.ReadContext != nil {
 		r.ReadContext = wrapOpContext(name, intercept.OpRead, chain, r.ReadContext)
-	} else if r.Read != nil {
-		r.Read = wrapOp(name, intercept.OpRead, chain, r.Read)
 	}
 }
 
 func wrapUpdate(r *schema.Resource, name string, chain []intercept.Interceptor) {
-	if r.UpdateWithoutTimeout != nil {
+	if r.Update != nil {
+		r.Update = wrapOp(name, intercept.OpUpdate, chain, r.Update)
+	} else if r.UpdateWithoutTimeout != nil {
 		r.UpdateWithoutTimeout = wrapOpContext(name, intercept.OpUpdate, chain, r.UpdateWithoutTimeout)
 	} else if r.UpdateContext != nil {
 		r.UpdateContext = wrapOpContext(name, intercept.OpUpdate, chain, r.UpdateContext)
-	} else if r.Update != nil {
-		r.Update = wrapOp(name, intercept.OpUpdate, chain, r.Update)
 	}
 }
 
 func wrapDelete(r *schema.Resource, name string, chain []intercept.Interceptor) {
-	if r.DeleteWithoutTimeout != nil {
+	if r.Delete != nil {
+		r.Delete = wrapOp(name, intercept.OpDelete, chain, r.Delete)
+	} else if r.DeleteWithoutTimeout != nil {
 		r.DeleteWithoutTimeout = wrapOpContext(name, intercept.OpDelete, chain, r.DeleteWithoutTimeout)
 	} else if r.DeleteContext != nil {
 		r.DeleteContext = wrapOpContext(name, intercept.OpDelete, chain, r.DeleteContext)
-	} else if r.Delete != nil {
-		r.Delete = wrapOp(name, intercept.OpDelete, chain, r.Delete)
 	}
 }
 
@@ -94,40 +96,49 @@ func wrapOpContext(name string, op intercept.Op, chain []intercept.Interceptor, 
 }
 
 var bridge = intercept.DiagBridge[diag.Diagnostics]{
-	ToError:   fmtDiagError,
-	WithError: replaceDiagErrors,
+	ToError:   diagsToErr,
+	WithError: appendDiagError,
 }
 
-func fmtDiagError(diags diag.Diagnostics) error {
+func diagsToErr(diags diag.Diagnostics) error {
+	var errs diag.Diagnostics
 	for _, d := range diags {
 		if d.Severity == diag.Error {
-			return &diagErr{summary: d.Summary, detail: d.Detail}
+			errs = append(errs, d)
 		}
 	}
-	return nil
+	if len(errs) == 0 {
+		return nil
+	}
+	return &diagsErr{diags: errs}
 }
 
-func replaceDiagErrors(diags diag.Diagnostics, err error) diag.Diagnostics {
-	out := make(diag.Diagnostics, 0, len(diags)+1)
-	for _, d := range diags {
-		if d.Severity != diag.Error {
-			out = append(out, d)
+func appendDiagError(diags diag.Diagnostics, err error) diag.Diagnostics {
+	if err == nil {
+		return diags
+	}
+	// A hook that only carried the originals forward has nothing of its own to say.
+	var de *diagsErr
+	if errors.As(err, &de) && err.Error() == de.Error() {
+		return diags
+	}
+	return append(diags, diag.FromErr(err)...)
+}
+
+// diagsErr carries every error-severity diagnostic across the hop through the
+// interceptor contract's single error.
+type diagsErr struct {
+	diags diag.Diagnostics
+}
+
+func (e *diagsErr) Error() string {
+	msgs := make([]string, 0, len(e.diags))
+	for _, d := range e.diags {
+		if d.Detail != "" {
+			msgs = append(msgs, d.Summary+": "+d.Detail)
+			continue
 		}
+		msgs = append(msgs, d.Summary)
 	}
-	if err != nil {
-		out = append(out, diag.FromErr(err)...)
-	}
-	return out
-}
-
-type diagErr struct {
-	summary string
-	detail  string
-}
-
-func (e *diagErr) Error() string {
-	if e.detail != "" {
-		return e.summary + ": " + e.detail
-	}
-	return e.summary
+	return strings.Join(msgs, "; ")
 }

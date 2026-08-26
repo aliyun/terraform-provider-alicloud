@@ -24,7 +24,10 @@ type Call struct {
 }
 
 // Interceptor wraps one invocation: Before runs in forward order and aborts the
-// operation on error, After always runs in reverse order and owns the error.
+// operation on error, After always runs in reverse order and may reword or replace
+// the error. It cannot make one disappear: Execute restores an error a hook
+// returned nil for, since the operation would otherwise be reported as successful
+// with whatever state the failure left behind.
 type Interceptor interface {
 	Before(ctx context.Context, call Call) error
 	After(ctx context.Context, call Call, err error) error

@@ -19,6 +19,7 @@ type recordInterceptor struct {
 	beforeErr  error
 	afterErr   error
 	rewriteErr error
+	wrapMsg    string
 	swallow    bool
 }
 
@@ -34,6 +35,9 @@ func (r *recordInterceptor) After(ctx context.Context, call intercept.Call, err 
 	}
 	if r.rewriteErr != nil {
 		return r.rewriteErr
+	}
+	if r.wrapMsg != "" && err != nil {
+		return fmt.Errorf("%s: %w", r.wrapMsg, err)
 	}
 	return err
 }
@@ -332,7 +336,7 @@ func TestContextFormDiagnosticsPassThroughVerbatim(t *testing.T) {
 	}
 }
 
-func TestContextFormAfterSwallowsError(t *testing.T) {
+func TestContextFormAfterCannotSwallowError(t *testing.T) {
 	rec := &recordInterceptor{name: "rec", swallow: true}
 	r := &schema.Resource{
 		ReadContext: func(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
@@ -340,8 +344,13 @@ func TestContextFormAfterSwallowsError(t *testing.T) {
 		},
 	}
 	got := WrapResource("alicloud_test", r, []intercept.Interceptor{rec})
-	if diags := got.ReadContext(context.Background(), nil, nil); diags.HasError() {
-		t.Fatalf("After returned nil, so the error must be gone: %v", diags)
+	diags := got.ReadContext(context.Background(), nil, nil)
+
+	if !diags.HasError() {
+		t.Fatal("After returned nil, but a failure must not be reported as success")
+	}
+	if len(diags) != 1 || diags[0].Summary != "resource not found" {
+		t.Fatalf("want the inner error restored verbatim, got %v", diags)
 	}
 }
 
@@ -355,11 +364,50 @@ func TestContextFormAfterRewritesError(t *testing.T) {
 	got := WrapResource("alicloud_test", r, []intercept.Interceptor{rec})
 	diags := got.CreateContext(context.Background(), nil, nil)
 
-	if len(diags) != 1 {
-		t.Fatalf("len(diags) = %d, want 1: %v", len(diags), diags)
+	if len(diags) != 2 {
+		t.Fatalf("len(diags) = %d, want 2 (inner kept, rewritten appended): %v", len(diags), diags)
 	}
-	if diags[0].Summary != "rewritten" {
-		t.Fatalf("summary = %q, want %q", diags[0].Summary, "rewritten")
+	if diags[0].Summary != "inner" {
+		t.Fatalf("the inner error was replaced, summary = %q", diags[0].Summary)
+	}
+	if diags[1].Summary != "rewritten" {
+		t.Fatalf("summary = %q, want %q", diags[1].Summary, "rewritten")
+	}
+}
+
+// A hook that only wraps the chain's error must not cost the attribute path and
+// detail that error came from.
+func TestContextFormWrapKeepsInnerErrorsIntact(t *testing.T) {
+	rec := &recordInterceptor{name: "rec", wrapMsg: "retry gave up"}
+	r := &schema.Resource{
+		CreateContext: func(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+			return diag.Diagnostics{
+				{
+					Severity:      diag.Error,
+					Summary:       "the API said no",
+					Detail:        "code: Throttling",
+					AttributePath: cty.GetAttrPath("cidr_block"),
+				},
+				{Severity: diag.Error, Summary: "second failure", Detail: "with a detail"},
+			}
+		},
+	}
+	got := WrapResource("alicloud_test", r, []intercept.Interceptor{rec})
+	diags := got.CreateContext(context.Background(), nil, nil)
+
+	if len(diags) != 3 {
+		t.Fatalf("len(diags) = %d, want 3: %v", len(diags), diags)
+	}
+	if got := diags[0].AttributePath; !got.Equals(cty.GetAttrPath("cidr_block")) {
+		t.Fatalf("the attribute path was lost: %v", got)
+	}
+	if got := diags[1].Detail; got != "with a detail" {
+		t.Fatalf("detail = %q, want it preserved", got)
+	}
+	// The hook's own wording arrives on top, carrying both messages it saw.
+	want := "retry gave up: the API said no: code: Throttling; second failure: with a detail"
+	if got := diags[2].Summary; got != want {
+		t.Fatalf("summary = %q, want %q", got, want)
 	}
 }
 
