@@ -1,4 +1,9 @@
 ## 1.291.0 (Unreleased)
+
+ENHANCEMENTS:
+
+- resource/alicloud_instance: support `instance_metadata_tags` attribute to expose instance tags in instance metadata. ([#10156](https://github.com/aliyun/terraform-provider-alicloud/issues/10156))
+
 ## 1.290.0 (August 25, 2026)
 
 - **New Resource:** `alicloud_mongodb_sharding_audit_filter` ([#10259](https://github.com/aliyun/terraform-provider-alicloud/issues/10259))
