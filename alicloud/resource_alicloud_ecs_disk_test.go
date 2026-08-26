@@ -1678,8 +1678,14 @@ func TestAccAliCloudECSDisk_basic8019_twin(t *testing.T) {
 // bursting_enabled update combinations across the Update path.
 // Covers the distinct code paths in the bursting_enabled Update logic:
 //  1. needBurstingPost defer: category changes TO cloud_auto in the same apply,
-//     so BurstingEnabled is deferred until after ModifyDiskSpec + WaitForState
-//     confirms the disk is cloud_auto (Step2 ESSD->cloud_auto bursting=true).
+//     so BurstingEnabled is deferred until after ModifyDiskSpec + a Status
+//     WaitForState (with "Modifying" pending and a doubled timeout) and a
+//     Category-field WaitForState confirm the disk has truly reached cloud_auto
+//     (Step2 ESSD->cloud_auto bursting=true). The category conversion enters a
+//     "Modifying" transition that can exceed the default 15m Update timeout, so
+//     the Status wait uses a longer timeout and lists "Modifying" as pending; the
+//     Category wait then confirms the target category before BurstingEnabled is
+//     applied.
 //  2. else branch, category unchanged: BurstingEnabled is set directly while the
 //     disk is already cloud_auto (Step3 disable, Step4 re-enable).
 //  3. import: round-trip the resource through Read to confirm state is stable
