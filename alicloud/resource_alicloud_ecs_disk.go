@@ -592,13 +592,50 @@ func resourceAliCloudEcsDiskUpdate(d *schema.ResourceData, meta interface{}) err
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 
-		stateConf := BuildStateConf([]string{}, []string{"Available", "In_use"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, ecsServiceV2.EcsDiskStateRefreshFunc(d.Id(), "Status", []string{}))
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+		// Category conversion (e.g. cloud_essd -> cloud_auto) is applied asynchronously
+		// by ECS: after ModifyDiskSpec returns, DescribeDisks may report Status
+		// "Modifying" during the transition, and even after Status returns to
+		// "Available" the Category field can still report the previous value. Two
+		// separate waits cannot exclude such interleavings (e.g. a response reading
+		// Status=Available with the old category followed by one reading
+		// Modifying with the new category), so on the category-change path both
+		// fields are checked within one DescribeDisks response: the wait completes
+		// only when Status is Available/In_use AND Category equals the requested
+		// value, so the deferred BurstingEnabled update below, which is only valid
+		// on cloud_auto disks, is not issued while the disk is still converting
+		// (BurstingEnabledForModifyingDiskUnsupported). Conversion duration depends
+		// on the disk (throughput, capacity, previous category) and comes with no
+		// completion guarantee, so the wait uses the configured update timeout as-is
+		// instead of a multiplied budget; set `timeouts.update` explicitly for large
+		// disks whose conversion may take longer.
+		if d.HasChange("category") {
+			targetCategory := d.Get("category").(string)
+			categoryConf := BuildStateConf([]string{"Modifying", "CategoryConverting"}, []string{"Available", "In_use"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, func() (interface{}, string, error) {
+				objectRaw, err := ecsServiceV2.DescribeEcsDisk(d.Id())
+				if err != nil {
+					if NotFoundError(err) {
+						return objectRaw, "", nil
+					}
+					return objectRaw, "", WrapError(err)
+				}
+				return objectRaw, ecsDiskCategoryTransitionState(fmt.Sprint(objectRaw["Status"]), fmt.Sprint(objectRaw["Category"]), targetCategory), nil
+			})
+			if _, err := categoryConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+		} else {
+			// With an empty Pending list the state machine keeps polling through any
+			// unknown state (including "Modifying" on non-category updates) until the
+			// target or the timeout.
+			stateConf := BuildStateConf([]string{}, []string{"Available", "In_use"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, ecsServiceV2.EcsDiskStateRefreshFunc(d.Id(), "Status", []string{}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
 		}
 	}
 	// Deferred BurstingEnabled set: category has just been changed to cloud_auto and
-	// WaitForState confirmed the disk is now cloud_auto, so BurstingEnabled is valid.
+	// the Status + Category WaitForState above confirmed the disk reached the target
+	// category, so BurstingEnabled is valid.
 	if needBurstingPost {
 		update = true
 		action = "ModifyDiskAttribute"
@@ -738,4 +775,24 @@ func convertEcsDiskPaymentTypeRequest(source interface{}) interface{} {
 		return "PrePaid"
 	}
 	return source
+}
+
+// ecsDiskCategoryTransitionState maps one DescribeDisks response into the state of
+// the combined Status/Category wait on the category-change path. The wait targets
+// Status Available/In_use and only completes when Category already equals the
+// requested value in the same response; "Modifying" and "CategoryConverting" keep
+// polling, and any other status is returned as-is so the state machine fails fast
+// instead of polling until the timeout.
+func ecsDiskCategoryTransitionState(status, category, targetCategory string) string {
+	switch {
+	case status == "Modifying":
+		return "Modifying"
+	case status == "Available" || status == "In_use":
+		if category == targetCategory {
+			return status
+		}
+		return "CategoryConverting"
+	default:
+		return status
+	}
 }
