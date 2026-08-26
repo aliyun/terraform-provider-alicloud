@@ -1,3 +1,0 @@
-alicloud/resource_alicloud_gwlb_server_group.go
-alicloud/resource_alicloud_gwlb_server_group_test.go
-website/docs/r/gwlb_server_group.html.markdown
