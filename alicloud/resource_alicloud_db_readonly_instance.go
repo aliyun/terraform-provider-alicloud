@@ -263,7 +263,7 @@ func resourceAlicloudDBReadonlyInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"local_ssd", "cloud_ssd", "cloud_essd", "cloud_essd2", "cloud_essd3"}, false),
+				ValidateFunc: StringInSlice([]string{"local_ssd", "cloud_ssd", "cloud_essd", "cloud_essd2", "cloud_essd3", "general_essd"}, false),
 			},
 			"effective_time": {
 				Type:         schema.TypeString,

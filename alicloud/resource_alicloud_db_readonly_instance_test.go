@@ -1166,6 +1166,45 @@ data "alicloud_db_instance_classes" "read" {
 `, name)
 }
 
+func resourceDBReadonlyInstanceConfigDependence_general_essd(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "%s"
+}
+data "alicloud_db_zones" "default"{
+	engine = "MySQL"
+	engine_version = "8.0"
+	instance_charge_type = "PostPaid"
+	category = "HighAvailability"
+ 	db_instance_storage_type = "cloud_auto"
+}
+
+data "alicloud_vpcs" "default" {
+    name_regex = "^default-NODELETING$"
+}
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_db_zones.default.zones.0.id
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {
+	status = "OK"
+}
+
+resource "alicloud_db_instance" "default" {
+    engine = "MySQL"
+	engine_version = "8.0"
+ 	db_instance_storage_type = "general_essd"
+	instance_type = "mysql.x4.medium.2c"
+	instance_storage = "100"
+	zone_id = data.alicloud_db_zones.default.zones.0.id
+	vswitch_id = data.alicloud_vswitches.default.ids.0
+	instance_name = var.name
+	security_ips = ["10.168.1.12", "100.69.7.112"]
+}
+`, name)
+}
+
 func resourceDBReadonlyInstanceConfigPostgreSQLDependence(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
@@ -1419,4 +1458,85 @@ data "alicloud_db_instance_classes" "read" {
     commodity_code = "rds_rordspre_public_cn"
 }
 `, name)
+}
+
+// TestAccAliCloudDBReadonlyInstance_dbInstanceStorageTypeValidation locks the
+// db_instance_storage_type enum: general_essd must be accepted and an unknown
+// value must be rejected. Before general_essd was added to the enum this
+// assertion failed at schema validation time; with the enum updated it passes.
+// It runs without TF_ACC so it executes in every CI run.
+func TestAccAliCloudDBReadonlyInstance_dbInstanceStorageTypeValidation(t *testing.T) {
+	validateFn := resourceAlicloudDBReadonlyInstance().Schema["db_instance_storage_type"].ValidateFunc
+	if validateFn == nil {
+		t.Fatal("db_instance_storage_type ValidateFunc is nil")
+	}
+	validValues := []string{"local_ssd", "cloud_ssd", "cloud_essd", "cloud_essd2", "cloud_essd3", "general_essd"}
+	for _, v := range validValues {
+		if _, errs := validateFn(v, "db_instance_storage_type"); len(errs) > 0 {
+			t.Fatalf("expected %q to be a valid db_instance_storage_type, got errors: %v", v, errs)
+		}
+	}
+	if _, errs := validateFn("invalid_storage_type", "db_instance_storage_type"); len(errs) == 0 {
+		t.Fatal("expected an invalid db_instance_storage_type to be rejected, but no error was returned")
+	}
+}
+
+func TestAccAliCloudRdsDBReadonlyInstance_general_essd(t *testing.T) {
+	var instance map[string]interface{}
+	resourceId := "alicloud_db_readonly_instance.default"
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAccDBReadonlyGeneralEssd%d", rand)
+	var DBReadonlyGeneralEssdMap = map[string]string{
+		"engine":                   "MySQL",
+		"engine_version":           "8.0",
+		"port":                     "3306",
+		"instance_name":            name,
+		"instance_type":            CHECKSET,
+		"instance_storage":         CHECKSET,
+		"db_instance_storage_type": "general_essd",
+		"master_db_instance_id":    CHECKSET,
+		"zone_id":                  CHECKSET,
+		"vswitch_id":               CHECKSET,
+		"connection_string":        CHECKSET,
+	}
+	ra := resourceAttrInit(resourceId, DBReadonlyGeneralEssdMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
+		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDBReadonlyInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBReadonlyInstanceConfigDependence_general_essd)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"master_db_instance_id":    "${alicloud_db_instance.default.id}",
+					"zone_id":                  "${alicloud_db_instance.default.zone_id}",
+					"engine_version":           "${alicloud_db_instance.default.engine_version}",
+					"instance_type":            "mysql.x4.medium.2c",
+					"instance_storage":         "100",
+					"db_instance_storage_type": "general_essd",
+					"instance_name":            "${var.name}",
+					"vswitch_id":               "${data.alicloud_vswitches.default.ids.0}",
+					"resource_group_id":        "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"security_ips":             "${alicloud_db_instance.default.security_ips}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_restart", "effective_time"},
+			},
+		},
+	})
 }
