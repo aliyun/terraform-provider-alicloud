@@ -327,6 +327,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_mongo_instances":                                  dataSourceAliCloudMongoDBInstances(),
 			"alicloud_mongodb_instances":                                dataSourceAliCloudMongoDBInstances(),
 			"alicloud_mongodb_zones":                                    dataSourceAlicloudMongoDBZones(),
+			"alicloud_gpdb_db_extensions":                               dataSourceAliCloudGpdbDbExtensions(),
 			"alicloud_gpdb_instances":                                   dataSourceAlicloudGpdbInstances(),
 			"alicloud_gpdb_zones":                                       dataSourceAlicloudGpdbZones(),
 			"alicloud_kvstore_instances":                                dataSourceAlicloudKvstoreInstances(),
@@ -958,6 +959,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_apig_plugin_classes":                              dataSourceAliCloudApigPluginClasses(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_gpdb_db_extension":                                    resourceAliCloudGpdbDbExtension(),
 			"alicloud_redis_global_security_ip_group":                       resourceAliCloudRedisGlobalSecurityIpGroup(),
 			"alicloud_cr_artifact_subscription_rule":                        resourceAliCloudCrArtifactSubscriptionRule(),
 			"alicloud_cms_event_notify_policy":                              resourceAliCloudCmsEventNotifyPolicy(),
