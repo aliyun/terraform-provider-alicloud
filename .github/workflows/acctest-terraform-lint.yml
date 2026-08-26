@@ -11,7 +11,11 @@ on:
       - release/v2
     paths:
       - .github/workflows/acctest-terraform-lint.yml
-      - alicloud/*.go
+      - alicloud/**/*.go
+      - scripts/run-tflint.sh
+      - scripts/ci/resolve-change-range.sh
+      - scripts/ci/resolve-change-range_test.sh
+      - scripts/ci/run-tflint_test.sh
 
 permissions: {}
 
@@ -72,6 +76,20 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
           fetch-depth: 0
+      - name: Test change range and lint scoping
+        shell: bash
+        run: |
+          scripts/ci/resolve-change-range_test.sh
+          scripts/ci/run-tflint_test.sh
+      - name: Resolve change range
+        id: change-range
+        shell: bash
+        env:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          CI_BASE_REPOSITORY_URL: ${{ github.event.pull_request.base.repo.clone_url }}
+        run: scripts/ci/resolve-change-range.sh >> "$GITHUB_OUTPUT"
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
@@ -95,4 +113,8 @@ jobs:
         run: |
           go install github.com/bflad/tfproviderlint/cmd/tfproviderlint@v0.31.0
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
-      - run: ./scripts/run-tflint.sh
+      - name: Run tfproviderlint
+        env:
+          DIFF_BASE: ${{ steps.change-range.outputs.diff_base }}
+          DIFF_HEAD: ${{ steps.change-range.outputs.diff_head }}
+        run: ./scripts/run-tflint.sh

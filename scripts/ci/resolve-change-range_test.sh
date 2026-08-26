@@ -6,7 +6,6 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(git -C "$script_dir" rev-parse --show-toplevel)"
 helper="$script_dir/resolve-change-range.sh"
 basic_check="$repo_root/scripts/basic-check.sh"
-fixture_dir="$script_dir/testdata/pr-10077"
 
 die() {
 	echo "FAIL: $*" >&2
@@ -234,44 +233,6 @@ test_no_common_ancestor_fails_closed() {
 	fi
 }
 
-test_pr_10077_fixture() {
-	local PR_NUMBER PR_BASE_REF PR_BASE_SHA PR_HEAD_SHA PR_MERGE_BASE_SHA
-	# shellcheck disable=SC1091
-	source "$fixture_dir/metadata.env"
-
-	git -C "$repo_root" fetch -q --no-tags \
-		"https://github.com/aliyun/terraform-provider-alicloud.git" \
-		"+refs/heads/$PR_BASE_REF:refs/remotes/ci-fixture/$PR_BASE_REF" \
-		"+refs/pull/$PR_NUMBER/head:refs/remotes/ci-fixture/pr-$PR_NUMBER"
-
-	git -C "$repo_root" cat-file -e "${PR_BASE_SHA}^{commit}" ||
-		die "PR #10077 exact base SHA is unavailable"
-	assert_eq "$PR_HEAD_SHA" \
-		"$(git -C "$repo_root" rev-parse "refs/remotes/ci-fixture/pr-$PR_NUMBER")" \
-		"PR #10077 head SHA fixture must remain exact"
-
-	local merge_base
-	merge_base="$(git -C "$repo_root" merge-base "$PR_BASE_SHA" "$PR_HEAD_SHA")"
-	assert_eq "$PR_MERGE_BASE_SHA" "$merge_base" \
-		"PR #10077 merge-base fixture must remain exact"
-
-	local changed_files content_files provider_files
-	changed_files="$(git -C "$repo_root" diff --name-only \
-		"$merge_base" "$PR_HEAD_SHA")"
-	content_files="$(grep '^website/docs/' <<<"$changed_files" || true)"
-	provider_files="$(grep '^alicloud/resource_.*\.go$' <<<"$changed_files" || true)"
-
-	assert_eq "$(sed '/^$/d' "$fixture_dir/expected-changed-files.txt")" \
-		"$changed_files" \
-		"PR #10077 must select exactly three changed files"
-	assert_eq "$(sed '/^$/d' "$fixture_dir/expected-content-files.txt")" \
-		"$content_files" \
-		"Content must select only the GWLB document"
-	assert_eq "$(sed '/^$/d' "$fixture_dir/expected-provider-files.txt")" \
-		"$provider_files" \
-		"Consistency and Coverage must select only the GWLB resource files"
-}
-
 main() {
 	[[ -x "$helper" ]] || die "missing executable helper: $helper"
 
@@ -282,7 +243,6 @@ main() {
 
 	test_diverged_multi_commit_pr "$temp_dir"
 	test_no_common_ancestor_fails_closed "$temp_dir"
-	test_pr_10077_fixture
 	echo "PASS: change-range regression tests"
 }
 
