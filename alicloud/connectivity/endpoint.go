@@ -348,6 +348,7 @@ var irregularProductEndpoint = map[string]string{
 	"alidns":                  "alidns.aliyuncs.com",
 	"openapiexplorer":         "openapi-mcp.cn-hangzhou.aliyuncs.com",
 	"computenestsupplier":     "computenestsupplier.cn-hangzhou.aliyuncs.com",
+	"appstream_center":        "appstream-center.%s.aliyuncs.com",
 }
 
 // irregularProductEndpointForIntlRegion specially records those product codes that
