@@ -2148,6 +2148,14 @@ func Provider() *schema.Provider {
 	provider.ConfigureContextFunc = func(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
 		return providerConfigure(ctx, d, provider)
 	}
+
+	if diags := assembleProvider(provider); diags.HasError() {
+		// Registration duplicates are a startup hard error: no configuration
+		// can make them work, and the provider is still being built, so there
+		// is nowhere to return diagnostics to.
+		panic("provider registration error: " + formatRegistrationDiags(diags))
+	}
+
 	return provider
 }
 
