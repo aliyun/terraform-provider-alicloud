@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -217,11 +216,11 @@ func resourceAliCloudSlsLogStoreCreate(d *schema.ResourceData, meta interface{})
 			logstoreName = v.(string)
 		}
 
-		logstore := buildLogStore(d)
+		metricStore := buildMetricStore(d)
 		var requestinfo *sls.Client
 		err := retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 			raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-				return nil, slsClient.CreateMetricStore(projectName, logstore)
+				return nil, slsClient.CreateMetricStoreV2(projectName, metricStore)
 			})
 			if err != nil {
 				if IsExpectedErrors(err, []string{"InternalServerError", LogClientTimeout}) {
@@ -230,14 +229,14 @@ func resourceAliCloudSlsLogStoreCreate(d *schema.ResourceData, meta interface{})
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug("CreateMetricStore", raw, requestinfo, map[string]interface{}{
-				"project":  projectName,
-				"logstore": logstore,
+			addDebug("CreateMetricStoreV2", raw, requestinfo, map[string]interface{}{
+				"project":     projectName,
+				"metricStore": metricStore,
 			})
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, "alicloud_log_store", "CreateLogStoreV2", AliyunLogGoSdkERROR)
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_log_store", "CreateMetricStoreV2", AliyunLogGoSdkERROR)
 		}
 		d.SetId(fmt.Sprintf("%s%s%s", projectName, COLON_SEPARATED, logstoreName))
 		return resourceAliCloudSlsLogStoreUpdate(d, meta)
@@ -608,11 +607,11 @@ func resourceAliCloudSlsLogStoreUpdate(d *schema.ResourceData, meta interface{})
 			projectName = v.(string)
 		}
 
-		logstore := buildLogStore(d)
+		metricStore := buildMetricStore(d)
 		var requestinfo *sls.Client
 		err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 			raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-				return nil, slsClient.UpdateMetricStore(projectName, logstore)
+				return nil, slsClient.UpdateMetricStoreV2(projectName, metricStore)
 			})
 			if err != nil {
 				if IsExpectedErrors(err, []string{"InternalServerError", LogClientTimeout}) {
@@ -621,9 +620,9 @@ func resourceAliCloudSlsLogStoreUpdate(d *schema.ResourceData, meta interface{})
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug("UpdateMetricStore", raw, requestinfo, map[string]interface{}{
-				"project":  projectName,
-				"logstore": logstore,
+			addDebug("UpdateMetricStoreV2", raw, requestinfo, map[string]interface{}{
+				"project":     projectName,
+				"metricStore": metricStore,
 			})
 			return nil
 		})
@@ -728,8 +727,8 @@ func resourceAliCloudSlsLogStoreDelete(d *schema.ResourceData, meta interface{})
 	return nil
 }
 
-func buildLogStore(d *schema.ResourceData) *sls.LogStore {
-	logstore := &sls.LogStore{
+func buildMetricStore(d *schema.ResourceData) *sls.MetricStore {
+	metricStore := &sls.MetricStore{
 		Name:          d.Get("logstore_name").(string),
 		TTL:           d.Get("retention_period").(int),
 		ShardCount:    d.Get("shard_count").(int),
@@ -737,20 +736,44 @@ func buildLogStore(d *schema.ResourceData) *sls.LogStore {
 		AutoSplit:     d.Get("auto_split").(bool),
 		MaxSplitShard: d.Get("max_split_shard_count").(int),
 		AppendMeta:    d.Get("append_meta").(bool),
-		TelemetryType: d.Get("telemetry_type").(string),
 		Mode:          d.Get("mode").(string),
 	}
 	if v, ok := d.GetOkExists("name"); ok {
-		logstore.Name = v.(string)
+		metricStore.Name = v.(string)
 	}
 	if hotTTL, ok := d.GetOk("hot_ttl"); ok {
-		logstore.HotTTL = int32(hotTTL.(int))
+		metricStore.HotTTL = int32(hotTTL.(int))
 	}
-	if encrypt := buildEncrypt(d); encrypt != nil {
-		logstore.EncryptConf = encrypt
+	if infrequentAccessTTL, ok := d.GetOk("infrequent_access_ttl"); ok {
+		ttl := int32(infrequentAccessTTL.(int))
+		metricStore.InfrequentAccessTTL = &ttl
+	}
+	// The /metricstores API speaks camelCase, so the encrypt_conf must be
+	// converted to MetricStoreEncryptConf instead of reusing EncryptConf.
+	if encrypt := buildMetricStoreEncrypt(d); encrypt != nil {
+		metricStore.EncryptConf = encrypt
 	}
 
-	return logstore
+	return metricStore
+}
+
+func buildMetricStoreEncrypt(d *schema.ResourceData) *sls.MetricStoreEncryptConf {
+	encrypt := buildEncrypt(d)
+	if encrypt == nil {
+		return nil
+	}
+	metricStoreEncrypt := &sls.MetricStoreEncryptConf{
+		Enable:      encrypt.Enable,
+		EncryptType: encrypt.EncryptType,
+	}
+	if encrypt.UserCmkInfo != nil {
+		metricStoreEncrypt.UserCmkInfo = &sls.MetricStoreEncryptUserCmkConf{
+			CmkKeyId: encrypt.UserCmkInfo.CmkKeyId,
+			Arn:      encrypt.UserCmkInfo.Arn,
+			RegionId: encrypt.UserCmkInfo.RegionId,
+		}
+	}
+	return metricStoreEncrypt
 }
 
 func buildEncrypt(d *schema.ResourceData) *sls.EncryptConf {

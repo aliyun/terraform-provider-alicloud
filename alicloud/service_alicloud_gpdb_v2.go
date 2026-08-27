@@ -1080,3 +1080,88 @@ func (s *GpdbServiceV2) GpdbApiKeyStateRefreshFuncWithApi(id string, field strin
 }
 
 // DescribeGpdbApiKey >>> Encapsulated.
+
+// DescribeGpdbDbExtension <<< Encapsulated get interface for Gpdb DbExtension.
+
+func (s *GpdbServiceV2) DescribeGpdbDbExtension(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 3 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
+		return nil, err
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["DBInstanceId"] = parts[0]
+	request["DatabaseName"] = parts[1]
+	request["ExtensionName"] = parts[2]
+
+	action := "DescribeExtension"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPost("gpdb", "2016-05-03", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"Extension.NotInstalled"}) {
+			return object, WrapErrorf(NotFoundErr("DbExtension", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	// DescribeExtension describes the instance's extension catalog: an extension that is
+	// not installed comes back with HTTP 200 and Status "uninstalled" rather than an error
+	// code, so that status is what marks the resource as absent.
+	if fmt.Sprint(response["Status"]) == "uninstalled" {
+		return object, WrapErrorf(NotFoundErr("DbExtension", id), NotFoundMsg, response)
+	}
+
+	return response, nil
+}
+
+func (s *GpdbServiceV2) GpdbDbExtensionStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+	return s.GpdbDbExtensionStateRefreshFuncWithApi(id, field, failStates, s.DescribeGpdbDbExtension)
+}
+
+func (s *GpdbServiceV2) GpdbDbExtensionStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeGpdbDbExtension >>> Encapsulated.

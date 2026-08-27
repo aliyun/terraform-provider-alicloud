@@ -2306,6 +2306,51 @@ func (s *PolarDBService) DescribePolarDBAIClusterAttribute(id string) (object ma
 	return object, nil
 }
 
+func (s *PolarDBService) DescribePolarDBGatewayAttribute(id string) (object map[string]interface{}, err error) {
+	action := "DescribeGatewayAttribute"
+	request := map[string]interface{}{"GwClusterId": id, "RegionId": s.client.RegionId}
+	var response map[string]interface{}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+		response, err = s.client.RpcPost("polardb", "2017-08-01", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if NotFoundError(err) {
+			return object, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	return response, nil
+}
+
+func (s *PolarDBService) PolarDBGatewayStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribePolarDBGatewayAttribute(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return "DELETED", "DELETED", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		status := fmt.Sprint(object["Status"])
+		for _, failState := range failStates {
+			if status == failState {
+				return object, status, WrapError(Error(FailedToReachTargetStatus, status))
+			}
+		}
+		return object, status, nil
+	}
+}
+
 func (s *PolarDBService) PolarDBAIClusterStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribePolarDBAIClusterAttribute(id)

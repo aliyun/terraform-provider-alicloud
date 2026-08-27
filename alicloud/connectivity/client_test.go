@@ -2,7 +2,10 @@ package connectivity
 
 import (
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"os"
+	"os/exec"
 	"strings"
 	"sync"
 	"testing"
@@ -14,6 +17,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
+	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
 	"github.com/aliyun/credentials-go/credentials"
 	"github.com/stretchr/testify/assert"
 )
@@ -112,6 +116,72 @@ func NewTestClient(t *testing.T) *AliyunClient {
 		t.Fatalf("initial client failed: %v", err)
 	}
 	return client
+}
+
+func TestGetTableStoreConfigProxy(t *testing.T) {
+	assert.True(t, getTableStoreConfig().ProxyFromEnvironment)
+}
+
+func TestTableStoreRequestUsesEnvironmentProxy(t *testing.T) {
+	const helperEnv = "TABLESTORE_PROXY_TEST_HELPER"
+	if os.Getenv(helperEnv) == "1" {
+		credential, err := credentials.NewCredential(new(credentials.Config).
+			SetType("access_key").
+			SetAccessKeyId("access-key").
+			SetAccessKeySecret("secret-key"))
+		if err != nil {
+			t.Fatalf("create credential: %v", err)
+		}
+		client := &AliyunClient{
+			config: &Config{
+				OtsEndpoint: "http://tablestore.invalid",
+				Credential:  credential,
+			},
+			tablestoreconnByInstanceName: make(map[string]*tablestore.TableStoreClient),
+		}
+		if _, err := client.WithTableStoreClient("instance", func(client *tablestore.TableStoreClient) (interface{}, error) {
+			return client.ListTable()
+		}); err != nil {
+			t.Fatalf("list tables through proxy: %v", err)
+		}
+		return
+	}
+
+	type proxyRequest struct {
+		method string
+		host   string
+		path   string
+	}
+	requests := make(chan proxyRequest, 1)
+	proxy := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		select {
+		case requests <- proxyRequest{method: r.Method, host: r.URL.Host, path: r.URL.Path}:
+		default:
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer proxy.Close()
+
+	t.Setenv(helperEnv, "1")
+	t.Setenv("HTTP_PROXY", proxy.URL)
+	t.Setenv("http_proxy", "")
+	t.Setenv("NO_PROXY", "")
+	t.Setenv("no_proxy", "")
+	t.Setenv("REQUEST_METHOD", "")
+	cmd := exec.Command(os.Args[0], "-test.run=^TestTableStoreRequestUsesEnvironmentProxy$")
+	cmd.Env = os.Environ()
+	if output, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("proxy test subprocess failed: %v\n%s", err, output)
+	}
+
+	select {
+	case request := <-requests:
+		assert.Equal(t, http.MethodPost, request.method)
+		assert.Equal(t, "tablestore.invalid", request.host)
+		assert.Equal(t, "/ListTable", request.path)
+	default:
+		t.Fatal("proxy did not receive the TableStore request")
+	}
 }
 
 func TestUnitCommonWithEcsClient_UsingHttpMock(t *testing.T) {
