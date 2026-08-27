@@ -42,6 +42,8 @@
 #   a1id status                  显示默认身份 / live active / A1ID_ROOT / 八身份登录表
 #   a1id who [id]                whoami:缺省=默认身份,指定=该身份 dir
 #   a1id ready <id>              脚本探测:已登录退 0,否则退 1
+#   a1id assign [--check] <workitem-id> <staff-id>
+#                                通过 aone-assign.sh 的完整策略读/写负责人
 #   a1id as <id> -- <a1 args>    以指定身份跑一条(严格;未登录直接 die,不回退)
 #   a1id -- <a1 args>            以默认身份跑(受 JARVIS_A1_IDENTITY 影响)
 #
@@ -366,6 +368,33 @@ case "$cmd" in
     id="$(canon "$id_raw")"
     valid "$id" || exit 1
     is_logged_in "$id"
+    ;;
+  assign)
+    assign_mode=""
+    if [ "${1:-}" = "--check" ]; then
+      assign_mode="--check"
+      shift
+    fi
+    workitem_id="${1:-}"
+    target_staff_id="${2:-}"
+    [ -n "$workitem_id" ] && [ -n "$target_staff_id" ] && [ "$#" -eq 2 ] \
+      || die "用法: a1id assign [--check] <workitem-id> <staff-id>"
+
+    # A post-PR child is read-only even when the safe assignee wrapper would
+    # eventually decide on an idempotent no-op. --check itself remains read-only.
+    if [ -z "$assign_mode" ]; then
+      guard_aone_write project workitem update "$workitem_id" \
+        --assignee "$target_staff_id"
+    fi
+
+    id=$(resolve_default) || exit $?
+    assign_script="$SCRIPT_DIR/../bootstrap/aone-assign.sh"
+    [ -f "$assign_script" ] || die "受控 assignee writer 缺失:$assign_script"
+    # The child receives only the selected real a1 binary and identity config;
+    # it must re-run the complete owner/roster policy before any write.
+    A1_CONFIG_DIR="$(id_dir "$id")" JARVIS_A1="$A1" \
+      exec bash "$assign_script" ${assign_mode:+"$assign_mode"} \
+        "$workitem_id" "$target_staff_id"
     ;;
   as)
     id_raw="${1:-}"; shift || true; [ "${1:-}" = "--" ] && shift

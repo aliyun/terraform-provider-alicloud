@@ -51,15 +51,16 @@
 # the repo owner; never wire it into automation.
 #
 # Enforcement: bootstrap/a1_command_guard.py denies a raw `project workitem
-# update ... --assignee` from the Bash tool and points here. The a1 call this
-# script makes is a child process, which PreToolUse does not see.
+# update ... --assignee` from both PreToolUse and bin/a1id's runtime gate. The
+# public path delegates to `bin/a1id assign`, which selects the configured
+# identity and re-enters this complete policy with the real a1 binary. Directly
+# invoking that subcommand is still safe because it never skips this policy.
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$script_dir/lib.sh"
 jarvis_root="$(jarvis_root)"
 contacts_cfg="${JARVIS_CONTACTS:-$jarvis_root/config/contacts.json}"
-A1="${JARVIS_A1:-${A1_BIN:-$jarvis_root/bin/a1id --}}"
 
 check_only=""
 if [ "${1:-}" = "--check" ]; then
@@ -82,6 +83,19 @@ case "$target" in ""|*[![:alnum:]_]*)
     echo "aone-assign.sh: staff id must be alphanumeric/underscore, got '$target'" >&2
     exit 1 ;;
 esac
+
+# The ordinary identity-aware path must not feed the checked write back through
+# a1id's generic runtime gate: that gate intentionally cannot distinguish this
+# wrapper from a raw model command. `a1id assign` is a narrow safe entrypoint
+# that re-enters this script with JARVIS_A1 bound to the selected identity's
+# real a1 binary. JARVIS_A1 remains an explicit test seam for hermetic stubs.
+if [ -z "${JARVIS_A1:-}" ]; then
+    if [ -n "$check_only" ]; then
+        exec "$jarvis_root/bin/a1id" assign --check "$workitem_id" "$target"
+    fi
+    exec "$jarvis_root/bin/a1id" assign "$workitem_id" "$target"
+fi
+A1="$JARVIS_A1"
 
 refuse() {
     echo "aone-assign.sh: refusing to reassign #$workitem_id — $1" >&2

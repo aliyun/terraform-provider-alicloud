@@ -26,6 +26,7 @@
 | `a1id status`                   | 显示默认身份 / live active / A1ID_ROOT / 六身份登录表 |
 | `a1id who [id]`                 | `a1 auth whoami`;缺省=默认身份 dir,指定=该身份 dir |
 | `a1id ready <id>`               | 脚本探测:已登录退 0,否则退 1 |
+| `a1id assign [--check] <workitem-id> <staff-id>` | 选择默认身份并通过 `aone-assign.sh` 完整策略检查/写入负责人；不开放裸 assignee 写入 |
 | `a1id as <id> -- <a1 args...>`  | 以指定身份跑一条(严格;未登录直接 die,不回退) |
 | `a1id -- <a1 args...>`          | 以默认身份跑(受 `JARVIS_A1_IDENTITY` 影响) |
 
@@ -69,6 +70,9 @@ bin/a1id as terraform-rd -- project workitem comment create <id> -m "..."
 
 # 整链路由:让 wrap.sh / claim.sh 等自动走该身份
 JARVIS_A1_IDENTITY=terraform-rd bash bootstrap/wrap.sh sync <id> "MR: ..."
+
+# 受控改派:身份由 JARVIS_A1_IDENTITY 选择，禁止把 a1id 命令串塞进 JARVIS_A1
+JARVIS_A1_IDENTITY=terraform-rd bash bootstrap/aone-assign.sh <id> <staff-id>
 
 # 开工探测:RD 未登录即阻断，不回退 jarvis
 bin/a1id ready terraform-rd || exit 1
