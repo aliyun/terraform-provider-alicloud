@@ -62,6 +62,7 @@ func maximalSDKv2Resource(log *hookLog) *schema.Resource {
 			Version: 1,
 			SchemaFunc: func() map[string]*schema.Schema {
 				return map[string]*schema.Schema{
+					// lintignore: S013
 					"name": {Type: schema.TypeString, RequiredForImport: true},
 				}
 			},
@@ -117,6 +118,7 @@ func maximalSDKv2Resource(log *hookLog) *schema.Resource {
 			log.record("Delete")
 			return nil
 		},
+		// lintignore: R003
 		Exists: func(d *schema.ResourceData, meta interface{}) (bool, error) {
 			log.record("Exists")
 			return true, nil

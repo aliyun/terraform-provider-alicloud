@@ -61,6 +61,7 @@ func TestWrapResourceWrapsOnlyUsedFields(t *testing.T) {
 	rec := &recordInterceptor{name: "rec"}
 	r := &schema.Resource{
 		Create: func(d *schema.ResourceData, meta interface{}) error { called = true; return nil },
+		// lintignore: S013
 		Schema: map[string]*schema.Schema{"id": {Type: schema.TypeString}},
 	}
 	got := WrapResource("alicloud_test", r, []intercept.Interceptor{rec})
