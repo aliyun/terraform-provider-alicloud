@@ -1,10 +1,17 @@
-## 2.0.0-beta4 (Unreleased)
+## 2.0.0-beta4 (August 27, 2026)
+
+This beta rolls up every change merged from the 1.x line since v2.0.0-beta3 — see the `1.290.0` section of [CHANGELOG.md](CHANGELOG.md) — plus the v2-only changes below.
 
 BREAKING CHANGES:
 
 - resource/alicloud_amqp_exchange: `create_time` changed from `TypeInt` to `TypeString`, fixing a provider panic on 32-bit builds. No configuration or state migration is needed; expressions that consumed it as a number now need `tonumber`. ([#10254](https://github.com/aliyun/terraform-provider-alicloud/issues/10254))
 - resource/alicloud_amqp_instance: `create_time` changed from `TypeInt` to `TypeString`, fixing a provider panic on 32-bit builds. No configuration or state migration is needed; expressions that consumed it as a number now need `tonumber`. ([#10254](https://github.com/aliyun/terraform-provider-alicloud/issues/10254))
 - resource/alicloud_amqp_static_account: `create_time` changed from `TypeInt` to `TypeString`, fixing a provider panic on 32-bit builds. No configuration or state migration is needed; expressions that consumed it as a number now need `tonumber`. ([#10254](https://github.com/aliyun/terraform-provider-alicloud/issues/10254))
+
+ENHANCEMENTS:
+
+- provider: move ProtoV5ProviderServerFactory from package framework into the provider subpackage, resolving a cyclic import between the `alicloud` root and `framework` packages. ([#10269](https://github.com/aliyun/terraform-provider-alicloud/issues/10269))
+- provider: migrate `helper/resource` retry helpers to the `helper/retry` subpackage, removing the last SDK v1 retry dependency from the provider. ([#10255](https://github.com/aliyun/terraform-provider-alicloud/issues/10255), [#10266](https://github.com/aliyun/terraform-provider-alicloud/issues/10266))
 
 ## 2.0.0-beta3 (August 19, 2026)
 
