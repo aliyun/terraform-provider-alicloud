@@ -341,3 +341,88 @@ func (s *RealtimeComputeServiceV2) RealtimeComputeJobStateRefreshFuncWithApi(id 
 }
 
 // DescribeRealtimeComputeJob >>> Encapsulated.
+
+// DescribeRealtimeComputeMember <<< Encapsulated get interface for RealtimeCompute member.
+
+func (s *RealtimeComputeServiceV2) DescribeRealtimeComputeMember(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]*string
+	var header map[string]*string
+	parts := strings.Split(id, ":")
+	if len(parts) != 3 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
+		return nil, err
+	}
+	member := parts[2]
+	namespace := parts[1]
+	request = make(map[string]interface{})
+	query = make(map[string]*string)
+	header = make(map[string]*string)
+	header["workspace"] = StringPointer(parts[0])
+
+	action := fmt.Sprintf("/gateway/v2/namespaces/%s/members/%s", namespace, member)
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RoaGet("ververica", "2022-07-18", action, query, header, nil)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"990301"}) {
+			return object, WrapErrorf(NotFoundErr("member", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.data", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.data", response)
+	}
+
+	return v.(map[string]interface{}), nil
+}
+
+func (s *RealtimeComputeServiceV2) RealtimeComputeMemberStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.RealtimeComputeMemberStateRefreshFuncWithApi(id, field, failStates, s.DescribeRealtimeComputeMember)
+}
+
+func (s *RealtimeComputeServiceV2) RealtimeComputeMemberStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeRealtimeComputeMember >>> Encapsulated.
