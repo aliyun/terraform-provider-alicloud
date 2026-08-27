@@ -1295,6 +1295,56 @@ class InteractiveWorkerTest(unittest.TestCase):
         guard = self._store().load()[worker.CLOUDSPEC_OPERATION_GUARD_KEY]
         self.assertIn(str(repo.resolve()), guard["repositories"])
 
+    def test_long_heredoc_body_is_not_treated_as_candidate_path(self):
+        state = self._seed()
+        state["current"] = {
+            "aoneId": "99999999", "projectId": "2100304", "cycle": 1,
+        }
+        self._store().save(state)
+        embedded_path = Path(self.temp.name) / "embedded.txt"
+        document = (("数字人/AI 提效结果" * 400)
+                    + "\n" + str(embedded_path))
+        command = (
+            "python3 - <<'PY'\n"
+            "content=r'''%s'''\n"
+            "print(len(content))\n"
+            "PY\n" % document)
+        event = {
+            "tool_name": "Bash",
+            "cwd": self.temp.name,
+            "tool_input": {"command": command},
+        }
+
+        paths = worker._cloudspec_guard_event_paths(state, event)
+
+        self.assertFalse(any("content=r" in str(path) for path in paths))
+        self.assertIn(embedded_path.resolve(strict=False), paths)
+        self.assertIsNone(worker._cloudspec_operation_guard_reason(
+            self._store(), event))
+
+    def test_unstatable_candidate_path_is_converted_to_guard_result(self):
+        too_long = Path(self.temp.name) / ("x" * 4096)
+
+        with self.assertRaisesRegex(
+                worker.OperationDiffGuardError,
+                "cannot inspect candidate path"):
+            worker._cloudspec_guard_repo_root(too_long)
+
+        state = self._seed()
+        state["current"] = {
+            "aoneId": "99999999", "projectId": "2100304", "cycle": 1,
+        }
+        self._store().save(state)
+        reason = worker._cloudspec_operation_guard_reason(
+            self._store(), {
+                "tool_name": "Write",
+                "cwd": self.temp.name,
+                "tool_input": {"file_path": str(too_long)},
+            })
+
+        self.assertIn("无法解析写入目标仓库", reason)
+        self.assertIn("cannot inspect candidate path", reason)
+
     def test_deleted_main_cannot_hide_initial_operation_diff(self):
         repo = self._cloudspec_repo()
         subprocess.run(

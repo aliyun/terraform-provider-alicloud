@@ -574,6 +574,51 @@ def _cloudspec_guard_base_path(state: Mapping[str, Any],
     return Path(os.getcwd()).resolve(strict=False)
 
 
+def _shell_without_heredoc_bodies(command: str) -> str:
+    """Keep shell syntax while removing here-doc payload lines.
+
+    ``shlex.split`` understands shell quoting but not the boundary between a
+    here-doc command and its payload. Without this pass, quoting used by the
+    embedded language can turn an entire document into one path-like token.
+    Absolute paths inside payloads remain discoverable through the separate
+    raw-command regex scan in ``_cloudspec_guard_event_paths``.
+    """
+    sanitized: list[str] = []
+    pending: list[tuple[str, bool]] = []
+    for line in command.splitlines(keepends=True):
+        if pending:
+            delimiter, strip_tabs = pending[0]
+            candidate = line.rstrip("\r\n")
+            if strip_tabs:
+                candidate = candidate.lstrip("\t")
+            if candidate == delimiter:
+                pending.pop(0)
+            if line.endswith(("\n", "\r")):
+                sanitized.append("\n")
+            continue
+
+        sanitized.append(line)
+        try:
+            lexer = shlex.shlex(line, posix=True, punctuation_chars="<>")
+            lexer.whitespace_split = True
+            tokens = list(lexer)
+        except ValueError:
+            continue
+        for index, token in enumerate(tokens):
+            if token != "<<" or index + 1 >= len(tokens):
+                continue
+            delimiter = tokens[index + 1]
+            strip_tabs = delimiter.startswith("-")
+            if delimiter == "-" and index + 2 < len(tokens):
+                delimiter = tokens[index + 2]
+                strip_tabs = True
+            elif strip_tabs:
+                delimiter = delimiter[1:]
+            if delimiter:
+                pending.append((delimiter, strip_tabs))
+    return "".join(sanitized)
+
+
 def _cloudspec_guard_event_paths(state: Mapping[str, Any],
                                  event: Optional[Mapping[str, Any]]) -> tuple[Path, ...]:
     base = _cloudspec_guard_base_path(state, event)
@@ -598,7 +643,8 @@ def _cloudspec_guard_event_paths(state: Mapping[str, Any],
                 # git -C/cd/script invocations; the absolute-path scan also
                 # covers paths embedded in python/perl/ruby snippets.
                 try:
-                    tokens = shlex.split(command, posix=True)
+                    tokens = shlex.split(
+                        _shell_without_heredoc_bodies(command), posix=True)
                 except ValueError:
                     tokens = []
                 for index, token in enumerate(tokens):
@@ -630,10 +676,14 @@ def _cloudspec_guard_event_paths(state: Mapping[str, Any],
 
 def _cloudspec_guard_repo_root(path: Path) -> Optional[Path]:
     probe = path
-    while not probe.exists() and probe != probe.parent:
-        probe = probe.parent
-    if probe.is_file():
-        probe = probe.parent
+    try:
+        while not probe.exists() and probe != probe.parent:
+            probe = probe.parent
+        if probe.is_file():
+            probe = probe.parent
+    except OSError as exc:
+        raise OperationDiffGuardError(
+            "cannot inspect candidate path: %s" % exc) from exc
     try:
         completed = subprocess.run(
             ["git", "-C", os.fspath(probe), "rev-parse", "--show-toplevel"],
