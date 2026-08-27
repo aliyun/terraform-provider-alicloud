@@ -226,7 +226,6 @@ func resourceAliCloudVPNGatewayVPNGatewayCreate(d *schema.ResourceData, meta int
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
-		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"OperationFailed.SslNotSupport"}) || NeedRetry(err) {
@@ -340,7 +339,6 @@ func resourceAliCloudVPNGatewayVPNGatewayUpdate(d *schema.ResourceData, meta int
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
-			request["ClientToken"] = buildClientToken(action)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -430,7 +428,6 @@ func resourceAliCloudVPNGatewayVPNGatewayDelete(d *schema.ResourceData, meta int
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
-		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"VpnGateway.Configuring"}) || NeedRetry(err) {
