@@ -491,6 +491,104 @@ func TestAccAliCloudECSInstanceBasic(t *testing.T) {
 	})
 }
 
+// The case is used to verify that configuring `security_enhancement_strategy` or
+// `credit_specification` on an instance whose state does not contain these attributes
+// (e.g. an imported instance) does not trigger any change.
+func TestAccAliCloudECSInstanceImportedAttributeDiff(t *testing.T) {
+	var v ecs.Instance
+	resourceId := "alicloud_instance.default"
+	ra := resourceAttrInit(resourceId, testAccInstanceCheckMap)
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	rand := acctest.RandIntRange(1000, 9999)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAcc%sEcsInstanceImportDiff%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceInstanceImportDiffDependence)
+	var instanceId string
+	captureInstanceId := func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceId]
+		if !ok {
+			return fmt.Errorf("can't find resource by id: %s", resourceId)
+		}
+		instanceId = rs.Primary.ID
+		return nil
+	}
+	checkInstanceNotReplaced := func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceId]
+		if !ok {
+			return fmt.Errorf("can't find resource by id: %s", resourceId)
+		}
+		if rs.Primary.ID != instanceId {
+			return fmt.Errorf("the instance %s should not have been replaced, but it was recreated as %s", instanceId, rs.Primary.ID)
+		}
+		return nil
+	}
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				// Create an instance without `security_enhancement_strategy` and `credit_specification`,
+				// so that both state values are empty, the same situation as after importing an instance.
+				Config: testAccConfig(map[string]interface{}{
+					"image_id":             "${data.alicloud_images.default.images.0.id}",
+					"security_groups":      []string{"${alicloud_security_group.default.id}"},
+					"instance_type":        "${data.alicloud_instance_types.default.instance_types.0.id}",
+					"availability_zone":    "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}",
+					"system_disk_category": "cloud_efficiency",
+					"instance_name":        "${var.name}",
+					"spot_strategy":        "NoSpot",
+					"spot_price_limit":     "0",
+					"instance_charge_type": "PostPaid",
+					"vswitch_id":           "${alicloud_vswitch.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_name": name,
+						"user_data":     REMOVEKEY,
+					}),
+					captureInstanceId,
+				),
+			},
+			{
+				// The ECS API never returns `security_enhancement_strategy`, and `credit_specification`
+				// is not supported by non-burstable instance families (e.g. ecs.g6), so adding them
+				// to the configuration must not trigger any change.
+				Config: testAccConfig(map[string]interface{}{
+					"security_enhancement_strategy": "Active",
+					"credit_specification":          "Standard",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+					checkInstanceNotReplaced,
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"security_enhancement_strategy", "dry_run"},
+			},
+			{
+				// Applying the same configuration after importing must not trigger any change either.
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+					checkInstanceNotReplaced,
+				),
+			},
+		},
+	})
+}
+
 func TestAccAliCloudECSInstanceVpc(t *testing.T) {
 	var v ecs.Instance
 	resourceId := "alicloud_instance.default"
@@ -2685,6 +2783,43 @@ func resourceInstanceMetadataOptionsDependence(name string) string {
   		instance_type = data.alicloud_instance_types.default.instance_types.0.id
 	}
 
+
+resource "alicloud_vpc" "default" {
+  cidr_block = "192.168.0.0/16"
+  vpc_name   = var.name
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id            = alicloud_vpc.default.id
+  cidr_block        = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 2)
+  zone_id           = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+  vswitch_name      = var.name
+}
+
+resource "alicloud_security_group" "default" {
+  name   = "${var.name}"
+  vpc_id = alicloud_vpc.default.id
+}
+
+variable "name" {
+	default = "%s"
+}
+
+`, name)
+}
+
+func resourceInstanceImportDiffDependence(name string) string {
+	return fmt.Sprintf(`
+	data "alicloud_instance_types" "default" {
+  		instance_type_family = "ecs.g6"
+	}
+
+	data "alicloud_images" "default" {
+  		name_regex    = "^ubuntu_[0-9]+_[0-9]+_x64*"
+  		most_recent   = true
+  		owners        = "system"
+  		instance_type = data.alicloud_instance_types.default.instance_types.0.id
+	}
 
 resource "alicloud_vpc" "default" {
   cidr_block = "192.168.0.0/16"

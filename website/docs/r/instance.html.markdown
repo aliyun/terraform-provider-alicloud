@@ -191,6 +191,7 @@ The following arguments are supported:
   - false: A request is sent. If the validation succeeds, the instance is created.
 * `private_ip` - (Optional) Instance private IP address can be specified when you creating new instance. It is valid when `vswitch_id` is specified. When it is changed, the instance will reboot to make the change take effect.
 * `credit_specification` - (Optional, Available since v1.57.1) Performance mode of the t5 burstable instance. Valid values: 'Standard', 'Unlimited'.
+-> **NOTE:** `credit_specification` is only supported by burstable instance families (e.g. `t5`, `t6`). For an existing or imported instance whose instance type does not support credit specification, this field is empty in the state and configuring it does not take effect; no change will be applied, which avoids the `Credit.NotFound` error from the API.
 * `spot_strategy` - (Optional, ForceNew) The spot strategy of a Pay-As-You-Go instance, and it takes effect only when parameter `instance_charge_type` is 'PostPaid'. Value range:
   - NoSpot: A regular Pay-As-You-Go instance.
   - SpotWithPriceLimit: A price threshold for a spot instance
@@ -211,6 +212,8 @@ The following arguments are supported:
 * `security_enhancement_strategy` - (Optional, ForceNew) The security enhancement strategy.
   - Active: Enable security enhancement strategy, it only works on system images.
   - Deactive: Disable security enhancement strategy, it works on all images.
+
+-> **NOTE:** The ECS API does not return `security_enhancement_strategy`, so the provider cannot read it back into the state. For an imported instance (or an instance created without this field), the state value is empty; in this case, configuring or changing `security_enhancement_strategy` is ignored and will not force the instance to be recreated.
 * `data_disks` - (Optional, ForceNew, Available since v1.23.1) The list of data disks created with instance. See [`data_disks`](#data_disks) below.
 * `network_interfaces` - (Optional, ForceNew, Available since v1.212.0) The list of network interfaces created with instance. See [`network_interfaces`](#network_interfaces) below.
 * `status` - (Optional 1.85.0) The instance status. Valid values: ["Running", "Stopped"]. You can control the instance start and stop through this parameter. Default to `Running`.
