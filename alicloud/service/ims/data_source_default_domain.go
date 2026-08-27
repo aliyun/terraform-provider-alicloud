@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/fwadapt"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -22,7 +22,7 @@ func NewDefaultDomainDataSource() datasource.DataSource {
 }
 
 type defaultDomainDataSource struct {
-	client *connectivity.AliyunClient
+	fwadapt.DataSourceBase
 }
 
 type defaultDomainModel struct {
@@ -50,27 +50,10 @@ func (d *defaultDomainDataSource) Schema(ctx context.Context, req datasource.Sch
 	}
 }
 
-func (d *defaultDomainDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
-	if req.ProviderData == nil {
-		return
-	}
-
-	client, ok := req.ProviderData.(*connectivity.AliyunClient)
-	if !ok {
-		resp.Diagnostics.AddError(
-			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected *connectivity.AliyunClient, got %T. Please report this issue to the provider developers.", req.ProviderData),
-		)
-		return
-	}
-
-	d.client = client
-}
-
 func (d *defaultDomainDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	const action = "GetDefaultDomain"
 
-	response, err := d.client.RpcPost("Ims", "2019-08-15", action, nil, map[string]interface{}{}, true)
+	response, err := d.Client().RpcPost("Ims", "2019-08-15", action, nil, map[string]interface{}{}, true)
 	if err != nil {
 		resp.Diagnostics.AddError(fmt.Sprintf("Reading %s: calling %s", defaultDomainTypeName, action), err.Error())
 		return
