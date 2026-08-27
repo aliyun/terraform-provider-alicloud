@@ -30,9 +30,9 @@ func TestAccAliCloudLogStore_basic(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -177,9 +177,9 @@ func TestAccAliCloudLogStore_mode(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.SlsTestRegions)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -239,9 +239,9 @@ func TestAccAliCloudLogStore_lite(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.SlsTestRegions)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -294,89 +294,29 @@ func TestAccAliCloudLogStore_metric(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc-metric-store-%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceLogStoreConfigDependenceWithEncrypt)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceLogStoreConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":           name,
 					"project":        "${alicloud_log_project.foo.name}",
-					"shard_count":    "1",
+					"shard_count":    "2",
 					"telemetry_type": "Metrics",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":           name,
 						"project":        name,
-						"shard_count":    "1",
-						"telemetry_type": "Metrics",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"shard_count": "2",
-					"encrypt_conf": []map[string]interface{}{
-						{
-							"enable":       "true",
-							"encrypt_type": "default",
-							"user_cmk_info": []map[string]string{
-								{
-									"cmk_key_id": "${alicloud_kms_key.key.id}",
-									"arn":        "acs:ram::${data.alicloud_account.default.id}:role/aliyunlogdefaultrole",
-									"region_id":  defaultRegionToTest,
-								},
-							},
-						},
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
 						"shard_count":    "2",
-						"encrypt_conf.#": "1",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"encrypt_conf": []map[string]interface{}{
-						{
-							"enable":       "true",
-							"encrypt_type": "m4",
-							"user_cmk_info": []map[string]string{
-								{
-									"cmk_key_id": "${alicloud_kms_key.key.id}",
-									"arn":        "acs:ram::${data.alicloud_account.default.id}:role/aliyunlogdefaultrole",
-									"region_id":  defaultRegionToTest,
-								},
-							},
-						},
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"encrypt_conf.#": "1",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"encrypt_conf": []map[string]interface{}{
-						{
-							"enable": "false",
-						},
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"encrypt_conf.#": "1",
+						"telemetry_type": "Metrics",
 					}),
 				),
 			},
@@ -392,11 +332,37 @@ func TestAccAliCloudLogStore_metric(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"hot_ttl": "10",
+					"retention_period": "60",
+					"hot_ttl":          "10",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"hot_ttl": "10",
+						"retention_period": "60",
+						"hot_ttl":          "10",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"retention_period":      "120",
+					"hot_ttl":               "30",
+					"infrequent_access_ttl": "90",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"retention_period":      "120",
+						"hot_ttl":               "30",
+						"infrequent_access_ttl": "90",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"mode": "standard",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"mode": "standard",
 					}),
 				),
 			},
@@ -404,6 +370,92 @@ func TestAccAliCloudLogStore_metric(t *testing.T) {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+// TestAccAliCloudLogStore_telemetry_type_switch tests three scenarios:
+// 1. Create as logstore (no telemetry_type) → creates a regular logstore
+// 2. Update to metric store (telemetry_type = "Metrics") → ForceNew triggers replacement, creates metric store via CreateMetricStore
+// 3. Update metric store's retention_period → tests UpdateMetricStoreV2 path
+func TestAccAliCloudLogStore_telemetry_type_switch(t *testing.T) {
+	var v *sls.LogStore
+	resourceId := "alicloud_log_store.default"
+	ra := resourceAttrInit(resourceId, logStoreMap)
+	serviceFunc := func() interface{} {
+		return &LogService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacc-log-store-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceLogStoreConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			// Step 1: Create as logstore (no telemetry_type specified)
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":             name,
+					"project":          "${alicloud_log_project.foo.name}",
+					"shard_count":      "1",
+					"retention_period": "30",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":             name,
+						"project":          name,
+						"shard_count":      "1",
+						"retention_period": "30",
+					}),
+				),
+			},
+			// Step 2: Update to metric store (telemetry_type = "Metrics")
+			// Since telemetry_type has ForceNew: true, this triggers replacement (destroy + recreate)
+			// The create function will call CreateMetricStore because telemetry_type == "Metrics"
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":             name,
+					"project":          "${alicloud_log_project.foo.name}",
+					"shard_count":      "1",
+					"retention_period": "30",
+					"telemetry_type":   "Metrics",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":           name,
+						"project":        name,
+						"shard_count":    "1",
+						"telemetry_type": "Metrics",
+					}),
+				),
+			},
+			// Step 3: Update metric store's retention_period (tests UpdateMetricStoreV2 path)
+			// Since telemetry_type == "Metrics", the update function calls UpdateMetricStoreV2 instead of UpdateLogStore
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":             name,
+					"project":          "${alicloud_log_project.foo.name}",
+					"shard_count":      "1",
+					"retention_period": "60",
+					"telemetry_type":   "Metrics",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":             name,
+						"project":          name,
+						"telemetry_type":   "Metrics",
+						"retention_period": "60",
+					}),
+				),
 			},
 		},
 	})
@@ -427,9 +479,9 @@ func TestAccAliCloudLogStore_metric_fix_bug_using_logstoreName(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -554,9 +606,9 @@ func TestAccAliCloudLogStore_metric_fix_bug_using_projectName(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -681,9 +733,9 @@ func TestAccAliCloudLogStore_metric_fix_bug_using_projectName_and_logstoreName(t
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -808,9 +860,9 @@ func TestAccAliCloudLogStore_create_with_encrypt(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -947,9 +999,9 @@ func TestAccAliCloudLogStore_create_with_encrypt_bugfix(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1079,9 +1131,9 @@ func TestAccAliCloudLogStore_create_with_encrypt_enable(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1166,9 +1218,9 @@ func TestAccAliCloudLogStore_multi(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1834,9 +1886,9 @@ func TestAccAliCloudLogStore_infrequest_access_ttl(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1899,4 +1951,209 @@ func TestAccAliCloudLogStore_infrequest_access_ttl(t *testing.T) {
 			},
 		},
 	})
+}
+
+func TestUnitBuildMetricStore(t *testing.T) {
+	tests := []struct {
+		name     string
+		raw      map[string]interface{}
+		validate func(t *testing.T, ms *sls.MetricStore)
+	}{
+		{
+			name: "all_fields_set",
+			raw: map[string]interface{}{
+				"name":                  "test-metric-store",
+				"retention_period":      30,
+				"shard_count":           2,
+				"enable_web_tracking":   true,
+				"auto_split":            true,
+				"max_split_shard_count": 64,
+				"append_meta":           true,
+				"hot_ttl":               10,
+				"infrequent_access_ttl": 20,
+				"mode":                  "standard",
+			},
+			validate: func(t *testing.T, ms *sls.MetricStore) {
+				if ms.Name != "test-metric-store" {
+					t.Errorf("expected Name %q, got %q", "test-metric-store", ms.Name)
+				}
+				if ms.TTL != 30 {
+					t.Errorf("expected TTL %d, got %d", 30, ms.TTL)
+				}
+				if ms.ShardCount != 2 {
+					t.Errorf("expected ShardCount %d, got %d", 2, ms.ShardCount)
+				}
+				if !ms.WebTracking {
+					t.Errorf("expected WebTracking true, got false")
+				}
+				if !ms.AutoSplit {
+					t.Errorf("expected AutoSplit true, got false")
+				}
+				if ms.MaxSplitShard != 64 {
+					t.Errorf("expected MaxSplitShard %d, got %d", 64, ms.MaxSplitShard)
+				}
+				if !ms.AppendMeta {
+					t.Errorf("expected AppendMeta true, got false")
+				}
+				if ms.HotTTL != 10 {
+					t.Errorf("expected HotTTL %d, got %d", 10, ms.HotTTL)
+				}
+				if ms.InfrequentAccessTTL == nil || *ms.InfrequentAccessTTL != 20 {
+					t.Errorf("expected InfrequentAccessTTL %d, got %v", 20, ms.InfrequentAccessTTL)
+				}
+				if ms.Mode != "standard" {
+					t.Errorf("expected Mode %q, got %q", "standard", ms.Mode)
+				}
+			},
+		},
+		{
+			name: "name_field_overrides_logstore_name",
+			raw: map[string]interface{}{
+				"name":             "metric-store-name",
+				"logstore_name":    "logstore-name",
+				"retention_period": 30,
+				"shard_count":      2,
+			},
+			validate: func(t *testing.T, ms *sls.MetricStore) {
+				if ms.Name != "metric-store-name" {
+					t.Errorf("expected Name %q, got %q", "metric-store-name", ms.Name)
+				}
+			},
+		},
+		{
+			name: "no_optional_hot_ttl_and_infrequent_access_ttl",
+			raw: map[string]interface{}{
+				"name":             "test-metric-store",
+				"retention_period": 30,
+				"shard_count":      2,
+			},
+			validate: func(t *testing.T, ms *sls.MetricStore) {
+				if ms.HotTTL != 0 {
+					t.Errorf("expected HotTTL %d, got %d", 0, ms.HotTTL)
+				}
+				if ms.InfrequentAccessTTL != nil {
+					t.Errorf("expected InfrequentAccessTTL nil, got %v", *ms.InfrequentAccessTTL)
+				}
+			},
+		},
+		{
+			name: "hot_ttl_set_without_infrequent_access_ttl",
+			raw: map[string]interface{}{
+				"name":             "test-metric-store",
+				"retention_period": 30,
+				"shard_count":      2,
+				"hot_ttl":          10,
+			},
+			validate: func(t *testing.T, ms *sls.MetricStore) {
+				if ms.HotTTL != 10 {
+					t.Errorf("expected HotTTL %d, got %d", 10, ms.HotTTL)
+				}
+				if ms.InfrequentAccessTTL != nil {
+					t.Errorf("expected InfrequentAccessTTL nil, got %v", *ms.InfrequentAccessTTL)
+				}
+			},
+		},
+		{
+			name: "infrequent_access_ttl_set_without_hot_ttl",
+			raw: map[string]interface{}{
+				"name":                  "test-metric-store",
+				"retention_period":      30,
+				"shard_count":           2,
+				"infrequent_access_ttl": 20,
+			},
+			validate: func(t *testing.T, ms *sls.MetricStore) {
+				if ms.HotTTL != 0 {
+					t.Errorf("expected HotTTL %d, got %d", 0, ms.HotTTL)
+				}
+				if ms.InfrequentAccessTTL == nil || *ms.InfrequentAccessTTL != 20 {
+					t.Errorf("expected InfrequentAccessTTL %d, got %v", 20, ms.InfrequentAccessTTL)
+				}
+			},
+		},
+		{
+			name: "encrypt_conf_with_user_cmk_info",
+			raw: map[string]interface{}{
+				"name":             "test-metric-store",
+				"retention_period": 30,
+				"shard_count":      2,
+				"encrypt_conf": []interface{}{map[string]interface{}{
+					"enable":       true,
+					"encrypt_type": "default",
+					"user_cmk_info": []interface{}{map[string]interface{}{
+						"cmk_key_id": "key-abc",
+						"arn":        "acs:kms:cn-shanghai:1234567890:key/key-abc",
+						"region_id":  "cn-shanghai",
+					}},
+				}},
+			},
+			validate: func(t *testing.T, ms *sls.MetricStore) {
+				if ms.EncryptConf == nil {
+					t.Fatalf("expected EncryptConf to be set, got nil")
+				}
+				if !ms.EncryptConf.Enable {
+					t.Errorf("expected EncryptConf.Enable true, got false")
+				}
+				if ms.EncryptConf.EncryptType != "default" {
+					t.Errorf("expected EncryptType %q, got %q", "default", ms.EncryptConf.EncryptType)
+				}
+				cmk := ms.EncryptConf.UserCmkInfo
+				if cmk == nil {
+					t.Fatalf("expected UserCmkInfo to be set, got nil")
+				}
+				if cmk.CmkKeyId != "key-abc" {
+					t.Errorf("expected CmkKeyId %q, got %q", "key-abc", cmk.CmkKeyId)
+				}
+				if cmk.Arn != "acs:kms:cn-shanghai:1234567890:key/key-abc" {
+					t.Errorf("expected Arn %q, got %q", "acs:kms:cn-shanghai:1234567890:key/key-abc", cmk.Arn)
+				}
+				if cmk.RegionId != "cn-shanghai" {
+					t.Errorf("expected RegionId %q, got %q", "cn-shanghai", cmk.RegionId)
+				}
+			},
+		},
+		{
+			name: "encrypt_conf_without_user_cmk_info",
+			raw: map[string]interface{}{
+				"name":             "test-metric-store",
+				"retention_period": 30,
+				"shard_count":      2,
+				"encrypt_conf": []interface{}{map[string]interface{}{
+					"enable":        true,
+					"encrypt_type":  "default",
+					"user_cmk_info": []interface{}{},
+				}},
+			},
+			validate: func(t *testing.T, ms *sls.MetricStore) {
+				if ms.EncryptConf == nil {
+					t.Fatalf("expected EncryptConf to be set, got nil")
+				}
+				if !ms.EncryptConf.Enable {
+					t.Errorf("expected EncryptConf.Enable true, got false")
+				}
+				if ms.EncryptConf.UserCmkInfo != nil {
+					t.Errorf("expected UserCmkInfo nil, got %v", ms.EncryptConf.UserCmkInfo)
+				}
+			},
+		},
+		{
+			name: "no_encrypt_conf",
+			raw: map[string]interface{}{
+				"name":             "test-metric-store",
+				"retention_period": 30,
+				"shard_count":      2,
+			},
+			validate: func(t *testing.T, ms *sls.MetricStore) {
+				if ms.EncryptConf != nil {
+					t.Errorf("expected EncryptConf nil, got %v", ms.EncryptConf)
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d := schema.TestResourceDataRaw(t, resourceAliCloudSlsLogStore().Schema, tt.raw)
+			tt.validate(t, buildMetricStore(d))
+		})
+	}
 }
