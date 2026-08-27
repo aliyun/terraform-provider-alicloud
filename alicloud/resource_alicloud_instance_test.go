@@ -5197,3 +5197,137 @@ var tags0 = map[string]string{
 	"tagY":   "valueY",
 	"tagZ":   "valueZ",
 }
+
+// TestAccAliCloudECSInstanceTagsRemoval covers the tag removal scenario: removing a single tag
+// or all tags from an existing instance must succeed.
+func TestAccAliCloudECSInstanceTagsRemoval(t *testing.T) {
+	var v ecs.Instance
+	resourceId := "alicloud_instance.default"
+	ra := resourceAttrInit(resourceId, map[string]string{
+		"tags.%": NOSET,
+	})
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	rand := acctest.RandIntRange(1000, 9999)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEcsInstanceTagsRemoval%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceECSInstanceTagsDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id":                   "${data.alicloud_images.default.images.0.id}",
+					"instance_type":              "${data.alicloud_instance_types.default.instance_types.0.id}",
+					"availability_zone":          "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}",
+					"security_groups":            []string{"${alicloud_security_group.default.id}"},
+					"vswitch_id":                 "${alicloud_vswitch.default.id}",
+					"instance_name":              name,
+					"system_disk_category":       "cloud_essd",
+					"internet_max_bandwidth_out": "0",
+					"tags": map[string]string{
+						"test1": "test1",
+						"test2": "test2",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":     "2",
+						"tags.test1": "test1",
+						"tags.test2": "test2",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"security_enhancement_strategy", "dry_run"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id":                   "${data.alicloud_images.default.images.0.id}",
+					"instance_type":              "${data.alicloud_instance_types.default.instance_types.0.id}",
+					"availability_zone":          "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}",
+					"security_groups":            []string{"${alicloud_security_group.default.id}"},
+					"vswitch_id":                 "${alicloud_vswitch.default.id}",
+					"instance_name":              name,
+					"system_disk_category":       "cloud_essd",
+					"internet_max_bandwidth_out": "0",
+					"tags": map[string]string{
+						"test2": "test2",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":     "1",
+						"tags.test1": REMOVEKEY,
+						"tags.test2": "test2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id":                   "${data.alicloud_images.default.images.0.id}",
+					"instance_type":              "${data.alicloud_instance_types.default.instance_types.0.id}",
+					"availability_zone":          "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}",
+					"security_groups":            []string{"${alicloud_security_group.default.id}"},
+					"vswitch_id":                 "${alicloud_vswitch.default.id}",
+					"instance_name":              name,
+					"system_disk_category":       "cloud_essd",
+					"internet_max_bandwidth_out": "0",
+					"tags":                       REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":     "0",
+						"tags.test2": REMOVEKEY,
+					}),
+				),
+			},
+		},
+	})
+}
+
+func resourceECSInstanceTagsDependence(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+  		default = "%s"
+	}
+
+	data "alicloud_images" "default" {
+  		name_regex = "^ubuntu_18.*64"
+  		owners     = "system"
+	}
+
+	data "alicloud_instance_types" "default" {
+  		image_id             = data.alicloud_images.default.images.0.id
+  		system_disk_category = "cloud_essd"
+	}
+
+	resource "alicloud_vpc" "default" {
+  		cidr_block = "192.168.0.0/16"
+  		vpc_name   = var.name
+	}
+
+	resource "alicloud_vswitch" "default" {
+  		vpc_id       = alicloud_vpc.default.id
+  		cidr_block   = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 2)
+  		zone_id      = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+  		vswitch_name = var.name
+	}
+
+	resource "alicloud_security_group" "default" {
+  		name   = var.name
+  		vpc_id = alicloud_vpc.default.id
+	}
+`, name)
+}
