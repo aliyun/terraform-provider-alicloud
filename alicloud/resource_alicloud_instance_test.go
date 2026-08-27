@@ -491,6 +491,72 @@ func TestAccAliCloudECSInstanceBasic(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudECSInstanceSesImportNoop(t *testing.T) {
+	var v ecs.Instance
+	resourceId := "alicloud_instance.default"
+	ra := resourceAttrInit(resourceId, testAccInstanceCheckMap)
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+
+	rand := acctest.RandIntRange(1000, 9999)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEcsInstanceSesImport%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceECSInstanceVpcDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id":                      "${data.alicloud_images.default.images.0.id}",
+					"security_groups":               []string{"${alicloud_security_group.default.0.id}"},
+					"instance_type":                 "${data.alicloud_instance_types.default.instance_types.0.id}",
+					"availability_zone":             "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}",
+					"system_disk_category":          "cloud_efficiency",
+					"instance_name":                 "${var.name}",
+					"key_name":                      "${alicloud_key_pair.default.key_name}",
+					"spot_strategy":                 "NoSpot",
+					"spot_price_limit":              "0",
+					"security_enhancement_strategy": "Active",
+					"user_data":                     "I_am_user_data",
+					"vswitch_id":                    "${alicloud_vswitch.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_name": name,
+						"key_name":      name,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				// security_enhancement_strategy is create-only and not returned by
+				// DescribeInstance, so it cannot be verified against state after import.
+				ImportStateVerifyIgnore: []string{"security_enhancement_strategy", "dry_run"},
+			},
+			{
+				// After import, security_enhancement_strategy is null in state (DescribeInstance
+				// does not return it) while the config still declares "Active". The CustomizeDiff
+				// hook must suppress the spurious ForceNew diff so that re-applying the same
+				// config is a no-op; without the hook this step would recreate the instance.
+				Config: testAccConfig(map[string]interface{}{
+					"security_enhancement_strategy": "Active",
+				}),
+			},
+		},
+	})
+}
+
 func TestAccAliCloudECSInstanceVpc(t *testing.T) {
 	var v ecs.Instance
 	resourceId := "alicloud_instance.default"

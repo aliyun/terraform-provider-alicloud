@@ -2717,10 +2717,23 @@ func resourceAliCloudInstanceDelete(d *schema.ResourceData, meta interface{}) er
 	return nil
 }
 
-// resourceAliCloudInstanceCustomizeDiff turns an image_id change into a replacement when the
-// provider is configured with features.ecs_instance.replace_on_image_update. Without it, such a
-// change is applied in place by modifyInstanceImage, which the plan can only describe as an update.
+// resourceAliCloudInstanceCustomizeDiff does two jobs:
+//   - Suppress the spurious ForceNew diff on security_enhancement_strategy after import. The
+//     field is create-only (RunInstances/CreateInstance/ReplaceSystemDisk accept it, but
+//     DescribeInstance does not return it), so Read never writes it back; after import the state
+//     value is always empty and a config that declares the field would otherwise recreate the
+//     instance. For an existing instance we clear the diff and treat the config value as truth.
+//   - Turn an image_id change into a replacement when the provider is configured with
+//     features.ecs_instance.replace_on_image_update. Without it, such a change is applied in
+//     place by modifyInstanceImage, which the plan can only describe as an update.
 func resourceAliCloudInstanceCustomizeDiff(diff *schema.ResourceDiff, meta interface{}) error {
+	if diff.Id() != "" {
+		oldSes, newSes := diff.GetChange("security_enhancement_strategy")
+		if oldSes.(string) == "" && newSes.(string) != "" {
+			diff.Clear("security_enhancement_strategy")
+		}
+	}
+
 	client, ok := meta.(*connectivity.AliyunClient)
 	if !ok || client == nil || !client.Features.EcsInstance.ReplaceOnImageUpdate {
 		return nil
