@@ -49,6 +49,7 @@ func maximalSDKv2SchemaV1() *schema.Resource {
 	}
 }
 
+// lintignore: R003
 func maximalSDKv2Resource(log *hookLog) *schema.Resource {
 	return &schema.Resource{
 		Schema: map[string]*schema.Schema{
@@ -118,7 +119,6 @@ func maximalSDKv2Resource(log *hookLog) *schema.Resource {
 			log.record("Delete")
 			return nil
 		},
-		// lintignore: R003
 		Exists: func(d *schema.ResourceData, meta interface{}) (bool, error) {
 			log.record("Exists")
 			return true, nil
