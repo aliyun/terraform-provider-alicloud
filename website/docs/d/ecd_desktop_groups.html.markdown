@@ -11,7 +11,7 @@ description: |-
 
 This data source provides Elastic Desktop Service (ECD) Desktop Groups available to the user. For information about Elastic Desktop Service (ECD) Desktop Group, see [What is Desktop Group](https://next.api.alibabacloud.com/document/ecd/2020-09-30/CreateDesktopGroup).
 
--> **NOTE:** Available since v1.289.0.
+-> **NOTE:** Available since v1.291.0.
 
 ## Example Usage
 
