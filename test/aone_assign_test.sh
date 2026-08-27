@@ -44,7 +44,7 @@ if [[ "$args" == *"workitem get"* ]]; then
     exit "${STUB_GET_RC:-0}"
 fi
 if [[ "$args" == *"workitem update"* ]]; then
-    echo "$args" >> "$STUB_LOG"
+    printf 'A1_CONFIG_DIR=%s\tARGS=%s\n' "${A1_CONFIG_DIR:-}" "$args" >> "$STUB_LOG"
     exit "${STUB_UPDATE_RC:-0}"
 fi
 exit 0
@@ -125,6 +125,98 @@ set_owner 320687 辰羿
 OVERRIDE_CONTACTS="$tmp/no-such-roster.json" \
     run "unreadable roster refuses (fail-closed)"       3 no 85020657 484483
 unset OVERRIDE_CONTACTS
+
+# ── real wrapper integration: aone-assign → a1id assign → policy → a1 ───────
+# The unit matrix above injects JARVIS_A1 directly. This path deliberately does
+# not, so the identity wrapper and runtime guard boundary are exercised too.
+integration_root="$tmp/a1id-root"
+mkdir -p "$integration_root/identities/jarvis" \
+         "$integration_root/identities/terraform-rd"
+printf 'seeded\n' > "$integration_root/identities/jarvis/auth.yaml"
+printf 'seeded\n' > "$integration_root/identities/terraform-rd/auth.yaml"
+
+set_owner WORKER_1782379562571 open-jarvis
+: > "$tmp/log.txt"
+integration_out="$(env -u JARVIS_A1 \
+    JARVIS_ROOT="$repo_root" A1ID_ROOT="$integration_root" A1_BIN="$tmp/a1" \
+    STUB_DETAIL="$tmp/detail.json" STUB_LOG="$tmp/log.txt" \
+    JARVIS_CACHE_DIR="$tmp/integration-cache-jarvis" \
+    JARVIS_CONTACTS="$contacts" \
+    bash "$script" 84486902 484483 2>&1)"
+integration_rc=$?
+if [ "$integration_rc" = 0 ] \
+    && grep -Fq "A1_CONFIG_DIR=$integration_root/identities/jarvis" "$tmp/log.txt" \
+    && grep -Fq 'ARGS=project workitem update 84486902 --assignee 484483' "$tmp/log.txt"; then
+    ok "default path crosses a1id assign with jarvis identity"
+else
+    no "default a1id integration failed rc=$integration_rc out=$integration_out log=$(cat "$tmp/log.txt")"
+fi
+
+set_owner WORKER_1782379562571 open-jarvis
+: > "$tmp/log.txt"
+integration_out="$(env -u JARVIS_A1 \
+    JARVIS_ROOT="$repo_root" JARVIS_A1_IDENTITY=terraform-rd \
+    A1ID_ROOT="$integration_root" \
+    A1_BIN="$tmp/a1" STUB_DETAIL="$tmp/detail.json" \
+    STUB_LOG="$tmp/log.txt" JARVIS_CACHE_DIR="$tmp/integration-cache-rd" \
+    JARVIS_CONTACTS="$contacts" \
+    bash "$script" 84486902 521957 2>&1)"
+integration_rc=$?
+if [ "$integration_rc" = 0 ] \
+    && grep -Fq "A1_CONFIG_DIR=$integration_root/identities/terraform-rd" "$tmp/log.txt" \
+    && grep -Fq 'ARGS=project workitem update 84486902 --assignee 521957' "$tmp/log.txt"; then
+    ok "terraform-rd identity also uses the safe assign path"
+else
+    no "terraform-rd integration failed rc=$integration_rc out=$integration_out log=$(cat "$tmp/log.txt")"
+fi
+
+# The new safe subcommand must not weaken the generic runtime fence.
+: > "$tmp/log.txt"
+raw_err="$tmp/raw-assignee.err"
+A1ID_ROOT="$integration_root" A1_BIN="$tmp/a1" \
+    STUB_DETAIL="$tmp/detail.json" STUB_LOG="$tmp/log.txt" \
+    bash "$repo_root/bin/a1id" -- project workitem update 84486902 \
+      --assignee 484483 >/dev/null 2>"$raw_err"
+raw_rc=$?
+if [ "$raw_rc" = 2 ] && [ ! -s "$tmp/log.txt" ] \
+    && grep -Fq 'writing an Aone assignee directly is disabled' "$raw_err"; then
+    ok "raw a1id assignee update remains blocked"
+else
+    no "raw a1id assignee fence regressed rc=$raw_rc log=$(cat "$tmp/log.txt") err=$(cat "$raw_err")"
+fi
+
+set_owner WORKER_1782379562571 open-jarvis
+: > "$tmp/log.txt"
+post_pr_out="$(env -u JARVIS_A1 \
+    JARVIS_ROOT="$repo_root" JARVIS_AONE_WRITE_POLICY=post-pr-read-only \
+    A1ID_ROOT="$integration_root" A1_BIN="$tmp/a1" \
+    STUB_DETAIL="$tmp/detail.json" STUB_LOG="$tmp/log.txt" \
+    JARVIS_CACHE_DIR="$tmp/integration-cache-post-pr" \
+    JARVIS_CONTACTS="$contacts" \
+    bash "$script" 84486902 484483 2>&1)"
+post_pr_rc=$?
+if [ "$post_pr_rc" != 0 ] && [ ! -s "$tmp/log.txt" ] \
+    && printf '%s' "$post_pr_out" | grep -Fq 'post-PR 子代理对 Aone 只读'; then
+    ok "post-PR policy blocks the safe assign write path"
+else
+    no "post-PR safe assign was not blocked rc=$post_pr_rc out=$post_pr_out log=$(cat "$tmp/log.txt")"
+fi
+
+: > "$tmp/log.txt"
+post_pr_out="$(env -u JARVIS_A1 \
+    JARVIS_ROOT="$repo_root" JARVIS_AONE_WRITE_POLICY=post-pr-read-only \
+    A1ID_ROOT="$integration_root" A1_BIN="$tmp/a1" \
+    STUB_DETAIL="$tmp/detail.json" STUB_LOG="$tmp/log.txt" \
+    JARVIS_CACHE_DIR="$tmp/integration-cache-post-pr-check" \
+    JARVIS_CONTACTS="$contacts" \
+    bash "$script" --check 84486902 484483 2>&1)"
+post_pr_rc=$?
+if [ "$post_pr_rc" = 0 ] && [ ! -s "$tmp/log.txt" ] \
+    && printf '%s' "$post_pr_out" | grep -Fq 'would be allowed'; then
+    ok "post-PR policy still allows read-only assignee checks"
+else
+    no "post-PR assignee check regressed rc=$post_pr_rc out=$post_pr_out log=$(cat "$tmp/log.txt")"
+fi
 
 # ── escape hatch (repo-owner authorization only) ────────────────────────────
 set_owner 320687 辰羿
