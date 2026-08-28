@@ -322,6 +322,13 @@ func resourceAlicloudDBBackupPolicyUpdate(d *schema.ResourceData, meta interface
 		}); err != nil {
 			return WrapError(err)
 		}
+		// Wait for the instance to return to Running after the backup policy
+		// modification so that downstream resources (e.g. alicloud_db_account)
+		// do not race into an intermediate instance state and time out waiting
+		// for Running.
+		if err := rdsService.WaitForDBInstance(d.Id(), Running, DefaultTimeoutMedium); err != nil {
+			return WrapError(err)
+		}
 	}
 
 	return resourceAlicloudDBBackupPolicyRead(d, meta)
