@@ -9,7 +9,10 @@ import unittest
 from unittest import mock
 
 from bridge.scheduler.runners import scan
-from bridge.aone_tasks import DIGITAL_WORKER_IDS
+from bridge.aone_tasks import (
+    DIGITAL_WORKER_IDS,
+    PERSONA_LEGACY_PD_WORKER,
+)
 
 
 def _item(iid, title="t", status="New"):
@@ -33,13 +36,15 @@ class UnionFiltersTests(unittest.TestCase):
         self.assertTrue(any("ak.issue.member=" in expr for expr, _excl in filters))
         self.assertTrue(any("workitem.tracker=" in expr for expr, _excl in filters))
 
-    def test_union_filters_participants_uses_full_digital_worker_csv(self):
+    def test_identity_filters_use_scheduler_scan_worker_csv(self):
         runner = self._runner()
         filters = runner._union_filters(exclude_status=["Closed"])
-        member_filter = next(expr for expr, _excl in filters
-                             if "ak.issue.member=" in expr)
-        for wid in DIGITAL_WORKER_IDS:
-            self.assertIn(wid, member_filter)
+        worker_csv = ",".join(sorted(DIGITAL_WORKER_IDS))
+        for field in ("assignedTo", "workitem.tracker", "ak.issue.member"):
+            expr = next(expr for expr, _excl in filters
+                        if expr.startswith(field + "="))
+            self.assertEqual(expr, "%s=%s" % (field, worker_csv))
+            self.assertNotIn(PERSONA_LEGACY_PD_WORKER, expr)
 
 
 class PoolUnionDedupTests(unittest.TestCase):

@@ -868,9 +868,9 @@ PERSONA_CLOSE_ESCALATION = (("辰羿", "320687"), ("过载", "484483"))
 
 # jarvis 编排层 worker id（与 JARVIS_SELF_IDS 保持一致）。
 
-# 「数字人」account 单一真源：编排层 jarvis + 公开 TerraformRD + 旧 PD/QA 兼容 worker。
-# ScanRunner 的 assignedTo / workitem.tracker 过滤都引用它——一处维护，扫描面不再散落
-# （原来散在 pools.json 的 assignee=WORKER_1782379562571 与 PERSONA_WORKER_IDS 两处）。
+# 「数字人」主动扫描真源：编排层 jarvis + 公开 TerraformRD + 旧 QA worker。
+# 旧 PD/QA 的完整入站兼容集合仍由 PERSONA_LEGACY_WORKER_IDS 保留，用于识别历史作者、
+# @mention 与 tracker 入站；旧 PD 退出 DIGITAL_WORKER_IDS 不会丢失这些兼容路径。
 # @jarvis(编排层)识别：@jarvis / @open-jarvis / @WORKER_1782379562571（Aone UI 括号形态亦可）。
 # **仅用于关单请求提醒**——scope 决策：jarvis 一般 @ 不触发 persona 协作，只有明确关单请求才走
 # 人工授权 handoff（由 terraform-pd 代为核验 + 催真人关单）。CJK 边界用 lookahead（同 persona 正则）。
