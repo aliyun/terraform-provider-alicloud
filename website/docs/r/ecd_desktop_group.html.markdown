@@ -16,7 +16,7 @@ connect.
 
 For information about Elastic Desktop Service (ECD) Desktop Group and how to use it, see [What is Desktop Group](https://next.api.alibabacloud.com/document/ecd/2020-09-30/CreateDesktopGroup).
 
--> **NOTE:** Available since v1.289.0.
+-> **NOTE:** Available since v1.291.0.
 
 ## Example Usage
 
