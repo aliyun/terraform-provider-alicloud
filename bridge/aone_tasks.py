@@ -310,9 +310,12 @@ PERSONA_PUBLIC_WORKER = "WORKER_1783582458263"
 
 PERSONA_WORKER_IDS = {PERSONA_PUBLIC_WORKER}
 
+PERSONA_LEGACY_PD_WORKER = "WORKER_1783582374386"
+PERSONA_LEGACY_QA_WORKER = "WORKER_1783582593461"
+
 PERSONA_LEGACY_WORKER_ROLES = {
-    "WORKER_1783582374386": "terraform-pd",
-    "WORKER_1783582593461": "terraform-qa",
+    PERSONA_LEGACY_PD_WORKER: "terraform-pd",
+    PERSONA_LEGACY_QA_WORKER: "terraform-qa",
 }
 
 PERSONA_LEGACY_WORKER_IDS = set(PERSONA_LEGACY_WORKER_ROLES)
@@ -322,7 +325,12 @@ PERSONA_NAME_RE = re.compile(r"terraform[-_ ]?(pd|rd|qa)\b", re.IGNORECASE)
 JARVIS_ORCH_WORKER = "WORKER_1782379562571"
 
 DIGITAL_WORKER_IDS = frozenset(
-    {JARVIS_ORCH_WORKER, PERSONA_PUBLIC_WORKER} | PERSONA_LEGACY_WORKER_IDS)
+    {JARVIS_ORCH_WORKER, PERSONA_PUBLIC_WORKER, PERSONA_LEGACY_QA_WORKER})
+
+# PERSONA_LEGACY_WORKER_IDS intentionally remains broader than the discovery set:
+# both retired identities still identify historical authors, @mentions, and inbound
+# tracker activity.  Only legacy QA remains scan-active; legacy PD must not make a
+# ticket dispatchable merely by assignment or participation.
 
 def _persona_nicks_map():
     """解析 env JARVIS_PERSONA_NICKS="terraform-pd=名A,terraform-rd=名B,..." 显式配置。

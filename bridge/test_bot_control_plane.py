@@ -918,11 +918,16 @@ class SchedulerRunnerTest(unittest.TestCase):
         with mock.patch.object(scan.ScanRunner, "_read_pools", return_value=[]):
             self.assertIsNone(s._scan_union())
 
-    def test_digital_worker_ids_single_source(self):
-        # 单一真源含编排层 + 公开 RD + 旧 PD/QA 兼容 worker
+    def test_scan_worker_ids_exclude_only_legacy_pd(self):
+        # 入站兼容集合仍完整保留旧 PD/QA worker。
+        self.assertEqual(
+            aone.PERSONA_LEGACY_WORKER_IDS,
+            {aone.PERSONA_LEGACY_PD_WORKER, aone.PERSONA_LEGACY_QA_WORKER})
+        # 扫描只排除退役 PD；open-Jarvis、现行 RD 与旧 QA 不变。
+        self.assertNotIn(aone.PERSONA_LEGACY_PD_WORKER, aone.DIGITAL_WORKER_IDS)
         self.assertIn(aone.JARVIS_ORCH_WORKER, aone.DIGITAL_WORKER_IDS)
         self.assertIn(aone.PERSONA_PUBLIC_WORKER, aone.DIGITAL_WORKER_IDS)
-        self.assertTrue(aone.PERSONA_LEGACY_WORKER_IDS <= aone.DIGITAL_WORKER_IDS)
+        self.assertIn(aone.PERSONA_LEGACY_QA_WORKER, aone.DIGITAL_WORKER_IDS)
 
     def test_source_status_reconcile_observes_terminal_aone_without_dispatch_upsert(self):
         class Client:

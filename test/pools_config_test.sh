@@ -25,16 +25,16 @@ done
   && ok "cloudspec pool removed" || bad "cloudspec pool should be removed"
 
 # S3c: per-pool assignee 语义(config/pools.json)
-#   5 池消费统一数字人 ID 集合；open-jarvis 与 Terraform 的现行/迁移期公共身份都需保留。
+#   5 池消费统一扫描 ID 集合；旧 Terraform-PD 只保留入站兼容，不再进入扫描。
+#   open-jarvis、现行 TerraformRD 与旧 Terraform-QA 的扫描保持不变。
 for pool in tf_customer tf_provider mcp_server api_toolkit automation_platform; do
   jq -e ".pools.$pool.assignee == [
     \"WORKER_1782379562571\",
     \"WORKER_1783582458263\",
-    \"WORKER_1783582374386\",
     \"WORKER_1783582593461\"
   ]" "$POOLS_JSON" >/dev/null \
-    && ok "$pool.assignee keeps the digital-worker set" \
-    || bad "$pool.assignee digital-worker set mismatch"
+    && ok "$pool.assignee keeps the scheduler scan-worker set" \
+    || bad "$pool.assignee scheduler scan-worker set mismatch"
 done
 
 # S3d: CloudSpec 结构与 text-only 文档都不再通过 upstream pool 出站。
