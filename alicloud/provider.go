@@ -1194,6 +1194,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_oss_bucket_worm":                                      resourceAliCloudOssBucketWorm(),
 			"alicloud_apig_environment":                                     resourceAliCloudApigEnvironment(),
 			"alicloud_apig_gateway":                                         resourceAliCloudApigGateway(),
+			"alicloud_apig_gateway_security_group_rule":                     resourceAliCloudApigGatewaySecurityGroupRule(),
 			"alicloud_apig_http_api":                                        resourceAliCloudApigHttpApi(),
 			"alicloud_mongodb_private_srv_network_address":                  resourceAliCloudMongodbPrivateSrvNetworkAddress(),
 			"alicloud_schedulerx_app_group":                                 resourceAliCloudSchedulerxAppGroup(),

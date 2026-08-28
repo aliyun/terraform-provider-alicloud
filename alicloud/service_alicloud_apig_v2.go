@@ -992,3 +992,73 @@ func (s *ApigServiceV2) ApigAiModelProviderStateRefreshFuncWithApi(id string, fi
 }
 
 // DescribeApigAiModelProvider >>> Encapsulated.
+
+// DescribeApigGatewaySecurityGroupRule <<< Encapsulated get interface for Apig GatewaySecurityGroupRule (hand-written).
+
+func (s *ApigServiceV2) DescribeApigGatewaySecurityGroupRule(id string) (object map[string]interface{}, err error) {
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		return object, WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+	}
+	gatewayId := parts[0]
+	securityGroupRuleId := parts[1]
+	items, err := s.ListApigGatewaySecurityGroupRules(gatewayId)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, "ListGatewayAuthorizedSecurityGroupRules", AlibabaCloudSdkGoERROR)
+	}
+	for _, item := range items {
+		if fmt.Sprint(item["securityGroupRuleId"]) == securityGroupRuleId {
+			return item, nil
+		}
+	}
+	return object, WrapErrorf(NotFoundErr("GatewaySecurityGroupRule", id), NotFoundMsg, id)
+}
+
+func (s *ApigServiceV2) ListApigGatewaySecurityGroupRules(gatewayId string) (items []map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]*string)
+	action := fmt.Sprintf("/v1/gateways/%s/authorized-security-groups-rules", gatewayId)
+	request = make(map[string]interface{})
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RoaGet("APIG", "2024-03-27", action, query, nil, nil)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		// When the parent gateway has been deleted out-of-band, the API returns
+		// Conflict.GatewayIsDeleted (409); a security group rule cannot exist
+		// without its gateway, so treat the rule as gone rather than surfacing
+		// a hard error. This keeps Read and CheckDestroy idempotent.
+		if IsExpectedErrors(err, []string{"Conflict.GatewayIsDeleted"}) {
+			return items, WrapErrorf(NotFoundErr("Gateway", gatewayId), NotFoundMsg, gatewayId)
+		}
+		return items, WrapErrorf(err, DefaultErrorMsg, gatewayId, action, AlibabaCloudSdkGoERROR)
+	}
+	if response == nil {
+		return items, WrapErrorf(NotFoundErr("GatewaySecurityGroupRule", gatewayId), NotFoundMsg, response)
+	}
+	v, e := jsonpath.Get("$.data.items[*]", response)
+	if e != nil {
+		return items, nil
+	}
+	result, _ := v.([]interface{})
+	for _, vv := range result {
+		if item, ok := vv.(map[string]interface{}); ok {
+			items = append(items, item)
+		}
+	}
+	return items, nil
+}
+
+// DescribeApigGatewaySecurityGroupRule >>> Encapsulated.
