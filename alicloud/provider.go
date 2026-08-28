@@ -1323,6 +1323,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ens_security_group":                                   resourceAliCloudEnsSecurityGroup(),
 			"alicloud_ens_vswitch":                                          resourceAliCloudEnsVswitch(),
 			"alicloud_ens_load_balancer":                                    resourceAliCloudEnsLoadBalancer(),
+			"alicloud_ens_load_balancer_http_listener":                      resourceAliCloudEnsLoadBalancerHttpListener(),
 			"alicloud_ens_eip":                                              resourceAliCloudEnsEip(),
 			"alicloud_ens_network":                                          resourceAliCloudEnsNetwork(),
 			"alicloud_ens_snapshot":                                         resourceAliCloudEnsSnapshot(),
