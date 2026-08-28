@@ -420,6 +420,68 @@ func (s *ApigServiceV2) ApigEnvironmentStateRefreshFunc(id string, field string,
 
 // DescribeApigEnvironment >>> Encapsulated.
 
+// DescribeApigSecurityGroupRule <<< Encapsulated get interface for Apig SecurityGroupRule.
+
+func (s *ApigServiceV2) DescribeApigSecurityGroupRule(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]*string
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
+	}
+	gatewayId := parts[0]
+	securityGroupRuleId := parts[1]
+	request = make(map[string]interface{})
+	query = make(map[string]*string)
+
+	action := fmt.Sprintf("/v1/gateways/%s/authorized-security-groups-rules", gatewayId)
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RoaGet("APIG", "2024-03-27", action, query, nil, nil)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if response == nil {
+		return object, WrapErrorf(NotFoundErr("SecurityGroupRule", id), NotFoundMsg, response)
+	}
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	itemsRaw, err := jsonpath.Get("$.data.items", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.data.items", response)
+	}
+	items, ok := itemsRaw.([]interface{})
+	if !ok || len(items) == 0 {
+		return object, WrapErrorf(NotFoundErr("SecurityGroupRule", id), NotFoundMsg, response)
+	}
+	for _, raw := range items {
+		item, ok := raw.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		if fmt.Sprint(item["securityGroupRuleId"]) == securityGroupRuleId {
+			return item, nil
+		}
+	}
+	return object, WrapErrorf(NotFoundErr("SecurityGroupRule", id), NotFoundMsg, response)
+}
+
+// DescribeApigSecurityGroupRule >>> Encapsulated.
+
 // DescribeApigService <<< Encapsulated get interface for Apig Service.
 
 func (s *ApigServiceV2) DescribeApigService(id string) (object map[string]interface{}, err error) {
