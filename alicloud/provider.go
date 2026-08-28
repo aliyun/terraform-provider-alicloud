@@ -958,6 +958,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_ipam_ipams":                                   dataSourceAliCloudVpcIpamIpams(),
 			"alicloud_das_sql_log_configs":                              dataSourceAliCloudDasSqlLogConfigs(),
 			"alicloud_apig_plugin_classes":                              dataSourceAliCloudApigPluginClasses(),
+			"alicloud_sls_metric_stores":                                dataSourceAliCloudSlsMetricStores(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_gpdb_db_extension":                                    resourceAliCloudGpdbDbExtension(),
@@ -2150,6 +2151,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_polardb_zonal_db_cluster":                              resourceAliCloudPolarDbZonalCluster(),
 			"alicloud_polardb_zonal_endpoint":                                resourceAlicloudPolarDBZonalEndpoint(),
 			"alicloud_polardb_zonal_account":                                 resourceAlicloudPolarDBZonalAccount(),
+			"alicloud_sls_metric_store":                                      resourceAliCloudSlsMetricStore(),
 		},
 	}
 	provider.ConfigureFunc = func(d *schema.ResourceData) (interface{}, error) {
