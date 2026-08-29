@@ -70,6 +70,10 @@ func resourceAliCloudEnsEip() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"ip_address": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -106,7 +110,7 @@ func resourceAliCloudEnsEipCreate(d *schema.ResourceData, meta interface{}) erro
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"OrderFailed"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -154,6 +158,7 @@ func resourceAliCloudEnsEipRead(d *schema.ResourceData, meta interface{}) error 
 	d.Set("isp", objectRaw["Isp"])
 	d.Set("payment_type", convertEnsEipAddressesEipAddressChargeTypeResponse(objectRaw["ChargeType"]))
 	d.Set("status", objectRaw["Status"])
+	d.Set("ip_address", objectRaw["IpAddress"])
 
 	return nil
 }
