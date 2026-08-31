@@ -17,7 +17,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudPvtzUserVpcAuthorization_basic0(t *testing.T) {
+func TestAccAliCloudPvtzUserVpcAuthorization_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_pvtz_user_vpc_authorization.default"
 	ra := resourceAttrInit(resourceId, AlicloudPrivateZoneUserVpcAuthorizationMap0)
@@ -43,6 +43,51 @@ func TestAccAlicloudPvtzUserVpcAuthorization_basic0(t *testing.T) {
 					"authorized_user_id": "1359528198477648",
 					"auth_channel":       "RESOURCE_DIRECTORY",
 					"auth_type":          "NORMAL",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"authorized_user_id": CHECKSET,
+						"auth_type":          "NORMAL",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"auth_channel"},
+			},
+		},
+	})
+}
+
+// defaultAuthType exercises the bug-fix path: auth_type is omitted so the
+// resource ID must default to "<authorized_user_id>:NORMAL" instead of the
+// previous buggy "<authorized_user_id>:<nil>".
+func TestAccAliCloudPvtzUserVpcAuthorization_defaultAuthType(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_pvtz_user_vpc_authorization.default"
+	ra := resourceAttrInit(resourceId, AlicloudPrivateZoneUserVpcAuthorizationMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &PvtzService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribePvtzUserVpcAuthorization")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sprivatezoneuservpcauthorization%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudPrivateZoneUserVpcAuthorizationBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckEnterpriseAccountEnabled(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"authorized_user_id": "1359528198477648",
+					"auth_channel":       "RESOURCE_DIRECTORY",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -184,6 +229,51 @@ func TestUnitAlicloudPvtzUserVpcAuthorization(t *testing.T) {
 			return responseMock["CreateNormal"]("")
 		})
 		err := resourceAlicloudPvtzUserVpcAuthorizationCreate(dCreate, rawClient)
+		patches.Reset()
+		assert.Nil(t, err)
+	})
+
+	// Create with auth_type omitted: the resource ID must default to
+	// "<authorized_user_id>:NORMAL" instead of the previous buggy
+	// "<authorized_user_id>:<nil>".
+	t.Run("CreateNormalWithDefaultAuthType", func(t *testing.T) {
+		dDefault, _ := schema.InternalMap(p["alicloud_pvtz_user_vpc_authorization"].Schema).Data(nil, nil)
+		dDefault.MarkNewResource()
+		err := dDefault.Set("authorized_user_id", "authorized_user_id")
+		assert.Nil(t, err)
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			return responseMock["CreateNormal"]("")
+		})
+		err = resourceAlicloudPvtzUserVpcAuthorizationCreate(dDefault, rawClient)
+		patches.Reset()
+		assert.Nil(t, err)
+		assert.Equal(t, "authorized_user_id:NORMAL", dDefault.Id())
+	})
+
+	// Read with a legacy "<nil>" AuthType in the ID: the migration must
+	// rewrite it to "NORMAL" so the API receives the correct AuthType.
+	t.Run("ReadMigrateLegacyNilAuthType", func(t *testing.T) {
+		dLegacy, _ := schema.InternalMap(p["alicloud_pvtz_user_vpc_authorization"].Schema).Data(nil, nil)
+		dLegacy.SetId("authorized_user_id:<nil>")
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			return responseMock["ReadNormal"]("")
+		})
+		err := resourceAlicloudPvtzUserVpcAuthorizationRead(dLegacy, rawClient)
+		patches.Reset()
+		assert.Nil(t, err)
+		assert.Equal(t, "authorized_user_id:NORMAL", dLegacy.Id())
+		assert.Equal(t, "NORMAL", dLegacy.Get("auth_type"))
+	})
+
+	// Delete with a legacy "<nil>" AuthType in the ID: the migration must
+	// send "NORMAL" to the DeleteUserVpcAuthorization API.
+	t.Run("DeleteMigrateLegacyNilAuthType", func(t *testing.T) {
+		dLegacy, _ := schema.InternalMap(p["alicloud_pvtz_user_vpc_authorization"].Schema).Data(nil, nil)
+		dLegacy.SetId("authorized_user_id:<nil>")
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			return responseMock["DeleteNormal"]("")
+		})
+		err := resourceAlicloudPvtzUserVpcAuthorizationDelete(dLegacy, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
