@@ -35,11 +35,30 @@ func resourceAliCloudMessageServiceTopic() *schema.Resource {
 				Computed:      true,
 				ConflictsWith: []string{"logging_enabled"},
 			},
+			"enable_sse": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"kms_key_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"max_message_size": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
 				ValidateFunc: IntBetween(1024, 65536),
+			},
+			"sse_algorithm": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"sse_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
 			"tags": tagsSchema(),
 			"topic_name": {
@@ -80,6 +99,18 @@ func resourceAliCloudMessageServiceTopicCreate(d *schema.ResourceData, meta inte
 		request["EnableLogging"] = v
 	} else if v, ok := d.GetOkExists("logging_enabled"); ok {
 		request["EnableLogging"] = v
+	}
+	if v, ok := d.GetOkExists("enable_sse"); ok {
+		request["EnableSSE"] = v
+	}
+	if v, ok := d.GetOkExists("kms_key_id"); ok {
+		request["KmsKeyId"] = v
+	}
+	if v, ok := d.GetOkExists("sse_algorithm"); ok {
+		request["SseAlgorithm"] = v
+	}
+	if v, ok := d.GetOkExists("sse_type"); ok {
+		request["SseType"] = v
 	}
 	if v, ok := d.GetOkExists("max_message_size"); ok {
 		request["MaxMessageSize"] = v
@@ -131,7 +162,11 @@ func resourceAliCloudMessageServiceTopicRead(d *schema.ResourceData, meta interf
 
 	d.Set("create_time", objectRaw["CreateTime"])
 	d.Set("enable_logging", objectRaw["LoggingEnabled"])
+	d.Set("enable_sse", objectRaw["EnableSSE"])
+	d.Set("kms_key_id", objectRaw["KmsKeyId"])
 	d.Set("max_message_size", objectRaw["MaxMessageSize"])
+	d.Set("sse_algorithm", objectRaw["SseAlgorithm"])
+	d.Set("sse_type", objectRaw["SseType"])
 	d.Set("topic_name", objectRaw["TopicName"])
 	d.Set("topic_type", objectRaw["TopicType"])
 	d.Set("logging_enabled", objectRaw["LoggingEnabled"])
@@ -176,6 +211,38 @@ func resourceAliCloudMessageServiceTopicUpdate(d *schema.ResourceData, meta inte
 
 		if v, ok := d.GetOkExists("max_message_size"); ok {
 			request["MaxMessageSize"] = v
+		}
+	}
+
+	if d.HasChange("enable_sse") {
+		update = true
+
+		if v, ok := d.GetOkExists("enable_sse"); ok {
+			request["EnableSSE"] = v
+		}
+	}
+
+	if d.HasChange("kms_key_id") {
+		update = true
+
+		if v, ok := d.GetOkExists("kms_key_id"); ok {
+			request["KmsKeyId"] = v
+		}
+	}
+
+	if d.HasChange("sse_algorithm") {
+		update = true
+
+		if v, ok := d.GetOkExists("sse_algorithm"); ok {
+			request["SseAlgorithm"] = v
+		}
+	}
+
+	if d.HasChange("sse_type") {
+		update = true
+
+		if v, ok := d.GetOkExists("sse_type"); ok {
+			request["SseType"] = v
 		}
 	}
 
