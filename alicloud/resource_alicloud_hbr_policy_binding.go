@@ -79,6 +79,38 @@ func resourceAliCloudHbrPolicyBinding() *schema.Resource {
 										Optional: true,
 										Elem:     &schema.Schema{Type: schema.TypeString},
 									},
+									"app_consistent": {
+										Type:     schema.TypeBool,
+										Optional: true,
+									},
+									"snapshot_group": {
+										Type:     schema.TypeBool,
+										Optional: true,
+									},
+									"ram_role_name": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"pre_script_path": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"post_script_path": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"enable_fs_freeze": {
+										Type:     schema.TypeBool,
+										Optional: true,
+									},
+									"timeout_in_seconds": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+									"enable_writers": {
+										Type:     schema.TypeBool,
+										Optional: true,
+									},
 								},
 							},
 						},
@@ -245,6 +277,38 @@ func resourceAliCloudHbrPolicyBindingCreate(d *schema.ResourceData, meta interfa
 		if destinationKmsKeyId1 != nil && destinationKmsKeyId1 != "" {
 			udmDetail["DestinationKmsKeyId"] = destinationKmsKeyId1
 		}
+		appConsistent1, _ := jsonpath.Get("$[0].udm_detail[0].app_consistent", d.Get("advanced_options"))
+		if appConsistent1 != nil && appConsistent1 != "" {
+			udmDetail["AppConsistent"] = appConsistent1
+		}
+		snapshotGroup1, _ := jsonpath.Get("$[0].udm_detail[0].snapshot_group", d.Get("advanced_options"))
+		if snapshotGroup1 != nil && snapshotGroup1 != "" {
+			udmDetail["SnapshotGroup"] = snapshotGroup1
+		}
+		ramRoleName1, _ := jsonpath.Get("$[0].udm_detail[0].ram_role_name", d.Get("advanced_options"))
+		if ramRoleName1 != nil && ramRoleName1 != "" {
+			udmDetail["RamRoleName"] = ramRoleName1
+		}
+		preScriptPath1, _ := jsonpath.Get("$[0].udm_detail[0].pre_script_path", d.Get("advanced_options"))
+		if preScriptPath1 != nil && preScriptPath1 != "" {
+			udmDetail["PreScriptPath"] = preScriptPath1
+		}
+		postScriptPath1, _ := jsonpath.Get("$[0].udm_detail[0].post_script_path", d.Get("advanced_options"))
+		if postScriptPath1 != nil && postScriptPath1 != "" {
+			udmDetail["PostScriptPath"] = postScriptPath1
+		}
+		enableFsFreeze1, _ := jsonpath.Get("$[0].udm_detail[0].enable_fs_freeze", d.Get("advanced_options"))
+		if enableFsFreeze1 != nil && enableFsFreeze1 != "" {
+			udmDetail["EnableFsFreeze"] = enableFsFreeze1
+		}
+		timeoutInSeconds1, _ := jsonpath.Get("$[0].udm_detail[0].timeout_in_seconds", d.Get("advanced_options"))
+		if timeoutInSeconds1 != nil && timeoutInSeconds1 != "" {
+			udmDetail["TimeoutInSeconds"] = timeoutInSeconds1
+		}
+		enableWriters1, _ := jsonpath.Get("$[0].udm_detail[0].enable_writers", d.Get("advanced_options"))
+		if enableWriters1 != nil && enableWriters1 != "" {
+			udmDetail["EnableWriters"] = enableWriters1
+		}
 
 		if len(udmDetail) > 0 {
 			advancedOptions["UdmDetail"] = udmDetail
@@ -285,7 +349,43 @@ func resourceAliCloudHbrPolicyBindingCreate(d *schema.ResourceData, meta interfa
 	PolicyBindingListDataSourceIdVar := d.Get("data_source_id")
 	d.SetId(fmt.Sprintf("%v:%v:%v", request["PolicyId"], PolicyBindingListSourceTypeVar, PolicyBindingListDataSourceIdVar))
 
-	return resourceAliCloudHbrPolicyBindingRead(d, meta)
+	// Capture the user-configured UdmDetail booleans before Read overwrites
+	// the ResourceData writer with backend values.
+	udmBoolFields := []string{"snapshot_group", "app_consistent", "enable_fs_freeze", "enable_writers"}
+	configUdmBools := make(map[string]bool, len(udmBoolFields))
+	for _, f := range udmBoolFields {
+		configUdmBools[f] = hbrPolicyBindingUdmDetailBool(d, f)
+	}
+	// advancedOptions was built from the configuration above and stored on the
+	// policy binding list payload; keep a reference so the Create-then-Update
+	// fallback below can re-apply it verbatim.
+	configAdvancedOptions, _ := policyBindingListDataList["AdvancedOptions"].(map[string]interface{})
+
+	if err := resourceAliCloudHbrPolicyBindingRead(d, meta); err != nil {
+		return err
+	}
+
+	// Create-then-Update fallback: the CreatePolicyBindings backend silently
+	// coerces some UdmDetail booleans (notably snapshot_group) from true to
+	// false, while UpdatePolicyBinding persists them. When the user configured
+	// any such field as true but the backend stored false, re-apply the full
+	// AdvancedOptions via UpdatePolicyBinding so the user's configuration takes
+	// effect. This fallback can be removed once CreatePolicyBindings persists
+	// these fields.
+	needReapply := false
+	for _, f := range udmBoolFields {
+		if configUdmBools[f] && !hbrPolicyBindingUdmDetailBool(d, f) {
+			needReapply = true
+			break
+		}
+	}
+	if needReapply {
+		if err := hbrPolicyBindingReapplyAdvancedOptions(d, meta, configAdvancedOptions); err != nil {
+			return err
+		}
+		return resourceAliCloudHbrPolicyBindingRead(d, meta)
+	}
+	return nil
 }
 
 func resourceAliCloudHbrPolicyBindingRead(d *schema.ResourceData, meta interface{}) error {
@@ -359,6 +459,14 @@ func resourceAliCloudHbrPolicyBindingRead(d *schema.ResourceData, meta interface
 			}
 
 			udmDetailMap["exclude_disk_id_list"] = excludeDiskIdListRaw
+			udmDetailMap["app_consistent"] = udmDetailRaw["AppConsistent"]
+			udmDetailMap["snapshot_group"] = udmDetailRaw["SnapshotGroup"]
+			udmDetailMap["ram_role_name"] = udmDetailRaw["RamRoleName"]
+			udmDetailMap["pre_script_path"] = udmDetailRaw["PreScriptPath"]
+			udmDetailMap["post_script_path"] = udmDetailRaw["PostScriptPath"]
+			udmDetailMap["enable_fs_freeze"] = udmDetailRaw["EnableFsFreeze"]
+			udmDetailMap["timeout_in_seconds"] = formatInt(udmDetailRaw["TimeoutInSeconds"])
+			udmDetailMap["enable_writers"] = udmDetailRaw["EnableWriters"]
 			udmDetailMaps = append(udmDetailMaps, udmDetailMap)
 		}
 		advancedOptionsMap["udm_detail"] = udmDetailMaps
@@ -426,6 +534,38 @@ func resourceAliCloudHbrPolicyBindingUpdate(d *schema.ResourceData, meta interfa
 			destinationKmsKeyId1, _ := jsonpath.Get("$[0].udm_detail[0].destination_kms_key_id", d.Get("advanced_options"))
 			if destinationKmsKeyId1 != nil && destinationKmsKeyId1 != "" {
 				udmDetail["DestinationKmsKeyId"] = destinationKmsKeyId1
+			}
+			appConsistent1, _ := jsonpath.Get("$[0].udm_detail[0].app_consistent", d.Get("advanced_options"))
+			if appConsistent1 != nil && appConsistent1 != "" {
+				udmDetail["AppConsistent"] = appConsistent1
+			}
+			snapshotGroup1, _ := jsonpath.Get("$[0].udm_detail[0].snapshot_group", d.Get("advanced_options"))
+			if snapshotGroup1 != nil && snapshotGroup1 != "" {
+				udmDetail["SnapshotGroup"] = snapshotGroup1
+			}
+			ramRoleName1, _ := jsonpath.Get("$[0].udm_detail[0].ram_role_name", d.Get("advanced_options"))
+			if ramRoleName1 != nil && ramRoleName1 != "" {
+				udmDetail["RamRoleName"] = ramRoleName1
+			}
+			preScriptPath1, _ := jsonpath.Get("$[0].udm_detail[0].pre_script_path", d.Get("advanced_options"))
+			if preScriptPath1 != nil && preScriptPath1 != "" {
+				udmDetail["PreScriptPath"] = preScriptPath1
+			}
+			postScriptPath1, _ := jsonpath.Get("$[0].udm_detail[0].post_script_path", d.Get("advanced_options"))
+			if postScriptPath1 != nil && postScriptPath1 != "" {
+				udmDetail["PostScriptPath"] = postScriptPath1
+			}
+			enableFsFreeze1, _ := jsonpath.Get("$[0].udm_detail[0].enable_fs_freeze", d.Get("advanced_options"))
+			if enableFsFreeze1 != nil && enableFsFreeze1 != "" {
+				udmDetail["EnableFsFreeze"] = enableFsFreeze1
+			}
+			timeoutInSeconds1, _ := jsonpath.Get("$[0].udm_detail[0].timeout_in_seconds", d.Get("advanced_options"))
+			if timeoutInSeconds1 != nil && timeoutInSeconds1 != "" {
+				udmDetail["TimeoutInSeconds"] = timeoutInSeconds1
+			}
+			enableWriters1, _ := jsonpath.Get("$[0].udm_detail[0].enable_writers", d.Get("advanced_options"))
+			if enableWriters1 != nil && enableWriters1 != "" {
+				udmDetail["EnableWriters"] = enableWriters1
 			}
 
 			if len(udmDetail) > 0 {
@@ -522,5 +662,56 @@ func resourceAliCloudHbrPolicyBindingDelete(d *schema.ResourceData, meta interfa
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
+	return nil
+}
+
+// hbrPolicyBindingUdmDetailBool reads a boolean field from
+// advanced_options.0.udm_detail[0].<field> in the current ResourceData.
+// Before Read this reflects the configured value; after Read it reflects the
+// backend value, because the SDK writer (populated by d.Set during Read)
+// takes precedence over the diff.
+func hbrPolicyBindingUdmDetailBool(d *schema.ResourceData, field string) bool {
+	raw, _ := jsonpath.Get("$[0].udm_detail[0]."+field, d.Get("advanced_options"))
+	b, _ := raw.(bool)
+	return b
+}
+
+// hbrPolicyBindingReapplyAdvancedOptions re-issues UpdatePolicyBinding with the
+// full user-configured AdvancedOptions. It is the Create-then-Update fallback
+// for UdmDetail booleans that CreatePolicyBindings silently coerces (notably
+// snapshot_group=true -> false); UpdatePolicyBinding persists them correctly.
+func hbrPolicyBindingReapplyAdvancedOptions(d *schema.ResourceData, meta interface{}, advancedOptions map[string]interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	parts := strings.Split(d.Id(), ":")
+	action := "UpdatePolicyBinding"
+	request := make(map[string]interface{})
+	query := make(map[string]interface{})
+	request["PolicyId"] = parts[0]
+	request["DataSourceId"] = parts[2]
+	request["SourceType"] = parts[1]
+
+	advancedOptionsJson, err := json.Marshal(advancedOptions)
+	if err != nil {
+		return WrapError(err)
+	}
+	request["AdvancedOptions"] = string(advancedOptionsJson)
+
+	var response map[string]interface{}
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		response, err = client.RpcPost("hbr", "2017-09-08", action, query, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
 	return nil
 }
