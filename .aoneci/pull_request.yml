@@ -1,0 +1,142 @@
+name: Pull Request Checks
+
+triggers:
+  push:
+    paths:
+      - 'website/docs/**'
+      - 'alicloud/*.go'
+  merge_request:
+    types:
+      - opened
+    paths:
+      - 'website/docs/**'
+      - 'alicloud/*.go'
+
+jobs:
+  title:
+    steps:
+      - uses: checkout
+        inputs:
+          fetch-depth: '2'
+      - name: Checking the title info
+        run: |
+          exitCode=0
+          prTitle="${{git.merge_request.title}}"
+          echo -e "PR Title: \033[1m${prTitle}\033[0m"
+          if [[ ${prTitle} == *"..." ]]; then
+            echo -e "\nERROR: The PR title should not omit important infos about added or modified files. \033[1mxxx... is not recommended.\033[0m"
+            exitCode=1
+          fi
+          docsOnly=true
+          testcaseOnly=true
+          docsChanged=false
+          testcaseChanged=false
+          added_files=$(git diff --diff-filter=A --name-only HEAD^ HEAD)
+          for added_file in ${added_files[@]}; do
+            if [[ ${added_file} == *?_test.go ]]; then
+                testcaseChanged=true
+                continue
+            fi
+            if [[ ${added_file} == "website/docs"* ]]; then
+                testcaseOnly=false
+                docsChanged=true
+                continue
+            fi
+            if [[ ${added_file} == "alicloud/resource_alicloud"* ]]; then
+                docsOnly=false
+                testcaseOnly=false
+                prefix="alicloud/resource_"
+                suffix=".go"
+                resourceName=${added_file}
+                resourceName=${resourceName#"$prefix"}
+                resourceName=${resourceName%"$suffix"}
+                titleStr="New Resource: ${resourceName}"
+                if [[ ${prTitle} != *"${titleStr}"* ]]; then
+                  echo -e "\nERROR: The PR title should contains new resource info \033[1m${titleStr}\033[0m"
+                  exitCode=1
+                fi
+                continue
+            fi
+            if [[ ${added_file} == "alicloud/data_source_alicloud"* ]]; then
+                docsOnly=false
+                testcaseOnly=false
+                prefix="alicloud/data_source_"
+                suffix=".go"
+                resourceName=${added_file}
+                resourceName=${resourceName#"$prefix"}
+                resourceName=${resourceName%"$suffix"}
+                titleStr="New Data Source: ${resourceName}"
+                if [[ ${prTitle} != *"${titleStr}"* ]]; then
+                  echo -e "\nERROR: The PR title should contains new datasource info \033[1m${titleStr}\033[0m"
+                  exitCode=1
+                fi
+                continue
+            fi
+          done
+          modified_files=$(git diff --diff-filter=M --name-only HEAD^ HEAD)
+          for modified_file in ${modified_files[@]}; do
+            if [[ ${modified_file} == *?_test.go ]]; then
+                testcaseChanged=true
+                continue
+            fi
+            if [[ ${modified_file} == "website/docs"* ]]; then
+                testcaseOnly=false
+                docsChanged=true
+                continue
+            fi
+            if [[ ${modified_file} == "alicloud/resource_alicloud"* ]]; then
+                docsOnly=false
+                testcaseOnly=false
+                prefix="alicloud/resource_"
+                suffix=".go"
+                resourceName=${modified_file}
+                resourceName=${resourceName#"$prefix"}
+                resourceName=${resourceName%"$suffix"}
+                titleStr="resource/${resourceName}: "
+                if [[ ${prTitle} != *"${titleStr}"* ]]; then
+                  echo -e "\nERROR: The PR title should contains modified info like \033[1m${titleStr}xxx\033[0m"
+                  exitCode=1
+                fi
+            fi
+            if [[ ${modified_file} == "alicloud/data_source_alicloud"* ]]; then
+                docsOnly=false
+                testcaseOnly=false
+                prefix="alicloud/data_source_"
+                suffix=".go"
+                resourceName=${modified_file}
+                resourceName=${resourceName#"$prefix"}
+                resourceName=${resourceName%"$suffix"}
+                titleStr="data-source/${resourceName}: "
+                if [[ ${prTitle} != *"${titleStr}"* ]]; then
+                  echo -e "\nERROR: The PR title should contains modified info like \033[1m${titleStr}xxx\033[0m"
+                  exitCode=1
+                fi
+            fi
+          done
+          if [[ ${docsChanged} == true && ${docsOnly} == true ]]; then
+            titleStr="docs: "
+            if [[ ${prTitle} != "${titleStr}"* ]]; then
+              echo -e "\nERROR: The PR title should contains docs modified info like \033[1m${titleStr}xxx\033[0m"
+              exitCode=1
+            fi
+          elif [[ ${testcaseChanged} == true && ${testcaseOnly} == true ]]; then
+            titleStr="testcase: "
+            if [[ ${prTitle} != *"${titleStr}"* ]]; then
+              echo -e "\nERROR: The PR title should contains testcase modified info like \033[1m${titleStr}xxx\033[0m"
+              exitCode=1
+            fi
+          fi
+
+          exit ${exitCode}
+
+# 没有github.event.pull_request.commits语法的平替，用来获取commits数量
+#  commits:
+#    name: Pull Request Max Commits
+#    steps:
+#      - name: Checking the max commits number
+#        run: |
+#          commitNum=${{git.merge_request.commits }}
+#          if [[ ${commitNum} -gt 1 ]]; then
+#            echo -e "\nERROR: The PR has ${commitNum} commits, and please rebase it to 1.\n"
+#            exit 1
+#          fi

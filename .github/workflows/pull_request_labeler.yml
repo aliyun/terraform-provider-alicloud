@@ -1,0 +1,97 @@
+name: Pull Request Labeler
+
+on:
+  pull_request_target:
+    branches:
+      - master
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  labeler:
+    name: Label the PR
+    permissions:
+      contents: read
+      pull-requests: write
+    runs-on: terraform-ci-policy
+    timeout-minutes: 3
+    steps:
+      - uses: actions/labeler@b8dd2d9be0f68b860e7dae5dae7d772984eacd6d # v6.2.0
+        with:
+          repo-token: "${{ secrets.GITHUB_TOKEN }}"
+          configuration-path: .github/labeler-pull-request-triage.yml
+
+      - name: Apply Pull Request Size Labels
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            const pullNumber = context.payload.pull_request?.number;
+            if (!Number.isSafeInteger(pullNumber) || pullNumber <= 0) {
+              throw new Error("Invalid pull request number.");
+            }
+
+            const { data: pullRequest } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pullNumber,
+            });
+            const additions = pullRequest?.additions;
+            const deletions = pullRequest?.deletions;
+            if (
+              !Number.isSafeInteger(additions) ||
+              additions < 0 ||
+              !Number.isSafeInteger(deletions) ||
+              deletions < 0
+            ) {
+              throw new Error("Invalid pull request size metadata.");
+            }
+
+            const modifications = additions + deletions;
+            const sizeLabels = [
+              "size/XS",
+              "size/S",
+              "size/M",
+              "size/L",
+              "size/XL",
+            ];
+            const sizeLabel =
+              modifications < 30
+                ? "size/XS"
+                : modifications < 60
+                  ? "size/S"
+                  : modifications < 150
+                    ? "size/M"
+                    : modifications < 1500
+                      ? "size/L"
+                      : "size/XL";
+
+            const currentLabels = await github.paginate(
+              github.rest.issues.listLabelsOnIssue,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pullNumber,
+                per_page: 100,
+              }
+            );
+            const labels = currentLabels
+              .map(({ name }) => name)
+              .filter(
+                (name) =>
+                  typeof name === "string" && !sizeLabels.includes(name)
+              );
+            labels.push(sizeLabel);
+
+            await github.rest.issues.setLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pullNumber,
+              labels,
+            });
+            core.info(
+              `Applied ${sizeLabel} for ${modifications} changed lines.`
+            );

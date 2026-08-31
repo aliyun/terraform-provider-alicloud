@@ -1,0 +1,72 @@
+---
+subcategory: "Elastic High Performance Computing (Ehpc)"
+layout: "alicloud"
+page_title: "Alicloud: alicloud_ehpc_job_template"
+sidebar_current: "docs-alicloud-resource-ehpc-job-template"
+description: |-
+  Provides a Alicloud Ehpc Job Template resource.
+---
+
+# alicloud_ehpc_job_template
+
+Provides a Ehpc Job Template resource.
+
+For information about Ehpc Job Template and how to use it, see [What is Job Template](https://www.alibabacloud.com/help/product/57664.html).
+
+-> **NOTE:** Available since v1.133.0.
+
+## Example Usage
+
+Basic Usage
+
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_ehpc_job_template&exampleId=1a8bbe0f-24d6-0e5f-5518-208979dbe11b845cdbb2&activeTab=example&spm=docs.r.ehpc_job_template.0.1a8bbe0f24&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
+```terraform
+resource "alicloud_ehpc_job_template" "default" {
+  job_template_name = "example_value"
+  command_line      = "./LammpsTest/lammps.pbs"
+}
+
+```
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ehpc_job_template&spm=docs.r.ehpc_job_template.example&intl_lang=EN_US)
+
+## Argument Reference
+
+The following arguments are supported:
+
+* `array_request` - (Optional) Queue Jobs, Is of the Form: 1-10:2.
+* `clock_time` - (Optional) Job Maximum Run Time.
+* `command_line` - (Required) Job Commands.
+* `gpu` - (Optional) A Single Compute Node Using the GPU Number.Possible Values: 1~20000.
+* `job_template_name` - (Required) A Job Template Name.
+* `mem` - (Optional) A Single Compute Node Maximum Memory.
+* `node` - (Optional) Submit a Task Is Required for Computing the Number of Data Nodes to Be. Possible Values: 1~5000 .
+* `package_path` - (Optional) Job Commands the Directory.
+* `priority` - (Optional) The Job Priority.
+* `queue` - (Optional) The Job Queue.
+* `re_runable` - (Optional) If the Job Is Support for the Re-Run.
+* `runas_user` - (Optional) The name of the user who performed the job.
+* `stderr_redirect_path` - (Optional) Error Output Path.
+* `stdout_redirect_path` - (Optional) Standard Output Path and.
+* `task` - (Optional) A Single Compute Node Required Number of Tasks. Possible Values: 1~20000 .
+* `thread` - (Optional) A Single Task and the Number of Required Threads.
+* `variables` - (Optional) The Job of the Environment Variable.
+
+## Attributes Reference
+
+The following attributes are exported:
+
+* `id` - The resource ID in terraform of Job Template.
+
+## Import
+
+Ehpc Job Template can be imported using the id, e.g.
+
+```shell
+$ terraform import alicloud_ehpc_job_template.example <id>
+```

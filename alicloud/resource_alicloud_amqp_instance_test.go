@@ -1,0 +1,1554 @@
+package alicloud
+
+import (
+	"fmt"
+	"os"
+	"reflect"
+	"strconv"
+	"testing"
+	"time"
+
+	"github.com/agiledragon/gomonkey/v2"
+	"github.com/alibabacloud-go/tea-rpc/client"
+	util "github.com/alibabacloud-go/tea-utils/service"
+	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/stretchr/testify/assert"
+)
+
+// lintignore: R001
+func TestUnitAliCloudAmqpInstance(t *testing.T) {
+	p := Provider().(*schema.Provider).ResourcesMap
+	d, _ := schema.InternalMap(p["alicloud_amqp_instance"].Schema).Data(nil, nil)
+	dCreate, _ := schema.InternalMap(p["alicloud_amqp_instance"].Schema).Data(nil, nil)
+	dCreate.MarkNewResource()
+	dCreateMock, _ := schema.InternalMap(p["alicloud_amqp_instance"].Schema).Data(nil, nil)
+	dCreateMock.MarkNewResource()
+	dCreateRenewalStatus, _ := schema.InternalMap(p["alicloud_amqp_instance"].Schema).Data(nil, nil)
+	dCreateRenewalStatus.MarkNewResource()
+	for key, value := range map[string]interface{}{
+		"instance_name":    "${var.name}",
+		"instance_type":    "professional",
+		"max_tps":          "1000",
+		"payment_type":     "Subscription",
+		"period":           1,
+		"queue_capacity":   "50",
+		"support_eip":      false,
+		"logistics":        "logistics",
+		"max_eip_tps":      "128",
+		"renewal_duration": 1,
+		"renewal_status":   "ManualRenewal",
+		"storage_size":     "800",
+	} {
+		err := dCreate.Set(key, value)
+		assert.Nil(t, err)
+		err = d.Set(key, value)
+		assert.Nil(t, err)
+	}
+	for key, value := range map[string]interface{}{
+		"instance_name":    "${var.name}",
+		"instance_type":    "professional",
+		"max_tps":          "1000",
+		"payment_type":     "Subscription",
+		"period":           1,
+		"queue_capacity":   "50",
+		"support_eip":      true,
+		"logistics":        "logistics",
+		"renewal_duration": 1,
+		"renewal_status":   "ManualRenewal",
+		"storage_size":     "800",
+	} {
+		err := dCreateMock.Set(key, value)
+		assert.Nil(t, err)
+		err = d.Set(key, value)
+		assert.Nil(t, err)
+	}
+	for key, value := range map[string]interface{}{
+		"instance_name":  "${var.name}",
+		"instance_type":  "professional",
+		"max_tps":        "1000",
+		"payment_type":   "Subscription",
+		"period":         1,
+		"queue_capacity": "50",
+		"support_eip":    false,
+		"logistics":      "logistics",
+		"renewal_status": "AutoRenewal",
+		"storage_size":   "800",
+	} {
+		err := dCreateRenewalStatus.Set(key, value)
+		assert.Nil(t, err)
+		err = d.Set(key, value)
+		assert.Nil(t, err)
+	}
+	region := os.Getenv("ALICLOUD_REGION")
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		t.Skipf("Skipping the test case with err: %s", err)
+		t.Skipped()
+	}
+	rawClient = rawClient.(*connectivity.AliyunClient)
+	ReadMockResponse := map[string]interface{}{
+		"Data": map[string]interface{}{
+			"Instances": []interface{}{
+				map[string]interface{}{
+					"InstanceId":        "MockInstanceId",
+					"Status":            "SERVING",
+					"InstanceName":      "instance_name",
+					"InstanceType":      "PROFESSIONAL",
+					"SupportEIP":        false,
+					"EncryptedInstance": true,
+					"KmsKeyId":          "MockKmsKeyId",
+				},
+			},
+			"InstanceList": []interface{}{
+				map[string]interface{}{
+					"SubscriptionType":    "payment_type",
+					"RenewalDuration":     1,
+					"RenewStatus":         "ManualRenewal",
+					"RenewalDurationUnit": "M",
+					"InstanceID":          "MockInstanceId",
+				},
+			},
+			"InstanceId": "MockInstanceId",
+		},
+		"Code": "Success",
+	}
+
+	responseMock := map[string]func(errorCode string) (map[string]interface{}, error){
+		"RetryError": func(errorCode string) (map[string]interface{}, error) {
+			return nil, &tea.SDKError{
+				Code:       String(errorCode),
+				Data:       String(errorCode),
+				Message:    String(errorCode),
+				StatusCode: tea.Int(400),
+			}
+		},
+		"NotFoundError": func(errorCode string) (map[string]interface{}, error) {
+			return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_amqp_instance", "MockInstanceId"))
+		},
+		"NoRetryError": func(errorCode string) (map[string]interface{}, error) {
+			return nil, &tea.SDKError{
+				Code:       String(errorCode),
+				Data:       String(errorCode),
+				Message:    String(errorCode),
+				StatusCode: tea.Int(400),
+			}
+		},
+		"CreateNormal": func(errorCode string) (map[string]interface{}, error) {
+			result := ReadMockResponse
+			result["InstanceId"] = "MockInstanceId"
+			return result, nil
+		},
+		"UpdateNormal": func(errorCode string) (map[string]interface{}, error) {
+			result := ReadMockResponse
+			return result, nil
+		},
+		"DeleteNormal": func(errorCode string) (map[string]interface{}, error) {
+			result := ReadMockResponse
+			return result, nil
+		},
+		"ReadNormal": func(errorCode string) (map[string]interface{}, error) {
+			result := ReadMockResponse
+			return result, nil
+		},
+		"CreateResponseCode": func(errorCode string) (map[string]interface{}, error) {
+			result := map[string]interface{}{
+				"Code": "Failed",
+			}
+			return result, nil
+		},
+		"UpdateResponse": func(errorCode string) (map[string]interface{}, error) {
+			result := map[string]interface{}{
+				"Success": "false",
+			}
+			return result, nil
+		},
+	}
+	// Create
+	t.Run("CreateClientAbnormal", func(t *testing.T) {
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewBssopenapiClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+			return nil, &tea.SDKError{
+				Code:       String("loadEndpoint error"),
+				Data:       String("loadEndpoint error"),
+				Message:    String("loadEndpoint error"),
+				StatusCode: tea.Int(400),
+			}
+		})
+		err := resourceAliCloudAmqpInstanceCreate(d, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+	t.Run("CreateAbnormal", func(t *testing.T) {
+		retryFlag := true
+		noRetryFlag := true
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["CreateNormal"]("")
+		})
+		err := resourceAliCloudAmqpInstanceCreate(d, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+	t.Run("CreateNormal", func(t *testing.T) {
+		retryFlag := false
+		noRetryFlag := false
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["CreateNormal"]("")
+		})
+		err := resourceAliCloudAmqpInstanceCreate(dCreate, rawClient)
+		patches.Reset()
+		assert.Nil(t, err)
+	})
+
+	t.Run("CreateIsExpectedErrors", func(t *testing.T) {
+		retryFlag := true
+		noRetryFlag := true
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("NotApplicable")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["CreateNormal"]("")
+		})
+		err := resourceAliCloudAmqpInstanceCreate(d, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+
+	t.Run("CreateAttributesSupportEip", func(t *testing.T) {
+		retryFlag := false
+		noRetryFlag := false
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("NotApplicable")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["CreateNormal"]("")
+		})
+		err := resourceAliCloudAmqpInstanceCreate(dCreateMock, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+
+	t.Run("CreateAttributesRenewalStatus", func(t *testing.T) {
+		retryFlag := false
+		noRetryFlag := false
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("NotApplicable")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["CreateNormal"]("")
+		})
+		err := resourceAliCloudAmqpInstanceCreate(dCreateRenewalStatus, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+
+	t.Run("CreateResponseCode", func(t *testing.T) {
+		retryFlag := false
+		noRetryFlag := false
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("NotApplicable")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["CreateResponseCode"]("")
+		})
+		err := resourceAliCloudAmqpInstanceCreate(dCreate, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+
+	// Set ID for Update and Delete Method
+	d.SetId("MockInstanceId")
+	// Update
+	t.Run("UpdateClientAbnormal", func(t *testing.T) {
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewBssopenapiClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+			return nil, &tea.SDKError{
+				Code:       String("loadEndpoint error"),
+				Data:       String("loadEndpoint error"),
+				Message:    String("loadEndpoint error"),
+				StatusCode: tea.Int(400),
+			}
+		})
+
+		err := resourceAliCloudAmqpInstanceUpdate(d, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+
+	t.Run("UpdateInstanceNameAbnormal", func(t *testing.T) {
+		diff := terraform.NewInstanceDiff()
+		for _, key := range []string{"instance_name"} {
+			switch p["alicloud_amqp_instance"].Schema[key].Type {
+			case schema.TypeString:
+				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
+			case schema.TypeBool:
+				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)})
+			case schema.TypeInt:
+				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(3)})
+			case schema.TypeMap:
+				diff.SetAttribute("tags.%", &terraform.ResourceAttrDiff{Old: "0", New: "2"})
+				diff.SetAttribute("tags.For", &terraform.ResourceAttrDiff{Old: "", New: "Test"})
+				diff.SetAttribute("tags.Created", &terraform.ResourceAttrDiff{Old: "", New: "TF"})
+			}
+		}
+		resourceData1, _ := schema.InternalMap(p["alicloud_amqp_instance"].Schema).Data(nil, diff)
+		resourceData1.SetId(d.Id())
+		retryFlag := true
+		noRetryFlag := true
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["UpdateNormal"]("")
+		})
+		err := resourceAliCloudAmqpInstanceUpdate(resourceData1, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+
+	t.Run("UpdateInstanceNameNormal", func(t *testing.T) {
+		diff := terraform.NewInstanceDiff()
+		for _, key := range []string{"instance_name"} {
+			switch p["alicloud_amqp_instance"].Schema[key].Type {
+			case schema.TypeString:
+				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
+			case schema.TypeBool:
+				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)})
+			case schema.TypeInt:
+				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(3)})
+			case schema.TypeMap:
+				diff.SetAttribute("tags.%", &terraform.ResourceAttrDiff{Old: "0", New: "2"})
+				diff.SetAttribute("tags.For", &terraform.ResourceAttrDiff{Old: "", New: "Test"})
+				diff.SetAttribute("tags.Created", &terraform.ResourceAttrDiff{Old: "", New: "TF"})
+			}
+		}
+		resourceData1, _ := schema.InternalMap(p["alicloud_amqp_instance"].Schema).Data(nil, diff)
+		resourceData1.SetId(d.Id())
+		retryFlag := false
+		noRetryFlag := false
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["UpdateNormal"]("")
+		})
+		err := resourceAliCloudAmqpInstanceUpdate(resourceData1, rawClient)
+		patches.Reset()
+		assert.Nil(t, err)
+	})
+
+	t.Run("UpdateInstanceNameResponseAbnormal", func(t *testing.T) {
+		diff := terraform.NewInstanceDiff()
+		for _, key := range []string{"instance_name"} {
+			switch p["alicloud_amqp_instance"].Schema[key].Type {
+			case schema.TypeString:
+				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
+			case schema.TypeBool:
+				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)})
+			case schema.TypeInt:
+				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(3)})
+			case schema.TypeMap:
+				diff.SetAttribute("tags.%", &terraform.ResourceAttrDiff{Old: "0", New: "2"})
+				diff.SetAttribute("tags.For", &terraform.ResourceAttrDiff{Old: "", New: "Test"})
+				diff.SetAttribute("tags.Created", &terraform.ResourceAttrDiff{Old: "", New: "TF"})
+			}
+		}
+		resourceData1, _ := schema.InternalMap(p["alicloud_amqp_instance"].Schema).Data(nil, diff)
+		resourceData1.SetId(d.Id())
+		retryFlag := false
+		noRetryFlag := false
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["UpdateResponse"]("")
+		})
+		err := resourceAliCloudAmqpInstanceUpdate(resourceData1, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+
+	t.Run("UpdateSetRenewalAbnormal", func(t *testing.T) {
+		diff := terraform.NewInstanceDiff()
+		for _, key := range []string{"renewal_status", "renewal_duration", "payment_type", "renewal_duration_unit"} {
+			switch p["alicloud_amqp_instance"].Schema[key].Type {
+			case schema.TypeString:
+				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
+			case schema.TypeBool:
+				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)})
+			case schema.TypeInt:
+				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(3)})
+			case schema.TypeMap:
+				diff.SetAttribute("tags.%", &terraform.ResourceAttrDiff{Old: "0", New: "2"})
+				diff.SetAttribute("tags.For", &terraform.ResourceAttrDiff{Old: "", New: "Test"})
+				diff.SetAttribute("tags.Created", &terraform.ResourceAttrDiff{Old: "", New: "TF"})
+			}
+		}
+		resourceData1, _ := schema.InternalMap(p["alicloud_amqp_instance"].Schema).Data(nil, diff)
+		resourceData1.SetId(d.Id())
+		retryFlag := true
+		noRetryFlag := true
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["UpdateNormal"]("")
+		})
+		err := resourceAliCloudAmqpInstanceUpdate(resourceData1, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+
+	t.Run("UpdateSetRenewalIsExpectedErrors", func(t *testing.T) {
+		diff := terraform.NewInstanceDiff()
+		for _, key := range []string{"renewal_status", "renewal_duration", "payment_type", "renewal_duration_unit"} {
+			switch p["alicloud_amqp_instance"].Schema[key].Type {
+			case schema.TypeString:
+				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
+			case schema.TypeBool:
+				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)})
+			case schema.TypeInt:
+				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(3)})
+			case schema.TypeMap:
+				diff.SetAttribute("tags.%", &terraform.ResourceAttrDiff{Old: "0", New: "2"})
+				diff.SetAttribute("tags.For", &terraform.ResourceAttrDiff{Old: "", New: "Test"})
+				diff.SetAttribute("tags.Created", &terraform.ResourceAttrDiff{Old: "", New: "TF"})
+			}
+		}
+		resourceData1, _ := schema.InternalMap(p["alicloud_amqp_instance"].Schema).Data(nil, diff)
+		resourceData1.SetId(d.Id())
+		retryFlag := true
+		noRetryFlag := true
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("NotApplicable")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["UpdateNormal"]("")
+		})
+		err := resourceAliCloudAmqpInstanceUpdate(resourceData1, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+
+	t.Run("UpdateSetRenewalNormal", func(t *testing.T) {
+		diff := terraform.NewInstanceDiff()
+		for _, key := range []string{"renewal_status", "renewal_duration", "payment_type", "renewal_duration_unit"} {
+			switch p["alicloud_amqp_instance"].Schema[key].Type {
+			case schema.TypeString:
+				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
+			case schema.TypeBool:
+				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)})
+			case schema.TypeInt:
+				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(3)})
+			case schema.TypeMap:
+				diff.SetAttribute("tags.%", &terraform.ResourceAttrDiff{Old: "0", New: "2"})
+				diff.SetAttribute("tags.For", &terraform.ResourceAttrDiff{Old: "", New: "Test"})
+				diff.SetAttribute("tags.Created", &terraform.ResourceAttrDiff{Old: "", New: "TF"})
+			}
+
+		}
+		resourceData1, _ := schema.InternalMap(p["alicloud_amqp_instance"].Schema).Data(nil, diff)
+		resourceData1.SetId(d.Id())
+		retryFlag := false
+		noRetryFlag := false
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["UpdateNormal"]("")
+		})
+		err := resourceAliCloudAmqpInstanceUpdate(resourceData1, rawClient)
+		patches.Reset()
+		assert.Nil(t, err)
+	})
+
+	t.Run("UpdateSetRenewalResponseAbnormal", func(t *testing.T) {
+		diff := terraform.NewInstanceDiff()
+		for _, key := range []string{"renewal_status", "renewal_duration", "payment_type", "renewal_duration_unit"} {
+			switch p["alicloud_amqp_instance"].Schema[key].Type {
+			case schema.TypeString:
+				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
+			case schema.TypeBool:
+				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)})
+			case schema.TypeInt:
+				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(3)})
+			case schema.TypeMap:
+				diff.SetAttribute("tags.%", &terraform.ResourceAttrDiff{Old: "0", New: "2"})
+				diff.SetAttribute("tags.For", &terraform.ResourceAttrDiff{Old: "", New: "Test"})
+				diff.SetAttribute("tags.Created", &terraform.ResourceAttrDiff{Old: "", New: "TF"})
+			}
+
+		}
+		resourceData1, _ := schema.InternalMap(p["alicloud_amqp_instance"].Schema).Data(nil, diff)
+		resourceData1.SetId(d.Id())
+		retryFlag := false
+		noRetryFlag := false
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["UpdateResponse"]("")
+		})
+		err := resourceAliCloudAmqpInstanceUpdate(resourceData1, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+
+	t.Run("UpdateModifyInstanceAbnormal", func(t *testing.T) {
+		diff := terraform.NewInstanceDiff()
+		for _, key := range []string{"max_tps", "payment_type", "queue_capacity", "support_eip", "max_eip_tps", "support_eip", "storage_size", "modify_type"} {
+			switch p["alicloud_amqp_instance"].Schema[key].Type {
+			case schema.TypeString:
+				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
+			case schema.TypeBool:
+				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)})
+			case schema.TypeInt:
+				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(3)})
+			case schema.TypeMap:
+				diff.SetAttribute("tags.%", &terraform.ResourceAttrDiff{Old: "0", New: "2"})
+				diff.SetAttribute("tags.For", &terraform.ResourceAttrDiff{Old: "", New: "Test"})
+				diff.SetAttribute("tags.Created", &terraform.ResourceAttrDiff{Old: "", New: "TF"})
+			}
+		}
+		resourceData1, _ := schema.InternalMap(p["alicloud_amqp_instance"].Schema).Data(nil, diff)
+		resourceData1.SetId(d.Id())
+		retryFlag := true
+		noRetryFlag := true
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "SetRenewal" {
+				return responseMock["UpdateNormal"]("")
+			}
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["UpdateNormal"]("")
+		})
+		err := resourceAliCloudAmqpInstanceUpdate(resourceData1, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+
+	t.Run("UpdateModifyInstanceNormal", func(t *testing.T) {
+		diff := terraform.NewInstanceDiff()
+		for _, key := range []string{"max_tps", "payment_type", "queue_capacity", "support_eip", "max_eip_tps", "support_eip", "storage_size", "modify_type"} {
+			switch p["alicloud_amqp_instance"].Schema[key].Type {
+			case schema.TypeString:
+				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
+			case schema.TypeBool:
+				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)})
+			case schema.TypeInt:
+				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(3)})
+			case schema.TypeMap:
+				diff.SetAttribute("tags.%", &terraform.ResourceAttrDiff{Old: "0", New: "2"})
+				diff.SetAttribute("tags.For", &terraform.ResourceAttrDiff{Old: "", New: "Test"})
+				diff.SetAttribute("tags.Created", &terraform.ResourceAttrDiff{Old: "", New: "TF"})
+			}
+		}
+		resourceData1, _ := schema.InternalMap(p["alicloud_amqp_instance"].Schema).Data(nil, diff)
+		resourceData1.SetId(d.Id())
+		retryFlag := false
+		noRetryFlag := false
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["UpdateNormal"]("")
+		})
+		err := resourceAliCloudAmqpInstanceUpdate(resourceData1, rawClient)
+		patches.Reset()
+		assert.Nil(t, err)
+	})
+
+	t.Run("UpdateResponseAbnormal", func(t *testing.T) {
+		diff := terraform.NewInstanceDiff()
+		for _, key := range []string{"max_tps", "payment_type", "queue_capacity", "support_eip", "max_eip_tps", "support_eip", "storage_size", "modify_type"} {
+			switch p["alicloud_amqp_instance"].Schema[key].Type {
+			case schema.TypeString:
+				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
+			case schema.TypeBool:
+				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)})
+			case schema.TypeInt:
+				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(3)})
+			case schema.TypeMap:
+				diff.SetAttribute("tags.%", &terraform.ResourceAttrDiff{Old: "0", New: "2"})
+				diff.SetAttribute("tags.For", &terraform.ResourceAttrDiff{Old: "", New: "Test"})
+				diff.SetAttribute("tags.Created", &terraform.ResourceAttrDiff{Old: "", New: "TF"})
+			}
+		}
+		resourceData1, _ := schema.InternalMap(p["alicloud_amqp_instance"].Schema).Data(nil, diff)
+		resourceData1.SetId(d.Id())
+		retryFlag := false
+		noRetryFlag := false
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "SetRenewal" {
+				return responseMock["UpdateNormal"]("")
+			}
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["UpdateResponse"]("")
+		})
+		err := resourceAliCloudAmqpInstanceUpdate(resourceData1, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+
+	t.Run("UpdateModifyInstanceIsExpectedErrors", func(t *testing.T) {
+		diff := terraform.NewInstanceDiff()
+		for _, key := range []string{"max_tps", "payment_type", "queue_capacity", "support_eip", "max_eip_tps", "support_eip", "storage_size", "modify_type"} {
+			switch p["alicloud_amqp_instance"].Schema[key].Type {
+			case schema.TypeString:
+				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
+			case schema.TypeBool:
+				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)})
+			case schema.TypeInt:
+				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(3)})
+			case schema.TypeMap:
+				diff.SetAttribute("tags.%", &terraform.ResourceAttrDiff{Old: "0", New: "2"})
+				diff.SetAttribute("tags.For", &terraform.ResourceAttrDiff{Old: "", New: "Test"})
+				diff.SetAttribute("tags.Created", &terraform.ResourceAttrDiff{Old: "", New: "TF"})
+			}
+		}
+		resourceData1, _ := schema.InternalMap(p["alicloud_amqp_instance"].Schema).Data(nil, diff)
+		resourceData1.SetId(d.Id())
+		retryFlag := true
+		noRetryFlag := true
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "SetRenewal" {
+				return responseMock["UpdateNormal"]("")
+			}
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("NotApplicable")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["UpdateNormal"]("")
+		})
+		err := resourceAliCloudAmqpInstanceUpdate(resourceData1, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+
+	t.Run("UpdateAttributesSupportEip", func(t *testing.T) {
+		diff := terraform.NewInstanceDiff()
+		diff.SetAttribute("support_eip", &terraform.ResourceAttrDiff{Old: "false", New: "true"})
+		resourceData1, _ := schema.InternalMap(p["alicloud_amqp_instance"].Schema).Data(nil, diff)
+		resourceData1.SetId(d.Id())
+		retryFlag := true
+		noRetryFlag := true
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("NotApplicable")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["UpdateNormal"]("")
+		})
+		err := resourceAliCloudAmqpInstanceUpdate(resourceData1, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+
+	// Delete
+	t.Run("DeleteNormal", func(t *testing.T) {
+		err := resourceAliCloudAmqpInstanceDelete(d, rawClient)
+		assert.Nil(t, err)
+	})
+
+	//Read
+	t.Run("ReadDescribeAmqpInstanceNotFound", func(t *testing.T) {
+		patcheDorequest := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			NotFoundFlag := true
+			noRetryFlag := false
+			if NotFoundFlag {
+				return responseMock["NotFoundError"]("ResourceNotfound")
+			} else if noRetryFlag {
+				return responseMock["NoRetryError"]("NoRetryError")
+			}
+			return responseMock["ReadNormal"]("")
+		})
+		err := resourceAliCloudAmqpInstanceRead(d, rawClient)
+		patcheDorequest.Reset()
+		assert.Nil(t, err)
+	})
+
+	t.Run("ReadDescribeAmqpInstanceAbnormal", func(t *testing.T) {
+		patcheDorequest := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			retryFlag := false
+			noRetryFlag := true
+			if retryFlag {
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["ReadNormal"]("")
+		})
+		err := resourceAliCloudAmqpInstanceRead(d, rawClient)
+		patcheDorequest.Reset()
+		assert.NotNil(t, err)
+	})
+}
+
+func TestUnitAliCloudAmqpInstanceEncryption(t *testing.T) {
+	resourceSchema := resourceAliCloudAmqpInstance()
+	assert.True(t, resourceSchema.Schema["encrypted_instance"].Optional)
+	assert.True(t, resourceSchema.Schema["encrypted_instance"].Computed)
+	assert.True(t, resourceSchema.Schema["encrypted_instance"].ForceNew)
+	assert.True(t, resourceSchema.Schema["kms_key_id"].Optional)
+	assert.False(t, resourceSchema.Schema["kms_key_id"].Computed)
+	assert.True(t, resourceSchema.Schema["kms_key_id"].ForceNew)
+	assert.False(t, resourceSchema.Schema["edition"].ForceNew)
+	serverlessChargeTypeValidate := resourceSchema.Schema["serverless_charge_type"].ValidateFunc
+	assert.NotNil(t, serverlessChargeTypeValidate)
+	_, validationErrors := serverlessChargeTypeValidate("onDemand", "serverless_charge_type")
+	assert.Empty(t, validationErrors)
+	_, validationErrors = serverlessChargeTypeValidate("provisioned", "serverless_charge_type")
+	assert.Empty(t, validationErrors)
+	_, validationErrors = serverlessChargeTypeValidate("invalid", "serverless_charge_type")
+	assert.NotEmpty(t, validationErrors)
+
+	newData := func(values map[string]interface{}) *schema.ResourceData {
+		return schema.TestResourceDataRaw(t, resourceSchema.Schema, values)
+	}
+
+	for name, values := range map[string]map[string]interface{}{
+		"vip": {
+			"payment_type":       "Subscription",
+			"instance_type":      "vip",
+			"encrypted_instance": true,
+			"kms_key_id":         "MockKmsKeyId",
+		},
+		"serverless provisioned dedicated": {
+			"payment_type":           "PayAsYouGo",
+			"serverless_charge_type": "provisioned",
+			"edition":                "dedicated",
+			"encrypted_instance":     true,
+			"kms_key_id":             "MockKmsKeyId",
+		},
+	} {
+		t.Run("valid "+name, func(t *testing.T) {
+			request := make(map[string]interface{})
+			assert.NoError(t, addAmqpInstanceEncryptionCreateRequest(newData(values), request))
+			assert.Equal(t, true, request["EncryptedInstance"])
+			assert.Equal(t, "MockKmsKeyId", request["KmsKeyId"])
+		})
+	}
+
+	t.Run("encryption arguments omitted", func(t *testing.T) {
+		request := make(map[string]interface{})
+		assert.NoError(t, addAmqpInstanceEncryptionCreateRequest(newData(map[string]interface{}{
+			"payment_type":  "PayAsYouGo",
+			"instance_type": "enterprise",
+			"edition":       "shared",
+		}), request))
+		assert.NotContains(t, request, "EncryptedInstance")
+		assert.NotContains(t, request, "KmsKeyId")
+	})
+
+	t.Run("encryption explicitly disabled", func(t *testing.T) {
+		request := make(map[string]interface{})
+		assert.NoError(t, addAmqpInstanceEncryptionCreateRequest(newData(map[string]interface{}{
+			"payment_type":       "PayAsYouGo",
+			"instance_type":      "enterprise",
+			"edition":            "shared",
+			"encrypted_instance": false,
+		}), request))
+		assert.Equal(t, false, request["EncryptedInstance"])
+		assert.NotContains(t, request, "KmsKeyId")
+	})
+
+	for name, testCase := range map[string]struct {
+		values map[string]interface{}
+		err    string
+	}{
+		"missing key": {
+			values: map[string]interface{}{
+				"payment_type":       "Subscription",
+				"instance_type":      "vip",
+				"encrypted_instance": true,
+			},
+			err: "kms_key_id must be configured when encrypted_instance is true",
+		},
+		"blank key": {
+			values: map[string]interface{}{
+				"payment_type":       "Subscription",
+				"instance_type":      "vip",
+				"encrypted_instance": true,
+				"kms_key_id":         "  ",
+			},
+			err: "kms_key_id must be configured when encrypted_instance is true",
+		},
+		"key without encryption": {
+			values: map[string]interface{}{
+				"payment_type":       "Subscription",
+				"instance_type":      "vip",
+				"encrypted_instance": false,
+				"kms_key_id":         "MockKmsKeyId",
+			},
+			err: "encrypted_instance must be true when kms_key_id is configured",
+		},
+	} {
+		t.Run("invalid "+name, func(t *testing.T) {
+			assert.EqualError(t, addAmqpInstanceEncryptionCreateRequest(newData(testCase.values), make(map[string]interface{})), testCase.err)
+		})
+	}
+
+	for name, values := range map[string]map[string]interface{}{
+		"subscription enterprise dedicated": {
+			"payment_type":       "Subscription",
+			"instance_type":      "enterprise",
+			"edition":            "dedicated",
+			"encrypted_instance": true,
+			"kms_key_id":         "MockKmsKeyId",
+		},
+		"pay as you go on demand dedicated": {
+			"payment_type":           "PayAsYouGo",
+			"serverless_charge_type": "onDemand",
+			"edition":                "dedicated",
+			"encrypted_instance":     true,
+			"kms_key_id":             "MockKmsKeyId",
+		},
+		"pay as you go provisioned shared": {
+			"payment_type":           "PayAsYouGo",
+			"serverless_charge_type": "provisioned",
+			"edition":                "shared",
+			"encrypted_instance":     true,
+			"kms_key_id":             "MockKmsKeyId",
+		},
+		"subscription provisioned dedicated": {
+			"payment_type":           "Subscription",
+			"serverless_charge_type": "provisioned",
+			"edition":                "dedicated",
+			"encrypted_instance":     true,
+			"kms_key_id":             "MockKmsKeyId",
+		},
+	} {
+		t.Run("passes through "+name, func(t *testing.T) {
+			request := make(map[string]interface{})
+			assert.NoError(t, addAmqpInstanceEncryptionCreateRequest(newData(values), request))
+			assert.Equal(t, true, request["EncryptedInstance"])
+			assert.Equal(t, "MockKmsKeyId", request["KmsKeyId"])
+		})
+	}
+}
+
+// Case 创建serverless实例 6128
+func TestAccAliCloudAmqpInstanceResource_basic6128(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_amqp_instance.default"
+	ra := resourceAttrInit(resourceId, AliCloudAmqpInstanceMap6128)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &AmqpServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAmqpInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%samqpinstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAmqpInstanceBasicDependence6128)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":           "PayAsYouGo",
+					"vpc_id":                 "${data.alicloud_vswitches.default.vpc_id}",
+					"vswitch_ids":            []string{"${data.alicloud_vswitches.default.ids.0}", "${data.alicloud_vswitches.default.ids.1}"},
+					"security_group_id":      "${data.alicloud_security_groups.default.ids.0}",
+					"serverless_charge_type": "onDemand",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type":      "PayAsYouGo",
+						"vpc_id":            CHECKSET,
+						"vswitch_ids.#":     "2",
+						"security_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"serverless_charge_type": "provisioned",
+					"provisioned_capacity":   "2000",
+					"modify_type":            "Upgrade",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"provisioned_capacity": "2000",
+					}),
+				),
+			},
+			// Modifying Edition between shared <-> dedicated requires migrating the
+			// instance cluster. Re-asserting the auto-assigned value ("shared", which
+			// AMQP sets when the instance enters PROVISIONED_AND_SERVERLESS mode in
+			// the step above) keeps the edition attribute in the lifecycle for
+			// coverage purposes without triggering a real reconfiguration.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"edition": "shared",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"edition": "shared",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"provisioned_capacity": "20000",
+					"modify_type":          "Upgrade",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"provisioned_capacity": "20000",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"support_eip": "true",
+					"modify_type": "Upgrade",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"support_eip": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"support_tracing": "true",
+					"modify_type":     "Upgrade",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"support_tracing": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "1",
+						"tags.Created": "TF-update",
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"serverless_switch": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"serverless_switch": "true",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auth_model", "auto_renew", "modify_type", "period", "period_cycle", "serverless_charge_type", "renewal_duration", "renewal_duration_unit", "renewal_status"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudAmqpInstanceResource_basic6128_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_amqp_instance.default"
+	ra := resourceAttrInit(resourceId, AliCloudAmqpInstanceMap6128)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &AmqpServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAmqpInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%samqpinstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAmqpInstanceBasicDependence6128)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":           "PayAsYouGo",
+					"vpc_id":                 "${data.alicloud_vswitches.default.vpc_id}",
+					"vswitch_ids":            []string{"${data.alicloud_vswitches.default.ids.0}", "${data.alicloud_vswitches.default.ids.1}"},
+					"security_group_id":      "${data.alicloud_security_groups.default.ids.0}",
+					"auth_model":             "ram",
+					"serverless_charge_type": "provisioned",
+					"serverless_switch":      "true",
+					"provisioned_capacity":   "20000",
+					"edition":                "dedicated",
+					"instance_name":          name,
+					"support_eip":            "true",
+					"support_tracing":        "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type":         "PayAsYouGo",
+						"vpc_id":               CHECKSET,
+						"vswitch_ids.#":        "2",
+						"security_group_id":    CHECKSET,
+						"auth_model":           "ram",
+						"provisioned_capacity": "20000",
+						"edition":              "dedicated",
+						"instance_name":        name,
+						"support_eip":          "true",
+						"support_tracing":      "true",
+						"serverless_switch":    "true",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auth_model", "auto_renew", "modify_type", "period", "period_cycle", "serverless_charge_type", "renewal_duration", "renewal_duration_unit", "renewal_status"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudAmqpInstanceResource_encryptedServerlessDedicatedCreate(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_amqp_instance.default"
+	ra := resourceAttrInit(resourceId, AliCloudAmqpInstanceMap6128)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &AmqpServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAmqpInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%samqpencrypted%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAmqpInstanceEncryptedDependence6128)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+			testAccEnsureAmqpEncryptionServiceLinkedRole(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":           "PayAsYouGo",
+					"vpc_id":                 "${data.alicloud_vswitches.default.vpc_id}",
+					"vswitch_ids":            []string{"${data.alicloud_vswitches.default.ids.0}", "${data.alicloud_vswitches.default.ids.1}"},
+					"security_group_id":      "${data.alicloud_security_groups.default.ids.0}",
+					"serverless_charge_type": "provisioned",
+					"provisioned_capacity":   "20000",
+					"edition":                "dedicated",
+					"instance_name":          name,
+					"encrypted_instance":     true,
+					"kms_key_id":             "${alicloud_kms_key.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type":           "PayAsYouGo",
+						"vpc_id":                 CHECKSET,
+						"vswitch_ids.#":          "2",
+						"security_group_id":      CHECKSET,
+						"serverless_charge_type": "provisioned",
+						"provisioned_capacity":   "20000",
+						"edition":                "dedicated",
+						"instance_name":          name,
+						"encrypted_instance":     "true",
+						"kms_key_id":             CHECKSET,
+					}),
+					resource.TestCheckResourceAttrPair(resourceId, "kms_key_id", "alicloud_kms_key.default", "id"),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auth_model", "auto_renew", "modify_type", "period", "period_cycle", "serverless_charge_type", "renewal_duration", "renewal_duration_unit", "renewal_status"},
+			},
+		},
+	})
+}
+
+func testAccEnsureAmqpEncryptionServiceLinkedRole(t *testing.T) {
+	t.Helper()
+
+	const (
+		serviceName = "encrypt.amqp.aliyuncs.com"
+		roleID      = serviceName + ":AliyunServiceRoleForAmqpEncrypt"
+	)
+
+	rawClient, err := sharedClientForRegion(defaultRegionToTest)
+	if err != nil {
+		t.Fatalf("failed to get Alibaba Cloud client: %s", err)
+	}
+	aliyunClient := rawClient.(*connectivity.AliyunClient)
+	ramService := RamService{aliyunClient}
+	if _, err = ramService.DescribeRamServiceLinkedRole(roleID); err == nil {
+		return
+	} else if !NotFoundError(err) && !IsExpectedErrors(err, []string{"EntityNotExist.Role"}) {
+		t.Fatalf("failed to describe AMQP encryption service-linked role: %s", err)
+	}
+
+	request := map[string]interface{}{"ServiceName": serviceName}
+	if _, err = aliyunClient.RpcPost("ResourceManager", "2020-03-31", "CreateServiceLinkedRole", nil, request, true); err != nil &&
+		!IsExpectedErrors(err, []string{"AlreadyExists", "EntityAlreadyExists"}) {
+		t.Fatalf("failed to create AMQP encryption service-linked role: %s", err)
+	}
+
+	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+		if _, describeErr := ramService.DescribeRamServiceLinkedRole(roleID); describeErr != nil {
+			if NotFoundError(describeErr) || IsExpectedErrors(describeErr, []string{"EntityNotExist.Role"}) {
+				return resource.RetryableError(describeErr)
+			}
+			return resource.NonRetryableError(describeErr)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("AMQP encryption service-linked role did not become available: %s", err)
+	}
+}
+
+var AliCloudAmqpInstanceMap6128 = map[string]string{
+	"status":        CHECKSET,
+	"create_time":   CHECKSET,
+	"instance_name": CHECKSET,
+}
+
+func AliCloudAmqpInstanceBasicDependence6128(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+    	default = "%s"
+	}
+
+	data "alicloud_vpcs" "default" {
+  		name_regex = "default-NODELETING"
+	}
+
+	data "alicloud_vswitches" "default" {
+  		vpc_id     = data.alicloud_vpcs.default.ids.0
+  		name_regex = "^default-NODELETING-ACK-switch"
+	}
+
+	data "alicloud_security_groups" "default" {
+  		vpc_id     = data.alicloud_vpcs.default.ids.0
+  		name_regex = "^sae"
+	}
+`, name)
+}
+
+func AliCloudAmqpInstanceEncryptedDependence6128(name string) string {
+	return AliCloudAmqpInstanceBasicDependence6128(name) + `
+	resource "alicloud_kms_key" "default" {
+		description            = "terraform-provider-alicloud AMQP acceptance test"
+		pending_window_in_days = 7
+	}
+`
+}
+
+// Test Amqp Instance. >>> Resource test cases, automatically generated.
+// Case 创建企业版实例5 11166
+func TestAccAliCloudAmqpInstanceResource_basic11166(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_amqp_instance.default"
+	ra := resourceAttrInit(resourceId, AliCloudAmqpInstanceMap11166)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &AmqpServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAmqpInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccamqp%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAmqpInstanceBasicDependence11166)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":      "Subscription",
+					"vpc_id":            "${data.alicloud_vswitches.default.vpc_id}",
+					"vswitch_ids":       []string{"${data.alicloud_vswitches.default.ids.0}", "${data.alicloud_vswitches.default.ids.1}"},
+					"security_group_id": "${data.alicloud_security_groups.default.ids.0}",
+					"instance_type":     "enterprise",
+					"max_tps":           "3000",
+					"max_connections":   "2000",
+					"queue_capacity":    "200",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type":      "Subscription",
+						"vpc_id":            CHECKSET,
+						"vswitch_ids.#":     "2",
+						"security_group_id": CHECKSET,
+						"instance_type":     "enterprise",
+						"max_tps":           "3000",
+						"max_connections":   "2000",
+						"queue_capacity":    "200",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_type":   "vip",
+					"max_tps":         "8000",
+					"max_connections": "50000",
+					"queue_capacity":  "10000",
+					"modify_type":     "Upgrade",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_type":   "vip",
+						"max_tps":         "8000",
+						"max_connections": "50000",
+						"queue_capacity":  "10000",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"max_connections": "51000",
+					"modify_type":     "Upgrade",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"max_connections": "51000",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"support_eip": "true",
+					"modify_type": "Upgrade",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"support_eip": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"max_eip_tps": "256",
+					"modify_type": "Upgrade",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"max_eip_tps": "256",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"max_tps":     "15000",
+					"modify_type": "Upgrade",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"max_tps": "15000",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"queue_capacity": "11000",
+					"modify_type":    "Upgrade",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"queue_capacity": "11000",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"renewal_status":        "AutoRenewal",
+					"renewal_duration":      "1",
+					"renewal_duration_unit": "Year",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"renewal_status":        "AutoRenewal",
+						"renewal_duration":      "1",
+						"renewal_duration_unit": "Year",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"storage_size": "800",
+					"modify_type":  "Upgrade",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"storage_size": "800",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"support_tracing":      "true",
+					"tracing_storage_time": "15",
+					"modify_type":          "Upgrade",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"support_tracing":      "true",
+						"tracing_storage_time": "15",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auth_model", "auto_renew", "modify_type", "period", "period_cycle", "serverless_charge_type"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudAmqpInstanceResource_basic11166_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_amqp_instance.default"
+	ra := resourceAttrInit(resourceId, AliCloudAmqpInstanceMap11166)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &AmqpServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAmqpInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccamqp%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAmqpInstanceBasicDependence11166)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":          "Subscription",
+					"vpc_id":                "${data.alicloud_vswitches.default.vpc_id}",
+					"vswitch_ids":           []string{"${data.alicloud_vswitches.default.ids.0}", "${data.alicloud_vswitches.default.ids.1}"},
+					"security_group_id":     "${data.alicloud_security_groups.default.ids.0}",
+					"auth_model":            "openSource",
+					"auto_renew":            "true",
+					"period":                "1",
+					"period_cycle":          "Year",
+					"instance_type":         "vip",
+					"listener_mode":         "ssl_only",
+					"max_tps":               "8000",
+					"max_connections":       "50000",
+					"queue_capacity":        "10000",
+					"instance_name":         name,
+					"support_eip":           "true",
+					"max_eip_tps":           "128",
+					"renewal_status":        "AutoRenewal",
+					"renewal_duration":      "1",
+					"renewal_duration_unit": "Year",
+					"storage_size":          "800",
+					"support_tracing":       "true",
+					"tracing_storage_time":  "15",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type":          "Subscription",
+						"vpc_id":                CHECKSET,
+						"vswitch_ids.#":         "2",
+						"security_group_id":     CHECKSET,
+						"auth_model":            "openSource",
+						"instance_type":         "vip",
+						"listener_mode":         "ssl_only",
+						"max_tps":               "8000",
+						"max_connections":       "50000",
+						"queue_capacity":        "10000",
+						"instance_name":         name,
+						"support_eip":           "true",
+						"max_eip_tps":           "128",
+						"renewal_status":        "AutoRenewal",
+						"renewal_duration":      "1",
+						"renewal_duration_unit": "Year",
+						"storage_size":          "800",
+						"support_tracing":       "true",
+						"tracing_storage_time":  "15",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auth_model", "auto_renew", "modify_type", "period", "period_cycle", "serverless_charge_type"},
+			},
+		},
+	})
+}
+
+var AliCloudAmqpInstanceMap11166 = map[string]string{
+	"status":               CHECKSET,
+	"create_time":          CHECKSET,
+	"instance_name":        CHECKSET,
+	"renewal_status":       CHECKSET,
+	"tracing_storage_time": CHECKSET,
+}
+
+func AliCloudAmqpInstanceBasicDependence11166(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+    	default = "%s"
+	}
+
+	data "alicloud_vpcs" "default" {
+  		name_regex = "default-NODELETING"
+	}
+
+	data "alicloud_vswitches" "default" {
+  		vpc_id     = data.alicloud_vpcs.default.ids.0
+  		name_regex = "^default-NODELETING-ACK-switch"
+	}
+
+	data "alicloud_security_groups" "default" {
+  		vpc_id     = data.alicloud_vpcs.default.ids.0
+  		name_regex = "^sae"
+	}
+`, name)
+}
