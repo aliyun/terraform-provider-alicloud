@@ -1,4 +1,10 @@
 ## 1.291.0 (Unreleased)
+
+- **New Resource:** `alicloud_apig_consumer`
+- **New Resource:** `alicloud_apig_policy`
+- **New Resource:** `alicloud_apig_consumer_authorization_rules`
+- **New Resource:** `alicloud_apig_http_api_deployment`
+
 ## 1.290.0 (August 25, 2026)
 
 - **New Resource:** `alicloud_mongodb_sharding_audit_filter` ([#10259](https://github.com/aliyun/terraform-provider-alicloud/issues/10259))
