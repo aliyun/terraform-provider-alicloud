@@ -138,6 +138,21 @@ func resourceAliCloudAlikafkaSaslAclCreate(d *schema.ResourceData, meta interfac
 
 	d.SetId(fmt.Sprintf("%v:%v:%v:%v:%v:%v", request["InstanceId"], request["Username"], request["AclResourceType"], request["AclResourceName"], request["AclResourcePatternType"], request["AclOperationType"]))
 
+	// DescribeAcls is eventually consistent: after CreateAcl returns, the Kafka
+	// backend may need tens of seconds before the new ACL shows up in DescribeAcls
+	// results (an empty KafkaAclVO list, which the service maps to NotFound).
+	// Wait for the ACL to become queryable before the first Read; otherwise batch
+	// creation with for_each intermittently fails with ResourceNotfound when the
+	// post-Create Read races ahead of the backend sync. AlikafkaSaslAclStateRefreshFunc
+	// treats the not-yet-synced (empty list) state as pending, so WaitForState polls
+	// until the ACL is readable. Real delete/not-found semantics in Read are
+	// preserved because that path is only reached when d.IsNewResource() is false.
+	alikafkaServiceV2 := AlikafkaServiceV2{client}
+	stateConf := BuildStateConf([]string{""}, []string{"#CHECKSET"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, alikafkaServiceV2.AlikafkaSaslAclStateRefreshFunc(d.Id(), "#AclOperationType", []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+
 	return resourceAliCloudAlikafkaSaslAclRead(d, meta)
 }
 
