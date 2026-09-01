@@ -527,8 +527,11 @@ func (s *Fcv3ServiceV2) DescribeFcv3ProvisionConfig(id string) (object map[strin
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
-	currentStatus := response["target"]
-	if currentStatus == "0" {
+	// FC does not return 404 once the provision config is deleted; instead it
+	// responds 200 with an empty object whose functionArn is blank. A live
+	// provision config always carries its functionArn, even while deletion is
+	// still in progress (target zeroed first).
+	if response["functionArn"] == nil || fmt.Sprint(response["functionArn"]) == "" {
 		return object, WrapErrorf(NotFoundErr("ProvisionConfig", id), NotFoundMsg, response)
 	}
 
