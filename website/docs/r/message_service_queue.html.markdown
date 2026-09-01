@@ -48,6 +48,10 @@ resource "alicloud_message_service_queue" "default" {
 The following arguments are supported:
 * `delay_seconds` - (Optional, Int) The period after which all messages sent to the queue are consumed. Default value: `0`. Valid values: `0` to `604800`. Unit: seconds.
 * `dlq_policy` - (Optional, Set, Available since v1.244.0) The dead-letter queue policy. See [`dlq_policy`](#dlq_policy) below.
+* `enable_sse` - (Optional, Bool, Available since v1.291.0) Specifies whether to enable server-side encryption (SSE) for the messages in the queue. Default value: `false`. Valid values:
+  - `true`: Enable.
+  - `false`: Disable.
+* `kms_key_id` - (Optional, Available since v1.291.0) The ID of the customer master key (CMK) in Key Management Service (KMS). This parameter is required when `sse_type` is set to `KMS`.
 * `logging_enabled` - (Optional, Bool) Specifies whether to enable the logging feature. Default value: `false`. Valid values:
   - `true`: Enable.
   - `false`: Disable.
@@ -58,8 +62,16 @@ The following arguments are supported:
 * `queue_type` - (Optional, ForceNew, Available since v1.283.0) The type of the queue. Default value: `normal`. Valid values:
   - `normal`: Standard queue.
   - `fifo`: FIFO queue.
+* `sse_algorithm` - (Optional, Available since v1.291.0) The encryption algorithm that is used to encrypt the messages in the queue. Valid value: `AES-256-GCM`.
+* `sse_type` - (Optional, Available since v1.291.0) The type of server-side encryption (SSE). Valid values:
+  - `SMQ`: The keys that are managed by Message Service are used to encrypt and decrypt messages.
+  - `KMS`: The customer master key (CMK) that is managed by Key Management Service (KMS) is used to encrypt and decrypt messages.
 * `tags` - (Optional, Map, Available since v1.241.0) A mapping of tags to assign to the resource.
 * `visibility_timeout` - (Optional, Int) The duration for which a message stays in the Inactive state after the message is received from the queue. Valid values: `1` to `43200`. Unit: seconds. Default value: `30`.
+
+-> **NOTE:** Server-side encryption (SSE) is available only after the feature is enabled for your account. To enable the feature, submit a ticket. Before you set `sse_type` to `KMS`, make sure that a symmetric key of the AES-256 key spec is created in KMS in the same region and within the same account as the queue, and that the service-linked role `AliyunMNSAccessingKMSRole` is authorized.
+
+-> **NOTE:** To disable SSE, you must set `enable_sse` to `false` and remove `sse_type`, `sse_algorithm`, and `kms_key_id` from the configuration at the same time. SSE takes effect only on the messages that are sent after SSE is enabled or disabled, and existing messages are not encrypted or decrypted again.
 
 ### `dlq_policy`
 
@@ -73,6 +85,7 @@ The dlq_policy supports the following:
 The following attributes are exported:
 * `id` - The resource ID in terraform of Queue.
 * `create_time` - (Available since v1.223.2) The time when the queue was created.
+* `encryption_enabled` - (Available since v1.291.0) Indicates whether server-side encryption is applied to the queue. The value remains `true` after server-side encryption is disabled because existing messages are still stored as encrypted.
 
 ## Timeouts
 

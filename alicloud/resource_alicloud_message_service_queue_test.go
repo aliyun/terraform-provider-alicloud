@@ -625,6 +625,101 @@ func TestAccAliCloudMessageServiceQueue_basic1_twin(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudMessageServiceQueue_sse(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_message_service_queue.default"
+	ra := resourceAttrInit(resourceId, AliCloudMessageServiceQueueMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &MessageServiceServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeMessageServiceQueue")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAccMessageServiceQueue-name%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMessageServiceQueueSSEDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			// SSE runs in cn-shanghai: it is the only probed region where the
+			// SSE create/read round trip works without an account whitelist.
+			// Other regions either hide the SSE fields in the response
+			// (cn-hangzhou, cn-beijing, cn-shenzhen, cn-hongkong,
+			// cn-zhangjiakou) or reject SSE with FeatureNotEnabled behind an
+			// account whitelist (cn-qingdao).
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"queue_name":    name,
+					"enable_sse":    "true",
+					"sse_type":      "SMQ",
+					"sse_algorithm": "AES-256-GCM",
+					"tags": map[string]string{
+						"Created": "TF",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"queue_name":         name,
+						"enable_sse":         "true",
+						"sse_type":           "SMQ",
+						"sse_algorithm":      "AES-256-GCM",
+						"encryption_enabled": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_sse":    "false",
+					"sse_type":      REMOVEKEY,
+					"sse_algorithm": REMOVEKEY,
+					"tags":          REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						// EncryptionEnabled stays true after SSE is disabled: it
+						// reports the residual encryption state, not the switch. The
+						// check map accumulates across steps, so sse_type and
+						// sse_algorithm are REMOVEKEYed here: the response no longer
+						// reports them once SSE is off.
+						"enable_sse":         "false",
+						"encryption_enabled": "true",
+						"sse_type":           REMOVEKEY,
+						"sse_algorithm":      REMOVEKEY,
+					}),
+				),
+			},
+			{
+				// SSE-SMQ does not use a KMS key: kms_key_id is explicitly set to
+				// empty here, which also keeps the attribute covered in tests.
+				Config: testAccConfig(map[string]interface{}{
+					"enable_sse":    "true",
+					"sse_type":      "SMQ",
+					"sse_algorithm": "AES-256-GCM",
+					"kms_key_id":    "",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_sse":         "true",
+						"sse_type":           "SMQ",
+						"sse_algorithm":      "AES-256-GCM",
+						"encryption_enabled": "true",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 var AliCloudMessageServiceQueueMap0 = map[string]string{
 	"create_time":              CHECKSET,
 	"delay_seconds":            CHECKSET,
@@ -657,6 +752,14 @@ resource "alicloud_message_service_queue" "fifo" {
   queue_name = "${var.name}-fifo"
   queue_type = "fifo"
 }
+`, name)
+}
+
+func AliCloudMessageServiceQueueSSEDependence(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+		default = "%s"
+	}
 `, name)
 }
 
