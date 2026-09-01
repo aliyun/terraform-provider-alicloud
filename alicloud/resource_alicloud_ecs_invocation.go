@@ -44,10 +44,11 @@ func resourceAlicloudEcsInvocation() *schema.Resource {
 				ValidateFunc: validation.StringInSlice([]string{"Once", "Period", "NextRebootOnly", "EveryReboot"}, false),
 			},
 			"timed": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				ForceNew: true,
-				Computed: true,
+				Type:       schema.TypeBool,
+				Optional:   true,
+				ForceNew:   true,
+				Computed:   true,
+				Deprecated: "Timed is deprecated. Use repeat_mode=Period with frequency instead.",
 			},
 			"frequency": {
 				Type:     schema.TypeString,

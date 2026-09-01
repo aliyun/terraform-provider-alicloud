@@ -104,11 +104,11 @@ The following arguments are supported:
 
 * `command_id` - (Required, ForceNew) The ID of the command.
 * `instance_id` - (Required, ForceNew) The list of instances to execute the command. You can specify up to 50 instance IDs.
-* `repeat_mode` - (Optional, ForceNew, Computed) Specifies how to run the command. Valid values: `Once`, `Period`, `NextRebootOnly`, `EveryReboot`. Default value: When `timed` is set to false and Frequency is not specified, the default value of `repeat_mode` is `Once`. When `Timed` is set to true and Frequency is specified, `period` is used as the value of RepeatMode regardless of whether `repeat_mode` is specified.
-* `timed` - (Optional, ForceNew, Computed) Specifies whether to periodically run the command. Default value: `false`.
+* `repeat_mode` - (Optional, ForceNew, Computed) Specifies how to run the command. Valid values: `Once`, `Period`, `NextRebootOnly`, `EveryReboot`. Default value: When `frequency` is not specified, the default value of `repeat_mode` is `Once`. When `frequency` is specified, `Period` is used as the value of `repeat_mode` regardless of whether `repeat_mode` is specified.
+* `timed` - (Optional, ForceNew, Computed, **Deprecated**) `timed` is deprecated and ignored by the API. Use `repeat_mode` set to `Period` together with `frequency` to schedule recurring execution. The field is retained only for backward compatibility.
 * `frequency` - (Optional, ForceNew) The schedule on which the recurring execution of the command takes place. Take note of the following items:
   * The interval between two consecutive executions must be 10 seconds or longer. The minimum interval cannot be less than the timeout period of the execution.
-  * When you set Timed to true, you must specify Frequency.
+  * To schedule recurring execution, set `repeat_mode` to `Period` and specify `frequency`.
   * The value of the Frequency parameter is a cron expression. For more information, see [Cron expression](https://www.alibabacloud.com/help/en/elastic-compute-service/latest/cron-expression).
 * `parameters` - (Optional, ForceNew) The key-value pairs of custom parameters to be passed in when the custom parameter feature is enabled.  Number of custom parameters: 0 to 10.
 * `username` - (Optional, ForceNew, Computed) The username that is used to run the command on the ECS instance. 
