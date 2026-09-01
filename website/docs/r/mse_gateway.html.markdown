@@ -73,6 +73,8 @@ The following arguments are supported:
 * `vswitch_id` - (Required, ForceNew) The ID of the vswitch.
 * `vpc_id` - (Required, ForceNew) The ID of the vpc.
 * `delete_slb` - (Optional) Whether to delete the SLB purchased on behalf of the gateway at the same time.
+* `resource_group_id` - (Optional, Computed) The ID of the resource group which the gateway belongs.
+* `tags` - (Optional, Computed) A mapping of tags to assign to the resource.
 
 ## Attributes Reference
 
