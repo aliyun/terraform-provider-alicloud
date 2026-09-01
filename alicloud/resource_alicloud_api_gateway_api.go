@@ -48,6 +48,13 @@ func resourceAliyunApigatewayApi() *schema.Resource {
 				Required: true,
 			},
 
+			"app_code_auth_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"DISABLE", "HEADER", "HEADER_QUERY"}, false),
+			},
+
 			"request_config": {
 				Type:     schema.TypeList,
 				Required: true,
@@ -431,6 +438,7 @@ func resourceAliyunApigatewayApiRead(d *schema.ResourceData, meta interface{}) e
 	d.Set("name", objectRaw["ApiName"])
 	d.Set("description", objectRaw["Description"])
 	d.Set("auth_type", objectRaw["AuthType"])
+	d.Set("app_code_auth_type", objectRaw["AppCodeAuthType"])
 	d.Set("force_nonce_check", objectRaw["ForceNonceCheck"])
 
 	v := convertApiGatewayApiRequestConfigResponse(objectRaw["RequestConfig"])
@@ -499,12 +507,17 @@ func resourceAliyunApigatewayApiUpdate(d *schema.ResourceData, meta interface{})
 
 	d.Partial(true)
 
-	if d.HasChanges("name", "description", "auth_type") {
+	if d.HasChanges("name", "description", "auth_type", "app_code_auth_type") {
 		update = true
 	}
 	request.ApiName = d.Get("name").(string)
 	request.Description = d.Get("description").(string)
 	request.AuthType = d.Get("auth_type").(string)
+	if d.HasChange("app_code_auth_type") || d.Get("auth_type").(string) == "APP" {
+		if v, exist := d.GetOk("app_code_auth_type"); exist {
+			request.AppCodeAuthType = v.(string)
+		}
+	}
 
 	if d.HasChange("force_nonce_check") {
 		update = true
@@ -653,6 +666,9 @@ func buildAliyunApiArgs(d *schema.ResourceData, meta interface{}) (*cloudapi.Cre
 	request.Description = d.Get("description").(string)
 	request.ApiName = d.Get("name").(string)
 	request.AuthType = d.Get("auth_type").(string)
+	if v, exist := d.GetOk("app_code_auth_type"); exist {
+		request.AppCodeAuthType = v.(string)
+	}
 	if v, exist := d.GetOk("force_nonce_check"); exist {
 		request.ForceNonceCheck = requests.Boolean(strconv.FormatBool(v.(bool)))
 	}
