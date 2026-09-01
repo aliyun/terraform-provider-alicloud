@@ -5,6 +5,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -72,6 +73,12 @@ func resourceAlicloudMseGateway() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"tags": tagsSchema(),
 			"delete_slb": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -175,7 +182,7 @@ func resourceAlicloudMseGatewayCreate(d *schema.ResourceData, meta interface{}) 
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudMseGatewayRead(d, meta)
+	return resourceAlicloudMseGatewayUpdate(d, meta)
 }
 func resourceAlicloudMseGatewayRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
@@ -196,6 +203,9 @@ func resourceAlicloudMseGatewayRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("status", fmt.Sprint(formatInt(object["Status"])))
 	d.Set("vswitch_id", object["Vswitch"])
 	d.Set("vpc_id", object["Vpc"])
+	d.Set("resource_group_id", object["ResourceGroupId"])
+	tagsMaps, _ := jsonpath.Get("$.Tags", object)
+	d.Set("tags", tagsToMap(tagsMaps))
 
 	slbListObject, err := mseService.ListGatewaySlb(d.Id())
 	if err != nil {
@@ -230,36 +240,81 @@ func resourceAlicloudMseGatewayRead(d *schema.ResourceData, meta interface{}) er
 }
 func resourceAlicloudMseGatewayUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	request := map[string]interface{}{
-		"GatewayUniqueId": d.Id(),
+	mseService := MseService{client}
+	d.Partial(true)
+
+	if d.HasChange("resource_group_id") {
+		action := "ChangeResourceGroup"
+		request := map[string]interface{}{
+			"ResourceId":       d.Id(),
+			"ResourceRegionId": client.RegionId,
+			"ResourceGroupId":  d.Get("resource_group_id"),
+			"ResourceType":     "gateway",
+		}
+		var response map[string]interface{}
+		var err error
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("mse", "2019-05-31", action, nil, request, false)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		if fmt.Sprint(response["Success"]) == "false" {
+			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+		}
+		d.SetPartial("resource_group_id")
 	}
-	var response map[string]interface{}
+
 	if d.HasChange("gateway_name") {
+		action := "UpdateGatewayName"
+		request := map[string]interface{}{
+			"GatewayUniqueId": d.Id(),
+		}
 		if v, ok := d.GetOk("gateway_name"); ok {
 			request["Name"] = v
 		}
-	}
-	action := "UpdateGatewayName"
-	var err error
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-		response, err = client.RpcGet("mse", "2019-05-31", action, request, nil)
-		if err != nil {
-			if NeedRetry(err) {
-				wait()
-				return resource.RetryableError(err)
+		var response map[string]interface{}
+		var err error
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcGet("mse", "2019-05-31", action, request, nil)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		return nil
-	})
-	addDebug(action, response, request)
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		if fmt.Sprint(response["Success"]) == "false" {
+			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+		}
+		d.SetPartial("gateway_name")
 	}
-	if fmt.Sprint(response["Success"]) == "false" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+
+	if d.HasChange("tags") {
+		if err := mseService.SetResourceTags(d, "gateway"); err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("tags")
 	}
+
+	d.Partial(false)
 	return resourceAlicloudMseGatewayRead(d, meta)
 }
 func resourceAlicloudMseGatewayDelete(d *schema.ResourceData, meta interface{}) error {

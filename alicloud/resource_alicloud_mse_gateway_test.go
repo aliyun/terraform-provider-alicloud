@@ -135,29 +135,45 @@ func TestAccAlicloudMSEGateway_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"spec":         "MSE_GTW_2_4_200_c",
-					"replica":      "2",
-					"vpc_id":       "${data.alicloud_vpcs.default.ids.0}",
-					"vswitch_id":   "${data.alicloud_vswitches.default.ids.0}",
-					"gateway_name": "${var.name}",
+					"spec":              "MSE_GTW_2_4_200_c",
+					"replica":           "2",
+					"vpc_id":            "${data.alicloud_vpcs.default.ids.0}",
+					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
+					"gateway_name":      "${var.name}",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.1.id}",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"spec":         "MSE_GTW_2_4_200_c",
-						"replica":      "2",
-						"vpc_id":       CHECKSET,
-						"vswitch_id":   CHECKSET,
-						"gateway_name": name,
+						"spec":              "MSE_GTW_2_4_200_c",
+						"replica":           "2",
+						"vpc_id":            CHECKSET,
+						"vswitch_id":        CHECKSET,
+						"gateway_name":      name,
+						"resource_group_id": CHECKSET,
+						"tags.%":            "2",
+						"tags.Created":      "TF",
+						"tags.For":          "Test",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"gateway_name": "${var.name}_update",
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"gateway_name": name + "_update",
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
 					}),
 				),
 			},
@@ -165,7 +181,7 @@ func TestAccAlicloudMSEGateway_basic0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"enterprise_security_group", "slb_spec", "delete_slb"},
+				ImportStateVerifyIgnore: []string{"enterprise_security_group", "slb_spec", "delete_slb", "resource_group_id"},
 			},
 		},
 	})
@@ -244,6 +260,8 @@ data "alicloud_vswitches" "default" {
 	vpc_id  = data.alicloud_vpcs.default.ids.0
 	zone_id = data.alicloud_zones.default.zones.0.id
 }
+data "alicloud_resource_manager_resource_groups" "default" {
+}
 
 `, name)
 }
@@ -265,6 +283,11 @@ func TestUnitAlicloudMSEGateway(t *testing.T) {
 		"slb_spec":                  "slb_spec",
 		"internet_slb_spec":         "internet_slb_spec",
 		"delete_slb":                true,
+		"resource_group_id":         "resource_group_id",
+		"tags": map[string]interface{}{
+			"Created": "TF",
+			"For":     "Test",
+		},
 	} {
 		err := dCreate.Set(key, value)
 		assert.Nil(t, err)
@@ -282,13 +305,15 @@ func TestUnitAlicloudMSEGateway(t *testing.T) {
 		"Success": "true",
 		"Code":    "200",
 		"Data": map[string]interface{}{
-			"Spec":     "spec",
-			"Replica":  2,
-			"Vpc":      "vpc_id",
-			"Vswitch":  "vswitch_id",
-			"Vswitch2": "backup_vswitch_id",
-			"Name":     "gateway_name",
-			"Status":   "2",
+			"Spec":            "spec",
+			"Replica":         2,
+			"Vpc":             "vpc_id",
+			"Vswitch":         "vswitch_id",
+			"Vswitch2":        "backup_vswitch_id",
+			"Name":            "gateway_name",
+			"Status":          "2",
+			"ResourceGroupId": "resource_group_id",
+			"Tags":            map[string]interface{}{"Created": "TF", "For": "Test"},
 		},
 	}
 
