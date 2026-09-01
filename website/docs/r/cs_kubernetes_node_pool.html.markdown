@@ -767,7 +767,7 @@ The following arguments are supported:
   - `release`: in the standard mode, scaling is performed by creating and releasing ECS instances based on the usage of the application resource value.
   - `recycle`: in the speed mode, scaling is performed through creation, shutdown, and startup to increase the speed of scaling again (computing resources are not charged during shutdown, only storage fees are charged, except for local disk models).
 * `security_group_id` - (Optional, ForceNew, Computed, Deprecated since v1.145.0) The security group ID of the node pool. This field has been replaced by `security_group_ids`, please use the `security_group_ids` field instead.
-* `security_group_ids` - (Optional, ForceNew, Computed, List) Multiple security groups can be configured for a node pool. If both `security_group_ids` and `security_group_id` are configured, `security_group_ids` takes effect. This field cannot be modified.
+* `security_group_ids` - (Optional, ForceNew, Computed, Set) Multiple security groups can be configured for a node pool. If both `security_group_ids` and `security_group_id` are configured, `security_group_ids` takes effect. This field cannot be modified.
 * `security_hardening_os` - (Optional, ForceNew) Alibaba Cloud OS security reinforcement. Default value: `false`. Value:
   -`true`: enable Alibaba Cloud OS security reinforcement.
   -`false`: does not enable Alibaba Cloud OS security reinforcement.
