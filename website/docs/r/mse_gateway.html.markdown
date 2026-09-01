@@ -11,7 +11,7 @@ description: |-
 
 Provides a Microservice Engine (MSE) Gateway resource.
 
-For information about Microservice Engine (MSE) Gateway and how to use it, see [What is Gateway](https://help.aliyun.com/document_detail/347638.html).
+For information about Microservice Engine (MSE) Gateway and how to use it, see [What is Gateway](https://www.alibabacloud.com/help/en/mse/developer-reference/api-mse-2019-05-31-addgateway).
 
 -> **NOTE:** Available since v1.157.0.
 
@@ -73,6 +73,8 @@ The following arguments are supported:
 * `vswitch_id` - (Required, ForceNew) The ID of the vswitch.
 * `vpc_id` - (Required, ForceNew) The ID of the vpc.
 * `delete_slb` - (Optional) Whether to delete the SLB purchased on behalf of the gateway at the same time.
+* `resource_group_id` - (Optional, Computed) The ID of the resource group which the gateway belongs.
+* `tags` - (Optional, Computed) A mapping of tags to assign to the resource.
 
 ## Attributes Reference
 
