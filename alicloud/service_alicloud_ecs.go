@@ -349,38 +349,52 @@ func (s *EcsService) DescribeSecurityGroupRule(id string) (rule ecs.Permission, 
 	request.SecurityGroupId = groupId
 	request.Direction = direction
 	request.NicType = nicType
+	// Fetch a full page at a time and follow NextToken so that rules beyond
+	// the first page are still visible for matching.
+	request.MaxResults = requests.NewInteger(1000)
 
-	var raw interface{}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err = s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.DescribeSecurityGroupAttribute(request)
-		})
-		if err != nil {
-			if NeedRetry(err) {
-				wait()
-				return resource.RetryableError(err)
+	permissions := make([]ecs.Permission, 0)
+	var response *ecs.DescribeSecurityGroupAttributeResponse
+	for {
+		var raw interface{}
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			raw, err = s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+				return ecsClient.DescribeSecurityGroupAttribute(request)
+			})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
 			}
-			return resource.NonRetryableError(err)
-		}
-		return nil
-	})
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			return nil
+		})
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
-	response, _ := raw.(*ecs.DescribeSecurityGroupAttributeResponse)
+		response, _ = raw.(*ecs.DescribeSecurityGroupAttributeResponse)
 
-	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidSecurityGroupId.NotFound"}) {
-			return rule, WrapErrorf(NotFoundErr("SecurityGroup:Rule", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response.RequestId))
+		if err != nil {
+			if IsExpectedErrors(err, []string{"InvalidSecurityGroupId.NotFound"}) {
+				return rule, WrapErrorf(NotFoundErr("SecurityGroup:Rule", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response.RequestId))
+			}
+			return rule, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		return rule, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+
+		if response == nil {
+			return rule, GetNotFoundErrorFromString(GetNotFoundMessage("Security Group", groupId))
+		}
+
+		permissions = append(permissions, response.Permissions.Permission...)
+
+		if response.NextToken == "" {
+			break
+		}
+		request.NextToken = response.NextToken
 	}
 
-	if response == nil {
-		return rule, GetNotFoundErrorFromString(GetNotFoundMessage("Security Group", groupId))
-	}
-
-	for _, ru := range response.Permissions.Permission {
+	for _, ru := range permissions {
 		if strings.ToLower(string(ru.IpProtocol)) == ipProtocol && ru.PortRange == portRange {
 
 			var cidr string

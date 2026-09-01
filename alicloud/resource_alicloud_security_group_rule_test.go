@@ -167,6 +167,39 @@ func TestAccAliCloudECSSecurityGroupRuleMulti(t *testing.T) {
 
 }
 
+func TestAccAliCloudECSSecurityGroupRuleBatch(t *testing.T) {
+	var v ecs.Permission
+	resourceId := "alicloud_security_group_rule.test.0"
+	name := acctest.RandString(4)
+	ra := resourceAttrInit(resourceId, testAccCheckSecurityGroupRuleBasicMap)
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckSecurityGroupRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: hclSecurityGroupRuleBatch(name),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cidr_ip":                  "192.168.0.0/24",
+						"source_security_group_id": REMOVEKEY,
+					}),
+				),
+			},
+		},
+	})
+
+}
+
 func TestAccAliCloudECSSecurityGroupRulePrefixList(t *testing.T) {
 	var v ecs.Permission
 	resourceId := "alicloud_security_group_rule.test"
@@ -906,6 +939,45 @@ resource "alicloud_security_group_rule" "test" {
   cidr_ip           = element(var.cidr_ip_list, count.index)
 }
 `, name)
+}
+
+func hclSecurityGroupRuleBatch(name string) string {
+	cidrIpList := make([]string, 0, 40)
+	for i := 0; i < 40; i++ {
+		cidrIpList = append(cidrIpList, fmt.Sprintf(`"192.168.%d.0/24"`, i))
+	}
+	return fmt.Sprintf(`
+variable "name" {
+  default = "tf-testAccSGRBatch%s"
+}
+
+variable "cidr_ip_list" {
+  type    = "list"
+  default = [%s]
+}
+
+data "alicloud_vpcs" "test" {
+  name_regex = "^default-NODELETING$"
+}
+
+resource "alicloud_security_group" "test" {
+  security_group_name = var.name
+  description         = "Security group for batch rules"
+  vpc_id              = data.alicloud_vpcs.test.ids.0
+}
+
+resource "alicloud_security_group_rule" "test" {
+  count             = length(compact(var.cidr_ip_list))
+  security_group_id = alicloud_security_group.test.id
+  type              = "ingress"
+  policy            = "drop"
+  port_range        = "22/22"
+  ip_protocol       = "tcp"
+  nic_type          = "intranet"
+  priority          = 100
+  cidr_ip           = element(var.cidr_ip_list, count.index)
+}
+`, name, strings.Join(cidrIpList, ", "))
 }
 
 func hclSecurityGroupIngressRuleIpv6(name string) string {
