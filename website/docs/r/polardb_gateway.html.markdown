@@ -17,6 +17,12 @@ Provides a PolarDB Gateway resource.
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_polardb_gateway&exampleId=a987fdef-2f38-783f-eef3-12a032f8e5c74ff6697d&activeTab=example&spm=docs.r.polardb_gateway.0.a987fdef2f&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 resource "alicloud_polardb_gateway" "default" {
   zone_id           = "cn-beijing-l"
@@ -28,6 +34,10 @@ resource "alicloud_polardb_gateway" "default" {
   db_type           = "PostgreSQL"
 }
 ```
+
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_polardb_gateway&spm=docs.r.polardb_gateway.example&intl_lang=EN_US)
+
 
 ## Argument Reference
 

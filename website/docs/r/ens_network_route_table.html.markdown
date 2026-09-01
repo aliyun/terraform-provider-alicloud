@@ -20,6 +20,12 @@ For information about ENS Network Route Table and how to use it, see [What is Ne
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_ens_network_route_table&exampleId=cac3e4e3-e786-5999-bed7-15c1a06189459654f882&activeTab=example&spm=docs.r.ens_network_route_table.0.cac3e4e3e7&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -47,6 +53,10 @@ resource "alicloud_ens_network_route_table" "default" {
   description      = var.name
 }
 ```
+
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ens_network_route_table&spm=docs.r.ens_network_route_table.example&intl_lang=EN_US)
+
 
 ## Argument Reference
 
