@@ -211,54 +211,70 @@ func dataSourceAlicloudEcsInvocationsRead(d *schema.ResourceData, meta interface
 	}
 	var objects []map[string]interface{}
 
-	idsMap := make(map[string]string)
-	if v, ok := d.GetOk("ids"); ok {
+	// The command output is returned by DescribeInvocations only when
+	// IncludeOutput is set to true and the InvokeId or InstanceId parameter
+	// is specified. Therefore, when ids are set, query each invocation by
+	// its InvokeId with IncludeOutput enabled so that the output of every
+	// invoke instance can be returned. Otherwise, list all invocations by page.
+	queries := make([]map[string]interface{}, 0)
+	if v, ok := d.GetOk("ids"); ok && len(v.([]interface{})) > 0 {
+		seen := make(map[string]bool)
 		for _, vv := range v.([]interface{}) {
 			if vv == nil {
 				continue
 			}
-			idsMap[vv.(string)] = vv.(string)
+			invokeId := vv.(string)
+			if seen[invokeId] {
+				continue
+			}
+			seen[invokeId] = true
+			query := make(map[string]interface{}, len(request)+2)
+			for key, value := range request {
+				query[key] = value
+			}
+			query["InvokeId"] = invokeId
+			query["IncludeOutput"] = "true"
+			query["PageNumber"] = 1
+			queries = append(queries, query)
 		}
+	} else {
+		queries = append(queries, request)
 	}
 	var response map[string]interface{}
 	var err error
-	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
+	for _, query := range queries {
+		for {
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+				response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, query, true)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, query)
+
 			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return resource.RetryableError(err)
-				}
-				return resource.NonRetryableError(err)
+				return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ecs_invocations", action, AlibabaCloudSdkGoERROR)
 			}
-			return nil
-		})
-		addDebug(action, response, request)
 
-		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ecs_invocations", action, AlibabaCloudSdkGoERROR)
-		}
-
-		resp, err := jsonpath.Get("$.Invocations.Invocation", response)
-		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Invocations.Invocation", response)
-		}
-		result, _ := resp.([]interface{})
-		for _, v := range result {
-			item := v.(map[string]interface{})
-			if len(idsMap) > 0 {
-				if _, ok := idsMap[fmt.Sprint(item["InvokeId"])]; !ok {
-					continue
-				}
+			resp, err := jsonpath.Get("$.Invocations.Invocation", response)
+			if err != nil {
+				return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Invocations.Invocation", response)
 			}
-			objects = append(objects, item)
+			result, _ := resp.([]interface{})
+			for _, v := range result {
+				objects = append(objects, v.(map[string]interface{}))
+			}
+			if len(result) < PageSizeLarge {
+				break
+			}
+			query["PageNumber"] = query["PageNumber"].(int) + 1
 		}
-		if len(result) < PageSizeLarge {
-			break
-		}
-		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 	ids := make([]string, 0)
 	s := make([]map[string]interface{}, 0)

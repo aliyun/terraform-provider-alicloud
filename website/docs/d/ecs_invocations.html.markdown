@@ -7,11 +7,11 @@ description: |-
   Provides a list of Ecs Invocations to the user.
 ---
 
-# alicloud\_ecs\_invocations
+# alicloud_ecs_invocations
 
 This data source provides the Ecs Invocations of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.168.0+.
+-> **NOTE:** Available since v1.168.0.
 
 ## Example Usage
 
@@ -36,7 +36,7 @@ The following arguments are supported:
 * `invoke_status` - (Optional, ForceNew) The overall execution state of the command. The value of this parameter depends on the execution states on all the involved instances. Valid values: `Running`, `Finished`, `Failed`, `PartialFailed`, `Stopped`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
@@ -62,12 +62,12 @@ The following attributes are exported in addition to the arguments listed above:
     * `invocation_status` - The execution state on a single instance. Valid values: `Pending`, `Scheduled`, `Running`, `Success`, `Failed`, `Stopping`, `Stopped`, `PartialFailed`.
     * `repeats` - The number of times that the command is run on the instance.
     * `instance_id` - The ID of the instance.
-    * `output` - The output of the command.
+    * `output` - The output of the command. **NOTE:** The command output is only returned when `ids` is specified, because the API returns the output only when querying by invocation ID with `IncludeOutput` enabled.
     * `dropped` - The size of truncated and discarded text when the value of the Output response parameter exceeds 24 KB in size.
     * `stop_time` - The time when the command stopped being run on the instance. If you call the StopInvocation operation to manually stop the execution, the value is the time when you call the operation.
     * `exit_code` - The exit code of the execution.
     * `start_time` - The time when the command started to be run on the instance.
     * `error_info` - Details about the reason why the command failed to be sent or run.
     * `timed` - Indicates whether the commands are to be automatically run.
-    * `error_code	` - The code that indicates why the command failed to be sent or run. 
-    * `instance_invoke_status	` - **Note:** We recommend that you ignore this parameter and check the value of the `invocation_status` response parameter for the overall execution state.
+    * `error_code` - The code that indicates why the command failed to be sent or run.
+    * `instance_invoke_status` - **Note:** We recommend that you ignore this parameter and check the value of the `invocation_status` response parameter for the overall execution state.
