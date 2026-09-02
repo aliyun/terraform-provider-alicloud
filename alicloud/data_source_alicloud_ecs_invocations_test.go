@@ -12,10 +12,12 @@ func TestAccAliCloudECSInvocationsDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEcsInvocationsDataSourceName(rand, map[string]string{
-			"ids": `["${alicloud_ecs_invocation.default.id}"]`,
+			"ids":              `["${alicloud_ecs_invocation.default.id}"]`,
+			"content_encoding": `"PlainText"`,
 		}),
 		fakeConfig: testAccCheckAlicloudEcsInvocationsDataSourceName(rand, map[string]string{
-			"ids": `["${alicloud_ecs_invocation.default.id}_fake"]`,
+			"ids":              `["${alicloud_ecs_invocation.default.id}_fake"]`,
+			"content_encoding": `"PlainText"`,
 		}),
 	}
 	commandIdConf := dataSourceTestAccConfig{
@@ -75,7 +77,7 @@ func TestAccAliCloudECSInvocationsDataSource(t *testing.T) {
 			"invocations.0.invoke_instances.0.instance_id":            CHECKSET,
 			"invocations.0.invoke_instances.0.invocation_status":      CHECKSET,
 			"invocations.0.invoke_instances.0.repeats":                CHECKSET,
-			"invocations.0.invoke_instances.0.output":                 "",
+			"invocations.0.invoke_instances.0.output":                 CHECKSET,
 			"invocations.0.invoke_instances.0.dropped":                CHECKSET,
 			"invocations.0.invoke_instances.0.stop_time":              "",
 			"invocations.0.invoke_instances.0.exit_code":              CHECKSET,
@@ -115,7 +117,7 @@ variable "name" {
 }
 
 	data "alicloud_zones" "default" {
-  		available_disk_category     = "cloud_efficiency"
+  		available_disk_category     = "cloud_essd"
   		available_resource_creation = "VSwitch"
 	}
 
@@ -126,8 +128,9 @@ variable "name" {
 	}
 
 	data "alicloud_instance_types" "default" {
-  		availability_zone = data.alicloud_zones.default.zones.0.id
-  		image_id          = data.alicloud_images.default.images.0.id
+  		availability_zone   = data.alicloud_zones.default.zones.0.id
+  		image_id           = data.alicloud_images.default.images.0.id
+  		system_disk_category = "cloud_essd"
 	}
 
 	resource "alicloud_vpc" "default" {
@@ -155,14 +158,14 @@ variable "name" {
   		internet_max_bandwidth_out = "10"
   		availability_zone          = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
   		instance_charge_type       = "PostPaid"
-  		system_disk_category       = "cloud_efficiency"
+  		system_disk_category       = "cloud_essd"
   		vswitch_id                 = alicloud_vswitch.default.id
   		instance_name              = var.name
 	}
 
 	resource "alicloud_ecs_command" "default" {
   		name            = var.name
-  		command_content = "bHMK"
+  		command_content = "ZWNobyB0Zi10ZXN0LWFjYy1lY3MtaW52b2NhdGlvbnMK"
   		description     = "For Terraform Test"
   		type            = "RunShellScript"
   		working_dir     = "/root"
