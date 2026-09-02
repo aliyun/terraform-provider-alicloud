@@ -60,6 +60,11 @@ func dataSourceAlicloudExpressConnectVirtualBorderRouters() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"tags": {
+				Type:     schema.TypeMap,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"routers": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -193,6 +198,11 @@ func dataSourceAlicloudExpressConnectVirtualBorderRouters() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"tags": {
+							Type:     schema.TypeMap,
+							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
 					},
 				},
 			},
@@ -213,6 +223,16 @@ func dataSourceAlicloudExpressConnectVirtualBorderRoutersRead(d *schema.Resource
 				request[fmt.Sprintf("Filter.%d.Value.%d", filterPtr+1, valuePtr+1)] = value
 			}
 		}
+	}
+	if v, ok := d.GetOk("tags"); ok {
+		tags := make([]map[string]interface{}, 0)
+		for key, value := range v.(map[string]interface{}) {
+			tags = append(tags, map[string]interface{}{
+				"Key":   key,
+				"Value": value.(string),
+			})
+		}
+		request = expandTagsToMapWithTags(request, tags)
 	}
 	request["RegionId"] = client.RegionId
 	request["PageSize"] = PageSizeLarge
@@ -319,6 +339,8 @@ func dataSourceAlicloudExpressConnectVirtualBorderRoutersRead(d *schema.Resource
 			"vlan_id":                             formatInt(object["VlanId"]),
 			"vlan_interface_id":                   object["VlanInterfaceId"],
 		}
+		tagsMaps, _ := jsonpath.Get("$.Tags.Tags", object)
+		mapping["tags"] = tagsToMap(tagsMaps)
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		names = append(names, object["Name"])
 		s = append(s, mapping)
