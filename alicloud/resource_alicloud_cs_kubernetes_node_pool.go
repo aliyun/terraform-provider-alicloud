@@ -715,6 +715,31 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 					},
 				},
 			},
+			"resource_pool_options": {
+				Type:          schema.TypeList,
+				Optional:      true,
+				MaxItems:      1,
+				ConflictsWith: []string{"private_pool_options"},
+				Description:   "The resource pool and resource pool strategy used when launching instances. It only takes effect when creating PostPaid (pay-as-you-go) instances, and cannot be set together with `private_pool_options`.",
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"strategy": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							Default:      "None",
+							ValidateFunc: StringInSlice([]string{"PrivatePoolFirst", "PrivatePoolOnly", "None"}, false),
+							Description:  "The resource pool strategy used when launching instances. Default value: `None`. Valid values: `PrivatePoolFirst` (private pool first; the specified private pools are used first when `private_pool_ids` is set, and it falls back to an Open type private pool or the public pool when unavailable), `PrivatePoolOnly` (private pool only; `private_pool_ids` is required and instances fail to start if the specified private pool does not have enough capacity), `None` (do not use the resource pool strategy).",
+						},
+						"private_pool_ids": {
+							Type:        schema.TypeList,
+							Optional:    true,
+							MaxItems:    20,
+							Elem:        &schema.Schema{Type: schema.TypeString},
+							Description: "The list of private pool IDs, that is, the IDs of elasticity assurance services or capacity reservation services. Only Target mode private pool IDs can be passed in. The value of N ranges from 1 to 20.",
+						},
+					},
+				},
+			},
 			"ram_role_name": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -1312,6 +1337,26 @@ func resourceAliCloudAckNodepoolCreate(d *schema.ResourceData, meta interface{})
 
 		if len(private_pool_options) > 0 {
 			scaling_group["private_pool_options"] = private_pool_options
+		}
+	}
+
+	if v := d.Get("resource_pool_options"); !IsNil(v) {
+		resource_pool_options := make(map[string]interface{})
+		resourcePoolOptionsStrategy, _ := jsonpath.Get("$[0].strategy", d.Get("resource_pool_options"))
+		if resourcePoolOptionsStrategy != nil && resourcePoolOptionsStrategy != "" {
+			resource_pool_options["strategy"] = resourcePoolOptionsStrategy
+		}
+		resourcePoolOptionsPrivatePoolIds, _ := jsonpath.Get("$[0].private_pool_ids", d.Get("resource_pool_options"))
+		if resourcePoolOptionsPrivatePoolIds != nil {
+			resource_pool_options["private_pool_ids"] = resourcePoolOptionsPrivatePoolIds
+		}
+		if resourcePoolOptionsStrategy == "PrivatePoolOnly" {
+			if ids, ok := resourcePoolOptionsPrivatePoolIds.([]interface{}); !ok || len(ids) == 0 {
+				return WrapError(Error("resource_pool_options.private_pool_ids is required when resource_pool_options.strategy is PrivatePoolOnly"))
+			}
+		}
+		if len(resource_pool_options) > 0 {
+			scaling_group["resource_pool_options"] = resource_pool_options
 		}
 	}
 
@@ -2345,6 +2390,23 @@ func resourceAliCloudAckNodepoolRead(d *schema.ResourceData, meta interface{}) e
 	if err := d.Set("private_pool_options", privatePoolOptionsMaps); err != nil {
 		return err
 	}
+	resourcePoolOptionsMaps := make([]map[string]interface{}, 0)
+	resourcePoolOptionsMap := make(map[string]interface{})
+	resource_pool_optionsRawObj, _ := jsonpath.Get("$.scaling_group.resource_pool_options", objectRaw)
+	resource_pool_optionsRaw := make(map[string]interface{})
+	if resource_pool_optionsRawObj != nil {
+		resource_pool_optionsRaw = resource_pool_optionsRawObj.(map[string]interface{})
+	}
+	if len(resource_pool_optionsRaw) > 0 {
+		resourcePoolOptionsMap["strategy"] = resource_pool_optionsRaw["strategy"]
+		if ids, ok := resource_pool_optionsRaw["private_pool_ids"]; ok && ids != nil {
+			resourcePoolOptionsMap["private_pool_ids"] = ids
+		}
+		resourcePoolOptionsMaps = append(resourcePoolOptionsMaps, resourcePoolOptionsMap)
+	}
+	if err := d.Set("resource_pool_options", resourcePoolOptionsMaps); err != nil {
+		return err
+	}
 	rds_instancesRaw, _ := jsonpath.Get("$.scaling_group.rds_instances", objectRaw)
 	d.Set("rds_instances", rds_instancesRaw)
 	scalingConfigMaps := make([]map[string]interface{}, 0)
@@ -2682,6 +2744,29 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 
 			if len(private_pool_options) > 0 {
 				scaling_group["private_pool_options"] = private_pool_options
+			}
+		}
+	}
+
+	if d.HasChange("resource_pool_options") {
+		update = true
+		if v := d.Get("resource_pool_options"); v != nil {
+			resource_pool_options := make(map[string]interface{})
+			resourcePoolOptionsStrategy, _ := jsonpath.Get("$[0].strategy", d.Get("resource_pool_options"))
+			if resourcePoolOptionsStrategy != nil && resourcePoolOptionsStrategy != "" {
+				resource_pool_options["strategy"] = resourcePoolOptionsStrategy
+			}
+			resourcePoolOptionsPrivatePoolIds, _ := jsonpath.Get("$[0].private_pool_ids", d.Get("resource_pool_options"))
+			if resourcePoolOptionsPrivatePoolIds != nil {
+				resource_pool_options["private_pool_ids"] = resourcePoolOptionsPrivatePoolIds
+			}
+			if resourcePoolOptionsStrategy == "PrivatePoolOnly" {
+				if ids, ok := resourcePoolOptionsPrivatePoolIds.([]interface{}); !ok || len(ids) == 0 {
+					return WrapError(Error("resource_pool_options.private_pool_ids is required when resource_pool_options.strategy is PrivatePoolOnly"))
+				}
+			}
+			if len(resource_pool_options) > 0 {
+				scaling_group["resource_pool_options"] = resource_pool_options
 			}
 		}
 	}
