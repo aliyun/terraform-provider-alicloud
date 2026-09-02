@@ -500,7 +500,9 @@ func resourceAliCloudVpcRouteEntryDelete(d *schema.ResourceData, meta interface{
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"IncorrectInstanceStatus", "IncorrectRouteEntryStatus", "SystemBusy", "InvalidVBRStatus", "LastTokenProcessing", "IncorrectStatus.Ipv6Address", "IncorrectStatus", "OperationFailed.DistibuteLock", "ServiceUnavailable", "IncorrectStatus.RouteTableStatus", "IncorrectStatus.MultiScopeRiRouteEntry", "IncorrectVpcStatus", "IncorrectHaVipStatus", "OperationConflict", "TaskConflict", "IncorrectStatus.Ipv4Gateway", "IncorrectStatus.VpcPeer", "IncorrectStatus.PrefixList"}) || NeedRetry(err) {
+			// "InternalError" from DeleteRouteEntry is a transient server-side
+			// failure and the same delete succeeds when retried.
+			if IsExpectedErrors(err, []string{"IncorrectInstanceStatus", "IncorrectRouteEntryStatus", "SystemBusy", "InvalidVBRStatus", "LastTokenProcessing", "IncorrectStatus.Ipv6Address", "IncorrectStatus", "OperationFailed.DistibuteLock", "ServiceUnavailable", "IncorrectStatus.RouteTableStatus", "IncorrectStatus.MultiScopeRiRouteEntry", "IncorrectVpcStatus", "IncorrectHaVipStatus", "OperationConflict", "TaskConflict", "IncorrectStatus.Ipv4Gateway", "IncorrectStatus.VpcPeer", "IncorrectStatus.PrefixList", "InternalError"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
