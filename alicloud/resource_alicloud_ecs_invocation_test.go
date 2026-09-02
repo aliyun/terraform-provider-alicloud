@@ -131,7 +131,7 @@ func AliCloudECSInvocationBasicDependence0(name string) string {
 	}
 
 	data "alicloud_zones" "default" {
-  		available_disk_category     = "cloud_efficiency"
+  		available_disk_category     = "cloud_essd"
   		available_resource_creation = "VSwitch"
 	}
 
@@ -142,8 +142,9 @@ func AliCloudECSInvocationBasicDependence0(name string) string {
 	}
 
 	data "alicloud_instance_types" "default" {
-  		availability_zone = data.alicloud_zones.default.zones.0.id
-  		image_id          = data.alicloud_images.default.images.0.id
+  		availability_zone    = data.alicloud_zones.default.zones.0.id
+  		instance_type_family = "ecs.u1"
+  		image_id             = data.alicloud_images.default.images.0.id
 	}
 
 	resource "alicloud_vpc" "default" {
@@ -171,7 +172,7 @@ func AliCloudECSInvocationBasicDependence0(name string) string {
   		internet_max_bandwidth_out = "10"
   		availability_zone          = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
   		instance_charge_type       = "PostPaid"
-  		system_disk_category       = "cloud_efficiency"
+  		system_disk_category       = "cloud_essd"
   		vswitch_id                 = alicloud_vswitch.default.id
   		instance_name              = var.name
 	}
@@ -197,7 +198,7 @@ func AliCloudECSInvocationBasicDependence1(name string) string {
 	}
 
 	data "alicloud_zones" "default" {
-  		available_disk_category     = "cloud_efficiency"
+  		available_disk_category     = "cloud_essd"
   		available_resource_creation = "VSwitch"
 	}
 
@@ -208,8 +209,9 @@ func AliCloudECSInvocationBasicDependence1(name string) string {
 	}
 
 	data "alicloud_instance_types" "default" {
-  		availability_zone = data.alicloud_zones.default.zones.0.id
-  		image_id          = data.alicloud_images.default.images.0.id
+  		availability_zone    = data.alicloud_zones.default.zones.0.id
+  		instance_type_family = "ecs.u1"
+  		image_id             = data.alicloud_images.default.images.0.id
 	}
 
 	resource "alicloud_vpc" "default" {
@@ -237,7 +239,7 @@ func AliCloudECSInvocationBasicDependence1(name string) string {
   		internet_max_bandwidth_out = "10"
   		availability_zone          = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
   		instance_charge_type       = "PostPaid"
-  		system_disk_category       = "cloud_efficiency"
+  		system_disk_category       = "cloud_essd"
   		vswitch_id                 = alicloud_vswitch.default.id
   		instance_name              = var.name
 	}
