@@ -1327,6 +1327,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_quotas_template_applications":                         resourceAliCloudQuotasTemplateApplications(),
 			"alicloud_threat_detection_oss_scan_config":                     resourceAliCloudThreatDetectionOssScanConfig(),
 			"alicloud_threat_detection_malicious_file_whitelist_config":     resourceAliCloudThreatDetectionMaliciousFileWhitelistConfig(),
+			"alicloud_threat_detection_monitor_account":                     resourceAliCloudThreatDetectionMonitorAccount(),
 			"alicloud_adb_lake_account":                                     resourceAliCloudAdbLakeAccount(),
 			"alicloud_ens_security_group":                                   resourceAliCloudEnsSecurityGroup(),
 			"alicloud_ens_vswitch":                                          resourceAliCloudEnsVswitch(),
