@@ -22,6 +22,17 @@ func TestAccAlicloudPrivatelinkVpcEndpointServiceUsersDataSource(t *testing.T) {
 		fakeConfig: "",
 	}
 
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"service_id": "${alicloud_privatelink_vpc_endpoint_service_user.default.service_id}",
+		}),
+		fakeConfig: "",
+		existChangMap: map[string]string{
+			"ids.#":   "2",
+			"users.#": "2",
+		},
+	}
+
 	var existPrivatelinkVpcEndpointServiceUsersMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"ids.#":           "1",
@@ -48,11 +59,13 @@ func TestAccAlicloudPrivatelinkVpcEndpointServiceUsersDataSource(t *testing.T) {
 		testAccPreCheckWithRegions(t, true, connectivity.PrivateLinkRegions)
 	}
 
-	PrivatelinkVpcEndpointServiceUsersInfo.dataSourceTestCheckWithPreCheck(t, 0, preCheck, userIdConf)
+	PrivatelinkVpcEndpointServiceUsersInfo.dataSourceTestCheckWithPreCheck(t, 0, preCheck, userIdConf, allConf)
 }
 
 func dataSourcePrivatelinkVpcEndpointServiceUsersDependence(name string) string {
 	return fmt.Sprintf(`
+	data "alicloud_account" "current" {
+	}
 	resource "alicloud_ram_user" "user" {
 	    name         = "%[1]s"
 	    display_name = "user_display_name"
@@ -77,5 +90,53 @@ func dataSourcePrivatelinkVpcEndpointServiceUsersDependence(name string) string 
         service_id = alicloud_privatelink_vpc_endpoint_service.default.id
         user_id = alicloud_ram_user.user.id
 	}
+    resource "alicloud_privatelink_vpc_endpoint_service_user" "arn" {
+        service_id = alicloud_privatelink_vpc_endpoint_service.default.id
+        user_arn = "acs:ram:*:${data.alicloud_account.current.id}:*"
+	}
 	`, name)
+}
+
+func TestAccAlicloudPrivatelinkVpcEndpointServiceUsersDataSourceUserArns(t *testing.T) {
+	resourceId := "data.alicloud_privatelink_vpc_endpoint_service_users.default"
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccPrivatelinkVpcEndpointServiceUsers%d", rand)
+	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourcePrivatelinkVpcEndpointServiceUsersDependence)
+
+	userListTypeConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"service_id":     "${alicloud_privatelink_vpc_endpoint_service_user.arn.service_id}",
+			"user_list_type": "UserARNs",
+		}),
+		fakeConfig: "",
+	}
+
+	var existPrivatelinkVpcEndpointServiceUserArnsMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"ids.#":            "2",
+			"ids.0":            CHECKSET,
+			"users.#":          "2",
+			"users.0.id":       CHECKSET,
+			"users.0.user_arn": CHECKSET,
+			"users.1.user_arn": CHECKSET,
+		}
+	}
+
+	var fakePrivatelinkVpcEndpointServiceUserArnsMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"ids.#": "0",
+		}
+	}
+
+	var PrivatelinkVpcEndpointServiceUserArnsInfo = dataSourceAttr{
+		resourceId:   resourceId,
+		existMapFunc: existPrivatelinkVpcEndpointServiceUserArnsMapFunc,
+		fakeMapFunc:  fakePrivatelinkVpcEndpointServiceUserArnsMapFunc,
+	}
+
+	preCheck := func() {
+		testAccPreCheckWithRegions(t, true, connectivity.PrivateLinkRegions)
+	}
+
+	PrivatelinkVpcEndpointServiceUserArnsInfo.dataSourceTestCheckWithPreCheck(t, 0, preCheck, userListTypeConf)
 }

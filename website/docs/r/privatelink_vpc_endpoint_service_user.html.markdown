@@ -3,28 +3,22 @@ subcategory: "Private Link"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_privatelink_vpc_endpoint_service_user"
 description: |-
-  Provides a Alicloud Private Link Vpc Endpoint Service User resource.
+  Provides a Alicloud Privatelink Vpc Endpoint Service User resource.
 ---
 
 # alicloud_privatelink_vpc_endpoint_service_user
 
-Provides a Private Link Vpc Endpoint Service User resource.
+Provides a Privatelink Vpc Endpoint Service User resource.
 
 Endpoint service user whitelist.
 
-For information about Private Link Vpc Endpoint Service User and how to use it, see [What is Vpc Endpoint Service User](https://www.alibabacloud.com/help/en/privatelink/latest/api-privatelink-2020-04-15-addusertovpcendpointservice).
+For information about Privatelink Vpc Endpoint Service User and how to use it, see [What is Vpc Endpoint Service User](https://www.alibabacloud.com/help/en/privatelink/latest/api-privatelink-2020-04-15-addusertovpcendpointservice).
 
 -> **NOTE:** Available since v1.110.0.
 
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_privatelink_vpc_endpoint_service_user&exampleId=4dd99c3d-edbb-793b-9ab6-dc2f06139de5919ea744&activeTab=example&spm=docs.r.privatelink_vpc_endpoint_service_user.0.4dd99c3ded&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 variable "name" {
@@ -49,9 +43,12 @@ resource "alicloud_privatelink_vpc_endpoint_service_user" "example" {
   service_id = alicloud_privatelink_vpc_endpoint_service.example.id
   user_id    = alicloud_ram_user.example.id
 }
-```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_privatelink_vpc_endpoint_service_user&spm=docs.r.privatelink_vpc_endpoint_service_user.example&intl_lang=EN_US)
+resource "alicloud_privatelink_vpc_endpoint_service_user" "arn" {
+  service_id = alicloud_privatelink_vpc_endpoint_service.example.id
+  user_arn   = "acs:ram:*:11827252xxxxxxxx:*"
+}
+```
 
 ## Argument Reference
 
@@ -59,14 +56,17 @@ The following arguments are supported:
 * `dry_run` - (Optional) Specifies whether to perform only a dry run, without performing the actual request. Valid values:
   - `true`: performs only a dry run. The system checks the request for potential issues, including missing parameter values, incorrect request syntax, and service limits. If the request fails the dry run, an error message is returned. If the request passes the dry run, the DryRunOperation error code is returned.
   - **false (default)**: performs a dry run and performs the actual request. If the request passes the dry run, a 2xx HTTP status code is returned and the operation is performed.
+
+-> **NOTE:** This parameter is only evaluated during resource creation and deletion. Modifying it in isolation will not trigger any action.
+
 * `service_id` - (Required, ForceNew) The endpoint service ID.
-* `user_arn` - (Optional, Available since v1.232.0) The whitelist in the format of ARN.
-* `user_id` - (Required, ForceNew) The ID of the Alibaba Cloud account in the whitelist of the endpoint service.
+* `user_arn` - (Optional, Computed, Available since v1.232.0) The whitelist in the format of ARN. At least one of `user_id` and `user_arn` must be specified.
+* `user_id` - (Optional, ForceNew, Computed) The ID of the Alibaba Cloud account in the whitelist of the endpoint service. At least one of `user_id` and `user_arn` must be specified.
 
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above.The value is formulated as `<service_id>:<user_id>`.
+* `id` - The ID of the resource supplied above. For account ID whitelist entries, the value is formulated as `<service_id>:<user_id>`. For ARN whitelist entries, the value is formulated as `<service_id>:<user_id>:<user_arn>`, where `<user_id>` is empty when only `user_arn` is specified.
 
 ## Timeouts
 
@@ -76,8 +76,9 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Private Link Vpc Endpoint Service User can be imported using the id, e.g.
+Privatelink Vpc Endpoint Service User can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_privatelink_vpc_endpoint_service_user.example <service_id>:<user_id>
+$ terraform import alicloud_privatelink_vpc_endpoint_service_user.arn <service_id>::<user_arn>
 ```
