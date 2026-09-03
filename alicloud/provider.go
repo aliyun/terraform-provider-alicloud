@@ -509,6 +509,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ros_stacks":                                       dataSourceAlicloudRosStacks(),
 			"alicloud_ros_stack_groups":                                 dataSourceAlicloudRosStackGroups(),
 			"alicloud_ros_templates":                                    dataSourceAlicloudRosTemplates(),
+			"alicloud_ros_template_estimate_cost":                       dataSourceAlicloudRosTemplateEstimateCost(),
 			"alicloud_privatelink_vpc_endpoint_services":                dataSourceAliCloudPrivateLinkVpcEndpointServices(),
 			"alicloud_privatelink_vpc_endpoints":                        dataSourceAlicloudPrivatelinkVpcEndpoints(),
 			"alicloud_privatelink_vpc_endpoint_connections":             dataSourceAlicloudPrivatelinkVpcEndpointConnections(),
