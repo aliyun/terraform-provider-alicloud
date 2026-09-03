@@ -69,6 +69,17 @@ The following attributes are exported in addition to the arguments listed above:
     * `image` - The container Image address.
     * `port` - The listening port of the HTTP Server when the custom container runs.
     * `resolved_image_uri` - The actual digest version of the deployed Image. The code version specified by this digest is used when the function starts.
+    * `registry_config` - The configuration of the custom image registry.
+      * `auth_config` - The authentication configuration of the image registry.
+        * `user_name` - The username of the image registry.
+        * `password` - The password of the image registry.
+      * `cert_config` - The certificate configuration of the image registry.
+        * `insecure` - Whether to skip certificate verification when pulling images from the registry.
+        * `root_ca_cert_base64` - The Base64-encoded CA certificate of the image registry.
+      * `network_config` - The network configuration used to access the image registry.
+        * `vpc_id` - The ID of the VPC that can connect to the image registry.
+        * `vswitch_id` - The ID of the vSwitch that can connect to the image registry.
+        * `security_group_id` - The ID of the security group that can connect to the image registry.
   * `custom_dns` - Function custom DNS configuration
     * `dns_options` - List of configuration items in the resolv.conf file. Each item corresponds to a key-value pair in the format of key:value, where the key is required.
       * `name` - Configuration Item Name.

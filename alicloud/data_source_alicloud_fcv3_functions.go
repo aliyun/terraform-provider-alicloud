@@ -138,6 +138,67 @@ func dataSourceAliCloudFcv3Functions() *schema.Resource {
 										Type:     schema.TypeString,
 										Computed: true,
 									},
+									"registry_config": {
+										Type:     schema.TypeList,
+										Computed: true,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"auth_config": {
+													Type:     schema.TypeList,
+													Computed: true,
+													Elem: &schema.Resource{
+														Schema: map[string]*schema.Schema{
+															"user_name": {
+																Type:     schema.TypeString,
+																Computed: true,
+															},
+															"password": {
+																Type:      schema.TypeString,
+																Computed:  true,
+																Sensitive: true,
+															},
+														},
+													},
+												},
+												"cert_config": {
+													Type:     schema.TypeList,
+													Computed: true,
+													Elem: &schema.Resource{
+														Schema: map[string]*schema.Schema{
+															"insecure": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+															"root_ca_cert_base64": {
+																Type:     schema.TypeString,
+																Computed: true,
+															},
+														},
+													},
+												},
+												"network_config": {
+													Type:     schema.TypeList,
+													Computed: true,
+													Elem: &schema.Resource{
+														Schema: map[string]*schema.Schema{
+															"vpc_id": {
+																Type:     schema.TypeString,
+																Computed: true,
+															},
+															"vswitch_id": {
+																Type:     schema.TypeString,
+																Computed: true,
+															},
+															"security_group_id": {
+																Type:     schema.TypeString,
+																Computed: true,
+															},
+														},
+													},
+												},
+											},
+										},
+									},
 								},
 							},
 						},
@@ -758,6 +819,50 @@ func dataSourceAliCloudFcv3FunctionRead(d *schema.ResourceData, meta interface{}
 				healthCheckConfigMaps = append(healthCheckConfigMaps, healthCheckConfigMap)
 			}
 			customContainerConfigMap["health_check_config"] = healthCheckConfigMaps
+			registryConfigMaps := make([]map[string]interface{}, 0)
+			registryConfigRaw := make(map[string]interface{})
+			if customContainerConfigRaw["registryConfig"] != nil {
+				registryConfigRaw = customContainerConfigRaw["registryConfig"].(map[string]interface{})
+			}
+			if len(registryConfigRaw) > 0 {
+				registryConfigMap := make(map[string]interface{})
+				authConfigMaps := make([]map[string]interface{}, 0)
+				if registryConfigRaw["authConfig"] != nil {
+					authConfigRaw := registryConfigRaw["authConfig"].(map[string]interface{})
+					if len(authConfigRaw) > 0 {
+						authConfigMap := make(map[string]interface{})
+						authConfigMap["user_name"] = authConfigRaw["userName"]
+						authConfigMap["password"] = authConfigRaw["password"]
+						authConfigMaps = append(authConfigMaps, authConfigMap)
+					}
+				}
+				registryConfigMap["auth_config"] = authConfigMaps
+				certConfigMaps := make([]map[string]interface{}, 0)
+				if registryConfigRaw["certConfig"] != nil {
+					certConfigRaw := registryConfigRaw["certConfig"].(map[string]interface{})
+					if len(certConfigRaw) > 0 {
+						certConfigMap := make(map[string]interface{})
+						certConfigMap["insecure"] = certConfigRaw["insecure"]
+						certConfigMap["root_ca_cert_base64"] = certConfigRaw["rootCaCertBase64"]
+						certConfigMaps = append(certConfigMaps, certConfigMap)
+					}
+				}
+				registryConfigMap["cert_config"] = certConfigMaps
+				networkConfigMaps := make([]map[string]interface{}, 0)
+				if registryConfigRaw["networkConfig"] != nil {
+					networkConfigRaw := registryConfigRaw["networkConfig"].(map[string]interface{})
+					if len(networkConfigRaw) > 0 {
+						networkConfigMap := make(map[string]interface{})
+						networkConfigMap["vpc_id"] = networkConfigRaw["vpcId"]
+						networkConfigMap["vswitch_id"] = networkConfigRaw["vSwitchId"]
+						networkConfigMap["security_group_id"] = networkConfigRaw["securityGroupId"]
+						networkConfigMaps = append(networkConfigMaps, networkConfigMap)
+					}
+				}
+				registryConfigMap["network_config"] = networkConfigMaps
+				registryConfigMaps = append(registryConfigMaps, registryConfigMap)
+			}
+			customContainerConfigMap["registry_config"] = registryConfigMaps
 			customContainerConfigMaps = append(customContainerConfigMaps, customContainerConfigMap)
 		}
 		mapping["custom_container_config"] = customContainerConfigMaps

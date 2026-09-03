@@ -165,6 +165,71 @@ func resourceAliCloudFcv3Function() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
+						"registry_config": {
+							Type:     schema.TypeList,
+							Optional: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"auth_config": {
+										Type:     schema.TypeList,
+										Optional: true,
+										MaxItems: 1,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"user_name": {
+													Type:     schema.TypeString,
+													Optional: true,
+												},
+												"password": {
+													Type:      schema.TypeString,
+													Optional:  true,
+													Sensitive: true,
+												},
+											},
+										},
+									},
+									"cert_config": {
+										Type:     schema.TypeList,
+										Optional: true,
+										MaxItems: 1,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"insecure": {
+													Type:     schema.TypeBool,
+													Optional: true,
+												},
+												"root_ca_cert_base64": {
+													Type:     schema.TypeString,
+													Optional: true,
+												},
+											},
+										},
+									},
+									"network_config": {
+										Type:     schema.TypeList,
+										Optional: true,
+										MaxItems: 1,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"vpc_id": {
+													Type:     schema.TypeString,
+													Optional: true,
+												},
+												"vswitch_id": {
+													Type:     schema.TypeString,
+													Optional: true,
+												},
+												"security_group_id": {
+													Type:     schema.TypeString,
+													Optional: true,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
 					},
 				},
 			},
@@ -810,6 +875,50 @@ func resourceAliCloudFcv3FunctionCreate(d *schema.ResourceData, meta interface{}
 		if acrInstanceId1 != nil && acrInstanceId1 != "" {
 			customContainerConfig["acrInstanceId"] = acrInstanceId1
 		}
+		registryConfig1 := make(map[string]interface{})
+		authConfig1 := make(map[string]interface{})
+		userName1, _ := jsonpath.Get("$[0].registry_config[0].auth_config[0].user_name", d.Get("custom_container_config"))
+		if userName1 != nil && userName1 != "" {
+			authConfig1["userName"] = userName1
+		}
+		password1, _ := jsonpath.Get("$[0].registry_config[0].auth_config[0].password", d.Get("custom_container_config"))
+		if password1 != nil && password1 != "" {
+			authConfig1["password"] = password1
+		}
+		if len(authConfig1) > 0 {
+			registryConfig1["authConfig"] = authConfig1
+		}
+		certConfig1 := make(map[string]interface{})
+		insecure1, _ := jsonpath.Get("$[0].registry_config[0].cert_config[0].insecure", d.Get("custom_container_config"))
+		if insecure1 != nil {
+			certConfig1["insecure"] = insecure1
+		}
+		rootCaCertBase641, _ := jsonpath.Get("$[0].registry_config[0].cert_config[0].root_ca_cert_base64", d.Get("custom_container_config"))
+		if rootCaCertBase641 != nil && rootCaCertBase641 != "" {
+			certConfig1["rootCaCertBase64"] = rootCaCertBase641
+		}
+		if len(certConfig1) > 0 {
+			registryConfig1["certConfig"] = certConfig1
+		}
+		networkConfig1 := make(map[string]interface{})
+		vpcId1, _ := jsonpath.Get("$[0].registry_config[0].network_config[0].vpc_id", d.Get("custom_container_config"))
+		if vpcId1 != nil && vpcId1 != "" {
+			networkConfig1["vpcId"] = vpcId1
+		}
+		vSwitchId1, _ := jsonpath.Get("$[0].registry_config[0].network_config[0].vswitch_id", d.Get("custom_container_config"))
+		if vSwitchId1 != nil && vSwitchId1 != "" {
+			networkConfig1["vSwitchId"] = vSwitchId1
+		}
+		securityGroupId1, _ := jsonpath.Get("$[0].registry_config[0].network_config[0].security_group_id", d.Get("custom_container_config"))
+		if securityGroupId1 != nil && securityGroupId1 != "" {
+			networkConfig1["securityGroupId"] = securityGroupId1
+		}
+		if len(networkConfig1) > 0 {
+			registryConfig1["networkConfig"] = networkConfig1
+		}
+		if len(registryConfig1) > 0 {
+			customContainerConfig["registryConfig"] = registryConfig1
+		}
 
 		request["customContainerConfig"] = customContainerConfig
 	}
@@ -1090,6 +1199,61 @@ func resourceAliCloudFcv3FunctionRead(d *schema.ResourceData, meta interface{}) 
 			healthCheckConfigMaps = append(healthCheckConfigMaps, healthCheckConfigMap)
 		}
 		customContainerConfigMap["health_check_config"] = healthCheckConfigMaps
+		registryConfigMaps := make([]map[string]interface{}, 0)
+		registryConfigRaw := make(map[string]interface{})
+		if customContainerConfigRaw["registryConfig"] != nil {
+			registryConfigRaw = customContainerConfigRaw["registryConfig"].(map[string]interface{})
+		}
+		if len(registryConfigRaw) > 0 {
+			registryConfigMap := make(map[string]interface{})
+			authConfigMaps := make([]map[string]interface{}, 0)
+			authConfigRaw := make(map[string]interface{})
+			if registryConfigRaw["authConfig"] != nil {
+				authConfigRaw = registryConfigRaw["authConfig"].(map[string]interface{})
+			}
+			if len(authConfigRaw) > 0 {
+				authConfigMap := make(map[string]interface{})
+				authConfigMap["user_name"] = authConfigRaw["userName"]
+				if authConfigRaw["password"] != nil && authConfigRaw["password"] != "" {
+					authConfigMap["password"] = authConfigRaw["password"]
+				} else if v, ok := d.GetOk("custom_container_config.0.registry_config.0.auth_config.0.password"); ok {
+					authConfigMap["password"] = v
+				}
+				authConfigMaps = append(authConfigMaps, authConfigMap)
+			} else if v, ok := d.GetOk("custom_container_config.0.registry_config.0.auth_config"); ok {
+				for _, item := range v.([]interface{}) {
+					if m, ok := item.(map[string]interface{}); ok {
+						authConfigMaps = append(authConfigMaps, m)
+					}
+				}
+			}
+			registryConfigMap["auth_config"] = authConfigMaps
+			certConfigMaps := make([]map[string]interface{}, 0)
+			if registryConfigRaw["certConfig"] != nil {
+				certConfigRaw := registryConfigRaw["certConfig"].(map[string]interface{})
+				if len(certConfigRaw) > 0 {
+					certConfigMap := make(map[string]interface{})
+					certConfigMap["insecure"] = certConfigRaw["insecure"]
+					certConfigMap["root_ca_cert_base64"] = certConfigRaw["rootCaCertBase64"]
+					certConfigMaps = append(certConfigMaps, certConfigMap)
+				}
+			}
+			registryConfigMap["cert_config"] = certConfigMaps
+			networkConfigMaps := make([]map[string]interface{}, 0)
+			if registryConfigRaw["networkConfig"] != nil {
+				networkConfigRaw := registryConfigRaw["networkConfig"].(map[string]interface{})
+				if len(networkConfigRaw) > 0 {
+					networkConfigMap := make(map[string]interface{})
+					networkConfigMap["vpc_id"] = networkConfigRaw["vpcId"]
+					networkConfigMap["vswitch_id"] = networkConfigRaw["vSwitchId"]
+					networkConfigMap["security_group_id"] = networkConfigRaw["securityGroupId"]
+					networkConfigMaps = append(networkConfigMaps, networkConfigMap)
+				}
+			}
+			registryConfigMap["network_config"] = networkConfigMaps
+			registryConfigMaps = append(registryConfigMaps, registryConfigMap)
+		}
+		customContainerConfigMap["registry_config"] = registryConfigMaps
 		customContainerConfigMaps = append(customContainerConfigMaps, customContainerConfigMap)
 	}
 	if err := d.Set("custom_container_config", customContainerConfigMaps); err != nil {
@@ -1662,6 +1826,50 @@ func resourceAliCloudFcv3FunctionUpdate(d *schema.ResourceData, meta interface{}
 			acrInstanceId1, _ := jsonpath.Get("$[0].acr_instance_id", v)
 			if acrInstanceId1 != nil && acrInstanceId1 != "" {
 				customContainerConfig["acrInstanceId"] = acrInstanceId1
+			}
+			registryConfig1 := make(map[string]interface{})
+			authConfig1 := make(map[string]interface{})
+			userName1, _ := jsonpath.Get("$[0].registry_config[0].auth_config[0].user_name", d.Get("custom_container_config"))
+			if userName1 != nil && userName1 != "" {
+				authConfig1["userName"] = userName1
+			}
+			password1, _ := jsonpath.Get("$[0].registry_config[0].auth_config[0].password", d.Get("custom_container_config"))
+			if password1 != nil && password1 != "" {
+				authConfig1["password"] = password1
+			}
+			if len(authConfig1) > 0 {
+				registryConfig1["authConfig"] = authConfig1
+			}
+			certConfig1 := make(map[string]interface{})
+			insecure1, _ := jsonpath.Get("$[0].registry_config[0].cert_config[0].insecure", d.Get("custom_container_config"))
+			if insecure1 != nil {
+				certConfig1["insecure"] = insecure1
+			}
+			rootCaCertBase641, _ := jsonpath.Get("$[0].registry_config[0].cert_config[0].root_ca_cert_base64", d.Get("custom_container_config"))
+			if rootCaCertBase641 != nil && rootCaCertBase641 != "" {
+				certConfig1["rootCaCertBase64"] = rootCaCertBase641
+			}
+			if len(certConfig1) > 0 {
+				registryConfig1["certConfig"] = certConfig1
+			}
+			networkConfig1 := make(map[string]interface{})
+			vpcId1, _ := jsonpath.Get("$[0].registry_config[0].network_config[0].vpc_id", d.Get("custom_container_config"))
+			if vpcId1 != nil && vpcId1 != "" {
+				networkConfig1["vpcId"] = vpcId1
+			}
+			vSwitchId1, _ := jsonpath.Get("$[0].registry_config[0].network_config[0].vswitch_id", d.Get("custom_container_config"))
+			if vSwitchId1 != nil && vSwitchId1 != "" {
+				networkConfig1["vSwitchId"] = vSwitchId1
+			}
+			securityGroupId1, _ := jsonpath.Get("$[0].registry_config[0].network_config[0].security_group_id", d.Get("custom_container_config"))
+			if securityGroupId1 != nil && securityGroupId1 != "" {
+				networkConfig1["securityGroupId"] = securityGroupId1
+			}
+			if len(networkConfig1) > 0 {
+				registryConfig1["networkConfig"] = networkConfig1
+			}
+			if len(registryConfig1) > 0 {
+				customContainerConfig["registryConfig"] = registryConfig1
 			}
 
 			request["customContainerConfig"] = customContainerConfig

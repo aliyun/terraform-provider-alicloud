@@ -2063,4 +2063,178 @@ data "alicloud_resource_manager_resource_groups" "default" {
 `, name)
 }
 
+var AliCloudFc3FunctionMapRegistryConfig = map[string]string{
+	"cpu":                  "0.5",
+	"function_name":        CHECKSET,
+	"disk_size":            "512",
+	"instance_concurrency": CHECKSET,
+	"memory_size":          "512",
+	"create_time":          CHECKSET,
+	"internet_access":      "true",
+}
+
+func AliCloudFc3FunctionRegistryConfigDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+variable "registry_image" {
+  default = "registry-vpc.cn-hangzhou.aliyuncs.com/eci_open/nginx:alpine"
+}
+
+data "alicloud_vpcs" "default" {
+  is_default = true
+}
+
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+}
+
+data "alicloud_security_groups" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+}
+`, name)
+}
+
+func TestAccAliCloudFcv3Function_registryConfig(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_fcv3_function.default"
+	ra := resourceAttrInit(resourceId, AliCloudFc3FunctionMapRegistryConfig)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &Fcv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeFcv3Function")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sfc3reg%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudFc3FunctionRegistryConfigDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"function_name": name,
+					"memory_size":   "512",
+					"runtime":       "custom-container",
+					"timeout":       "3",
+					"handler":       "index.handler",
+					"description":   "registry_config create",
+					"cpu":           "0.5",
+					"disk_size":     "512",
+					"log_config": []map[string]interface{}{
+						{
+							"log_begin_rule": "None",
+						},
+					},
+					"custom_container_config": []map[string]interface{}{
+						{
+							"image": "${var.registry_image}",
+							"port":  "9000",
+							"registry_config": []map[string]interface{}{
+								{
+									"auth_config": []map[string]interface{}{
+										{
+											"user_name": "tf-acc-user",
+											"password":  "tf-acc-password1",
+										},
+									},
+									"cert_config": []map[string]interface{}{
+										{
+											"insecure":            "true",
+											"root_ca_cert_base64": "dGVzdC1jYS1jZXJ0",
+										},
+									},
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"function_name":                                                                 name,
+						"custom_container_config.#":                                                     "1",
+						"custom_container_config.0.registry_config.#":                                   "1",
+						"custom_container_config.0.registry_config.0.auth_config.#":                     "1",
+						"custom_container_config.0.registry_config.0.auth_config.0.user_name":           "tf-acc-user",
+						"custom_container_config.0.registry_config.0.auth_config.0.password":            "tf-acc-password1",
+						"custom_container_config.0.registry_config.0.cert_config.#":                     "1",
+						"custom_container_config.0.registry_config.0.cert_config.0.insecure":            "true",
+						"custom_container_config.0.registry_config.0.cert_config.0.root_ca_cert_base64": "dGVzdC1jYS1jZXJ0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"function_name": name,
+					"memory_size":   "512",
+					"runtime":       "custom-container",
+					"timeout":       "3",
+					"handler":       "index.handler",
+					"description":   "registry_config update",
+					"cpu":           "0.5",
+					"disk_size":     "512",
+					"log_config": []map[string]interface{}{
+						{
+							"log_begin_rule": "None",
+						},
+					},
+					"custom_container_config": []map[string]interface{}{
+						{
+							"image": "${var.registry_image}",
+							"port":  "9000",
+							"registry_config": []map[string]interface{}{
+								{
+									"auth_config": []map[string]interface{}{
+										{
+											"user_name": "tf-acc-user2",
+											"password":  "tf-acc-password2",
+										},
+									},
+									"cert_config": []map[string]interface{}{
+										{
+											"insecure":            "false",
+											"root_ca_cert_base64": "dGVzdC1jYS1jZXJ0LXVwZGF0ZQ==",
+										},
+									},
+									"network_config": []map[string]interface{}{
+										{
+											"vpc_id":            "${data.alicloud_vpcs.default.ids.0}",
+											"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
+											"security_group_id": "${data.alicloud_security_groups.default.ids.0}",
+										},
+									},
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"custom_container_config.0.registry_config.0.auth_config.0.user_name":            "tf-acc-user2",
+						"custom_container_config.0.registry_config.0.auth_config.0.password":             "tf-acc-password2",
+						"custom_container_config.0.registry_config.0.cert_config.0.insecure":             "false",
+						"custom_container_config.0.registry_config.0.cert_config.0.root_ca_cert_base64":  "dGVzdC1jYS1jZXJ0LXVwZGF0ZQ==",
+						"custom_container_config.0.registry_config.0.network_config.#":                   "1",
+						"custom_container_config.0.registry_config.0.network_config.0.vpc_id":            CHECKSET,
+						"custom_container_config.0.registry_config.0.network_config.0.vswitch_id":        CHECKSET,
+						"custom_container_config.0.registry_config.0.network_config.0.security_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: false,
+			},
+		},
+	})
+}
+
 // Test Fcv3 Function. <<< Resource test cases, automatically generated.
