@@ -441,5 +441,20 @@ func resourceAliCloudFcv3ProvisionConfigDelete(d *schema.ResourceData, meta inte
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
-	return nil
+	fcv3ServiceV2 := Fcv3ServiceV2{client}
+	deleteWait := incrementalWait(3*time.Second, 5*time.Second)
+	return resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		object, err := fcv3ServiceV2.DescribeFcv3ProvisionConfig(functionName)
+		if err != nil {
+			if NotFoundError(err) {
+				return nil
+			}
+			return resource.NonRetryableError(err)
+		}
+		if object == nil {
+			return nil
+		}
+		deleteWait()
+		return resource.RetryableError(WrapErrorf(Error("ProvisionConfig [%s] deletion is in progress", functionName), "please wait a moment and try again"))
+	})
 }
