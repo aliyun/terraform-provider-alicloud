@@ -74,7 +74,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Cloud Control Resource can be imported using the id, e.g.
+Cloud Control Resource can be imported using the id, which consists of provider, product, resource_code and resource_id, e.g.
 
 ```shell
 $ terraform import alicloud_cloud_control_resource.example <provider>:<product>:<resource_code>:<resource_id>

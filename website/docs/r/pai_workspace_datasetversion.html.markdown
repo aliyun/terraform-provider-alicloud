@@ -130,7 +130,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-PAI Workspace Datasetversion can be imported using the id, e.g.
+PAI Workspace Datasetversion can be imported using the id, which consists of dataset_id and version_name, e.g.
 
 ```shell
 $ terraform import alicloud_pai_workspace_datasetversion.example <dataset_id>:<version_name>

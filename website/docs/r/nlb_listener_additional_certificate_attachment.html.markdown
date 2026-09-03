@@ -223,7 +223,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-NLB Listener Additional Certificate Attachment can be imported using the id, e.g.
+NLB Listener Additional Certificate Attachment can be imported using the id, which consists of listener_id and certificate_id, e.g.
 
 ```shell
 $ terraform import alicloud_nlb_listener_additional_certificate_attachment.example <listener_id>:<certificate_id>

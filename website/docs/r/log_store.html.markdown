@@ -193,7 +193,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-SLS Log Store can be imported using the id, e.g.
+SLS Log Store can be imported using the id, which consists of project_name and logstore_name, e.g.
 
 ```shell
 $ terraform import alicloud_log_store.example <project_name>:<logstore_name>

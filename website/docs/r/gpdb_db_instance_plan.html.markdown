@@ -193,7 +193,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-GPDB DB Instance Plan can be imported using the id, e.g.
+GPDB DB Instance Plan can be imported using the id, which consists of db_instance_id and plan_id, e.g.
 
 ```shell
 $ terraform import alicloud_gpdb_db_instance_plan.example <db_instance_id>:<plan_id>

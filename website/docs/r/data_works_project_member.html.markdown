@@ -103,7 +103,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Data Works Project Member can be imported using the id, e.g.
+Data Works Project Member can be imported using the id, which consists of project_id and user_id, e.g.
 
 ```shell
 $ terraform import alicloud_data_works_project_member.example <project_id>:<user_id>

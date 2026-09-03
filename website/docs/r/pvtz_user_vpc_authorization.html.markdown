@@ -76,7 +76,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Private Zone User Vpc Authorization can be imported using the id, e.g.
+Private Zone User Vpc Authorization can be imported using the id, which consists of authorized_user_id and auth_type, e.g.
 
 ```shell
 $ terraform import alicloud_pvtz_user_vpc_authorization.example <authorized_user_id>:<auth_type>

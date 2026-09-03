@@ -95,7 +95,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Polar Db Database can be imported using the id, e.g.
+Polar Db Database can be imported using the id, which consists of db_cluster_id and db_name, e.g.
 
 ```shell
 $ terraform import alicloud_polardb_database.example <db_cluster_id>:<db_name>

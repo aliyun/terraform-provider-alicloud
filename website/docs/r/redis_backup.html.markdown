@@ -105,7 +105,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Tair (Redis OSS-Compatible) And Memcache (KVStore) Backup can be imported using the id, e.g.
+Tair (Redis OSS-Compatible) And Memcache (KVStore) Backup can be imported using the id, which consists of instance_id and backup_id, e.g.
 
 ```shell
 $ terraform import alicloud_redis_backup.example <instance_id>:<backup_id>

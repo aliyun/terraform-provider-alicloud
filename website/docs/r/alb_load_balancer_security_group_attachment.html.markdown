@@ -112,7 +112,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Application Load Balancer (ALB) Load Balancer Security Group Attachment can be imported using the id, e.g.
+Application Load Balancer (ALB) Load Balancer Security Group Attachment can be imported using the id, which consists of load_balancer_id and security_group_id, e.g.
 
 ```shell
 $ terraform import alicloud_alb_load_balancer_security_group_attachment.example <load_balancer_id>:<security_group_id>

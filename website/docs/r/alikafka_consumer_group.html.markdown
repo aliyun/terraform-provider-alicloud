@@ -70,7 +70,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-AliKafka Consumer Group can be imported using the id, e.g.
+AliKafka Consumer Group can be imported using the id, which consists of instance_id and consumer_id, e.g.
 
 ```shell
 $ terraform import alicloud_alikafka_consumer_group.example <instance_id>:<consumer_id>

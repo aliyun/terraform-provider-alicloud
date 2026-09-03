@@ -86,7 +86,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-FCV3 Layer Version can be imported using the id, e.g.
+FCV3 Layer Version can be imported using the id, which consists of layer_name and version, e.g.
 
 ```shell
 $ terraform import alicloud_fcv3_layer_version.example <layer_name>:<version>

@@ -184,7 +184,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-ESA Load Balancer can be imported using the id, e.g.
+ESA Load Balancer can be imported using the id, which consists of site_id and load_balancer_id, e.g.
 
 ```shell
 $ terraform import alicloud_esa_load_balancer.example <site_id>:<load_balancer_id>

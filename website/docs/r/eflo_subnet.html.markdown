@@ -85,7 +85,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Eflo Subnet can be imported using the id, e.g.
+Eflo Subnet can be imported using the id, which consists of vpd_id and subnet_id, e.g.
 
 ```shell
 $ terraform import alicloud_eflo_subnet.example <vpd_id>:<subnet_id>

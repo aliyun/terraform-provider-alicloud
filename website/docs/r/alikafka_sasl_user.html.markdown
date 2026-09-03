@@ -107,7 +107,7 @@ The following attributes are exported:
 
 ## Import
 
-AliKafka Sasl User can be imported using the id, e.g.
+AliKafka Sasl User can be imported using the id, which consists of instance_id and username, e.g.
 
 ```shell
 terraform import alicloud_alikafka_sasl_user.example <instance_id>:<username>

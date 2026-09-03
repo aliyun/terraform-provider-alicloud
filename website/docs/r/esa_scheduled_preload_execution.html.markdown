@@ -81,7 +81,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-ESA Scheduled Preload Execution can be imported using the id, e.g.
+ESA Scheduled Preload Execution can be imported using the id, which consists of scheduled_preload_job_id and scheduled_preload_execution_id, e.g.
 
 ```shell
 $ terraform import alicloud_esa_scheduled_preload_execution.example <scheduled_preload_job_id>:<scheduled_preload_execution_id>

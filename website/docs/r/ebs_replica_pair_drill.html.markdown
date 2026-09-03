@@ -60,7 +60,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-EBS Replica Pair Drill can be imported using the id, e.g.
+EBS Replica Pair Drill can be imported using the id, which consists of pair_id and replica_pair_drill_id, e.g.
 
 ```shell
 $ terraform import alicloud_ebs_replica_pair_drill.example <pair_id>:<replica_pair_drill_id>

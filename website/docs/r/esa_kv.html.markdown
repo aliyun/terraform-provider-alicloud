@@ -69,7 +69,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-ESA Kv can be imported using the id, e.g.
+ESA Kv can be imported using the id, which consists of namespace and key, e.g.
 
 ```shell
 $ terraform import alicloud_esa_kv.example <namespace>:<key>

@@ -148,7 +148,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Bastion Host User can be imported using the id, e.g.
+Bastion Host User can be imported using the id, which consists of instance_id and user_id, e.g.
 
 ```shell
 $ terraform import alicloud_bastionhost_user.example <instance_id>:<user_id>

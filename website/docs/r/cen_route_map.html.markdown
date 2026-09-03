@@ -149,7 +149,7 @@ The RouteMapId attributes are exported:
 
 ## Import
 
-CEN RouteMap can be imported using the id, e.g.
+CEN RouteMap can be imported using the id, which consists of cen_id and route_map_id, e.g.
 
 ```shell
 $ terraform import alicloud_cen_route_map.default <cen_id>:<route_map_id>.

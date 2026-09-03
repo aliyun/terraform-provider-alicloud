@@ -114,7 +114,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-GPDB DB Instance IP Array can be imported using the id, e.g.
+GPDB DB Instance IP Array can be imported using the id, which consists of db_instance_id and db_instance_ip_array_name, e.g.
 
 ```shell
 $ terraform import alicloud_gpdb_db_instance_ip_array.example <db_instance_id>:<db_instance_ip_array_name>

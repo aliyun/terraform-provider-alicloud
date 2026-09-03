@@ -75,7 +75,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Service Catalog Product Portfolio Association can be imported using the id, e.g.
+Service Catalog Product Portfolio Association can be imported using the id, which consists of product_id and portfolio_id, e.g.
 
 ```shell
 $ terraform import alicloud_service_catalog_product_portfolio_association.example <product_id>:<portfolio_id>

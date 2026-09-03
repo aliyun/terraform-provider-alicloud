@@ -99,7 +99,7 @@ The following attributes are exported:
 
 ## Import
 
-Bastion Host Host Account can be imported using the id, e.g.
+Bastion Host Host Account can be imported using the id, which consists of instance_id and host_account_id, e.g.
 
 ```shell
 $ terraform import alicloud_bastionhost_host_account.example <instance_id>:<host_account_id>

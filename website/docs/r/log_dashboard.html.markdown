@@ -106,7 +106,7 @@ The following attributes are exported:
 
 ## Import
 
-Log Dashboard can be imported using the id, e.g.
+Log Dashboard can be imported using the id, which consists of project_name and dashboard_name, e.g.
 
 ```shell
 $ terraform import alicloud_log_dashboard.example <project_name>:<dashboard_name>

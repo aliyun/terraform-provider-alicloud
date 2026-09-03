@@ -161,7 +161,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-ARMS Env Service Monitor can be imported using the id, e.g.
+ARMS Env Service Monitor can be imported using the id, which consists of environment_id, namespace and env_service_monitor_name, e.g.
 
 ```shell
 $ terraform import alicloud_arms_env_service_monitor.example <environment_id>:<namespace>:<env_service_monitor_name>

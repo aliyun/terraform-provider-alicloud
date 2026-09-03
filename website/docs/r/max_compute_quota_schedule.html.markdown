@@ -211,7 +211,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Max Compute Quota Schedule can be imported using the id, e.g.
+Max Compute Quota Schedule can be imported using the id, which consists of nickname and timezone, e.g.
 
 ```shell
 $ terraform import alicloud_max_compute_quota_schedule.example <nickname>:<timezone>

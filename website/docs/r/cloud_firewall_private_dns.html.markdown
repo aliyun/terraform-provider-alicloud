@@ -112,7 +112,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Cloud Firewall Private Dns can be imported using the id, e.g.
+Cloud Firewall Private Dns can be imported using the id, which consists of access_instance_id and region_no, e.g.
 
 ```shell
 $ terraform import alicloud_cloud_firewall_private_dns.example <access_instance_id>:<region_no>

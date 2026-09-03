@@ -78,7 +78,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-WAFV3 Address Book can be imported using the id, e.g.
+WAFV3 Address Book can be imported using the id, which consists of instance_id and address_book_id, e.g.
 
 ```shell
 $ terraform import alicloud_wafv3_address_book.example <instance_id>:<address_book_id>

@@ -90,7 +90,7 @@ The following attributes are exported:
 
 ## Import
 
-Container Registry Enterprise Edition Repository can be imported using the id, e.g.
+Container Registry Enterprise Edition Repository can be imported using the id, which consists of instance_id, namespace and name, e.g.
 
 ```shell
 $ terraform import alicloud_cr_ee_repo.example <instance_id>:<namespace>:<name>

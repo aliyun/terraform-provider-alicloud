@@ -72,7 +72,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Resource Manager Shared Target can be imported using the id, e.g.
+Resource Manager Shared Target can be imported using the id, which consists of resource_share_id and target_id, e.g.
 
 ```shell
 $ terraform import alicloud_resource_manager_shared_target.example <resource_share_id>:<target_id>

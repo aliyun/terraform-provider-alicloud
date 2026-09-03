@@ -132,7 +132,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Route Entry can be imported using the id, e.g.
+Route Entry can be imported using the id, which consists of route_table_id, router_id, destination_cidrblock, nexthop_type and nexthop_id, e.g.
 
 ```shell
 $ terraform import alicloud_route_entry.example <route_table_id>:<router_id>:<destination_cidrblock>:<nexthop_type>:<nexthop_id>

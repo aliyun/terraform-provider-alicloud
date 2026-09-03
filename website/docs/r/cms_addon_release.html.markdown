@@ -95,7 +95,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Cms Addon Release can be imported using the id, e.g.
+Cms Addon Release can be imported using the id, which consists of integration_policy_id and addon_release_name, e.g.
 
 ```shell
 $ terraform import alicloud_cms_addon_release.example <integration_policy_id>:<addon_release_name>

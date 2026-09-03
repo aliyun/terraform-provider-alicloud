@@ -105,7 +105,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-CR Artifact Lifecycle Rule can be imported using the id, e.g.
+CR Artifact Lifecycle Rule can be imported using the id, which consists of instance_id and artifact_lifecycle_rule_id, e.g.
 
 ```shell
 $ terraform import alicloud_cr_artifact_lifecycle_rule.example <instance_id>:<artifact_lifecycle_rule_id>

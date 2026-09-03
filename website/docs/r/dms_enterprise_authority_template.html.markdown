@@ -69,7 +69,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-DMS Enterprise Authority Template can be imported using the id, e.g.
+DMS Enterprise Authority Template can be imported using the id, which consists of tid and authority_template_id, e.g.
 
 ```shell
 $ terraform import alicloud_dms_enterprise_authority_template.example <tid>:<authority_template_id>

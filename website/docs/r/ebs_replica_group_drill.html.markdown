@@ -60,7 +60,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-EBS Replica Group Drill can be imported using the id, e.g.
+EBS Replica Group Drill can be imported using the id, which consists of group_id and replica_group_drill_id, e.g.
 
 ```shell
 $ terraform import alicloud_ebs_replica_group_drill.example <group_id>:<replica_group_drill_id>

@@ -96,7 +96,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-ARMS Env Custom Job can be imported using the id, e.g.
+ARMS Env Custom Job can be imported using the id, which consists of environment_id and env_custom_job_name, e.g.
 
 ```shell
 $ terraform import alicloud_arms_env_custom_job.example <environment_id>:<env_custom_job_name>

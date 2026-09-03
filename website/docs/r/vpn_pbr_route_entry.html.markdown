@@ -164,7 +164,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-VPN Pbr route entry can be imported using the id, e.g.
+VPN Pbr route entry can be imported using the id, which consists of vpn_gateway_id, next_hop, route_source and route_dest, e.g.
 
 ```shell
 $ terraform import alicloud_vpn_pbr_route_entry.example <vpn_gateway_id>:<next_hop>:<route_source>:<route_dest>

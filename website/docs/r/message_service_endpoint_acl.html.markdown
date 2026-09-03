@@ -68,7 +68,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Message Service Endpoint Acl can be imported using the id, e.g.
+Message Service Endpoint Acl can be imported using the id, which consists of endpoint_type, acl_strategy and cidr, e.g.
 
 ```shell
 $ terraform import alicloud_message_service_endpoint_acl.example <endpoint_type>:<acl_strategy>:<cidr>

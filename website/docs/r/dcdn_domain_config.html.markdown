@@ -107,7 +107,7 @@ The following attributes are exported:
 
 ## Import
 
-DCDN domain config can be imported using the id, e.g.
+DCDN domain config can be imported using the id, which consists of domain_name, function_name and config_id, e.g.
 
 ```shell
 $ terraform import alicloud_dcdn_domain_config.example <domain_name>:<function_name>:<config_id>

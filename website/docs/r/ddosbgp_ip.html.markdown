@@ -83,7 +83,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Anti-DDoS Pro (DdosBgp) Ip can be imported using the id, e.g.
+Anti-DDoS Pro (DdosBgp) Ip can be imported using the id, which consists of instance_id and ip, e.g.
 
 ```shell
 $ terraform import alicloud_ddosbgp_ip.example <instance_id>:<ip>

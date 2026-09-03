@@ -109,7 +109,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Express Connect Vbr Pconn Association can be imported using the id, e.g.
+Express Connect Vbr Pconn Association can be imported using the id, which consists of vbr_id and physical_connection_id, e.g.
 
 ```shell
 $ terraform import alicloud_express_connect_vbr_pconn_association.example <vbr_id>:<physical_connection_id>

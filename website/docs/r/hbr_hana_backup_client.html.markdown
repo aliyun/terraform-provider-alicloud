@@ -131,7 +131,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Hybrid Backup Recovery (HBR) Hana Backup Client can be imported using the id, e.g.
+Hybrid Backup Recovery (HBR) Hana Backup Client can be imported using the id, which consists of vault_id and client_id, e.g.
 
 ```shell
 $ terraform import alicloud_hbr_hana_backup_client.example <vault_id>:<client_id>

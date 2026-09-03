@@ -100,7 +100,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Click House Enterprise Db Cluster Security I P can be imported using the id, e.g.
+Click House Enterprise Db Cluster Security I P can be imported using the id, which consists of db_instance_id and group_name, e.g.
 
 ```shell
 $ terraform import alicloud_click_house_enterprise_db_cluster_security_ip.example <db_instance_id>:<group_name>

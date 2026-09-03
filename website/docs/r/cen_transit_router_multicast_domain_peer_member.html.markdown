@@ -128,7 +128,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Cen Transit Router Multicast Domain Peer Member can be imported using the id, e.g.
+Cen Transit Router Multicast Domain Peer Member can be imported using the id, which consists of transit_router_multicast_domain_id, group_ip_address and peer_transit_router_multicast_domain_id, e.g.
 
 ```shell
 $terraform import alicloud_cen_transit_router_multicast_domain_peer_member.example <transit_router_multicast_domain_id>:<group_ip_address>:<peer_transit_router_multicast_domain_id>

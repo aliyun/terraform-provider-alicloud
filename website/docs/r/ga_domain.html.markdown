@@ -60,7 +60,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Ga Domain can be imported using the id, e.g.
+Ga Domain can be imported using the id, which consists of accelerator_id and domain, e.g.
 
 ```shell
 $ terraform import alicloud_ga_domain.example <accelerator_id>:<domain>
