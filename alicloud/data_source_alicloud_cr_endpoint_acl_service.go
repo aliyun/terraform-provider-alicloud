@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -21,7 +22,8 @@ func dataSourceAlicloudCrEndpointAclService() *schema.Resource {
 			"endpoint_type": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{"internet"}, false),
+				StateFunc:    func(v interface{}) string { return strings.ToLower(v.(string)) },
+				ValidateFunc: validation.StringInSlice([]string{"internet", "Internet"}, false),
 			},
 			"instance_id": {
 				Type:     schema.TypeString,
@@ -46,7 +48,7 @@ func dataSourceAlicloudCrEndpointAclServiceRead(d *schema.ResourceData, meta int
 	action := "UpdateInstanceEndpointStatus"
 	request := make(map[string]interface{})
 	request["Enable"] = d.Get("enable")
-	request["EndpointType"] = d.Get("endpoint_type")
+	request["EndpointType"] = convertCrEndpointType(d.Get("endpoint_type").(string))
 	request["InstanceId"] = d.Get("instance_id")
 	if v, ok := d.GetOk("module_name"); ok {
 		request["ModuleName"] = v
@@ -71,8 +73,8 @@ func dataSourceAlicloudCrEndpointAclServiceRead(d *schema.ResourceData, meta int
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cr_instance_endpoint_acl_service", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprint(request["InstanceId"], ":", request["EndpointType"]))
-	d.Set("endpoint_type", request["EndpointType"])
+	d.SetId(fmt.Sprint(request["InstanceId"], ":", d.Get("endpoint_type").(string)))
+	d.Set("endpoint_type", d.Get("endpoint_type").(string))
 	d.Set("instance_id", request["InstanceId"])
 	d.Set("enable", request["Enable"])
 

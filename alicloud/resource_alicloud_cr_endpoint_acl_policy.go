@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -30,10 +31,14 @@ func resourceAlicloudCrEndpointAclPolicy() *schema.Resource {
 				ForceNew: true,
 			},
 			"endpoint_type": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"internet"}, false),
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+				// The CR endpoint APIs document EndpointType as "Internet";
+				// accept that spelling too and normalize to the lowercase
+				// form used in state and resource IDs.
+				StateFunc:    func(v interface{}) string { return strings.ToLower(v.(string)) },
+				ValidateFunc: validation.StringInSlice([]string{"internet", "Internet"}, false),
 			},
 			"entry": {
 				Type:     schema.TypeString,
@@ -64,7 +69,7 @@ func resourceAlicloudCrEndpointAclPolicyCreate(d *schema.ResourceData, meta inte
 	if v, ok := d.GetOk("description"); ok {
 		request["Comment"] = v
 	}
-	request["EndpointType"] = d.Get("endpoint_type")
+	request["EndpointType"] = convertCrEndpointType(d.Get("endpoint_type").(string))
 	request["Entry"] = d.Get("entry")
 	request["InstanceId"] = d.Get("instance_id")
 	if v, ok := d.GetOk("module_name"); ok {
@@ -106,7 +111,7 @@ func resourceAlicloudCrEndpointAclPolicyCreate(d *schema.ResourceData, meta inte
 		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 
-	d.SetId(fmt.Sprint(request["InstanceId"], ":", request["EndpointType"], ":", request["Entry"]))
+	d.SetId(fmt.Sprint(request["InstanceId"], ":", d.Get("endpoint_type").(string), ":", request["Entry"]))
 
 	// CreateInstanceEndpointAclPolicy propagates the ACL entry asynchronously;
 	// now that the endpoint is RUNNING (gated above), poll GetInstanceEndpoint
@@ -124,6 +129,13 @@ func resourceAlicloudCrEndpointAclPolicyCreate(d *schema.ResourceData, meta inte
 	return resourceAlicloudCrEndpointAclPolicyRead(d, meta)
 }
 func resourceAlicloudCrEndpointAclPolicyRead(d *schema.ResourceData, meta interface{}) error {
+	parts, err := ParseResourceId(d.Id(), 3)
+	if err != nil {
+		return WrapError(err)
+	}
+	if !isCrEndpointType(parts[1]) {
+		return WrapError(fmt.Errorf("invalid endpoint_type %q in resource ID %q: the ID format is <instance_id>:<endpoint_type>:<entry> (e.g. cri-abc123:internet:10.0.0.0/8)", parts[1], d.Id()))
+	}
 	client := meta.(*connectivity.AliyunClient)
 	crService := CrService{client}
 	object, err := crService.DescribeCrEndpointAclPolicy(d.Id())
@@ -135,11 +147,7 @@ func resourceAlicloudCrEndpointAclPolicyRead(d *schema.ResourceData, meta interf
 		}
 		return WrapError(err)
 	}
-	parts, err := ParseResourceId(d.Id(), 3)
-	if err != nil {
-		return WrapError(err)
-	}
-	d.Set("endpoint_type", parts[1])
+	d.Set("endpoint_type", strings.ToLower(parts[1]))
 	d.Set("entry", parts[2])
 	d.Set("instance_id", parts[0])
 	d.Set("description", object["Comment"])
@@ -154,7 +162,7 @@ func resourceAlicloudCrEndpointAclPolicyDelete(d *schema.ResourceData, meta inte
 	action := "DeleteInstanceEndpointAclPolicy"
 	var response map[string]interface{}
 	request := map[string]interface{}{
-		"EndpointType": parts[1],
+		"EndpointType": convertCrEndpointType(parts[1]),
 		"Entry":        parts[2],
 		"InstanceId":   parts[0],
 	}

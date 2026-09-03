@@ -72,6 +72,68 @@ func TestAccAliCloudCREndpointAclPolicy_basic0(t *testing.T) {
 	})
 }
 
+// TestAccAliCloudCREndpointAclPolicy_basic1 covers the API-documented
+// endpoint_type spelling "Internet": the schema accepts it and normalizes it
+// to the lowercase form used in state and resource IDs, and an import ID
+// written with "Internet" (as the CR API documentation shows) imports cleanly
+// without a perpetual diff.
+func TestAccAliCloudCREndpointAclPolicy_basic1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cr_endpoint_acl_policy.default"
+	ra := resourceAttrInit(resourceId, AlicloudCREndpointAclPolicyMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CrService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCrEndpointAclPolicy")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc-cr-aclep-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCREndpointAclPolicyBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":   name,
+					"entry":         "192.168.2.0/24",
+					"instance_id":   "${local.cr_endpoint_instance_id}",
+					"module_name":   "Registry",
+					"endpoint_type": "Internet",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":   name,
+						"entry":         "192.168.2.0/24",
+						"instance_id":   CHECKSET,
+						"module_name":   "Registry",
+						"endpoint_type": "internet",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				// Rewrite the import ID to the API-documented endpoint_type
+				// casing; Read must normalize it back to lowercase.
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					rs, ok := s.RootModule().Resources[resourceId]
+					if !ok {
+						return "", fmt.Errorf("resource %s not found in state", resourceId)
+					}
+					return strings.Replace(rs.Primary.ID, ":internet:", ":Internet:", 1), nil
+				},
+				ImportStateVerifyIgnore: []string{"module_name"},
+			},
+		},
+	})
+}
+
 var AlicloudCREndpointAclPolicyMap0 = map[string]string{}
 
 func AlicloudCREndpointAclPolicyBasicDependence0(name string) string {
@@ -490,4 +552,36 @@ func TestUnitAlicloudCREndpointAclPolicy(t *testing.T) {
 		patcheDorequest.Reset()
 		assert.NotNil(t, err)
 	})
+}
+
+func TestUnitAlicloudCrEndpointTypeConvert(t *testing.T) {
+	for input, want := range map[string]string{
+		"internet": "Internet",
+		"Internet": "Internet",
+		"INTERNET": "Internet",
+		"vpc":      "vpc",
+		"":         "",
+	} {
+		assert.Equal(t, want, convertCrEndpointType(input), "convertCrEndpointType(%q)", input)
+	}
+	assert.True(t, isCrEndpointType("internet"))
+	assert.True(t, isCrEndpointType("Internet"))
+	assert.False(t, isCrEndpointType("10.0.0.0/8"))
+	assert.False(t, isCrEndpointType("vpc"))
+	assert.False(t, isCrEndpointType(""))
+}
+
+// TestUnitAlicloudCREndpointAclPolicyReadInvalidId reproduces the misordered
+// import ID from the field report (<instance_id>:<entry>:<endpoint_type>
+// instead of the documented <instance_id>:<endpoint_type>:<entry>): Read must
+// fail fast with an actionable message naming the ID format instead of
+// forwarding the segment to the API and surfacing a raw InvalidEndpointType.
+func TestUnitAlicloudCREndpointAclPolicyReadInvalidId(t *testing.T) {
+	p := Provider().(*schema.Provider).ResourcesMap
+	d, _ := schema.InternalMap(p["alicloud_cr_endpoint_acl_policy"].Schema).Data(nil, nil)
+	d.SetId("cri-abc123:10.0.0.0/8:internet")
+	err := resourceAlicloudCrEndpointAclPolicyRead(d, nil)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "invalid endpoint_type")
+	assert.Contains(t, err.Error(), "<instance_id>:<endpoint_type>:<entry>")
 }

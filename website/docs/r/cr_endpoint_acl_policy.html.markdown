@@ -66,7 +66,7 @@ resource "alicloud_cr_endpoint_acl_policy" "default" {
 The following arguments are supported:
 
 * `description` - (Optional, ForceNew) The description of the entry.
-* `endpoint_type` - (Required, ForceNew) The type of endpoint. Valid values: `internet`.
+* `endpoint_type` - (Required, ForceNew) The type of endpoint. Valid values: `internet`, `Internet`. The value is normalized to lowercase `internet` in the state and the resource ID.
 * `entry` - (Required, ForceNew) The IP segment that allowed to access.
 * `instance_id` - (Required, ForceNew) The ID of the CR Instance.
 * `module_name` - (Optional, ForceNew) The module that needs to set the access policy. Valid values: `Registry`.
@@ -86,7 +86,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-CR Endpoint Acl Policy can be imported using the id, e.g.
+CR Endpoint Acl Policy can be imported using the id, e.g. The `endpoint_type` segment of the import ID accepts both `internet` and `Internet`, e.g. `cri-abc123:internet:10.0.0.0/8`.
 
 ```shell
 $ terraform import alicloud_cr_endpoint_acl_policy.example <instance_id>:<endpoint_type>:<entry>
