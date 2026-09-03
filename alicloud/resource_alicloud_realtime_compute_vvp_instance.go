@@ -12,6 +12,25 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
+// bss (BssOpenApi 2017-12-14) renewal ProductCode/ProductType for the VVP
+// (Realtime Compute for Apache Flink) subscription instance.
+//
+// Domestic values empirically confirmed via bss GetOrderDetail on two ACC VVP
+// orders (ProductCode=sc, ProductType=sc_flinkserverless_public_cn,
+// CommodityCode=sc_flinkserverless_public_cn, SubscriptionType=Subscription,
+// PaymentStatus=Paid) and bss QueryAvailableInstances on a live instance
+// (returned RenewStatus=ManualRenewal, RenewalDurationUnit=M).
+//
+// The intl ProductType follows the domestic _cn → _intl naming convention used
+// by other alicloud subscription resources (e.g. elasticsearchpre →
+// elasticsearchpre_intl). Confirmed by the Flink product owner 2026-09-03;
+// international-site ACC verification is still pending (see PR test plan).
+const (
+	realtimeComputeVvpBssProductCode     = "sc"
+	realtimeComputeVvpBssProductType     = "sc_flinkserverless_public_cn"
+	realtimeComputeVvpBssProductTypeIntl = "sc_flinkserverless_public_intl" // confirmed by the Flink product owner 2026-09-03
+)
+
 func resourceAliCloudRealtimeComputeVvpInstance() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliCloudRealtimeComputeVvpInstanceCreate,
@@ -27,6 +46,11 @@ func resourceAliCloudRealtimeComputeVvpInstance() *schema.Resource {
 			Delete: schema.DefaultTimeout(35 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
+			"auto_renew_duration": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: IntInSlice([]int{1, 2, 3, 6, 12}),
+			},
 			"create_time": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -45,6 +69,16 @@ func resourceAliCloudRealtimeComputeVvpInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: StringInSlice([]string{"Month"}, false),
+			},
+			"renew_status": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"renewal_duration_unit": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
@@ -234,6 +268,10 @@ func resourceAliCloudRealtimeComputeVvpInstanceCreate(d *schema.ResourceData, me
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
+	if err := setRealtimeComputeVvpInstanceRenewal(d, meta); err != nil {
+		return WrapError(err)
+	}
+
 	return resourceAliCloudRealtimeComputeVvpInstanceRead(d, meta)
 }
 
@@ -300,6 +338,21 @@ func resourceAliCloudRealtimeComputeVvpInstanceRead(d *schema.ResourceData, meta
 	}
 
 	d.Set("vswitch_ids", vSwitchIds1Raw)
+
+	if checkValue := d.Get("payment_type"); checkValue == "Subscription" {
+		// The foasconsole DescribeInstances API does not return renewal state, so
+		// renewal is read back from bss QueryAvailableInstances. bss uses a
+		// different naming from SetRenewal: RenewStatus / RenewalDuration /
+		// RenewalDurationUnit (vs. RenewalStatus / RenewalPeriod / RenewalPeriodUnit).
+		bssOpenApiService := BssOpenApiService{client}
+		renewRaw, err := bssOpenApiService.QueryAvailableInstances(d.Id(), client.RegionId, realtimeComputeVvpBssProductCode, realtimeComputeVvpBssProductType, realtimeComputeVvpBssProductCode, realtimeComputeVvpBssProductTypeIntl)
+		if err != nil && !NotFoundError(err) {
+			return WrapError(err)
+		}
+		d.Set("renew_status", renewRaw["RenewStatus"])
+		d.Set("auto_renew_duration", renewRaw["RenewalDuration"])
+		d.Set("renewal_duration_unit", renewRaw["RenewalDurationUnit"])
+	}
 
 	return nil
 }
@@ -405,6 +458,9 @@ func resourceAliCloudRealtimeComputeVvpInstanceUpdate(d *schema.ResourceData, me
 		}
 		d.SetPartial("tags")
 	}
+	if err := setRealtimeComputeVvpInstanceRenewal(d, meta); err != nil {
+		return WrapError(err)
+	}
 	d.Partial(false)
 	return resourceAliCloudRealtimeComputeVvpInstanceRead(d, meta)
 }
@@ -450,6 +506,75 @@ func resourceAliCloudRealtimeComputeVvpInstanceDelete(d *schema.ResourceData, me
 	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 9*time.Minute, realtimeComputeServiceV2.RealtimeComputeVvpInstanceStateRefreshFunc(d.Id(), "InstanceId", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
+	}
+	return nil
+}
+
+// setRealtimeComputeVvpInstanceRenewal applies bss SetRenewal for a VVP
+// subscription instance. It is a no-op when payment_type is not Subscription
+// and when no renewal argument is configured (create) or changed (update).
+func setRealtimeComputeVvpInstanceRenewal(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	if v, ok := d.GetOk("payment_type"); !ok || v.(string) != "Subscription" {
+		return nil
+	}
+	needUpdate := false
+	if d.IsNewResource() {
+		if _, ok := d.GetOk("renew_status"); ok {
+			needUpdate = true
+		}
+		if v, ok := d.GetOk("auto_renew_duration"); ok && v.(int) > 0 {
+			needUpdate = true
+		}
+		if _, ok := d.GetOk("renewal_duration_unit"); ok {
+			needUpdate = true
+		}
+	} else if d.HasChange("renew_status") || d.HasChange("auto_renew_duration") || d.HasChange("renewal_duration_unit") {
+		needUpdate = true
+	}
+	if !needUpdate {
+		return nil
+	}
+	action := "SetRenewal"
+	request := make(map[string]interface{})
+	request["InstanceIDs"] = d.Id()
+	request["ProductCode"] = realtimeComputeVvpBssProductCode
+	request["ProductType"] = realtimeComputeVvpBssProductType
+	if client.IsInternationalAccount() {
+		request["ProductType"] = realtimeComputeVvpBssProductTypeIntl
+	}
+	if v, ok := d.GetOk("auto_renew_duration"); ok && v.(int) > 0 {
+		request["RenewalPeriod"] = v
+	}
+	if v, ok := d.GetOk("renewal_duration_unit"); ok {
+		request["RenewalPeriodUnit"] = v
+	}
+	if v, ok := d.GetOk("renew_status"); ok {
+		request["RenewalStatus"] = v
+	}
+	var response map[string]interface{}
+	var endpoint string
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		var err error
+		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, nil, request, true, endpoint)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
+				request["ProductType"] = realtimeComputeVvpBssProductTypeIntl
+				endpoint = connectivity.BssOpenAPIEndpointInternational
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 	return nil
 }
