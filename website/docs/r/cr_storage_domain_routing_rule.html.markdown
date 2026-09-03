@@ -67,7 +67,7 @@ The following arguments are supported:
 The routes supports the following:
 * `endpoint_type` - (Required) Endpoint Type.
 * `instance_domain` - (Required) Instance domain name.
-* `storage_domain` - (Required) Storage domain name.
+* `storage_domain` - (Required) Storage domain name. The API returns this value with an `https://` prefix; the prefix is optional in the configuration and is ignored when comparing the configured value with the returned one.
 
 ## Attributes Reference
 
