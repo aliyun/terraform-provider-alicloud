@@ -968,6 +968,7 @@ func Provider() terraform.ResourceProvider {
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_ehpc_user":                                            resourceAliCloudEhpcUser(),
+			"alicloud_realtime_compute_member":                              resourceAliCloudRealtimeComputeMember(),
 			"alicloud_ens_load_balancer_udp_listener":                       resourceAliCloudEnsLoadBalancerUdpListener(),
 			"alicloud_gpdb_db_extension":                                    resourceAliCloudGpdbDbExtension(),
 			"alicloud_ecd_desktop_group":                                    resourceAliCloudEcdDesktopGroup(),
