@@ -54,7 +54,7 @@ func resourceAlicloudDtsSynchronizationJob() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"4xlarge", "2xlarge", "xlarge", "large", "medium", "small"}, false),
+				ValidateFunc: StringInSlice([]string{"xmicro", "micro", "small", "medium", "large", "xlarge", "2xlarge", "4xlarge", "6xlarge", "8xlarge"}, false),
 			},
 			"data_initialization": {
 				Type:     schema.TypeBool,
@@ -448,6 +448,14 @@ func resourceAlicloudDtsSynchronizationJobCreate(d *schema.ResourceData, meta in
 	d.SetId(fmt.Sprint(response["DtsJobId"]))
 	d.Set("dts_instance_id", response["DtsInstanceId"])
 	dtsService := DtsService{client}
+	// DescribeDtsSynchronizationJob maps the transient Initializing state to
+	// Synchronizing so the create wait does not block on the data initialization
+	// phase. The wait releases as soon as the job reports a target state
+	// (Synchronizing/NotStarted). SynchronizationDirection is intentionally NOT
+	// gated here: DTS does not always report it for synchronization jobs, and
+	// requiring it non-empty would never converge, timing out the create. The
+	// direction is configured once by ConfigureDtsJob and is written back in Read
+	// when the API reports a non-empty value.
 	stateConf := BuildStateConf([]string{}, []string{"Synchronizing", "NotStarted"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, dtsService.DtsSynchronizationJobStateRefreshFunc(d.Id(), []string{"PrecheckFailed", "InitializeFailed", "Failed"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
@@ -504,7 +512,16 @@ func resourceAlicloudDtsSynchronizationJobRead(d *schema.ResourceData, meta inte
 	}
 	d.Set("status", object["Status"])
 	d.Set("structure_initialization", migrationModeObj["StructureInitialization"])
-	d.Set("synchronization_direction", object["SynchronizationDirection"])
+	// DescribeDtsJobDetail does not return SynchronizationDirection while the job is still
+	// prechecking or initializing, and the create wait may end in those phases because the
+	// shared state mapping treats Initializing as Synchronizing to skip the data initialization.
+	// The direction is configured once by ConfigureDtsJob and is force-new immutable, so keep
+	// the current state value until the API reports a non-empty one instead of overwriting it
+	// with an empty response, which would surface as a force-new diff on the next plan.
+	if direction, ok := object["SynchronizationDirection"].(string); ok && direction != "" {
+		d.Set("synchronization_direction", direction)
+	}
+	d.Set("instance_class", object["DtsJobClass"])
 
 	parameters, err := dtsService.QueryChangedJobParameters(d.Id())
 	if err != nil {
@@ -645,11 +662,28 @@ func resourceAlicloudDtsSynchronizationJobUpdate(d *schema.ResourceData, meta in
 	request = map[string]interface{}{
 		"DtsJobId": d.Id(),
 	}
+	// ConfigureDtsJob does not accept InstanceClass, so the job is created with the
+	// service-side default. TransferInstanceClass supports both upgrade and downgrade;
+	// the server decides the direction from InstanceClass versus the actual spec and
+	// returns NoPermission for accounts without downgrade permission. Compare the
+	// configured class against the actual one returned by DescribeDtsJobDetail and
+	// request the transfer whenever they differ, so create-time convergence and
+	// user-initiated downgrades both flow through a single apply instead of being
+	// silently skipped.
 	if d.HasChange("instance_class") {
 		if v, ok := d.GetOk("instance_class"); ok {
-			request["InstanceClass"] = v
+			configClass := v.(string)
+			dtsService := DtsService{client}
+			object, err := dtsService.DescribeDtsSynchronizationJob(d.Id())
+			if err != nil {
+				return WrapError(err)
+			}
+			actualClass, _ := object["DtsJobClass"].(string)
+			if configClass != actualClass {
+				request["InstanceClass"] = configClass
+				update = true
+			}
 		}
-		update = true
 	}
 	request["RegionId"] = client.RegionId
 	request["OrderType"] = "UPGRADE"
