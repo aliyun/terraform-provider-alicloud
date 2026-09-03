@@ -426,3 +426,126 @@ func (s *RealtimeComputeServiceV2) RealtimeComputeMemberStateRefreshFuncWithApi(
 }
 
 // DescribeRealtimeComputeMember >>> Encapsulated.
+
+// DescribeRealtimeComputeVariable <<< Encapsulated get interface for RealtimeCompute Variable.
+// There is no single GetVariable API; Read uses ListVariables and filters by name.
+
+func (s *RealtimeComputeServiceV2) DescribeRealtimeComputeVariable(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var response map[string]interface{}
+	var query map[string]*string
+	var header map[string]*string
+	parts := strings.Split(id, ":")
+	if len(parts) != 3 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
+		return nil, err
+	}
+	workspace := parts[0]
+	namespace := parts[1]
+	name := parts[2]
+	query = make(map[string]*string)
+	header = make(map[string]*string)
+	header["workspace"] = StringPointer(workspace)
+
+	action := fmt.Sprintf("/api/v2/namespaces/%s/variables", namespace)
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RoaGet("ververica", "2022-07-18", action, query, header, nil)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, make(map[string]interface{}))
+	if err != nil {
+		if IsExpectedErrors(err, []string{"990301"}) {
+			return object, WrapErrorf(NotFoundErr("Variable", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.data", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.data", response)
+	}
+
+	var data []interface{}
+	if dataSlice, ok := v.([]interface{}); ok {
+		data = dataSlice
+	}
+
+	for _, item := range data {
+		if m, ok := item.(map[string]interface{}); ok {
+			if fmt.Sprint(m["name"]) == name {
+				return m, nil
+			}
+		}
+	}
+
+	return object, WrapErrorf(NotFoundErr("Variable", id), NotFoundMsg, response)
+}
+
+// DescribeRealtimeComputeVariable >>> Encapsulated.
+
+// DescribeRealtimeComputeVariables <<< Encapsulated list interface for RealtimeCompute Variables.
+// Used by the variables data source existence check; id is a 2-part workspace:namespace.
+func (s *RealtimeComputeServiceV2) DescribeRealtimeComputeVariables(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var response map[string]interface{}
+	var query map[string]*string
+	var header map[string]*string
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
+	}
+	workspace := parts[0]
+	namespace := parts[1]
+	query = make(map[string]*string)
+	header = make(map[string]*string)
+	header["workspace"] = StringPointer(workspace)
+
+	action := fmt.Sprintf("/api/v2/namespaces/%s/variables", namespace)
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RoaGet("ververica", "2022-07-18", action, query, header, nil)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, make(map[string]interface{}))
+	if err != nil {
+		if IsExpectedErrors(err, []string{"990301"}) {
+			return object, WrapErrorf(NotFoundErr("Variable", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.data", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.data", response)
+	}
+
+	var data []interface{}
+	if dataSlice, ok := v.([]interface{}); ok {
+		data = dataSlice
+	}
+	if len(data) == 0 {
+		return object, WrapErrorf(NotFoundErr("Variable", id), NotFoundMsg, response)
+	}
+
+	return response, nil
+}
+
+// DescribeRealtimeComputeVariables >>> Encapsulated.
