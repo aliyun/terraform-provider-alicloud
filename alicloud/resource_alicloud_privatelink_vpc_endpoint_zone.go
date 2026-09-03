@@ -188,7 +188,14 @@ func resourceAliCloudPrivateLinkVpcEndpointZoneDelete(d *schema.ResourceData, me
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"EndpointLocked", "ConcurrentCallNotSupported", "EndpointConnectionOperationDenied", "EndpointOperationDenied"}) || NeedRetry(err) {
+			// EndpointAssociatedRouteTargetGroup is retryable on destroy: a
+			// route target group that references this endpoint may have just
+			// been deleted (Terraform destroys the RTG before the endpoint
+			// zones when the RTG depends_on the zones), but the endpoint-side
+			// association clearance is eventually consistent. Retry until the
+			// association clears, otherwise the dangling association makes the
+			// zone destroy fail non-deterministically.
+			if IsExpectedErrors(err, []string{"EndpointLocked", "ConcurrentCallNotSupported", "EndpointConnectionOperationDenied", "EndpointOperationDenied", "EndpointAssociatedRouteTargetGroup"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}

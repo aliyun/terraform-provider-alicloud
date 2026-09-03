@@ -86,9 +86,13 @@ func AlicloudPrivatelinkVpcEndpointZoneBasicDependence(name string) string {
 	  load_balancer_spec  = "slb.s2.small"
       address_type = "intranet"
       instance_charge_type = "PayBySpec"
+      delete_protection = "off"
       vswitch_id = alicloud_vswitch.default.id
       master_zone_id = data.alicloud_slb_zones.default.zones.0.id
       slave_zone_id = data.alicloud_slb_zones.default.zones.1.id
+      lifecycle {
+        ignore_changes = [delete_protection]
+      }
 	}
 
 	data "alicloud_vswitches" "default" {

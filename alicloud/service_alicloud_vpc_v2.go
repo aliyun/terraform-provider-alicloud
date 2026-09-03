@@ -171,6 +171,61 @@ func (s *VpcServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 
 // SetResourceTags >>> tag function encapsulated.
 
+// ListTagResources <<< Encapsulated tag list function for Vpc.
+// GetRouteTargetGroup does not return Tags (confirmed via ACC tf-debug), so
+// the resource Read cannot map tags off the Get response. This method reads
+// tags through the dedicated tagging API (ListTagResources) — the same
+// tagging service SetResourceTags writes to via TagResources — which is the
+// reliable, strongly-consistent tag source for a resource whose Get omits
+// Tags. Mirrors VpcService.ListTagResources (service_alicloud_vpc.go).
+func (s *VpcServiceV2) ListTagResources(resourceId string, resourceType string) (object interface{}, err error) {
+	client := s.client
+	action := "ListTagResources"
+	query := make(map[string]interface{})
+	request := map[string]interface{}{
+		"RegionId":     client.RegionId,
+		"ResourceType": resourceType,
+		"ResourceId.1": resourceId,
+	}
+	tags := make([]interface{}, 0)
+	var response map[string]interface{}
+
+	for {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err := client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			v, err := jsonpath.Get("$.TagResources.TagResource", response)
+			if err != nil {
+				return resource.NonRetryableError(WrapErrorf(err, FailedGetAttributeMsg, resourceId, "$.TagResources.TagResource", response))
+			}
+			if v != nil {
+				tags = append(tags, v.([]interface{})...)
+			}
+			return nil
+		})
+		if err != nil {
+			err = WrapErrorf(err, DefaultErrorMsg, resourceId, action, AlibabaCloudSdkGoERROR)
+			return
+		}
+		if response["NextToken"] == nil {
+			break
+		}
+		request["NextToken"] = response["NextToken"]
+	}
+
+	return tags, nil
+}
+
+// ListTagResources >>> tag list function encapsulated.
+
 // DescribeVpcPrefixList <<< Encapsulated get interface for Vpc PrefixList.
 
 func (s *VpcServiceV2) DescribeVpcPrefixList(id string) (object map[string]interface{}, err error) {
@@ -2549,3 +2604,76 @@ func (s *VpcServiceV2) VpcIpv6CidrBlockStateRefreshFuncWithApi(id string, field 
 }
 
 // DescribeVpcIpv6CidrBlock >>> Encapsulated.
+
+// DescribeVpcRouteTargetGroup <<< Encapsulated get interface for Vpc RouteTargetGroup.
+
+func (s *VpcServiceV2) DescribeVpcRouteTargetGroup(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["RouteTargetGroupId"] = id
+	request["RegionId"] = client.RegionId
+	action := "GetRouteTargetGroup"
+	request["ClientToken"] = buildClientToken(action)
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
+		request["ClientToken"] = buildClientToken(action)
+
+		if err != nil {
+			if IsExpectedErrors(err, []string{"TaskConflict"}) || NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ResourceNotFound.RouteTargetGroup"}) {
+			return object, WrapErrorf(NotFoundErr("RouteTargetGroup", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+
+func (s *VpcServiceV2) VpcRouteTargetGroupStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.VpcRouteTargetGroupStateRefreshFuncWithApi(id, field, failStates, s.DescribeVpcRouteTargetGroup)
+}
+
+func (s *VpcServiceV2) VpcRouteTargetGroupStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeVpcRouteTargetGroup >>> Encapsulated.
