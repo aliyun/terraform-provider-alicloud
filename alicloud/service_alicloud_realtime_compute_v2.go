@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -341,3 +342,123 @@ func (s *RealtimeComputeServiceV2) RealtimeComputeJobStateRefreshFuncWithApi(id 
 }
 
 // DescribeRealtimeComputeJob >>> Encapsulated.
+
+// DescribeRealtimeComputeFlinkMember <<< Encapsulated get interface for RealtimeCompute Flink Member.
+
+func (s *RealtimeComputeServiceV2) DescribeRealtimeComputeFlinkMember(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]*string
+	var header map[string]*string
+	parts := strings.Split(id, ":")
+	if len(parts) != 3 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
+		return nil, err
+	}
+	workspace := parts[0]
+	namespace := parts[1]
+	member := parts[2]
+	request = make(map[string]interface{})
+	query = make(map[string]*string)
+	header = make(map[string]*string)
+	header["workspace"] = StringPointer(workspace)
+
+	action := fmt.Sprintf("/gateway/v2/namespaces/%s/members/%s", namespace, member)
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RoaGet("ververica", "2022-07-18", action, query, header, nil)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"990301"}) {
+			return object, WrapErrorf(NotFoundErr("FlinkMember", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.data", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.data", response)
+	}
+
+	return v.(map[string]interface{}), nil
+}
+
+// DescribeRealtimeComputeFlinkMember >>> Encapsulated.
+
+// ListRealtimeComputeFlinkMembers <<< Encapsulated list interface for RealtimeCompute Flink Member.
+
+func (s *RealtimeComputeServiceV2) ListRealtimeComputeFlinkMembers(workspace, namespace string) (objects []interface{}, resp map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]*string
+	var header map[string]*string
+	request = make(map[string]interface{})
+	query = make(map[string]*string)
+	header = make(map[string]*string)
+	header["workspace"] = StringPointer(workspace)
+	action := fmt.Sprintf("/gateway/v2/namespaces/%s/members", namespace)
+	pageIndex := 1
+	pageSize := 100
+	objects = make([]interface{}, 0)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	for {
+		query["pageSize"] = StringPointer(fmt.Sprintf("%d", pageSize))
+		query["pageIndex"] = StringPointer(fmt.Sprintf("%d", pageIndex))
+		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+			response, err = client.RoaGet("ververica", "2022-07-18", action, query, header, nil)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return objects, response, WrapErrorf(err, DefaultErrorMsg, "FlinkMember", action, AlibabaCloudSdkGoERROR)
+		}
+		resp = response
+		v, e := jsonpath.Get("$.data", response)
+		if e != nil || v == nil {
+			break
+		}
+		data, ok := v.([]interface{})
+		if !ok || len(data) == 0 {
+			break
+		}
+		objects = append(objects, data...)
+		totalSize := 0
+		if total, ok := response["totalSize"]; ok && total != nil {
+			switch t := total.(type) {
+			case json.Number:
+				if n, e := t.Int64(); e == nil {
+					totalSize = int(n)
+				}
+			case float64:
+				totalSize = int(t)
+			}
+		}
+		if totalSize > 0 && len(objects) >= totalSize {
+			break
+		}
+		pageIndex++
+	}
+	return objects, resp, nil
+}
+
+// ListRealtimeComputeFlinkMembers >>> Encapsulated.
