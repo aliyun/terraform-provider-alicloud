@@ -329,6 +329,7 @@ var productCodeToConfigEndpoints = map[string]string{
 // The priority of this configuration is higher than location service, lower than user environment variable configuration
 var irregularProductEndpoint = map[string]string{
 	"tablestore": "tablestore.%s.aliyuncs.com",
+	"dlfnext":    "dlfnext.%s.aliyuncs.com",
 	//"ots":              "tablestore.%s.aliyuncs.com", // the old endpoint ots.%s.aliyuncs.com has been deprecated
 	"ram":                     "ram.aliyuncs.com",
 	"brain_industrial":        "brain-industrial.cn-hangzhou.aliyuncs.com",
