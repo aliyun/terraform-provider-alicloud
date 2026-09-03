@@ -299,6 +299,85 @@ func TestAccAliCloudOssBucketObject_outOfBandDeleteRebuild(t *testing.T) {
 	})
 }
 
+// TestAccAliCloudOssBucketObject_contentMD5Hex verifies that content_md5
+// accepts a hex-encoded MD5 digest (the format produced by Terraform's md5()
+// and filemd5() functions) and converts it to the base64 form required by the
+// OSS PutObject Content-MD5 header (RFC 1864). Before the fix, forwarding a
+// hex digest verbatim made PutObject fail with a digest mismatch.
+func TestAccAliCloudOssBucketObject_contentMD5Hex(t *testing.T) {
+	var v http.Header
+	resourceId := "alicloud_oss_bucket_object.default"
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacc-object-md5-hex-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceOssBucketObjectConfigDependence)
+	// "content" and its md5 hex digest. The provider must convert the hex digest
+	// to base64 before sending the Content-MD5 header; otherwise OSS rejects
+	// the request with a digest mismatch.
+	cfg := testAccConfig(map[string]interface{}{
+		"bucket":       "${alicloud_oss_bucket.default.bucket}",
+		"key":          "test-object-md5-hex-key",
+		"content":      "hex content md5 acceptance test for oss bucket object",
+		"content_md5":  "45d8d11bed20b619add195b98d4b1775",
+		"content_type": "text/plain",
+	})
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckAlicloudOssBucketObjectDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: cfg,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudOssBucketObjectExists(resourceId, name, v),
+					resource.TestCheckResourceAttr(resourceId, "content_type", "text/plain"),
+				),
+			},
+		},
+	})
+}
+
+// TestUnitNormalizeContentMD5 locks the normalization and validation of the
+// OSS PutObject Content-MD5 header. It is a pure-function unit test (no ACC
+// env required).
+func TestUnitNormalizeContentMD5(t *testing.T) {
+	cases := []struct {
+		input   string
+		want    string
+		wantErr bool
+	}{
+		// A 32-character hex MD5 digest (as produced by Terraform's md5() and
+		// filemd5() functions) is converted to base64.
+		{"45d8d11bed20b619add195b98d4b1775", "RdjRG+0gthmt0ZW5jUsXdQ==", false},
+		// An already base64-encoded MD5 digest is passed through unchanged.
+		{"RdjRG+0gthmt0ZW5jUsXdQ==", "RdjRG+0gthmt0ZW5jUsXdQ==", false},
+		{"ewBv9NcPaMxlBhrPL4Aubw==", "ewBv9NcPaMxlBhrPL4Aubw==", false},
+		// A short hex string is valid base64 but decodes to fewer than 16 bytes,
+		// so it is not a valid MD5 digest; the provider rejects it instead of
+		// forwarding it to OSS, which would otherwise surface an opaque error.
+		{"deadbeef", "", true},
+		// Input that is neither a valid 32-character hex MD5 digest nor valid
+		// base64 is rejected by the provider instead of being forwarded.
+		{"not-hex-at-all==", "", true},
+		{"plain garbage value", "", true},
+	}
+	for _, c := range cases {
+		got, err := normalizeContentMD5(c.input)
+		if c.wantErr {
+			if err == nil {
+				t.Errorf("normalizeContentMD5(%q) expected an error, got %q with nil err", c.input, got)
+			}
+			continue
+		}
+		if err != nil {
+			t.Errorf("normalizeContentMD5(%q) unexpected error: %v", c.input, err)
+			continue
+		}
+		if got != c.want {
+			t.Errorf("normalizeContentMD5(%q) = %q, want %q", c.input, got, c.want)
+		}
+	}
+}
+
 // testAccCheckAlicloudOssBucketObjectDeleteOutOfBand removes the OSS object
 // backing the resource via the OSS SDK directly, simulating a delete issued
 // from the console or CLI that Terraform did not observe.
