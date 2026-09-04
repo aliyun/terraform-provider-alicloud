@@ -2106,6 +2106,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_threat_detection_backup_policy":                        resourceAlicloudThreatDetectionBackupPolicy(),
 			"alicloud_dms_enterprise_proxy_access":                           resourceAlicloudDmsEnterpriseProxyAccess(),
 			"alicloud_threat_detection_vul_whitelist":                        resourceAlicloudThreatDetectionVulWhitelist(),
+			"alicloud_threat_detection_vul_auto_config":                      resourceAlicloudThreatDetectionVulAutoConfig(),
 			"alicloud_dms_enterprise_logic_database":                         resourceAlicloudDmsEnterpriseLogicDatabase(),
 			"alicloud_amqp_static_account":                                   resourceAliCloudAmqpStaticAccount(),
 			"alicloud_adb_resource_group":                                    resourceAliCloudAdbResourceGroup(),
