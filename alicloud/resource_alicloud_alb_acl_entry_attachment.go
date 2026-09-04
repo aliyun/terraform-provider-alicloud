@@ -71,7 +71,7 @@ func resourceAlicloudAlbAclEntryAttachmentCreate(d *schema.ResourceData, meta in
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("Alb", "2020-06-16", action, nil, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"OperationFailed.ResourceGroupStatusCheckFail", "IncorrectStatus.Acl", "ResourceInConfiguring"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"OperationFailed.ResourceGroupStatusCheckFail", "IncorrectStatus.Acl", "ResourceInConfiguring", "AclStatusNotStable"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -141,7 +141,7 @@ func resourceAlicloudAlbAclEntryAttachmentDelete(d *schema.ResourceData, meta in
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("Alb", "2020-06-16", action, nil, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"IncorrectStatus.Acl", "OperationFailed.ResourceGroupStatusCheckFail", "ResourceInConfiguring"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"IncorrectStatus.Acl", "OperationFailed.ResourceGroupStatusCheckFail", "ResourceInConfiguring", "AclStatusNotStable"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
