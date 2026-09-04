@@ -79,6 +79,10 @@ func resourceAlicloudDdoscooSchedulerRule() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
+						"restore_delay": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -169,6 +173,7 @@ func resourceAlicloudDdoscooSchedulerRuleRead(d *schema.ResourceData, meta inter
 			ruleMap["type"] = ruleArg["Type"]
 			ruleMap["value"] = ruleArg["Value"]
 			ruleMap["value_type"] = formatInt(ruleArg["ValueType"])
+			ruleMap["restore_delay"] = formatInt(ruleArg["RestoreDelay"])
 			ruleMaps = append(ruleMaps, ruleMap)
 		}
 	}
