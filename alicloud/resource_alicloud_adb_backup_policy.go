@@ -46,6 +46,17 @@ func resourceAlicloudAdbBackupPolicy() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"enable_backup_log": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Enable", "Disable"}, false),
+			},
+			"log_backup_retention_period": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -73,6 +84,8 @@ func resourceAlicloudAdbBackupPolicyRead(d *schema.ResourceData, meta interface{
 	d.Set("backup_retention_period", object.BackupRetentionPeriod)
 	d.Set("preferred_backup_period", strings.Split(object.PreferredBackupPeriod, ","))
 	d.Set("preferred_backup_time", object.PreferredBackupTime)
+	d.Set("enable_backup_log", object.EnableBackupLog)
+	d.Set("log_backup_retention_period", object.LogBackupRetentionPeriod)
 
 	return nil
 }
@@ -82,17 +95,19 @@ func resourceAlicloudAdbBackupPolicyUpdate(d *schema.ResourceData, meta interfac
 	client := meta.(*connectivity.AliyunClient)
 	adbService := AdbService{client}
 
-	if d.HasChange("preferred_backup_period") || d.HasChange("preferred_backup_time") {
+	if d.HasChange("preferred_backup_period") || d.HasChange("preferred_backup_time") || d.HasChange("enable_backup_log") || d.HasChange("log_backup_retention_period") {
 		periodList := expandStringList(d.Get("preferred_backup_period").(*schema.Set).List())
 		preferredBackupPeriod := fmt.Sprintf("%s", strings.Join(periodList[:], COMMA_SEPARATED))
 		preferredBackupTime := d.Get("preferred_backup_time").(string)
+		enableBackupLog := d.Get("enable_backup_log").(string)
+		logBackupRetentionPeriod := d.Get("log_backup_retention_period").(int)
 
 		// wait instance running before modifying
 		if err := adbService.WaitForCluster(d.Id(), Running, DefaultTimeoutMedium); err != nil {
 			return WrapError(err)
 		}
 		if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-			if err := adbService.ModifyAdbBackupPolicy(d.Id(), preferredBackupTime, preferredBackupPeriod); err != nil {
+			if err := adbService.ModifyAdbBackupPolicy(d.Id(), preferredBackupTime, preferredBackupPeriod, enableBackupLog, logBackupRetentionPeriod); err != nil {
 				if IsExpectedErrors(err, OperationDeniedDBStatus) {
 					return resource.RetryableError(err)
 				}

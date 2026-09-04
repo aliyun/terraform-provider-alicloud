@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudADBBackupPolicy(t *testing.T) {
+func TestAccAliCloudADBBackupPolicy(t *testing.T) {
 	var v *adb.DescribeBackupPolicyResponse
 	resourceId := "alicloud_adb_backup_policy.default"
 	serverFunc := func() interface{} {
@@ -30,15 +30,20 @@ func TestAccAlicloudADBBackupPolicy(t *testing.T) {
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
+				// Create the backup policy with log backup enabled and a retention period.
 				Config: testAccConfig(map[string]interface{}{
-					"db_cluster_id":           "${alicloud_adb_db_cluster.default.id}",
-					"preferred_backup_period": []string{"Tuesday", "Wednesday"},
-					"preferred_backup_time":   "10:00Z-11:00Z",
+					"db_cluster_id":               "${alicloud_adb_db_cluster.default.id}",
+					"preferred_backup_period":     []string{"Tuesday", "Wednesday"},
+					"preferred_backup_time":       "10:00Z-11:00Z",
+					"enable_backup_log":           "Enable",
+					"log_backup_retention_period": 7,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"preferred_backup_period.#": "2",
-						"preferred_backup_time":     "10:00Z-11:00Z",
+						"preferred_backup_period.#":   "2",
+						"preferred_backup_time":       "10:00Z-11:00Z",
+						"enable_backup_log":           "Enable",
+						"log_backup_retention_period": "7",
 					}),
 				),
 			},
@@ -46,6 +51,46 @@ func TestAccAlicloudADBBackupPolicy(t *testing.T) {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
+			},
+			{
+				// Update the log backup retention period.
+				Config: testAccConfig(map[string]interface{}{
+					"log_backup_retention_period": 30,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"log_backup_retention_period": "30",
+						"enable_backup_log":           "Enable",
+					}),
+				),
+			},
+			{
+				// Disable log backup. The retention period is only meaningful when
+				// log backup is enabled, so it is removed from the config to let
+				// the server value settle without a perpetual diff.
+				Config: testAccConfig(map[string]interface{}{
+					"enable_backup_log":           "Disable",
+					"log_backup_retention_period": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_backup_log": "Disable",
+					}),
+				),
+			},
+			{
+				// Re-enable log backup with a retention period to verify the
+				// set/read roundtrip works after a disable.
+				Config: testAccConfig(map[string]interface{}{
+					"enable_backup_log":           "Enable",
+					"log_backup_retention_period": 7,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_backup_log":           "Enable",
+						"log_backup_retention_period": "7",
+					}),
+				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
