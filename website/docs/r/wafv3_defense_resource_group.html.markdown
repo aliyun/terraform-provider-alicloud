@@ -114,7 +114,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-WAFV3 Defense Resource Group can be imported using the id, e.g.
+WAFV3 Defense Resource Group can be imported using the id, which consists of instance_id and group_name, e.g.
 
 ```shell
 $ terraform import alicloud_wafv3_defense_resource_group.example <instance_id>:<group_name>

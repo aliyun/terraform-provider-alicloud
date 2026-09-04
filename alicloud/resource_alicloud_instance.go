@@ -57,6 +57,13 @@ func resourceAliCloudInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
+				// CreditSpecification is only supported by burstable instance families (e.g. t5, t6).
+				// The ECS API returns an empty value for other instances and ModifyInstanceAttribute
+				// would fail with `Credit.NotFound`, so suppress the diff when the existing instance
+				// has no credit specification in its state (e.g. after importing).
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Id() != "" && old == ""
+				},
 				ValidateFunc: StringInSlice([]string{
 					string(CreditSpecificationStandard),
 					string(CreditSpecificationUnlimited),
@@ -487,6 +494,13 @@ func resourceAliCloudInstance() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 				Computed: true,
+				// SecurityEnhancementStrategy is a create-only attribute which the ECS API never
+				// returns, so the state value of an imported instance is always empty. Suppress
+				// the diff in that case, otherwise applying a configuration containing this field
+				// after importing would force a replacement of the instance.
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Id() != "" && old == ""
+				},
 				ValidateFunc: StringInSlice([]string{
 					string(ActiveSecurityEnhancementStrategy),
 					string(DeactiveSecurityEnhancementStrategy),

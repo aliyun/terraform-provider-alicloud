@@ -147,7 +147,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Global Accelerator (GA) Basic Accelerate Ip Endpoint Relation can be imported using the id, e.g.
+Global Accelerator (GA) Basic Accelerate Ip Endpoint Relation can be imported using the id, which consists of accelerator_id, accelerate_ip_id and endpoint_id, e.g.
 
 ```shell
 $ terraform import alicloud_ga_basic_accelerate_ip_endpoint_relation.example <accelerator_id>:<accelerate_ip_id>:<endpoint_id>

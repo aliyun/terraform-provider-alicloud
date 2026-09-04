@@ -66,7 +66,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Hybrid Backup Recovery (HBR) Cross Account can be imported using the id, e.g.
+Hybrid Backup Recovery (HBR) Cross Account can be imported using the id, which consists of cross_account_user_id and cross_account_role_name, e.g.
 
 ```shell
 $ terraform import alicloud_hbr_cross_account.example <cross_account_user_id>:<cross_account_role_name>

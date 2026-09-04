@@ -105,7 +105,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-RDS Custom Disk Attachment can be imported using the id, e.g.
+RDS Custom Disk Attachment can be imported using the id, which consists of disk_id and instance_id, e.g.
 
 ```shell
 $ terraform import alicloud_rds_custom_disk_attachment.example <disk_id>:<instance_id>

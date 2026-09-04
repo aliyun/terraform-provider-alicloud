@@ -352,6 +352,55 @@ func TestAccAliCloudCenBandwidthPackage_upgrade(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudCenBandwidthPackage_southAmerica(t *testing.T) {
+	var v cbn.CenBandwidthPackage
+	resourceId := "alicloud_cen_bandwidth_package.default"
+	ra := resourceAttrInit(resourceId, nil)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CbnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCenBandwidthPackage")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccCen%sBandwidthPackage-%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCenBandwidthPackageConfigDependence_upgrade)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			// Cross-continent CEN bandwidth packages (e.g. South-America<->China) can only be
+			// purchased on International accounts; Domestic accounts return ParameterIllegal.BandwidthPackage.
+			testAccPreCheckWithAccountSiteType(t, IntlSite)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bandwidth":              "2",
+					"geographic_region_a_id": "South-America",
+					"geographic_region_b_id": "China",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bandwidth":              "2",
+						"geographic_region_a_id": "South-America",
+						"geographic_region_b_id": "China",
+					}),
+					testAccCheckCenBandwidthPackageRegionId(&v, "South-America", "China"),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"period", "auto_renew"},
+			},
+		},
+	})
+}
+
 func TestAccAliCloudCenBandwidthPackage_basic1(t *testing.T) {
 	var v cbn.CenBandwidthPackage
 	resourceId := "alicloud_cen_bandwidth_package.default"

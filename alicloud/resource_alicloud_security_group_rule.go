@@ -310,7 +310,23 @@ func resourceAliyunSecurityGroupRuleRead(d *schema.ResourceData, meta interface{
 	sgId := parts[0]
 	direction := parts[1]
 
-	object, err := ecsService.DescribeSecurityGroupRule(d.Id())
+	// Wait for the rule to be visible: the rule list API may lag behind the
+	// just-issued AuthorizeSecurityGroup call, especially in batch creation.
+	var object ecs.Permission
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err := retry.Retry(10*time.Minute, func() *retry.RetryError {
+		obj, err := ecsService.DescribeSecurityGroupRule(d.Id())
+		if err != nil {
+			// Only the not-found case is retried; other errors fail fast.
+			if d.IsNewResource() && NotFoundError(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		object = obj
+		return nil
+	})
 	if err != nil {
 		if NotFoundError(err) && !d.IsNewResource() {
 			log.Printf("[DEBUG] Resource alicloud_security_group_rule ecsService.DescribeSecurityGroupRule Failed!!! %s", err)

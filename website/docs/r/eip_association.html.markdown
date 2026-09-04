@@ -146,7 +146,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-EIP Association can be imported using the id, e.g.
+EIP Association can be imported using the id, which consists of allocation_id and instance_id, e.g.
 
 ```shell
 $ terraform import alicloud_eip_association.example <allocation_id>:<instance_id>

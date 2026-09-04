@@ -76,7 +76,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-ESA Routine Related Record can be imported using the id, e.g.
+ESA Routine Related Record can be imported using the id, which consists of name and record_id, e.g.
 
 ```shell
 $ terraform import alicloud_esa_routine_related_record.example <name>:<record_id>

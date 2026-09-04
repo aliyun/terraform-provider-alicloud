@@ -58,7 +58,7 @@ func resourceAlicloudCenBandwidthPackage() *schema.Resource {
 				Optional:      true,
 				ForceNew:      true,
 				Computed:      true,
-				ValidateFunc:  validation.StringInSlice([]string{"Asia-Pacific", "Australia", "China", "Europe", "Middle-East", "North-America"}, false),
+				ValidateFunc:  validation.StringInSlice([]string{"Asia-Pacific", "Australia", "China", "Europe", "Middle-East", "North-America", "South-America"}, false),
 				ConflictsWith: []string{"geographic_region_ids"},
 			},
 			"geographic_region_b_id": {
@@ -66,7 +66,7 @@ func resourceAlicloudCenBandwidthPackage() *schema.Resource {
 				Optional:      true,
 				ForceNew:      true,
 				Computed:      true,
-				ValidateFunc:  validation.StringInSlice([]string{"Asia-Pacific", "Australia", "China", "Europe", "Middle-East", "North-America"}, false),
+				ValidateFunc:  validation.StringInSlice([]string{"Asia-Pacific", "Australia", "China", "Europe", "Middle-East", "North-America", "South-America"}, false),
 				ConflictsWith: []string{"geographic_region_ids"},
 			},
 			"geographic_region_ids": {
@@ -372,6 +372,8 @@ func convertGeographicRegionAIdResponse(source string) string {
 		return "North-America"
 	case "australia":
 		return "Australia"
+	case "south-america":
+		return "South-America"
 	}
 	return source
 }
@@ -389,6 +391,8 @@ func convertGeographicRegionBIdResponse(source string) string {
 		return "North-America"
 	case "australia":
 		return "Australia"
+	case "south-america":
+		return "South-America"
 	}
 	return source
 }

@@ -149,7 +149,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-ESA Waiting Room Event can be imported using the id, e.g.
+ESA Waiting Room Event can be imported using the id, which consists of site_id, waiting_room_id and waiting_room_event_id, e.g.
 
 ```shell
 $ terraform import alicloud_esa_waiting_room_event.example <site_id>:<waiting_room_id>:<waiting_room_event_id>

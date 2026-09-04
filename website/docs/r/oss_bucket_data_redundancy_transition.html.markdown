@@ -72,7 +72,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-OSS Bucket Data Redundancy Transition can be imported using the id, e.g.
+OSS Bucket Data Redundancy Transition can be imported using the id, which consists of bucket and task_id, e.g.
 
 ```shell
 $ terraform import alicloud_oss_bucket_data_redundancy_transition.example <bucket>:<task_id>

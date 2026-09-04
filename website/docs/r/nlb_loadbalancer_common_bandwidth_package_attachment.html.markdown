@@ -112,7 +112,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-NLB Loadbalancer Common Bandwidth Package Attachment can be imported using the id, e.g.
+NLB Loadbalancer Common Bandwidth Package Attachment can be imported using the id, which consists of load_balancer_id and bandwidth_package_id, e.g.
 
 ```shell
 $ terraform import alicloud_nlb_loadbalancer_common_bandwidth_package_attachment.example <load_balancer_id>:<bandwidth_package_id>

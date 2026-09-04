@@ -75,7 +75,7 @@ The following attributes are exported:
 
 ## Import
 
-Simple Application Server Firewall Rule can be imported using the id, e.g.
+Simple Application Server Firewall Rule can be imported using the id, which consists of instance_id and firewall_rule_id, e.g.
 
 ```shell
 $ terraform import alicloud_simple_application_server_firewall_rule.example <instance_id>:<firewall_rule_id>

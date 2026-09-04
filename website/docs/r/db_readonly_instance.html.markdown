@@ -88,8 +88,8 @@ The following arguments are supported:
   - true: delete protect.
   - false: no delete protect.
 * `tags` - (Optional, Available since v1.68.0) A mapping of tags to assign to the resource.
-    - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
-    - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
+  - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
+  - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
 * `upgrade_db_instance_kernel_version` - (Optional, Available since v1.128.0) Whether to upgrade a minor version of the kernel. Valid values:
   - true: upgrade
   - false: not to upgrade
@@ -164,6 +164,7 @@ The following arguments are supported:
   - cloud_essd: specifies to use enhanced SSDs (ESSDs).
   - cloud_essd2: specifies to use enhanced SSDs (ESSDs).
   - cloud_essd3: specifies to use enhanced SSDs (ESSDs).
+  - general_essd: general essd.
 * `effective_time` - (Optional, Available since v1.207.2) The method to change.  Default value: Immediate. Valid values:
   - Immediate: The change immediately takes effect.
   - MaintainTime: The change takes effect during the specified maintenance window. For more information, see ModifyDBInstanceMaintainTime.

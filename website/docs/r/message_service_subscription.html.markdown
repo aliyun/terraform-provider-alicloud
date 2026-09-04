@@ -91,7 +91,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Message Service Subscription can be imported using the id, e.g.
+Message Service Subscription can be imported using the id, which consists of topic_name and subscription_name, e.g.
 
 ```shell
 $ terraform import alicloud_message_service_subscription.example <topic_name>:<subscription_name>

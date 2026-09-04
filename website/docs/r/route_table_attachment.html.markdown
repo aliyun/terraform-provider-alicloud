@@ -79,7 +79,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-VPC Route Table Attachment can be imported using the id, e.g.
+VPC Route Table Attachment can be imported using the id, which consists of route_table_id and vswitch_id, e.g.
 
 ```shell
 $ terraform import alicloud_route_table_attachment.example <route_table_id>:<vswitch_id>

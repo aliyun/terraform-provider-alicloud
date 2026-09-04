@@ -69,7 +69,7 @@ The following attributes are exported:
 
 ## Import
 
-Cloud SSO Group can be imported using the id, e.g.
+Cloud SSO Group can be imported using the id, which consists of directory_id and group_id, e.g.
 
 ```shell
 $ terraform import alicloud_cloud_sso_group.example <directory_id>:<group_id>

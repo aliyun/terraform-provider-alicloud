@@ -108,7 +108,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Cloud Monitor Service Monitoring Agent Process can be imported using the id, e.g.
+Cloud Monitor Service Monitoring Agent Process can be imported using the id, which consists of instance_id and process_id, e.g.
 
 ```shell
 $ terraform import alicloud_cloud_monitor_service_monitoring_agent_process.example <instance_id>:<process_id>

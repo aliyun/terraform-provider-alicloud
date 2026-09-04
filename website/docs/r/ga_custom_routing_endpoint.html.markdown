@@ -129,7 +129,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Global Accelerator (GA) Custom Routing Endpoint can be imported using the id, e.g.
+Global Accelerator (GA) Custom Routing Endpoint can be imported using the id, which consists of endpoint_group_id and custom_routing_endpoint_id, e.g.
 
 ```shell
 $ terraform import alicloud_ga_custom_routing_endpoint.example <endpoint_group_id>:<custom_routing_endpoint_id>

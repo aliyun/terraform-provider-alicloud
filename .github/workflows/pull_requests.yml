@@ -2,6 +2,7 @@ name: Pull Request Checks
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, edited]
     branches:
       - master
 

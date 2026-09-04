@@ -19,6 +19,14 @@ func TestAccAlicloudEssScheduledtasksDataSource(t *testing.T) {
 			"scheduled_task_id": `"${alicloud_ess_scheduled_task.default.id}_fake"`,
 		}),
 	}
+	scalingGroupIdConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudEssScheduledTasksDataSourceConfig(rand, map[string]string{
+			"scaling_group_id": `"${alicloud_ess_scaling_group.default.id}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudEssScheduledTasksDataSourceConfig(rand, map[string]string{
+			"scaling_group_id": `"${alicloud_ess_scaling_group.default.id}_fake"`,
+		}),
+	}
 	actionConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEssScheduledTasksDataSourceConfig(rand, map[string]string{
 			"scheduled_action": `"${alicloud_ess_scheduled_task.default.scheduled_action}"`,
@@ -51,12 +59,14 @@ func TestAccAlicloudEssScheduledtasksDataSource(t *testing.T) {
 			"ids":               `["${alicloud_ess_scheduled_task.default.id}"]`,
 			"name_regex":        `"${alicloud_ess_scheduled_task.default.scheduled_task_name}"`,
 			"scheduled_task_id": `"${alicloud_ess_scheduled_task.default.id}"`,
+			"scaling_group_id":  `"${alicloud_ess_scaling_group.default.id}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudEssScheduledTasksDataSourceConfig(rand, map[string]string{
 			"scheduled_action":  `"${alicloud_ess_scheduled_task.default.scheduled_action}_fake"`,
 			"ids":               `["${alicloud_ess_scheduled_task.default.id}"]`,
 			"name_regex":        `"${alicloud_ess_scheduled_task.default.scheduled_task_name}"`,
 			"scheduled_task_id": `"${alicloud_ess_scheduled_task.default.id}"`,
+			"scaling_group_id":  `"${alicloud_ess_scaling_group.default.id}_fake"`,
 		}),
 	}
 
@@ -66,6 +76,7 @@ func TestAccAlicloudEssScheduledtasksDataSource(t *testing.T) {
 			"tasks.#":                        "1",
 			"tasks.0.name":                   fmt.Sprintf("tf-testAccDataSourceEssScheduledTasks-%d", rand),
 			"tasks.0.id":                     CHECKSET,
+			"tasks.0.scaling_group_id":       CHECKSET,
 			"tasks.0.scheduled_action":       CHECKSET,
 			"tasks.0.launch_expiration_time": CHECKSET,
 			"tasks.0.launch_time":            CHECKSET,
@@ -89,7 +100,7 @@ func TestAccAlicloudEssScheduledtasksDataSource(t *testing.T) {
 		fakeMapFunc:  fakeEssScheduledTasksMapFunc,
 	}
 
-	essScheduledTasksCheckInfo.dataSourceTestCheck(t, rand, idConf, actionConf, nameRegexConf, idsConf, allConf)
+	essScheduledTasksCheckInfo.dataSourceTestCheck(t, rand, idConf, scalingGroupIdConf, actionConf, nameRegexConf, idsConf, allConf)
 }
 
 func testAccCheckAlicloudEssScheduledTasksDataSourceConfig(rand int, attrMap map[string]string) string {

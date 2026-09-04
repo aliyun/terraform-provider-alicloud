@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -1083,6 +1084,244 @@ func (s *EnsServiceV2) EnsKeyPairStateRefreshFunc(id string, field string, failS
 
 // DescribeEnsKeyPair >>> Encapsulated.
 
+// DescribeEnsLoadBalancerHttpListener <<< Encapsulated get interface for Ens LoadBalancerHttpListener.
+
+func (s *EnsServiceV2) DescribeEnsLoadBalancerHttpListener(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return object, err
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["LoadBalancerId"] = parts[0]
+	request["ListenerPort"], _ = strconv.Atoi(parts[1])
+
+	action := "DescribeLoadBalancerHTTPListenerAttribute"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"LoadBalancerNotFound"}) {
+			return object, WrapErrorf(NotFoundErr("LoadBalancerHttpListener", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	currentStatus := response["ListenerPort"]
+	if currentStatus == nil {
+		return object, WrapErrorf(NotFoundErr("LoadBalancerHttpListener", id), NotFoundMsg, response)
+	}
+
+	// DescribeLoadBalancerHTTPListenerAttribute returns Status capitalised
+	// (e.g. "Running"/"Stopped"); normalise to lowercase so it matches the
+	// schema enum (running/stopped) and the StateConf targets used by Read and
+	// the status refresh function.
+	if statusVal, ok := response["Status"].(string); ok {
+		response["Status"] = strings.ToLower(statusVal)
+	}
+
+	return response, nil
+}
+
+func (s *EnsServiceV2) EnsLoadBalancerHttpListenerStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeEnsLoadBalancerHttpListener(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeEnsLoadBalancerHttpListener >>> Encapsulated.
+
+// StartEnsLoadBalancerHttpListener <<< Encapsulated start interface for Ens LoadBalancerHttpListener.
+
+func (s *EnsServiceV2) StartEnsLoadBalancerHttpListener(id string) error {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		return WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["LoadBalancerId"] = parts[0]
+	request["ListenerPort"], _ = strconv.Atoi(parts[1])
+
+	action := "StartLoadBalancerListener"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	var err error
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			// The listener is already running; treat as idempotent success.
+			if IsExpectedErrors(err, []string{"IncorrectListenerStatus"}) {
+				return nil
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	return nil
+}
+
+func (s *EnsServiceV2) StopEnsLoadBalancerHttpListener(id string) error {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		return WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["LoadBalancerId"] = parts[0]
+	request["ListenerPort"], _ = strconv.Atoi(parts[1])
+
+	action := "StopLoadBalancerListener"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	var err error
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			// The listener is already stopped; treat as idempotent success.
+			if IsExpectedErrors(err, []string{"IncorrectListenerStatus"}) {
+				return nil
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	return nil
+}
+
+// StartEnsLoadBalancerHttpListener >>> Encapsulated.
+
+// DescribeEnsNetworkRouteTable <<< Encapsulated get interface for Ens NetworkRouteTable.
+
+func (s *EnsServiceV2) DescribeEnsNetworkRouteTable(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	action := "DescribeEnsRouteTables"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["RouteTableId"] = id
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		addDebug(action, response, request)
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.RouteTables[*]", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.RouteTables[*]", response)
+	}
+
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(NotFoundErr("NetworkRouteTable", id), NotFoundMsg, response)
+	}
+
+	return v.([]interface{})[0].(map[string]interface{}), nil
+}
+
+func (s *EnsServiceV2) EnsNetworkRouteTableStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeEnsNetworkRouteTable(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeEnsNetworkRouteTable >>> Encapsulated.
+
 // SetResourceTags <<< Encapsulated tag function for Ens.
 func (s *EnsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType string) error {
 	if d.HasChange("tags") {
@@ -1168,3 +1407,164 @@ func (s *EnsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 }
 
 // SetResourceTags >>> tag function encapsulated.
+
+// DescribeEnsBucketLifecycle <<< Encapsulated get interface for Ens BucketLifecycle.
+
+func (s *EnsServiceV2) DescribeEnsBucketLifecycle(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	action := "GetBucketLifecycle"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	parts := strings.Split(id, ":")
+	if len(parts) < 2 {
+		return object, WrapError(fmt.Errorf("Invalid Resource Id %s. Expected id in format <bucket_name>:<rule_id>", id))
+	}
+	query["BucketName"] = parts[0]
+	query["RuleId"] = parts[1]
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+
+	if err != nil {
+		if IsExpectedErrors(err, []string{"NoSuchBucket", "NoSuchLifecycle"}) {
+			return object, WrapErrorf(NotFoundErr("BucketLifecycle", id), NotFoundMsg, err)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.Rule[*]", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Rule[*]", response)
+	}
+
+	rules, ok := v.([]interface{})
+	if !ok || len(rules) == 0 {
+		return object, WrapErrorf(NotFoundErr("BucketLifecycle", id), NotFoundMsg, response)
+	}
+
+	for _, raw := range rules {
+		rule, ok := raw.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		if fmt.Sprint(rule["ID"]) == parts[1] {
+			return rule, nil
+		}
+	}
+
+	return object, WrapErrorf(NotFoundErr("BucketLifecycle", id), NotFoundMsg, response)
+}
+
+func (s *EnsServiceV2) EnsBucketLifecycleStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeEnsBucketLifecycle(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeEnsBucketLifecycle >>> Encapsulated.
+
+// DescribeEnsLoadBalancerUdpListener <<< Encapsulated get interface for Ens LoadBalancerUdpListener.
+
+func (s *EnsServiceV2) DescribeEnsLoadBalancerUdpListener(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["ListenerPort"] = parts[1]
+	request["LoadBalancerId"] = parts[0]
+
+	action := "DescribeLoadBalancerUDPListenerAttribute"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ListenerNotFound", "LoadBalancerNotFound"}) {
+			return object, WrapErrorf(NotFoundErr("LoadBalancerUdpListener", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+
+func (s *EnsServiceV2) EnsLoadBalancerUdpListenerStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+	return s.EnsLoadBalancerUdpListenerStateRefreshFuncWithApi(id, field, failStates, s.DescribeEnsLoadBalancerUdpListener)
+}
+
+func (s *EnsServiceV2) EnsLoadBalancerUdpListenerStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeEnsLoadBalancerUdpListener >>> Encapsulated.

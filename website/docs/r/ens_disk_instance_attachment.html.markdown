@@ -91,7 +91,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-ENS Disk Instance Attachment can be imported using the id, e.g.
+ENS Disk Instance Attachment can be imported using the id, which consists of disk_id and instance_id, e.g.
 
 ```shell
 $ terraform import alicloud_ens_disk_instance_attachment.example <disk_id>:<instance_id>

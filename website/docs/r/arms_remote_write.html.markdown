@@ -92,7 +92,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Application Real-Time Monitoring Service (ARMS) Remote Write can be imported using the id, e.g.
+Application Real-Time Monitoring Service (ARMS) Remote Write can be imported using the id, which consists of cluster_id and remote_write_name, e.g.
 
 ```shell
 $ terraform import alicloud_arms_remote_write.example <cluster_id>:<remote_write_name>

@@ -217,7 +217,7 @@ The following attributes are exported:
 
 ## Import
 
-Serverless App Engine (SAE) Application Scaling Rule can be imported using the id, e.g.
+Serverless App Engine (SAE) Application Scaling Rule can be imported using the id, which consists of app_id and scaling_rule_name, e.g.
 
 ```shell
 $ terraform import alicloud_sae_application_scaling_rule.example <app_id>:<scaling_rule_name>

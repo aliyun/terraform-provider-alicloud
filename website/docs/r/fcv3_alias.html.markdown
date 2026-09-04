@@ -78,7 +78,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-FCV3 Alias can be imported using the id, e.g.
+FCV3 Alias can be imported using the id, which consists of function_name and alias_name, e.g.
 
 ```shell
 $ terraform import alicloud_fcv3_alias.example <function_name>:<alias_name>

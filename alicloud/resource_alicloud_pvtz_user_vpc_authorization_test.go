@@ -52,6 +52,51 @@ func TestAccAliCloudPvtzUserVpcAuthorization_basic0(t *testing.T) {
 	})
 }
 
+// defaultAuthType exercises the bug-fix path: auth_type is omitted so the
+// resource ID must default to "<authorized_user_id>:NORMAL" instead of the
+// previous buggy "<authorized_user_id>:<nil>".
+func TestAccAliCloudPvtzUserVpcAuthorization_defaultAuthType(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_pvtz_user_vpc_authorization.default"
+	ra := resourceAttrInit(resourceId, AlicloudPrivateZoneUserVpcAuthorizationMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &PvtzService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribePvtzUserVpcAuthorization")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sprivatezoneuservpcauthorization%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudPrivateZoneUserVpcAuthorizationBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckEnterpriseAccountEnabled(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"authorized_user_id": "1359528198477648",
+					"auth_channel":       "RESOURCE_DIRECTORY",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"authorized_user_id": CHECKSET,
+						"auth_type":          "NORMAL",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"auth_channel"},
+			},
+		},
+	})
+}
+
 var AlicloudPrivateZoneUserVpcAuthorizationMap0 = map[string]string{}
 
 func AlicloudPrivateZoneUserVpcAuthorizationBasicDependence0(name string) string {

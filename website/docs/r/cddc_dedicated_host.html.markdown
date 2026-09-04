@@ -115,7 +115,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-ApsaraDB for MyBase Dedicated Host can be imported using the id, e.g.
+ApsaraDB for MyBase Dedicated Host can be imported using the id, which consists of dedicated_host_group_id and dedicated_host_id, e.g.
 
 ```shell
 $ terraform import alicloud_cddc_dedicated_host.example <dedicated_host_group_id>:<dedicated_host_id>

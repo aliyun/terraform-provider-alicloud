@@ -85,7 +85,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-CR Storage Domain Routing Rule can be imported using the id, e.g.
+CR Storage Domain Routing Rule can be imported using the id, which consists of instance_id and rule_id, e.g.
 
 ```shell
 $ terraform import alicloud_cr_storage_domain_routing_rule.example <instance_id>:<rule_id>

@@ -135,7 +135,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-RocketMQ Consumer Group can be imported using the id, e.g.
+RocketMQ Consumer Group can be imported using the id, which consists of instance_id and consumer_group_id, e.g.
 
 ```shell
 $ terraform import alicloud_rocketmq_consumer_group.example <instance_id>:<consumer_group_id>

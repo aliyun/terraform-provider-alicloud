@@ -323,7 +323,11 @@ func resourceAliyunRouteEntryDelete(d *schema.ResourceData, meta interface{}) er
 			return vpcClient.DeleteRouteEntry(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"IncorrectVpcStatus", "TaskConflict", "OperationConflict", "SystemBusy", "IncorrectRouteEntryStatus", "IncorrectInstanceStatus", "Forbbiden", "UnknownError", "InvalidVBRStatus", "LastTokenProcessing", "IncorrectStatus.Ipv6Address", "OperationFailed.DistibuteLock", "ServiceUnavailable", "IncorrectStatus.RouteTableStatus", "IncorrectStatus.MultiScopeRiRouteEntry", "IncorrectHaVipStatus", "IncorrectStatus.Ipv4Gateway", "IncorrectStatus.VpcPeer", "IncorrectStatus.PrefixList"}) || NeedRetry(err) {
+			// "InternalError" from DeleteRouteEntry is a transient server-side
+			// failure: notably when deleting the last route of a VPC peering
+			// connection, the same delete succeeds when retried. Retry it within
+			// the delete timeout budget instead of failing the resource.
+			if IsExpectedErrors(err, []string{"IncorrectVpcStatus", "TaskConflict", "OperationConflict", "SystemBusy", "IncorrectRouteEntryStatus", "IncorrectInstanceStatus", "Forbbiden", "UnknownError", "InvalidVBRStatus", "LastTokenProcessing", "IncorrectStatus.Ipv6Address", "OperationFailed.DistibuteLock", "ServiceUnavailable", "IncorrectStatus.RouteTableStatus", "IncorrectStatus.MultiScopeRiRouteEntry", "IncorrectHaVipStatus", "IncorrectStatus.Ipv4Gateway", "IncorrectStatus.VpcPeer", "IncorrectStatus.PrefixList", "InternalError"}) || NeedRetry(err) {
 				// Route Entry does not support creating or deleting within 5 seconds frequently
 				time.Sleep(time.Duration(retryTimes) * time.Second)
 				return retry.RetryableError(err)

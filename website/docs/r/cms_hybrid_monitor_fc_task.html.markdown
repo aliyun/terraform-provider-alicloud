@@ -92,7 +92,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Cloud Monitor Service Hybrid Monitor Fc Task can be imported using the id, e.g.
+Cloud Monitor Service Hybrid Monitor Fc Task can be imported using the id, which consists of hybrid_monitor_fc_task_id and namespace, e.g.
 
 ```shell
 $ terraform import alicloud_cms_hybrid_monitor_fc_task.example <hybrid_monitor_fc_task_id>:<namespace>

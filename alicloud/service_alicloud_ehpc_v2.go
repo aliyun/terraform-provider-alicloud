@@ -205,3 +205,85 @@ func (s *EhpcServiceV2) EhpcQueueStateRefreshFuncWithApi(id string, field string
 }
 
 // DescribeEhpcQueue >>> Encapsulated.
+
+// DescribeEhpcUser <<< Encapsulated get interface for Ehpc User.
+
+func (s *EhpcServiceV2) DescribeEhpcUser(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["ClusterId"] = parts[0]
+	query["UserName"] = parts[1]
+
+	action := "GetUser"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcGet("EHPC", "2024-07-30", action, query, request)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"UserNotFound"}) {
+			return object, WrapErrorf(NotFoundErr("User", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.User", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.User", response)
+	}
+
+	return v.(map[string]interface{}), nil
+}
+
+func (s *EhpcServiceV2) EhpcUserStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+	return s.EhpcUserStateRefreshFuncWithApi(id, field, failStates, s.DescribeEhpcUser)
+}
+
+func (s *EhpcServiceV2) EhpcUserStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeEhpcUser >>> Encapsulated.

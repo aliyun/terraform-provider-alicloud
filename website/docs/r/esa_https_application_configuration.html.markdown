@@ -123,7 +123,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-ESA Https Application Configuration can be imported using the id, e.g.
+ESA Https Application Configuration can be imported using the id, which consists of site_id and config_id, e.g.
 
 ```shell
 $ terraform import alicloud_esa_https_application_configuration.example <site_id>:<config_id>

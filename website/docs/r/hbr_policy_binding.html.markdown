@@ -74,6 +74,79 @@ resource "alicloud_hbr_policy_binding" "default" {
 ```
 
 
+ECS Instance Backup With App-Consistent Snapshot Group
+
+This example migrates an `alicloud_hbr_server_backup_plan` configuration (deprecated since v1.249.0) to `alicloud_hbr_policy_binding` using `alicloud_hbr_policy` + `advanced_options.udm_detail` with `app_consistent` and `snapshot_group`.
+
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_hbr_policy_binding&exampleId=cf92ed2f-82d2-a8c0-6fa9-c8ef36c246b94f5b3ef2&activeTab=example&spm=docs.r.hbr_policy_binding.1.cf92ed2f82&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
+```terraform
+variable "name" {
+  default = "terraform-example"
+}
+
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
+resource "random_integer" "default" {
+  max = 99999
+  min = 10000
+}
+
+resource "alicloud_hbr_vault" "default" {
+  vault_type = "STANDARD"
+  vault_name = "example-value-${random_integer.default.result}"
+}
+
+resource "alicloud_hbr_policy" "default" {
+  policy_name = "example-value-${random_integer.default.result}"
+  rules {
+    rule_type    = "BACKUP"
+    backup_type  = "COMPLETE"
+    schedule     = "I|1631685600|P1D"
+    retention    = "7"
+    archive_days = "0"
+    vault_id     = alicloud_hbr_vault.default.id
+  }
+  policy_description = "policy example"
+}
+
+resource "alicloud_instance" "default" {
+  instance_name = "example-value-${random_integer.default.result}"
+  instance_type = "ecs.g7.large"
+  image_id      = "aliyun_2_1903_x64_7h_cor_4.0.40_alibase"
+  system_disk {
+    category = "cloud_essd"
+    size     = "40"
+  }
+}
+
+resource "alicloud_hbr_policy_binding" "default" {
+  source_type    = "UDM_ECS"
+  policy_id      = alicloud_hbr_policy.default.id
+  data_source_id = alicloud_instance.default.id
+  disabled       = "false"
+  advanced_options {
+    udm_detail {
+      app_consistent     = true
+      snapshot_group     = true
+      ram_role_name      = "AliyunECSBackupRole"
+      pre_script_path    = "/opt/prescript.sh"
+      post_script_path   = "/opt/postscript.sh"
+      enable_fs_freeze   = true
+      timeout_in_seconds = 60
+      enable_writers     = true
+    }
+  }
+}
+```
+
+
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_hbr_policy_binding&spm=docs.r.hbr_policy_binding.example&intl_lang=EN_US)
 
 ## Argument Reference
@@ -117,9 +190,21 @@ The advanced_options-oss_detail supports the following:
 ### `advanced_options-udm_detail`
 
 The advanced_options-udm_detail supports the following:
+* `app_consistent` - (Optional) Whether to enable application-consistent backup. When enabled, the system uses a snapshot group together with pre/post scripts to guarantee application data consistency. Only supported when all cloud disk types of the instance are ESSD.
 * `destination_kms_key_id` - (Optional) Custom KMS key ID of encrypted copy
 * `disk_id_list` - (Optional, List) The list of backup disks. If it is empty, all disks are backed up.
+* `enable_fs_freeze` - (Optional) Whether to enable file system freeze before taking a snapshot.
+* `enable_writers` - (Optional) Whether to enable VSS writers.
 * `exclude_disk_id_list` - (Optional, List) List of cloud disk IDs that are not backed up
+* `post_script_path` - (Optional) The path of the post-backup script, executed after the snapshot is taken. Required when `app_consistent` is `true`.
+* `pre_script_path` - (Optional) The path of the pre-backup script, executed before the snapshot is taken. Required when `app_consistent` is `true`.
+* `ram_role_name` - (Optional) The RAM role name used by ECS to run the pre/post scripts. Required when `app_consistent` is `true`.
+* `snapshot_group` - (Optional) Whether to use a snapshot group. Valid when `app_consistent` is `true`.
+* `timeout_in_seconds` - (Optional) The timeout in seconds for the pre/post script execution.
+
+-> **NOTE:** `app_consistent`, `snapshot_group`, `ram_role_name`, `pre_script_path`, `post_script_path`, `enable_fs_freeze`, `timeout_in_seconds` and `enable_writers` are only supported when `source_type` is `UDM_ECS`. When `app_consistent` is set to `true`, `ram_role_name`, `pre_script_path` and `post_script_path` are required by the [CreatePolicyBindings API](https://www.alibabacloud.com/help/en/cloud-backup/developer-reference/api-hbr-2017-09-08-createpolicybindings). This set of options supersedes the deprecated `alicloud_hbr_server_backup_plan` `detail` block.
+
+-> **NOTE:** Application-consistent backup relies on [ECS snapshot consistency groups](https://help.aliyun.com/zh/ecs/user-guide/create-a-snapshot-consistency-group), which have the following runtime constraints: every disk attached to the instance must be an ESSD; multi-attach (`Multi-Attach`) shared disks are not supported; the disks in a consistency group must be in the same zone (the group can span multiple instances); a single consistency group contains at most 128 disks and at most 256 TiB of total capacity; and snapshots produced by a consistency group are retained permanently by default and are not subject to the backup policy retention period. When [Cloud Backup](https://help.aliyun.com/zh/cloud-backup/user-guide/back-up-ecs-instances) runs a whole-instance backup, it creates a consistency group if the instance supports application-consistent backup; otherwise it falls back to per-disk crash-consistent snapshots.
 
 ## Attributes Reference
 
@@ -136,7 +221,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Hybrid Backup Recovery (HBR) Policy Binding can be imported using the id, e.g.
+Hybrid Backup Recovery (HBR) Policy Binding can be imported using the id, which consists of policy_id, source_type and data_source_id, e.g.
 
 ```shell
 $ terraform import alicloud_hbr_policy_binding.example <policy_id>:<source_type>:<data_source_id>

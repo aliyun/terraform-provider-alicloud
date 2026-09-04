@@ -134,7 +134,7 @@ The following attributes are exported:
 
 ## Import
 
-Cloud Storage Gateway Gateway Block Volume can be imported using the id, e.g.
+Cloud Storage Gateway Gateway Block Volume can be imported using the id, which consists of gateway_id and index_id, e.g.
 
 ```shell
 $ terraform import alicloud_cloud_storage_gateway_gateway_block_volume.example <gateway_id>:<index_id>

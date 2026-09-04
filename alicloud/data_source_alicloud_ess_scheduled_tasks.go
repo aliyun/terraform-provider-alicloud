@@ -18,6 +18,10 @@ func dataSourceAlicloudEssScheduledTasks() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"scaling_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"scheduled_action": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -48,6 +52,10 @@ func dataSourceAlicloudEssScheduledTasks() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"scaling_group_id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -111,6 +119,9 @@ func dataSourceAlicloudEssScheduledTasksRead(d *schema.ResourceData, meta interf
 
 	if v, ok := d.GetOk("scheduled_task_id"); ok {
 		request.ScheduledTaskId = &[]string{v.(string)}
+	}
+	if v, ok := d.GetOk("scaling_group_id"); ok {
+		request.ScalingGroupId = v.(string)
 	}
 	if v, ok := d.GetOk("scheduled_action"); ok {
 		request.ScheduledAction = &[]string{v.(string)}
@@ -187,6 +198,7 @@ func scheduledTasksDescriptionAttribute(d *schema.ResourceData, tasks []ess.Sche
 	for _, t := range tasks {
 		mapping := map[string]interface{}{
 			"id":                     t.ScheduledTaskId,
+			"scaling_group_id":       t.ScalingGroupId,
 			"name":                   t.ScheduledTaskName,
 			"scheduled_action":       t.ScheduledAction,
 			"description":            t.Description,

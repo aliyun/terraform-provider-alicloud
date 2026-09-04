@@ -137,7 +137,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Max Compute Quota Plan can be imported using the id, e.g.
+Max Compute Quota Plan can be imported using the id, which consists of nickname and plan_name, e.g.
 
 ```shell
 $ terraform import alicloud_max_compute_quota_plan.example <nickname>:<plan_name>

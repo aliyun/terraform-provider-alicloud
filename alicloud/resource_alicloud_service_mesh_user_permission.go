@@ -3,6 +3,7 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -140,8 +141,17 @@ func resourceAliCloudServiceMeshUserPermissionRead(d *schema.ResourceData, meta 
 			obj["service_mesh_id"] = v
 		}
 		if v, ok := rawMap["IsRamRole"]; ok {
-			obj["is_ram_role"] = v
-			obj["is_custom"] = !v.(bool)
+			isRamRole := false
+			switch value := v.(type) {
+			case bool:
+				isRamRole = value
+			case string:
+				if parsed, err := strconv.ParseBool(value); err == nil {
+					isRamRole = parsed
+				}
+			}
+			obj["is_ram_role"] = isRamRole
+			obj["is_custom"] = !isRamRole
 		} else {
 			obj["is_ram_role"] = false
 			obj["is_custom"] = true

@@ -81,7 +81,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Cloud Firewall Nat Firewall Control Policy Order can be imported using the id, e.g.
+Cloud Firewall Nat Firewall Control Policy Order can be imported using the id, which consists of acl_uuid, nat_gateway_id and direction, e.g.
 
 ```shell
 $ terraform import alicloud_cloud_firewall_nat_firewall_control_policy_order.example <acl_uuid>:<nat_gateway_id>:<direction>

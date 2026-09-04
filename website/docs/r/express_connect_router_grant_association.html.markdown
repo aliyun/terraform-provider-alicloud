@@ -91,7 +91,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Express Connect Router Grant Association can be imported using the id, e.g.
+Express Connect Router Grant Association can be imported using the id, which consists of ecr_id, instance_id, instance_region_id, ecr_owner_ali_uid and instance_type, e.g.
 
 ```shell
 $ terraform import alicloud_express_connect_router_grant_association.example <ecr_id>:<instance_id>:<instance_region_id>:<ecr_owner_ali_uid>:<instance_type>

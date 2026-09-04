@@ -151,7 +151,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-ARMS Prometheus Monitoring can be imported using the id, e.g.
+ARMS Prometheus Monitoring can be imported using the id, which consists of cluster_id, monitoring_name and type, e.g.
 
 ```shell
 $ terraform import alicloud_arms_prometheus_monitoring.example <cluster_id>:<monitoring_name>:<type>

@@ -113,7 +113,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-RabbitMQ (AMQP) Exchange can be imported using the id, e.g.
+RabbitMQ (AMQP) Exchange can be imported using the id, which consists of instance_id, virtual_host_name and exchange_name, e.g.
 
 ```shell
 $ terraform import alicloud_amqp_exchange.example <instance_id>:<virtual_host_name>:<exchange_name>

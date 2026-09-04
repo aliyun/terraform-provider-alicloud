@@ -84,7 +84,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Serverless Workflow Schedule can be imported using the id, e.g.
+Serverless Workflow Schedule can be imported using the id, which consists of schedule_name and flow_name, e.g.
 
 ```shell
 $ terraform import alicloud_fnf_schedule.example <schedule_name>:<flow_name>

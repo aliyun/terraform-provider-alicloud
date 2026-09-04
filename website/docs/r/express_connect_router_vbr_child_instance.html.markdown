@@ -92,7 +92,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Express Connect Router Express Connect Router Vbr Child Instance can be imported using the id, e.g.
+Express Connect Router Express Connect Router Vbr Child Instance can be imported using the id, which consists of ecr_id, child_instance_id and child_instance_type, e.g.
 
 ```shell
 $ terraform import alicloud_express_connect_router_vbr_child_instance.example <ecr_id>:<child_instance_id>:<child_instance_type>

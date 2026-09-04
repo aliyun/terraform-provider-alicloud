@@ -91,7 +91,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Express Connect Grant Rule To Cen can be imported using the id, e.g.
+Express Connect Grant Rule To Cen can be imported using the id, which consists of cen_id, cen_owner_id and instance_id, e.g.
 
 ```shell
 $ terraform import alicloud_express_connect_grant_rule_to_cen.example <cen_id>:<cen_owner_id>:<instance_id>

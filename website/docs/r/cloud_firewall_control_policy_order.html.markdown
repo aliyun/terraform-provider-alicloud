@@ -68,7 +68,7 @@ The following attributes are exported:
 
 ## Import
 
-Cloud Firewall Control Policy Order can be imported using the id, e.g.
+Cloud Firewall Control Policy Order can be imported using the id, which consists of acl_uuid and direction, e.g.
 
 ```shell
 $ terraform import alicloud_cloud_firewall_control_policy_order.example <acl_uuid>:<direction>

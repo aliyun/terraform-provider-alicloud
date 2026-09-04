@@ -93,7 +93,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Hybrid Backup Recovery (HBR) Hana Instance can be imported using the id, e.g.
+Hybrid Backup Recovery (HBR) Hana Instance can be imported using the id, which consists of vault_id and hana_instance_id, e.g.
 
 ```shell
 $ terraform import alicloud_hbr_hana_instance.example <vault_id>:<hana_instance_id>

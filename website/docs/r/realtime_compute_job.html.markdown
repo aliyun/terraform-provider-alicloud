@@ -174,7 +174,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Realtime Compute Job can be imported using the id, e.g.
+Realtime Compute Job can be imported using the id, which consists of resource_id, namespace and job_id, e.g.
 
 ```shell
 $ terraform import alicloud_realtime_compute_job.example <resource_id>:<namespace>:<job_id>

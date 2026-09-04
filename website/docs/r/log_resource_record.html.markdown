@@ -98,7 +98,7 @@ The following attributes are exported:
 
 ## Import
 
-Log resource record can be imported using the id, e.g.
+Log resource record can be imported using the id, which consists of resource_name and record_id, e.g.
 
 ```shell
 $ terraform import alicloud_log_resource_record.example <resource_name>:<record_id>

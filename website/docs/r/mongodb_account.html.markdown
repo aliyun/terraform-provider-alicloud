@@ -105,7 +105,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Mongodb Account can be imported using the id, e.g.
+Mongodb Account can be imported using the id, which consists of instance_id and account_name, e.g.
 
 ```shell
 $ terraform import alicloud_mongodb_account.example <instance_id>:<account_name>

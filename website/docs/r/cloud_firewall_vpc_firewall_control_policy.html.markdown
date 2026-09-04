@@ -139,7 +139,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Cloud Firewall Vpc Firewall Control Policy can be imported using the id, e.g.
+Cloud Firewall Vpc Firewall Control Policy can be imported using the id, which consists of vpc_firewall_id and acl_uuid, e.g.
 
 ```shell
 $ terraform import alicloud_cloud_firewall_vpc_firewall_control_policy.example <vpc_firewall_id>:<acl_uuid>

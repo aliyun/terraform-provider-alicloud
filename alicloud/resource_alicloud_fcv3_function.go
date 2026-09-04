@@ -1983,7 +1983,7 @@ func resourceAliCloudFcv3FunctionDelete(d *schema.ResourceData, meta interface{}
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RoaDelete("FC", "2023-03-30", action, query, nil, nil, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"429"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"429", "ProvisionConfigExist"}) || NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}

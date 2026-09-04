@@ -217,6 +217,45 @@ resource "alicloud_fcv3_custom_domain" "default" {
 ```
 
 
+Bind an HTTPS certificate managed by SSL Certificates Service (CAS) by id, instead of pasting the PEM material:
+
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_fcv3_custom_domain&exampleId=1e863850-e533-de40-5c3e-a1fc11600221c2e1a725&activeTab=example&spm=docs.r.fcv3_custom_domain.1.1e863850e5&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
+```terraform
+variable "name" {
+  default = "flask-07ap.fcv3.1511928242963727.cn-shanghai.fc.devsapp.net"
+}
+
+variable "function_name1" {
+  default = "terraform-custom-domain-t1"
+}
+
+resource "alicloud_ssl_certificates_service_certificate" "default" {
+  certificate_name = "tf-cert-example"
+  cert             = file("cert.pem")
+  key              = file("key.pem")
+}
+
+resource "alicloud_fcv3_custom_domain" "default" {
+  custom_domain_name = var.name
+  protocol           = "HTTP,HTTPS"
+  certificate_id     = alicloud_ssl_certificates_service_certificate.default.id
+
+  route_config {
+    routes {
+      function_name = var.function_name1
+      path          = "/a"
+      qualifier     = "LATEST"
+      methods       = ["GET"]
+    }
+  }
+}
+```
+
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_fcv3_custom_domain&spm=docs.r.fcv3_custom_domain.example&intl_lang=EN_US)
 
 ## Argument Reference
@@ -224,6 +263,7 @@ resource "alicloud_fcv3_custom_domain" "default" {
 The following arguments are supported:
 * `auth_config` - (Optional, Set) Permission authentication configuration See [`auth_config`](#auth_config) below.
 * `cert_config` - (Optional, Computed, Set) HTTPS certificate information See [`cert_config`](#cert_config) below.
+* `certificate_id` - (Optional, Computed, Available since v1.290.0) The ID of an SSL certificate managed by SSL Certificates Service (CAS). When set, the provider resolves the certificate and private key from the referenced SSL certificate and binds them as the HTTPS certificate for the custom domain, so that a certificate managed in SSL Certificates Service can be referenced without pasting the PEM material. It conflicts with `cert_config.0.certificate` and `cert_config.0.private_key`. The resolved private key is never persisted to state.
 * `cors_config` - (Optional, Set, Available since v1.270.0) Cross-Origin Resource Sharing (CORS) configuration, used to control which origins can access resources under the custom domain. See [`cors_config`](#cors_config) below.
 * `custom_domain_name` - (Optional, ForceNew, Computed) The name of the resource
 * `protocol` - (Optional) The protocol type supported by the domain name. HTTP: only HTTP protocol is supported. HTTPS: only HTTPS is supported. HTTP,HTTPS: Supports HTTP and HTTPS protocols.
@@ -250,7 +290,7 @@ The cors_config supports the following:
 * `allow_credentials` - (Optional, Available since v1.270.0) Whether to allow credentials (such as Cookies, Authorization headers, etc.). When AllowCredentials is true, AllowOrigins cannot use the wildcard '*'.
 * `allow_headers` - (Optional, List, Available since v1.270.0) List of allowed request headers, such as Content-Type, Authorization, etc.
 * `allow_methods` - (Optional, List, Available since v1.270.0) List of allowed HTTP methods, such as GET, POST, PUT, DELETE, etc.
-* `allow_origins` - (Optional, List, Available since v1.270.0) List of allowed origins. Supports wildcard '*' to allow all origins (when AllowCredentials is false), specific domains like 'https://example.com', or an array of multiple domains.
+* `allow_origins` - (Optional, List, Available since v1.270.0) List of allowed origins. Supports wildcard '*' to allow all origins (when AllowCredentials is false), specific domains like `https://example.com`, or an array of multiple domains.
 * `expose_headers` - (Optional, List, Available since v1.270.0) List of response headers that can be exposed to the browser.
 * `max_age` - (Optional, Int, Available since v1.270.0) Cache time (seconds) for preflight request results. Browsers will not resend preflight requests within this time.
 

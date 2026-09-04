@@ -121,7 +121,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-ESA Transport Layer Application can be imported using the id, e.g.
+ESA Transport Layer Application can be imported using the id, which consists of site_id and application_id, e.g.
 
 ```shell
 $ terraform import alicloud_esa_transport_layer_application.example <site_id>:<application_id>

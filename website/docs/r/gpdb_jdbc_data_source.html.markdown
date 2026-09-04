@@ -123,7 +123,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-AnalyticDB for PostgreSQL (GPDB) Jdbc Data Source can be imported using the id, e.g.
+AnalyticDB for PostgreSQL (GPDB) Jdbc Data Source can be imported using the id, which consists of db_instance_id and data_source_id, e.g.
 
 ```shell
 $ terraform import alicloud_gpdb_jdbc_data_source.example <db_instance_id>:<data_source_id>

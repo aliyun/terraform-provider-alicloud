@@ -82,7 +82,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Cloud Enterprise Network (CEN) Transit Router Cidr can be imported using the id, e.g.
+Cloud Enterprise Network (CEN) Transit Router Cidr can be imported using the id, which consists of transit_router_id and transit_router_cidr_id, e.g.
 
 ```shell
 $ terraform import alicloud_cen_transit_router_cidr.example <transit_router_id>:<transit_router_cidr_id>

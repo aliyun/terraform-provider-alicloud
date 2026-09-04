@@ -92,7 +92,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Vpc Vswitch Cidr Reservation can be imported using the id, e.g.
+Vpc Vswitch Cidr Reservation can be imported using the id, which consists of vswitch_id and vswitch_cidr_reservation_id, e.g.
 
 ```shell
 $ terraform import alicloud_vpc_vswitch_cidr_reservation.example <vswitch_id>:<vswitch_cidr_reservation_id>

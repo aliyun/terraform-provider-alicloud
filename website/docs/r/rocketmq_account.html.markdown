@@ -118,7 +118,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-RocketMQ Account can be imported using the id, e.g.
+RocketMQ Account can be imported using the id, which consists of instance_id and username, e.g.
 
 ```shell
 $ terraform import alicloud_rocketmq_account.example <instance_id>:<username>

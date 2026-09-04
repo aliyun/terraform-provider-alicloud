@@ -100,7 +100,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-CR Vpc Endpoint Linked Vpc can be imported using the id, e.g.
+CR Vpc Endpoint Linked Vpc can be imported using the id, which consists of instance_id, vpc_id, vswitch_id and module_name, e.g.
 
 ```shell
 $ terraform import alicloud_cr_vpc_endpoint_linked_vpc.example <instance_id>:<vpc_id>:<vswitch_id>:<module_name>
