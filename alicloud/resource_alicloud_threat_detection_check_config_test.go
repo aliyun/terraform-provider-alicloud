@@ -69,6 +69,19 @@ func TestAccAliCloudThreatDetectionCheckConfig_basic12031(t *testing.T) {
 					"enable_auto_check": "false",
 					"enable_add_check":  "false",
 					"start_time":        "6",
+					"config_standard_ids": []map[string]interface{}{
+						{
+							"add_ids":    []interface{}{},
+							"remove_ids": []interface{}{},
+						},
+					},
+					"config_requirement_ids": []map[string]interface{}{
+						{
+							"add_ids":    []interface{}{},
+							"remove_ids": []interface{}{},
+						},
+					},
+					"resource_directory_account_id": 0,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -106,7 +119,7 @@ func TestAccAliCloudThreatDetectionCheckConfig_basic12031(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"configure", "system_config", "vendors"},
+				ImportStateVerifyIgnore: []string{"configure", "system_config", "vendors", "config_standard_ids", "config_requirement_ids", "resource_directory_account_id"},
 			},
 		},
 	})

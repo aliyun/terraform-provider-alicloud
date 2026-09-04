@@ -81,7 +81,31 @@ The following arguments are supported:
 
 -> **NOTE:** This parameter only applies during resource creation, update. If modified in isolation without other property changes, Terraform will not trigger any action.
 
+* `config_standard_ids` - (Optional) The standard IDs configuration for the check config. See [`config_standard_ids`](#config_standard_ids) below.
+
+-> **NOTE:** This parameter only applies during resource creation, update. If modified in isolation without other property changes, Terraform will not trigger any action.
+
+* `config_requirement_ids` - (Optional) The requirement IDs configuration for the check config. See [`config_requirement_ids`](#config_requirement_ids) below.
+
+-> **NOTE:** This parameter only applies during resource creation, update. If modified in isolation without other property changes, Terraform will not trigger any action.
+
+* `resource_directory_account_id` - (Optional, Int) The resource directory account ID.
+
+-> **NOTE:** This parameter only applies during resource creation, update. If modified in isolation without other property changes, Terraform will not trigger any action.
+
 * `selected_checks` - (Optional) The check items selected in the policy. See [`selected_checks`](#selected_checks) below.
+
+### `config_standard_ids`
+
+The config_standard_ids supports the following:
+* `add_ids` - (Optional, List) The list of standard IDs to add.
+* `remove_ids` - (Optional, List) The list of standard IDs to remove.
+
+### `config_requirement_ids`
+
+The config_requirement_ids supports the following:
+* `add_ids` - (Optional, List) The list of requirement IDs to add.
+* `remove_ids` - (Optional, List) The list of requirement IDs to remove.
 
 ### `selected_checks`
 
