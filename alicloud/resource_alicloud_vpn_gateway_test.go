@@ -392,10 +392,10 @@ func TestAccAliCloudVPNGateway_basic2(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"vpc_id":                       "${data.alicloud_vpcs.default.ids.0}",
+					"vpc_id":                       "${alicloud_vpc.default.id}",
 					"name":                         name,
-					"vswitch_id":                   "${data.alicloud_vswitches.default0.ids.0}",
-					"disaster_recovery_vswitch_id": "${data.alicloud_vswitches.default1.ids.0}",
+					"vswitch_id":                   "${local.vswitch_id}",
+					"disaster_recovery_vswitch_id": "${local.disaster_recovery_vswitch_id}",
 					"description":                  name,
 					"bandwidth":                    "10",
 					"enable_ssl":                   "true",
@@ -474,28 +474,45 @@ var AlicloudVpnGatewayMap3 = map[string]string{}
 func AlicloudVpnGatewayBasicDependence2(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-	default = "%s"
+  default = "%s"
 }
 
 data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
 }
 
-data "alicloud_vpcs" "default" {
-    name_regex = "^default-NODELETING$"
+# Self-built independent VPC (192.168.0.0/16) instead of the shared
+# default-NODELETING VPC (172.16.0.0/12). The shared VPC already contains a
+# 172.16.144.0/20 vswitch, so deterministic cidrsubnet indexes collided with
+# it (InvalidCidrBlock.OverlappedWithVSwitch) and blocked the CRUD exercise.
+# A fresh VPC with its own address space sidesteps every overlap with the
+# pre-existing vswitches and keeps the acceptance test focused on
+# alicloud_vpn_gateway instead of babysitting shared-VPC subnet math.
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "192.168.0.0/16"
 }
 
-data "alicloud_vswitches" "default0" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id           = data.alicloud_zones.default.zones.0.id
+resource "alicloud_vswitch" "vswitch0" {
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "192.168.0.0/24"
+  zone_id      = data.alicloud_zones.default.zones.0.id
+  vswitch_name = var.name
 }
 
-data "alicloud_vswitches" "default1" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id           = data.alicloud_zones.default.zones.1.id
+resource "alicloud_vswitch" "vswitch1" {
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "192.168.1.0/24"
+  zone_id      = data.alicloud_zones.default.zones.1.id
+  vswitch_name = var.name
 }
 
-`, name)
+locals {
+  vswitch_id                    = alicloud_vswitch.vswitch0.id
+  disaster_recovery_vswitch_id = alicloud_vswitch.vswitch1.id
+}
+
+	`, name)
 }
 
 func TestAccAliCloudVPNGateway_basic3(t *testing.T) {
