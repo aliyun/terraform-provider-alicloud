@@ -194,12 +194,18 @@ func TestAccAliCloudECSDeploymentSet_basic0_twin(t *testing.T) {
 					"deployment_set_name":                   name,
 					"description":                           name,
 					"on_unable_to_redeploy_failed_instance": "CancelMembershipAndStart",
+					"group_count":                           "3",
+					"type":                                  "host",
+					"affinity":                              "2",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"strategy":            "AvailabilityGroup",
 						"deployment_set_name": name,
 						"description":         name,
+						"group_count":         "3",
+						"type":                "host",
+						"affinity":            "2",
 					}),
 				),
 			},
@@ -289,6 +295,9 @@ func TestUnitAliCloudECSDeploymentSet(t *testing.T) {
 		"deployment_set_name":                   "deployment_set_name",
 		"description":                           "description",
 		"on_unable_to_redeploy_failed_instance": "CancelMembershipAndStart",
+		"group_count":                           3,
+		"type":                                  "host",
+		"affinity":                              2,
 	} {
 		err := dCreate.Set(key, value)
 		assert.Nil(t, err)
@@ -311,6 +320,9 @@ func TestUnitAliCloudECSDeploymentSet(t *testing.T) {
 					"DeploymentSetDescription": "description",
 					"DeploymentStrategy":       "Availability",
 					"DeploymentSetId":          "MockDeploymentSetId",
+					"GroupCount":               3,
+					"Type":                     "host",
+					"Affinity":                 2,
 				},
 			},
 		},
