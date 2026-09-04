@@ -19,7 +19,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudARMSPrometheusAlertRule_basic0(t *testing.T) {
+func TestAccAliCloudARMSPrometheusAlertRule_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_arms_prometheus_alert_rule.default"
 	ra := resourceAttrInit(resourceId, AlicloudARMSPrometheusAlertRuleMap0)
@@ -33,7 +33,8 @@ func TestAccAlicloudARMSPrometheusAlertRule_basic0(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudARMSPrometheusAlertRuleBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckPrePaidResources(t)
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.ARMSSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -42,7 +43,7 @@ func TestAccAlicloudARMSPrometheusAlertRule_basic0(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"prometheus_alert_rule_name": name,
-					"cluster_id":                 "${data.alicloud_cs_managed_kubernetes_clusters.default.clusters.0.id}",
+					"cluster_id":                 "${data.alicloud_cs_clusters.default.ids.0}",
 					"expression":                 "node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes * 100 < 10",
 					"message":                    "node available memory is less than 10%",
 					"duration":                   "1",
@@ -108,6 +109,34 @@ func TestAccAlicloudARMSPrometheusAlertRule_basic0(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"annotations.#": "1",
+						"labels.#":      "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"labels": []map[string]interface{}{
+						{
+							"name":  "TF2",
+							"value": "test2",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"labels.#":      "1",
+						"annotations.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"annotations": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"annotations.#": "0",
+						"labels.#":      "1",
 					}),
 				),
 			},
@@ -168,7 +197,7 @@ func TestAccAlicloudARMSPrometheusAlertRule_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudARMSPrometheusAlertRule_basic1(t *testing.T) {
+func TestAccAliCloudARMSPrometheusAlertRule_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_arms_prometheus_alert_rule.default"
 	ra := resourceAttrInit(resourceId, AlicloudARMSPrometheusAlertRuleMap0)
@@ -182,7 +211,8 @@ func TestAccAlicloudARMSPrometheusAlertRule_basic1(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudARMSPrometheusAlertRuleBasicDependence1)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckPrePaidResources(t)
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.ARMSSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -191,7 +221,7 @@ func TestAccAlicloudARMSPrometheusAlertRule_basic1(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"prometheus_alert_rule_name": name,
-					"cluster_id":                 "${data.alicloud_cs_managed_kubernetes_clusters.default.clusters.0.id}",
+					"cluster_id":                 "${data.alicloud_cs_clusters.default.ids.0}",
 					"expression":                 "node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes * 100 < 10",
 					"message":                    "node available memory is less than 10%",
 					"duration":                   "1",
@@ -213,6 +243,47 @@ func TestAccAlicloudARMSPrometheusAlertRule_basic1(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"labels": []map[string]interface{}{
+						{
+							"name":  "TF",
+							"value": "test1",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"labels.#":         "1",
+						"notify_type":      "DISPATCH_RULE",
+						"dispatch_rule_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"dispatch_rule_id": "${alicloud_arms_dispatch_rule.default2.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"notify_type":      "DISPATCH_RULE",
+						"dispatch_rule_id": CHECKSET,
+						"labels.#":         "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"notify_type":      "ALERT_MANAGER",
+					"dispatch_rule_id": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"notify_type":      "ALERT_MANAGER",
+						"dispatch_rule_id": REMOVEKEY,
+					}),
+				),
+			},
+			{
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -228,8 +299,7 @@ func AlicloudARMSPrometheusAlertRuleBasicDependence0(name string) string {
 variable "name" {
   default = "%s"
 }
-data "alicloud_cs_managed_kubernetes_clusters" "default" {
-  name_regex = "Default"
+data "alicloud_cs_clusters" "default" {
 }
 `, name)
 }
@@ -239,8 +309,7 @@ func AlicloudARMSPrometheusAlertRuleBasicDependence1(name string) string {
 variable "name" {
  default = "%v"
 }
-data "alicloud_cs_managed_kubernetes_clusters" "default" {
-  name_regex = "Default"
+data "alicloud_cs_clusters" "default" {
 }
 resource "alicloud_arms_alert_contact" "default" {
   alert_contact_name = var.name
@@ -282,7 +351,46 @@ resource "alicloud_arms_dispatch_rule" "default" {
       notify_type      = "ARMS_CONTACT_GROUP"
       name             = var.name
     }
-    notify_channels = ["dingTalk", "wechat"]
+    notify_channels   = ["dingTalk", "wechat"]
+    notify_start_time = "00:00"
+    notify_end_time   = "23:59"
+  }
+}
+
+resource "alicloud_arms_dispatch_rule" "default2" {
+  dispatch_rule_name = "${var.name}-2"
+  dispatch_type      = "CREATE_ALERT"
+  group_rules {
+    group_wait_time = 5
+    group_interval  = 15
+    repeat_interval = 100
+    grouping_fields = [
+      "alertname"]
+  }
+  label_match_expression_grid {
+   label_match_expression_groups {
+     label_match_expressions {
+       key      = "_aliyun_arms_involvedObject_kind"
+       value    = "app"
+       operator = "eq"
+     }
+   }
+  }
+
+  notify_rules {
+    notify_objects {
+      notify_object_id = alicloud_arms_alert_contact.default.id
+      notify_type      = "ARMS_CONTACT"
+      name             = var.name
+    }
+    notify_objects {
+      notify_object_id = alicloud_arms_alert_contact_group.default.id
+      notify_type      = "ARMS_CONTACT_GROUP"
+      name             = var.name
+    }
+    notify_channels   = ["dingTalk", "wechat"]
+    notify_start_time = "00:00"
+    notify_end_time   = "23:59"
   }
 }
 `, name)

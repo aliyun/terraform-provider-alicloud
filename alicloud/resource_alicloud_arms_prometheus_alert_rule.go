@@ -272,45 +272,49 @@ func resourceAlicloudArmsPrometheusAlertRuleUpdate(d *schema.ResourceData, meta 
 	request["RegionId"] = client.RegionId
 	if d.HasChange("annotations") {
 		update = true
-		if v, ok := d.GetOk("annotations"); ok {
-			annotationsMaps := make([]map[string]interface{}, 0)
-			for _, annotations := range v.(*schema.Set).List() {
-				annotationsMap := annotations.(map[string]interface{})
-				annotationsMaps = append(annotationsMaps, annotationsMap)
-			}
-			if v, err := convertArrayObjectToJsonString(annotationsMaps); err == nil {
-				request["Annotations"] = v
-			} else {
-				return WrapError(err)
-			}
-		}
 	}
 	if d.HasChange("dispatch_rule_id") {
 		update = true
-		if v, ok := d.GetOk("dispatch_rule_id"); ok {
-			request["DispatchRuleId"] = v
-		}
 	}
 	if d.HasChange("labels") {
 		update = true
-		if v, ok := d.GetOk("labels"); ok {
-			labelsMaps := make([]map[string]interface{}, 0)
-			for _, labels := range v.(*schema.Set).List() {
-				labelsMap := labels.(map[string]interface{})
-				labelsMaps = append(labelsMaps, labelsMap)
-			}
-			if v, err := convertArrayObjectToJsonString(labelsMaps); err == nil {
-				request["Labels"] = v
-			} else {
-				return WrapError(err)
-			}
-		}
 	}
 	if d.HasChange("notify_type") {
 		update = true
-		if v, ok := d.GetOk("notify_type"); ok {
-			request["NotifyType"] = v
+	}
+	// UpdatePrometheusAlertRule works with full replacement semantics, and any
+	// attribute absent from the request is cleared on the server side. Always
+	// send the current values of these attributes in every update request, so
+	// that modifying one of them does not clear the others.
+	if v, ok := d.GetOk("annotations"); ok {
+		annotationsMaps := make([]map[string]interface{}, 0)
+		for _, annotations := range v.(*schema.Set).List() {
+			annotationsMap := annotations.(map[string]interface{})
+			annotationsMaps = append(annotationsMaps, annotationsMap)
 		}
+		if v, err := convertArrayObjectToJsonString(annotationsMaps); err == nil {
+			request["Annotations"] = v
+		} else {
+			return WrapError(err)
+		}
+	}
+	if v, ok := d.GetOk("dispatch_rule_id"); ok {
+		request["DispatchRuleId"] = v
+	}
+	if v, ok := d.GetOk("labels"); ok {
+		labelsMaps := make([]map[string]interface{}, 0)
+		for _, labels := range v.(*schema.Set).List() {
+			labelsMap := labels.(map[string]interface{})
+			labelsMaps = append(labelsMaps, labelsMap)
+		}
+		if v, err := convertArrayObjectToJsonString(labelsMaps); err == nil {
+			request["Labels"] = v
+		} else {
+			return WrapError(err)
+		}
+	}
+	if v, ok := d.GetOk("notify_type"); ok {
+		request["NotifyType"] = v
 	}
 
 	if update {
