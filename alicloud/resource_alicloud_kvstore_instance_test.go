@@ -3005,6 +3005,97 @@ func TestUnitKvstoreResolveMajorVersionForSpecChange(t *testing.T) {
 	}
 }
 
+// TestAccAliCloudKVStoreRedisInstance_privateConnectionCreate is a regression
+// test for a create-time config that pins the connection string fields to the
+// instance's default private endpoint values (e.g. private_connection_port =
+// "6379"). Create chains into Update, so HasChange is true for every
+// explicitly configured attribute on a brand new resource, and
+// ModifyDBInstanceConnectionString used to reject same-value modifications with
+// InvalidConnectionStringOrPort.Duplicate, tainting the resource and forcing
+// an unrecoverable replace on the next apply.
+func TestAccAliCloudKVStoreRedisInstance_privateConnectionCreate(t *testing.T) {
+	var v r_kvstore.DBInstanceAttribute
+	resourceId := "alicloud_kvstore_instance.default"
+	ra := resourceAttrInit(resourceId, AliCloudKVStoreMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &R_kvstoreService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeKvstoreInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccKvstoreRedisPrivConnCreate%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudKVStoreRedisInstanceVpcBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				// Create step carries both connection string fields, with port
+				// pinned to the instance default (6379). Historical bug: create
+				// failed here with InvalidConnectionStringOrPort.Duplicate.
+				Config: testAccConfig(map[string]interface{}{
+					"instance_class":            "redis.master.small.default",
+					"db_instance_name":          name,
+					"instance_type":             "Redis",
+					"engine_version":            "5.0",
+					"payment_type":              "PostPaid",
+					"resource_group_id":         "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+					"zone_id":                   "${data.alicloud_kvstore_zones.default.zones.0.id}",
+					"vswitch_id":                "${data.alicloud_vswitches.default.ids.0}",
+					"password":                  "YourPassword_123",
+					"private_connection_prefix": fmt.Sprintf("privateprefixcreate%d", rand),
+					"private_connection_port":   "6379",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_class":            "redis.master.small.default",
+						"db_instance_name":          name,
+						"instance_type":             "Redis",
+						"engine_version":            "5.0",
+						"payment_type":              "PostPaid",
+						"resource_group_id":         CHECKSET,
+						"zone_id":                   CHECKSET,
+						"vswitch_id":                CHECKSET,
+						"private_connection_port":   "6379",
+						"private_connection_prefix": CHECKSET,
+					}),
+				),
+			},
+			{
+				// In-place prefix change: verifies the diff filter still forwards
+				// a real change.
+				Config: testAccConfig(map[string]interface{}{
+					"private_connection_prefix": fmt.Sprintf("privateprefixmodify%d", rand),
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"private_connection_prefix": CHECKSET,
+						"private_connection_port":   "6379",
+					}),
+				),
+			},
+			{
+				// Unrelated update while connection fields stay put: the diff
+				// filter must collapse to a no-op instead of re-sending the
+				// current prefix/port.
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_name": name + "_upd",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_name":        name + "_upd",
+						"private_connection_port": "6379",
+					}),
+				),
+			},
+		},
+	})
+}
+
 var AliCloudKVStoreMap0 = map[string]string{
 	"connection_domain": CHECKSET,
 	"bandwidth":         CHECKSET,
