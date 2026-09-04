@@ -12,6 +12,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func resourceAliCloudVpcVswitch() *schema.Resource {
@@ -53,9 +54,10 @@ func resourceAliCloudVpcVswitch() *schema.Resource {
 				Computed: true,
 			},
 			"ipv6_cidr_block_mask": {
-				Type:     schema.TypeInt,
-				Optional: true,
-				Computed: true,
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.IntBetween(0, 4095),
 			},
 			"is_default": {
 				Type:     schema.TypeBool,
