@@ -79,19 +79,20 @@ The following arguments are supported:
 
 -> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
 
-* `http_api_name` - (Required, ForceNew) Perform an exact search by name.
+* `http_api_name` - (Required, ForceNew) The name of the HTTP API.
 * `model_category` - (Optional, Available since v1.285.0) AI model category
 
 -> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
 
 * `protocols` - (Required, List) List of API access protocols. Valid values: `HTTP`, `HTTPS`.
 * `resource_group_id` - (Optional, Computed) The ID of the resource group. It can be modified to migrate the resource to another resource group.
-* `type` - (Required, ForceNew) The type of the HTTP API. Multiple types are supported and must be separated by commas (,).
+* `type` - (Required, ForceNew) The type of the HTTP API. Valid values: `Http`, `Rest`, `WebSocket`, `HttpIngress`, `LLM`, `Agent`.
   - Http
-  - Rest  
-  - LLM  
-  - WebSocket  
-  - HttpIngress  
+  - Rest
+  - LLM
+  - WebSocket
+  - HttpIngress
+  - Agent
 
 ## Attributes Reference
 
