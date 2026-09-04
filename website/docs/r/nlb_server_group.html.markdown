@@ -90,7 +90,7 @@ The following arguments are supported:
 
   - `TCP` (default)
   - `UDP`
-  - `TCPSSL`
+  - `TCP_UDP`
 * `resource_group_id` - (Optional, Computed) The ID of the new resource group.
 You can log on to the [Resource Management console](https://resourcemanager.console.aliyun.com/resource-groups) to view resource group IDs.
 * `scheduler` - (Optional, Computed) The scheduling algorithm. Valid values:
