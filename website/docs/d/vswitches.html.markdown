@@ -49,6 +49,8 @@ The following arguments are supported:
 * `vpc_id` - (Optional) ID of the VPC that owns the vSwitch.
 * `tags` - (Optional, Available in v1.55.3+) A mapping of tags to assign to the resource.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
+* `page_number` - (Optional) Current page number. The default value is `1`. When this argument is set, only the specified page of results is returned.
+* `page_size` - (Optional) Number of records per page. The maximum value is `50`. The default value is `50`.
 * `ids` - (Optional, Available in 1.52.0+) A list of vSwitch IDs.
 * `resource_group_id` - (Optional, ForceNew, Available in 1.60.0+) The Id of resource group which VSWitch belongs.
 * `dry_run` - (Optional, ForceNew, Available in 1.119.0+) Specifies whether to precheck this request only. Valid values: `true` and `false`.
