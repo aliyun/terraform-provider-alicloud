@@ -411,7 +411,7 @@ The scaling_rules mapping supports the following:
 * `activity_type` - (Required) The activity type of auto scaling policy. Valid values: `SCALE_OUT` and `SCALE_IN`.
 * `adjustment_type` - (Optional) The adjustment type of auto scaling policy. Valid values: `CHANGE_IN_CAPACITY` and `EXACT_CAPACITY`.
 * `adjustment_value` - (Required) The adjustment value of auto scaling policy. The value should between 1 and 5000.
-* `min_adjustment_value` - (Optional) The minimum adjustment value of auto scaling policy.
+* `min_adjustment_value` - (Optional) The minimum number of instances that must be successfully delivered before a scale-out activity of auto scaling policy is treated as successful. The value should be at least 1, and `0` is rejected at plan time because the scaling activity would later fail with `minSuccessNumber should be > 0`. If it is not specified, the parameter is omitted from the request and the server side default applies.
 * `time_trigger` - (Optional) The trigger time of scaling rules for emr node group auto scaling policy. See [`time_trigger`](#node_groups-auto_scaling_policy-scaling_rules-time_trigger) below.
 * `metrics_trigger` - (Optional) The trigger metrics of scaling rules for emr node group auto scaling policy. See [`metrics_trigger`](#node_groups-auto_scaling_policy-scaling_rules-metrics_trigger) below.
 
