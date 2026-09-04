@@ -964,6 +964,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_ipam_ipams":                                   dataSourceAliCloudVpcIpamIpams(),
 			"alicloud_das_sql_log_configs":                              dataSourceAliCloudDasSqlLogConfigs(),
 			"alicloud_apig_plugin_classes":                              dataSourceAliCloudApigPluginClasses(),
+			"alicloud_apig_policy_classes":                              dataSourceAliCloudApigPolicyClasses(),
 			"alicloud_sls_metric_stores":                                dataSourceAliCloudSlsMetricStores(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
