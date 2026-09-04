@@ -118,7 +118,7 @@ func resourceAliCloudPolarDbAccountCreate(d *schema.ResourceData, meta interface
 	kmsPassword := d.Get("kms_encrypted_password").(string)
 
 	if password == "" && kmsPassword == "" {
-		return WrapError(Error("One of the 'password' and 'kms_encrypted_password' should be set."))
+		return WrapError(Error("One of the 'account_password' and 'kms_encrypted_password' should be set."))
 	}
 	if password != "" {
 		request["AccountPassword"] = password
