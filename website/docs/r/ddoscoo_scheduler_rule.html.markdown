@@ -82,6 +82,7 @@ The rules supports the following:
     `6` the IP address of the interaction resource (in the cloud service interaction scenario)
 * `region_id` - (Optional) The region where the interaction resource that is used in the scheduling rule is deployed. **NOTE:** This parameter is returned only if the RuleType parameter is set to 2.
 * `status` - (Optional) The status of the scheduling rule.
+* `restore_delay` - (Computed) The restore delay in minutes for the scheduling rule.
 
 ## Attributes Reference
 
