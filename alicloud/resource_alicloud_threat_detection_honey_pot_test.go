@@ -10,10 +10,10 @@ import (
 )
 
 // Case 1
-func TestAccAlicloudThreatDetectionHoneyPot_basic1994(t *testing.T) {
+func TestAccAliCloudThreatDetectionHoneyPot_basic1994(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_threat_detection_honey_pot.default"
-	ra := resourceAttrInit(resourceId, AlicloudThreatDetectionHoneyPotMap1994)
+	ra := resourceAttrInit(resourceId, AliCloudThreatDetectionHoneyPotMap1994)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &SasService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeThreatDetectionHoneyPot")
@@ -21,7 +21,7 @@ func TestAccAlicloudThreatDetectionHoneyPot_basic1994(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sHoneyPot%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudThreatDetectionHoneyPotBasicDependence1994)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudThreatDetectionHoneyPotBasicDependence1994)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -36,6 +36,7 @@ func TestAccAlicloudThreatDetectionHoneyPot_basic1994(t *testing.T) {
 					"honeypot_image_id":   "${data.alicloud_threat_detection_honeypot_images.default.images.0.honeypot_image_id}",
 					"honeypot_name":       "${var.name}",
 					"node_id":             "${alicloud_threat_detection_honeypot_node.default.id}",
+					"meta":                "{\"trojan_git\":\"close\",\"burp\":\"close\",\"portrait_option\":\"false\"}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -49,6 +50,7 @@ func TestAccAlicloudThreatDetectionHoneyPot_basic1994(t *testing.T) {
 			}, {
 				Config: testAccConfig(map[string]interface{}{
 					"honeypot_name": "${var.name}-u",
+					"meta":          "{\"trojan_git\":\"close\",\"burp\":\"open\",\"portrait_option\":\"true\"}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -59,15 +61,15 @@ func TestAccAlicloudThreatDetectionHoneyPot_basic1994(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
+				ImportStateVerifyIgnore: []string{"meta"},
 			},
 		},
 	})
 }
 
-var AlicloudThreatDetectionHoneyPotMap1994 = map[string]string{}
+var AliCloudThreatDetectionHoneyPotMap1994 = map[string]string{}
 
-func AlicloudThreatDetectionHoneyPotBasicDependence1994(name string) string {
+func AliCloudThreatDetectionHoneyPotBasicDependence1994(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
