@@ -57,18 +57,26 @@ resource "alicloud_vod_domain" "default" {
 The following arguments are supported:
 
 * `domain_name` - (Required, ForceNew) The domain name for CDN that you want to add to ApsaraVideo VOD. Wildcard domain names are supported. Start the domain name with a period (.). Example: `.example.com.`.
-* `sources` - (Required) The information about the address of the origin server. For more information about the Sources parameter, See the following `Block sources`.
+* `sources` - (Required) The information about the address of the origin server. For more information about the Sources parameter, See [`sources`](#sources) below.
 * `check_url` - (Optional) The URL that is used for health checks.
-* `scope` - (Optional, ForceNew) This parameter is applicable to users of level 3 or higher in mainland China and users outside mainland China. Valid values: 
+* `scope` - (Optional, ForceNew) This parameter is applicable to users of level 3 or higher in mainland China and users outside mainland China. Valid values:
   * `domestic` - mainland China. This is the default value.
   * `overseas` - outside mainland China.
   * `global` - regions in and outside mainland China.
 * `top_level_domain` - (Optional) The top-level domain name.
+* `ssl_protocol` - (Optional) Indicates whether the Secure Sockets Layer (SSL) certificate is enabled. Valid values: `on`, `off`.
+* `ssl_pub` - (Optional) The public key of the certificate. This parameter is required when you upload a certificate (`cert_type` is set to `upload`).
+* `ssl_pri` - (Optional, Sensitive) The private key of the certificate. This parameter is required when you upload a certificate (`cert_type` is set to `upload`).
+* `cert_name` - (Optional) The name of the certificate. The value of this parameter must be unique in the Alibaba Cloud account.
+* `cert_id` - (Optional) The ID of the certificate. This parameter takes effect only when `cert_type` is set to `cas`.
+* `cert_region` - (Optional) The region of the certificate. This parameter takes effect only when `cert_type` is set to `cas`. Valid values: `cn-hangzhou` (default) and `ap-southeast-1`.
+* `cert_type` - (Optional) The type of the certificate. Valid values: `upload` (upload a certificate) and `cas` (use a Cloud Shield certificate). When `cert_type` is set to `cas`, `ssl_pri` does not need to be specified.
+* `env` - (Optional) The environment of the certificate.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
   * `Key`: It can be up to 64 characters in length. It cannot be a null string.
   * `Value`: It can be up to 128 characters in length. It can be a null string.
 
-#### Block sources
+### `sources`
 
 The sources supports the following: 
 
@@ -88,6 +96,9 @@ The following attributes are exported:
 * `domain_name` - The domain name for CDN.
 * `description` - The description of the domain name for CDN.
 * `cert_name` - The name of the certificate. The value of this parameter is returned if HTTPS is enabled.
+* `cert_id` - The ID of the certificate. This parameter takes effect only when `cert_type` is set to `cas`.
+* `cert_region` - The region of the certificate. This parameter takes effect only when `cert_type` is set to `cas`.
+* `cert_type` - The type of the certificate.
 * `cname` - The CNAME that is assigned to the domain name for CDN. You must add a CNAME record in the system of your Domain Name System (DNS) service provider to map the domain name for CDN to the CNAME.
 * `gmt_created` - The time when the domain name for CDN was added. The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time is displayed in UTC.
 * `gmt_modified` - The last time when the domain name for CDN was modified. The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time is displayed in UTC.
