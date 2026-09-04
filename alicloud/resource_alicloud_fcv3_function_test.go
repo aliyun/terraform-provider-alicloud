@@ -2064,3 +2064,203 @@ data "alicloud_resource_manager_resource_groups" "default" {
 }
 
 // Test Fcv3 Function. <<< Resource test cases, automatically generated.
+
+// Case RegistryConfig
+func TestAccAliCloudFcv3Function_registryConfig(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_fcv3_function.default"
+	ra := resourceAttrInit(resourceId, AliCloudFc3FunctionMapRegistry)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &Fcv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeFcv3Function")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sfc3function%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudFc3FunctionBasicDependenceRegistry)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"function_name": name,
+					"memory_size":   "512",
+					"runtime":       "custom-container",
+					"timeout":       "3",
+					"handler":       "index.handler",
+					"cpu":           "0.5",
+					"disk_size":     "512",
+					"custom_container_config": []map[string]interface{}{
+						{
+							"image": "${var.image1}",
+							"port":  "9000",
+							"registry_config": []map[string]interface{}{
+								{
+									"auth_config": []map[string]interface{}{
+										{
+											"user_name": "testuser",
+											"password":  "TestPass123",
+										},
+									},
+									"cert_config": []map[string]interface{}{
+										{
+											"insecure":            true,
+											"root_ca_cert_base64": "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0t",
+										},
+									},
+									"network_config": []map[string]interface{}{
+										{
+											"security_group_id": "${data.alicloud_security_groups.sg0.ids.0}",
+											"vswitch_id":        "${data.alicloud_vswitches.vsw0.ids.0}",
+											"vpc_id":            "${data.alicloud_vpcs.default.ids.0}",
+										},
+									},
+								},
+							},
+						},
+					},
+					// there is a bug in api,
+					"log_config": []map[string]interface{}{
+						{
+							"log_begin_rule": "None",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"function_name": name,
+						"memory_size":   "512",
+						"runtime":       "custom-container",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"function_name": name,
+					"memory_size":   "1024",
+					"runtime":       "custom-container",
+					"timeout":       "6",
+					"cpu":           "1",
+					"disk_size":     "512",
+					"custom_container_config": []map[string]interface{}{
+						{
+							"image": "${var.image1}",
+							"port":  "9001",
+							"registry_config": []map[string]interface{}{
+								{
+									"auth_config": []map[string]interface{}{
+										{
+											"user_name": "testuser2",
+											"password":  "UpdatedPass456",
+										},
+									},
+									"cert_config": []map[string]interface{}{
+										{
+											"insecure":            false,
+											"root_ca_cert_base64": "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tLS0t",
+										},
+									},
+									"network_config": []map[string]interface{}{
+										{
+											"security_group_id": "${data.alicloud_security_groups.sg1.ids.0}",
+											"vswitch_id":        "${data.alicloud_vswitches.vsw1.ids.0}",
+											"vpc_id":            "${data.alicloud_vpcs.default.ids.1}",
+										},
+									},
+								},
+							},
+						},
+					},
+					// there is a bug in api,
+					"log_config": []map[string]interface{}{
+						{
+							"log_begin_rule": "None",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"memory_size": "1024",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"function_name": name,
+					"memory_size":   "512",
+					"runtime":       "custom-container",
+					"cpu":           "0.5",
+					"disk_size":     "512",
+					"custom_container_config": []map[string]interface{}{
+						{
+							"image": "${var.image1}",
+							"port":  "9000",
+						},
+					},
+					// there is a bug in api,
+					"log_config": []map[string]interface{}{
+						{
+							"log_begin_rule": "None",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"memory_size": "512",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"code", "layers", "custom_container_config"},
+			},
+		},
+	})
+}
+
+var AliCloudFc3FunctionMapRegistry = map[string]string{
+	"function_name": CHECKSET,
+	"memory_size":   CHECKSET,
+	"runtime":       CHECKSET,
+	"create_time":   CHECKSET,
+}
+
+func AliCloudFc3FunctionBasicDependenceRegistry(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+variable "image1" {
+  default = "registry-vpc.cn-hangzhou.aliyuncs.com/eci_open/nginx:alpine"
+}
+
+data "alicloud_vpcs" "default" {
+  name_regex = "^default-NODELETING$"
+}
+
+data "alicloud_vswitches" "vsw0" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+}
+
+data "alicloud_vswitches" "vsw1" {
+  vpc_id = data.alicloud_vpcs.default.ids.1
+}
+
+data "alicloud_security_groups" "sg0" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+}
+
+data "alicloud_security_groups" "sg1" {
+  vpc_id = data.alicloud_vpcs.default.ids.1
+}
+`, name)
+}
