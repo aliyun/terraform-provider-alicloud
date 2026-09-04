@@ -362,7 +362,7 @@ func WrapError(cause error) error {
 		log.Printf("\u001B[31m[ERROR]\u001B[0m runtime.Caller error in WrapError.")
 		return WrapComplexError(cause, nil, "", -1)
 	}
-	parts := strings.Split(filepath, "/")
+	parts := strings.Split(strings.ReplaceAll(filepath, "\\", "/"), "/")
 	if len(parts) > 3 {
 		filepath = strings.Join(parts[len(parts)-3:], "/")
 	}
@@ -379,7 +379,7 @@ func WrapErrorf(cause error, msg string, args ...interface{}) error {
 		log.Printf("\u001B[31m[ERROR]\u001B[0m runtime.Caller error in WrapErrorf.")
 		return WrapComplexError(cause, Error("%s", msg), "", -1)
 	}
-	parts := strings.Split(filepath, "/")
+	parts := strings.Split(strings.ReplaceAll(filepath, "\\", "/"), "/")
 	if len(parts) > 3 {
 		filepath = strings.Join(parts[len(parts)-3:], "/")
 	}
