@@ -4396,3 +4396,62 @@ func TestUnitCommonIsSlicesValuesEqual(t *testing.T) {
 		})
 	}
 }
+
+func TestUnitCommonNormalizeJsonObjectSliceByName(t *testing.T) {
+	// reverse-ordered input (d, b) must be sorted by the "name" field to (b, d)
+	reverseJSON := `[{"name":"d","value":"1"},{"name":"b","value":"2"}]`
+	sortedJSON := `[{"name":"b","value":"2"},{"name":"d","value":"1"}]`
+
+	reverseSlice := []interface{}{
+		map[string]interface{}{"name": "d", "value": "1"},
+		map[string]interface{}{"name": "b", "value": "2"},
+	}
+
+	tests := []struct {
+		name     string
+		input    interface{}
+		expected string
+	}{
+		{
+			name:     "StringJSONArraySortedByName",
+			input:    reverseJSON,
+			expected: sortedJSON,
+		},
+		{
+			name:     "InterfaceSliceSortedByName",
+			input:    reverseSlice,
+			expected: sortedJSON,
+		},
+		{
+			name:     "EmptyJSONArray",
+			input:    "[]",
+			expected: "[]",
+		},
+		{
+			name:     "EmptyInterfaceSlice",
+			input:    []interface{}{},
+			expected: "null",
+		},
+		{
+			name:     "NonJSONStringReturnedAsIs",
+			input:    "not-json",
+			expected: "not-json",
+		},
+		{
+			name:     "DefaultSprintfForOtherTypes",
+			input:    123,
+			expected: "123",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := NormalizeJsonObjectSliceByName(tt.input)
+			assert.Equal(t, tt.expected, actual)
+		})
+	}
+
+	// determinism: order-independent inputs must produce identical output
+	assert.Equal(t, NormalizeJsonObjectSliceByName(reverseJSON), NormalizeJsonObjectSliceByName(sortedJSON))
+	assert.Equal(t, NormalizeJsonObjectSliceByName(reverseSlice), NormalizeJsonObjectSliceByName(reverseJSON))
+}
