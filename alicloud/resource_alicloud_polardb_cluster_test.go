@@ -412,6 +412,83 @@ func TestAccAliCloudPolarDBCluster_Update(t *testing.T) {
 
 }
 
+func TestAccAliCloudPolarDBCluster_TDEAutomaticRotation_Oracle(t *testing.T) {
+	var v *polardb.DescribeDBClusterAttributeResponse
+	name := "tf-testAccPolarDBClusterTDEOracleRotation"
+	resourceId := "alicloud_polardb_cluster.default"
+	var basicMap = map[string]string{
+		"description":       CHECKSET,
+		"db_node_class":     CHECKSET,
+		"db_type":           "Oracle",
+		"db_version":        "14",
+		"vswitch_id":        CHECKSET,
+		"tde_status":        "Disabled",
+		"connection_string": CHECKSET,
+		"port":              CHECKSET,
+		"status":            CHECKSET,
+		"create_time":       CHECKSET,
+	}
+	ra := resourceAttrInit(resourceId, basicMap)
+	serviceFunc := func() interface{} {
+		return &PolarDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribePolarDBClusterAttribute")
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourcePolarDBClusterOracleTDEConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_type":           "Oracle",
+					"db_version":        "14",
+					"pay_type":          "PostPaid",
+					"creation_category": "Normal",
+					"db_node_count":     "2",
+					"db_node_class":     "polar.o.x4.medium",
+					"vswitch_id":        "${local.vswitch_id}",
+					"description":       "${var.name}",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_type":           "Oracle",
+						"db_version":        "14",
+						"resource_group_id": CHECKSET,
+						"zone_id":           CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tde_status":                "Enabled",
+					"encryption_key":            "${alicloud_kms_key.default.id}",
+					"role_arn":                  "${alicloud_ram_role.default.arn}",
+					"enable_automatic_rotation": true,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tde_status":         "Enabled",
+						"encryption_key":     CHECKSET,
+						"role_arn":           CHECKSET,
+						"automatic_rotation": CHECKSET,
+						"rotation_interval":  CHECKSET,
+					}),
+				),
+			},
+		},
+	})
+}
+
 func TestAccAliCloudPolarDBCluster_UpdatePrePaid(t *testing.T) {
 	var v *polardb.DescribeDBClusterAttributeResponse
 	name := "tf-testAccPolarDBClusterUpdatePrePaid"
@@ -2450,6 +2527,9 @@ func resourcePolarDBClusterTDEConfigDependence(name string) string {
     data "alicloud_account" "current" {
     }
 
+    data "alicloud_ram_account_alias" "current" {
+    }
+
     resource "alicloud_kms_key" "default" {
         description             =  var.name
         pending_window_in_days =  7
@@ -2480,11 +2560,19 @@ func resourcePolarDBClusterTDEConfigDependence(name string) string {
     resource "alicloud_resource_manager_policy_attachment" "default" {
 	    policy_name       = "AliyunRDSInstanceEncryptionRolePolicy"
 	    policy_type       = "System"
-	    principal_name    = "${alicloud_ram_role.default.name}@role.${data.alicloud_account.current.id}.onaliyunservice.com"
+	    principal_name    = "${alicloud_ram_role.default.name}@role.${coalesce(data.alicloud_ram_account_alias.current.account_alias, data.alicloud_account.current.id)}.onaliyunservice.com"
 	    principal_type    = "ServiceRole"
 	    resource_group_id = "${data.alicloud_account.current.id}"
 		depends_on = [alicloud_ram_role.default]
     }`, name)
+}
+
+func resourcePolarDBClusterOracleTDEConfigDependence(name string) string {
+	conf := resourcePolarDBClusterTDEConfigDependence(name)
+	conf = strings.Replace(conf, `db_type    = "MySQL"`, `db_type    = "Oracle"`, 1)
+	conf = strings.Replace(conf, `db_version = "8.0"`, `db_version = "14"`, 1)
+	conf = strings.Replace(conf, `role_name   = "AliyunRDSInstanceEncryptionDefaultRole"`, `role_name   = var.name`, 1)
+	return conf
 }
 
 func resourcePolarDBClusterConfigDependence(name string) string {
