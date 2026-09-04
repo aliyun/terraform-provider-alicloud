@@ -2487,6 +2487,98 @@ func resourcePolarDBClusterTDEConfigDependence(name string) string {
     }`, name)
 }
 
+func TestAccAliCloudPolarDBCluster_ArchitectureAndStorage(t *testing.T) {
+	var v *polardb.DescribeDBClusterAttributeResponse
+	name := "tf-testAccPolarDBClusterArchitecture"
+	resourceId := "alicloud_polardb_cluster.default"
+	var basicMap = map[string]string{
+		"description":           CHECKSET,
+		"db_node_class":         CHECKSET,
+		"vswitch_id":            CHECKSET,
+		"db_type":               CHECKSET,
+		"db_version":            CHECKSET,
+		"architecture":          CHECKSET,
+		"cluster_network_type":  CHECKSET,
+		"storage_auto_scale":    CHECKSET,
+		"storage_upper_bound":   CHECKSET,
+		"deploy_unit":           CHECKSET,
+		"db_cluster_ip_array.#": CHECKSET,
+	}
+	ra := resourceAttrInit(resourceId, basicMap)
+	serviceFunc := func() interface{} {
+		return &PolarDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribePolarDBClusterAttribute")
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourcePolarDBClusterConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_type":              "MySQL",
+					"db_version":           "8.0",
+					"pay_type":             "PostPaid",
+					"db_node_count":        "2",
+					"db_node_class":        "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.0.db_node_class}",
+					"vswitch_id":           "${local.vswitch_id}",
+					"zone_id":              "${data.alicloud_polardb_node_classes.this.classes.0.zone_id}",
+					"creation_category":    "Normal",
+					"architecture":         "X86",
+					"cluster_network_type": "VPC",
+					"storage_auto_scale":   "Enable",
+					"storage_upper_bound":  "200",
+					"description":          "${var.name}",
+					"db_cluster_ip_array": []map[string]interface{}{{
+						"db_cluster_ip_array_name":      "default",
+						"db_cluster_ip_array_attribute": "",
+						"white_list_type":               "IP",
+						"security_ips":                  []string{"10.168.1.12", "100.69.7.112"},
+						"modify_mode":                   "Cover",
+					}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"architecture":         "X86",
+						"cluster_network_type": "VPC",
+						"storage_auto_scale":   "Enable",
+						"storage_upper_bound":  "200",
+						"deploy_unit":          CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"modify_type", "creation_option", "db_node_num", "parameter_group_id", "backup_retention_policy_on_cluster_deletion", "storage_auto_scale", "storage_upper_bound", "db_cluster_ip_array", "db_cluster_ip_array.white_list_type", "db_cluster_ip_array.db_cluster_ip_array_attribute"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"storage_auto_scale":  "Disable",
+					"storage_upper_bound": "300",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"storage_auto_scale":  "Disable",
+						"storage_upper_bound": "300",
+					}),
+				),
+			},
+		},
+	})
+}
+
 func resourcePolarDBClusterConfigDependence(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
