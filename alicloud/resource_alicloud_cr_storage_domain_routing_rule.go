@@ -45,6 +45,9 @@ func resourceAliCloudCrStorageDomainRoutingRule() *schema.Resource {
 						"storage_domain": {
 							Type:     schema.TypeString,
 							Required: true,
+							DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+								return strings.TrimPrefix(old, "https://") == strings.TrimPrefix(new, "https://")
+							},
 						},
 						"endpoint_type": {
 							Type:     schema.TypeString,
