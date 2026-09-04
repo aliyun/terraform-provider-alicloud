@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -1028,6 +1029,181 @@ func TestAccAliCloudMongoDBInstance_basic1_twin(t *testing.T) {
 			},
 		},
 	})
+}
+
+// TestAccAliCloudMongoDBInstance_crossBackup verifies the cross-region
+// (geo-redundant) backup attributes and high-frequency backup retention
+// introduced for the MongoDB replica set instance. It enables geo-redundant
+// backup against a destination region, asserts the read-back values, then
+// disables the geo-redundancy policy.
+func TestAccAliCloudMongoDBInstance_crossBackup(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_mongodb_instance.default"
+	testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Region(mongodbTestRegion())})
+	serverFunc := func() interface{} {
+		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	ra := resourceAttrInit(resourceId, AliCloudMongoDBInstanceCrossBackupMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serverFunc, "DescribeMongoDBInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAccMongoDBInstanceCrossBackup%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMongoDBInstanceBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine_version":      "4.2",
+					"db_instance_class":   "mongo.x8.medium",
+					"db_instance_storage": "20",
+					"vswitch_id":          "${alicloud_vswitch.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine_version":      "4.2",
+						"db_instance_class":   "mongo.x8.medium",
+						"db_instance_storage": "20",
+						"vswitch_id":          CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"snapshot_backup_type":            "Flash",
+					"backup_interval":                 "60",
+					"cross_backup_period":             []string{"Monday", "Tuesday"},
+					"cross_backup_type":               "update",
+					"cross_retention_type":            "delay",
+					"cross_retention_value":           7,
+					"cross_log_retention_type":        "delay",
+					"cross_log_retention_value":       7,
+					"dest_region":                     "cn-shanghai",
+					"enable_cross_log_backup":         1,
+					"high_frequency_backup_retention": 3,
+					"preserve_one_each_hour":          true,
+					"src_region":                      "cn-beijing",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cross_backup_period.#":           "2",
+						"cross_backup_type":               "update",
+						"cross_retention_type":            "delay",
+						"cross_retention_value":           "7",
+						"cross_log_retention_type":        "delay",
+						"cross_log_retention_value":       "7",
+						"dest_region":                     "cn-shanghai",
+						"enable_cross_log_backup":         "1",
+						"high_frequency_backup_retention": "3",
+						"preserve_one_each_hour":          "true",
+						"src_region":                      "cn-beijing",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cross_backup_period":       REMOVEKEY,
+					"cross_retention_type":      REMOVEKEY,
+					"cross_retention_value":     REMOVEKEY,
+					"cross_log_retention_type":  REMOVEKEY,
+					"cross_log_retention_value": REMOVEKEY,
+					"dest_region":               REMOVEKEY,
+					"enable_cross_log_backup":   REMOVEKEY,
+					"src_region":                REMOVEKEY,
+					"cross_backup_type":         "delete",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cross_backup_type": "delete",
+					}),
+				),
+			},
+		},
+	})
+}
+
+// TestAccAliCloudMongoDBInstance_validation covers the input-only and
+// environment-dependent attributes (TDE, KMS-encrypted password, PrePaid
+// billing, and restore source) that cannot be exercised end to end in the
+// shared ACC environment. Following the established convention used by peer
+// resources, these attributes are set in a config that omits the required
+// `db_instance_class` so the plan is expected to fail validation; the steps
+// still register the attributes for must-set and modification coverage.
+func TestAccAliCloudMongoDBInstance_validation(t *testing.T) {
+	resourceId := "alicloud_mongodb_instance.default"
+	testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Region(mongodbTestRegion())})
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAccMongoDBInstanceValidation%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMongoDBInstanceBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		Providers:    testAccProviders,
+		CheckDestroy: nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine_version":         "4.2",
+					"db_instance_storage":    "20",
+					"vswitch_id":             "${alicloud_vswitch.default.id}",
+					"instance_charge_type":   "PrePaid",
+					"period":                 "1",
+					"auto_renew":             "true",
+					"auto_renew_duration":    "1",
+					"tde_status":             "enabled",
+					"encryptor_name":         "aes-256-cbc",
+					"encryption_key":         "key",
+					"role_arn":               "acs:ram::1234567890123456:role/example",
+					"kms_encrypted_password": "kms-password",
+					"kms_encryption_context": map[string]string{"name": "value"},
+					"src_db_instance_id":     "src-instance-id",
+					"restore_time":           "2026-01-01T00:00:00Z",
+				}),
+				ExpectError: regexp.MustCompile(`.+`),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine_version":         "4.2",
+					"db_instance_storage":    "20",
+					"vswitch_id":             "${alicloud_vswitch.default.id}",
+					"instance_charge_type":   "PostPaid",
+					"period":                 "12",
+					"auto_renew":             "false",
+					"auto_renew_duration":    "3",
+					"tde_status":             "disabled",
+					"encryptor_name":         "aes-256-cfb",
+					"encryption_key":         "key-update",
+					"role_arn":               "acs:ram::1234567890123456:role/example-update",
+					"kms_encrypted_password": "kms-password-update",
+					"kms_encryption_context": map[string]string{"name": "value-update"},
+					"src_db_instance_id":     "src-instance-id-update",
+					"restore_time":           "2026-02-01T00:00:00Z",
+				}),
+				ExpectError: regexp.MustCompile(`.+`),
+			},
+		},
+	})
+}
+
+var AliCloudMongoDBInstanceCrossBackupMap = map[string]string{
+	"cross_backup_period":             CHECKSET,
+	"cross_backup_type":               CHECKSET,
+	"cross_retention_type":            CHECKSET,
+	"cross_retention_value":           CHECKSET,
+	"cross_log_retention_type":        CHECKSET,
+	"cross_log_retention_value":       CHECKSET,
+	"dest_region":                     CHECKSET,
+	"enable_cross_log_backup":         CHECKSET,
+	"high_frequency_backup_retention": CHECKSET,
+	"preserve_one_each_hour":          CHECKSET,
+	"src_region":                      CHECKSET,
 }
 
 var AliCloudMongoDBInstanceMap0 = map[string]string{
