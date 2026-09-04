@@ -312,6 +312,7 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 			"user_data": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 
 			"role_name": {
@@ -333,6 +334,7 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 			"tags": {
 				Type:     schema.TypeMap,
 				Optional: true,
+				Computed: true,
 			},
 
 			"instance_name": {
@@ -1757,6 +1759,8 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 	}
 	if v := response["Tags"]; v != nil {
 		d.Set("tags", tagsToMap(response["Tags"].(map[string]interface{})["Tag"]))
+	} else {
+		d.Set("tags", map[string]interface{}{})
 	}
 	if v := response["SpotPriceLimit"]; v != nil {
 		result := make([]map[string]interface{}, 0)
