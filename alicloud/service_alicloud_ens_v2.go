@@ -311,7 +311,7 @@ func (s *EnsServiceV2) DescribeEnsNetwork(id string) (object map[string]interfac
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	action := "DescribeNetworks"
+	action := "DescribeNetworkAttribute"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["NetworkId"] = id
@@ -332,19 +332,13 @@ func (s *EnsServiceV2) DescribeEnsNetwork(id string) (object map[string]interfac
 	})
 
 	if err != nil {
+		if IsExpectedErrors(err, []string{"NetworkNotFound", "InvalidNetworkId.NotFound"}) {
+			return object, WrapErrorf(NotFoundErr("Network", id), NotFoundMsg, response)
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
-	v, err := jsonpath.Get("$.Networks.Network[*]", response)
-	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Networks.Network[*]", response)
-	}
-
-	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(NotFoundErr("Network", id), NotFoundMsg, response)
-	}
-
-	return v.([]interface{})[0].(map[string]interface{}), nil
+	return response, nil
 }
 
 func (s *EnsServiceV2) EnsNetworkStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
