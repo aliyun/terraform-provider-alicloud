@@ -173,6 +173,7 @@ func Provider() terraform.ResourceProvider {
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"alicloud_ehpc_users":                                     dataSourceAliCloudEhpcUsers(),
+			"alicloud_apig_portals":                                   dataSourceAliCloudApigPortals(),
 			"alicloud_ens_load_balancer_udp_listeners":                dataSourceAliCloudEnsLoadBalancerUdpListeners(),
 			"alicloud_ecd_desktop_groups":                             dataSourceAliCloudEcdDesktopGroups(),
 			"alicloud_redis_global_security_ip_groups":                dataSourceAliCloudRedisGlobalSecurityIpGroups(),
@@ -969,6 +970,7 @@ func Provider() terraform.ResourceProvider {
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_ehpc_user":                                            resourceAliCloudEhpcUser(),
 			"alicloud_realtime_compute_member":                              resourceAliCloudRealtimeComputeMember(),
+			"alicloud_apig_portal":                                          resourceAliCloudApigPortal(),
 			"alicloud_ens_load_balancer_udp_listener":                       resourceAliCloudEnsLoadBalancerUdpListener(),
 			"alicloud_gpdb_db_extension":                                    resourceAliCloudGpdbDbExtension(),
 			"alicloud_ecd_desktop_group":                                    resourceAliCloudEcdDesktopGroup(),
