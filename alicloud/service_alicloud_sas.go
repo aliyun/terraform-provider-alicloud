@@ -410,3 +410,61 @@ func (s *SasService) ThreatDetectionHoneypotProbeStateRefreshFunc(d *schema.Reso
 		return object, fmt.Sprint(object["Status"]), nil
 	}
 }
+
+func (s *SasService) DescribeThreatDetectionSasPrivateLinkEndpoint(id string) (object map[string]interface{}, err error) {
+	client := s.client
+
+	request := map[string]interface{}{
+		"Id": id,
+	}
+
+	var response map[string]interface{}
+	action := "GetSasPrivateLinkEndpoint"
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		resp, err := client.RpcPost("Sas", "2018-12-03", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		response = resp
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.Data", response)
+	if err != nil {
+		return object, WrapErrorf(NotFoundErr("ThreatDetection", id), NotFoundWithResponse, response)
+	}
+	data, ok := v.(map[string]interface{})
+	if !ok || data == nil {
+		return object, WrapErrorf(NotFoundErr("ThreatDetection", id), NotFoundWithResponse, response)
+	}
+	if status, ok := data["Status"]; ok && fmt.Sprint(status) == "deleting" {
+		return object, WrapErrorf(NotFoundErr("ThreatDetection", id), NotFoundWithResponse, response)
+	}
+	return data, nil
+}
+
+func (s *SasService) ThreatDetectionSasPrivateLinkEndpointStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeThreatDetectionSasPrivateLinkEndpoint(d.Id())
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		for _, failState := range failStates {
+			if fmt.Sprint(object["Status"]) == failState {
+				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
+			}
+		}
+		return object, fmt.Sprint(object["Status"]), nil
+	}
+}
