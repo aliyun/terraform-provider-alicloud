@@ -137,21 +137,25 @@ func TestAccAliCloudPolarDBGlobalDatabaseNetwork_basic00(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_cluster_id": "${alicloud_polardb_cluster.default.id}",
+					"db_cluster_id":     "${alicloud_polardb_cluster.default.id}",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"db_cluster_id": CHECKSET,
+						"db_cluster_id":     CHECKSET,
+						"resource_group_id": CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description": "tf-testAcc",
+					"description":       "tf-testAcc",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description": "tf-testAcc",
+						"description":       "tf-testAcc",
+						"resource_group_id": CHECKSET,
 					}),
 				),
 			},
@@ -161,7 +165,8 @@ func TestAccAliCloudPolarDBGlobalDatabaseNetwork_basic00(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description": "update-tf-testAcc",
+						"description":       "update-tf-testAcc",
+						"resource_group_id": CHECKSET,
 					}),
 				),
 			},
@@ -175,7 +180,8 @@ func TestAccAliCloudPolarDBGlobalDatabaseNetwork_basic00(t *testing.T) {
 }
 
 var resourceAlicloudPolarDBGlobalDatabaseNetworkMap = map[string]string{
-	"status": CHECKSET,
+	"status":            CHECKSET,
+	"resource_group_id": CHECKSET,
 }
 
 func resourceAlicloudPolarDBGlobalDatabaseNetworkBasicDependence(name string) string {
@@ -183,6 +189,8 @@ func resourceAlicloudPolarDBGlobalDatabaseNetworkBasicDependence(name string) st
 variable "name" {
 	default = "%s"
 }
+
+data "alicloud_resource_manager_resource_groups" "default" {}
 
 data "alicloud_vpcs" "default" {
 	name_regex = "^default-NODELETING$"
@@ -224,8 +232,9 @@ func TestUnitAlicloudPolarDBGlobalDatabaseNetwork(t *testing.T) {
 	dExisted, _ := schema.InternalMap(p["alicloud_polardb_global_database_network"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()
 	attributes := map[string]interface{}{
-		"db_cluster_id": "CreatePolarDBGDNValue",
-		"description":   "CreatePolarDBGDNValue",
+		"db_cluster_id":     "CreatePolarDBGDNValue",
+		"description":       "CreatePolarDBGDNValue",
+		"resource_group_id": "CreatePolarDBGDNValue",
 	}
 	for key, value := range attributes {
 		err := dInit.Set(key, value)
@@ -246,8 +255,9 @@ func TestUnitAlicloudPolarDBGlobalDatabaseNetwork(t *testing.T) {
 	rawClient = rawClient.(*connectivity.AliyunClient)
 	ReadMockResponse := map[string]interface{}{
 		// DescribeGlobalDatabaseNetwork
-		"GDNStatus":      "active",
-		"GDNDescription": "CreatePolarDBGDNValue",
+		"GDNStatus":       "active",
+		"GDNDescription":  "CreatePolarDBGDNValue",
+		"ResourceGroupId": "CreatePolarDBGDNValue",
 		"DBClusters": []interface{}{
 			map[string]interface{}{
 				"DBClusterId": "CreatePolarDBGDNValue",
@@ -344,7 +354,8 @@ func TestUnitAlicloudPolarDBGlobalDatabaseNetwork(t *testing.T) {
 	dExisted, _ = schema.InternalMap(p["alicloud_polardb_global_database_network"].Schema).Data(dInit.State(), diff)
 	ReadMockResponseDiff = map[string]interface{}{
 		// DescribeGlobalDatabaseNetwork Response
-		"GDNDescription": "PutPolarDBGDNValue",
+		"GDNDescription":  "PutPolarDBGDNValue",
+		"ResourceGroupId": "CreatePolarDBGDNValue",
 		"DBClusters": []interface{}{
 			map[string]interface{}{
 				"DBClusterId": "CreatePolarDBGDNValue",
