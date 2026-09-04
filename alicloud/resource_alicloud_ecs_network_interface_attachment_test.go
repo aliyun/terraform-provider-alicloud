@@ -190,13 +190,14 @@ func AliCloudAliCloudEcsNetworkInterfaceAttachmentBasicDependence0(name string) 
   		default = "%s"
 	}
 
-	data "alicloud_zones" "default" {
-  		available_resource_creation = "Instance"
+	data "alicloud_instance_types" "default" {
+  		instance_type_family = "ecs.g7nex"
+  		sorted_by            = "CPU"
 	}
 
-	data "alicloud_instance_types" "default" {
-  		availability_zone    = data.alicloud_zones.default.zones.0.id
-  		instance_type_family = "ecs.g7nex"
+	data "alicloud_zones" "default" {
+  		available_resource_creation = "Instance"
+  		available_instance_type     = data.alicloud_instance_types.default.instance_types.0.id
 	}
 
 	data "alicloud_images" "default" {
@@ -229,7 +230,7 @@ func AliCloudAliCloudEcsNetworkInterfaceAttachmentBasicDependence0(name string) 
   		security_groups            = alicloud_security_group.default.*.id
   		internet_charge_type       = "PayByTraffic"
   		internet_max_bandwidth_out = "10"
-  		availability_zone          = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+  		availability_zone          = data.alicloud_zones.default.zones.0.id
 		instance_charge_type       = "PostPaid"
 		system_disk_category       = "cloud_essd"
 		vswitch_id                 = alicloud_vswitch.default.id
@@ -311,13 +312,14 @@ func AliCloudEcsNetworkInterfaceAttachmentBasicDependenceMulti(name string) stri
   		default = "%s"
 	}
 
-	data "alicloud_zones" "default" {
-  		available_resource_creation = "Instance"
+	data "alicloud_instance_types" "default" {
+  		instance_type_family = "ecs.g7nex"
+  		sorted_by            = "CPU"
 	}
 
-	data "alicloud_instance_types" "default" {
-  		availability_zone    = data.alicloud_zones.default.zones.0.id
-  		instance_type_family = "ecs.sn1ne"
+	data "alicloud_zones" "default" {
+  		available_resource_creation = "Instance"
+  		available_instance_type     = data.alicloud_instance_types.default.instance_types.0.id
 	}
 
 	data "alicloud_images" "default" {
@@ -351,9 +353,9 @@ func AliCloudEcsNetworkInterfaceAttachmentBasicDependenceMulti(name string) stri
   		security_groups            = alicloud_security_group.default.*.id
   		internet_charge_type       = "PayByTraffic"
   		internet_max_bandwidth_out = "10"
-  		availability_zone          = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+  		availability_zone          = data.alicloud_zones.default.zones.0.id
   		instance_charge_type       = "PostPaid"
-  		system_disk_category       = "cloud_efficiency"
+  		system_disk_category       = "cloud_essd"
   		vswitch_id                 = alicloud_vswitch.default.id
 	}
 
