@@ -600,13 +600,37 @@ func resourceAliCloudEcsDiskUpdate(d *schema.ResourceData, meta interface{}) err
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 
-		stateConf := BuildStateConf([]string{}, []string{"Available", "In_use"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, ecsServiceV2.EcsDiskStateRefreshFunc(d.Id(), "Status", []string{}))
+		// ESSD -> AutoPL (cloud_auto) category conversion is asynchronous: after
+		// ModifyDiskSpec returns, DescribeDisks reports Status "Modifying" while the
+		// disk transitions between categories. This transition can exceed the default
+		// 15m Update timeout, so when the category is changing, use a longer wait and
+		// list "Modifying" as a known pending state to avoid a premature timeout.
+		pending := []string{}
+		waitTimeout := d.Timeout(schema.TimeoutUpdate)
+		if d.HasChange("category") {
+			pending = []string{"Modifying"}
+			waitTimeout = 2 * waitTimeout
+		}
+		stateConf := BuildStateConf(pending, []string{"Available", "In_use"}, waitTimeout, 10*time.Second, ecsServiceV2.EcsDiskStateRefreshFunc(d.Id(), "Status", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
+
+		// After the Status wait confirms the disk has left the "Modifying" transition,
+		// poll the Category field until it reaches the target value (e.g. cloud_auto).
+		// This second confirmation ensures operations that depend on the new category
+		// (such as setting BurstingEnabled on a cloud_auto disk) do not fire before the
+		// category conversion is truly complete.
+		if d.HasChange("category") {
+			categoryConf := BuildStateConf([]string{}, []string{d.Get("category").(string)}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, ecsServiceV2.EcsDiskStateRefreshFunc(d.Id(), "Category", []string{}))
+			if _, err := categoryConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+		}
 	}
 	// Deferred BurstingEnabled set: category has just been changed to cloud_auto and
-	// WaitForState confirmed the disk is now cloud_auto, so BurstingEnabled is valid.
+	// the Status + Category WaitForState above confirmed the disk reached the target
+	// category, so BurstingEnabled is valid.
 	if needBurstingPost {
 		update = true
 		action = "ModifyDiskAttribute"
