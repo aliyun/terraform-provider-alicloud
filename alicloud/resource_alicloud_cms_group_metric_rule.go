@@ -551,6 +551,13 @@ func resourceAliCloudCmsGroupMetricRuleUpdate(d *schema.ResourceData, meta inter
 	}
 	request["MetricName"] = d.Get("metric_name")
 
+	if !d.IsNewResource() && d.HasChange("category") {
+		update = true
+	}
+	if v, ok := d.GetOk("category"); ok {
+		request["Category"] = v
+	}
+
 	if !d.IsNewResource() && d.HasChange("contact_groups") {
 		update = true
 	}
@@ -717,6 +724,7 @@ func resourceAliCloudCmsGroupMetricRuleUpdate(d *schema.ResourceData, meta inter
 		d.SetPartial("group_id")
 		d.SetPartial("group_metric_rule_name")
 		d.SetPartial("metric_name")
+		d.SetPartial("category")
 		d.SetPartial("contact_groups")
 		d.SetPartial("dimensions")
 		d.SetPartial("email_subject")
