@@ -28,6 +28,20 @@ func resourceAliCloudSlsLogStore() *schema.Resource {
 			Update: schema.DefaultTimeout(5 * time.Minute),
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
+		CustomizeDiff: func(d *schema.ResourceDiff, meta interface{}) error {
+			// When hot storage is enabled (hot_ttl > 0), the hot storage retention
+			// period must not exceed the data retention period (retention_period).
+			if hotTTL, ok := d.GetOk("hot_ttl"); ok {
+				hotTTLInt := hotTTL.(int)
+				if hotTTLInt > 0 {
+					retentionPeriod := d.Get("retention_period").(int)
+					if retentionPeriod > 0 && hotTTLInt > retentionPeriod {
+						return fmt.Errorf("hot_ttl (%d) must be less than or equal to retention_period (%d)", hotTTLInt, retentionPeriod)
+					}
+				}
+			}
+			return nil
+		},
 		Schema: map[string]*schema.Schema{
 			"append_meta": {
 				Type:     schema.TypeBool,
@@ -99,6 +113,18 @@ func resourceAliCloudSlsLogStore() *schema.Resource {
 			"hot_ttl": {
 				Type:     schema.TypeInt,
 				Optional: true,
+				ValidateFunc: func(v interface{}, k string) ([]string, []error) {
+					i, ok := v.(int)
+					if !ok {
+						return nil, []error{fmt.Errorf("expected type of %s to be int", k)}
+					}
+					// 0 disables hot storage; otherwise the hot storage retention
+					// period is an integer from 7 to retention_period.
+					if i != 0 && i < 7 {
+						return nil, []error{fmt.Errorf("expected %s to be 0 (disable hot storage) or at least 7, got %d", k, i)}
+					}
+					return nil, nil
+				},
 			},
 			"infrequent_access_ttl": {
 				Type:     schema.TypeInt,
@@ -114,7 +140,7 @@ func resourceAliCloudSlsLogStore() *schema.Resource {
 			"max_split_shard_count": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: IntBetween(0, 256),
+				ValidateFunc: IntBetween(1, 256),
 			},
 			"metering_mode": {
 				Type:     schema.TypeString,
@@ -140,9 +166,10 @@ func resourceAliCloudSlsLogStore() *schema.Resource {
 				ForceNew:     true,
 			},
 			"retention_period": {
-				Type:     schema.TypeInt,
-				Optional: true,
-				Default:  30,
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Default:      30,
+				ValidateFunc: IntBetween(1, 3650),
 			},
 			"shard_count": {
 				Type:     schema.TypeInt,
