@@ -3,6 +3,7 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"regexp"
 	"sort"
 	"strconv"
@@ -158,34 +159,12 @@ func dataSourceAliCloudInstanceTypes() *schema.Resource {
 						"gpu": {
 							Type:     schema.TypeMap,
 							Computed: true,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"amount": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-									"category": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-								},
-							},
+							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 						"burstable_instance": {
 							Type:     schema.TypeMap,
 							Computed: true,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"initial_credit": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-									"baseline_credit": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-								},
-							},
+							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 						"eni_amount": {
 							Type:     schema.TypeInt,
@@ -226,22 +205,7 @@ func dataSourceAliCloudInstanceTypes() *schema.Resource {
 						"local_storage": {
 							Type:     schema.TypeMap,
 							Computed: true,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"capacity": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-									"amount": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-									"category": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-								},
-							},
+							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 					},
 				},
@@ -430,6 +394,67 @@ func dataSourceAliCloudInstanceTypesRead(d *schema.ResourceData, meta interface{
 			InstanceType: object,
 		})
 	}
+
+	if len(instanceTypes) == 0 {
+		activeFilters := make([]string, 0)
+		if v, ok := d.GetOk("availability_zone"); ok && v.(string) != "" {
+			activeFilters = append(activeFilters, fmt.Sprintf("availability_zone=%q", v.(string)))
+		}
+		if cpu > 0 {
+			activeFilters = append(activeFilters, fmt.Sprintf("cpu_core_count=%d", cpu))
+		}
+		if mem > 0 {
+			activeFilters = append(activeFilters, fmt.Sprintf("memory_size=%v", mem))
+		}
+		if v, ok := d.GetOk("instance_type_family"); ok && v.(string) != "" {
+			activeFilters = append(activeFilters, fmt.Sprintf("instance_type_family=%q", v.(string)))
+		}
+		if v, ok := d.GetOk("instance_type"); ok && v.(string) != "" {
+			activeFilters = append(activeFilters, fmt.Sprintf("instance_type=%q", v.(string)))
+		}
+		if v, ok := d.GetOk("system_disk_category"); ok && v.(string) != "" {
+			activeFilters = append(activeFilters, fmt.Sprintf("system_disk_category=%q", v.(string)))
+		}
+		if imageId != "" {
+			activeFilters = append(activeFilters, fmt.Sprintf("image_id=%q (intersects with DescribeImageSupportInstanceTypes)", imageId))
+		}
+		if v, ok := d.GetOk("spot_strategy"); ok && v.(string) != "" && v.(string) != string(NoSpot) {
+			activeFilters = append(activeFilters, fmt.Sprintf("spot_strategy=%q", v.(string)))
+		}
+		if v, ok := d.GetOk("network_type"); ok && v.(string) != "" {
+			activeFilters = append(activeFilters, fmt.Sprintf("network_type=%q", v.(string)))
+		}
+		if v, ok := d.GetOk("instance_charge_type"); ok && v.(string) != "" && v.(string) != string(PostPaid) {
+			activeFilters = append(activeFilters, fmt.Sprintf("instance_charge_type=%q", v.(string)))
+		}
+		if eniAmount > 0 {
+			activeFilters = append(activeFilters, fmt.Sprintf("eni_amount=%d", eniAmount))
+		}
+		if gpuAmount > 0 {
+			activeFilters = append(activeFilters, fmt.Sprintf("gpu_amount=%d", gpuAmount))
+		}
+		if v, ok := d.GetOk("gpu_spec"); ok && v.(string) != "" {
+			activeFilters = append(activeFilters, fmt.Sprintf("gpu_spec=%q", v.(string)))
+		}
+		if k8sNode != "" {
+			activeFilters = append(activeFilters, fmt.Sprintf("kubernetes_node_role=%q", k8sNode))
+		}
+		isOutdated, _ := d.Get("is_outdated").(bool)
+		ioOptimizedValue := "optimized"
+		if isOutdated {
+			ioOptimizedValue = "none"
+		}
+		activeFilters = append(activeFilters, fmt.Sprintf("is_outdated=%t (implicit IoOptimized=%q)", isOutdated, ioOptimizedValue))
+
+		log.Printf("[WARN] data.alicloud_instance_types returned an empty result set. Active filters: %s. "+
+			"Empty results are often caused by server-side filters in DescribeAvailableResource. "+
+			"Suggested troubleshooting: (1) if spot_strategy is SpotWithPriceLimit or SpotAsPriceGo, retry with NoSpot -- families without a spot SKU (e.g. ecs.u2i-*) are dropped server-side; "+
+			"(2) if image_id is set, remove it to check the DescribeImageSupportInstanceTypes intersection; "+
+			"(3) drop cpu_core_count/memory_size to confirm the type is available in the target zone; "+
+			"(4) do not rely on is_outdated=true as a workaround -- it flips IoOptimized to \"none\", which currently returns an empty set because legacy non-I/O-optimized families have been retired.",
+			strings.Join(activeFilters, ", "))
+	}
+
 	sortedBy := d.Get("sorted_by").(string)
 
 	if sortedBy == "Price" && len(instanceTypes) > 0 {
