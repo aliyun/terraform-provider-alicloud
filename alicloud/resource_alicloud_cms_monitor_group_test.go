@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -89,7 +90,7 @@ func testSweepCmsMonitorgroup(region string) error {
 	return nil
 }
 
-func TestAccAlicloudCmsMonitorGroup_basic(t *testing.T) {
+func TestAccAliCloudCmsMonitorGroup_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cms_monitor_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudCmsMonitorGroupMap)
@@ -183,7 +184,7 @@ func TestAccAlicloudCmsMonitorGroup_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCmsMonitorGroup_ByResourceGroupId(t *testing.T) {
+func TestAccAliCloudCmsMonitorGroup_ByResourceGroupId(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cms_monitor_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudCmsMonitorGroupMap)
@@ -287,6 +288,40 @@ func TestAccAlicloudCmsMonitorGroup_ByResourceGroupId(t *testing.T) {
 						"tags.For":           "acceptance-test-update",
 					}),
 				),
+			},
+		},
+	})
+}
+
+// TestAccAliCloudCmsMonitorGroup_missingNameAndResourceGroupId verifies that
+// creating a monitor group specifying neither monitor_group_name nor
+// resource_group_id fails. The validation runs at apply time (in Create),
+// because plan-time CustomizeDiff cannot reliably detect a referenced
+// resource_group_id when it is a typed-unknown interpolated from a resource
+// created in the same plan.
+func TestAccAliCloudCmsMonitorGroup_missingNameAndResourceGroupId(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cms_monitor_group.default"
+	ra := resourceAttrInit(resourceId, AlicloudCmsMonitorGroupMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CmsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCmsMonitorGroup")
+	rac := resourceAttrCheckInit(rc, ra)
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sAlicloudCmsMonitorGroup%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCmsMonitorGroupBasicDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				// Neither monitor_group_name nor resource_group_id is set, so
+				// Create validation must reject the apply with an error.
+				Config:      testAccConfig(map[string]interface{}{}),
+				ExpectError: regexp.MustCompile(`monitor_group_name is required when resource_group_id is not specified`),
 			},
 		},
 	})

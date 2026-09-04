@@ -53,6 +53,8 @@ The following arguments are supported:
 * `resource_group_name` - (Optional, Available since v1.141.0) The name of the resource group.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 
+-> **NOTE:** When creating, at least one of `monitor_group_name` or `resource_group_id` must be specified. The validation runs at apply time (in Create), because a `resource_group_id` interpolated from a resource created in the same plan is unknown at plan time. If `resource_group_id` is set, the resource is created via the `CreateMonitorGroupByResourceGroupId` API and `monitor_group_name` is not sent; otherwise `monitor_group_name` is required and must not be empty.
+
 ## Attributes Reference
 
 The following attributes are exported:
