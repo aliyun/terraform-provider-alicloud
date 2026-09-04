@@ -34,8 +34,9 @@ func resourceAliCloudCloudMonitorServiceEventRule() *schema.Resource {
 				Optional: true,
 			},
 			"silence_time": {
-				Type:     schema.TypeInt,
-				Optional: true,
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Description: "The silence time in seconds.",
 			},
 			"description": {
 				Type:     schema.TypeString,
@@ -94,8 +95,9 @@ func resourceAliCloudCloudMonitorServiceEventRule() *schema.Resource {
 							Optional: true,
 						},
 						"level": {
-							Type:     schema.TypeString,
-							Optional: true,
+							Type:        schema.TypeString,
+							Optional:    true,
+							Description: "The alert level and the corresponding notification methods. Valid values: 2 (phone, SMS, DingTalk, and email), 3 (SMS, DingTalk, and email), and 4 (DingTalk and email). International or partner accounts only support level 4.",
 						},
 					},
 				},
