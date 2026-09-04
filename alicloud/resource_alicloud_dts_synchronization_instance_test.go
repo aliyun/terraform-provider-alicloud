@@ -18,7 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudDTSSynchronizationInstance_basic0(t *testing.T) {
+func TestAccAliCloudDTSSynchronizationInstance_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dts_synchronization_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudDTSSynchronizationInstanceMap0)
@@ -44,24 +44,45 @@ func TestAccAlicloudDTSSynchronizationInstance_basic0(t *testing.T) {
 					"auto_start":                       "false",
 					"payment_type":                     "PayAsYouGo",
 					"source_endpoint_engine_name":      "MySQL",
-					"source_endpoint_region":           os.Getenv("ALICLOUD_REGION"),
+					"source_endpoint_region":           "${data.alicloud_regions.default.regions.0.id}",
 					"destination_endpoint_engine_name": "MySQL",
-					"destination_endpoint_region":      os.Getenv("ALICLOUD_REGION"),
+					"destination_endpoint_region":      "${data.alicloud_regions.default.regions.0.id}",
+					"compute_unit":                     "2",
+					"database_count":                   "1",
+					"instance_class":                   "small",
+					"payment_duration":                 "1",
+					"payment_duration_unit":            "Month",
+					"quantity":                         "1",
+					"sync_architecture":                "oneway",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"payment_type":                     "PayAsYouGo",
 						"source_endpoint_engine_name":      "MySQL",
-						"source_endpoint_region":           os.Getenv("ALICLOUD_REGION"),
+						"source_endpoint_region":           CHECKSET,
 						"destination_endpoint_engine_name": "MySQL",
-						"destination_endpoint_region":      os.Getenv("ALICLOUD_REGION"),
+						"destination_endpoint_region":      CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_class":        "large",
+					"payment_duration":      "2",
+					"payment_duration_unit": "Year",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_class":        "large",
+						"payment_duration":      "2",
+						"payment_duration_unit": "Year",
 					}),
 				),
 			},
 			{
 				ResourceName:      resourceId,
 				ImportState:       true,
-				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"database_count", "status", "quantity", "sync_architecture", "auto_pay", "auto_start", "compute_unit", "period", "used_time", "auto_pay", "order_type", "synchronization_direction"},
+				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"database_count", "status", "quantity", "sync_architecture", "auto_pay", "auto_start", "compute_unit"},
 			},
 		},
 	})
@@ -80,9 +101,16 @@ var AlicloudDTSSynchronizationInstanceMap0 = map[string]string{
 }
 
 func AlicloudDTSSynchronizationInstanceBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
+	return fmt.Sprintf(`
 variable "name" {
   default = "%s"
+}
+
+// The region has to come from the provider rather than from ALICLOUD_REGION: that
+// variable is not always set, and an empty region_id makes CreateDtsInstance fail
+// with MissingDestinationRegion before the instance is created.
+data "alicloud_regions" "default" {
+  current = true
 }
 `, name)
 }
