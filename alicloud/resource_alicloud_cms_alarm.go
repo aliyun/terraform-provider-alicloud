@@ -198,10 +198,11 @@ func resourceAliCloudCmsAlarm() *schema.Resource {
 							Optional: true,
 						},
 						"level": {
-							Type:         schema.TypeString,
-							Optional:     true,
-							Computed:     true,
-							ValidateFunc: StringInSlice([]string{"Critical", "Warn", "Info"}, false),
+							Type:             schema.TypeString,
+							Optional:         true,
+							Computed:         true,
+							ValidateFunc:     StringInSlice([]string{"Critical", "Warn", "Info"}, true),
+							DiffSuppressFunc: cmsAlarmLevelDiffSuppressFunc,
 						},
 						"times": {
 							Type:     schema.TypeInt,
@@ -231,9 +232,10 @@ func resourceAliCloudCmsAlarm() *schema.Resource {
 							Optional: true,
 						},
 						"level": {
-							Type:         schema.TypeString,
-							Optional:     true,
-							ValidateFunc: StringInSlice([]string{"Critical", "Warn", "Info"}, false),
+							Type:             schema.TypeString,
+							Optional:         true,
+							ValidateFunc:     StringInSlice([]string{"Critical", "Warn", "Info"}, true),
+							DiffSuppressFunc: cmsAlarmLevelDiffSuppressFunc,
 						},
 						"arn": {
 							Type:     schema.TypeString,
@@ -249,9 +251,10 @@ func resourceAliCloudCmsAlarm() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"level": {
-							Type:         schema.TypeString,
-							Optional:     true,
-							ValidateFunc: StringInSlice([]string{"CRITICAL", "WARN", "INFO"}, false),
+							Type:             schema.TypeString,
+							Optional:         true,
+							ValidateFunc:     StringInSlice([]string{"Critical", "Warn", "Info"}, true),
+							DiffSuppressFunc: cmsAlarmLevelDiffSuppressFunc,
 						},
 						"times": {
 							Type:     schema.TypeInt,
@@ -482,7 +485,7 @@ func resourceAliCloudCmsAlarmRead(d *schema.ResourceData, meta interface{}) erro
 		compositeExpressionMap := make(map[string]interface{})
 
 		if level, ok := compositeExpressionArg["Level"]; ok {
-			compositeExpressionMap["level"] = level
+			compositeExpressionMap["level"] = normalizeCmsAlarmLevel(level)
 		}
 
 		if times, ok := compositeExpressionArg["Times"]; ok {
@@ -582,7 +585,7 @@ func resourceAliCloudCmsAlarmRead(d *schema.ResourceData, meta interface{}) erro
 		}
 
 		if level, ok := targetsArg["Level"]; ok {
-			targetsMap["level"] = level
+			targetsMap["level"] = normalizeCmsAlarmLevel(level)
 		}
 
 		if arn, ok := targetsArg["Arn"]; ok {
@@ -738,7 +741,7 @@ func resourceAliCloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) er
 		prometheusMap := make(map[string]interface{}, 0)
 		prometheusArg := prometheus.(map[string]interface{})
 		prometheusMap["PromQL"] = prometheusArg["prom_ql"]
-		prometheusMap["Level"] = prometheusArg["level"]
+		prometheusMap["Level"] = normalizeCmsAlarmLevel(prometheusArg["level"])
 		prometheusMap["Times"] = prometheusArg["times"]
 		if vv, ok := prometheusArg["annotations"]; ok {
 			tags := make([]map[string]interface{}, 0)
@@ -760,7 +763,7 @@ func resourceAliCloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) er
 			compositeExpressionArg := compositeExpression.(map[string]interface{})
 
 			if level, ok := compositeExpressionArg["level"]; ok {
-				compositeExpressionMap["Level"] = level
+				compositeExpressionMap["Level"] = normalizeCmsAlarmLevel(level)
 			}
 
 			if times, ok := compositeExpressionArg["times"]; ok {
@@ -936,7 +939,7 @@ func resourceAliCloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) er
 			}
 
 			if level, ok := targetsArg["level"]; ok {
-				targetsMap["Level"] = level
+				targetsMap["Level"] = normalizeCmsAlarmLevel(level)
 			}
 
 			if arn, ok := targetsArg["arn"]; ok {
@@ -1058,15 +1061,30 @@ func convertCmsAlarmComparisonOperator(comparisonOperator string) string {
 	}
 }
 
-func convertCmsAlarmPrometheusLevelResponse(source interface{}) interface{} {
-	switch source {
-	case "2":
-		return "Critical"
-	case "3":
-		return "Warn"
-	case "4":
-		return "Info"
+// normalizeCmsAlarmLevel normalizes a CMS alarm level value (any letter case,
+// or the numeric code returned by the CMS API for prometheus levels) to the
+// canonical uppercase form accepted by the CMS OpenAPI (CRITICAL/WARN/INFO).
+// Unknown values are returned upper-cased unchanged.
+func normalizeCmsAlarmLevel(level interface{}) string {
+	s := fmt.Sprintf("%v", level)
+	switch strings.ToLower(s) {
+	case "critical", "2":
+		return "CRITICAL"
+	case "warn", "3":
+		return "WARN"
+	case "info", "4":
+		return "INFO"
 	}
+	return strings.ToUpper(s)
+}
 
-	return source
+// cmsAlarmLevelDiffSuppressFunc suppresses diffs where the only difference
+// between old and new is letter case, so users may write CRITICAL/WARN/INFO in
+// any case without producing a perpetual plan diff against state.
+func cmsAlarmLevelDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	return strings.EqualFold(old, new)
+}
+
+func convertCmsAlarmPrometheusLevelResponse(source interface{}) interface{} {
+	return normalizeCmsAlarmLevel(source)
 }
