@@ -1465,8 +1465,18 @@ func (s *RdsService) WaitForDBInstance(id string, status Status, timeout int) er
 				return WrapError(err)
 			}
 		}
-		if object != nil && strings.ToLower(fmt.Sprint(object["DBInstanceStatus"])) == strings.ToLower(string(status)) {
-			break
+		if object != nil {
+			current := fmt.Sprint(object["DBInstanceStatus"])
+			if strings.ToLower(current) == strings.ToLower(string(status)) {
+				break
+			}
+			// A deleting instance cannot transition back to Running (or any other
+			// non-Deleted status). Fail fast instead of polling until the timeout
+			// so callers surface the real cause and concurrent/downstream resources
+			// do not wait in vain for an instance that is already being deleted.
+			if status != Deleted && strings.ToLower(current) == strings.ToLower(string(Deleting)) {
+				return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, current, status, ProviderERROR)
+			}
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 		if time.Now().After(deadline) {
