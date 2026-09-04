@@ -878,6 +878,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_transit_router_cidrs":                         dataSourceAlicloudCenTransitRouterCidrs(),
 			"alicloud_ga_basic_accelerators":                            dataSourceAliCloudGaBasicAccelerators(),
 			"alicloud_cms_metric_rule_black_lists":                      dataSourceAlicloudCmsMetricRuleBlackLists(),
+			"alicloud_cms_metric_list":                                  dataSourceAlicloudCmsMetricList(),
 			"alicloud_cloud_firewall_vpc_firewall_cens":                 dataSourceAlicloudCloudFirewallVpcFirewallCens(),
 			"alicloud_cloud_firewall_vpc_firewalls":                     dataSourceAlicloudCloudFirewallVpcFirewalls(),
 			"alicloud_cloud_firewall_instance_members":                  dataSourceAlicloudCloudFirewallInstanceMembers(),
