@@ -630,6 +630,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ens_bucket_lifecycles":                            dataSourceAlicloudEnsBucketLifecycles(),
 			"alicloud_ens_network_route_tables":                         dataSourceAliCloudEnsNetworkRouteTables(),
 			"alicloud_sae_applications":                                 dataSourceAlicloudSaeApplications(),
+			"alicloud_sae_application_instances":                        dataSourceAlicloudSaeApplicationInstances(),
 			"alicloud_alb_rules":                                        dataSourceAliCloudAlbRules(),
 			"alicloud_cms_metric_rule_templates":                        dataSourceAlicloudCmsMetricRuleTemplates(),
 			"alicloud_iot_device_groups":                                dataSourceAlicloudIotDeviceGroups(),
