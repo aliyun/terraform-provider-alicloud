@@ -109,6 +109,51 @@ func TestAccAliCloudGaEndpointGroupsDataSource(t *testing.T) {
 	alicloudGaEndpointGroupsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, listenerIdConf, endpointGroupTypeConf, statusConf, allConf)
 }
 
+func TestAccAliCloudGaEndpointGroupsDataSource_withIpTarget(t *testing.T) {
+	rand := acctest.RandInt()
+	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
+	resourceId := "data.alicloud_ga_endpoint_groups.default"
+
+	idsConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAliCloudGaEndpointGroupsDataSourceIpTarget(rand, map[string]string{
+			"ids": `["${alicloud_ga_endpoint_group.default.id}"]`,
+		}),
+		fakeConfig: testAccCheckAliCloudGaEndpointGroupsDataSourceIpTarget(rand, map[string]string{
+			"ids": `["${alicloud_ga_endpoint_group.default.id}_fake"]`,
+		}),
+	}
+
+	var existMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"ids.#":                                       "1",
+			"groups.#":                                    "1",
+			"groups.0.id":                                 CHECKSET,
+			"groups.0.endpoint_group_id":                  CHECKSET,
+			"groups.0.endpoint_group_region":              CHECKSET,
+			"groups.0.status":                             "active",
+			"groups.0.endpoint_configurations.#":          "1",
+			"groups.0.endpoint_configurations.0.type":     "IpTarget",
+			"groups.0.endpoint_configurations.0.vpc_id":   CHECKSET,
+			"groups.0.endpoint_configurations.0.vswitch_ids.#": CHECKSET,
+		}
+	}
+
+	var fakeMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"groups.#": "0",
+			"ids.#":    "0",
+		}
+	}
+
+	var CheckInfo = dataSourceAttr{
+		resourceId:   resourceId,
+		existMapFunc: existMapFunc,
+		fakeMapFunc:  fakeMapFunc,
+	}
+
+	CheckInfo.dataSourceTestCheck(t, rand, idsConf)
+}
+
 func testAccCheckAliCloudGaEndpointGroupsDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
 	for k, v := range attrMap {
@@ -187,4 +232,66 @@ func testAccCheckAliCloudGaEndpointGroupsDataSourceName(rand int, attrMap map[st
 	}
 `, rand, defaultRegionToTest, strings.Join(pairs, " \n "))
 	return config
+}
+
+func testAccCheckAliCloudGaEndpointGroupsDataSourceIpTarget(rand int, attrMap map[string]string) string {
+	var pairs []string
+	for k, v := range attrMap {
+		pairs = append(pairs, k+" = "+v)
+	}
+
+	return fmt.Sprintf(`
+variable "name" {
+  default = "tf-testAccGaEndpointGroup-ipTarget-%d"
+}
+
+resource "alicloud_ga_accelerator" "default" {
+  bandwidth_billing_type = "CDT"
+  payment_type           = "PayAsYouGo"
+}
+
+resource "alicloud_ga_listener" "default" {
+  accelerator_id = alicloud_ga_accelerator.default.id
+  port_ranges {
+    from_port = 8080
+    to_port   = 8080
+  }
+  client_affinity = "SOURCE_IP"
+  protocol        = "HTTP"
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "192.168.0.0/16"
+}
+
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "192.168.0.0/24"
+  zone_id      = data.alicloud_zones.default.zones.0.id
+}
+
+resource "alicloud_ga_endpoint_group" "default" {
+  accelerator_id        = alicloud_ga_listener.default.accelerator_id
+  listener_id           = alicloud_ga_listener.default.id
+  endpoint_group_region = "%s"
+  endpoint_configurations {
+    endpoint = "192.168.0.100"
+    type     = "IpTarget"
+    weight   = 20
+    vpc_id   = alicloud_vpc.default.id
+    vswitch_ids = [alicloud_vswitch.default.id]
+  }
+}
+
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+
+data "alicloud_ga_endpoint_groups" "default" {
+  accelerator_id = alicloud_ga_endpoint_group.default.accelerator_id
+  %s
+}
+`, rand, defaultRegionToTest, strings.Join(pairs, " \n "))
 }
