@@ -443,6 +443,50 @@ func (s *ThreatDetectionServiceV2) ThreatDetectionFileUploadLimitStateRefreshFun
 
 // DescribeThreatDetectionFileUploadLimit >>> Encapsulated.
 
+// DescribeThreatDetectionRdDefaultSyncList <<< Encapsulated get interface for ThreatDetection RdDefaultSyncList.
+
+func (s *ThreatDetectionServiceV2) DescribeThreatDetectionRdDefaultSyncList(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	action := "ListRdDefaultSyncList"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.Data", response)
+	if err != nil {
+		// An account that has never configured a default synchronization list
+		// gets a ListRdDefaultSyncList response without a Data field. This
+		// resource is an account-level singleton that always exists, so an
+		// unconfigured list is a valid empty state (no synchronized folders)
+		// rather than a missing resource; report it as an empty object.
+		return map[string]interface{}{}, nil
+	}
+
+	return v.(map[string]interface{}), nil
+}
+
+// DescribeThreatDetectionRdDefaultSyncList >>> Encapsulated.
+
 // DescribeThreatDetectionMaliciousFileWhitelistConfig <<< Encapsulated get interface for ThreatDetection MaliciousFileWhitelistConfig.
 
 func (s *ThreatDetectionServiceV2) DescribeThreatDetectionMaliciousFileWhitelistConfig(id string) (object map[string]interface{}, err error) {
@@ -1465,3 +1509,74 @@ func (s *ThreatDetectionServiceV2) DescribeAsyncDescribeServiceLinkedRoleStatus(
 }
 
 // DescribeAsyncDescribeServiceLinkedRoleStatus >>> Encapsulated.
+// DescribeThreatDetectionMonitorAccount <<< Encapsulated get interface for ThreatDetection MonitorAccount.
+
+func (s *ThreatDetectionServiceV2) DescribeThreatDetectionMonitorAccount(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+
+	action := "DescribeMonitorAccounts"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+	}
+
+	return v.(map[string]interface{}), nil
+}
+
+func (s *ThreatDetectionServiceV2) ThreatDetectionMonitorAccountStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+	return s.ThreatDetectionMonitorAccountStateRefreshFuncWithApi(id, field, failStates, s.DescribeThreatDetectionMonitorAccount)
+}
+
+func (s *ThreatDetectionServiceV2) ThreatDetectionMonitorAccountStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeThreatDetectionMonitorAccount >>> Encapsulated.

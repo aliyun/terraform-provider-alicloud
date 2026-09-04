@@ -101,7 +101,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Network Load Balancer (NLB) Load Balancer Zone Shifted Attachment can be imported using the id, e.g.
+Network Load Balancer (NLB) Load Balancer Zone Shifted Attachment can be imported using the id, which consists of load_balancer_id, zone_id and vswitch_id, e.g.
 
 ```shell
 $ terraform import alicloud_nlb_load_balancer_zone_shifted_attachment.example <load_balancer_id>:<zone_id>:<vswitch_id>

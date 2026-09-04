@@ -78,7 +78,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Api Gateway Backend Model can be imported using the id, e.g.
+Api Gateway Backend Model can be imported using the id, which consists of backend_id and stage_name, e.g.
 
 ```shell
 $ terraform import alicloud_api_gateway_backend_model.example <backend_id>:<stage_name>

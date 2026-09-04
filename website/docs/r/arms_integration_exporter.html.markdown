@@ -100,7 +100,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Application Real-Time Monitoring Service (ARMS) Integration Exporter can be imported using the id, e.g.
+Application Real-Time Monitoring Service (ARMS) Integration Exporter can be imported using the id, which consists of cluster_id, integration_type and instance_id, e.g.
 
 ```shell
 $ terraform import alicloud_arms_integration_exporter.example <cluster_id>:<integration_type>:<instance_id>

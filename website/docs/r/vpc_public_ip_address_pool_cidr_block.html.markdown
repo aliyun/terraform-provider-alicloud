@@ -74,7 +74,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-VPC Public Ip Address Pool Cidr Block can be imported using the id, e.g.
+VPC Public Ip Address Pool Cidr Block can be imported using the id, which consists of public_ip_address_pool_id and cidr_block, e.g.
 
 ```shell
 $ terraform import alicloud_vpc_public_ip_address_pool_cidr_block.example <public_ip_address_pool_id>:<cidr_block>

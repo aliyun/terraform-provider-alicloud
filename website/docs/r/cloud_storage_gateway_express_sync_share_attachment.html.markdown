@@ -141,7 +141,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Cloud Storage Gateway Express Sync Share Attachment can be imported using the id, e.g.
+Cloud Storage Gateway Express Sync Share Attachment can be imported using the id, which consists of express_sync_id, gateway_id and share_name, e.g.
 
 ```shell
 $ terraform import alicloud_cloud_storage_gateway_express_sync_share_attachment.example <express_sync_id>:<gateway_id>:<share_name>

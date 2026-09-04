@@ -104,7 +104,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-AnalyticDB for PostgreSQL (GPDB) External Data Service can be imported using the id, e.g.
+AnalyticDB for PostgreSQL (GPDB) External Data Service can be imported using the id, which consists of db_instance_id and service_id, e.g.
 
 ```shell
 $ terraform import alicloud_gpdb_external_data_service.example <db_instance_id>:<service_id>

@@ -83,7 +83,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-FCV3 Function Version can be imported using the id, e.g.
+FCV3 Function Version can be imported using the id, which consists of function_name and version_id, e.g.
 
 ```shell
 $ terraform import alicloud_fcv3_function_version.example <function_name>:<version_id>

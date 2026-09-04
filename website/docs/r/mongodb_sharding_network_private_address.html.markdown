@@ -112,7 +112,7 @@ The following attributes are exported:
 
 ## Import
 
-MongoDB Sharding Network Private Address can be imported using the id, e.g.
+MongoDB Sharding Network Private Address can be imported using the id, which consists of db_instance_id and node_id, e.g.
 
 ```shell
 $ terraform import alicloud_mongodb_sharding_network_private_address.example <db_instance_id>:<node_id>

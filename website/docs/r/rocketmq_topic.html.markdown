@@ -122,7 +122,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-RocketMQ Topic can be imported using the id, e.g.
+RocketMQ Topic can be imported using the id, which consists of instance_id and topic_name, e.g.
 
 ```shell
 $ terraform import alicloud_rocketmq_topic.example <instance_id>:<topic_name>

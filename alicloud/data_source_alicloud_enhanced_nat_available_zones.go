@@ -89,7 +89,7 @@ func dataSourceAlicloudEnhancedNatAvailableZonesRead(d *schema.ResourceData, met
 			"local_name": value["LocalName"].(string),
 		}
 		s = append(s, mapping)
-		ids = append(ids, value["LocalName"].(string))
+		ids = append(ids, value["ZoneId"].(string))
 	}
 
 	d.SetId(strconv.FormatInt(time.Now().Unix(), 16))

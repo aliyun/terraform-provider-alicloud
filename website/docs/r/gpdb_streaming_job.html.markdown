@@ -209,7 +209,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-GPDB Streaming Job can be imported using the id, e.g.
+GPDB Streaming Job can be imported using the id, which consists of db_instance_id and job_id, e.g.
 
 ```shell
 $ terraform import alicloud_gpdb_streaming_job.example <db_instance_id>:<job_id>

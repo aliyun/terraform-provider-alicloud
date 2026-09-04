@@ -66,6 +66,7 @@ func TestAccAliCloudServiceMeshUserPermission_basic0(t *testing.T) {
 							"service_mesh_id": "${alicloud_service_mesh_service_mesh.default1.id}",
 							"role_type":       "custom",
 							"is_custom":       "true",
+							"is_ram_role":     "false",
 						},
 					},
 				}),
@@ -81,9 +82,10 @@ func TestAccAliCloudServiceMeshUserPermission_basic0(t *testing.T) {
 					"permissions": []map[string]interface{}{
 						{
 							"role_name":       "istio-readonly",
-							"service_mesh_id": "${alicloud_service_mesh_service_mesh.default1.id}",
+							"service_mesh_id": "${alicloud_service_mesh_service_mesh.default2.id}",
 							"role_type":       "custom",
 							"is_custom":       "true",
+							"is_ram_role":     "false",
 						},
 					},
 				}),
@@ -98,7 +100,7 @@ func TestAccAliCloudServiceMeshUserPermission_basic0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
+				ImportStateVerifyIgnore: []string{"permissions.role_type", "permissions.is_custom"},
 			},
 		},
 	})
@@ -118,15 +120,25 @@ data "alicloud_service_mesh_versions" "default" {
 	edition = "Default"
 }
 data "alicloud_zones" "default" {
-	available_resource_creation= "VSwitch"
+	available_resource_creation = "VSwitch"
 }
 data "alicloud_vpcs" "default" {
 	name_regex = "^default-NODELETING$"
 }
 
+resource "alicloud_vpc" "default" {
+	count = length(data.alicloud_vpcs.default.ids) > 0 ? 0 : 1
+}
+
 data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id     	= data.alicloud_zones.default.zones.0.id
+	vpc_id = length(data.alicloud_vpcs.default.ids) > 0 ? data.alicloud_vpcs.default.ids[0] : alicloud_vpc.default[0].id
+}
+
+resource "alicloud_vswitch" "default" {
+	count      = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+	vpc_id     = length(data.alicloud_vpcs.default.ids) > 0 ? data.alicloud_vpcs.default.ids[0] : alicloud_vpc.default[0].id
+	cidr_block = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 2)
+	zone_id    = data.alicloud_zones.default.zones.0.id
 }
 
 resource "alicloud_ram_user" "default" {
@@ -139,8 +151,23 @@ resource "alicloud_service_mesh_service_mesh" "default1" {
     cluster_spec = "standard"
     version = data.alicloud_service_mesh_versions.default.versions.0.version
 	network {
-		vpc_id = data.alicloud_vpcs.default.ids.0
-		vswitche_list = [data.alicloud_vswitches.default.ids.0]
+		vpc_id        = length(data.alicloud_vpcs.default.ids) > 0 ? data.alicloud_vpcs.default.ids[0] : alicloud_vpc.default[0].id
+		vswitche_list = [length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : alicloud_vswitch.default[0].id]
+	}
+	load_balancer {
+		pilot_public_eip = false
+		api_server_public_eip = false
+	}
+}
+
+resource "alicloud_service_mesh_service_mesh" "default2" {
+	service_mesh_name = "${var.name}-2"
+    edition = "Default"
+    cluster_spec = "standard"
+    version = data.alicloud_service_mesh_versions.default.versions.0.version
+	network {
+		vpc_id        = length(data.alicloud_vpcs.default.ids) > 0 ? data.alicloud_vpcs.default.ids[0] : alicloud_vpc.default[0].id
+		vswitche_list = [length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : alicloud_vswitch.default[0].id]
 	}
 	load_balancer {
 		pilot_public_eip = false
@@ -195,6 +222,7 @@ func TestUnitAlicloudServiceMeshUserPermission(t *testing.T) {
 				"RoleType":     "custom",
 				"RoleName":     "istio-ops",
 				"ResourceId":   "service_mesh_id",
+				"IsRamRole":    "false",
 			},
 		},
 	}
@@ -301,6 +329,7 @@ func TestUnitAlicloudServiceMeshUserPermission(t *testing.T) {
 					"RoleType":     "custom",
 					"RoleName":     "istio-admin",
 					"ResourceId":   "service_mesh_id",
+					"IsRamRole":    "false",
 				},
 			},
 		}

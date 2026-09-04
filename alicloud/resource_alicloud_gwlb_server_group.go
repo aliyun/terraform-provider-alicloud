@@ -52,6 +52,30 @@ func resourceAliCloudGwlbServerGroup() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"draining_servers": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"server_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"server_ip": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"server_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"status": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
 			"dry_run": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -164,9 +188,6 @@ func resourceAliCloudGwlbServerGroup() *schema.Resource {
 					}
 					if v, ok := server["server_ip"]; ok && server["server_type"] == "Eni" {
 						buf.WriteString(fmt.Sprintf("%s-", v.(string)))
-					}
-					if v, ok := server["server_port"]; ok {
-						buf.WriteString(fmt.Sprintf("%d", v.(int)))
 					}
 					return int(crc32.ChecksumIEEE([]byte(buf.String())))
 				},
@@ -499,10 +520,25 @@ func resourceAliCloudGwlbServerGroupRead(d *schema.ResourceData, meta interface{
 	servers1Raw, _ := jsonpath.Get("$.Servers", objectRaw)
 
 	serversMaps := make([]map[string]interface{}, 0)
+	drainingServersMaps := make([]map[string]interface{}, 0)
 	if servers1Raw != nil {
 		for _, serversChild1Raw := range servers1Raw.([]interface{}) {
-			serversMap := make(map[string]interface{})
 			serversChild1Raw := serversChild1Raw.(map[string]interface{})
+			// Servers in the removal pipeline (Draining/Removing) are transitional and are
+			// not kept in `servers`: the removal already happened and the drain process
+			// finishes it. This keeps the plan clean and allows re-adding such a server
+			// (the AddServers API rescues it back to Available). They are exposed through
+			// the computed `draining_servers` field instead.
+			if status, _ := serversChild1Raw["Status"].(string); status == "Draining" || status == "Removing" {
+				drainingServersMap := make(map[string]interface{})
+				drainingServersMap["server_id"] = serversChild1Raw["ServerId"]
+				drainingServersMap["server_ip"] = serversChild1Raw["ServerIp"]
+				drainingServersMap["server_type"] = serversChild1Raw["ServerType"]
+				drainingServersMap["status"] = serversChild1Raw["Status"]
+				drainingServersMaps = append(drainingServersMaps, drainingServersMap)
+				continue
+			}
+			serversMap := make(map[string]interface{})
 			serversMap["port"] = 6081
 			serversMap["server_group_id"] = serversChild1Raw["ServerGroupId"]
 			serversMap["server_id"] = serversChild1Raw["ServerId"]
@@ -515,6 +551,9 @@ func resourceAliCloudGwlbServerGroupRead(d *schema.ResourceData, meta interface{
 	}
 	if objectRaw["Servers"] != nil {
 		if err := d.Set("servers", serversMaps); err != nil {
+			return err
+		}
+		if err := d.Set("draining_servers", drainingServersMaps); err != nil {
 			return err
 		}
 	}
@@ -755,6 +794,16 @@ func resourceAliCloudGwlbServerGroupUpdate(d *schema.ResourceData, meta interfac
 		newEntrySet := newEntry.(*schema.Set)
 		removed := oldEntrySet.Difference(newEntrySet)
 		added := newEntrySet.Difference(oldEntrySet)
+
+		// Skip servers in the removal pipeline: the API rejects removing a Draining or
+		// Removing server. They may still exist in a state written by an older provider
+		// version, or the drain timeout has not expired yet.
+		for _, item := range oldEntrySet.List() {
+			server := item.(map[string]interface{})
+			if status, _ := server["status"].(string); status == "Draining" || status == "Removing" {
+				removed.Remove(item)
+			}
+		}
 
 		if removed.Len() > 0 {
 			action := "RemoveServersFromServerGroup"

@@ -175,7 +175,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Star Rocks Node Group can be imported using the id, e.g.
+Star Rocks Node Group can be imported using the id, which consists of instance_id and node_group_id, e.g.
 
 ```shell
 $ terraform import alicloud_star_rocks_node_group.example <instance_id>:<node_group_id>

@@ -127,8 +127,8 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Disk.
-* `update` - (Defaults to 15 mins) Used when update the Disk.
 * `delete` - (Defaults to 5 mins) Used when delete the Disk.
+* `update` - (Defaults to 30 mins) Used when update the Disk.
 
 ## Import
 

@@ -83,7 +83,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-PAI Workspace Member can be imported using the id, e.g.
+PAI Workspace Member can be imported using the id, which consists of workspace_id and member_id, e.g.
 
 ```shell
 $ terraform import alicloud_pai_workspace_member.example <workspace_id>:<member_id>

@@ -100,7 +100,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Microservice Engine (MSE) Engine Namespace can be imported using the id, e.g.
+Microservice Engine (MSE) Engine Namespace can be imported using the id, which consists of instance_id and namespace_id, e.g.
 
 ```shell
 $ terraform import alicloud_mse_engine_namespace.example <instance_id>:<namespace_id>

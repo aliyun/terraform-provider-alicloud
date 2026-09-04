@@ -94,7 +94,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-ESA Edge Container App Record can be imported using the id, e.g.
+ESA Edge Container App Record can be imported using the id, which consists of site_id, app_id and record_name, e.g.
 
 ```shell
 $ terraform import alicloud_esa_edge_container_app_record.example <site_id>:<app_id>:<record_name>

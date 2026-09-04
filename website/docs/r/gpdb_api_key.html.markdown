@@ -72,7 +72,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-AnalyticDB for PostgreSQL (GPDB) Api Key can be imported using the id, e.g.
+AnalyticDB for PostgreSQL (GPDB) Api Key can be imported using the id, which consists of workspace_id and key_id, e.g.
 
 ```shell
 $ terraform import alicloud_gpdb_api_key.example <workspace_id>:<key_id>

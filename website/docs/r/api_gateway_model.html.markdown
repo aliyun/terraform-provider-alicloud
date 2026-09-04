@@ -66,7 +66,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Api Gateway Model can be imported using the id, e.g.
+Api Gateway Model can be imported using the id, which consists of group_id and model_name, e.g.
 
 ```shell
 $ terraform import alicloud_api_gateway_model.example <group_id>:<model_name>

@@ -78,7 +78,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-OSS Bucket Style can be imported using the id, e.g.
+OSS Bucket Style can be imported using the id, which consists of bucket and style_name, e.g.
 
 ```shell
 $ terraform import alicloud_oss_bucket_style.example <bucket>:<style_name>

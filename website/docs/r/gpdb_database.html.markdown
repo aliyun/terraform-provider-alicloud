@@ -101,7 +101,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-GPDB Database can be imported using the id, e.g.
+GPDB Database can be imported using the id, which consists of db_instance_id and database_name, e.g.
 
 ```shell
 $ terraform import alicloud_gpdb_database.example <db_instance_id>:<database_name>

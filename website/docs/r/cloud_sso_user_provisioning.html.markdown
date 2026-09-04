@@ -112,7 +112,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Cloud SSO User Provisioning can be imported using the id, e.g.
+Cloud SSO User Provisioning can be imported using the id, which consists of directory_id and user_provisioning_id, e.g.
 
 ```shell
 $ terraform import alicloud_cloud_sso_user_provisioning.example <directory_id>:<user_provisioning_id>

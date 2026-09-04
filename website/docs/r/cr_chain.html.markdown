@@ -241,7 +241,7 @@ The following attributes are exported:
 
 ## Import
 
-CR Chain can be imported using the id, e.g.
+CR Chain can be imported using the id, which consists of instance_id and chain_id, e.g.
 
 ```shell
 $ terraform import alicloud_cr_chain.example <instance_id>:<chain_id>

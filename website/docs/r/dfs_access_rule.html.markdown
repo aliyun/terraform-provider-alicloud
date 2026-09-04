@@ -71,7 +71,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-DFS Access Rule can be imported using the id, e.g.
+DFS Access Rule can be imported using the id, which consists of access_group_id and access_rule_id, e.g.
 
 ```shell
 $ terraform import alicloud_dfs_access_rule.example <access_group_id>:<access_rule_id>

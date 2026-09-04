@@ -94,7 +94,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Resource Manager Control Policy Attachment can be imported using the id, e.g.
+Resource Manager Control Policy Attachment can be imported using the id, which consists of policy_id and target_id, e.g.
 
 ```shell
 $ terraform import alicloud_resource_manager_control_policy_attachment.example <policy_id>:<target_id>

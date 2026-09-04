@@ -72,7 +72,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-VPC Ipv4 Cidr Block can be imported using the id, e.g.
+VPC Ipv4 Cidr Block can be imported using the id, which consists of vpc_id and secondary_cidr_block, e.g.
 
 ```shell
 $ terraform import alicloud_vpc_ipv4_cidr_block.example <vpc_id>:<secondary_cidr_block>

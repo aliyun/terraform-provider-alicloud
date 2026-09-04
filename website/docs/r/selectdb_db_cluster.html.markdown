@@ -120,7 +120,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-SelectDB DBCluster can be imported using the id, e.g.
+SelectDB DBCluster can be imported using the id, which consists of db_instance_id and db_cluster_id, e.g.
 
 ```shell
 $ terraform import alicloud_selectdb_db_cluster.example <db_instance_id>:<db_cluster_id>

@@ -104,7 +104,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-NAT Gateway Snat Entry can be imported using the id, e.g.
+NAT Gateway Snat Entry can be imported using the id, which consists of snat_table_id and snat_entry_id, e.g.
 
 ```shell
 $ terraform import alicloud_snat_entry.example <snat_table_id>:<snat_entry_id>

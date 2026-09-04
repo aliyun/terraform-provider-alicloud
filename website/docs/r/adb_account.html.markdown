@@ -96,7 +96,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-AnalyticDB for MySQL (ADB) Account can be imported using the id, e.g.
+AnalyticDB for MySQL (ADB) Account can be imported using the id, which consists of db_cluster_id and account_name, e.g.
 
 ```shell
 $ terraform import alicloud_adb_account.example <db_cluster_id>:<account_name>

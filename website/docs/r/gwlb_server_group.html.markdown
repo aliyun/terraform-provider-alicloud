@@ -148,16 +148,17 @@ The following arguments are supported:
 
   - `NoRebalance` (default): existing connections on the unhealthy backend server are not redistributed to other healthy backend servers.
   - `Rebalance`: existing connections on the unhealthy backend server are redistributed to other healthy backend servers.
-* `servers` - (Optional, Set) The backend servers that you want to remove.
+* `servers` - (Optional, Set) The backend servers that you want to remove. See [`servers`](#servers) below.
 
--> **NOTE:**  You can remove at most 200 backend servers in each call.
- See [`servers`](#servers) below.
+  -> **NOTE:**  You can remove at most 200 backend servers in each call.
+
+  -> **NOTE:**  When connection draining is enabled, a removed backend server enters the `Draining` status before it is released. Servers in the `Draining` or `Removing` status are not kept in `servers`, because the removal has already happened and the drain process finishes it. They are exposed through the computed `draining_servers` attribute instead. If a removal request still contains such a server, the provider skips it. If such a server is added back to `servers`, Terraform re-adds it to the server group (rescuing it back to the `Available` status).
 * `tags` - (Optional, Map) The tag keys.
 
   You can specify at most 20 tags in each call.
 * `vpc_id` - (Required, ForceNew) The VPC ID.
 
--> **NOTE:**  If `ServerGroupType` is set to `Instance`, only servers in the specified VPC can be added to the server group.
+  -> **NOTE:**  If `server_group_type` is set to `Instance`, only servers in the specified VPC can be added to the server group.
 
 ### `connection_drain_config`
 
@@ -195,7 +196,7 @@ The health_check_config supports the following:
 
   - `domain`: a domain name. The domain name must be 1 to 80 characters in length, and can contain letters, digits, hyphens (-), and periods (.).
 
--> **NOTE:**  This parameter takes effect only if you set `HealthCheckProtocol` to `HTTP`.
+  -> **NOTE:**  This parameter takes effect only if you set `health_check_protocol` to `HTTP`.
 
 * `health_check_enabled` - (Optional, Computed, Available since v1.236.0) Specifies whether to enable the health check feature. Valid values:
 
@@ -215,7 +216,7 @@ The health_check_config supports the following:
 
   The URL must start with a forward slash (/).
 
--> **NOTE:**  This parameter takes effect only if you set `HealthCheckProtocol` to `HTTP`.
+  -> **NOTE:**  This parameter takes effect only if you set `health_check_protocol` to `HTTP`.
 
 * `health_check_protocol` - (Optional, Computed, Available since v1.236.0) The protocol that is used for health checks. Valid values:
 
@@ -261,6 +262,11 @@ The servers supports the following:
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `create_time` - The time when the resource was created. The time follows the ISO 8601 standard in the **yyyy-MM-ddTHH:mm:ssZ** format. The time is displayed in UTC.
+* `draining_servers` - (Set, Available since v1.290.0) The backend servers that are being removed (in the `Draining` or `Removing` status).
+  * `server_id` - The backend server ID.
+  * `server_ip` - The IP address of the backend server.
+  * `server_type` - The type of the backend server. Valid values: `Ecs`, `Eni`, `Eci`, `Ip`.
+  * `status` - The status of the backend server. Valid values: `Draining`, `Removing`.
 * `status` - Indicates the status of the backend server.
 
 ## Timeouts

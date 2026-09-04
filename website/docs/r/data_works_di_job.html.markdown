@@ -353,7 +353,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Data Works Di Job can be imported using the id, e.g.
+Data Works Di Job can be imported using the id, which consists of project_id and di_job_id, e.g.
 
 ```shell
 $ terraform import alicloud_data_works_di_job.example <project_id>:<di_job_id>

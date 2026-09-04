@@ -85,7 +85,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-EBS Enterprise Snapshot Policy Attachment can be imported using the id, e.g.
+EBS Enterprise Snapshot Policy Attachment can be imported using the id, which consists of policy_id and disk_id, e.g.
 
 ```shell
 $ terraform import alicloud_ebs_enterprise_snapshot_policy_attachment.example <policy_id>:<disk_id>

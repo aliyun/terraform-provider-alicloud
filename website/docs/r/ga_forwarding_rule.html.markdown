@@ -215,7 +215,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Ga Forwarding Rule can be imported using the id, e.g.
+Ga Forwarding Rule can be imported using the id, which consists of accelerator_id, listener_id and forwarding_rule_id, e.g.
 
 ```shell
 $ terraform import alicloud_ga_forwarding_rule.example <accelerator_id>:<listener_id>:<forwarding_rule_id>

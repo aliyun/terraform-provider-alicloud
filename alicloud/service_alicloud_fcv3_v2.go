@@ -329,17 +329,27 @@ func (s *Fcv3ServiceV2) DescribeFcv3AsyncInvokeConfig(id string) (object map[str
 }
 
 func (s *Fcv3ServiceV2) Fcv3AsyncInvokeConfigStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+	return s.Fcv3AsyncInvokeConfigStateRefreshFuncWithApi(id, field, failStates, s.DescribeFcv3AsyncInvokeConfig)
+}
+
+func (s *Fcv3ServiceV2) Fcv3AsyncInvokeConfigStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeFcv3AsyncInvokeConfig(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
@@ -517,8 +527,11 @@ func (s *Fcv3ServiceV2) DescribeFcv3ProvisionConfig(id string) (object map[strin
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
-	currentStatus := response["target"]
-	if currentStatus == "0" {
+	// FC does not return 404 once the provision config is deleted; instead it
+	// responds 200 with an empty object whose functionArn is blank. A live
+	// provision config always carries its functionArn, even while deletion is
+	// still in progress (target zeroed first).
+	if response["functionArn"] == nil || fmt.Sprint(response["functionArn"]) == "" {
 		return object, WrapErrorf(NotFoundErr("ProvisionConfig", id), NotFoundMsg, response)
 	}
 

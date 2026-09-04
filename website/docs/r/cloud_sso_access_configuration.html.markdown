@@ -103,7 +103,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Cloud SSO Access Configuration can be imported using the id, e.g.
+Cloud SSO Access Configuration can be imported using the id, which consists of directory_id and access_configuration_id, e.g.
 
 ```shell
 $ terraform import alicloud_cloud_sso_access_configuration.example <directory_id>:<access_configuration_id>

@@ -107,7 +107,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Ens Eip Instance Attachment can be imported using the id, e.g.
+Ens Eip Instance Attachment can be imported using the id, which consists of allocation_id, instance_id and instance_type, e.g.
 
 ```shell
 $ terraform import alicloud_ens_eip_instance_attachment.example <allocation_id>:<instance_id>:<instance_type>

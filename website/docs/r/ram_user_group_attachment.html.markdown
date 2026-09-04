@@ -76,7 +76,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-RAM User Group Attachment can be imported using the id, e.g.
+RAM User Group Attachment can be imported using the id, which consists of group_name and user_name, e.g.
 
 ```shell
 $ terraform import alicloud_ram_user_group_attachment.example <group_name>:<user_name>

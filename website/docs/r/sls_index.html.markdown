@@ -142,7 +142,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Log Service (SLS) Index can be imported using the id, e.g.
+Log Service (SLS) Index can be imported using the id, which consists of project_name and logstore_name, e.g.
 
 ```shell
 $ terraform import alicloud_sls_index.example <project_name>:<logstore_name>

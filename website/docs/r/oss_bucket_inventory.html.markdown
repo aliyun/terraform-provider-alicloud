@@ -156,7 +156,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-OSS Bucket Inventory can be imported using the id, e.g.
+OSS Bucket Inventory can be imported using the id, which consists of bucket and inventory_id, e.g.
 
 ```shell
 $ terraform import alicloud_oss_bucket_inventory.example <bucket>:<inventory_id>

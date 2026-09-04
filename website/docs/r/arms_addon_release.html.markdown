@@ -147,7 +147,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-ARMS Addon Release can be imported using the id, e.g.
+ARMS Addon Release can be imported using the id, which consists of environment_id and addon_release_name, e.g.
 
 ```shell
 $ terraform import alicloud_arms_addon_release.example <environment_id>:<addon_release_name>

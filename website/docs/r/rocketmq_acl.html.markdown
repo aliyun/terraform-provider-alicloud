@@ -132,7 +132,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-RocketMQ Acl can be imported using the id, e.g.
+RocketMQ Acl can be imported using the id, which consists of instance_id, username, resource_type and resource_name, e.g.
 
 ```shell
 $ terraform import alicloud_rocketmq_acl.example <instance_id>:<username>:<resource_type>:<resource_name>

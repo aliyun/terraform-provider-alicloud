@@ -182,7 +182,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Container Service for Kubernetes (ACK) Policy Instance can be imported using the id, e.g.
+Container Service for Kubernetes (ACK) Policy Instance can be imported using the id, which consists of cluster_id, policy_name and instance_name, e.g.
 
 ```shell
 $ terraform import alicloud_cs_kubernetes_policy_instance.example <cluster_id>:<policy_name>:<instance_name>

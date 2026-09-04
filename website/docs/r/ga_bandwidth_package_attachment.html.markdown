@@ -75,7 +75,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Ga Bandwidth Package Attachment can be imported using the id, e.g.
+Ga Bandwidth Package Attachment can be imported using the id, which consists of accelerator_id and bandwidth_package_id, e.g.
 
 ```shell
 $ terraform import alicloud_ga_bandwidth_package_attachment.example <accelerator_id>:<bandwidth_package_id>

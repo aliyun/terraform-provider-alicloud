@@ -1,4 +1,42 @@
-## 1.291.0 (Unreleased)
+## 1.292.0 (Unreleased)
+## 1.291.0 (September 1, 2026)
+
+- **New Resource:** `alicloud_ecd_desktop_group` ([#10230](https://github.com/aliyun/terraform-provider-alicloud/issues/10230))
+- **New Resource:** `alicloud_polardb_gateway` ([#10271](https://github.com/aliyun/terraform-provider-alicloud/issues/10271))
+- **New Resource:** `alicloud_gpdb_db_extension` ([#10290](https://github.com/aliyun/terraform-provider-alicloud/issues/10290))
+- **New Resource:** `alicloud_ens_bucket_lifecycle` ([#10314](https://github.com/aliyun/terraform-provider-alicloud/issues/10314))
+- **New Resource:** `alicloud_ens_load_balancer_http_listener` ([#10315](https://github.com/aliyun/terraform-provider-alicloud/issues/10315))
+- **New Resource:** `alicloud_sls_metric_store` ([#10317](https://github.com/aliyun/terraform-provider-alicloud/issues/10317))
+- **New Resource:** `alicloud_ens_network_route_table` ([#10319](https://github.com/aliyun/terraform-provider-alicloud/issues/10319))
+- **New Resource:** `alicloud_ens_load_balancer_udp_listener` ([#10320](https://github.com/aliyun/terraform-provider-alicloud/issues/10320))
+- **New Data Source:** `alicloud_ecd_desktop_groups` ([#10230](https://github.com/aliyun/terraform-provider-alicloud/issues/10230))
+- **New Data Source:** `alicloud_express_connect_router_express_connect_routers` ([#10289](https://github.com/aliyun/terraform-provider-alicloud/issues/10289))
+- **New Data Source:** `alicloud_gpdb_db_extensions` ([#10290](https://github.com/aliyun/terraform-provider-alicloud/issues/10290))
+- **New Data Source:** `alicloud_express_connect_router_grant_associations` ([#10292](https://github.com/aliyun/terraform-provider-alicloud/issues/10292))
+- **New Data Source:** `alicloud_ens_bucket_lifecycles` ([#10314](https://github.com/aliyun/terraform-provider-alicloud/issues/10314))
+- **New Data Source:** `alicloud_sls_metric_stores` ([#10317](https://github.com/aliyun/terraform-provider-alicloud/issues/10317))
+- **New Data Source:** `alicloud_ens_network_route_tables` ([#10319](https://github.com/aliyun/terraform-provider-alicloud/issues/10319))
+- **New Data Source:** `alicloud_ens_load_balancer_udp_listeners` ([#10320](https://github.com/aliyun/terraform-provider-alicloud/issues/10320))
+
+ENHANCEMENTS:
+
+- resource/alicloud_instance: support instance_metadata_tags attribute. ([#10156](https://github.com/aliyun/terraform-provider-alicloud/issues/10156))
+- resource/alicloud_hbr_policy_binding: support app_consistent and snapshot_group in udm_detail. ([#10246](https://github.com/aliyun/terraform-provider-alicloud/issues/10246))
+- resource/alicloud_fcv3_custom_domain: support binding HTTPS certificate by id. ([#10265](https://github.com/aliyun/terraform-provider-alicloud/issues/10265))
+- resource/alicloud_db_readonly_instance: support general_essd storage type. ([#10302](https://github.com/aliyun/terraform-provider-alicloud/issues/10302))
+- docs: correct the Available since version of alicloud_ecd_desktop_group and alicloud_ecd_desktop_groups. ([#10313](https://github.com/aliyun/terraform-provider-alicloud/issues/10313))
+- resource/alicloud_cen_bandwidth_package: support South-America geographic region. ([#10325](https://github.com/aliyun/terraform-provider-alicloud/issues/10325))
+- resource/alicloud_ecs_disk: Modify default timeout for update operation. ([#10340](https://github.com/aliyun/terraform-provider-alicloud/issues/10340))
+
+BUG FIXES:
+
+- resource/alicloud_pvtz_user_vpc_authorization: fix nil auth_type in resource ID. ([#10295](https://github.com/aliyun/terraform-provider-alicloud/issues/10295))
+- resource/alicloud_fcv3_async_invoke_config: Fixed the create error caused by field destination_config. ([#10298](https://github.com/aliyun/terraform-provider-alicloud/issues/10298))
+- resource/alicloud_instance: Fixed the unexpected diff of security_enhancement_strategy and credit_specification for imported instances. ([#10307](https://github.com/aliyun/terraform-provider-alicloud/issues/10307))
+- resource/alicloud_vpn_gateway: Fixed the issue where multiple VPN gateways were created when deploying alicloud_vpn_gateway. ([#10310](https://github.com/aliyun/terraform-provider-alicloud/issues/10310))
+- resource/alicloud_gwlb_server_group: add draining_servers attribute and skip draining/removing servers during removal. ([#10321](https://github.com/aliyun/terraform-provider-alicloud/issues/10321))
+- resource/alicloud_security_group_rule: wait for rule visibility and paginate rule list. ([#10336](https://github.com/aliyun/terraform-provider-alicloud/issues/10336))
+
 ## 1.290.0 (August 25, 2026)
 
 - **New Resource:** `alicloud_mongodb_sharding_audit_filter` ([#10259](https://github.com/aliyun/terraform-provider-alicloud/issues/10259))

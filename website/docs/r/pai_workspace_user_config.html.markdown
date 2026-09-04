@@ -66,7 +66,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-PAI Workspace User Config can be imported using the id, e.g.
+PAI Workspace User Config can be imported using the id, which consists of category_name and config_key, e.g.
 
 ```shell
 $ terraform import alicloud_pai_workspace_user_config.example <category_name>:<config_key>

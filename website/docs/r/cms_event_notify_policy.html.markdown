@@ -239,7 +239,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Cms Event Notify Policy can be imported using the id, e.g.
+Cms Event Notify Policy can be imported using the id, which consists of uuid and workspace, e.g.
 
 ```shell
 $ terraform import alicloud_cms_event_notify_policy.example <uuid>:<workspace>

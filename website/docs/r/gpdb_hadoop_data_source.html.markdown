@@ -269,7 +269,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-GPDB Hadoop Data Source can be imported using the id, e.g.
+GPDB Hadoop Data Source can be imported using the id, which consists of db_instance_id and data_source_id, e.g.
 
 ```shell
 $ terraform import alicloud_gpdb_hadoop_data_source.example <db_instance_id>:<data_source_id>

@@ -95,7 +95,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Cloud Storage Gateway Gateway SMB User can be imported using the id, e.g.
+Cloud Storage Gateway Gateway SMB User can be imported using the id, which consists of gateway_id and username, e.g.
 
 ```shell
 $ terraform import alicloud_cloud_storage_gateway_gateway_smb_user.example <gateway_id>:<username>

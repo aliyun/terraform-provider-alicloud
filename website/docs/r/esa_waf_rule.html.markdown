@@ -328,7 +328,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-ESA Waf Rule can be imported using the id, e.g.
+ESA Waf Rule can be imported using the id, which consists of site_id and waf_rule_id, e.g.
 
 ```shell
 $ terraform import alicloud_esa_waf_rule.example <site_id>:<waf_rule_id>

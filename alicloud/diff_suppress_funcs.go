@@ -86,6 +86,18 @@ func healthCheckTypeDiffSuppressFunc(k, old, new string, d *schema.ResourceData)
 	return true
 }
 
+// ensLoadBalancerHttpListenerHealthCheckOffDiffSuppressFunc suppresses the
+// ENS HTTP listener health check parameter fields when health_check is "off".
+// The ENS Describe API omits HealthCheckDomain/URI/HealthyThreshold/
+// UnhealthyThreshold/HealthCheckTimeout/HealthCheckInterval/HealthCheckHttpCode/
+// HealthCheckMethod while health check is off (HealthCheckConnectPort is still
+// returned), so these parameters must neither be planned into the diff nor set
+// into state; otherwise they persist as empty/zero values and surface as
+// unexpected attributes after refresh.
+func ensLoadBalancerHttpListenerHealthCheckOffDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	return d.Get("health_check").(string) == "off"
+}
+
 func establishedTimeoutDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	if protocol, ok := d.GetOk("protocol"); ok && Protocol(protocol.(string)) == Tcp {
 		return false

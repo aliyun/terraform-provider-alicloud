@@ -138,6 +138,7 @@ The following arguments are supported:
 * `group_id` - (Required, ForceNew) The api gateway that the api belongs to. Defaults to null.
 * `description` - (Required) The description of the api. Defaults to null.
 * `auth_type` - (Required) The authorization Type including APP and ANONYMOUS. Defaults to null.
+* `app_code_auth_type` - (Optional, Available since v1.292.0) The App Code authentication type, only valid when `auth_type` is `APP`. Valid values: `DISABLE`, `HEADER` and `HEADER_QUERY`. If not set, the default value `DEFAULT` is used.
 * `request_config` - (Required, List) Request_config defines how users can send requests to your API. See [`request_config`](#request_config) below.
 * `service_type` - (Required) The type of backend service. Type including HTTP, VPC, FunctionCompute and MOCK. Defaults to null.
 * `http_service_config` - (Optional, List) http_service_config defines the config when service_type selected 'HTTP'. See [`http_service_config`](#http_service_config) below.
@@ -204,9 +205,9 @@ The fc_service_config mapping supports the following:
 * `arn_role` - (Required) RAM role arn attached to the Function Compute service. This governs both who / what can invoke your Function, as well as what resources our Function has access to. See [User Permissions](https://www.alibabacloud.com/help/doc-detail/52885.htm) for more details.
 * `timeout` - (Required) Backend service time-out time; unit: millisecond.
 * `content_type_category` - (Optional, Computed, Available since v1.281.0) The strategy for setting the Content-Type header when calling an HTTP backend service. Valid values:
- * `DEFAULT`: Use the default value provided by API Gateway.
- * `CUSTOM`: Use a custom value.
- * `CLIENT`: Use the Content-Type header from the client request.
+  * `DEFAULT`: Use the default value provided by API Gateway.
+  * `CUSTOM`: Use a custom value.
+  * `CLIENT`: Use the Content-Type header from the client request.
 * `content_type_value` - (Optional, Computed, Available since v1.281.0) The value of the Content-Type header when `content_type_category` is `DEFAULT` or `CUSTOM`. This field is ignored when `content_type_category` is set to `CLIENT`.
 
 ### `mock_service_config`
