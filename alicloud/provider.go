@@ -2000,6 +2000,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_sae_load_balancer_internet":                            resourceAlicloudSaeLoadBalancerInternet(),
 			"alicloud_bastionhost_host_share_key":                            resourceAlicloudBastionhostHostShareKey(),
 			"alicloud_cdn_fc_trigger":                                        resourceAlicloudCdnFcTrigger(),
+			"alicloud_cdn_refresh_object_cache":                              resourceAliCloudCdnRefreshObjectCache(),
+			"alicloud_cdn_preload_object_cache":                              resourceAliCloudCdnPreloadObjectCache(),
 			"alicloud_sae_load_balancer_intranet":                            resourceAlicloudSaeLoadBalancerIntranet(),
 			"alicloud_bastionhost_host_account_share_key_attachment":         resourceAlicloudBastionhostHostAccountShareKeyAttachment(),
 			"alicloud_alb_acl_entry_attachment":                              resourceAlicloudAlbAclEntryAttachment(),
