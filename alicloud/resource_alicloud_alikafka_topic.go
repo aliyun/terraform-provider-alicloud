@@ -25,7 +25,7 @@ func resourceAliCloudAlikafkaTopic() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(5 * time.Minute),
+			Create: schema.DefaultTimeout(15 * time.Minute),
 			Update: schema.DefaultTimeout(5 * time.Minute),
 			Delete: schema.DefaultTimeout(16 * time.Minute),
 		},
@@ -36,14 +36,11 @@ func resourceAliCloudAlikafkaTopic() *schema.Resource {
 				ForceNew: true,
 			},
 			"configs": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Computed:     true,
-				ValidateFunc: validation.StringIsJSON,
-				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					equal, _ := compareJsonTemplateAreEquivalent(old, new)
-					return equal
-				},
+				Type:             schema.TypeString,
+				Optional:         true,
+				Computed:         true,
+				ValidateFunc:     validation.StringIsJSON,
+				DiffSuppressFunc: alikafkaTopicConfigsDiffSuppressFunc,
 			},
 			"create_time": {
 				Type:     schema.TypeInt,
@@ -122,7 +119,7 @@ func resourceAliCloudAlikafkaTopicCreate(d *schema.ResourceData, meta interface{
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("alikafka", "2019-09-16", action, query, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"ONS_SYSTEM_FLOW_CONTROL"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"ONS_SYSTEM_FLOW_CONTROL", "BIZ_INSTANCE_STATUS_ERROR", "BIZ.INSTANCE.STATUS.ERROR"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -203,7 +200,7 @@ func resourceAliCloudAlikafkaTopicUpdate(d *schema.ResourceData, meta interface{
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("alikafka", "2019-09-16", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"ONS_SYSTEM_FLOW_CONTROL", "BIZ_INSTANCE_STATUS_ERROR", "BIZ.INSTANCE.STATUS.ERROR"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -240,7 +237,7 @@ func resourceAliCloudAlikafkaTopicUpdate(d *schema.ResourceData, meta interface{
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("alikafka", "2019-09-16", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"ONS_SYSTEM_FLOW_CONTROL", "BIZ_INSTANCE_STATUS_ERROR", "BIZ.INSTANCE.STATUS.ERROR"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -274,7 +271,7 @@ func resourceAliCloudAlikafkaTopicUpdate(d *schema.ResourceData, meta interface{
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 				response, err = client.RpcPost("alikafka", "2019-09-16", action, query, request, true)
 				if err != nil {
-					if IsExpectedErrors(err, []string{"ONS_SYSTEM_FLOW_CONTROL"}) || NeedRetry(err) {
+					if IsExpectedErrors(err, []string{"ONS_SYSTEM_FLOW_CONTROL", "BIZ_INSTANCE_STATUS_ERROR", "BIZ.INSTANCE.STATUS.ERROR"}) || NeedRetry(err) {
 						wait()
 						return resource.RetryableError(err)
 					}
@@ -318,7 +315,7 @@ func resourceAliCloudAlikafkaTopicDelete(d *schema.ResourceData, meta interface{
 		response, err = client.RpcPost("alikafka", "2019-09-16", action, query, request, true)
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"ONS_SYSTEM_FLOW_CONTROL"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"ONS_SYSTEM_FLOW_CONTROL", "BIZ_INSTANCE_STATUS_ERROR", "BIZ.INSTANCE.STATUS.ERROR"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
