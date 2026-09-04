@@ -89,7 +89,7 @@ func testSweepCmsMonitorgroup(region string) error {
 	return nil
 }
 
-func TestAccAlicloudCmsMonitorGroup_basic(t *testing.T) {
+func TestAccAliCloudCmsMonitorGroup_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cms_monitor_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudCmsMonitorGroupMap)
@@ -183,7 +183,7 @@ func TestAccAlicloudCmsMonitorGroup_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCmsMonitorGroup_ByResourceGroupId(t *testing.T) {
+func TestAccAliCloudCmsMonitorGroup_ByResourceGroupId(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cms_monitor_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudCmsMonitorGroupMap)
@@ -290,6 +290,49 @@ func TestAccAlicloudCmsMonitorGroup_ByResourceGroupId(t *testing.T) {
 			},
 		},
 	})
+}
+
+// TestUnitAlicloudCmsMonitorGroup_ResourceGroupNameRequiredWhenRGIDSet locks in
+// the fail-fast guard added to Create: when resource_group_id is set but
+// resource_group_name is omitted, Create must return a clear validation error
+// instead of sending an empty ResourceGroupName to the
+// CreateMonitorGroupByResourceGroupId API.
+// lintignore: R001
+func TestUnitAlicloudCmsMonitorGroup_ResourceGroupNameRequiredWhenRGIDSet(t *testing.T) {
+	p := Provider().(*schema.Provider).ResourcesMap
+	dInit, _ := schema.InternalMap(p["alicloud_cms_monitor_group"].Schema).Data(nil, nil)
+	dInit.MarkNewResource()
+	attributes := map[string]interface{}{
+		"resource_group_id": "rg-test-value",
+	}
+	for key, value := range attributes {
+		err := dInit.Set(key, value)
+		assert.Nil(t, err)
+	}
+	region := os.Getenv("ALICLOUD_REGION")
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		t.Skipf("Skipping the test case with err: %s", err)
+		t.Skipped()
+	}
+	rawClient = rawClient.(*connectivity.AliyunClient)
+	// If validation did not fire, the request would reach the API; mock it so
+	// the regression surfaces as a missing expected error rather than a live
+	// call.
+	patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+		return nil, &tea.SDKError{
+			Code:       String("InvalidParameter"),
+			Data:       String("InvalidParameter"),
+			Message:    String("ResourceGroupName is required"),
+			StatusCode: tea.Int(400),
+		}
+	})
+	defer patches.Reset()
+	err = resourceAlicloudCmsMonitorGroupCreate(dInit, rawClient)
+	assert.NotNil(t, err)
+	if err != nil {
+		assert.True(t, strings.Contains(err.Error(), "resource_group_name is required when resource_group_id is set"))
+	}
 }
 
 var AlicloudCmsMonitorGroupMap = map[string]string{}
