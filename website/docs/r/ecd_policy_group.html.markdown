@@ -33,6 +33,11 @@ resource "alicloud_ecd_policy_group" "default" {
   usb_redirect      = "off"
   watermark         = "off"
 
+  client_types {
+    client_type = "windows"
+    status      = "ON"
+  }
+
   authorize_access_policy_rules {
     description = "terraform-example"
     cidr_ip     = "1.2.3.45/24"
@@ -57,15 +62,16 @@ The following arguments are supported:
 
 * `authorize_access_policy_rules` - (Optional) The rule of authorize access rule. See [`authorize_access_policy_rules`](#authorize_access_policy_rules) below.
 * `authorize_security_policy_rules` - (Optional) The policy rule. See [`authorize_security_policy_rules`](#authorize_security_policy_rules) below.
-* `clipboard` - (Optional, Computed) The clipboard policy. Valid values: `off`, `read`, `readwrite`.
+* `client_types` - (Optional, Computed) The configuration of client types. See [`client_types`](#client_types) below.
+* `clipboard` - (Optional, Computed) The clipboard policy. Valid values: `off`, `read`, `readwrite`, `write`.
 * `domain_list` - (Optional) The list of domain.
 * `html_access` - (Optional, Computed) The access of html5. Valid values: `off`, `on`.
 * `html_file_transfer` - (Optional, Computed) The html5 file transfer. Valid values: `all`, `download`, `off`, `upload`.
-* `local_drive` - (Optional, Computed) Local drive redirect policy. Valid values: ` readwrite`, `off`, `read`.
+* `local_drive` - (Optional, Computed) Local drive redirect policy. Valid values: `readwrite`, `off`, `read`.
 * `policy_group_name` - (Optional) The name of policy group.
 * `usb_redirect` - (Optional, Computed) The usb redirect policy. Valid values: `off`, `on`.
 * `visual_quality` - (Optional, Computed) The quality of visual. Valid values: `high`, `lossless`, `low`, `medium`.
-* `watermark` - (Optional, Computed) The watermark policy. Valid values: `off`, `on`.
+* `watermark` - (Optional, Computed) The watermark policy. Valid values: `blind`, `off`, `on`.
 * `watermark_transparency` - (Optional, Computed) The watermark transparency. Valid values: `DARK`, `LIGHT`, `MIDDLE`.
 * `watermark_type` - (Optional) The type of watemark. Valid values: `EndUserId`, `HostName`.
 * `recording` - (Optional, Computed, Available in 1.171.0+) Whether to enable screen recording. Valid values: `off`, `all-time`, `period`.
@@ -93,6 +99,13 @@ The authorize_access_policy_rules supports the following:
 
 * `cidr_ip` - (Optional) The cidrip of authorize access rule.
 * `description` - (Optional) The description of authorize access rule.
+
+### `client_types`
+
+The client_types supports the following:
+
+* `client_type` - (Optional) The type of client. Valid values: `windows`, `linux`, `macos`, `android`, `html5`.
+* `status` - (Optional) The status of client. Valid values: `ON`, `OFF`.
 
 ## Attributes Reference
 
