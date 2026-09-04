@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 type EcdServiceV2 struct {
@@ -31,15 +31,15 @@ func (s *EcdServiceV2) DescribeEcdDesktopGroup(id string) (object map[string]int
 	action := "GetDesktopGroupDetail"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ecd", "2020-09-30", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -82,15 +82,15 @@ func (s *EcdServiceV2) DescribeDesktopGroupDescribeUsersInGroup(id string) (obje
 		}
 
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("ecd", "2020-09-30", action, query, request, true)
 
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -126,11 +126,11 @@ func (s *EcdServiceV2) DescribeDesktopGroupDescribeUsersInGroup(id string) (obje
 	return object, nil
 }
 
-func (s *EcdServiceV2) EcdDesktopGroupStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EcdServiceV2) EcdDesktopGroupStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EcdDesktopGroupStateRefreshFuncWithApi(id, field, failStates, s.DescribeEcdDesktopGroup)
 }
 
-func (s *EcdServiceV2) EcdDesktopGroupStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *EcdServiceV2) EcdDesktopGroupStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {

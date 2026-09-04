@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -127,14 +127,14 @@ func dataSourceAliCloudSlsMetricStoresRead(d *schema.ResourceData, meta interfac
 	}
 
 	var response map[string]interface{}
-	err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+	err := retry.Retry(2*time.Minute, func() *retry.RetryError {
 		resp, err := client.Do("Sls", roaParam("GET", "2020-12-30", "ListLogStores", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				time.Sleep(5 * time.Second)
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		response = resp
 		return nil

@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -207,7 +207,7 @@ func resourceAliCloudEnsLoadBalancerHttpListenerCreate(d *schema.ResourceData, m
 	}
 
 	wait := incrementalWait(10*time.Second, 15*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 		if err != nil {
 			// A same-port ForceNew destroy (backend_server_port is ForceNew
@@ -215,13 +215,13 @@ func resourceAliCloudEnsLoadBalancerHttpListenerCreate(d *schema.ResourceData, m
 			// releasing on the ENS backend; absorb the consistency window.
 			if IsExpectedErrors(err, []string{"ListenerAlreadyExists"}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -358,7 +358,7 @@ func resourceAliCloudEnsLoadBalancerHttpListenerUpdate(d *schema.ResourceData, m
 		request["XForwardedFor"] = d.Get("x_forwarded_for")
 
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 			if err != nil {
 				// The Set API requires the listener to be in the stopped state.
@@ -366,13 +366,13 @@ func resourceAliCloudEnsLoadBalancerHttpListenerUpdate(d *schema.ResourceData, m
 				if IsExpectedErrors(err, []string{"IncorrectListenerStatus", "IncorrectInstanceStatus"}) {
 					_ = ensServiceV2.StopEnsLoadBalancerHttpListener(d.Id())
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -424,20 +424,20 @@ func resourceAliCloudEnsLoadBalancerHttpListenerDelete(d *schema.ResourceData, m
 	request["ListenerPort"] = parts[1]
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 		if err != nil {
 			// A running listener must be stopped before it can be deleted.
 			if IsExpectedErrors(err, []string{"IncorrectListenerStatus", "IncorrectInstanceStatus"}) {
 				_ = ensServiceV2.StopEnsLoadBalancerHttpListener(d.Id())
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -457,7 +457,7 @@ func resourceAliCloudEnsLoadBalancerHttpListenerDelete(d *schema.ResourceData, m
 	// empty-target StateConf could return without an actual Describe poll,
 	// leaving the port apparently busy for the immediate recreate.
 	goneWait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		_, e := ensServiceV2.DescribeEnsLoadBalancerHttpListener(d.Id())
 		if e != nil {
 			if NotFoundError(e) {
@@ -465,12 +465,12 @@ func resourceAliCloudEnsLoadBalancerHttpListenerDelete(d *schema.ResourceData, m
 			}
 			if NeedRetry(e) {
 				goneWait()
-				return resource.RetryableError(e)
+				return retry.RetryableError(e)
 			}
-			return resource.NonRetryableError(e)
+			return retry.NonRetryableError(e)
 		}
 		goneWait()
-		return resource.RetryableError(WrapError(Error("LoadBalancerHttpListener %s still exists after delete", d.Id())))
+		return retry.RetryableError(WrapError(Error("LoadBalancerHttpListener %s still exists after delete", d.Id())))
 	})
 	if err != nil && !NotFoundError(err) {
 		return WrapErrorf(err, IdMsg, d.Id())
