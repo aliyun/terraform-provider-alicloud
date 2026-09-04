@@ -1392,3 +1392,104 @@ func TestUnitAliCloudConfigRule(t *testing.T) {
 	}
 
 }
+
+func TestAccAliCloudConfigRule_scope(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_config_rule.default"
+	ra := resourceAttrInit(resourceId, AliCloudConfigRuleMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ConfigService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeConfigRule")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccConfigRuleScope%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudConfigRuleBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, connectivity.CloudConfigSupportedRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rule_name":                        name,
+					"risk_level":                       "1",
+					"resource_types_scope":             []string{"ACS::ECS::Instance"},
+					"config_rule_trigger_types":        "ConfigurationItemChangeNotification",
+					"maximum_execution_frequency":      "One_Hour",
+					"source_identifier":                "ecs-instances-in-vpc",
+					"source_owner":                     "ALIYUN",
+					"exclude_region_ids_scope":         "cn-hangzhou",
+					"exclude_resource_group_ids_scope": "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+					"extend_content":                   "{\\\"fixedHour\\\":\\\"13\\\"}",
+					"tag_key_logic_scope":              "AND",
+					"tags_scope": []map[string]interface{}{
+						{"tag_key": "tfTestTagKey", "tag_value": "tfTestTagValue"},
+					},
+					"exclude_tags_scope": []map[string]interface{}{
+						{"tag_key": "tfTestExcludeKey", "tag_value": "tfTestExcludeValue"},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rule_name":                        name,
+						"resource_types_scope.#":           "1",
+						"config_rule_trigger_types":        "ConfigurationItemChangeNotification",
+						"exclude_region_ids_scope":         "cn-hangzhou",
+						"exclude_resource_group_ids_scope": CHECKSET,
+						"extend_content":                   CHECKSET,
+						"tag_key_logic_scope":              "AND",
+						"tags_scope.#":                     "1",
+						"tags_scope.0.tag_key":             "tfTestTagKey",
+						"tags_scope.0.tag_value":           "tfTestTagValue",
+						"exclude_tags_scope.#":             "1",
+						"exclude_tags_scope.0.tag_key":     "tfTestExcludeKey",
+						"exclude_tags_scope.0.tag_value":   "tfTestExcludeValue",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"config_rule_trigger_types":        "ScheduledNotification",
+					"maximum_execution_frequency":      "Three_Hours",
+					"resource_ids_scope":               "${alicloud_instance.default.id}",
+					"exclude_region_ids_scope":         "cn-beijing",
+					"exclude_resource_group_ids_scope": "${data.alicloud_resource_manager_resource_groups.default.groups.1.id}",
+					"extend_content":                   "{\\\"fixedHour\\\":\\\"14\\\"}",
+					"tag_key_logic_scope":              "OR",
+					"tags_scope": []map[string]interface{}{
+						{"tag_key": "tfTestTagKeyUpdated", "tag_value": "tfTestTagValueUpdated"},
+					},
+					"exclude_tags_scope": []map[string]interface{}{
+						{"tag_key": "tfTestExcludeKeyUpdated", "tag_value": "tfTestExcludeValueUpdated"},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"config_rule_trigger_types":        "ScheduledNotification",
+						"maximum_execution_frequency":      "Three_Hours",
+						"resource_ids_scope":               CHECKSET,
+						"exclude_region_ids_scope":         "cn-beijing",
+						"exclude_resource_group_ids_scope": CHECKSET,
+						"extend_content":                   CHECKSET,
+						"tag_key_logic_scope":              "OR",
+						"tags_scope.#":                     "1",
+						"tags_scope.0.tag_key":             "tfTestTagKeyUpdated",
+						"tags_scope.0.tag_value":           "tfTestTagValueUpdated",
+						"exclude_tags_scope.#":             "1",
+						"exclude_tags_scope.0.tag_key":     "tfTestExcludeKeyUpdated",
+						"exclude_tags_scope.0.tag_value":   "tfTestExcludeValueUpdated",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: false,
+			},
+		},
+	})
+}
