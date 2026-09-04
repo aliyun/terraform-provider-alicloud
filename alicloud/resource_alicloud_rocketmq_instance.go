@@ -292,9 +292,10 @@ func resourceAliCloudRocketmqInstance() *schema.Resource {
 							Computed: true,
 						},
 						"maintain_time": {
-							Type:     schema.TypeString,
-							Optional: true,
-							Computed: true,
+							Type:       schema.TypeString,
+							Optional:   true,
+							Computed:   true,
+							Deprecated: "Field 'maintain_time' has been deprecated from provider version 1.291.0. The GetInstance operation no longer returns this field. Although the value is still accepted on write, it cannot be read back. Manage the maintenance window of the instance in the ApsaraMQ for RocketMQ console.",
 						},
 					},
 				},
@@ -859,6 +860,11 @@ func resourceAliCloudRocketmqInstanceUpdate(d *schema.ResourceData, meta interfa
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
+		rocketmqServiceV2 := RocketmqServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{"RUNNING"}, d.Timeout(schema.TimeoutUpdate), 2*time.Minute, rocketmqServiceV2.RocketmqInstanceStateRefreshFunc(d.Id(), "status", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
 	}
 
 	update = false
@@ -998,12 +1004,83 @@ func resourceAliCloudRocketmqInstanceUpdate(d *schema.ResourceData, meta interfa
 
 func resourceAliCloudRocketmqInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 
+	client := meta.(*connectivity.AliyunClient)
+
 	if d.Get("payment_type").(string) == "Subscription" {
-		log.Printf("[WARN] Cannot destroy Subscription resource: alicloud_rocketmq_instance. Terraform will remove this resource from the state file, however resources may remain.")
+		// The RocketMQ DeleteInstance operation only releases pay-as-you-go instances,
+		// so a subscription instance is refunded and released through BssOpenApi.
+		// Otherwise `terraform destroy` would succeed silently while the instance
+		// keeps existing (and billing) until it expires.
+		bssOpenApiService := BssOpenApiService{client}
+		queryAvailableInstancesObject, err := bssOpenApiService.QueryAvailableInstancesWithoutProductType(d.Id(), client.RegionId, "ons", "ons")
+		if err != nil {
+			if NotFoundError(err) {
+				rocketmqServiceV2 := RocketmqServiceV2{client}
+				if _, err := rocketmqServiceV2.DescribeRocketmqInstance(d.Id()); err != nil {
+					if NotFoundError(err) {
+						return nil
+					}
+					return WrapError(err)
+				}
+				return WrapError(Error("The subscription RocketMQ instance %s still exists but its billing record was not found, so it cannot be refunded and released automatically. Please release it manually or wait for it to expire.", d.Id()))
+			}
+			return WrapError(err)
+		}
+
+		action := "RefundInstance"
+		var request map[string]interface{}
+		var response map[string]interface{}
+		query := make(map[string]interface{})
+		var endpoint string
+		request = make(map[string]interface{})
+		request["InstanceId"] = d.Id()
+
+		request["ClientToken"] = buildClientToken(action)
+
+		request["ImmediatelyRelease"] = "1"
+		request["ProductCode"] = "ons"
+		if v, ok := queryAvailableInstancesObject["ProductCode"]; ok && fmt.Sprint(v) != "" {
+			request["ProductCode"] = fmt.Sprint(v)
+		}
+		request["ProductType"] = ""
+		if v, ok := queryAvailableInstancesObject["ProductType"]; ok {
+			request["ProductType"] = fmt.Sprint(v)
+		}
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+			response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
+					endpoint = connectivity.BssOpenAPIEndpointInternational
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+
+		if err != nil {
+			// ResourceNotExists / ExistRefundingOrderError mean the instance has already
+			// been refunded, expired or released; still verify below that it is gone.
+			if !IsExpectedErrors(err, []string{"ResourceNotExists", "ExistRefundingOrderError"}) && !NotFoundError(err) {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+		}
+
+		rocketmqServiceV2 := RocketmqServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Minute, rocketmqServiceV2.RocketmqInstanceStateRefreshFunc(d.Id(), "$.instanceId", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
 		return nil
 	}
 
-	client := meta.(*connectivity.AliyunClient)
 	instanceId := d.Id()
 	action := fmt.Sprintf("/instances/%s", instanceId)
 	var request map[string]interface{}
