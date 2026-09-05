@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudThreatDetectionWebLockConfigDataSource(t *testing.T) {
+func TestAccAliCloudThreatDetectionWebLockConfigDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 
 	idsConf := dataSourceTestAccConfig{
@@ -64,6 +64,7 @@ var existThreatDetectionWebLockConfigMapFunc = func(rand int) map[string]string 
 		"configs.0.exclusive_dir":       "",
 		"configs.0.exclusive_file":      "",
 		"configs.0.exclusive_file_type": "",
+		"configs.0.inclusive_file":      "/tmp/include.txt",
 		"configs.0.inclusive_file_type": "php;jsp;asp;aspx;js;cgi;html;htm;xml;shtml;shtm;jpg",
 		"configs.0.local_backup_dir":    "/usr/local/aegis/bak",
 		"configs.0.mode":                "whitelist",
@@ -100,11 +101,16 @@ data "alicloud_threat_detection_assets" "default" {
 
 resource "alicloud_threat_detection_web_lock_config" "default" {
   inclusive_file_type = "php;jsp;asp;aspx;js;cgi;html;htm;xml;shtml;shtm;jpg"
+  inclusive_file      = "/tmp/include.txt"
+  lang                = "zh"
   uuid                = data.alicloud_threat_detection_assets.default.ids.0
   mode                = "whitelist"
   local_backup_dir    = "/usr/local/aegis/bak"
   dir                 = "/tmp/"
   defence_mode        = "audit"
+  exclusive_dir       = ""
+  exclusive_file      = ""
+  exclusive_file_type = ""
 }
 
 data "alicloud_threat_detection_web_lock_configs" "default" {
