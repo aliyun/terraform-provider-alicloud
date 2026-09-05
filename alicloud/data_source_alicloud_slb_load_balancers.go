@@ -580,7 +580,7 @@ func dataSourceAlicloudSlbLoadBalancersRead(d *schema.ResourceData, meta interfa
 			"vswitch_id":               object["VSwitchId"],
 			"address":                  object["Address"],
 			"internet":                 fmt.Sprint(object["NetworkType"]) == strings.ToLower(string(Internet)),
-			"creation_time":            object["CreationTime"],
+			"creation_time":            object["CreateTime"],
 			"tags":                     tags,
 		}
 		slbs = append(slbs, slb)
