@@ -41,6 +41,13 @@ func resourceAliCloudThreatDetectionClientFileProtect() *schema.Resource {
 				Required: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
+			"platform": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"windows", "linux"}, false),
+			},
 			"proc_paths": {
 				Type:     schema.TypeList,
 				Required: true,
@@ -105,6 +112,9 @@ func resourceAliCloudThreatDetectionClientFileProtectCreate(d *schema.ResourceDa
 	if v, ok := d.GetOk("switch_id"); ok {
 		request["SwitchId"] = v
 	}
+	if v, ok := d.GetOk("platform"); ok {
+		request["Platform"] = v
+	}
 	if v, ok := d.GetOk("status"); ok {
 		request["Status"] = v
 	} else {
@@ -153,6 +163,7 @@ func resourceAliCloudThreatDetectionClientFileProtectRead(d *schema.ResourceData
 	d.Set("rule_name", objectRaw["RuleName"])
 	d.Set("status", objectRaw["Status"])
 	d.Set("switch_id", objectRaw["SwitchId"])
+	d.Set("platform", objectRaw["Platform"])
 	fileOps1Raw := make([]interface{}, 0)
 	if objectRaw["FileOps"] != nil {
 		fileOps1Raw = objectRaw["FileOps"].([]interface{})
