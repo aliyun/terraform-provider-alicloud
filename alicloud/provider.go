@@ -941,6 +941,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_hbr_hana_backup_clients":                          dataSourceAlicloudHbrHanaBackupClients(),
 			"alicloud_dts_instances":                                    dataSourceAlicloudDtsInstances(),
 			"alicloud_threat_detection_instances":                       dataSourceAlicloudThreatDetectionInstances(),
+			"alicloud_threat_detection_incident":                        dataSourceAlicloudThreatDetectionIncident(),
+			"alicloud_threat_detection_incidents":                       dataSourceAlicloudThreatDetectionIncidents(),
 			"alicloud_cr_vpc_endpoint_linked_vpcs":                      dataSourceAlicloudCrVpcEndpointLinkedVpcs(),
 			"alicloud_express_connect_router_interfaces":                dataSourceAlicloudExpressConnectRouterInterfaces(),
 			"alicloud_wafv3_instances":                                  dataSourceAlicloudWafv3Instances(),
