@@ -37,6 +37,7 @@ resource "alicloud_threat_detection_malicious_file_whitelist_config" "default" {
   event_name   = "123"
   source       = "agentless"
   field_value  = "sadfas"
+  remark       = "example remark"
 }
 ```
 
@@ -53,6 +54,7 @@ The following arguments are supported:
   - agentless: agentless detection.
 * `target_type` - (Optional) The type of target in effect on behalf of the resource.
 * `target_value` - (Optional) Represents the specific value of the target type in effect for the resource.
+* `remark` - (Optional) The remark of the whitelist rule.
 
 ## Attributes Reference
 
