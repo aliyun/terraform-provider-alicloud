@@ -343,6 +343,7 @@ var irregularProductEndpoint = map[string]string{
 	"esa":                     "esa.cn-hangzhou.aliyuncs.com",
 	"cas":                     "cas.aliyuncs.com",
 	"sas":                     "tds.aliyuncs.com",
+	"cloud_siem":              "cloud-siem.aliyuncs.com",
 	"ros":                     "ros.aliyuncs.com",
 	"eds_aic":                 "eds-aic.cn-shanghai.aliyuncs.com",
 	"alidns":                  "alidns.aliyuncs.com",
@@ -376,6 +377,7 @@ var irregularProductEndpointForIntlAccount = map[string]string{
 	"ros":                     "ros-intl.aliyuncs.com",
 	"openapiexplorer":         "openapi-mcp.ap-southeast-1.aliyuncs.com",
 	"computenestsupplier":     "computenestsupplier.ap-southeast-1.aliyuncs.com",
+	"cloud_siem":              "cloud-siem.ap-southeast-1.aliyuncs.com",
 }
 
 // irregularProductEndpointForIntlAccountIntlRegion specially records those product codes that
