@@ -916,6 +916,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_child_instance_route_entry_to_attachments":    dataSourceAlicloudCenChildInstanceRouteEntryToAttachments(),
 			"alicloud_cen_transit_router_multicast_domain_associations": dataSourceAlicloudCenTransitRouterMulticastDomainAssociations(),
 			"alicloud_threat_detection_honeypot_presets":                dataSourceAlicloudThreatDetectionHoneypotPresets(),
+			"alicloud_threat_detection_incident_investigations":         dataSourceAlicloudThreatDetectionIncidentInvestigations(),
 			"alicloud_cen_transit_router_multicast_domain_sources":      dataSourceAlicloudCenTransitRouterMulticastDomainSources(),
 			"alicloud_bss_open_api_products":                            dataSourceAlicloudBssOpenApiProducts(),
 			"alicloud_bss_open_api_pricing_modules":                     dataSourceAlicloudBssOpenApiPricingModules(),
