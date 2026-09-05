@@ -1154,6 +1154,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_nlb_load_balancer_zone_shifted_attachment":            resourceAliCloudNlbLoadBalancerZoneShiftedAttachment(),
 			"alicloud_threat_detection_log_meta":                            resourceAliCloudThreatDetectionLogMeta(),
 			"alicloud_threat_detection_asset_selection_config":              resourceAliCloudThreatDetectionAssetSelectionConfig(),
+			"alicloud_threat_detection_data_source_template":                resourceAlicloudThreatDetectionDataSourceTemplate(),
 			"alicloud_ram_user_group_attachment":                            resourceAliCloudRamUserGroupAttachment(),
 			"alicloud_esa_kv_namespace":                                     resourceAliCloudEsaKvNamespace(),
 			"alicloud_esa_client_ca_certificate":                            resourceAliCloudEsaClientCaCertificate(),
