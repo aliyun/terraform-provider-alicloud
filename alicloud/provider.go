@@ -172,6 +172,7 @@ func Provider() terraform.ResourceProvider {
 			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
+			"alicloud_threat_detection_file_protect_client_rules":     dataSourceAliCloudThreatDetectionFileProtectClientRules(),
 			"alicloud_threat_detection_attack_path_whitelists":        dataSourceAliCloudThreatDetectionAttackPathWhitelists(),
 			"alicloud_ehpc_users":                                     dataSourceAliCloudEhpcUsers(),
 			"alicloud_realtime_compute_members":                       dataSourceAliCloudRealtimeComputeMembers(),
@@ -973,7 +974,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_sls_metric_stores":                                dataSourceAliCloudSlsMetricStores(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
-			"alicloud_threat_detection_attack_path_whitelist":               resourceAliCloudThreatDetectionAttackPathWhitelist(),
+			"alicloud_threat_detection_file_protect_client_rule": resourceAliCloudThreatDetectionFileProtectClientRule(),
+			"alicloud_threat_detection_attack_path_whitelist":    resourceAliCloudThreatDetectionAttackPathWhitelist(),
 			"alicloud_ehpc_user":                                            resourceAliCloudEhpcUser(),
 			"alicloud_realtime_compute_member":                              resourceAliCloudRealtimeComputeMember(),
 			"alicloud_apig_policy":                                          resourceAliCloudApigPolicy(),
