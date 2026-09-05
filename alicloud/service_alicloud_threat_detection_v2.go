@@ -1656,3 +1656,44 @@ func (s *ThreatDetectionServiceV2) ThreatDetectionAttackPathWhitelistStateRefres
 }
 
 // DescribeThreatDetectionAttackPathWhitelist >>> Encapsulated.
+
+// DescribeThreatDetectionDataSet <<< Encapsulated get interface for ThreatDetection DataSet.
+func (s *ThreatDetectionServiceV2) DescribeThreatDetectionDataSet(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["DataSetId"] = id
+	action := "ListDataSets"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("cloud-siem", "2024-12-12", action, query, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.DataSets[*]", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.DataSets[*]", response)
+	}
+	dataSets, ok := v.([]interface{})
+	if !ok || len(dataSets) == 0 {
+		return object, WrapErrorf(NotFoundErr("DataSet", id), NotFoundMsg, response)
+	}
+	return dataSets[0].(map[string]interface{}), nil
+}
+
+// DescribeThreatDetectionDataSet >>> Encapsulated.
