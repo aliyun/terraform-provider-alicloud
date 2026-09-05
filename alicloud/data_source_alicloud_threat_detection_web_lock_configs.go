@@ -82,6 +82,10 @@ func dataSourceAlicloudThreatDetectionWebLockConfigs() *schema.Resource {
 							Computed: true,
 							Type:     schema.TypeString,
 						},
+						"inclusive_file": {
+							Computed: true,
+							Type:     schema.TypeString,
+						},
 						"inclusive_file_type": {
 							Computed: true,
 							Type:     schema.TypeString,
@@ -212,6 +216,7 @@ func dataSourceAlicloudThreatDetectionWebLockConfigsRead(d *schema.ResourceData,
 		mapping["exclusive_dir"] = object["ExclusiveDir"]
 		mapping["exclusive_file"] = object["ExclusiveFile"]
 		mapping["exclusive_file_type"] = object["ExclusiveFileType"]
+		mapping["inclusive_file"] = object["InclusiveFile"]
 		mapping["inclusive_file_type"] = object["InclusiveFileType"]
 		mapping["local_backup_dir"] = object["LocalBackupDir"]
 		mapping["mode"] = object["Mode"]
