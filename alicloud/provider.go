@@ -2103,6 +2103,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ga_basic_accelerate_ip_endpoint_relation":              resourceAlicloudGaBasicAccelerateIpEndpointRelation(),
 			"alicloud_vpc_gateway_route_table_attachment":                    resourceAliCloudVpcGatewayRouteTableAttachment(),
 			"alicloud_threat_detection_web_lock_config":                      resourceAlicloudThreatDetectionWebLockConfig(),
+			"alicloud_threat_detection_web_lock_bind":                        resourceAlicloudThreatDetectionWebLockBind(),
 			"alicloud_threat_detection_backup_policy":                        resourceAlicloudThreatDetectionBackupPolicy(),
 			"alicloud_dms_enterprise_proxy_access":                           resourceAlicloudDmsEnterpriseProxyAccess(),
 			"alicloud_threat_detection_vul_whitelist":                        resourceAlicloudThreatDetectionVulWhitelist(),
