@@ -148,23 +148,22 @@ func (s *EcsService) DescribeInstance(id string) (instance ecs.Instance, err err
 	return response.Instances.Instance[0], nil
 }
 
-func (s *EcsService) DescribeInstanceAttribute(id string) (instance ecs.DescribeInstanceAttributeResponse, err error) {
-	request := ecs.CreateDescribeInstanceAttributeRequest()
-	request.InstanceId = id
-	request.RegionId = s.client.RegionId
-	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DescribeInstanceAttribute(request)
-	})
-	if err != nil {
-		return instance, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+func (s *EcsService) DescribeInstanceAttribute(id string) (instance map[string]interface{}, err error) {
+	action := "DescribeInstanceAttribute"
+	request := map[string]interface{}{
+		"InstanceId": id,
+		"RegionId":   s.client.RegionId,
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*ecs.DescribeInstanceAttributeResponse)
-	if response.InstanceId != id {
-		return instance, WrapErrorf(NotFoundErr("Instance", id), NotFoundMsg, ProviderERROR, response.RequestId)
+	response, err := s.client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
+	if err != nil {
+		return instance, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	addDebug(action, response, request)
+	if response["InstanceId"] != id {
+		return instance, WrapErrorf(NotFoundErr("Instance", id), NotFoundMsg, ProviderERROR, response["RequestId"])
 	}
 
-	return *response, nil
+	return response, nil
 }
 
 func (s *EcsService) DescribeInstanceSystemDisk(instanceId, rg, diskId string) (disk ecs.Disk, err error) {

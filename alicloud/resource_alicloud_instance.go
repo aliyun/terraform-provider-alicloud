@@ -702,6 +702,11 @@ func resourceAliCloudInstance() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"enable_network_encryption": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
 			"private_pool_options_match_criteria": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -1205,6 +1210,10 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 		networkOptionsMap["EnableJumboFrame"] = v
 	}
 
+	if v, ok := d.GetOkExists("enable_network_encryption"); ok {
+		networkOptionsMap["EnableNetworkEncryption"] = v
+	}
+
 	if len(networkOptionsMap) > 0 {
 		request["NetworkOptions"] = networkOptionsMap
 	}
@@ -1609,7 +1618,20 @@ func resourceAliCloudInstanceRead(d *schema.ResourceData, meta interface{}) erro
 		return WrapError(err)
 	}
 
-	d.Set("enable_jumbo_frame", instanceAttribute.EnableJumboFrame)
+	enableJumboFrame := instanceAttribute["EnableJumboFrame"]
+	if enableJumboFrame == nil {
+		enableJumboFrame = false
+	}
+	if err := d.Set("enable_jumbo_frame", enableJumboFrame); err != nil {
+		return WrapError(err)
+	}
+	if value := instanceAttribute["EnableNetworkEncryption"]; value != nil {
+		if err := d.Set("enable_network_encryption", value); err != nil {
+			return WrapError(err)
+		}
+	} else if d.Get("enable_network_encryption").(bool) {
+		return WrapError(fmt.Errorf("DescribeInstanceAttribute omitted EnableNetworkEncryption; cannot verify the enabled network encryption state"))
+	}
 
 	// move the DescribeInstanceAutoRenewAttributeRequest to final to void the unexpected error InvalidParameter
 	if instance.InstanceChargeType == string(PrePaid) {
@@ -2998,6 +3020,16 @@ func modifyInstanceAttribute(d *schema.ResourceData, meta interface{}) (bool, er
 
 		if v, ok := d.GetOkExists("enable_jumbo_frame"); ok {
 			request["EnableJumboFrame"] = v
+		}
+
+		update = true
+	}
+
+	if d.HasChange("enable_network_encryption") {
+		d.SetPartial("enable_network_encryption")
+
+		if v, ok := d.GetOkExists("enable_network_encryption"); ok {
+			request["EnableNetworkEncryption"] = v
 		}
 
 		update = true
