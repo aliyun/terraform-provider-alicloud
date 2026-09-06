@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -14,6 +16,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/features"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
@@ -3900,8 +3903,11 @@ func TestAccAliCloudECSInstanceMaintenance(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudECSInstanceDedicatedHostId(t *testing.T) {
+func TestAccAliCloudInstanceNetworkEncryption(t *testing.T) {
 	var v ecs.Instance
+	var instanceId string
+	var mutationErr error
+
 	resourceId := "alicloud_instance.default"
 	ra := resourceAttrInit(resourceId, testAccInstanceCheckMap)
 	serviceFunc := func() interface{} {
@@ -3909,14 +3915,16 @@ func TestAccAliCloudECSInstanceDedicatedHostId(t *testing.T) {
 	}
 	rc := resourceCheckInit(resourceId, &v, serviceFunc)
 	rac := resourceAttrCheckInit(rc, ra)
+
 	rand := acctest.RandIntRange(1000, 9999)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	name := fmt.Sprintf("tf-testAcc%sEcsInstanceDedicatedHostId%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceInstanceDedicatedHostIdConfigDependence)
+	name := fmt.Sprintf("tf-testAcc%sEcsInstanceNetworkEncryption%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceInstanceNetworkEncryptionDependence)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Shanghai, connectivity.Hongkong})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -3925,9 +3933,398 @@ func TestAccAliCloudECSInstanceDedicatedHostId(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"image_id":                      "${data.alicloud_images.default.images.0.id}",
+					"security_groups":               []string{"${alicloud_security_group.default.0.id}"},
+					"instance_type":                 "${data.alicloud_instance_types.default.instance_types.0.id}",
+					"availability_zone":             "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}",
+					"system_disk_category":          "cloud_essd",
+					"instance_name":                 "${var.name}",
+					"key_name":                      "${alicloud_key_pair.default.key_name}",
+					"spot_strategy":                 "NoSpot",
+					"spot_price_limit":              "0",
+					"instance_charge_type":          "PostPaid",
+					"vswitch_id":                    "${alicloud_vswitch.default.id}",
+					"force_delete":                  "true",
+					"security_enhancement_strategy": "Active",
+					"enable_network_encryption":     "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_network_encryption": "true",
+						"system_disk_category":      "cloud_essd",
+						"user_data":                 "",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete", "security_enhancement_strategy", "dry_run"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_network_encryption": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_network_encryption": "false",
+					}),
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources[resourceId]
+						if !ok || rs.Primary == nil || rs.Primary.ID == "" {
+							return fmt.Errorf("instance ID is empty")
+						}
+						instanceId = rs.Primary.ID
+						return nil
+					},
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete", "security_enhancement_strategy", "dry_run"},
+			},
+			{
+				PreConfig: func() {
+					if instanceId == "" {
+						mutationErr = fmt.Errorf("instance ID is empty before external update")
+						return
+					}
+					client := testAccProvider.Meta().(*connectivity.AliyunClient)
+					request := map[string]interface{}{
+						"RegionId":                client.RegionId,
+						"InstanceId":              instanceId,
+						"EnableNetworkEncryption": true,
+					}
+					response, err := client.RpcPost("Ecs", "2014-05-26", "ModifyInstanceAttribute", nil, request, false)
+					addDebug("ModifyInstanceAttribute", response, request)
+					mutationErr = err
+				},
+				Config: testAccConfig(map[string]interface{}{
+					"enable_network_encryption": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					func(s *terraform.State) error {
+						return mutationErr
+					},
+					resource.TestCheckResourceAttrPtr(resourceId, "id", &instanceId),
+					testAccCheck(map[string]string{
+						"enable_network_encryption": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_network_encryption": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrPtr(resourceId, "id", &instanceId),
+					testAccCheck(map[string]string{
+						"enable_network_encryption": "false",
+					}),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAliCloudInstanceImageOptionsAndKmsPassword(t *testing.T) {
+	var v ecs.Instance
+	resourceId := "alicloud_instance.default"
+	ra := resourceAttrInit(resourceId, map[string]string{
+		"status": "Running",
+	})
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testacc-ecs-coverage-%d", acctest.RandIntRange(10000, 99999))
+	initialPassword := "Tf9!" + acctest.RandString(12)
+	updatedPassword := "Tf9!" + acctest.RandString(12)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, func(name string) string {
+		return resourceInstanceKmsPasswordDependence(name, initialPassword, updatedPassword)
+	})
+	checkNonRoot := func(s *terraform.State) error {
+		rs := s.RootModule().Resources[resourceId]
+		if rs == nil || rs.Primary == nil || rs.Primary.ID == "" {
+			return fmt.Errorf("instance ID is missing from state")
+		}
+		service := EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		instance, err := service.DescribeInstance(rs.Primary.ID)
+		if err != nil {
+			return err
+		}
+		if !instance.ImageOptions.LoginAsNonRoot {
+			return fmt.Errorf("ECS did not report non-root login enabled")
+		}
+		return nil
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Shanghai})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id":             "${data.alicloud_images.default.images.0.id}",
+					"instance_type":        "${data.alicloud_instance_types.default.instance_types.0.id}",
+					"availability_zone":    "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}",
+					"security_groups":      []string{"${alicloud_security_group.default.id}"},
+					"vswitch_id":           "${alicloud_vswitch.default.id}",
+					"instance_name":        "${var.name}",
+					"instance_charge_type": "PostPaid",
+					"system_disk_category": "cloud_essd",
+					"is_outdated":          "false",
+					"image_options": []map[string]interface{}{
+						{"login_as_non_root": "true"},
+					},
+					"kms_encrypted_password": "${alicloud_kms_ciphertext.initial.ciphertext_blob}",
+					"kms_encryption_context": map[string]string{"phase": "initial"},
+					"resource_group_id":      "${alicloud_resource_manager_resource_group.default.0.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"is_outdated":                  "false",
+						"image_options.#":              "1",
+						"kms_encryption_context.phase": "initial",
+					}),
+					checkNonRoot,
+					resource.TestCheckResourceAttrPair(resourceId, "kms_encrypted_password", "alicloud_kms_ciphertext.initial", "ciphertext_blob"),
+					resource.TestCheckResourceAttrPair(resourceId, "resource_group_id", "alicloud_resource_manager_resource_group.default.0", "id"),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"kms_encrypted_password": "${alicloud_kms_ciphertext.updated.ciphertext_blob}",
+					"kms_encryption_context": map[string]string{"phase": "updated"},
+					"resource_group_id":      "${alicloud_resource_manager_resource_group.default.1.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{"kms_encryption_context.phase": "updated"}),
+					checkNonRoot,
+					resource.TestCheckResourceAttrPair(resourceId, "kms_encrypted_password", "alicloud_kms_ciphertext.updated", "ciphertext_blob"),
+					resource.TestCheckResourceAttrPair(resourceId, "resource_group_id", "alicloud_resource_manager_resource_group.default.1", "id"),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"is_outdated", "kms_encrypted_password", "kms_encryption_context", "dry_run"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudInstanceDataDiskSnapshot(t *testing.T) {
+	var v ecs.Instance
+	resourceId := "alicloud_instance.default"
+	ra := resourceAttrInit(resourceId, map[string]string{
+		"status":       "Running",
+		"data_disks.#": "1",
+	})
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testacc-ecs-snapshot-%d", acctest.RandIntRange(10000, 99999))
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceInstanceDataDiskSnapshotDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Shanghai})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id":             "${data.alicloud_images.default.images.0.id}",
+					"instance_type":        "${data.alicloud_instance_types.default.instance_types.0.id}",
+					"availability_zone":    "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}",
+					"security_groups":      []string{"${alicloud_security_group.default.id}"},
+					"vswitch_id":           "${alicloud_vswitch.default.id}",
+					"instance_name":        "${var.name}",
+					"instance_charge_type": "PostPaid",
+					"system_disk_category": "cloud_essd",
+					"data_disks": []map[string]interface{}{
+						{
+							"size":                    "20",
+							"category":                "cloud_essd",
+							"performance_level":       "PL1",
+							"snapshot_id":             "${alicloud_ecs_snapshot.default.id}",
+							"auto_snapshot_policy_id": "${alicloud_ecs_auto_snapshot_policy.default.id}",
+							"delete_with_instance":    "true",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+					func(s *terraform.State) error {
+						rs := s.RootModule().Resources[resourceId]
+						if rs == nil || rs.Primary == nil || rs.Primary.ID == "" {
+							return fmt.Errorf("instance ID is missing from state")
+						}
+						service := EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+						disks, err := service.DescribeDisksByType(rs.Primary.ID, DiskTypeData)
+						if err != nil {
+							return err
+						}
+						if len(disks) != 1 {
+							return fmt.Errorf("expected one data disk, got %d", len(disks))
+						}
+						snapshot := s.RootModule().Resources["alicloud_ecs_snapshot.default"]
+						policy := s.RootModule().Resources["alicloud_ecs_auto_snapshot_policy.default"]
+						if snapshot == nil || policy == nil {
+							return fmt.Errorf("snapshot or automatic snapshot policy is missing from state")
+						}
+						disk := disks[0]
+						if disk.SourceSnapshotId != snapshot.Primary.ID || disk.AutoSnapshotPolicyId != policy.Primary.ID {
+							return fmt.Errorf("ECS data disk did not retain the configured snapshot and policy")
+						}
+						if disk.Category != "cloud_essd" || disk.PerformanceLevel != "PL1" {
+							return fmt.Errorf("expected an ESSD PL1 data disk, got %s %s", disk.Category, disk.PerformanceLevel)
+						}
+						return nil
+					},
+				),
+			},
+		},
+	})
+}
+
+func TestAccAliCloudInstanceDedicatedBlockStorageCluster(t *testing.T) {
+	// Use an existing test cluster; this case never provisions or deletes it.
+	clusterId := os.Getenv("ALICLOUD_ECS_TEST_STORAGE_CLUSTER_ID")
+	region := os.Getenv("ALICLOUD_ECS_TEST_STORAGE_CLUSTER_REGION")
+	var v ecs.Instance
+	resourceId := "alicloud_instance.default"
+	ra := resourceAttrInit(resourceId, map[string]string{"status": "Running"})
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testacc-ecs-storage-%d", acctest.RandIntRange(10000, 99999))
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, func(name string) string {
+		return resourceInstanceDedicatedBlockStorageDependence(name, clusterId)
+	})
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			if clusterId == "" || region == "" {
+				t.Skip("ALICLOUD_ECS_TEST_STORAGE_CLUSTER_ID and ALICLOUD_ECS_TEST_STORAGE_CLUSTER_REGION must identify an existing test cluster")
+			}
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Region(region)})
+			rawClient, err := sharedClientForRegion(region)
+			if err != nil {
+				t.Fatalf("cannot initialize the storage cluster precheck: %s", err)
+			}
+			service := EbsService{rawClient.(*connectivity.AliyunClient)}
+			cluster, err := service.DescribeEbsDedicatedBlockStorageCluster(clusterId)
+			if err != nil {
+				t.Fatalf("cannot read the required test storage cluster: %s", err)
+			}
+			if cluster["DedicatedBlockStorageClusterId"] != clusterId || cluster["RegionId"] != region {
+				t.Fatal("the storage cluster must match the explicitly configured ID and region")
+			}
+			zone, _ := cluster["ZoneId"].(string)
+			if !strings.HasPrefix(zone, region+"-") || cluster["Status"] != "Running" || cluster["Category"] != "cloud_essd" {
+				t.Fatal("the test requires a running ESSD storage cluster in a zone of the configured region")
+			}
+			if cluster["PerformanceLevel"] != "PL0" && cluster["PerformanceLevel"] != "PL1" {
+				t.Fatal("the test requires a PL0 or PL1 storage cluster for its 40 GiB system disk")
+			}
+			capacity, _ := cluster["DedicatedBlockStorageClusterCapacity"].(map[string]interface{})
+			available, err := strconv.Atoi(fmt.Sprint(capacity["AvailableCapacity"]))
+			if err != nil || available < 40 {
+				t.Fatal("the test requires at least 40 GiB of available storage cluster capacity")
+			}
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id":                       "${data.alicloud_images.default.images.0.id}",
+					"instance_type":                  "${data.alicloud_instance_types.default.instance_types.0.id}",
+					"availability_zone":              "${data.alicloud_ebs_dedicated_block_storage_clusters.default.clusters.0.zone_id}",
+					"security_groups":                []string{"${alicloud_security_group.default.id}"},
+					"vswitch_id":                     "${alicloud_vswitch.default.id}",
+					"instance_name":                  "${var.name}",
+					"instance_charge_type":           "PostPaid",
+					"system_disk_category":           "${data.alicloud_ebs_dedicated_block_storage_clusters.default.clusters.0.category}",
+					"system_disk_performance_level":  "${data.alicloud_ebs_dedicated_block_storage_clusters.default.clusters.0.performance_level}",
+					"system_disk_size":               "40",
+					"system_disk_storage_cluster_id": "${data.alicloud_ebs_dedicated_block_storage_clusters.default.clusters.0.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+					resource.TestCheckResourceAttrPair(resourceId, "system_disk_storage_cluster_id", "data.alicloud_ebs_dedicated_block_storage_clusters.default", "clusters.0.id"),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudECSInstanceDedicatedHostId(t *testing.T) {
+	var v ecs.Instance
+	var host ecs.DedicatedHost
+	resourceId := "alicloud_instance.default"
+	ra := resourceAttrInit(resourceId, testAccInstanceCheckMap)
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	hostCheck := resourceCheckInitWithDescribeMethod("alicloud_ecs_dedicated_host.default", &host, serviceFunc, "DescribeEcsDedicatedHost")
+	rand := acctest.RandIntRange(1000, 9999)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAcc%sEcsInstanceDedicatedHostId%d", defaultRegionToTest, rand)
+	autoReleaseTime := time.Now().UTC().Add(time.Hour).Truncate(time.Minute)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, func(name string) string {
+		return resourceInstanceDedicatedHostIdConfigDependence(name, autoReleaseTime.Format(time.RFC3339))
+	})
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy: resource.ComposeTestCheckFunc(rac.checkResourceDestroy(), func(s *terraform.State) error {
+			return resource.Retry(2*time.Minute, func() *resource.RetryError {
+				if err := hostCheck.checkResourceDestroy()(s); err != nil {
+					return resource.RetryableError(err)
+				}
+				return nil
+			})
+		}),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id":                      "${data.alicloud_images.default.images.0.id}",
 					"security_groups":               []string{"${alicloud_security_group.default.id}"},
-					"instance_type":                 "${data.alicloud_ecs_dedicated_hosts.default.hosts.0.supported_instance_types_list.0}",
-					"availability_zone":             "${data.alicloud_ecs_dedicated_hosts.default.hosts.0.zone_id}",
+					"instance_type":                 "ecs.c6.large",
+					"availability_zone":             "${alicloud_ecs_dedicated_host.default.zone_id}",
 					"system_disk_category":          "cloud_efficiency",
 					"instance_name":                 "${var.name}",
 					"key_name":                      "${alicloud_key_pair.default.key_name}",
@@ -3935,7 +4332,7 @@ func TestAccAliCloudECSInstanceDedicatedHostId(t *testing.T) {
 					"user_data":                     "${base64encode(\"I am the user data\")}",
 					"vswitch_id":                    "${alicloud_vswitch.default.id}",
 					"role_name":                     "${alicloud_ram_role.default.name}",
-					"dedicated_host_id":             "${data.alicloud_ecs_dedicated_hosts.default.hosts.0.id}",
+					"dedicated_host_id":             "${alicloud_ecs_dedicated_host.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -3945,6 +4342,10 @@ func TestAccAliCloudECSInstanceDedicatedHostId(t *testing.T) {
 						"dedicated_host_id": CHECKSET,
 						"user_data":         "SSBhbSB0aGUgdXNlciBkYXRh",
 					}),
+					resource.TestCheckResourceAttrPair(resourceId, "dedicated_host_id", "alicloud_ecs_dedicated_host.default", "id"),
+					resource.TestCheckResourceAttr("alicloud_ecs_dedicated_host.default", "payment_type", "PostPaid"),
+					resource.TestCheckResourceAttr("alicloud_ecs_dedicated_host.default", "auto_placement", "off"),
+					resource.TestMatchResourceAttr("alicloud_ecs_dedicated_host.default", "auto_release_time", regexp.MustCompile("^"+autoReleaseTime.Format("2006-01-02T15:04")+"(:00)?Z$")),
 				),
 			},
 			{
@@ -4539,6 +4940,12 @@ func TestAccAliCloudECSInstanceNetworkInterface3(t *testing.T) {
 }
 
 func TestAccAliCloudECSInstancePrivatePool(t *testing.T) {
+	if os.Getenv("TF_ACC") == "" {
+		t.Skip("TF_ACC is not set")
+	}
+	testAccPreCheck(t)
+	testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
+	privatePoolId := testAccInstancePrivatePoolId(t)
 	var v ecs.Instance
 	resourceId := "alicloud_instance.default"
 	ra := resourceAttrInit(resourceId, testAccInstanceCheckMap)
@@ -4550,7 +4957,9 @@ func TestAccAliCloudECSInstancePrivatePool(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 9999)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	name := fmt.Sprintf("tf-testAcc%sEcsInstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEcsInstancePrivatePool)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, func(name string) string {
+		return AliCloudEcsInstancePrivatePool(name, privatePoolId)
+	})
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -4639,21 +5048,112 @@ func TestAccAliCloudECSInstancePrivatePool(t *testing.T) {
 	})
 }
 
-func resourceInstanceDedicatedHostIdConfigDependence(name string) string {
+func testAccInstancePrivatePoolId(t *testing.T) string {
+	t.Helper()
+	rawClient, err := sharedClientForRegion(defaultRegionToTest)
+	if err != nil {
+		t.Fatalf("cannot initialize the private pool precheck: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+	service := EcsService{client}
+	dataSource := dataSourceAlicloudEcsElasticityAssurances()
+	data := schema.TestResourceDataRaw(t, dataSource.Schema, map[string]interface{}{"status": "Active"})
+	if err := dataSource.Read(data, client); err != nil {
+		t.Fatalf("cannot list active private pools: %s", err)
+	}
+	var pools []map[string]interface{}
+	for _, id := range data.Get("ids").([]interface{}) {
+		pool, err := service.DescribeEcsElasticityAssurance(id.(string))
+		if err != nil {
+			t.Fatalf("cannot read the private pool capacity: %s", err)
+		}
+		if pool["PrivatePoolOptionsId"] != id || pool["RegionId"] != defaultRegionToTest {
+			t.Fatal("the private pool must match its requested ID and region")
+		}
+		pools = append(pools, pool)
+	}
+	availability := schema.TestResourceDataRaw(t, dataSourceAliCloudInstanceTypes().Schema, map[string]interface{}{
+		"instance_charge_type": "PostPaid",
+		"spot_strategy":        "NoSpot",
+		"network_type":         "Vpc",
+		"system_disk_category": "cloud_essd",
+	})
+	_, zones, _, err := service.DescribeAvailableResources(availability, client, InstanceTypeResource)
+	if err != nil {
+		t.Fatalf("cannot read instance availability for the private pool: %s", err)
+	}
+	id := selectInstancePrivatePool(pools, zones)
+	if id == "" {
+		t.Fatal("the test requires an active private pool with unused, unlocked capacity and a WithStock instance type in its zone")
+	}
+	return id
+}
+
+func selectInstancePrivatePool(pools []map[string]interface{}, zones []ecs.AvailableZone) string {
+	withStock := make(map[string]bool)
+	for _, zone := range zones {
+		if zone.Status != "Available" {
+			continue
+		}
+		for _, available := range zone.AvailableResources.AvailableResource {
+			if available.Type != string(InstanceTypeResource) {
+				continue
+			}
+			for _, instanceType := range available.SupportedResources.SupportedResource {
+				if instanceType.Status == "Available" && instanceType.StatusCategory == "WithStock" {
+					withStock[zone.ZoneId+"/"+instanceType.Value] = true
+				}
+			}
+		}
+	}
+	for _, pool := range pools {
+		id, _ := pool["PrivatePoolOptionsId"].(string)
+		if id == "" || pool["Status"] != "Active" {
+			continue
+		}
+		resources, _ := pool["AllocatedResources"].(map[string]interface{})
+		allocations, _ := resources["AllocatedResource"].([]interface{})
+		if len(allocations) == 0 {
+			continue
+		}
+		// The fixture uses the first allocation of the selected pool.
+		allocation, _ := allocations[0].(map[string]interface{})
+		remaining := formatInt(allocation["TotalAmount"]) - formatInt(allocation["UsedAmount"]) - formatInt(allocation["LockedAmount"])
+		if remaining > 0 && withStock[fmt.Sprint(allocation["zoneId"])+"/"+fmt.Sprint(allocation["InstanceType"])] {
+			return id
+		}
+	}
+	return ""
+}
+
+func resourceInstanceDedicatedHostIdConfigDependence(name, autoReleaseTime string) string {
 	return fmt.Sprintf(`
 	variable "name" {
   		default = "%s"
 	}
 
-	data "alicloud_ecs_dedicated_hosts" "default" {
-  		name_regex = "default-NODELETING"
+	resource "alicloud_ecs_dedicated_host" "default" {
+    dedicated_host_type = "ddh.c6"
+    dedicated_host_name = var.name
+    payment_type        = "PostPaid"
+    auto_placement      = "off"
+    auto_release_time   = "%s"
+    zone_id             = "cn-hangzhou-i"
+    # The API returns this fixed cleanup deadline at minute precision.
+    lifecycle {
+      ignore_changes = [auto_release_time]
+    }
+    tags = {
+      Create = "Terraform"
+      For    = "DDH_Test"
+    }
 	}
 
 	data "alicloud_images" "default" {
   		name_regex    = "^ubuntu_[0-9]+_[0-9]+_x64*"
   		most_recent   = true
   		owners        = "system"
-  		instance_type = data.alicloud_ecs_dedicated_hosts.default.hosts.0.supported_instance_types_list.0
+    instance_type = "ecs.c6.large"
 	}
 
 	resource "alicloud_vpc" "default" {
@@ -4664,7 +5164,7 @@ func resourceInstanceDedicatedHostIdConfigDependence(name string) string {
 	resource "alicloud_vswitch" "default" {
   		vpc_id       = alicloud_vpc.default.id
   		cidr_block   = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 2)
-  		zone_id      = data.alicloud_ecs_dedicated_hosts.default.hosts.0.zone_id
+    zone_id      = alicloud_ecs_dedicated_host.default.zone_id
   		vswitch_name = var.name
 	}
 
@@ -4697,6 +5197,220 @@ func resourceInstanceDedicatedHostIdConfigDependence(name string) string {
 	resource "alicloud_key_pair" "default" {
   		key_pair_name = var.name
 	}
+`, name, autoReleaseTime)
+}
+
+func resourceInstanceCoverageDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+data "alicloud_instance_types" "default" {
+  instance_type_family = "ecs.g8i"
+  system_disk_category = "cloud_essd"
+  instance_charge_type = "PostPaid"
+  network_type         = "Vpc"
+  sorted_by            = "CPU"
+}
+
+data "alicloud_images" "default" {
+  name_regex    = "^aliyun_3_x64_20G_alibase_"
+  most_recent   = true
+  owners        = "system"
+  instance_type = data.alicloud_instance_types.default.instance_types.0.id
+}
+
+resource "alicloud_vpc" "default" {
+  cidr_block = "192.168.0.0/16"
+  vpc_name   = var.name
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "192.168.1.0/24"
+  zone_id      = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+  vswitch_name = var.name
+}
+
+resource "alicloud_security_group" "default" {
+  name   = var.name
+  vpc_id = alicloud_vpc.default.id
+}
+`, name)
+}
+
+func resourceInstanceKmsPasswordDependence(name, initialPassword, updatedPassword string) string {
+	return resourceInstanceCoverageDependence(name) + fmt.Sprintf(`
+resource "alicloud_resource_manager_resource_group" "default" {
+  count               = 2
+  resource_group_name = "${var.name}-${count.index}"
+  display_name        = "${var.name}-${count.index}"
+}
+
+resource "alicloud_kms_key" "default" {
+  description            = var.name
+  pending_window_in_days = 7
+}
+
+resource "alicloud_kms_ciphertext" "initial" {
+  key_id    = alicloud_kms_key.default.id
+  plaintext = "%s"
+  encryption_context = {
+    phase = "initial"
+  }
+}
+
+resource "alicloud_kms_ciphertext" "updated" {
+  key_id    = alicloud_kms_key.default.id
+  plaintext = "%s"
+  encryption_context = {
+    phase = "updated"
+  }
+}
+`, initialPassword, updatedPassword)
+}
+
+func resourceInstanceDataDiskSnapshotDependence(name string) string {
+	return resourceInstanceCoverageDependence(name) + `
+resource "alicloud_instance" "snapshot_source" {
+  image_id             = data.alicloud_images.default.images.0.id
+  instance_type        = data.alicloud_instance_types.default.instance_types.0.id
+  availability_zone    = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+  security_groups      = [alicloud_security_group.default.id]
+  vswitch_id           = alicloud_vswitch.default.id
+  instance_name        = "${var.name}-source"
+  instance_charge_type = "PostPaid"
+  system_disk_category = "cloud_essd"
+}
+
+resource "alicloud_ecs_disk" "source" {
+  disk_name = "${var.name}-source"
+  zone_id   = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+  category  = "cloud_essd"
+  size      = 20
+}
+
+resource "alicloud_ecs_disk_attachment" "source" {
+  disk_id     = alicloud_ecs_disk.source.id
+  instance_id = alicloud_instance.snapshot_source.id
+}
+
+resource "alicloud_ecs_snapshot" "default" {
+  disk_id        = alicloud_ecs_disk_attachment.source.disk_id
+  snapshot_name  = var.name
+  retention_days = 1
+}
+
+resource "alicloud_ecs_auto_snapshot_policy" "default" {
+  name            = var.name
+  repeat_weekdays = ["1"]
+  retention_days  = 1
+  time_points     = ["1"]
+}
+`
+}
+
+func resourceInstanceDedicatedBlockStorageDependence(name, clusterId string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = %q
+}
+
+data "alicloud_ebs_dedicated_block_storage_clusters" "default" {
+  ids = [%q]
+}
+
+data "alicloud_instance_types" "default" {
+  availability_zone    = data.alicloud_ebs_dedicated_block_storage_clusters.default.clusters.0.zone_id
+  system_disk_category = data.alicloud_ebs_dedicated_block_storage_clusters.default.clusters.0.category
+  instance_charge_type = "PostPaid"
+  network_type         = "Vpc"
+  cpu_core_count       = 2
+  memory_size          = 4
+  sorted_by            = "CPU"
+}
+
+data "alicloud_images" "default" {
+  name_regex    = "^aliyun_3_x64_20G_alibase_"
+  most_recent   = true
+  owners        = "system"
+  instance_type = data.alicloud_instance_types.default.instance_types.0.id
+}
+
+resource "alicloud_vpc" "default" {
+  cidr_block = "192.168.0.0/16"
+  vpc_name   = var.name
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "192.168.1.0/24"
+  zone_id      = data.alicloud_ebs_dedicated_block_storage_clusters.default.clusters.0.zone_id
+  vswitch_name = var.name
+}
+
+resource "alicloud_security_group" "default" {
+  name   = var.name
+  vpc_id = alicloud_vpc.default.id
+}
+`, name, clusterId)
+}
+
+func resourceInstanceNetworkEncryptionDependence(name string) string {
+	return fmt.Sprintf(`
+data "alicloud_instance_types" "default" {
+  instance_type_family = "ecs.g9ae"
+  system_disk_category = "cloud_essd"
+  instance_charge_type = "PostPaid"
+  network_type         = "Vpc"
+  sorted_by            = "CPU"
+}
+
+data "alicloud_images" "default" {
+  name_regex    = "^ubuntu_[0-9]+_[0-9]+_x64*"
+  most_recent   = true
+  owners        = "system"
+  instance_type = data.alicloud_instance_types.default.instance_types.0.id
+}
+
+resource "alicloud_vpc" "default" {
+  cidr_block = "192.168.0.0/16"
+  vpc_name   = var.name
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 2)
+  zone_id      = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+  vswitch_name = var.name
+}
+
+resource "alicloud_security_group" "default" {
+  count  = 2
+  name   = var.name
+  vpc_id = alicloud_vpc.default.id
+}
+
+resource "alicloud_security_group_rule" "default" {
+  count             = 2
+  type              = "ingress"
+  ip_protocol       = "tcp"
+  nic_type          = "intranet"
+  policy            = "accept"
+  port_range        = "22/22"
+  priority          = 1
+  security_group_id = element(alicloud_security_group.default.*.id, count.index)
+  cidr_ip           = "172.16.0.0/24"
+}
+
+variable "name" {
+  default = "%s"
+}
+
+resource "alicloud_key_pair" "default" {
+  key_pair_name = var.name
+}
 `, name)
 }
 
@@ -4945,7 +5659,7 @@ resource "alicloud_ecs_key_pair" "update" {
 `, name)
 }
 
-func AliCloudEcsInstancePrivatePool(name string) string {
+func AliCloudEcsInstancePrivatePool(name, privatePoolId string) string {
 	return fmt.Sprintf(`
 	variable "name" {
   		default = "%s"
@@ -4953,6 +5667,7 @@ func AliCloudEcsInstancePrivatePool(name string) string {
 
 	data "alicloud_ecs_elasticity_assurances" "default" {
   		status = "Active"
+		private_pool_options_ids = [%q]
 	}
 
 	data "alicloud_images" "default" {
@@ -4976,7 +5691,7 @@ func AliCloudEcsInstancePrivatePool(name string) string {
   		name   = var.name
   		vpc_id = alicloud_vpc.vpc.id
 	}
-`, name)
+`, name, privatePoolId)
 }
 
 // TestAccAliCloudECSInstanceImageUpdateReplace covers
