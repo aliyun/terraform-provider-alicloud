@@ -118,25 +118,58 @@ func resourceAlicloudCmsHybridMonitorFcTaskRead(d *schema.ResourceData, meta int
 }
 func resourceAlicloudCmsHybridMonitorFcTaskUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	var err error
 	var response map[string]interface{}
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
-	}
-	request := map[string]interface{}{
-		"TargetUserId": parts[0],
-		"Namespace":    parts[1],
-	}
-	request["CollectTargetType"] = "aliyun_fc"
-	request["TaskType"] = "aliyun_fc"
-	if d.HasChange("yarm_config") {
-		request["YARMConfig"] = d.Get("yarm_config")
-		action := "CreateHybridMonitorTask"
 
+	if d.HasChange("yarm_config") {
+		parts, err := ParseResourceId(d.Id(), 2)
+		if err != nil {
+			return WrapError(err)
+		}
+		// ModifyHybridMonitorTask does not accept YARMConfig, so the only way to
+		// apply a yarm_config change is to destroy the old task and create a new
+		// one with the updated config, then refresh the Terraform state ID.
 		wait := incrementalWait(3*time.Second, 5*time.Second)
+
+		// 1. Delete the old monitoring task.
+		deleteAction := "DeleteHybridMonitorTask"
+		deleteRequest := map[string]interface{}{
+			"Namespace": parts[1],
+		}
+		if v, ok := d.GetOk("target_user_id"); ok {
+			deleteRequest["TargetUserId"] = v
+		}
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
+			response, err = client.RpcPost("Cms", "2019-01-01", deleteAction, nil, deleteRequest, false)
+			if err != nil {
+				if IsExpectedErrors(err, []string{"InternalError"}) || NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(deleteAction, response, deleteRequest)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), deleteAction, AlibabaCloudSdkGoERROR)
+		}
+		if fmt.Sprint(response["Success"]) == "false" {
+			return WrapError(fmt.Errorf("%s failed, response: %v", deleteAction, response))
+		}
+
+		// 2. Create a new monitoring task with the updated yarm_config.
+		createAction := "CreateHybridMonitorTask"
+		createRequest := map[string]interface{}{
+			"CollectTargetType": "aliyun_fc",
+			"Namespace":         d.Get("namespace"),
+			"TaskType":          "aliyun_fc",
+			"YARMConfig":        d.Get("yarm_config"),
+		}
+		if v, ok := d.GetOk("target_user_id"); ok {
+			createRequest["TargetUserId"] = v
+		}
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("Cms", "2019-01-01", createAction, nil, createRequest, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"InternalError", "undefined"}) || NeedRetry(err) {
 					wait()
@@ -146,13 +179,16 @@ func resourceAlicloudCmsHybridMonitorFcTaskUpdate(d *schema.ResourceData, meta i
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		addDebug(createAction, response, createRequest)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), createAction, AlibabaCloudSdkGoERROR)
 		}
 		if fmt.Sprint(response["Success"]) == "false" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+			return WrapError(fmt.Errorf("%s failed, response: %v", createAction, response))
 		}
+
+		// 3. Refresh the state ID so it points to the newly created task.
+		d.SetId(fmt.Sprintf("%s:%s", response["TaskId"], createRequest["Namespace"]))
 	}
 
 	return resourceAlicloudCmsHybridMonitorFcTaskRead(d, meta)
@@ -166,8 +202,10 @@ func resourceAlicloudCmsHybridMonitorFcTaskDelete(d *schema.ResourceData, meta i
 	action := "DeleteHybridMonitorTask"
 	var response map[string]interface{}
 	request := map[string]interface{}{
-		"TargetUserId": parts[0],
-		"Namespace":    parts[1],
+		"Namespace": parts[1],
+	}
+	if v, ok := d.GetOk("target_user_id"); ok {
+		request["TargetUserId"] = v
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
