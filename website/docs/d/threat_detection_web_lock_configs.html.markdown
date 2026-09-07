@@ -48,6 +48,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `exclusive_dir` - The directory that has web tamper proofing disabled.
   * `exclusive_file` - The file that has web tamper proofing disabled. **Note:** If the value of `mode` is `blacklist`, this parameter is returned.
   * `exclusive_file_type` - The type of the file that has web tamper proofing disabled. **Note:** If the value of `mode` is `blacklist`, this parameter is returned.
+  * `inclusive_file` - The files that have web tamper proofing enabled. **Note:** If the value of `mode` is `whitelist`, this parameter is returned.
   * `inclusive_file_type` - The type of the file that has web tamper proofing enabled. **Note:** If the value of `mode` is `whitelist`, this parameter is returned.
   * `local_backup_dir` - The local path to the backup files of the protected directory.
   * `mode` - The protection mode of web tamper proofing. 
