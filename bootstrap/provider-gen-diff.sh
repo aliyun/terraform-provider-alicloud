@@ -31,6 +31,8 @@
 #   --checklist-only   skip generation/diff, run just the checklist annotation
 #   --popcode X        explicit PopCode (namespace) instead of deriving
 #   --resource Y       explicit resource type code (CamelCase) instead of deriving
+#   --html[=PATH]      render diff+checklist to an HTML page and open it.
+#                     PATH defaults to $cache_dir/diff.html. Implies --no-color.
 #
 # ENV
 #   JARVIS_GEN_DIFF_CACHE       cache dir (default $HOME/.cache/jarvis-gen-diff)
@@ -56,10 +58,23 @@ jarvis_root="$(cd "$script_dir/.." && pwd)"
 
 # ── helpers ─────────────────────────────────────────────────────────────────
 
-die() { echo "$prog: $*" >&2; exit 1; }
+die() {
+    echo "$prog: $*" >&2
+    if [ -n "${html_capture:-}" ]; then
+        exec 1>&3 3>&- 2>/dev/null || true
+        rm -f "$html_capture" 2>/dev/null || true
+    fi
+    exit 1
+}
 
-log() { printf '\033[1;36m%s\033[0m\n' "$*"; }
-warn() { printf '\033[1;33m%s\033[0m\n' "$*" >&2; }
+log() {
+    if [ "$want_color" -eq 1 ]; then printf '\033[1;36m%s\033[0m\n' "$*"
+    else printf '%s\n' "$*"; fi
+}
+warn() {
+    if [ "$want_color" -eq 1 ]; then printf '\033[1;33m%s\033[0m\n' "$*" >&2
+    else printf '%s\n' "$*" >&2; fi
+}
 
 # Capitalize first letter (vpc -> Vpc).
 capitalize() {
@@ -108,7 +123,7 @@ resolve_one() {
 # ── arg parsing ─────────────────────────────────────────────────────────────
 
 popcode=""; resource=""; worktree=""; resource_name=""
-refresh=0; want_color=1; checklist_only=0
+refresh=0; want_color=1; checklist_only=0; html_out=""
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -117,6 +132,8 @@ while [ $# -gt 0 ]; do
         --checklist-only) checklist_only=1; shift ;;
         --popcode) popcode="${2:-}"; shift 2 ;;
         --resource) resource="${2:-}"; shift 2 ;;
+        --html) html_out=1; shift ;;
+        --html=*) html_out="${1#--html=}"; shift ;;
         --help|-h) sed -n '2,/^$/p' "$0" | sed 's/^# \?//'; exit 0 ;;
         --*) die "unknown flag: $1" ;;
         *)
@@ -150,6 +167,31 @@ if [ -z "$resource" ]; then
 else
     product_lc="$(printf '%s' "$popcode" | tr '[:upper:]' '[:lower:]')"
     res_lc="$(printf '%s' "$resource" | sed -E 's/([A-Z])/_\L\1/g; s/^_//')"
+fi
+
+# ── HTML render setup ─────────────────────────────────────────────────────────
+# When --html is set: force --no-color (renderer needs plain text), resolve the
+# default output path, and redirect stdout to a temp capture file so the entire
+# diff+checklist output feeds the renderer. stderr (warn/die) still hits the
+# terminal so errors stay visible.
+render_py="$script_dir/provider-gen-diff-render.py"
+if [ -n "$html_out" ]; then
+    want_color=0
+    if [ "$html_out" = "1" ]; then
+        _cr="${JARVIS_GEN_DIFF_CACHE:-$HOME/.cache/jarvis-gen-diff}"
+        html_out="$_cr/${popcode}_${resource}/diff.html"
+    fi
+    if ! command -v python3 >/dev/null 2>&1; then
+        warn "python3 not found; --html disabled, will print text to terminal"
+        html_out=""
+    elif [ ! -f "$render_py" ]; then
+        warn "renderer not found ($render_py); --html disabled"
+        html_out=""
+    fi
+fi
+if [ -n "$html_out" ]; then
+    html_capture="$(mktemp -t gen-diff-capture)" || die "mktemp failed"
+    exec 3>&1 1>"$html_capture"
 fi
 
 log "== provider-gen-diff =="
@@ -370,3 +412,20 @@ chk_grep "$actual_r" 'd\.HasChange\(|update\s*=\s*true' | sed 's/^/    /' | head
 
 echo
 log "done. baseline cache: $cache_dir"
+
+# ── HTML render ───────────────────────────────────────────────────────────────
+# Restore stdout (saved on fd3), render the captured text to HTML, open it.
+if [ -n "${html_out:-}" ]; then
+    exec 1>&3 3>&-
+    mkdir -p "$(dirname "$html_out")" 2>/dev/null || true
+    if python3 "$render_py" "$html_capture" "$html_out"; then
+        if [ "$(uname)" = "Darwin" ]; then
+            open "$html_out" 2>/dev/null || true
+        fi
+        log "HTML 渲染完成 → $html_out"
+    else
+        warn "HTML 渲染失败;原始文本见 $html_capture"
+        cat "$html_capture" 2>/dev/null || true
+    fi
+    rm -f "$html_capture" 2>/dev/null || true
+fi
