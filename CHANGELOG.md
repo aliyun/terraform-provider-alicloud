@@ -1,4 +1,7 @@
 ## 1.292.0 (Unreleased)
+
+- resource/alicloud_alb_acl_entry_attachment: adds `entries` to manage multiple ACL entries in one resource with batch API calls, and deprecates `entry`.
+
 ## 1.291.0 (September 1, 2026)
 
 - **New Resource:** `alicloud_ecd_desktop_group` ([#10230](https://github.com/aliyun/terraform-provider-alicloud/issues/10230))
