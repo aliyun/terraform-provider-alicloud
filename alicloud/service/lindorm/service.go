@@ -2,9 +2,12 @@ package lindorm
 
 import (
 	"fmt"
+	"net/http"
+	"sync"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
@@ -150,6 +153,79 @@ func (s *Service) LindormInstanceStateRefreshFunc(id string, failStates []string
 		}
 		return object, fmt.Sprint(object["InstanceStatus"]), nil
 	}
+}
+
+// LindormPostCreateReadTolerance keeps the last tolerated post-create read
+// error. The SDK runs the refresh function in its own goroutine, so access is
+// guarded.
+type LindormPostCreateReadTolerance struct {
+	mu      sync.Mutex
+	lastErr error
+}
+
+func (t *LindormPostCreateReadTolerance) record(err error) {
+	if t == nil {
+		return
+	}
+	t.mu.Lock()
+	t.lastErr = err
+	t.mu.Unlock()
+}
+
+func (t *LindormPostCreateReadTolerance) last() error {
+	if t == nil {
+		return nil
+	}
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	return t.lastErr
+}
+
+// LindormInstanceStateRefreshFuncWithPostCreateReadTolerance wraps
+// LindormInstanceStateRefreshFunc so that a freshly created instance which is
+// briefly unreadable (HTTP 451 OperationFailed from GetLindormInstance) is
+// treated as still provisioning until deadline. Any other error is returned
+// unchanged, and the original error is returned once the deadline passes, so a
+// permanent failure is not masked and the wait stays bounded. The last tolerated
+// error is recorded in tolerance so the caller can surface it when the wait
+// itself times out. Only the Create wait uses this wrapper; Read and Delete keep
+// the strict behaviour.
+func (s *Service) LindormInstanceStateRefreshFuncWithPostCreateReadTolerance(id string, failStates []string, deadline time.Time, tolerance *LindormPostCreateReadTolerance) retry.StateRefreshFunc {
+	refresh := s.LindormInstanceStateRefreshFunc(id, failStates)
+	return func() (interface{}, string, error) {
+		object, state, err := refresh()
+		if err != nil && time.Now().Before(deadline) && isLindormTransientPostCreateReadError(err) {
+			tolerance.record(err)
+			return map[string]interface{}{"InstanceId": id}, "CREATING", nil
+		}
+		return object, state, err
+	}
+}
+
+func isLindormTransientPostCreateReadError(err error) bool {
+	if err == nil {
+		return false
+	}
+	if e, ok := err.(*errs.ComplexError); ok {
+		return isLindormTransientPostCreateReadError(e.Cause)
+	}
+	if e, ok := err.(*tea.SDKError); ok {
+		code := ""
+		if e.Code != nil {
+			code = *e.Code
+		}
+		return tea.IntValue(e.StatusCode) == http.StatusUnavailableForLegalReasons && code == "OperationFailed"
+	}
+	// The shared client can also surface the legacy SDK error shape
+	// (alibaba-cloud-sdk-go ServerError) which exposes HttpStatus/ErrorCode
+	// instead of the tea fields.
+	if e, ok := err.(interface {
+		HttpStatus() int
+		ErrorCode() string
+	}); ok {
+		return e.HttpStatus() == http.StatusUnavailableForLegalReasons && e.ErrorCode() == "OperationFailed"
+	}
+	return false
 }
 
 func (s *Service) ListTagResources(id string, resourceType string) (object interface{}, err error) {

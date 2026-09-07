@@ -17,6 +17,8 @@ For information about Lindorm Instance and how to use it, see [What is Instance]
 
 -> **NOTE:**  The Lindorm Instance does not support updating the specifications of multiple different engines, or the number of nodes at the same time.
 
+-> **NOTE:** The example below creates a multi-zone instance (`arch_version = "2.0"`). Multi-zone instances require `primary_zone_id`/`primary_vswitch_id`, `standby_zone_id`/`standby_vswitch_id`, `arbiter_zone_id`/`arbiter_vswitch_id`, `multi_zone_combination`, `core_single_storage`, `log_num`, `log_spec`, `log_single_storage` and `log_disk_category`, and the wide table engine node count (`table_engine_node_count`) must be at least 4.
+
 ## Example Usage
 
 Basic Usage
@@ -28,42 +30,73 @@ Basic Usage
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 provider "alicloud" {
   region = local.region
 }
 
 variable "name" {
-  default = "tf-example"
+  default = "terraform-example"
 }
 
 locals {
-  region  = "cn-hangzhou"
-  zone_id = "cn-hangzhou-h"
+  region = "ap-southeast-1"
 }
 
-data "alicloud_zones" "default" {
-  available_resource_creation = "VSwitch"
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "172.16.0.0/16"
 }
 
-data "alicloud_vpcs" "default" {
-  name_regex = "^default-NODELETING$"
+resource "alicloud_vswitch" "primary" {
+  vpc_id     = alicloud_vpc.default.id
+  zone_id    = "ap-southeast-1a"
+  cidr_block = "172.16.0.0/24"
 }
 
-data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = local.zone_id
+resource "alicloud_vswitch" "standby" {
+  vpc_id     = alicloud_vpc.default.id
+  zone_id    = "ap-southeast-1b"
+  cidr_block = "172.16.1.0/24"
+}
+
+resource "alicloud_vswitch" "arbiter" {
+  vpc_id     = alicloud_vpc.default.id
+  zone_id    = "ap-southeast-1c"
+  cidr_block = "172.16.2.0/24"
 }
 
 resource "alicloud_lindorm_instance" "default" {
-  disk_category              = "cloud_efficiency"
-  payment_type               = "PayAsYouGo"
-  zone_id                    = local.zone_id
-  vswitch_id                 = data.alicloud_vswitches.default.ids.0
-  vpc_id                     = data.alicloud_vpcs.default.ids.0
-  instance_name              = var.name
+  arch_version           = "2.0"
+  disk_category          = "cloud_efficiency"
+  payment_type           = "PayAsYouGo"
+  zone_id                = "ap-southeast-1a"
+  vswitch_id             = alicloud_vswitch.primary.id
+  vpc_id                 = alicloud_vpc.default.id
+  primary_zone_id        = "ap-southeast-1a"
+  primary_vswitch_id     = alicloud_vswitch.primary.id
+  standby_zone_id        = "ap-southeast-1b"
+  standby_vswitch_id     = alicloud_vswitch.standby.id
+  arbiter_zone_id        = "ap-southeast-1c"
+  arbiter_vswitch_id     = alicloud_vswitch.arbiter.id
+  multi_zone_combination = "ap-southeast-1-abc-aliyun"
+  instance_name          = var.name
+
   table_engine_specification = "lindorm.g.4xlarge"
-  table_engine_node_count    = "2"
-  instance_storage           = "1920"
+  table_engine_node_count    = "4"
+  core_single_storage        = "400"
+
+  log_num            = "4"
+  log_spec           = "lindorm.sn1.large"
+  log_single_storage = "400"
+  log_disk_category  = "cloud_efficiency"
 }
 ```
 
@@ -75,11 +108,11 @@ The following arguments are supported:
 
 * `vswitch_id` - (Required, ForceNew) The vswitch id.
 * `disk_category` - (Required, ForceNew) The disk type of instance. Valid values: `cloud_efficiency`, `cloud_ssd`, `cloud_essd`, `cloud_essd_pl0`, `capacity_cloud_storage`, `local_ssd_pro`, `local_hdd_pro`. **NOTE:** From version 1.207.0, `disk_category` can be set to `cloud_essd_pl0`.
-* `payment_type` - (Required, ForceNew) The billing method. Valid values: `PayAsYouGo` and `Subscription`.
+* `payment_type` - (Required, ForceNew) The billing method. Valid values: `PayAsYouGo` and `Subscription`. Destroying a `Subscription` instance switches it to pay-as-you-go before it is released.
 * `cold_storage` - (Optional, Int) The cold storage capacity of the instance. Unit: GB. Valid values: [800, 1000000].
 * `core_spec` - (Optional, ForceNew) The core spec. When `disk_category` is `local_ssd_pro` or `local_hdd_pro`, this filed is valid.
-   - When `disk_category` is `local_ssd_pro`, the valid values is `lindorm.i2.xlarge`, `lindorm.i2.2xlarge`, `lindorm.i2.4xlarge`, `lindorm.i2.8xlarge`.
-   - When `disk_category` is `local_hdd_pro`, the valid values is `lindorm.d2c.6xlarge`, `lindorm.d2c.12xlarge`, `lindorm.d2c.24xlarge`, `lindorm.d2s.5xlarge`, `lindorm.d2s.10xlarge`, `lindorm.d1.2xlarge`, `lindorm.d1.4xlarge`, `lindorm.d1.6xlarge`.
+  - When `disk_category` is `local_ssd_pro`, the valid values is `lindorm.i2.xlarge`, `lindorm.i2.2xlarge`, `lindorm.i2.4xlarge`, `lindorm.i2.8xlarge`.
+  - When `disk_category` is `local_hdd_pro`, the valid values is `lindorm.d2c.6xlarge`, `lindorm.d2c.12xlarge`, `lindorm.d2c.24xlarge`, `lindorm.d2s.5xlarge`, `lindorm.d2s.10xlarge`, `lindorm.d1.2xlarge`, `lindorm.d1.4xlarge`, `lindorm.d1.6xlarge`.
 * `deletion_proection` - (Optional, Bool) The deletion protection of instance.
 * `duration` - (Optional) The duration of paid. Valid when the `payment_type` is `Subscription`.  When `pricing_cycle` set to `Month`, the valid value id `1` to `9`.  When `pricing_cycle` set to `Year`, the valid value id `1` to `3`.
 * `file_engine_node_count` - (Optional, Int) The count of file engine.
@@ -137,9 +170,9 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
-* `create` - (Defaults to 90 mins) Used when create the Instance.
-* `update` - (Defaults to 180 mins) Used when update the Instance.
-* `delete` - (Defaults to 10 mins) Used when delete the Instance.
+* `create` - (Defaults to `180 mins`) Used when create the Instance.
+* `update` - (Defaults to `720 mins`) Used when update the Instance.
+* `delete` - (Defaults to `30 mins`) Used when delete the Instance.
 
 ## Import
 
