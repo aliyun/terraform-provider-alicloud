@@ -86,9 +86,13 @@ func AlicloudPrivatelinkVpcEndpointZoneBasicDependence(name string) string {
 	  load_balancer_spec  = "slb.s2.small"
       address_type = "intranet"
       instance_charge_type = "PayBySpec"
+      delete_protection = "off"
       vswitch_id = alicloud_vswitch.default.id
       master_zone_id = data.alicloud_slb_zones.default.zones.0.id
       slave_zone_id = data.alicloud_slb_zones.default.zones.1.id
+      lifecycle {
+        ignore_changes = [delete_protection]
+      }
 	}
 
 	data "alicloud_vswitches" "default" {
@@ -454,6 +458,13 @@ resource "alicloud_privatelink_vpc_endpoint" "defaulti9F95i" {
   vpc_id     = alicloud_vpc.defaultbFzA4a.id
   service_id = alicloud_privatelink_vpc_endpoint_service.defaultr0WBYX.id
   security_group_ids = [alicloud_security_group.default1FTFrP.id]
+  # The NLB-backed endpoint service only reports a zone as supported after the
+  # service_resource (the NLB registration) is created. Without this dependency
+  # the endpoint and service_resource race in parallel, and AddZoneToVpcEndpoint
+  # can run before the zone is propagated, failing with
+  # EndpointServiceNotSupportedZone. The service_resource Create waits on its own
+  # state refresh, so depending on it here lets endpoint_zone inherit the ordering.
+  depends_on = [alicloud_privatelink_vpc_endpoint_service_resource.defaultdTPOne]
 }
 
 resource "alicloud_vpc" "defaultVpcService" {

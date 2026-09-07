@@ -176,6 +176,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ehpc_users":                                     dataSourceAliCloudEhpcUsers(),
 			"alicloud_realtime_compute_members":                       dataSourceAliCloudRealtimeComputeMembers(),
 			"alicloud_apig_policies":                                  dataSourceAliCloudApigPolicies(),
+			"alicloud_vpc_route_target_groups":                        dataSourceAliCloudVpcRouteTargetGroups(),
 			"alicloud_ens_load_balancer_udp_listeners":                dataSourceAliCloudEnsLoadBalancerUdpListeners(),
 			"alicloud_ecd_desktop_groups":                             dataSourceAliCloudEcdDesktopGroups(),
 			"alicloud_redis_global_security_ip_groups":                dataSourceAliCloudRedisGlobalSecurityIpGroups(),
@@ -974,6 +975,7 @@ func Provider() terraform.ResourceProvider {
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_threat_detection_attack_path_whitelist":               resourceAliCloudThreatDetectionAttackPathWhitelist(),
+			"alicloud_vpc_route_target_group":                               resourceAliCloudVpcRouteTargetGroup(),
 			"alicloud_ehpc_user":                                            resourceAliCloudEhpcUser(),
 			"alicloud_realtime_compute_member":                              resourceAliCloudRealtimeComputeMember(),
 			"alicloud_apig_policy":                                          resourceAliCloudApigPolicy(),
