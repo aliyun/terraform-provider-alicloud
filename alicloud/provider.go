@@ -1022,6 +1022,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecs_disk_encryption_by_default":                       resourceAliCloudEcsDiskEncryptionByDefault(),
 			"alicloud_cms_agg_task_group":                                   resourceAliCloudCmsAggTaskGroup(),
 			"alicloud_cms_addon_release":                                    resourceAliCloudCmsAddonRelease(),
+			"alicloud_cms_cloud_resource":                                   resourceAliCloudCmsCloudResource(),
 			"alicloud_cms_prometheus_view":                                  resourceAliCloudCmsPrometheusView(),
 			"alicloud_cms_prometheus_instance":                              resourceAliCloudCmsPrometheusInstance(),
 			"alicloud_cms_integration_policy":                               resourceAliCloudCmsIntegrationPolicy(),
