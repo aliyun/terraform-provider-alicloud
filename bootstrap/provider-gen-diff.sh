@@ -94,6 +94,12 @@ to_camel() {
     }' <<<"$1"
 }
 
+# CamelCase -> snake_case (RealtimeCompute -> realtime_compute).
+# macOS BSD sed has no \L, so insert '_' before each capital then tr lower.
+to_snake() {
+    printf '%s' "$1" | sed -E 's/([A-Z])/_\1/g' | tr '[:upper:]' '[:lower:]' | sed 's/^_//'
+}
+
 # product segment -> PopCode. Default = capitalize; override non-obvious ones.
 popcode_for() {
     case "$1" in
@@ -165,8 +171,11 @@ if [ -z "$resource" ]; then
     resource="$(to_camel "$res_lc")"        # RouteTargetGroup (-r flag value)
     popcode="$(popcode_for "$product_lc")"  # Vpc (-n flag value)
 else
-    product_lc="$(printf '%s' "$popcode" | tr '[:upper:]' '[:lower:]')"
-    res_lc="$(printf '%s' "$resource" | sed -E 's/([A-Z])/_\L\1/g; s/^_//')"
+    product_lc="$(to_snake "$popcode")"
+    res_lc="$(to_snake "$resource")"
+    # Strip the product prefix when the resource code carries it
+    # (RealtimeComputeVariable -> variable; RouteTargetGroup stays route_target_group).
+    res_lc="${res_lc#${product_lc}_}"
 fi
 
 # ── HTML render setup ─────────────────────────────────────────────────────────
