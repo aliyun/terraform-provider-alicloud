@@ -218,20 +218,23 @@ def render_unified(rows):
 
 
 def render_split(rows):
-    out = []
+    out = ['<table class="split-table"><colgroup>'
+           '<col class="ln"><col class="code"><col class="ln"><col class="code">'
+           '</colgroup>']
     for r in rows:
         if r[0] == 'hunk':
-            out.append(f'<div class="srow hunk-row">{esc(r[1])}</div>')
+            out.append(f'<tr class="hunk-tr"><td colspan="4">{esc(r[1])}</td></tr>')
             continue
         ll, lc, lt, rl, rc, rt = r
         ll_s = str(ll) if ll is not None else ''
         rl_s = str(rl) if rl is not None else ''
         out.append(
-            f'<div class="srow">'
-            f'<span class="ln l {lt}">{ll_s}</span><span class="code l {lt}">{lc}</span>'
-            f'<span class="ln r {rt}">{rl_s}</span><span class="code r {rt}">{rc}</span>'
-            f'</div>'
+            '<tr>'
+            f'<td class="ln l {lt}">{ll_s}</td><td class="code l {lt}">{lc}</td>'
+            f'<td class="ln r {rt}">{rl_s}</td><td class="code r {rt}">{rc}</td>'
+            '</tr>'
         )
+    out.append('</table>')
     return ''.join(out)
 
 
@@ -382,12 +385,11 @@ def render_panel(section):
     elif no_diff:
         body_html = '<div class="empty">该文件与生成基线一致,无手改差异。</div>'
     else:
-        meta_html = ''.join(f'<span class="row meta">{esc(l)}</span>' for l in pre if l.strip())
+        meta_html = ''
         u = render_unified(unified_rows(hunks))
         s = render_split(split_rows(hunks))
         body_html = (
-            f'<pre class="diff-meta">{meta_html}</pre>'
-            f'<div class="view-split"><pre class="diff-pre split">{s}</pre></div>'
+            f'<div class="view-split">{s}</div>'
             f'<div class="view-unified" hidden><pre class="diff-pre unified">{u}</pre></div>'
         )
     return (
@@ -452,8 +454,6 @@ h1 .pop{font-family:'IBM Plex Mono',monospace; font-size:17px; font-weight:500; 
 .path{font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0}
 .diff-body{overflow:auto; max-height:540px; background:var(--panel)}
 .empty{padding:18px 20px; font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--muted)}
-.diff-meta{margin:0; padding:8px 18px; font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); white-space:pre; border-bottom:1px solid var(--border); overflow:auto}
-.diff-meta .row{display:block}
 .diff-pre{margin:0; padding:10px 0; font-family:'IBM Plex Mono',monospace; font-size:12.5px; line-height:1.65; background:var(--panel)}
 body.view-split .view-unified{display:none}
 body.view-unified .view-split{display:none}
@@ -465,17 +465,21 @@ body.view-unified .view-unified{display:block}
 .diff-pre.unified .del{background:var(--del-bg)} .diff-pre.unified .del .txt{color:var(--del-tx)} .diff-pre.unified .del .sig{color:var(--del-tx)}
 .diff-pre.unified .hunk{background:var(--hunk-bg); color:var(--hunk-tx); border-top:1px solid var(--border); border-bottom:1px solid var(--border)}
 .diff-pre.unified .meta{color:var(--muted)} .diff-pre.unified .ctx .txt{color:var(--ink)}
-/* split */
-.diff-pre.split{padding:10px 0}
-.diff-pre.split .srow{display:flex; white-space:pre; align-items:stretch}
-.diff-pre.split .srow .ln{flex:0 0 auto; width:4ch; text-align:right; padding:0 9px 0 16px; color:var(--sig); user-select:none; font-variant-numeric:tabular-nums}
-.diff-pre.split .srow .code{flex:0 0 auto; min-width:42ch; padding-right:24px; white-space:pre}
-.diff-pre.split .srow .ln.del, .diff-pre.split .srow .code.del{background:var(--del-bg); color:var(--del-tx)}
-.diff-pre.split .srow .ln.add, .diff-pre.split .srow .code.add{background:var(--add-bg); color:var(--add-tx)}
-.diff-pre.split .srow .ln.blank, .diff-pre.split .srow .code.blank{background:var(--blank-bg); color:var(--sig)}
-.diff-pre.split .srow .ln.ctx{color:var(--sig)} .diff-pre.split .srow .code.ctx{color:var(--ink)}
-.diff-pre.split .srow .code.l{border-right:1px solid var(--border)}
-.diff-pre.split .hunk-row{background:var(--hunk-bg); color:var(--hunk-tx); padding:3px 16px; font-size:11.5px; border-top:1px solid var(--border); border-bottom:1px solid var(--border); white-space:pre}
+/* split — fixed-layout table so left/right code columns are EQUAL width and
+   stay aligned row-to-row; pre-wrap keeps both sides visible instead of letting
+   one side's longest line eat the viewport. */
+.split-table{border-collapse:collapse; width:100%; table-layout:fixed; margin:0; font-family:'IBM Plex Mono',monospace; font-size:12.5px; line-height:1.65}
+.split-table col.ln{width:6ch}
+.split-table col.code{width:auto}
+.split-table td{padding:0; vertical-align:top; border:none}
+.split-table td.ln{white-space:nowrap; overflow:hidden; text-align:right; padding:0 8px 0 14px; color:var(--sig); user-select:none; font-variant-numeric:tabular-nums}
+.split-table td.code{padding:1px 12px 1px 8px; white-space:pre-wrap; overflow-wrap:break-word; word-break:break-word}
+.split-table td.code.l{border-right:1px solid var(--border); padding-right:14px}
+.split-table td.ln.del, .split-table td.code.del{background:var(--del-bg); color:var(--del-tx)}
+.split-table td.ln.add, .split-table td.code.add{background:var(--add-bg); color:var(--add-tx)}
+.split-table td.ln.blank, .split-table td.code.blank{background:var(--blank-bg); color:var(--sig)}
+.split-table td.ln.ctx{color:var(--sig)} .split-table td.code.ctx{color:var(--ink)}
+.split-table tr.hunk-tr td{background:var(--hunk-bg); color:var(--hunk-tx); padding:3px 16px; font-size:11.5px; white-space:pre; border-top:1px solid var(--border); border-bottom:1px solid var(--border)}
 .checklist{background:var(--panel); border:1px solid var(--border); border-radius:9px; padding:22px 26px; margin-bottom:20px}
 .bug{padding:15px 0; border-bottom:1px solid var(--border)}
 .bug:last-child{border-bottom:none; padding-bottom:0} .bug:first-child{padding-top:0}
