@@ -550,7 +550,12 @@ def main():
     ]
     meta_html = ''.join(f'<div class="mk">{esc(k)}</div><div class="mv">{esc(v)}</div>' for k, v in rows_meta)
 
-    PAGE = f"""<title>{esc(meta.get('resource_code', 'Provider') or 'Provider')} 生成对比</title>
+    # Prefer the snake_case resource name (e.g. realtime_compute_variable) for
+    # the tab title so multiple gen-diff pages are distinguishable; fall back to
+    # the resource code when snake is unavailable (degraded mode).
+    title_name = (meta.get('snake', '') or '').replace(' / ', '_') or (meta.get('resource_code', 'Provider') or 'Provider')
+
+    PAGE = f"""<title>{esc(title_name)} 生成对比</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600&display=swap">
 <style>{CSS}</style>
 <div class="wrap">

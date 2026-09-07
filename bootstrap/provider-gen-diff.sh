@@ -143,7 +143,7 @@ while [ $# -gt 0 ]; do
         --help|-h) sed -n '2,/^$/p' "$0" | sed 's/^# \?//'; exit 0 ;;
         --*) die "unknown flag: $1" ;;
         *)
-            if [ -z "$resource_name" ]; then resource_name="$1"
+            if [ -z "$resource_name" ] && [ -z "$resource" ]; then resource_name="$1"
             elif [ -z "$worktree" ]; then worktree="$1"
             else die "unexpected positional arg: $1"; fi
             shift ;;
