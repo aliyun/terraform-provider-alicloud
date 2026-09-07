@@ -108,6 +108,7 @@ func testSweepLindormInstances(region string) error {
 
 func TestAccAliCloudLindormInstance_basic0(t *testing.T) {
 	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.LindormInstanceRegions)
 	resourceId := "alicloud_lindorm_instance.default_0"
 	ra := resourceAttrInit(resourceId, AliCloudLindormInstanceMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -446,6 +447,7 @@ func TestAccAliCloudLindormInstance_basic0(t *testing.T) {
 
 func TestAccAliCloudLindormInstance_basic1(t *testing.T) {
 	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.LindormInstanceRegions)
 	resourceId := "alicloud_lindorm_instance.default_1"
 	ra := resourceAttrInit(resourceId, AliCloudLindormInstanceMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -636,6 +638,17 @@ func TestAccAliCloudLindormInstance_basic2(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"log_num": "12",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"table_engine_node_count": "8",
+						"log_num":                 "12",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"log_spec": "lindorm.sn1.2xlarge",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -656,6 +669,7 @@ func TestAccAliCloudLindormInstance_basic2(t *testing.T) {
 
 func TestAccAliCloudLindormInstance_basic3(t *testing.T) {
 	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.LindormInstanceRegions)
 	resourceId := "alicloud_lindorm_instance.default_0"
 	ra := resourceAttrInit(resourceId, AliCloudLindormInstanceMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -758,6 +772,7 @@ func TestAccAliCloudLindormInstance_basic3(t *testing.T) {
 
 func TestAccAliCloudLindormInstance_twin(t *testing.T) {
 	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.LindormInstanceRegions)
 	resourceId := "alicloud_lindorm_instance.default_1"
 	ra := resourceAttrInit(resourceId, AliCloudLindormInstanceMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
