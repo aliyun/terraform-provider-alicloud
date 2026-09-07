@@ -1,15 +1,22 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
+	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
+	credentials "github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	sdktf "github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
@@ -637,6 +644,17 @@ func TestAccAliCloudLindormInstance_basic2(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"log_num": "12",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"table_engine_node_count": "8",
+						"log_num":                 "12",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"log_spec": "lindorm.sn1.2xlarge",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -940,4 +958,457 @@ func AliCloudLindormInstanceBasicDependence1(name string) string {
 	data "alicloud_resource_manager_resource_groups" "default" {
 	}
 `, name)
+}
+
+const lindormInstanceTestId = "ld-test-instance"
+
+type lindormInstanceTestAPI struct {
+	t             *testing.T
+	engineType    int
+	logNum        int
+	rejectUpgrade bool
+
+	describeFailures      int
+	describeFailureStatus int
+	describeFailureCode   string
+
+	mu            sync.Mutex
+	upgrades      []map[string]string
+	describeCalls int
+}
+
+func (a *lindormInstanceTestAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		a.t.Errorf("parse hitsdb request: %v", err)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	response := map[string]interface{}{"RequestId": "test-request-id"}
+	switch action := r.Form.Get("Action"); action {
+	case "UpgradeLindormInstance":
+		call := map[string]string{}
+		for _, key := range []string{"UpgradeType", "LogNum", "LindormNum", "LindormSpec", "ClusterStorage", "InstanceId"} {
+			if value := r.Form.Get(key); value != "" {
+				call[key] = value
+			}
+		}
+		a.mu.Lock()
+		a.upgrades = append(a.upgrades, call)
+		a.mu.Unlock()
+		if a.rejectUpgrade {
+			w.WriteHeader(http.StatusBadRequest)
+			response = map[string]interface{}{
+				"Code":      "InvalidParameter",
+				"Message":   "mock UpgradeLindormInstance rejected",
+				"RequestId": "test-request-id",
+			}
+		}
+	case "GetLindormInstance":
+		a.mu.Lock()
+		a.describeCalls++
+		failRead := a.describeCalls <= a.describeFailures
+		a.mu.Unlock()
+		if failRead {
+			status := a.describeFailureStatus
+			if status == 0 {
+				status = http.StatusUnavailableForLegalReasons
+			}
+			code := a.describeFailureCode
+			if code == "" {
+				code = "OperationFailed"
+			}
+			w.WriteHeader(status)
+			response = map[string]interface{}{
+				"Code":      code,
+				"Message":   "mock GetLindormInstance failure",
+				"RequestId": "test-request-id",
+			}
+			break
+		}
+		response = map[string]interface{}{
+			"InstanceId":       lindormInstanceTestId,
+			"InstanceStatus":   "ACTIVATION",
+			"InstanceAlias":    "tf-test-lindorm",
+			"PayType":          "POSTPAY",
+			"ZoneId":           "cn-hangzhou-h",
+			"ServiceType":      "lindorm",
+			"LogNum":           a.logNum,
+			"LogSingleStorage": 400,
+			"InstanceStorage":  1000,
+			"EngineType":       a.engineType,
+		}
+	case "GetInstanceIpWhiteList":
+		response = map[string]interface{}{"InstanceId": lindormInstanceTestId, "IpList": []interface{}{"127.0.0.1"}}
+	case "GetLindormInstanceEngineInfo":
+		response = map[string]interface{}{
+			"InstanceId":               lindormInstanceTestId,
+			"TableEngineNodeCount":     4,
+			"TableEngineSpecification": "lindorm.g.xlarge",
+		}
+	case "ListTagResources":
+		response = map[string]interface{}{"TagResources": []interface{}{}}
+	default:
+		a.t.Errorf("unexpected hitsdb action %q", action)
+		w.WriteHeader(http.StatusBadRequest)
+		response = map[string]interface{}{"Code": "UnexpectedAction", "Message": action}
+	}
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		a.t.Errorf("encode hitsdb response: %v", err)
+	}
+}
+
+func (a *lindormInstanceTestAPI) upgradeCalls() []map[string]string {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	return append([]map[string]string(nil), a.upgrades...)
+}
+
+func (a *lindormInstanceTestAPI) describeCount() int {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	return a.describeCalls
+}
+
+func lindormInstanceTestClient(t *testing.T, handler http.Handler) *connectivity.AliyunClient {
+	t.Helper()
+	server := httptest.NewServer(handler)
+	t.Cleanup(server.Close)
+
+	credential, err := credentials.NewCredential(new(credentials.Config).
+		SetType("access_key").SetAccessKeyId("test-key").SetAccessKeySecret("test-secret"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	endpoints := new(sync.Map)
+	endpoint := strings.TrimPrefix(server.URL, "http://")
+	t.Setenv("NO_PROXY", endpoint)
+	config := &connectivity.Config{
+		AccessKey: "test-key", SecretKey: "test-secret", Credential: credential,
+		RegionId: "cn-hangzhou", AccountType: "test", Protocol: "http",
+		Endpoints: endpoints, SignVersion: new(sync.Map), SkipRegionValidation: true,
+	}
+	client, err := config.Client()
+	if err != nil {
+		t.Fatal(err)
+	}
+	endpoints.Store("hitsdb", endpoint)
+	return client
+}
+
+func lindormInstanceTestData(t *testing.T, state, changes map[string]string) *schema.ResourceData {
+	t.Helper()
+	attributes := map[string]string{"id": lindormInstanceTestId}
+	for key, value := range state {
+		attributes[key] = value
+	}
+	diff := sdktf.NewInstanceDiff()
+	for key, value := range changes {
+		diff.Attributes[key] = &sdktf.ResourceAttrDiff{Old: attributes[key], New: value}
+	}
+	d, err := schema.InternalMap(resourceAliCloudLindormInstance().Schema).Data(
+		&sdktf.InstanceState{ID: lindormInstanceTestId, Attributes: attributes}, diff)
+	if err != nil {
+		t.Fatalf("build resource data: %v", err)
+	}
+	return d
+}
+
+func lindormInstanceTableEngineState() map[string]string {
+	return map[string]string{
+		"enabled_table_engine":       "true",
+		"table_engine_node_count":    "4",
+		"table_engine_specification": "lindorm.g.xlarge",
+		"log_num":                    "4",
+		"instance_storage":           "1000",
+		"zone_id":                    "cn-hangzhou-h",
+	}
+}
+
+func TestUnitLindormInstanceUpdateLogNum(t *testing.T) {
+	t.Run("log_num only is upgraded independently", func(t *testing.T) {
+		api := &lindormInstanceTestAPI{t: t, engineType: 4, logNum: 8}
+		client := lindormInstanceTestClient(t, api)
+		d := lindormInstanceTestData(t, lindormInstanceTableEngineState(), map[string]string{"log_num": "8"})
+
+		if err := resourceAliCloudLindormInstanceUpdate(d, client); err != nil {
+			t.Fatalf("log_num-only update failed: %v", err)
+		}
+
+		// The pre-fix gate keyed only off table_engine_node_count and
+		// table_engine_specification, so it sent no request here at all and this
+		// assertion is the counter-example that fails without the log_num gate.
+		calls := api.upgradeCalls()
+		if len(calls) != 1 {
+			t.Fatalf("expected exactly one UpgradeLindormInstance call for a log_num-only change, got %d: %#v", len(calls), calls)
+		}
+		if got := calls[0]["UpgradeType"]; got != "upgrade-lindorm-core-num" {
+			t.Fatalf("expected UpgradeType=upgrade-lindorm-core-num, got %q", got)
+		}
+		if got := calls[0]["LogNum"]; got != "8" {
+			t.Fatalf("expected LogNum=8 (the new value), got %q", got)
+		}
+		if got := calls[0]["LindormNum"]; got != "4" {
+			t.Fatalf("expected LindormNum=4 (the unchanged table node count), got %q", got)
+		}
+		if got, ok := calls[0]["ClusterStorage"]; ok {
+			t.Fatalf("a log_num-only change must not send ClusterStorage, got %q", got)
+		}
+	})
+
+	t.Run("log_num and table node count change together are sent as one request", func(t *testing.T) {
+		api := &lindormInstanceTestAPI{t: t, engineType: 4, logNum: 8}
+		client := lindormInstanceTestClient(t, api)
+		d := lindormInstanceTestData(t, lindormInstanceTableEngineState(), map[string]string{
+			"log_num":                 "8",
+			"table_engine_node_count": "8",
+		})
+
+		if err := resourceAliCloudLindormInstanceUpdate(d, client); err != nil {
+			t.Fatalf("combined log_num and table node count update failed: %v", err)
+		}
+
+		calls := api.upgradeCalls()
+		if len(calls) != 1 {
+			t.Fatalf("expected exactly one UpgradeLindormInstance call for a combined change, got %d: %#v", len(calls), calls)
+		}
+		if got := calls[0]["UpgradeType"]; got != "upgrade-lindorm-core-num" {
+			t.Fatalf("expected UpgradeType=upgrade-lindorm-core-num, got %q", got)
+		}
+		if got := calls[0]["LogNum"]; got != "8" {
+			t.Fatalf("expected LogNum=8 (the new value), got %q", got)
+		}
+		if got := calls[0]["LindormNum"]; got != "8" {
+			t.Fatalf("expected LindormNum=8 (the new node count), got %q", got)
+		}
+		if got, ok := calls[0]["ClusterStorage"]; ok {
+			t.Fatalf("a combined log_num and node count change must not send ClusterStorage, got %q", got)
+		}
+	})
+
+	t.Run("log_num and specification change together upgrade both", func(t *testing.T) {
+		api := &lindormInstanceTestAPI{t: t, engineType: 4, logNum: 8}
+		client := lindormInstanceTestClient(t, api)
+		d := lindormInstanceTestData(t, lindormInstanceTableEngineState(), map[string]string{
+			"log_num":                    "8",
+			"table_engine_specification": "lindorm.g.2xlarge",
+		})
+
+		if err := resourceAliCloudLindormInstanceUpdate(d, client); err != nil {
+			t.Fatalf("combined log_num and specification update failed: %v", err)
+		}
+
+		calls := api.upgradeCalls()
+		if len(calls) != 2 {
+			t.Fatalf("expected a spec upgrade followed by a log_num upgrade, got %d call(s): %#v", len(calls), calls)
+		}
+		if got := calls[0]["UpgradeType"]; got != "upgrade-lindorm-engine" {
+			t.Fatalf("expected the first call to be upgrade-lindorm-engine, got %q", got)
+		}
+		if got := calls[0]["LindormSpec"]; got != "lindorm.g.2xlarge" {
+			t.Fatalf("expected LindormSpec=lindorm.g.2xlarge on the spec upgrade, got %q", got)
+		}
+		if got := calls[0]["ClusterStorage"]; got != "1000" {
+			t.Fatalf("expected ClusterStorage=1000 on the spec upgrade, got %q", got)
+		}
+		for _, key := range []string{"LogNum", "LindormNum"} {
+			if got, ok := calls[0][key]; ok {
+				t.Fatalf("the spec upgrade must not send %s, got %q", key, got)
+			}
+		}
+		if got := calls[1]["UpgradeType"]; got != "upgrade-lindorm-core-num" {
+			t.Fatalf("expected the second call to be upgrade-lindorm-core-num, got %q", got)
+		}
+		if got := calls[1]["LogNum"]; got != "8" {
+			t.Fatalf("expected LogNum=8 on the log_num upgrade, got %q", got)
+		}
+		if got := calls[1]["LindormNum"]; got != "4" {
+			t.Fatalf("expected LindormNum=4 (the unchanged table node count) on the log_num upgrade, got %q", got)
+		}
+		if got, ok := calls[1]["ClusterStorage"]; ok {
+			t.Fatalf("the log_num upgrade must not send ClusterStorage, got %q", got)
+		}
+	})
+
+	t.Run("log_num only does not open a disabled table engine", func(t *testing.T) {
+		api := &lindormInstanceTestAPI{t: t, engineType: 0, logNum: 8}
+		client := lindormInstanceTestClient(t, api)
+		d := lindormInstanceTestData(t, map[string]string{
+			"enabled_table_engine":    "false",
+			"table_engine_node_count": "0",
+			"log_num":                 "4",
+			"instance_storage":        "1000",
+			"zone_id":                 "cn-hangzhou-h",
+		}, map[string]string{"log_num": "8"})
+
+		if err := resourceAliCloudLindormInstanceUpdate(d, client); err != nil {
+			t.Fatalf("log_num-only update on a disabled table engine failed: %v", err)
+		}
+
+		if calls := api.upgradeCalls(); len(calls) != 0 {
+			t.Fatalf("a log_num-only change must not trigger any upgrade while the table engine is disabled, got %#v", calls)
+		}
+	})
+
+	t.Run("table node count change keeps its request shape", func(t *testing.T) {
+		api := &lindormInstanceTestAPI{t: t, engineType: 4, logNum: 4}
+		client := lindormInstanceTestClient(t, api)
+		d := lindormInstanceTestData(t, lindormInstanceTableEngineState(), map[string]string{"table_engine_node_count": "8"})
+
+		if err := resourceAliCloudLindormInstanceUpdate(d, client); err != nil {
+			t.Fatalf("table node count update failed: %v", err)
+		}
+
+		calls := api.upgradeCalls()
+		if len(calls) != 1 {
+			t.Fatalf("expected exactly one UpgradeLindormInstance call, got %d: %#v", len(calls), calls)
+		}
+		if got := calls[0]["UpgradeType"]; got != "upgrade-lindorm-core-num" {
+			t.Fatalf("expected UpgradeType=upgrade-lindorm-core-num, got %q", got)
+		}
+		if got := calls[0]["LindormNum"]; got != "8" {
+			t.Fatalf("expected LindormNum=8 (the new node count), got %q", got)
+		}
+		if got := calls[0]["LogNum"]; got != "" {
+			t.Fatalf("a node count change must not send LogNum, got %q", got)
+		}
+		if got := calls[0]["ClusterStorage"]; got != "1000" {
+			t.Fatalf("expected ClusterStorage=1000, got %q", got)
+		}
+	})
+
+	t.Run("table engine spec change keeps its request shape", func(t *testing.T) {
+		api := &lindormInstanceTestAPI{t: t, engineType: 4, logNum: 4}
+		client := lindormInstanceTestClient(t, api)
+		d := lindormInstanceTestData(t, lindormInstanceTableEngineState(), map[string]string{"table_engine_specification": "lindorm.g.2xlarge"})
+
+		if err := resourceAliCloudLindormInstanceUpdate(d, client); err != nil {
+			t.Fatalf("table engine spec update failed: %v", err)
+		}
+
+		calls := api.upgradeCalls()
+		if len(calls) != 1 {
+			t.Fatalf("expected exactly one UpgradeLindormInstance call, got %d: %#v", len(calls), calls)
+		}
+		if got := calls[0]["UpgradeType"]; got != "upgrade-lindorm-engine" {
+			t.Fatalf("expected UpgradeType=upgrade-lindorm-engine, got %q", got)
+		}
+		if got := calls[0]["LindormSpec"]; got != "lindorm.g.2xlarge" {
+			t.Fatalf("expected LindormSpec=lindorm.g.2xlarge, got %q", got)
+		}
+		if got := calls[0]["LindormNum"]; got != "" {
+			t.Fatalf("a spec change must not send LindormNum, got %q", got)
+		}
+		if got := calls[0]["LogNum"]; got != "" {
+			t.Fatalf("a spec change must not send LogNum, got %q", got)
+		}
+	})
+}
+
+func TestUnitLindormInstanceUpdateLogNumFailure(t *testing.T) {
+	api := &lindormInstanceTestAPI{t: t, engineType: 4, logNum: 4, rejectUpgrade: true}
+	client := lindormInstanceTestClient(t, api)
+	d := lindormInstanceTestData(t, lindormInstanceTableEngineState(), map[string]string{"log_num": "8"})
+
+	err := resourceAliCloudLindormInstanceUpdate(d, client)
+	if err == nil {
+		t.Fatal("a rejected UpgradeLindormInstance must fail the update")
+	}
+	if !strings.Contains(err.Error(), "mock UpgradeLindormInstance rejected") {
+		t.Fatalf("the cloud error must be returned as-is, got: %v", err)
+	}
+	if calls := api.upgradeCalls(); len(calls) != 1 {
+		t.Fatalf("expected exactly one UpgradeLindormInstance attempt, got %d: %#v", len(calls), calls)
+	}
+	if got := api.describeCount(); got != 0 {
+		t.Fatalf("a rejected upgrade must not poll or re-read the instance, got %d GetLindormInstance calls", got)
+	}
+}
+
+func TestUnitLindormInstanceStateRefreshPostCreateReadTolerance(t *testing.T) {
+	t.Run("freshly created instance read failure is treated as provisioning", func(t *testing.T) {
+		api := &lindormInstanceTestAPI{t: t, engineType: 4, logNum: 4, describeFailures: 2}
+		client := lindormInstanceTestClient(t, api)
+		service := HitsdbService{client}
+		var tolerance LindormPostCreateReadTolerance
+		refresh := service.LindormInstanceStateRefreshFuncWithPostCreateReadTolerance(lindormInstanceTestId, []string{}, time.Now().Add(time.Minute), &tolerance)
+
+		for i := 0; i < 2; i++ {
+			_, state, err := refresh()
+			if err != nil {
+				t.Fatalf("call %d: a transient post-create read failure must not fail the wait, got: %v", i+1, err)
+			}
+			if state == "ACTIVATION" {
+				t.Fatalf("call %d: an unreadable instance must not report ACTIVATION", i+1)
+			}
+		}
+		if lastTolerated := tolerance.last(); lastTolerated == nil || !strings.Contains(lastTolerated.Error(), "OperationFailed") {
+			t.Fatalf("the tolerated error must be recorded for diagnostics, got: %v", lastTolerated)
+		}
+
+		_, state, err := refresh()
+		if err != nil {
+			t.Fatalf("call 3: the refresh must recover once the instance is readable, got: %v", err)
+		}
+		if state != "ACTIVATION" {
+			t.Fatalf("call 3: expected state ACTIVATION once readable, got %q", state)
+		}
+	})
+
+	t.Run("the same failure is returned after the tolerance window", func(t *testing.T) {
+		api := &lindormInstanceTestAPI{t: t, engineType: 4, logNum: 4, describeFailures: 5}
+		client := lindormInstanceTestClient(t, api)
+		service := HitsdbService{client}
+		refresh := service.LindormInstanceStateRefreshFuncWithPostCreateReadTolerance(lindormInstanceTestId, []string{}, time.Now().Add(-time.Second), nil)
+
+		_, _, err := refresh()
+		if err == nil {
+			t.Fatal("a read failure after the tolerance window must be returned")
+		}
+		if !strings.Contains(err.Error(), "OperationFailed") {
+			t.Fatalf("the original cloud error must be returned after the window, got: %v", err)
+		}
+	})
+
+	t.Run("other errors are not tolerated", func(t *testing.T) {
+		api := &lindormInstanceTestAPI{
+			t:                     t,
+			engineType:            4,
+			logNum:                4,
+			describeFailures:      5,
+			describeFailureStatus: http.StatusBadRequest,
+			describeFailureCode:   "InvalidParameter",
+		}
+		client := lindormInstanceTestClient(t, api)
+		service := HitsdbService{client}
+		refresh := service.LindormInstanceStateRefreshFuncWithPostCreateReadTolerance(lindormInstanceTestId, []string{}, time.Now().Add(time.Minute), nil)
+
+		_, _, err := refresh()
+		if err == nil {
+			t.Fatal("a non-transient read error must propagate even inside the tolerance window")
+		}
+		if !strings.Contains(err.Error(), "InvalidParameter") {
+			t.Fatalf("expected the original error, got: %v", err)
+		}
+	})
+}
+
+func TestUnitLindormPostCreateReadToleranceForCreateTimeout(t *testing.T) {
+	cases := []struct {
+		name          string
+		createTimeout time.Duration
+		expected      time.Duration
+	}{
+		{"default create timeout keeps the upper bound", 90 * time.Minute, 20 * time.Minute},
+		{"timeout above the upper bound keeps the upper bound", 30 * time.Minute, 20 * time.Minute},
+		{"timeout just above the upper bound keeps room for the original error", 21 * time.Minute, 15*time.Minute + 45*time.Second},
+		{"timeout equal to the upper bound leaves room for the original error", 20 * time.Minute, 15 * time.Minute},
+		{"short timeout is shortened to three quarters", 12 * time.Minute, 9 * time.Minute},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if got := lindormPostCreateReadToleranceFor(c.createTimeout); got != c.expected {
+				t.Fatalf("create timeout %s: expected tolerance %s, got %s", c.createTimeout, c.expected, got)
+			}
+		})
+	}
 }

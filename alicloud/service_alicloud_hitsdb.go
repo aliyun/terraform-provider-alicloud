@@ -2,9 +2,12 @@ package alicloud
 
 import (
 	"fmt"
+	"net/http"
+	"sync"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -180,6 +183,70 @@ func (s *HitsdbService) LindormInstanceStateRefreshFunc(id string, failStates []
 		}
 		return object, fmt.Sprint(object["InstanceStatus"]), nil
 	}
+}
+
+// LindormPostCreateReadTolerance keeps the last tolerated post-create read
+// error. The SDK runs the refresh function in its own goroutine, so access is
+// guarded.
+type LindormPostCreateReadTolerance struct {
+	mu      sync.Mutex
+	lastErr error
+}
+
+func (t *LindormPostCreateReadTolerance) record(err error) {
+	if t == nil {
+		return
+	}
+	t.mu.Lock()
+	t.lastErr = err
+	t.mu.Unlock()
+}
+
+func (t *LindormPostCreateReadTolerance) last() error {
+	if t == nil {
+		return nil
+	}
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	return t.lastErr
+}
+
+// LindormInstanceStateRefreshFuncWithPostCreateReadTolerance wraps
+// LindormInstanceStateRefreshFunc so that a freshly created instance which is
+// briefly unreadable (HTTP 451 OperationFailed from GetLindormInstance) is
+// treated as still provisioning until deadline. Any other error is returned
+// unchanged, and the original error is returned once the deadline passes, so a
+// permanent failure is not masked and the wait stays bounded. The last tolerated
+// error is recorded in tolerance so the caller can surface it when the wait
+// itself times out. Only the Create wait uses this wrapper; Read and Delete keep
+// the strict behaviour.
+func (s *HitsdbService) LindormInstanceStateRefreshFuncWithPostCreateReadTolerance(id string, failStates []string, deadline time.Time, tolerance *LindormPostCreateReadTolerance) retry.StateRefreshFunc {
+	refresh := s.LindormInstanceStateRefreshFunc(id, failStates)
+	return func() (interface{}, string, error) {
+		object, state, err := refresh()
+		if err != nil && time.Now().Before(deadline) && isLindormTransientPostCreateReadError(err) {
+			tolerance.record(err)
+			return map[string]interface{}{"InstanceId": id}, "CREATING", nil
+		}
+		return object, state, err
+	}
+}
+
+func isLindormTransientPostCreateReadError(err error) bool {
+	if err == nil {
+		return false
+	}
+	if e, ok := err.(*ComplexError); ok {
+		return isLindormTransientPostCreateReadError(e.Cause)
+	}
+	if e, ok := err.(*tea.SDKError); ok {
+		code := ""
+		if e.Code != nil {
+			code = *e.Code
+		}
+		return tea.IntValue(e.StatusCode) == http.StatusUnavailableForLegalReasons && code == "OperationFailed"
+	}
+	return false
 }
 
 func (s *HitsdbService) ListTagResources(id string, resourceType string) (object interface{}, err error) {
