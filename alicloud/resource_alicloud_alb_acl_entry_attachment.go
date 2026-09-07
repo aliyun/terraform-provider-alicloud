@@ -89,6 +89,15 @@ func resourceAlicloudAlbAclEntryAttachmentCreate(d *schema.ResourceData, meta in
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
+	// Wait for the ACL itself to settle to Available before returning. The
+	// entry-level status may flip to Available while the ACL is still
+	// Configuring, which breaks downstream operations such as associating the
+	// ACL with a listener (IncorrectStatus.Acl). Aligns with the deprecated
+	// acl_entries path in resourceAlicloudAlbAclUpdate.
+	aclStateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, albService.AlbAclStateRefreshFunc(d.Get("acl_id").(string), []string{}))
+	if _, err := aclStateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
 	return resourceAlicloudAlbAclEntryAttachmentRead(d, meta)
 }
 
@@ -158,6 +167,13 @@ func resourceAlicloudAlbAclEntryAttachmentDelete(d *schema.ResourceData, meta in
 	}
 	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, albService.AlbAclEntryAttachmentStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+	// Wait for the ACL itself to settle to Available before returning. The
+	// entry is gone once the remove call succeeds, but the ACL may still be
+	// Configuring, which breaks downstream operations on the same ACL.
+	aclStateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutDelete), 5*time.Second, albService.AlbAclStateRefreshFunc(parts[0], []string{}))
+	if _, err := aclStateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 	return nil
