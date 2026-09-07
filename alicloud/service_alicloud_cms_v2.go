@@ -159,6 +159,134 @@ func (s *CmsServiceV2) CmsIntegrationPolicyStateRefreshFuncWithApi(id string, fi
 
 // DescribeCmsIntegrationPolicy >>> Encapsulated.
 
+// DescribeCmsAlertEventIntegrationPolicy <<< Encapsulated get interface for Cms AlertEventIntegrationPolicy.
+
+func (s *CmsServiceV2) DescribeCmsAlertEventIntegrationPolicy(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]*string
+	policyId := id
+	request = make(map[string]interface{})
+	query = make(map[string]*string)
+
+	action := fmt.Sprintf("/alertEventIntegrationPolicies/%s", policyId)
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RoaGet("Cms", "2024-03-30", action, query, nil, nil)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ResourceNotFound", "NotFound", "404"}) {
+			return object, WrapErrorf(NotFoundErr("AlertEventIntegrationPolicy", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+
+func (s *CmsServiceV2) CmsAlertEventIntegrationPolicyStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.CmsAlertEventIntegrationPolicyStateRefreshFuncWithApi(id, field, failStates, s.DescribeCmsAlertEventIntegrationPolicy)
+}
+
+func (s *CmsServiceV2) CmsAlertEventIntegrationPolicyStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeCmsAlertEventIntegrationPolicy >>> Encapsulated.
+
+// ListCmsAlertEventIntegrationPolicies <<< Encapsulated list interface for Cms AlertEventIntegrationPolicy.
+
+func (s *CmsServiceV2) ListCmsAlertEventIntegrationPolicies(workspace string, args *struct {
+	AlertEventIntegrationPolicyName *string
+	AlertEventIntegrationPolicyId   *string
+	Enable                          *bool
+	NextToken                       *string
+	MaxResults                      *int
+}) (resp map[string]interface{}, err error) {
+	client := s.client
+	action := "/alertEventIntegrationPolicies"
+	request := make(map[string]interface{})
+	query := make(map[string]*string)
+
+	if workspace != "" {
+		query["workspace"] = StringPointer(workspace)
+	}
+	if args != nil {
+		if args.AlertEventIntegrationPolicyName != nil && *args.AlertEventIntegrationPolicyName != "" {
+			query["name"] = StringPointer(*args.AlertEventIntegrationPolicyName)
+		}
+		if args.AlertEventIntegrationPolicyId != nil && *args.AlertEventIntegrationPolicyId != "" {
+			query["uuid"] = StringPointer(*args.AlertEventIntegrationPolicyId)
+		}
+		if args.Enable != nil {
+			query["enable"] = StringPointer(fmt.Sprintf("%t", *args.Enable))
+		}
+		if args.NextToken != nil && *args.NextToken != "" {
+			query["nextToken"] = StringPointer(*args.NextToken)
+		}
+		if args.MaxResults != nil && *args.MaxResults > 0 {
+			query["maxResults"] = StringPointer(fmt.Sprintf("%d", *args.MaxResults))
+		}
+	}
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	var response map[string]interface{}
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RoaGet("Cms", "2024-03-30", action, query, nil, nil)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return response, WrapErrorf(err, DefaultErrorMsg, "ListAlertEventIntegrationPolicies", action, AlibabaCloudSdkGoERROR)
+	}
+	return response, nil
+}
+
+// ListCmsAlertEventIntegrationPolicies >>> Encapsulated.
+
 // DescribeCmsPrometheusInstance <<< Encapsulated get interface for Cms PrometheusInstance.
 
 func (s *CmsServiceV2) DescribeCmsPrometheusInstance(id string) (object map[string]interface{}, err error) {
