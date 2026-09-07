@@ -986,19 +986,34 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 			action := "ModifyDBClusterTDE"
 			request := map[string]interface{}{
 				"DBClusterId": d.Id(),
-				"TDEStatus":   convertPolarDBTdeStatusUpdateRequest(v.(string)),
 			}
+			// Distinguish a first-time TDE enable from an incremental update on an
+			// already-enabled cluster. Sending TDEStatus=Enable when TDE is already
+			// enabled makes the server reject the whole ModifyDBClusterTDE call with
+			// InvalidTDEStatus.AlreadyEnabled, which previously was swallowed and left
+			// EnableAutomaticRotation (and the other incremental fields) silently
+			// un-applied. Only carry TDEStatus when this is the Disable->Enable turn.
+			tdeOld, _ := d.GetChange("tde_status")
+			firstTimeEnable := tdeOld.(string) == "" || tdeOld.(string) == "Disabled"
+			if firstTimeEnable {
+				request["TDEStatus"] = convertPolarDBTdeStatusUpdateRequest(v.(string))
+			}
+			hasIncrementalFields := false
 			if s, ok := d.GetOk("encrypt_new_tables"); ok && s.(string) != "" {
 				request["EncryptNewTables"] = s.(string)
+				hasIncrementalFields = true
 			}
 			if v, ok := d.GetOk("encryption_key"); ok && v.(string) != "" {
 				request["EncryptionKey"] = v.(string)
+				hasIncrementalFields = true
 			}
 			if v, ok := d.GetOk("role_arn"); ok && v.(string) != "" {
 				request["RoleArn"] = v.(string)
+				hasIncrementalFields = true
 			}
 			if v, ok := d.GetOkExists("enable_automatic_rotation"); ok {
 				request["EnableAutomaticRotation"] = v
+				hasIncrementalFields = true
 			}
 			//retry
 			wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -1015,7 +1030,13 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 				return nil
 			})
 			if err != nil {
-				if !IsExpectedErrors(err, []string{"InvalidTDEStatus.AlreadyEnabled"}) {
+				// InvalidTDEStatus.AlreadyEnabled means TDE is already enabled and the
+				// server rejected the whole call. Only tolerate it for a pure first-time
+				// enable no-op; when the request also carries EnableAutomaticRotation
+				// (or another incremental field) the rejection means the update did NOT
+				// take effect, so it must surface as a real failure instead of being
+				// swallowed as a silent success.
+				if !(IsExpectedErrors(err, []string{"InvalidTDEStatus.AlreadyEnabled"}) && !hasIncrementalFields) {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
 			}
