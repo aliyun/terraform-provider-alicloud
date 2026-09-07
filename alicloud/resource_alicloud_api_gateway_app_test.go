@@ -187,6 +187,114 @@ func SkipTestAccAlicloudApigatewayApp_basic(t *testing.T) {
 	})
 }
 
+// TestAccAliCloudApiGatewayApp_basic exercises the new schema fields introduced
+// alongside the App.cspec operations update (app_code, extend, disabled,
+// app_secret_reset) and tags. It covers create -> update -> reset trigger ->
+// import, exercising every Optional attribute and modifying it across steps.
+// app_key/app_secret are Computed-only server-managed credentials surfaced
+// from DescribeAppSecurity, so they are not set in config.
+func TestAccAliCloudApiGatewayApp_basic(t *testing.T) {
+	var v *cloudapi.DescribeAppResponse
+	resourceId := "alicloud_api_gateway_app.default"
+	ra := resourceAttrInit(resourceId, apigatewayAppBasicMap)
+	serviceFunc := func() interface{} {
+		return &CloudApiService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf_testAccApp_%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceApigatewayAppConfigDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			// Step 1: create with name, description, extend, app_code and tags.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":        "${var.name}",
+					"description": "${var.description}",
+					"extend":      "tf-extend-info",
+					"app_code":    "tf-appcode-1234",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "create",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":         name,
+						"description":  "tf_testAcc api gateway description",
+						"extend":       "tf-extend-info",
+						"app_code":     "tf-appcode-1234",
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "create",
+					}),
+				),
+			},
+			// Step 2: update name, description, extend, disabled, app_code and tags.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":        "${var.name}_u",
+					"description": "${var.description}_u",
+					"extend":      "tf-extend-info-updated",
+					"disabled":    true,
+					"app_code":    "tf-appcode-5678",
+					"tags": map[string]string{
+						"Created": "TF",
+						"Env":     "updated",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":         name + "_u",
+						"description":  "tf_testAcc api gateway description_u",
+						"extend":       "tf-extend-info-updated",
+						"disabled":     "true",
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.Env":     "updated",
+					}),
+				),
+			},
+			// Step 3: re-enable the app and trigger AppSecret reset.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":             "${var.name}_u",
+					"description":      "${var.description}_u",
+					"extend":           "tf-extend-info-updated",
+					"disabled":         false,
+					"app_code":         "tf-appcode-5678",
+					"app_secret_reset": "trigger-1",
+					"tags": map[string]string{
+						"Created": "TF",
+						"Env":     "updated",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":     name + "_u",
+						"disabled": "false",
+					}),
+				),
+			},
+			// Step 4: import verify. Ignore app_secret_reset which is a client-side trigger.
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"app_secret_reset"},
+			},
+		},
+	})
+}
+
 func SkipTestAccAlicloudApigatewayApp_multi(t *testing.T) {
 	var v *cloudapi.DescribeAppResponse
 	resourceId := "alicloud_api_gateway_app.default.9"

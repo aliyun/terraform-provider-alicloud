@@ -86,6 +86,30 @@ func (s *CloudApiService) DescribeApiGatewayApp(id string) (*cloudapi.DescribeAp
 	return app, nil
 }
 
+// DescribeApiGatewayAppSecurity queries AppKey/AppSecret/AppCode for an app.
+// The API uses AppId as the identifier and returns AppKey, AppSecret, AppCode,
+// ModifiedTime and CreatedTime, matching the cspec
+// App_operation_DescribeAppSecurity_mapping.
+func (s *CloudApiService) DescribeApiGatewayAppSecurity(id string) (*cloudapi.DescribeAppSecurityResponse, error) {
+	resp := &cloudapi.DescribeAppSecurityResponse{}
+	request := cloudapi.CreateDescribeAppSecurityRequest()
+	request.RegionId = s.client.RegionId
+	request.AppId = requests.Integer(id)
+
+	raw, err := s.client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
+		return cloudApiClient.DescribeAppSecurity(request)
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"NotFoundApp"}) {
+			return resp, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return resp, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	resp, _ = raw.(*cloudapi.DescribeAppSecurityResponse)
+	return resp, nil
+}
+
 func (s *CloudApiService) WaitForApiGatewayApp(id string, status Status, timeout int) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
