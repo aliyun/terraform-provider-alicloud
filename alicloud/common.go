@@ -414,6 +414,26 @@ func filterEmptyStrings(arr []interface{}) []interface{} {
 	return result
 }
 
+// filterNilAndEmptyStrings removes nil and empty-string elements from a
+// []interface{} before it is forwarded to the SDK request. The tea-rpc-utils
+// request serializer reflects over slice elements; a nil element triggers
+// "reflect: Value.Interface: cannot return zero Value" because the zero
+// Value has no concrete type to recover. Empty strings are dropped as well
+// to avoid sending placeholder entries that the server would reject.
+func filterNilAndEmptyStrings(arr []interface{}) []interface{} {
+	var result []interface{}
+	for _, str := range arr {
+		if str == nil {
+			continue
+		}
+		if fmt.Sprint(str) == "" {
+			continue
+		}
+		result = append(result, str)
+	}
+	return result
+}
+
 func convertBoolToString(configured bool) string {
 	return strconv.FormatBool(configured)
 }

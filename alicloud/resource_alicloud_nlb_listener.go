@@ -186,12 +186,12 @@ func resourceAliCloudNlbListenerCreate(d *schema.ResourceData, meta interface{})
 	}
 	if v, ok := d.GetOk("certificate_ids"); ok {
 		certificateIdsMapsArray := v.([]interface{})
-		request["CertificateIds"] = certificateIdsMapsArray
+		request["CertificateIds"] = filterNilAndEmptyStrings(certificateIdsMapsArray)
 	}
 
 	if v, ok := d.GetOk("ca_certificate_ids"); ok {
 		caCertificateIdsMapsArray := v.([]interface{})
-		request["CaCertificateIds"] = caCertificateIdsMapsArray
+		request["CaCertificateIds"] = filterNilAndEmptyStrings(caCertificateIdsMapsArray)
 	}
 
 	if v, ok := d.GetOk("alpn_policy"); ok {
@@ -487,7 +487,7 @@ func resourceAliCloudNlbListenerUpdate(d *schema.ResourceData, meta interface{})
 		update = true
 		if v, ok := d.GetOk("certificate_ids"); ok || d.HasChange("certificate_ids") {
 			certificateIdsMapsArray := v.([]interface{})
-			request["CertificateIds"] = certificateIdsMapsArray
+			request["CertificateIds"] = filterNilAndEmptyStrings(certificateIdsMapsArray)
 		}
 	}
 
@@ -495,7 +495,7 @@ func resourceAliCloudNlbListenerUpdate(d *schema.ResourceData, meta interface{})
 		update = true
 		if v, ok := d.GetOk("ca_certificate_ids"); ok || d.HasChange("ca_certificate_ids") {
 			caCertificateIdsMapsArray := v.([]interface{})
-			request["CaCertificateIds"] = caCertificateIdsMapsArray
+			request["CaCertificateIds"] = filterNilAndEmptyStrings(caCertificateIdsMapsArray)
 		}
 	}
 
