@@ -89,6 +89,13 @@ func resourceAlicloudAlbAclEntryAttachmentCreate(d *schema.ResourceData, meta in
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
+	// The acl entry turns Available before the acl itself leaves Configuring status.
+	// Wait for the acl to become Available, so that dependent resources (e.g. alicloud_alb_listener_acl_attachment)
+	// will not be created while the server side still considers the acl Configuring.
+	stateConf = BuildStateConf([]string{"Creating", "Configuring"}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, albService.AlbAclStateRefreshFunc(fmt.Sprint(request["AclId"]), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
 	return resourceAlicloudAlbAclEntryAttachmentRead(d, meta)
 }
 
