@@ -215,6 +215,43 @@ func TestAccAliCloudPolarDBCluster_Update(t *testing.T) {
 					}),
 				),
 			},
+			// Verify incremental modification of enable_automatic_rotation on an
+			// already-TDE-enabled cluster. Before the fix, ModifyDBClusterTDE re-sends
+			// TDEStatus=Enable on an enabled cluster and the server rejects the whole
+			// request with InvalidTDEStatus.AlreadyEnabled; the error was swallowed and
+			// SetPartial marked the rotation as applied, so the rotation never took
+			// effect (automatic_rotation stayed unchanged). The fix retries the request
+			// without TDEStatus so the server applies the remaining parameters.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tde_status":                "Enabled",
+					"encrypt_new_tables":        "ON",
+					"encryption_key":            "${alicloud_kms_key.default.id}",
+					"role_arn":                  "acs:ram::${data.alicloud_account.current.id}:role/aliyunrdsinstanceencryptiondefaultrole",
+					"enable_automatic_rotation": false,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tde_status":         "Enabled",
+						"automatic_rotation": "Disabled",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tde_status":                "Enabled",
+					"encrypt_new_tables":        "ON",
+					"encryption_key":            "${alicloud_kms_key.default.id}",
+					"role_arn":                  "acs:ram::${data.alicloud_account.current.id}:role/aliyunrdsinstanceencryptiondefaultrole",
+					"enable_automatic_rotation": true,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tde_status":         "Enabled",
+						"automatic_rotation": "Enabled",
+					}),
+				),
+			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"db_node_count": "3",

@@ -1015,7 +1015,40 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 				return nil
 			})
 			if err != nil {
-				if !IsExpectedErrors(err, []string{"InvalidTDEStatus.AlreadyEnabled"}) {
+				if IsExpectedErrors(err, []string{"InvalidTDEStatus.AlreadyEnabled"}) {
+					// TDE is already enabled, so sending TDEStatus=Enable was rejected with
+					// InvalidTDEStatus.AlreadyEnabled and the whole request (including
+					// EnableAutomaticRotation/EncryptNewTables/EncryptionKey/RoleArn) was
+					// discarded. When the request carried other TDE parameters, retry once
+					// without TDEStatus so the server applies them instead of silently
+					// dropping the change. A pure re-enable with no other parameters is
+					// treated as idempotent (AlreadyEnabled tolerated).
+					if len(request) > 2 {
+						retryRequest := map[string]interface{}{"DBClusterId": d.Id()}
+						for k, val := range request {
+							if k == "TDEStatus" {
+								continue
+							}
+							retryRequest[k] = val
+						}
+						waitRetry := incrementalWait(3*time.Second, 3*time.Second)
+						err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+							resp, e := client.RpcPost("polardb", "2017-08-01", action, nil, retryRequest, false)
+							if e != nil {
+								if NeedRetry(e) {
+									waitRetry()
+									return resource.RetryableError(e)
+								}
+								return resource.NonRetryableError(e)
+							}
+							addDebug(action, resp, retryRequest)
+							return nil
+						})
+						if err != nil {
+							return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+						}
+					}
+				} else {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
 			}
