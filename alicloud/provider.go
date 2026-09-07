@@ -974,6 +974,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_sls_metric_stores":                                dataSourceAliCloudSlsMetricStores(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_cms_context_store_api_key":                            resourceAliCloudCmsContextStoreApiKey(),
 			"alicloud_threat_detection_attack_path_whitelist":               resourceAliCloudThreatDetectionAttackPathWhitelist(),
 			"alicloud_vpc_route_target_group":                               resourceAliCloudVpcRouteTargetGroup(),
 			"alicloud_ehpc_user":                                            resourceAliCloudEhpcUser(),
