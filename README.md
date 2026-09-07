@@ -103,3 +103,14 @@ export ALICLOUD_ACCOUNT_SITE=Domestic
 export ALICLOUD_ACCOUNT_SITE=International
 ```
 The setting of account site type can skip some unsupported cases automatically.
+
+## Estimate Cost (plan-time pricing)
+
+This repository also ships a small companion tool that adds a `--estimate-cost`
+flag to `terraform plan`, returning the real Alibaba Cloud price (from
+CloudControl `GetApiPrice`) of the resources you are about to create or modify.
+It is **built alongside the provider** by the same release pipeline, with
+matching version numbers, so every provider release tag automatically produces
+a matching `alicloud-tf-estimate-cost_*.tar.gz` on GitHub Releases.
+
+See [estimate-cost/README.md](./estimate-cost/README.md) for install + usage.
