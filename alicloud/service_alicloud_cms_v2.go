@@ -638,3 +638,104 @@ func (s *CmsServiceV2) CmsEventNotifyPolicyStateRefreshFuncWithApi(id string, fi
 }
 
 // DescribeCmsEventNotifyPolicy >>> Encapsulated.
+
+// DescribeCmsAlertWebhook <<< Encapsulated get interface for Cms AlertWebhook.
+
+func (s *CmsServiceV2) DescribeCmsAlertWebhook(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]*string
+	request = make(map[string]interface{})
+	query = make(map[string]*string)
+
+	// There is no dedicated Get API for the alert webhook. The single
+	// identifier is wrapped into the ListAlertWebhooks webhookIds query
+	// parameter (JSON array string) and matched client-side.
+	webhookIdsJson, jsonErr := json.Marshal([]string{id})
+	if jsonErr != nil {
+		return object, WrapError(jsonErr)
+	}
+	query["webhookIds"] = StringPointer(string(webhookIdsJson))
+	query["pageNumber"] = StringPointer("1")
+	query["pageSize"] = StringPointer(fmt.Sprintf("%d", PageSizeLarge))
+
+	action := "/webhooks"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RoaGet("Cms", "2024-03-30", action, query, nil, nil)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"404", "ResourceNotFound"}) {
+			return object, WrapErrorf(NotFoundErr("AlertWebhook", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	if response["webhooks"] == nil {
+		return object, WrapErrorf(NotFoundErr("AlertWebhook", id), NotFoundMsg, response)
+	}
+
+	v, err := jsonpath.Get("$.webhooks[*]", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.webhooks[*]", response)
+	}
+
+	webhooks, _ := v.([]interface{})
+	for _, webhookRaw := range webhooks {
+		webhook, ok := webhookRaw.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		if fmt.Sprint(webhook["webhookId"]) == id {
+			return webhook, nil
+		}
+	}
+
+	return object, WrapErrorf(NotFoundErr("AlertWebhook", id), NotFoundMsg, response)
+}
+
+func (s *CmsServiceV2) CmsAlertWebhookStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.CmsAlertWebhookStateRefreshFuncWithApi(id, field, failStates, s.DescribeCmsAlertWebhook)
+}
+
+func (s *CmsServiceV2) CmsAlertWebhookStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeCmsAlertWebhook >>> Encapsulated.
