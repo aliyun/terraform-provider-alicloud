@@ -59,7 +59,7 @@ resource "alicloud_cms_integration_policy" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `entity_group` - (Optional, ForceNew, Set) The entity group used to create the policy. See [`entity_group`](#entity_group) below.
+* `entity_group` - (Optional, ForceNew, List) The entity group used to create the policy. See [`entity_group`](#entity_group) below.
 * `force` - (Optional, Bool) Specifies whether to force delete the cloud native appliance. Valid values:
   - `true`: Enable.
   - `false`: Disable.
