@@ -218,8 +218,21 @@ def render_unified(rows):
 
 
 def render_split(rows):
+    # Max code length across both sides → both code columns get the same width,
+    # so the divider stays at a fixed x and rows align, without wrapping.
+    maxlen = 0
+    for r in rows:
+        if r[0] == 'hunk':
+            continue
+        ll, lc, lt, rl, rc, rt = r
+        if lc:
+            maxlen = max(maxlen, len(lc))
+        if rc:
+            maxlen = max(maxlen, len(rc))
+    col_w = max(maxlen + 4, 36)
     out = ['<table class="split-table"><colgroup>'
-           '<col class="ln"><col class="code"><col class="ln"><col class="code">'
+           f'<col class="ln"><col class="code" style="width:{col_w}ch">'
+           f'<col class="ln"><col class="code" style="width:{col_w}ch">'
            '</colgroup>']
     for r in rows:
         if r[0] == 'hunk':
@@ -465,15 +478,17 @@ body.view-unified .view-unified{display:block}
 .diff-pre.unified .del{background:var(--del-bg)} .diff-pre.unified .del .txt{color:var(--del-tx)} .diff-pre.unified .del .sig{color:var(--del-tx)}
 .diff-pre.unified .hunk{background:var(--hunk-bg); color:var(--hunk-tx); border-top:1px solid var(--border); border-bottom:1px solid var(--border)}
 .diff-pre.unified .meta{color:var(--muted)} .diff-pre.unified .ctx .txt{color:var(--ink)}
-/* split — fixed-layout table so left/right code columns are EQUAL width and
-   stay aligned row-to-row; pre-wrap keeps both sides visible instead of letting
-   one side's longest line eat the viewport. */
-.split-table{border-collapse:collapse; width:100%; table-layout:fixed; margin:0; font-family:'IBM Plex Mono',monospace; font-size:12.5px; line-height:1.65}
+/* split — fixed-layout table; both code columns get the same explicit width
+   (the global max line length, set inline per-table) so the divider sits at a
+   constant x and rows stay aligned. white-space:pre keeps each line on a single
+   row (no wrapping); long content makes the table wider than the panel, which
+   .diff-body scrolls horizontally as one unit — no clip, no wrap, equal sides. */
+.split-table{border-collapse:collapse; table-layout:fixed; margin:0; font-family:'IBM Plex Mono',monospace; font-size:12.5px; line-height:1.65}
 .split-table col.ln{width:6ch}
 .split-table col.code{width:auto}
 .split-table td{padding:0; vertical-align:top; border:none}
 .split-table td.ln{white-space:nowrap; overflow:hidden; text-align:right; padding:0 8px 0 14px; color:var(--sig); user-select:none; font-variant-numeric:tabular-nums}
-.split-table td.code{padding:1px 12px 1px 8px; white-space:pre-wrap; overflow-wrap:break-word; word-break:break-word}
+.split-table td.code{padding:1px 12px 1px 8px; white-space:pre}
 .split-table td.code.l{border-right:1px solid var(--border); padding-right:14px}
 .split-table td.ln.del, .split-table td.code.del{background:var(--del-bg); color:var(--del-tx)}
 .split-table td.ln.add, .split-table td.code.add{background:var(--add-bg); color:var(--add-tx)}
