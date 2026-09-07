@@ -1,0 +1,1964 @@
+groups:
+  - name: all
+    jobs:
+      - all
+      - unit
+      # ECS
+      - regions
+      - zones
+      - dataworks
+      - hbr
+      - sae
+      - eventbridge
+      # ESS
+      - ess
+      # Container Service
+      - cs
+      # Container Registry
+      - acr
+      # Function Compute
+      - fc
+      # OSS
+      - oss
+      # vpc
+      - vpc
+      - eip
+      - elasticsearch
+      - cddc
+      - arms
+      - scdn
+      - lindorm
+      - ecd
+      - cbwp
+      - cen
+      - vpn
+      - sslvpn
+      # slb
+      - slb
+      # Database
+      # rds
+      - alb
+      - rds
+      # Redis and Memcache
+      - kvstore
+      - drds
+      - gpdb
+      # ram
+      - ram
+      # msc and privatezone
+      - msc
+      # PrivateZone
+      - privatezone
+      # datahub
+      - datahub
+      # cdn
+      - cdn
+      # dcdn
+      - dcdn
+      # Api gateway
+      - apigateway
+      # messageservice
+      - messageservice
+      # Rocket MQ
+      - ons
+      # Kafka
+      - alikafka
+      # nas
+      - nas
+      # ots
+      - ots
+      # kms
+      - kms
+      # Sls
+      - sls
+      # actiontrail
+      - actiontrail
+      # SSL Certificate
+      - sslcertificates
+      # mongodb
+      - mongodb
+      # ddoscoo
+      - ddoscoo
+      - ddosbgp
+      # cms
+      - cms
+      # E-MapReduce
+      - emr
+      # Cloud Connect network
+      - cloudconnectnetwork
+      # Smart Access Gateway
+      - sag
+      - dbaudit
+      - bastionhost
+      - market
+      - polardb
+      - hbase
+      - graphdatabase
+      - adb
+      - maxcompute
+      - dms
+      - waf
+      - edas
+      - resourcemanager
+      - ecs
+      - config
+      - alidns
+      - mse
+      - fnf
+      - ros
+      - privatelink
+      - tsdb
+      - eci
+      - oos
+      - amqp
+      - cloudfirewall
+      - directmail
+      - sas
+      - dfs
+      - dbfs
+      - ehpc
+      - imp
+      - ga
+      - opensearch
+      - eais
+      - sddp
+      - simpleapplicationserver
+      - dts
+      - expressconnect
+      - servicemesh
+      - clickhouse
+      - cloudsso
+      - sweeperafter
+      - procider
+
+shared:
+  - &clone-provider
+    get: terraform-provider-alicloud
+    resource: terraform-provider-alicloud
+    trigger: false
+
+  - &get-aliyun-cli
+    get: aliyun-cli
+    resource: aliyun-cli
+
+  - &run
+    task: terraformci
+    file: terraform-provider-alicloud/ci/tasks/run.yml
+    params: &run-params
+      ALICLOUD_ACCESS_KEY: {{alicloud_access_key}}
+      ALICLOUD_SECRET_KEY: {{alicloud_secret_key}}
+      ALICLOUD_REGION: {{alicloud_region}}
+      ALICLOUD_ACCOUNT_SITE: {{alicloud_account_site}}
+      TEST_CASE_CODE: ""
+      SWEEPER: false
+      CHECKOUT_REGION: "true"
+      ACCESS_URL: {{access_ci_url}}
+      ACCESS_USER_NAME: {{access_ci_user_name}}
+      ACCESS_PASSWORD: {{access_ci_password}}
+      DING_TALK_TOKEN: {{ding_talk_token}}
+      ALICLOUD_ACCOUNT_ID: {{alicloud_accound_id}}
+      ALICLOUD_RESOURCE_GROUP_ID: {{alicloud_resource_group_id}}
+      CONCOURSE_TARGET: {{alicloud_concourse_target}}
+      CONCOURSE_TARGET_URL: {{alicloud_concourse_target_url}}
+      CONCOURSE_TARGET_USER: {{alicloud_concourse_target_user}}
+      CONCOURSE_TARGET_PASSWORD: {{alicloud_concourse_target_password}}
+      CONCOURSE_TARGET_TRIGGER_PIPELINE_NAME: {{alicloud_concourse_target_pipeline_name}}
+      TRIGGER_TARGET_PIPELINE: {{alicloud_trigger_target_pipeline}}
+      ALICLOUD_ACCESS_KEY_MASTER: {{alicloud_access_key_master}}
+      ALICLOUD_SECRET_KEY_MASTER: {{alicloud_secret_key_master}}
+      ALICLOUD_ACCESS_KEY_SLAVE:  {{alicloud_access_key_slave}}
+      ALICLOUD_SECRET_KEY_SLAVE:  {{alicloud_secret_key_slave}}
+      ENTERPRISE_ACCOUNT_ENABLED: {{enterprise_account_enabled}}
+      ALICLOUD_EXPRESS_CONNECT_UID: {{alicloud_express_connect_uid}}
+
+
+
+jobs:
+  - name: all
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: zero-half-monday
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "All"
+
+  - name: unit
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: zero
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_PREFIX: "TestUnit"
+        TEST_CASE_CODE: "Alicloud"
+
+  - name: apigateway
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: zero
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "Apigateway"
+        SWEEPER_CODE: "alicloud_api_gateway"
+
+  - name: cdn
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: one
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "CDN"
+        CONCOURSE_TARGET_TRIGGER_PIPELINE_JOB_NAME: "Cdn"
+
+  - name: cen
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: two
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "Cen"
+        SWEEPER_CODE: "alicloud_cen_instance"
+
+  - name: cbwp
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: three
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "CommonBandwidth"
+        SWEEPER_CODE: "alicloud_common_bandwidth_package"
+
+  - name: cs
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: four
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "CS"
+        SWEEPER_CODE: "alicloud_cs_swarm"
+
+  - name: datahub
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: five
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "Datahub"
+        SWEEPER_CODE: "alicloud_datahub_project"
+
+  - name: alb
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: six
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "ALB"
+        SWEEPER_CODE: "alicloud_alb"
+
+  - name: rds
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: six
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "Rds"
+        SWEEPER_CODE: "alicloud_db_instance"
+
+  - name: amqp
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: eight
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "Amqp"
+
+  - name: msc
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: nine
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "Msc"
+
+  - name: drds
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: ten
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "DRDS"
+
+  - name: eip
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: eleven
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "EIP"
+        CONCOURSE_TARGET_TRIGGER_PIPELINE_JOB_NAME: "EIP"
+        SWEEPER_CODE: "alicloud_eip"
+
+  - name: ess
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: twelve
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "Ess"
+        SWEEPER_CODE: "alicloud_ess_scaling_group"
+  #
+  - name: hbr
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: thirteen
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "HBR"
+        SWEEPER_CODE: "alicloud_hbr"
+
+  - name: fc
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: fourteen
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "FC"
+        SWEEPER_CODE: "alicloud_fc_service"
+
+  - name: dataworks
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: fifteen
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "DataWorks"
+
+  - name: kms
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: sixteen
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "KMS"
+
+  - name: sls
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: seventeen
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "Log"
+        SWEEPER_CODE: "alicloud_log_project"
+
+  - name: zones
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: eighteen
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "Zones"
+
+  - name: kvstore
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: zero-half
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "KVStore"
+        SWEEPER_CODE: "alicloud_kvstore_instance"
+
+  - name: elasticsearch
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: one-half
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "Elasticsearch"
+
+  - name: acr
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: two-half
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "CR"
+
+  - name: oss
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: three-half
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "Oss"
+        SWEEPER_CODE: "alicloud_oss_bucket"
+
+  - name: ots
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: four-half
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "Ots"
+        SWEEPER_CODE: "alicloud_ots_instance"
+
+  - name: privatezone
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: five-half
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "Pvtz"
+        SWEEPER_CODE: "alicloud_pvtz_zone"
+
+  - name: ram
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: six-half
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "RAM"
+        SWEEPER_CODE: "alicloud_ram"
+
+  - name: regions
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: seven-half
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "Regions"
+
+  - name: arms
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: eight-half
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "ARMS"
+        SWEEPER_CODE: "alicloud_arms"
+
+  - name: cddc
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: nine-half
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "Cddc"
+        SWEEPER_CODE: "alicloud_cddc"
+
+  - name: scdn
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: three
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "Scdn"
+        SWEEPER_CODE: "alicloud_scdn_domain"
+
+  - name: lindorm
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: eleven-half
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "Lindorm"
+
+  - name: slb
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: twelve-half
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "SLB"
+        SWEEPER_CODE: "alicloud_slb_load_balancer"
+
+  - name: sslvpn
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: thirteen-half
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "SslVpn"
+
+  - name: vpc
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: fourteen-half
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "VPC"
+        SWEEPER_CODE: "alicloud_vpc"
+
+  - name: vpn
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: fifteen-half
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "VPN"
+
+  - name: messageservice
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: sixteen-half
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "MessageService"
+
+  - name: nas
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: seventeen-half
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "NAS"
+
+  - name: actiontrail
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: zero
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "Actiontrail"
+
+  - name: sslcertificates
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: one
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "SslCertificates"
+
+  - name: mongodb
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: two
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "MongoDB"
+
+  - name: ddoscoo
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: three
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "Ddoscoo"
+
+  - name: sae
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: four
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "SAE"
+
+  - name: eventbridge
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: five
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "EventBridge"
+
+  - name: cms
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: six
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "Cms"
+
+  - name: gpdb
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: seven
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "GPDB"
+
+  - name: ons
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: eight
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "Ons"
+
+  - name: alikafka
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: nine
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "Alikafka"
+
+  - name: ddosbgp
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: ten
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "Ddosbgp"
+
+  - name: procider
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: eleven
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "Provider"
+
+  - name: emr
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: twelve
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "Emr"
+
+  - name: cloudconnectnetwork
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: thirteen
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "CloudConnectNetwork"
+
+  - name: sag
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: fourteen
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "Sag"
+
+  - name: dbaudit
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: fifteen
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "YundunDbaudit"
+
+  - name: bastionhost
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: sixteen
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "Bastionhost"
+
+  - name: market
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: seventeen
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "Market"
+
+  - name: polardb
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: eighteen
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "PolarDB"
+
+  - name: hbase
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: zero-half
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "HBase"
+
+  - name: adb
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: one-half
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "ADB"
+
+  - name: maxcompute
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: two-half
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "Maxcompute"
+
+  - name: dms
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: three-half
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "DMS"
+
+  - name: waf
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: four-half
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "WAF"
+
+  - name: edas
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: false
+        resource: five-half
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "Edas"
+
+  - name: resourcemanager
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: six-half
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "ResourceManager"
+
+  - name: ecs
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: seven-half
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "ECS"
+
+  - name: dcdn
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: ten
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "DCDN"
+
+  - name: graphdatabase
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: nine-half
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "GraphDatabase"
+
+  - name: config
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: three
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "Config"
+
+  - name: alidns
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: eleven-half
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "Alidns"
+
+  - name: mse
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: twelve-half
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "MSE"
+
+  - name: fnf
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: thirteen-half
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "Fnf"
+
+  - name: ros
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: fourteen-half
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "ROS"
+
+  - name: privatelink
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: fifteen-half
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "Privatelink"
+
+  - name: cloudfirewall
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: sixteen-half
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "CloudFirewall"
+
+  - name: tsdb
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: seventeen-half
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "Tsdb"
+
+  - name: eci
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: zero
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "Eci"
+
+  - name: oos
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: one
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "OOS"
+
+  - name: ecd
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: two
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "ECD"
+
+  - name: sddp
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: three
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "SDDP"
+
+  - name: directmail
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: four
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "DirectMail"
+
+  - name: sas
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: five
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "SAS"
+
+  - name: dfs
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: six
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "DFS"
+
+  - name: ehpc
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: seven
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "Ehpc"
+
+  - name: imp
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: eight
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "IMP"
+
+  - name: ga
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: nine
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "Ga"
+
+  - name: opensearch
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: ten
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "OpenSearch"
+
+  - name: eais
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: eleven
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "Eais"
+
+  - name: simpleapplicationserver
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: thirteen
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "SimpleApplicationServer"
+
+  - name: dts
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: fourteen
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "DTS"
+
+  - name: expressconnect
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: fifteen
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "ExpressConnect"
+
+  - name: servicemesh
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: sixteen
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "ServiceMesh"
+
+  - name: clickhouse
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: seventeen
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "ClickHouse"
+
+  - name: dbfs
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: eighteen
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "DBFS"
+
+  - name: cloudsso
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: trigger
+        trigger: true
+        resource: zero-half
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        TEST_CASE_CODE: "CloudSSO"
+
+  - name: sweeperafter
+    plan:
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+        trigger: true
+        passed: [
+            hbr, ess, cs, fc, ecs,
+            vpc, eip, cddc, arms, scdn, amqp, cbwp,
+            slb, alb, kvstore, drds, apigateway, ots, elasticsearch, vpn, sslvpn, mongodb, sae, eventbridge
+        ]
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        SWEEPER: true
+        TEST_CASE_CODE: "-"
+        TEST_SWEEPER_CASE_CODE: "alicloud_vpc"
+
+resources:
+  - name: terraform-provider-alicloud
+    type: git
+    source:
+      uri: https://github.com/aliyun/terraform-provider-alicloud.git
+      branch: master
+
+  - name: aliyun-cli
+    type: s3
+    source:
+      access_key_id: {{aliyun_cli_access_key}}
+      secret_access_key: {{aliyun_cli_secret_key}}
+      bucket: {{aliyun_cli_bucket}}
+      regexp: .*-cli-linux-3\.0\.(\d+)-amd64\.tgz
+      region_name: {{aliyun_cli_region}}
+      endpoint: oss-((aliyun_cli_region)).aliyuncs.com
+
+  - name: zero-half-monday
+    type: time
+    source:
+      days: [Monday]
+      location: {{time_location}}
+
+  - name: zero
+    type: time
+    source:
+      start: 00:00 AM
+      stop: 10:50 PM
+      days: [Thursday]
+      location: {{time_location}}
+
+  - name: zero-half
+    type: time
+    source:
+      start: 00:30 AM
+      stop: 10:50 PM
+      days: [Thursday]
+      location: {{time_location}}
+
+  - name: one
+    type: time
+    source:
+      start: 01:00 AM
+      stop: 10:50 PM
+      days: [Thursday]
+      location: {{time_location}}
+
+  - name: one-half
+    type: time
+    source:
+      start: 01:30 AM
+      stop: 10:50 PM
+      days: [Thursday]
+      location: {{time_location}}
+
+  - name: two
+    type: time
+    source:
+      start: 02:00 AM
+      stop: 10:50 PM
+      days: [Thursday]
+      location: {{time_location}}
+
+  - name: two-half
+    type: time
+    source:
+      start: 02:30 AM
+      stop: 10:50 PM
+      days: [Thursday]
+      location: {{time_location}}
+
+  - name: three
+    type: time
+    source:
+      start: 03:00 AM
+      stop: 10:50 PM
+      days: [Thursday]
+      location: {{time_location}}
+
+  - name: three-half
+    type: time
+    source:
+      start: 03:30 AM
+      stop: 10:50 PM
+      days: [Thursday]
+      location: {{time_location}}
+
+  - name: four
+    type: time
+    source:
+      start: 04:00 AM
+      stop: 10:50 PM
+      days: [Thursday]
+      location: {{time_location}}
+
+  - name: four-half
+    type: time
+    source:
+      start: 04:30 AM
+      stop: 10:50 PM
+      days: [Thursday]
+      location: {{time_location}}
+
+  - name: five
+    type: time
+    source:
+      start: 05:00 AM
+      stop: 10:50 PM
+      days: [Thursday]
+      location: {{time_location}}
+
+  - name: five-half
+    type: time
+    source:
+      start: 05:30 AM
+      stop: 10:50 PM
+      days: [Thursday]
+      location: {{time_location}}
+
+  - name: six
+    type: time
+    source:
+      start: 06:00 AM
+      stop: 10:50 PM
+      days: [Thursday]
+      location: {{time_location}}
+
+  - name: six-half
+    type: time
+    source:
+      start: 06:30 AM
+      stop: 10:50 PM
+      days: [Thursday]
+      location: {{time_location}}
+
+  - name: seven
+    type: time
+    source:
+      start: 07:00 AM
+      stop: 10:50 PM
+      days: [Thursday]
+      location: {{time_location}}
+
+  - name: seven-half
+    type: time
+    source:
+      start: 07:30 AM
+      stop: 10:50 PM
+      days: [Thursday]
+      location: {{time_location}}
+
+  - name: eight
+    type: time
+    source:
+      start: 08:00 AM
+      stop: 10:50 PM
+      days: [Thursday]
+      location: {{time_location}}
+
+  - name: eight-half
+    type: time
+    source:
+      start: 08:30 AM
+      stop: 10:50 PM
+      days: [Thursday]
+      location: {{time_location}}
+
+  - name: nine
+    type: time
+    source:
+      start: 09:00 AM
+      stop: 10:50 PM
+      days: [Thursday]
+      location: {{time_location}}
+
+  - name: nine-half
+    type: time
+    source:
+      start: 09:30 AM
+      stop: 10:50 PM
+      days: [Thursday]
+      location: {{time_location}}
+
+  - name: ten
+    type: time
+    source:
+      start: 10:00 AM
+      stop: 10:50 PM
+      days: [Thursday]
+      location: {{time_location}}
+
+#  - name: ten-half
+#    type: time
+#    source:
+#      start: 10:30 AM
+#      stop: 10:50 PM
+#      days: [Thursday]
+#      location: {{time_location}}
+
+  - name: eleven
+    type: time
+    source:
+      start: 11:00 AM
+      stop: 10:50 PM
+      days: [Thursday]
+      location: {{time_location}}
+
+  - name: eleven-half
+    type: time
+    source:
+      start: 11:30 AM
+      stop: 10:50 PM
+      days: [Thursday]
+      location: {{time_location}}
+
+  - name: twelve
+    type: time
+    source:
+      start: 12:00 AM
+      stop: 10:50 PM
+      days: [Thursday]
+      location: {{time_location}}
+
+  - name: twelve-half
+    type: time
+    source:
+      start: 12:30 AM
+      stop: 10:50 PM
+      days: [Thursday]
+      location: {{time_location}}
+
+  - name: thirteen
+    type: time
+    source:
+      start: 01:00 PM
+      stop: 10:50 PM
+      days: [Thursday]
+      location: {{time_location}}
+
+  - name: thirteen-half
+    type: time
+    source:
+      start: 10:30 PM
+      stop: 10:50 PM
+      days: [Thursday]
+      location: {{time_location}}
+
+  - name: fourteen
+    type: time
+    source:
+      start: 02:00 PM
+      stop: 10:50 PM
+      days: [Thursday]
+      location: {{time_location}}
+
+  - name: fourteen-half
+    type: time
+    source:
+      start: 02:30 PM
+      stop: 10:50 PM
+      days: [Thursday]
+      location: {{time_location}}
+
+  - name: fifteen
+    type: time
+    source:
+      start: 03:00 PM
+      stop: 10:50 PM
+      days: [Thursday]
+      location: {{time_location}}
+
+  - name: fifteen-half
+    type: time
+    source:
+      start: 03:30 PM
+      stop: 10:50 PM
+      days: [Thursday]
+      location: {{time_location}}
+
+  - name: sixteen
+    type: time
+    source:
+      start: 04:00 PM
+      stop: 10:50 PM
+      days: [Thursday]
+      location: {{time_location}}
+
+  - name: sixteen-half
+    type: time
+    source:
+      start: 04:30 PM
+      stop: 10:50 PM
+      days: [Thursday]
+      location: {{time_location}}
+
+  - name: seventeen
+    type: time
+    source:
+      start: 05:00 PM
+      stop: 10:50 PM
+      days: [Thursday]
+      location: {{time_location}}
+
+  - name: seventeen-half
+    type: time
+    source:
+      start: 05:30 PM
+      stop: 10:50 PM
+      days: [Thursday]
+      location: {{time_location}}
+
+  - name: eighteen
+    type: time
+    source:
+      start: 06:00 PM
+      stop: 10:50 PM
+      days: [Thursday]
+      location: {{time_location}}

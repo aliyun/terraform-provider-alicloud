@@ -1,0 +1,407 @@
+package alicloud
+
+import (
+	"fmt"
+	"regexp"
+	"time"
+
+	"github.com/PaesslerAG/jsonpath"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+)
+
+func dataSourceAliCloudCloudFirewallAddressBooks() *schema.Resource {
+	return &schema.Resource{
+		Read: dataSourceAliCloudCloudFirewallAddressBooksRead,
+		Schema: map[string]*schema.Schema{
+			"ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"name_regex": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringIsValidRegExp,
+			},
+			"group_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"ip", "ipv6", "domain", "port", "tag", "asset", "assetIpv6"}, false),
+			},
+			"output_file": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"names": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"books": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"group_uuid": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"group_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"group_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"description": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"auto_add_tag_ecs": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"tag_relation": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"address_list": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"ecs_tags": {
+							Type:     schema.TypeSet,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"tag_key": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"tag_value": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
+						},
+						"asset_member_uids": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeInt},
+						},
+						"asset_region_resource_types": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"asset_region_id": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"resource_type": {
+										Type:     schema.TypeList,
+										Computed: true,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"ipv4": {
+													Type:     schema.TypeList,
+													Computed: true,
+													Elem: &schema.Resource{
+														Schema: map[string]*schema.Schema{
+															"eip": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+															"ecs_eip": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+															"ecs_public_ip": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+															"slb_eip": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+															"slb_public_ip": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+															"nlb_eip": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+															"alb_eip": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+															"nat_eip": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+															"nat_public_ip": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+															"eni_eip": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+															"ga_eip": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+															"api_gateway_eip": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+															"ai_gateway_eip": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+															"bastion_host_ip": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+															"bastion_host_ingress_ip": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+															"bastion_host_egress_ip": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+															"havip": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+														},
+													},
+												},
+												"ipv6": {
+													Type:     schema.TypeList,
+													Computed: true,
+													Elem: &schema.Resource{
+														Schema: map[string]*schema.Schema{
+															"ecs_ipv6": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+															"slb_ipv6": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+															"nlb_ipv6": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+															"alb_ipv6": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+															"eni_eipv6": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+															"ga_eipv6": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+															"api_gateway_eipv6": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+															"ai_gateway_eipv6": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						"address_list_count": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"reference_count": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func dataSourceAliCloudCloudFirewallAddressBooksRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+
+	action := "DescribeAddressBook"
+	request := make(map[string]interface{})
+	request["PageSize"] = PageSizeLarge
+	request["CurrentPage"] = 1
+
+	if v, ok := d.GetOk("group_type"); ok {
+		request["GroupType"] = v
+	}
+
+	var objects []map[string]interface{}
+	var addressBookNameRegex *regexp.Regexp
+	if v, ok := d.GetOk("name_regex"); ok {
+		r, err := regexp.Compile(v.(string))
+		if err != nil {
+			return WrapError(err)
+		}
+		addressBookNameRegex = r
+	}
+
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			if vv == nil {
+				continue
+			}
+			idsMap[vv.(string)] = vv.(string)
+		}
+	}
+
+	var response map[string]interface{}
+	var err error
+	var endpoint string
+
+	for {
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = client.RpcPostWithEndpoint("Cloudfw", "2017-12-07", action, nil, request, true, endpoint)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				} else if IsExpectedErrors(err, []string{"not buy user"}) {
+					endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+
+			return nil
+		})
+		addDebug(action, response, request)
+
+		if err != nil {
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cloud_firewall_address_books", action, AlibabaCloudSdkGoERROR)
+		}
+
+		resp, err := jsonpath.Get("$.Acls", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Acls", response)
+		}
+
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			if addressBookNameRegex != nil && !addressBookNameRegex.MatchString(fmt.Sprint(item["GroupName"])) {
+				continue
+			}
+
+			if len(idsMap) > 0 {
+				if _, ok := idsMap[fmt.Sprint(item["GroupUuid"])]; !ok {
+					continue
+				}
+			}
+
+			objects = append(objects, item)
+		}
+
+		if len(result) < PageSizeLarge {
+			break
+		}
+
+		request["CurrentPage"] = request["CurrentPage"].(int) + 1
+	}
+
+	ids := make([]string, 0)
+	names := make([]interface{}, 0)
+	s := make([]map[string]interface{}, 0)
+	for _, object := range objects {
+		mapping := map[string]interface{}{
+			"id":               fmt.Sprint(object["GroupUuid"]),
+			"group_uuid":       fmt.Sprint(object["GroupUuid"]),
+			"group_name":       object["GroupName"],
+			"group_type":       object["GroupType"],
+			"description":      object["Description"],
+			"auto_add_tag_ecs": formatInt(object["AutoAddTagEcs"]),
+			"tag_relation":     object["TagRelation"],
+			"address_list":     object["AddressList"],
+		}
+
+		ecsTags := make([]map[string]interface{}, 0)
+		for _, tagListItem := range object["TagList"].([]interface{}) {
+			ecsTagItem := make(map[string]interface{})
+			ecsTagItem["tag_value"] = tagListItem.(map[string]interface{})["TagValue"]
+			ecsTagItem["tag_key"] = tagListItem.(map[string]interface{})["TagKey"]
+			ecsTags = append(ecsTags, ecsTagItem)
+		}
+
+		mapping["ecs_tags"] = ecsTags
+
+		assetMemberUids := make([]int, 0)
+		if v, ok := object["AssetMemberUids"].([]interface{}); ok {
+			for _, assetMemberUid := range v {
+				assetMemberUids = append(assetMemberUids, formatInt(assetMemberUid))
+			}
+		}
+
+		mapping["asset_member_uids"] = assetMemberUids
+		mapping["asset_region_resource_types"] = flattenCloudFirewallAddressBookAssetRegionResourceTypes(object["AssetRegionResourceTypes"])
+
+		if v, ok := object["AddressListCount"]; ok {
+			mapping["address_list_count"] = formatInt(v)
+		}
+
+		if v, ok := object["ReferenceCount"]; ok {
+			mapping["reference_count"] = formatInt(v)
+		}
+
+		ids = append(ids, fmt.Sprint(mapping["id"]))
+		names = append(names, object["GroupName"])
+		s = append(s, mapping)
+	}
+
+	d.SetId(dataResourceIdHash(ids))
+	if err := d.Set("ids", ids); err != nil {
+		return WrapError(err)
+	}
+
+	if err := d.Set("names", names); err != nil {
+		return WrapError(err)
+	}
+
+	if err := d.Set("books", s); err != nil {
+		return WrapError(err)
+	}
+
+	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+		writeToFile(output.(string), s)
+	}
+
+	return nil
+}
