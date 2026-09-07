@@ -13,6 +13,8 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -556,6 +558,11 @@ func TestAccAliCloudKVStoreRedisInstance_6_0(t *testing.T) {
 					"zone_id":           "${data.alicloud_kvstore_zones.default.zones.0.id}",
 					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
 					"secondary_zone_id": "${data.alicloud_kvstore_zones.default.zones.1.id}",
+					"timeouts": []map[string]interface{}{
+						{
+							"update": "1h",
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -678,11 +685,6 @@ func TestAccAliCloudKVStoreRedisInstance_6_0(t *testing.T) {
 					"zone_id":           "${data.alicloud_kvstore_zones.default.zones.1.id}",
 					"vswitch_id":        "${data.alicloud_vswitches.update.ids.0}",
 					"secondary_zone_id": "${data.alicloud_kvstore_zones.default.zones.0.id}",
-					"timeouts": []map[string]interface{}{
-						{
-							"update": "1h",
-						},
-					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -1950,6 +1952,183 @@ func TestAccAliCloudKVStoreRedisInstance_7_0_with_proxy_class_replica(t *testing
 	})
 }
 
+func TestAccAliCloudKVStoreRedisInstance_single_copy(t *testing.T) {
+	testAccKvstoreNodeType(t, "single", "redis.shard.small.2.ce", "OnECS", "")
+}
+
+func TestAccAliCloudKVStoreRedisInstance_node_type_double(t *testing.T) {
+	testAccKvstoreNodeType(t, "double", "redis.amber.master.small.multithread", "", "double")
+}
+
+func testAccKvstoreNodeType(t *testing.T, nodeType, instanceClass, productType, inventoryNodeType string) {
+	t.Helper()
+	var v r_kvstore.DBInstanceAttribute
+	resourceId := "alicloud_kvstore_instance.default"
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &R_kvstoreService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeKvstoreInstance")
+	rac := resourceAttrCheckInit(rc, resourceAttrInit(resourceId, nil))
+	name := fmt.Sprintf("tf-testAccKvstoreNodeType%d", acctest.RandIntRange(1000000, 9999999))
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, func(name string) string {
+		productFilter, nodeFilter := "", ""
+		if productType != "" {
+			productFilter = fmt.Sprintf("product_type = %q", productType)
+		}
+		// OnECS inventory reports numeric values instead of classic node-type values.
+		if inventoryNodeType != "" {
+			nodeFilter = fmt.Sprintf("node_type = %q", inventoryNodeType)
+		}
+		return fmt.Sprintf(`
+data "alicloud_kvstore_zones" "default" {
+  instance_charge_type = "PostPaid"
+  %s
+}
+
+data "alicloud_kvstore_instance_classes" "default" {
+  count                = length(data.alicloud_kvstore_zones.default.ids)
+  zone_id              = data.alicloud_kvstore_zones.default.ids[count.index]
+  instance_charge_type = "PostPaid"
+  engine               = "Redis"
+  engine_version       = "5.0"
+  %s
+  %s
+}
+
+locals {
+  class_supported_zones = [for i, classes in data.alicloud_kvstore_instance_classes.default : data.alicloud_kvstore_zones.default.ids[i] if contains(classes.instance_classes, %q)]
+  # The catalog also includes zones that no longer support instance creation.
+  supported_zones = [for zone in ["cn-hangzhou-i", "cn-hangzhou-j", "cn-hangzhou-k"] : zone if contains(local.class_supported_zones, zone)]
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = %q
+  cidr_block = "192.168.0.0/16"
+}
+
+resource "alicloud_vswitch" "default" {
+  vswitch_name = %q
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "192.168.0.0/24"
+  zone_id      = local.supported_zones[0]
+}
+`, productFilter, productFilter, nodeFilter, instanceClass, name, name)
+	})
+	var instanceId string
+	check := resource.ComposeTestCheckFunc(
+		resource.TestCheckResourceAttr(resourceId, "instance_class", instanceClass),
+		resource.TestCheckResourceAttr(resourceId, "node_type", nodeType),
+		func(s *terraform.State) error {
+			rs, ok := s.RootModule().Resources[resourceId]
+			if !ok || rs.Primary == nil || rs.Primary.ID == "" {
+				return fmt.Errorf("instance is missing from state")
+			}
+			id := rs.Primary.ID
+			if instanceId != "" && id != instanceId {
+				return fmt.Errorf("instance was unexpectedly replaced")
+			}
+			service := R_kvstoreService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+			instance, err := service.DescribeKvstoreInstance(id)
+			if err != nil {
+				return err
+			}
+			if instance["NodeType"] != nodeType {
+				return fmt.Errorf("expected remote NodeType %q, got %v", nodeType, instance["NodeType"])
+			}
+			if instance["InstanceClass"] != instanceClass {
+				return fmt.Errorf("expected remote InstanceClass %q, got %v", instanceClass, instance["InstanceClass"])
+			}
+			instanceId = id
+			return nil
+		},
+	)
+	importCheck := func(states []*terraform.InstanceState) error {
+		if len(states) != 1 || states[0].ID != instanceId {
+			return fmt.Errorf("expected the existing instance to be imported")
+		}
+		if states[0].Attributes["node_type"] != nodeType {
+			return fmt.Errorf("expected imported node_type %q, got %q", nodeType, states[0].Attributes["node_type"])
+		}
+		for _, configureNodeType := range []bool{false, true} {
+			config := map[string]interface{}{
+				"instance_class":   instanceClass,
+				"instance_type":    states[0].Attributes["instance_type"],
+				"engine_version":   "5.0",
+				"payment_type":     "PostPaid",
+				"db_instance_name": states[0].Attributes["db_instance_name"],
+				"vswitch_id":       states[0].Attributes["vswitch_id"],
+			}
+			if configureNodeType {
+				config["node_type"] = nodeType
+			}
+			diff, err := resourceAliCloudKvstoreInstance().Diff(states[0], terraform.NewResourceConfigRaw(config), testAccProvider.Meta())
+			if err != nil {
+				return err
+			}
+			if diff != nil && diff.Attributes["node_type"] != nil {
+				return fmt.Errorf("imported node_type changed with configuration %v: %v", config, diff.Attributes["node_type"])
+			}
+			if diff != nil && diff.RequiresNew() {
+				return fmt.Errorf("imported instance unexpectedly requires replacement")
+			}
+		}
+		return nil
+	}
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_class":   instanceClass,
+					"node_type":        nodeType,
+					"engine_version":   "5.0",
+					"payment_type":     "PostPaid",
+					"db_instance_name": name,
+					"vswitch_id":       "${alicloud_vswitch.default.id}",
+				}),
+				Check: check,
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateCheck:        importCheck,
+				ImportStateVerifyIgnore: []string{"dry_run", "business_info", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
+			},
+			{
+				Config:             testAccConfig(map[string]interface{}{}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"node_type":        REMOVEKEY,
+					"db_instance_name": name + "-updated",
+				}),
+				Check: resource.ComposeTestCheckFunc(check,
+					resource.TestCheckResourceAttr(resourceId, "db_instance_name", name+"-updated")),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateCheck:        importCheck,
+				ImportStateVerifyIgnore: []string{"dry_run", "business_info", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
+			},
+			{
+				Config:             testAccConfig(map[string]interface{}{}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+		},
+	})
+}
+
 func TestAccAliCloudKVStoreRedisInstance_5_0_memory_classic_standard(t *testing.T) {
 	var v r_kvstore.DBInstanceAttribute
 	// en-central-1 has no enough quota for this class
@@ -1963,7 +2142,7 @@ func TestAccAliCloudKVStoreRedisInstance_5_0_memory_classic_standard(t *testing.
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccKvstoreRedisInstanceVpcMultiTest%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudKVStoreRedisInstanceVpcBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, testAccKvstoreClassicDependence("Redis", "5.0", "PrePaid", "redis.amber.master.small.multithread", "redis.amber.master.mid.multithread"))
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -1975,12 +2154,13 @@ func TestAccAliCloudKVStoreRedisInstance_5_0_memory_classic_standard(t *testing.
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"instance_class":       "redis.amber.master.small.multithread",
+					"node_type":            "double",
 					"db_instance_name":     name,
 					"instance_type":        "Redis",
 					"engine_version":       "5.0",
 					"resource_group_id":    "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
-					"zone_id":              "${data.alicloud_kvstore_zones.default.zones.0.id}",
-					"vswitch_id":           "${data.alicloud_vswitches.default.ids.0}",
+					"zone_id":              "${alicloud_vswitch.default.zone_id}",
+					"vswitch_id":           "${alicloud_vswitch.default.id}",
 					"instance_charge_type": "PrePaid",
 					"period":               "1",
 					"is_auto_upgrade_open": "1",
@@ -1993,6 +2173,7 @@ func TestAccAliCloudKVStoreRedisInstance_5_0_memory_classic_standard(t *testing.
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"instance_class":       "redis.amber.master.small.multithread",
+						"node_type":            "double",
 						"db_instance_name":     name,
 						"instance_type":        "Redis",
 						"engine_version":       "5.0",
@@ -2166,9 +2347,9 @@ func TestAccAliCloudKVStoreRedisInstance_5_0_memory_classic_standard(t *testing.
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"zone_id":           "${data.alicloud_kvstore_zones.default.zones.1.id}",
-					"vswitch_id":        "${data.alicloud_vswitches.update.ids.0}",
-					"secondary_zone_id": "${data.alicloud_kvstore_zones.default.zones.0.id}",
+					"zone_id":           "${alicloud_vswitch.update.zone_id}",
+					"vswitch_id":        "${alicloud_vswitch.update.id}",
+					"secondary_zone_id": "${alicloud_vswitch.default.zone_id}",
 					"timeouts": []map[string]interface{}{
 						{
 							"update": "1h",
@@ -2266,8 +2447,8 @@ func TestAccAliCloudKVStoreRedisInstance_5_0_memory_classic_standard(t *testing.
 						"Created": "TF",
 						"For":     "acceptance test",
 					},
-					"zone_id":           "${data.alicloud_kvstore_zones.default.zones.0.id}",
-					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
+					"zone_id":           "${alicloud_vswitch.default.zone_id}",
+					"vswitch_id":        "${alicloud_vswitch.default.id}",
 					"secondary_zone_id": REMOVEKEY,
 					// There is an OpenAPI bug in eu-central-1
 					//"maintain_start_time":       "04:00Z",
@@ -2327,7 +2508,7 @@ func TestAccAliCloudKVStoreRedisInstance_5_0_memory_classic_cluster(t *testing.T
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccKvstoreRedisInstanceVpcMultiTest%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudKVStoreRedisInstanceVpcBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, testAccKvstoreClassicDependence("Redis", "5.0", "PostPaid", "redis.amber.logic.sharding.1g.2db.0rodb.6proxy.multithread", "redis.amber.logic.sharding.2g.2db.0rodb.6proxy.multithread"))
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -2343,8 +2524,8 @@ func TestAccAliCloudKVStoreRedisInstance_5_0_memory_classic_cluster(t *testing.T
 					"instance_type":     "Redis",
 					"engine_version":    "5.0",
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
-					"zone_id":           "${data.alicloud_kvstore_zones.default.zones.0.id}",
-					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
+					"zone_id":           "${alicloud_vswitch.default.zone_id}",
+					"vswitch_id":        "${alicloud_vswitch.default.id}",
 					"shard_count":       "2",
 					"tags": map[string]string{
 						"Created": "TF",
@@ -2468,9 +2649,9 @@ func TestAccAliCloudKVStoreRedisInstance_5_0_memory_classic_cluster(t *testing.T
 			// there is no more quota for this class on multi-zone
 			//{
 			//	Config: testAccConfig(map[string]interface{}{
-			//		"zone_id":           "${data.alicloud_kvstore_zones.default.zones.1.id}",
-			//		"vswitch_id":        "${data.alicloud_vswitches.update.ids.0}",
-			//		"secondary_zone_id": "${data.alicloud_kvstore_zones.default.zones.0.id}",
+			//		"zone_id":           "${alicloud_vswitch.update.zone_id}",
+			//		"vswitch_id":        "${alicloud_vswitch.update.id}",
+			//		"secondary_zone_id": "${alicloud_vswitch.default.zone_id}",
 			//		"timeouts": []map[string]interface{}{
 			//			{
 			//				"update": "1h",
@@ -2580,8 +2761,8 @@ func TestAccAliCloudKVStoreRedisInstance_5_0_memory_classic_cluster(t *testing.T
 						"Created": "TF",
 						"For":     "acceptance test",
 					},
-					"zone_id":    "${data.alicloud_kvstore_zones.default.zones.0.id}",
-					"vswitch_id": "${data.alicloud_vswitches.default.ids.0}",
+					"zone_id":    "${alicloud_vswitch.default.zone_id}",
+					"vswitch_id": "${alicloud_vswitch.default.id}",
 					// There is an OpenAPI bug in eu-central-1
 					//"maintain_start_time":       "04:00Z",
 					//"maintain_end_time":         "06:00Z",
@@ -2637,7 +2818,8 @@ func TestAccAliCloudKVStoreMemcacheInstance_vpctest(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccKvstoreMemcacheInstanceVpcTest%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudKVStoreMemcacheInstanceVpcBasicDependence0)
+	// Memcache inventory leaves Version empty even though instances use engine 4.0.
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, testAccKvstoreClassicDependence("Memcache", "", "PostPaid", "memcache.master.small.default", "memcache.master.mid.default"))
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -2658,9 +2840,9 @@ func TestAccAliCloudKVStoreMemcacheInstance_vpctest(t *testing.T) {
 						"For":     "acceptance test",
 					},
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
-					"zone_id":           "${data.alicloud_vswitches.default.vswitches.0.zone_id}",
-					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
-					"secondary_zone_id": "${data.alicloud_vswitches.slave.vswitches.0.zone_id}",
+					"zone_id":           "${alicloud_vswitch.default.zone_id}",
+					"vswitch_id":        "${alicloud_vswitch.default.id}",
+					"secondary_zone_id": "${alicloud_vswitch.update.zone_id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -2752,9 +2934,9 @@ func TestAccAliCloudKVStoreMemcacheInstance_vpctest(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"zone_id":           "${data.alicloud_vswitches.slave.vswitches.0.zone_id}",
-					"vswitch_id":        "${data.alicloud_vswitches.slave.ids.0}",
-					"secondary_zone_id": "${data.alicloud_vswitches.default.vswitches.0.zone_id}",
+					"zone_id":           "${alicloud_vswitch.update.zone_id}",
+					"vswitch_id":        "${alicloud_vswitch.update.id}",
+					"secondary_zone_id": "${alicloud_vswitch.default.zone_id}",
 					"timeouts": []map[string]interface{}{
 						{
 							"update": "1h",
@@ -2844,7 +3026,7 @@ func TestAccAliCloudKVStoreRedisInstance_classic_cluster_instance_class(t *testi
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccKvstoreRedisClassicClusterSpec%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudKVStoreRedisInstanceVpcBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, testAccKvstoreClassicDependence("Redis", "5.0", "PostPaid", "redis.amber.logic.sharding.1g.2db.0rodb.6proxy.multithread", "redis.amber.logic.sharding.2g.2db.0rodb.6proxy.multithread"))
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -2859,8 +3041,8 @@ func TestAccAliCloudKVStoreRedisInstance_classic_cluster_instance_class(t *testi
 					"db_instance_name": name,
 					"instance_type":    "Redis",
 					"engine_version":   "5.0",
-					"zone_id":          "${data.alicloud_kvstore_zones.default.zones.0.id}",
-					"vswitch_id":       "${data.alicloud_vswitches.default.ids.0}",
+					"zone_id":          "${alicloud_vswitch.default.zone_id}",
+					"vswitch_id":       "${alicloud_vswitch.default.id}",
 					"shard_count":      "2",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -2903,6 +3085,40 @@ func TestAccAliCloudKVStoreRedisInstance_classic_cluster_instance_class(t *testi
 			},
 		},
 	})
+}
+
+func TestUnitKvstoreNodeTypeCompatibility(t *testing.T) {
+	r := resourceAliCloudKvstoreInstance()
+	for _, nodeType := range []string{"single", "double", "MASTER_SLAVE", "STAND_ALONE"} {
+		t.Run(nodeType, func(t *testing.T) {
+			config := terraform.NewResourceConfigRaw(map[string]interface{}{"node_type": nodeType})
+			warnings, errors := r.Validate(config)
+			assert.Empty(t, errors)
+			assert.Empty(t, warnings, "supported node types must not produce a deprecation warning")
+
+			data := schema.TestResourceDataRaw(t, r.Schema, map[string]interface{}{"node_type": nodeType})
+			data.SetId("test-instance")
+			state := data.State()
+			for _, config := range []map[string]interface{}{{}, {"node_type": nodeType}} {
+				diff, err := r.Diff(state, terraform.NewResourceConfigRaw(config), nil)
+				if !assert.NoError(t, err) || diff == nil {
+					continue
+				}
+				assert.NotContains(t, diff.Attributes, "node_type", "existing and imported node types must remain stable")
+			}
+			other := "single"
+			if nodeType == other {
+				other = "double"
+			}
+			diff, err := r.Diff(state, terraform.NewResourceConfigRaw(map[string]interface{}{"node_type": other}), nil)
+			if assert.NoError(t, err) && assert.NotNil(t, diff) && assert.Contains(t, diff.Attributes, "node_type") {
+				assert.True(t, diff.Attributes["node_type"].RequiresNew)
+			}
+		})
+	}
+	d := schema.TestResourceDataRaw(t, r.Schema, map[string]interface{}{})
+	_, configured := d.GetOk("node_type")
+	assert.False(t, configured, "omission must preserve service-side default selection")
 }
 
 // TestUnitKvstoreIsCloudDiskSpec verifies the architecture classification helper
@@ -3070,24 +3286,68 @@ func AliCloudKVStoreRedisInstancePrePaidBasicDependence0(name string) string {
 	`)
 }
 
-func AliCloudKVStoreMemcacheInstanceVpcBasicDependence0(name string) string {
-	return fmt.Sprintf(`
-	data "alicloud_resource_manager_resource_groups" "default" {
-  		status = "OK"
-	}
+func testAccKvstoreClassicDependence(engine, version, paymentType string, instanceClasses ...string) func(string) string {
+	return func(name string) string {
+		versionFilter := ""
+		if version != "" {
+			versionFilter = fmt.Sprintf("engine_version       = %q", version)
+		}
+		classes := make([]string, len(instanceClasses))
+		for i, class := range instanceClasses {
+			classes[i] = fmt.Sprintf("%q", class)
+		}
+		zones := `"cn-hangzhou-i", "cn-hangzhou-j", "cn-hangzhou-k"`
+		if engine == "Memcache" {
+			zones = `"cn-hangzhou-j", "cn-hangzhou-k"`
+		}
+		return fmt.Sprintf(`
+data "alicloud_resource_manager_resource_groups" "default" {
+  status = "OK"
+}
 
-	data "alicloud_vpcs" "default" {
-  		name_regex = "^default-NODELETING$"
-	}
+data "alicloud_kvstore_zones" "default" {
+  engine               = %q
+  instance_charge_type = %q
+}
 
-	data "alicloud_vswitches" "default" {
-  		vpc_id  = data.alicloud_vpcs.default.ids.0
-  		zone_id = "cn-hangzhou-h"
-	}
+data "alicloud_kvstore_instance_classes" "default" {
+  count                = length(data.alicloud_kvstore_zones.default.ids)
+  zone_id              = data.alicloud_kvstore_zones.default.ids[count.index]
+  engine               = %q
+  %s
+  instance_charge_type = %q
+}
 
-	data "alicloud_vswitches" "slave" {
-  		vpc_id  = data.alicloud_vpcs.default.ids.0
-  		zone_id = "cn-hangzhou-i"
+locals {
+  class_supported_zones = [for i, classes in data.alicloud_kvstore_instance_classes.default : data.alicloud_kvstore_zones.default.ids[i] if length([for class in [%s] : class if !contains(classes.instance_classes, class)]) == 0]
+  # Older catalog entries can refer to zones closed for new instance creation.
+  supported_zones = [for zone in [%s] : zone if contains(local.class_supported_zones, zone)]
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = %q
+  cidr_block = "192.168.0.0/16"
+}
+
+resource "alicloud_vswitch" "default" {
+  vswitch_name = %q
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "192.168.0.0/24"
+  zone_id      = local.supported_zones[0]
+}
+
+resource "alicloud_vswitch" "update" {
+  vswitch_name = %q
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "192.168.1.0/24"
+  zone_id      = local.supported_zones[1]
+}
+
+resource "alicloud_security_group" "default" {
+  name                = %q
+  vpc_id              = alicloud_vpc.default.id
+  inner_access_policy = "Accept"
+}
+`, engine, paymentType, engine, versionFilter, paymentType, strings.Join(classes, ", "), zones, name, name, name+"-update", name)
 	}
-	`)
 }
