@@ -2,11 +2,20 @@ package alicloud
 
 import (
 	"fmt"
+	"os"
+	"reflect"
 	"testing"
 
+	"github.com/agiledragon/gomonkey/v2"
+	"github.com/alibabacloud-go/tea-rpc/client"
+	util "github.com/alibabacloud-go/tea-utils/service"
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestAccAliCloudDTSSynchronizationJob_basic0(t *testing.T) {
@@ -922,4 +931,250 @@ func AliCloudDTSSynchronizationJobBasicDependence1(name string) string {
   		sync_architecture                = "oneway"
 	}
 `, name)
+}
+
+// lintignore: R001
+func TestUnitAlicloudDTSSynchronizationJob(t *testing.T) {
+	p := Provider().(*schema.Provider).ResourcesMap
+	d, _ := schema.InternalMap(p["alicloud_dts_synchronization_job"].Schema).Data(nil, nil)
+	for key, value := range map[string]interface{}{
+		"dts_instance_id":                    "dts_instance_id",
+		"dts_job_name":                       "dts_job_name",
+		"source_endpoint_instance_type":      "RDS",
+		"source_endpoint_engine_name":        "MySQL",
+		"destination_endpoint_instance_type": "RDS",
+		"destination_endpoint_engine_name":   "MySQL",
+		"db_list":                            "db_list",
+		"structure_initialization":           true,
+		"data_initialization":                true,
+		"data_synchronization":               true,
+		"status":                             "Synchronizing",
+	} {
+		err := d.Set(key, value)
+		assert.Nil(t, err)
+	}
+	region := os.Getenv("ALICLOUD_REGION")
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		t.Skipf("Skipping the test case with err: %s", err)
+		t.Skipped()
+	}
+	rawClient = rawClient.(*connectivity.AliyunClient)
+
+	readMockResponse := map[string]interface{}{
+		"Checkpoint": 0,
+		"MigrationMode": map[string]interface{}{
+			"DataInitialization":      true,
+			"DataSynchronization":     true,
+			"StructureInitialization": true,
+		},
+		"DbObject": "db_list",
+		"DestinationEndpoint": map[string]interface{}{
+			"EngineName":   "MySQL",
+			"InstanceType": "RDS",
+		},
+		"DtsInstanceID": "dts_instance_id",
+		"DtsJobName":    "dts_job_name_renamed",
+		"SourceEndpoint": map[string]interface{}{
+			"EngineName":   "MySQL",
+			"InstanceType": "RDS",
+		},
+		"Status":                   "Synchronizing",
+		"SynchronizationDirection": "Forward",
+	}
+
+	describeDtsJobsResponse := map[string]interface{}{
+		"Success": true,
+		"DtsJobList": []interface{}{
+			map[string]interface{}{
+				"DtsJobId":        "dts_job_id_resolved",
+				"DtsInstanceID":   "dts_instance_id",
+				"DtsJobDirection": "Forward",
+				"Status":          "Synchronizing",
+			},
+		},
+	}
+
+	describeDtsJobsBidirectionalResponse := map[string]interface{}{
+		"Success": true,
+		"DtsJobList": []interface{}{
+			map[string]interface{}{
+				"DtsJobId":        "dts_job_id_reverse",
+				"DtsInstanceID":   "dts_instance_id",
+				"DtsJobDirection": "Reverse",
+				"Status":          "Synchronizing",
+			},
+			map[string]interface{}{
+				"DtsJobId":        "dts_job_id_forward",
+				"DtsInstanceID":   "dts_instance_id",
+				"DtsJobDirection": "Forward",
+				"Status":          "Synchronizing",
+			},
+		},
+	}
+
+	responseMock := map[string]func(errorCode string) (map[string]interface{}, error){
+		"NoRetryError": func(errorCode string) (map[string]interface{}, error) {
+			return nil, &tea.SDKError{
+				Code:       String(errorCode),
+				Data:       String(errorCode),
+				Message:    String(errorCode),
+				StatusCode: tea.Int(400),
+			}
+		},
+		"ModifyJobNameNormal": func(errorCode string) (map[string]interface{}, error) {
+			return map[string]interface{}{
+				"Success": true,
+			}, nil
+		},
+		"ModifyJobNameNotFoundResponse": func(errorCode string) (map[string]interface{}, error) {
+			return map[string]interface{}{
+				"Success":    false,
+				"ErrCode":    errorCode,
+				"ErrMessage": errorCode,
+			}, nil
+		},
+		"DescribeDtsJobsNormal": func(errorCode string) (map[string]interface{}, error) {
+			return describeDtsJobsResponse, nil
+		},
+		"DescribeDtsJobsBidirectional": func(errorCode string) (map[string]interface{}, error) {
+			return describeDtsJobsBidirectionalResponse, nil
+		},
+		"DescribeDtsJobsEmpty": func(errorCode string) (map[string]interface{}, error) {
+			return map[string]interface{}{
+				"Success":    true,
+				"DtsJobList": []interface{}{},
+			}, nil
+		},
+		"ReadNormal": func(errorCode string) (map[string]interface{}, error) {
+			return readMockResponse, nil
+		},
+	}
+
+	// The job ID stored in state no longer maps to the instance: the rename first fails with
+	// Forbidden.InstanceNotFound, then the valid job ID is resolved from the instance and the
+	// retry succeeds, refreshing the resource ID.
+	t.Run("UpdateModifyJobNameResolveNormal", func(t *testing.T) {
+		diff := terraform.NewInstanceDiff()
+		diff.SetAttribute("dts_job_name", &terraform.ResourceAttrDiff{Old: "dts_job_name", New: "dts_job_name_renamed"})
+		diff.SetAttribute("dts_instance_id", &terraform.ResourceAttrDiff{Old: "dts_instance_id", New: "dts_instance_id"})
+		resourceData, _ := schema.InternalMap(p["alicloud_dts_synchronization_job"].Schema).Data(nil, diff)
+		resourceData.SetId("dts_job_id_old")
+		callIndex := 0
+		patcheRead := gomonkey.ApplyMethod(reflect.TypeOf(&DtsService{}), "DescribeDtsSynchronizationJob", func(*DtsService, string) (map[string]interface{}, error) {
+			return responseMock["ReadNormal"]("")
+		})
+		patcheParameters := gomonkey.ApplyMethod(reflect.TypeOf(&DtsService{}), "QueryChangedJobParameters", func(*DtsService, string) (string, error) {
+			return "", nil
+		})
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			callIndex++
+			switch callIndex {
+			case 1:
+				return responseMock["NoRetryError"]("Forbidden.InstanceNotFound")
+			case 2:
+				return responseMock["DescribeDtsJobsNormal"]("")
+			default:
+				return responseMock["ModifyJobNameNormal"]("")
+			}
+		})
+		err := resourceAlicloudDtsSynchronizationJobUpdate(resourceData, rawClient)
+		patcheRead.Reset()
+		patcheParameters.Reset()
+		patches.Reset()
+		assert.Nil(t, err)
+		assert.Equal(t, "dts_job_id_resolved", resourceData.Id())
+	})
+
+	// The rename fails with a business-level not-found response instead of an SDK error; the
+	// resolution fallback applies the same way.
+	t.Run("UpdateModifyJobNameResolveSuccessFalseNormal", func(t *testing.T) {
+		diff := terraform.NewInstanceDiff()
+		diff.SetAttribute("dts_job_name", &terraform.ResourceAttrDiff{Old: "dts_job_name", New: "dts_job_name_renamed"})
+		diff.SetAttribute("dts_instance_id", &terraform.ResourceAttrDiff{Old: "dts_instance_id", New: "dts_instance_id"})
+		resourceData, _ := schema.InternalMap(p["alicloud_dts_synchronization_job"].Schema).Data(nil, diff)
+		resourceData.SetId("dts_job_id_old")
+		callIndex := 0
+		patcheRead := gomonkey.ApplyMethod(reflect.TypeOf(&DtsService{}), "DescribeDtsSynchronizationJob", func(*DtsService, string) (map[string]interface{}, error) {
+			return responseMock["ReadNormal"]("")
+		})
+		patcheParameters := gomonkey.ApplyMethod(reflect.TypeOf(&DtsService{}), "QueryChangedJobParameters", func(*DtsService, string) (string, error) {
+			return "", nil
+		})
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			callIndex++
+			switch callIndex {
+			case 1:
+				return responseMock["ModifyJobNameNotFoundResponse"]("Forbidden.InstanceNotFound")
+			case 2:
+				return responseMock["DescribeDtsJobsNormal"]("")
+			default:
+				return responseMock["ModifyJobNameNormal"]("")
+			}
+		})
+		err := resourceAlicloudDtsSynchronizationJobUpdate(resourceData, rawClient)
+		patcheRead.Reset()
+		patcheParameters.Reset()
+		patches.Reset()
+		assert.Nil(t, err)
+		assert.Equal(t, "dts_job_id_resolved", resourceData.Id())
+	})
+
+	// A bidirectional synchronization instance carries one job per direction under the same
+	// instance: the resolver must pick the job whose direction matches the resource state.
+	t.Run("UpdateModifyJobNameResolveBidirectionalNormal", func(t *testing.T) {
+		diff := terraform.NewInstanceDiff()
+		diff.SetAttribute("dts_job_name", &terraform.ResourceAttrDiff{Old: "dts_job_name", New: "dts_job_name_renamed"})
+		diff.SetAttribute("dts_instance_id", &terraform.ResourceAttrDiff{Old: "dts_instance_id", New: "dts_instance_id"})
+		diff.SetAttribute("synchronization_direction", &terraform.ResourceAttrDiff{Old: "Forward", New: "Forward"})
+		resourceData, _ := schema.InternalMap(p["alicloud_dts_synchronization_job"].Schema).Data(nil, diff)
+		resourceData.SetId("dts_job_id_old")
+		callIndex := 0
+		patcheRead := gomonkey.ApplyMethod(reflect.TypeOf(&DtsService{}), "DescribeDtsSynchronizationJob", func(*DtsService, string) (map[string]interface{}, error) {
+			return responseMock["ReadNormal"]("")
+		})
+		patcheParameters := gomonkey.ApplyMethod(reflect.TypeOf(&DtsService{}), "QueryChangedJobParameters", func(*DtsService, string) (string, error) {
+			return "", nil
+		})
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			callIndex++
+			switch callIndex {
+			case 1:
+				return responseMock["NoRetryError"]("Forbidden.InstanceNotFound")
+			case 2:
+				return responseMock["DescribeDtsJobsBidirectional"]("")
+			default:
+				return responseMock["ModifyJobNameNormal"]("")
+			}
+		})
+		err := resourceAlicloudDtsSynchronizationJobUpdate(resourceData, rawClient)
+		patcheRead.Reset()
+		patcheParameters.Reset()
+		patches.Reset()
+		assert.Nil(t, err)
+		assert.Equal(t, "dts_job_id_forward", resourceData.Id())
+	})
+
+	// The rename fails and no valid job remains under the instance: the original failure is
+	// surfaced instead of being silently swallowed.
+	t.Run("UpdateModifyJobNameResolveNotFoundAbnormal", func(t *testing.T) {
+		diff := terraform.NewInstanceDiff()
+		diff.SetAttribute("dts_job_name", &terraform.ResourceAttrDiff{Old: "dts_job_name", New: "dts_job_name_renamed"})
+		diff.SetAttribute("dts_instance_id", &terraform.ResourceAttrDiff{Old: "dts_instance_id", New: "dts_instance_id"})
+		resourceData, _ := schema.InternalMap(p["alicloud_dts_synchronization_job"].Schema).Data(nil, diff)
+		resourceData.SetId("dts_job_id_old")
+		callIndex := 0
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			callIndex++
+			switch callIndex {
+			case 1:
+				return responseMock["NoRetryError"]("Forbidden.InstanceNotFound")
+			default:
+				return responseMock["DescribeDtsJobsEmpty"]("")
+			}
+		})
+		err := resourceAlicloudDtsSynchronizationJobUpdate(resourceData, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
 }
