@@ -1,4 +1,12 @@
 ## 1.292.0 (Unreleased)
+
+ENHANCEMENTS:
+
+- resource/alicloud_ga_endpoint_group: Added the fields `vpc_id` and `vswitch_ids` for `IpTarget` endpoint type. ([#10345](https://github.com/aliyun/terraform-provider-alicloud/pull/10345))
+- resource/alicloud_ga_accelerator: Added the field `ip_set_config` and `bandwidth`. ([#10345](https://github.com/aliyun/terraform-provider-alicloud/pull/10345))
+- data-source/alicloud_ga_endpoint_groups: Added the fields `vpc_id` and `vswitch_ids` in response. ([#10345](https://github.com/aliyun/terraform-provider-alicloud/pull/10345))
+- data-source/alicloud_ga_accelerators: Added the field `ip_set_config` and `bandwidth` in response. ([#10345](https://github.com/aliyun/terraform-provider-alicloud/pull/10345))
+
 ## 1.291.0 (September 1, 2026)
 
 - **New Resource:** `alicloud_ecd_desktop_group` ([#10230](https://github.com/aliyun/terraform-provider-alicloud/issues/10230))

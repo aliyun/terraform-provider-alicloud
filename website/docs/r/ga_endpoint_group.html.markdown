@@ -142,7 +142,7 @@ The endpoint_configurations supports the following:
 * `type` - (Required) The type of Endpoint N in the endpoint group. Valid values:
   - `Domain`: A custom domain name.
   - `Ip`: A custom IP address.
-  - `IpTarget`: (Available since v1.262.0) An Alibaba Cloud public IP address.
+  - `IpTarget`: (Available since v1.262.0) a custom private IP address.
   - `PublicIp`: An Alibaba Cloud public IP address.
   - `ECS`: An Elastic Compute Service (ECS) instance.
   - `SLB`: A Classic Load Balancer (CLB) instance.
@@ -160,8 +160,8 @@ The endpoint_configurations supports the following:
 * `enable_clientip_preservation` - (Optional, Bool) Indicates whether client IP addresses are reserved. Default Value: `false`. Valid values:
   - `true`: Client IP addresses are reserved.
   - `false`: Client IP addresses are not reserved.
-* `vpc_id` - (Optional, Available since v1.262.0) The ID of the VPC.
-* `vswitch_ids` - (Optional, List, Available since v1.262.0) The IDs of vSwitches that are deployed in the VPC.
+* `vpc_id` - (Optional, Available since v1.262.0) The ID of the Virtual Private Cloud (VPC). This parameter is required only when the endpoint type is set to IpTarget.
+* `vswitch_ids` - (Optional, List, Available since v1.262.0) A list of vSwitches in the VPC. You can specify a maximum of two vSwitch IDs for an endpoint group of an intelligent routing listener. This parameter is required when the endpoint type is IpTarget. The vSwitch must belong to the VPC specified by the VpcId parameter.
 
 ### `port_overrides`
 
