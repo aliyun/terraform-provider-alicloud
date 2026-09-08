@@ -24,7 +24,41 @@ func String(v string) *string {
 	return &v
 }
 
+func tagsSchemaWithElements() *schema.Schema {
+	return &schema.Schema{
+		Type:     schema.TypeMap,
+		Optional: true,
+		Elem: &schema.Schema{
+			Type: schema.TypeString,
+		},
+	}
+}
+
+func tagsSchemaForceNewWithElements() *schema.Schema {
+	return &schema.Schema{
+		Type:     schema.TypeMap,
+		Optional: true,
+		ForceNew: true,
+		Elem: &schema.Schema{
+			Type: schema.TypeString,
+		},
+	}
+}
+
+func tagsSchemaComputedWithElements() *schema.Schema {
+	return &schema.Schema{
+		Type:     schema.TypeMap,
+		Optional: true,
+		Computed: true,
+		Elem: &schema.Schema{
+			Type: schema.TypeString,
+		},
+	}
+}
+
 // lintignore: S006
+// Deprecated: Use tagsSchemaWithElements instead, which declares the string
+// element type explicitly.
 func tagsSchema() *schema.Schema {
 	return &schema.Schema{
 		Type:     schema.TypeMap,
@@ -33,6 +67,8 @@ func tagsSchema() *schema.Schema {
 }
 
 // lintignore: S006
+// Deprecated: Use tagsSchemaForceNewWithElements instead, which declares the
+// string element type explicitly.
 func tagsSchemaForceNew() *schema.Schema {
 	return &schema.Schema{
 		Type:     schema.TypeMap,
@@ -42,6 +78,8 @@ func tagsSchemaForceNew() *schema.Schema {
 }
 
 // lintignore: S006
+// Deprecated: Use tagsSchemaComputedWithElements instead, which declares the
+// string element type explicitly.
 func tagsSchemaComputed() *schema.Schema {
 	return &schema.Schema{
 		Type:     schema.TypeMap,
