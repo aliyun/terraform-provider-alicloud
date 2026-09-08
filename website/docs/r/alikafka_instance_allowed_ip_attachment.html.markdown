@@ -90,6 +90,7 @@ The following arguments are supported:
   - `9094/9094`: The port range for access from VPCs by using the Simple Authentication and Security Layer (SASL) endpoint.
   - `9095/9095`: The port range for access from VPCs by using the Secure Sockets Layer (SSL) endpoint.
 * `allowed_ip` - (Required, ForceNew) The IP address whitelist. It can be a CIDR block.
+* `description` - (Optional, ForceNew) The description of the whitelist.
 
 ## Attributes Reference
 

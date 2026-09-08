@@ -45,6 +45,11 @@ func resourceAliCloudAliKafkaInstanceAllowedIpAttachment() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"description": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -62,6 +67,9 @@ func resourceAliCloudAliKafkaInstanceAllowedIpAttachmentCreate(d *schema.Resourc
 	request["AllowedListType"] = d.Get("allowed_type")
 	request["PortRange"] = d.Get("port_range")
 	request["AllowedListIp"] = d.Get("allowed_ip")
+	if v, ok := d.GetOk("description"); ok {
+		request["Description"] = v
+	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
