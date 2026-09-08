@@ -682,3 +682,117 @@ func (s *CmsServiceV2) CmsEventNotifyPolicyStateRefreshFuncWithApi(id string, fi
 }
 
 // DescribeCmsEventNotifyPolicy >>> Encapsulated.
+
+// DescribeCmsBizTrace <<< Encapsulated get interface for Cms BizTrace.
+
+func (s *CmsServiceV2) DescribeCmsBizTrace(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]*string
+	bizTraceId := id
+	request = make(map[string]interface{})
+	query = make(map[string]*string)
+
+	action := fmt.Sprintf("/bizTrace/%s", bizTraceId)
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RoaGet("Cms", "2024-03-30", action, query, nil, nil)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"BizTraceNotExist", "404"}) {
+			return object, WrapErrorf(NotFoundErr("BizTrace", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.item", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.item", response)
+	}
+
+	return v.(map[string]interface{}), nil
+}
+
+func (s *CmsServiceV2) CmsBizTraceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.CmsBizTraceStateRefreshFuncWithApi(id, field, failStates, s.DescribeCmsBizTrace)
+}
+
+// CreateCmsEntityStore initialises the EntityStore for a CMS workspace. The
+// EntityStore must exist before BizTrace resources can be created inside the
+// workspace; it is not auto-provisioned by workspace creation. The call is
+// idempotent: if the store already exists the returned error is treated as
+// success so the caller can proceed safely.
+func (s *CmsServiceV2) CreateCmsEntityStore(workspaceName string) error {
+	client := s.client
+	action := fmt.Sprintf("/workspace/%s/entitystore", workspaceName)
+	query := make(map[string]*string)
+	body := make(map[string]interface{})
+
+	response, err := client.RoaPost("Cms", "2024-03-30", action, query, nil, body, true)
+	addDebug(action, response, body)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"EntityStoreAlreadyExist", "AlreadyExist"}) ||
+			strings.Contains(err.Error(), "already exist") {
+			return nil
+		}
+		return WrapErrorf(err, DefaultErrorMsg, workspaceName, action, AlibabaCloudSdkGoERROR)
+	}
+	return nil
+}
+
+// GetCmsEntityStore retrieves the EntityStore for a CMS workspace. It can be
+// used to poll readiness after CreateCmsEntityStore.
+func (s *CmsServiceV2) GetCmsEntityStore(workspaceName string) (map[string]interface{}, error) {
+	client := s.client
+	action := fmt.Sprintf("/workspace/%s/entitystore", workspaceName)
+	query := make(map[string]*string)
+
+	response, err := client.RoaGet("Cms", "2024-03-30", action, query, nil, nil)
+	addDebug(action, response, nil)
+	if err != nil {
+		return nil, WrapErrorf(err, DefaultErrorMsg, workspaceName, action, AlibabaCloudSdkGoERROR)
+	}
+	return response, nil
+}
+
+func (s *CmsServiceV2) CmsBizTraceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeCmsBizTrace >>> Encapsulated.
