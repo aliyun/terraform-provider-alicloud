@@ -10,7 +10,7 @@ import (
 
 func TestAccAliCloudCmsEntityGroupsDataSource_basic(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testAcc%d", rand)
+	name := fmt.Sprintf("tf-testacc%d", rand)
 	dataSourceId := "data.alicloud_cms_entity_groups.default"
 
 	dependence := AliCloudCmsEntityGroupBasicDependence(name)
@@ -53,7 +53,7 @@ data "alicloud_cms_entity_groups" "default" {
 
 func TestAccAliCloudCmsEntityGroupsDataSource_filterByType(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testAcc%d", rand)
+	name := fmt.Sprintf("tf-testacc%d", rand)
 	dataSourceId := "data.alicloud_cms_entity_groups.default"
 
 	dependence := AliCloudCmsEntityGroupBasicDependence(name)

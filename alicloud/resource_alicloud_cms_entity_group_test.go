@@ -24,7 +24,7 @@ func testSweepCmsEntityGroup(region string) error {
 		return WrapErrorf(err, "error getting Alicloud client.")
 	}
 	client := rawClient.(*connectivity.AliyunClient)
-	prefixes := []string{"tf-testAcc", "tf_testAcc"}
+	prefixes := []string{"tf-testacc", "tf_testacc"}
 	action := "/entity-groups"
 	query := map[string]*string{
 		"MaxResults": StringPointer(fmt.Sprintf("%d", PageSizeLarge)),
@@ -138,7 +138,7 @@ func TestAccAliCloudCmsEntityGroup_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cms_entity_group.default"
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testAcc%d", rand)
+	name := fmt.Sprintf("tf-testacc%d", rand)
 	ra := resourceAttrInit(resourceId, AliCloudCmsEntityGroupMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &CmsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -280,7 +280,7 @@ func TestAccAliCloudCmsEntityGroup_emptyRules(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cms_entity_group.default"
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testAcc%d", rand)
+	name := fmt.Sprintf("tf-testacc%d", rand)
 	ra := resourceAttrInit(resourceId, AliCloudCmsEntityGroupMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &CmsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
