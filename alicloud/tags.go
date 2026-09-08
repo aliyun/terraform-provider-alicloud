@@ -32,6 +32,14 @@ func tagsSchema() *schema.Schema {
 	}
 }
 
+func tagsSchemaString() *schema.Schema {
+	return &schema.Schema{
+		Type:     schema.TypeMap,
+		Optional: true,
+		Elem:     &schema.Schema{Type: schema.TypeString},
+	}
+}
+
 // lintignore: S006
 func tagsSchemaForceNew() *schema.Schema {
 	return &schema.Schema{
