@@ -638,3 +638,87 @@ func (s *CmsServiceV2) CmsEventNotifyPolicyStateRefreshFuncWithApi(id string, fi
 }
 
 // DescribeCmsEventNotifyPolicy >>> Encapsulated.
+
+// DescribeCmsAlertNotifyTemplate <<< Encapsulated get interface for Cms AlertNotifyTemplate.
+
+func (s *CmsServiceV2) DescribeCmsAlertNotifyTemplate(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]*string
+	request = make(map[string]interface{})
+	query = make(map[string]*string)
+	query["alertNotifyTemplateIds"] = StringPointer(fmt.Sprintf(`["%s"]`, id))
+	query["regionId"] = StringPointer(client.RegionId)
+	action := "/alertNotifyTemplate"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RoaGet("Cms", "2024-03-30", action, query, nil, nil)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ResourceNotFound"}) {
+			return object, WrapErrorf(NotFoundErr("AlertNotifyTemplate", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	items, err := jsonpath.Get("$.alertNotifyTemplates", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.alertNotifyTemplates", response)
+	}
+	itemsArray, ok := items.([]interface{})
+	if !ok || len(itemsArray) == 0 {
+		return object, WrapErrorf(NotFoundErr("AlertNotifyTemplate", id), NotFoundMsg, response)
+	}
+	firstItem, ok := itemsArray[0].(map[string]interface{})
+	if !ok {
+		return object, WrapError(fmt.Errorf("alertNotifyTemplates[0] is not a map[string]interface{}"))
+	}
+
+	return firstItem, nil
+}
+
+func (s *CmsServiceV2) CmsAlertNotifyTemplateStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.CmsAlertNotifyTemplateStateRefreshFuncWithApi(id, field, failStates, s.DescribeCmsAlertNotifyTemplate)
+}
+
+func (s *CmsServiceV2) CmsAlertNotifyTemplateStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeCmsAlertNotifyTemplate >>> Encapsulated.
