@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudSLBLoadBalancersDataSource(t *testing.T) {
+func TestAccAliCloudSLBLoadBalancersDataSource(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	rand := acctest.RandInt()
 	idsConf := dataSourceTestAccConfig{
@@ -150,6 +150,8 @@ func TestAccAlicloudSLBLoadBalancersDataSource(t *testing.T) {
 			"balancers.0.address_ip_version":             `ipv4`,
 			"balancers.0.address_type":                   `intranet`,
 			"balancers.0.bandwidth":                      CHECKSET,
+			"balancers.0.create_time":                    CHECKSET,
+			"balancers.0.create_time_stamp":              CHECKSET,
 			"balancers.0.internet_charge_type":           `PayByTraffic`,
 			"balancers.0.delete_protection":              `off`,
 			"balancers.0.load_balancer_name":             CHECKSET,
@@ -163,6 +165,7 @@ func TestAccAlicloudSLBLoadBalancersDataSource(t *testing.T) {
 			"balancers.0.status":                         `active`,
 			"balancers.0.tags.%":                         `1`,
 			"balancers.0.vswitch_id":                     CHECKSET,
+			"slbs.0.creation_time":                       CHECKSET,
 		}
 	}
 	var fakeAlicloudSlbLoadBalancersDataSourceNameMapFunc = func(rand int) map[string]string {
