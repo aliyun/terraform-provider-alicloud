@@ -823,6 +823,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecd_desktop_types":                                dataSourceAlicloudEcdDesktopTypes(),
 			"alicloud_config_deliveries":                                dataSourceAlicloudConfigDeliveries(),
 			"alicloud_cms_namespaces":                                   dataSourceAlicloudCmsNamespaces(),
+			"alicloud_cms_agg_task_groups":                              dataSourceAliCloudCmsAggTaskGroups(),
 			"alicloud_cms_datasets":                                     dataSourceAliCloudCmsDatasets(),
 			"alicloud_cms_sls_groups":                                   dataSourceAlicloudCmsSlsGroups(),
 			"alicloud_config_aggregate_deliveries":                      dataSourceAlicloudConfigAggregateDeliveries(),
