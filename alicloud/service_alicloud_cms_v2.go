@@ -54,6 +54,43 @@ func (s *CmsServiceV2) DescribeCmsWorkspace(id string) (object map[string]interf
 	return response, nil
 }
 
+// DescribeCmsEntityStore <<< Encapsulated get interface for Cms EntityStore.
+
+func (s *CmsServiceV2) DescribeCmsEntityStore(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]*string
+	workspaceName := id
+	request = make(map[string]interface{})
+	query = make(map[string]*string)
+
+	action := fmt.Sprintf("/workspace/%s/entitystore", workspaceName)
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RoaGet("Cms", "2024-03-30", action, query, nil, nil)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"EntityStoreNotExist", "WorkspaceNotAvailable"}) {
+			return object, WrapErrorf(NotFoundErr("EntityStore", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+
 func (s *CmsServiceV2) CmsWorkspaceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
 	return s.CmsWorkspaceStateRefreshFuncWithApi(id, field, failStates, s.DescribeCmsWorkspace)
 }
