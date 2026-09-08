@@ -1011,7 +1011,7 @@ def _persona_prompt(item_id, role, action, note, round_n, snippet, project=None,
         "PD 的路由动作、QA 的缺陷与验收结论都只是给 RD 的提案；PD/QA 禁止外写，中间 RD "
         "禁止工单进展回复。MR/CR 已开则收集链接。\n"
         "3) 最后 Task 起 terraform-rd finalizer，汇总所有返回并审查允许的外部动作，起草完整回复正文"
-        "（结论、查证、改动及链接、验收证据、未决项/下一步）——这段正文即下面 AONE_RESULT 的 reply_body。\n"
+        "，严格使用 loops/terraform-reply-template.md 四栏模板——这段正文即下面 AONE_RESULT 的 reply_body。\n"
         "%s\n"
         "%s\n%s"
         % (item_id, action, round_n, identity_context, scenario,

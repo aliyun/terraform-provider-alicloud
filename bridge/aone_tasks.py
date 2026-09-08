@@ -430,13 +430,14 @@ def _terraform_visual_evidence_instructions(item_id):
         "`python3 .claude/skills/screenshot-evidence/scripts/validate-manifest.py "
         ".my-day/screenshots/%s/evidence-manifest.md`，再统一上传一次报告："
         "`bash bootstrap/html-report-preview.sh upload %s <report.html>`，严禁传 `--comment`。"
-        "成功时把返回的 markdown 预览链接写入 AONE_RESULT.reply_body；失败时把截图降级分类"
-        "和原因写入 reply_body。两种情况都由 executor 随唯一回复落账；"
+        "成功时把返回的 markdown 预览链接写入 AONE_RESULT.reply_body；失败时用业务语言"
+        "说明报告不可用原因。两种情况都由 executor 随唯一回复落账；"
         "**源工单禁止 claim/wrap/release/直接评论**。D/E/G/I 严禁创建、复用或 "
         "bookend 528766；只有 H 按既有边界保留合法 528766，仅实际 claim 的 H "
         "研发单由 RD finalizer bookend。\n"
-        "- 缺层、截图不存在、manifest 无效或上传失败时，在 reply_body 说明 "
+        "- 缺层、截图不存在、manifest 无效或上传失败时，在内部记录保留 "
         "`screenshot degraded: <capture_error|missing_capability|manifest_error|upload_error>`；"
+        "reply_body 的必要证据栏目写「可视化报告暂不可用：<原因>，本次依据<文字证据>」。"
         "禁止静默省略报告，但不得仅因此把内部结果标为 blocked/missing_capability。\n"
         "- Terraform 内部 Task 严格返回字段：%s。"
         % (item_id, item_id, item_id, TERRAFORM_INTERNAL_RESULT_FIELDS)
@@ -525,6 +526,33 @@ def _terraform_d_g_source_only_instructions(item_id):
     )
 
 
+def _terraform_reply_template_instructions():
+    """Carry the finalizer writing contract through ticket, persona and wake prompts."""
+    return (
+        "Terraform 主处理唯一聚合回复：finalizer 先读取 loops/terraform-reply-template.md，"
+        "按其固定模板撰写 AONE_RESULT.reply_body；done/idle/suspend 均适用，"
+        "包括挂起恢复和升级收口。后续已有固定生命周期事件通知不适用此模板。\n"
+        "正文必须依次使用以下四个 Markdown 加粗标题，不增加同级标题；"
+        "前三段的总结句也必须加粗：总体进展、当前待办、发布安排。"
+        "段落及各项之间留一个空行，不把整个回复包在代码块。\n"
+        "**一、完成情况**\n"
+        "按构建、测试、文档、发布分项写真实状态及已完成内容；不适用时写原因。"
+        "百分比仅在有明确分子/分母时使用并注明口径，否则用状态，不估算总进度。\n"
+        "**二、待处理事项及负责人**\n"
+        "逐项写待办、角色及已知实名负责人、需要确认的具体决策和方案链接。"
+        "未知时写「负责人待确认」，不编造姓名或 @；无待办明确写无。\n"
+        "**三、预计发布时间**\n"
+        "只填写已确认排期并给出依据；未确认时根据实际阶段写"
+        "「待发布，发布时间待确认」或「尚未进入待发布阶段」；无需发布、已发布按实情说明。"
+        "期望日期不能写成发布承诺。\n"
+        "**四、必要证据**\n"
+        "保留查证结论（PD）、修改及 PR/CI（RD）、验收结果（QA）和报告链接；"
+        "未执行或不可用如实说明。正文使用读者能理解的业务表述，不暴露 PD/RD/QA、"
+        "finalizer、route、manifest 等内部交接术语；技术详情由链接承载，不堆原始日志。"
+        "待确认事项、截图降级原因也必须归入以上对应栏目，不另起旧式汇总结构。"
+    )
+
+
 def _task_result_instructions(item_id, terraform, expected_comment_cursor=None):
     """B-proper 收尾契约（executor 托管）——三个控制面 Task prompt 共用的尾块。
 
@@ -584,7 +612,8 @@ def _task_result_instructions(item_id, terraform, expected_comment_cursor=None):
     )
     if terraform:
         instructions += (
-            "\n\n" + _terraform_visual_evidence_instructions(item_id)
+            "\n\n" + _terraform_reply_template_instructions()
+            + "\n\n" + _terraform_visual_evidence_instructions(item_id)
             + "\n\n" + _terraform_pure_datasource_instructions(item_id)
             + "\n\n" + _terraform_d_g_source_only_instructions(item_id)
         )
@@ -700,7 +729,7 @@ PD/QA 全程只读或执行内部验证，不得写 Aone、钉钉、MR/CR，不�
    enqueue 对应 subtype/owner 的 DM，最后才交 AONE_RESULT；G 只同步源单给新山且不发新增
    route DM。pure datasource 仍只复核源单 owner/status。open PR + QA pass 时让 executor
    release 源单，不 finish。MR/CR 已开则收集链接，并起草一条
-   完整回复正文——结论、PD 查证、RD 改动及 MR/CR 链接、QA 证据、未决项/下一步。这段正文即下面
+   完整回复正文，严格使用 loops/terraform-reply-template.md 的四栏模板。这段正文即下面
    AONE_RESULT 的 reply_body。有 PR 时无需手动登记看守：bridge 的 PR watch 会自动发现
    api-tool-agent 名下 open PR（分支编码工单号）并纳管全生命周期。bootstrap/log.sh run_done
    {item_id} "<内部链路 + 收口摘要>"。

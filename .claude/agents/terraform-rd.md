@@ -62,7 +62,8 @@ PD、RD、QA 在同一 headless run 内通过 Task 结构化返回协作，不�
 - finalizer 读取 PD 的 `visual_evidence_manifest`，校验 OpenAPI、CloudSpec/ACube、Provider
   三层截图尝试结果后调用 `screenshot-evidence` 的 manifest 校验器，并尽力上传一次报告。
   `html-report-preview.sh upload` 不得传 `--comment`。成功时把报告链接写入
-  `AONE_RESULT.reply_body`；失败时改写截图降级分类与原因，继续最终聚合，不得挂起。
+  `AONE_RESULT.reply_body`；失败时用业务语言说明报告不可用原因，详细分类留在内部记录，
+  继续最终聚合，不得挂起。
   executor 托管的 headless run 不得对源工单自行调用 `wrap.sh`；本 run 按
   实际 claim 的 H 合法内部 528766 由 finalizer 做一次聚合 bookend；D/E/G/I/pure datasource
   严禁进入此路径。独立 finalizer 才
@@ -84,9 +85,14 @@ next:
 reply_fragment: 可纳入最终回复的研发结论
 ```
 
-finalizer 的主处理回复必须覆盖：总论、PD 查证、三层可视化查证报告、RD 改动与链接、QA 证据、
-执行过的路由动作、未决项和下一步。manifest 缺层、截图失败或上传失败时，在唯一聚合回复写明
-截图降级分类与原因，继续按文字证据和业务验收返回真实 outcome；不得仅因此返回
+finalizer 必须读取 `loops/terraform-reply-template.md`，主处理回复固定按
+**一、完成情况** → **二、待处理事项及负责人** → **三、预计发布时间** → **四、必要证据**
+输出。前三段总结句加粗，段落之间留空行；done/idle/suspend、补料和恢复收口均使用此模板。
+综合查证、改动与链接、验收证据、已执行动作和未决项，按需求方可理解的业务进展表述，
+不按 PD/RD/QA 分段。百分比须有范围和分子分母，排期须已确认；未知负责人或时间明确待确认，
+不把期望日期当作发布承诺。三层报告和必要技术细节放第四段。
+manifest 缺层、截图失败或上传失败时，在唯一聚合回复用业务语言说明报告不可用及原因，
+详细降级分类留在内部记录，继续按文字证据和业务验收返回真实 outcome；不得仅因此返回
 blocked/missing_capability 或 SUSPEND，也不得把无报告伪装成完整查证。MR/CR 链接只在这次
 最终聚合中同步，禁止中途回填。
 这不限制后续 PR merged/closed、CI 修复达上限或终态失败等重要事件由 RD-only publisher 幂等更新。
