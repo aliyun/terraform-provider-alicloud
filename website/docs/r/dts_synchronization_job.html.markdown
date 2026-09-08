@@ -151,7 +151,7 @@ The following arguments supported:
 * `structure_initialization` - (Required, ForceNew) Whether to perform library table structure migration or initialization. Valid values: `true`, `false`.
 * `db_list` - (Required) Migration object, in the format of JSON strings. For detailed definition instructions, please refer to [the description of migration, synchronization or subscription objects](https://help.aliyun.com/document_detail/209545.html). **NOTE:** From version 1.173.0, `db_list` can be modified.
 * `synchronization_direction` - (Optional, ForceNew) Synchronization direction. Valid values: `Forward`, `Reverse`. Only when the property `sync_architecture` of the `alicloud_dts_synchronization_instance` was `bidirectional` this parameter should be passed, otherwise this parameter should not be specified.
-* `instance_class` - (Optional) The instance class. Valid values: `large`, `medium`, `micro`, `small`, `xlarge`, `xxlarge`. You can only upgrade the configuration, not downgrade the configuration. If you downgrade the instance, you need to [submit a ticket](https://selfservice.console.aliyun.com/ticket/category/dts/today).
+* `instance_class` - (Optional) The instance class. Valid values: `xmicro`, `micro`, `small`, `medium`, `large`, `xlarge`, `2xlarge`, `4xlarge`, `6xlarge`, `8xlarge`. Both upgrade and downgrade are supported; downgrade requires an [allowlisted account](https://selfservice.console.aliyun.com/ticket/category/dts/today), otherwise the server returns NoPermission and the change is not applied.
 * `checkpoint` - (Optional, ForceNew) The start point or synchronization point of incremental data migration, the format is Unix timestamp, and the unit is seconds.
 * `reserve` - (Optional) DTS reserves parameters, the format is a JSON string, you can pass in this parameter to complete the source and target database information (such as the data storage format of the target Kafka database, the instance ID of the cloud enterprise network CEN). For more information, please refer to the parameter [description of the Reserve parameter](https://help.aliyun.com/document_detail/273111.html).
 
@@ -209,7 +209,7 @@ The following arguments supported:
 
 -> **NOTE:** From the status of `NotStarted` to `Synchronizing`, the resource goes through the `Prechecking` and `Initializing` phases. Because of the `Initializing` phase takes too long, and once the resource passes to the status of `Prechecking`, it can be considered that the task can be executed normally. Therefore, we treat the status of `Initializing` as an equivalent to `Synchronizing`.
 
--> **NOTE:** If you want to upgrade the synchronization job specifications by the property `instance_class`, you must also modify the property `instance_class` of it's instance to keep them consistent.
+-> **NOTE:** Both upgrade and downgrade of `instance_class` are forwarded to TransferInstanceClass; the server decides the direction from the configured class versus the actual spec. Downgrade requires an allowlisted account — if the account is not allowlisted the server returns NoPermission. When you change the synchronization job specifications by the property `instance_class`, you must also modify the property `instance_class` of it's instance to keep them consistent.
 
 ## Notice
 
