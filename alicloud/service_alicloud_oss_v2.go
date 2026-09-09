@@ -1397,6 +1397,61 @@ func (s *OssServiceV2) OssAccessPointStateRefreshFunc(id string, field string, f
 
 // DescribeOssAccessPoint >>> Encapsulated.
 
+// DescribeOssAccessPointPolicy <<< Encapsulated get interface for Oss AccessPointPolicy.
+func (s *OssServiceV2) DescribeOssAccessPointPolicy(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]*string
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return
+	}
+	action := fmt.Sprintf("/?accessPointPolicy")
+	request = make(map[string]interface{})
+	query = make(map[string]*string)
+	hostMap := make(map[string]*string)
+	query["x-oss-access-point-name"] = StringPointer(parts[1])
+	hostMap["bucket"] = StringPointer(parts[0])
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.Do("Oss", xmlJsonParam("GET", "2019-05-17", "GetAccessPointPolicy", action), query, nil, nil, hostMap, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"NoSuchAccessPointPolicy", "NoSuchAccessPoint"}) {
+			return object, WrapErrorf(NotFoundErr("AccessPointPolicy", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	if response == nil {
+		return object, WrapErrorf(NotFoundErr("AccessPointPolicy", id), NotFoundMsg, response)
+	}
+
+	// OSS access-point responses are wrapped in a *Result element (e.g.
+	// GetAccessPointResult). GetAccessPointPolicy may similarly wrap the
+	// policy in GetAccessPointPolicyResult; extract it defensively and
+	// fall back to the raw response when no wrapper is present.
+	if v, jsonErr := jsonpath.Get("$.GetAccessPointPolicyResult", response); jsonErr == nil && v != nil {
+		if vv, ok := v.(map[string]interface{}); ok {
+			response = vv
+		}
+	}
+
+	return response, nil
+}
+
+// DescribeOssAccessPointPolicy >>> Encapsulated.
+
 // DescribeOssBucketLifecycle <<< Encapsulated get interface for Oss BucketLifecycle.
 func (s *OssServiceV2) DescribeOssBucketLifecycle(id string) (object map[string]interface{}, err error) {
 	client := s.client
