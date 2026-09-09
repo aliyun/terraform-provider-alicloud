@@ -64,10 +64,9 @@ func resourceAliCloudNlbListener() *schema.Resource {
 				ValidateFunc: IntBetween(0, 65535),
 			},
 			"idle_timeout": {
-				Type:         schema.TypeInt,
-				Optional:     true,
-				Computed:     true,
-				ValidateFunc: IntBetween(0, 900),
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
 			},
 			"listener_description": {
 				Type:     schema.TypeString,
