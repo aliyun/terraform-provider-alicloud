@@ -821,3 +821,80 @@ func (s *CrServiceV2) CrArtifactSubscriptionRuleStateRefreshFuncWithApi(id strin
 }
 
 // DescribeCrArtifactSubscriptionRule >>> Encapsulated.
+
+// DescribeCrInstanceCustomizedDomain <<< Encapsulated get interface for Cr InstanceCustomizedDomain.
+
+func (s *CrServiceV2) DescribeCrInstanceCustomizedDomain(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	parts, err := ParseResourceId(id, 3)
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"RegionId":   client.RegionId,
+		"InstanceId": parts[0],
+		"ModuleName": parts[1],
+		"Domain":     parts[2],
+	}
+	query := make(map[string]interface{})
+	action := "GetInstanceCustomizedDomain"
+	var response map[string]interface{}
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("cr", "2018-12-01", action, query, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
+	if err != nil {
+		if IsExpectedErrors(err, []string{"DOMAIN_NOT_EXIST", "INSTANCE_NOT_EXIST"}) {
+			return object, WrapErrorf(NotFoundErr("InstanceCustomizedDomain", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+
+func (s *CrServiceV2) CrInstanceCustomizedDomainStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.CrInstanceCustomizedDomainStateRefreshFuncWithApi(id, field, failStates, s.DescribeCrInstanceCustomizedDomain)
+}
+
+func (s *CrServiceV2) CrInstanceCustomizedDomainStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeCrInstanceCustomizedDomain >>> Encapsulated.
