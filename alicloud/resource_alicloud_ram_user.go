@@ -3,6 +3,7 @@ package alicloud
 import (
 	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
@@ -51,6 +52,7 @@ func resourceAlicloudRamUser() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
+			"tags": tagsSchema(),
 		},
 	}
 }
@@ -108,6 +110,16 @@ func resourceAlicloudRamUserCreate(d *schema.ResourceData, meta interface{}) err
 	err = ramService.WaitForRamUser(d.Id(), Normal, DefaultTimeout)
 	if err != nil {
 		return WrapError(err)
+	}
+
+	// Tags on a RAM user are managed via the IMS (2019-08-15) tagging API
+	// (ResourceType=user), because the legacy RAM (2015-05-01) TagResources
+	// API does not enumerate "user" as a taggable resource type.
+	if _, ok := d.GetOk("tags"); ok {
+		imsService := ImsServiceV2{client}
+		if err := imsService.SetImsUserTags(d); err != nil {
+			return WrapError(err)
+		}
 	}
 
 	return resourceAlicloudRamUserRead(d, meta)
@@ -191,6 +203,13 @@ func resourceAlicloudRamUserUpdate(d *schema.ResourceData, meta interface{}) err
 		}
 	}
 
+	if d.HasChange("tags") {
+		imsService := ImsServiceV2{client}
+		if err := imsService.SetImsUserTags(d); err != nil {
+			return WrapError(err)
+		}
+	}
+
 	return resourceAlicloudRamUserRead(d, meta)
 }
 
@@ -214,6 +233,23 @@ func resourceAlicloudRamUserRead(d *schema.ResourceData, meta interface{}) error
 	d.Set("email", object.Email)
 	d.Set("comments", object.Comments)
 
+	// Tags on a RAM user are read via the IMS (2019-08-15) ListTagResources
+	// API with ResourceType=user and the RAM user id as the resource id.
+	imsService := ImsServiceV2{client}
+	tagsRaw, err := imsService.DescribeImsUserTags(d.Id())
+	if err != nil && !NotFoundError(err) {
+		return WrapError(err)
+	}
+	if tagsRaw != nil {
+		// IMS (2019-08-15) ListTagResources nests the tag list under
+		// TagResources.TagResource, unlike the legacy RAM (2015-05-01)
+		// API where TagResources is the list directly. Align with the
+		// canonical ims tag parse used by cdn_domain_new,
+		// common_bandwidth_package and ddoscoo_instance.
+		tagsMaps, _ := jsonpath.Get("$.TagResources.TagResource", tagsRaw)
+		d.Set("tags", tagsToMap(tagsMaps))
+	}
+
 	return nil
 }
 
@@ -233,6 +269,7 @@ func resourceAlicloudRamUserDelete(d *schema.ResourceData, meta interface{}) err
 	}
 
 	userName := object.UserName
+
 	request := ram.CreateListAccessKeysRequest()
 	request.RegionId = client.RegionId
 	request.UserName = userName

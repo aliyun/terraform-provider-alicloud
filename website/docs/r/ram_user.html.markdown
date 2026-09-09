@@ -55,6 +55,7 @@ The following arguments are supported:
 * `email` - (Optional) Email of the RAM user.
 * `comments` - (Optional) Comment of the RAM user. This parameter can have a string of 1 to 128 characters.
 * `force` - (Optional, Bool) This parameter is used for resource destroy. Default value: `false`.
+* `tags` - (Optional, Map, Available since v1.292.0) A mapping of tags to assign to the RAM user.
 
 ## Attributes Reference
 

@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -874,6 +875,34 @@ func TestAccAliCloudNlbSecurityPolicy_basic5352_twin(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+// An empty string inside a list parameter is decoded as a nil element by
+// terraform-plugin-sdk, and the request serializer (tea-rpc-utils >= v1.1.3,
+// pulled in by tea-rpc >= v1.3.4) must fail with a clear serialization error
+// instead of crashing the provider process.
+func TestAccAliCloudNlbSecurityPolicy_emptyStringInList(t *testing.T) {
+	resourceId := "alicloud_nlb_security_policy.default"
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%snlbsecuritypolicy%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNLBSecurityPolicyBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		Providers:    testAccProviders,
+		CheckDestroy: nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_policy_name": "${var.name}",
+					"ciphers":              []string{"", "ECDHE-RSA-AES128-SHA"},
+					"tls_versions":         []string{"TLSv1.2"},
+				}),
+				ExpectError: regexp.MustCompile(`cannot serialize repeated parameter element "Ciphers\.1": value is nil`),
 			},
 		},
 	})

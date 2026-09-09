@@ -138,6 +138,50 @@ func dataSourceAliCloudFcv3Functions() *schema.Resource {
 										Type:     schema.TypeString,
 										Computed: true,
 									},
+									"registry_config": {
+										Type:     schema.TypeList,
+										Computed: true,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"cert_config": {
+													Type:     schema.TypeList,
+													Computed: true,
+													Elem: &schema.Resource{
+														Schema: map[string]*schema.Schema{
+															"insecure": {
+																Type:     schema.TypeBool,
+																Computed: true,
+															},
+															"root_ca_cert_base64": {
+																Type:     schema.TypeString,
+																Computed: true,
+															},
+														},
+													},
+												},
+												"network_config": {
+													Type:     schema.TypeList,
+													Computed: true,
+													Elem: &schema.Resource{
+														Schema: map[string]*schema.Schema{
+															"security_group_id": {
+																Type:     schema.TypeString,
+																Computed: true,
+															},
+															"vswitch_id": {
+																Type:     schema.TypeString,
+																Computed: true,
+															},
+															"vpc_id": {
+																Type:     schema.TypeString,
+																Computed: true,
+															},
+														},
+													},
+												},
+											},
+										},
+									},
 								},
 							},
 						},
@@ -758,6 +802,37 @@ func dataSourceAliCloudFcv3FunctionRead(d *schema.ResourceData, meta interface{}
 				healthCheckConfigMaps = append(healthCheckConfigMaps, healthCheckConfigMap)
 			}
 			customContainerConfigMap["health_check_config"] = healthCheckConfigMaps
+			registryConfigMaps := make([]map[string]interface{}, 0)
+			registryConfigMap := make(map[string]interface{})
+			registryConfigRaw := make(map[string]interface{})
+			if customContainerConfigRaw["registryConfig"] != nil {
+				registryConfigRaw = customContainerConfigRaw["registryConfig"].(map[string]interface{})
+			}
+			if len(registryConfigRaw) > 0 {
+				certConfigMaps := make([]map[string]interface{}, 0)
+				certConfigMap := make(map[string]interface{})
+				certConfigRaw := make(map[string]interface{})
+				if registryConfigRaw["certConfig"] != nil {
+					certConfigRaw = registryConfigRaw["certConfig"].(map[string]interface{})
+				}
+				certConfigMap["insecure"] = certConfigRaw["insecure"]
+				certConfigMap["root_ca_cert_base64"] = certConfigRaw["rootCaCertBase64"]
+				certConfigMaps = append(certConfigMaps, certConfigMap)
+				registryConfigMap["cert_config"] = certConfigMaps
+				networkConfigMaps := make([]map[string]interface{}, 0)
+				networkConfigMap := make(map[string]interface{})
+				networkConfigRaw := make(map[string]interface{})
+				if registryConfigRaw["networkConfig"] != nil {
+					networkConfigRaw = registryConfigRaw["networkConfig"].(map[string]interface{})
+				}
+				networkConfigMap["security_group_id"] = networkConfigRaw["securityGroupId"]
+				networkConfigMap["vswitch_id"] = networkConfigRaw["vSwitchId"]
+				networkConfigMap["vpc_id"] = networkConfigRaw["vpcId"]
+				networkConfigMaps = append(networkConfigMaps, networkConfigMap)
+				registryConfigMap["network_config"] = networkConfigMaps
+				registryConfigMaps = append(registryConfigMaps, registryConfigMap)
+			}
+			customContainerConfigMap["registry_config"] = registryConfigMaps
 			customContainerConfigMaps = append(customContainerConfigMaps, customContainerConfigMap)
 		}
 		mapping["custom_container_config"] = customContainerConfigMaps

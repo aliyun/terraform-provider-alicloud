@@ -11,6 +11,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAliCloudNlbListener() *schema.Resource {
@@ -40,7 +41,10 @@ func resourceAliCloudNlbListener() *schema.Resource {
 			"ca_certificate_ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
+				Elem: &schema.Schema{
+					Type:         schema.TypeString,
+					ValidateFunc: validation.StringIsNotEmpty,
+				},
 			},
 			"ca_enabled": {
 				Type:     schema.TypeBool,
@@ -50,7 +54,10 @@ func resourceAliCloudNlbListener() *schema.Resource {
 			"certificate_ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
+				Elem: &schema.Schema{
+					Type:         schema.TypeString,
+					ValidateFunc: validation.StringIsNotEmpty,
+				},
 			},
 			"cps": {
 				Type:         schema.TypeInt,

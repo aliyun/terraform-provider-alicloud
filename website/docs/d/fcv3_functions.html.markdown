@@ -68,6 +68,14 @@ The following attributes are exported in addition to the arguments listed above:
       * `timeout_seconds` - Health check timeout. Value range 1~3. The default value is 1.
     * `image` - The container Image address.
     * `port` - The listening port of the HTTP Server when the custom container runs.
+    * `registry_config` - The configuration of the custom image registry. The data source exposes `cert_config` and `network_config`; `auth_config` (registry username/password) is not returned by the ListFunctions API and is not available in the data source.
+      * `cert_config` - The certificate configuration of the image registry.
+        * `insecure` - Specifies whether to skip certificate verification.
+        * `root_ca_cert_base64` - The Base64-encoded root CA certificate of the image registry.
+      * `network_config` - The network configuration used to connect to the image registry.
+        * `security_group_id` - The ID of the security group that can connect to the image registry.
+        * `vpc_id` - The ID of the VPC that can connect to the image registry.
+        * `vswitch_id` - The ID of the vSwitch that can connect to the image registry.
     * `resolved_image_uri` - The actual digest version of the deployed Image. The code version specified by this digest is used when the function starts.
   * `custom_dns` - Function custom DNS configuration
     * `dns_options` - List of configuration items in the resolv.conf file. Each item corresponds to a key-value pair in the format of key:value, where the key is required.
