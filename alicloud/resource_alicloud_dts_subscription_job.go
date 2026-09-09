@@ -155,6 +155,12 @@ func resourceAliCloudDtsSubscriptionJob() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"source_endpoint_ssl": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"0", "1"}, false),
+			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -292,6 +298,9 @@ func resourceAliCloudDtsSubscriptionJobRead(d *schema.ResourceData, meta interfa
 	d.Set("source_endpoint_region", object["SourceEndpoint"].(map[string]interface{})["Region"])
 	d.Set("source_endpoint_role", object["SourceEndpoint"].(map[string]interface{})["RoleName"])
 	d.Set("source_endpoint_user_name", object["SourceEndpoint"].(map[string]interface{})["UserName"])
+	if ssl := convertDtsEndpointSslResponse(object["SourceEndpoint"].(map[string]interface{})["SslSolutionEnum"]); ssl != nil {
+		d.Set("source_endpoint_ssl", ssl)
+	}
 	d.Set("status", object["Status"])
 	d.Set("subscription_data_type_ddl", object["SubscriptionDataType"].(map[string]interface{})["Ddl"])
 	d.Set("subscription_data_type_dml", object["SubscriptionDataType"].(map[string]interface{})["Dml"])
@@ -508,6 +517,9 @@ func resourceAliCloudDtsSubscriptionJobUpdate(d *schema.ResourceData, meta inter
 	if v, ok := d.GetOk("source_endpoint_user_name"); ok {
 		configureSubscriptionReq["SourceEndpointUserName"] = v
 	}
+	if d.HasChange("source_endpoint_ssl") {
+		update = true
+	}
 	if d.HasChange("subscription_data_type_ddl") || d.IsNewResource() {
 		update = true
 	}
@@ -552,6 +564,11 @@ func resourceAliCloudDtsSubscriptionJobUpdate(d *schema.ResourceData, meta inter
 		if v, ok := d.GetOk("reserve"); ok {
 			configureSubscriptionReq["Reserve"] = v
 		}
+		if d.HasChange("source_endpoint_ssl") {
+			if err := setDtsEndpointSSL(d, configureSubscriptionReq); err != nil {
+				return WrapError(err)
+			}
+		}
 		action := "ConfigureSubscription"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
@@ -585,6 +602,7 @@ func resourceAliCloudDtsSubscriptionJobUpdate(d *schema.ResourceData, meta inter
 		d.SetPartial("source_endpoint_region")
 		d.SetPartial("source_endpoint_role")
 		d.SetPartial("source_endpoint_user_name")
+		d.SetPartial("source_endpoint_ssl")
 		d.SetPartial("subscription_data_type_ddl")
 		d.SetPartial("subscription_data_type_dml")
 		d.SetPartial("subscription_instance_vpc_id")

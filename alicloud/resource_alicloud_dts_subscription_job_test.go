@@ -135,6 +135,7 @@ func TestAccAliCloudDTSSubscriptionJob_basic0(t *testing.T) {
 					"source_endpoint_database_name":      "${alicloud_rds_account.source_account.account_password}",
 					"source_endpoint_user_name":          "${alicloud_rds_account.source_account.account_name}",
 					"source_endpoint_password":           "${alicloud_rds_account.source_account.account_password}",
+					"source_endpoint_ssl":                "1",
 					"db_list":                            "{\\\"test_database\\\":{\\\"name\\\":\\\"test_database\\\",\\\"all\\\":true,\\\"state\\\":\\\"normal\\\"}}",
 					"subscription_instance_network_type": "vpc",
 					"subscription_instance_vpc_id":       "${data.alicloud_vpcs.default.ids.0}",
@@ -150,8 +151,33 @@ func TestAccAliCloudDTSSubscriptionJob_basic0(t *testing.T) {
 						"source_endpoint_database_name":      "N1cetest",
 						"source_endpoint_user_name":          "test_mysql",
 						"source_endpoint_password":           "N1cetest",
+						"source_endpoint_ssl":                "1",
 						"db_list":                            "{\"test_database\":{\"name\":\"test_database\",\"all\":true,\"state\":\"normal\"}}",
 						"subscription_instance_network_type": "vpc",
+					}),
+				),
+			},
+			// Turn SSL off on the source endpoint in place. The field is not ForceNew, so this
+			// must go through ConfigureSubscription with the srcSSL reserve key rather than
+			// recreating the job.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"source_endpoint_ssl": "0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"source_endpoint_ssl": "0",
+					}),
+				),
+			},
+			// Turn SSL back on, covering the enable-by-update direction as well as disable.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"source_endpoint_ssl": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"source_endpoint_ssl": "1",
 					}),
 				),
 			},
@@ -525,6 +551,7 @@ var AliCloudDTSSubscriptionJobMap0 = map[string]string{
 	"subscription_data_type_ddl":       CHECKSET,
 	"destination_endpoint_engine_name": NOSET,
 	"used_time":                        NOSET,
+	"source_endpoint_ssl":              NOSET,
 	"status":                           CHECKSET,
 }
 
