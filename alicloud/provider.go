@@ -1209,6 +1209,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cloud_control_resource":                               resourceAliCloudCloudControlResource(),
 			"alicloud_hbr_cross_account":                                    resourceAliCloudHbrCrossAccount(),
 			"alicloud_oss_access_point":                                     resourceAliCloudOssAccessPoint(),
+			"alicloud_oss_access_point_policy":                              resourceAliCloudOssAccessPointPolicy(),
 			"alicloud_oss_bucket_worm":                                      resourceAliCloudOssBucketWorm(),
 			"alicloud_apig_environment":                                     resourceAliCloudApigEnvironment(),
 			"alicloud_apig_gateway":                                         resourceAliCloudApigGateway(),

@@ -48,6 +48,7 @@ func resourceAliCloudOssAccessPoint() *schema.Resource {
 			"public_access_block_configuration": {
 				Type:     schema.TypeList,
 				Optional: true,
+				Computed: true,
 				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -194,12 +195,12 @@ func resourceAliCloudOssAccessPointRead(d *schema.ResourceData, meta interface{}
 	if objectRaw["VpcConfiguration"] != nil {
 		vpcConfiguration1Raw = objectRaw["VpcConfiguration"].(map[string]interface{})
 	}
-	if len(vpcConfiguration1Raw) > 0 {
+	if len(vpcConfiguration1Raw) > 0 && vpcConfiguration1Raw["VpcId"] != nil && vpcConfiguration1Raw["VpcId"] != "" {
 		vpcConfigurationMap["vpc_id"] = vpcConfiguration1Raw["VpcId"]
 
 		vpcConfigurationMaps = append(vpcConfigurationMaps, vpcConfigurationMap)
 	}
-	if objectRaw["VpcConfiguration"] != nil {
+	if len(vpcConfigurationMaps) > 0 {
 		if err := d.Set("vpc_configuration", vpcConfigurationMaps); err != nil {
 			return err
 		}
