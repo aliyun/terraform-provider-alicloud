@@ -2,14 +2,19 @@ package alicloud
 
 import (
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"reflect"
+	"strings"
+	"sync"
 	"testing"
 
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -331,4 +336,62 @@ func TestUnitAlicloudVPCDhcpOptionsSetAttachment(t *testing.T) {
 		assert.NotNil(t, err)
 	})
 
+}
+
+// TestUnitAlicloudVPCDhcpOptionsSetAttachmentDeleteStateRefreshId locks the
+// regression where the Delete state refresh called GetDhcpOptionsSet with the
+// composite resource ID (vpc_id:dopt_id) instead of the dopt-* ID only.
+func TestUnitAlicloudVPCDhcpOptionsSetAttachmentDeleteStateRefreshId(t *testing.T) {
+	type apiCall struct {
+		action string
+		id     string
+	}
+	var calls []apiCall
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Error(err)
+		}
+		calls = append(calls, apiCall{action: r.Form.Get("Action"), id: r.Form.Get("DhcpOptionsSetId")})
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	t.Cleanup(server.Close)
+	credential, err := credentials.NewCredential(new(credentials.Config).
+		SetType("access_key").SetAccessKeyId("test-key").SetAccessKeySecret("test-secret"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	endpoints := new(sync.Map)
+	endpoint := strings.TrimPrefix(server.URL, "http://")
+	t.Setenv("NO_PROXY", endpoint)
+	config := &connectivity.Config{
+		AccessKey: "test-key", SecretKey: "test-secret", Credential: credential,
+		RegionId: "cn-hangzhou", AccountType: "test", Protocol: "http",
+		Endpoints: endpoints, SignVersion: new(sync.Map), SkipRegionValidation: true,
+	}
+	client, err := config.Client()
+	if err != nil {
+		t.Fatal(err)
+	}
+	endpoints.Store("vpc", endpoint)
+
+	d := schema.TestResourceDataRaw(t, resourceAlicloudVpcDhcpOptionsSetAttachement().Schema, map[string]interface{}{
+		"vpc_id":              "vpc_id",
+		"dhcp_options_set_id": "dhcp_options_set_id",
+		"dry_run":             false,
+	})
+	d.SetId("vpc_id:dhcp_options_set_id")
+
+	if err := resourceAlicloudVpcDhcpOptionsSetAttachmentDelete(d, client); err != nil {
+		t.Fatalf("Delete returned an error: %s", err)
+	}
+	if len(calls) != 2 {
+		t.Fatalf("expected 2 API calls (DetachDhcpOptionsSetFromVpc + GetDhcpOptionsSet), got %d: %+v", len(calls), calls)
+	}
+	if calls[1].action != "GetDhcpOptionsSet" {
+		t.Fatalf("expected the second call to be GetDhcpOptionsSet, got %s", calls[1].action)
+	}
+	if calls[1].id != "dhcp_options_set_id" {
+		t.Fatalf("GetDhcpOptionsSet must receive the dopt-* ID only, got %q", calls[1].id)
+	}
 }
