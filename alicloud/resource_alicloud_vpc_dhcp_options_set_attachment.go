@@ -161,7 +161,7 @@ func resourceAlicloudVpcDhcpOptionsSetAttachmentDelete(d *schema.ResourceData, m
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 	vpcService := VpcService{client}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutCreate), 5*time.Second, vpcService.DescribeVpcDhcpOptionsSetAttachmentStateRefreshFunc(d.Id(), []string{}))
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutCreate), 5*time.Second, vpcService.DescribeVpcDhcpOptionsSetAttachmentDeleteStateRefreshFunc(d.Id()))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
