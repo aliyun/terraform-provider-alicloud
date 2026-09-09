@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"regexp"
 	"testing"
 
 	"github.com/agiledragon/gomonkey/v2"
@@ -2432,6 +2433,36 @@ func TestAccAliCloudNlbListener_basic4683_twin(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+// An empty string inside certificate list parameters is decoded as a nil
+// element by the SDK, which crashes the request serializer. It must be
+// rejected at validation time instead of reaching the SDK.
+func TestAccAliCloudNlbListener_emptyStringInList(t *testing.T) {
+	resourceId := "alicloud_nlb_listener.default"
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testacc%snlblistener%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNlbListenerBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.NLBSupportRegions)
+		},
+		Providers:    testAccProviders,
+		CheckDestroy: nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"listener_protocol":  "TCP",
+					"listener_port":      "80",
+					"load_balancer_id":   "${alicloud_nlb_load_balancer.default.id}",
+					"server_group_id":    "${alicloud_nlb_server_group.default.id}",
+					"ca_certificate_ids": []string{"", "cert-not-exist"},
+				}),
+				ExpectError: regexp.MustCompile(`ca_certificate_ids\.0.*to not be an empty string`),
 			},
 		},
 	})
