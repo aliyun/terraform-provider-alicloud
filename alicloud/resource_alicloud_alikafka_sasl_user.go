@@ -131,6 +131,9 @@ func resourceAliCloudAliKafkaSaslUserCreate(d *schema.ResourceData, meta interfa
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_alikafka_sasl_user", action, AlibabaCloudSdkGoERROR)
 	}
 
+	// Server may have cache, sleep a while.
+	time.Sleep(60 * time.Second)
+
 	d.SetId(fmt.Sprintf("%v:%v", request["InstanceId"], request["Username"]))
 
 	return resourceAliCloudAliKafkaSaslUserRead(d, meta)

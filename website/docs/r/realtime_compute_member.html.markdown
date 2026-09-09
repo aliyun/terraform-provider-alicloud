@@ -20,6 +20,12 @@ For information about Realtime Compute Member and how to use it, see [What is Me
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_realtime_compute_member&exampleId=aba20d40-f3fa-25b7-adca-3a18fb17947fa65dafd7&activeTab=example&spm=docs.r.realtime_compute_member.0.aba20d40f3&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -78,6 +84,10 @@ resource "alicloud_realtime_compute_member" "default" {
   role        = "viewer"
 }
 ```
+
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_realtime_compute_member&spm=docs.r.realtime_compute_member.example&intl_lang=EN_US)
+
 
 ## Argument Reference
 

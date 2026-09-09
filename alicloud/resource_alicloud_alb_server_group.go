@@ -902,6 +902,9 @@ func resourceAliCloudAlbServerGroupUpdate(d *schema.ResourceData, meta interface
 	request["ServerGroupId"] = d.Id()
 
 	request["ClientToken"] = buildClientToken(action)
+	if d.HasChange("health_check_template_id") {
+		update = true
+	}
 	request["HealthCheckTemplateId"] = d.Get("health_check_template_id")
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
