@@ -2,22 +2,29 @@ package alicloud
 
 import (
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"reflect"
+	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudVPCDhcpOptionsSetAttachment_basic0(t *testing.T) {
+func TestAccAliCloudVPCDhcpOptionsSetAttachment_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_dhcp_options_set_attachment.default"
 	ra := resourceAttrInit(resourceId, AlicloudVPCDhcpOptionsSetMap0)
@@ -331,4 +338,167 @@ func TestUnitAlicloudVPCDhcpOptionsSetAttachment(t *testing.T) {
 		assert.NotNil(t, err)
 	})
 
+}
+
+// TestUnitAlicloudVPCDhcpOptionsSetAttachmentDeleteStateRefreshId locks the
+// regression where the Delete state refresh called GetDhcpOptionsSet with the
+// composite resource ID (vpc_id:dopt_id) instead of the dopt-* ID only.
+func TestUnitAlicloudVPCDhcpOptionsSetAttachmentDeleteStateRefreshId(t *testing.T) {
+	type apiCall struct {
+		action string
+		id     string
+	}
+	var calls []apiCall
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Error(err)
+		}
+		calls = append(calls, apiCall{action: r.Form.Get("Action"), id: r.Form.Get("DhcpOptionsSetId")})
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	t.Cleanup(server.Close)
+	credential, err := credentials.NewCredential(new(credentials.Config).
+		SetType("access_key").SetAccessKeyId("test-key").SetAccessKeySecret("test-secret"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	endpoints := new(sync.Map)
+	endpoint := strings.TrimPrefix(server.URL, "http://")
+	t.Setenv("NO_PROXY", endpoint)
+	config := &connectivity.Config{
+		AccessKey: "test-key", SecretKey: "test-secret", Credential: credential,
+		RegionId: "cn-hangzhou", AccountType: "test", Protocol: "http",
+		Endpoints: endpoints, SignVersion: new(sync.Map), SkipRegionValidation: true,
+	}
+	client, err := config.Client()
+	if err != nil {
+		t.Fatal(err)
+	}
+	endpoints.Store("vpc", endpoint)
+
+	d := schema.TestResourceDataRaw(t, resourceAlicloudVpcDhcpOptionsSetAttachement().Schema, map[string]interface{}{
+		"vpc_id":              "vpc_id",
+		"dhcp_options_set_id": "dhcp_options_set_id",
+		"dry_run":             false,
+	})
+	d.SetId("vpc_id:dhcp_options_set_id")
+
+	if err := resourceAlicloudVpcDhcpOptionsSetAttachmentDelete(d, client); err != nil {
+		t.Fatalf("Delete returned an error: %s", err)
+	}
+	if len(calls) != 2 {
+		t.Fatalf("expected 2 API calls (DetachDhcpOptionsSetFromVpc + GetDhcpOptionsSet), got %d: %+v", len(calls), calls)
+	}
+	if calls[1].action != "GetDhcpOptionsSet" {
+		t.Fatalf("expected the second call to be GetDhcpOptionsSet, got %s", calls[1].action)
+	}
+	if calls[1].id != "dhcp_options_set_id" {
+		t.Fatalf("GetDhcpOptionsSet must receive the dopt-* ID only, got %q", calls[1].id)
+	}
+}
+
+// TestUnitAlicloudVPCDhcpOptionsSetAttachmentDeleteStateRefreshGone locks the
+// wait-termination semantics of the Delete state refresh: when the DHCP
+// options set still exists but the VPC is no longer associated, Delete must
+// terminate instead of polling until the timeout.
+func TestUnitAlicloudVPCDhcpOptionsSetAttachmentDeleteStateRefreshGone(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Error(err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if r.Form.Get("Action") == "GetDhcpOptionsSet" {
+			_, _ = w.Write([]byte(`{"DhcpOptionsSetId":"dhcp_options_set_id","AssociateVpcs":[]}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	t.Cleanup(server.Close)
+	credential, err := credentials.NewCredential(new(credentials.Config).
+		SetType("access_key").SetAccessKeyId("test-key").SetAccessKeySecret("test-secret"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	endpoints := new(sync.Map)
+	endpoint := strings.TrimPrefix(server.URL, "http://")
+	t.Setenv("NO_PROXY", endpoint)
+	config := &connectivity.Config{
+		AccessKey: "test-key", SecretKey: "test-secret", Credential: credential,
+		RegionId: "cn-hangzhou", AccountType: "test", Protocol: "http",
+		Endpoints: endpoints, SignVersion: new(sync.Map), SkipRegionValidation: true,
+	}
+	client, err := config.Client()
+	if err != nil {
+		t.Fatal(err)
+	}
+	endpoints.Store("vpc", endpoint)
+
+	// ResourceData built from raw test config has no timeouts set, so
+	// d.Timeout() would fall back to the SDK's 20-minute system default and a
+	// regression would poll for minutes instead of failing fast.
+	res := resourceAlicloudVpcDhcpOptionsSetAttachement()
+	shortTimeout := 10 * time.Second
+	res.Timeouts.Create = &shortTimeout
+	res.Timeouts.Delete = &shortTimeout
+	d := res.Data(&terraform.InstanceState{
+		ID: "vpc_id:dhcp_options_set_id",
+		Attributes: map[string]string{
+			"vpc_id":              "vpc_id",
+			"dhcp_options_set_id": "dhcp_options_set_id",
+			"dry_run":             "false",
+		},
+	})
+
+	start := time.Now()
+	if err := resourceAlicloudVpcDhcpOptionsSetAttachmentDelete(d, client); err != nil {
+		t.Fatalf("Delete returned an error: %s", err)
+	}
+	if elapsed := time.Since(start); elapsed > 15*time.Second {
+		t.Fatalf("Delete state wait did not terminate after the association was gone: took %s", elapsed)
+	}
+}
+
+// TestUnitAlicloudVPCDhcpOptionsSetAttachmentDeleteStateRefreshAssociated
+// locks the other side of the wait-termination contract: while the VPC is
+// still associated, the Delete refresh keeps returning the object and its
+// status so the wait continues instead of terminating early.
+func TestUnitAlicloudVPCDhcpOptionsSetAttachmentDeleteStateRefreshAssociated(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Error(err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if r.Form.Get("Action") == "GetDhcpOptionsSet" {
+			_, _ = w.Write([]byte(`{"DhcpOptionsSetId":"dopt_id","AssociateVpcs":[{"VpcId":"vpc_id","AssociateStatus":"InUse"}]}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	t.Cleanup(server.Close)
+	credential, err := credentials.NewCredential(new(credentials.Config).
+		SetType("access_key").SetAccessKeyId("test-key").SetAccessKeySecret("test-secret"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	endpoints := new(sync.Map)
+	endpoint := strings.TrimPrefix(server.URL, "http://")
+	t.Setenv("NO_PROXY", endpoint)
+	config := &connectivity.Config{
+		AccessKey: "test-key", SecretKey: "test-secret", Credential: credential,
+		RegionId: "cn-hangzhou", AccountType: "test", Protocol: "http",
+		Endpoints: endpoints, SignVersion: new(sync.Map), SkipRegionValidation: true,
+	}
+	client, err := config.Client()
+	if err != nil {
+		t.Fatal(err)
+	}
+	endpoints.Store("vpc", endpoint)
+
+	vpcService := VpcService{client}
+	refreshFunc := vpcService.DescribeVpcDhcpOptionsSetAttachmentDeleteStateRefreshFunc("vpc_id:dopt_id")
+	object, status, err := refreshFunc()
+	assert.NoError(t, err)
+	assert.NotNil(t, object)
+	assert.Equal(t, "InUse", status)
 }
