@@ -138,7 +138,7 @@ test_diverged_multi_commit_pr() {
 	set +e
 	legacy_output="$(
 		cd "$checkout_repo"
-		env -u GITHUB_ACTIONS -u DIFF_BASE -u DIFF_HEAD \
+		env -u GITHUB_ACTIONS -u GITHUB_BASE_REF -u DIFF_BASE -u DIFF_HEAD \
 			BASIC_CHECK_AUTO_RANGE=true "$basic_check" 2>&1
 	)"
 	legacy_status=$?
