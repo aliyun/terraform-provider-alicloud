@@ -682,3 +682,116 @@ func (s *CmsServiceV2) CmsEventNotifyPolicyStateRefreshFuncWithApi(id string, fi
 }
 
 // DescribeCmsEventNotifyPolicy >>> Encapsulated.
+// DescribeCmsMemoryStoreAPIKey <<< Encapsulated get interface for Cms MemoryStoreAPIKey.
+func (s *CmsServiceV2) DescribeCmsMemoryStoreAPIKey(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]*string
+	parts := strings.Split(id, ":")
+	if len(parts) != 3 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
+		return nil, err
+	}
+	workspace := parts[0]
+	memoryStoreName := parts[1]
+	name := parts[2]
+	request = make(map[string]interface{})
+	query = make(map[string]*string)
+	query["maxResults"] = StringPointer("100")
+	action := fmt.Sprintf("/workspace/%s/memorystore/%s/apikey", workspace, memoryStoreName)
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+		response, err = client.RoaGet("Cms", "2024-03-30", action, query, nil, nil)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"WorkspaceNotExist"}) {
+			return object, WrapErrorf(NotFoundErr("MemoryStoreAPIKey", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	for {
+		v, err := jsonpath.Get("$.results", response)
+		if err != nil {
+			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.results", response)
+		}
+		results, ok := v.([]interface{})
+		if !ok {
+			return object, WrapErrorf(fmt.Errorf("failed to cast results to array"), FailedGetAttributeMsg, id, "$.results", response)
+		}
+		for _, item := range results {
+			if m, ok := item.(map[string]interface{}); ok {
+				if fmt.Sprint(m["name"]) == name {
+					return m, nil
+				}
+			}
+		}
+		nextTokenRaw, _ := jsonpath.Get("$.nextToken", response)
+		if nextTokenRaw == nil || fmt.Sprint(nextTokenRaw) == "" {
+			break
+		}
+		query["nextToken"] = StringPointer(fmt.Sprint(nextTokenRaw))
+		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+			response, err = client.RoaGet("Cms", "2024-03-30", action, query, nil, nil)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		if err != nil {
+			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	return object, WrapErrorf(NotFoundErr("MemoryStoreAPIKey", id), NotFoundMsg, response)
+}
+
+func (s *CmsServiceV2) CmsMemoryStoreAPIKeyStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.CmsMemoryStoreAPIKeyStateRefreshFuncWithApi(id, field, failStates, s.DescribeCmsMemoryStoreAPIKey)
+}
+
+func (s *CmsServiceV2) CmsMemoryStoreAPIKeyStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeCmsMemoryStoreAPIKey >>> Encapsulated.
