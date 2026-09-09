@@ -599,6 +599,7 @@ resource "alicloud_db_instance" "source" {
   instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
   vswitch_id       = data.alicloud_vswitches.default.ids.0
   instance_name    = "rds-mysql-source"
+  ssl_action       = "Open"
 }
 
 resource "alicloud_db_database" "source_db" {
