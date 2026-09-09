@@ -582,3 +582,142 @@ func (s *RocketmqServiceV2) RocketmqAclStateRefreshFunc(id string, field string,
 }
 
 // DescribeRocketmqAcl >>> Encapsulated.
+
+// DescribeRocketmqDisasterRecoveryPlan <<< Encapsulated get interface for Rocketmq DisasterRecoveryPlan.
+
+func (s *RocketmqServiceV2) DescribeRocketmqDisasterRecoveryPlan(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]*string
+	planId := id
+	request = make(map[string]interface{})
+	query = make(map[string]*string)
+
+	action := fmt.Sprintf("/disaster_recovery/%s", planId)
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RoaGet("RocketMQ", "2022-08-01", action, query, nil, nil)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"DisasterRecoveryPlan.NotFound"}) {
+			return object, WrapErrorf(NotFoundErr("DisasterRecoveryPlan", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.data", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.data", response)
+	}
+
+	return v.(map[string]interface{}), nil
+}
+
+func (s *RocketmqServiceV2) RocketmqDisasterRecoveryPlanStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeRocketmqDisasterRecoveryPlan(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeRocketmqDisasterRecoveryPlan >>> Encapsulated.
+
+// ListRocketmqDisasterRecoveryPlans <<< Encapsulated list interface for Rocketmq DisasterRecoveryPlan.
+
+func (s *RocketmqServiceV2) ListRocketmqDisasterRecoveryPlans(filters map[string]interface{}) (objects []interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]*string)
+
+	if v, ok := filters["instance_id"]; ok && v.(string) != "" {
+		query["instanceId"] = StringPointer(v.(string))
+	}
+	if v, ok := filters["filter"]; ok && v.(string) != "" {
+		query["filter"] = StringPointer(v.(string))
+	}
+
+	pageNumber := 1
+	pageSize := 100
+	objects = make([]interface{}, 0)
+	for {
+		query["pageNumber"] = StringPointer(fmt.Sprint(pageNumber))
+		query["pageSize"] = StringPointer(fmt.Sprint(pageSize))
+
+		action := "/disaster_recovery"
+		request = make(map[string]interface{})
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+			response, err = client.RoaGet("RocketMQ", "2022-08-01", action, query, nil, nil)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return objects, WrapErrorf(err, DefaultErrorMsg, "", action, AlibabaCloudSdkGoERROR)
+		}
+
+		v, err := jsonpath.Get("$.data.list", response)
+		if err != nil || v == nil {
+			break
+		}
+		list, ok := v.([]interface{})
+		if !ok || len(list) == 0 {
+			break
+		}
+		objects = append(objects, list...)
+
+		totalCount, _ := jsonpath.Get("$.data.totalCount", response)
+		if totalCount == nil {
+			break
+		}
+		total := int(formatInt(totalCount))
+		if len(objects) >= total {
+			break
+		}
+		pageNumber++
+	}
+	return objects, nil
+}
+
+// ListRocketmqDisasterRecoveryPlans >>> Encapsulated.
