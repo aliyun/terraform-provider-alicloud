@@ -155,6 +155,76 @@ func resourceAlicloudEcdDesktop() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"app_rule_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"desktop_member_ip": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"desktop_name_suffix": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
+			"group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"ou_path": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"promotion_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"qos_rule_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"reseller_owner_uid": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"snapshot_policy_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"subnet_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"timer_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"volume_encryption_enabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
+			"volume_encryption_key": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -213,6 +283,48 @@ func resourceAlicloudEcdDesktopCreate(d *schema.ResourceData, meta interface{}) 
 	}
 	if v, ok := d.GetOk("host_name"); ok {
 		request["HostName"] = v
+	}
+	if v, ok := d.GetOk("app_rule_id"); ok {
+		request["AppRuleId"] = v
+	}
+	if v, ok := d.GetOk("desktop_member_ip"); ok {
+		request["DesktopMemberIp"] = v
+	}
+	if v, ok := d.GetOkExists("desktop_name_suffix"); ok {
+		request["DesktopNameSuffix"] = v
+	}
+	if v, ok := d.GetOk("group_id"); ok {
+		request["GroupId"] = v
+	}
+	if v, ok := d.GetOk("ou_path"); ok {
+		request["OUPath"] = v
+	}
+	if v, ok := d.GetOk("promotion_id"); ok {
+		request["PromotionId"] = v
+	}
+	if v, ok := d.GetOk("qos_rule_id"); ok {
+		request["QosRuleId"] = v
+	}
+	if v, ok := d.GetOk("reseller_owner_uid"); ok {
+		request["ResellerOwnerUid"] = v
+	}
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
+	}
+	if v, ok := d.GetOk("snapshot_policy_id"); ok {
+		request["SnapshotPolicyId"] = v
+	}
+	if v, ok := d.GetOk("subnet_id"); ok {
+		request["SubnetId"] = v
+	}
+	if v, ok := d.GetOk("timer_group_id"); ok {
+		request["TimerGroupId"] = v
+	}
+	if v, ok := d.GetOkExists("volume_encryption_enabled"); ok {
+		request["VolumeEncryptionEnabled"] = v
+	}
+	if v, ok := d.GetOk("volume_encryption_key"); ok {
+		request["VolumeEncryptionKey"] = v
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
