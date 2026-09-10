@@ -33,6 +33,7 @@ import (
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/cs"
 	"github.com/google/uuid"
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -727,6 +728,20 @@ func buildClientToken(action string) string {
 		token = token[0:64]
 	}
 	return token
+}
+
+func getWriteOnlyStringValue(d *schema.ResourceData, path cty.Path) (string, error) {
+	if d.GetRawConfig().IsNull() {
+		return "", nil
+	}
+	value, diags := d.GetRawConfigAt(path)
+	if diags.HasError() {
+		return "", WrapError(fmt.Errorf("error retrieving write-only argument: %s", diags[0].Summary))
+	}
+	if value.IsNull() || !value.IsKnown() || !value.Type().Equals(cty.String) {
+		return "", nil
+	}
+	return value.AsString(), nil
 }
 
 func getNextpageNumber(number requests.Integer) (requests.Integer, error) {

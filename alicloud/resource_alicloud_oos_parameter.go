@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -38,6 +39,10 @@ func resourceAlicloudOosParameter() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: validation.StringLenBetween(1, 200),
 			},
+			"has_value_wo": {
+				Type:     schema.TypeBool,
+				Computed: true,
+			},
 			"parameter_name": {
 				Type:         schema.TypeString,
 				Required:     true,
@@ -58,8 +63,25 @@ func resourceAlicloudOosParameter() *schema.Resource {
 			},
 			"value": {
 				Type:         schema.TypeString,
-				Required:     true,
+				Optional:     true,
+				Computed:     true,
 				ValidateFunc: validation.StringLenBetween(1, 4096),
+				ExactlyOneOf: []string{"value", "value_wo"},
+			},
+			"value_wo": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Sensitive:    true,
+				WriteOnly:    true,
+				ValidateFunc: validation.StringLenBetween(1, 4096),
+				ExactlyOneOf: []string{"value", "value_wo"},
+				RequiredWith: []string{"value_wo_version"},
+			},
+			"value_wo_version": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				RequiredWith: []string{"value_wo"},
 			},
 		},
 	}
@@ -89,7 +111,13 @@ func resourceAlicloudOosParameterCreate(d *schema.ResourceData, meta interface{}
 	}
 	request["Name"] = d.Get("parameter_name")
 	request["Type"] = d.Get("type")
-	request["Value"] = d.Get("value")
+	value := d.Get("value").(string)
+	if woValue, err := getWriteOnlyStringValue(d, cty.GetAttrPath("value_wo")); err != nil {
+		return WrapError(err)
+	} else if woValue != "" {
+		value = woValue
+	}
+	request["Value"] = value
 	request["ClientToken"] = buildClientToken("CreateParameter")
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
@@ -131,7 +159,24 @@ func resourceAlicloudOosParameterRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("resource_group_id", object["ResourceGroupId"])
 	d.Set("tags", tagsToMap(object["Tags"]))
 	d.Set("type", object["Type"])
-	d.Set("value", object["Value"])
+	hasValueWo := false
+	if v, ok := d.GetOk("has_value_wo"); ok && v.(bool) {
+		hasValueWo = true
+	}
+	if rawConfig := d.GetRawConfig(); !rawConfig.IsNull() {
+		woValue, err := getWriteOnlyStringValue(d, cty.GetAttrPath("value_wo"))
+		if err != nil {
+			return WrapError(err)
+		}
+		hasValueWo = woValue != ""
+	}
+	if hasValueWo {
+		d.Set("has_value_wo", true)
+		d.Set("value", nil)
+	} else {
+		d.Set("has_value_wo", nil)
+		d.Set("value", object["Value"])
+	}
 	return nil
 }
 func resourceAlicloudOosParameterUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -142,10 +187,19 @@ func resourceAlicloudOosParameterUpdate(d *schema.ResourceData, meta interface{}
 	request := map[string]interface{}{
 		"Name": d.Id(),
 	}
+	value := d.Get("value").(string)
+	if woValue, err := getWriteOnlyStringValue(d, cty.GetAttrPath("value_wo")); err != nil {
+		return WrapError(err)
+	} else if woValue != "" {
+		value = woValue
+	}
 	if d.HasChange("value") {
 		update = true
 	}
-	request["Value"] = d.Get("value")
+	if d.HasChange("value_wo_version") {
+		update = true
+	}
+	request["Value"] = value
 	if d.HasChange("description") {
 		update = true
 	}

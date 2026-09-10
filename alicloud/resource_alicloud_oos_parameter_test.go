@@ -110,7 +110,7 @@ func testSweepOosParameter(region string) error {
 	return nil
 }
 
-func TestAccAlicloudOOSParameter_basic0(t *testing.T) {
+func TestAccAliCloudOosParameter_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_oos_parameter.default"
 	checkoutSupportedRegions(t, true, connectivity.OOSSupportRegions)
@@ -218,7 +218,7 @@ func TestAccAlicloudOOSParameter_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudOOSParameter_basic1(t *testing.T) {
+func TestAccAliCloudOosParameter_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_oos_parameter.default"
 	checkoutSupportedRegions(t, true, connectivity.OOSSupportRegions)
@@ -270,6 +270,81 @@ func TestAccAlicloudOOSParameter_basic1(t *testing.T) {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAliCloudOosParameter_valueWo(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_oos_parameter.default"
+	checkoutSupportedRegions(t, true, connectivity.OOSSupportRegions)
+	ra := resourceAttrInit(resourceId, map[string]string{
+		"parameter_name": CHECKSET,
+		"type":           "String",
+	})
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &OosService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeOosParameter")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%soosparameter%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudOOSParameterBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"parameter_name":   "${var.name}",
+					"type":             "String",
+					"value_wo":         "tf-testacc-oos_parameter_wo",
+					"value_wo_version": 1,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"parameter_name":   name,
+						"value":            "",
+						"value_wo_version": "1",
+						"has_value_wo":     "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"value_wo":         "tf-testacc-oos_parameter_wo_update",
+					"value_wo_version": 2,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"value_wo_version": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"value":            "tf-testacc-oos_parameter",
+					"value_wo":         REMOVEKEY,
+					"value_wo_version": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"value":            "tf-testacc-oos_parameter",
+						"has_value_wo":     "false",
+						"value_wo_version": "2",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"value_wo_version"},
 			},
 		},
 	})
