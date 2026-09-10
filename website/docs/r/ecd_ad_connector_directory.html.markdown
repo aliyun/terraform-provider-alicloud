@@ -91,6 +91,7 @@ The following arguments are supported:
 
 The following attributes are exported:
 
+* `directory_type` - The type of the directory. Valid values: `SIMPLE`, `AD_CONNECTOR`.
 * `id` - The resource ID in terraform of Ad Connector Directory.
 * `status` - The status of directory.
 

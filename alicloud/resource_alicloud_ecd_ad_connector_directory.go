@@ -39,6 +39,10 @@ func resourceAlicloudEcdAdConnectorDirectory() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: validation.StringInSlice([]string{"VPC", "INTERNET", "ANY"}, false),
 			},
+			"directory_type": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"dns_address": {
 				Type:     schema.TypeList,
 				Required: true,
@@ -112,7 +116,7 @@ func resourceAlicloudEcdAdConnectorDirectoryCreate(d *schema.ResourceData, meta 
 	var err error
 	request["DirectoryName"] = d.Get("directory_name")
 	if v, ok := d.GetOk("desktop_access_type"); ok {
-		request["DesktopAccessType"] = v
+		request["DesktopAccessType"] = v.(string)
 	}
 	request["DnsAddress"] = d.Get("dns_address")
 	request["DomainName"] = d.Get("domain_name")
@@ -170,6 +174,7 @@ func resourceAlicloudEcdAdConnectorDirectoryRead(d *schema.ResourceData, meta in
 	}
 	d.Set("directory_name", object["Name"])
 	d.Set("desktop_access_type", object["DesktopAccessType"])
+	d.Set("directory_type", object["DirectoryType"])
 	d.Set("dns_address", object["DnsAddress"])
 	d.Set("domain_name", object["DomainName"])
 	d.Set("domain_user_name", object["DomainUserName"])
