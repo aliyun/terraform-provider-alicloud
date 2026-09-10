@@ -68,6 +68,10 @@ func dataSourceAlicloudPolarDBGlobalDatabaseNetworks() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"resource_group_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"db_type": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -183,13 +187,14 @@ func dataSourceAlicloudPolarDBGlobalDatabaseNetworksRead(d *schema.ResourceData,
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 		mapping := map[string]interface{}{
-			"id":          fmt.Sprint(object["GDNId"]),
-			"gdn_id":      fmt.Sprint(object["GDNId"]),
-			"description": object["GDNDescription"],
-			"db_type":     object["DBType"],
-			"db_version":  object["DBVersion"],
-			"create_time": object["CreateTime"],
-			"status":      object["GDNStatus"],
+			"id":                fmt.Sprint(object["GDNId"]),
+			"gdn_id":            fmt.Sprint(object["GDNId"]),
+			"description":       object["GDNDescription"],
+			"resource_group_id": object["ResourceGroupId"],
+			"db_type":           object["DBType"],
+			"db_version":        object["DBVersion"],
+			"create_time":       object["CreateTime"],
+			"status":            object["GDNStatus"],
 		}
 		if v, ok := object["DBClusters"]; ok {
 			dbClustersMaps := make([]map[string]interface{}, 0)
