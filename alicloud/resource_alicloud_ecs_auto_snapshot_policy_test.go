@@ -940,4 +940,194 @@ func TestAccAliCloudECSAutoSnapshotPolicy_basic8035_twin(t *testing.T) {
 	})
 }
 
+// Case 关联实例标签自动快照策略：association_type=AssociatedWithInstanceTag + target_tags 创建/回读 no-drift
+func TestAccAliCloudECSAutoSnapshotPolicy_associationInstanceTag(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ecs_auto_snapshot_policy.default"
+	ra := resourceAttrInit(resourceId, AliCloudEcsAutoSnapshotPolicyMap7893)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EcsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEcsAutoSnapshotPolicy")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1, 999)
+	name := fmt.Sprintf("tf_testacc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEcsAutoSnapshotPolicyBasicDependence7893)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_snapshot_policy_name": name,
+					"repeat_weekdays":           []string{"1", "2"},
+					"retention_days":            "1",
+					"time_points":               []string{"1", "2"},
+					"association_type":          "AssociatedWithInstanceTag",
+					"target_tags": []map[string]interface{}{
+						{
+							"tag_key":   fmt.Sprintf("tf-testacc-tag-key-%d", rand),
+							"tag_value": fmt.Sprintf("tf-testacc-tag-value-%d", rand),
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"association_type":        "AssociatedWithInstanceTag",
+						"target_tags.#":           "1",
+						"target_tags.0.tag_key":   fmt.Sprintf("tf-testacc-tag-key-%d", rand),
+						"target_tags.0.tag_value": fmt.Sprintf("tf-testacc-tag-value-%d", rand),
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+// Case association_type ForceNew：改 association_type 触发 destroy+recreate（验证 ForceNew 生效、不走 Modify 永续 diff）
+func TestAccAliCloudECSAutoSnapshotPolicy_associationForceNew(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ecs_auto_snapshot_policy.default"
+	ra := resourceAttrInit(resourceId, AliCloudEcsAutoSnapshotPolicyMap7893)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EcsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEcsAutoSnapshotPolicy")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1, 999)
+	name := fmt.Sprintf("tf_testacc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEcsAutoSnapshotPolicyBasicDependence7893)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_snapshot_policy_name": name,
+					"repeat_weekdays":           []string{"1", "2"},
+					"retention_days":            "1",
+					"time_points":               []string{"1", "2"},
+					"association_type":          "AssociatedWithDisk",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"association_type": "AssociatedWithDisk",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"association_type": "AssociatedWithInstanceTag",
+					"target_tags": []map[string]interface{}{
+						{
+							"tag_key":   fmt.Sprintf("tf-testacc-fn-key-%d", rand),
+							"tag_value": fmt.Sprintf("tf-testacc-fn-value-%d", rand),
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"association_type":        "AssociatedWithInstanceTag",
+						"target_tags.#":           "1",
+						"target_tags.0.tag_key":   fmt.Sprintf("tf-testacc-fn-key-%d", rand),
+						"target_tags.0.tag_value": fmt.Sprintf("tf-testacc-fn-value-%d", rand),
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+// Case target_tags 可更新：改 target_tags 不重建、走 Modify 更新成功 + Read 回读新值
+func TestAccAliCloudECSAutoSnapshotPolicy_targetTagsUpdate(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ecs_auto_snapshot_policy.default"
+	ra := resourceAttrInit(resourceId, AliCloudEcsAutoSnapshotPolicyMap7893)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EcsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEcsAutoSnapshotPolicy")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1, 999)
+	name := fmt.Sprintf("tf_testacc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEcsAutoSnapshotPolicyBasicDependence7893)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_snapshot_policy_name": name,
+					"repeat_weekdays":           []string{"1", "2"},
+					"retention_days":            "1",
+					"time_points":               []string{"1", "2"},
+					"association_type":          "AssociatedWithInstanceTag",
+					"target_tags": []map[string]interface{}{
+						{
+							"tag_key":   fmt.Sprintf("tf-testacc-tu-key-%d", rand),
+							"tag_value": "v1",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"association_type":        "AssociatedWithInstanceTag",
+						"target_tags.#":           "1",
+						"target_tags.0.tag_key":   fmt.Sprintf("tf-testacc-tu-key-%d", rand),
+						"target_tags.0.tag_value": "v1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"target_tags": []map[string]interface{}{
+						{
+							"tag_key":   fmt.Sprintf("tf-testacc-tu-key2-%d", rand),
+							"tag_value": "v2",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"association_type":        "AssociatedWithInstanceTag",
+						"target_tags.#":           "1",
+						"target_tags.0.tag_key":   fmt.Sprintf("tf-testacc-tu-key2-%d", rand),
+						"target_tags.0.tag_value": "v2",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 // Test Ecs AutoSnapshotPolicy. <<< Resource test cases, automatically generated.
