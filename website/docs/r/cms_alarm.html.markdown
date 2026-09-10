@@ -166,7 +166,7 @@ The escalations_warn supports the following:
 The prometheus supports the following:
 
 * `prom_ql` - (Optional) The PromQL query statement. **Note:** The data obtained by using the PromQL query statement is the monitoring data. You must include the alert threshold in this statement.
-* `level` - (Optional) The level of the alert. Valid values: `Critical`, `Warn`, `Info`.
+* `level` - (Optional) The level of the alert. Valid values: `CRITICAL`, `WARN`, `INFO` (case-insensitive).
 * `times` - (Optional, Int) The number of consecutive triggers. If the number of times that the metric values meet the trigger conditions reaches the value of this parameter, CloudMonitor sends alert notifications.
 * `annotations` - (Optional, Map) The annotations of the Prometheus alert rule. When a Prometheus alert is triggered, the system renders the annotated keys and values to help you understand the metrics and alert rule.
 
@@ -176,7 +176,7 @@ The targets supports the following:
 
 * `target_id` - (Optional) The ID of the resource for which alerts are triggered. For more information about how to obtain the ID of the resource for which alerts are triggered, see [DescribeMetricRuleTargets](https://www.alibabacloud.com/help/en/cms/developer-reference/api-describemetricruletargets) .
 * `json_params` - (Optional) The parameters of the alert callback. The parameters are in the JSON format.
-* `level` - (Optional) The level of the alert. Valid values: `Critical`, `Warn`, `Info`.
+* `level` - (Optional) The level of the alert. Valid values: `CRITICAL`, `WARN`, `INFO` (case-insensitive).
 * `arn` - (Optional) The Alibaba Cloud Resource Name (ARN) of the resource. Simple Message Queue (formerly MNS) (SMQ), Auto Scaling, Simple Log Service, and Function Compute are supported:
   - SMQ: `acs:mns:{regionId}:{userId}:/{Resource type}/{Resource name}/message`. {regionId}: the region ID of the SMQ queue or topic. {userId}: the ID of the Alibaba Cloud account that owns the resource. {Resource type}: the type of the resource for which alerts are triggered. Valid values:queues, topics. {Resource name}: the resource name. If the resource type is queues, the resource name is the queue name. If the resource type is topics, the resource name is the topic name.
   - Auto Scaling: `acs:ess:{regionId}:{userId}:scalingGroupId/{Scaling group ID}:scalingRuleId/{Scaling rule ID}`
@@ -187,7 +187,7 @@ The targets supports the following:
 
 The composite_expression supports the following:
 
-* `level` - (Optional) The level of the alert. Valid values: `CRITICAL`, `WARN`, `INFO`.
+* `level` - (Optional) The level of the alert. Valid values: `CRITICAL`, `WARN`, `INFO` (case-insensitive).
 * `times` - (Optional, Int) The number of consecutive triggers.
 * `expression_raw` - (Optional) The trigger conditions that are created by using expressions.
 * `expression_list_join` - (Optional) The relationship between the trigger conditions for multiple metrics. Valid values: `&&`, `||`.
