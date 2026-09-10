@@ -4,7 +4,7 @@
 > 目标:避开 `claim.sh lost race` 静默继续、Bash 工具 2min timeout 截断、
 > `wrap.sh done` heredoc 反引号/`$var:字母` 展开等已知踩坑。
 >
-> 引用见 `.Codex/skills/aone-triage/references/tf-customer-request-routing.md`
+> 引用见 `.agents/skills/aone-triage/references/tf-customer-request-routing.md`
 > 反模式段落 E 组。
 
 ## 骨架 A · 走 bookend(改状态 / 建关联单场景)

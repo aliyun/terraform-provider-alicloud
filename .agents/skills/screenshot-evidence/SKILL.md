@@ -36,7 +36,7 @@ description: 可视化查证截图取证——aone-triage / terraform-pr-review 
 在截图**之前**先探测通道，避免运行到中途才发现无浏览器而失败：
 
 ```bash
-bash .Codex/skills/screenshot-evidence/scripts/capture.sh probe
+bash .agents/skills/screenshot-evidence/scripts/capture.sh probe
 # stdout: <channel-name>          → exit 0，通道可用（playwright_python / chrome_binary）
 # stdout: missing_capability: ... → exit 3，无可用通道
 ```
@@ -96,7 +96,7 @@ headless bridge 会话**没有** `mcp__playwright__*`（根因见 `references/he
 当 Step 0 探测返回 `chrome_binary` 或 `playwright_python` 时，用仓库内 `capture.sh` 全页截图：
 
 ```bash
-bash .Codex/skills/screenshot-evidence/scripts/capture.sh capture \
+bash .agents/skills/screenshot-evidence/scripts/capture.sh capture \
   "<URL>" .my-day/screenshots/<aone-id>/<name>.png \
   --wait 3000 --full-page --width 1280 --height 2000 \
   --text "<目标字段名>"
@@ -141,7 +141,7 @@ visual_evidence_manifest: /absolute/path/.my-day/screenshots/<aone-id>/evidence-
 finalizer 上传前必须执行确定性校验：
 
 ```bash
-python3 .Codex/skills/screenshot-evidence/scripts/validate-manifest.py \
+python3 .agents/skills/screenshot-evidence/scripts/validate-manifest.py \
   .my-day/screenshots/<aone-id>/evidence-manifest.md
 ```
 
@@ -169,7 +169,7 @@ private，只向客户端返回限时 signed GET URL。
 **辅助脚本**批量上传 PNG/JPG：
 
 ```bash
-bash .Codex/skills/screenshot-evidence/scripts/upload-screenshots.sh <aone-id> <screenshot-dir>
+bash .agents/skills/screenshot-evidence/scripts/upload-screenshots.sh <aone-id> <screenshot-dir>
 # 输出：name|signed_url（stdout 每文件一行，需要落盘时自行重定向）
 ```
 
@@ -182,7 +182,7 @@ AK/SK，也禁止把任何明文/密文凭据放进命令参数、日志、报�
 **默认走 `gen-report.py --manifest`，它替你完成 Step 3 的上传与签名 URL 接线：**
 
 ```bash
-python3 .Codex/skills/html-report-preview/scripts/gen-report.py \
+python3 .agents/skills/html-report-preview/scripts/gen-report.py \
   --title "可视化查证报告 — Aone #<id>" \
   --manifest .my-day/screenshots/<aone-id>/evidence-manifest.md \
   --aone-id <aone-id> > report.html

@@ -107,14 +107,14 @@ bash bootstrap/aone-image-extract.sh <id>          # 附件截图→本地,skill
 
 1. **OpenAPI 层**:`aliyun <product> <Action> --help` 拿官方 meta(next.api 网页是 SPA,curl 拿不到 JSON);或 `AlibabaCloud ListApis` / `GetApiDefinition` 若 MCP 可用。JMESPath 用单引号,反引号会失败:`parameters[?name=='X'].schema.properties|[0]|keys(@)`。
 2. **Terraform 映射层**(仅当涉 Terraform 资源):`curl "https://acube.aliyun-inc.com/api/v1/terraform/generator/getTerraformResourceSpec?terraformResourceType=alicloud_x"` —— 仅判"TF 资源 ↔ Cloudspec 是否建映射",不代表实现。
-3. **provider 源码层**(仅当涉 Terraform 资源):先 `bash .Codex/skills/aone-triage/scripts/sync-provider.sh` 同步,再在 `$(bash bootstrap/workspace.sh dir terraform_provider)/alicloud/` grep 资源 .go,核对 schema / `Importer` / Create 实际下发参数。单复数陷阱:`*_instances` 多半是数据源。
+3. **provider 源码层**(仅当涉 Terraform 资源):先 `bash .agents/skills/aone-triage/scripts/sync-provider.sh` 同步,再在 `$(bash bootstrap/workspace.sh dir terraform_provider)/alicloud/` grep 资源 .go,核对 schema / `Importer` / Create 实际下发参数。单复数陷阱:`*_instances` 多半是数据源。
 4. **文档兜底**:GitHub raw markdown、`aliyun help <product>` 命令列表。
 
 **「文档 vs 代码一致性」分诊起点**(涉 endpoint/schema 键名/枚举值/属性行为类问题):**先对比"文档承诺"vs"代码实际行为"两侧**,不要只看代码或只看文档。Terraform 资源文档必须增加 OpenAPI、CloudSpec 文档源、Provider 本地生成/展示三侧比较：严格 text-only 的 CloudSpec 文档 metadata 走 I；CloudSpec 源正确、Provider 本地偏差走 D；涉及字段集合/类型/约束/CRUD 则走 E，pre 验收后在源单上下文继续 Provider 开发。
 
 **Terraform-specific 领域**详细 branch(专属维护名单 / 类比 API 原生 vs Provider 适配 / 镇元覆盖度 / 生成器 vs 手写)全在 `references/tf-customer-request-routing.md`。tf_customer 域必读,其它域按需借鉴。
 
-5. **可视化截图取证**(查证完成后追加):调用 `.Codex/skills/screenshot-evidence` skill，把关键页面组装成 HTML 可视化报告并上传 pre-agent 预览。**Terraform 工单的 OpenAPI、CloudSpec/ACube 映射、Provider 源码三层都必须尝试截图；失败时在 manifest 中逐层写明 `n-a`、`capture_error`/`missing_capability` 与原因，禁止静默省略。截图属于证据增强项，失败只降级报告，不得阻断最终评论或触发 SUSPEND。**为保持单写者约束，PD 只在 `.my-day/screenshots/<aone-id>/` 生成本地截图和 `evidence-manifest.md`，不上传 OSS、不写 Aone；最终 RD finalizer 运行 `screenshot-evidence` 的 manifest 校验器后统一上传一次，调用 `html-report-preview.sh upload` 时不得传 `--comment`，并把报告链接写入本轮唯一聚合回复。manifest/上传失败时直接在该回复说明截图降级，继续按文字证据收口。executor 托管时链接进入 `AONE_RESULT.reply_body`，run 内不得调用 `wrap.sh`；非 Terraform 流程仍可由当前处理者端到端生成、上传和回贴。**评论内 URL/图片渲染规则见下方 §4「Aone 评论渲染 quirk」**；签名图片受 img src query 剥离影响，只能在 pre-agent 在线报告里展示，评论区不直接内嵌。
+5. **可视化截图取证**(查证完成后追加):调用 `.agents/skills/screenshot-evidence` skill，把关键页面组装成 HTML 可视化报告并上传 pre-agent 预览。**Terraform 工单的 OpenAPI、CloudSpec/ACube 映射、Provider 源码三层都必须尝试截图；失败时在 manifest 中逐层写明 `n-a`、`capture_error`/`missing_capability` 与原因，禁止静默省略。截图属于证据增强项，失败只降级报告，不得阻断最终评论或触发 SUSPEND。**为保持单写者约束，PD 只在 `.my-day/screenshots/<aone-id>/` 生成本地截图和 `evidence-manifest.md`，不上传 OSS、不写 Aone；最终 RD finalizer 运行 `screenshot-evidence` 的 manifest 校验器后统一上传一次，调用 `html-report-preview.sh upload` 时不得传 `--comment`，并把报告链接写入本轮唯一聚合回复。manifest/上传失败时直接在该回复说明截图降级，继续按文字证据收口。executor 托管时链接进入 `AONE_RESULT.reply_body`，run 内不得调用 `wrap.sh`；非 Terraform 流程仍可由当前处理者端到端生成、上传和回贴。**评论内 URL/图片渲染规则见下方 §4「Aone 评论渲染 quirk」**；签名图片受 img src query 剥离影响，只能在 pre-agent 在线报告里展示，评论区不直接内嵌。
 
 ### 4. 回复草稿(结构固定,先给用户过目)
 
@@ -287,7 +287,7 @@ options 为空，脚本会继续查询 field options API，并返回合法候选
 
 **release vs finish**:默认 release(路由 ≠ 真闭环,需下游响应);仅当查证发现"其实已支持 + 只是客户版本旧"这类无缺口场景走 finish。
 
-**收尾蒸馏钩子(涉及 terraform 云产品的工单必挂)**:工单涉及某个 terraform 产品(客户单/内部研发单/probe 单皆算),在 `wrap.sh done` 之后、`claim.sh release/finish` 之前,按 `.Codex/skills/tf-customer-probe/references/knowledge-distillation.md` 契约把本单学到的产品级事实蒸馏进 `<playground>/<product>/KNOWLEDGE.md`(触发点②aone-triage bookend 收尾——这是评审阻断项,客户单场合的蒸馏钩子必须挂在主流程,不能只挂 probe 侧)。收录判据:可执行 / 跨场景复用 / 非文档已明示;条目格式 `- [YYYY-MM-DD][来源: 工单URL/verdict路径/PR URL] <可执行的产品级事实>`。playground 路径解析走 `bootstrap/workspace.sh dir tf_playground` 或 env `JARVIS_TF_PLAYGROUND`。
+**收尾蒸馏钩子(涉及 terraform 云产品的工单必挂)**:工单涉及某个 terraform 产品(客户单/内部研发单/probe 单皆算),在 `wrap.sh done` 之后、`claim.sh release/finish` 之前,按 `.agents/skills/tf-customer-probe/references/knowledge-distillation.md` 契约把本单学到的产品级事实蒸馏进 `<playground>/<product>/KNOWLEDGE.md`(触发点②aone-triage bookend 收尾——这是评审阻断项,客户单场合的蒸馏钩子必须挂在主流程,不能只挂 probe 侧)。收录判据:可执行 / 跨场景复用 / 非文档已明示;条目格式 `- [YYYY-MM-DD][来源: 工单URL/verdict路径/PR URL] <可执行的产品级事实>`。playground 路径解析走 `bootstrap/workspace.sh dir tf_playground` 或 env `JARVIS_TF_PLAYGROUND`。
 
 **MR/CR 未合并禁 finish**:当 MR/CR 已提交但未合并(PR state ≠ merged / CR 未合入 master)时,**禁止调 `claim.sh finish`**。正确路径:
 - `JARVIS_A1_IDENTITY=terraform-rd bash bootstrap/wrap.sh done <id> "<final aggregate>" --no-status`(多行用 `--summary-stdin --no-status`)—— Terraform 由 RD finalizer 一次写完完整结果,不改 Aone 状态

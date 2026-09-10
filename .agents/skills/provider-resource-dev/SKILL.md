@@ -16,11 +16,11 @@ description: Use when DEVELOPING, DIAGNOSING, or FIXING an alicloud Terraform pr
 - cspec 仓 `cloudspec-model/<Product>_pop_*`;provider upstream=aliyun;Jarvis 提交 GitHub PR/评论/推分支必须使用 `JARVIS_GITHUB_TOKEN` 对应的 `api-tool-agent` 身份,head=`api-tool-agent:<branch>`;acube/terraform-generator-v4 见 `config/workspaces.json`。
 - Acube 在线生成工具: `tools/acube_terraform_generate.py`(tools/ 是 repo 顶层的 Python 工具目录,不在 skill scripts/ 内,便于跨会话共享 + 独立测试)。
 - 生成差异/语义检查工具: `tools/terraform_generated_diff.py`(同上)。
-- **错误码语义查证**(客户 acc/apply 报错、retry 白名单决策):读 `.Codex/skills/aone-triage/references/aliyun-error-code-lookup.md`(跨 skill 复用,给定 product+code 出 HTTP/中英 message/官方 retry 建议/相邻错误码)。
+- **错误码语义查证**(客户 acc/apply 报错、retry 白名单决策):读 `.agents/skills/aone-triage/references/aliyun-error-code-lookup.md`(跨 skill 复用,给定 product+code 出 HTTP/中英 message/官方 retry 建议/相邻错误码)。
 - **镇元查证与路由分支**(诊断资源在哪一层缺、按决策树选执行分支):读 `references/zhenyuan-verification.md`(跨 skill 单点维护:aone-triage tf-customer 路由与本 skill 资源开发都读它)。
-- **开发前先读 `<playground>/<product>/KNOWLEDGE.md`(存在即读)**:jarvis 蒸馏的产品级可执行知识(命名/参数 quirk/生命周期/API 行为/报错→原因→解法五节);playground 路径解析走 `bootstrap/workspace.sh dir tf_playground` 或 env `JARVIS_TF_PLAYGROUND`,文件不存在跳过。契约见 `.Codex/skills/tf-customer-probe/references/knowledge-distillation.md`。
+- **开发前先读 `<playground>/<product>/KNOWLEDGE.md`(存在即读)**:jarvis 蒸馏的产品级可执行知识(命名/参数 quirk/生命周期/API 行为/报错→原因→解法五节);playground 路径解析走 `bootstrap/workspace.sh dir tf_playground` 或 env `JARVIS_TF_PLAYGROUND`,文件不存在跳过。契约见 `.agents/skills/tf-customer-probe/references/knowledge-distillation.md`。
 - 编码交 terraform-rd 子代理,改文件先 worktree,acc 由 terraform-qa 验过才交。
-- **PR 提交后**按 `.Codex/skills/tf-customer-probe/references/knowledge-distillation.md` 契约把本次开发学到的产品级事实(API 行为差异、schema 陷阱、必须的重试码等)蒸馏进 `<playground>/<product>/KNOWLEDGE.md`(触发点③provider-resource-dev 完成开发后),来源锚点写 upstream PR URL + provider 源码行号。
+- **PR 提交后**按 `.agents/skills/tf-customer-probe/references/knowledge-distillation.md` 契约把本次开发学到的产品级事实(API 行为差异、schema 陷阱、必须的重试码等)蒸馏进 `<playground>/<product>/KNOWLEDGE.md`(触发点③provider-resource-dev 完成开发后),来源锚点写 upstream PR URL + provider 源码行号。
 
 ## Aone source-only 路由与同步
 

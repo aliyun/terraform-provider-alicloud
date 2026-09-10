@@ -88,7 +88,7 @@ Never make report screenshots public-read. Use the repository-owned screenshot h
 same server token through `bootstrap/runtime-config.sh` and uploads each PNG/JPG as multipart:
 
 ```bash
-bash .Codex/skills/screenshot-evidence/scripts/upload-screenshots.sh \
+bash .agents/skills/screenshot-evidence/scripts/upload-screenshots.sh \
   <aone-id> <screenshot-dir> > image-urls.txt
 ```
 
@@ -134,7 +134,7 @@ details stay readable without clicking.
 Preferred: feed it the manifest and let it upload and wire the signed URLs itself.
 
 ```bash
-python3 .Codex/skills/html-report-preview/scripts/gen-report.py \
+python3 .agents/skills/html-report-preview/scripts/gen-report.py \
   --title "可视化查证报告 — Aone #<id>" \
   --manifest .my-day/screenshots/<aone-id>/evidence-manifest.md \
   --aone-id <aone-id> [--summary "..."] > report.html
@@ -150,7 +150,7 @@ Explicit layers remain supported when you are not driving from a manifest:
 
 ```bash
 # layers.json: [{name, result, screenshot_url, source_url, source_label, note}, ...]
-python3 .Codex/skills/html-report-preview/scripts/gen-report.py \
+python3 .agents/skills/html-report-preview/scripts/gen-report.py \
   --title "可视化查证报告 — Aone #<id>" \
   --layers-file layers.json [--summary "..."] > report.html
 ```

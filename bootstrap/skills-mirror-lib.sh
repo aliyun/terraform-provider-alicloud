@@ -8,10 +8,13 @@
 # 关键词替换规则(顺序敏感:更长的先替换避免误伤;两个方向互为逆):
 #   Claude Code             ↔ Codex
 #   Co-Authored-By: Claude  ↔ Co-Authored-By: Codex
-#   .claude/agents/         ↔ .Codex/agents/
-#   .claude/skills/         ↔ .Codex/skills/     (含 ~/.claude/skills/ 等硬编码路径)
+#   .claude/agents/         ↔ .codex/agents/
+#   .claude/skills/         ↔ .agents/skills/    (含 ~/.claude/skills/ 等硬编码路径)
 #   claude-code-guide       ↔ codex-guide
 #   CLAUDE.md               ↔ AGENTS.md
+#
+# 两侧目录名不对称(skills 落 .agents/,agents 落 .codex/)是既有布局,必须与
+# mirror.sh 的 _map_target 落盘目标逐字一致——否则镜像出来的自引用路径全是死链。
 #
 # 使用:
 #   source "$(dirname "${BASH_SOURCE[0]}")/skills-mirror-lib.sh"
@@ -23,8 +26,8 @@ mirror_sed_claude_to_codex() {
     sed \
         -e 's|Claude Code|Codex|g' \
         -e 's|Co-Authored-By: Claude|Co-Authored-By: Codex|g' \
-        -e 's|\.claude/agents/|.Codex/agents/|g' \
-        -e 's|\.claude/skills/|.Codex/skills/|g' \
+        -e 's|\.claude/agents/|.codex/agents/|g' \
+        -e 's|\.claude/skills/|.agents/skills/|g' \
         -e 's|claude-code-guide|codex-guide|g' \
         -e 's|CLAUDE\.md|AGENTS.md|g'
 }
@@ -33,8 +36,8 @@ mirror_sed_claude_to_codex() {
 mirror_sed_codex_to_claude() {
     sed \
         -e 's|Co-Authored-By: Codex|Co-Authored-By: Claude|g' \
-        -e 's|\.Codex/agents/|.claude/agents/|g' \
-        -e 's|\.Codex/skills/|.claude/skills/|g' \
+        -e 's|\.codex/agents/|.claude/agents/|g' \
+        -e 's|\.agents/skills/|.claude/skills/|g' \
         -e 's|codex-guide|claude-code-guide|g' \
         -e 's|AGENTS\.md|CLAUDE.md|g' \
         -e 's|Codex|Claude Code|g'

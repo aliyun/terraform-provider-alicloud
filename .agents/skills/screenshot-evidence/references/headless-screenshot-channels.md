@@ -44,7 +44,7 @@ Playwright MCP 的交互环境，headless 一律拿不到 `mcp__playwright__*`�
 | — | 无 | `missing_capability` 降级 | manifest 记录原因，任务继续文字查证和最终评论 |
 
 - 探测与捕获实现在 `bridge/jarvis_screenshot.py`（单测 `bridge/test_jarvis_screenshot.py`）。
-- skill 侧封装为 `.Codex/skills/screenshot-evidence/scripts/capture.sh`，从任意 cwd 可调用，
+- skill 侧封装为 `.agents/skills/screenshot-evidence/scripts/capture.sh`，从任意 cwd 可调用，
   内部 `python3 -m bridge.jarvis_screenshot probe|capture`，并把仓库根插到 `PYTHONPATH` 最前，
   防止被继承的 `PYTHONPATH`（如 harness 注入的主仓）shadow 掉本仓模块。
 - 退出码：`0` 通道可用/捕获成功；`3` `missing_capability`（无可用通道）；`1` `capture_error`
