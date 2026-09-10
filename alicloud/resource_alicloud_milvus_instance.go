@@ -26,6 +26,14 @@ func resourceAliCloudMilvusInstance() *schema.Resource {
 			Update: schema.DefaultTimeout(30 * time.Minute),
 			Delete: schema.DefaultTimeout(14 * time.Minute),
 		},
+		SchemaVersion: 1,
+		StateUpgraders: []schema.StateUpgrader{
+			{
+				Version: 0,
+				Type:    resourceAliCloudMilvusInstanceV0().CoreConfigSchema().ImpliedType(),
+				Upgrade: resourceAliCloudMilvusInstanceStateUpgradeV0,
+			},
+		},
 		Schema: map[string]*schema.Schema{
 			"auto_backup": {
 				Type:     schema.TypeBool,
@@ -36,9 +44,35 @@ func resourceAliCloudMilvusInstance() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
+			"auto_renew": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"backup_restore_info": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"backup_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"source_cluster_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"backup_name": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
 			"components": {
 				Type:     schema.TypeSet,
 				Optional: true,
+				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"cu_type": {
@@ -54,11 +88,46 @@ func resourceAliCloudMilvusInstance() *schema.Resource {
 							Type:     schema.TypeInt,
 							Required: true,
 						},
+						"data_disk": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							Computed: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"storage_class": {
+										Type:     schema.TypeString,
+										Optional: true,
+										Computed: true,
+									},
+									"size": {
+										Type:     schema.TypeInt,
+										Optional: true,
+										Computed: true,
+									},
+									"performance_level": {
+										Type:     schema.TypeString,
+										Optional: true,
+										Computed: true,
+									},
+									"enabled": {
+										Type:     schema.TypeBool,
+										Optional: true,
+										Computed: true,
+									},
+								},
+							},
+						},
 						"disk_size_type": {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Computed:     true,
+							ForceNew:     true,
 							ValidateFunc: StringInSlice([]string{"Normal", "Large"}, false),
+						},
+						"pay_type": {
+							Type:     schema.TypeString,
+							Computed: true,
 						},
 						"replica": {
 							Type:     schema.TypeInt,
@@ -76,9 +145,8 @@ func resourceAliCloudMilvusInstance() *schema.Resource {
 				Computed: true,
 			},
 			"db_admin_password": {
-				Type:      schema.TypeString,
-				Optional:  true,
-				Sensitive: true,
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"db_version": {
 				Type:     schema.TypeString,
@@ -90,6 +158,10 @@ func resourceAliCloudMilvusInstance() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"expire_time": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"ha": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -98,15 +170,27 @@ func resourceAliCloudMilvusInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
+			"is_multi_az_storage": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 			"kms_key_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 			},
+			"load_replicas": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
 			"multi_zone_mode": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
+			},
+			"order_id": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"payment_duration": {
 				Type:     schema.TypeInt,
@@ -122,6 +206,10 @@ func resourceAliCloudMilvusInstance() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"promotion_no": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"region_id": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -130,6 +218,15 @@ func resourceAliCloudMilvusInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
+			},
+			"running_time": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
+			"security_group_ids": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -181,13 +278,41 @@ func resourceAliCloudMilvusInstanceCreate(d *schema.ResourceData, meta interface
 	var err error
 	request = make(map[string]interface{})
 	query["RegionId"] = StringPointer(client.RegionId)
+	query["clientToken"] = StringPointer(buildClientToken(action))
 
+	if v, ok := d.GetOkExists("load_replicas"); ok {
+		request["loadReplicas"] = v
+	}
 	if v, ok := d.GetOk("components"); ok {
 		componentsMapsArray := make([]interface{}, 0)
 		for _, dataLoop := range convertToInterfaceArray(v) {
 			dataLoopTmp := dataLoop.(map[string]interface{})
 			dataLoopMap := make(map[string]interface{})
 			dataLoopMap["cuNum"] = dataLoopTmp["cu_num"]
+			for _, dataDisks := range convertToInterfaceArray(dataLoopTmp["data_disk"]) {
+				dataDisksMap := map[string]interface{}{}
+				dataDisksArg := dataDisks.(map[string]interface{})
+
+				if size, ok := dataDisksArg["size"]; ok {
+					dataDisksMap["size"] = size
+				}
+
+				if storageClass, ok := dataDisksArg["storage_class"]; ok {
+					dataDisksMap["storageClass"] = storageClass
+				}
+
+				if enabled, ok := dataDisksArg["enabled"]; ok {
+					dataDisksMap["enabled"] = enabled
+				}
+
+				if performanceLevel, ok := dataDisksArg["performance_level"]; ok {
+					dataDisksMap["performanceLevel"] = performanceLevel
+				}
+
+				if len(dataDisksMap) > 0 {
+					dataLoopMap["dataDisk"] = dataDisksMap
+				}
+			}
 			dataLoopMap["type"] = dataLoopTmp["type"]
 			dataLoopMap["replica"] = dataLoopTmp["replica"]
 			dataLoopMap["diskSizeType"] = dataLoopTmp["disk_size_type"]
@@ -197,21 +322,43 @@ func resourceAliCloudMilvusInstanceCreate(d *schema.ResourceData, meta interface
 		request["components"] = componentsMapsArray
 	}
 
+	backupRestoreInfo := make(map[string]interface{})
+
+	if v := d.Get("backup_restore_info"); !IsNil(v) {
+		backupId1, _ := jsonpath.Get("$[0].backup_id", v)
+		if backupId1 != nil && backupId1 != "" {
+			backupRestoreInfo["backupId"] = backupId1
+		}
+		backupName1, _ := jsonpath.Get("$[0].backup_name", v)
+		if backupName1 != nil && backupName1 != "" {
+			backupRestoreInfo["backupName"] = backupName1
+		}
+		sourceClusterId1, _ := jsonpath.Get("$[0].source_cluster_id", v)
+		if sourceClusterId1 != nil && sourceClusterId1 != "" {
+			backupRestoreInfo["sourceClusterId"] = sourceClusterId1
+		}
+
+		request["backupRestoreInfo"] = backupRestoreInfo
+	}
+
 	request["paymentType"] = d.Get("payment_type")
 	if v, ok := d.GetOkExists("auto_pay"); ok {
 		request["autoPay"] = v
+	}
+	if v, ok := d.GetOk("promotion_no"); ok {
+		request["promotionNo"] = v
 	}
 	if v, ok := d.GetOk("configuration"); ok {
 		request["configuration"] = v
 	}
 	if v, ok := d.GetOk("vswitch_ids"); ok {
 		vSwitchIdsMapsArray := make([]interface{}, 0)
-		for _, dataLoop1 := range convertToInterfaceArray(v) {
-			dataLoop1Tmp := dataLoop1.(map[string]interface{})
-			dataLoop1Map := make(map[string]interface{})
-			dataLoop1Map["zoneId"] = dataLoop1Tmp["zone_id"]
-			dataLoop1Map["vswId"] = dataLoop1Tmp["vsw_id"]
-			vSwitchIdsMapsArray = append(vSwitchIdsMapsArray, dataLoop1Map)
+		for _, dataLoop2 := range convertToInterfaceArray(v) {
+			dataLoop2Tmp := dataLoop2.(map[string]interface{})
+			dataLoop2Map := make(map[string]interface{})
+			dataLoop2Map["zoneId"] = dataLoop2Tmp["zone_id"]
+			dataLoop2Map["vswId"] = dataLoop2Tmp["vsw_id"]
+			vSwitchIdsMapsArray = append(vSwitchIdsMapsArray, dataLoop2Map)
 		}
 		request["vSwitchIds"] = vSwitchIdsMapsArray
 	}
@@ -230,12 +377,18 @@ func resourceAliCloudMilvusInstanceCreate(d *schema.ResourceData, meta interface
 	if v, ok := d.GetOk("kms_key_id"); ok {
 		request["kmsKeyId"] = v
 	}
+	if v, ok := d.GetOkExists("auto_renew"); ok {
+		request["autoRenew"] = v
+	}
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		request["resourceGroupId"] = v
 	}
 	request["instanceName"] = d.Get("instance_name")
 	if v, ok := d.GetOkExists("encrypted"); ok {
 		request["encrypted"] = v
+	}
+	if v, ok := d.GetOkExists("is_multi_az_storage"); ok {
+		request["isMultiAzStorage"] = v
 	}
 	if v, ok := d.GetOkExists("ha"); ok {
 		request["ha"] = v
@@ -302,13 +455,16 @@ func resourceAliCloudMilvusInstanceRead(d *schema.ResourceData, meta interface{}
 	d.Set("create_time", objectRaw["createTime"])
 	d.Set("db_version", objectRaw["dbVersion"])
 	d.Set("encrypted", objectRaw["encrypted"])
+	d.Set("expire_time", objectRaw["expireTime"])
 	d.Set("ha", objectRaw["ha"])
 	d.Set("instance_name", objectRaw["instanceName"])
 	d.Set("kms_key_id", objectRaw["kmsKeyId"])
 	d.Set("multi_zone_mode", objectRaw["multiZoneMode"])
+	d.Set("order_id", objectRaw["orderId"])
 	d.Set("payment_type", objectRaw["paymentType"])
 	d.Set("region_id", objectRaw["regionId"])
 	d.Set("resource_group_id", objectRaw["resourceGroupId"])
+	d.Set("running_time", objectRaw["runningTime"])
 	d.Set("status", objectRaw["status"])
 	d.Set("vpc_id", objectRaw["vpcId"])
 	d.Set("zone_id", objectRaw["zoneId"])
@@ -322,15 +478,37 @@ func resourceAliCloudMilvusInstanceRead(d *schema.ResourceData, meta interface{}
 			componentsMap["cu_num"] = componentsChildRaw["cuNum"]
 			componentsMap["cu_type"] = componentsChildRaw["cuType"]
 			componentsMap["disk_size_type"] = componentsChildRaw["diskSizeType"]
+			componentsMap["pay_type"] = componentsChildRaw["payType"]
 			componentsMap["replica"] = componentsChildRaw["replica"]
 			componentsMap["type"] = componentsChildRaw["type"]
 
+			dataDiskMaps := make([]map[string]interface{}, 0)
+			dataDiskMap := make(map[string]interface{})
+			dataDiskRaw := make(map[string]interface{})
+			if componentsChildRaw["dataDisk"] != nil {
+				dataDiskRaw = componentsChildRaw["dataDisk"].(map[string]interface{})
+			}
+			if len(dataDiskRaw) > 0 {
+				dataDiskMap["enabled"] = dataDiskRaw["enabled"]
+				dataDiskMap["performance_level"] = dataDiskRaw["performanceLevel"]
+				dataDiskMap["size"] = dataDiskRaw["size"]
+				dataDiskMap["storage_class"] = dataDiskRaw["storageClass"]
+
+				dataDiskMaps = append(dataDiskMaps, dataDiskMap)
+			}
+			componentsMap["data_disk"] = dataDiskMaps
 			componentsMaps = append(componentsMaps, componentsMap)
 		}
 	}
 	if err := d.Set("components", componentsMaps); err != nil {
 		return err
 	}
+	securityGroupIdsRaw := make([]interface{}, 0)
+	if objectRaw["securityGroupIds"] != nil {
+		securityGroupIdsRaw = convertToInterfaceArray(objectRaw["securityGroupIds"])
+	}
+
+	d.Set("security_group_ids", securityGroupIdsRaw)
 	tagsMaps := objectRaw["tags"]
 	d.Set("tags", tagsToMap(tagsMaps))
 	vSwitchIdsRaw := objectRaw["vSwitchIds"]
@@ -359,7 +537,6 @@ func resourceAliCloudMilvusInstanceUpdate(d *schema.ResourceData, meta interface
 	var query map[string]*string
 	var body map[string]interface{}
 	update := false
-	d.Partial(true)
 
 	var err error
 	action := fmt.Sprintf("/webapi/instance/update")
@@ -368,6 +545,7 @@ func resourceAliCloudMilvusInstanceUpdate(d *schema.ResourceData, meta interface
 	body = make(map[string]interface{})
 	request["instanceId"] = d.Id()
 	query["RegionId"] = StringPointer(client.RegionId)
+	query["clientToken"] = StringPointer(buildClientToken(action))
 	if d.HasChange("components") {
 		update = true
 	}
@@ -377,19 +555,40 @@ func resourceAliCloudMilvusInstanceUpdate(d *schema.ResourceData, meta interface
 			dataLoopTmp := dataLoop.(map[string]interface{})
 			dataLoopMap := make(map[string]interface{})
 			dataLoopMap["type"] = dataLoopTmp["type"]
+
+			for _, dataDisks := range convertToInterfaceArray(dataLoopTmp["data_disk"]) {
+				dataDisksMap := map[string]interface{}{}
+				dataDisksArg := dataDisks.(map[string]interface{})
+
+				if size, ok := dataDisksArg["size"]; ok {
+					dataDisksMap["size"] = size
+				}
+
+				if storageClass, ok := dataDisksArg["storage_class"]; ok {
+					dataDisksMap["storageClass"] = storageClass
+				}
+
+				if enabled, ok := dataDisksArg["enabled"]; ok {
+					dataDisksMap["enabled"] = enabled
+				}
+
+				if performanceLevel, ok := dataDisksArg["performance_level"]; ok {
+					dataDisksMap["performanceLevel"] = performanceLevel
+				}
+
+				if len(dataDisksMap) > 0 {
+					dataLoopMap["dataDisk"] = dataDisksMap
+				}
+			}
+
 			dataLoopMap["cuNum"] = dataLoopTmp["cu_num"]
 			dataLoopMap["replica"] = dataLoopTmp["replica"]
+			dataLoopMap["cuType"] = dataLoopTmp["cu_type"]
 			componentsMapsArray = append(componentsMapsArray, dataLoopMap)
 		}
 		request["components"] = componentsMapsArray
 	}
 
-	if d.HasChange("ha") {
-		update = true
-	}
-	if v, ok := d.GetOk("ha"); ok && d.HasChange("ha") {
-		request["ha"] = v
-	}
 	if d.HasChange("instance_name") {
 		update = true
 	}
@@ -397,17 +596,23 @@ func resourceAliCloudMilvusInstanceUpdate(d *schema.ResourceData, meta interface
 	if v, ok := d.GetOkExists("auto_pay"); ok {
 		request["autoPay"] = v
 	}
-	if d.HasChange("auto_backup") {
-		update = true
-	}
-	if v, ok := d.GetOk("auto_backup"); ok && d.HasChange("auto_backup") {
-		request["autoBackup"] = v
-	}
 	if d.HasChange("configuration") {
 		update = true
 	}
 	if v, ok := d.GetOk("configuration"); ok && d.HasChange("configuration") {
 		request["configuration"] = v
+	}
+	if d.HasChange("ha") {
+		update = true
+	}
+	if v, ok := d.GetOk("ha"); ok && d.HasChange("ha") {
+		request["ha"] = v
+	}
+	if d.HasChange("auto_backup") {
+		update = true
+	}
+	if v, ok := d.GetOk("auto_backup"); ok && d.HasChange("auto_backup") {
+		request["autoBackup"] = v
 	}
 	body = request
 	if update {
@@ -474,7 +679,6 @@ func resourceAliCloudMilvusInstanceUpdate(d *schema.ResourceData, meta interface
 			return WrapError(err)
 		}
 	}
-	d.Partial(false)
 	return resourceAliCloudMilvusInstanceRead(d, meta)
 }
 
@@ -587,4 +791,252 @@ func resourceAliCloudMilvusInstanceDelete(d *schema.ResourceData, meta interface
 
 	}
 	return nil
+}
+
+func resourceAliCloudMilvusInstanceV0() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"auto_backup": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
+			"auto_pay": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"auto_renew": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"backup_restore_info": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"backup_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"source_cluster_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"backup_name": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
+			"components": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"cu_type": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+						"type": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"cu_num": {
+							Type:     schema.TypeInt,
+							Required: true,
+						},
+						"data_disk": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Computed: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"storage_class": {
+										Type:     schema.TypeString,
+										Optional: true,
+										Computed: true,
+									},
+									"size": {
+										Type:     schema.TypeInt,
+										Optional: true,
+										Computed: true,
+									},
+									"performance_level": {
+										Type:     schema.TypeString,
+										Optional: true,
+										Computed: true,
+									},
+									"enabled": {
+										Type:     schema.TypeBool,
+										Optional: true,
+										Computed: true,
+									},
+								},
+							},
+						},
+						"disk_size_type": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							Computed:     true,
+							ForceNew:     true,
+							ValidateFunc: StringInSlice([]string{"Normal", "Large"}, false),
+						},
+						"pay_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"replica": {
+							Type:     schema.TypeInt,
+							Required: true,
+						},
+					},
+				},
+			},
+			"configuration": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"create_time": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"db_admin_password": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"db_version": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"encrypted": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
+			"expire_time": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"ha": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"instance_name": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"is_multi_az_storage": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"kms_key_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"load_replicas": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"multi_zone_mode": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"order_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"payment_duration": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"payment_duration_unit": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"month", "year"}, false),
+			},
+			"payment_type": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"promotion_no": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"region_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"running_time": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
+			"security_group_ids": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"status": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"tags": tagsSchema(),
+			"vswitch_ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"vsw_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+						},
+						"zone_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+						},
+					},
+				},
+			},
+			"vpc_id": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"zone_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+		},
+	}
+}
+
+func resourceAliCloudMilvusInstanceStateUpgradeV0(rawState map[string]interface{}, _ interface{}) (map[string]interface{}, error) {
+	if v, ok := rawState["components"]; ok && v != nil {
+		switch val := v.(type) {
+		case map[string]interface{}:
+			if len(val) > 0 {
+				rawState["components"] = []interface{}{val}
+			} else {
+				rawState["components"] = []interface{}{}
+			}
+		}
+	}
+	return rawState, nil
 }
