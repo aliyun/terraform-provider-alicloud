@@ -215,6 +215,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_esa_https_basic_configurations":                 dataSourceAliCloudEsaHttpsBasicConfigurations(),
 			"alicloud_esa_cache_reserve_instances":                    dataSourceAliCloudEsaCacheReserveInstances(),
 			"alicloud_esa_waf_rulesets":                               dataSourceAliCloudEsaWafRuleSets(),
+			"alicloud_esa_lists":                                      dataSourceAliCloudEsaLists(),
 			"alicloud_cs_clusters":                                    dataSourceAliCloudAckClusters(),
 			"alicloud_threat_detection_check_item_configs":            dataSourceAliCloudThreatDetectionCheckItemConfigs(),
 			"alicloud_threat_detection_check_structures":              dataSourceAliCloudThreatDetectionCheckStructures(),
