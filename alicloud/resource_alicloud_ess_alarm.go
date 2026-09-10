@@ -172,7 +172,7 @@ func resourceAliyunEssAlarmCreate(d *schema.ResourceData, meta interface{}) erro
 			return essClient.CreateAlarm(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{Throttling}) {
+			if NeedRetry(err) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -190,10 +190,18 @@ func resourceAliyunEssAlarmCreate(d *schema.ResourceData, meta interface{}) erro
 		disableAlarmRequest := ess.CreateDisableAlarmRequest()
 		disableAlarmRequest.RegionId = client.RegionId
 		disableAlarmRequest.AlarmTaskId = response.AlarmTaskId
-		raw, err = client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-			return essClient.DisableAlarm(disableAlarmRequest)
-		})
-		if err != nil {
+		if err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			raw, err = client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+				return essClient.DisableAlarm(disableAlarmRequest)
+			})
+			if err != nil {
+				if NeedRetry(err) {
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		}); err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), disableAlarmRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		addDebug(disableAlarmRequest.GetActionName(), raw, disableAlarmRequest.RpcRequest, disableAlarmRequest)
@@ -353,10 +361,20 @@ func resourceAliyunEssAlarmUpdate(d *schema.ResourceData, meta interface{}) erro
 		}
 	}
 
-	raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-		return essClient.ModifyAlarm(request)
-	})
-	if err != nil {
+	var raw interface{}
+	var err error
+	if err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err = client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+			return essClient.ModifyAlarm(request)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	}); err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	d.SetPartial("name")
@@ -376,20 +394,36 @@ func resourceAliyunEssAlarmUpdate(d *schema.ResourceData, meta interface{}) erro
 		if enable.(bool) {
 			enableAlarmRequest := ess.CreateEnableAlarmRequest()
 			enableAlarmRequest.AlarmTaskId = d.Id()
-			raw, err = client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-				return essClient.EnableAlarm(enableAlarmRequest)
-			})
-			if err != nil {
+			if err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+				raw, err = client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+					return essClient.EnableAlarm(enableAlarmRequest)
+				})
+				if err != nil {
+					if NeedRetry(err) {
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			}); err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), enableAlarmRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
 			addDebug(enableAlarmRequest.GetActionName(), raw)
 		} else {
 			disableAlarmRequest := ess.CreateDisableAlarmRequest()
 			disableAlarmRequest.AlarmTaskId = d.Id()
-			raw, err = client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-				return essClient.DisableAlarm(disableAlarmRequest)
-			})
-			if err != nil {
+			if err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+				raw, err = client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+					return essClient.DisableAlarm(disableAlarmRequest)
+				})
+				if err != nil {
+					if NeedRetry(err) {
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			}); err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), disableAlarmRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
 			addDebug(disableAlarmRequest.GetActionName(), raw)
@@ -406,10 +440,20 @@ func resourceAliyunEssAlarmDelete(d *schema.ResourceData, meta interface{}) erro
 	request := ess.CreateDeleteAlarmRequest()
 	request.AlarmTaskId = d.Id()
 	request.RegionId = client.RegionId
-	raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-		return essClient.DeleteAlarm(request)
-	})
-	if err != nil {
+	var raw interface{}
+	var err error
+	if err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err = client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+			return essClient.DeleteAlarm(request)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	}); err != nil {
 		if IsExpectedErrors(err, []string{"404"}) {
 			return nil
 		}
