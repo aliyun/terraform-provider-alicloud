@@ -135,6 +135,12 @@ The following attributes are exported:
     * `type` - Domain Type
   * `enable` - enable
   * `endpoint_type` - Network Access Endpoint Type
+  * `status` - (Available since v1.292.0) The status of the network access endpoint.
+  * `acl_enable` - (Available since v1.292.0) Whether access control is enabled for the network access endpoint.
+  * `linked_vpcs` - (Available since v1.292.0) The list of VPCs linked to the network access endpoint.
+    * `vpc_id` - The ID of the linked VPC.
+  * `acl_entries` - (Available since v1.292.0) The list of access control entries of the network access endpoint.
+    * `entry` - The access control entry.
 * `region_id` - RegionId
 * `status` - Instance Status
 
