@@ -1,0 +1,88 @@
+name: Testing Coverage Rate Checks
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+    branches:
+      - master
+      - release/v2
+    paths:
+      - .github/workflows/testing-coverage-rate.yml
+      - .go-version
+      - alicloud/*.go
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  route:
+    permissions:
+      checks: read
+      pull-requests: read
+    runs-on: terraform-ci-policy
+    timeout-minutes: 3
+    outputs:
+      classification: ${{ steps.select.outputs.classification }}
+      runner: ${{ steps.select.outputs.runner }}
+    steps:
+      - name: Select runner
+        id: select
+        uses: aliyun/terraform-provider-alicloud/.github/actions/terraform-ci-select-policy@6cee1fff3bc9f430dc88bf19794a803ec20120c6
+
+  TestingCoverageRate:
+    needs: route
+    runs-on: ${{ fromJSON(needs.route.outputs.runner) }}
+    permissions:
+      contents: read
+    steps:
+      - name: Check out event commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Resolve change range
+        id: change-range
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          PUSH_BASE_SHA: ${{ github.event.before }}
+          CI_BASE_REPOSITORY_URL: https://github.com/${{ github.repository }}.git
+          CI_BASE_REF: ${{ github.ref_name }}
+        run: scripts/ci/resolve-change-range.sh >> "$GITHUB_OUTPUT"
+      - name: Setup Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: .go-version
+          cache: false
+      - name: Resolve Go cache paths
+        id: go-cache
+        shell: bash
+        run: |
+          echo "module=$(go env GOMODCACHE)" >> "$GITHUB_OUTPUT"
+          echo "build=$(go env GOCACHE)" >> "$GITHUB_OUTPUT"
+      - name: Restore trusted Go cache
+        if: ${{ needs.route.outputs.classification == 'trusted' }}
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ${{ steps.go-cache.outputs.module }}
+            ${{ steps.go-cache.outputs.build }}
+          key: provider-go-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.go-version') }}-${{ hashFiles('**/go.sum') }}
+      - name: Checking testing coverage rate
+        env:
+          DIFF_BASE: ${{ steps.change-range.outputs.diff_base }}
+          DIFF_HEAD: ${{ steps.change-range.outputs.diff_head }}
+        run: |
+          git diff "$DIFF_BASE" "$DIFF_HEAD" > diff.out
+          go run scripts/testing/testing_coverage_rate_check.go -fileNames="diff.out"
