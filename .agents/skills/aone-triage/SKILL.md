@@ -51,7 +51,7 @@ a1 skill install a1@0.28.0
 bash bootstrap/aone-get.sh <id>                    # 3h 缓存
 bin/a1id -- project workitem comment list <id>
 bin/a1id -- project workitem activity <id>         # 可选,看流转
-bash bootstrap/aone-image-extract.sh <id>          # 附件截图→本地,skill 自识别
+bash bootstrap/aone-image-extract.sh <id>          # 附件+正文内嵌截图→本地,skill 自识别
 ```
 
 从返回 JSON 抽:`workitemType` / `status` / `assignedTo` / `priority` / `space`(= 所属池)/ `涉及云产品(140097)` / `工单ID(104264)` / `description` **全文**(尤其末段,常藏真实诉求)/ `creator` / `计划截止日期(80)`。
