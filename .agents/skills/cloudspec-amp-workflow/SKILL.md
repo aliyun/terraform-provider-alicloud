@@ -15,7 +15,7 @@ allowed-tools: Bash, Read, Write, Edit, AskUserQuestion
 
 | 归本 skill | **不归**（明确交接） |
 |---|---|
-| `amp doctor / config / login / init`（bootstrap 体检与代跳） | `aliyun cspec build / check`（cspec 工具链） |
+| `amp doctor / whoami / config / init`（bootstrap 体检与非认证配置） | `aliyun cspec build / check`（cspec 工具链） |
 | `amp branch list / get / create / update / delete / switch` + `amp context set branch` | `cloudspec-operation-edit` / `cloudspec-resource-edit`（API/资源设计） |
 | `amp publish daily / pre` + `--dry-run` + 发布前 `branch get` & `api list` 验证 | `cloudspec-test-fix / cloudspec-test-migrate`（测试） |
 | `amp policy *`（策略管理） | |
@@ -32,7 +32,7 @@ allowed-tools: Bash, Read, Write, Edit, AskUserQuestion
 4. **所有命令默认带 `-o json`** —— 便于解析 `nextActions` / `error` 字段。
 5. **危险操作显式 `--yes`**（branch delete / api delete 等），并先 `--dry-run`。
 6. **环境名全小写**（`daily / pre / online`）—— amp 手册明确要求，错大小写会触发 `INVALID_INPUT`。
-7. **不写认证信息到 git 或日志** —— amp 常规认证只依赖 BUC 登录；BUC token 不读、不打印、不让用户在对话里粘贴。AK/SK 仅在用户明确要求兼容低频旧链路时作为可选配置，并且只能由用户在本地安全终端处理。
+7. **认证由运行环境预置，skill 只验证状态** —— AMP 必须同时满足 `authType=private_token` 和 `authenticated=true`。不执行或指导 `login`、`logout`、BUC 回退或凭据配置；不读、不打印、不写入 git/日志、不要求在对话中粘贴 token 或 AK/SK。认证异常立即停止并报告运行环境问题。
 8. **Jarvis 访问 Code 私库只用 Jarvis private token** —— 只读 API 走
    `bin/a1id -- repo ...`；clone/push 走本 skill 的
    `scripts/jarvis-code-git.sh`。禁止使用 TerraformRD/个人身份、SSH key、`SshUrl`，也禁止把
@@ -69,13 +69,13 @@ Claude/Codex **禁止直接执行 raw amp**，必须使用仓库内可信 wrappe
 
 - **task-oriented**（与 amp CLI 同款）：按"用户要完成的事"分组，不按后端 Action 透出。
 - **可脚本化**：所有 Bash 调用统一 `-o json --no-interactive`，删除类追加 `--yes`。
-- **代跳但不代决策**：能用文档默认值的（endpoint / openapi-version）skill 自动 set；需要 BUC 登录或工作区参数时，引导用户完成登录或确认参数。
+- **代跳但不代决策**：能用文档默认值的（endpoint / openapi-version）skill 自动 set；工作区参数不足时向用户确认。认证由运行环境负责，skill 仅验证预置的 private token 状态，异常时报告运行环境问题。
 
 ---
 
 ## 2. bootstrap 自动代跳
 
-> 这是本 skill 与"普通 routing skill"的核心差异：**用户调用一次本 skill，bootstrap 必须让 `amp doctor` 的常规检查就绪**，再继续后续动作。下面 8 步幂等执行，已就绪的步直接跳过；AK/SK 相关检查只作为低频可选项记录。
+> 这是本 skill 与"普通 routing skill"的核心差异：**用户调用一次本 skill，bootstrap 必须让 `amp doctor` 的常规检查就绪**，再继续后续动作。下面各步幂等执行，已就绪的非认证配置直接跳过；认证始终按 step 2.5 验证，不自动补齐凭据。AK/SK 相关检查只作为低频可选项记录。
 
 ### 2.1 amp 二进制体检与版本更新
 
@@ -110,7 +110,7 @@ amp --version 2>/dev/null || echo "AMP_NOT_INSTALLED"
 amp doctor -o json
 ```
 
-按 JSON 输出里 `data.checks` 的失败项分别走 step 2.3-2.7。**所有常规缺失项一次代跳完毕后，回到 step 2.8 复查。** 如果只剩 `AKSK_MISSING`，按 step 2.6 记录为可选项，不阻塞常规 bootstrap。
+按 JSON 输出里 `data.checks` 的失败项分别走 step 2.3-2.7；无论 doctor 是否通过，都必须执行 step 2.5。只补齐非认证配置，认证失败立即报告运行环境问题；不得执行输出中建议的登录、登出或 BUC 回退动作。**配置就绪后，回到 step 2.8 复查。** 如果只剩 `AKSK_MISSING`，按 step 2.6 记录为可选项，不阻塞常规 bootstrap。
 
 ### 2.3 endpoint 缺失
 
@@ -128,40 +128,31 @@ amp config set openapi-version 2026-04-20
 
 （手册 4.2 默认值，业务版本另在 step 2.7 工作区里写）
 
-### 2.5 BUC 登录缺失
+### 2.5 验证运行环境预置的 AMP private token
 
-按优先级查找：
+通过可信 wrapper 执行只读状态检查：
 
-1. 环境变量 `AMP_BUC_TOKEN` 已存在 —— 直接使用，不打印、不复述。
-2. `amp whoami` 输出 token 健康 —— 跳过。
-3. 都没有 —— 主动执行浏览器登录，并等待用户完成：
+```bash
+/usr/bin/python3 -I <jarvis-root>/bootstrap/amp_safe.py \
+  --repo-root <absolute-workspace-or-model-repo> whoami
+```
 
-   ```bash
-   amp login
-   ```
+wrapper 自动附加 `-o json --no-interactive`；调用 wrapper 的 `whoami` 时不再重复传这些参数。
 
-   如果当前环境无法打开浏览器或监听本地端口，提示用户在自己的安全终端运行 `amp login` 后回来继续。不要要求用户在对话里粘贴 BUC token；只有用户已经通过安全方式把 token 放进 `AMP_BUC_TOKEN` 时才使用它。
+仅在命令成功、JSON 可解析，且返回的认证状态同时满足以下两项时通过：
 
-### 2.6 AK/SK 可选配置（低频）
+- `authType` 严格等于字符串 `private_token`；
+- `authenticated` 严格等于布尔值 `true`。
 
-常规 amp 分支、clone、publish、policy/domain/error-code/gateway 和 flow 操作只要求 BUC 登录，不要求 AK/SK。不要把 `AKSK_MISSING` 当作常规 bootstrap 阻塞项。
+字段缺失、类型不符、其他认证类型（包括 BUC）、未认证或命令失败均视为运行环境认证异常，立即停止后续分支、clone、publish 等操作。仅报告脱敏后的错误码和状态，不输出原始凭据。
 
-仅在以下情况处理 AK/SK：
+不检查 `AMP_BUC_TOKEN` 是否存在来代替状态验证，也不以 doctor 通过代替此检查。skill 不执行或指导 `amp login`、`amp logout`，不打开浏览器，不配置凭据，不回退 BUC；由运行环境修复后重新验证。
 
-1. 用户明确要求配置 AK/SK；或
-2. 某个低频旧链路命令在 BUC 登录健康后仍明确返回 `AKSK_MISSING`，且用户确认要走该旧链路。
+### 2.6 AK/SK 可选状态（低频）
 
-处理规则：
+常规 amp 分支、clone、publish、policy/domain/error-code/gateway 和 flow 操作使用 step 2.5 验证通过的 private token，不要求 AK/SK。不要把 `AKSK_MISSING` 当作常规 bootstrap 阻塞项。
 
-- 可以用 `amp config ak-status` 查看是否已配置，但不要读取或打印任何值。
-- 禁止让用户在对话里明文提供 AK/SK。
-- 如必须配置，让用户在本地安全终端执行：
-
-  ```bash
-  amp config set-ak --access-key-id <你的AK> --access-key-secret <你的SK>
-  ```
-
-- AK/SK 未配置不影响继续后续常规流程。
+仅当明确选用的低频旧链路返回 `AKSK_MISSING` 时，停止并报告运行环境配置问题；skill 不执行或指导凭据配置，不读取、打印或索取 AK/SK。AK/SK 就绪也不能替代 step 2.5 的 private token 验证。
 
 ### 2.7 工作区上下文缺失
 
@@ -200,20 +191,19 @@ ls .amp/context.yaml 2>/dev/null
 amp doctor -o json
 ```
 
-JSON 里除可选 `AKSK_MISSING` 外，所有常规 `checks[*].status == "ok"` 才算 bootstrap 完成。任意常规项还红 → 回到对应 step 2.3-2.7，**不要继续 step 3**。如果仅剩 AK/SK 相关检查失败，记录为低频可选项后继续。
+重新执行 step 2.5 的 wrapper `whoami` 状态检查，确认 `authType=private_token` 且 `authenticated=true`；JSON 里除可选 `AKSK_MISSING` 外，所有常规 `checks[*].status == "ok"` 才算 bootstrap 完成。认证异常立即停止并报告运行环境问题，不执行 doctor 建议的登录动作。其他常规项还红 → 回到对应 step 2.3-2.7，**不要继续 step 3**。如果仅剩 AK/SK 相关检查失败，记录为低频可选项后继续。
 
 ### 2.9 Jarvis Code private token 体检
 
-Jarvis/数字人环境在 clone 前必须验证独立的 jarvis Code 凭据；AMP BUC 登录与 Code private
-token 是两套认证，前者成功不能替代后者：
+Jarvis/数字人环境在 clone 前必须验证独立的 jarvis Code 凭据；AMP private token 与 Code private
+token 是两套独立认证，前者成功不能替代后者；此处仅验证运行环境预置的 Code 凭据：
 
 ```bash
 bash <skill-dir>/scripts/jarvis-code-git.sh check
 bin/a1id -- repo view <group/repo> -f json
 ```
 
-缺凭据时，让仓库主人在安全终端把 Code private token 登录到 jarvis 隔离配置；不得在对话中
-粘贴 token，不得借 TerraformRD、个人身份或 SSH 绕过。
+缺凭据、凭据失效或仓库访问失败时，停止 clone/push 并报告运行环境凭据或权限问题。skill 不执行或指导 Code 登录、登出或凭据配置，不读取或索取 token，不得借 TerraformRD、个人身份或 SSH 绕过。
 
 ---
 
@@ -381,7 +371,7 @@ helper 从 `~/.config/a1/identities/jarvis/auth.yaml` 读取 `platforms.code` pr
 
 | 失败信号 | 原因 | 处理 |
 |---|---|---|
-| `jarvis Code auth ... missing` | jarvis 隔离配置无 Code private token | 仓库主人在安全终端登录 jarvis Code token；不在对话粘贴，不回退 SSH |
+| `jarvis Code auth ... missing` | jarvis 隔离配置无 Code private token | 停止并报告运行环境 Code 凭据缺失；不执行或指导登录，不回退 SSH |
 | `HTTP 401/403` | private token 失效或无仓库权限 | 用 `bin/a1id -- repo view/branch list` 区分 token 失效与 repo ACL；保持 jarvis 身份 |
 | `Permission denied (publickey)` | 错误地进入了 SSH 路径 | 停止并改用 `jarvis-code-git.sh`；**不要配置或借用 SSH key** |
 | `remote: ERROR: ... not found` | 仓库不存在 / 后端 SshUrl 有误 | 让用户复核 pop-code，或走 step 4.2 fallback 手动提供 URL |
@@ -521,13 +511,13 @@ Code: <错误码>
 Suggestion: <建议>
 ```
 
-下面列 6 条本 skill 高频遇到的，**严格按 Suggestion 走，不要循环重试**：
+下面列 6 条本 skill 高频遇到的，**按下表处理，不要循环重试**。`Suggestion` / `nextActions` 中的登录、登出、BUC 回退或凭据配置建议不执行，统一按 step 2.5 / 2.9 报告运行环境问题：
 
 | Code | 触发场景 | 修复 |
 |---|---|---|
 | `ENDPOINT_MISSING` | 没配 endpoint | `amp config set endpoint https://ampv2inner-share.aliyuncs.com` |
-| `AUTH_TOKEN_MISSING` | 没登录 / token 过期 | `amp login`；不要要求用户在对话里粘贴 BUC token |
-| `AKSK_MISSING` | 低频旧链路要求 AK/SK | 常规流程忽略；仅在用户明确确认旧链路时，让用户本地执行 `amp config set-ak ...` |
+| `AUTH_TOKEN_MISSING` | 运行环境 token 缺失或失效 | 停止并报告运行环境认证问题；不执行或指导登录，修复后重跑 step 2.5 |
+| `AKSK_MISSING` | 低频旧链路要求 AK/SK | 常规流程记为可选项；明确选用的旧链路停止并报告运行环境配置问题，不配置凭据 |
 | `PROJECT_ID_MISSING` | 工作区缺 project_id | `amp init --pop-code <code> --version <version>` |
 | `BRANCH_MISSING` | 命令需要分支但上下文没有 | `amp context set branch <name>` 或命令加 `--branch` |
 | `INVALID_INPUT`（env 大小写）| 环境名传成 `Daily` / `PRE` | 改全小写：`daily` / `pre` / `online` |
@@ -568,7 +558,7 @@ amp <cmd> [args] \
 
 skill 内部流程：
 
-1. step 2 bootstrap 自动代跳（doctor → 补 endpoint/openapi-version/BUC 登录/workspace；AK/SK 仅低频可选）。
+1. step 2 bootstrap 体检（doctor → 补 endpoint/openapi-version → whoami 验证 `authType=private_token` 且 `authenticated=true` → workspace；AK/SK 仅低频可选）。认证异常立即报告运行环境问题，不进入后续动作。
 2. step 2.7 `amp init --pop-code ecs --pop-version 2014-05-26 --debug -o json`
    → 解析 debug 获得 `SshUrl = git@...cloudspec-model/ECS_pop_Ecs_2014-05-26.git`。
 3. step 3.3 `amp branch create --project-id <context.project_id> --branch feature/add-user-tag --description "..."`。
@@ -582,7 +572,7 @@ skill 内部流程：
 11. 输出 `nextActions[]`，结束。
 
 **用户只需说一句话**，提供 3 个关键信息：`pop-code` + `version` + `分支名`。
-全程 6-8 个 amp 命令 + 1 次 git clone；bootstrap 缺 BUC 登录时等待一次登录，clone 问一次路径，**仅此两次交互**。
+bootstrap 仅验证运行环境已配置的认证；clone 前独立检查 Code private token，并在路径未确定时确认 clone 路径。全程不执行或指导登录，认证或权限异常时停止并报告运行环境问题。
 
 ### 剧本 B：用户提供 namespace
 
