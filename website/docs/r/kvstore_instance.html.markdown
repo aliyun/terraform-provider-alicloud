@@ -224,6 +224,7 @@ The following arguments are supported:
 * `security_group_id` - (Optional, Available since v1.76.0) The ID of security groups. Separate multiple security group IDs with commas (,), such as `sg-***,sg-***,sg-***`.
 * `private_ip`- (Optional, ForceNew) The internal IP address of the instance.
 * `backup_id`- (Optional, ForceNew) The ID of the backup file of the source instance.
+* `cluster_backup_id` - (Optional, ForceNew, Available since v1.290.0) The ID of the cluster backup set of the source instance. You can call the `DescribeClusterBackupList` operation to query cluster backup set IDs. It is valid when you clone a new instance from a cluster-architecture instance that supports cluster backup sets, and it replaces the need to list per-shard backup IDs in `backup_id`. It must be used together with `srcdb_instance_id`.
 * `srcdb_instance_id`- (Optional, ForceNew, Available since v1.101.0) The ID of the source instance.
 * `restore_time`- (Optional, ForceNew, Available since v1.101.0) The point in time of a backup file.
 * `vpc_auth_mode`- (Optional) Only meaningful if instance_type is `Redis` and network type is VPC. Valid values: `Close`, `Open`. Default value: `Open`. `Close` means the redis instance can be accessed without authentication. `Open` means authentication is required.
@@ -239,6 +240,7 @@ The following arguments are supported:
 * `connection_string_prefix` - (Deprecated since v1.101.0) It has been deprecated from provider version 1.101.0 and resource `alicloud_kvstore_connection` instead.
 * `port` - (Optional, Int, Available since v1.94.0) It has been deprecated from provider version 1.101.0 and resource `alicloud_kvstore_connection` instead.
 * `order_type`- (Optional, Available since v1.101.0) Specifies a change type when you change the configuration of a subscription instance. Valid values: `UPGRADE`, `DOWNGRADE`. Default value: `UPGRADE`. `UPGRADE` means upgrades the configuration of a subscription instance. `DOWNGRADE` means downgrades the configuration of a subscription instance.
+* `auto_pay` - (Optional, Bool, Available since v1.290.0) Specifies whether to automatically pay the order generated when the instance specification is changed or when the billing method is converted. Valid values: `true`: automatically pays the order. `false`: does not automatically pay the order; you must pay it manually in the console. Default value: `true`. **NOTE:** It is valid only for subscription (`payment_type = "PrePaid"`) instances; pay-as-you-go instances do not generate orders.
 * `node_type`- (Deprecated since v1.120.1) Node type, valid values:
   - `MASTER_SLAVE`: High availability (dual copies)
   - `STAND_ALONE`: Single copy
@@ -248,6 +250,7 @@ The following arguments are supported:
 * `ssl_enable`- (Optional, Available since v1.101.0) Modifies the SSL status. Valid values: `Disable`, `Enable` and `Update`.
   **NOTE:** This functionality is supported by Cluster mode (Redis 2.8, 4.0, 5.0) and Standard mode( Redis 2.8 only).
 * `force_upgrade`- (Optional, Bool, Available since v1.101.0) Specifies whether to forcibly change the type. Default value: `true`.
+* `force_trans` - (Optional, Bool, Available since v1.290.0) Specifies whether to skip the minor version check before changing the instance specification. Valid values: `false` (default): the system checks the current minor version of the instance before the specification change and reports an error if the minor version is too low; upgrade the minor version and retry. `true`: skips the check and directly performs the specification change. It is valid when `instance_class` changes.
 * `dedicated_host_group_id`- (Optional, ForceNew, Available since v1.101.0) The ID of the dedicated cluster. This parameter is required when you create a Tair (Redis OSS-Compatible) And Memcache (KVStore) Classic Instance in a dedicated cluster.
 * `coupon_no`- (Optional, Available since v1.101.0) The coupon code. **NOTE:** The default value `youhuiquan_promotion_option_id_for_blank` removed since v1.216.0, this can cause your status file to change even if it has not been modified, so please review your change plan before apply change plan.
 * `business_info`- (Optional, Available since v1.101.0) The ID of the event or the business information.
@@ -279,6 +282,7 @@ The following arguments are supported:
 * `is_auto_upgrade_open` - (Optional, Available since v1.228.0) Specifies whether to enable automatic minor version update. Valid values:
   - `1`: Enables automatic minor version update.
   - `0`: Disables automatic minor version update.
+* `minor_version` - (Optional, Available since v1.290.0) The minor version of the instance. Changing this attribute upgrades the instance to the specified minor version in place. If it is not specified, the latest minor version is used when the upgrade is triggered. **NOTE:** The minor version can only be upgraded, not downgraded; a newly created instance is always provisioned with the latest minor version. The current minor version is read back into this attribute.
 * `bandwidth` - (Optional, Int) The total bandwidth of the instance. **NOTE:** From version 1.232.0, `bandwidth` can be set. If the instance is a cluster instance, `bandwidth` must be divisible by the number of `shard_count` in the instance, and if the instance is a read/write splitting instance, `bandwidth` cannot be set.
 * `connection_string` - (Deprecated since v1.101.0) Indicates whether the address is a private endpoint.
 * `modify_mode`- (Removed since v1.216.0) The method of modifying the whitelist. **NOTE:** Field `modify_mode` has been removed from provider version 1.216.0.
@@ -289,7 +293,7 @@ The following arguments are supported:
 
 -> **NOTE:** The `private_ip` must be in the Classless Inter-Domain Routing (CIDR) block of the VSwitch to which the instance belongs.
 
--> **NOTE:** If you specify the `srcdb_instance_id` parameter, you must specify the `backup_id` or `restore_time` parameter.
+-> **NOTE:** If you specify the `srcdb_instance_id` parameter, you must specify one of the `backup_id`, `cluster_backup_id` or `restore_time` parameters.
 
 ### `parameters`
 
