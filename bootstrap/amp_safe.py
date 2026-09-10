@@ -778,7 +778,8 @@ def _child_environment(environ: Mapping[str, str]) -> dict[str, str]:
         "HOME": os.fspath(_account_home()),
         "PATH": "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
     }
-    for name in ("AMP_BUC_TOKEN", "LANG", "LC_ALL", "LC_CTYPE", "TZ"):
+    # Authentication is preconfigured in the account home; do not inject BUC.
+    for name in ("LANG", "LC_ALL", "LC_CTYPE", "TZ"):
         value = environ.get(name)
         if value:
             result[name] = value

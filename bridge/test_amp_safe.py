@@ -525,6 +525,22 @@ class AmpSafeTest(unittest.TestCase):
         self.assertEqual(child["PATH"],
                          "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin")
 
+    def test_amp_child_uses_account_home_without_inherited_buc_token(self):
+        self.environment.update({
+            "AMP_BUC_TOKEN": "stale-buc-token",
+            "HOME": "/tmp/untrusted-home",
+            "LANG": "en_US.UTF-8",
+        })
+        account_home = self.root / "account-home"
+        with mock.patch.object(amp_safe, "_account_home", return_value=account_home), \
+                mock.patch.object(amp_safe.subprocess, "run") as execute:
+            execute.return_value = SimpleNamespace(returncode=0)
+            self.assertEqual(self.run_amp("whoami"), 0)
+        child = execute.call_args.kwargs["env"]
+        self.assertNotIn("AMP_BUC_TOKEN", child)
+        self.assertEqual(child["HOME"], os.fspath(account_home))
+        self.assertEqual(child["LANG"], "en_US.UTF-8")
+
     def test_default_authorizer_calls_worker_with_exact_action_and_cwd(self):
         with mock.patch.object(
                 amp_safe.subprocess, "run",

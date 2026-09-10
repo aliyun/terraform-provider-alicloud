@@ -227,7 +227,7 @@ namespace: alicloud.{Product}.{PopCode}.v{PopVersion}
 
 - 创建 / 切换 / 删除 amp 分支（`amp branch *`）
 - 拉 cspec 源码仓库到本地（`git clone -b <branch> git@gitlab.alibaba-inc.com:cloudspec-model/<repo>.git`）
-- amp 工作区初始化 / 体检 / BUC 登录配置（`amp init` / `amp doctor` / `amp login`；`amp config set-ak` 仅低频可选）
+- amp 工作区初始化 / 体检 / 预置 private token 状态验证（遵循 `cloudspec-amp-workflow` 的可信 wrapper `whoami` 检查，必须同时满足 `authType=private_token` 且 `authenticated=true`；否则报告运行环境问题，不执行或指导登录、登出、BUC 回退或凭据配置）
 - 发布到 daily / pre（`amp publish *`）
 
 典型完整流程：用户先在 `cloudspec-amp-workflow` 里建分支 + clone 仓库，进入 cspec 工作区后回到本 skill 做 .cspec 编辑，编辑完成 + `aliyun cspec build` & `check` 全绿，再回到 `cloudspec-amp-workflow` 做 publish。

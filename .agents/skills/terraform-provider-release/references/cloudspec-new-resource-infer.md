@@ -140,6 +140,8 @@ ModelProvider: string
 
 ### 7. Build → commit → push → publish pre
 
+认证检查遵循 `cloudspec-amp-workflow`：wrapper 自动附加 `-o json --no-interactive`，只有 `authType=private_token` 且 `authenticated=true` 才继续。字段缺失、类型不符、命令失败或其他认证类型均停止并报告运行环境问题；不执行或指导登录、登出、BUC 回退或凭据配置。下列后续 `amp ...` 为原生 CLI 参数参考，Agent 仍须按该 skill 通过可信 wrapper 执行。
+
 ```bash
 cd "$CSPEC_DIR"
 git switch -c infer-<resource>     # 或复用工单绑定的 feature 分支
@@ -148,7 +150,8 @@ git commit -m "feat(<Resource>): 新增 <Resource> 资源定义"
 git push origin HEAD
 
 # 用 cloudspec-amp-workflow 发预发
-amp login                          # 已登录跳过
+/usr/bin/python3 -I <jarvis-root>/bootstrap/amp_safe.py \
+  --repo-root "$CSPEC_DIR" whoami
 amp init --pop-code <PopCode> --pop-version <PopVersion> --branch <cspec_branch> --yes
 amp publish pre --release-mode single --dry-run --yes
 amp publish pre --release-mode single --yes
