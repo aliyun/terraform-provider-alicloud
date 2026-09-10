@@ -43,6 +43,10 @@ func resourceAliCloudEnsEip() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"ip_address": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"ens_region_id": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -149,6 +153,7 @@ func resourceAliCloudEnsEipRead(d *schema.ResourceData, meta interface{}) error 
 	d.Set("create_time", objectRaw["AllocationTime"])
 	d.Set("description", objectRaw["Description"])
 	d.Set("eip_name", objectRaw["Name"])
+	d.Set("ip_address", objectRaw["IpAddress"])
 	d.Set("ens_region_id", objectRaw["EnsRegionId"])
 	d.Set("internet_charge_type", objectRaw["InternetChargeType"])
 	d.Set("isp", objectRaw["Isp"])
