@@ -96,8 +96,20 @@ The following arguments are supported:
 * `enable_ssl` - (Optional, Bool, Available since v1.230.0) Specifies whether to enable SSL encryption. Default Value: `false`. Valid values: `true`, `false`.
 * `kernel_version` - (Optional, String, Available since v1.240.0) The minor version to which you want to update.
 * `switch_mode` - (Optional, Int, Available since v1.240.0) The time when to perform the update. Valid values:
-  - `0` (default): immediately performs the update. 
+  - `0` (default): immediately performs the update.
   - `1`: performs the update during the maintenance window.
+* `backup_set_id` - (Optional, ForceNew) The ID of the backup set. It is valid when `restore_type` is set to `BackupSet`.
+* `restore_type` - (Optional, ForceNew) The restore type of the cluster. Valid values: `BackupSet`, `BackupTime`.
+* `source_db_instance_name` - (Optional, ForceNew) The name of the source ADB cluster. It is valid when `restore_type` is set to `BackupTime`.
+* `restore_time` - (Optional, ForceNew) The point in time to restore the cluster. It is valid when `restore_type` is set to `BackupTime`. Format: `yyyy-MM-ddTHH:mm:ssZ`.
+* `storage_type` - (Optional, ForceNew) The storage type of the cluster.
+* `db_cluster_name` - (Optional) The name of the DBCluster.
+* `storage_resource` - (Optional) The storage resource specifications of the cluster.
+* `executor_count` - (Optional) The number of executors in the cluster.
+* `period_unit` - (Optional) The unit of the subscription period. It is valid when `payment_type` is `Subscription`. Valid values: `Year`, `Month`.
+* `db_cluster_ip_array_name` - (Optional) The name of the IP whitelist.
+* `db_cluster_ip_array_attribute` - (Optional) The attribute of the IP whitelist.
+* `modify_mode` - (Optional) The modification mode of the IP whitelist. Valid values: `Cover`, `Append`, `Delete`.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
   - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
   - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
