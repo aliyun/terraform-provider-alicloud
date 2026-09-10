@@ -1231,6 +1231,16 @@ func TestAccAliCloudVPCVPC_basic3113(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"system_route_table_route_propagation_enable": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"system_route_table_route_propagation_enable": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"vpc_name": name + "_update",
 				}),
 				Check: resource.ComposeTestCheckFunc(
