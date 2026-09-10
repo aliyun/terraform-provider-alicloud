@@ -100,6 +100,43 @@ func resourceAliCloudCloudFirewallVpcCenTrFirewall() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"firewall_vpc_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"firewall_vswitch_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"tr_attachment_zones": {
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"firewall_attachment_zone": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"firewall_service_mode": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"firewall_service_zones": {
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"lang": {
+				Type:      schema.TypeString,
+				Optional:  true,
+				Sensitive: true,
+			},
 		},
 	}
 }
@@ -140,6 +177,27 @@ func resourceAliCloudCloudFirewallVpcCenTrFirewallCreate(d *schema.ResourceData,
 		request["TrAttachmentMasterZone"] = v
 	}
 	request["FirewallVpcCidr"] = d.Get("firewall_vpc_cidr")
+	if v, ok := d.GetOk("firewall_vpc_id"); ok {
+		request["FirewallVpcId"] = v
+	}
+	if v, ok := d.GetOk("firewall_vswitch_id"); ok {
+		request["FirewallVswitchId"] = v
+	}
+	if v, ok := d.GetOk("tr_attachment_zones"); ok && len(v.([]interface{})) > 0 {
+		request["TrAttachmentZones"] = v
+	}
+	if v, ok := d.GetOk("firewall_attachment_zone"); ok {
+		request["FirewallAttachmentZone"] = v
+	}
+	if v, ok := d.GetOk("firewall_service_mode"); ok {
+		request["FirewallServiceMode"] = v
+	}
+	if v, ok := d.GetOk("firewall_service_zones"); ok && len(v.([]interface{})) > 0 {
+		request["FirewallServiceZones"] = v
+	}
+	if v, ok := d.GetOk("lang"); ok {
+		request["Lang"] = v
+	}
 	wait := incrementalWait(30*time.Second, 30*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPostWithEndpoint("Cloudfw", "2017-12-07", action, query, request, false, endpoint)
