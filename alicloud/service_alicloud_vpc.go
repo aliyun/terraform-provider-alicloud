@@ -1267,6 +1267,24 @@ func (s *VpcService) DescribeVpcDhcpOptionsSetAttachmentStateRefreshFunc(id stri
 	}
 }
 
+// DescribeVpcDhcpOptionsSetAttachmentDeleteStateRefreshFunc is the Delete
+// variant of the shared attachment refresh: when the VPC is no longer
+// associated the refresh returns a nil object, which lets WaitForState finish
+// through its resource-gone path instead of polling until the timeout.
+func (s *VpcService) DescribeVpcDhcpOptionsSetAttachmentDeleteStateRefreshFunc(id string) resource.StateRefreshFunc {
+	refreshFunc := s.DescribeVpcDhcpOptionsSetAttachmentStateRefreshFunc(id, []string{})
+	return func() (interface{}, string, error) {
+		object, status, err := refreshFunc()
+		if err != nil {
+			return object, status, err
+		}
+		if status == "" {
+			return nil, "", nil
+		}
+		return object, status, nil
+	}
+}
+
 func (s *VpcService) DescribeVpcNatIpCidr(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	client := s.client
