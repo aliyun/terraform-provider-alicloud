@@ -224,17 +224,17 @@ func NeedRetry(err error) bool {
 		if strings.Contains(*e.Message, "Client.Timeout") {
 			return true
 		}
-		if *e.Code == ServiceUnavailable || *e.Code == "Rejected.Throttling" || throttlingRegex.MatchString(*e.Code) || codeRegex.MatchString(*e.Message) {
+		if *e.Code == ServiceUnavailable || *e.Code == "Rejected.Throttling" || *e.Code == "InvalidIpStatus.HasBeenUsedByForwardEntry" || throttlingRegex.MatchString(*e.Code) || codeRegex.MatchString(*e.Message) {
 			return true
 		}
 	}
 
 	if e, ok := err.(*errors.ServerError); ok {
-		return e.ErrorCode() == ServiceUnavailable || e.ErrorCode() == "Rejected.Throttling" || throttlingRegex.MatchString(e.ErrorCode()) || codeRegex.MatchString(e.Message())
+		return e.ErrorCode() == ServiceUnavailable || e.ErrorCode() == "Rejected.Throttling" || e.ErrorCode() == "InvalidIpStatus.HasBeenUsedByForwardEntry" || throttlingRegex.MatchString(e.ErrorCode()) || codeRegex.MatchString(e.Message())
 	}
 
 	if e, ok := err.(*common.Error); ok {
-		return e.Code == ServiceUnavailable || e.Code == "Rejected.Throttling" || throttlingRegex.MatchString(e.Code) || codeRegex.MatchString(e.Message)
+		return e.Code == ServiceUnavailable || e.Code == "Rejected.Throttling" || e.Code == "InvalidIpStatus.HasBeenUsedByForwardEntry" || throttlingRegex.MatchString(e.Code) || codeRegex.MatchString(e.Message)
 	}
 
 	return false
