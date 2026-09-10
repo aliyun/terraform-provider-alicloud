@@ -2794,6 +2794,130 @@ func (s *EsaServiceV2) DescribeEsaSiteDeliveryTask(id string) (object map[string
 	return response, nil
 }
 
+// ListEsaSiteDeliveryTasks <<< Encapsulated list interface for Esa SiteDeliveryTask.
+// GetSiteDeliveryTask reports an absent task as HTTP 400 InternalError instead of 404, so existence
+// and destroy checks are answered by a fully successful, fully paginated ListSiteDeliveryTasks
+// instead. ListSiteDeliveryTasks returns only live (is_deleted=0) tasks and includes offline ones.
+func (s *EsaServiceV2) ListEsaSiteDeliveryTasks(siteId string) (tasks []map[string]interface{}, err error) {
+	return s.listEsaSiteDeliveryTasks(siteId, s.fetchEsaSiteDeliveryTasksPage)
+}
+
+// listEsaSiteDeliveryTasks walks every page so that a caller can only conclude absence from a fully
+// successful result. The page fetcher is a parameter so the aggregation can be verified without a
+// live endpoint.
+func (s *EsaServiceV2) listEsaSiteDeliveryTasks(siteId string, fetch func(siteId string, pageNumber int) (map[string]interface{}, error)) ([]map[string]interface{}, error) {
+	tasks := make([]map[string]interface{}, 0)
+	for pageNumber := 1; ; pageNumber++ {
+		response, err := fetch(siteId, pageNumber)
+		if err != nil {
+			return nil, WrapErrorf(err, DefaultErrorMsg, siteId, "ListSiteDeliveryTasks", AlibabaCloudSdkGoERROR)
+		}
+		pageTasks, err := esaSiteDeliveryTaskPageTasks(response)
+		if err != nil {
+			return nil, WrapErrorf(err, DefaultErrorMsg, siteId, "ListSiteDeliveryTasks", AlibabaCloudSdkGoERROR)
+		}
+		tasks = append(tasks, pageTasks...)
+		if len(pageTasks) < PageSizeLarge {
+			return tasks, nil
+		}
+	}
+}
+
+func (s *EsaServiceV2) fetchEsaSiteDeliveryTasksPage(siteId string, pageNumber int) (map[string]interface{}, error) {
+	client := s.client
+	action := "ListSiteDeliveryTasks"
+	request := make(map[string]interface{})
+	query := map[string]interface{}{
+		"SiteId":     siteId,
+		"PageNumber": pageNumber,
+		"PageSize":   PageSizeLarge,
+	}
+	var response map[string]interface{}
+	var err error
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
+		if err != nil {
+			if esaSiteDeliveryTaskListRetryable(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return nil, err
+	}
+	return response, nil
+}
+
+// esaSiteDeliveryTaskListRetryable reports whether a ListSiteDeliveryTasks failure may be retried.
+// Only the service's transient backend failure is retried; a persistent InternalError with another
+// message, InvalidParameter and every other 4xx reach the caller instead of being retried away or
+// mistaken for absence.
+func esaSiteDeliveryTaskListRetryable(err error) bool {
+	return esaSiteDeliveryTaskTransientInternalError(err) || NeedRetry(err)
+}
+
+// esaSiteDeliveryTaskTransientInternalError reports the service's transient backend failure: the
+// InternalError code together with the official "please try again later" hint. The same code with a
+// different message is a persistent failure and must not be retried.
+func esaSiteDeliveryTaskTransientInternalError(err error) bool {
+	if !IsExpectedErrors(err, []string{"InternalError"}) {
+		return false
+	}
+	return IsExpectedErrorsMessage(err, "please try again later") ||
+		strings.Contains(strings.ToLower(err.Error()), "please try again later")
+}
+
+// esaSiteDeliveryTaskPageTasks validates one ListSiteDeliveryTasks page before the caller decides
+// existence or pagination. A missing or mistyped Tasks field, or an element that is not an object,
+// is an error: treating it as an empty or shortened page would let Read clear state, let Delete skip
+// an existing task and let CheckDestroy pass without proof.
+func esaSiteDeliveryTaskPageTasks(response map[string]interface{}) ([]map[string]interface{}, error) {
+	pageRaw, err := jsonpath.Get("$.Tasks", response)
+	if err != nil {
+		return nil, fmt.Errorf("ListSiteDeliveryTasks response has no readable Tasks: %s", err)
+	}
+	items, ok := pageRaw.([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("ListSiteDeliveryTasks response Tasks has unexpected type %T", pageRaw)
+	}
+	tasks := make([]map[string]interface{}, 0, len(items))
+	for index, item := range items {
+		task, ok := item.(map[string]interface{})
+		if !ok {
+			return nil, fmt.Errorf("ListSiteDeliveryTasks response Tasks[%d] has unexpected type %T", index, item)
+		}
+		tasks = append(tasks, task)
+	}
+	return tasks, nil
+}
+
+// EsaSiteDeliveryTaskExists reports whether taskName is present in a fully successful and fully
+// paginated ListSiteDeliveryTasks result for siteId. A failed List is returned as an error and is
+// never treated as absence.
+func (s *EsaServiceV2) EsaSiteDeliveryTaskExists(siteId, taskName string) (bool, error) {
+	tasks, err := s.ListEsaSiteDeliveryTasks(siteId)
+	if err != nil {
+		return false, err
+	}
+	return esaSiteDeliveryTaskListed(tasks, taskName), nil
+}
+
+// esaSiteDeliveryTaskListed matches the exact task name inside one site's full task list; other
+// tasks on the same site, including offline ones, do not affect the result.
+func esaSiteDeliveryTaskListed(tasks []map[string]interface{}, taskName string) bool {
+	for _, task := range tasks {
+		if fmt.Sprint(task["TaskName"]) == taskName {
+			return true
+		}
+	}
+	return false
+}
+
 func (s *EsaServiceV2) EsaSiteDeliveryTaskStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.EsaSiteDeliveryTaskStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaSiteDeliveryTask)
 }
