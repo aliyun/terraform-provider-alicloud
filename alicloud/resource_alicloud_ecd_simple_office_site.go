@@ -37,6 +37,12 @@ func resourceAlicloudEcdSimpleOfficeSite() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"cloud_box_office_site": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
 			"cidr_block": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -70,6 +76,16 @@ func resourceAlicloudEcdSimpleOfficeSite() *schema.Resource {
 				Computed: true,
 				Optional: true,
 			},
+			"need_verify_login_risk": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
+			"need_verify_zero_device": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
 			"office_site_name": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -78,6 +94,17 @@ func resourceAlicloudEcdSimpleOfficeSite() *schema.Resource {
 				Type:     schema.TypeBool,
 				Computed: true,
 				Optional: true,
+			},
+			"verify_code": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"vpc_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -118,6 +145,18 @@ func resourceAlicloudEcdSimpleOfficeSiteCreate(d *schema.ResourceData, meta inte
 
 	if v, ok := d.GetOk("desktop_access_type"); ok {
 		request["DesktopAccessType"] = v
+	}
+	if v, ok := d.GetOkExists("cloud_box_office_site"); ok {
+		request["CloudBoxOfficeSite"] = v
+	}
+	if v, ok := d.GetOk("verify_code"); ok {
+		request["VerifyCode"] = v
+	}
+	if v, ok := d.GetOkExists("need_verify_zero_device"); ok {
+		request["NeedVerifyZeroDevice"] = v
+	}
+	if v, ok := d.GetOk("vpc_type"); ok {
+		request["VpcType"] = v
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
@@ -170,6 +209,10 @@ func resourceAlicloudEcdSimpleOfficeSiteRead(d *schema.ResourceData, meta interf
 	d.Set("mfa_enabled", object["MfaEnabled"])
 	d.Set("enable_internet_access", object["EnableInternetAccess"])
 	d.Set("sso_enabled", object["SsoEnabled"])
+	d.Set("need_verify_login_risk", object["NeedVerifyLoginRisk"])
+	d.Set("cloud_box_office_site", object["CloudBoxOfficeSite"])
+	d.Set("need_verify_zero_device", object["NeedVerifyZeroDevice"])
+	d.Set("vpc_type", object["VpcType"])
 	d.Set("status", object["Status"])
 	return nil
 }
@@ -290,6 +333,18 @@ func resourceAlicloudEcdSimpleOfficeSiteUpdate(d *schema.ResourceData, meta inte
 	if v, ok := d.GetOk("office_site_name"); ok {
 		request["OfficeSiteName"] = v
 	}
+	if !d.IsNewResource() && d.HasChange("need_verify_login_risk") {
+		update = true
+		if v, ok := d.GetOkExists("need_verify_login_risk"); ok {
+			request["NeedVerifyLoginRisk"] = v
+		}
+	}
+	if !d.IsNewResource() && d.HasChange("need_verify_zero_device") {
+		update = true
+		if v, ok := d.GetOkExists("need_verify_zero_device"); ok {
+			request["NeedVerifyZeroDevice"] = v
+		}
+	}
 	if update {
 		request["RegionId"] = client.RegionId
 		action := "ModifyOfficeSiteAttribute"
@@ -311,6 +366,8 @@ func resourceAlicloudEcdSimpleOfficeSiteUpdate(d *schema.ResourceData, meta inte
 		}
 		d.SetPartial("desktop_access_type")
 		d.SetPartial("office_site_name")
+		d.SetPartial("need_verify_login_risk")
+		d.SetPartial("need_verify_zero_device")
 	}
 	d.Partial(false)
 	return resourceAlicloudEcdSimpleOfficeSiteRead(d, meta)
