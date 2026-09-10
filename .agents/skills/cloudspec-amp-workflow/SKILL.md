@@ -3,7 +3,7 @@ name: cloudspec-amp-workflow
 description: |
   镇元/amp 项目的唯一入口技能。无论用户是要初始化项目、新建API、创建操作、拉代码、还是发布，都必须先经过本 skill。本 skill 负责完整生命周期：amp bootstrap → 分支管理 → git clone cspec 仓库 → API/接口定义编辑 → 发布 daily/pre。同时支持 policy/domain/error-code/gateway 管理。
   🔴 路由规则：只要用户消息包含以下任意关键词，必须使用本 skill：初始化、镇元、namespace、发布、publish、clone、拉代码、拉到本地、推送远程、新建API、新增API、API接口定义、接口定义、创建操作、IDL、IDL定义。
-  Triggers: "amp", "amp branch", "amp publish", "建分支", "创建分支", "切分支", "分支管理", "发布到 daily", "发布到 pre", "publish daily", "publish pre", "集成发布", "amp 流程", "amp 初始化", "amp init", "amp doctor", "amp login", "工作区初始化", "镇元", "镇元项目", "镇元 cli", "初始化项目", "初始化镇元", "namespace:", "namespace", "amp workflow", "克隆 cspec", "克隆仓库", "clone 仓库", "git clone", "cspec 仓库", "cspec 源码", "拉代码", "拉源码", "拉到本地", "cloudspec-model", "发布预发", "推送远程", "新建API", "create API", "新建API并发布", "初始化并新建API", "API接口定义", "接口定义", "API定义", "新增API", "创建操作", "IDL", "IDL定义", "CloudSpec IDL", "amp policy", "amp domain", "amp error-code", "amp gateway", "策略管理", "域名管理", "错误码管理", "网关".
+  Triggers: "amp", "amp branch", "amp publish", "建分支", "创建分支", "切分支", "分支管理", "发布到 daily", "发布到 pre", "publish daily", "publish pre", "集成发布", "amp 流程", "amp 初始化", "amp init", "amp doctor", "amp whoami", "工作区初始化", "镇元", "镇元项目", "镇元 cli", "初始化项目", "初始化镇元", "namespace:", "namespace", "amp workflow", "克隆 cspec", "克隆仓库", "clone 仓库", "git clone", "cspec 仓库", "cspec 源码", "拉代码", "拉源码", "拉到本地", "cloudspec-model", "发布预发", "推送远程", "新建API", "create API", "新建API并发布", "初始化并新建API", "API接口定义", "接口定义", "API定义", "新增API", "创建操作", "IDL", "IDL定义", "CloudSpec IDL", "amp policy", "amp domain", "amp error-code", "amp gateway", "策略管理", "域名管理", "错误码管理", "网关".
 allowed-tools: Bash, Read, Write, Edit, AskUserQuestion
 ---
 
