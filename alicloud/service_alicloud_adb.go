@@ -487,13 +487,22 @@ func (s *AdbService) DescribeAdbBackupPolicy(id string) (policy *adb.DescribeBac
 	return raw.(*adb.DescribeBackupPolicyResponse), nil
 }
 
-func (s *AdbService) ModifyAdbBackupPolicy(clusterId, backupTime, backupPeriod string) error {
+func (s *AdbService) ModifyAdbBackupPolicy(clusterId, backupTime, backupPeriod, enableBackupLog string, logBackupRetentionPeriod int) error {
 
 	request := adb.CreateModifyBackupPolicyRequest()
 	request.RegionId = s.client.RegionId
 	request.DBClusterId = clusterId
 	request.PreferredBackupPeriod = backupPeriod
 	request.PreferredBackupTime = backupTime
+	// EnableBackupLog and LogBackupRetentionPeriod are only sent when the user
+	// explicitly configures them, so that an unset Optional field does not
+	// overwrite the cluster's existing log backup settings.
+	if enableBackupLog != "" {
+		request.EnableBackupLog = enableBackupLog
+	}
+	if logBackupRetentionPeriod > 0 {
+		request.LogBackupRetentionPeriod = requests.NewInteger(logBackupRetentionPeriod)
+	}
 
 	raw, err := s.client.WithAdbClient(func(adbClient *adb.Client) (interface{}, error) {
 		return adbClient.ModifyBackupPolicy(request)
