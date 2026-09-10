@@ -280,6 +280,31 @@ func resourceAlicloudAlidnsGtmInstanceRead(d *schema.ResourceData, meta interfac
 			}
 		}
 	}
+	// QueryAvailableInstances returns BSS order parameters (renewal_status,
+	// health_check_task_count, sms_notification_count) that DescribeDnsGtmInstance
+	// does not surface, so import verification can cover these ForceNew attributes
+	// instead of ignoring them. Best-effort: a BSS lookup failure is logged but
+	// does not fail Read, since the instance is already described via the Alidns API above.
+	bssOpenApiService := BssOpenApiService{client}
+	if bssObject, err := bssOpenApiService.QueryAvailableInstances(d.Id(), "", "dns", "dns_gtm_public_cn", "dns", "dns_gtm_public_intl"); err == nil {
+		if v, ok := bssObject["RenewStatus"]; ok {
+			d.Set("renewal_status", v)
+		}
+		if parameters, ok := bssObject["Parameter"].([]interface{}); ok {
+			for _, p := range parameters {
+				if pm, ok := p.(map[string]interface{}); ok {
+					switch fmt.Sprint(pm["Code"]) {
+					case "HealthcheckTaskCount":
+						d.Set("health_check_task_count", formatInt(pm["Value"]))
+					case "SmsNotificationCount":
+						d.Set("sms_notification_count", formatInt(pm["Value"]))
+					}
+				}
+			}
+		}
+	} else {
+		log.Printf("[WARN] QueryAvailableInstances for alicloud_alidns_gtm_instance %s failed: %s", d.Id(), err)
+	}
 	return nil
 }
 func resourceAlicloudAlidnsGtmInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -333,7 +358,7 @@ func resourceAlicloudAlidnsGtmInstanceUpdate(d *schema.ResourceData, meta interf
 	}
 	if update {
 		if v, ok := d.GetOk("lang"); ok {
-			request["Lang"] = v
+			switchDnsGtmInstanceStrategyModeRequest["Lang"] = v
 		}
 		action := "SwitchDnsGtmInstanceStrategyMode"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -348,7 +373,7 @@ func resourceAlicloudAlidnsGtmInstanceUpdate(d *schema.ResourceData, meta interf
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		addDebug(action, response, switchDnsGtmInstanceStrategyModeRequest)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}

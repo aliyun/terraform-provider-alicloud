@@ -18,7 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudAlidnsGtmInstance_basic0(t *testing.T) {
+func TestAccAliCloudAlidnsGtmInstance_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_alidns_gtm_instance.default"
 	checkoutSupportedRegions(t, true, connectivity.AlidnsSupportRegions)
@@ -183,10 +183,63 @@ func TestAccAlicloudAlidnsGtmInstance_basic0(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"lang", "force_update", "health_check_task_count", "sms_notification_count", "period", "renewal_status"},
+				Config: testAccConfig(map[string]interface{}{
+					"lang":              "zh",
+					"force_update":      true,
+					"renew_period":      1,
+					"public_cname_mode": "CUSTOM",
+					"public_rr":         "www",
+					"public_zone_name":  "${var.domain_name}",
+					"alert_config": []map[string]interface{}{
+						{
+							"sms_notice":      "true",
+							"notice_type":     "ADDR_ALERT",
+							"email_notice":    "false",
+							"dingtalk_notice": "false",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"lang":              "zh",
+						"force_update":      "true",
+						"public_cname_mode": "CUSTOM",
+						"public_rr":         "www",
+						"alert_config.#":    "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"public_cname_mode":       "SYSTEM_ASSIGN",
+					"public_rr":               "api",
+					"public_zone_name":        "test.${var.domain_name}",
+					"public_user_domain_name": "test.${var.domain_name}",
+					"alert_config": []map[string]interface{}{
+						{
+							"sms_notice":      "false",
+							"notice_type":     "ADDR_ALERT",
+							"email_notice":    "true",
+							"dingtalk_notice": "true",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"public_rr": "api",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				// health_check_task_count/sms_notification_count/renewal_status are
+				// ForceNew BSS order parameters now written back via
+				// QueryAvailableInstances in Read, so they no longer need to be
+				// ignored. lang/force_update/period are non-ForceNew attributes
+				// without a readback path, so import verification skips them.
+				ImportStateVerifyIgnore: []string{"lang", "force_update", "period"},
 			},
 		},
 	})
@@ -584,4 +637,65 @@ func TestUnitAlicloudAlidnsGtmInstance(t *testing.T) {
 
 	err = resourceAlicloudAlidnsGtmInstanceDelete(dExisted, rawClient)
 	assert.Nil(t, err)
+}
+
+// TestUnitAlicloudAlidnsGtmInstanceStrategyModeLang asserts that when
+// strategy_mode is updated and lang is set, the Lang attribute is forwarded
+// onto the SwitchDnsGtmInstanceStrategyMode request body. Regression guard for
+// a bug that wrote Lang onto the stale MoveGtmResourceGroup request map instead,
+// so the RPC was invoked without Lang and the language selection was dropped.
+func TestUnitAlicloudAlidnsGtmInstanceStrategyModeLang(t *testing.T) {
+	p := Provider().(*schema.Provider).ResourcesMap
+	dInit, _ := schema.InternalMap(p["alicloud_alidns_gtm_instance"].Schema).Data(nil, nil)
+	dInit.MarkNewResource()
+	attributes := map[string]interface{}{
+		"payment_type":    "Subscription",
+		"period":          1,
+		"package_edition": "ultimate",
+		"strategy_mode":   "GEO",
+	}
+	// Set attributes with string-literal keys (tfproviderlint R001 forbids variable keys).
+	assert.Nil(t, dInit.Set("payment_type", "Subscription"))
+	assert.Nil(t, dInit.Set("period", 1))
+	assert.Nil(t, dInit.Set("package_edition", "ultimate"))
+	assert.Nil(t, dInit.Set("strategy_mode", "GEO"))
+	// State() returns nil without an ID, which would make newInstanceDiff panic;
+	// give the existing resource an ID so the diff/state machinery is well-formed.
+	dInit.SetId("gtm-test-instance-id")
+
+	attributesDiff := map[string]interface{}{
+		"strategy_mode": "LATENCY",
+		"lang":          "zh",
+	}
+	diff, err := newInstanceDiff("alicloud_alidns_gtm_instance", attributes, attributesDiff, dInit.State())
+	assert.Nil(t, err)
+	dExisted, _ := schema.InternalMap(p["alicloud_alidns_gtm_instance"].Schema).Data(dInit.State(), diff)
+
+	region := os.Getenv("ALICLOUD_REGION")
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		t.Skipf("Skipping the test case with err: %s", err)
+		t.Skipped()
+	}
+	aliClient := rawClient.(*connectivity.AliyunClient)
+
+	var strategyModeBody map[string]interface{}
+	var strategyModeCalled bool
+	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "RpcPost", func(_ *connectivity.AliyunClient, apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}, autoRetry bool) (map[string]interface{}, error) {
+		if apiName == "SwitchDnsGtmInstanceStrategyMode" {
+			strategyModeCalled = true
+			strategyModeBody = body
+		}
+		return map[string]interface{}{"Code": "Success"}, nil
+	})
+	defer patches.Reset()
+
+	err = resourceAlicloudAlidnsGtmInstanceUpdate(dExisted, aliClient)
+	assert.Nil(t, err)
+
+	assert.True(t, strategyModeCalled, "strategy_mode change must invoke SwitchDnsGtmInstanceStrategyMode")
+	assert.NotNil(t, strategyModeBody, "SwitchDnsGtmInstanceStrategyMode request body must be captured")
+	langValue, langOk := strategyModeBody["Lang"]
+	assert.True(t, langOk, "SwitchDnsGtmInstanceStrategyMode request must carry Lang when lang is set")
+	assert.Equal(t, "zh", langValue, "Lang value must match the configured lang")
 }
