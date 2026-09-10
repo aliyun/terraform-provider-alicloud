@@ -272,6 +272,75 @@ func resourceAliCloudPolarDbZonalCluster() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			// --- governance attributes aligned with CloudSpec pre ---
+			"architecture": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"hot_standby_cluster": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"cluster_network_type": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"storage_auto_scale": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"db_node_num": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
+			"db_node_target_class": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"modify_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Default:  "Upgrade",
+			},
+			"zone_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"zone_ids": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"period": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"period_unit": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"auto_renew_status": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"db_node": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"target_class": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"db_node_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -323,6 +392,16 @@ func resourceAliCloudPolarDbZonalClusterCreate(d *schema.ResourceData, meta inte
 	}
 	request["DBVersion"] = d.Get("db_version")
 	request["CloudProvider"] = "ENS"
+
+	if v, ok := d.GetOk("storage_auto_scale"); ok {
+		request["StorageAutoScale"] = v
+	}
+	if v, ok := d.GetOk("zone_id"); ok {
+		request["ZoneId"] = v
+	}
+	if v, ok := d.GetOk("period"); ok {
+		request["Period"] = v
+	}
 
 	payType := Trim(d.Get("pay_type").(string))
 	request["PayType"] = string(Postpaid)
@@ -425,6 +504,11 @@ func resourceAliCloudPolarDbZonalClusterRead(d *schema.ResourceData, meta interf
 	d.Set("vswitch_id", objectObj.VSwitchId)
 	d.Set("vpc_id", objectObj.VPCId)
 	d.Set("ens_region_id", objectObj.ZoneIds)
+	d.Set("architecture", objectObj.Architecture)
+	d.Set("hot_standby_cluster", objectObj.HotStandbyCluster)
+	d.Set("cluster_network_type", objectObj.DBClusterNetworkType)
+	d.Set("zone_ids", objectObj.ZoneIds)
+	d.Set("db_node_target_class", objectObj.DBClusterClass)
 
 	dBNodesRaw := objectObj.DBNodes
 	dbNodeMaps := make([]map[string]interface{}, 0)
@@ -437,6 +521,10 @@ func resourceAliCloudPolarDbZonalClusterRead(d *schema.ResourceData, meta interf
 			dbNodeMaps = append(dbNodeMaps, dbNodeMap)
 		}
 	}
+	if err := d.Set("db_node", dbNodeMaps); err != nil {
+		return WrapError(err)
+	}
+	d.Set("db_node_num", len(objectObj.DBNodes))
 
 	d.Set("storage_space", objectObj.StorageSpace/1024/1024)
 	objectRaw, err := polarDbServiceV2.DescribeZonalClusterDescribeDBClusterVersionZonal(d.Id())
@@ -463,6 +551,8 @@ func resourceAliCloudPolarDbZonalClusterRead(d *schema.ResourceData, meta interf
 		}
 		d.Set("renewal_status", objectRaw["RenewalStatus"])
 		d.Set("auto_renew_period", renewPeriod)
+		d.Set("auto_renew_status", objectRaw["RenewalStatus"])
+		d.Set("period_unit", objectRaw["PeriodUnit"])
 	}
 
 	return nil
@@ -475,8 +565,11 @@ func resourceAliCloudPolarDbZonalClusterUpdate(d *schema.ResourceData, meta inte
 
 	var err error
 	if (d.Get("pay_type").(string) == string(PrePaid)) &&
-		(d.HasChange("renewal_status") || d.HasChange("auto_renew_period")) {
+		(d.HasChange("renewal_status") || d.HasChange("auto_renew_period") || d.HasChange("auto_renew_status") || d.HasChange("period_unit")) {
 		status := d.Get("renewal_status").(string)
+		if v, ok := d.GetOk("auto_renew_status"); ok {
+			status = v.(string)
+		}
 		var duration string
 		var periodUnit string
 		if status == string(RenewAutoRenewal) {
@@ -491,6 +584,9 @@ func resourceAliCloudPolarDbZonalClusterUpdate(d *schema.ResourceData, meta inte
 			duration = "0"
 			periodUnit = string(Month)
 		}
+		if v, ok := d.GetOk("period_unit"); ok {
+			periodUnit = v.(string)
+		}
 		//wait asynchronously cluster payType
 		if err := polarDbServiceV2.WaitForPolarDBPayType(d.Id(), "Prepaid", DefaultLongTimeout); err != nil {
 			return WrapError(err)
@@ -501,6 +597,8 @@ func resourceAliCloudPolarDbZonalClusterUpdate(d *schema.ResourceData, meta inte
 		}
 		d.SetPartial("renewal_status")
 		d.SetPartial("auto_renew_period")
+		d.SetPartial("auto_renew_status")
+		d.SetPartial("period_unit")
 	}
 
 	if d.HasChange("db_cluster_nodes_configs") {
@@ -835,7 +933,8 @@ func modifyDBNodesClass(d *schema.ResourceData, meta interface{}, modifyNodeClas
 	}
 	client := meta.(*connectivity.AliyunClient)
 	polarDbServiceV2 := PolarDbServiceV2{client}
-	_, err := polarDbServiceV2.ModifyDBNodesClass(client.RegionId, d.Id(), "Upgrade", modifyNodeClassList)
+	modifyType := d.Get("modify_type").(string)
+	_, err := polarDbServiceV2.ModifyDBNodesClass(client.RegionId, d.Id(), modifyType, modifyNodeClassList)
 	if err != nil {
 		return WrapErrorf(
 			err, DefaultErrorMsg, d.Id(), "ModifyDBNodesClass", AlibabaCloudSdkGoERROR)
