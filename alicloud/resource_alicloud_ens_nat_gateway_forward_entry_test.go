@@ -109,7 +109,7 @@ variable "name" {
 }
 
 variable "ens_region_id" {
-  default = "cn-hangzhou-44"
+  default = "cn-chenzhou-telecom_unicom_cmcc"
 }
 
 resource "alicloud_ens_network" "default6T9qR2" {

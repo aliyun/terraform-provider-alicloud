@@ -16,31 +16,37 @@ func TestAccAliCloudEnsNatGatewayForwardEntryDataSource(t *testing.T) {
 
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEnsNatGatewayForwardEntrySourceConfig(rand, map[string]string{
-			"ids": `["${alicloud_ens_nat_gateway_forward_entry.default.id}"]`,
+			"ids":            `["${alicloud_ens_nat_gateway_forward_entry.default.id}"]`,
+			"nat_gateway_id": `"${alicloud_ens_nat_gateway.defaultlZ7YKl.id}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudEnsNatGatewayForwardEntrySourceConfig(rand, map[string]string{
-			"ids": `["${alicloud_ens_nat_gateway_forward_entry.default.id}_fake"]`,
+			"ids":            `["${alicloud_ens_nat_gateway_forward_entry.default.id}_fake"]`,
+			"nat_gateway_id": `"${alicloud_ens_nat_gateway.defaultlZ7YKl.id}"`,
 		}),
 	}
 
 	InternalIpConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEnsNatGatewayForwardEntrySourceConfig(rand, map[string]string{
-			"ids":         `["${alicloud_ens_nat_gateway_forward_entry.default.id}"]`,
-			"internal_ip": `"${alicloud_ens_instance.defaulth6OQ3p.private_ip_address}"`,
+			"ids":            `["${alicloud_ens_nat_gateway_forward_entry.default.id}"]`,
+			"internal_ip":    `"${alicloud_ens_instance.defaulth6OQ3p.private_ip_address}"`,
+			"nat_gateway_id": `"${alicloud_ens_nat_gateway.defaultlZ7YKl.id}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudEnsNatGatewayForwardEntrySourceConfig(rand, map[string]string{
-			"ids":         `["${alicloud_ens_nat_gateway_forward_entry.default.id}_fake"]`,
-			"internal_ip": `"${alicloud_ens_instance.defaulth6OQ3p.private_ip_address}_fake"`,
+			"ids":            `["${alicloud_ens_nat_gateway_forward_entry.default.id}_fake"]`,
+			"internal_ip":    `"${alicloud_ens_instance.defaulth6OQ3p.private_ip_address}_fake"`,
+			"nat_gateway_id": `"${alicloud_ens_nat_gateway.defaultlZ7YKl.id}"`,
 		}),
 	}
 	IpProtocolConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEnsNatGatewayForwardEntrySourceConfig(rand, map[string]string{
-			"ids":         `["${alicloud_ens_nat_gateway_forward_entry.default.id}"]`,
-			"ip_protocol": `"TCP"`,
+			"ids":            `["${alicloud_ens_nat_gateway_forward_entry.default.id}"]`,
+			"ip_protocol":    `"TCP"`,
+			"nat_gateway_id": `"${alicloud_ens_nat_gateway.defaultlZ7YKl.id}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudEnsNatGatewayForwardEntrySourceConfig(rand, map[string]string{
-			"ids":         `["${alicloud_ens_nat_gateway_forward_entry.default.id}_fake"]`,
-			"ip_protocol": `"TCP_fake"`,
+			"ids":            `["${alicloud_ens_nat_gateway_forward_entry.default.id}_fake"]`,
+			"ip_protocol":    `"TCP_fake"`,
+			"nat_gateway_id": `"${alicloud_ens_nat_gateway.defaultlZ7YKl.id}"`,
 		}),
 	}
 	NatGatewayIdConf := dataSourceTestAccConfig{
@@ -55,22 +61,26 @@ func TestAccAliCloudEnsNatGatewayForwardEntryDataSource(t *testing.T) {
 	}
 	ExternalIpConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEnsNatGatewayForwardEntrySourceConfig(rand, map[string]string{
-			"ids":         `["${alicloud_ens_nat_gateway_forward_entry.default.id}"]`,
-			"external_ip": `"${alicloud_ens_eip.defaultLQgQB6.ip_address}"`,
+			"ids":            `["${alicloud_ens_nat_gateway_forward_entry.default.id}"]`,
+			"external_ip":    `"${alicloud_ens_eip.defaultLQgQB6.ip_address}"`,
+			"nat_gateway_id": `"${alicloud_ens_nat_gateway.defaultlZ7YKl.id}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudEnsNatGatewayForwardEntrySourceConfig(rand, map[string]string{
-			"ids":         `["${alicloud_ens_nat_gateway_forward_entry.default.id}_fake"]`,
-			"external_ip": `"${alicloud_ens_eip.defaultLQgQB6.ip_address}_fake"`,
+			"ids":            `["${alicloud_ens_nat_gateway_forward_entry.default.id}_fake"]`,
+			"external_ip":    `"${alicloud_ens_eip.defaultLQgQB6.ip_address}_fake"`,
+			"nat_gateway_id": `"${alicloud_ens_nat_gateway.defaultlZ7YKl.id}"`,
 		}),
 	}
 	ForwardEntryNameConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEnsNatGatewayForwardEntrySourceConfig(rand, map[string]string{
 			"ids":                `["${alicloud_ens_nat_gateway_forward_entry.default.id}"]`,
 			"forward_entry_name": `"测试用例-dnat"`,
+			"nat_gateway_id":     `"${alicloud_ens_nat_gateway.defaultlZ7YKl.id}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudEnsNatGatewayForwardEntrySourceConfig(rand, map[string]string{
 			"ids":                `["${alicloud_ens_nat_gateway_forward_entry.default.id}_fake"]`,
 			"forward_entry_name": `"测试用例-dnat_fake"`,
+			"nat_gateway_id":     `"${alicloud_ens_nat_gateway.defaultlZ7YKl.id}"`,
 		}),
 	}
 
@@ -142,7 +152,7 @@ variable "name" {
 	default = "tf-testAccEnsNatGatewayForwardEntry%d"
 }
 variable "ens_region_id" {
-  default = "cn-hangzhou-44"
+  default = "cn-chenzhou-telecom_unicom_cmcc"
 }
 
 resource "alicloud_ens_network" "default6T9qR2" {
