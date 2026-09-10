@@ -161,6 +161,14 @@ func dataSourceAliCloudEnsNatGatewayForwardEntryRead(d *schema.ResourceData, met
 			return nil
 		})
 		if err != nil {
+			// When the queried NatGateway does not exist, the ENS API returns
+			// InvalidParameter.NatNotFound. A data source listing the forward
+			// entries of a non-existent nat gateway should return an empty
+			// list rather than erroring out, so break out of pagination and
+			// return zero entries.
+			if IsExpectedErrors(err, []string{"InvalidParameter.NatNotFound"}) {
+				break
+			}
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 
