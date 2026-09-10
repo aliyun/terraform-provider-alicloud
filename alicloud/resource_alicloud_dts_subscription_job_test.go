@@ -113,7 +113,7 @@ func TestAccAliCloudDTSSubscriptionJob_basic0(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sdtssubscriptionjob%d", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-testacc%sdtssubscriptionjob%d", dtsSubscriptionRegion(), rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDTSSubscriptionJobBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -135,6 +135,7 @@ func TestAccAliCloudDTSSubscriptionJob_basic0(t *testing.T) {
 					"source_endpoint_database_name":      "${alicloud_rds_account.source_account.account_password}",
 					"source_endpoint_user_name":          "${alicloud_rds_account.source_account.account_name}",
 					"source_endpoint_password":           "${alicloud_rds_account.source_account.account_password}",
+					"source_endpoint_ssl":                "1",
 					"db_list":                            "{\\\"test_database\\\":{\\\"name\\\":\\\"test_database\\\",\\\"all\\\":true,\\\"state\\\":\\\"normal\\\"}}",
 					"subscription_instance_network_type": "vpc",
 					"subscription_instance_vpc_id":       "${data.alicloud_vpcs.default.ids.0}",
@@ -145,13 +146,38 @@ func TestAccAliCloudDTSSubscriptionJob_basic0(t *testing.T) {
 						"dts_job_name":                       CHECKSET,
 						"payment_type":                       "PayAsYouGo",
 						"source_endpoint_engine_name":        "MySQL",
-						"source_endpoint_region":             os.Getenv("ALICLOUD_REGION"),
+						"source_endpoint_region":             dtsSubscriptionRegion(),
 						"source_endpoint_instance_type":      "RDS",
 						"source_endpoint_database_name":      "N1cetest",
 						"source_endpoint_user_name":          "test_mysql",
 						"source_endpoint_password":           "N1cetest",
+						"source_endpoint_ssl":                "1",
 						"db_list":                            "{\"test_database\":{\"name\":\"test_database\",\"all\":true,\"state\":\"normal\"}}",
 						"subscription_instance_network_type": "vpc",
+					}),
+				),
+			},
+			// Turn SSL off on the source endpoint in place. The field is not ForceNew, so this
+			// must go through ConfigureSubscription with the srcSSL reserve key rather than
+			// recreating the job.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"source_endpoint_ssl": "0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"source_endpoint_ssl": "0",
+					}),
+				),
+			},
+			// Turn SSL back on, covering the enable-by-update direction as well as disable.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"source_endpoint_ssl": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"source_endpoint_ssl": "1",
 					}),
 				),
 			},
@@ -273,7 +299,7 @@ func TestAccAliCloudDTSSubscriptionJob_basic1(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sdtssubscriptionjob%d", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-testacc%sdtssubscriptionjob%d", dtsSubscriptionRegion(), rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDTSSubscriptionJobBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -289,7 +315,7 @@ func TestAccAliCloudDTSSubscriptionJob_basic1(t *testing.T) {
 					"dts_job_name":                       "tf-testAccCase",
 					"payment_type":                       "PayAsYouGo",
 					"source_endpoint_engine_name":        "MySQL",
-					"source_endpoint_region":             os.Getenv("ALICLOUD_REGION"),
+					"source_endpoint_region":             dtsSubscriptionRegion(),
 					"source_endpoint_instance_type":      "RDS",
 					"source_endpoint_instance_id":        "${alicloud_db_instance.source.id}",
 					"source_endpoint_database_name":      "tfaccountpri_0",
@@ -307,7 +333,7 @@ func TestAccAliCloudDTSSubscriptionJob_basic1(t *testing.T) {
 						"dts_job_name":                       "tf-testAccCase",
 						"payment_type":                       "PayAsYouGo",
 						"source_endpoint_engine_name":        "MySQL",
-						"source_endpoint_region":             os.Getenv("ALICLOUD_REGION"),
+						"source_endpoint_region":             dtsSubscriptionRegion(),
 						"source_endpoint_instance_type":      "RDS",
 						"source_endpoint_database_name":      "tfaccountpri_0",
 						"source_endpoint_user_name":          "tftestprivilege",
@@ -447,7 +473,7 @@ func TestAccAliCloudDTSSubscriptionJob_basic2(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sdtssubscriptionjob%d", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-testacc%sdtssubscriptionjob%d", dtsSubscriptionRegion(), rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDTSSubscriptionJobBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -464,7 +490,7 @@ func TestAccAliCloudDTSSubscriptionJob_basic2(t *testing.T) {
 					"payment_duration_unit":              "Month",
 					"payment_duration":                   "1",
 					"source_endpoint_engine_name":        "MySQL",
-					"source_endpoint_region":             os.Getenv("ALICLOUD_REGION"),
+					"source_endpoint_region":             dtsSubscriptionRegion(),
 					"source_endpoint_instance_type":      "RDS",
 					"source_endpoint_instance_id":        "${alicloud_db_instance.source.id}",
 					"source_endpoint_database_name":      "tfaccountpri_0",
@@ -482,7 +508,7 @@ func TestAccAliCloudDTSSubscriptionJob_basic2(t *testing.T) {
 						"dts_job_name":                       "tf-testAccCase",
 						"payment_type":                       "Subscription",
 						"source_endpoint_engine_name":        "MySQL",
-						"source_endpoint_region":             os.Getenv("ALICLOUD_REGION"),
+						"source_endpoint_region":             dtsSubscriptionRegion(),
 						"source_endpoint_instance_type":      "RDS",
 						"source_endpoint_database_name":      "tfaccountpri_0",
 						"source_endpoint_user_name":          "tftestprivilege",
@@ -525,6 +551,7 @@ var AliCloudDTSSubscriptionJobMap0 = map[string]string{
 	"subscription_data_type_ddl":       CHECKSET,
 	"destination_endpoint_engine_name": NOSET,
 	"used_time":                        NOSET,
+	"source_endpoint_ssl":              NOSET,
 	"status":                           CHECKSET,
 }
 
@@ -572,6 +599,7 @@ resource "alicloud_db_instance" "source" {
   instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
   vswitch_id       = data.alicloud_vswitches.default.ids.0
   instance_name    = "rds-mysql-source"
+  ssl_action       = "Open"
 }
 
 resource "alicloud_db_database" "source_db" {
@@ -608,5 +636,15 @@ resource "alicloud_rds_account" "target_account" {
   account_password = "N1cetest"
 }
 
-`, name, os.Getenv("ALICLOUD_REGION"))
+`, name, dtsSubscriptionRegion())
+}
+
+// dtsSubscriptionRegion resolves the region for TestCase configs rendered before
+// testAccPreCheck runs, mirroring its cn-beijing fallback so dependence and check
+// values stay consistent with the provider's run-time region.
+func dtsSubscriptionRegion() string {
+	if v := os.Getenv("ALICLOUD_REGION"); v != "" {
+		return v
+	}
+	return "cn-beijing"
 }

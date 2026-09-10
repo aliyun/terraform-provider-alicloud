@@ -152,6 +152,7 @@ The following arguments were support:
 * `source_endpoint_owner_id` - (Optional) The Alibaba Cloud account ID to which the source instance belongs. This parameter is only available when configuring data subscriptions across Alibaba Cloud accounts and must be passed in.
 * `source_endpoint_user_name` - (Optional) The username of source database instance account.
 * `source_endpoint_password` - (Optional) The password of source database instance account.
+* `source_endpoint_ssl` - (Optional, Computed) The connection method of the source instance. Valid values: `0` (an unencrypted connection), `1` (an SSL-secured connection). Only supported when the source endpoint is accessed as a cloud instance or as a self-managed database hosted on ECS. When `1` is configured and the source instance is an ApsaraDB RDS for MySQL instance, the SSL encryption feature of the source RDS instance must be enabled in advance, otherwise the task precheck fails and the task cannot be started.
 * `source_endpoint_port` - (Optional) The port of source database.
 * `source_endpoint_region` - (Required) The region of source database.
 * `source_endpoint_role` - (Optional) Both the authorization roles. When the source instance and configure subscriptions task of the Alibaba Cloud account is not the same as the need to pass the parameter, to specify the source of the authorization roles, to allow configuration subscription task of the Alibaba Cloud account to access the source of the source instance information.

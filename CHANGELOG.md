@@ -1,4 +1,8 @@
 ## 1.293.0 (Unreleased)
+
+ENHANCEMENTS:
+
+- resource/alicloud_dts_subscription_job: support source_endpoint_ssl.
 ## 1.292.0 (September 8, 2026)
 
 - **New Resource:** `alicloud_threat_detection_rd_default_sync_list` ([#10207](https://github.com/aliyun/terraform-provider-alicloud/issues/10207))
