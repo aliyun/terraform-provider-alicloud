@@ -4,14 +4,14 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_ecd_nas_file_system"
 sidebar_current: "docs-alicloud-resource-ecd-nas-file-system"
 description: |-
-  Provides a Alicloud ECD Nas File System resource.
+  Provides a Alicloud ECD NAS File System resource.
 ---
 
 # alicloud_ecd_nas_file_system
 
-Provides a ECD Nas File System resource.
+Provides a ECD NAS File System resource.
 
-For information about ECD Nas File System and how to use it, see [What is Nas File System](https://www.alibabacloud.com/help/en/elastic-desktop-service/latest/api-reference-for-easy-use-1).
+For information about ECD NAS File System and how to use it, see [What is NAS File System](https://www.alibabacloud.com/help/en/elastic-desktop-service/latest/api-reference-for-easy-use-1).
 
 -> **NOTE:** Available since v1.141.0.
 
@@ -56,30 +56,31 @@ resource "alicloud_ecd_nas_file_system" "example" {
 The following arguments are supported:
 
 * `file_system_id` - (Optional) The filesystem id of nas file system.
-* `description` - (Optional, ForceNew) The description of nas file system.
+* `description` - (Optional, ForceNew) The description of the NAS file system.
 * `mount_target_domain` - (Optional) The domain of mount target.
-* `nas_file_system_name` - (Optional, ForceNew) The name of nas file system.
-* `office_site_id` - (Required, ForceNew) The ID of office site.
+* `nas_file_system_name` - (Optional, ForceNew) The NAS file system name. The name must be 2 to 128 characters in length and can contain letters and Chinese characters. The name must start with a letter or a Chinese character and cannot start with http:// or https://. The name can contain digits, underscores (_), or hyphens (-).
+* `office_site_id` - (Required, ForceNew) The office network ID.
 * `reset` - (Optional) The mount point is in an inactive state, reset the mount point of the NAS file system. Default to `false`.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
-* `id` - The resource ID in terraform of Nas File System.
+* `id` - The resource ID in terraform of NAS File System.
 * `status` - The status of nas file system. Valid values: `Pending`, `Running`, `Stopped`,`Deleting`, `Deleted`, `Invalid`.
+* `zone_id` - The zone ID of the NAS file system.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
-* `create` - (Defaults to 10 mins) Used when create the Nas File System.
-* `delete` - (Defaults to 10 mins) Used when delete the Nas File System.
-* `update` - (Defaults to 10 mins) Used when update the Nas File System.
+* `create` - (Defaults to 10 mins) Used when create the NAS File System.
+* `delete` - (Defaults to 10 mins) Used when delete the NAS File System.
+* `update` - (Defaults to 10 mins) Used when update the NAS File System.
 
 ## Import
 
-ECD Nas File System can be imported using the id, e.g.
+ECD NAS File System can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_ecd_nas_file_system.example <id>

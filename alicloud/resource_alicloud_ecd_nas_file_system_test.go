@@ -104,7 +104,7 @@ func testSweepEcdNasFileSystem(region string) error {
 	return nil
 }
 
-func TestAccAlicloudECDNasFileSystem_basic0(t *testing.T) {
+func TestAccAliCloudECDNasFileSystem_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecd_nas_file_system.default"
 	ra := resourceAttrInit(resourceId, AlicloudECDNasFileSystemMap0)
@@ -141,7 +141,9 @@ func TestAccAlicloudECDNasFileSystem_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"reset": "false",
+					"reset":               "false",
+					"file_system_id":      REMOVEKEY,
+					"mount_target_domain": REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
