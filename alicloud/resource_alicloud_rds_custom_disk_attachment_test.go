@@ -44,6 +44,7 @@ func TestAccAliCloudRdsCustomDiskAttachment_basic12736(t *testing.T) {
 						"instance_id": CHECKSET,
 						//"delete_with_instance": "true",
 						"disk_id": CHECKSET,
+						"zone_id": CHECKSET,
 					}),
 				),
 			},
@@ -89,6 +90,7 @@ func TestAccAliCloudRdsCustomDiskAttachment_basic12736_twin(t *testing.T) {
 						"instance_id":          CHECKSET,
 						"delete_with_instance": "false",
 						"disk_id":              CHECKSET,
+						"zone_id":              CHECKSET,
 					}),
 				),
 			},
@@ -106,6 +108,7 @@ var AliCloudRdsCustomDiskAttachmentMap12736 = map[string]string{
 	"region_id":            CHECKSET,
 	"status":               CHECKSET,
 	"delete_with_instance": CHECKSET,
+	"zone_id":              CHECKSET,
 }
 
 func AliCloudRdsCustomDiskAttachmentBasicDependence12736(name string) string {
