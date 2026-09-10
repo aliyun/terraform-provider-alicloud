@@ -193,6 +193,8 @@ The following arguments are supported:
 -> **NOTE:** From version 1.249.0, `hot_standby_cluster` can be set to `EQUAL`, and this value is only valid for MySQL.
 * `standby_az` - (Optional, Computed, Available since 1.249.0) The availability zone where the hot standby cluster is stored, takes effect when `hot_standby_cluster` is `ON` or `EQUAL`.
 -> **NOTE:** `standby_az` is required when `hot_standby_cluster` is `EQUAL`.
+* `architecture` - (Optional, ForceNew, Computed, Available since v1.290.0) The CPU architecture of the cluster. Valid values: `X86`, `ARM`.
+* `cluster_network_type` - (Optional, ForceNew, Computed, Available since v1.290.0) The network type of the cluster. Valid value: `VPC`.
 * `strict_consistency` - (Optional, Computed, ForceNew, Available since v1.239.0) Whether the cluster has enabled strong data consistency across multiple zones. Valid values are `ON`, `OFF`. Available parameters can refer to the latest docs [CreateDBCluster](https://www.alibabacloud.com/help/en/polardb/latest/createdbcluster-1)
 * `serverless_type` - (Optional, Available since v1.204.0) The type of the serverless cluster. Valid values `AgileServerless`, `SteadyServerless`. This parameter is valid only for serverless clusters.
 * `serverless_steady_switch` - (Optional, Available since v1.211.1) Serverless steady-state switch. Valid values are `ON`, `OFF`. This parameter is valid only for serverless clusters.
@@ -238,6 +240,8 @@ The following arguments are supported:
 * `target_db_revision_version_code` - (Optional, Available since v1.216.0) The Version Code of the target version, whose parameter values can be obtained from the [DescribeDBClusterVersion](https://www.alibabacloud.com/help/en/polardb/latest/describedbclusterversion) interface.
 * `compress_storage` - (Optional, Available since v1.232.0) Enable storage compression function. The value of this parameter is `ON`. Only MySQL supports.
   -> **NOTE:** When the value of db_type is not MySQL, the value of creation_option is neither empty nor Normal, and the value of storage_type is not PSL4, this field will be ignored.
+* `storage_auto_scale` - (Optional, Computed, Available since v1.290.0) Specifies whether to enable automatic storage scaling. Valid values: `Enable`, `Disable`.
+* `storage_upper_bound` - (Optional, Computed, Available since v1.290.0) The upper bound of the storage capacity in GB when automatic storage scaling is enabled. Valid values: 0 to 32000. This parameter takes effect when `storage_auto_scale` is `Enable`.
 * `global_security_group_list` - (Optional, List, Available since v1.271.0) The list of global security ip group ids.
 * `enable_dynamodb` - (Optional, Bool, Available since v1.273.0) Specifies whether to enable DynamoDB compatibility. Valid values: `true`, `false`.
   -> **NOTE:** This parameter is valid only when the DBType parameter is set to PostgreSQL.
@@ -249,6 +253,8 @@ The db_cluster_ip_array supports the following:
 * `security_ips` - (Optional) List of IP addresses allowed to access all databases of a cluster. The list contains up to 1,000 IP addresses, separated by commas. Supported formats include 0.0.0.0/0, 10.23.12.24 (IP), and 10.23.12.24/24 (Classless Inter-Domain Routing (CIDR) mode. /24 represents the length of the prefix in an IP address. The range of the prefix length is [1,32]).
 * `db_cluster_ip_array_name` - (Optional) The name of the IP whitelist group. The group name must be 2 to 120 characters in length and consists of lowercase letters and digits. It must start with a letter, and end with a letter or a digit.
   **NOTE:** If the specified whitelist group name does not exist, the whitelist group is created. If the specified whitelist group name exists, the whitelist group is modified. If you do not specify this parameter, the default group is modified. You can create a maximum of 50 IP whitelist groups for a cluster.
+* `db_cluster_ip_array_attribute` - (Optional, Computed) The attribute of the IP whitelist array.
+* `white_list_type` - (Optional) The type of the whitelist. Valid values: `IP`, `SecurityGroup`.
 * `modify_mode` - (Optional) The method for modifying the IP whitelist. Valid values are `Cover`, `Append`, `Delete`.
   **NOTE:** There does not recommend setting modify_mode to `Append` or `Delete` and it will bring a potential diff error.  
 
@@ -268,6 +274,7 @@ The following attributes are exported:
 * `port` - (Available since 1.196.0) PolarDB cluster connection port. 
 * `status` - (Available since 1.204.1) PolarDB cluster status.
 * `create_time` - (Available since 1.204.1) PolarDB cluster creation time.
+* `deploy_unit` - (Available since v1.290.0) The deploy unit of the cluster.
 * `tde_region` - (Available since 1.200.0) The region where the TDE key resides.
 -> **NOTE:** TDE can be enabled on clusters that have joined a global database network (GDN). After TDE is enabled on the primary cluster in a GDN, TDE is enabled on the secondary clusters in the GDN by default. The key used by the secondary clusters and the region for the key resides must be the same as the primary cluster. The region of the key cannot be modified.
 -> **NOTE:** You cannot enable TDE for the secondary clusters in a GDN. Used to view user KMS activation status.
