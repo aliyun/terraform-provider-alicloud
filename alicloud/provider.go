@@ -909,6 +909,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_threat_detection_honeypot_images":                 dataSourceAlicloudThreatDetectionHoneypotImages(),
 			"alicloud_threat_detection_honey_pots":                      dataSourceAlicloudThreatDetectionHoneyPots(),
 			"alicloud_threat_detection_honeypot_probes":                 dataSourceAlicloudThreatDetectionHoneypotProbes(),
+			"alicloud_threat_detection_components":                      dataSourceAlicloudThreatDetectionComponents(),
 			"alicloud_ecs_capacity_reservations":                        dataSourceAlicloudEcsCapacityReservations(),
 			"alicloud_cen_inter_region_traffic_qos_queues":              dataSourceAlicloudCenInterRegionTrafficQosQueues(),
 			"alicloud_cen_transit_router_multicast_domain_peer_members": dataSourceAlicloudCenTransitRouterMulticastDomainPeerMembers(),
