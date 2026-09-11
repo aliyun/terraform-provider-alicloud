@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Strict, non-interactive safety wrapper for the AMP CLI.
 
-The wrapper accepts a deliberately small AMP-compatible argv surface, rebuilds
-the command from parsed values, and never invokes a shell.  Mutating commands
-must first be authorized by the current Jarvis task fence.  Real daily/pre
+The wrapper accepts a deliberately small AMP-compatible argv surface and builds
+the AMP command without shell evaluation.  Mutating commands must first be
+authorized by the current Jarvis task fence.  Real daily/pre
 publishes automatically run one successful dry-run; online publishing remains
 a human-only production gate.
 """
@@ -18,9 +18,11 @@ import socket
 import struct
 import subprocess
 import sys
+from contextlib import nullcontext
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import Any, Callable, Mapping, Optional, Sequence
 
 
@@ -395,11 +397,12 @@ def _parse_api(tokens: Sequence[str]) -> AmpInvocation:
     command = tokens[0]
     rest = tokens[1:]
     if command == "list":
-        values, booleans, _ = _parse_options(rest, value_flags=_SCOPE_FLAGS)
+        order = (*_SCOPE_FLAGS, "--branch")
+        values, booleans, _ = _parse_options(rest, value_flags=order)
         return AmpInvocation((
-            "api", "list", *_canonical_options(values, booleans, _SCOPE_FLAGS)))
+            "api", "list", *_canonical_options(values, booleans, order)))
     if command == "get":
-        order = (*_SCOPE_FLAGS, "--api-name")
+        order = (*_SCOPE_FLAGS, "--branch", "--api-name")
         values, booleans, _ = _parse_options(rest, value_flags=order)
         return AmpInvocation((
             "api", "get", *_canonical_options(values, booleans, order)))
@@ -759,6 +762,82 @@ def _account_home() -> Path:
         raise AmpSafeError("cannot resolve the local account home: %s" % exc) from exc
 
 
+def _run_code_helper(prompt: str, error: str) -> str:
+    """Capture the fixed helper's internal response without inheriting overrides."""
+    home = _account_home()
+    helper = (Path(__file__).resolve().parent.parent / ".claude" / "skills"
+              / "cloudspec-amp-workflow" / "scripts" / "jarvis-code-git.sh")
+    environment = {
+        "HOME": os.fspath(home),
+        "PATH": "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
+        "JARVIS_CODE_ASKPASS_MODE": "1",
+        "JARVIS_CODE_AUTH_FILE": os.fspath(
+            home / ".config" / "a1" / "identities" / "jarvis" / "auth.yaml"),
+        "JARVIS_CODE_PYTHON": sys.executable,
+    }
+    try:
+        completed = subprocess.run(
+            ["/bin/bash", os.fspath(helper), prompt],
+            cwd=os.fspath(home), env=environment,
+            stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE, timeout=10, check=False,
+        )
+        if completed.returncode != 0:
+            raise AmpSafeError(error)
+        return completed.stdout.decode("utf-8")
+    except (OSError, UnicodeError, subprocess.SubprocessError):
+        # Helper errors, including YAML parser diagnostics, may contain secrets.
+        raise AmpSafeError(error) from None
+
+
+def _load_amp_private_token() -> str:
+    """Read the fixed Jarvis Code credential through the existing ASKPASS helper."""
+    error = "Jarvis Code credential is unavailable or invalid"
+    token = _run_code_helper("Password", error)
+    if token.endswith("\n"):
+        token = token[:-1]
+    if not token.strip() or any(char in token for char in ("\n", "\r", "\x00")):
+        raise AmpSafeError(error)
+    return token
+
+
+def _load_amp_config() -> dict[str, Any]:
+    """Load only the helper's nonsecret, private-token profile projection."""
+    error = "AMP config is unavailable or invalid"
+    raw = _run_code_helper("AMPConfig", error)
+    try:
+        config = json.loads(raw)
+        name = config["current_profile"]
+        if not isinstance(name, str) or not name.strip():
+            raise ValueError()
+        profiles = config["profiles"]
+        profile = profiles[name]
+        if (set(config) != {"current_profile", "profiles", "output", "http", "upgrade"}
+                or config["output"] != {"default": "json"}
+                or config["upgrade"] != {}
+                or set(profiles) != {name}
+                or set(profile) - {"auth", "endpoint", "openapi_version", "credentials"}
+                or profile["auth"] != {"type": "private_token"}
+                or any(not isinstance(profile[key], str) or not profile[key].strip()
+                       for key in ("endpoint", "openapi_version") if key in profile)):
+            raise ValueError()
+        credentials = profile.get("credentials", {})
+        if (not isinstance(credentials, dict)
+                or set(credentials) - {"source", "oauth_profile", "oauth_site"}
+                or any(not isinstance(value, str) or not value.strip()
+                       for value in credentials.values())
+                or ("source" in credentials and credentials["source"] not in {"local", "oauth"})):
+            raise ValueError()
+        timeout = config["http"]["timeout_seconds"]
+        if (set(config["http"]) != {"timeout_seconds", "debug"}
+                or config["http"]["debug"] is not False
+                or type(timeout) is not int or timeout < 0):
+            raise ValueError()
+    except (KeyError, TypeError, ValueError, RecursionError):
+        raise AmpSafeError(error) from None
+    return config
+
+
 def _worker_environment(environ: Mapping[str, str]) -> dict[str, str]:
     """Preserve Worker routing while removing interpreter/process injection."""
     result = dict(environ)
@@ -767,18 +846,20 @@ def _worker_environment(environ: Mapping[str, str]) -> dict[str, str]:
             result.pop(name, None)
     result.pop(_TESTING_ENV, None)
     result.pop(_AMP_BIN_ENV, None)
+    result.pop("AMP_PRIVATE_TOKEN", None)
+    result.pop("AMP_BUC_TOKEN", None)
     result["HOME"] = os.fspath(_account_home())
     result["PATH"] = "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
     return result
 
 
 def _child_environment(environ: Mapping[str, str]) -> dict[str, str]:
-    """Build the minimal environment visible to the credentialed AMP child."""
+    """Build a minimal credential-free environment shared by AMP and Git."""
     result: dict[str, str] = {
         "HOME": os.fspath(_account_home()),
         "PATH": "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
     }
-    # Authentication is preconfigured in the account home; do not inject BUC.
+    # Only _execute_amp injects credentials, after all authorization gates.
     for name in ("LANG", "LC_ALL", "LC_CTYPE", "TZ"):
         value = environ.get(name)
         if value:
@@ -892,17 +973,39 @@ def _authorize(action: str, repo: Path,
 
 def _execute_amp(binary: str, argv: Sequence[str], cwd: Path,
                  environ: Mapping[str, str]) -> int:
+    child_environment = dict(environ)
     command = [binary, *argv, *_FIXED_FLAGS]
+    if tuple(argv[:2]) in {("api", "get"), ("api", "list"), ("branch", "get")}:
+        # Native read selectors use context overrides rather than CLI flags.
+        overrides = {"--branch": "AMP_BRANCH", "--api-name": "AMP_API_NAME"}
+        command = [binary, *argv[:2]]
+        for flag, value in zip(argv[2::2], argv[3::2]):
+            if flag in overrides:
+                child_environment[overrides[flag]] = value
+            else:
+                command.extend((flag, value))
+        command.extend(_FIXED_FLAGS)
+    config = None
+    if tuple(argv) != ("--version",):
+        child_environment["AMP_PRIVATE_TOKEN"] = _load_amp_private_token()
+        config = _load_amp_config()
     try:
-        completed = subprocess.run(
-            command,
-            cwd=os.fspath(cwd),
-            env=dict(environ),
-            stdin=subprocess.DEVNULL,
-            check=False,
-        )
-    except OSError as exc:
-        raise AmpSafeError("cannot invoke amp: %s" % exc) from exc
+        with (TemporaryDirectory(prefix="jarvis-amp-") if config is not None
+              else nullcontext()) as amp_home:
+            if amp_home is not None:
+                # Stored auth.type wins over env tokens, so select PAT in a disposable home.
+                (Path(amp_home) / "config.yaml").write_text(
+                    json.dumps(config), encoding="utf-8")
+                child_environment["AMP_HOME"] = amp_home
+            completed = subprocess.run(
+                command,
+                cwd=os.fspath(cwd),
+                env=child_environment,
+                stdin=subprocess.DEVNULL,
+                check=False,
+            )
+    except OSError:
+        raise AmpSafeError("cannot prepare or invoke amp") from None
     return int(completed.returncode)
 
 
