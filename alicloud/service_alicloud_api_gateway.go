@@ -6,6 +6,7 @@ import (
 	"log"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -42,6 +43,31 @@ func (s *CloudApiService) DescribeApiGatewayGroup(id string) (*cloudapi.Describe
 		return apiGroup, WrapErrorf(NotFoundErr("ApiGatewayGroup", id), NotFoundMsg, ProviderERROR)
 	}
 	return apiGroup, nil
+}
+
+func (s *CloudApiService) DescribeApiGatewayDomain(id string) (*cloudapi.DescribeDomainResponse, error) {
+	parts := strings.Split(id, COLON_SEPARATED)
+	if len(parts) < 2 {
+		return nil, WrapError(fmt.Errorf("invalid resource id format: %s, expected <group_id>:<domain_name>", id))
+	}
+	domain := &cloudapi.DescribeDomainResponse{}
+	request := cloudapi.CreateDescribeDomainRequest()
+	request.RegionId = s.client.RegionId
+	request.GroupId = parts[0]
+	request.DomainName = parts[1]
+
+	raw, err := s.client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
+		return cloudApiClient.DescribeDomain(request)
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"NotFoundDomain", "NotFound"}) {
+			return domain, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return domain, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	domain, _ = raw.(*cloudapi.DescribeDomainResponse)
+	return domain, nil
 }
 
 func (s *CloudApiService) WaitForApiGatewayGroup(id string, status Status, timeout int) error {
