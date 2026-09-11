@@ -1,4 +1,26 @@
-## 1.293.0 (Unreleased)
+## 1.294.0 (Unreleased)
+## 1.293.0 (September 11, 2026)
+
+- **New Resource:** `alicloud_cms_dataset` ([#10454](https://github.com/aliyun/terraform-provider-alicloud/issues/10454))
+- **New Resource:** `alicloud_cr_instance_customized_domain` ([#10485](https://github.com/aliyun/terraform-provider-alicloud/issues/10485))
+- **New Data Source:** `alicloud_cms_datasets` ([#10454](https://github.com/aliyun/terraform-provider-alicloud/issues/10454))
+- **New Data Source:** `alicloud_esa_lists` ([#10477](https://github.com/aliyun/terraform-provider-alicloud/issues/10477))
+
+ENHANCEMENTS:
+
+- resource/alicloud_realtime_compute_vvp_instance: support auto_renew for subscription instance. ([#10277](https://github.com/aliyun/terraform-provider-alicloud/issues/10277))
+- resource/alicloud_ecs_snapshot: add configurable wait_until policy. ([#10425](https://github.com/aliyun/terraform-provider-alicloud/issues/10425))
+- alicloud: deprecate tags schema helpers without Elem and add WithElements variants. ([#10463](https://github.com/aliyun/terraform-provider-alicloud/issues/10463))
+- testcase: upgrade tea-rpc to v1.3.4 and add nil list element regression test. ([#10475](https://github.com/aliyun/terraform-provider-alicloud/issues/10475))
+- resource/alicloud_nlb_listener: remove idle_timeout validation upper bound and test 3600. ([#10489](https://github.com/aliyun/terraform-provider-alicloud/issues/10489))
+- resource/alicloud_ecs_auto_snapshot_policy: support association type and target tags; data-source/alicloud_ecs_auto_snapshot_policies: support association type and target tags. ([#10498](https://github.com/aliyun/terraform-provider-alicloud/issues/10498))
+
+BUG FIXES:
+
+- resource/alicloud_alikafka_sasl_user: Fixed the error of resource not found during creation; resource/alicloud_alikafka_sasl_acl: Fixed the error of resource not found during creation. ([#10362](https://github.com/aliyun/terraform-provider-alicloud/issues/10362))
+- resource/alicloud_alb_server_group: Fixed health_check_template_id invalid error. ([#10432](https://github.com/aliyun/terraform-provider-alicloud/issues/10432))
+- resource/alicloud_nlb_listener: reject empty strings in certificate_ids and ca_certificate_ids. ([#10473](https://github.com/aliyun/terraform-provider-alicloud/issues/10473))
+
 ## 1.292.0 (September 8, 2026)
 
 - **New Resource:** `alicloud_threat_detection_rd_default_sync_list` ([#10207](https://github.com/aliyun/terraform-provider-alicloud/issues/10207))
