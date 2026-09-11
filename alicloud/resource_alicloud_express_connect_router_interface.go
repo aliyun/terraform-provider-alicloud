@@ -708,6 +708,12 @@ func resourceAliCloudExpressConnectRouterInterfaceDelete(d *schema.ResourceData,
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
 
+			expressConnectServiceV2 := ExpressConnectServiceV2{client}
+			stateConf := BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 5*time.Second, expressConnectServiceV2.ExpressConnectRouterInterfaceStateRefreshFunc(d.Id(), "Status", []string{}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+
 		}
 	}
 
