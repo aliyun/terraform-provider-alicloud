@@ -32,7 +32,7 @@ allowed-tools: Bash, Read, Write, Edit, AskUserQuestion
 4. **所有命令默认带 `-o json`** —— 便于解析 `nextActions` / `error` 字段。
 5. **危险操作显式 `--yes`**（branch delete / api delete 等），并先 `--dry-run`。
 6. **环境名全小写**（`daily / pre / online`）—— amp 手册明确要求，错大小写会触发 `INVALID_INPUT`。
-7. **认证由运行环境预置，skill 只验证状态** —— AMP 必须同时满足 `authType=private_token` 和 `authenticated=true`。不执行或指导 `login`、`logout`、BUC 回退或凭据配置；不读、不打印、不写入 git/日志、不要求在对话中粘贴 token 或 AK/SK。认证异常立即停止并报告运行环境问题。
+7. **AMP 经可信 wrapper 复用 Jarvis Code PAT，skill 只验证、不接触明文** —— 凭据固定来自真实 OS 账号 home 下 `~/.config/a1/identities/jarvis/auth.yaml` 的 `platforms.code`，由 wrapper 内部读取校验。必须通过 step 2.5 的 `authType=private_token`、`authenticated=true` 及目标项目只读后端验证；不执行或指导 `login`、`logout`，不回退 BUC/个人/TerraformRD，不要求另配 AMP 凭据。不读、不打印、不写入 git/日志、不索取 token 或 AK/SK；认证异常立即停止并报告源凭据运行环境问题。
 8. **Jarvis 访问 Code 私库只用 Jarvis private token** —— 只读 API 走
    `bin/a1id -- repo ...`；clone/push 走本 skill 的
    `scripts/jarvis-code-git.sh`。禁止使用 TerraformRD/个人身份、SSH key、`SshUrl`，也禁止把
@@ -69,13 +69,13 @@ Claude/Claude Code **禁止直接执行 raw amp**，必须使用仓库内可信 
 
 - **task-oriented**（与 amp CLI 同款）：按"用户要完成的事"分组，不按后端 Action 透出。
 - **可脚本化**：所有 Bash 调用统一 `-o json --no-interactive`，删除类追加 `--yes`。
-- **代跳但不代决策**：能用文档默认值的（endpoint / openapi-version）skill 自动 set；工作区参数不足时向用户确认。认证由运行环境负责，skill 仅验证预置的 private token 状态，异常时报告运行环境问题。
+- **代跳但不代决策**：能用文档默认值的（endpoint / openapi-version）skill 自动 set；工作区参数不足时向用户确认。AMP 由可信 wrapper 复用运行环境已有的 Jarvis Code PAT；此复用已经用户授权，不需要用户为 AMP 手动配置第二份凭据。skill 仅验证本地认证状态和目标服务权限，异常交运行环境维护。
 
 ---
 
 ## 2. bootstrap 自动代跳
 
-> 这是本 skill 与"普通 routing skill"的核心差异：**用户调用一次本 skill，bootstrap 必须让 `amp doctor` 的常规检查就绪**，再继续后续动作。下面各步幂等执行，已就绪的非认证配置直接跳过；认证始终按 step 2.5 验证，不自动补齐凭据。AK/SK 相关检查只作为低频可选项记录。
+> 这是本 skill 与"普通 routing skill"的核心差异：**用户调用一次本 skill，bootstrap 必须让 `amp doctor` 的常规检查就绪**，再继续后续动作。下面各步幂等执行，已就绪的非认证配置直接跳过；认证始终按 step 2.5 验证 wrapper 的 Jarvis PAT 复用及目标项目后端访问，不另配或复制 AMP 凭据。`--version` 无需读取 token；请求签名按 step 2.6 保留既有 OAuth 配置并验证，不自动配置 AK/SK。
 
 ### 2.1 amp 二进制体检与版本更新
 
@@ -110,7 +110,7 @@ amp --version 2>/dev/null || echo "AMP_NOT_INSTALLED"
 amp doctor -o json
 ```
 
-按 JSON 输出里 `data.checks` 的失败项分别走 step 2.3-2.7；无论 doctor 是否通过，都必须执行 step 2.5。只补齐非认证配置，认证失败立即报告运行环境问题；不得执行输出中建议的登录、登出或 BUC 回退动作。**配置就绪后，回到 step 2.8 复查。** 如果只剩 `AKSK_MISSING`，按 step 2.6 记录为可选项，不阻塞常规 bootstrap。
+按 JSON 输出里 `data.checks` 的失败项分别走 step 2.3-2.7；无论 doctor 是否通过，都必须执行 step 2.5。只补齐非认证配置，认证失败立即报告运行环境问题；不得执行输出中建议的登录、登出或 BUC 回退动作。**配置就绪后，回到 step 2.8 复查。** `AKSK_MISSING` 按 step 2.6 排查既有 OAuth 请求签名来源，不能仅因 PAT 本地认证成功而忽略。
 
 ### 2.3 endpoint 缺失
 
@@ -128,7 +128,20 @@ amp config set openapi-version 2026-04-20
 
 （手册 4.2 默认值，业务版本另在 step 2.7 工作区里写）
 
-### 2.5 验证运行环境预置的 AMP private token
+### 2.5 验证 Jarvis PAT 复用
+
+wrapper 在内部复用同仓 `scripts/jarvis-code-git.sh` 的 Code 凭据读取校验逻辑，固定从真实 OS
+账号 home 下 `~/.config/a1/identities/jarvis/auth.yaml` 的 `platforms.code` 获取 PAT。
+仅通过 AMP 子进程环境 `AMP_PRIVATE_TOKEN` 传递：模型不读取明文，token 不进入 argv/日志，
+不复制写入 `~/.amp` 凭据。每次调用使用自动清理的临时 `AMP_HOME`，其配置只保留原当前 profile
+的 endpoint、OpenAPI 版本、HTTP 超时，以及 `credentials` 的严格非 secret 白名单
+`source`、`oauth_profile`、`oauth_site`（仅字符串，`source` 仅 `local` / `oauth`）；
+固定 `auth.type=private_token` 并关闭 HTTP debug。不复制其它 profile、token、AK/SK、
+`auth.token_file` 或任何 secret 文件，不修改真实配置。缺失的签名 metadata 不自动补齐，
+由原生 AMP 报错。AMP 子进程的 `HOME` 仍是真实 OS 账号 home，让原生 OAuth 按既有
+profile/site 获取请求签名凭据；这不代表回退 BUC 身份认证。除无需读 token 的 `--version`
+外，所有 AMP 调用的身份认证都使用 Jarvis PAT；不依赖 AMP default profile 已缓存的
+BUC/私有 token 或 ambient token，也不接受它们作回退。
 
 通过可信 wrapper 执行只读状态检查：
 
@@ -139,20 +152,40 @@ amp config set openapi-version 2026-04-20
 
 wrapper 自动附加 `-o json --no-interactive`；调用 wrapper 的 `whoami` 时不再重复传这些参数。
 
-仅在命令成功、JSON 可解析，且返回的认证状态同时满足以下两项时通过：
+仅在命令成功、JSON 可解析，且返回的认证状态同时满足以下两项时，本地状态检查通过：
 
 - `authType` 严格等于字符串 `private_token`；
 - `authenticated` 严格等于布尔值 `true`。
 
 字段缺失、类型不符、其他认证类型（包括 BUC）、未认证或命令失败均视为运行环境认证异常，立即停止后续分支、clone、publish 等操作。仅报告脱敏后的错误码和状态，不输出原始凭据。
 
-不检查 `AMP_BUC_TOKEN` 是否存在来代替状态验证，也不以 doctor 通过代替此检查。skill 不执行或指导 `amp login`、`amp logout`，不打开浏览器，不配置凭据，不回退 BUC；由运行环境修复后重新验证。
+**`whoami` 的本地成功不等于后端认证/权限有效**。还须对已验证的目标项目执行只读查询：
 
-### 2.6 AK/SK 可选状态（低频）
+```bash
+/usr/bin/python3 -I <jarvis-root>/bootstrap/amp_safe.py \
+  --repo-root <absolute-workspace-or-model-repo> branch list --project-id <verified-project-id>
+```
 
-常规 amp 分支、clone、publish、policy/domain/error-code/gateway 和 flow 操作使用 step 2.5 验证通过的 private token，不要求 AK/SK。不要把 `AKSK_MISSING` 当作常规 bootstrap 阻塞项。
+缺少已验证的 `project-id` 时，先按 step 2.7 定位项目，再回到此处；不得猜测 ID 或用其它项目替代。
+只有目标项目查询成功（包括后端业务结果成功）才确认 AMP 后端有效，允许继续分支、clone、publish。
 
-仅当明确选用的低频旧链路返回 `AKSK_MISSING` 时，停止并报告运行环境配置问题；skill 不执行或指导凭据配置，不读取、打印或索取 AK/SK。AK/SK 就绪也不能替代 step 2.5 的 private token 验证。
+源凭据缺失、非 `private_token`/内容错误、文件权限不安全或 HTTP 401/403 均 fail-closed；
+由运行环境维护源 `auth.yaml` 及对应服务权限后重新验证，不自动重置凭据。
+不检查 `AMP_BUC_TOKEN` 是否存在来代替状态验证，也不以 doctor 通过代替上述检查。
+skill 不执行或指导 `amp login`、`amp logout`，不打开浏览器，不回退 BUC/个人/TerraformRD；
+此同源复用已经用户授权，不再要求用户手动为 AMP 配置第二份凭据。
+
+### 2.6 POP 请求签名与既有 OAuth 配置
+
+`private_token` 是身份认证方式，不等于免除 POP 请求签名；即使 `whoami` 返回
+`authenticated=true`，普通 `api get` / `branch list` 等后端调用仍可能需要 AK/SK 签名。
+不能断言常规流程不需要 AK，也不能把实际请求的 `AKSK_MISSING` 当作可忽略的低频旧链路提示。
+
+原当前 profile 已有 `credentials.source=oauth` 时，临时 profile 保留既有
+`oauth_profile` / `oauth_site`，由原生 AMP 通过该 OAuth 来源获取签名凭据，无需另配 PAT。
+先确认这三个非 secret metadata 未在投影中遗漏；不读取签名 secret 文件，不自动配置、
+打印或索取 AK/SK，不修改真实配置，不触发登录或 BUC 回退。metadata / 签名来源缺失时
+沿用原生错误，停止并报告运行环境问题；签名就绪不能替代 step 2.5 的 PAT 与后端权限验证。
 
 ### 2.7 工作区上下文缺失
 
@@ -191,19 +224,20 @@ ls .amp/context.yaml 2>/dev/null
 amp doctor -o json
 ```
 
-重新执行 step 2.5 的 wrapper `whoami` 状态检查，确认 `authType=private_token` 且 `authenticated=true`；JSON 里除可选 `AKSK_MISSING` 外，所有常规 `checks[*].status == "ok"` 才算 bootstrap 完成。认证异常立即停止并报告运行环境问题，不执行 doctor 建议的登录动作。其他常规项还红 → 回到对应 step 2.3-2.7，**不要继续 step 3**。如果仅剩 AK/SK 相关检查失败，记录为低频可选项后继续。
+重新执行 step 2.5 的 wrapper `whoami`，确认 `authType=private_token` 且 `authenticated=true`，并对已验证的目标 `project-id` 执行只读 `branch list` 确认后端成功；所有常规 `checks[*].status == "ok"` 才算 bootstrap 完成。AMP 与 Code 使用同源 Jarvis PAT，但此处通过不替代 step 2.9 的 Code 服务权限检查。认证或签名异常立即停止并报告源 `auth.yaml`、既有 OAuth 签名来源或服务权限运行环境问题，不执行 doctor 建议的登录动作。常规项还红 → 回到对应 step 2.3-2.7，**不要继续 step 3**；`AKSK_MISSING` 按 step 2.6 处理，不能标为可选后继续。
 
 ### 2.9 Jarvis Code private token 体检
 
-Jarvis/数字人环境在 clone 前必须验证独立的 jarvis Code 凭据；AMP private token 与 Code private
-token 是两套独立认证，前者成功不能替代后者；此处仅验证运行环境预置的 Code 凭据：
+Jarvis/数字人环境在 clone 前仍须验证 Code 服务权限；AMP 与 Code 复用同一份
+`~/.config/a1/identities/jarvis/auth.yaml` 的 `platforms.code` PAT，不是两套独立凭据。
+两端服务权限仍分别验证：AMP 后端成功不能替代 Code 仓库访问成功，反之亦然。
 
 ```bash
 bash <skill-dir>/scripts/jarvis-code-git.sh check
 bin/a1id -- repo view <group/repo> -f json
 ```
 
-缺凭据、凭据失效或仓库访问失败时，停止 clone/push 并报告运行环境凭据或权限问题。skill 不执行或指导 Code 登录、登出或凭据配置，不读取或索取 token，不得借 TerraformRD、个人身份或 SSH 绕过。
+缺凭据、凭据失效或仓库访问失败时，停止 clone/push 并报告源 `auth.yaml` 或 Code 仓库权限运行环境问题。skill 不执行或指导 Code 登录、登出或另配凭据，不读取或索取 token，不得借 TerraformRD、个人身份或 SSH 绕过。
 
 ---
 
@@ -371,8 +405,8 @@ helper 从 `~/.config/a1/identities/jarvis/auth.yaml` 读取 `platforms.code` pr
 
 | 失败信号 | 原因 | 处理 |
 |---|---|---|
-| `jarvis Code auth ... missing` | jarvis 隔离配置无 Code private token | 停止并报告运行环境 Code 凭据缺失；不执行或指导登录，不回退 SSH |
-| `HTTP 401/403` | private token 失效或无仓库权限 | 用 `bin/a1id -- repo view/branch list` 区分 token 失效与 repo ACL；保持 jarvis 身份 |
+| `jarvis Code auth ... missing` | 共享源 `auth.yaml` 无 Jarvis Code private token | 停止并报告源凭据运行环境问题；不另配 AMP 凭据、不执行或指导登录，不回退 SSH |
+| `HTTP 401/403` | 共享 PAT 失效或无 Code 仓库权限 | 停止 clone/push，报告源 `auth.yaml` 或 Code repo ACL 运行环境问题；AMP 成功不代表 Code 可用，不自动重置或切身份 |
 | `Permission denied (publickey)` | 错误地进入了 SSH 路径 | 停止并改用 `jarvis-code-git.sh`；**不要配置或借用 SSH key** |
 | `remote: ERROR: ... not found` | 仓库不存在 / 后端 SshUrl 有误 | 让用户复核 pop-code，或走 step 4.2 fallback 手动提供 URL |
 | `error: Remote branch <name> not found` | amp branch 还没同步到 git 远端 | `amp branch get --branch <name>` 确认存在 → 等 30s 重试；仍失败则开 issue |
@@ -511,13 +545,14 @@ Code: <错误码>
 Suggestion: <建议>
 ```
 
-下面列 6 条本 skill 高频遇到的，**按下表处理，不要循环重试**。`Suggestion` / `nextActions` 中的登录、登出、BUC 回退或凭据配置建议不执行，统一按 step 2.5 / 2.9 报告运行环境问题：
+下面列出本 skill 高频遇到的错误，**按下表处理，不要循环重试**。`Suggestion` / `nextActions` 中的登录、登出、BUC 回退、另配或自动重置凭据建议不执行；认证故障统一按 step 2.5 / 2.9 报告源 `auth.yaml` 或对应服务权限的运行环境维护问题：
 
 | Code | 触发场景 | 修复 |
 |---|---|---|
 | `ENDPOINT_MISSING` | 没配 endpoint | `amp config set endpoint https://ampv2inner-share.aliyuncs.com` |
-| `AUTH_TOKEN_MISSING` | 运行环境 token 缺失或失效 | 停止并报告运行环境认证问题；不执行或指导登录，修复后重跑 step 2.5 |
-| `AKSK_MISSING` | 低频旧链路要求 AK/SK | 常规流程记为可选项；明确选用的旧链路停止并报告运行环境配置问题，不配置凭据 |
+| `AUTH_TOKEN_MISSING` / wrapper 凭据校验失败 | 源 `auth.yaml` 缺失、非 `private_token`/内容错误或权限不安全 | fail-closed；交运行环境维护 Jarvis `platforms.code` 源凭据，不另配 AMP 凭据；修复后重跑 step 2.5 |
+| `HTTP 401/403` | 共享 PAT 失效或无 AMP 目标项目权限 | 停止并报告源 `auth.yaml` 或 AMP 服务权限问题；不回退 BUC/个人/TerraformRD、不自动重置；修复后重跑目标项目只读验证 |
+| `AKSK_MISSING` | POP 请求签名来源缺失，PAT 本地认证成功也可能发生 | 按 step 2.6 检查既有 OAuth 非 secret metadata 是否完整投影；停止并报告签名来源问题，不自动配置或打印 AK，不回退 BUC |
 | `PROJECT_ID_MISSING` | 工作区缺 project_id | `amp init --pop-code <code> --version <version>` |
 | `BRANCH_MISSING` | 命令需要分支但上下文没有 | `amp context set branch <name>` 或命令加 `--branch` |
 | `INVALID_INPUT`（env 大小写）| 环境名传成 `Daily` / `PRE` | 改全小写：`daily` / `pre` / `online` |
@@ -558,7 +593,7 @@ amp <cmd> [args] \
 
 skill 内部流程：
 
-1. step 2 bootstrap 体检（doctor → 补 endpoint/openapi-version → whoami 验证 `authType=private_token` 且 `authenticated=true` → workspace；AK/SK 仅低频可选）。认证异常立即报告运行环境问题，不进入后续动作。
+1. step 2 bootstrap 体检（doctor → 补 endpoint/openapi-version → wrapper 复用 Jarvis PAT，保留既有 OAuth 签名配置，whoami 验证 `authType=private_token` 且 `authenticated=true` → workspace → 目标项目只读 branch list 成功）。认证或请求签名异常立即报告源凭据、既有 OAuth 签名来源或服务权限运行环境问题，不进入后续动作。
 2. step 2.7 `amp init --pop-code ecs --pop-version 2014-05-26 --debug -o json`
    → 解析 debug 获得 `SshUrl = git@...cloudspec-model/ECS_pop_Ecs_2014-05-26.git`。
 3. step 3.3 `amp branch create --project-id <context.project_id> --branch feature/add-user-tag --description "..."`。
@@ -572,7 +607,7 @@ skill 内部流程：
 11. 输出 `nextActions[]`，结束。
 
 **用户只需说一句话**，提供 3 个关键信息：`pop-code` + `version` + `分支名`。
-bootstrap 仅验证运行环境已配置的认证；clone 前独立检查 Code private token，并在路径未确定时确认 clone 路径。全程不执行或指导登录，认证或权限异常时停止并报告运行环境问题。
+bootstrap 验证 wrapper 复用的 Jarvis PAT 与 AMP 目标项目权限；clone 前另验同源 PAT 的 Code 仓库权限，并在路径未确定时确认 clone 路径。无需第二份 AMP 凭据；全程不执行或指导登录，认证或权限异常时停止并报告源 `auth.yaml` 或服务权限运行环境问题。
 
 ### 剧本 B：用户提供 namespace
 
