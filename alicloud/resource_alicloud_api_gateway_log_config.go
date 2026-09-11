@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -26,18 +27,28 @@ func resourceAlicloudApiGatewayLogConfig() *schema.Resource {
 		},
 		Schema: map[string]*schema.Schema{
 			"sls_project": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				Description: "The name of the Log Service project.",
 			},
 			"sls_log_store": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				Description: "The name of the Log Service Logstore.",
 			},
 			"log_type": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"PROVIDER"}, false),
+				Description:  "The log type. Valid values: `PROVIDER`.",
+			},
+			"create_slr": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     false,
+				ForceNew:    true,
+				Description: "Specifies whether to create a service-linked role. The system creates the service-linked role (AliyunServiceRoleForApiGatewayLogPush) when this parameter is set to true.",
 			},
 		},
 	}
@@ -53,6 +64,10 @@ func resourceAlicloudApiGatewayLogConfigCreate(d *schema.ResourceData, meta inte
 	request["SlsProject"] = d.Get("sls_project")
 	request["SlsLogStore"] = d.Get("sls_log_store")
 	request["LogType"] = d.Get("log_type")
+
+	if v, ok := d.GetOk("create_slr"); ok && v.(bool) {
+		request["CreateSlr"] = v
+	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
@@ -89,7 +104,11 @@ func resourceAlicloudApiGatewayLogConfigRead(d *schema.ResourceData, meta interf
 	}
 
 	d.Set("sls_project", object["SlsProject"])
-	d.Set("sls_log_store", object["SlsLogStore"])
+	if slsLogStore, ok := object["SlsLogStore"].(string); ok {
+		d.Set("sls_log_store", strings.TrimPrefix(slsLogStore, "acs_apigateway-"))
+	} else {
+		d.Set("sls_log_store", object["SlsLogStore"])
+	}
 	d.Set("log_type", object["LogType"])
 
 	return nil
