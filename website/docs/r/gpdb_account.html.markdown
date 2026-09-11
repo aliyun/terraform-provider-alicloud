@@ -14,6 +14,8 @@ For information about GPDB Account and how to use it, see [What is Account](http
 
 -> **NOTE:** Available since v1.142.0.
 
+-> **NOTE:** The `account_password_wo` and `account_password_wo_version` arguments require Terraform v1.11.0 or later. When `account_password_wo` is in use, `account_password` is not stored in the state or plan and reads back empty; use the `has_account_password_wo` attribute to check whether the password is managed by `account_password_wo`.
+
 ## Example Usage
 
 Basic Usage
@@ -79,7 +81,9 @@ resource "alicloud_gpdb_account" "default" {
 The following arguments are supported:
 * `account_description` - (Optional) The description of the account.
 * `account_name` - (Required, ForceNew) The account name.
-* `account_password` - (Required) AccountPassword
+* `account_password` - (Optional, Computed) AccountPassword. Exactly one of `account_password` and `account_password_wo` can be set.
+* `account_password_wo` - (Optional, Sensitive, Available since v1.293.0) The write-only password of the account. It is only sent to the server when the resource is created or updated and is never stored in the state or plan. It requires Terraform v1.11.0 or later and must be used together with `account_password_wo_version`. Exactly one of `account_password` and `account_password_wo` can be set.
+* `account_password_wo_version` - (Optional, Computed, Available since v1.293.0) The version of the write-only password. The write-only password is re-sent to the server only when this argument changes, so it must be changed whenever `account_password_wo` changes. Once set, the last version remains in the state after this argument is removed from the configuration together with `account_password_wo`.
 * `account_type` - (Optional, ForceNew, Available since v1.230.0) Account type. The value range is as follows:
 
   Normal: Normal account number.
@@ -96,6 +100,7 @@ The following arguments are supported:
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<db_instance_id>:<account_name>`.
 * `status` - The status of the resource
+* `has_account_password_wo` - Whether the password of the account is currently managed by `account_password_wo`. When it is `true`, `account_password` reads back empty because the write-only password is never stored in the state.
 
 ## Timeouts
 

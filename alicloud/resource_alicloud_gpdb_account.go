@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -40,9 +41,29 @@ func resourceAliCloudGpdbAccount() *schema.Resource {
 				ValidateFunc: StringMatch(regexp.MustCompile("^[\u4E00-\u9FA5A-Za-z0-9_]+$"), "The account name."),
 			},
 			"account_password": {
-				Type:      schema.TypeString,
-				Required:  true,
-				Sensitive: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				Sensitive:    true,
+				ExactlyOneOf: []string{"account_password", "account_password_wo"},
+			},
+			"account_password_wo": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Sensitive:    true,
+				WriteOnly:    true,
+				ExactlyOneOf: []string{"account_password", "account_password_wo"},
+				RequiredWith: []string{"account_password_wo_version"},
+			},
+			"account_password_wo_version": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				RequiredWith: []string{"account_password_wo"},
+			},
+			"has_account_password_wo": {
+				Type:     schema.TypeBool,
+				Computed: true,
 			},
 			"account_type": {
 				Type:     schema.TypeString,
@@ -84,6 +105,11 @@ func resourceAliCloudGpdbAccountCreate(d *schema.ResourceData, meta interface{})
 		request["AccountDescription"] = v
 	}
 	request["AccountPassword"] = d.Get("account_password")
+	if woValue, err := getWriteOnlyStringValue(d, cty.GetAttrPath("account_password_wo")); err != nil {
+		return WrapError(err)
+	} else if woValue != "" {
+		request["AccountPassword"] = woValue
+	}
 	if v, ok := d.GetOk("account_type"); ok {
 		request["AccountType"] = v
 	}
@@ -153,6 +179,24 @@ func resourceAliCloudGpdbAccountRead(d *schema.ResourceData, meta interface{}) e
 	d.Set("db_instance_id", parts[0])
 	d.Set("account_name", parts[1])
 
+	hasPasswordWo := false
+	if v, ok := d.GetOk("has_account_password_wo"); ok && v.(bool) {
+		hasPasswordWo = true
+	}
+	if rawConfig := d.GetRawConfig(); !rawConfig.IsNull() {
+		woValue, err := getWriteOnlyStringValue(d, cty.GetAttrPath("account_password_wo"))
+		if err != nil {
+			return WrapError(err)
+		}
+		hasPasswordWo = woValue != ""
+	}
+	if hasPasswordWo {
+		d.Set("has_account_password_wo", true)
+		d.Set("account_password", nil)
+	} else {
+		d.Set("has_account_password_wo", nil)
+	}
+
 	return nil
 }
 
@@ -204,7 +248,15 @@ func resourceAliCloudGpdbAccountUpdate(d *schema.ResourceData, meta interface{})
 	if d.HasChange("account_password") {
 		update = true
 	}
+	if d.HasChange("account_password_wo_version") {
+		update = true
+	}
 	request["AccountPassword"] = d.Get("account_password")
+	if woValue, err := getWriteOnlyStringValue(d, cty.GetAttrPath("account_password_wo")); err != nil {
+		return WrapError(err)
+	} else if woValue != "" {
+		request["AccountPassword"] = woValue
+	}
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {

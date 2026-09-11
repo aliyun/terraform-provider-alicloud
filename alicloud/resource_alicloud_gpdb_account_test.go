@@ -387,3 +387,79 @@ func TestUnitAlicloudGPDBAccount(t *testing.T) {
 	err = resourceAliCloudGpdbAccountDelete(dExisted, rawClient)
 	assert.Nil(t, err)
 }
+
+func TestAccAliCloudGPDBAccount_passwordWo(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_gpdb_account.default"
+	ra := resourceAttrInit(resourceId, AlicloudGPDBAccountMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &GpdbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeGpdbAccount")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tftest%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGPDBAccountBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.GPDBDBInstancePlanSupportRegions)
+		},
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_id":              "${alicloud_gpdb_instance.default.id}",
+					"account_name":                name,
+					"account_password_wo":         "TFTest123",
+					"account_password_wo_version": 1,
+					"account_description":         name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"account_name":                name,
+						"account_description":         name,
+						"db_instance_id":              CHECKSET,
+						"account_password":            "",
+						"account_password_wo_version": "1",
+						"has_account_password_wo":     "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"account_password_wo":         "TFTest123" + "update",
+					"account_password_wo_version": 2,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"account_password_wo_version": "2",
+						"has_account_password_wo":     "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"account_password":            "TFTest123",
+					"account_password_wo":         REMOVEKEY,
+					"account_password_wo_version": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"account_password":            "TFTest123",
+						"account_password_wo_version": "2",
+						"has_account_password_wo":     "false",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"account_password", "account_password_wo_version"},
+			},
+		},
+	})
+}
