@@ -30,13 +30,11 @@ EOF
 read_code_auth() {
   local mode="$1"
   [ -n "$python_bin" ] || die "python3 is required"
-  [ "$mode" = "amp-config" ] || [ -f "$auth_file" ] || die "jarvis Code auth is missing: $auth_file"
+  [ -f "$auth_file" ] || die "jarvis Code auth is missing: $auth_file"
   "$python_bin" - "$auth_file" "$mode" <<'PY'
-import json
 import os
 import stat
 import sys
-from datetime import date
 
 try:
     import yaml
@@ -44,59 +42,6 @@ except Exception:
     raise SystemExit("PyYAML is required to read the isolated a1 auth file")
 
 path, mode = sys.argv[1:]
-if mode == "amp-config":
-    # Preserve routing and signing-source metadata, never credential contents.
-    try:
-        with open(os.path.join(os.environ["HOME"], ".amp", "config.yaml"),
-                  encoding="utf-8") as stream:
-            config = yaml.safe_load(stream)
-        if not isinstance(config, dict):
-            raise ValueError()
-        name = config.get("current_profile", "default")
-        if not isinstance(name, str) or not name.strip():
-            raise ValueError()
-        profiles = config.get("profiles", {"default": {}})
-        if not isinstance(profiles, dict) or not isinstance(profiles.get(name), dict):
-            raise ValueError()
-        source = profiles[name]
-        profile = {"auth": {"type": "private_token"}}
-        for key in ("endpoint", "openapi_version"):
-            if key in source:
-                value = source[key]
-                if key == "openapi_version" and type(value) is date:
-                    value = value.isoformat()
-                if not isinstance(value, str) or not value.strip():
-                    raise ValueError()
-                profile[key] = value
-        credentials = source.get("credentials", {})
-        if not isinstance(credentials, dict):
-            raise ValueError()
-        metadata = {}
-        for key in ("source", "oauth_profile", "oauth_site"):
-            if key in credentials:
-                value = credentials[key]
-                if (not isinstance(value, str) or not value.strip()
-                        or (key == "source" and value not in {"local", "oauth"})):
-                    raise ValueError()
-                metadata[key] = value
-        if metadata:
-            profile["credentials"] = metadata
-        http = config.get("http", {})
-        if not isinstance(http, dict):
-            raise ValueError()
-        timeout = http.get("timeout_seconds", 30)
-        if type(timeout) is not int or timeout < 0:
-            raise ValueError()
-        result = {"current_profile": name, "profiles": {name: profile},
-                  "output": {"default": "json"},
-                  "http": {"timeout_seconds": timeout, "debug": False},
-                  "upgrade": {}}
-        output = json.dumps(result, allow_nan=False)
-    except Exception:
-        raise SystemExit("AMP config is unavailable or invalid") from None
-    print(output)
-    raise SystemExit(0)
-
 file_mode = stat.S_IMODE(os.stat(path).st_mode)
 if file_mode & 0o077:
     raise SystemExit("jarvis Code auth file must not be group/world accessible")
@@ -130,7 +75,6 @@ PY
 # this path: stdout is the credential response channel.
 if [ "${JARVIS_CODE_ASKPASS_MODE:-0}" = "1" ]; then
   case "${1:-}" in
-    AMPConfig) read_code_auth amp-config ;;
     *Username*) read_code_auth user ;;
     *Password*) read_code_auth token ;;
     *) printf '\n' ;;
