@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud"
+	providerregistry "github.com/aliyun/terraform-provider-alicloud/alicloud/provider/registry"
 	set "github.com/deckarep/golang-set"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	log "github.com/sirupsen/logrus"
@@ -78,6 +79,7 @@ func main() {
 	fileRegex := regexp.MustCompile("alicloud/(resource|data_source)[0-9a-zA-Z_]*.go")
 	fileTestRegex := regexp.MustCompile("alicloud/(resource|data_source)[0-9a-zA-Z_]*_test.go")
 	fileDocsRegex := regexp.MustCompile("website/docs/(r|d)/[0-9a-zA-Z_]*.html.markdown")
+	frameworkNames := frameworkRegisteredNames()
 	resourceNameMap := make(map[string]struct{})
 	for _, file := range diff.Files {
 		resourceName := ""
@@ -97,6 +99,11 @@ func main() {
 			continue
 		} else {
 			resourceNameMap[resourceName] = struct{}{}
+		}
+
+		if _, ok := frameworkNames[resourceName]; ok {
+			log.Infof("==> %s is registered framework-native, skipping the SDKv2 schema consistency check\n\n", resourceName)
+			continue
 		}
 
 		log.Infof("==> Checking resource or data-source %s attributes consistency...", resourceName)
@@ -130,6 +137,19 @@ func main() {
 		os.Exit(exitCode)
 	}
 	return
+}
+
+func frameworkRegisteredNames() map[string]struct{} {
+	names := make(map[string]struct{})
+	for _, sp := range providerregistry.ServicePackages() {
+		for _, d := range sp.Resources {
+			names[d.TypeName] = struct{}{}
+		}
+		for _, d := range sp.DataSources {
+			names[d.TypeName] = struct{}{}
+		}
+	}
+	return names
 }
 
 func parseResourceDocs(resourceName, docsPath string, isResource bool, resourceAttributes map[string]ResourceAttribute) error {
