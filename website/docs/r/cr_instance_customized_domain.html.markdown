@@ -19,6 +19,12 @@ For information about CR Instance Customized Domain and how to use it, see [What
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_cr_instance_customized_domain&exampleId=44149b0f-e392-adb9-7612-40ee3ad2bd51cc340095&activeTab=example&spm=docs.r.cr_instance_customized_domain.0.44149b0fe3&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -49,6 +55,10 @@ resource "alicloud_cr_instance_customized_domain" "default" {
   cert_region_id = "cn-hangzhou"
 }
 ```
+
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cr_instance_customized_domain&spm=docs.r.cr_instance_customized_domain.example&intl_lang=EN_US)
+
 
 ## Argument Reference
 

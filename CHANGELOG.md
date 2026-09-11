@@ -8,6 +8,8 @@
 
 ENHANCEMENTS:
 
+- service: Added retry strategy for DescribePvtzZoneBasic, DescribePvtzZoneAttachment. ([#10500](https://github.com/aliyun/terraform-provider-alicloud/issues/10500))
+- data-source/alicloud_privatelink_service: Improves the invoking api method. ([#10512](https://github.com/aliyun/terraform-provider-alicloud/issues/10512))
 - resource/alicloud_realtime_compute_vvp_instance: support auto_renew for subscription instance. ([#10277](https://github.com/aliyun/terraform-provider-alicloud/issues/10277))
 - resource/alicloud_ecs_snapshot: add configurable wait_until policy. ([#10425](https://github.com/aliyun/terraform-provider-alicloud/issues/10425))
 - alicloud: deprecate tags schema helpers without Elem and add WithElements variants. ([#10463](https://github.com/aliyun/terraform-provider-alicloud/issues/10463))
