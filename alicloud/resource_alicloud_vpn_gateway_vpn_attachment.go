@@ -2,8 +2,8 @@ package alicloud
 
 import (
 	"fmt"
-	"hash/crc32"
 	"log"
+	"sort"
 	"strings"
 	"time"
 
@@ -12,16 +12,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
-
-func vpnTunnelOptionsSpecificationHash(v interface{}) int {
-	m := v.(map[string]interface{})
-	s := fmt.Sprintf("%d-%s", m["tunnel_index"].(int), m["customer_gateway_id"].(string))
-	h := int(crc32.ChecksumIEEE([]byte(s)))
-	if h < 0 {
-		return -h
-	}
-	return h
-}
 
 func resourceAliCloudVpnGatewayVpnAttachment() *schema.Resource {
 	return &schema.Resource{
@@ -273,10 +263,9 @@ func resourceAliCloudVpnGatewayVpnAttachment() *schema.Resource {
 			},
 			"tags": tagsSchema(),
 			"tunnel_options_specification": {
-				Type:     schema.TypeSet,
+				Type:     schema.TypeList,
 				Optional: true,
 				Computed: true,
-				Set:      vpnTunnelOptionsSpecificationHash,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"status": {
@@ -604,7 +593,7 @@ func resourceAliCloudVpnGatewayVpnAttachmentCreate(d *schema.ResourceData, meta 
 	}
 	if v, ok := d.GetOk("tunnel_options_specification"); ok {
 		tunnelOptionsSpecificationMapsArray := make([]interface{}, 0)
-		for _, dataLoop1 := range v.(*schema.Set).List() {
+		for _, dataLoop1 := range v.([]interface{}) {
 			dataLoop1Tmp := dataLoop1.(map[string]interface{})
 			dataLoop1Map := make(map[string]interface{})
 			dataLoop1Map["CustomerGatewayId"] = dataLoop1Tmp["customer_gateway_id"]
@@ -934,6 +923,9 @@ func resourceAliCloudVpnGatewayVpnAttachmentRead(d *schema.ResourceData, meta in
 			tunnelOptionsSpecificationMaps = append(tunnelOptionsSpecificationMaps, tunnelOptionsSpecificationMap)
 		}
 	}
+	sort.SliceStable(tunnelOptionsSpecificationMaps, func(i, j int) bool {
+		return formatInt(tunnelOptionsSpecificationMaps[i]["tunnel_index"]) < formatInt(tunnelOptionsSpecificationMaps[j]["tunnel_index"])
+	})
 	if err := d.Set("tunnel_options_specification", tunnelOptionsSpecificationMaps); err != nil {
 		return err
 	}
@@ -1024,7 +1016,7 @@ func resourceAliCloudVpnGatewayVpnAttachmentUpdate(d *schema.ResourceData, meta 
 		update = true
 		if v, ok := d.GetOk("tunnel_options_specification"); ok || d.HasChange("tunnel_options_specification") {
 			tunnelOptionsSpecificationMapsArray := make([]interface{}, 0)
-			for _, dataLoop := range v.(*schema.Set).List() {
+			for _, dataLoop := range v.([]interface{}) {
 				dataLoopTmp := dataLoop.(map[string]interface{})
 				dataLoopMap := make(map[string]interface{})
 				dataLoopMap["CustomerGatewayId"] = dataLoopTmp["customer_gateway_id"]

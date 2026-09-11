@@ -1,4 +1,9 @@
 ## 1.294.0 (Unreleased)
+
+BUG FIXES:
+
+- resource/alicloud_vpn_gateway_vpn_attachment: switch `tunnel_options_specification` from TypeSet to TypeList (ordered by tunnel_index) to stop spurious plan drift after computed-field backfill and to detect nested tunnel-option updates in place. ([#10518](https://github.com/aliyun/terraform-provider-alicloud/issues/10518))
+
 ## 1.293.0 (September 11, 2026)
 
 - **New Resource:** `alicloud_cms_dataset` ([#10454](https://github.com/aliyun/terraform-provider-alicloud/issues/10454))

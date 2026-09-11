@@ -1116,6 +1116,219 @@ func TestAccAliCloudVpnGatewayVpnAttachment_basic10338(t *testing.T) {
 	})
 }
 
+// TestAccAliCloudVpnGatewayVpnAttachment_tunnelOptionsNestedUpdate covers workitem
+// 84071096 (and the root cause shared with 83949761): when only nested tunnel options
+// (local_asn / ike_lifetime / psk) change while customer_gateway_id and tunnel_index
+// stay the same, the change must be detected and applied in place via
+// ModifyVpnAttachmentAttribute instead of triggering a spurious tunnel delete+add.
+// With the old TypeSet schema (whose hash only covered tunnel_index + customer_gateway_id)
+// such nested-only changes were not detected. After switching tunnel_options_specification
+// to TypeList (sorted by tunnel_index in Read), the diff is reliable.
+func TestAccAliCloudVpnGatewayVpnAttachment_tunnelOptionsNestedUpdate(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_vpn_gateway_vpn_attachment.default"
+	ra := resourceAttrInit(resourceId, AlicloudVpnGatewayVpnAttachmentMap10338)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VPNGatewayServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeVpnGatewayVpnAttachment")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccvpngateway%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpnGatewayVpnAttachmentBasicDependence10338)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-huhehaote"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			// Create two tunnels sharing the same customer gateway, indexed 1 and 2.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"local_subnet":        "0.0.0.0/0",
+					"enable_tunnels_bgp":  "true",
+					"vpn_attachment_name": name,
+					"tunnel_options_specification": []map[string]interface{}{
+						{
+							"customer_gateway_id":  "${alicloud_vpn_customer_gateway.cgw1.id}",
+							"enable_dpd":           "true",
+							"enable_nat_traversal": "true",
+							"tunnel_index":         "1",
+							"tunnel_bgp_config": []map[string]interface{}{
+								{
+									"local_asn":    "1219001",
+									"local_bgp_ip": "169.254.10.1",
+									"tunnel_cidr":  "169.254.10.0/30",
+								},
+							},
+							"tunnel_ike_config": []map[string]interface{}{
+								{
+									"ike_auth_alg": "md5",
+									"ike_enc_alg":  "aes",
+									"ike_lifetime": "86100",
+									"ike_mode":     "main",
+									"ike_pfs":      "group2",
+									"ike_version":  "ikev1",
+									"local_id":     "1.1.1.1",
+									"psk":          "12345678",
+									"remote_id":    "2.2.2.2",
+								},
+							},
+							"tunnel_ipsec_config": []map[string]interface{}{
+								{
+									"ipsec_auth_alg": "md5",
+									"ipsec_enc_alg":  "aes",
+									"ipsec_lifetime": "86200",
+									"ipsec_pfs":      "group5",
+								},
+							},
+						},
+						{
+							"customer_gateway_id":  "${alicloud_vpn_customer_gateway.cgw1.id}",
+							"enable_dpd":           "true",
+							"enable_nat_traversal": "true",
+							"tunnel_index":         "2",
+							"tunnel_bgp_config": []map[string]interface{}{
+								{
+									"local_asn":    "1219001",
+									"local_bgp_ip": "169.254.20.1",
+									"tunnel_cidr":  "169.254.20.0/30",
+								},
+							},
+							"tunnel_ike_config": []map[string]interface{}{
+								{
+									"ike_auth_alg": "md5",
+									"ike_enc_alg":  "aes",
+									"ike_lifetime": "86400",
+									"ike_mode":     "main",
+									"ike_pfs":      "group5",
+									"ike_version":  "ikev2",
+									"local_id":     "4.4.4.4",
+									"psk":          "32333442",
+									"remote_id":    "5.5.5.5",
+								},
+							},
+							"tunnel_ipsec_config": []map[string]interface{}{
+								{
+									"ipsec_auth_alg": "sha256",
+									"ipsec_enc_alg":  "aes",
+									"ipsec_lifetime": "86400",
+									"ipsec_pfs":      "group5",
+								},
+							},
+						},
+					},
+					"remote_subnet":     "0.0.0.0/0",
+					"network_type":      "public",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tunnel_options_specification.#": "2",
+					}),
+				),
+			},
+			// Update ONLY nested tunnel options: local_asn 1219001 -> 1219999 and
+			// ike_lifetime 86100/86400 -> 80000/90000, keeping customer_gateway_id
+			// (cgw1) and tunnel_index (1, 2) unchanged. Read sorts tunnels by
+			// tunnel_index, so tunnel_index=1 sits at list index 0 and
+			// tunnel_index=2 at index 1.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"local_subnet":        "0.0.0.0/0",
+					"enable_tunnels_bgp":  "true",
+					"vpn_attachment_name": name,
+					"tunnel_options_specification": []map[string]interface{}{
+						{
+							"customer_gateway_id":  "${alicloud_vpn_customer_gateway.cgw1.id}",
+							"enable_dpd":           "true",
+							"enable_nat_traversal": "true",
+							"tunnel_index":         "1",
+							"tunnel_bgp_config": []map[string]interface{}{
+								{
+									"local_asn":    "1219999",
+									"local_bgp_ip": "169.254.10.1",
+									"tunnel_cidr":  "169.254.10.0/30",
+								},
+							},
+							"tunnel_ike_config": []map[string]interface{}{
+								{
+									"ike_auth_alg": "sha384",
+									"ike_enc_alg":  "aes256",
+									"ike_lifetime": "80000",
+									"ike_mode":     "main",
+									"ike_pfs":      "group2",
+									"ike_version":  "ikev1",
+									"local_id":     "1.1.1.1",
+									"psk":          "nestedonly1",
+									"remote_id":    "2.2.2.2",
+								},
+							},
+							"tunnel_ipsec_config": []map[string]interface{}{
+								{
+									"ipsec_auth_alg": "sha512",
+									"ipsec_enc_alg":  "aes256",
+									"ipsec_lifetime": "80000",
+									"ipsec_pfs":      "group5",
+								},
+							},
+						},
+						{
+							"customer_gateway_id":  "${alicloud_vpn_customer_gateway.cgw1.id}",
+							"enable_dpd":           "true",
+							"enable_nat_traversal": "true",
+							"tunnel_index":         "2",
+							"tunnel_bgp_config": []map[string]interface{}{
+								{
+									"local_asn":    "1219999",
+									"local_bgp_ip": "169.254.20.1",
+									"tunnel_cidr":  "169.254.20.0/30",
+								},
+							},
+							"tunnel_ike_config": []map[string]interface{}{
+								{
+									"ike_auth_alg": "sha384",
+									"ike_enc_alg":  "aes256",
+									"ike_lifetime": "90000",
+									"ike_mode":     "main",
+									"ike_pfs":      "group5",
+									"ike_version":  "ikev2",
+									"local_id":     "4.4.4.4",
+									"psk":          "nestedonly2",
+									"remote_id":    "5.5.5.5",
+								},
+							},
+							"tunnel_ipsec_config": []map[string]interface{}{
+								{
+									"ipsec_auth_alg": "sha512",
+									"ipsec_enc_alg":  "aes256",
+									"ipsec_lifetime": "90000",
+									"ipsec_pfs":      "group5",
+								},
+							},
+						},
+					},
+					"remote_subnet":     "0.0.0.0/0",
+					"network_type":      "public",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tunnel_options_specification.#":                                  "2",
+						"tunnel_options_specification.0.tunnel_bgp_config.0.local_asn":    "1219999",
+						"tunnel_options_specification.0.tunnel_ike_config.0.ike_lifetime": "80000",
+						"tunnel_options_specification.1.tunnel_bgp_config.0.local_asn":    "1219999",
+						"tunnel_options_specification.1.tunnel_ike_config.0.ike_lifetime": "90000",
+					}),
+				),
+			},
+		},
+	})
+}
+
 var AlicloudVpnGatewayVpnAttachmentMap10338 = map[string]string{
 	"status":      CHECKSET,
 	"create_time": CHECKSET,
