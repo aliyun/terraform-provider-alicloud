@@ -227,18 +227,41 @@ func resourceAliCloudRdsDatabaseDelete(d *schema.ResourceData, meta interface{})
 		"DBName":       parts[1],
 		"SourceIp":     client.SourceIp,
 	}
-	// wait instance status is running before deleting database
-	if err := rdsService.WaitForDBInstance(parts[0], Running, 1800); err != nil {
-		return WrapError(err)
-	}
-	response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
+	// If the instance has already been removed outside of Terraform (console /
+	// CLI, or orphaned via `terraform state rm` and then deleted) or is being
+	// deleted, the database no longer exists and DeleteDatabase cannot be
+	// invoked. Return nil here so refresh / destroy does not block for up to
+	// 30 minutes waiting for the instance to reach Running.
+	instance, err := rdsService.DescribeDBInstance(parts[0])
 	if err != nil {
-		if NotFoundError(err) || IsExpectedErrors(err, []string{"InvalidDBName.NotFound"}) {
+		if NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return WrapError(err)
 	}
-	addDebug(action, response, request)
+	if status := fmt.Sprint(instance["DBInstanceStatus"]); status == "Deleting" || status == "Deleted" {
+		return nil
+	}
+	// The instance exists and is not in a terminal state; wait for it to reach
+	// Running so DeleteDatabase is permitted, then call it with retry on the
+	// transient instance-status race (consistent with alicloud_db_instance).
+	if err := rdsService.WaitForDBInstance(parts[0], Running, DefaultTimeoutMedium); err != nil {
+		return WrapError(err)
+	}
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
+		if err != nil {
+			if NotFoundError(err) || IsExpectedErrors(err, []string{"InvalidDBName.NotFound"}) {
+				return nil
+			}
+			if IsExpectedErrors(err, []string{"OperationDenied.DBInstanceStatus", "OperationDenied.ReadDBInstanceStatus", "IncorrectDBInstanceState"}) || NeedRetry(err) {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
