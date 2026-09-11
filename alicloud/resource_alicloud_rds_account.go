@@ -9,6 +9,7 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -64,7 +65,25 @@ func resourceAliCloudRdsAccount() *schema.Resource {
 				Sensitive:     true,
 				Optional:      true,
 				Computed:      true,
-				ConflictsWith: []string{"password"},
+				ConflictsWith: []string{"password", "account_password_wo"},
+			},
+			"account_password_wo": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Sensitive:     true,
+				WriteOnly:     true,
+				ConflictsWith: []string{"password", "kms_encrypted_password"},
+				RequiredWith:  []string{"account_password_wo_version"},
+			},
+			"account_password_wo_version": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				RequiredWith: []string{"account_password_wo"},
+			},
+			"has_account_password_wo": {
+				Type:     schema.TypeBool,
+				Computed: true,
 			},
 			"password": {
 				Type:          schema.TypeString,
@@ -72,7 +91,7 @@ func resourceAliCloudRdsAccount() *schema.Resource {
 				Optional:      true,
 				Computed:      true,
 				Deprecated:    "Field 'password' has been deprecated from provider version 1.120.0. New field 'account_password' instead.",
-				ConflictsWith: []string{"account_password"},
+				ConflictsWith: []string{"account_password", "account_password_wo"},
 			},
 			"account_type": {
 				Type:          schema.TypeString,
@@ -165,15 +184,24 @@ func resourceAliCloudRdsAccountCreate(d *schema.ResourceData, meta interface{}) 
 		request["AccountPassword"] = v
 	} else if v, ok := d.GetOk("password"); ok {
 		request["AccountPassword"] = v
-	} else if v, ok := d.GetOk("kms_encrypted_password"); ok {
-		kmsService := KmsService{client}
-		decryptResp, err := kmsService.Decrypt(v.(string), d.Get("kms_encryption_context").(map[string]interface{}))
-		if err != nil {
-			return WrapError(err)
+	}
+	if woValue, err := getWriteOnlyStringValue(d, cty.GetAttrPath("account_password_wo")); err != nil {
+		return WrapError(err)
+	} else if woValue != "" {
+		request["AccountPassword"] = woValue
+	}
+	if request["AccountPassword"] == "" {
+		if v, ok := d.GetOk("kms_encrypted_password"); ok {
+			kmsService := KmsService{client}
+			decryptResp, err := kmsService.Decrypt(v.(string), d.Get("kms_encryption_context").(map[string]interface{}))
+			if err != nil {
+				return WrapError(err)
+			}
+			request["AccountPassword"] = decryptResp
 		}
-		request["AccountPassword"] = decryptResp
-	} else {
-		return WrapError(Error("One of the 'account_password' and 'password' and 'kms_encrypted_password' should be set."))
+	}
+	if request["AccountPassword"] == "" {
+		return WrapError(Error("One of the 'account_password', 'password', 'kms_encrypted_password' and 'account_password_wo' should be set."))
 	}
 	if v, ok := d.GetOk("account_type"); ok {
 		request["AccountType"] = v
@@ -248,6 +276,23 @@ func resourceAliCloudRdsAccountRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("account_type", object["AccountType"])
 	d.Set("type", object["AccountType"])
 	d.Set("status", object["AccountStatus"])
+	hasPasswordWo := false
+	if v, ok := d.GetOk("has_account_password_wo"); ok && v.(bool) {
+		hasPasswordWo = true
+	}
+	if rawConfig := d.GetRawConfig(); !rawConfig.IsNull() {
+		woValue, err := getWriteOnlyStringValue(d, cty.GetAttrPath("account_password_wo"))
+		if err != nil {
+			return WrapError(err)
+		}
+		hasPasswordWo = woValue != ""
+	}
+	if hasPasswordWo {
+		d.Set("has_account_password_wo", true)
+		d.Set("account_password", nil)
+	} else {
+		d.Set("has_account_password_wo", nil)
+	}
 	return nil
 }
 
@@ -378,6 +423,14 @@ func resourceAliCloudRdsAccountUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 		resetAccountPasswordReq["AccountPassword"] = decryptResp
 	}
+	if d.HasChange("account_password_wo_version") {
+		update = true
+		if woValue, err := getWriteOnlyStringValue(d, cty.GetAttrPath("account_password_wo")); err != nil {
+			return WrapError(err)
+		} else if woValue != "" {
+			resetAccountPasswordReq["AccountPassword"] = woValue
+		}
+	}
 	if update {
 		action := "ResetAccountPassword"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -447,6 +500,11 @@ func resourceAliCloudRdsAccountUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 		if v, ok := d.GetOk("password"); ok {
 			resetAccountReq["AccountPassword"] = v.(string)
+		}
+		if woValue, err := getWriteOnlyStringValue(d, cty.GetAttrPath("account_password_wo")); err != nil {
+			return WrapError(err)
+		} else if woValue != "" {
+			resetAccountReq["AccountPassword"] = woValue
 		}
 		// ResetAccount interface can also reset the database account password
 		action := "ResetAccount"

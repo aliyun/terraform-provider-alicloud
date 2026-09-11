@@ -3,6 +3,7 @@
 ENHANCEMENTS:
 
 - resource/alicloud_oos_parameter: support the write-only attribute `value_wo` with `value_wo_version` as its change trigger, so the parameter value can be managed without being persisted in the state or plan.
+- resource/alicloud_rds_account: support the write-only attribute account_password_wo with account_password_wo_version as its change trigger, so the account password can be managed without being persisted in the state or plan.
 
 ## 1.292.0 (September 8, 2026)
 
