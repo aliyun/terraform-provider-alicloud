@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/drds"
@@ -17,8 +18,19 @@ func (s *DrdsService) DescribeDrdsInstance(id string) (*drds.DescribeDrdsInstanc
 	request := drds.CreateDescribeDrdsInstanceRequest()
 	request.RegionId = s.client.RegionId
 	request.DrdsInstanceId = id
-	raw, err := s.client.WithDrdsClient(func(drdsClient *drds.Client) (interface{}, error) {
-		return drdsClient.DescribeDrdsInstance(request)
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithDrdsClient(func(drdsClient *drds.Client) (interface{}, error) {
+			return drdsClient.DescribeDrdsInstance(request)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"InternalError"}) || NeedRetry(err) {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response, _ = raw.(*drds.DescribeDrdsInstanceResponse)
+		return nil
 	})
 
 	if err != nil {
@@ -27,10 +39,26 @@ func (s *DrdsService) DescribeDrdsInstance(id string) (*drds.DescribeDrdsInstanc
 		}
 		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ = raw.(*drds.DescribeDrdsInstanceResponse)
 	if response.Data.Status == "5" {
 		return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+	}
+	// The SDK's dns tag does not match the API's Dns casing.
+	var dnsResponse struct {
+		Data struct {
+			Vips struct {
+				Vip []struct {
+					Dns string
+				}
+			}
+		}
+	}
+	if err := json.Unmarshal(response.GetHttpContentBytes(), &dnsResponse); err != nil {
+		return response, WrapError(err)
+	}
+	for i, vip := range dnsResponse.Data.Vips.Vip {
+		if i < len(response.Data.Vips.Vip) {
+			response.Data.Vips.Vip[i].Dns = vip.Dns
+		}
 	}
 	return response, nil
 }
