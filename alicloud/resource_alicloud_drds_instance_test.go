@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"testing"
 
@@ -94,6 +95,12 @@ func testSweepDRDSInstances(region string) error {
 }
 
 func TestAccAliCloudDRDSInstance_Vpc(t *testing.T) {
+	t.Setenv("ALICLOUD_REGION", "cn-hangzhou")
+	t.Setenv("CHECKOUT_REGION", "false")
+	originalDefaultRegion := defaultRegionToTest
+	t.Cleanup(func() { defaultRegionToTest = originalDefaultRegion })
+	defaultRegionToTest = "cn-hangzhou"
+
 	var v *drds.DescribeDrdsInstanceResponse
 
 	resourceId := "alicloud_drds_instance.default"
@@ -109,12 +116,32 @@ func TestAccAliCloudDRDSInstance_Vpc(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandInt()
 	name := fmt.Sprintf("tf-testacc%sDrdsdatabase-%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDRDSInstanceConfigDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, func(name string) string {
+		return resourceDRDSInstanceConfigDependence(name) + `
+	provider "alicloud" {
+	  region = "cn-hangzhou"
+	}
+	`
+	})
+	createConfig := testAccConfig(map[string]interface{}{
+		"description":          "${var.name}",
+		"zone_id":              "${data.alicloud_vswitches.default.vswitches.0.zone_id}",
+		"instance_series":      "${var.instance_series}",
+		"instance_charge_type": "PostPaid",
+		"vswitch_id":           "${data.alicloud_vswitches.default.vswitches.0.id}",
+		"specification":        "drds.sn2.4c16g.8C32G",
+	})
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.DrdsSupportedRegions)
+			if region := os.Getenv("ALICLOUD_REGION"); region != "cn-hangzhou" {
+				t.Fatalf("ALICLOUD_REGION = %q, want cn-hangzhou", region)
+			}
+			if defaultRegionToTest != "cn-hangzhou" {
+				t.Fatalf("defaultRegionToTest = %q, want cn-hangzhou", defaultRegionToTest)
+			}
 		},
 		// module name
 		IDRefreshName: resourceId,
@@ -122,25 +149,26 @@ func TestAccAliCloudDRDSInstance_Vpc(t *testing.T) {
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"description":          "${var.name}",
-					"zone_id":              "${data.alicloud_vswitches.default.vswitches.0.zone_id}",
-					"instance_series":      "${var.instance_series}",
-					"instance_charge_type": "PostPaid",
-					"vswitch_id":           "${data.alicloud_vswitches.default.vswitches.0.id}",
-					"specification":        "drds.sn1.4c8g.8C16G",
-				}),
+				Config: createConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description":   name,
-						"mysql_version": "5",
+						"description":     name,
+						"mysql_version":   "5",
+						"specification":   "drds.sn2.4c16g.8C32G",
+						"instance_series": "drds.sn2.4c16g",
+						"vswitch_id":      CHECKSET,
 					}),
 				),
 			},
 			{
 				ResourceName:      resourceId,
 				ImportState:       true,
-				ImportStateVerify: false,
+				ImportStateVerify: true,
+			},
+			{
+				Config:             createConfig,
+				ExpectNonEmptyPlan: false,
+				PlanOnly:           true,
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -201,7 +229,7 @@ func TestAccAliCloudDRDSInstance_Multi(t *testing.T) {
 					"zone_id":              "${data.alicloud_vswitches.default.vswitches.0.zone_id}",
 					"instance_series":      "${var.instance_series}",
 					"instance_charge_type": "PostPaid",
-					"specification":        "drds.sn1.4c8g.8C16G",
+					"specification":        "drds.sn2.4c16g.8C32G",
 					"vswitch_id":           "${data.alicloud_vswitches.default.vswitches.0.id}",
 					"count":                "3",
 					"mysql_version":        "5",
@@ -251,7 +279,7 @@ func TestAccAliCloudDRDSInstance_VpcId(t *testing.T) {
 					"instance_series":      "${var.instance_series}",
 					"instance_charge_type": "PostPaid",
 					"vswitch_id":           "${data.alicloud_vswitches.default.vswitches.0.id}",
-					"specification":        "drds.sn1.4c8g.8C16G",
+					"specification":        "drds.sn2.4c16g.8C32G",
 					"vpc_id":               "${data.alicloud_vpcs.default.ids.0}",
 					"mysql_version":        "5",
 				}),
@@ -306,7 +334,7 @@ func TestAccAliCloudDRDSInstance_MySQLVersion(t *testing.T) {
 					"instance_series":      "${var.instance_series}",
 					"instance_charge_type": "PostPaid",
 					"vswitch_id":           "${data.alicloud_vswitches.default.vswitches.0.id}",
-					"specification":        "drds.sn1.4c8g.8C16G",
+					"specification":        "drds.sn2.4c16g.8C32G",
 					"mysql_version":        "5",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -335,7 +363,7 @@ func resourceDRDSInstanceConfigDependence(name string) string {
 	}
 	
 	variable "instance_series" {
-		default = "drds.sn1.4c8g"
+		default = "drds.sn2.4c16g"
 	}
 	
 	data "alicloud_vpcs" "default"	{
@@ -350,9 +378,9 @@ func resourceDRDSInstanceConfigDependence(name string) string {
 var drdsInstancebasicMap = map[string]string{
 	"description":          CHECKSET,
 	"zone_id":              CHECKSET,
-	"instance_series":      "drds.sn1.4c8g",
+	"instance_series":      "drds.sn2.4c16g",
 	"instance_charge_type": "PostPaid",
-	"specification":        "drds.sn1.4c8g.8C16G",
+	"specification":        "drds.sn2.4c16g.8C32G",
 	"connection_string":    CHECKSET,
 	"port":                 CHECKSET,
 }
@@ -361,33 +389,36 @@ var drdsInstancebasicMap = map[string]string{
 // panic when the DescribeDrdsInstance response returns an empty VIP list. A valid
 // instance can transiently report no VIPs, and indexing Vip[0] directly used to
 // crash the provider. The empty case must return zero values; the populated case
-// must surface the first VIP's VpcId plus the intranet connection string/port.
+// must surface paired network IDs and the intranet connection string/port.
 func TestUnitAliCloudDRDSInstanceFlattenVips(t *testing.T) {
 	// Empty VIP list: must not panic and must yield zero values.
-	vpcId, connectionString, port := flattenDrdsInstanceVips([]drds.Vip{})
-	if vpcId != "" || connectionString != "" || port != "" {
-		t.Fatalf("empty VIP list should yield zero values, got vpcId=%q connectionString=%q port=%q", vpcId, connectionString, port)
+	vpcId, connectionString, port, vswitchId := flattenDrdsInstanceVips([]drds.Vip{})
+	if vpcId != "" || connectionString != "" || port != "" || vswitchId != "" {
+		t.Fatalf("empty VIP list should yield zero values, got vpcId=%q connectionString=%q port=%q vswitchId=%q", vpcId, connectionString, port, vswitchId)
 	}
 
 	// Nil VIP list: same guarantee.
-	vpcId, connectionString, port = flattenDrdsInstanceVips(nil)
-	if vpcId != "" || connectionString != "" || port != "" {
-		t.Fatalf("nil VIP list should yield zero values, got vpcId=%q connectionString=%q port=%q", vpcId, connectionString, port)
+	vpcId, connectionString, port, vswitchId = flattenDrdsInstanceVips(nil)
+	if vpcId != "" || connectionString != "" || port != "" || vswitchId != "" {
+		t.Fatalf("nil VIP list should yield zero values, got vpcId=%q connectionString=%q port=%q vswitchId=%q", vpcId, connectionString, port, vswitchId)
 	}
 
-	// Populated VIP list: vpc_id from the first VIP, connection_string/port from the intranet VIP.
+	// The first VIP has no VSwitch. Both network IDs must come from the next VIP.
 	vips := []drds.Vip{
 		{Type: "internet", VpcId: "vpc-external", Dns: "public.example.com", Port: "3306"},
-		{Type: "intranet", VpcId: "vpc-internal", Dns: "intranet.example.com", Port: "3307"},
+		{Type: "intranet", VpcId: "vpc-internal", Dns: "intranet.example.com", Port: "3307", VswitchId: "vsw-intranet"},
 	}
-	vpcId, connectionString, port = flattenDrdsInstanceVips(vips)
-	if vpcId != "vpc-external" {
-		t.Fatalf("vpcId should come from the first VIP, got %q", vpcId)
+	vpcId, connectionString, port, vswitchId = flattenDrdsInstanceVips(vips)
+	if vpcId != "vpc-internal" {
+		t.Fatalf("vpcId should come from the VIP with the VSwitch, got %q", vpcId)
 	}
 	if connectionString != "intranet.example.com" {
 		t.Fatalf("connectionString should come from the intranet VIP, got %q", connectionString)
 	}
 	if port != "3307" {
 		t.Fatalf("port should come from the intranet VIP, got %q", port)
+	}
+	if vswitchId != "vsw-intranet" {
+		t.Fatalf("vswitchId should be the first non-empty VswitchId, got %q", vswitchId)
 	}
 }

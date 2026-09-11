@@ -1,7 +1,9 @@
 package alicloud
 
 import (
+	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -24,6 +26,7 @@ func resourceAlicloudDRDSInstance() *schema.Resource {
 
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(10 * time.Minute),
+			Read:   schema.DefaultTimeout(5 * time.Minute),
 			Update: schema.DefaultTimeout(5 * time.Minute),
 			Delete: schema.DefaultTimeout(10 * time.Minute),
 		},
@@ -81,6 +84,10 @@ func resourceAlicloudDRDSInstance() *schema.Resource {
 				Optional: true,
 				Computed: true,
 				ForceNew: true,
+			},
+			"status": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 		},
 	}
@@ -203,7 +210,24 @@ func resourceAliCloudDRDSInstanceRead(d *schema.ResourceData, meta interface{}) 
 	client := meta.(*connectivity.AliyunClient)
 	drdsService := DrdsService{client}
 
-	object, err := drdsService.DescribeDrdsInstance(d.Id())
+	var object *drds.DescribeDrdsInstanceResponse
+	var vpcId, connectionString, port, vswitchId string
+	// RUN can precede complete specification and network metadata. Use the same
+	// wait for create, import and refresh, and leave state intact on timeout.
+	err := resource.Retry(d.Timeout(schema.TimeoutRead), func() *resource.RetryError {
+		var err error
+		object, err = drdsService.DescribeDrdsInstance(d.Id())
+		if err != nil {
+			return resource.NonRetryableError(err)
+		}
+		data := object.Data
+		vpcId, connectionString, port, vswitchId = flattenDrdsInstanceVips(data.Vips.Vip)
+		if data.InstanceSeries == "" || !strings.HasPrefix(data.InstanceSpec, data.InstanceSeries+".") || len(data.InstanceSpec) <= len(data.InstanceSeries)+1 ||
+			data.ZoneId == "" || vpcId == "" || vswitchId == "" || data.CommodityCode == "" {
+			return resource.RetryableError(fmt.Errorf("waiting for complete DRDS instance specification and network attributes"))
+		}
+		return nil
+	})
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -212,24 +236,36 @@ func resourceAliCloudDRDSInstanceRead(d *schema.ResourceData, meta interface{}) 
 		return WrapError(err)
 	}
 	data := object.Data
-	//other attribute not set,because these attribute from `data` can't  get
 	d.Set("zone_id", data.ZoneId)
 	d.Set("description", data.Description)
-	vpcId, connectionString, port := flattenDrdsInstanceVips(data.Vips.Vip)
+	d.Set("specification", data.InstanceSpec)
+	d.Set("instance_series", data.InstanceSeries)
 	d.Set("vpc_id", vpcId)
+	d.Set("vswitch_id", vswitchId)
+	// CommodityCode encodes the charge type (drdsPost/drdsPre); map it back so
+	// imported instances do not diff against the PostPaid default.
+	switch data.CommodityCode {
+	case "drdsPost":
+		d.Set("instance_charge_type", PostPaid)
+	case "drdsPre":
+		d.Set("instance_charge_type", PrePaid)
+	}
 	d.Set("connection_string", connectionString)
 	d.Set("port", port)
 	d.Set("mysql_version", data.MysqlVersion)
+	d.Set("status", data.Status)
 	return nil
 }
 
-// flattenDrdsInstanceVips extracts the vpc_id, connection_string and port from the
-// DescribeDrdsInstance VIP list. A valid instance can transiently report an empty
-// VIP list, so the first-element access is length-guarded to avoid an out-of-range
-// panic; an empty list yields zero values.
-func flattenDrdsInstanceVips(vips []drds.Vip) (vpcId, connectionString, port string) {
-	if len(vips) > 0 {
-		vpcId = vips[0].VpcId
+// Keep VPC and VSwitch IDs paired, since a public VIP can precede the network
+// VIP. An empty or incomplete VIP list yields empty network IDs.
+func flattenDrdsInstanceVips(vips []drds.Vip) (vpcId, connectionString, port, vswitchId string) {
+	for _, vip := range vips {
+		if vip.VpcId != "" && vip.VswitchId != "" {
+			vpcId = vip.VpcId
+			vswitchId = vip.VswitchId
+			break
+		}
 	}
 	for _, vip := range vips {
 		if vip.Type == "intranet" {
@@ -238,7 +274,7 @@ func flattenDrdsInstanceVips(vips []drds.Vip) (vpcId, connectionString, port str
 			break
 		}
 	}
-	return vpcId, connectionString, port
+	return vpcId, connectionString, port, vswitchId
 }
 
 func resourceAliCloudDRDSInstanceDelete(d *schema.ResourceData, meta interface{}) error {

@@ -1,4 +1,8 @@
 ## 1.293.0 (Unreleased)
+
+BUG FIXES:
+
+- resource/alicloud_drds_instance: fix read not returning the required attributes vswitch_id, specification and instance_series, and add a computed status attribute. ([#10480](https://github.com/aliyun/terraform-provider-alicloud/pull/10480))
 ## 1.292.0 (September 8, 2026)
 
 - **New Resource:** `alicloud_threat_detection_rd_default_sync_list` ([#10207](https://github.com/aliyun/terraform-provider-alicloud/issues/10207))
