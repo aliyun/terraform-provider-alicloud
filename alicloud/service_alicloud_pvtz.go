@@ -20,25 +20,40 @@ func (s *PvtzService) DescribePvtzZoneBasic(id string) (object map[string]interf
 	var response map[string]interface{}
 	client := s.client
 	action := "DescribeZoneInfo"
+
 	request := map[string]interface{}{
 		"RegionId": s.client.RegionId,
 		"ZoneId":   id,
 	}
-	response, err = client.RpcPost("pvtz", "2018-01-01", action, nil, request, true)
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("pvtz", "2018-01-01", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Zone.Invalid.Id", "Zone.Invalid.UserId", "Zone.NotExists", "ZoneVpc.NotExists.VpcId"}) {
-			err = WrapErrorf(NotFoundErr("PvtzZone", id), NotFoundMsg, ProviderERROR)
-			return object, err
+			return object, WrapErrorf(NotFoundErr("PvtzZone", id), NotFoundMsg, response)
 		}
-		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-		return object, err
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(action, response, request)
+
 	v, err := jsonpath.Get("$", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
 	}
+
 	object = v.(map[string]interface{})
+
 	return object, nil
 }
 
@@ -46,25 +61,40 @@ func (s *PvtzService) DescribePvtzZoneAttachment(id string) (object map[string]i
 	var response map[string]interface{}
 	client := s.client
 	action := "DescribeZoneInfo"
+
 	request := map[string]interface{}{
 		"RegionId": s.client.RegionId,
 		"ZoneId":   id,
 	}
-	response, err = client.RpcPost("pvtz", "2018-01-01", action, nil, request, true)
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("pvtz", "2018-01-01", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Zone.Invalid.Id", "Zone.Invalid.UserId", "Zone.NotExists", "ZoneVpc.NotExists.VpcId"}) {
-			err = WrapErrorf(NotFoundErr("PvtzZoneAttachment", id), NotFoundMsg, ProviderERROR)
-			return object, err
+			return object, WrapErrorf(NotFoundErr("PvtzZoneAttachment", id), NotFoundMsg, response)
 		}
-		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-		return object, err
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(action, response, request)
+
 	v, err := jsonpath.Get("$", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
 	}
+
 	object = v.(map[string]interface{})
+
 	return object, nil
 }
 
