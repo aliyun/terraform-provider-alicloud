@@ -2520,3 +2520,75 @@ resource "alicloud_vpn_customer_gateway" "cgw2" {
 
 `, name)
 }
+
+func makeTunnelHashElement(cgwId string, tunnelIndex int, psk, localId string, localAsn int, tunnelCidr string) map[string]interface{} {
+	return map[string]interface{}{
+		"customer_gateway_id":  cgwId,
+		"role":                 "main",
+		"tunnel_index":         tunnelIndex,
+		"enable_nat_traversal": true,
+		"enable_dpd":           true,
+		"tunnel_ike_config": []interface{}{
+			map[string]interface{}{
+				"ike_auth_alg": "sha1", "ike_enc_alg": "aes", "ike_version": "ikev2",
+				"ike_mode": "main", "ike_lifetime": 86400, "psk": psk,
+				"remote_id": "1.1.1.1", "ike_pfs": "group2", "local_id": localId,
+			},
+		},
+		"tunnel_bgp_config": []interface{}{
+			map[string]interface{}{
+				"local_asn": localAsn, "tunnel_cidr": tunnelCidr, "local_bgp_ip": "169.254.10.1",
+			},
+		},
+		"tunnel_ipsec_config": []interface{}{
+			map[string]interface{}{
+				"ipsec_pfs": "group2", "ipsec_enc_alg": "aes", "ipsec_auth_alg": "sha1", "ipsec_lifetime": 86400,
+			},
+		},
+	}
+}
+
+func TestUnitVpnTunnelOptionsSpecificationHash(t *testing.T) {
+	base := makeTunnelHashElement("cgw-1", 0, "secret-psk-value", "1.1.1.1", 65001, "169.254.10.0/30")
+	baseHash := vpnTunnelOptionsSpecificationHash(base)
+
+	// Fields whose changes MUST flip the hash (nested changes become visible).
+	changeCases := []struct {
+		name string
+		elem map[string]interface{}
+	}{
+		{"psk", makeTunnelHashElement("cgw-1", 0, "different-psk", "1.1.1.1", 65001, "169.254.10.0/30")},
+		{"local_asn", makeTunnelHashElement("cgw-1", 0, "secret-psk-value", "1.1.1.1", 65010, "169.254.10.0/30")},
+		{"tunnel_cidr", makeTunnelHashElement("cgw-1", 0, "secret-psk-value", "1.1.1.1", 65001, "169.254.11.0/30")},
+		{"customer_gateway_id", makeTunnelHashElement("cgw-2", 0, "secret-psk-value", "1.1.1.1", 65001, "169.254.10.0/30")},
+		{"tunnel_index", makeTunnelHashElement("cgw-1", 1, "secret-psk-value", "1.1.1.1", 65001, "169.254.10.0/30")},
+	}
+	for _, tc := range changeCases {
+		got := vpnTunnelOptionsSpecificationHash(tc.elem)
+		if got == baseHash {
+			t.Fatalf("%s change should alter hash: base=%d got=%d", tc.name, baseHash, got)
+		}
+	}
+
+	// local_id change (simulating backend backfill N/A -> real IP) MUST NOT flip hash.
+	backfilled := makeTunnelHashElement("cgw-1", 0, "secret-psk-value", "2.2.2.2", 65001, "169.254.10.0/30")
+	if got := vpnTunnelOptionsSpecificationHash(backfilled); got != baseHash {
+		t.Fatalf("local_id change should NOT alter hash: base=%d got=%d", baseHash, got)
+	}
+
+	// local_id absent vs present MUST NOT flip hash.
+	absentLocalId := makeTunnelHashElement("cgw-1", 0, "secret-psk-value", "", 65001, "169.254.10.0/30")
+	if ike, ok := absentLocalId["tunnel_ike_config"].([]interface{}); ok && len(ike) > 0 {
+		if m, ok := ike[0].(map[string]interface{}); ok {
+			delete(m, "local_id")
+		}
+	}
+	if got := vpnTunnelOptionsSpecificationHash(absentLocalId); got != baseHash {
+		t.Fatalf("local_id absence should NOT alter hash: base=%d got=%d", baseHash, got)
+	}
+
+	// determinism: identical input yields identical hash
+	if got := vpnTunnelOptionsSpecificationHash(base); got != baseHash {
+		t.Fatalf("hash should be deterministic: base=%d got=%d", baseHash, got)
+	}
+}
