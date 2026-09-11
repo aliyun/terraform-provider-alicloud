@@ -7,13 +7,15 @@ description: |-
   Provides a Alicloud OOS Parameter resource.
 ---
 
-# alicloud\_oos\_parameter
+# alicloud_oos_parameter
 
 Provides a OOS Parameter resource.
 
 For information about OOS Parameter and how to use it, see [What is Parameter](https://www.alibabacloud.com/help/en/doc-detail/183408.html).
 
--> **NOTE:** Available in v1.147.0+.
+-> **NOTE:** Available since v1.147.0.
+
+-> **NOTE:** The `value_wo` and `value_wo_version` arguments require Terraform v1.11.0 or later. When `value_wo` is in use, `value` is not stored in the state or plan and reads back empty; use the `has_value_wo` attribute to check whether the value is managed by `value_wo`.
 
 ## Example Usage
 
@@ -57,7 +59,9 @@ The following arguments are supported:
 * `parameter_name` - (Required, ForceNew) The name of the common parameter. The name must be `2` to `180` characters in length, and can contain letters, digits, hyphens (-), forward slashes (/) and underscores (_). It cannot start with `ALIYUN`, `ACS`, `ALIBABA`, `ALICLOUD`, or `OOS`.
 * `resource_group_id` - (Optional, Computed) The ID of the Resource Group.
 * `type` - (Required, ForceNew) The data type of the common parameter. Valid values: `String` and `StringList`.
-* `value` - (Required) The value of the common parameter. The value must be `1` to `4096` characters in length.
+* `value` - (Optional, Computed) The value of the common parameter. The value must be `1` to `4096` characters in length. Exactly one of `value` and `value_wo` can be set.
+* `value_wo` - (Optional, Sensitive, Available since v1.293.0) The write-only value of the common parameter. It is only sent to the server when the resource is created or updated and is never stored in the state or plan. The value must be `1` to `4096` characters in length. It requires Terraform v1.11.0 or later and must be used together with `value_wo_version`. Exactly one of `value` and `value_wo` can be set.
+* `value_wo_version` - (Optional, Computed, Available since v1.293.0) The version of the write-only value. The write-only value is re-sent to the server only when this argument changes, so it must be changed whenever `value_wo` changes. Once set, the last version remains in the state after this argument is removed from the configuration together with `value_wo`.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 
 ## Attributes Reference
@@ -65,6 +69,7 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The resource ID in terraform of Parameter. Its value is same as `parameter_name`.
+* `has_value_wo` - Whether the value of the common parameter is currently managed by `value_wo`. When it is `true`, `value` reads back empty because the write-only value is never stored in the state.
 
 ## Import
 

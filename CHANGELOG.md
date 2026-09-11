@@ -1,4 +1,9 @@
 ## 1.293.0 (Unreleased)
+
+ENHANCEMENTS:
+
+- resource/alicloud_oos_parameter: support the write-only attribute `value_wo` with `value_wo_version` as its change trigger, so the parameter value can be managed without being persisted in the state or plan.
+
 ## 1.292.0 (September 8, 2026)
 
 - **New Resource:** `alicloud_threat_detection_rd_default_sync_list` ([#10207](https://github.com/aliyun/terraform-provider-alicloud/issues/10207))
