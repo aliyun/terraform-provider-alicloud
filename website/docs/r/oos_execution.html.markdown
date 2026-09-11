@@ -13,6 +13,8 @@ Provides a OOS Execution resource. For information about Alicloud OOS Execution 
 
 -> **NOTE:** Available since v1.93.0.
 
+-> **NOTE:** When the execution template starts with a trigger task (`ACS::TimerTrigger`, `ACS::EventTrigger` or `ACS::AlarmTrigger`), the execution stays in the `Waiting` status between triggers and only reaches a terminal status after the trigger end date. For these templates the creation completes once the execution is registered, instead of waiting for `Success`, `Failed` or `Cancelled`.
+
 ## Example Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
@@ -84,7 +86,7 @@ The following arguments are supported:
 * `mode` - (Optional, ForceNew) The mode of OOS Execution. Valid: `Automatic`, `Debug`. Default to `Automatic`.
 * `parameters` - (Optional, ForceNew) The parameters required by the template. Default to `{}`.
 * `parent_execution_id` - (Optional, ForceNew) The id of parent execution.
-* `safety_check` - (Optional, ForceNew) The mode of safety check.
+* `safety_check` - (Optional, ForceNew, Computed) The mode of safety check. If not specified, the value returned by the server is used.
 * `template_name` - (Required, ForceNew) The name of execution template.
 * `template_version` - (Optional, ForceNew) The version of execution template.
 * `template_content` - (Optional, ForceNew, Available in v1.114.0+) The content of template. When the user selects an existing template to create and execute a task, it is not necessary to pass in this field.

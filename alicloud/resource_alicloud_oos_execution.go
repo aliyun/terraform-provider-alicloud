@@ -87,6 +87,7 @@ func resourceAlicloudOosExecution() *schema.Resource {
 			"safety_check": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 				ForceNew: true,
 			},
 			"start_date": {
@@ -197,7 +198,34 @@ func resourceAlicloudOosExecutionCreate(d *schema.ResourceData, meta interface{}
 	responseExecution := response["Execution"].(map[string]interface{})
 	d.SetId(fmt.Sprint(responseExecution["ExecutionId"]))
 	oosService := OosService{client}
-	stateConf := BuildStateConf([]string{}, []string{"Success", "Failed", "Cancelled"}, d.Timeout(schema.TimeoutCreate), 3*time.Second, oosService.OosExecutionStateRefreshFunc(d.Id(), "Status", []string{}))
+
+	// StartExecution does not return Category, so it has to be read back from the execution.
+	var object map[string]interface{}
+	wait = incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		object, err = oosService.DescribeOosExecution(d.Id())
+		if err != nil {
+			if NotFoundError(err) || NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	if err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+
+	// Trigger-class executions register a schedule and then settle in Waiting between triggers,
+	// so they never reach a terminal state while the schedule is active.
+	targetStatus := []string{"Success", "Failed", "Cancelled"}
+	switch fmt.Sprint(object["Category"]) {
+	case "TimerTrigger", "EventTrigger", "AlarmTrigger":
+		targetStatus = append(targetStatus, "Waiting", "Running")
+	}
+
+	stateConf := BuildStateConf([]string{}, targetStatus, d.Timeout(schema.TimeoutCreate), 3*time.Second, oosService.OosExecutionStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -262,6 +290,13 @@ func resourceAlicloudOosExecutionDelete(d *schema.ResourceData, meta interface{}
 		response, err = client.RpcPost("oos", "2019-06-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			// A trigger-class execution stays in Waiting until its trigger end date, so it can
+			// only be removed by forcing the deletion.
+			if IsExpectedErrors(err, []string{"Execution.DeleteFailed"}) && request["Force"] == nil {
+				request["Force"] = true
 				wait()
 				return resource.RetryableError(err)
 			}
