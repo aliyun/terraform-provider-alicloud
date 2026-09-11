@@ -239,7 +239,7 @@ The following arguments are supported:
 * `connection_string_prefix` - (Deprecated since v1.101.0) It has been deprecated from provider version 1.101.0 and resource `alicloud_kvstore_connection` instead.
 * `port` - (Optional, Int, Available since v1.94.0) It has been deprecated from provider version 1.101.0 and resource `alicloud_kvstore_connection` instead.
 * `order_type`- (Optional, Available since v1.101.0) Specifies a change type when you change the configuration of a subscription instance. Valid values: `UPGRADE`, `DOWNGRADE`. Default value: `UPGRADE`. `UPGRADE` means upgrades the configuration of a subscription instance. `DOWNGRADE` means downgrades the configuration of a subscription instance.
-* `node_type`- (Deprecated since v1.120.1) Node type, valid values:
+* `node_type`- (Optional, ForceNew) The node type. This parameter remains supported. Set `node_type = "single"` to explicitly select a single-copy instance with `instance_class = "redis.shard.small.2.ce"`. When omitted, the provider leaves node type selection to the service and reads the resulting value into state. Changing an explicitly configured node type forces a new instance. Valid values:
   - `MASTER_SLAVE`: High availability (dual copies)
   - `STAND_ALONE`: Single copy
   - `double`: Dual copies

@@ -198,7 +198,6 @@ func resourceAliCloudKvstoreInstance() *schema.Resource {
 				ForceNew:     true,
 				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"MASTER_SLAVE", "STAND_ALONE", "double", "single"}, false),
-				Deprecated:   "Field 'node_type' has been deprecated from version 1.120.1",
 			},
 			"order_type": {
 				Type:         schema.TypeString,
@@ -597,7 +596,7 @@ func resourceAliCloudKvstoreInstanceCreate(d *schema.ResourceData, meta interfac
 		request["NetworkType"] = "VPC"
 		request["VpcId"] = vsw.VpcId
 		request["VSwitchId"] = vswitchId
-		if fmt.Sprint(request["ZoneId"]) == "" {
+		if zoneId, _ := request["ZoneId"].(string); zoneId == "" {
 			request["ZoneId"] = vsw.ZoneId
 		}
 	}
@@ -606,7 +605,7 @@ func resourceAliCloudKvstoreInstanceCreate(d *schema.ResourceData, meta interfac
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		response, err = client.RpcPost("R-kvstore", "2015-01-01", action, nil, request, true)
 		if err != nil {
-			if NoCodeRegexRetry(err) {
+			if NoCodeRegexRetry(err) || IsExpectedErrors(err, []string{"CanNotAcquireLock"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
