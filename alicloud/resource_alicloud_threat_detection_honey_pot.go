@@ -47,6 +47,10 @@ func resourceAlicloudThreatDetectionHoneyPot() *schema.Resource {
 				ForceNew: true,
 				Type:     schema.TypeString,
 			},
+			"meta": {
+				Optional: true,
+				Type:     schema.TypeString,
+			},
 			"preset_id": {
 				Computed: true,
 				Type:     schema.TypeString,
@@ -82,6 +86,9 @@ func resourceAlicloudThreatDetectionHoneyPotCreate(d *schema.ResourceData, meta 
 	}
 	if v, ok := d.GetOk("node_id"); ok {
 		request["NodeId"] = v
+	}
+	if v, ok := d.GetOk("meta"); ok {
+		request["Meta"] = v
 	}
 
 	var response map[string]interface{}
@@ -151,6 +158,13 @@ func resourceAlicloudThreatDetectionHoneyPotUpdate(d *schema.ResourceData, meta 
 		update = true
 		if v, ok := d.GetOk("honeypot_name"); ok {
 			request["HoneypotName"] = v
+		}
+	}
+
+	if d.HasChange("meta") {
+		update = true
+		if v, ok := d.GetOk("meta"); ok {
+			request["Meta"] = v
 		}
 	}
 
