@@ -1853,6 +1853,12 @@ func (s *PolarDBService) ModifyDBClusterAccessWhitelist(d *schema.ResourceData) 
 			request.SecurityIps = ipstr
 			request.DBClusterIPArrayName = pack["db_cluster_ip_array_name"].(string)
 			request.ModifyMode = pack["modify_mode"].(string)
+			if v, ok := pack["db_cluster_ip_array_attribute"]; ok && v.(string) != "" {
+				request.DBClusterIPArrayAttribute = v.(string)
+			}
+			if v, ok := pack["white_list_type"]; ok && v.(string) != "" {
+				request.WhiteListType = v.(string)
+			}
 			wait := incrementalWait(3*time.Second, 3*time.Second)
 			err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 				raw, err := s.client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
