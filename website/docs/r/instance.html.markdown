@@ -112,7 +112,7 @@ The following arguments are supported:
 
 * `instance_type` - (Optional) The type of instance to start. When it is changed, the instance will reboot to make the change take effect. If you do not use `launch_template_id` or `launch_template_name` to specify a launch template, you must specify `instance_type`.
 * `io_optimized` - (Removed) It has been deprecated on instance resource. All the launched alicloud instances will be I/O optimized.
-* `is_outdated` - (Optional) Whether to use outdated instance type.
+* `is_outdated` - (Optional) Whether to use outdated instance type. **Note: The parameter is immutable after resource creation.** It only controls the I/O optimization option sent when creating the instance.
 * `network_interface_id` - (Optional, ForceNew, Available since v1.284.0) The ID of the Primary ENI.
   
 -> **NOTE:** From version 1.284.0, `network_interface_id` can be set.
@@ -214,8 +214,8 @@ The following arguments are supported:
   - Deactive: Disable security enhancement strategy, it works on all images.
 
 -> **NOTE:** The ECS API does not return `security_enhancement_strategy`, so the provider cannot read it back into the state. For an imported instance (or an instance created without this field), the state value is empty; in this case, configuring or changing `security_enhancement_strategy` is ignored and will not force the instance to be recreated.
-* `data_disks` - (Optional, ForceNew, Available since v1.23.1) The list of data disks created with instance. See [`data_disks`](#data_disks) below.
-* `network_interfaces` - (Optional, ForceNew, Available since v1.212.0) The list of network interfaces created with instance. See [`network_interfaces`](#network_interfaces) below.
+* `data_disks` - (Optional, ForceNew, Available since v1.23.1) The list of data disks created with instance. **Note: The parameter is immutable after resource creation.** This resource only configures these disks during instance creation; it does not update or refresh the inline disk settings. See [`data_disks`](#data_disks) below.
+* `network_interfaces` - (Optional, ForceNew, Available since v1.212.0) The list of network interfaces created with instance. **Note: The parameter is immutable after resource creation.** See [`network_interfaces`](#network_interfaces) below.
 * `status` - (Optional 1.85.0) The instance status. Valid values: ["Running", "Stopped"]. You can control the instance start and stop through this parameter. Default to `Running`.
 * `hpc_cluster_id` - (Optional, ForceNew, Available since v1.144.0) The ID of the Elastic High Performance Computing (E-HPC) cluster to which to assign the instance.
 * `secondary_private_ips` - (Optional, Available since v1.144.0) A list of Secondary private IP addresses which is selected from within the CIDR block of the vSwitch.
@@ -233,7 +233,7 @@ The following arguments are supported:
 * `maintenance_notify` - (Optional, Available since v1.181.0) Specifies whether to send an event notification before instance shutdown. Valid values: `true`, `false`. Default value: `false`.
   * `true` : sends an event notification.
   * `false` : does not send an event notification.
-* `spot_duration` - (Optional, Available since v1.188.0) The retention time of the preemptive instance in hours. Valid values: `0`, `1`, `2`, `3`, `4`, `5`, `6`. Retention duration 2~6 is under invitation test, please submit a work order if you need to open. If the value is `0`, the mode is no protection period. Default value is `1`.
+* `spot_duration` - (Optional, Available since v1.188.0) The retention time of the preemptive instance in hours. Valid values: `0`, `1`, `2`, `3`, `4`, `5`, `6`. Retention duration 2~6 is under invitation test, please submit a work order if you need to open. If the value is `0`, the mode is no protection period. Default value is `1`. **Note: The parameter is immutable after resource creation.** This resource sends it only when creating the instance.
 * `spot_interruption_behavior` - (Optional, ForceNew, Available since v1.275.0) The interruption mode of the spot instance. Default value: `Terminate`. Valid values:
   - `Terminate`: The instance is released.
   - `Stop`: The instance is stopped in economical mode.
@@ -251,6 +251,7 @@ The following arguments are supported:
 * `launch_template_name` - (Optional, ForceNew, Available since v1.213.1) The name of the launch template.
 * `launch_template_version` - (Optional, ForceNew, Available since v1.213.1) The version of the launch template. If you set `launch_template_id` or `launch_template_name` parameter but do not set the version number of the launch template, the default template version is used.
 * `enable_jumbo_frame` - (Optional, Bool, Available since v1.223.2) Specifies whether to enable the Jumbo Frames feature for the instance. Valid values: `true`, `false`.
+* `enable_network_encryption` - (Optional, Bool) Specifies whether to enable network encryption for the instance. Valid values: `true`, `false`.
 * `enable_high_density_mode` - (Optional, Bool, Available since v1.283.0) Specifies whether to enable the high density mode for the instance. Valid values: `true`, `false`.
 
   -> **NOTE:** Modifying `enable_high_density_mode` requires the instance to be stopped.
@@ -271,7 +272,7 @@ The following arguments are supported:
   - `None`: No private pool. The capacity in private pools is not used.
 * `private_pool_options_id` - (Optional, Available since v1.253.0) The ID of the private pool.
 
-* `image_options` - (Optional, Set, Available since v1.237.0) The options of images. See [`image_options`](#image_options) below.
+* `image_options` - (Optional, Set, Available since v1.237.0) The options of images. **Note: The parameter is immutable after resource creation.** See [`image_options`](#image_options) below.
 * `cpu_options` - (Optional, Set, Available since v1.267.0) The options of cpu. See [`cpu_options`](#cpu_options) below.
 * `allocate_public_ip` - (Optional, Bool, Deprecated since v1.7.0) Field `allocate_public_ip` has been deprecated from provider version 1.7.0. Setting  `internet_max_bandwidth_out` larger than 0 will allocate public ip for instance.
 * `internet_max_bandwidth_in` - (Optional, Int, Deprecated since v1.121.2) Maximum incoming bandwidth from the public network, measured in Mbps (Mega bit per second). Value range: [1, 200]. If this value is not specified, then automatically sets it to 200 Mbps.
