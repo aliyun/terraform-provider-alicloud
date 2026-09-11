@@ -16,6 +16,8 @@ For information about Tair (Redis OSS-Compatible) And Memcache (KVStore) Account
 
 -> **NOTE:** Available since v1.66.0.
 
+-> **NOTE:** The `account_password_wo` and `account_password_wo_version` arguments require Terraform v1.11.0 or later. When `account_password_wo` is in use, `account_password` is not stored in the state or plan and reads back empty; use the `has_account_password_wo` attribute to check whether the password is managed by `account_password_wo`.
+
 ## Example Usage
 
 Basic Usage
@@ -85,6 +87,8 @@ The following arguments are supported:
   * The name can be up to 100 characters in length.
   * The name cannot be one of the reserved words listed in the [Reserved words for Redis account names](https://www.alibabacloud.com/help/en/redis/user-guide/create-and-manage-database-accounts) section.
 * `account_password` - (Optional, Sensitive) The password of the account. The password must be 8 to 32 characters in length. It must contain at least three of the following character types: uppercase letters, lowercase letters, digits, and special characters. Special characters include `!@ # $ % ^ & * ( ) _ + - =`. You have to specify one of `account_password` and `kms_encrypted_password` fields.
+* `account_password_wo` - (Optional, Sensitive, Available since v1.293.0) The write-only password of the account. It is only sent to the server when the resource is created or updated and is never stored in the state or plan. It requires Terraform v1.11.0 or later and must be used together with `account_password_wo_version`. It conflicts with `account_password` and `kms_encrypted_password`.
+* `account_password_wo_version` - (Optional, Computed, Available since v1.293.0) The version of the write-only password. The write-only password is re-sent to the server only when this argument changes, so it must be changed whenever `account_password_wo` changes. Once set, the last version remains in the state after this argument is removed from the configuration together with `account_password_wo`.
 * `description` - (Optional) Database description. It cannot begin with https://. It must start with a Chinese character or English letter. It can include Chinese and English characters, underlines (_), hyphens (-), and numbers. The length may be 2-256 characters.
 * `instance_id` - (Required, ForceNew) The Id of instance in which account belongs (The engine version of instance must be 4.0 or 4.0+).
 * `kms_encrypted_password` - (Optional) An KMS encrypts password used to a Tair (Redis OSS-Compatible) And Memcache (KVStore) account. If the `account_password` is filled in, this field will be ignored.
@@ -102,6 +106,7 @@ The following attributes are exported:
 
 * `id` - The resource ID of Account. The value is formatted `<instance_id>:<account_name>`.
 * `status` - The status of Tair (Redis OSS-Compatible) And Memcache (KVStore) Account.
+* `has_account_password_wo` - Whether the password of the account is currently managed by `account_password_wo`. When it is `true`, `account_password` reads back empty because the write-only password is never stored in the state.
 
 ## Timeouts
 

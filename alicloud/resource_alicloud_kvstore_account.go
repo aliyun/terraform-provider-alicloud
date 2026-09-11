@@ -9,6 +9,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -34,9 +35,28 @@ func resourceAliCloudRedisAccount() *schema.Resource {
 				ForceNew: true,
 			},
 			"account_password": {
-				Type:      schema.TypeString,
-				Optional:  true,
-				Sensitive: true,
+				Type:          schema.TypeString,
+				Optional:      true,
+				Sensitive:     true,
+				ConflictsWith: []string{"account_password_wo"},
+			},
+			"account_password_wo": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Sensitive:     true,
+				WriteOnly:     true,
+				ConflictsWith: []string{"kms_encrypted_password"},
+				RequiredWith:  []string{"account_password_wo_version"},
+			},
+			"account_password_wo_version": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				RequiredWith: []string{"account_password_wo"},
+			},
+			"has_account_password_wo": {
+				Type:     schema.TypeBool,
+				Computed: true,
 			},
 			"account_privilege": {
 				Type:     schema.TypeString,
@@ -105,6 +125,11 @@ func resourceAliCloudRedisAccountCreate(d *schema.ResourceData, meta interface{}
 		request["AccountDescription"] = v
 	}
 	request["AccountPassword"] = d.Get("account_password")
+	if woValue, err := getWriteOnlyStringValue(d, cty.GetAttrPath("account_password_wo")); err != nil {
+		return WrapError(err)
+	} else if woValue != "" {
+		request["AccountPassword"] = woValue
+	}
 	if v, ok := d.GetOk("account_type"); ok {
 		request["AccountType"] = v
 	}
@@ -175,6 +200,24 @@ func resourceAliCloudRedisAccountRead(d *schema.ResourceData, meta interface{}) 
 
 	if len(databasePrivilegeRaw) > 0 {
 		d.Set("account_privilege", databasePrivilegeRaw[0].(map[string]interface{})["AccountPrivilege"])
+	}
+
+	hasPasswordWo := false
+	if v, ok := d.GetOk("has_account_password_wo"); ok && v.(bool) {
+		hasPasswordWo = true
+	}
+	if rawConfig := d.GetRawConfig(); !rawConfig.IsNull() {
+		woValue, err := getWriteOnlyStringValue(d, cty.GetAttrPath("account_password_wo"))
+		if err != nil {
+			return WrapError(err)
+		}
+		hasPasswordWo = woValue != ""
+	}
+	if hasPasswordWo {
+		d.Set("has_account_password_wo", true)
+		d.Set("account_password", nil)
+	} else {
+		d.Set("has_account_password_wo", nil)
 	}
 
 	return nil
@@ -264,7 +307,15 @@ func resourceAliCloudRedisAccountUpdate(d *schema.ResourceData, meta interface{}
 	if !d.IsNewResource() && d.HasChanges("account_password", "kms_encrypted_password") {
 		update = true
 	}
+	if !d.IsNewResource() && d.HasChange("account_password_wo_version") {
+		update = true
+	}
 	request["AccountPassword"] = d.Get("account_password")
+	if woValue, err := getWriteOnlyStringValue(d, cty.GetAttrPath("account_password_wo")); err != nil {
+		return WrapError(err)
+	} else if woValue != "" {
+		request["AccountPassword"] = woValue
+	}
 	if request["AccountPassword"] == "" {
 		if v := d.Get("kms_encrypted_password").(string); v != "" {
 			kmsService := KmsService{client}
