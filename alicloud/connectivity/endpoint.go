@@ -348,6 +348,7 @@ var irregularProductEndpoint = map[string]string{
 	"alidns":                  "alidns.aliyuncs.com",
 	"openapiexplorer":         "openapi-mcp.cn-hangzhou.aliyuncs.com",
 	"computenestsupplier":     "computenestsupplier.cn-hangzhou.aliyuncs.com",
+	"cloud_siem":              "cloud-siem.aliyuncs.com",
 }
 
 // irregularProductEndpointForIntlRegion specially records those product codes that
@@ -376,6 +377,7 @@ var irregularProductEndpointForIntlAccount = map[string]string{
 	"ros":                     "ros-intl.aliyuncs.com",
 	"openapiexplorer":         "openapi-mcp.ap-southeast-1.aliyuncs.com",
 	"computenestsupplier":     "computenestsupplier.ap-southeast-1.aliyuncs.com",
+	"cloud_siem":              "cloud-siem.ap-southeast-1.aliyuncs.com",
 }
 
 // irregularProductEndpointForIntlAccountIntlRegion specially records those product codes that
